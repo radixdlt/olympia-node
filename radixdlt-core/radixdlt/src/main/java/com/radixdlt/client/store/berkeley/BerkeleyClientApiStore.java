@@ -623,7 +623,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		);
 
 		if (status != OperationStatus.SUCCESS) {
-			log.error("Error while storing token definition {}", tokenDefinition.asJson(universeMagic));
+			log.error("Error while storing token definition {}", tokenDefinition.asJson());
 		}
 	}
 

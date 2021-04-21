@@ -140,10 +140,10 @@ public class TokenDefinitionRecord {
 		);
 	}
 
-	public JSONObject asJson(byte magic) {
+	public JSONObject asJson() {
 		return jsonObject()
 			.put("name", name)
-			.put("rri", rri.toSpecString(magic))
+			.put("rri", rri.toString())
 			.put("symbol", rri.getName().toUpperCase())
 			.put("description", description)
 			.put("currentSupply", currentSupply)

@@ -93,10 +93,10 @@ public class ActionEntry {
 	}
 
 	public String toString() {
-		return asJson((byte) 0).toString(2);
+		return asJson().toString(2);
 	}
 
-	public JSONObject asJson(byte magic) {
+	public JSONObject asJson() {
 		var json = jsonObject()
 			.put("type", type.toString())
 			.put("from", from)
@@ -104,7 +104,7 @@ public class ActionEntry {
 
 		switch (type) {
 			case TRANSFER:
-				return json.put("to", to).put("rri", rri.toSpecString(magic));
+				return json.put("to", to).put("rri", rri.toString());
 
 			case UNSTAKE:
 			case STAKE:
