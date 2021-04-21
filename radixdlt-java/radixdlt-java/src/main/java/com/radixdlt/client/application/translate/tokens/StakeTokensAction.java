@@ -86,6 +86,6 @@ public class StakeTokensAction implements Action {
 
 	@Override
 	public String toString() {
-		return String.format("STAKE TOKENS %s %s OF %s TO %s", amount, rri.getName(), from, delegate);
+		return String.format("STAKE TOKENS %s %s OF %s TO %s", amount, rri, from, delegate);
 	}
 }

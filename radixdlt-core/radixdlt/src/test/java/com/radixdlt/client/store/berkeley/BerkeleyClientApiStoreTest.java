@@ -88,7 +88,8 @@ public class BerkeleyClientApiStoreTest {
 	private static final ECKeyPair TOKEN_KEYPAIR = ECKeyPair.generateNew();
 	private static final RadixAddress TOKEN_ADDRESS = new RadixAddress((byte) 0, TOKEN_KEYPAIR.getPublicKey());
 
-	private static final Rri TOKEN = Rri.of(TOKEN_ADDRESS.getPublicKey(), "cfee");
+	private static final String SYMBOL = "cfee";
+	private static final Rri TOKEN = Rri.of(TOKEN_ADDRESS.getPublicKey(), SYMBOL);
 
 	private final Serialization serialization = DefaultSerialization.getInstance();
 	private final BerkeleyLedgerEntryStore ledgerStore = mock(BerkeleyLedgerEntryStore.class);
@@ -132,7 +133,7 @@ public class BerkeleyClientApiStoreTest {
 
 	@Test
 	public void tokenBalancesAreReturned() throws Exception {
-		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
+		var tokenDef = prepareMutableTokenDef(SYMBOL);
 		var tx = engine.construct(TOKEN_ADDRESS, TxActionListBuilder.create()
 			.createMutableToken(tokenDef)
 			.mint(TOKEN, TOKEN_ADDRESS, UInt256.EIGHT)
@@ -162,7 +163,7 @@ public class BerkeleyClientApiStoreTest {
 
 	@Test
 	public void tokenSupplyIsCalculateProperlyForInitialTokenIssuance() throws Exception {
-		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
+		var tokenDef = prepareMutableTokenDef(SYMBOL);
 		var tx = engine.construct(TOKEN_ADDRESS, new CreateMutableToken(tokenDef))
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
@@ -175,7 +176,7 @@ public class BerkeleyClientApiStoreTest {
 
 	@Test
 	public void tokenSupplyIsCalculateProperlyAfterBurnMint() throws Exception {
-		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
+		var tokenDef = prepareMutableTokenDef(SYMBOL);
 		var tx = engine.construct(TOKEN_ADDRESS, TxActionListBuilder.create()
 			.createMutableToken(tokenDef)
 			.mint(TOKEN, TOKEN_ADDRESS, UInt256.TEN)
@@ -192,7 +193,7 @@ public class BerkeleyClientApiStoreTest {
 
 	@Test
 	public void mutableTokenDefinitionIsStoredAndAccessible() throws Exception {
-		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
+		var tokenDef = prepareMutableTokenDef(SYMBOL);
 		var tx = engine.construct(TOKEN_ADDRESS, new CreateMutableToken(tokenDef))
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 		var clientApiStore = prepareApiStore(tx);
@@ -217,7 +218,7 @@ public class BerkeleyClientApiStoreTest {
 
 	@Test
 	public void transactionHistoryIsReturnedInPages() throws Exception {
-		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
+		var tokenDef = prepareMutableTokenDef(SYMBOL);
 		var tx = engine.construct(TOKEN_ADDRESS, TxActionListBuilder.create()
 			.createMutableToken(tokenDef)
 			.mint(TOKEN, TOKEN_ADDRESS, UInt256.TEN)
@@ -258,7 +259,7 @@ public class BerkeleyClientApiStoreTest {
 
 	@Test
 	public void singleTransactionIsLocatedAndReturned() throws Exception {
-		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
+		var tokenDef = prepareMutableTokenDef(SYMBOL);
 		var tx = engine.construct(TOKEN_ADDRESS, TxActionListBuilder.create()
 			.createMutableToken(tokenDef)
 			.mint(TOKEN, TOKEN_ADDRESS, UInt256.TEN)
@@ -280,7 +281,7 @@ public class BerkeleyClientApiStoreTest {
 
 	@Test
 	public void incorrectPageSizeIsRejected() throws TxBuilderException, RadixEngineException {
-		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
+		var tokenDef = prepareMutableTokenDef(SYMBOL);
 		var tx = engine.construct(TOKEN_ADDRESS, TxActionListBuilder.create()
 			.createMutableToken(tokenDef)
 			.mint(TOKEN, TOKEN_ADDRESS, UInt256.TEN)
@@ -347,7 +348,7 @@ public class BerkeleyClientApiStoreTest {
 	}
 
 	private FixedTokenDefinition prepareFixedTokenDef() {
-		var symbol = TOKEN.getName();
+		var symbol = SYMBOL;
 
 		return new FixedTokenDefinition(
 			symbol, symbol, symbol, null, null, UInt256.ONE

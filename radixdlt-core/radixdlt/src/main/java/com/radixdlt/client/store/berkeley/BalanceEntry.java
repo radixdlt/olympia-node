@@ -164,7 +164,7 @@ public class BalanceEntry {
 
 	@Override
 	public String toString() {
-		return "/" + owner + "/" + rri.getName() + " = " + (negative ? "-" : "+") + amount.toString()
+		return "/" + owner + "/" + rri + " = " + (negative ? "-" : "+") + amount.toString()
 			+ (delegate == null ? "" : ", delegate " + delegate.toString());
 	}
 

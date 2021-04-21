@@ -131,6 +131,6 @@ public class TransferTokensAction implements Action {
 
 	@Override
 	public String toString() {
-		return "TRANSFER TOKEN " + amount + " " + rri.getName() + " FROM " + from + " TO " + to;
+		return "TRANSFER TOKEN " + amount + " " + rri + " FROM " + from + " TO " + to;
 	}
 }

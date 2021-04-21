@@ -653,7 +653,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private static DatabaseEntry asKey(BalanceEntry balanceEntry) {
 		var address = buffer().writeBytes(balanceEntry.getOwner().toByteArray());
-		var buf = address.writeBytes(balanceEntry.getRri().getName().getBytes());
+		var buf = address.writeBytes(balanceEntry.getRri().toString().getBytes(StandardCharsets.UTF_8));
 
 		if (balanceEntry.isStake()) {
 			buf.writeBytes(balanceEntry.getDelegate().toByteArray());

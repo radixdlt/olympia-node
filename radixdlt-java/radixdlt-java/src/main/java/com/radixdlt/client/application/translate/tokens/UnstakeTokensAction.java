@@ -86,6 +86,6 @@ public class UnstakeTokensAction implements Action {
 
 	@Override
 	public String toString() {
-		return String.format("UNSTAKE TOKENS %s %s OF %s FROM %s", amount, rri.getName(), from, delegate);
+		return String.format("UNSTAKE TOKENS %s %s OF %s FROM %s", amount, rri, from, delegate);
 	}
 }

@@ -19,7 +19,6 @@ package com.radixdlt.atommodel.tokens;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.identifiers.Rri;
 import com.radixdlt.utils.UInt256;
 
 import java.util.regex.Pattern;
@@ -62,7 +61,7 @@ public final class TokenDefinitionUtils {
 	 * @return The short code of the native asset.
 	 */
 	public static String getNativeTokenShortCode() {
-		return Rri.NATIVE_TOKEN.getName();
+		return "xrd";
 	}
 
 	private static Result validateUrl(String url) {
