@@ -158,7 +158,7 @@ final class ConstraintScryptEnv implements SysCalls {
 
 				@Override
 				public SignatureValidator<RRIParticle, O> signatureValidator() {
-					return (rri, o, index, pubKey) -> pubKey.map(p -> rri.getRri().ownedBy(p)).orElse(false);
+					return (rri, o, index, pubKey) -> pubKey.map(rri::ownedBy).orElse(false);
 				}
 			}
 		);
@@ -188,7 +188,7 @@ final class ConstraintScryptEnv implements SysCalls {
 			particleClass1,
 			includeSecondClass,
 			combinedCheck,
-			(rri, o, index, pubKey) -> pubKey.map(p -> rri.getRri().ownedBy(p)).orElse(false)
+			(rri, o, index, pubKey) -> pubKey.map(rri::ownedBy).orElse(false)
 		);
 
 		this.executeRoutine(createCombinedTransitionRoutine);

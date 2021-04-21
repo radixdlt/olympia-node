@@ -60,7 +60,7 @@ public final class Rri {
 		return new Rri(hash, name);
 	}
 
-	private static byte[] pkToHash(String name, ECPublicKey publicKey) {
+	public static byte[] pkToHash(String name, ECPublicKey publicKey) {
 		var nameBytes = name.getBytes(StandardCharsets.UTF_8);
 		var dataToHash = new byte[33 + nameBytes.length];
 		System.arraycopy(publicKey.getCompressedBytes(), 0, dataToHash, 0, 33);
@@ -68,14 +68,6 @@ public final class Rri {
 		var firstHash = HashUtils.sha256(dataToHash);
 		var secondHash = HashUtils.sha256(firstHash.asBytes());
 		return Arrays.copyOfRange(secondHash.asBytes(), 32 - HASH_BYTES, 32);
-	}
-
-	public boolean ownedBy(ECPublicKey publicKey) {
-		if (hash.length == 0) {
-			return false;
-		}
-
-		return Arrays.equals(hash, pkToHash(name, publicKey));
 	}
 
 	public boolean isSystem() {

@@ -17,9 +17,11 @@
 
 package com.radixdlt.atomos;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.Rri;
 
 public final class RRIParticle implements Particle {
@@ -31,6 +33,18 @@ public final class RRIParticle implements Particle {
 
 	public Rri getRri() {
 		return rri;
+	}
+
+	public String getName() {
+		return rri.getName();
+	}
+
+	public boolean ownedBy(ECPublicKey publicKey) {
+		if (rri.getHash().length == 0) {
+			return false;
+		}
+
+		return Arrays.equals(rri.getHash(), Rri.pkToHash(rri.getName(), publicKey));
 	}
 
 	@Override
