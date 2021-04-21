@@ -18,7 +18,6 @@
 package com.radixdlt.client.service;
 
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
@@ -64,22 +63,10 @@ public class HighLevelApiService {
 	}
 
 	public Result<TokenDefinitionRecord> getNativeTokenDescription() {
-		return Result.fromOptional(
-			immutableIndex.loadRri(null, Rri.NATIVE_TOKEN),
-			"Unable to find native token"
-		)
-			.map(TokenDefinitionParticle.class::cast)
-			.flatMap(p ->
-				clientApiStore.getTokenSupply(p.getRri())
-					.map(supply -> TokenDefinitionRecord.from(p, supply))
-			);
+		return getTokenDescription(Rri.NATIVE_TOKEN);
 	}
 
 	public Result<TokenDefinitionRecord> getTokenDescription(Rri rri) {
-		if (rri.equals(Rri.NATIVE_TOKEN)) {
-			return getNativeTokenDescription();
-		}
-
 		return clientApiStore.getTokenDefinition(rri)
 			.flatMap(definition -> withSupply(rri, definition));
 	}

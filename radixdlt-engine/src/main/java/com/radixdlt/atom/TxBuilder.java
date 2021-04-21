@@ -33,7 +33,6 @@ import java.util.Iterator;
 import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -417,24 +416,6 @@ public final class TxBuilder {
 	public TxBuilder message(byte[] message) {
 		lowLevelBuilder.message(message);
 		return this;
-	}
-
-	public Txn signAndBuild(
-		Function<HashCode, ECDSASignature> signer,
-		Consumer<SubstateStore> upSubstateConsumer
-	) {
-		var hashToSign = lowLevelBuilder.hashToSign();
-		var txn = lowLevelBuilder.sig(signer.apply(hashToSign)).build();
-		SubstateStore upSubstate = c -> SubstateCursor.concat(
-			createRemoteSubstateCursor(c),
-			() -> SubstateCursor.wrapIterator(lowLevelBuilder.localUpSubstate().stream()
-				.filter(l -> c.isInstance(l.getParticle()))
-				.map(l -> Substate.create(l.getParticle(), SubstateId.ofSubstate(txn.getId(), l.getIndex())))
-				.iterator())
-		);
-		upSubstateConsumer.accept(upSubstate);
-
-		return txn;
 	}
 
 	public Txn signAndBuild(Function<HashCode, ECDSASignature> signer) {

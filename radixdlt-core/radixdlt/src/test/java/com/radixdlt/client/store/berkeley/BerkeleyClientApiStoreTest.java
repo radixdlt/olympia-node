@@ -41,10 +41,7 @@ import com.radixdlt.atom.FixedTokenDefinition;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.counters.SystemCounters;
@@ -195,22 +192,13 @@ public class BerkeleyClientApiStoreTest {
 
 	@Test
 	public void mutableTokenDefinitionIsStoredAndAccessible() throws Exception {
-		var fooDef = new AtomicReference<TokenDefinitionRecord>();
-
 		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
 		var tx = engine.construct(TOKEN_ADDRESS, new CreateMutableToken(tokenDef))
-			.signAndBuild(TOKEN_KEYPAIR::sign, store -> {
-				try (var cursor = store.openIndexedCursor(TokenDefinitionParticle.class)) {
-					while (cursor.hasNext()) {
-						toTokenDefinitionRecord(cursor.next().getParticle()).ifPresent(fooDef::set);
-					}
-				}
-			});
-
+			.signAndBuild(TOKEN_KEYPAIR::sign);
 		var clientApiStore = prepareApiStore(tx);
 
 		clientApiStore.getTokenDefinition(TOKEN)
-			.onSuccess(tokDef -> assertEquals(fooDef.get(), tokDef))
+			.onSuccess(tokDef -> assertEquals(tokenDef.getName(), tokDef.getName()))
 			.onFailure(this::failWithMessage);
 	}
 
@@ -350,14 +338,6 @@ public class BerkeleyClientApiStoreTest {
 
 	private void failWithMessage(com.radixdlt.utils.functional.Failure failure) {
 		Assert.fail(failure.message());
-	}
-
-	private Optional<TokenDefinitionRecord> toTokenDefinitionRecord(Particle particle) {
-		if (particle instanceof TokenDefinitionParticle) {
-			return Optional.of(TokenDefinitionRecord.from((TokenDefinitionParticle) particle));
-		} else {
-			return Optional.empty();
-		}
 	}
 
 	private MutableTokenDefinition prepareMutableTokenDef(String symbol) {

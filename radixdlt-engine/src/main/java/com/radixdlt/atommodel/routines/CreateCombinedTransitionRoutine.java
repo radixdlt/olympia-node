@@ -19,8 +19,12 @@ package com.radixdlt.atommodel.routines;
 
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.atom.actions.CreateFixedToken;
+import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.Unknown;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atomos.ConstraintRoutine;
+import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.RoutineCalls;
 import com.radixdlt.constraintmachine.Particle;
@@ -111,10 +115,24 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 
 			@Override
 			public InputOutputReducer<I, O, VoidReducerState> inputOutputReducer() {
-				return (input, output, index, outputUsed) ->
-					includeSecondClass.test(output)
-						? ReducerResult.incomplete(new UsedParticle<>(typeToken0, output), true)
-						: ReducerResult.complete(Unknown.create());
+				return (input, output, index, outputUsed) -> {
+					if (includeSecondClass.test(output)) {
+						return ReducerResult.incomplete(new UsedParticle<>(typeToken0, output), true);
+					} else {
+						// FIXME: HACK as we are assuming that this is a mutable token creation which is fine for
+						// FIXME: now as it is the only available transition for betanet
+						var rriParticle = (RRIParticle) input;
+						var tokDefParticle = (TokenDefinitionParticle) output;
+						var action = new CreateMutableToken(
+							rriParticle.getName(),
+							tokDefParticle.getName(),
+							tokDefParticle.getDescription(),
+							tokDefParticle.getIconUrl(),
+							tokDefParticle.getUrl()
+						);
+						return ReducerResult.complete(action);
+					}
+				};
 			}
 
 			@Override
@@ -133,7 +151,21 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 
 			@Override
 			public InputOutputReducer<I, V, UsedParticle<O>> inputOutputReducer() {
-				return (input, output, index, outputUsed) -> ReducerResult.complete(Unknown.create());
+				return (input, output, index, outputUsed) -> {
+					// FIXME: HACK as we are assuming that this is a mutable token creation which is fine for
+					// FIXME: now as it is the only available transition for betanet
+					var rriParticle = (RRIParticle) input;
+					var tokDefParticle = (TokenDefinitionParticle) outputUsed.usedParticle;
+					var action = new CreateFixedToken(
+						rriParticle.getName(),
+						tokDefParticle.getName(),
+						tokDefParticle.getDescription(),
+						tokDefParticle.getIconUrl(),
+						tokDefParticle.getUrl(),
+						tokDefParticle.getSupply().orElseThrow()
+					);
+					return ReducerResult.complete(action);
+				};
 			}
 
 			@Override

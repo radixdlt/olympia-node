@@ -392,7 +392,7 @@ public class HighLevelApiHandlerTest {
 	private Result<TokenDefinitionRecord> buildToken(String name) {
 		return Result.ok(
 			TokenDefinitionRecord.create(
-				name, Rri.of(KNOWN_ADDRESS.getPublicKey(), name), name + " " + name, UInt384.EIGHT,
+				name, name, Rri.of(KNOWN_ADDRESS.getPublicKey(), name), name + " " + name, UInt384.EIGHT,
 				"http://" + name.toLowerCase() + ".icon.url", "http://" + name.toLowerCase() + "home.url",
 				false
 			));
