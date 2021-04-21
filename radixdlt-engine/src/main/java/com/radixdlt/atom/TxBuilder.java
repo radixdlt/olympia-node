@@ -20,8 +20,6 @@ package com.radixdlt.atom;
 
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.constraintmachine.Particle;
@@ -411,61 +409,6 @@ public final class TxBuilder {
 			"RRI not available"
 		).with(r -> new UniqueParticle(rri));
 
-		particleGroup();
-
-		return this;
-	}
-
-	public TxBuilder createFixedToken(FixedTokenDefinition tokenDefinition) throws TxBuilderException {
-		assertHasAddress("Must have address");
-
-		final var tokenRri = Rri.of(address.getPublicKey(), tokenDefinition.getSymbol());
-
-		down(
-			RRIParticle.class,
-			p -> p.getRri().equals(tokenRri),
-			Optional.of(new RRIParticle(tokenRri)),
-			"RRI not available"
-		);
-
-		up(new TokenDefinitionParticle(
-			tokenRri,
-			tokenDefinition.getName(),
-			tokenDefinition.getDescription(),
-			tokenDefinition.getIconUrl(),
-			tokenDefinition.getTokenUrl(),
-			tokenDefinition.getSupply()
-		));
-
-		up(new TokensParticle(
-			address,
-			tokenDefinition.getSupply(),
-			tokenRri)
-		);
-
-		particleGroup();
-
-		return this;
-	}
-
-	public TxBuilder createMutableToken(MutableTokenDefinition tokenDefinition) throws TxBuilderException {
-		assertHasAddress("Must have address");
-
-		final var tokenRRI = Rri.of(address.getPublicKey(), tokenDefinition.getSymbol());
-		down(
-			RRIParticle.class,
-			p -> p.getRri().equals(tokenRRI),
-			Optional.of(new RRIParticle(tokenRRI)),
-			"RRI not available"
-		);
-		up(new TokenDefinitionParticle(
-			tokenRRI,
-			tokenDefinition.getName(),
-			tokenDefinition.getDescription(),
-			tokenDefinition.getIconUrl(),
-			tokenDefinition.getTokenUrl(),
-			null
-		));
 		particleGroup();
 
 		return this;

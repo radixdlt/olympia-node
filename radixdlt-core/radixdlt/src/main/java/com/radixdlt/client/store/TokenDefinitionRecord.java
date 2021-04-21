@@ -152,6 +152,10 @@ public class TokenDefinitionRecord {
 			.put("mutable", mutable);
 	}
 
+	public String getName() {
+		return name;
+	}
+
 	public boolean isMutable() {
 		return mutable;
 	}

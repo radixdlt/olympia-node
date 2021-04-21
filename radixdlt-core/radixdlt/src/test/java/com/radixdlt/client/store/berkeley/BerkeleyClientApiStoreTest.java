@@ -18,6 +18,8 @@ package com.radixdlt.client.store.berkeley;
 
 import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.atom.TxActionListBuilder;
+import com.radixdlt.atom.actions.CreateFixedToken;
+import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.utils.UInt384;
@@ -37,7 +39,6 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.FixedTokenDefinition;
 import com.radixdlt.atom.MutableTokenDefinition;
-import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
@@ -165,8 +166,7 @@ public class BerkeleyClientApiStoreTest {
 	@Test
 	public void tokenSupplyIsCalculateProperlyForInitialTokenIssuance() throws Exception {
 		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
-		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
-			.createMutableToken(tokenDef)
+		var tx = engine.construct(TOKEN_ADDRESS, new CreateMutableToken(tokenDef))
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var clientApiStore = prepareApiStore(tx);
@@ -198,8 +198,7 @@ public class BerkeleyClientApiStoreTest {
 		var fooDef = new AtomicReference<TokenDefinitionRecord>();
 
 		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
-		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
-			.createMutableToken(tokenDef)
+		var tx = engine.construct(TOKEN_ADDRESS, new CreateMutableToken(tokenDef))
 			.signAndBuild(TOKEN_KEYPAIR::sign, store -> {
 				try (var cursor = store.openIndexedCursor(TokenDefinitionParticle.class)) {
 					while (cursor.hasNext()) {
@@ -217,23 +216,15 @@ public class BerkeleyClientApiStoreTest {
 
 	@Test
 	public void fixedTokenDefinitionIsStoredAndAccessible() throws Exception {
-		var fooDef = new AtomicReference<TokenDefinitionRecord>();
 		var tokenDef = prepareFixedTokenDef();
-		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
-			.createFixedToken(tokenDef)
-			.signAndBuild(TOKEN_KEYPAIR::sign, store -> {
-				try (var cursor = store.openIndexedCursor(TokenDefinitionParticle.class)) {
-					while (cursor.hasNext()) {
-						toTokenDefinitionRecord(cursor.next().getParticle()).ifPresent(fooDef::set);
-					}
-				}
-			});
+		var tx = engine.construct(TOKEN_ADDRESS, new CreateFixedToken(tokenDef))
+			.signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var clientApiStore = prepareApiStore(tx);
 
 		clientApiStore.getTokenDefinition(TOKEN)
 			.onFailure(this::failWithMessage)
-			.onSuccess(tokDef -> assertEquals(fooDef.get(), tokDef));
+			.onSuccess(tokDef -> assertEquals(tokenDef.getName(), tokDef.getName()));
 	}
 
 	@Test
