@@ -26,8 +26,8 @@ import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxActionListBuilder;
-import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
@@ -94,8 +94,7 @@ public class MutableTokenTest {
 			null,
 			null
 		);
-		var txn = TxBuilder.newBuilder(address)
-			.createMutableToken(tokDef)
+		var txn = sut.construct(address, new CreateMutableToken(tokDef))
 			.signAndBuild(keyPair::sign);
 
 		// Act/Assert
@@ -147,8 +146,7 @@ public class MutableTokenTest {
 			null,
 			null
 		);
-		var atom = TxBuilder.newBuilder(address)
-			.createMutableToken(tokDef)
+		var atom = sut.construct(address, new CreateMutableToken(tokDef))
 			.signAndBuild(keyPair::sign);
 
 		// Act/Assert

@@ -18,6 +18,7 @@
 
 package com.radixdlt.atom.actions;
 
+import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
@@ -34,6 +35,10 @@ public final class CreateMutableToken implements TxAction {
 	private final String description;
 	private final String iconUrl;
 	private final String tokenUrl;
+
+	public CreateMutableToken(MutableTokenDefinition def) {
+		this(def.getSymbol(), def.getName(), def.getDescription(), def.getIconUrl(), def.getTokenUrl());
+	}
 
 	public CreateMutableToken(
 		String symbol,

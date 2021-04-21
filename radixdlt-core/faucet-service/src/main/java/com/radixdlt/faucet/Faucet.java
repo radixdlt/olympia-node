@@ -31,7 +31,6 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.ledger.AtomObservation;
-import com.radixdlt.identifiers.Rri;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -122,19 +121,8 @@ public class Faucet {
 
 		var api = loadApi();
 		var source = createRequestSource();
-		var tokenRRI = retrieveTokenRRI();
 		var rateLimiter = prepareRateLimiter();
 		var leakAmount = retrieveLeakAmount();
-
-		log.info(
-			"Faucet starting on port {}, granting {} {} at max rate {}/second",
-			source.port(), leakAmount, tokenRRI, rateLimiter.getRate()
-		);
-
-		syncToHead(api);
-
-		new FaucetHandler(api, tokenRRI, leakAmount, rateLimiter)
-			.run(source.requestSource());
 
 		// Wait for threads to start
 		try {
@@ -143,12 +131,6 @@ public class Faucet {
 			// Ignored
 			Thread.currentThread().interrupt();
 		}
-	}
-
-	private static Rri retrieveTokenRRI() {
-		return envVar(FAUCET_TOKEN_RRI_ENV_NAME)
-			.map(Rri::fromBech32)
-			.orElseGet(() -> fail("Token RRI must be set via env var: {}=<rri-of-token>", FAUCET_TOKEN_RRI_ENV_NAME));
 	}
 
 	private static BigDecimal retrieveLeakAmount() {

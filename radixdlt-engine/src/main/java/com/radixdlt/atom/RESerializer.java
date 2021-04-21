@@ -241,7 +241,7 @@ public final class RESerializer {
 	}
 
 	private static void serializeData(TokenDefinitionParticle p, ByteBuffer buf) {
-		serializeString(buf, p.getRri().toString());
+		serializeRri(buf, p.getRri());
 		p.getSupply().ifPresentOrElse(
 			i -> {
 				buf.put((byte) 0);
@@ -258,7 +258,7 @@ public final class RESerializer {
 	}
 
 	private static TokenDefinitionParticle deserializeTokenDefinitionParticle(ByteBuffer buf) {
-		var rri = Rri.fromBech32(deserializeString(buf));
+		var rri = deserializeRri(buf);
 		var supply = buf.get() != 0 ? null : deserializeUInt256(buf);
 		var name = deserializeString(buf);
 		var description = deserializeString(buf);
