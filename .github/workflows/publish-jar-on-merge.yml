@@ -9,8 +9,8 @@ on:
       - rc\/*
       - release\/*
 jobs:
-  if: ${{ contains(github.ref, 'refs/heads/release/') }}
   cancel_running_workflows:
+    if: ${{ contains(github.ref, 'refs/heads/release/') }}
     name: Cancel running workflows
     runs-on: ubuntu-20.04
     steps:
