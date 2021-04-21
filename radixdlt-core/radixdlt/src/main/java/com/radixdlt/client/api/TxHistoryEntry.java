@@ -101,17 +101,17 @@ public class TxHistoryEntry {
 		return Objects.hash(txId, timestamp, fee, message, actions);
 	}
 
-	public JSONObject asJson() {
+	public JSONObject asJson(byte magic) {
 		return jsonObject()
 			.put("txId", txId)
 			.put("sentAt", DateTimeFormatter.ISO_INSTANT.format(timestamp))
 			.put("fee", fee)
-			.put("actions", fromList(actions, ActionEntry::asJson))
+			.put("actions", fromList(actions, entry -> entry.asJson(magic)))
 			.putOpt("message", Optional.ofNullable(message).map(MessageEntry::asJson).orElse(null));
 	}
 
 	@Override
 	public String toString() {
-		return asJson().toString(2);
+		return asJson((byte) 0).toString(2);
 	}
 }
