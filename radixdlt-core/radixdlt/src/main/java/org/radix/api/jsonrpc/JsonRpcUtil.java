@@ -21,6 +21,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.radixdlt.utils.functional.Failure;
+import com.radixdlt.utils.functional.Result;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,10 +34,16 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.radixdlt.utils.functional.Result.fromOptional;
+
+import static java.util.Optional.ofNullable;
+
 /**
  * A collection of utilities for the Json RPC API
  */
 public final class JsonRpcUtil {
+	private static final Result<JSONObject> MISSING_PARAMETER = Result.fail("Parameter not present");
+
 	/**
 	 * The following found at: https://www.jsonrpc.org/specification
 	 */
@@ -55,6 +64,7 @@ public final class JsonRpcUtil {
 		public int code() {
 			return code;
 		}
+
 	}
 
 	private JsonRpcUtil() {
@@ -63,6 +73,10 @@ public final class JsonRpcUtil {
 
 	public static JSONArray params(JSONObject request) {
 		return request.getJSONArray("params");
+	}
+
+	public static JSONObject toErrorResponse(JSONObject request, Failure failure) {
+		return errorResponse(request, RpcError.INVALID_PARAMS, failure.message());
 	}
 
 	public static Optional<JSONObject> jsonObject(String data) {
@@ -105,7 +119,7 @@ public final class JsonRpcUtil {
 
 	public static Optional<String> safeString(JSONObject params, String name) {
 		if (params.has(name)) {
-			return Optional.ofNullable(params.get(name).toString());
+			return ofNullable(params.get(name).toString());
 		}
 		return Optional.empty();
 	}
@@ -144,40 +158,33 @@ public final class JsonRpcUtil {
 
 	public static JSONObject withRequiredStringParameter(
 		JSONObject request,
-		BiFunction<JSONArray, String, JSONObject> fn
+		BiFunction<JSONArray, String, Result<JSONObject>> fn
 	) {
-		return withParameters(request, params -> {
-			if (params.length() != 1) {
-				return errorResponse(request, RpcError.INVALID_REQUEST, "Parameter not present");
-			}
-			var str = params.getString(0);
-			return fn.apply(params, str);
-		});
+		return withParameters(request, params ->
+			params.length() == 1
+			? fn.apply(params, params.getString(0))
+			: MISSING_PARAMETER);
 	}
 
 	public static JSONObject withRequiredArrayParameter(
 		JSONObject request,
-		BiFunction<JSONArray, JSONArray, JSONObject> fn
+		BiFunction<JSONArray, JSONArray, Result<JSONObject>> fn
 	) {
-		return withParameters(request, params -> {
-			if (params.isEmpty()) {
-				return errorResponse(request, RpcError.INVALID_REQUEST, "Parameter not present");
-			}
-
-			var arr = params.getJSONArray(0);
-			return fn.apply(params, arr);
-		});
+		return withParameters(request, params ->
+			!params.isEmpty()
+			? fn.apply(params, params.getJSONArray(0))
+			: MISSING_PARAMETER);
 	}
 
 	public static JSONObject withRequiredParameters(
 		JSONObject request,
 		List<String> required,
 		List<String> optional,
-		Function<JSONObject, JSONObject> fn
+		Function<JSONObject, Result<JSONObject>> fn
 	) {
 		return withParameters(request, params -> {
 			if (params.length() < required.size()) {
-				return errorResponse(request, RpcError.INVALID_REQUEST, "Params missing one or more fields");
+				return MISSING_PARAMETER;
 			}
 			var o = new JSONObject();
 			for (int i = 0; i < required.size(); i++) {
@@ -191,17 +198,17 @@ public final class JsonRpcUtil {
 		});
 	}
 
-	public static JSONObject withParameters(JSONObject request, Function<JSONArray, JSONObject> fn) {
-		if (!request.has("params")) {
-			return errorResponse(request, RpcError.INVALID_REQUEST, "'params' field is required");
-		}
+	private static JSONObject withParameters(JSONObject request, Function<JSONArray, Result<JSONObject>> fn) {
+		return retrieveParams(request)
+			.map(JSONArray.class::cast)
+			.flatMap(fn)
+			.fold(failure -> toErrorResponse(request, failure), response -> response(request, response));
+	}
 
-		final Object paramsObject = request.get("params");
-
-		if (!(paramsObject instanceof JSONArray)) {
-			return errorResponse(request, RpcError.INVALID_PARAMS, "'params' field must be a JSON array");
-		}
-
-		return fn.apply((JSONArray) paramsObject);
+	private static Result<JSONArray> retrieveParams(JSONObject request) {
+		return fromOptional(
+			ofNullable(request.optJSONArray("params")),
+			"The 'params' field must be present and must be a JSON array"
+		);
 	}
 }

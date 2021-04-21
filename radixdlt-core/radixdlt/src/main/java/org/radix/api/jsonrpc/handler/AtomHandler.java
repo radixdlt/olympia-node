@@ -18,13 +18,11 @@
 package org.radix.api.jsonrpc.handler;
 
 import org.json.JSONObject;
-import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
 import org.radix.api.services.AtomsService;
 
 import com.google.inject.Inject;
 import com.radixdlt.identifiers.AID;
 
-import static org.radix.api.jsonrpc.JsonRpcUtil.errorResponse;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredStringParameter;
 
 public class AtomHandler {
@@ -38,10 +36,7 @@ public class AtomHandler {
 	public JSONObject handleGetAtom(JSONObject request) {
 		return withRequiredStringParameter(
 			request,
-			(params, aid) -> AID.fromString(aid)
-				.flatMap(atomsService::getAtomByAtomId)
-				.orElseGet(() -> errorResponse(request, RpcError.INVALID_PARAMS, "Atom with AID '" + aid + "' not found"))
+			(params, aid) -> AID.fromString(aid).flatMap(atomsService::getAtomByAtomId)
 		);
 	}
-
 }

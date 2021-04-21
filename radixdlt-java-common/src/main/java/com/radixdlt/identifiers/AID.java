@@ -27,6 +27,10 @@ import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
 
+import static com.radixdlt.utils.functional.Result.fromOptional;
+
+import static java.util.Optional.ofNullable;
+
 /**
  * An Atom ID, made up of 256 bits of a hash.
  * The Atom ID is used so that Atoms can be located using just their hid.
@@ -145,17 +149,17 @@ public final class AID implements Comparable<AID> {
 	}
 
 	/**
-	 * Create an AID from string. Unlike {@link #from(String)} this method does not throw an exception.
+	 * Functional style friendly version of {@link #from(String)}.
 	 *
-	 * @param hexBytes The bytes in hex (must be of length AID.BYTES * 2)
+	 * @param input The string to parse
 	 *
-	 * @return Present {@link Optional} in case of success and empty {@link Optional} in case of failure
+	 * @return Success {@link Result} if value can be successfully parsed and failure {@link Result} otherwise.
 	 */
-	public static Optional<AID> fromString(String hexBytes) {
-		return Optional.ofNullable(hexBytes)
-			.filter(bytes -> bytes.length() == BYTES * 2)
+	public static Result<AID> fromString(String input) {
+		return fromOptional(ofNullable(input), "AID string is 'null'")
+			.filter(bytes -> bytes.length() == BYTES * 2, "AID string is of incorrect length")
 			.map(Bytes::fromHexString)
-			.filter(bytes -> bytes.length == HASH_BYTES)
+			.filter(bytes -> bytes.length == HASH_BYTES, "AID string converted to bytes has incorrect length")
 			.map(AID::new);
 	}
 
