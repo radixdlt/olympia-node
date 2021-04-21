@@ -24,6 +24,7 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.identifiers.Rri;
 
 import java.util.Objects;
@@ -91,7 +92,7 @@ public final class CreateMutableToken implements TxAction {
 			getDescription(),
 			getIconUrl(),
 			getTokenUrl(),
-			null
+			txBuilder.getAddress().map(RadixAddress::getPublicKey).orElse(null)
 		));
 	}
 }
