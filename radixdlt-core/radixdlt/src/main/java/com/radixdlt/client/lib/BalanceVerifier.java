@@ -17,85 +17,64 @@
 
 package com.radixdlt.client.lib;
 
-import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.json.JSONObject;
 
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.Ints;
+import com.radixdlt.utils.functional.Result;
 
 import java.security.Security;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.ResponseBody;
-
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
+import static java.util.Optional.ofNullable;
 
 public class BalanceVerifier {
 	private static final String DEFAULT_HOST = "http://localhost:8080/";
-	private static final MediaType MEDIA_TYPE = MediaType.parse("application/json");
+
+	private final Options options = new Options()
+		.addOption("h", "help", false, "Show usage information (this message)")
+		.addOption("n", "node-url", true, "Node URL (default to " + DEFAULT_HOST + ")");
 
 	public static void main(String[] args) {
 		Security.insertProviderAt(new BouncyCastleProvider(), 1);
 
-		var options = new Options()
-			.addOption("h", "help", false, "Show usage information (this message)")
-			.addOption("n", "node-url", true, "Node URL (default to " + DEFAULT_HOST + ")");
-
-		try {
-
-			var cmd = new DefaultParser().parse(options, args);
-
-			if (!cmd.getArgList().isEmpty()) {
-				usage(options);
-				return;
-			}
-
-			if (cmd.hasOption('h')) {
-				usage(options);
-				return;
-			}
-
-			var baseUrl = getOption(cmd, 'h').orElse(DEFAULT_HOST);
-			var client = NodeClient.create(baseUrl);
-
-			var setupState = client.tryConnect();
-
-			if (!setupState.isSuccess()) {
-				System.out.println("Unable to establish communication with node ");
-				return;
-			}
-
-			retrieveBalance(client, pubkeyOf(1));
-			retrieveBalance(client, pubkeyOf(2));
-			retrieveBalance(client, pubkeyOf(3));
-			retrieveBalance(client, pubkeyOf(4));
-			retrieveBalance(client, pubkeyOf(5));
-
-		} catch (ParseException e) {
-			System.err.println(e.getMessage());
-			usage(options);
-		}
+		new BalanceVerifier().run(args);
 	}
 
-	private static void retrieveBalance(NodeClient client, ECPublicKey key) {
+	private void run(String[] args) {
+		Result.wrap(() -> new DefaultParser().parse(options, args))
+			.filter(cmd -> cmd.getArgList().isEmpty() && !cmd.hasOption('h'), "Invalid command line options")
+			.onSuccess(cmd -> {
+				var baseUrl = ofNullable(cmd.getOptionValue('h')).orElse(DEFAULT_HOST);
+
+				NodeClient.create(baseUrl)
+					.onSuccess(client -> {
+						retrieveBalance(client, pubkeyOf(1));
+						retrieveBalance(client, pubkeyOf(2));
+						retrieveBalance(client, pubkeyOf(3));
+						retrieveBalance(client, pubkeyOf(4));
+						retrieveBalance(client, pubkeyOf(5));
+					})
+					.onFailure(failure -> System.out.println(failure.message()));
+			})
+			.onFailure(failure -> {
+				System.err.println(failure.message());
+				usage();
+			});
+	}
+
+	private void retrieveBalance(NodeClient client, ECPublicKey key) {
 		client.callTokenBalances(key).onSuccess(balances -> printBalances(key, balances));
 	}
 
-	private static void printBalances(ECPublicKey publicKey, List<TokenBalance> balances) {
+	private void printBalances(ECPublicKey publicKey, List<TokenBalance> balances) {
 		System.out.println("Owner: " + publicKey.toString());
 		if (balances.isEmpty()) {
 			System.out.println("(empty balances)");
@@ -105,7 +84,7 @@ public class BalanceVerifier {
 		System.out.println();
 	}
 
-	private static ECPublicKey pubkeyOf(int pk) {
+	private ECPublicKey pubkeyOf(int pk) {
 		var privateKey = new byte[ECKeyPair.BYTES];
 		Ints.copyTo(pk, privateKey, ECKeyPair.BYTES - Integer.BYTES);
 
@@ -116,11 +95,8 @@ public class BalanceVerifier {
 		}
 	}
 
-	private static void usage(Options options) {
+	private void usage() {
 		new HelpFormatter().printHelp(BalanceVerifier.class.getSimpleName(), options, true);
 	}
 
-	private static Optional<String> getOption(CommandLine cmd, char opt) {
-		return Optional.ofNullable(cmd.getOptionValue(opt));
-	}
 }

@@ -17,11 +17,11 @@
 
 package com.radixdlt.identifiers;
 
+import org.bitcoinj.core.Bech32;
+
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.Bits;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.utils.functional.Result;
-import org.bitcoinj.core.Bech32;
 
 import java.util.Arrays;
 import java.util.Objects;

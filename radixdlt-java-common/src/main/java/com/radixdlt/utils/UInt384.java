@@ -17,13 +17,12 @@
 
 package com.radixdlt.utils;
 
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.Optional;
-
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.utils.functional.Result;
+
+import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * A 384-bit unsigned integer, with comparison and some basic arithmetic
@@ -226,12 +225,11 @@ public final class UInt384 implements Comparable<UInt384> {
 	}
 
 	/**
-	 * Functional style friendly version of {@link #from(String)}. Instead of throwing exceptions
-	 * this method returns {@link Optional#empty()}.
+	 * Functional style friendly version of {@link #from(String)}.
 	 *
 	 * @param input The string to parse
 	 *
-	 * @return Present {@link Optional} if value can be parsed and {@link Optional#empty()} otherwise.
+	 * @return Success {@link Result} if value can be successfully parsed and failure {@link Result} otherwise.
 	 */
 	public static Result<UInt384> fromString(String input) {
 		return Result.wrap(() -> from(input));

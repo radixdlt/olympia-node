@@ -359,7 +359,7 @@ public class HighLevelApiHandlerTest {
 	private void validateHistoryEntry(TxHistoryEntry entry, JSONObject historyEntry) {
 		assertEquals(UInt256.ONE, historyEntry.get("fee"));
 		assertEquals(DateTimeFormatter.ISO_INSTANT.format(entry.timestamp()), historyEntry.getString("sentAt"));
-		assertEquals(entry.getTxId(), historyEntry.get("txId"));
+		assertEquals(entry.getTxId(), historyEntry.get("txID"));
 
 		assertTrue(historyEntry.has("actions"));
 		var actions = historyEntry.getJSONArray("actions");

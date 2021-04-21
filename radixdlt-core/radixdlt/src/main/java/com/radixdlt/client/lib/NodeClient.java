@@ -21,7 +21,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.radixdlt.client.store.TokenBalance;
-import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.identifiers.Rri;
@@ -48,7 +47,6 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 import static com.radixdlt.utils.functional.Optionals.allOf;
 
-import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
 public class NodeClient {
@@ -79,10 +77,12 @@ public class NodeClient {
 		}
 	}
 
-	public static NodeClient create(String baseUrl) {
-		requireNonNull(baseUrl);
+	public static Result<NodeClient> create(String baseUrl) {
+		if (baseUrl == null) {
+			return Result.fail("Base URL is mandatory");
+		}
 
-		return new NodeClient(baseUrl);
+		return Result.ok(new NodeClient(baseUrl)).flatMap(NodeClient::tryConnect);
 	}
 
 	public Result<List<TokenBalance>> callTokenBalances(ECPublicKey publicKey) {
@@ -101,7 +101,7 @@ public class NodeClient {
 			.flatMap(this::parseJson);
 	}
 
-	public Result<Integer> tryConnect() {
+	private Result<NodeClient> tryConnect() {
 		var params = jsonArray();
 
 		return call("networkId", params)
@@ -109,7 +109,8 @@ public class NodeClient {
 			.flatMap(obj -> Result.fromOptional(ofNullable(obj.opt("networkId")), "Network ID not found"))
 			.filter(Integer.class::isInstance, "Network ID is not an integer")
 			.map(Integer.class::cast)
-			.onSuccess(magic -> magicHolder.set(magic.byteValue()));
+			.onSuccess(magic -> magicHolder.set(magic.byteValue()))
+			.map(__ -> this);
 	}
 
 	private JSONObject wrap(String method, JSONArray params) {
