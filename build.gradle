@@ -56,7 +56,9 @@ if (System.getenv("CI_VERSION")){
 }
 
 task radixCiVersion {
-    print "radixdlt-version:$version"
+    doLast {
+        print "radixdlt-version:$version"
+    }
 }
 
 sonarqube {

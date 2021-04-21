@@ -103,7 +103,7 @@ public class TxHistoryEntry {
 
 	public JSONObject asJson(byte magic) {
 		return jsonObject()
-			.put("txId", txId)
+			.put("txID", txId)
 			.put("sentAt", DateTimeFormatter.ISO_INSTANT.format(timestamp))
 			.put("fee", fee)
 			.put("actions", fromList(actions, entry -> entry.asJson(magic)))
@@ -112,6 +112,7 @@ public class TxHistoryEntry {
 
 	@Override
 	public String toString() {
+		// zero magic is irrelevant here as this method is not used to build response
 		return asJson((byte) 0).toString(2);
 	}
 }

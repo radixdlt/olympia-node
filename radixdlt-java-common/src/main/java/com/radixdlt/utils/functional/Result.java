@@ -248,6 +248,21 @@ public interface Result<T> {
 	}
 
 	/**
+	 * Wrap call to function which may throw an exception.
+	 *
+	 * @param supplier the function to call.
+	 *
+	 * @return success instance if call was successful and failure instance if function threw an exception.
+	 */
+	static <T> Result<T> wrap(ThrowingSupplier<T> supplier) {
+		try {
+			return ok(supplier.get());
+		} catch (Throwable e) {
+			return fail(e);
+		}
+	}
+
+	/**
 	 * Create an instance of successful operation result.
 	 *
 	 * @param value Operation result

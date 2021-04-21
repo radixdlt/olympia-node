@@ -43,10 +43,6 @@ public final class TxnParser {
 	}
 
 	public Result<REParsedTxn> parseTxn(Txn txn) {
-		try {
-			return Result.ok(parse(txn));
-		} catch (RadixEngineException e) {
-			return Result.fail(e);
-		}
+		return Result.wrap(() -> parse(txn));
 	}
 }

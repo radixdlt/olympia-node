@@ -25,13 +25,16 @@ import org.apache.commons.cli.ParseException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 
+import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.Ints;
 
 import java.security.Security;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -48,11 +51,12 @@ public class BalanceVerifier {
 	public static void main(String[] args) {
 		Security.insertProviderAt(new BouncyCastleProvider(), 1);
 
-		Options options = new Options();
-		options.addOption("h", "help", false, "Show usage information (this message)");
-		options.addOption("n", "node-url", true, "Node URL (default to " + DEFAULT_HOST + ")");
+		var options = new Options()
+			.addOption("h", "help", false, "Show usage information (this message)")
+			.addOption("n", "node-url", true, "Node URL (default to " + DEFAULT_HOST + ")");
 
 		try {
+
 			var cmd = new DefaultParser().parse(options, args);
 
 			if (!cmd.getArgList().isEmpty()) {
@@ -68,7 +72,18 @@ public class BalanceVerifier {
 			var baseUrl = getOption(cmd, 'h').orElse(DEFAULT_HOST);
 			var client = NodeClient.create(baseUrl);
 
-			//String json = "{\"params\":{\"address\":\"" + addressToSendTokensTo + "\"}}";
+			var setupState = client.tryConnect();
+
+			if (!setupState.isSuccess()) {
+				System.out.println("Unable to establish communication with node ");
+				return;
+			}
+
+			retrieveBalance(client, pubkeyOf(1));
+			retrieveBalance(client, pubkeyOf(2));
+			retrieveBalance(client, pubkeyOf(3));
+			retrieveBalance(client, pubkeyOf(4));
+			retrieveBalance(client, pubkeyOf(5));
 
 		} catch (ParseException e) {
 			System.err.println(e.getMessage());
@@ -76,30 +91,29 @@ public class BalanceVerifier {
 		}
 	}
 
-	private static void printResponse(ResponseBody responseBody) {
-
+	private static void retrieveBalance(NodeClient client, ECPublicKey key) {
+		client.callTokenBalances(key).onSuccess(balances -> printBalances(key, balances));
 	}
 
-	private static OkHttpClient assembleClient() {
-		var client = new OkHttpClient.Builder()
-			.connectTimeout(30, TimeUnit.SECONDS)
-			.writeTimeout(30, TimeUnit.SECONDS)
-			.readTimeout(30, TimeUnit.SECONDS)
-			.pingInterval(30, TimeUnit.SECONDS)
-			.build();
-		return client;
+	private static void printBalances(ECPublicKey publicKey, List<TokenBalance> balances) {
+		System.out.println("Owner: " + publicKey.toString());
+		if (balances.isEmpty()) {
+			System.out.println("(empty balances)");
+		} else {
+			balances.forEach(balance -> System.out.printf("    %s : %s", balance.getRri(), balance.getAmount()));
+		}
+		System.out.println();
 	}
 
 	private static ECPublicKey pubkeyOf(int pk) {
-		final byte[] privateKey = new byte[ECKeyPair.BYTES];
+		var privateKey = new byte[ECKeyPair.BYTES];
 		Ints.copyTo(pk, privateKey, ECKeyPair.BYTES - Integer.BYTES);
-		ECKeyPair kp;
+
 		try {
-			kp = ECKeyPair.fromPrivateKey(privateKey);
+			return ECKeyPair.fromPrivateKey(privateKey).getPublicKey();
 		} catch (PrivateKeyException | PublicKeyException e) {
 			throw new IllegalArgumentException("Error while generating public key", e);
 		}
-		return kp.getPublicKey();
 	}
 
 	private static void usage(Options options) {
