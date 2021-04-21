@@ -148,10 +148,10 @@ public final class RESerializer {
 		serializeString(buf, rri.getName());
 	}
 
-	public static Rri deserializeRri(ByteBuffer buf) {
+	public static Rri deserializeRri(ByteBuffer buf) throws DeserializeException {
 		var v = buf.get(); // version
 		if (v != 0 && v != 1) {
-			throw new IllegalArgumentException();
+			throw new DeserializeException("Invalid rri version " + v);
 		}
 		var isSystem = v == 0;
 		if (isSystem) {
@@ -170,7 +170,7 @@ public final class RESerializer {
 		serializeRri(buf, rri);
 	}
 
-	private static RRIParticle deserializeRRIParticle(ByteBuffer buf) {
+	private static RRIParticle deserializeRRIParticle(ByteBuffer buf) throws DeserializeException {
 		var rri = deserializeRri(buf);
 		return new RRIParticle(rri);
 	}
@@ -195,7 +195,7 @@ public final class RESerializer {
 		buf.put(tokensParticle.getAmount().toByteArray());
 	}
 
-	private static TokensParticle deserializeTokensParticle(ByteBuffer buf) {
+	private static TokensParticle deserializeTokensParticle(ByteBuffer buf) throws DeserializeException {
 		var rri = deserializeRri(buf);
 		var address = deserializeAddress(buf);
 		var amount = deserializeUInt256(buf);
@@ -235,7 +235,7 @@ public final class RESerializer {
 		serializeRri(buf, uniqueParticle.getRri());
 	}
 
-	private static UniqueParticle deserializeUniqueParticle(ByteBuffer buf) {
+	private static UniqueParticle deserializeUniqueParticle(ByteBuffer buf) throws DeserializeException {
 		var rri = deserializeRri(buf);
 		return new UniqueParticle(rri);
 	}
@@ -257,7 +257,7 @@ public final class RESerializer {
 		serializeString(buf, p.getIconUrl());
 	}
 
-	private static TokenDefinitionParticle deserializeTokenDefinitionParticle(ByteBuffer buf) {
+	private static TokenDefinitionParticle deserializeTokenDefinitionParticle(ByteBuffer buf) throws DeserializeException {
 		var rri = deserializeRri(buf);
 		var supply = buf.get() != 0 ? null : deserializeUInt256(buf);
 		var name = deserializeString(buf);

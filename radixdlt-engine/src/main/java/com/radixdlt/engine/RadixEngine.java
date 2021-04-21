@@ -333,7 +333,7 @@ public final class RadixEngine<M> {
 	private REParsedTxn verify(CMStore.Transaction dbTransaction, Txn txn, PermissionLevel permissionLevel)
 		throws RadixEngineException {
 
-		var parsedTxn = constraintMachine.validate(
+		var parsedTxn = constraintMachine.verify(
 			dbTransaction,
 			engineStore,
 			txn,

@@ -561,7 +561,7 @@ public final class ConstraintMachine {
 	 *
 	 * @return the first error found, otherwise an empty optional
 	 */
-	public REParsedTxn validate(
+	public REParsedTxn verify(
 		CMStore.Transaction dbTxn,
 		CMStore cmStore,
 		Txn txn,
@@ -583,7 +583,6 @@ public final class ConstraintMachine {
 		}
 
 		var signedBy = validationState.signedBy;
-
 		return new REParsedTxn(txn, signedBy, parsedActions);
 	}
 }
