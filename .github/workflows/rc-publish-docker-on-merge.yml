@@ -31,12 +31,6 @@ jobs:
             ${{ runner.os }}-gradle-
       - name: Build deb file
         run: |
-          if [[ "$GITHUB_REF" == *"refs/heads/release"* ]]; then
-              echo "Workflow triggered by on a release branch"
-          else
-            echo "Workflow triggered by on a rc branch"
-            export CI_VERSION=true
-          fi
           version=$(./gradlew radixCiVersion | grep radixdlt-version | cut -d: -f2)
           echo "Version: $version"
           cd radixdlt-core/radixdlt
