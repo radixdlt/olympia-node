@@ -16,7 +16,7 @@
  *
  */
 
-package com.radixdlt.statecomputer.radixengine;
+package com.radixdlt.integration.statemachine;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -25,7 +25,9 @@ import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolConfig;
@@ -33,21 +35,28 @@ import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.store.LastStoredProof;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.util.List;
+import java.util.Random;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-public class ConstraintMachineTest {
-
+public class RandomTxnTest {
+	private static final Logger logger = LogManager.getLogger();
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
 	@Inject
-	private RadixEngine<LedgerAndBFTProof> sut;
+	private RadixEngine<LedgerAndBFTProof> engine;
+
+	// FIXME: Hack, need this in order to cause provider for genesis to be stored
+	@Inject
+	@LastStoredProof
+	private LedgerProof ledgerProof;
 
 	private Injector createInjector() {
 		return Guice.createInjector(
@@ -66,10 +75,29 @@ public class ConstraintMachineTest {
 	}
 
 	@Test
-	public void invalid_instruction_should_error() {
+	public void poor_mans_fuzz_test() {
+		var random = new Random(12345678);
+
 		// Arrange
 		createInjector().injectMembers(this);
-		assertThatThrownBy(() -> sut.execute(List.of(Txn.create(new byte[] {1, 2, 3, 4, 5, 6}))))
-			.isInstanceOf(RadixEngineException.class);
+		final var count = 1000000;
+
+		for (int i = 0; i < count; i++) {
+			int len = random.nextInt(512);
+			var payload = new byte[len];
+			random.nextBytes(payload);
+			for (int j = 0; j < len; j++) {
+				payload[j] = random.nextBoolean() ? (byte) random.nextInt(10) : payload[j];
+			}
+			var txns = List.of(Txn.create(payload));
+			if (i % 1000 == 0) {
+				logger.info(i + "/" + count);
+			}
+			try {
+				engine.execute(txns, null, PermissionLevel.SYSTEM);
+			} catch (RadixEngineException e) {
+				// ignore
+			}
+		}
 	}
 }

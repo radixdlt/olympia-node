@@ -67,6 +67,10 @@ public final class RadixAddress {
 	}
 
 	public static RadixAddress from(byte[] raw) {
+		if (raw.length != 1 + ECPublicKey.COMPRESSED_BYTES + 4) {
+			throw new IllegalArgumentException("Invalid number of bytes for address");
+		}
+
 		try {
 			byte[] check = HashUtils.sha256(raw, 0, raw.length - 4).asBytes();
 			for (int i = 0; i < 4; ++i) {

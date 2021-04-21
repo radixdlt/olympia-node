@@ -498,7 +498,7 @@ public final class ConstraintMachine {
 					nextParticle = maybeParticle.get();
 					substate = Substate.create(nextParticle, substateId);
 				} else if (inst.getMicroOp() == REInstruction.REOp.READ) {
-					var substateId = SubstateId.fromBuffer(inst.getData());
+					SubstateId substateId = inst.getData();
 					var maybeParticle = validationState.read(substateId);
 					if (maybeParticle.isEmpty()) {
 						return Optional.of(new CMError(instIndex, CMErrorCode.READ_FAILURE, validationState));
