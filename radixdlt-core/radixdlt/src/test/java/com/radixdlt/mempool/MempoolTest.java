@@ -99,9 +99,9 @@ public class MempoolTest {
 		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder();
 		for (int i = 0; i < numParticles; i++) {
 			var symbol = "test" + (char) ('c' + i);
-			var rri = REAddr.ofHashedKey(keyPair.getPublicKey(), symbol);
-			var rriParticle = new RRIParticle(rri, symbol);
-			var uniqueParticle = new UniqueParticle(rri);
+			var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), symbol);
+			var rriParticle = new RRIParticle(addr);
+			var uniqueParticle = new UniqueParticle(addr);
 			atomBuilder
 				.virtualDown(rriParticle, symbol.getBytes(StandardCharsets.UTF_8))
 				.up(uniqueParticle)

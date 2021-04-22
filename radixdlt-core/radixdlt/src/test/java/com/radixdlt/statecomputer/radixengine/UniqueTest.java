@@ -71,9 +71,9 @@ public final class UniqueTest {
 	}
 
 	private Txn uniqueTxn(ECKeyPair keyPair) {
-		var rri = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
-		var rriParticle = new RRIParticle(rri, "test");
-		var uniqueParticle = new UniqueParticle(rri);
+		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
+		var rriParticle = new RRIParticle(addr);
+		var uniqueParticle = new UniqueParticle(addr);
 		var atomBuilder = TxLowLevelBuilder.newBuilder()
 			.virtualDown(rriParticle, "test".getBytes(StandardCharsets.UTF_8))
 			.up(uniqueParticle)

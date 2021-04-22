@@ -165,13 +165,11 @@ public final class RESerializer {
 	private static void serializeData(RRIParticle rriParticle, ByteBuffer buf) {
 		var rri = rriParticle.getRri();
 		serializeRri(buf, rri);
-		serializeString(buf, rriParticle.getName());
 	}
 
 	private static RRIParticle deserializeRRIParticle(ByteBuffer buf) {
 		var rri = deserializeRri(buf);
-		var name = deserializeString(buf);
-		return new RRIParticle(rri, name);
+		return new RRIParticle(rri);
 	}
 
 	private static void serializeData(SystemParticle systemParticle, ByteBuffer buf) {

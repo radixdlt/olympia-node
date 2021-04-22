@@ -41,6 +41,7 @@ import com.radixdlt.identifiers.RadixAddress;
 import io.reactivex.observers.TestObserver;
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import org.junit.After;
@@ -87,7 +88,7 @@ public class AtomKernelTest {
 			1 << 20,
 			true,
 			TxLowLevelBuilder.newBuilder()
-				.virtualDown(new RRIParticle(rri))
+				.virtualDown(new RRIParticle(rri), "toobig".getBytes(StandardCharsets.UTF_8))
 				.up(new UniqueParticle(rri))
 				.particleGroup()
 		);
@@ -104,7 +105,7 @@ public class AtomKernelTest {
 			10,
 			false,
 			TxLowLevelBuilder.newBuilder()
-				.virtualDown(new RRIParticle(rri))
+				.virtualDown(new RRIParticle(rri), "nofee".getBytes(StandardCharsets.UTF_8))
 				.up(new UniqueParticle(rri))
 				.particleGroup()
 		);

@@ -81,7 +81,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 
 			new TransitionProcedure<>() {
 				@Override
-				public PermissionLevel requiredPermissionLevel(SystemParticle i, SystemParticle o, ImmutableIndex index) {
+				public PermissionLevel requiredPermissionLevel(SubstateWithArg<SystemParticle> i, SystemParticle o, ImmutableIndex index) {
 					return PermissionLevel.SUPER_USER;
 				}
 

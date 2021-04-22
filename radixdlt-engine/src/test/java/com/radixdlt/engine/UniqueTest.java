@@ -32,6 +32,7 @@ import com.radixdlt.store.InMemoryEngineStore;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -68,7 +69,7 @@ public class UniqueTest {
 		var rri = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "smthng");
 		var builder = TxBuilder.newBuilder(address)
 			.toLowLevelBuilder()
-			.virtualDown(new RRIParticle(rri, "smthng"))
+			.virtualDown(new RRIParticle(rri), "smthng".getBytes(StandardCharsets.UTF_8))
 			.up(new UniqueParticle(rri))
 			.particleGroup();
 		var sig = keyPair.sign(builder.hashToSign());

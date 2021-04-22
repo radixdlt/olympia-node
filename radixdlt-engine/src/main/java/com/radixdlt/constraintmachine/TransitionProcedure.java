@@ -28,11 +28,11 @@ public interface TransitionProcedure<I extends Particle, O extends Particle, U e
 
 	Result precondition(SubstateWithArg<I> in, O outputParticle, U outputUsed, ImmutableIndex immutableIndex);
 
-	default PermissionLevel requiredPermissionLevel(I inputParticle, O outputParticle, ImmutableIndex index) {
+	InputOutputReducer<I, O, U> inputOutputReducer();
+
+	default PermissionLevel requiredPermissionLevel(SubstateWithArg<I> in, O outputParticle, ImmutableIndex index) {
 		return PermissionLevel.USER;
 	}
-
-	InputOutputReducer<I, O, U> inputOutputReducer();
 
 	SignatureValidator<I, O> signatureValidator();
 }

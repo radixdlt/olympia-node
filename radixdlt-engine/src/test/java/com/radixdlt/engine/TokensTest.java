@@ -17,6 +17,7 @@ import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class TokensTest {
@@ -46,7 +47,7 @@ public class TokensTest {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 		REAddr rri = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
-		RRIParticle rriParticle = new RRIParticle(rri, "test");
+		RRIParticle rriParticle = new RRIParticle(rri);
 		TokenDefinitionParticle tokenDefinitionParticle = new TokenDefinitionParticle(
 			rri,
 			"TEST",
@@ -61,7 +62,7 @@ public class TokensTest {
 			rri
 		);
 		var builder = TxLowLevelBuilder.newBuilder()
-			.virtualDown(rriParticle)
+			.virtualDown(rriParticle, "test".getBytes(StandardCharsets.UTF_8))
 			.up(tokenDefinitionParticle)
 			.up(tokensParticle)
 			.particleGroup();

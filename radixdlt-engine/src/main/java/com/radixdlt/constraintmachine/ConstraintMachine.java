@@ -297,7 +297,7 @@ public final class ConstraintMachine {
 		}
 
 		final var requiredPermissionLevel = transitionProcedure.requiredPermissionLevel(
-			input.getSubstate(), outputParticle, validationState.immutableIndex()
+			input, outputParticle, validationState.immutableIndex()
 		);
 		if (validationState.permissionLevel.compareTo(requiredPermissionLevel) < 0) {
 			return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));

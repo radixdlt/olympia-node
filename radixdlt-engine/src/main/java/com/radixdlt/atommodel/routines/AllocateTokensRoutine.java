@@ -73,7 +73,7 @@ public final class AllocateTokensRoutine implements ConstraintRoutine {
 				}
 
 				@Override
-				public PermissionLevel requiredPermissionLevel(VoidParticle i, TokensParticle o, ImmutableIndex index) {
+				public PermissionLevel requiredPermissionLevel(SubstateWithArg<VoidParticle> i, TokensParticle o, ImmutableIndex index) {
 					var tokenDef = (TokenDefinitionParticle) index.loadRri(null, o.getRri()).orElseThrow();
 					return tokenDef.getRri().isSystem() ? PermissionLevel.SYSTEM : PermissionLevel.USER;
 				}

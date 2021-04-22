@@ -26,19 +26,13 @@ import com.radixdlt.identifiers.REAddr;
 
 public final class RRIParticle implements Particle {
 	private final REAddr rri;
-	private final String name;
 
-	public RRIParticle(REAddr rri, String name) {
+	public RRIParticle(REAddr rri) {
 		this.rri = rri;
-		this.name = name;
 	}
 
 	public REAddr getRri() {
 		return rri;
-	}
-
-	public String getName() {
-		return name;
 	}
 
 	public boolean allow(ECPublicKey publicKey, byte[] arg) {
@@ -60,13 +54,11 @@ public final class RRIParticle implements Particle {
 			return false;
 		}
 		final var that = (RRIParticle) obj;
-		return Objects.equals(this.rri, that.rri)
-			&& Objects.equals(this.name, that.name);
+		return Objects.equals(this.rri, that.rri);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[(%s)(%s)]",
-			getClass().getSimpleName(), rri, name);
+		return String.format("%s[(%s)]", getClass().getSimpleName(), rri);
 	}
 }

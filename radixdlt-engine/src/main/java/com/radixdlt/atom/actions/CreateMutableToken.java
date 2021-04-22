@@ -85,7 +85,7 @@ public final class CreateMutableToken implements TxAction {
 		txBuilder.down(
 			RRIParticle.class,
 			p -> p.getRri().equals(reAddress),
-			Optional.of(SubstateWithArg.withArg(new RRIParticle(reAddress, symbol), symbol.getBytes(StandardCharsets.UTF_8))),
+			Optional.of(SubstateWithArg.withArg(new RRIParticle(reAddress), symbol.getBytes(StandardCharsets.UTF_8))),
 			"RRI not available"
 		);
 		txBuilder.up(new TokenDefinitionParticle(

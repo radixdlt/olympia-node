@@ -48,9 +48,9 @@ import java.util.regex.Pattern;
  */
 // FIXME: unchecked, rawtypes
 @SuppressWarnings({"unchecked", "rawtypes"})
-final class ConstraintScryptEnv implements SysCalls {
-	private static final String NAME_REGEX = "[a-z0-9]+";
-	private static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
+public final class ConstraintScryptEnv implements SysCalls {
+	public static final String NAME_REGEX = "[a-z0-9]+";
+	public static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
 	private final ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions;
 	private final Function<RadixAddress, Result> addressChecker;
 
@@ -140,12 +140,6 @@ final class ConstraintScryptEnv implements SysCalls {
 			new TransitionToken<>(RRIParticle.class, particleClass, TypeToken.of(VoidReducerState.class)),
 			new TransitionProcedure<>() {
 				@Override
-				public PermissionLevel requiredPermissionLevel(RRIParticle inputParticle, O outputParticle, ImmutableIndex index) {
-					return systemNames.contains(inputParticle.getName()) || inputParticle.getRri().isSystem()
-						? PermissionLevel.SYSTEM : PermissionLevel.USER;
-				}
-
-				@Override
 				public Result precondition(
 					SubstateWithArg<RRIParticle> in,
 					O outputParticle,
@@ -165,6 +159,13 @@ final class ConstraintScryptEnv implements SysCalls {
 				@Override
 				public InputOutputReducer<RRIParticle, O, VoidReducerState> inputOutputReducer() {
 					return (input, output, index, outputUsed) -> ReducerResult.complete(Unknown.create());
+				}
+
+				@Override
+				public PermissionLevel requiredPermissionLevel(SubstateWithArg<RRIParticle> in, O outputParticle, ImmutableIndex index) {
+					var name = new String(in.getArg().orElseThrow());
+					return systemNames.contains(name) || in.getSubstate().getRri().isSystem()
+						? PermissionLevel.SYSTEM : PermissionLevel.USER;
 				}
 
 				@Override
@@ -195,7 +196,7 @@ final class ConstraintScryptEnv implements SysCalls {
 		var createCombinedTransitionRoutine = new CreateCombinedTransitionRoutine<>(
 			RRIParticle.class,
 			particleClass0,
-			(rri, p) -> systemNames.contains(rri.getName()) || rri.getRri().isSystem()
+			(rri, p) -> systemNames.contains(new String(rri.getArg().orElseThrow())) || rri.getSubstate().getRri().isSystem()
 				? PermissionLevel.SYSTEM : PermissionLevel.USER,
 			particleClass1,
 			includeSecondClass,
@@ -222,8 +223,11 @@ final class ConstraintScryptEnv implements SysCalls {
 		final TransitionProcedure<Particle, Particle, ReducerState> transformedProcedure
 			= new TransitionProcedure<Particle, Particle, ReducerState>() {
 				@Override
-				public PermissionLevel requiredPermissionLevel(Particle i, Particle o, ImmutableIndex index) {
-					return procedure.requiredPermissionLevel((I) i, (O) o, index);
+				public PermissionLevel requiredPermissionLevel(SubstateWithArg<Particle> i, Particle o, ImmutableIndex index) {
+					var in = i.getArg()
+						.map(arg -> SubstateWithArg.withArg((I) i.getSubstate(), arg))
+						.orElseGet(() -> SubstateWithArg.noArg((I) i.getSubstate()));
+					return procedure.requiredPermissionLevel(in, (O) o, index);
 				}
 
 				@Override

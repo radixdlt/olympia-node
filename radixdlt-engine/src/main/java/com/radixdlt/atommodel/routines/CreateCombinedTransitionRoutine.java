@@ -23,6 +23,8 @@ import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atomos.ConstraintRoutine;
+import com.radixdlt.atomos.ConstraintScrypt;
+import com.radixdlt.atomos.ConstraintScryptEnv;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.RoutineCalls;
@@ -61,7 +63,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	}
 	private final Class<I> inputClass;
 	private final Class<O> outputClass0;
-	private final BiFunction<I, O, PermissionLevel> permissionLevel;
+	private final BiFunction<SubstateWithArg<I>, O, PermissionLevel> permissionLevel;
 	private final Class<V> outputClass1;
 	private final BiFunction<O, V, Result> combinedCheck;
 	private final TypeToken<UsedParticle<O>> typeToken0;
@@ -71,7 +73,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	public CreateCombinedTransitionRoutine(
 		Class<I> inputClass,
 		Class<O> outputClass0,
-		BiFunction<I, O, PermissionLevel> permissionLevel,
+		BiFunction<SubstateWithArg<I>, O, PermissionLevel> permissionLevel,
 		Class<V> outputClass1,
 		Predicate<O> includeSecondClass,
 		BiFunction<O, V, Result> combinedCheck,
@@ -104,14 +106,20 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	public TransitionProcedure<I, O, VoidReducerState> getProcedure0() {
 		return new TransitionProcedure<I, O, VoidReducerState>() {
 			@Override
-			public PermissionLevel requiredPermissionLevel(I inputParticle, O outputParticle, ImmutableIndex index) {
-				return permissionLevel.apply(inputParticle, outputParticle);
+			public PermissionLevel requiredPermissionLevel(SubstateWithArg<I> in, O outputParticle, ImmutableIndex index) {
+				return permissionLevel.apply(in, outputParticle);
 			}
 
 			@Override
 			public Result precondition(SubstateWithArg<I> in, O outputParticle, VoidReducerState outputUsed, ImmutableIndex index) {
+				// FIXME: HACK as we are assuming that this is a mutable token creation which is fine for
+				// FIXME: now as it is the only available transition for betanet
 				if (in.getArg().isEmpty()) {
-
+					return Result.error("Rri must be created with a name");
+				}
+				var arg = in.getArg().get();
+				if (!ConstraintScryptEnv.NAME_PATTERN.matcher(new String(arg)).matches()) {
+					return Result.error("invalid rri name");
 				}
 				return Result.success();
 			}
