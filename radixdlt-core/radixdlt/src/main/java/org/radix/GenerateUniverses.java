@@ -78,6 +78,7 @@ import org.radix.universe.output.HelmUniverseOutput;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.Security;
@@ -113,8 +114,10 @@ public final class GenerateUniverses {
 		options.addOption("h", "help",                   false, "Show usage information (this message)");
 		options.addOption("c", "no-cbor-output",         false, "Suppress DSON output");
 		options.addOption("i", "issue-default-tokens",   false, "Issue tokens to default keys 1, 2, 3, 4 and 5 (dev universe only)");
+		options.addOption("p", "pubkey-issuance",   true, "Pub key (hex) to issue tokens to");
+		options.addOption("m", "amount-issuance",   true, "Amount to issue pub key");
 		options.addOption("j", "no-json-output",         false, "Suppress JSON output");
-		options.addOption("p", "include-private-keys",   false, "Include universe, validator and staking private keys in output");
+		options.addOption("p", "include-private-keys",   false, "Include validator and staking private keys in output");
 		options.addOption("S", "stake-amounts",          true,  "Amount of stake for each staked node (default: " + DEFAULT_STAKE + ")");
 		options.addOption("t", "universe-type",          true,  "Specify universe type (default: " + DEFAULT_UNIVERSE + ")");
 		options.addOption("T", "universe-timestamp",     true,  "Specify universe timestamp (default: " + DEFAULT_TIMESTAMP + ")");
@@ -207,6 +210,24 @@ public final class GenerateUniverses {
 					TokenIssuance.of(pubkeyOf(4), unitsToSubunits(DEFAULT_ISSUANCE)),
 					TokenIssuance.of(pubkeyOf(5), unitsToSubunits(DEFAULT_ISSUANCE))
 				);
+			}
+
+			if (cmd.hasOption("p")) {
+				try {
+					var hexPubKey = cmd.getOptionValue("p");
+					var pubKey = ECPublicKey.fromHex(hexPubKey);
+					final UInt256 tokenAmt;
+					if (cmd.hasOption("a")) {
+						var amountStr = cmd.getOptionValue("a");
+						var amt = new BigInteger(amountStr);
+						tokenAmt = unitsToSubunits(new BigDecimal(amt));
+					} else {
+						tokenAmt = unitsToSubunits(DEFAULT_ISSUANCE);
+					}
+					tokenIssuancesBuilder.add(TokenIssuance.of(pubKey, tokenAmt));
+				} catch (PublicKeyException e) {
+					throw new IllegalStateException("Invalid pub key", e);
+				}
 			}
 
 			if (universeType == UniverseType.DEVELOPMENT) {
