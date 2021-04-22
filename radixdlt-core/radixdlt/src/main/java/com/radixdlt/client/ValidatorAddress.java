@@ -25,7 +25,13 @@ import com.radixdlt.utils.Bits;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
 
+/**
+ * Bech-32 encoding/decoding of validators. Validators are represented as 33-byte
+ * compressed EC Public Keys.
+ */
 public final class ValidatorAddress {
+	private static final String VALIDATOR_HRP = "vb"; // "vr" for mainnet
+
 	private ValidatorAddress() {
 		throw new IllegalStateException();
 	}
@@ -41,7 +47,7 @@ public final class ValidatorAddress {
 	public static String of(ECPublicKey key) {
 		var bytes = key.getCompressedBytes();
 		var convert = toBech32Data(bytes);
-		return Bech32.encode("vb", convert);
+		return Bech32.encode(VALIDATOR_HRP, convert);
 	}
 
 	public static ECPublicKey parse(String v) throws DeserializeException {
@@ -52,7 +58,7 @@ public final class ValidatorAddress {
 			throw new DeserializeException("Could not decode string: " + v, e);
 		}
 
-		if (!bech32Data.hrp.equals("vb")) {
+		if (!bech32Data.hrp.equals(VALIDATOR_HRP)) {
 			throw new DeserializeException("hrp must be vb but was " + bech32Data.hrp);
 		}
 		var keyBytes = fromBech32Data(bech32Data.data);

@@ -30,13 +30,15 @@ import org.bitcoinj.core.Bech32;
  * provided when the resource was first created.
  */
 public final class Rri {
+	private static final String RRI_HRP_SUFFIX = "_rr";
+
 	private Rri() {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
 
 	public static REAddr parseUnchecked(String rri) {
 		var data = Bech32.decode(rri);
-		if (!data.hrp.endsWith("_rr")) {
+		if (!data.hrp.endsWith(RRI_HRP_SUFFIX)) {
 			throw new IllegalArgumentException();
 		}
 		var hash = data.data;
@@ -51,14 +53,14 @@ public final class Rri {
 	public static Result<Pair<String, REAddr>> parse(String rri) {
 		try {
 			var data = Bech32.decode(rri);
-			if (!data.hrp.endsWith("_rr")) {
-				return Result.fail("hrp must end in _rr");
+			if (!data.hrp.endsWith(RRI_HRP_SUFFIX)) {
+				return Result.fail("hrp must end in " + RRI_HRP_SUFFIX);
 			}
 			var hash = data.data;
 			if (hash.length > 0) {
 				hash = Bits.convertBits(hash, 0, hash.length, 5, 8, false);
 			}
-			var symbol = data.hrp.substring(0, data.hrp.length() - 3);
+			var symbol = data.hrp.substring(0, data.hrp.length() - RRI_HRP_SUFFIX.length());
 			return Result.ok(Pair.of(symbol, REAddr.of(hash)));
 		} catch (AddressFormatException e) {
 			return Result.fail(e);
@@ -73,10 +75,6 @@ public final class Rri {
 		} else {
 			convert = hash;
 		}
-		return Bech32.encode(symbol + "_rr", convert);
-	}
-
-	public static String ofNativeToken() {
-		return Bech32.encode("xrd_rr", new byte[0]);
+		return Bech32.encode(symbol + RRI_HRP_SUFFIX, convert);
 	}
 }
