@@ -19,6 +19,7 @@ package org.radix.api.jsonrpc;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
 import org.radix.api.jsonrpc.handler.AtomHandler;
@@ -116,7 +117,7 @@ public final class RadixJsonRpcServer {
 
 		handlers.putAll(additionalHandlers);
 
-		handlers.keySet().forEach(name -> log.trace("Registered JSON RPC method: {}", name));
+		handlers.keySet().forEach(name -> log.debug("Registered JSON RPC method: {}", name));
 	}
 
 	/**
@@ -150,7 +151,7 @@ public final class RadixJsonRpcServer {
 	 * @return The response to the request, could be a JSON-RPC error
 	 */
 	JSONObject handleRpc(String requestString) {
-		log.trace("RPC: input {}", requestString);
+		log.debug("RPC: input {}", requestString);
 
 		int length = requestString.getBytes(StandardCharsets.UTF_8).length;
 
@@ -179,7 +180,9 @@ public final class RadixJsonRpcServer {
 				.orElseGet(() -> errorResponse(request, RpcError.METHOD_NOT_FOUND, "Method not found"));
 
 		} catch (Exception e) {
-			if (request.has("params") && request.get("params") instanceof JSONObject) {
+			logValue("exception message", e.getMessage());
+
+			if (request.has("params") && request.get("params") instanceof JSONArray) {
 				return errorResponse(request, RpcError.SERVER_ERROR, e.getMessage(), request.getJSONObject("params"));
 			} else {
 				return errorResponse(request, RpcError.SERVER_ERROR, e.getMessage());
@@ -190,12 +193,12 @@ public final class RadixJsonRpcServer {
 	private JSONObject requestTooLongError(int length) {
 		var message = "request too big: " + length + " > " + maxRequestSizeBytes;
 
-		log.trace("RPC error: {}", message);
+		log.debug("RPC error: {}", message);
 		return errorResponse(RpcError.REQUEST_TOO_LONG, message);
 	}
 
 	private static <T> T logValue(String message, T value) {
-		log.trace("RPC: {} {}", message, value);
+		log.debug("RPC: {} {}", message, value);
 		return value;
 	}
 }

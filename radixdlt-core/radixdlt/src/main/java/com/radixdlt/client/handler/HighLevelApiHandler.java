@@ -17,6 +17,8 @@
 
 package com.radixdlt.client.handler;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.JsonRpcUtil;
@@ -48,10 +50,10 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.radix.api.jsonrpc.JsonRpcUtil.fromList;
+import static org.radix.api.jsonrpc.JsonRpcUtil.invalidParamsError;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static org.radix.api.jsonrpc.JsonRpcUtil.response;
 import static org.radix.api.jsonrpc.JsonRpcUtil.safeInteger;
-import static org.radix.api.jsonrpc.JsonRpcUtil.invalidParamsError;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredArrayParameter;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredParameters;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredStringParameter;
@@ -60,6 +62,8 @@ import static com.radixdlt.utils.functional.Optionals.allOf;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class HighLevelApiHandler {
+	private static final Logger log = LogManager.getLogger();
+
 	private final HighLevelApiService highLevelApiService;
 	private final TransactionStatusService transactionStatusService;
 	private final SubmissionService submissionService;
@@ -105,7 +109,8 @@ public class HighLevelApiHandler {
 			(params, address) -> RadixAddress.fromString(address)
 				.flatMap(radixAddress ->
 							 highLevelApiService.getTokenBalances(radixAddress).map(v -> tuple(radixAddress, v)))
-				.map(tuple -> tuple.map(this::formatTokenBalances)));
+				.map(tuple -> tuple.map(this::formatTokenBalances))
+		);
 	}
 
 	public JSONObject handleTransactionStatus(JSONObject request) {
@@ -210,6 +215,8 @@ public class HighLevelApiHandler {
 	}
 
 	private Result<JSONObject> formatTransactionHistory(RadixAddress address, int size, Optional<Instant> cursor) {
+		log.debug("formatTransactionHistory: {}, {}, {}", address, size, cursor);
+
 		return highLevelApiService
 			.getTransactionHistory(address, size, cursor)
 			.map(tuple -> tuple.map(this::formatHistoryResponse));
@@ -301,9 +308,13 @@ public class HighLevelApiHandler {
 	private static Optional<Instant> parseInstantCursor(JSONObject request) {
 		var params = JsonRpcUtil.params(request);
 
-		return params.isEmpty()
+		return params.length() < 3
 			   ? Optional.empty()
-			   : Optional.of(params.getString(0))
+			   : Optional.of(params.getString(2))
+				   .map(v -> {
+					   log.info("Cursor: {}", v);
+					   return v;
+				   })
 				   .flatMap(HighLevelApiHandler::instantFromString);
 	}
 

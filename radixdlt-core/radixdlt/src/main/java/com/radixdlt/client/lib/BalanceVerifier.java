@@ -54,7 +54,7 @@ public class BalanceVerifier {
 			.onSuccess(cmd -> {
 				var baseUrl = ofNullable(cmd.getOptionValue('h')).orElse(DEFAULT_HOST);
 
-				NodeClient.create(baseUrl)
+				NodeClient.connect(baseUrl)
 					.onSuccess(client -> {
 						retrieveBalance(client, pubkeyOf(1));
 						retrieveBalance(client, pubkeyOf(2));

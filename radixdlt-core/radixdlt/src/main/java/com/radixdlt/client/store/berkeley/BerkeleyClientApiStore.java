@@ -309,7 +309,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			return Result.fail("Invalid size specified: {0}", size);
 		}
 
-		Instant instant = ptr.orElse(Instant.EPOCH);
+		var instant = ptr.orElse(Instant.EPOCH);
 		var key = asKey(address, instant);
 		var data = entry();
 

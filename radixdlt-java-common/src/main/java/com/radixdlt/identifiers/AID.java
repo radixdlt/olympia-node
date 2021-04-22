@@ -25,7 +25,6 @@ import com.radixdlt.utils.functional.Result;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
-import java.util.Optional;
 
 import static com.radixdlt.utils.functional.Result.fromOptional;
 
