@@ -37,6 +37,7 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.client.AccountAddress;
 import com.radixdlt.client.Rri;
 import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.consensus.bft.Self;
@@ -176,7 +177,7 @@ public final class NodeController implements Controller {
 			case "TransferTokens": {
 				var rri = Rri.parse(paramsObject.getString("rri"));
 				var addressString = paramsObject.getString("to");
-				var to = RadixAddress.from(addressString);
+				var to = AccountAddress.parse(addressString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
 				return new TransferToken(rri.getSecond(), to, subunits);
@@ -184,7 +185,7 @@ public final class NodeController implements Controller {
 			case "MintTokens": {
 				var rri = Rri.parse(paramsObject.getString("rri"));
 				var addressString = paramsObject.getString("to");
-				var to = RadixAddress.from(addressString);
+				var to = AccountAddress.parse(addressString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
 				return new MintToken(rri.getSecond(), to, subunits);

@@ -179,13 +179,13 @@ public final class RESerializer {
 
 	private static void serializeData(TokensParticle tokensParticle, ByteBuffer buf) {
 		serializeRri(buf, tokensParticle.getRri());
-		serializeAddress(buf, tokensParticle.getAddress());
+		serializeKey(buf, tokensParticle.getAddress());
 		buf.put(tokensParticle.getAmount().toByteArray());
 	}
 
 	private static TokensParticle deserializeTokensParticle(ByteBuffer buf) throws DeserializeException {
 		var rri = deserializeRri(buf);
-		var address = deserializeAddress(buf);
+		var address = deserializeKey(buf);
 		var amount = deserializeUInt256(buf);
 
 		return new TokensParticle(address, amount, rri);

@@ -217,7 +217,7 @@ public class SubmissionServiceTest {
 	@Test
 	public void testPrepareTransaction() throws Exception {
 		var address = new RadixAddress((byte) 0, key.getPublicKey());
-		var action = new TransferToken(nativeToken, ALICE, BIG_AMOUNT);
+		var action = new TransferToken(nativeToken, ALICE_KEYPAIR.getPublicKey(), BIG_AMOUNT);
 
 		var tx = radixEngine.construct(address, List.of(action))
 			.signAndBuild(key::sign);
@@ -280,7 +280,7 @@ public class SubmissionServiceTest {
 	private Result<PreparedTransaction> buildTransaction() throws TxBuilderException, RadixEngineException {
 		var address = new RadixAddress((byte) 0, key.getPublicKey());
 
-		var action = new TransferToken(nativeToken, ALICE, BIG_AMOUNT);
+		var action = new TransferToken(nativeToken, ALICE_KEYPAIR.getPublicKey(), BIG_AMOUNT);
 
 		var tx = radixEngine.construct(address, List.of(action))
 			.signAndBuild(key::sign);

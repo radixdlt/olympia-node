@@ -80,7 +80,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			TokensParticle::getAmount,
 			TokensParticle::getAmount,
 			(i, o) -> Result.success(),
-			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getAddress()::ownedBy).orElse(false),
+			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getAddress()::equals).orElse(false),
 			(i, o, index) -> {
 				var p = (TokenDefinitionParticle) index.loadRri(null, i.getRri()).orElseThrow();
 				return new TransferToken(p.getRri(), o.getAddress(), o.getAmount()); // FIXME: This isn't 100% correct

@@ -51,11 +51,11 @@ public final class StakeTokens implements TxAction {
 		txBuilder.swapFungible(
 			TokensParticle.class,
 			p -> p.getRri().isSystem()
-				&& p.getAddress().equals(address)
+				&& p.getAddress().equals(address.getPublicKey())
 				&& (amount.compareTo(TokenUnitConversions.SUB_UNITS) < 0
 				|| p.getAmount().compareTo(TokenUnitConversions.unitsToSubunits(1)) >= 0),
 			TokensParticle::getAmount,
-			amt -> new TokensParticle(address, amt, REAddr.ofNativeToken()),
+			amt -> new TokensParticle(address.getPublicKey(), amt, REAddr.ofNativeToken()),
 			amount,
 			"Not enough balance for staking."
 		).with(amt -> new StakedTokensParticle(delegateKey, address, amt));

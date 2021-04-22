@@ -518,7 +518,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		if (action.getTxAction() instanceof TransferToken) {
 			var transferToken = (TransferToken) action.getTxAction();
 			var entry0 = BalanceEntry.create(
-				user,
+				user.getPublicKey(),
 				null,
 				transferToken.rri(),
 				UInt384.from(transferToken.amount()),
@@ -536,7 +536,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		} else if (action.getTxAction() instanceof BurnToken) {
 			var burnToken = (BurnToken) action.getTxAction();
 			var entry0 = BalanceEntry.create(
-				user,
+				user.getPublicKey(),
 				null,
 				burnToken.rri(),
 				UInt384.from(burnToken.amount()),
@@ -661,7 +661,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private static DatabaseEntry asKey(BalanceEntry balanceEntry) {
-		var address = buffer().writeBytes(balanceEntry.getOwner().toByteArray());
+		var address = buffer().writeBytes(balanceEntry.getOwner().getCompressedBytes());
 		var buf = address.writeBytes(balanceEntry.getRri().toString().getBytes(StandardCharsets.UTF_8));
 
 		if (balanceEntry.isStake()) {

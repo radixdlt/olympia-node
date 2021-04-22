@@ -23,11 +23,14 @@ import com.google.inject.Inject;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.client.AccountAddress;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.UInt256;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
@@ -64,10 +67,10 @@ public final class FaucetController implements Controller {
 		withBody(exchange, values -> {
 			var params = values.getJSONObject("params");
 			var addressString = params.getString("address");
-			final RadixAddress address;
+			final ECPublicKey address;
 			try {
-				address = RadixAddress.from(addressString);
-			} catch (IllegalArgumentException e) {
+				address = AccountAddress.parse(addressString);
+			} catch (DeserializeException e) {
 				respond(exchange, jsonObject().put("error", jsonObject().put("message", "Bad address.")));
 				return;
 			}

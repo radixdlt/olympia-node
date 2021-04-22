@@ -136,9 +136,9 @@ public class BerkeleyClientApiStoreTest {
 		var tokenDef = prepareMutableTokenDef(SYMBOL);
 		var tx = engine.construct(TOKEN_ADDRESS, TxActionListBuilder.create()
 			.createMutableToken(tokenDef)
-			.mint(TOKEN, TOKEN_ADDRESS, UInt256.EIGHT)
+			.mint(TOKEN, TOKEN_KEYPAIR.getPublicKey(), UInt256.EIGHT)
 			.burn(TOKEN, UInt256.ONE)
-			.transfer(TOKEN, OWNER, UInt256.FOUR)
+			.transfer(TOKEN, OWNER_KEYPAIR.getPublicKey(), UInt256.FOUR)
 			.build()
 		).signAndBuild(TOKEN_KEYPAIR::sign);
 
@@ -179,7 +179,7 @@ public class BerkeleyClientApiStoreTest {
 		var tokenDef = prepareMutableTokenDef(SYMBOL);
 		var tx = engine.construct(TOKEN_ADDRESS, TxActionListBuilder.create()
 			.createMutableToken(tokenDef)
-			.mint(TOKEN, TOKEN_ADDRESS, UInt256.TEN)
+			.mint(TOKEN, TOKEN_KEYPAIR.getPublicKey(), UInt256.TEN)
 			.burn(TOKEN, UInt256.TWO)
 			.build()
 		).signAndBuild(TOKEN_KEYPAIR::sign);
@@ -221,8 +221,8 @@ public class BerkeleyClientApiStoreTest {
 		var tokenDef = prepareMutableTokenDef(SYMBOL);
 		var tx = engine.construct(TOKEN_ADDRESS, TxActionListBuilder.create()
 			.createMutableToken(tokenDef)
-			.mint(TOKEN, TOKEN_ADDRESS, UInt256.TEN)
-			.transfer(TOKEN, OWNER, UInt256.FOUR)
+			.mint(TOKEN, TOKEN_KEYPAIR.getPublicKey(), UInt256.TEN)
+			.transfer(TOKEN, OWNER_KEYPAIR.getPublicKey(), UInt256.FOUR)
 			.burn(TOKEN, UInt256.ONE)
 			.build()
 		).signAndBuild(TOKEN_KEYPAIR::sign);
@@ -262,8 +262,8 @@ public class BerkeleyClientApiStoreTest {
 		var tokenDef = prepareMutableTokenDef(SYMBOL);
 		var tx = engine.construct(TOKEN_ADDRESS, TxActionListBuilder.create()
 			.createMutableToken(tokenDef)
-			.mint(TOKEN, TOKEN_ADDRESS, UInt256.TEN)
-			.transfer(TOKEN, OWNER, UInt256.FOUR)
+			.mint(TOKEN, TOKEN_KEYPAIR.getPublicKey(), UInt256.TEN)
+			.transfer(TOKEN, OWNER_KEYPAIR.getPublicKey(), UInt256.FOUR)
 			.burn(TOKEN, UInt256.ONE)
 			.build()
 		).signAndBuild(TOKEN_KEYPAIR::sign);
@@ -284,8 +284,8 @@ public class BerkeleyClientApiStoreTest {
 		var tokenDef = prepareMutableTokenDef(SYMBOL);
 		var tx = engine.construct(TOKEN_ADDRESS, TxActionListBuilder.create()
 			.createMutableToken(tokenDef)
-			.mint(TOKEN, TOKEN_ADDRESS, UInt256.TEN)
-			.transfer(TOKEN, OWNER, UInt256.FOUR)
+			.mint(TOKEN, TOKEN_KEYPAIR.getPublicKey(), UInt256.TEN)
+			.transfer(TOKEN, OWNER_KEYPAIR.getPublicKey(), UInt256.FOUR)
 			.burn(TOKEN, UInt256.ONE)
 			.build()
 		).signAndBuild(TOKEN_KEYPAIR::sign);

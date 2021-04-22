@@ -116,8 +116,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 			var createTokenActions = TxActionListBuilder.create()
 				.createMutableToken(tokenDefinition);
 			for (var e : issuances.entrySet()) {
-				var to = new RadixAddress(magic, e.getKey());
-				createTokenActions.mint(rri, to, e.getValue());
+				createTokenActions.mint(rri, e.getKey(), e.getValue());
 			}
 
 			var tokenTxn = branch.construct(createTokenActions.build()).buildWithoutSignature();

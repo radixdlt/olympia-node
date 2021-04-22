@@ -40,7 +40,7 @@ public final class SplitToken implements TxAction {
 		var substate = txBuilder.findSubstate(
 			TokensParticle.class,
 			p -> p.getRri().equals(rri)
-				&& p.getAddress().equals(address)
+				&& p.getAddress().equals(address.getPublicKey())
 				&& p.getAmount().compareTo(minSize) > 0,
 			"Could not find large particle greater than " + minSize
 		);
@@ -49,7 +49,7 @@ public final class SplitToken implements TxAction {
 		var particle = (TokensParticle) substate.getParticle();
 		var amt1 = particle.getAmount().divide(UInt256.TWO);
 		var amt2 = particle.getAmount().subtract(amt1);
-		txBuilder.up(new TokensParticle(address, amt1, rri));
-		txBuilder.up(new TokensParticle(address, amt2, rri));
+		txBuilder.up(new TokensParticle(address.getPublicKey(), amt1, rri));
+		txBuilder.up(new TokensParticle(address.getPublicKey(), amt2, rri));
 	}
 }

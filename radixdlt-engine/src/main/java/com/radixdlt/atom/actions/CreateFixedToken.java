@@ -103,6 +103,6 @@ public class CreateFixedToken implements TxAction {
 			getTokenUrl(),
 			supply
 		));
-		txBuilder.up(new TokensParticle(address, supply, tokenAddress));
+		txBuilder.up(new TokensParticle(address.getPublicKey(), supply, tokenAddress));
 	}
 }

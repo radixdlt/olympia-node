@@ -19,6 +19,7 @@ package com.radixdlt.client.store.berkeley;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
@@ -37,7 +38,7 @@ public class BalanceEntry {
 
 	@JsonProperty("owner")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final RadixAddress owner;
+	private final ECPublicKey owner;
 
 	@JsonProperty("delegate")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -56,7 +57,7 @@ public class BalanceEntry {
 	private final boolean negative;
 
 	private BalanceEntry(
-		RadixAddress owner, RadixAddress delegate, REAddr rri,
+		ECPublicKey owner, RadixAddress delegate, REAddr rri,
 		UInt384 amount, boolean negative
 	) {
 		this.owner = owner;
@@ -67,7 +68,7 @@ public class BalanceEntry {
 	}
 
 	public static BalanceEntry createFull(
-		RadixAddress owner,
+		ECPublicKey owner,
 		RadixAddress delegate,
 		REAddr rri,
 		UInt384 amount,
@@ -81,7 +82,7 @@ public class BalanceEntry {
 
 	@JsonCreator
 	public static BalanceEntry create(
-		@JsonProperty("owner") RadixAddress owner,
+		@JsonProperty("owner") ECPublicKey owner,
 		@JsonProperty("delegate") RadixAddress delegate,
 		@JsonProperty("rri") REAddr rri,
 		@JsonProperty("amount") UInt384 amount,
@@ -91,12 +92,12 @@ public class BalanceEntry {
 	}
 
 	public static BalanceEntry createBalance(
-		RadixAddress owner, RadixAddress delegate, REAddr rri, UInt384 amount
+		ECPublicKey owner, RadixAddress delegate, REAddr rri, UInt384 amount
 	) {
 		return createFull(owner, delegate, rri, amount, false);
 	}
 
-	public RadixAddress getOwner() {
+	public ECPublicKey getOwner() {
 		return owner;
 	}
 

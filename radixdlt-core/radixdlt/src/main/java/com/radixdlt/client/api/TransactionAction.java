@@ -92,7 +92,7 @@ public class TransactionAction {
 			case MSG:
 				return new IncludeMessage(data);
 			case TRANSFER:
-				return new TransferToken(rriValue(), to, amount);
+				return new TransferToken(rriValue(), to.getPublicKey(), amount);
 			case STAKE:
 				return new StakeTokens(to.getPublicKey(), amount);
 			case UNSTAKE:

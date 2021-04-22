@@ -94,7 +94,7 @@ public class TransactionParserTest {
 		var txn0 = engine.construct(
 			TxActionListBuilder.create()
 				.createMutableToken(tokDef)
-				.mint(this.tokenRri, this.tokenOwnerAddress, UInt256.TEN)
+				.mint(this.tokenRri, this.tokenOwnerKeyPair.getPublicKey(), UInt256.TEN)
 				.build()
 		).buildWithoutSignature();
 		var validatorBuilder = this.engine.construct(this.validatorAddress, new RegisterValidator());
@@ -128,8 +128,8 @@ public class TransactionParserTest {
 		//Use different token
 		var txn = engine.construct(tokenOwnerAddress, TxActionListBuilder.create()
 			.createMutableToken(tokDefII)
-			.mint(tokenRriII, tokenOwnerAddress, UInt256.TEN)
-			.transfer(tokenRriII, otherAddress, UInt256.FIVE)
+			.mint(tokenRriII, tokenOwnerKeyPair.getPublicKey(), UInt256.TEN)
+			.transfer(tokenRriII, tokenOwnerKeyPair.getPublicKey(), UInt256.FIVE)
 			.burn(tokenRri, UInt256.FOUR)
 			.build()
 		).signAndBuild(tokenOwnerKeyPair::sign);

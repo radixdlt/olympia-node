@@ -55,7 +55,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			TokensParticle::getAmount,
 			StakedTokensParticle::getAmount,
 			(i, o) -> Result.success(),
-			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getAddress()::ownedBy).orElse(false),
+			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getAddress()::equals).orElse(false),
 			(i, o, index) -> new StakeTokens(o.getDelegateKey(), o.getAmount()) // FIXME: this isn't 100% correct
 		));
 
