@@ -18,6 +18,7 @@
 package com.radixdlt.client.store;
 
 import com.radixdlt.client.api.TxHistoryEntry;
+import com.radixdlt.client.store.berkeley.BalanceEntry;
 import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.AID;
@@ -36,13 +37,14 @@ import java.util.Optional;
 public interface ClientApiStore {
 
 	/**
-	 * Retrieve list of immediately spendable token balances.
+	 * Retrieve list of immediately spendable token balances or stakes.
 	 *
 	 * @param address client address
+	 * @param retrieveStakes {@code true} - retrieve stakes, {@code false} - retrieve spendable balances
 	 *
 	 * @return list of token balances
 	 */
-	Result<List<TokenBalance>> getTokenBalances(RadixAddress address);
+	Result<List<BalanceEntry>> getTokenBalances(RadixAddress address, boolean retrieveStakes);
 
 	Result<REAddr> parseRri(String rri);
 

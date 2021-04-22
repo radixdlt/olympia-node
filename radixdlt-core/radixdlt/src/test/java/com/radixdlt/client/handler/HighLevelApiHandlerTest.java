@@ -70,12 +70,17 @@ import static com.radixdlt.client.api.TransactionStatus.CONFIRMED;
 import static com.radixdlt.client.api.TransactionStatus.FAILED;
 import static com.radixdlt.client.api.TransactionStatus.PENDING;
 import static com.radixdlt.client.api.TransactionStatus.TRANSACTION_NOT_FOUND;
+import static com.radixdlt.client.store.berkeley.BalanceEntry.createBalance;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class HighLevelApiHandlerTest {
 	private static final byte MAGIC = (byte) 0;
 	private static final String KNOWN_ADDRESS_STRING = "JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor";
 	private static final RadixAddress KNOWN_ADDRESS = RadixAddress.from(KNOWN_ADDRESS_STRING);
+
+	private static final RadixAddress V1 = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
+	private static final RadixAddress V2 = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
+	private static final RadixAddress V3 = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
 
 	private final HighLevelApiService highLevelApiService = mock(HighLevelApiService.class);
 	private final TransactionStatusService transactionStatusService = mock(TransactionStatusService.class);
@@ -102,10 +107,32 @@ public class HighLevelApiHandlerTest {
 		assertEquals(KNOWN_ADDRESS_STRING, result.getString("owner"));
 
 		var list = result.getJSONArray("tokenBalances");
+
 		assertEquals(3, list.length());
-		assertEquals("2", list.getJSONObject(0).getString("amount"));
-		assertEquals("5", list.getJSONObject(1).getString("amount"));
-		assertEquals("8", list.getJSONObject(2).getString("amount"));
+		assertEquals(UInt384.TWO, list.getJSONObject(0).get("amount"));
+		assertEquals(UInt384.FIVE, list.getJSONObject(1).get("amount"));
+		assertEquals(UInt384.EIGHT, list.getJSONObject(2).get("amount"));
+	}
+
+	@Test
+	public void testStakePositions() {
+		var balance1 = createBalance(KNOWN_ADDRESS, V1, REAddr.ofNativeToken(), UInt384.TWO);
+		var balance2 = createBalance(KNOWN_ADDRESS, V2, REAddr.ofNativeToken(), UInt384.FIVE);
+		var balance3 = createBalance(KNOWN_ADDRESS, V3, REAddr.ofNativeToken(), UInt384.EIGHT);
+
+		when(highLevelApiService.getStakePositions(any(RadixAddress.class)))
+			.thenReturn(Result.ok(List.of(balance1, balance2, balance3)));
+
+		var response = handler.handleStakePositions(requestWith(jsonArray().put(KNOWN_ADDRESS_STRING)));
+
+		assertNotNull(response);
+
+		var list = response.getJSONArray("result");
+
+		assertEquals(3, list.length());
+		assertEquals(UInt384.TWO, list.getJSONObject(0).get("amount"));
+		assertEquals(UInt384.FIVE, list.getJSONObject(1).get("amount"));
+		assertEquals(UInt384.EIGHT, list.getJSONObject(2).get("amount"));
 	}
 
 	@Test
