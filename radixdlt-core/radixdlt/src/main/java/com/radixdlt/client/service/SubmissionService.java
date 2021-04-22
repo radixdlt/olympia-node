@@ -19,6 +19,7 @@ package com.radixdlt.client.service;
 
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
@@ -31,6 +32,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -48,14 +50,17 @@ public final class SubmissionService {
 	private final UInt256 fixedFee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
+	private final int magic;
 
 	@Inject
 	public SubmissionService(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher
+		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
+		@Named("magic") int magic
 	) {
 		this.radixEngine = radixEngine;
 		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
+		this.magic = magic;
 	}
 
 	public Result<PreparedTransaction> prepareTransaction(List<TransactionAction> steps) {
@@ -67,11 +72,12 @@ public final class SubmissionService {
 			return Result.fail("Source addresses for all actions must be the same");
 		}
 
-		var address = addresses.iterator().next();
+		var key = addresses.iterator().next();
+		var addr = new RadixAddress((byte) magic, key);
 
 		try {
 			var transaction = radixEngine
-				.construct(address.getPublicKey(), toActionsAndFee(steps))
+				.construct(key, toActionsAndFee(steps))
 				.buildForExternalSign()
 				.map(this::toPreparedTx);
 
@@ -83,7 +89,7 @@ public final class SubmissionService {
 
 	private List<TxAction> toActionsAndFee(List<TransactionAction> steps) {
 		return Stream.concat(
-			steps.stream().map(TransactionAction::toAction),
+			steps.stream().map(t -> t.toAction((byte) magic)),
 			Stream.of(new BurnToken(REAddr.ofNativeToken(), fixedFee))
 		).collect(Collectors.toList());
 	}

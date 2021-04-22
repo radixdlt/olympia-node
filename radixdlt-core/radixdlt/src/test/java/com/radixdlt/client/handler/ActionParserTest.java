@@ -17,6 +17,7 @@
 
 package com.radixdlt.client.handler;
 
+import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.utils.functional.Result;
 import org.junit.Assert;
@@ -67,8 +68,8 @@ public class ActionParserTest {
 				parsed.get(0)
 					.map((type, fromAddress, toAddress, amount, rriOptional) -> {
 						assertEquals(TRANSFER, type);
-						assertEquals(from, fromAddress);
-						assertEquals(to, toAddress);
+						assertEquals(from.getPublicKey(), fromAddress);
+						assertEquals(to.getPublicKey(), toAddress);
 						assertEquals(amount, UInt256.NINE);
 						assertEquals(rriOptional, Optional.of(rri));
 						return null;
@@ -78,8 +79,9 @@ public class ActionParserTest {
 
 	@Test
 	public void stakeActionIsParsedCorrectly() {
+		var validatorAddr = ValidatorAddress.of(to.getPublicKey());
 		var source = "[{\"type\":\"StakeTokens\", \"from\":\"%s\", \"validator\":\"%s\", \"amount\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, from, to, UInt256.NINE)).orElseThrow();
+		var actions = jsonArray(String.format(source, from, validatorAddr, UInt256.NINE)).orElseThrow();
 		ActionParser.parse(actions, clientApiStore)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
@@ -88,8 +90,8 @@ public class ActionParserTest {
 				parsed.get(0)
 					.map((type, fromAddress, validatorAddress, amount, rriOptional) -> {
 						assertEquals(STAKE, type);
-						assertEquals(from, fromAddress);
-						assertEquals(to, validatorAddress);
+						assertEquals(from.getPublicKey(), fromAddress);
+						assertEquals(to.getPublicKey(), validatorAddress);
 						assertEquals(amount, UInt256.NINE);
 						return null;
 					});
@@ -98,8 +100,9 @@ public class ActionParserTest {
 
 	@Test
 	public void unstakeActionIsParsedCorrectly() {
+		var validatorAddr = ValidatorAddress.of(to.getPublicKey());
 		var source = "[{\"type\":\"UnstakeTokens\", \"from\":\"%s\", \"validator\":\"%s\", \"amount\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, from, to, UInt256.NINE)).orElseThrow();
+		var actions = jsonArray(String.format(source, from, validatorAddr, UInt256.NINE)).orElseThrow();
 
 		ActionParser.parse(actions, clientApiStore)
 			.onFailure(this::fail)
@@ -109,8 +112,8 @@ public class ActionParserTest {
 				parsed.get(0)
 					.map((type, fromAddress, validatorAddress, amount, rriOptional) -> {
 						assertEquals(UNSTAKE, type);
-						assertEquals(from, fromAddress);
-						assertEquals(to, validatorAddress);
+						assertEquals(from.getPublicKey(), fromAddress);
+						assertEquals(to.getPublicKey(), validatorAddress);
 						assertEquals(amount, UInt256.NINE);
 						return null;
 					});
