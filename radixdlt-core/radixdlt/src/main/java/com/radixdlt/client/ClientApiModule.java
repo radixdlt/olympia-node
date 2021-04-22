@@ -112,6 +112,12 @@ public class ClientApiModule extends AbstractModule {
 		return highLevelApiHandler::handleValidators;
 	}
 
+	@ProvidesIntoMap
+	@StringMapKey("radix.stakePositions")
+	public JsonRpcHandler stakePositions(HighLevelApiHandler highLevelApiHandler) {
+		return highLevelApiHandler::handleStakePositions;
+	}
+
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> clientApiStore(ClientApiStore clientApiStore) {
 		return new EventProcessorOnRunner<>(

@@ -146,7 +146,7 @@ public class BerkeleyClientApiStoreTest {
 
 		var clientApiStore = prepareApiStore(tx);
 
-		clientApiStore.getTokenBalances(TOKEN_ADDRESS)
+		clientApiStore.getTokenBalances(TOKEN_ADDRESS, false)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
 				assertEquals(UInt384.THREE, list.get(0).getAmount());
@@ -154,7 +154,7 @@ public class BerkeleyClientApiStoreTest {
 			})
 			.onFailureDo(() -> fail("Failure is not expected here"));
 
-		clientApiStore.getTokenBalances(OWNER)
+		clientApiStore.getTokenBalances(OWNER, false)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
 				assertEquals(UInt384.FOUR, list.get(0).getAmount());
