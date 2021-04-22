@@ -16,11 +16,12 @@
  */
 package com.radixdlt.client.store.berkeley;
 
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt384;
 import org.junit.Test;
 
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
@@ -28,13 +29,13 @@ import nl.jqno.equalsverifier.Warning;
 import static org.junit.Assert.assertEquals;
 
 public class BalanceEntryTest {
-	private static final RadixAddress ADDRESS = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
-	private static final REAddr TOKEN_RRI = REAddr.ofHashedKey(ADDRESS.getPublicKey(), "xrd");
+	private static final ECPublicKey KEY = ECKeyPair.generateNew().getPublicKey();
+	private static final REAddr TOKEN_RRI = REAddr.ofHashedKey(KEY, "xrd");
 
 	@Test
 	public void verifyBalanceCalculation() {
-		BalanceEntry entry1 = BalanceEntry.createBalance(ADDRESS.getPublicKey(), null, TOKEN_RRI, UInt384.FOUR);
-		BalanceEntry entry2 = BalanceEntry.createBalance(ADDRESS.getPublicKey(), null, TOKEN_RRI, UInt384.FIVE);
+		BalanceEntry entry1 = BalanceEntry.createBalance(KEY, null, TOKEN_RRI, UInt384.FOUR);
+		BalanceEntry entry2 = BalanceEntry.createBalance(KEY, null, TOKEN_RRI, UInt384.FIVE);
 
 		validate(entry1, entry2, UInt384.NINE, false);           		// 4 + 5 => 9
 		validate(entry2, entry1, UInt384.NINE, false);               	// 5 + 4 => 9

@@ -243,7 +243,7 @@ public class BerkeleyClientApiStoreTest {
 				assertEquals(ActionType.TRANSFER, action.getType());
 				assertEquals(UInt256.FOUR, action.getAmount());
 				assertEquals(AccountAddress.of(TOKEN_KEYPAIR.getPublicKey()), action.getFrom());
-				assertEquals(OWNER_KEYPAIR.getPublicKey().toString(), action.getTo());
+				assertEquals(AccountAddress.of(OWNER_KEYPAIR.getPublicKey()), action.getTo());
 
 				newCursor.set(entry.timestamp());
 			});

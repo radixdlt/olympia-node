@@ -55,7 +55,6 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
@@ -121,10 +120,7 @@ public class SubmissionServiceTest {
 	);
 
 	private static final ECKeyPair ALICE_KEYPAIR = ECKeyPair.generateNew();
-	private static final RadixAddress ALICE = new RadixAddress((byte) 0, ALICE_KEYPAIR.getPublicKey());
-
 	private static final ECKeyPair BOB_KEYPAIR = ECKeyPair.generateNew();
-	private static final RadixAddress BOB = new RadixAddress((byte) 0, BOB_KEYPAIR.getPublicKey());
 
 	private static final BFTNode NODE = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
 	private static final Hasher hasher = Sha256Hasher.withDefaultSerialization();

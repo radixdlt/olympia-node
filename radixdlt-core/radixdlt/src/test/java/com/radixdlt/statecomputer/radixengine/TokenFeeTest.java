@@ -37,7 +37,6 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.EpochCeilingView;
@@ -68,8 +67,6 @@ public class TokenFeeTest {
 	private RadixEngine<LedgerAndBFTProof> sut;
 
 	private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
-
-	private RadixAddress address;
 
 	@Inject
 	@NativeToken
