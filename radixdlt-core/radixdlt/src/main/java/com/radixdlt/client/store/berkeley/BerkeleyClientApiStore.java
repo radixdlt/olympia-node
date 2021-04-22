@@ -166,7 +166,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	@Override
 	public Result<REAddr> parseRri(String rri) {
-		return Rri.parse(rri)
+		return Rri.parseFunctional(rri)
 			.flatMap(p -> getTokenDefinition(p.getSecond())
 				.flatMap(t -> Result.ok(p.getSecond()).filter(i -> t.getSymbol().equals(p.getFirst()), "symbol does not match"))
 			);

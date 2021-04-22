@@ -18,63 +18,63 @@
 
 package com.radixdlt.client;
 
+import com.radixdlt.atomos.ConstraintScryptEnv;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Bits;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.functional.Result;
-import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
 
 /**
- * Radix resource identifier, hrp of the address should match the nonce
- * provided when the resource was first created.
+ * A Radix resource identifier which encodes addresses with a resource behind them in
+ * Bech-32 encoding.
+ *
+ * The human-readable part is the alphanumeric argument provided when creating the
+ * resource followed by "_rb" for betanet and "_rr" for mainnet.
+ *
+ * The data part is a conversion of the 1-34 byte Radix Engine address
+ * {@link com.radixdlt.identifiers.REAddr} to Base32 similar to specification described
+ * in BIP_0173 for converting witness programs.
  */
 public final class Rri {
-	private static final String RRI_HRP_SUFFIX = "_rr";
+	private static final String RRI_HRP_SUFFIX = "_rb";
 
 	private Rri() {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
 
-	public static REAddr parseUnchecked(String rri) {
-		var data = Bech32.decode(rri);
-		if (!data.hrp.endsWith(RRI_HRP_SUFFIX)) {
-			throw new IllegalArgumentException();
-		}
-		var hash = data.data;
-		if (hash.length > 0) {
-			hash = Bits.convertBits(hash, 0, hash.length, 5, 8, false);
-		} else {
-			return REAddr.ofNativeToken();
-		}
-		return REAddr.of(hash);
+	private static byte[] toBech32Data(byte[] bytes) {
+		return Bits.convertBits(bytes, 0, bytes.length, 8, 5, true);
 	}
 
-	public static Result<Pair<String, REAddr>> parse(String rri) {
+	private static byte[] fromBech32Data(byte[] bytes) {
+		return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
+	}
+
+	public static Pair<String, REAddr> parse(String rri) {
+		var data = Bech32.decode(rri);
+		if (!data.hrp.endsWith(RRI_HRP_SUFFIX)) {
+			throw new IllegalArgumentException("hrp suffix must be " + RRI_HRP_SUFFIX);
+		}
+		var symbol = data.hrp.substring(0, data.hrp.length() - RRI_HRP_SUFFIX.length());
+		if (!ConstraintScryptEnv.NAME_PATTERN.matcher(symbol).matches()) {
+			throw new IllegalArgumentException("Invalid symbol");
+		}
+		var addrBytes = fromBech32Data(data.data);
+		return Pair.of(symbol, REAddr.of(addrBytes));
+	}
+
+	public static Result<Pair<String, REAddr>> parseFunctional(String rri) {
 		try {
-			var data = Bech32.decode(rri);
-			if (!data.hrp.endsWith(RRI_HRP_SUFFIX)) {
-				return Result.fail("hrp must end in " + RRI_HRP_SUFFIX);
-			}
-			var hash = data.data;
-			if (hash.length > 0) {
-				hash = Bits.convertBits(hash, 0, hash.length, 5, 8, false);
-			}
-			var symbol = data.hrp.substring(0, data.hrp.length() - RRI_HRP_SUFFIX.length());
-			return Result.ok(Pair.of(symbol, REAddr.of(hash)));
-		} catch (AddressFormatException e) {
+			return Result.ok(parse(rri));
+		} catch (IllegalArgumentException e) {
 			return Result.fail(e);
 		}
 	}
 
-	public static String of(String symbol, REAddr rri) {
-		final byte[] convert;
-		var hash = rri.getBytes();
-		if (hash.length != 0) {
-			convert = Bits.convertBits(hash, 0, hash.length, 8, 5, true);
-		} else {
-			convert = hash;
-		}
-		return Bech32.encode(symbol + RRI_HRP_SUFFIX, convert);
+	public static String of(String symbol, REAddr addr) {
+		var addrBytes = addr.getBytes();
+		var bech32Data = toBech32Data(addrBytes);
+		return Bech32.encode(symbol + RRI_HRP_SUFFIX, bech32Data);
 	}
 }

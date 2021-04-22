@@ -29,7 +29,15 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * A Radix resource identifier is a human readable unique identifier into the Ledger which points to a resource.
+ * A Radix Engine Address. A 1-34 byte array describing a resource or component
+ * in the Radix Engine.
+ *
+ * The first byte of the address describes the type of address followed by
+ * additional data depending on the type.
+ *
+ * Version
+ * 0x01 : Native Token, 0 data bytes
+ * 0x03 : Hashed Key+Nonce, followed by lower_26_bytes(sha_256_twice(33_byte_compressed_pubkey | arg_nonce))
  */
 public final class REAddr {
 	public enum REAddrType {
@@ -37,13 +45,27 @@ public final class REAddr {
 			public REAddr parse(ByteBuffer buf) {
 				return REAddr.ofNativeToken();
 			}
+
+			public Optional<String> verify(ByteBuffer buf) {
+				if (buf.hasRemaining()) {
+					return Optional.of("Native token must not have bytes");
+				}
+				return Optional.empty();
+			}
 		},
 		HASHED_KEY((byte) 3) {
 			public REAddr parse(ByteBuffer buf) {
-				var addr = new byte[REAddr.HASH_BYTES + 1];
+				var addr = new byte[REAddr.HASHED_KEY_BYTES + 1];
 				addr[0] = type;
-				buf.get(addr, 1, REAddr.HASH_BYTES);
+				buf.get(addr, 1, REAddr.HASHED_KEY_BYTES);
 				return new REAddr(addr);
+			}
+
+			public Optional<String> verify(ByteBuffer buf) {
+				if (buf.remaining() != REAddr.HASHED_KEY_BYTES) {
+					return Optional.of("Hashed key must have " + HASHED_KEY_BYTES + " bytes");
+				}
+				return Optional.empty();
 			}
 		};
 
@@ -54,6 +76,8 @@ public final class REAddr {
 		}
 
 		public abstract REAddr parse(ByteBuffer buf);
+
+		public abstract Optional<String> verify(ByteBuffer buf);
 
 		public static Optional<REAddrType> parse(byte b) {
 			switch (b) {
@@ -67,7 +91,7 @@ public final class REAddr {
 		}
 	}
 
-	public static final int HASH_BYTES = 26;
+	private static final int HASHED_KEY_BYTES = 26;
 	private final byte[] addr;
 
 	REAddr(byte[] addr) {
@@ -84,7 +108,7 @@ public final class REAddr {
 				throw new IllegalArgumentException();
 			}
 		} else if (hash[0] == REAddrType.HASHED_KEY.type) {
-			if (hash.length != 1 + HASH_BYTES) {
+			if (hash.length != 1 + HASHED_KEY_BYTES) {
 				throw new IllegalArgumentException();
 			}
 		}
@@ -97,15 +121,14 @@ public final class REAddr {
 		var dataToHash = new byte[33 + nameBytes.length];
 		System.arraycopy(publicKey.getCompressedBytes(), 0, dataToHash, 0, 33);
 		System.arraycopy(nameBytes, 0, dataToHash, 33, nameBytes.length);
-		var firstHash = HashUtils.sha256(dataToHash);
-		var secondHash = HashUtils.sha256(firstHash.asBytes());
-		return Arrays.copyOfRange(secondHash.asBytes(), 32 - HASH_BYTES, 32);
+		var hash = HashUtils.sha256(dataToHash);
+		return Arrays.copyOfRange(hash.asBytes(), 32 - HASHED_KEY_BYTES, 32);
 	}
 
 	public boolean allow(ECPublicKey publicKey, byte[] arg) {
 		if (addr[0] == REAddrType.HASHED_KEY.type) {
 			var hash = REAddr.pkToHash(new String(arg), publicKey);
-			return Arrays.equals(addr, 1, HASH_BYTES + 1, hash, 0, HASH_BYTES);
+			return Arrays.equals(addr, 1, HASHED_KEY_BYTES + 1, hash, 0, HASHED_KEY_BYTES);
 		}
 
 		return false;
@@ -120,13 +143,25 @@ public final class REAddr {
 	}
 
 	public static REAddr of(byte[] addr) {
+		if (addr.length == 0) {
+			throw new IllegalArgumentException("Address cannot be empty.");
+		}
+		var buf = ByteBuffer.wrap(addr);
+		var type = REAddrType.parse(buf.get());
+		if (type.isEmpty()) {
+			throw new IllegalArgumentException("Unknown type: " + type);
+		}
+		var error = type.get().verify(buf);
+		error.ifPresent(str -> {
+			throw new IllegalArgumentException(str);
+		});
 		return new REAddr(addr);
 	}
 
 	public static REAddr ofHashedKey(ECPublicKey key, String name) {
 		Objects.requireNonNull(key);
 		var hash = pkToHash(name, key);
-		var buf = ByteBuffer.allocate(HASH_BYTES + 1);
+		var buf = ByteBuffer.allocate(HASHED_KEY_BYTES + 1);
 		buf.put(REAddrType.HASHED_KEY.type);
 		buf.put(hash);
 		return create(buf.array());

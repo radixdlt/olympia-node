@@ -174,26 +174,26 @@ public final class NodeController implements Controller {
 				return new CreateFixedToken(symbol, name, description, iconUrl, url, supply);
 			}
 			case "TransferTokens": {
-				var rri = Rri.parseUnchecked(paramsObject.getString("rri"));
+				var rri = Rri.parse(paramsObject.getString("rri"));
 				var addressString = paramsObject.getString("to");
 				var to = RadixAddress.from(addressString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
-				return new TransferToken(rri, to, subunits);
+				return new TransferToken(rri.getSecond(), to, subunits);
 			}
 			case "MintTokens": {
-				var rri = Rri.parseUnchecked(paramsObject.getString("rri"));
+				var rri = Rri.parse(paramsObject.getString("rri"));
 				var addressString = paramsObject.getString("to");
 				var to = RadixAddress.from(addressString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
-				return new MintToken(rri, to, subunits);
+				return new MintToken(rri.getSecond(), to, subunits);
 			}
 			case "BurnTokens": {
-				var rri = Rri.parseUnchecked(paramsObject.getString("rri"));
+				var rri = Rri.parse(paramsObject.getString("rri"));
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
-				return new BurnToken(rri, subunits);
+				return new BurnToken(rri.getSecond(), subunits);
 			}
 			case "StakeTokens": {
 				var validatorString = paramsObject.getString("to");
