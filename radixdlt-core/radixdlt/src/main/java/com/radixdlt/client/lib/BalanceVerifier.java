@@ -27,6 +27,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.functional.Result;
 
@@ -71,11 +72,13 @@ public class BalanceVerifier {
 	}
 
 	private void retrieveBalance(NodeClient client, ECPublicKey key) {
-		client.callTokenBalances(key).onSuccess(balances -> printBalances(key, balances));
+		var address = client.toAddress(key);
+
+		client.callTokenBalances(key).onSuccess(balances -> printBalances(address, balances));
 	}
 
-	private void printBalances(ECPublicKey publicKey, List<TokenBalance> balances) {
-		System.out.println("Owner: " + publicKey.toString());
+	private void printBalances(RadixAddress radixAddress, List<TokenBalance> balances) {
+		System.out.println("Owner: " + radixAddress.toString());
 		if (balances.isEmpty()) {
 			System.out.println("(empty balances)");
 		} else {

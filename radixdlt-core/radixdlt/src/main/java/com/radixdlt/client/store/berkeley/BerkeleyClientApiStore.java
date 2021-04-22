@@ -236,7 +236,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				}
 
 				var definition = restore(serialization, data.getData(), TokenDefinitionRecord.class)
-					.filter(def -> def.getName().equals(rri.getName()), "Name not matched");
+					.filter(def -> def.rri().equals(rri), "Name not matched");
 
 				if (definition.isSuccess()) {
 					return definition;
@@ -502,6 +502,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private void processRETransaction(REParsedTxn reTxn) {
 		extractTimestamp(reTxn.upSubstates());
+
 		reTxn.getUser().ifPresentOrElse(
 			p -> {
 				var addr = new RadixAddress(universeMagic, p);

@@ -59,7 +59,6 @@ public final class JsonRpcUtil {
 		public int code() {
 			return code;
 		}
-
 	}
 
 	private JsonRpcUtil() {

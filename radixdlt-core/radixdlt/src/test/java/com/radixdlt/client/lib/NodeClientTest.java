@@ -15,8 +15,16 @@ package com.radixdlt.client.lib;/*
  * language governing permissions and limitations under the License.
  */
 
-import static org.junit.Assert.*;
+import org.junit.Ignore;
+import org.junit.Test;
 
+import static org.junit.Assert.fail;
+
+@Ignore
 public class NodeClientTest {
-
+	@Test
+	@Ignore
+	public void name() {
+		fail("Not implemented yet");
+	}
 }

@@ -198,7 +198,7 @@ public final class RadixJsonRpcServer {
 	}
 
 	private static <T> T logValue(String message, T value) {
-		log.debug("RPC: {} {}", message, value);
+		log.trace("RPC: {} {}", message, value);
 		return value;
 	}
 }

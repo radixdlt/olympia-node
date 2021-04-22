@@ -207,7 +207,6 @@ public class HighLevelApiHandler {
 			.map(this::formatTxId);
 	}
 
-
 	private JSONObject formatTokenBalances(RadixAddress radixAddress, List<TokenBalance> balances) {
 		return jsonObject()
 			.put("owner", radixAddress.toString())
@@ -311,10 +310,6 @@ public class HighLevelApiHandler {
 		return params.length() < 3
 			   ? Optional.empty()
 			   : Optional.of(params.getString(2))
-				   .map(v -> {
-					   log.info("Cursor: {}", v);
-					   return v;
-				   })
 				   .flatMap(HighLevelApiHandler::instantFromString);
 	}
 

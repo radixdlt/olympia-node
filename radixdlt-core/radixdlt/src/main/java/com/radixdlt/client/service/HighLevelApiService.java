@@ -76,10 +76,6 @@ public class HighLevelApiService {
 	}
 
 	public Result<TokenDefinitionRecord> getTokenDescription(Rri rri) {
-		if (rri.equals(Rri.NATIVE_TOKEN)) {
-			return getNativeTokenDescription();
-		}
-
 		return clientApiStore.getTokenDefinition(rri)
 			.flatMap(definition -> withSupply(rri, definition));
 	}

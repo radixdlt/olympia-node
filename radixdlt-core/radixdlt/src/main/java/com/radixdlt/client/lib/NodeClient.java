@@ -94,6 +94,12 @@ public class NodeClient {
 			.map(this::parseTokenBalances);
 	}
 
+	public Result<JSONObject> callLookupTransaction(String txId) {
+		var params = jsonArray().put(txId);
+
+		return call("lookupTransaction", params);
+	}
+
 	//TODO: parse response
 	public Result<JSONObject> callTransactionHistory(
 		RadixAddress address, int size, Optional<String> cursor
@@ -115,7 +121,7 @@ public class NodeClient {
 			.flatMap(this::parseJson);
 	}
 
-	private RadixAddress toAddress(ECPublicKey publicKey) {
+	public RadixAddress toAddress(ECPublicKey publicKey) {
 		return new RadixAddress(magicHolder.get(), publicKey);
 	}
 
@@ -140,7 +146,8 @@ public class NodeClient {
 	}
 
 	private List<TokenBalance> parseTokenBalances(JSONObject json) {
-		return ofNullable(json.optJSONArray("tokenBalances"))
+		return ofNullable(json.optJSONObject("result"))
+			.flatMap(result -> ofNullable(result.optJSONArray("tokenBalances")))
 			.map(this::parseTokenBalanceEntries)
 			.orElseGet(List::of);
 	}
@@ -174,16 +181,6 @@ public class NodeClient {
 		if (!(obj instanceof JSONObject)) {
 			return Result.fail("Not an JSON object");
 		}
-
-//		var object = (JSONObject) obj;
-//
-//		return allOf(
-//			parseTxId(object),
-//			parseSentAt(object),
-//			parseFee(object),
-//			parseMessage(object),
-//			parseActions(object)
-//		).map(TxHistoryEntry::create);
 		return Result.fail("Not implemented yet");
 	}
 
