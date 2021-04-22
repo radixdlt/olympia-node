@@ -78,7 +78,7 @@ public final class RadixNodeModule extends AbstractModule {
 	protected void configure() {
 		bind(RuntimeProperties.class).toInstance(properties);
 		bind(MempoolConfig.class).toInstance(MempoolConfig.of(properties.get("mempool.maxSize", 1000), 5L));
-		final long syncPatience = properties.get("sync.patience", 2000L);
+		final long syncPatience = properties.get("sync.patience", 10_000L);
 		bind(SyncConfig.class).toInstance(SyncConfig.of(syncPatience, 10, 3000L));
 		bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(properties.get("bft.sync.patience", 200));
 

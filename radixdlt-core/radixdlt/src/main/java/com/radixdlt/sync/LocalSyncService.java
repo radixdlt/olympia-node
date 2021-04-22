@@ -202,7 +202,7 @@ public final class LocalSyncService {
 	private SyncState initSyncCheck(IdleState currentState) {
 		final ImmutableSet<BFTNode> peersToAsk = this.choosePeersForSyncCheck();
 
-		log.trace("LocalSync: Initializing sync check, about to ask {} peers for their status", peersToAsk.size());
+		log.info("LocalSync: Initializing sync check, about to ask {} peers for their status", peersToAsk.size());
 
 		peersToAsk.forEach(peer -> statusRequestDispatcher.dispatch(peer, StatusRequest.create()));
 		this.syncCheckReceiveStatusTimeoutDispatcher.dispatch(
@@ -294,7 +294,7 @@ public final class LocalSyncService {
 		ImmutableList<BFTNode> candidatePeers,
 		LedgerProof targetHeader
 	) {
-		log.trace("LocalSync: Syncing to target header {}, got {} candidate peers", targetHeader, candidatePeers.size());
+		log.info("LocalSync: Syncing to target header {}, got {} candidate peers", targetHeader, candidatePeers.size());
 		return this.processSync(SyncingState.init(currentState.getCurrentHeader(), candidatePeers, targetHeader));
 	}
 
@@ -302,7 +302,7 @@ public final class LocalSyncService {
 		this.updateSyncTargetDiffCounter(currentState);
 
 		if (isFullySynced(currentState)) {
-			log.trace("LocalSync: Fully synced to {}", currentState.getTargetHeader());
+			log.info("LocalSync: Fully synced to {}", currentState.getTargetHeader());
 			// we're fully synced, go to idle and wait for another sync check
 			return this.goToIdle(currentState);
 		}
@@ -325,7 +325,7 @@ public final class LocalSyncService {
 	}
 
 	private SyncState sendSyncRequest(SyncingState currentState, BFTNode peer) {
-		log.trace("LocalSync: Sending sync request to {}", peer);
+		log.info("LocalSync: Sending sync request to {}", peer);
 
 		final var currentHeader = currentState.getCurrentHeader();
 
@@ -346,7 +346,7 @@ public final class LocalSyncService {
 	}
 
 	private SyncState processSyncResponse(SyncingState currentState, BFTNode sender, SyncResponse syncResponse) {
-		log.trace("LocalSync: Received sync response from {}", sender);
+		log.info("LocalSync: Received sync response from {}", sender);
 
 		if (!currentState.waitingForResponseFrom(sender)) {
 			log.warn("LocalSync: Received unexpected sync response from {}", sender);
@@ -401,7 +401,7 @@ public final class LocalSyncService {
 			return currentState; // ignore, this timeout is no longer valid
 		}
 
-		log.trace("LocalSync: Sync request timeout from peer {}", syncRequestTimeout.getPeer());
+		log.info("LocalSync: Sync request timeout from peer {}", syncRequestTimeout.getPeer());
 
 		return this.processSync(
 			currentState
@@ -440,7 +440,7 @@ public final class LocalSyncService {
 				.withTargetHeader(header)
 				.withCandidatePeers(peers);
 		} else {
-			log.trace("LocalSync: skipping as already targeted {}", currentState.getTargetHeader());
+			log.info("LocalSync: skipping as already targeted {}", currentState.getTargetHeader());
 			return currentState;
 		}
 	}
