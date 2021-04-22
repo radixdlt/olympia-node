@@ -51,7 +51,7 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.fromList;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static org.radix.api.jsonrpc.JsonRpcUtil.response;
 import static org.radix.api.jsonrpc.JsonRpcUtil.safeInteger;
-import static org.radix.api.jsonrpc.JsonRpcUtil.toErrorResponse;
+import static org.radix.api.jsonrpc.JsonRpcUtil.invalidParamsError;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredArrayParameter;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredParameters;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredStringParameter;
@@ -87,7 +87,7 @@ public class HighLevelApiHandler {
 	public JSONObject handleNativeToken(JSONObject request) {
 		return highLevelApiService.getNativeTokenDescription()
 			.map(TokenDefinitionRecord::asJson)
-			.fold(failure -> toErrorResponse(request, failure), response -> response(request, response));
+			.fold(failure -> invalidParamsError(request, failure), response -> response(request, response));
 	}
 
 	public JSONObject handleTokenInfo(JSONObject request) {

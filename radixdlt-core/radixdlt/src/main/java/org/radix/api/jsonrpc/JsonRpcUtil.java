@@ -24,15 +24,10 @@ import org.json.JSONObject;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static com.radixdlt.utils.functional.Result.fromOptional;
 
@@ -75,16 +70,20 @@ public final class JsonRpcUtil {
 		return request.getJSONArray("params");
 	}
 
-	public static JSONObject toErrorResponse(JSONObject request, Failure failure) {
+	public static JSONObject parseError(String message) {
+		return errorResponse(RpcError.PARSE_ERROR, message);
+	}
+
+	public static JSONObject invalidParamsError(String message) {
+		return errorResponse(RpcError.INVALID_PARAMS, message);
+	}
+
+	public static JSONObject invalidParamsError(JSONObject request, Failure failure) {
 		return errorResponse(request, RpcError.INVALID_PARAMS, failure.message());
 	}
 
-	public static Optional<JSONObject> jsonObject(String data) {
-		try {
-			return Optional.of(new JSONObject(data));
-		} catch (JSONException e) {
-			return Optional.empty();
-		}
+	public static Result<JSONObject> jsonObject(String data) {
+		return Result.wrap(() -> new JSONObject(data));
 	}
 
 	public static JSONObject jsonObject() {
@@ -202,7 +201,7 @@ public final class JsonRpcUtil {
 		return retrieveParams(request)
 			.map(JSONArray.class::cast)
 			.flatMap(fn)
-			.fold(failure -> toErrorResponse(request, failure), response -> response(request, response));
+			.fold(failure -> invalidParamsError(request, failure), response -> response(request, response));
 	}
 
 	private static Result<JSONArray> retrieveParams(JSONObject request) {

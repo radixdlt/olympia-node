@@ -39,7 +39,9 @@ import java.util.Optional;
 import io.undertow.server.HttpServerExchange;
 
 import static org.radix.api.jsonrpc.JsonRpcUtil.errorResponse;
+import static org.radix.api.jsonrpc.JsonRpcUtil.invalidParamsError;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
+import static org.radix.api.jsonrpc.JsonRpcUtil.parseError;
 
 /**
  * Stateless Json Rpc 2.0 Server
@@ -114,7 +116,7 @@ public final class RadixJsonRpcServer {
 
 		handlers.putAll(additionalHandlers);
 
-		handlers.keySet().forEach(name -> log.debug("Registered JSON RPC method: {}", name));
+		handlers.keySet().forEach(name -> log.trace("Registered JSON RPC method: {}", name));
 	}
 
 	/**
@@ -126,15 +128,18 @@ public final class RadixJsonRpcServer {
 	 */
 	public String handleJsonRpc(HttpServerExchange exchange) {
 		try {
-			// Switch to blocking since we need to retrieve whole request body
-			exchange.setMaxEntitySize(maxRequestSizeBytes);
-			exchange.startBlocking();
-
-			var requestBody = CharStreams.toString(new InputStreamReader(exchange.getInputStream(), StandardCharsets.UTF_8));
-			return handleRpc(requestBody);
+			return handleRpc(readBody(exchange)).toString();
 		} catch (IOException e) {
 			throw new IllegalStateException("RPC failed", e);
 		}
+	}
+
+	private String readBody(HttpServerExchange exchange) throws IOException {
+		// Switch to blocking since we need to retrieve whole request body
+		exchange.setMaxEntitySize(maxRequestSizeBytes);
+		exchange.startBlocking();
+
+		return CharStreams.toString(new InputStreamReader(exchange.getInputStream(), StandardCharsets.UTF_8));
 	}
 
 	/**
@@ -144,36 +149,28 @@ public final class RadixJsonRpcServer {
 	 *
 	 * @return The response to the request, could be a JSON-RPC error
 	 */
-	String handleRpc(String requestString) {
-		log.debug("RPC: input {}", requestString);
+	JSONObject handleRpc(String requestString) {
+		log.trace("RPC: input {}", requestString);
 
 		int length = requestString.getBytes(StandardCharsets.UTF_8).length;
 
 		if (length > maxRequestSizeBytes) {
-			return errorResponse(RpcError.REQUEST_TOO_LONG, "request too big: " + length + " > " + maxRequestSizeBytes).toString();
+			return requestTooLongError(length);
 		}
 
 		return jsonObject(requestString)
 			.map(this::handle)
-			.map(Object::toString)
 			.map(value -> logValue("result", value))
-			.orElseGet(() -> errorResponse(RpcError.PARSE_ERROR, "unable to parse input").toString());
-	}
-
-	private static <T> T logValue(String message, T value) {
-		log.debug("RPC: {} {}", message, value);
-		return value;
+			.fold(failure -> parseError("Unable to parse input: " + failure.message()), v -> v);
 	}
 
 	private JSONObject handle(JSONObject request) {
 		if (!request.has("id")) {
-			log.debug("RPC: error, no id");
-			return errorResponse(RpcError.INVALID_PARAMS, "id missing");
+			return invalidParamsError("The 'id' missing");
 		}
 
 		if (!request.has("method")) {
-			log.debug("RPC: error, no method");
-			return errorResponse(RpcError.INVALID_PARAMS, "method missing");
+			return invalidParamsError("The method name is missing");
 		}
 
 		try {
@@ -188,5 +185,17 @@ public final class RadixJsonRpcServer {
 				return errorResponse(request, RpcError.SERVER_ERROR, e.getMessage());
 			}
 		}
+	}
+
+	private JSONObject requestTooLongError(int length) {
+		var message = "request too big: " + length + " > " + maxRequestSizeBytes;
+
+		log.trace("RPC error: {}", message);
+		return errorResponse(RpcError.REQUEST_TOO_LONG, message);
+	}
+
+	private static <T> T logValue(String message, T value) {
+		log.trace("RPC: {} {}", message, value);
+		return value;
 	}
 }
