@@ -148,20 +148,24 @@ public final class RESerializer {
 		serializeString(buf, rri.getName());
 	}
 
-	public static Rri deserializeRri(ByteBuffer buf) {
+	public static Rri deserializeRri(ByteBuffer buf) throws DeserializeException {
 		var v = buf.get(); // version
 		if (v != 0 && v != 1) {
-			throw new IllegalArgumentException();
+			throw new DeserializeException("Invalid rri version " + v);
 		}
-		var isSystem = v == 0;
-		if (isSystem) {
-			var name = deserializeString(buf);
-			return Rri.ofSystem(name);
-		} else {
-			var hash = new byte[Rri.HASH_BYTES];
-			buf.get(hash);
-			var name = deserializeString(buf);
-			return Rri.of(hash, name);
+		try {
+			var isSystem = v == 0;
+			if (isSystem) {
+				var name = deserializeString(buf);
+				return Rri.ofSystem(name);
+			} else {
+				var hash = new byte[Rri.HASH_BYTES];
+				buf.get(hash);
+				var name = deserializeString(buf);
+				return Rri.of(hash, name);
+			}
+		} catch (IllegalArgumentException e) {
+			throw new DeserializeException("Could not deserialize rri", e);
 		}
 	}
 
@@ -170,7 +174,7 @@ public final class RESerializer {
 		serializeRri(buf, rri);
 	}
 
-	private static RRIParticle deserializeRRIParticle(ByteBuffer buf) {
+	private static RRIParticle deserializeRRIParticle(ByteBuffer buf) throws DeserializeException {
 		var rri = deserializeRri(buf);
 		return new RRIParticle(rri);
 	}
@@ -195,7 +199,7 @@ public final class RESerializer {
 		buf.put(tokensParticle.getAmount().toByteArray());
 	}
 
-	private static TokensParticle deserializeTokensParticle(ByteBuffer buf) {
+	private static TokensParticle deserializeTokensParticle(ByteBuffer buf) throws DeserializeException {
 		var rri = deserializeRri(buf);
 		var address = deserializeAddress(buf);
 		var amount = deserializeUInt256(buf);
@@ -235,7 +239,7 @@ public final class RESerializer {
 		serializeRri(buf, uniqueParticle.getRri());
 	}
 
-	private static UniqueParticle deserializeUniqueParticle(ByteBuffer buf) {
+	private static UniqueParticle deserializeUniqueParticle(ByteBuffer buf) throws DeserializeException {
 		var rri = deserializeRri(buf);
 		return new UniqueParticle(rri);
 	}
@@ -257,7 +261,7 @@ public final class RESerializer {
 		serializeString(buf, p.getIconUrl());
 	}
 
-	private static TokenDefinitionParticle deserializeTokenDefinitionParticle(ByteBuffer buf) {
+	private static TokenDefinitionParticle deserializeTokenDefinitionParticle(ByteBuffer buf) throws DeserializeException {
 		var rri = deserializeRri(buf);
 		var supply = buf.get() != 0 ? null : deserializeUInt256(buf);
 		var name = deserializeString(buf);
@@ -282,7 +286,7 @@ public final class RESerializer {
 			var keyBytes = new byte[33];
 			buf.get(keyBytes);
 			return ECPublicKey.fromBytes(keyBytes);
-		} catch (PublicKeyException e) {
+		} catch (PublicKeyException | IllegalArgumentException e) {
 			throw new DeserializeException("Could not deserialize key");
 		}
 	}
@@ -293,11 +297,15 @@ public final class RESerializer {
 		buf.put(address.toByteArray()); // address
 	}
 
-	private static RadixAddress deserializeAddress(ByteBuffer buf) {
+	private static RadixAddress deserializeAddress(ByteBuffer buf) throws DeserializeException {
 		var addressLength = Byte.toUnsignedInt(buf.get()); // address length
 		var addressDest = new byte[addressLength]; // address
 		buf.get(addressDest);
-		return RadixAddress.from(addressDest);
+		try {
+			return RadixAddress.from(addressDest);
+		} catch (IllegalArgumentException e) {
+			throw new DeserializeException("Address deserialization failed.", e);
+		}
 	}
 
 	private static void serializeString(ByteBuffer buf, String s) {

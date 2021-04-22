@@ -39,7 +39,7 @@ public final class TxnParser {
 	}
 
 	public REParsedTxn parse(Txn txn) throws RadixEngineException {
-		return constraintMachine.validate(logCMStore.createTransaction(), logCMStore, txn, PermissionLevel.SYSTEM);
+		return constraintMachine.verify(logCMStore.createTransaction(), logCMStore, txn, PermissionLevel.SYSTEM);
 	}
 
 	public Result<REParsedTxn> parseTxn(Txn txn) {

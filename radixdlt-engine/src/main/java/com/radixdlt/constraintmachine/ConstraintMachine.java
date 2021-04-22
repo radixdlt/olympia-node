@@ -498,7 +498,7 @@ public final class ConstraintMachine {
 					nextParticle = maybeParticle.get();
 					substate = Substate.create(nextParticle, substateId);
 				} else if (inst.getMicroOp() == REInstruction.REOp.READ) {
-					var substateId = SubstateId.fromBuffer(inst.getData());
+					SubstateId substateId = inst.getData();
 					var maybeParticle = validationState.read(substateId);
 					if (maybeParticle.isEmpty()) {
 						return Optional.of(new CMError(instIndex, CMErrorCode.READ_FAILURE, validationState));
@@ -561,7 +561,7 @@ public final class ConstraintMachine {
 	 *
 	 * @return the first error found, otherwise an empty optional
 	 */
-	public REParsedTxn validate(
+	public REParsedTxn verify(
 		CMStore.Transaction dbTxn,
 		CMStore cmStore,
 		Txn txn,
@@ -583,7 +583,6 @@ public final class ConstraintMachine {
 		}
 
 		var signedBy = validationState.signedBy;
-
 		return new REParsedTxn(txn, signedBy, parsedActions);
 	}
 }
