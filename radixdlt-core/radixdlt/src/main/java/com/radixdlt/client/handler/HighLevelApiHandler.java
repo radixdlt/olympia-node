@@ -221,12 +221,12 @@ public class HighLevelApiHandler {
 			.map(tuple -> tuple.map(this::formatValidatorResponse));
 	}
 
-	private JSONObject formatTxId(AID txId) {
-		return jsonObject().put("txID", txId.toString());
-	}
-
 	private JSONObject formatTransactionStatus(AID txId) {
 		return transactionStatusService.getTransactionStatus(txId).asJson(formatTxId(txId));
+	}
+
+	private JSONObject formatTxId(AID txId) {
+		return jsonObject().put("txID", txId);
 	}
 
 	private JSONObject formatHistoryResponse(Optional<Instant> cursor, List<TxHistoryEntry> transactions) {

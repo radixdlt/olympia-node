@@ -40,6 +40,6 @@ public class LedgerHandlerTest {
 
 		var response = ledgerHandler.handleGetAtomStatus(request);
 
-		assertEquals("{\"content\":\"abc\"}", response.toString());
+		assertEquals("{\"result\":{\"content\":\"abc\"},\"id\":124,\"jsonrpc\":\"2.0\"}", response.toString());
 	}
 }
