@@ -14,29 +14,18 @@
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
+package com.radixdlt.client.lib;
 
-package org.radix.api.jsonrpc.handler;
+import org.junit.Ignore;
+import org.junit.Test;
 
-import org.json.JSONObject;
-import org.radix.api.services.AtomsService;
+import static org.junit.Assert.fail;
 
-import com.google.inject.Inject;
-import com.radixdlt.identifiers.AID;
-
-import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredStringParameter;
-
-public class AtomHandler {
-	private final AtomsService atomsService;
-
-	@Inject
-	public AtomHandler(AtomsService atomsService) {
-		this.atomsService = atomsService;
-	}
-
-	public JSONObject handleGetAtom(JSONObject request) {
-		return withRequiredStringParameter(
-			request,
-			(params, aid) -> AID.fromString(aid).flatMap(atomsService::getAtomByAtomId)
-		);
+@Ignore
+public class NodeClientTest {
+	@Test
+	@Ignore
+	public void name() {
+		fail("Not implemented yet");
 	}
 }

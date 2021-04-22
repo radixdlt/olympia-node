@@ -27,8 +27,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 
 import static org.radix.api.jsonrpc.JsonRpcUtil.errorResponse;
+import static org.radix.api.jsonrpc.JsonRpcUtil.invalidParamsError;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static org.radix.api.jsonrpc.JsonRpcUtil.notification;
+import static org.radix.api.jsonrpc.JsonRpcUtil.parseError;
 
 /**
  * A Stateful JSON RPC 2.0 Server and Client for duplex communication
@@ -36,7 +38,7 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.notification;
 public class RadixJsonRpcPeer {
 	private static final Logger LOGGER = LogManager.getLogger();
 
-	private final BiConsumer<RadixJsonRpcPeer, String> callback;
+	private final BiConsumer<RadixJsonRpcPeer, JSONObject> callback;
 
 	/**
 	 * Epic for managing atom subscriptions
@@ -45,14 +47,14 @@ public class RadixJsonRpcPeer {
 
 	public RadixJsonRpcPeer(
 		RadixJsonRpcServer server,
-		BiConsumer<RadixJsonRpcPeer, String> callback
+		BiConsumer<RadixJsonRpcPeer, JSONObject> callback
 	) {
 		this.server = server;
 		this.callback = callback;
 
 		callback.accept(
 			this,
-			notification("Radix.welcome", jsonObject().put("message", "Radix JSON RPC Peer V1.0")).toString()
+			notification("Radix.welcome", jsonObject().put("message", "Radix JSON RPC Peer V1.0"))
 		);
 	}
 
@@ -68,7 +70,7 @@ public class RadixJsonRpcPeer {
 		try {
 			jsonRpcRequest = new JSONObject(message);
 		} catch (JSONException e) {
-			callback.accept(this, errorResponse(RpcError.PARSE_ERROR, e.getMessage()).toString());
+			callback.accept(this, parseError(e.getMessage()));
 			return;
 		}
 
@@ -83,7 +85,7 @@ public class RadixJsonRpcPeer {
 				} else {
 					callback.accept(
 						RadixJsonRpcPeer.this,
-						errorResponse(RpcError.SERVER_ERROR, "unable to process request: " + message).toString()
+						errorResponse(RpcError.SERVER_ERROR, "Unable to process request: " + message)
 					);
 				}
 			});
@@ -92,7 +94,7 @@ public class RadixJsonRpcPeer {
 	private boolean ensureRequestHas(final JSONObject jsonRpcRequest, final String... names) {
 		for (var name : names) {
 			if (!jsonRpcRequest.has(name)) {
-				callback.accept(this, errorResponse(RpcError.INVALID_PARAMS, "JSON-RPC: No " + name).toString());
+				callback.accept(this, invalidParamsError( "JSON-RPC: No " + name));
 				return false;
 			}
 		}

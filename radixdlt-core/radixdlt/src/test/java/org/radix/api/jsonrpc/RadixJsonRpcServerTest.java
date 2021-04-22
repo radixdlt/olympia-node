@@ -48,7 +48,7 @@ public class RadixJsonRpcServerTest {
 			Map.of()
 		);
 
-		var response = new JSONObject(server.handleRpc(jsonObject().toString()));
+		var response = server.handleRpc(jsonObject().toString());
 
 		assertThat(response.getString("jsonrpc")).isEqualTo("2.0");
 		assertThat(response.has("result")).isFalse();
@@ -81,7 +81,7 @@ public class RadixJsonRpcServerTest {
 			Map.of()
 		);
 
-		var response = new JSONObject(server.handleRpc(request.toString()));
+		var response = server.handleRpc(request.toString());
 		assertThat(response.getString("jsonrpc")).isEqualTo("2.0");
 		assertThat(response.has("result")).isTrue();
 		assertThat(response.get("id")).isEqualTo(0);
@@ -101,7 +101,7 @@ public class RadixJsonRpcServerTest {
 			5
 		);
 
-		var response = new JSONObject(server.handleRpc("123456"));
+		var response = server.handleRpc("123456");
 		assertThat(response.getString("jsonrpc")).isEqualTo("2.0");
 		assertThat(response.has("result")).isFalse();
 		assertThat(response.has("id")).isTrue();

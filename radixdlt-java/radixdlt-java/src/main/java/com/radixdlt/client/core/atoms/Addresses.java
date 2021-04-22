@@ -18,7 +18,6 @@
 
 package com.radixdlt.client.core.atoms;
 
-import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RadixAddress;
 
@@ -40,13 +39,6 @@ public final class Addresses {
 	}
 
 	public static Set<RadixAddress> getShardables(Particle p) {
-		Set<RadixAddress> addresses = new HashSet<>();
-
-		if (p instanceof TokensParticle) {
-			var a = (TokensParticle) p;
-			addresses.add(a.getAddress());
-		}
-
-		return new HashSet<>(addresses);
+		return new HashSet<>();
 	}
 }

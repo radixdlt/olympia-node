@@ -166,7 +166,7 @@ public class BalanceEntry {
 	@Override
 	public String toString() {
 		return "/" + owner + "/" + rri + " = " + (negative ? "-" : "+") + amount.toString()
-			+ (delegate == null ? "" : ", delegate " + delegate.toString());
+			+ (delegate == null ? "" : ", delegate " + delegate);
 	}
 
 	private BalanceEntry diff(BalanceEntry balanceEntry, boolean negate) {

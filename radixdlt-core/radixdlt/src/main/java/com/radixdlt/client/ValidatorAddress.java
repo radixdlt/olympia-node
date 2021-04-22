@@ -22,6 +22,8 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bits;
+import com.radixdlt.utils.functional.Result;
+
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
 
@@ -72,5 +74,9 @@ public final class ValidatorAddress {
 		} catch (PublicKeyException e) {
 			throw new DeserializeException("Invalid bytes in validator address: " + v);
 		}
+	}
+
+	public static Result<ECPublicKey> fromString(String input) {
+		return Result.wrap(() -> parse(input));
 	}
 }

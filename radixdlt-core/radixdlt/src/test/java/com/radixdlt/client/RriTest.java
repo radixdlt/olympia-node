@@ -20,6 +20,8 @@ package com.radixdlt.client;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
@@ -49,6 +51,21 @@ public class RriTest {
 		"xrd_2_rb1qvpsxqcrqvpsxqcrqvpsxqcrqvpsxqcrqvpsxqcrqvpszyaqyw", "invalid characters in hrp"
 	);
 
+	private final BiMap<Pair<Integer, String>, String> privateKeyAndNameToRri = HashBiMap.create(
+		Map.of(
+			Pair.of(1, "foo"), "foo_rb1qv9ee5j4qun9frqj2mcg79maqq55n46u5ypn2j0g9c3q32j6y3",
+			Pair.of(1, "bar"), "bar_rb1qwaa87cznx0nmeq08dya2ae43u92g4g0nkfktd9u9lpq6hgjca",
+			Pair.of(2, "foo"), "foo_rb1qvmf6ak360gxjfhxeh0x5tn99gjzzh5d7u3kvktj26rsu5qa3u",
+			Pair.of(2, "bar"), "bar_rb1qd3t7gnvwxddj2wxg5dl4adr7er9uw62g7x0ku6hyw4qfk0pfz"
+		)
+	);
+
+	private final Map<String, String> systemRris = Map.of(
+		"xrd", "xrd_rb1qya85pwq",
+		"eth", "eth_rb1qynl40gy",
+		"btc", "btc_rb1qytls7qn"
+	);
+
 	@Test
 	public void test_rri_serialization() {
 		reAddressToRri.forEach((pair, expected) -> {
@@ -73,5 +90,35 @@ public class RriTest {
 		for (var e : invalidRris.entrySet()) {
 			assertThatThrownBy(() -> Rri.parse(e.getKey()), e.getValue()).isInstanceOf(IllegalArgumentException.class);
 		}
+	}
+
+	private ECPublicKey publicKeyOfPrivateKey(int privateKeyScalar) {
+		assertThat(privateKeyScalar).isLessThanOrEqualTo(9);
+		try {
+			return ECKeyPair.fromPrivateKey(Bytes.fromHexString("0".repeat(63) + privateKeyScalar)).getPublicKey();
+		} catch (Exception e) {
+			throw new IllegalStateException("bad key");
+		}
+	}
+
+	private String rriFromPKAndName(int privateKey, String name) {
+		var reAddr = REAddr.ofHashedKey(publicKeyOfPrivateKey(privateKey), name);
+		return Rri.of(name, reAddr);
+	}
+
+	@Test
+	public void test_system_rris() {
+		var systemTokenREAddr = REAddr.ofNativeToken();
+		for (var e : systemRris.entrySet()) {
+			var rri = Rri.of(e.getKey(), systemTokenREAddr);
+			assertThat(rri).isEqualTo(e.getValue());
+		}
+	}
+	@Test
+	public void test_rri_from_pubkey_serialization() {
+		privateKeyAndNameToRri.forEach((pair, expected) -> {
+			var rri = rriFromPKAndName(pair.getFirst(), pair.getSecond());
+			assertThat(rri).isEqualTo(expected);
+		});
 	}
 }

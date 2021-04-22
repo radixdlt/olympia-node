@@ -116,7 +116,7 @@ public class HighLevelApiServiceTest {
 
 		when(clientApiStore.parseRri(any()))
 			.thenReturn(Result.ok(token));
-		when(clientApiStore.getTokenDefinition(token))
+		when(clientApiStore.getTokenDefinition(eq(token)))
 			.thenReturn(Result.ok(definition));
 		when(clientApiStore.getTokenSupply(token))
 			.thenReturn(Result.ok(UInt384.NINE));

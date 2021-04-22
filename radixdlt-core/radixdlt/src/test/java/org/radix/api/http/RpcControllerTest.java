@@ -38,6 +38,7 @@ import io.undertow.util.HeaderMap;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -86,7 +87,7 @@ public class RpcControllerTest {
 		}).when(sender).send(anyString());
 
 		var requestText = "{\"id\":321, \"method\":\"Ping\"}";
-		var requestJson = jsonObject(requestText).orElseThrow();
+		var requestJson = jsonObject(requestText).fold(f -> { fail(f.message()); return null; } , v -> v);
 		when(exchange.getInputStream()).thenReturn(asStream(requestText));
 		when(exchange.dispatch(any(Runnable.class))).thenAnswer(invocation -> {
 			var runnable = invocation.getArgument(0, Runnable.class);
