@@ -73,7 +73,7 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 
 				@Override
 				public SignatureValidator<TokensParticle, VoidParticle> signatureValidator() {
-					return (i, o, index, pubKey) -> pubKey.map(i.getAddress()::ownedBy).orElse(false);
+					return (i, o, index, pubKey) -> pubKey.map(i.getSubstate().getAddress()::ownedBy).orElse(false);
 				}
 			}
 		);
@@ -121,7 +121,7 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 
 				@Override
 				public SignatureValidator<TokensParticle, VoidParticle> signatureValidator() {
-					return (i, o, index, pubKey) -> pubKey.map(i.getAddress()::ownedBy).orElse(false);
+					return (i, o, index, pubKey) -> pubKey.map(i.getSubstate().getAddress()::ownedBy).orElse(false);
 				}
 			}
 		);

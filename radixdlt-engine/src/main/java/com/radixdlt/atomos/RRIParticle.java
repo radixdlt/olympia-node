@@ -41,12 +41,12 @@ public final class RRIParticle implements Particle {
 		return name;
 	}
 
-	public boolean ownedBy(ECPublicKey publicKey) {
+	public boolean allow(ECPublicKey publicKey, byte[] arg) {
 		if (rri.getHash().length == 0) {
 			return false;
 		}
 
-		return Arrays.equals(rri.getHash(), REAddr.pkToHash(name, publicKey));
+		return Arrays.equals(rri.getHash(), REAddr.pkToHash(new String(arg), publicKey));
 	}
 
 	@Override

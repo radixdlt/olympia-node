@@ -144,7 +144,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		@Override
 		public SignatureValidator<I, O> signatureValidator() {
 			// verify that the transition was authenticated by the validator address in question
-			return (i, o, index, pubKey) -> pubKey.map(inputAddressMapper.apply(i)::equals).orElse(false);
+			return (i, o, index, pubKey) -> pubKey.map(inputAddressMapper.apply(i.getSubstate())::equals).orElse(false);
 		}
 	}
 }

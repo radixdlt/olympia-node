@@ -159,7 +159,8 @@ final class ConstraintScryptEnv implements SysCalls {
 
 				@Override
 				public SignatureValidator<RRIParticle, O> signatureValidator() {
-					return (rri, o, index, pubKey) -> pubKey.map(rri::ownedBy).orElse(false);
+					return (rri, o, index, pubKey) -> pubKey.map(k -> rri.getSubstate().allow(k, rri.getArg()))
+						.orElse(false);
 				}
 			}
 		);
@@ -189,7 +190,7 @@ final class ConstraintScryptEnv implements SysCalls {
 			particleClass1,
 			includeSecondClass,
 			combinedCheck,
-			(rri, o, index, pubKey) -> pubKey.map(rri::ownedBy).orElse(false)
+			(rri, o, index, pubKey) -> pubKey.map(k -> rri.getSubstate().allow(k, rri.getArg())).orElse(false)
 		);
 
 		this.executeRoutine(createCombinedTransitionRoutine);
@@ -244,7 +245,10 @@ final class ConstraintScryptEnv implements SysCalls {
 
 				@Override
 				public SignatureValidator<Particle, Particle> signatureValidator() {
-					return (i, o, index, pubKey) -> procedure.signatureValidator().verify((I) i, (O) o, index, pubKey);
+					return (i, o, index, pubKey) -> {
+						var in = SubstateWithArg.create((I) i.getSubstate(), i.getArg());
+						return procedure.signatureValidator().verify(in, (O) o, index, pubKey);
+					};
 				}
 			};
 

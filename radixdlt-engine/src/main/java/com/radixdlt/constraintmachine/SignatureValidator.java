@@ -27,5 +27,5 @@ import java.util.Optional;
  * @param <I> particle class
  */
 public interface SignatureValidator<I extends Particle, O extends Particle> {
-	boolean verify(I input, O output, ImmutableIndex immutableIndex, Optional<ECPublicKey> signedBy);
+	boolean verify(SubstateWithArg<I> input, O output, ImmutableIndex immutableIndex, Optional<ECPublicKey> signedBy);
 }

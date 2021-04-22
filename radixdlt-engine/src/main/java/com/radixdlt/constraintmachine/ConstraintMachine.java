@@ -322,7 +322,7 @@ public final class ConstraintMachine {
 		}
 
 		var signatureVerified = transitionProcedure.signatureValidator()
-			.verify(input.getSubstate(), outputParticle, validationState.immutableIndex(), validationState.signedBy);
+			.verify(input, outputParticle, validationState.immutableIndex(), validationState.signedBy);
 		if (!signatureVerified) {
 			return Optional.of(Pair.of(CMErrorCode.INCORRECT_SIGNATURE, null));
 		}
