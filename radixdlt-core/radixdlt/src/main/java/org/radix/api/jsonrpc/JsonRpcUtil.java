@@ -37,6 +37,8 @@ import static java.util.Optional.ofNullable;
  * A collection of utilities for the Json RPC API
  */
 public final class JsonRpcUtil {
+	public static final String ARRAY = "___array___";
+
 	private static final Result<JSONObject> MISSING_PARAMETER = Result.fail("Parameter not present");
 
 	/**
@@ -150,6 +152,14 @@ public final class JsonRpcUtil {
 	}
 
 	public static JSONObject response(JSONObject request, Object result) {
+		//FIXME: replace hack with proper solution
+		if (result instanceof JSONObject) {
+			var array = ((JSONObject) result).optJSONArray(ARRAY);
+			if (array != null) {
+				return commonFields(request.get("id")).put("result", array);
+			}
+		}
+
 		return commonFields(request.get("id")).put("result", result);
 	}
 

@@ -39,7 +39,6 @@ import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.ClientApiStoreException;
-import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.constraintmachine.Particle;
@@ -174,7 +173,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
-	public Result<List<TokenBalance>> getTokenBalances(RadixAddress address) {
+	public Result<List<BalanceEntry>> getTokenBalances(RadixAddress address, boolean retrieveStakes) {
 		try (var cursor = addressBalances.openCursor(null, null)) {
 			var key = asKey(address.getPublicKey());
 			var data = entry();
@@ -184,7 +183,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				return Result.ok(List.of());
 			}
 
-			var list = new ArrayList<TokenBalance>();
+			var list = new ArrayList<BalanceEntry>();
 
 			do {
 				restore(serialization, data.getData(), BalanceEntry.class)
@@ -194,7 +193,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					.toOptional()
 					.filter(Predicate.not(BalanceEntry::isStake))
 					.filter(entry -> entry.getOwner().equals(address.getPublicKey()))
-					.map(TokenBalance::from)
 					.ifPresent(list::add);
 
 				status = readBalance(() -> cursor.getNext(key, data, null), data);

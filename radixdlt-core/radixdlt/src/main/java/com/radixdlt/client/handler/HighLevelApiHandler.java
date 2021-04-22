@@ -36,6 +36,7 @@ import com.radixdlt.client.service.TransactionStatusService;
 import com.radixdlt.client.service.ValidatorInfoService;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
+import com.radixdlt.client.store.berkeley.BalanceEntry;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyUtils;
@@ -48,6 +49,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+import static org.radix.api.jsonrpc.JsonRpcUtil.ARRAY;
 import static org.radix.api.jsonrpc.JsonRpcUtil.fromList;
 import static org.radix.api.jsonrpc.JsonRpcUtil.invalidParamsError;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
@@ -170,6 +172,15 @@ public class HighLevelApiHandler {
 		);
 	}
 
+	public JSONObject handleStakePositions(JSONObject request) {
+		return withRequiredStringParameter(
+			request,
+			(params, address) -> RadixAddress.fromString(address)
+				.flatMap(highLevelApiService::getStakePositions)
+				.map(this::formatStakePositions)
+		);
+	}
+
 	//-----------------------------------------------------------------------------------------------------
 	// internal processing
 	//-----------------------------------------------------------------------------------------------------
@@ -209,6 +220,13 @@ public class HighLevelApiHandler {
 		return jsonObject()
 			.put("owner", radixAddress.toString())
 			.put("tokenBalances", fromList(balances, TokenBalance::asJson));
+	}
+
+	private JSONObject formatStakePositions(List<BalanceEntry> balances) {
+		var array = fromList(balances, balance ->
+			jsonObject().put("validator", balance.getDelegate()).put("amount", balance.getAmount())
+		);
+		return jsonObject().put(ARRAY, array);
 	}
 
 	private Result<JSONObject> formatTransactionHistory(RadixAddress address, int size, Optional<Instant> cursor) {
