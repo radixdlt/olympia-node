@@ -25,6 +25,10 @@ import com.radixdlt.utils.functional.Result;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
 
+/**
+ * Radix resource identifier, hrp of the address should match the nonce
+ * provided when the resource was first created.
+ */
 public final class Rri {
 	private Rri() {
 		throw new IllegalStateException("Cannot instantiate.");
