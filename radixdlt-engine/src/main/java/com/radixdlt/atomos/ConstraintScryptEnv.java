@@ -31,7 +31,6 @@ import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.SignatureValidator;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.ImmutableIndex;
 
 import java.util.HashMap;
@@ -39,7 +38,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -52,7 +50,6 @@ public final class ConstraintScryptEnv implements SysCalls {
 	public static final String NAME_REGEX = "[a-z0-9]+";
 	public static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
 	private final ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions;
-	private final Function<RadixAddress, Result> addressChecker;
 
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> scryptParticleDefinitions;
 	private final Map<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>> scryptTransitionProcedures;
@@ -60,11 +57,9 @@ public final class ConstraintScryptEnv implements SysCalls {
 
 	ConstraintScryptEnv(
 		ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions,
-		Function<RadixAddress, Result> addressChecker,
 		Set<String> systemNames
 	) {
 		this.particleDefinitions = particleDefinitions;
-		this.addressChecker = addressChecker;
 		this.systemNames = systemNames;
 
 		this.scryptParticleDefinitions = new HashMap<>();

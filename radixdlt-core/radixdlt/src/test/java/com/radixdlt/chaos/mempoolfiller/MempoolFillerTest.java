@@ -30,10 +30,10 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.network.addressbook.PeersView;
@@ -80,8 +80,8 @@ public class MempoolFillerTest {
 				}
 
 				@ProvidesIntoSet
-				private TokenIssuance mempoolFillerIssuance(@Self RadixAddress self) {
-					return TokenIssuance.of(self.getPublicKey(), TokenUnitConversions.unitsToSubunits(10000000000L));
+				private TokenIssuance mempoolFillerIssuance(@Self ECPublicKey self) {
+					return TokenIssuance.of(self, TokenUnitConversions.unitsToSubunits(10000000000L));
 				}
 			}
 

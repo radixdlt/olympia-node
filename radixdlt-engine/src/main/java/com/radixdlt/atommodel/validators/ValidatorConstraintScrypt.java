@@ -33,7 +33,6 @@ import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.SignatureValidator;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.ImmutableIndex;
 
 import java.util.Objects;
@@ -91,17 +90,6 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 			String url = urlMapper.apply(particle);
 			if (!url.isEmpty() && !OWASP_URL_REGEX.matcher(url).matches()) {
 				return Result.error("url is not a valid URL: " + url);
-			}
-
-			return Result.success();
-		};
-	}
-
-	// create a check verifying that the given address doesn't map to null
-	private static <I> Function<I, Result> checkAddress(Function<I, RadixAddress> addressMapper) {
-		return particle -> {
-			if (addressMapper.apply(particle) == null) {
-				return Result.error("address is null");
 			}
 
 			return Result.success();

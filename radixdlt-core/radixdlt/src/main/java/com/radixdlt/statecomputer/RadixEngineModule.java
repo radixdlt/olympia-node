@@ -23,7 +23,6 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.name.Named;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.StakingConstraintScrypt;
@@ -72,19 +71,8 @@ public class RadixEngineModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private ConstraintMachine buildConstraintMachine(
-		@Named("magic") int magic
-	) {
-		final CMAtomOS os = new CMAtomOS(
-			addr -> {
-				final int universeMagic = magic & 0xff;
-				if (addr.getMagic() != universeMagic) {
-					return Result.error("Address magic " + addr.getMagic() + " does not match universe " + universeMagic);
-				}
-				return Result.success();
-			},
-			Set.of(TokenDefinitionUtils.getNativeTokenShortCode())
-		);
+	private ConstraintMachine buildConstraintMachine() {
+		final CMAtomOS os = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
 		os.load(new ValidatorConstraintScrypt()); // load before TokensConstraintScrypt due to dependency
 		os.load(new TokensConstraintScrypt());
 		os.load(new StakingConstraintScrypt());

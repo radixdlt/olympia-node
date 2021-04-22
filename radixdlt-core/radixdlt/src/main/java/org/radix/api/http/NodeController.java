@@ -46,7 +46,6 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.serialization.DeserializeException;
@@ -70,7 +69,6 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 public final class NodeController implements Controller {
 	private static final UInt256 FEE = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(1000));
 	private final REAddr nativeToken;
-	private final RadixAddress selfAddress;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final ImmutableIndex immutableIndex;
 	private final EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher;
@@ -79,14 +77,12 @@ public final class NodeController implements Controller {
 	@Inject
 	public NodeController(
 		@NativeToken REAddr nativeToken,
-		@Self RadixAddress selfAddress,
 		@Self ECPublicKey bftKey,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		ImmutableIndex immutableIndex,
 		EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher
 	) {
 		this.nativeToken = nativeToken;
-		this.selfAddress = selfAddress;
 		this.bftKey = bftKey;
 		this.radixEngine = radixEngine;
 		this.immutableIndex = immutableIndex;
@@ -142,7 +138,7 @@ public final class NodeController implements Controller {
 	@VisibleForTesting
 	void respondWithNode(HttpServerExchange exchange) {
 		respond(exchange, jsonObject()
-			.put("address", selfAddress)
+			.put("address", bftKey)
 			.put("balance", getBalance()));
 	}
 

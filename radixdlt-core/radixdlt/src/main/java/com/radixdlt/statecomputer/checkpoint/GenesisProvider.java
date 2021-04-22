@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.google.inject.name.Named;
 import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.MutableTokenDefinition;
@@ -37,7 +36,6 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -56,7 +54,6 @@ import java.util.List;
  * Generates a genesis atom
  */
 public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
-	private final byte magic;
 	private final ImmutableList<TokenIssuance> tokenIssuances;
 	private final ImmutableList<ECKeyPair> validatorKeys;
 	private final ImmutableList<StakeDelegation> stakeDelegations;
@@ -72,7 +69,6 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		ValidatorSetBuilder validatorSetBuilder,
 		LedgerAccumulator ledgerAccumulator,
-		@Named("magic") int magic,
 		@NativeToken MutableTokenDefinition tokenDefinition,
 		@Genesis ImmutableList<TokenIssuance> tokenIssuances,
 		@Genesis ImmutableList<StakeDelegation> stakeDelegations,
@@ -82,7 +78,6 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 		this.radixEngine = radixEngine;
 		this.validatorSetBuilder = validatorSetBuilder;
 		this.ledgerAccumulator = ledgerAccumulator;
-		this.magic = (byte) magic;
 		this.tokenDefinition = tokenDefinition;
 		this.tokenIssuances = tokenIssuances;
 		this.validatorKeys = validatorKeys;
@@ -100,10 +95,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 			final var issuedAmount = issuances.getOrDefault(pk, UInt256.ZERO);
 			if (amount.compareTo(issuedAmount) > 0) {
 				throw new IllegalStateException(
-					String.format(
-						"%s wants to stake %s, but was only issued %s",
-						new RadixAddress(magic, pk), amount, issuedAmount
-					)
+					String.format("%s wants to stake %s, but was only issued %s", pk, amount, issuedAmount)
 				);
 			}
 		});

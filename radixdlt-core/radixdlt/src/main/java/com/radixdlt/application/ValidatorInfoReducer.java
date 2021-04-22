@@ -21,8 +21,8 @@ package com.radixdlt.application;
 import com.google.inject.Inject;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.StateReducer;
-import com.radixdlt.identifiers.RadixAddress;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -32,11 +32,11 @@ import java.util.function.Supplier;
  * Reduces radix engine state to validator info
  */
 public final class ValidatorInfoReducer implements StateReducer<ValidatorInfo, ValidatorParticle> {
-	private final RadixAddress address;
+	private final ECPublicKey self;
 
 	@Inject
-	public ValidatorInfoReducer(@Self RadixAddress address) {
-		this.address = Objects.requireNonNull(address);
+	public ValidatorInfoReducer(@Self ECPublicKey self) {
+		this.self = Objects.requireNonNull(self);
 	}
 
 	@Override
@@ -57,7 +57,7 @@ public final class ValidatorInfoReducer implements StateReducer<ValidatorInfo, V
 	@Override
 	public BiFunction<ValidatorInfo, ValidatorParticle, ValidatorInfo> outputReducer() {
 		return (i, r) -> {
-			if (r.getKey().equals(address.getPublicKey())) {
+			if (r.getKey().equals(self)) {
 				return new ValidatorInfo(r.isRegisteredForNextEpoch());
 			}
 			return i;
