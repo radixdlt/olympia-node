@@ -22,6 +22,7 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
+import com.radixdlt.client.store.berkeley.BalanceEntry;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
@@ -35,6 +36,7 @@ import com.radixdlt.utils.functional.Tuple.Tuple2;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
@@ -60,7 +62,8 @@ public class HighLevelApiService {
 	}
 
 	public Result<List<TokenBalance>> getTokenBalances(RadixAddress radixAddress) {
-		return clientApiStore.getTokenBalances(radixAddress);
+		return clientApiStore.getTokenBalances(radixAddress, false)
+			.map(list -> list.stream().map(TokenBalance::from).collect(Collectors.toList()));
 	}
 
 	public Result<TokenDefinitionRecord> getNativeTokenDescription() {
@@ -89,6 +92,10 @@ public class HighLevelApiService {
 
 	public Result<TxHistoryEntry> getTransaction(AID txId) {
 		return clientApiStore.getTransaction(txId);
+	}
+
+	public Result<List<BalanceEntry>> getStakePositions(RadixAddress radixAddress) {
+		return clientApiStore.getTokenBalances(radixAddress, true);
 	}
 
 	private static Optional<Instant> calculateNewCursor(List<TxHistoryEntry> response) {

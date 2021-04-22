@@ -16,25 +16,24 @@
  */
 package com.radixdlt.client.service;
 
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.store.ImmutableIndex;
-import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.UInt384;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.radixdlt.atom.Txn;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.store.ActionEntry;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.MessageEntry;
-import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
-import com.radixdlt.client.api.TxHistoryEntry;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.identifiers.Rri;
+import com.radixdlt.store.ImmutableIndex;
 import com.radixdlt.universe.Universe;
+import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
 
 import java.time.Instant;
@@ -48,14 +47,20 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import static com.radixdlt.client.store.berkeley.BalanceEntry.createBalance;
+
 public class HighLevelApiServiceTest {
 	private static final RadixAddress OWNER = RadixAddress.from("JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8");
 	private static final RadixAddress TOKEN_ADDRESS = RadixAddress.from("23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x");
 	private static final Rri TOKEN = Rri.of(TOKEN_ADDRESS.getPublicKey(), "xrd");
+	private static final byte MAGIC = (byte) 0;
+	private static final RadixAddress V1 = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
+	private static final RadixAddress V2 = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
+	private static final RadixAddress V3 = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
 
 	private final Universe universe = mock(Universe.class);
 	private final ClientApiStore clientApiStore = mock(ClientApiStore.class);
-	private Txn genesisAtom;
+
 	private HighLevelApiService highLevelApiService;
 
 	@Before
@@ -75,12 +80,13 @@ public class HighLevelApiServiceTest {
 	}
 
 	@Test
-	public void testGetTokenBalances() {
-		var balance1 = TokenBalance.create(Rri.of(TOKEN_ADDRESS.getPublicKey(), "fff"), UInt384.FIVE);
-		var balance2 = TokenBalance.create(Rri.of(TOKEN_ADDRESS.getPublicKey(), "rar"), UInt384.NINE);
+	public void testGetTokenBalancesForFunds() {
+		var address = TOKEN_ADDRESS.getPublicKey();
+		var balance1 = createBalance(OWNER, null, Rri.of(address, "fff"), UInt384.FIVE);
+		var balance2 = createBalance(OWNER, null, Rri.of(address, "rar"), UInt384.NINE);
 		var balances = Result.ok(List.of(balance1, balance2));
 
-		when(clientApiStore.getTokenBalances(OWNER))
+		when(clientApiStore.getTokenBalances(OWNER, false))
 			.thenReturn(balances);
 
 		highLevelApiService.getTokenBalances(OWNER)
@@ -88,6 +94,27 @@ public class HighLevelApiServiceTest {
 				assertEquals(2, list.size());
 				assertEquals(UInt384.FIVE, list.get(0).getAmount());
 				assertEquals(UInt384.NINE, list.get(1).getAmount());
+			})
+			.onFailureDo(Assert::fail);
+	}
+
+	@Test
+	public void testGetTokenBalancesForStakes() {
+		var address = TOKEN_ADDRESS.getPublicKey();
+		var balance1 = createBalance(OWNER, null, Rri.of(address, "fff"), UInt384.FIVE);
+		var balance2 = createBalance(OWNER, null, Rri.of(address, "rar"), UInt384.NINE);
+		var balance3 = createBalance(OWNER, null, Rri.NATIVE_TOKEN, UInt384.TWO);
+		var balances = Result.ok(List.of(balance1, balance2, balance3));
+
+		when(clientApiStore.getTokenBalances(OWNER, true))
+			.thenReturn(balances);
+
+		highLevelApiService.getStakePositions(OWNER)
+			.onSuccess(list -> {
+				assertEquals(3, list.size());
+				assertEquals(UInt384.FIVE, list.get(0).getAmount());
+				assertEquals(UInt384.NINE, list.get(1).getAmount());
+				assertEquals(UInt384.TWO, list.get(2).getAmount());
 			})
 			.onFailureDo(Assert::fail);
 	}
