@@ -21,7 +21,7 @@ package com.radixdlt.atom;
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECDSASignature;
@@ -359,9 +359,9 @@ public final class TxBuilder {
 
 		final var addr = REAddr.ofHashedKey(address.getPublicKey(), id);
 		swap(
-			RRIParticle.class,
-			p -> p.getRri().equals(addr),
-			Optional.of(SubstateWithArg.withArg(new RRIParticle(addr), id.getBytes(StandardCharsets.UTF_8))),
+			REAddrParticle.class,
+			p -> p.getAddr().equals(addr),
+			Optional.of(SubstateWithArg.withArg(new REAddrParticle(addr), id.getBytes(StandardCharsets.UTF_8))),
 			"RRI not available"
 		).with(r -> new UniqueParticle(addr));
 

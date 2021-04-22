@@ -23,7 +23,6 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.constraintmachine.SubstateWithArg;
-import com.radixdlt.utils.Pair;
 
 import java.util.Optional;
 

@@ -109,7 +109,7 @@ public class JacksonJsonMapper extends ObjectMapper {
 		jsonModule.addSerializer(REAddr.class, new JacksonJsonObjectStringSerializer<>(
 				REAddr.class,
 				JacksonCodecConstants.RRI_STR_VALUE,
-				rri -> Hex.toHexString(rri.getHash())
+				rri -> Hex.toHexString(rri.getBytes())
 		));
 		jsonModule.addSerializer(AID.class, new JacksonJsonObjectStringSerializer<>(
 				AID.class,

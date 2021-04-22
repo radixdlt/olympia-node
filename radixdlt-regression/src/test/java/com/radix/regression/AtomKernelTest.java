@@ -19,7 +19,7 @@ package com.radix.regression;
 
 import com.google.common.base.Strings;
 import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -88,7 +88,7 @@ public class AtomKernelTest {
 			1 << 20,
 			true,
 			TxLowLevelBuilder.newBuilder()
-				.virtualDown(new RRIParticle(rri), "toobig".getBytes(StandardCharsets.UTF_8))
+				.virtualDown(new REAddrParticle(rri), "toobig".getBytes(StandardCharsets.UTF_8))
 				.up(new UniqueParticle(rri))
 				.particleGroup()
 		);
@@ -105,7 +105,7 @@ public class AtomKernelTest {
 			10,
 			false,
 			TxLowLevelBuilder.newBuilder()
-				.virtualDown(new RRIParticle(rri), "nofee".getBytes(StandardCharsets.UTF_8))
+				.virtualDown(new REAddrParticle(rri), "nofee".getBytes(StandardCharsets.UTF_8))
 				.up(new UniqueParticle(rri))
 				.particleGroup()
 		);

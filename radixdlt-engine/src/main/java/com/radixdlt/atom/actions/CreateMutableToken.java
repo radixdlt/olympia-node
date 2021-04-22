@@ -23,7 +23,7 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.identifiers.REAddr;
@@ -83,9 +83,9 @@ public final class CreateMutableToken implements TxAction {
 			.orElse(REAddr.ofNativeToken());
 
 		txBuilder.down(
-			RRIParticle.class,
-			p -> p.getRri().equals(reAddress),
-			Optional.of(SubstateWithArg.withArg(new RRIParticle(reAddress), symbol.getBytes(StandardCharsets.UTF_8))),
+			REAddrParticle.class,
+			p -> p.getAddr().equals(reAddress),
+			Optional.of(SubstateWithArg.withArg(new REAddrParticle(reAddress), symbol.getBytes(StandardCharsets.UTF_8))),
 			"RRI not available"
 		);
 		txBuilder.up(new TokenDefinitionParticle(

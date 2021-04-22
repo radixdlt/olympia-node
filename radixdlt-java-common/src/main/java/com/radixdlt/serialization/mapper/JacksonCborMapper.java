@@ -109,7 +109,7 @@ public class JacksonCborMapper extends ObjectMapper {
 		cborModule.addSerializer(REAddr.class, new JacksonCborObjectBytesSerializer<>(
 				REAddr.class,
 				JacksonCodecConstants.RRI_VALUE,
-				REAddr::getHash
+				REAddr::getBytes
 		));
 		cborModule.addSerializer(AID.class, new JacksonCborObjectBytesSerializer<>(
 				AID.class,

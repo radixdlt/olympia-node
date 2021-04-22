@@ -63,7 +63,7 @@ public final class Rri {
 
 	public static String of(String symbol, REAddr rri) {
 		final byte[] convert;
-		var hash = rri.getHash();
+		var hash = rri.getBytes();
 		if (hash.length != 0) {
 			convert = Bits.convertBits(hash, 0, hash.length, 8, 5, true);
 		} else {

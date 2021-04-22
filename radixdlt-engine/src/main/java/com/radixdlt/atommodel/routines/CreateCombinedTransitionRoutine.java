@@ -23,9 +23,7 @@ import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atomos.ConstraintRoutine;
-import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ConstraintScryptEnv;
-import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.RoutineCalls;
 import com.radixdlt.constraintmachine.Particle;
@@ -155,7 +153,12 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	public TransitionProcedure<I, V, UsedParticle<O>> getProcedure2() {
 		return new TransitionProcedure<I, V, UsedParticle<O>>() {
 			@Override
-			public Result precondition(SubstateWithArg<I> inputParticle, V outputParticle, UsedParticle<O> inputUsed, ImmutableIndex index) {
+			public Result precondition(
+				SubstateWithArg<I> inputParticle,
+				V outputParticle,
+				UsedParticle<O> inputUsed,
+				ImmutableIndex index
+			) {
 				return combinedCheck.apply(inputUsed.usedParticle, outputParticle);
 			}
 

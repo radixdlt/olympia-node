@@ -113,7 +113,7 @@ public class CreateFungibleTransitionRoutineTest {
 		).getProcedure0();
 
 		var state = procedure.inputOutputReducer().reduce(
-			SubstateWithArg.noArg(new Fungible(UInt256.ONE)),
+			SubstateWithArg.noArg(new Fungible(UInt256.TWO)),
 			new Fungible(UInt256.ONE),
 			mock(ImmutableIndex.class),
 			null
@@ -157,7 +157,7 @@ public class CreateFungibleTransitionRoutineTest {
 		).getProcedure0();
 
 		assertThat(procedure.inputOutputReducer().reduce(
-			SubstateWithArg.noArg(new Fungible(UInt256.ONE)),
+			SubstateWithArg.noArg(new Fungible(UInt256.TWO)),
 			new Fungible(UInt256.TWO),
 			mock(ImmutableIndex.class),
 			null

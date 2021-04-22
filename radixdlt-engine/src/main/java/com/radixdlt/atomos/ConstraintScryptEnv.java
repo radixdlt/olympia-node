@@ -137,11 +137,11 @@ public final class ConstraintScryptEnv implements SysCalls {
 		}
 
 		createTransition(
-			new TransitionToken<>(RRIParticle.class, particleClass, TypeToken.of(VoidReducerState.class)),
+			new TransitionToken<>(REAddrParticle.class, particleClass, TypeToken.of(VoidReducerState.class)),
 			new TransitionProcedure<>() {
 				@Override
 				public Result precondition(
-					SubstateWithArg<RRIParticle> in,
+					SubstateWithArg<REAddrParticle> in,
 					O outputParticle,
 					VoidReducerState outputUsed,
 					ImmutableIndex index
@@ -157,19 +157,23 @@ public final class ConstraintScryptEnv implements SysCalls {
 				}
 
 				@Override
-				public InputOutputReducer<RRIParticle, O, VoidReducerState> inputOutputReducer() {
+				public InputOutputReducer<REAddrParticle, O, VoidReducerState> inputOutputReducer() {
 					return (input, output, index, outputUsed) -> ReducerResult.complete(Unknown.create());
 				}
 
 				@Override
-				public PermissionLevel requiredPermissionLevel(SubstateWithArg<RRIParticle> in, O outputParticle, ImmutableIndex index) {
+				public PermissionLevel requiredPermissionLevel(
+					SubstateWithArg<REAddrParticle> in,
+					O outputParticle,
+					ImmutableIndex index
+				) {
 					var name = new String(in.getArg().orElseThrow());
-					return systemNames.contains(name) || in.getSubstate().getRri().isSystem()
+					return systemNames.contains(name) || in.getSubstate().getAddr().isSystem()
 						? PermissionLevel.SYSTEM : PermissionLevel.USER;
 				}
 
 				@Override
-				public SignatureValidator<RRIParticle, O> signatureValidator() {
+				public SignatureValidator<REAddrParticle, O> signatureValidator() {
 					return (in, o, index, pubKey) -> pubKey.flatMap(k -> in.getArg().map(arg -> in.getSubstate().allow(k, arg)))
 						.orElse(false);
 				}
@@ -194,9 +198,9 @@ public final class ConstraintScryptEnv implements SysCalls {
 		}
 
 		var createCombinedTransitionRoutine = new CreateCombinedTransitionRoutine<>(
-			RRIParticle.class,
+			REAddrParticle.class,
 			particleClass0,
-			(rri, p) -> systemNames.contains(new String(rri.getArg().orElseThrow())) || rri.getSubstate().getRri().isSystem()
+			(rri, p) -> systemNames.contains(new String(rri.getArg().orElseThrow())) || rri.getSubstate().getAddr().isSystem()
 				? PermissionLevel.SYSTEM : PermissionLevel.USER,
 			particleClass1,
 			includeSecondClass,
