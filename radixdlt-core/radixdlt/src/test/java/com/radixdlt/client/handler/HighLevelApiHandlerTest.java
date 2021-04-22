@@ -221,7 +221,7 @@ public class HighLevelApiHandlerTest {
 
 		assertTrue(result.has("txID"));
 
-		assertEquals(aid, AID.from(result.getString("txID")));
+		assertEquals(aid, result.get("txID"));
 	}
 
 	@Test
@@ -256,7 +256,7 @@ public class HighLevelApiHandlerTest {
 
 		assertTrue(result.has("txID"));
 
-		assertEquals(aid, AID.from(result.getString("txID")));
+		assertEquals(aid, result.get("txID"));
 	}
 
 	private String encodeToDer(ECDSASignature signature) {

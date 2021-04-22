@@ -311,7 +311,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			return Result.fail("Invalid size specified: {0}", size);
 		}
 
-		Instant instant = ptr.orElse(Instant.EPOCH);
+		var instant = ptr.orElse(Instant.EPOCH);
 		var key = asKey(address, instant);
 		var data = entry();
 
@@ -504,6 +504,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private void processRETransaction(REParsedTxn reTxn) {
 		extractTimestamp(reTxn.upSubstates());
+
 		reTxn.getUser().ifPresentOrElse(
 			p -> {
 				var addr = new RadixAddress(universeMagic, p);

@@ -20,8 +20,7 @@ import org.junit.Test;
 import org.radix.api.services.AtomsService;
 
 import com.radixdlt.identifiers.AID;
-
-import java.util.Optional;
+import com.radixdlt.utils.functional.Result;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,10 +37,10 @@ public class AtomHandlerTest {
 	public void testHandleGetAtom() {
 		var jsonAtom = jsonArray().put(AID.ZERO.toString());
 		var request = jsonObject().put("id", 124).put("params", jsonAtom);
-		when(atomsService.getAtomByAtomId(any())).thenReturn(Optional.of(jsonObject().put("content", "abc")));
+		when(atomsService.getAtomByAtomId(any())).thenReturn(Result.ok(jsonObject().put("content", "abc")));
 
 		var response = atomHandler.handleGetAtom(request);
 
-		assertEquals("{\"content\":\"abc\"}", response.toString());
+		assertEquals("{\"result\":{\"content\":\"abc\"},\"id\":124,\"jsonrpc\":\"2.0\"}", response.toString());
 	}
 }
