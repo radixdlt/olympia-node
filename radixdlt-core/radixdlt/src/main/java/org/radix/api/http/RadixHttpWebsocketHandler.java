@@ -59,7 +59,7 @@ import io.undertow.websockets.spi.WebSocketHttpExchange;
 	}
 
 	private RadixJsonRpcPeer createPeer(final WebSocketChannel channel) {
-		return new RadixJsonRpcPeer(jsonRpcServer, (p, msg) -> peerCallback(channel, p, msg));
+		return new RadixJsonRpcPeer(jsonRpcServer, (p, msg) -> peerCallback(channel, p, msg.toString()));
 	}
 
 	private AbstractReceiveListener createListener(final RadixJsonRpcPeer peer) {

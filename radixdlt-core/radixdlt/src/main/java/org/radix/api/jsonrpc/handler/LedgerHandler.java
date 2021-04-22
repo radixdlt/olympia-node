@@ -21,6 +21,7 @@ import org.json.JSONObject;
 import org.radix.api.services.LedgerService;
 
 import com.google.inject.Inject;
+import com.radixdlt.utils.functional.Result;
 
 import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredStringParameter;
 
@@ -33,6 +34,6 @@ public class LedgerHandler {
 	}
 
 	public JSONObject handleGetAtomStatus(JSONObject request) {
-		return withRequiredStringParameter(request, (params, aid) -> ledgerService.getAtomStatus(request, aid));
+		return withRequiredStringParameter(request, (params, aid) -> Result.ok(ledgerService.getAtomStatus(request, aid)));
 	}
 }

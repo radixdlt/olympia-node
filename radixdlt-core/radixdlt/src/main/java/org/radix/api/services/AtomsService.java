@@ -24,9 +24,11 @@ import org.json.JSONObject;
 import com.google.inject.Inject;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.store.TxnIndex;
+import com.radixdlt.utils.functional.Result;
 
 import java.util.Objects;
-import java.util.Optional;
+
+import static com.radixdlt.utils.functional.Result.fromOptional;
 
 public class AtomsService {
 	private final TxnIndex store;
@@ -36,8 +38,8 @@ public class AtomsService {
 		this.store = Objects.requireNonNull(store);
 	}
 
-	public Optional<JSONObject> getAtomByAtomId(AID txnId) throws JSONException {
-		return store.get(txnId)
+	public Result<JSONObject> getAtomByAtomId(AID txnId) throws JSONException {
+		return fromOptional(store.get(txnId), "Atom with AID {0} not found", txnId)
 			.map(txn -> new JSONObject().put("tx", Hex.toHexString(txn.getPayload())));
 	}
 }
