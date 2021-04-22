@@ -96,7 +96,6 @@ public final class GenerateUniverses {
 		= new BigDecimal(UInt256s.toBigInteger(TokenDefinitionUtils.SUB_UNITS));
 	private static final String DEFAULT_UNIVERSE = UniverseType.DEVELOPMENT.toString().toLowerCase();
 	private static final String DEFAULT_TIMESTAMP = String.valueOf(Instant.parse("2020-01-01T00:00:00.00Z").toEpochMilli());
-	private static final String DEFAULT_KEYSTORE = "universe.ks";
 	private static final String DEFAULT_STAKE = "5000000";
 	private static final String VALIDATOR_TEMPLATE = "validator%s.ks";
 	private static final String STAKER_TEMPLATE = "staker%s.ks";
@@ -115,7 +114,6 @@ public final class GenerateUniverses {
 		options.addOption("c", "no-cbor-output",         false, "Suppress DSON output");
 		options.addOption("i", "issue-default-tokens",   false, "Issue tokens to default keys 1, 2, 3, 4 and 5 (dev universe only)");
 		options.addOption("j", "no-json-output",         false, "Suppress JSON output");
-		options.addOption("k", "keystore",               true,  "Specify universe keystore (default: " + DEFAULT_KEYSTORE + ")");
 		options.addOption("p", "include-private-keys",   false, "Include universe, validator and staking private keys in output");
 		options.addOption("S", "stake-amounts",          true,  "Amount of stake for each staked node (default: " + DEFAULT_STAKE + ")");
 		options.addOption("t", "universe-type",          true,  "Specify universe type (default: " + DEFAULT_UNIVERSE + ")");
