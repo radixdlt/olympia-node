@@ -112,7 +112,10 @@ public final class TxLowLevelBuilder {
 	}
 
 	public TxLowLevelBuilder virtualDown(Particle particle) {
-		return virtualDown(particle, new byte[0]);
+		Objects.requireNonNull(particle, "particle is required");
+		var bytes = RESerializer.serialize(particle);
+		instruction(REInstruction.REOp.VDOWN, bytes);
+		return this;
 	}
 
 	public TxLowLevelBuilder virtualDown(Particle particle, byte[] arg) {
@@ -122,7 +125,7 @@ public final class TxLowLevelBuilder {
 		buf.put(bytes);
 		buf.put((byte) arg.length); // arg length
 		buf.put(arg);
-		instruction(REInstruction.REOp.VDOWN, buf.array());
+		instruction(REInstruction.REOp.VDOWNARG, buf.array());
 		this.remoteDownSubstate.add(SubstateId.ofVirtualSubstate(bytes));
 		return this;
 	}

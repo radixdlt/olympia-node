@@ -287,7 +287,7 @@ public final class ConstraintMachine {
 
 		// Precondition check
 		final Result preconditionCheckResult = transitionProcedure.precondition(
-			input.getSubstate(),
+			input,
 			outputParticle,
 			used,
 			validationState.immutableIndex()
@@ -478,8 +478,16 @@ public final class ConstraintMachine {
 					substate = inst.getData();
 					nextParticle = substate.getParticle();
 					validationState.bootUp(instIndex, substate);
-					argument = new byte[0];
+					argument = null;
 				} else if (inst.getMicroOp() == REInstruction.REOp.VDOWN) {
+					substate = inst.getData();
+					argument = null;
+					nextParticle = substate.getParticle();
+					var stateError = validationState.virtualShutdown(substate);
+					if (stateError.isPresent()) {
+						return Optional.of(new CMError(instIndex, stateError.get(), validationState));
+					}
+				} else if (inst.getMicroOp() == REInstruction.REOp.VDOWNARG) {
 					substate = (Substate) ((Pair) inst.getData()).getFirst();
 					argument = (byte[]) ((Pair) inst.getData()).getSecond();
 					nextParticle = substate.getParticle();
@@ -495,7 +503,7 @@ public final class ConstraintMachine {
 					}
 					nextParticle = maybeParticle.get();
 					substate = Substate.create(nextParticle, substateId);
-					argument = new byte[0];
+					argument = null;
 				} else if (inst.getMicroOp() == REInstruction.REOp.LDOWN) {
 					SubstateId substateId = inst.getData();
 					var maybeParticle = validationState.localShutdown(substateId.getIndex().orElseThrow());
@@ -504,14 +512,15 @@ public final class ConstraintMachine {
 					}
 					nextParticle = maybeParticle.get();
 					substate = Substate.create(nextParticle, substateId);
-					argument = new byte[0];
+					argument = null;
 				} else {
 					return Optional.of(new CMError(instIndex, CMErrorCode.UNKNOWN_OP, validationState));
 				}
 
 				var error = validateParticle(
 					validationState,
-					SubstateWithArg.create(nextParticle, argument),
+					argument == null ? SubstateWithArg.noArg(nextParticle)
+						: SubstateWithArg.withArg(nextParticle, argument),
 					inst.getCheckSpin() == Spin.UP
 				);
 				if (error.isPresent()) {

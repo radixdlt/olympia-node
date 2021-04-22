@@ -29,6 +29,7 @@ import com.radixdlt.atomos.RoutineCalls;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
+import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
@@ -108,7 +109,10 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 			}
 
 			@Override
-			public Result precondition(I inputParticle, O outputParticle, VoidReducerState outputUsed, ImmutableIndex index) {
+			public Result precondition(SubstateWithArg<I> in, O outputParticle, VoidReducerState outputUsed, ImmutableIndex index) {
+				if (in.getArg().isEmpty()) {
+
+				}
 				return Result.success();
 			}
 
@@ -120,10 +124,9 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 					} else {
 						// FIXME: HACK as we are assuming that this is a mutable token creation which is fine for
 						// FIXME: now as it is the only available transition for betanet
-						var rriParticle = (RRIParticle) input.getSubstate();
 						var tokDefParticle = (TokenDefinitionParticle) output;
 						var action = new CreateMutableToken(
-							rriParticle.getName(),
+							new String(input.getArg().orElseThrow()),
 							tokDefParticle.getName(),
 							tokDefParticle.getDescription(),
 							tokDefParticle.getIconUrl(),
@@ -144,7 +147,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	public TransitionProcedure<I, V, UsedParticle<O>> getProcedure2() {
 		return new TransitionProcedure<I, V, UsedParticle<O>>() {
 			@Override
-			public Result precondition(I inputParticle, V outputParticle, UsedParticle<O> inputUsed, ImmutableIndex index) {
+			public Result precondition(SubstateWithArg<I> inputParticle, V outputParticle, UsedParticle<O> inputUsed, ImmutableIndex index) {
 				return combinedCheck.apply(inputUsed.usedParticle, outputParticle);
 			}
 
@@ -153,10 +156,9 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 				return (input, output, index, outputUsed) -> {
 					// FIXME: HACK as we are assuming that this is a mutable token creation which is fine for
 					// FIXME: now as it is the only available transition for betanet
-					var rriParticle = (RRIParticle) input.getSubstate();
 					var tokDefParticle = (TokenDefinitionParticle) outputUsed.usedParticle;
 					var action = new CreateFixedToken(
-						rriParticle.getName(),
+						new String(input.getArg().orElseThrow()),
 						tokDefParticle.getName(),
 						tokDefParticle.getDescription(),
 						tokDefParticle.getIconUrl(),

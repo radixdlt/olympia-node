@@ -25,8 +25,8 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
 import java.nio.charset.StandardCharsets;
@@ -92,7 +92,7 @@ public class CreateFixedToken implements TxAction {
 		txBuilder.down(
 			RRIParticle.class,
 			p -> p.getRri().equals(tokenRri),
-			Optional.of(Pair.of(new RRIParticle(tokenRri, symbol), symbol.getBytes(StandardCharsets.UTF_8))),
+			Optional.of(SubstateWithArg.withArg(new RRIParticle(tokenRri, symbol), symbol.getBytes(StandardCharsets.UTF_8))),
 			"RRI not available"
 		);
 		txBuilder.up(new TokenDefinitionParticle(

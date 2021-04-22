@@ -22,6 +22,7 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
+import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.utils.Pair;
 
 import java.util.Optional;
@@ -35,7 +36,7 @@ public final class RegisterValidator implements TxAction {
 		txBuilder.swap(
 			ValidatorParticle.class,
 			p -> p.getKey().equals(key) && !p.isRegisteredForNextEpoch(),
-			Optional.of(Pair.of(new ValidatorParticle(key, false), new byte[0])),
+			Optional.of(SubstateWithArg.noArg(new ValidatorParticle(key, false))),
 			"Already a validator"
 		).with(
 			substateDown -> new ValidatorParticle(key, true, substateDown.getName(), substateDown.getUrl())

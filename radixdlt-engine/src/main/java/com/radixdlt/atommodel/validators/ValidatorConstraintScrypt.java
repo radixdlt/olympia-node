@@ -26,6 +26,7 @@ import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.ReducerResult;
+import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
@@ -122,8 +123,8 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		}
 
 		@Override
-		public Result precondition(I inputParticle, O outputParticle, VoidReducerState outputUsed, ImmutableIndex index) {
-			var inputAddress = inputAddressMapper.apply(inputParticle);
+		public Result precondition(SubstateWithArg<I> in, O outputParticle, VoidReducerState outputUsed, ImmutableIndex index) {
+			var inputAddress = inputAddressMapper.apply(in.getSubstate());
 			var outputAddress = outputAddressMapper.apply(outputParticle);
 			// ensure transition is between validator particles concerning the same validator address
 			if (!Objects.equals(inputAddress, outputAddress)) {

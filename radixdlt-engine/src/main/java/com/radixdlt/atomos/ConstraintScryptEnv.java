@@ -41,6 +41,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 /**
  * SysCall environment for CMAtomOS Constraint Scrypts.
@@ -48,6 +49,8 @@ import java.util.function.Predicate;
 // FIXME: unchecked, rawtypes
 @SuppressWarnings({"unchecked", "rawtypes"})
 final class ConstraintScryptEnv implements SysCalls {
+	private static final String NAME_REGEX = "[a-z0-9]+";
+	private static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
 	private final ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions;
 	private final Function<RadixAddress, Result> addressChecker;
 
@@ -144,11 +147,18 @@ final class ConstraintScryptEnv implements SysCalls {
 
 				@Override
 				public Result precondition(
-					RRIParticle inputParticle,
+					SubstateWithArg<RRIParticle> in,
 					O outputParticle,
 					VoidReducerState outputUsed,
 					ImmutableIndex index
 				) {
+					if (in.getArg().isEmpty()) {
+						return Result.error("Rri must be created with a name");
+					}
+					var arg = in.getArg().get();
+					if (!NAME_PATTERN.matcher(new String(arg)).matches()) {
+						return Result.error("invalid rri name");
+					}
 					return Result.success();
 				}
 
@@ -159,7 +169,7 @@ final class ConstraintScryptEnv implements SysCalls {
 
 				@Override
 				public SignatureValidator<RRIParticle, O> signatureValidator() {
-					return (in, o, index, pubKey) -> pubKey.map(k -> in.getSubstate().allow(k, in.getArg()))
+					return (in, o, index, pubKey) -> pubKey.flatMap(k -> in.getArg().map(arg -> in.getSubstate().allow(k, arg)))
 						.orElse(false);
 				}
 			}
@@ -190,7 +200,8 @@ final class ConstraintScryptEnv implements SysCalls {
 			particleClass1,
 			includeSecondClass,
 			combinedCheck,
-			(rri, o, index, pubKey) -> pubKey.map(k -> rri.getSubstate().allow(k, rri.getArg())).orElse(false)
+			(in, o, index, pubKey) -> pubKey.flatMap(k -> in.getArg().map(arg -> in.getSubstate().allow(k, arg)))
+				.orElse(false)
 		);
 
 		this.executeRoutine(createCombinedTransitionRoutine);
@@ -217,27 +228,33 @@ final class ConstraintScryptEnv implements SysCalls {
 
 				@Override
 				public Result precondition(
-					Particle inputParticle,
+					SubstateWithArg<Particle> in,
 					Particle outputParticle,
 					ReducerState outputUsed,
 					ImmutableIndex index
 				) {
 					// RRIs must be the same across RRI particle transitions
 					if (inputDefinition.getRriMapper() != null && outputDefinition.getRriMapper() != null) {
-						final var inputRriId = inputDefinition.getRriMapper().apply(inputParticle);
+						final var inputRriId = inputDefinition.getRriMapper().apply(in.getSubstate());
 						final var outputRriId = outputDefinition.getRriMapper().apply(outputParticle);
 						if (!inputRriId.equals(outputRriId)) {
 							return Result.error("Input/Output RRIs not equal");
 						}
 					}
 
-					return procedure.precondition((I) inputParticle, (O) outputParticle, (U) outputUsed, index);
+					var inConvert = in.getArg()
+						.map(arg -> SubstateWithArg.withArg((I) in.getSubstate(), arg))
+						.orElseGet(() -> SubstateWithArg.noArg((I) in.getSubstate()));
+
+					return procedure.precondition(inConvert, (O) outputParticle, (U) outputUsed, index);
 				}
 
 				@Override
 				public InputOutputReducer<Particle, Particle, ReducerState> inputOutputReducer() {
 					return (input, output, index, outputUsed) -> {
-						var in = SubstateWithArg.create((I) input.getSubstate(), input.getArg());
+						var in = input.getArg()
+							.map(arg -> SubstateWithArg.withArg((I) input.getSubstate(), arg))
+							.orElseGet(() -> SubstateWithArg.noArg((I) input.getSubstate()));
 						return procedure.inputOutputReducer()
 							.reduce(in, (O) output, index, (U) outputUsed);
 					};
@@ -246,7 +263,9 @@ final class ConstraintScryptEnv implements SysCalls {
 				@Override
 				public SignatureValidator<Particle, Particle> signatureValidator() {
 					return (i, o, index, pubKey) -> {
-						var in = SubstateWithArg.create((I) i.getSubstate(), i.getArg());
+						var in = i.getArg()
+							.map(arg -> SubstateWithArg.withArg((I) i.getSubstate(), arg))
+							.orElseGet(() -> SubstateWithArg.noArg((I) i.getSubstate()));
 						return procedure.signatureValidator().verify(in, (O) o, index, pubKey);
 					};
 				}

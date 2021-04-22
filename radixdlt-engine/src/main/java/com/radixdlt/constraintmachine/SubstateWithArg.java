@@ -18,6 +18,11 @@
 
 package com.radixdlt.constraintmachine;
 
+import org.bouncycastle.util.encoders.Hex;
+
+import java.util.Objects;
+import java.util.Optional;
+
 public class SubstateWithArg<I extends Particle> {
 	private final I particle;
 	private final byte[] arg;
@@ -27,19 +32,25 @@ public class SubstateWithArg<I extends Particle> {
 		this.arg = arg;
 	}
 
-	public static <I extends Particle> SubstateWithArg<I> create(I particle, byte[] arg) {
+	public static <I extends Particle> SubstateWithArg<I> withArg(I particle, byte[] arg) {
+		Objects.requireNonNull(arg);
 		return new SubstateWithArg<>(particle, arg);
 	}
 
 	public static <I extends Particle> SubstateWithArg<I> noArg(I particle) {
-		return new SubstateWithArg<>(particle, new byte[0]);
+		return new SubstateWithArg<>(particle, null);
 	}
 
 	public I getSubstate() {
 		return particle;
 	}
 
-	public byte[] getArg() {
-		return arg;
+	public Optional<byte[]> getArg() {
+		return Optional.ofNullable(arg);
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{%s %s}", this.getClass().getSimpleName(), particle, arg == null ? null : Hex.toHexString(arg));
 	}
 }

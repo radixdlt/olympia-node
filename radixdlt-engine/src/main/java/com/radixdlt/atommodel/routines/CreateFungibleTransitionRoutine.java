@@ -24,6 +24,7 @@ import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.RoutineCalls;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.ReducerResult;
+import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
@@ -140,8 +141,8 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 	public TransitionProcedure<I, O, VoidReducerState> getProcedure0() {
 		return new TransitionProcedure<I, O, VoidReducerState>() {
 			@Override
-			public Result precondition(I inputParticle, O outputParticle, VoidReducerState outputUsed, ImmutableIndex index) {
-				return transition.apply(inputParticle, outputParticle);
+			public Result precondition(SubstateWithArg<I> in, O outputParticle, VoidReducerState outputUsed, ImmutableIndex index) {
+				return transition.apply(in.getSubstate(), outputParticle);
 			}
 
 			@Override
@@ -170,8 +171,8 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 	public TransitionProcedure<I, O, UsedAmount> getProcedure1() {
 		return new TransitionProcedure<I, O, UsedAmount>() {
 			@Override
-			public Result precondition(I inputParticle, O outputParticle, UsedAmount used, ImmutableIndex index) {
-				return transition.apply(inputParticle, outputParticle);
+			public Result precondition(SubstateWithArg<I> in, O outputParticle, UsedAmount used, ImmutableIndex index) {
+				return transition.apply(in.getSubstate(), outputParticle);
 			}
 
 			@Override

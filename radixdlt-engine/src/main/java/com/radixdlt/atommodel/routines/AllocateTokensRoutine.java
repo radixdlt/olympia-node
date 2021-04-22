@@ -29,6 +29,7 @@ import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.SignatureValidator;
+import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.VoidParticle;
@@ -47,7 +48,7 @@ public final class AllocateTokensRoutine implements ConstraintRoutine {
 			new TransitionProcedure<>() {
 				@Override
 				public Result precondition(
-					VoidParticle inputParticle,
+					SubstateWithArg<VoidParticle> in,
 					TokensParticle outputParticle,
 					VoidReducerState inputUsed,
 					ImmutableIndex immutableIndex
