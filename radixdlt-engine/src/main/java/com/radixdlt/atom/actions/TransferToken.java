@@ -51,12 +51,12 @@ public final class TransferToken implements TxAction {
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var user = txBuilder.getAddressOrFail("Must have an address to transfer.");
+		var user = txBuilder.getUserOrFail("Must have an address to transfer.");
 		txBuilder.swapFungible(
 			TokensParticle.class,
-			p -> p.getRri().equals(rri) && p.getAddress().equals(user.getPublicKey()),
+			p -> p.getRri().equals(rri) && p.getAddress().equals(user),
 			TokensParticle::getAmount,
-			amt -> new TokensParticle(user.getPublicKey(), amt, rri),
+			amt -> new TokensParticle(user, amt, rri),
 			amount,
 			"Not enough balance for transfer."
 		).with(amt -> new TokensParticle(to, amount, rri));

@@ -118,12 +118,11 @@ public class TokenFeeTest {
 	@Before
 	public void setup() {
 		createInjector().injectMembers(this);
-		this.address = new RadixAddress((byte) magic, ecKeyPair.getPublicKey());
 	}
 
 	@Test
 	public void when_validating_atom_with_particles__result_has_no_error() throws Exception {
-		var atom = sut.construct(address, new BurnToken(nativeToken, fee))
+		var atom = sut.construct(ecKeyPair.getPublicKey(), new BurnToken(nativeToken, fee))
 			.mutex("test")
 			.signAndBuild(ecKeyPair::sign);
 
@@ -139,7 +138,7 @@ public class TokenFeeTest {
 
 	@Test
 	public void when_validating_atom_with_fee_and_no_change__result_has_no_error() throws Exception {
-		var txn = sut.construct(address, new BurnToken(nativeToken, fee))
+		var txn = sut.construct(ecKeyPair.getPublicKey(), new BurnToken(nativeToken, fee))
 			.signAndBuild(ecKeyPair::sign);
 
 		sut.execute(List.of(txn));

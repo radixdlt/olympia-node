@@ -120,7 +120,6 @@ public class Faucet {
 		logVersion();
 
 		var api = loadApi();
-		var source = createRequestSource();
 		var rateLimiter = prepareRateLimiter();
 		var leakAmount = retrieveLeakAmount();
 
@@ -139,10 +138,6 @@ public class Faucet {
 
 	private static RateLimiter prepareRateLimiter() {
 		return RateLimiter.create(envVar(FAUCET_RATE_ENV_NAME).map(Double::parseDouble).orElse(DEFAULT_RATE));
-	}
-
-	private static APITokenRequestSource createRequestSource() {
-		return APITokenRequestSource.create(envVar(FAUCET_API_PORT_ENV_NAME).map(Integer::parseInt).orElse(DEFAULT_API_PORT));
 	}
 
 	private static RadixApplicationAPI loadApi() {

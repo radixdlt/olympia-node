@@ -71,7 +71,7 @@ public final class SubmissionService {
 
 		try {
 			var transaction = radixEngine
-				.construct(address, toActionsAndFee(steps))
+				.construct(address.getPublicKey(), toActionsAndFee(steps))
 				.buildForExternalSign()
 				.map(this::toPreparedTx);
 

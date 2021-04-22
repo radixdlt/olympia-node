@@ -47,17 +47,17 @@ public final class StakeTokens implements TxAction {
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var address = txBuilder.getAddressOrFail("Must have an address.");
+		var user = txBuilder.getUserOrFail("Must have an address.");
 		txBuilder.swapFungible(
 			TokensParticle.class,
 			p -> p.getRri().isSystem()
-				&& p.getAddress().equals(address.getPublicKey())
+				&& p.getAddress().equals(user)
 				&& (amount.compareTo(TokenUnitConversions.SUB_UNITS) < 0
 				|| p.getAmount().compareTo(TokenUnitConversions.unitsToSubunits(1)) >= 0),
 			TokensParticle::getAmount,
-			amt -> new TokensParticle(address.getPublicKey(), amt, REAddr.ofNativeToken()),
+			amt -> new TokensParticle(user, amt, REAddr.ofNativeToken()),
 			amount,
 			"Not enough balance for staking."
-		).with(amt -> new StakedTokensParticle(delegateKey, address.getPublicKey(), amt));
+		).with(amt -> new StakedTokensParticle(delegateKey, user, amt));
 	}
 }

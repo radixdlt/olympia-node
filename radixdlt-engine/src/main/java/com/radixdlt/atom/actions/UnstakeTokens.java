@@ -46,14 +46,14 @@ public final class UnstakeTokens implements TxAction {
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var address = txBuilder.getAddressOrFail("Must have an address.");
+		var user = txBuilder.getUserOrFail("Must have an address.");
 		txBuilder.swapFungible(
 			StakedTokensParticle.class,
-			p -> p.getOwner().equals(address.getPublicKey()),
+			p -> p.getOwner().equals(user),
 			StakedTokensParticle::getAmount,
-			amt -> new StakedTokensParticle(delegateAddress, address.getPublicKey(), amt),
+			amt -> new StakedTokensParticle(delegateAddress, user, amt),
 			amount,
 			"Not enough staked."
-		).with(amt -> new TokensParticle(address.getPublicKey(), amt, REAddr.ofNativeToken()));
+		).with(amt -> new TokensParticle(user, amt, REAddr.ofNativeToken()));
 	}
 }

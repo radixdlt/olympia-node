@@ -34,7 +34,6 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -105,11 +104,10 @@ public class StakingTest {
 		// Arrange
 		createInjector().injectMembers(this);
 		var stakes = sut.getComputedState(Stakes.class);
-		var stakerAddress = new RadixAddress((byte) magic, staker.getPublicKey());
 		var staked = stakes.toMap().get(self.getPublicKey());
 
 		// Act
-		var atom = sut.construct(stakerAddress, new StakeTokens(self.getPublicKey(), UInt256.FIVE))
+		var atom = sut.construct(staker.getPublicKey(), new StakeTokens(self.getPublicKey(), UInt256.FIVE))
 			.signAndBuild(staker::sign);
 		sut.execute(List.of(atom));
 
@@ -124,15 +122,14 @@ public class StakingTest {
 		// Arrange
 		createInjector().injectMembers(this);
 		var stakes = sut.getComputedState(Stakes.class);
-		var stakerAddress = new RadixAddress((byte) magic, staker.getPublicKey());
 		var staked = stakes.toMap().get(self.getPublicKey());
-		var txn = sut.construct(stakerAddress, new StakeTokens(self.getPublicKey(), UInt256.FIVE))
+		var txn = sut.construct(staker.getPublicKey(), new StakeTokens(self.getPublicKey(), UInt256.FIVE))
 			.signAndBuild(staker::sign);
 		sut.execute(List.of(txn));
 
 		// Act
 		var nextTxn = sut.construct(
-			stakerAddress,
+			staker.getPublicKey(),
 			new UnstakeTokens(self.getPublicKey(), UInt256.THREE)
 		).signAndBuild(staker::sign);
 		sut.execute(List.of(nextTxn));

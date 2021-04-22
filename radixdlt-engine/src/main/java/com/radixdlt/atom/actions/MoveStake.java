@@ -38,15 +38,15 @@ public final class MoveStake implements TxAction {
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var address = txBuilder.getAddressOrFail("Must have an address.");
+		var user = txBuilder.getUserOrFail("Must have an address.");
 
 		txBuilder.swapFungible(
 			StakedTokensParticle.class,
-			p -> p.getOwner().equals(address.getPublicKey()) && p.getDelegateKey().equals(from),
+			p -> p.getOwner().equals(user) && p.getDelegateKey().equals(from),
 			StakedTokensParticle::getAmount,
-			amt -> new StakedTokensParticle(from, address.getPublicKey(), amt),
+			amt -> new StakedTokensParticle(from, user, amt),
 			amount,
 			"Not enough staked."
-		).with(amt -> new StakedTokensParticle(to, address.getPublicKey(), amt));
+		).with(amt -> new StakedTokensParticle(to, user, amt));
 	}
 }

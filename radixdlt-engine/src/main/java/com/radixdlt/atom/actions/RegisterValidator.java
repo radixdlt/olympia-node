@@ -29,16 +29,15 @@ import java.util.Optional;
 public final class RegisterValidator implements TxAction {
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var address = txBuilder.getAddressOrFail("Must have an address to register.");
-		var key = address.getPublicKey();
+		var user = txBuilder.getUserOrFail("Must be a user to register.");
 
 		txBuilder.swap(
 			ValidatorParticle.class,
-			p -> p.getKey().equals(key) && !p.isRegisteredForNextEpoch(),
-			Optional.of(SubstateWithArg.noArg(new ValidatorParticle(key, false))),
+			p -> p.getKey().equals(user) && !p.isRegisteredForNextEpoch(),
+			Optional.of(SubstateWithArg.noArg(new ValidatorParticle(user, false))),
 			"Already a validator"
 		).with(
-			substateDown -> new ValidatorParticle(key, true, substateDown.getName(), substateDown.getUrl())
+			substateDown -> new ValidatorParticle(user, true, substateDown.getName(), substateDown.getUrl())
 		);
 	}
 }

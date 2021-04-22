@@ -44,12 +44,12 @@ public final class BurnToken implements TxAction {
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var user = txBuilder.getAddressOrFail("Must have an address to burn.");
+		var user = txBuilder.getUserOrFail("Must have an address to burn.");
 		txBuilder.deallocateFungible(
 			TokensParticle.class,
-			p -> p.getRri().equals(rri) && p.getAddress().equals(user.getPublicKey()),
+			p -> p.getRri().equals(rri) && p.getAddress().equals(user),
 			TokensParticle::getAmount,
-			amt -> new TokensParticle(user.getPublicKey(), amt, rri),
+			amt -> new TokensParticle(user, amt, rri),
 			amount,
 			"Not enough balance to for fee burn."
 		);

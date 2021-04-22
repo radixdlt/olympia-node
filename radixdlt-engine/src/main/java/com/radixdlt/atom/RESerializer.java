@@ -31,7 +31,6 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.RadixConstants;
@@ -292,23 +291,6 @@ public final class RESerializer {
 			return ECPublicKey.fromBytes(keyBytes);
 		} catch (PublicKeyException | IllegalArgumentException e) {
 			throw new DeserializeException("Could not deserialize key");
-		}
-	}
-
-
-	private static void serializeAddress(ByteBuffer buf, RadixAddress address) {
-		buf.put((byte) address.toByteArray().length); // address length
-		buf.put(address.toByteArray()); // address
-	}
-
-	private static RadixAddress deserializeAddress(ByteBuffer buf) throws DeserializeException {
-		var addressLength = Byte.toUnsignedInt(buf.get()); // address length
-		var addressDest = new byte[addressLength]; // address
-		buf.get(addressDest);
-		try {
-			return RadixAddress.from(addressDest);
-		} catch (IllegalArgumentException e) {
-			throw new DeserializeException("Address deserialization failed.", e);
 		}
 	}
 

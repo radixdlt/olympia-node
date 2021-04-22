@@ -34,7 +34,6 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.UInt256;
@@ -42,14 +41,11 @@ import com.radixdlt.utils.UInt256;
 import java.util.List;
 
 public class StakedTokensTest {
-	private static final byte MAGIC = (byte) 0;
 	private RadixEngine<Void> engine;
 	private EngineStore<Void> store;
 	private REAddr tokenRri;
 	private ECKeyPair tokenOwnerKeyPair = ECKeyPair.generateNew();
-	private RadixAddress tokenOwnerAddress = new RadixAddress(MAGIC, this.tokenOwnerKeyPair.getPublicKey());
 	private ECKeyPair validatorKeyPair = ECKeyPair.generateNew();
-	private RadixAddress validatorAddress = new RadixAddress(MAGIC, this.validatorKeyPair.getPublicKey());
 
 	@Before
 	public void setup() throws Exception {
@@ -77,10 +73,10 @@ public class StakedTokensTest {
 		var txn0 = engine.construct(
 			TxActionListBuilder.create()
 				.createMutableToken(tokDef)
-				.mint(this.tokenRri, this.tokenOwnerAddress.getPublicKey(), UInt256.TEN)
+				.mint(this.tokenRri, this.tokenOwnerKeyPair.getPublicKey(), UInt256.TEN)
 				.build()
 		).buildWithoutSignature();
-		var validatorBuilder = this.engine.construct(this.validatorAddress, new RegisterValidator());
+		var validatorBuilder = this.engine.construct(this.validatorKeyPair.getPublicKey(), new RegisterValidator());
 		var txn1 = validatorBuilder.signAndBuild(this.validatorKeyPair::sign);
 
 		this.engine.execute(List.of(txn0, txn1), null, PermissionLevel.SYSTEM);
@@ -89,8 +85,8 @@ public class StakedTokensTest {
 	@Test
 	public void stake_tokens() throws Exception {
 		var txn = engine.construct(
-			this.tokenOwnerAddress,
-			new StakeTokens(this.validatorAddress.getPublicKey(), UInt256.TEN)
+			this.tokenOwnerKeyPair.getPublicKey(),
+			new StakeTokens(this.validatorKeyPair.getPublicKey(), UInt256.TEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 
 		this.engine.execute(List.of(txn));
@@ -99,14 +95,14 @@ public class StakedTokensTest {
 	@Test
 	public void unstake_tokens() throws Exception {
 		var txn = engine.construct(
-			this.tokenOwnerAddress,
-			new StakeTokens(this.validatorAddress.getPublicKey(), UInt256.TEN)
+			this.tokenOwnerKeyPair.getPublicKey(),
+			new StakeTokens(this.validatorKeyPair.getPublicKey(), UInt256.TEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn));
 
 		var txn2 = engine.construct(
-			this.tokenOwnerAddress,
-			new UnstakeTokens(this.validatorAddress.getPublicKey(), UInt256.TEN)
+			this.tokenOwnerKeyPair.getPublicKey(),
+			new UnstakeTokens(this.validatorKeyPair.getPublicKey(), UInt256.TEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn2));
 	}
@@ -114,26 +110,26 @@ public class StakedTokensTest {
 	@Test
 	public void unstake_partial_tokens() throws Exception {
 		var txn = engine.construct(
-			this.tokenOwnerAddress,
-			new StakeTokens(this.validatorAddress.getPublicKey(), UInt256.TEN)
+			this.tokenOwnerKeyPair.getPublicKey(),
+			new StakeTokens(this.validatorKeyPair.getPublicKey(), UInt256.TEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn));
 
 		var txn2 = engine.construct(
-			this.tokenOwnerAddress,
-			new UnstakeTokens(this.validatorAddress.getPublicKey(), UInt256.SEVEN)
+			this.tokenOwnerKeyPair.getPublicKey(),
+			new UnstakeTokens(this.validatorKeyPair.getPublicKey(), UInt256.SEVEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn2));
 	}
 
 	@Test
 	public void move_staked_tokens() throws Exception {
-		var txn = this.engine.construct(this.tokenOwnerAddress, new StakeTokens(validatorAddress.getPublicKey(),
+		var txn = this.engine.construct(this.tokenOwnerKeyPair.getPublicKey(), new StakeTokens(validatorKeyPair.getPublicKey(),
 			UInt256.TEN))
 			.signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn));
 
-		var atom2 = this.engine.construct(this.tokenOwnerAddress, new MoveStake(validatorAddress.getPublicKey(),
+		var atom2 = this.engine.construct(this.tokenOwnerKeyPair.getPublicKey(), new MoveStake(validatorKeyPair.getPublicKey(),
 			ECKeyPair.generateNew().getPublicKey(), UInt256.FIVE))
 			.signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(atom2));

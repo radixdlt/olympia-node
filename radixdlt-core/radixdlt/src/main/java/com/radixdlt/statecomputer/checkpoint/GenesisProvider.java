@@ -125,8 +125,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 
 			// Initial validator registration
 			for (var validatorKey : validatorKeys) {
-				var validatorAddress = new RadixAddress(magic, validatorKey.getPublicKey());
-				var validatorTxn = branch.construct(validatorAddress, new RegisterValidator())
+				var validatorTxn = branch.construct(validatorKey.getPublicKey(), new RegisterValidator())
 					.signAndBuild(validatorKey::sign);
 				branch.execute(List.of(validatorTxn), PermissionLevel.SYSTEM);
 				genesisTxns.add(validatorTxn);
@@ -134,9 +133,10 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 
 			// Initial stakes
 			for (var stakeDelegation : stakeDelegations) {
-				var stakerAddress = new RadixAddress(magic, stakeDelegation.staker().getPublicKey());
-				var stakerTxn = branch.construct(stakerAddress, new StakeTokens(stakeDelegation.delegate(), stakeDelegation.amount()))
-					.signAndBuild(stakeDelegation.staker()::sign);
+				var stakerTxn = branch.construct(
+					stakeDelegation.staker().getPublicKey(),
+					new StakeTokens(stakeDelegation.delegate(), stakeDelegation.amount())
+				).signAndBuild(stakeDelegation.staker()::sign);
 				branch.execute(List.of(stakerTxn), PermissionLevel.SYSTEM);
 				genesisTxns.add(stakerTxn);
 			}
