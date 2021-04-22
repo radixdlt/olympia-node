@@ -225,7 +225,13 @@ public class SubmissionServiceTest {
 		radixEngine.execute(List.of(tx));
 
 		var steps = List.of(
-			TransactionAction.create(ActionType.TRANSFER, ALICE, BOB, UInt256.FOUR, Optional.of(nativeToken)),
+			TransactionAction.create(
+				ActionType.TRANSFER,
+				ALICE_KEYPAIR.getPublicKey(),
+				BOB_KEYPAIR.getPublicKey(),
+				UInt256.FOUR,
+				Optional.of(nativeToken)
+			),
 			TransactionAction.msg("message")
 		);
 
@@ -288,7 +294,9 @@ public class SubmissionServiceTest {
 		radixEngine.execute(List.of(tx));
 
 		var steps = List.of(
-			TransactionAction.create(ActionType.TRANSFER, ALICE, BOB, UInt256.FOUR, Optional.of(nativeToken)),
+			TransactionAction.create(
+				ActionType.TRANSFER, ALICE_KEYPAIR.getPublicKey(), BOB_KEYPAIR.getPublicKey(), UInt256.FOUR, Optional.of(nativeToken)
+			),
 			TransactionAction.msg("message")
 		);
 

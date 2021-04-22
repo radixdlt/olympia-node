@@ -17,7 +17,9 @@
 
 package com.radixdlt.client.handler;
 
+import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.client.store.ClientApiStore;
+import com.radixdlt.crypto.ECPublicKey;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -93,16 +95,16 @@ public final class ActionParser {
 		return Result.fail("Action type {0} is not supported (yet)", type);
 	}
 
-	private static Result<RadixAddress> from(JSONObject element) {
+	private static Result<ECPublicKey> from(JSONObject element) {
 		return address(element, "from");
 	}
 
-	private static Result<RadixAddress> to(JSONObject element) {
+	private static Result<ECPublicKey> to(JSONObject element) {
 		return address(element, "to");
 	}
 
-	private static Result<RadixAddress> validator(JSONObject element) {
-		return address(element, "validator");
+	private static Result<ECPublicKey> validator(JSONObject element) {
+		return validator(element, "validator");
 	}
 
 	private static Result<UInt256> amount(JSONObject element) {
@@ -118,9 +120,14 @@ public final class ActionParser {
 			.map(Optional::of);
 	}
 
-	private static Result<RadixAddress> address(JSONObject element, String name) {
+	private static Result<ECPublicKey> validator(JSONObject element, String name) {
+		return Result.fromOptional(safeString(element, name), "")
+			.flatMap(ValidatorAddress::fromString);
+	}
+
+	private static Result<ECPublicKey> address(JSONObject element, String name) {
 		return safeString(element, name)
-			.map(RadixAddress::fromString)
+			.map(addr -> RadixAddress.fromString(addr).map(RadixAddress::getPublicKey))
 			.orElseGet(() -> fail(element, name));
 	}
 

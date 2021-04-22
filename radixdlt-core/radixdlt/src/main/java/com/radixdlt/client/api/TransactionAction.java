@@ -22,6 +22,7 @@ import com.radixdlt.atom.actions.IncludeMessage;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
@@ -32,16 +33,16 @@ import java.util.Optional;
 
 public class TransactionAction {
 	private final ActionType actionType;
-	private final RadixAddress from;
-	private final RadixAddress to;
+	private final ECPublicKey from;
+	private final ECPublicKey to;
 	private final UInt256 amount;
 	private final Optional<REAddr> rri;
 	private final byte[] data;
 
 	private TransactionAction(
 		ActionType actionType,
-		RadixAddress from,
-		RadixAddress to,
+		ECPublicKey from,
+		ECPublicKey to,
 		UInt256 amount,
 		Optional<REAddr> rri,
 		byte[] data
@@ -60,8 +61,8 @@ public class TransactionAction {
 
 	public static TransactionAction create(
 		ActionType actionType,
-		RadixAddress from,
-		RadixAddress to,
+		ECPublicKey from,
+		ECPublicKey to,
 		UInt256 amount,
 		Optional<REAddr> rri
 	) {
@@ -70,8 +71,8 @@ public class TransactionAction {
 
 	public static TransactionAction create(
 		ActionType actionType,
-		RadixAddress from,
-		RadixAddress to,
+		ECPublicKey from,
+		ECPublicKey to,
 		UInt256 amount,
 		Optional<REAddr> rri,
 		byte[] data
@@ -79,24 +80,25 @@ public class TransactionAction {
 		return new TransactionAction(actionType, from, to, amount, rri, data);
 	}
 
-	public RadixAddress getFrom() {
+	public ECPublicKey getFrom() {
 		return from;
 	}
 
-	public <T> T map(FN5<T, ActionType, RadixAddress, RadixAddress, UInt256, Optional<REAddr>> mapper) {
+	public <T> T map(FN5<T, ActionType, ECPublicKey, ECPublicKey, UInt256, Optional<REAddr>> mapper) {
 		return mapper.apply(actionType, from, to, amount, rri);
 	}
 
-	public TxAction toAction() {
+	public TxAction toAction(byte magic) {
 		switch (actionType) {
 			case MSG:
 				return new IncludeMessage(data);
 			case TRANSFER:
-				return new TransferToken(rriValue(), to, amount);
+				var addr = new RadixAddress(magic, to);
+				return new TransferToken(rriValue(), addr, amount);
 			case STAKE:
-				return new StakeTokens(to.getPublicKey(), amount);
+				return new StakeTokens(to, amount);
 			case UNSTAKE:
-				return new UnstakeTokens(to.getPublicKey(), amount);
+				return new UnstakeTokens(to, amount);
 		}
 		throw new IllegalStateException("Unsupported action type " + actionType);
 	}
