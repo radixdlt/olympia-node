@@ -18,6 +18,7 @@
 package com.radixdlt.atommodel.routines;
 
 import com.radixdlt.atom.actions.Unknown;
+import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.store.ImmutableIndex;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -87,7 +88,7 @@ public class CreateFungibleTransitionRoutineTest {
 		).getProcedure0();
 
 		assertThat(procedure.inputOutputReducer().reduce(
-			new Fungible(UInt256.ONE),
+			SubstateWithArg.noArg(new Fungible(UInt256.ONE)),
 			new Fungible(UInt256.ONE),
 			mock(ImmutableIndex.class),
 			null
@@ -95,7 +96,7 @@ public class CreateFungibleTransitionRoutineTest {
 
 
 		assertThat(procedure.inputOutputReducer().reduce(
-			new Fungible(UInt256.ONE),
+			SubstateWithArg.noArg(new Fungible(UInt256.ONE)),
 			new Fungible(UInt256.ONE),
 			mock(ImmutableIndex.class),
 			null
@@ -112,7 +113,7 @@ public class CreateFungibleTransitionRoutineTest {
 		).getProcedure0();
 
 		var state = procedure.inputOutputReducer().reduce(
-			new Fungible(UInt256.TWO),
+			SubstateWithArg.noArg(new Fungible(UInt256.ONE)),
 			new Fungible(UInt256.ONE),
 			mock(ImmutableIndex.class),
 			null
@@ -134,7 +135,7 @@ public class CreateFungibleTransitionRoutineTest {
 		).getProcedure0();
 
 		var state = procedure.inputOutputReducer().reduce(
-			new Fungible(UInt256.ONE),
+			SubstateWithArg.noArg(new Fungible(UInt256.ONE)),
 			new Fungible(UInt256.TWO),
 			mock(ImmutableIndex.class),
 			null
@@ -156,7 +157,7 @@ public class CreateFungibleTransitionRoutineTest {
 		).getProcedure0();
 
 		assertThat(procedure.inputOutputReducer().reduce(
-			new Fungible(UInt256.TWO),
+			SubstateWithArg.noArg(new Fungible(UInt256.ONE)),
 			new Fungible(UInt256.TWO),
 			mock(ImmutableIndex.class),
 			null
@@ -173,14 +174,14 @@ public class CreateFungibleTransitionRoutineTest {
 		).getProcedure1();
 
 		assertThat(procedure.inputOutputReducer().reduce(
-			new Fungible(UInt256.ONE),
+			SubstateWithArg.noArg(new Fungible(UInt256.ONE)),
 			new Fungible(UInt256.TWO),
 			mock(ImmutableIndex.class),
 			new UsedAmount(false, UInt256.ONE, Unknown.create())
 		).getIncomplete()).isEmpty();
 
 		assertThat(procedure.inputOutputReducer().reduce(
-			new Fungible(UInt256.TWO),
+			SubstateWithArg.noArg(new Fungible(UInt256.TWO)),
 			new Fungible(UInt256.ONE),
 			mock(ImmutableIndex.class),
 			new UsedAmount(true, UInt256.ONE, Unknown.create())

@@ -120,7 +120,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 					} else {
 						// FIXME: HACK as we are assuming that this is a mutable token creation which is fine for
 						// FIXME: now as it is the only available transition for betanet
-						var rriParticle = (RRIParticle) input;
+						var rriParticle = (RRIParticle) input.getSubstate();
 						var tokDefParticle = (TokenDefinitionParticle) output;
 						var action = new CreateMutableToken(
 							rriParticle.getName(),
@@ -153,7 +153,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 				return (input, output, index, outputUsed) -> {
 					// FIXME: HACK as we are assuming that this is a mutable token creation which is fine for
 					// FIXME: now as it is the only available transition for betanet
-					var rriParticle = (RRIParticle) input;
+					var rriParticle = (RRIParticle) input.getSubstate();
 					var tokDefParticle = (TokenDefinitionParticle) outputUsed.usedParticle;
 					var action = new CreateFixedToken(
 						rriParticle.getName(),

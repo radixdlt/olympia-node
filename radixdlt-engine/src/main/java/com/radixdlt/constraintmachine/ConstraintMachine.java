@@ -103,7 +103,7 @@ public final class ConstraintMachine {
 	public static final class CMValidationState {
 		private PermissionLevel permissionLevel;
 
-		private Particle particleRemaining = null;
+		private SubstateWithArg<Particle> particleRemaining = null;
 		private boolean particleRemainingIsInput;
 		private ReducerState reducerState = null;
 
@@ -193,7 +193,7 @@ public final class ConstraintMachine {
 			return signedBy.map(publicKey::equals).orElse(false);
 		}
 
-		Particle getCurParticle() {
+		SubstateWithArg<Particle> getCurParticle() {
 			return particleRemaining;
 		}
 
@@ -216,7 +216,7 @@ public final class ConstraintMachine {
 			this.txAction = txAction;
 		}
 
-		void popAndReplace(Particle particle, boolean isInput, ReducerState reducerState) {
+		void popAndReplace(SubstateWithArg<Particle> particle, boolean isInput, ReducerState reducerState) {
 			this.particleRemaining = particle;
 			this.particleRemainingIsInput = isInput;
 			this.reducerState = reducerState;
@@ -255,25 +255,26 @@ public final class ConstraintMachine {
 	 */
 	Optional<Pair<CMErrorCode, String>> validateParticle(
 		CMValidationState validationState,
-		Particle nextParticle,
+		SubstateWithArg<Particle> nextParticle,
 		boolean isInput
 	) {
-		final Particle curParticle = validationState.getCurParticle();
+		final SubstateWithArg<Particle> curParticle = validationState.getCurParticle();
 
 		if (validationState.spinClashes(isInput)) {
 			return Optional.of(Pair.of(CMErrorCode.PARTICLE_REGISTER_SPIN_CLASH, null));
 		}
 
-		final Particle inputParticle = isInput ? nextParticle : curParticle;
-		final Particle outputParticle = isInput ? curParticle : nextParticle;
+		final SubstateWithArg<Particle> input = isInput ? nextParticle : curParticle;
+		final Particle outputParticle = isInput ? (curParticle == null ? null : curParticle.getSubstate())
+			: nextParticle.getSubstate();
 		final TransitionToken transitionToken = new TransitionToken(
-			inputParticle != null ? inputParticle.getClass() : VoidParticle.class,
+			input != null ? input.getSubstate().getClass() : VoidParticle.class,
 			outputParticle != null ? outputParticle.getClass() : VoidParticle.class,
 			validationState.getReducerType()
 		);
 
 		final var transitionProcedure = this.particleProcedures.apply(transitionToken);
-		if (inputParticle == null || outputParticle == null) {
+		if (input == null || outputParticle == null) {
 			validationState.popAndReplace(nextParticle, isInput, null);
 			return Optional.empty();
 		}
@@ -286,7 +287,7 @@ public final class ConstraintMachine {
 
 		// Precondition check
 		final Result preconditionCheckResult = transitionProcedure.precondition(
-			inputParticle,
+			input.getSubstate(),
 			outputParticle,
 			used,
 			validationState.immutableIndex()
@@ -296,14 +297,14 @@ public final class ConstraintMachine {
 		}
 
 		final var requiredPermissionLevel = transitionProcedure.requiredPermissionLevel(
-			inputParticle, outputParticle, validationState.immutableIndex()
+			input.getSubstate(), outputParticle, validationState.immutableIndex()
 		);
 		if (validationState.permissionLevel.compareTo(requiredPermissionLevel) < 0) {
 			return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
 		}
 
 		var reducer = transitionProcedure.inputOutputReducer();
-		var result = reducer.reduce(inputParticle, outputParticle, validationState.immutableIndex(), used);
+		var result = reducer.reduce(input, outputParticle, validationState.immutableIndex(), used);
 		result.ifIncompleteElse(
 			(keepInput, state) -> {
 				if (isInput == keepInput) {
@@ -321,7 +322,7 @@ public final class ConstraintMachine {
 		}
 
 		var signatureVerified = transitionProcedure.signatureValidator()
-			.verify(inputParticle, outputParticle, validationState.immutableIndex(), validationState.signedBy);
+			.verify(input.getSubstate(), outputParticle, validationState.immutableIndex(), validationState.signedBy);
 		if (!signatureVerified) {
 			return Optional.of(Pair.of(CMErrorCode.INCORRECT_SIGNATURE, null));
 		}
@@ -498,7 +499,7 @@ public final class ConstraintMachine {
 
 				var error = validateParticle(
 					validationState,
-					nextParticle,
+					SubstateWithArg.create(nextParticle, new byte[0]),
 					inst.getCheckSpin() == Spin.UP
 				);
 				if (error.isPresent()) {
@@ -509,7 +510,7 @@ public final class ConstraintMachine {
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.END) {
 				if (validationState.txAction == null) {
 					var errMaybe = validateParticle(validationState,
-						VoidParticle.create(), !validationState.particleRemainingIsInput);
+						SubstateWithArg.noArg(VoidParticle.create()), !validationState.particleRemainingIsInput);
 					if (errMaybe.isPresent()) {
 						return Optional.of(new CMError(instIndex,
 							errMaybe.get().getFirst(), validationState, errMaybe.get().getSecond()));

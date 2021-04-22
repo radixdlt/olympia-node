@@ -147,10 +147,10 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 			@Override
 			public InputOutputReducer<I, O, VoidReducerState> inputOutputReducer() {
 				return (input, output, index, v) -> {
-					var i = inputAmountMapper.apply(input);
+					var i = inputAmountMapper.apply(input.getSubstate());
 					var o = outputAmountMapper.apply(output);
 					var compare = i.compareTo(o);
-					var txAction = actionMapper.map(input, output, index);
+					var txAction = actionMapper.map(input.getSubstate(), output, index);
 					if (compare == 0) {
 						return ReducerResult.complete(txAction);
 					}
@@ -177,7 +177,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 			@Override
 			public InputOutputReducer<I, O, UsedAmount> inputOutputReducer() {
 				return (input, output, index, used) -> {
-					var i = inputAmountMapper.apply(input);
+					var i = inputAmountMapper.apply(input.getSubstate());
 					var o = outputAmountMapper.apply(output);
 					if (used.isInput) {
 						i = i.subtract(used.getUsedAmount());

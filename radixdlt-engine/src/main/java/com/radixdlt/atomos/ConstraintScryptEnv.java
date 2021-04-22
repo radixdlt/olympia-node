@@ -24,6 +24,7 @@ import com.radixdlt.atommodel.routines.CreateCombinedTransitionRoutine;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
+import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.ReducerState;
@@ -234,8 +235,11 @@ final class ConstraintScryptEnv implements SysCalls {
 
 				@Override
 				public InputOutputReducer<Particle, Particle, ReducerState> inputOutputReducer() {
-					return (input, output, index, outputUsed) -> procedure.inputOutputReducer()
-						.reduce((I) input, (O) output, index, (U) outputUsed);
+					return (input, output, index, outputUsed) -> {
+						var in = SubstateWithArg.create((I) input.getSubstate(), input.getArg());
+						return procedure.inputOutputReducer()
+							.reduce(in, (O) output, index, (U) outputUsed);
+					};
 				}
 
 				@Override

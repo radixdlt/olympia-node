@@ -68,7 +68,7 @@ public class UniqueTest {
 		var rri = REAddr.of(ECKeyPair.generateNew().getPublicKey(), "smthng");
 		var builder = TxBuilder.newBuilder(address)
 			.toLowLevelBuilder()
-			.virtualDown(new RRIParticle(rri))
+			.virtualDown(new RRIParticle(rri, "smthng"))
 			.up(new UniqueParticle(rri))
 			.particleGroup();
 		var sig = keyPair.sign(builder.hashToSign());

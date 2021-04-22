@@ -66,7 +66,8 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 				@Override
 				public InputOutputReducer<TokensParticle, VoidParticle, VoidReducerState> inputOutputReducer() {
 					return (i, o, index, state) -> {
-						return ReducerResult.complete(new BurnToken(i.getRri(), i.getAmount()));
+						var in = i.getSubstate();
+						return ReducerResult.complete(new BurnToken(in.getRri(), in.getAmount()));
 					};
 				}
 
@@ -111,8 +112,9 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 				public InputOutputReducer<TokensParticle, VoidParticle, CreateFungibleTransitionRoutine.UsedAmount>
 					inputOutputReducer() {
 					return (i, o, index, state) -> {
-						var amt = i.getAmount().subtract(state.getUsedAmount());
-						var p = (TokenDefinitionParticle) index.loadRri(null, i.getRri()).orElseThrow();
+						var in = i.getSubstate();
+						var amt = in.getAmount().subtract(state.getUsedAmount());
+						var p = (TokenDefinitionParticle) index.loadRri(null, in.getRri()).orElseThrow();
 						return ReducerResult.complete(new BurnToken(p.getRri(), amt));
 					};
 				}

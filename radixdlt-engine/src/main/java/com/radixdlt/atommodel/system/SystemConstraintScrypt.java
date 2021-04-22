@@ -108,8 +108,8 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 				@Override
 				public InputOutputReducer<SystemParticle, SystemParticle, VoidReducerState> inputOutputReducer() {
 					return (input, output, index, outputUsed) -> ReducerResult.complete(
-						input.getEpoch() == output.getEpoch()
-							? new SystemNextView(output.getView(), output.getTimestamp(), input.getEpoch())
+						input.getSubstate().getEpoch() == output.getEpoch()
+							? new SystemNextView(output.getView(), output.getTimestamp(), input.getSubstate().getEpoch())
 							: new SystemNextEpoch(output.getTimestamp(), output.getEpoch())
 					);
 				}
