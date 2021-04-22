@@ -17,6 +17,7 @@
 
 package com.radixdlt.client.handler;
 
+import com.radixdlt.client.AccountAddress;
 import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.crypto.ECPublicKey;
@@ -26,7 +27,6 @@ import org.json.JSONObject;
 import com.radixdlt.client.api.ActionType;
 import com.radixdlt.client.api.TransactionAction;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
@@ -127,7 +127,7 @@ public final class ActionParser {
 
 	private static Result<ECPublicKey> address(JSONObject element, String name) {
 		return safeString(element, name)
-			.map(addr -> RadixAddress.fromString(addr).map(RadixAddress::getPublicKey))
+			.map(AccountAddress::parseFunctional)
 			.orElseGet(() -> fail(element, name));
 	}
 

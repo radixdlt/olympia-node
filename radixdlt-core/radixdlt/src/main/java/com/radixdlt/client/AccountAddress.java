@@ -22,6 +22,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bits;
+import com.radixdlt.utils.functional.Result;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
 
@@ -60,6 +61,14 @@ public final class AccountAddress {
 			return ECPublicKey.fromBytes(keyBytes);
 		} catch (PublicKeyException e) {
 			throw new DeserializeException("Invalid bytes in validator address: " + v);
+		}
+	}
+
+	public static Result<ECPublicKey> parseFunctional(String addr) {
+		try {
+			return Result.ok(parse(addr));
+		} catch (Exception e) {
+			return Result.fail(e);
 		}
 	}
 }

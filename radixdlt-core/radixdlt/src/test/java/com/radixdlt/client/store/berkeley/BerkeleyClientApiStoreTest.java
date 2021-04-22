@@ -144,7 +144,7 @@ public class BerkeleyClientApiStoreTest {
 
 		var clientApiStore = prepareApiStore(tx);
 
-		clientApiStore.getTokenBalances(TOKEN_ADDRESS, false)
+		clientApiStore.getTokenBalances(TOKEN_KEYPAIR.getPublicKey(), false)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
 				assertEquals(UInt384.THREE, list.get(0).getAmount());
@@ -152,7 +152,7 @@ public class BerkeleyClientApiStoreTest {
 			})
 			.onFailureDo(() -> fail("Failure is not expected here"));
 
-		clientApiStore.getTokenBalances(OWNER, false)
+		clientApiStore.getTokenBalances(OWNER_KEYPAIR.getPublicKey(), false)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
 				assertEquals(UInt384.FOUR, list.get(0).getAmount());
@@ -230,7 +230,7 @@ public class BerkeleyClientApiStoreTest {
 		var clientApiStore = prepareApiStore(tx);
 		var newCursor = new AtomicReference<Instant>();
 
-		clientApiStore.getTransactionHistory(TOKEN_ADDRESS, 1, Optional.empty())
+		clientApiStore.getTransactionHistory(TOKEN_KEYPAIR.getPublicKey(), 1, Optional.empty())
 			.onFailure(this::failWithMessage)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
@@ -252,7 +252,7 @@ public class BerkeleyClientApiStoreTest {
 
 		assertNotNull(newCursor.get());
 
-		clientApiStore.getTransactionHistory(TOKEN_ADDRESS, 1, Optional.of(newCursor.get()))
+		clientApiStore.getTransactionHistory(TOKEN_KEYPAIR.getPublicKey(), 1, Optional.of(newCursor.get()))
 			.onFailure(this::failWithMessage)
 			.onSuccess(list -> assertEquals(0, list.size()));
 	}
@@ -291,7 +291,7 @@ public class BerkeleyClientApiStoreTest {
 		).signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var clientApiStore = prepareApiStore(tx);
-		clientApiStore.getTransactionHistory(TOKEN_ADDRESS, 0, Optional.empty())
+		clientApiStore.getTransactionHistory(TOKEN_KEYPAIR.getPublicKey(), 0, Optional.empty())
 			.onSuccess(list -> fail("Request must be rejected"));
 	}
 

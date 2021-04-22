@@ -173,9 +173,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
-	public Result<List<BalanceEntry>> getTokenBalances(RadixAddress address, boolean retrieveStakes) {
+	public Result<List<BalanceEntry>> getTokenBalances(ECPublicKey publicKey, boolean retrieveStakes) {
 		try (var cursor = addressBalances.openCursor(null, null)) {
-			var key = asKey(address.getPublicKey());
+			var key = asKey(publicKey);
 			var data = entry();
 			var status = readBalance(() -> cursor.getSearchKeyRange(key, data, null), data);
 
@@ -188,11 +188,11 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			do {
 				restore(serialization, data.getData(), BalanceEntry.class)
 					.onFailureDo(
-						() -> log.error("Error deserializing existing balance while scanning DB for address {}", address)
+						() -> log.error("Error deserializing existing balance while scanning DB for address {}", publicKey)
 					)
 					.toOptional()
 					.filter(Predicate.not(BalanceEntry::isStake))
-					.filter(entry -> entry.getOwner().equals(address.getPublicKey()))
+					.filter(entry -> entry.getOwner().equals(publicKey))
 					.ifPresent(list::add);
 
 				status = readBalance(() -> cursor.getNext(key, data, null), data);
@@ -305,13 +305,13 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
-	public Result<List<TxHistoryEntry>> getTransactionHistory(RadixAddress address, int size, Optional<Instant> ptr) {
+	public Result<List<TxHistoryEntry>> getTransactionHistory(ECPublicKey pubKey, int size, Optional<Instant> ptr) {
 		if (size <= 0) {
 			return Result.fail("Invalid size specified: {0}", size);
 		}
 
 		var instant = ptr.orElse(Instant.EPOCH);
-		var key = asKey(address.getPublicKey(), instant);
+		var key = asKey(pubKey, instant);
 		var data = entry();
 
 		try (var cursor = transactionHistory.openCursor(null, null)) {
@@ -665,7 +665,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		var buf = address.writeBytes(balanceEntry.getRri().toString().getBytes(StandardCharsets.UTF_8));
 
 		if (balanceEntry.isStake()) {
-			buf.writeBytes(balanceEntry.getDelegate().toByteArray());
+			buf.writeBytes(balanceEntry.getDelegate().getCompressedBytes());
 		}
 
 		return entry(buf);

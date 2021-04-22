@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -44,7 +43,7 @@ public class BalanceEntry {
 
 	@JsonProperty("delegate")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final RadixAddress delegate;
+	private final byte[] delegate;
 
 	@JsonProperty("rri")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -61,7 +60,7 @@ public class BalanceEntry {
 	@JsonCreator
 	private static BalanceEntry create(
 		@JsonProperty("owner") byte[] owner,
-		@JsonProperty("delegate") RadixAddress delegate,
+		@JsonProperty("delegate") byte[] delegate,
 		@JsonProperty("rri") REAddr rri,
 		@JsonProperty("amount") UInt384 amount,
 		@JsonProperty("negative") boolean negative
@@ -71,16 +70,22 @@ public class BalanceEntry {
 
 	public static BalanceEntry create(
 		ECPublicKey owner,
-		RadixAddress delegate,
+		ECPublicKey delegate,
 		REAddr rri,
 		UInt384 amount,
 		boolean negative
 	) {
-		return createFull(owner == null ? null : owner.getCompressedBytes(), delegate, rri, amount, negative);
+		return createFull(
+			owner == null ? null : owner.getCompressedBytes(),
+			delegate == null ? null : delegate.getCompressedBytes(),
+			rri,
+			amount,
+			negative
+		);
 	}
 
 	private BalanceEntry(
-		byte[] owner, RadixAddress delegate, REAddr rri,
+		byte[] owner, byte[] delegate, REAddr rri,
 		UInt384 amount, boolean negative
 	) {
 		this.owner = owner;
@@ -92,7 +97,7 @@ public class BalanceEntry {
 
 	public static BalanceEntry createFull(
 		byte[] owner,
-		RadixAddress delegate,
+		byte[] delegate,
 		REAddr rri,
 		UInt384 amount,
 		boolean negative
@@ -103,11 +108,16 @@ public class BalanceEntry {
 		return new BalanceEntry(owner, delegate, rri, amount, negative);
 	}
 
-
 	public static BalanceEntry createBalance(
-		ECPublicKey owner, RadixAddress delegate, REAddr rri, UInt384 amount
+		ECPublicKey owner, ECPublicKey delegate, REAddr rri, UInt384 amount
 	) {
-		return createFull(owner.getCompressedBytes(), delegate, rri, amount, false);
+		return createFull(
+			owner == null ? null : owner.getCompressedBytes(),
+			delegate == null ? null : delegate.getCompressedBytes(),
+			rri,
+			amount,
+			false
+		);
 	}
 
 	public ECPublicKey getOwner() {
@@ -118,8 +128,12 @@ public class BalanceEntry {
 		}
 	}
 
-	public RadixAddress getDelegate() {
-		return delegate;
+	public ECPublicKey getDelegate() {
+		try {
+			return delegate == null ? null : ECPublicKey.fromBytes(delegate);
+		} catch (PublicKeyException e) {
+			throw new IllegalStateException();
+		}
 	}
 
 	public REAddr getRri() {
@@ -168,7 +182,7 @@ public class BalanceEntry {
 
 			return negative == entry.negative
 				&& Arrays.equals(owner, entry.owner)
-				&& Objects.equals(delegate, entry.delegate)
+				&& Arrays.equals(delegate, entry.delegate)
 				&& rri.equals(entry.rri)
 				&& amount.equals(entry.amount);
 		}
@@ -177,13 +191,13 @@ public class BalanceEntry {
 
 	@Override
 	public final int hashCode() {
-		return Objects.hash(Arrays.hashCode(owner), delegate, rri, amount, negative);
+		return Objects.hash(Arrays.hashCode(owner), Arrays.hashCode(delegate), rri, amount, negative);
 	}
 
 	@Override
 	public String toString() {
 		return "/" + getOwner() + "/" + rri + " = " + (negative ? "-" : "+") + amount.toString()
-			+ (delegate == null ? "" : ", delegate " + delegate);
+			+ (delegate == null ? "" : ", delegate " + getDelegate());
 	}
 
 	private BalanceEntry diff(BalanceEntry balanceEntry, boolean negate) {
