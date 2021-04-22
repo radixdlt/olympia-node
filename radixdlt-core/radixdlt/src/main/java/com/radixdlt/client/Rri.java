@@ -26,6 +26,10 @@ import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
 
 public final class Rri {
+	private Rri() {
+		throw new IllegalStateException("Cannot instantiate.");
+	}
+
 	public static REAddr parseUnchecked(String rri) {
 		var data = Bech32.decode(rri);
 		if (!data.hrp.endsWith("_rr")) {

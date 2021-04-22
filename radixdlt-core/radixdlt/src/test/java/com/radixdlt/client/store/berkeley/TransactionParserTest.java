@@ -67,7 +67,7 @@ public class TransactionParserTest {
 		"xrd", "Test", "description", null, null
 	);
 
-	private final REAddr tokenRriII = REAddr.of(tokenOwnerKeyPair.getPublicKey(), "tst");
+	private final REAddr tokenRriII = REAddr.ofHashedKey(tokenOwnerKeyPair.getPublicKey(), "tst");
 	private final MutableTokenDefinition tokDefII = new MutableTokenDefinition(
 		"tst", "Test2", "description2", null, null
 	);

@@ -131,7 +131,7 @@ public class TokenDefinitionRecord {
 	public static TokenDefinitionRecord from(RadixAddress user, CreateFixedToken createFixedToken) {
 		final REAddr rri;
 		if (user != null) {
-			rri = REAddr.of(user.getPublicKey(), createFixedToken.getSymbol());
+			rri = REAddr.ofHashedKey(user.getPublicKey(), createFixedToken.getSymbol());
 		} else {
 			rri = REAddr.ofNativeToken();
 		}
@@ -150,7 +150,7 @@ public class TokenDefinitionRecord {
 	public static TokenDefinitionRecord from(RadixAddress user, CreateMutableToken createMutableToken) {
 		final REAddr rri;
 		if (user != null) {
-			rri = REAddr.of(user.getPublicKey(), createMutableToken.getSymbol());
+			rri = REAddr.ofHashedKey(user.getPublicKey(), createMutableToken.getSymbol());
 		} else {
 			rri = REAddr.ofNativeToken();
 		}

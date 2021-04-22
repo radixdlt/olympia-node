@@ -159,7 +159,7 @@ final class ConstraintScryptEnv implements SysCalls {
 
 				@Override
 				public SignatureValidator<RRIParticle, O> signatureValidator() {
-					return (rri, o, index, pubKey) -> pubKey.map(k -> rri.getSubstate().allow(k, rri.getArg()))
+					return (in, o, index, pubKey) -> pubKey.map(k -> in.getSubstate().allow(k, in.getArg()))
 						.orElse(false);
 				}
 			}

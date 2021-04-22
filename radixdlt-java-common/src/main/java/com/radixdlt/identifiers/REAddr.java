@@ -63,7 +63,7 @@ public final class REAddr {
 		return new REAddr(hash);
 	}
 
-	public static REAddr of(ECPublicKey key, String name) {
+	public static REAddr ofHashedKey(ECPublicKey key, String name) {
 		Objects.requireNonNull(key);
 		return create(pkToHash(name, key));
 	}

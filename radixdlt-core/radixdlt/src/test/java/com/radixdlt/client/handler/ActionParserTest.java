@@ -45,7 +45,7 @@ public class ActionParserTest {
 	private static final byte MAGIC = (byte) 0;
 	private final RadixAddress from = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
 	private final RadixAddress to = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
-	private final REAddr rri = REAddr.of(ECKeyPair.generateNew().getPublicKey(), "ckee");
+	private final REAddr rri = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "ckee");
 	private ClientApiStore clientApiStore;
 
 	@Before

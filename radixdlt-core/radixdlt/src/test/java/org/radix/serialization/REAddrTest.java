@@ -26,6 +26,6 @@ public class REAddrTest extends SerializeValue<REAddr> {
 	}
 
 	private static REAddr get() {
-		return REAddr.of(ECKeyPair.generateNew().getPublicKey(), "jsh");
+		return REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "jsh");
 	}
 }

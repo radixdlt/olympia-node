@@ -22,6 +22,7 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.utils.Pair;
 
 import java.util.Optional;
 
@@ -41,7 +42,7 @@ public final class SystemNextEpoch implements TxAction {
 		txBuilder.swap(
 			SystemParticle.class,
 			p -> p.getEpoch() == currentEpoch,
-			currentEpoch == 0 ? Optional.of(new SystemParticle(0, 0, 0)) : Optional.empty(),
+			currentEpoch == 0 ? Optional.of(Pair.of(new SystemParticle(0, 0, 0), new byte[0])) : Optional.empty(),
 			"No System particle available"
 		).with(substateDown -> new SystemParticle(substateDown.getEpoch() + 1, 0, timestamp));
 	}

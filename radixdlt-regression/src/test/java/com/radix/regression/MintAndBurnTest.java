@@ -48,7 +48,7 @@ public class MintAndBurnTest {
 			.map(s -> s.iterator().next())
 			.firstOrError()
 			.blockingGet();
-		REAddr token = REAddr.of(api.getAddress().getPublicKey(), "JOSH");
+		REAddr token = REAddr.ofHashedKey(api.getAddress().getPublicKey(), "JOSH");
 
 		CreateTokenAction createTokenAction = CreateTokenAction.create(
 			token,

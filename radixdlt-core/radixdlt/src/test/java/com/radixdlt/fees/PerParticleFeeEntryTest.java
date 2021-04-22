@@ -96,7 +96,7 @@ public class PerParticleFeeEntryTest {
 
     private static UniqueParticle makeParticle(String message) {
     	final var kp = ECKeyPair.generateNew();
-		final var rri = REAddr.of(kp.getPublicKey(), message);
+		final var rri = REAddr.ofHashedKey(kp.getPublicKey(), message);
     	return new UniqueParticle(rri);
     }
 

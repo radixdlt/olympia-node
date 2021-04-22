@@ -22,6 +22,7 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.RESerializer;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.utils.Pair;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.nio.ByteBuffer;
@@ -44,7 +45,10 @@ public final class REInstruction {
 			var p = RESerializer.deserialize(b);
 			int length = b.position() - pos;
 			var buf = ByteBuffer.wrap(b.array(), pos, length);
-			return Substate.create(p, SubstateId.ofVirtualSubstate(buf));
+			var argLength = b.get();
+			var arg = new byte[Byte.toUnsignedInt(argLength)];
+			b.get(arg);
+			return Pair.of(Substate.create(p, SubstateId.ofVirtualSubstate(buf)), arg);
 		}, Spin.UP, Spin.DOWN),
 		DOWN((byte) 3, (txn, i, b) -> SubstateId.fromBuffer(b), Spin.UP, Spin.DOWN),
 		LDOWN((byte) 4, (txn, i, b) -> {

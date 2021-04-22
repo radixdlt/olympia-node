@@ -50,7 +50,7 @@ public class StakingTest {
 		delegator1.discoverNodes();
 		delegator2.discoverNodes();
 
-		REAddr token = REAddr.of(delegate.getAddress().getPublicKey(), "COOKIE");
+		REAddr token = REAddr.ofHashedKey(delegate.getAddress().getPublicKey(), "COOKIE");
 		RadixNode originNode = delegate.getNetworkState()
 			.map(RadixNetworkState::getNodes)
 			.filter(s -> !s.isEmpty())

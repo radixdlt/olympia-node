@@ -89,7 +89,7 @@ public class BerkeleyClientApiStoreTest {
 	private static final RadixAddress TOKEN_ADDRESS = new RadixAddress((byte) 0, TOKEN_KEYPAIR.getPublicKey());
 
 	private static final String SYMBOL = "cfee";
-	private static final REAddr TOKEN = REAddr.of(TOKEN_ADDRESS.getPublicKey(), SYMBOL);
+	private static final REAddr TOKEN = REAddr.ofHashedKey(TOKEN_ADDRESS.getPublicKey(), SYMBOL);
 
 	private final Serialization serialization = DefaultSerialization.getInstance();
 	private final BerkeleyLedgerEntryStore ledgerStore = mock(BerkeleyLedgerEntryStore.class);

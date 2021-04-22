@@ -29,6 +29,7 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.Spliterator;
@@ -83,8 +84,8 @@ public final class TxBuilder {
 		lowLevelBuilder.up(particle);
 	}
 
-	private void virtualDown(Particle particle) {
-		lowLevelBuilder.virtualDown(particle);
+	private void virtualDown(Particle particle, byte[] args) {
+		lowLevelBuilder.virtualDown(particle, args);
 	}
 
 	public void down(SubstateId substateId) {
@@ -155,7 +156,7 @@ public final class TxBuilder {
 
 	private <T extends Particle> T down(
 		Class<T> particleClass,
-		Optional<T> virtualParticle,
+		Optional<Pair<T, byte[]>> virtualParticle,
 		String errorMessage
 	) throws TxBuilderException {
 		return down(particleClass, p -> true, virtualParticle, errorMessage);
@@ -172,7 +173,7 @@ public final class TxBuilder {
 	public <T extends Particle> T down(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
-		Optional<T> virtualParticle,
+		Optional<Pair<T, byte[]>> virtualParticle,
 		String errorMessage
 	) throws TxBuilderException {
 		var localDown = lowLevelBuilder.localUpSubstate().stream()
@@ -200,8 +201,8 @@ public final class TxBuilder {
 				.map(particleClass::cast)
 				.findFirst()
 				.or(() -> {
-					virtualParticle.ifPresent(this::virtualDown);
-					return virtualParticle;
+					virtualParticle.ifPresent(p -> this.virtualDown(p.getFirst(), p.getSecond()));
+					return virtualParticle.map(Pair::getFirst);
 				});
 
 			if (substateDown.isEmpty()) {
@@ -234,7 +235,7 @@ public final class TxBuilder {
 
 	private <T extends Particle, U extends Particle> Replacer<T, U> swap(
 		Class<T> particleClass,
-		Optional<T> virtualParticle,
+		Optional<Pair<T, byte[]>> virtualParticle,
 		String errorMessage
 	) throws TxBuilderException {
 		T t = down(particleClass, virtualParticle, errorMessage);
@@ -247,7 +248,7 @@ public final class TxBuilder {
 	public <T extends Particle, U extends Particle> Replacer<T, U> swap(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
-		Optional<T> virtualParticle,
+		Optional<Pair<T, byte[]>> virtualParticle,
 		String errorMessage
 	) throws TxBuilderException {
 		T t = down(particleClass, particlePredicate, virtualParticle, errorMessage);
@@ -352,11 +353,11 @@ public final class TxBuilder {
 	public TxBuilder mutex(String id) throws TxBuilderException {
 		assertHasAddress("Must have address");
 
-		final var rri = REAddr.of(address.getPublicKey(), id);
+		final var rri = REAddr.ofHashedKey(address.getPublicKey(), id);
 		swap(
 			RRIParticle.class,
 			p -> p.getRri().equals(rri),
-			Optional.of(new RRIParticle(rri, id)),
+			Optional.of(Pair.of(new RRIParticle(rri, id), id.getBytes(StandardCharsets.UTF_8))),
 			"RRI not available"
 		).with(r -> new UniqueParticle(rri));
 

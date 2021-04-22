@@ -45,7 +45,7 @@ public class TokensTest {
 		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-		REAddr rri = REAddr.of(keyPair.getPublicKey(), "test");
+		REAddr rri = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
 		RRIParticle rriParticle = new RRIParticle(rri, "test");
 		TokenDefinitionParticle tokenDefinitionParticle = new TokenDefinitionParticle(
 			rri,

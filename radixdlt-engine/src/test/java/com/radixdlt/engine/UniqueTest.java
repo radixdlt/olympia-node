@@ -65,7 +65,7 @@ public class UniqueTest {
 
 	@Test
 	public void using_someone_elses_mutex_should_fail() {
-		var rri = REAddr.of(ECKeyPair.generateNew().getPublicKey(), "smthng");
+		var rri = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "smthng");
 		var builder = TxBuilder.newBuilder(address)
 			.toLowLevelBuilder()
 			.virtualDown(new RRIParticle(rri, "smthng"))

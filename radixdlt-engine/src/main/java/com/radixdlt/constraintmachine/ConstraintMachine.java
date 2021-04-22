@@ -400,10 +400,17 @@ public final class ConstraintMachine {
 					final Result staticCheckResult = particleStaticCheck.apply(substate.getParticle());
 					if (staticCheckResult.isError()) {
 						var errMsg = staticCheckResult.getErrorMessage();
-
+						throw verifierState.exception(errMsg);
+					}
+				} else if (data instanceof Pair) {
+					Substate substate = (Substate) ((Pair) data).getFirst();
+					final Result staticCheckResult = particleStaticCheck.apply(substate.getParticle());
+					if (staticCheckResult.isError()) {
+						var errMsg = staticCheckResult.getErrorMessage();
 						throw verifierState.exception(errMsg);
 					}
 				}
+
 				particleIndex++;
 
 			} else if (inst.getMicroOp() == REInstruction.REOp.MSG) {
@@ -465,13 +472,16 @@ public final class ConstraintMachine {
 			if (inst.hasSubstate()) {
 				final Particle nextParticle;
 				final Substate substate;
+				final byte[] argument;
 				if (inst.getMicroOp() == REInstruction.REOp.UP) {
 					// TODO: Cleanup indexing of substate class
 					substate = inst.getData();
 					nextParticle = substate.getParticle();
 					validationState.bootUp(instIndex, substate);
+					argument = new byte[0];
 				} else if (inst.getMicroOp() == REInstruction.REOp.VDOWN) {
-					substate = inst.getData();
+					substate = (Substate) ((Pair) inst.getData()).getFirst();
+					argument = (byte[]) ((Pair) inst.getData()).getSecond();
 					nextParticle = substate.getParticle();
 					var stateError = validationState.virtualShutdown(substate);
 					if (stateError.isPresent()) {
@@ -485,6 +495,7 @@ public final class ConstraintMachine {
 					}
 					nextParticle = maybeParticle.get();
 					substate = Substate.create(nextParticle, substateId);
+					argument = new byte[0];
 				} else if (inst.getMicroOp() == REInstruction.REOp.LDOWN) {
 					SubstateId substateId = inst.getData();
 					var maybeParticle = validationState.localShutdown(substateId.getIndex().orElseThrow());
@@ -493,13 +504,14 @@ public final class ConstraintMachine {
 					}
 					nextParticle = maybeParticle.get();
 					substate = Substate.create(nextParticle, substateId);
+					argument = new byte[0];
 				} else {
 					return Optional.of(new CMError(instIndex, CMErrorCode.UNKNOWN_OP, validationState));
 				}
 
 				var error = validateParticle(
 					validationState,
-					SubstateWithArg.create(nextParticle, new byte[0]),
+					SubstateWithArg.create(nextParticle, argument),
 					inst.getCheckSpin() == Spin.UP
 				);
 				if (error.isPresent()) {

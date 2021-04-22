@@ -27,6 +27,7 @@ import com.radixdlt.utils.Ints;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -111,9 +112,17 @@ public final class TxLowLevelBuilder {
 	}
 
 	public TxLowLevelBuilder virtualDown(Particle particle) {
+		return virtualDown(particle, new byte[0]);
+	}
+
+	public TxLowLevelBuilder virtualDown(Particle particle, byte[] arg) {
 		Objects.requireNonNull(particle, "particle is required");
 		var bytes = RESerializer.serialize(particle);
-		instruction(REInstruction.REOp.VDOWN, bytes);
+		var buf = ByteBuffer.allocate(bytes.length + 1 + arg.length);
+		buf.put(bytes);
+		buf.put((byte) arg.length); // arg length
+		buf.put(arg);
+		instruction(REInstruction.REOp.VDOWN, buf.array());
 		this.remoteDownSubstate.add(SubstateId.ofVirtualSubstate(bytes));
 		return this;
 	}

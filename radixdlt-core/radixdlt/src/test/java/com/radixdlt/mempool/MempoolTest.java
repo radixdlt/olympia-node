@@ -52,6 +52,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -98,11 +99,11 @@ public class MempoolTest {
 		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder();
 		for (int i = 0; i < numParticles; i++) {
 			var symbol = "test" + (char) ('c' + i);
-			var rri = REAddr.of(keyPair.getPublicKey(), symbol);
+			var rri = REAddr.ofHashedKey(keyPair.getPublicKey(), symbol);
 			var rriParticle = new RRIParticle(rri, symbol);
-			UniqueParticle uniqueParticle = new UniqueParticle(rri);
+			var uniqueParticle = new UniqueParticle(rri);
 			atomBuilder
-				.virtualDown(rriParticle)
+				.virtualDown(rriParticle, symbol.getBytes(StandardCharsets.UTF_8))
 				.up(uniqueParticle)
 				.particleGroup();
 		}

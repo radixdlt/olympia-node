@@ -126,8 +126,8 @@ public class MutableTokenTest {
 
 		var txn = sut.construct(address, TxActionListBuilder.create()
 			.createMutableToken(tokDef)
-			.mint(REAddr.of(address.getPublicKey(), "test"), address, UInt256.SEVEN)
-			.transfer(REAddr.of(address.getPublicKey(), "test"), address, UInt256.FIVE)
+			.mint(REAddr.ofHashedKey(address.getPublicKey(), "test"), address, UInt256.SEVEN)
+			.transfer(REAddr.ofHashedKey(address.getPublicKey(), "test"), address, UInt256.FIVE)
 			.build()
 		).signAndBuild(keyPair::sign);
 

@@ -329,7 +329,7 @@ public final class RESerializer {
 		buf.put(sBytes); // url
 	}
 
-	private static String deserializeString(ByteBuffer buf) {
+	public static String deserializeString(ByteBuffer buf) {
 		var len = Byte.toUnsignedInt(buf.get()); // url
 		var dest = new byte[len];
 		buf.get(dest);

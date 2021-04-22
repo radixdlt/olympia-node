@@ -43,6 +43,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
 import org.junit.rules.TemporaryFolder;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -70,11 +71,11 @@ public final class UniqueTest {
 	}
 
 	private Txn uniqueTxn(ECKeyPair keyPair) {
-		var rri = REAddr.of(keyPair.getPublicKey(), "test");
+		var rri = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
 		var rriParticle = new RRIParticle(rri, "test");
 		var uniqueParticle = new UniqueParticle(rri);
 		var atomBuilder = TxLowLevelBuilder.newBuilder()
-			.virtualDown(rriParticle)
+			.virtualDown(rriParticle, "test".getBytes(StandardCharsets.UTF_8))
 			.up(uniqueParticle)
 			.particleGroup();
 		var sig = keyPair.sign(atomBuilder.hashToSign());
