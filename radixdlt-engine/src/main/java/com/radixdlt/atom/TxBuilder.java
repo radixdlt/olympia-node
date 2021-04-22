@@ -21,19 +21,20 @@ package com.radixdlt.atom;
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -84,8 +85,11 @@ public final class TxBuilder {
 		lowLevelBuilder.up(particle);
 	}
 
-	private void virtualDown(Particle particle) {
-		lowLevelBuilder.virtualDown(particle);
+	private void virtualDown(SubstateWithArg<?> substateWithArg) {
+		substateWithArg.getArg().ifPresentOrElse(
+			arg -> lowLevelBuilder.virtualDown(substateWithArg.getSubstate(), arg),
+			() -> lowLevelBuilder.virtualDown(substateWithArg.getSubstate())
+		);
 	}
 
 	public void down(SubstateId substateId) {
@@ -94,14 +98,6 @@ public final class TxBuilder {
 
 	private void localDown(int index) {
 		lowLevelBuilder.localDown(index);
-	}
-
-	public void read(SubstateId substateId) {
-		lowLevelBuilder.read(substateId);
-	}
-
-	public void localRead(int index) {
-		lowLevelBuilder.localRead(index);
 	}
 
 	private SubstateCursor createRemoteSubstateCursor(Class<? extends Particle> particleClass) {
@@ -164,7 +160,7 @@ public final class TxBuilder {
 
 	private <T extends Particle> T down(
 		Class<T> particleClass,
-		Optional<T> virtualParticle,
+		Optional<SubstateWithArg<T>> virtualParticle,
 		String errorMessage
 	) throws TxBuilderException {
 		return down(particleClass, p -> true, virtualParticle, errorMessage);
@@ -181,7 +177,7 @@ public final class TxBuilder {
 	public <T extends Particle> T down(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
-		Optional<T> virtualParticle,
+		Optional<SubstateWithArg<T>> virtualParticle,
 		String errorMessage
 	) throws TxBuilderException {
 		var localDown = lowLevelBuilder.localUpSubstate().stream()
@@ -210,7 +206,7 @@ public final class TxBuilder {
 				.findFirst()
 				.or(() -> {
 					virtualParticle.ifPresent(this::virtualDown);
-					return virtualParticle;
+					return virtualParticle.map(SubstateWithArg::getSubstate);
 				});
 
 			if (substateDown.isEmpty()) {
@@ -220,46 +216,6 @@ public final class TxBuilder {
 			return substateDown.get();
 		}
 	}
-
-	public <T extends Particle> T read(
-		Class<T> particleClass,
-		Predicate<T> particlePredicate,
-		String errorMessage
-	) throws TxBuilderException {
-		var localDown = lowLevelBuilder.localUpSubstate().stream()
-			.filter(s -> {
-				if (!particleClass.isInstance(s.getParticle())) {
-					return false;
-				}
-
-				return particlePredicate.test(particleClass.cast(s.getParticle()));
-			})
-			.peek(s -> this.localRead(s.getIndex()))
-			.map(LocalSubstate::getParticle)
-			.map(particleClass::cast)
-			.findFirst();
-
-		if (localDown.isPresent()) {
-			return localDown.get();
-		}
-
-
-		try (var cursor = createRemoteSubstateCursor(particleClass)) {
-			var substateDown = iteratorToStream(cursor)
-				.filter(s -> particlePredicate.test(particleClass.cast(s.getParticle())))
-				.peek(s -> this.read(s.getId()))
-				.map(Substate::getParticle)
-				.map(particleClass::cast)
-				.findFirst();
-
-			if (substateDown.isEmpty()) {
-				throw new TxBuilderException(errorMessage + " (Substate not found)");
-			}
-
-			return substateDown.get();
-		}
-	}
-
 
 	public interface Mapper<T extends Particle, U extends Particle> {
 		U map(T t) throws TxBuilderException;
@@ -283,7 +239,7 @@ public final class TxBuilder {
 
 	private <T extends Particle, U extends Particle> Replacer<T, U> swap(
 		Class<T> particleClass,
-		Optional<T> virtualParticle,
+		Optional<SubstateWithArg<T>> virtualParticle,
 		String errorMessage
 	) throws TxBuilderException {
 		T t = down(particleClass, virtualParticle, errorMessage);
@@ -296,7 +252,7 @@ public final class TxBuilder {
 	public <T extends Particle, U extends Particle> Replacer<T, U> swap(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
-		Optional<T> virtualParticle,
+		Optional<SubstateWithArg<T>> virtualParticle,
 		String errorMessage
 	) throws TxBuilderException {
 		T t = down(particleClass, particlePredicate, virtualParticle, errorMessage);
@@ -401,13 +357,13 @@ public final class TxBuilder {
 	public TxBuilder mutex(String id) throws TxBuilderException {
 		assertHasAddress("Must have address");
 
-		final var rri = Rri.of(address.getPublicKey(), id);
+		final var addr = REAddr.ofHashedKey(address.getPublicKey(), id);
 		swap(
-			RRIParticle.class,
-			p -> p.getRri().equals(rri),
-			Optional.of(new RRIParticle(rri)),
+			REAddrParticle.class,
+			p -> p.getAddr().equals(addr),
+			Optional.of(SubstateWithArg.withArg(new REAddrParticle(addr), id.getBytes(StandardCharsets.UTF_8))),
 			"RRI not available"
-		).with(r -> new UniqueParticle(rri));
+		).with(r -> new UniqueParticle(addr));
 
 		particleGroup();
 
@@ -417,24 +373,6 @@ public final class TxBuilder {
 	public TxBuilder message(byte[] message) {
 		lowLevelBuilder.message(message);
 		return this;
-	}
-
-	public Txn signAndBuild(
-		Function<HashCode, ECDSASignature> signer,
-		Consumer<SubstateStore> upSubstateConsumer
-	) {
-		var hashToSign = lowLevelBuilder.hashToSign();
-		var txn = lowLevelBuilder.sig(signer.apply(hashToSign)).build();
-		SubstateStore upSubstate = c -> SubstateCursor.concat(
-			createRemoteSubstateCursor(c),
-			() -> SubstateCursor.wrapIterator(lowLevelBuilder.localUpSubstate().stream()
-				.filter(l -> c.isInstance(l.getParticle()))
-				.map(l -> Substate.create(l.getParticle(), SubstateId.ofSubstate(txn.getId(), l.getIndex())))
-				.iterator())
-		);
-		upSubstateConsumer.accept(upSubstate);
-
-		return txn;
 	}
 
 	public Txn signAndBuild(Function<HashCode, ECDSASignature> signer) {

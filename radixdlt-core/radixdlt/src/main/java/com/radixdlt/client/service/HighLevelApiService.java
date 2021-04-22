@@ -18,13 +18,14 @@
 package com.radixdlt.client.service;
 
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.client.api.TransactionAction;
+import com.radixdlt.client.handler.ActionParser;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.berkeley.BalanceEntry;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.ImmutableIndex;
 import com.radixdlt.client.api.TxHistoryEntry;
@@ -32,6 +33,7 @@ import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Tuple.Tuple2;
+import org.json.JSONArray;
 
 import java.time.Instant;
 import java.util.List;
@@ -67,19 +69,17 @@ public class HighLevelApiService {
 	}
 
 	public Result<TokenDefinitionRecord> getNativeTokenDescription() {
-		return Result.fromOptional(
-			immutableIndex.loadRri(null, Rri.NATIVE_TOKEN),
-			"Unable to find native token"
-		)
-			.map(TokenDefinitionParticle.class::cast)
-			.flatMap(p ->
-				clientApiStore.getTokenSupply(p.getRri())
-					.map(supply -> TokenDefinitionRecord.from(p, supply))
-			);
+		return clientApiStore.getTokenDefinition(REAddr.ofNativeToken())
+			.flatMap(r -> clientApiStore.getTokenSupply(REAddr.ofNativeToken()).map(r::withSupply));
 	}
 
-	public Result<TokenDefinitionRecord> getTokenDescription(Rri rri) {
-		return clientApiStore.getTokenDefinition(rri)
+	public Result<List<TransactionAction>> parse(JSONArray actions) {
+		return ActionParser.parse(actions, clientApiStore);
+	}
+
+	public Result<TokenDefinitionRecord> getTokenDescription(String rri) {
+		return clientApiStore.parseRri(rri)
+			.flatMap(clientApiStore::getTokenDefinition)
 			.flatMap(definition -> withSupply(rri, definition));
 	}
 
@@ -108,9 +108,9 @@ public class HighLevelApiService {
 		return second;
 	}
 
-	private Result<TokenDefinitionRecord> withSupply(Rri rri, TokenDefinitionRecord definition) {
+	private Result<TokenDefinitionRecord> withSupply(String rri, TokenDefinitionRecord definition) {
 		return definition.isMutable()
-			   ? clientApiStore.getTokenSupply(rri).map(definition::withSupply)
+			   ? clientApiStore.parseRri(rri).flatMap(clientApiStore::getTokenSupply).map(definition::withSupply)
 			   : Result.ok(definition);
 	}
 }

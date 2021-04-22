@@ -26,7 +26,7 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -38,7 +38,7 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.network.addressbook.PeersView;
@@ -52,6 +52,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -97,11 +98,12 @@ public class MempoolTest {
 	private static Txn createTxn(ECKeyPair keyPair, int numParticles) {
 		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder();
 		for (int i = 0; i < numParticles; i++) {
-			var rri = Rri.of(keyPair.getPublicKey(), "test" + (char) ('c' + i));
-			var rriParticle = new RRIParticle(rri);
-			UniqueParticle uniqueParticle = new UniqueParticle(rri);
+			var symbol = "test" + (char) ('c' + i);
+			var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), symbol);
+			var rriParticle = new REAddrParticle(addr);
+			var uniqueParticle = new UniqueParticle(addr);
 			atomBuilder
-				.virtualDown(rriParticle)
+				.virtualDown(rriParticle, symbol.getBytes(StandardCharsets.UTF_8))
 				.up(uniqueParticle)
 				.particleGroup();
 		}

@@ -28,7 +28,7 @@ import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.fees.NativeToken;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
@@ -37,12 +37,12 @@ import java.time.Instant;
 import java.util.stream.Collectors;
 
 public final class TransactionParser {
-	private final Rri nativeToken;
+	private final REAddr nativeToken;
 	private final int magic;
 
 	@Inject
 	public TransactionParser(
-		@NativeToken Rri nativeToken,
+		@NativeToken REAddr nativeToken,
 		@Named("magic") int magic
 	) {
 		this.nativeToken = nativeToken;

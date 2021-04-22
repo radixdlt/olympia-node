@@ -19,13 +19,17 @@ package com.radixdlt.atommodel.routines;
 
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.atom.actions.Unknown;
+import com.radixdlt.atom.actions.CreateFixedToken;
+import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atomos.ConstraintRoutine;
+import com.radixdlt.atomos.ConstraintScryptEnv;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.RoutineCalls;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
+import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
@@ -57,7 +61,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	}
 	private final Class<I> inputClass;
 	private final Class<O> outputClass0;
-	private final BiFunction<I, O, PermissionLevel> permissionLevel;
+	private final BiFunction<SubstateWithArg<I>, O, PermissionLevel> permissionLevel;
 	private final Class<V> outputClass1;
 	private final BiFunction<O, V, Result> combinedCheck;
 	private final TypeToken<UsedParticle<O>> typeToken0;
@@ -67,7 +71,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	public CreateCombinedTransitionRoutine(
 		Class<I> inputClass,
 		Class<O> outputClass0,
-		BiFunction<I, O, PermissionLevel> permissionLevel,
+		BiFunction<SubstateWithArg<I>, O, PermissionLevel> permissionLevel,
 		Class<V> outputClass1,
 		Predicate<O> includeSecondClass,
 		BiFunction<O, V, Result> combinedCheck,
@@ -100,21 +104,43 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	public TransitionProcedure<I, O, VoidReducerState> getProcedure0() {
 		return new TransitionProcedure<I, O, VoidReducerState>() {
 			@Override
-			public PermissionLevel requiredPermissionLevel(I inputParticle, O outputParticle, ImmutableIndex index) {
-				return permissionLevel.apply(inputParticle, outputParticle);
+			public PermissionLevel requiredPermissionLevel(SubstateWithArg<I> in, O outputParticle, ImmutableIndex index) {
+				return permissionLevel.apply(in, outputParticle);
 			}
 
 			@Override
-			public Result precondition(I inputParticle, O outputParticle, VoidReducerState outputUsed, ImmutableIndex index) {
+			public Result precondition(SubstateWithArg<I> in, O outputParticle, VoidReducerState outputUsed, ImmutableIndex index) {
+				// FIXME: HACK as we are assuming that this is a mutable token creation which is fine for
+				// FIXME: now as it is the only available transition for betanet
+				if (in.getArg().isEmpty()) {
+					return Result.error("Rri must be created with a name");
+				}
+				var arg = in.getArg().get();
+				if (!ConstraintScryptEnv.NAME_PATTERN.matcher(new String(arg)).matches()) {
+					return Result.error("invalid rri name");
+				}
 				return Result.success();
 			}
 
 			@Override
 			public InputOutputReducer<I, O, VoidReducerState> inputOutputReducer() {
-				return (input, output, index, outputUsed) ->
-					includeSecondClass.test(output)
-						? ReducerResult.incomplete(new UsedParticle<>(typeToken0, output), true)
-						: ReducerResult.complete(Unknown.create());
+				return (input, output, index, outputUsed) -> {
+					if (includeSecondClass.test(output)) {
+						return ReducerResult.incomplete(new UsedParticle<>(typeToken0, output), true);
+					} else {
+						// FIXME: HACK as we are assuming that this is a mutable token creation which is fine for
+						// FIXME: now as it is the only available transition for betanet
+						var tokDefParticle = (TokenDefinitionParticle) output;
+						var action = new CreateMutableToken(
+							new String(input.getArg().orElseThrow()),
+							tokDefParticle.getName(),
+							tokDefParticle.getDescription(),
+							tokDefParticle.getIconUrl(),
+							tokDefParticle.getUrl()
+						);
+						return ReducerResult.complete(action);
+					}
+				};
 			}
 
 			@Override
@@ -127,13 +153,31 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	public TransitionProcedure<I, V, UsedParticle<O>> getProcedure2() {
 		return new TransitionProcedure<I, V, UsedParticle<O>>() {
 			@Override
-			public Result precondition(I inputParticle, V outputParticle, UsedParticle<O> inputUsed, ImmutableIndex index) {
+			public Result precondition(
+				SubstateWithArg<I> inputParticle,
+				V outputParticle,
+				UsedParticle<O> inputUsed,
+				ImmutableIndex index
+			) {
 				return combinedCheck.apply(inputUsed.usedParticle, outputParticle);
 			}
 
 			@Override
 			public InputOutputReducer<I, V, UsedParticle<O>> inputOutputReducer() {
-				return (input, output, index, outputUsed) -> ReducerResult.complete(Unknown.create());
+				return (input, output, index, outputUsed) -> {
+					// FIXME: HACK as we are assuming that this is a mutable token creation which is fine for
+					// FIXME: now as it is the only available transition for betanet
+					var tokDefParticle = (TokenDefinitionParticle) outputUsed.usedParticle;
+					var action = new CreateFixedToken(
+						new String(input.getArg().orElseThrow()),
+						tokDefParticle.getName(),
+						tokDefParticle.getDescription(),
+						tokDefParticle.getIconUrl(),
+						tokDefParticle.getUrl(),
+						tokDefParticle.getSupply().orElseThrow()
+					);
+					return ReducerResult.complete(action);
+				};
 			}
 
 			@Override

@@ -18,7 +18,8 @@
 package com.radixdlt.atommodel.tokens;
 
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
@@ -28,34 +29,68 @@ import java.util.Optional;
  * Particle representing a fixed supply token definition
  */
 public final class TokenDefinitionParticle implements Particle {
-	private final Rri rri;
-	private final UInt256 supply;
+	private final REAddr rri;
 	private final String name;
 	private final String description;
 	private final String iconUrl;
 	private final String url;
+	private final ECPublicKey minter;
+	private final UInt256 supply;
 
 	public TokenDefinitionParticle(
-		Rri rri,
+		REAddr rri,
+		String name,
+		String description,
+		String iconUrl,
+		String url,
+		UInt256 supply,
+		ECPublicKey minter
+	) {
+		this.rri = Objects.requireNonNull(rri);
+		this.name = Objects.requireNonNull(name);
+		this.description = Objects.requireNonNull(description);
+		this.iconUrl = Objects.requireNonNull(iconUrl);
+		this.url = Objects.requireNonNull(url);
+
+		if (supply != null && minter != null) {
+			throw new IllegalArgumentException("Can't have fixed supply and minter");
+		}
+
+		this.supply = supply;
+		this.minter = minter;
+	}
+
+	public TokenDefinitionParticle(
+		REAddr rri,
 		String name,
 		String description,
 		String iconUrl,
 		String url,
 		UInt256 supply
 	) {
-		this.rri = Objects.requireNonNull(rri);
-		this.name = Objects.requireNonNull(name);
-		this.description = Objects.requireNonNull(description);
-		this.supply = supply;
-		this.iconUrl = Objects.requireNonNull(iconUrl);
-		this.url = Objects.requireNonNull(url);
+		this(rri, name, description, iconUrl, url, Objects.requireNonNull(supply), null);
+	}
+
+	public TokenDefinitionParticle(
+		REAddr rri,
+		String name,
+		String description,
+		String iconUrl,
+		String url,
+		ECPublicKey minter
+	) {
+		this(rri, name, description, iconUrl, url, null, minter);
+	}
+
+	public Optional<ECPublicKey> getMinter() {
+		return Optional.ofNullable(minter);
 	}
 
 	public boolean isMutable() {
 		return this.supply == null;
 	}
 
-	public Rri getRri() {
+	public REAddr getRri() {
 		return rri;
 	}
 
@@ -95,15 +130,16 @@ public final class TokenDefinitionParticle implements Particle {
 		}
 		TokenDefinitionParticle that = (TokenDefinitionParticle) o;
 		return Objects.equals(rri, that.rri)
-				&& Objects.equals(name, that.name)
-				&& Objects.equals(description, that.description)
-				&& Objects.equals(supply, that.supply)
-				&& Objects.equals(iconUrl, that.iconUrl)
-				&& Objects.equals(url, that.url);
+			&& Objects.equals(name, that.name)
+			&& Objects.equals(description, that.description)
+			&& Objects.equals(supply, that.supply)
+			&& Objects.equals(iconUrl, that.iconUrl)
+			&& Objects.equals(url, that.url)
+			&& Objects.equals(minter, that.minter);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(rri, name, description, supply, iconUrl, url);
+		return Objects.hash(rri, name, description, supply, iconUrl, url, minter);
 	}
 }

@@ -26,6 +26,7 @@ import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
+import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
@@ -80,18 +81,26 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 
 			new TransitionProcedure<>() {
 				@Override
-				public PermissionLevel requiredPermissionLevel(SystemParticle i, SystemParticle o, ImmutableIndex index) {
+				public PermissionLevel requiredPermissionLevel(
+					SubstateWithArg<SystemParticle> i,
+					SystemParticle o,
+					ImmutableIndex index
+				) {
 					return PermissionLevel.SUPER_USER;
 				}
 
 				@Override
 				public Result precondition(
-					SystemParticle inputParticle,
+					SubstateWithArg<SystemParticle> in,
 					SystemParticle outputParticle,
 					VoidReducerState outputUsed,
 					ImmutableIndex immutableIndex
 				) {
+					if (in.getArg().isPresent()) {
+						return Result.error("No arguments allowed");
+					}
 
+					var inputParticle = in.getSubstate();
 					if (inputParticle.getEpoch() == outputParticle.getEpoch()) {
 						if (inputParticle.getView() >= outputParticle.getView()) {
 							return Result.error("Next view must be greater than previous.");
@@ -108,8 +117,8 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 				@Override
 				public InputOutputReducer<SystemParticle, SystemParticle, VoidReducerState> inputOutputReducer() {
 					return (input, output, index, outputUsed) -> ReducerResult.complete(
-						input.getEpoch() == output.getEpoch()
-							? new SystemNextView(output.getView(), output.getTimestamp(), input.getEpoch())
+						input.getSubstate().getEpoch() == output.getEpoch()
+							? new SystemNextView(output.getView(), output.getTimestamp(), input.getSubstate().getEpoch())
 							: new SystemNextEpoch(output.getTimestamp(), output.getEpoch())
 					);
 				}

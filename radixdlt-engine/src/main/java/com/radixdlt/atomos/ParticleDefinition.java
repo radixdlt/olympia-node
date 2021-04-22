@@ -18,7 +18,7 @@
 package com.radixdlt.atomos;
 
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -31,13 +31,13 @@ import java.util.function.Predicate;
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class ParticleDefinition<T extends Particle> {
 	private final Function<T, Result> staticValidation; // may be null
-	private final Function<T, Rri> rriMapper; // may be null
+	private final Function<T, REAddr> rriMapper; // may be null
 	private final Predicate<T> virtualizeSpin; // may be null
 	private final boolean allowsTransitionsFromOutsideScrypts;
 
 	private ParticleDefinition(
 		Function<T, Result> staticValidation,
-		Function<T, Rri> rriMapper,
+		Function<T, REAddr> rriMapper,
 		Predicate<T> virtualizeSpin,
 		boolean allowsTransitionsFromOutsideScrypts
 	) {
@@ -51,7 +51,7 @@ public class ParticleDefinition<T extends Particle> {
 		return staticValidation;
 	}
 
-	Function<T, Rri> getRriMapper() {
+	Function<T, REAddr> getRriMapper() {
 		return rriMapper;
 	}
 
@@ -78,7 +78,7 @@ public class ParticleDefinition<T extends Particle> {
 	 */
 	public static class Builder<T extends Particle> {
 		private Function<T, Result> staticValidation = x -> Result.success();
-		private Function<T, Rri> rriMapper;
+		private Function<T, REAddr> rriMapper;
 		private Predicate<T> virtualizedParticles = x -> false;
 		private boolean allowsTransitionsFromOutsideScrypts = false;
 
@@ -90,7 +90,7 @@ public class ParticleDefinition<T extends Particle> {
 			return this;
 		}
 
-		public Builder<T> rriMapper(Function<T, Rri> rriMapper) {
+		public Builder<T> rriMapper(Function<T, REAddr> rriMapper) {
 			this.rriMapper = rriMapper;
 			return this;
 		}

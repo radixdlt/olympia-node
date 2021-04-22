@@ -69,7 +69,7 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.disposables.Disposables;
 import io.reactivex.observables.ConnectableObservable;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 
 import java.math.BigDecimal;
@@ -287,7 +287,7 @@ public class RadixApplicationAPI {
 	 * @deprecated The Java client access library has been deprecated
 	 */
 	@Deprecated(since = "beta.27")
-	public Rri getNativeTokenRef() {
+	public REAddr getNativeTokenRef() {
 		return universe.getNativeToken();
 	}
 
@@ -423,7 +423,7 @@ public class RadixApplicationAPI {
 	 */
 	@Deprecated(since = "beta.27")
 	public Result createMultiIssuanceToken(
-		Rri tokenRri,
+		REAddr tokenRri,
 		String name,
 		String description
 	) {
@@ -446,7 +446,7 @@ public class RadixApplicationAPI {
 	 */
 	@Deprecated(since = "beta.27")
 	public Result createMultiIssuanceToken(
-		Rri tokenRri,
+		REAddr tokenRri,
 		String name,
 		String description,
 		String iconUrl,
@@ -480,7 +480,7 @@ public class RadixApplicationAPI {
 	 */
 	@Deprecated(since = "beta.27")
 	public Result createFixedSupplyToken(
-		Rri tokenRri,
+		REAddr tokenRri,
 		String name,
 		String description,
 		BigDecimal supply
@@ -505,7 +505,7 @@ public class RadixApplicationAPI {
 	 */
 	@Deprecated(since = "beta.27")
 	public Result createFixedSupplyToken(
-		Rri tokenRri,
+		REAddr tokenRri,
 		String name,
 		String description,
 		String iconUrl,
@@ -541,7 +541,7 @@ public class RadixApplicationAPI {
 	 */
 	@Deprecated(since = "beta.27")
 	public Result createToken(
-		Rri tokenRri,
+		REAddr tokenRri,
 		String name,
 		String description,
 		BigDecimal initialSupply,
@@ -569,7 +569,7 @@ public class RadixApplicationAPI {
 	 */
 	@Deprecated(since = "beta.27")
 	public Result createToken(
-		Rri tokenRri,
+		REAddr tokenRri,
 		String name,
 		String description,
 		String iconUrl,
@@ -603,7 +603,7 @@ public class RadixApplicationAPI {
 	 * @deprecated The Java client access library has been deprecated
 	 */
 	@Deprecated(since = "beta.27")
-	public Result sendTokens(Rri token, RadixAddress to, BigDecimal amount) {
+	public Result sendTokens(REAddr token, RadixAddress to, BigDecimal amount) {
 		return sendTokens(token, getAddress(), to, amount);
 	}
 
@@ -620,7 +620,7 @@ public class RadixApplicationAPI {
 	 * @deprecated The Java client access library has been deprecated
 	 */
 	@Deprecated(since = "beta.27")
-	public Result sendTokens(Rri token, RadixAddress from, RadixAddress to, BigDecimal amount) {
+	public Result sendTokens(REAddr token, RadixAddress from, RadixAddress to, BigDecimal amount) {
 		return sendTokens(token, from, to, amount, null);
 	}
 
@@ -640,7 +640,7 @@ public class RadixApplicationAPI {
 	 */
 	@Deprecated(since = "beta.27")
 	public Result sendTokens(
-		Rri token,
+		REAddr token,
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
@@ -671,7 +671,7 @@ public class RadixApplicationAPI {
 	@Deprecated(since = "beta.27")
 	public Result stakeTokens(
 		BigDecimal amount,
-		Rri token,
+		REAddr token,
 		RadixAddress delegate
 	) {
 		return stakeTokens(amount, token, getAddress(), delegate);
@@ -692,7 +692,7 @@ public class RadixApplicationAPI {
 	@Deprecated(since = "beta.27")
 	public Result stakeTokens(
 		BigDecimal amount,
-		Rri token,
+		REAddr token,
 		RadixAddress from,
 		RadixAddress delegate
 	) {
@@ -718,7 +718,7 @@ public class RadixApplicationAPI {
 	@Deprecated(since = "beta.27")
 	public Result unstakeTokens(
 		BigDecimal amount,
-		Rri token,
+		REAddr token,
 		RadixAddress delegate
 	) {
 		return unstakeTokens(amount, token, getAddress(), delegate);
@@ -739,7 +739,7 @@ public class RadixApplicationAPI {
 	@Deprecated(since = "beta.27")
 	public Result unstakeTokens(
 		BigDecimal amount,
-		Rri token,
+		REAddr token,
 		RadixAddress from,
 		RadixAddress delegate
 	) {

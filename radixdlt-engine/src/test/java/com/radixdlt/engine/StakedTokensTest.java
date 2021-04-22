@@ -33,7 +33,7 @@ import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -45,7 +45,7 @@ public class StakedTokensTest {
 	private static final byte MAGIC = (byte) 0;
 	private RadixEngine<Void> engine;
 	private EngineStore<Void> store;
-	private Rri tokenRri;
+	private REAddr tokenRri;
 	private ECKeyPair tokenOwnerKeyPair = ECKeyPair.generateNew();
 	private RadixAddress tokenOwnerAddress = new RadixAddress(MAGIC, this.tokenOwnerKeyPair.getPublicKey());
 	private ECKeyPair validatorKeyPair = ECKeyPair.generateNew();
@@ -53,7 +53,7 @@ public class StakedTokensTest {
 
 	@Before
 	public void setup() throws Exception {
-		this.tokenRri = Rri.ofSystem("xrd");
+		this.tokenRri = REAddr.ofNativeToken();
 
 		final var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new ValidatorConstraintScrypt());

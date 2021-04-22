@@ -37,12 +37,13 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.common.hash.HashCode;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerIds;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
+import org.bouncycastle.util.encoders.Hex;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -105,10 +106,10 @@ public class JacksonJsonMapper extends ObjectMapper {
 				JacksonCodecConstants.U30_STR_VALUE,
 				UInt384::toString
 		));
-		jsonModule.addSerializer(Rri.class, new JacksonJsonObjectStringSerializer<>(
-				Rri.class,
+		jsonModule.addSerializer(REAddr.class, new JacksonJsonObjectStringSerializer<>(
+				REAddr.class,
 				JacksonCodecConstants.RRI_STR_VALUE,
-				Rri::toString
+				rri -> Hex.toHexString(rri.getBytes())
 		));
 		jsonModule.addSerializer(AID.class, new JacksonJsonObjectStringSerializer<>(
 				AID.class,
@@ -147,10 +148,10 @@ public class JacksonJsonMapper extends ObjectMapper {
 				JacksonCodecConstants.U30_STR_VALUE,
 				UInt384::from
 		));
-		jsonModule.addDeserializer(Rri.class, new JacksonJsonObjectStringDeserializer<>(
-				Rri.class,
+		jsonModule.addDeserializer(REAddr.class, new JacksonJsonObjectStringDeserializer<>(
+				REAddr.class,
 				JacksonCodecConstants.RRI_STR_VALUE,
-				Rri::fromBech32
+				s -> REAddr.of(Hex.decode(s))
 		));
 		jsonModule.addDeserializer(AID.class, new JacksonJsonObjectStringDeserializer<>(
 				AID.class,

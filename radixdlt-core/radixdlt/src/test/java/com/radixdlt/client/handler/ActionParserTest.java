@@ -17,11 +17,15 @@
 
 package com.radixdlt.client.handler;
 
+import com.radixdlt.client.ValidatorAddress;
+import com.radixdlt.client.store.ClientApiStore;
+import com.radixdlt.utils.functional.Result;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Failure;
@@ -29,6 +33,9 @@ import com.radixdlt.utils.functional.Failure;
 import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
 
 import static com.radixdlt.client.api.ActionType.STAKE;
@@ -39,14 +46,21 @@ public class ActionParserTest {
 	private static final byte MAGIC = (byte) 0;
 	private final RadixAddress from = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
 	private final RadixAddress to = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
-	private final Rri rri = Rri.of(ECKeyPair.generateNew().getPublicKey(), "ckee");
+	private final REAddr rri = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "ckee");
+	private ClientApiStore clientApiStore;
+
+	@Before
+	public void setup() {
+		this.clientApiStore = mock(ClientApiStore.class);
+		when(clientApiStore.parseRri(any())).thenReturn(Result.ok(rri));
+	}
 
 	@Test
 	public void transferActionIsParsedCorrectly() {
 		var source = "[{\"type\":\"TokenTransfer\", \"from\":\"%s\", \"to\":\"%s\", \"amount\":\"%s\", \"tokenIdentifier\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, from, to, UInt256.NINE, rri)).orElseThrow();
 
-		ActionParser.parse(actions)
+		ActionParser.parse(actions, clientApiStore)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -54,8 +68,8 @@ public class ActionParserTest {
 				parsed.get(0)
 					.map((type, fromAddress, toAddress, amount, rriOptional) -> {
 						assertEquals(TRANSFER, type);
-						assertEquals(from, fromAddress);
-						assertEquals(to, toAddress);
+						assertEquals(from.getPublicKey(), fromAddress);
+						assertEquals(to.getPublicKey(), toAddress);
 						assertEquals(amount, UInt256.NINE);
 						assertEquals(rriOptional, Optional.of(rri));
 						return null;
@@ -65,10 +79,10 @@ public class ActionParserTest {
 
 	@Test
 	public void stakeActionIsParsedCorrectly() {
+		var validatorAddr = ValidatorAddress.of(to.getPublicKey());
 		var source = "[{\"type\":\"StakeTokens\", \"from\":\"%s\", \"validator\":\"%s\", \"amount\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, from, to, UInt256.NINE)).orElseThrow();
-
-		ActionParser.parse(actions)
+		var actions = jsonArray(String.format(source, from, validatorAddr, UInt256.NINE)).orElseThrow();
+		ActionParser.parse(actions, clientApiStore)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -76,8 +90,8 @@ public class ActionParserTest {
 				parsed.get(0)
 					.map((type, fromAddress, validatorAddress, amount, rriOptional) -> {
 						assertEquals(STAKE, type);
-						assertEquals(from, fromAddress);
-						assertEquals(to, validatorAddress);
+						assertEquals(from.getPublicKey(), fromAddress);
+						assertEquals(to.getPublicKey(), validatorAddress);
 						assertEquals(amount, UInt256.NINE);
 						return null;
 					});
@@ -86,10 +100,11 @@ public class ActionParserTest {
 
 	@Test
 	public void unstakeActionIsParsedCorrectly() {
+		var validatorAddr = ValidatorAddress.of(to.getPublicKey());
 		var source = "[{\"type\":\"UnstakeTokens\", \"from\":\"%s\", \"validator\":\"%s\", \"amount\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, from, to, UInt256.NINE)).orElseThrow();
+		var actions = jsonArray(String.format(source, from, validatorAddr, UInt256.NINE)).orElseThrow();
 
-		ActionParser.parse(actions)
+		ActionParser.parse(actions, clientApiStore)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -97,8 +112,8 @@ public class ActionParserTest {
 				parsed.get(0)
 					.map((type, fromAddress, validatorAddress, amount, rriOptional) -> {
 						assertEquals(UNSTAKE, type);
-						assertEquals(from, fromAddress);
-						assertEquals(to, validatorAddress);
+						assertEquals(from.getPublicKey(), fromAddress);
+						assertEquals(to.getPublicKey(), validatorAddress);
 						assertEquals(amount, UInt256.NINE);
 						return null;
 					});
@@ -110,7 +125,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"MintTokens\", \"from\":\"%s\", \"to\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, from, to, UInt256.NINE, rri)).orElseThrow();
 
-		ActionParser.parse(actions)
+		ActionParser.parse(actions, clientApiStore)
 			.onFailure(System.out::println)
 			.onSuccess(v -> Assert.fail("Operation succeeded, while failure is expected"));
 	}
@@ -120,7 +135,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"CreateTokens\", \"from\":\"%s\", \"to\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, from, to, UInt256.NINE, rri)).orElseThrow();
 
-		ActionParser.parse(actions)
+		ActionParser.parse(actions, clientApiStore)
 			.onFailure(System.out::println)
 			.onSuccess(v -> Assert.fail("Operation succeeded, while failure is expected"));
 	}
@@ -130,7 +145,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"TokenTransfer\", \"from\":\"abc%s\", \"to\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, from, to, UInt256.NINE, rri)).orElseThrow();
 
-		ActionParser.parse(actions)
+		ActionParser.parse(actions, clientApiStore)
 			.onFailure(System.out::println)
 			.onSuccess(v -> Assert.fail("Operation succeeded, while failure is expected"));
 	}

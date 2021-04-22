@@ -22,6 +22,7 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.constraintmachine.SubstateWithArg;
 
 import java.util.Optional;
 
@@ -43,7 +44,9 @@ public final class SystemNextView implements TxAction {
 		txBuilder.swap(
 			SystemParticle.class,
 			p -> p.getEpoch() == currentEpoch,
-			currentEpoch == 0 ? Optional.of(new SystemParticle(0, 0, 0)) : Optional.empty(),
+			currentEpoch == 0
+				? Optional.of(SubstateWithArg.noArg(new SystemParticle(0, 0, 0)))
+				: Optional.empty(),
 			"No System particle available"
 		).with(substateDown -> {
 			if (view <= substateDown.getView()) {

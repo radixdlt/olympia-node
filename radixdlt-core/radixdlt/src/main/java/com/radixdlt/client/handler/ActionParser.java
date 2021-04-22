@@ -17,12 +17,15 @@
 
 package com.radixdlt.client.handler;
 
+import com.radixdlt.client.ValidatorAddress;
+import com.radixdlt.client.store.ClientApiStore;
+import com.radixdlt.crypto.ECPublicKey;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.radixdlt.client.api.ActionType;
 import com.radixdlt.client.api.TransactionAction;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
@@ -36,11 +39,11 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.safeString;
 import static com.radixdlt.utils.functional.Result.allOf;
 
 public final class ActionParser {
-	private static final Result<Optional<Rri>> EMPTY_RESULT = Result.ok(Optional.empty());
+	private static final Result<Optional<REAddr>> EMPTY_RESULT = Result.ok(Optional.empty());
 
 	private ActionParser() { }
 
-	public static Result<List<TransactionAction>> parse(JSONArray actions) {
+	public static Result<List<TransactionAction>> parse(JSONArray actions, ClientApiStore clientApiStore) {
 		var list = new ArrayList<TransactionAction>();
 
 		for (var o : actions) {
@@ -55,7 +58,7 @@ public final class ActionParser {
 					.flatMap(ActionType::fromString),
 				"Action type is missing or can not be parsed in {0}", element
 			)
-				.flatMap(type -> parseByType(type, element))
+				.flatMap(type -> parseByType(type, element, clientApiStore))
 				.onSuccess(list::add);
 
 			if (!result.isSuccess()) {
@@ -65,7 +68,7 @@ public final class ActionParser {
 		return Result.ok(list);
 	}
 
-	private static Result<TransactionAction> parseByType(ActionType type, JSONObject element) {
+	private static Result<TransactionAction> parseByType(ActionType type, JSONObject element, ClientApiStore clientApiStore) {
 		var typeResult = Result.ok(type);
 
 		switch (type) {
@@ -75,7 +78,7 @@ public final class ActionParser {
 					from(element),
 					to(element),
 					amount(element),
-					rri(element)
+					rri(element, clientApiStore)
 				).map(TransactionAction::create);
 
 			case UNSTAKE:
@@ -92,16 +95,16 @@ public final class ActionParser {
 		return Result.fail("Action type {0} is not supported (yet)", type);
 	}
 
-	private static Result<RadixAddress> from(JSONObject element) {
+	private static Result<ECPublicKey> from(JSONObject element) {
 		return address(element, "from");
 	}
 
-	private static Result<RadixAddress> to(JSONObject element) {
+	private static Result<ECPublicKey> to(JSONObject element) {
 		return address(element, "to");
 	}
 
-	private static Result<RadixAddress> validator(JSONObject element) {
-		return address(element, "validator");
+	private static Result<ECPublicKey> validator(JSONObject element) {
+		return validator(element, "validator");
 	}
 
 	private static Result<UInt256> amount(JSONObject element) {
@@ -111,15 +114,20 @@ public final class ActionParser {
 			.orElseGet(() -> fail(element, "amount"));
 	}
 
-	private static Result<Optional<Rri>> rri(JSONObject element) {
+	private static Result<Optional<REAddr>> rri(JSONObject element, ClientApiStore clientApiStore) {
 		return Result.fromOptional(safeString(element, "tokenIdentifier"), "Field tokenIdentifier is missing in {0}", element)
-			.flatMap(Rri::fromSpecString)
+			.flatMap(clientApiStore::parseRri)
 			.map(Optional::of);
 	}
 
-	private static Result<RadixAddress> address(JSONObject element, String name) {
+	private static Result<ECPublicKey> validator(JSONObject element, String name) {
+		return Result.fromOptional(safeString(element, name), "")
+			.flatMap(ValidatorAddress::fromString);
+	}
+
+	private static Result<ECPublicKey> address(JSONObject element, String name) {
 		return safeString(element, name)
-			.map(RadixAddress::fromString)
+			.map(addr -> RadixAddress.fromString(addr).map(RadixAddress::getPublicKey))
 			.orElseGet(() -> fail(element, name));
 	}
 

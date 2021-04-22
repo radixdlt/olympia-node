@@ -19,7 +19,7 @@ package com.radixdlt.atommodel.tokens;
 
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 
@@ -28,14 +28,14 @@ import java.util.Objects;
  *  owned by some key owner and stored in an account.
  */
 public final class TokensParticle implements Particle {
-	private final Rri rri;
+	private final REAddr rri;
 	private final RadixAddress address;
 	private final UInt256 amount;
 
 	public TokensParticle(
 		RadixAddress address,
 		UInt256 amount,
-		Rri	rri
+		REAddr rri
 	) {
 		this.address = Objects.requireNonNull(address);
 		this.rri = Objects.requireNonNull(rri);
@@ -46,7 +46,7 @@ public final class TokensParticle implements Particle {
 		return this.address;
 	}
 
-	public Rri getRri() {
+	public REAddr getRri() {
 		return this.rri;
 	}
 

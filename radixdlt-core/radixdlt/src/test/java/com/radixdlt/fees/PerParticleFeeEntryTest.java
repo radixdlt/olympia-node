@@ -19,7 +19,7 @@ package com.radixdlt.fees;
 
 import static org.junit.Assert.assertEquals;
 
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -96,7 +96,7 @@ public class PerParticleFeeEntryTest {
 
     private static UniqueParticle makeParticle(String message) {
     	final var kp = ECKeyPair.generateNew();
-		final var rri = Rri.of(kp.getPublicKey(), message);
+		final var rri = REAddr.ofHashedKey(kp.getPublicKey(), message);
     	return new UniqueParticle(rri);
     }
 

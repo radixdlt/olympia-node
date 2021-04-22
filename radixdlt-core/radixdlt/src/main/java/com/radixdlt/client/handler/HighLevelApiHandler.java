@@ -43,7 +43,6 @@ import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.identifiers.Rri;
 import com.radixdlt.utils.functional.Result;
 
 import java.time.Instant;
@@ -99,8 +98,7 @@ public class HighLevelApiHandler {
 	public JSONObject handleTokenInfo(JSONObject request) {
 		return withRequiredStringParameter(
 			request,
-			(params, tokenId) -> Rri.fromSpecString(tokenId)
-				.flatMap(highLevelApiService::getTokenDescription)
+			(params, tokenId) -> highLevelApiService.getTokenDescription(tokenId)
 				.map(TokenDefinitionRecord::asJson)
 		);
 	}
@@ -131,7 +129,7 @@ public class HighLevelApiHandler {
 
 	public JSONObject handleBuildTransaction(JSONObject request) {
 		return withRequiredArrayParameter(request, (params, actions) ->
-			ActionParser.parse(actions)
+			highLevelApiService.parse(actions)
 				.map(steps -> mergeMessageAction(params, steps))
 				.flatMap(submissionService::prepareTransaction)
 				.map(PreparedTransaction::asJson)

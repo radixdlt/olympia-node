@@ -33,7 +33,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.fees.NativeToken;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.network.addressbook.PeersView;
@@ -64,7 +64,7 @@ public final class MempoolFiller {
 	private final Random random;
 	private final HashSigner hashSigner;
 	private final RadixAddress selfAddress;
-	private final Rri nativeToken;
+	private final REAddr nativeToken;
 	private final UInt256 fee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
 
 	private boolean enabled = false;
@@ -74,7 +74,7 @@ public final class MempoolFiller {
 	@Inject
 	public MempoolFiller(
 		@Self RadixAddress selfAddress,
-		@NativeToken Rri nativeToken,
+		@NativeToken REAddr nativeToken,
 		@Named("RadixEngine") HashSigner hashSigner,
 		RadixEngineMempool radixEngineMempool,
 		RadixEngine<LedgerAndBFTProof> radixEngine,

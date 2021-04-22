@@ -25,7 +25,7 @@ package com.radixdlt.client.application.translate.tokens;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,13 +34,13 @@ import java.util.Map;
 public class TransferTokensAction implements Action {
 	private final RadixAddress from;
 	private final RadixAddress to;
-	private final Rri rri;
+	private final REAddr rri;
 	private final Map<String, Object> metaData;
 	private final BigDecimal amount;
 	private final byte[] attachment;
 
 	private TransferTokensAction(
-		Rri rri,
+		REAddr rri,
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
@@ -60,7 +60,7 @@ public class TransferTokensAction implements Action {
 	}
 
 	public static TransferTokensAction create(
-		Rri rri,
+		REAddr rri,
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount
@@ -69,7 +69,7 @@ public class TransferTokensAction implements Action {
 	}
 
 	public static TransferTokensAction create(
-		Rri rri,
+		REAddr rri,
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
@@ -79,7 +79,7 @@ public class TransferTokensAction implements Action {
 	}
 
 	public static TransferTokensAction create(
-		Rri rri,
+		REAddr rri,
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
@@ -92,7 +92,7 @@ public class TransferTokensAction implements Action {
 	}
 
 	public static TransferTokensAction create(
-		Rri rri,
+		REAddr rri,
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
@@ -117,7 +117,7 @@ public class TransferTokensAction implements Action {
 		return to;
 	}
 
-	public Rri getRRI() {
+	public REAddr getRRI() {
 		return rri;
 	}
 
@@ -131,6 +131,6 @@ public class TransferTokensAction implements Action {
 
 	@Override
 	public String toString() {
-		return "TRANSFER TOKEN " + amount + " " + rri.getName() + " FROM " + from + " TO " + to;
+		return "TRANSFER TOKEN " + amount + " " + rri + " FROM " + from + " TO " + to;
 	}
 }

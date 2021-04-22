@@ -24,6 +24,7 @@ import com.radixdlt.atommodel.routines.CreateCombinedTransitionRoutine;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
+import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.ReducerState;
@@ -40,13 +41,16 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 /**
  * SysCall environment for CMAtomOS Constraint Scrypts.
  */
 // FIXME: unchecked, rawtypes
 @SuppressWarnings({"unchecked", "rawtypes"})
-final class ConstraintScryptEnv implements SysCalls {
+public final class ConstraintScryptEnv implements SysCalls {
+	public static final String NAME_REGEX = "[a-z0-9]+";
+	public static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
 	private final ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions;
 	private final Function<RadixAddress, Result> addressChecker;
 
@@ -133,32 +137,45 @@ final class ConstraintScryptEnv implements SysCalls {
 		}
 
 		createTransition(
-			new TransitionToken<>(RRIParticle.class, particleClass, TypeToken.of(VoidReducerState.class)),
+			new TransitionToken<>(REAddrParticle.class, particleClass, TypeToken.of(VoidReducerState.class)),
 			new TransitionProcedure<>() {
 				@Override
-				public PermissionLevel requiredPermissionLevel(RRIParticle inputParticle, O outputParticle, ImmutableIndex index) {
-					return systemNames.contains(inputParticle.getRri().getName()) || inputParticle.getRri().isSystem()
-						? PermissionLevel.SYSTEM : PermissionLevel.USER;
-				}
-
-				@Override
 				public Result precondition(
-					RRIParticle inputParticle,
+					SubstateWithArg<REAddrParticle> in,
 					O outputParticle,
 					VoidReducerState outputUsed,
 					ImmutableIndex index
 				) {
+					if (in.getArg().isEmpty()) {
+						return Result.error("Rri must be created with a name");
+					}
+					var arg = in.getArg().get();
+					if (!NAME_PATTERN.matcher(new String(arg)).matches()) {
+						return Result.error("invalid rri name");
+					}
 					return Result.success();
 				}
 
 				@Override
-				public InputOutputReducer<RRIParticle, O, VoidReducerState> inputOutputReducer() {
+				public InputOutputReducer<REAddrParticle, O, VoidReducerState> inputOutputReducer() {
 					return (input, output, index, outputUsed) -> ReducerResult.complete(Unknown.create());
 				}
 
 				@Override
-				public SignatureValidator<RRIParticle, O> signatureValidator() {
-					return (rri, o, index, pubKey) -> pubKey.map(p -> rri.getRri().ownedBy(p)).orElse(false);
+				public PermissionLevel requiredPermissionLevel(
+					SubstateWithArg<REAddrParticle> in,
+					O outputParticle,
+					ImmutableIndex index
+				) {
+					var name = new String(in.getArg().orElseThrow());
+					return systemNames.contains(name) || in.getSubstate().getAddr().isSystem()
+						? PermissionLevel.SYSTEM : PermissionLevel.USER;
+				}
+
+				@Override
+				public SignatureValidator<REAddrParticle, O> signatureValidator() {
+					return (in, o, index, pubKey) -> pubKey.flatMap(k -> in.getArg().map(arg -> in.getSubstate().allow(k, arg)))
+						.orElse(false);
 				}
 			}
 		);
@@ -181,14 +198,15 @@ final class ConstraintScryptEnv implements SysCalls {
 		}
 
 		var createCombinedTransitionRoutine = new CreateCombinedTransitionRoutine<>(
-			RRIParticle.class,
+			REAddrParticle.class,
 			particleClass0,
-			(rri, p) -> systemNames.contains(rri.getRri().getName()) || rri.getRri().isSystem()
+			(rri, p) -> systemNames.contains(new String(rri.getArg().orElseThrow())) || rri.getSubstate().getAddr().isSystem()
 				? PermissionLevel.SYSTEM : PermissionLevel.USER,
 			particleClass1,
 			includeSecondClass,
 			combinedCheck,
-			(rri, o, index, pubKey) -> pubKey.map(p -> rri.getRri().ownedBy(p)).orElse(false)
+			(in, o, index, pubKey) -> pubKey.flatMap(k -> in.getArg().map(arg -> in.getSubstate().allow(k, arg)))
+				.orElse(false)
 		);
 
 		this.executeRoutine(createCombinedTransitionRoutine);
@@ -209,38 +227,55 @@ final class ConstraintScryptEnv implements SysCalls {
 		final TransitionProcedure<Particle, Particle, ReducerState> transformedProcedure
 			= new TransitionProcedure<Particle, Particle, ReducerState>() {
 				@Override
-				public PermissionLevel requiredPermissionLevel(Particle i, Particle o, ImmutableIndex index) {
-					return procedure.requiredPermissionLevel((I) i, (O) o, index);
+				public PermissionLevel requiredPermissionLevel(SubstateWithArg<Particle> i, Particle o, ImmutableIndex index) {
+					var in = i.getArg()
+						.map(arg -> SubstateWithArg.withArg((I) i.getSubstate(), arg))
+						.orElseGet(() -> SubstateWithArg.noArg((I) i.getSubstate()));
+					return procedure.requiredPermissionLevel(in, (O) o, index);
 				}
 
 				@Override
 				public Result precondition(
-					Particle inputParticle,
+					SubstateWithArg<Particle> in,
 					Particle outputParticle,
 					ReducerState outputUsed,
 					ImmutableIndex index
 				) {
 					// RRIs must be the same across RRI particle transitions
 					if (inputDefinition.getRriMapper() != null && outputDefinition.getRriMapper() != null) {
-						final var inputRriId = inputDefinition.getRriMapper().apply(inputParticle);
+						final var inputRriId = inputDefinition.getRriMapper().apply(in.getSubstate());
 						final var outputRriId = outputDefinition.getRriMapper().apply(outputParticle);
 						if (!inputRriId.equals(outputRriId)) {
 							return Result.error("Input/Output RRIs not equal");
 						}
 					}
 
-					return procedure.precondition((I) inputParticle, (O) outputParticle, (U) outputUsed, index);
+					var inConvert = in.getArg()
+						.map(arg -> SubstateWithArg.withArg((I) in.getSubstate(), arg))
+						.orElseGet(() -> SubstateWithArg.noArg((I) in.getSubstate()));
+
+					return procedure.precondition(inConvert, (O) outputParticle, (U) outputUsed, index);
 				}
 
 				@Override
 				public InputOutputReducer<Particle, Particle, ReducerState> inputOutputReducer() {
-					return (input, output, index, outputUsed) -> procedure.inputOutputReducer()
-						.reduce((I) input, (O) output, index, (U) outputUsed);
+					return (input, output, index, outputUsed) -> {
+						var in = input.getArg()
+							.map(arg -> SubstateWithArg.withArg((I) input.getSubstate(), arg))
+							.orElseGet(() -> SubstateWithArg.noArg((I) input.getSubstate()));
+						return procedure.inputOutputReducer()
+							.reduce(in, (O) output, index, (U) outputUsed);
+					};
 				}
 
 				@Override
 				public SignatureValidator<Particle, Particle> signatureValidator() {
-					return (i, o, index, pubKey) -> procedure.signatureValidator().verify((I) i, (O) o, index, pubKey);
+					return (i, o, index, pubKey) -> {
+						var in = i.getArg()
+							.map(arg -> SubstateWithArg.withArg((I) i.getSubstate(), arg))
+							.orElseGet(() -> SubstateWithArg.noArg((I) i.getSubstate()));
+						return procedure.signatureValidator().verify(in, (O) o, index, pubKey);
+					};
 				}
 			};
 

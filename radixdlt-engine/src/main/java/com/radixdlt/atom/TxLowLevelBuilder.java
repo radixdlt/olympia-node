@@ -27,6 +27,7 @@ import com.radixdlt.utils.Ints;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -114,6 +115,17 @@ public final class TxLowLevelBuilder {
 		Objects.requireNonNull(particle, "particle is required");
 		var bytes = RESerializer.serialize(particle);
 		instruction(REInstruction.REOp.VDOWN, bytes);
+		return this;
+	}
+
+	public TxLowLevelBuilder virtualDown(Particle particle, byte[] arg) {
+		Objects.requireNonNull(particle, "particle is required");
+		var bytes = RESerializer.serialize(particle);
+		var buf = ByteBuffer.allocate(bytes.length + 1 + arg.length);
+		buf.put(bytes);
+		buf.put((byte) arg.length); // arg length
+		buf.put(arg);
+		instruction(REInstruction.REOp.VDOWNARG, buf.array());
 		this.remoteDownSubstate.add(SubstateId.ofVirtualSubstate(bytes));
 		return this;
 	}
@@ -130,20 +142,6 @@ public final class TxLowLevelBuilder {
 	public TxLowLevelBuilder down(SubstateId substateId) {
 		instruction(REInstruction.REOp.DOWN, substateId.asBytes());
 		this.remoteDownSubstate.add(substateId);
-		return this;
-	}
-
-	public TxLowLevelBuilder read(SubstateId substateId) {
-		instruction(REInstruction.REOp.READ, substateId.asBytes());
-		return this;
-	}
-
-	public TxLowLevelBuilder localRead(int index) {
-		var particle = localUpParticles.get(index);
-		if (particle == null) {
-			throw new IllegalStateException("Local particle does not exist: " + index);
-		}
-		instruction(REInstruction.REOp.LREAD, Ints.toByteArray(index));
 		return this;
 	}
 

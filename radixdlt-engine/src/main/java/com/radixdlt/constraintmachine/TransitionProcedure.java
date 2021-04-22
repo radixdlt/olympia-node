@@ -26,13 +26,13 @@ import com.radixdlt.store.ImmutableIndex;
 public interface TransitionProcedure<I extends Particle, O extends Particle, U extends ReducerState> {
 	// TODO: move permission level to the "OS" level of paths rather than transitions
 
-	Result precondition(I inputParticle, O outputParticle, U outputUsed, ImmutableIndex immutableIndex);
-
-	default PermissionLevel requiredPermissionLevel(I inputParticle, O outputParticle, ImmutableIndex index) {
-		return PermissionLevel.USER;
-	}
+	Result precondition(SubstateWithArg<I> in, O outputParticle, U outputUsed, ImmutableIndex immutableIndex);
 
 	InputOutputReducer<I, O, U> inputOutputReducer();
+
+	default PermissionLevel requiredPermissionLevel(SubstateWithArg<I> in, O outputParticle, ImmutableIndex index) {
+		return PermissionLevel.USER;
+	}
 
 	SignatureValidator<I, O> signatureValidator();
 }

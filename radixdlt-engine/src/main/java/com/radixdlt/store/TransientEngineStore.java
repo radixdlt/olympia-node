@@ -6,7 +6,7 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 
 import java.util.List;
 import java.util.Objects;
@@ -68,7 +68,7 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public Optional<Particle> loadRri(Transaction dbTxn, Rri rri) {
+	public Optional<Particle> loadRri(Transaction dbTxn, REAddr rri) {
 		return transientStore.loadRri(dbTxn, rri)
 			.or(() -> base.loadRri(dbTxn, rri));
 	}

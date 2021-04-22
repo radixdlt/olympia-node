@@ -29,6 +29,7 @@ import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.SignatureValidator;
+import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.VoidParticle;
@@ -47,7 +48,7 @@ public final class AllocateTokensRoutine implements ConstraintRoutine {
 			new TransitionProcedure<>() {
 				@Override
 				public Result precondition(
-					VoidParticle inputParticle,
+					SubstateWithArg<VoidParticle> in,
 					TokensParticle outputParticle,
 					VoidReducerState inputUsed,
 					ImmutableIndex immutableIndex
@@ -72,7 +73,9 @@ public final class AllocateTokensRoutine implements ConstraintRoutine {
 				}
 
 				@Override
-				public PermissionLevel requiredPermissionLevel(VoidParticle i, TokensParticle o, ImmutableIndex index) {
+				public PermissionLevel requiredPermissionLevel(
+					SubstateWithArg<VoidParticle> i, TokensParticle o, ImmutableIndex index
+				) {
 					var tokenDef = (TokenDefinitionParticle) index.loadRri(null, o.getRri()).orElseThrow();
 					return tokenDef.getRri().isSystem() ? PermissionLevel.SYSTEM : PermissionLevel.USER;
 				}
@@ -92,7 +95,7 @@ public final class AllocateTokensRoutine implements ConstraintRoutine {
 				public SignatureValidator<VoidParticle, TokensParticle> signatureValidator() {
 					return (i, o, index, publicKey) -> {
 						var tokenDef = (TokenDefinitionParticle) index.loadRri(null, o.getRri()).orElseThrow();
-						return publicKey.map(tokenDef.getRri()::ownedBy).orElse(false);
+						return publicKey.flatMap(p -> tokenDef.getMinter().map(p::equals)).orElse(false);
 					};
 				}
 			}

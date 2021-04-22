@@ -17,17 +17,17 @@
 
 package com.radixdlt.client.lib;
 
+import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.UInt384;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.functional.Result;
 
@@ -72,17 +72,15 @@ public class BalanceVerifier {
 	}
 
 	private void retrieveBalance(NodeClient client, ECPublicKey key) {
-		var address = client.toAddress(key);
-
-		client.callTokenBalances(key).onSuccess(balances -> printBalances(address, balances));
+		client.callTokenBalances(key).onSuccess(balances -> printBalances(key, balances));
 	}
 
-	private void printBalances(RadixAddress radixAddress, List<TokenBalance> balances) {
-		System.out.println("Owner: " + radixAddress.toString());
+	private void printBalances(ECPublicKey publicKey, List<Pair<String, UInt384>> balances) {
+		System.out.println("Owner: " + publicKey.toString());
 		if (balances.isEmpty()) {
 			System.out.println("(empty balances)");
 		} else {
-			balances.forEach(balance -> System.out.printf("    %s : %s", balance.getRri(), balance.getAmount()));
+			balances.forEach(balance -> System.out.printf("    %s : %s", balance.getFirst(), balance.getSecond()));
 		}
 		System.out.println();
 	}

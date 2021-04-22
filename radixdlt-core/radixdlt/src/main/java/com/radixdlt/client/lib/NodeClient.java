@@ -17,14 +17,13 @@
 
 package com.radixdlt.client.lib;
 
+import com.radixdlt.utils.Pair;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.radixdlt.client.api.TxHistoryEntry;
-import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.identifiers.Rri;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
 
@@ -87,7 +86,7 @@ public class NodeClient {
 		return Result.ok(new NodeClient(baseUrl)).flatMap(NodeClient::tryConnect);
 	}
 
-	public Result<List<TokenBalance>> callTokenBalances(ECPublicKey publicKey) {
+	public Result<List<Pair<String, UInt384>>> callTokenBalances(ECPublicKey publicKey) {
 		var params = jsonArray().put(toAddress(publicKey).toString());
 
 		return call("tokenBalances", params)
@@ -145,14 +144,14 @@ public class NodeClient {
 			.put("params", params);
 	}
 
-	private List<TokenBalance> parseTokenBalances(JSONObject json) {
+	private List<Pair<String, UInt384>> parseTokenBalances(JSONObject json) {
 		return ofNullable(json.optJSONObject("result"))
 			.flatMap(result -> ofNullable(result.optJSONArray("tokenBalances")))
 			.map(this::parseTokenBalanceEntries)
 			.orElseGet(List::of);
 	}
 
-	private List<TokenBalance> parseTokenBalanceEntries(JSONArray array) {
+	private List<Pair<String, UInt384>> parseTokenBalanceEntries(JSONArray array) {
 		return parseArray(array, this::parseTokenBalanceEntry);
 	}
 
@@ -167,14 +166,14 @@ public class NodeClient {
 		return list;
 	}
 
-	private Result<TokenBalance> parseTokenBalanceEntry(Object obj) {
+	private Result<Pair<String, UInt384>> parseTokenBalanceEntry(Object obj) {
 		if (!(obj instanceof JSONObject)) {
 			return Result.fail("Not an JSON object");
 		}
 
 		var object = (JSONObject) obj;
 		return allOf(rri(object), uint384(object, "amount"))
-			.map(TokenBalance::create);
+			.map(Pair::of);
 	}
 
 	private Result<TxHistoryEntry> parseTxHistoryEntry(Object obj) {
@@ -196,8 +195,8 @@ public class NodeClient {
 		return fromOptional(ofNullable(object.optString(name)), "Field '" + name + "' is missing");
 	}
 
-	private static Result<Rri> rri(JSONObject object) {
-		return string(object, "rri").flatMap(Rri::fromSpecString);
+	private static Result<String> rri(JSONObject object) {
+		return string(object, "rri");
 	}
 
 	private static Result<UInt384> uint384(JSONObject object, String name) {

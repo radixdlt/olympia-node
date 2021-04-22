@@ -22,14 +22,14 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokensParticle;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 public final class SplitToken implements TxAction {
-	private final Rri rri;
+	private final REAddr rri;
 	private final UInt256 minSize;
 
-	public SplitToken(Rri rri, UInt256 minSize) {
+	public SplitToken(REAddr rri, UInt256 minSize) {
 		this.rri = rri;
 		this.minSize = minSize;
 	}

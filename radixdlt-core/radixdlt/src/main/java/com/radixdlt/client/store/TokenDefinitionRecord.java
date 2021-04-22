@@ -17,13 +17,16 @@
 
 package com.radixdlt.client.store;
 
+import com.radixdlt.atom.actions.CreateFixedToken;
+import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.client.Rri;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt384;
 import org.json.JSONObject;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -39,13 +42,17 @@ public class TokenDefinitionRecord {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
+	@JsonProperty("symbol")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private final String symbol;
+
 	@JsonProperty("name")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final String name;
 
 	@JsonProperty("rri")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final Rri rri;
+	private final REAddr rri;
 
 	@JsonProperty("description")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -68,14 +75,16 @@ public class TokenDefinitionRecord {
 	private final boolean mutable;
 
 	private TokenDefinitionRecord(
+		String symbol,
 		String name,
-		Rri rri,
+		REAddr rri,
 		String description,
 		UInt384 currentSupply,
 		String iconUrl,
 		String url,
 		boolean mutable
 	) {
+		this.symbol = symbol;
 		this.name = name;
 		this.rri = rri;
 		this.description = description;
@@ -87,69 +96,90 @@ public class TokenDefinitionRecord {
 
 	@JsonCreator
 	public static TokenDefinitionRecord create(
+		@JsonProperty("symbol") String symbol,
 		@JsonProperty("name") String name,
-		@JsonProperty("rri") Rri rri,
+		@JsonProperty("rri") REAddr rri,
 		@JsonProperty("description") String description,
 		@JsonProperty("currentSupply") UInt384 currentSupply,
 		@JsonProperty("iconUrl") String iconUrl,
 		@JsonProperty("url") String url,
 		@JsonProperty("mutable") boolean mutable
 	) {
+		Objects.requireNonNull(symbol);
 		Objects.requireNonNull(name);
 		Objects.requireNonNull(rri);
 		Objects.requireNonNull(description);
 		Objects.requireNonNull(currentSupply);
 
 		return new TokenDefinitionRecord(
-			name, rri, description, currentSupply, iconUrl == null ? "" : iconUrl, url == null ? "" : url, mutable
+			symbol, name, rri, description, currentSupply, iconUrl == null ? "" : iconUrl, url == null ? "" : url, mutable
 		);
 	}
 
 	public static TokenDefinitionRecord create(
+		String symbol,
 		String name,
-		Rri rri,
+		REAddr rri,
 		String description,
 		String iconUrl,
 		String url,
 		boolean mutable
 	) {
-		return create(name, rri, description, UInt384.ZERO, iconUrl, url, mutable);
+		return create(symbol, name, rri, description, UInt384.ZERO, iconUrl, url, mutable);
 	}
 
-	public static TokenDefinitionRecord from(TokenDefinitionParticle definition) {
+	public static TokenDefinitionRecord from(RadixAddress user, CreateFixedToken createFixedToken) {
+		final REAddr rri;
+		if (user != null) {
+			rri = REAddr.ofHashedKey(user.getPublicKey(), createFixedToken.getSymbol());
+		} else {
+			rri = REAddr.ofNativeToken();
+		}
 		return create(
-			definition.getName(),
-			definition.getRri(),
-			definition.getDescription(),
-			definition.getSupply().map(UInt384::from).orElse(UInt384.ZERO),
-			definition.getIconUrl(),
-			definition.getUrl(),
-			definition.isMutable()
+			createFixedToken.getSymbol(),
+			createFixedToken.getName(),
+			rri,
+			createFixedToken.getDescription(),
+			UInt384.from(createFixedToken.getSupply()),
+			createFixedToken.getIconUrl(),
+			createFixedToken.getTokenUrl(),
+			false
 		);
 	}
 
-	public static TokenDefinitionRecord from(TokenDefinitionParticle definition, UInt384 supply) {
+	public static TokenDefinitionRecord from(RadixAddress user, CreateMutableToken createMutableToken) {
+		final REAddr rri;
+		if (user != null) {
+			rri = REAddr.ofHashedKey(user.getPublicKey(), createMutableToken.getSymbol());
+		} else {
+			rri = REAddr.ofNativeToken();
+		}
 		return create(
-			definition.getName(),
-			definition.getRri(),
-			definition.getDescription(),
-			supply,
-			definition.getIconUrl(),
-			definition.getUrl(),
-			definition.isMutable()
+			createMutableToken.getSymbol(),
+			createMutableToken.getName(),
+			rri,
+			createMutableToken.getDescription(),
+			UInt384.ZERO,
+			createMutableToken.getIconUrl(),
+			createMutableToken.getTokenUrl(),
+			true
 		);
 	}
 
 	public JSONObject asJson() {
 		return jsonObject()
 			.put("name", name)
-			.put("rri", rri.toString())
-			.put("symbol", rri.getName().toUpperCase())
+			.put("rri", Rri.of(symbol, rri))
+			.put("symbol", symbol)
 			.put("description", description)
 			.put("currentSupply", currentSupply)
 			.put("iconUrl", iconUrl)
 			.put("url", url)
 			.put("mutable", mutable);
+	}
+
+	public String getSymbol() {
+		return symbol;
 	}
 
 	public String getName() {
@@ -160,7 +190,7 @@ public class TokenDefinitionRecord {
 		return mutable;
 	}
 
-	public Rri rri() {
+	public REAddr rri() {
 		return rri;
 	}
 
@@ -173,12 +203,12 @@ public class TokenDefinitionRecord {
 			return this;
 		}
 
-		return create(name, rri, description, supply, iconUrl, url, true);
+		return create(symbol, name, rri, description, supply, iconUrl, url, true);
 	}
 
 	public String toString() {
-		return String.format("%s{%s:%s:%s:%s:%s:%s}",
-			this.getClass().getSimpleName(), name, rri, description, currentSupply, iconUrl, url
+		return String.format("%s{%s:%s:%s:%s:%s:%s:%s}",
+			this.getClass().getSimpleName(), symbol, name, rri, description, currentSupply, iconUrl, url
 		);
 	}
 
@@ -194,6 +224,7 @@ public class TokenDefinitionRecord {
 			return mutable == that.mutable
 				&& name.equals(that.name)
 				&& rri.equals(that.rri)
+				&& Objects.equals(symbol, that.symbol)
 				&& Objects.equals(currentSupply, that.currentSupply)
 				&& Objects.equals(description, that.description)
 				&& Objects.equals(iconUrl, that.iconUrl)
@@ -205,6 +236,6 @@ public class TokenDefinitionRecord {
 
 	@Override
 	public final int hashCode() {
-		return Objects.hash(name, rri, description, currentSupply, iconUrl, url, mutable);
+		return Objects.hash(symbol, name, rri, description, currentSupply, iconUrl, url, mutable);
 	}
 }

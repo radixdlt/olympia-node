@@ -22,6 +22,7 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.RESerializer;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.utils.Pair;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.nio.BufferUnderflowException;
@@ -47,29 +48,31 @@ public final class REInstruction {
 			var buf = ByteBuffer.wrap(b.array(), pos, length);
 			return Substate.create(p, SubstateId.ofVirtualSubstate(buf));
 		}, Spin.UP, Spin.DOWN),
-		DOWN((byte) 3, (txn, i, b) -> SubstateId.fromBuffer(b), Spin.UP, Spin.DOWN),
-		LDOWN((byte) 4, (txn, i, b) -> {
+		VDOWNARG((byte) 3, (txn, i, b) -> {
+			int pos = b.position();
+			var p = RESerializer.deserialize(b);
+			int length = b.position() - pos;
+			var buf = ByteBuffer.wrap(b.array(), pos, length);
+			var argLength = b.get();
+			var arg = new byte[Byte.toUnsignedInt(argLength)];
+			b.get(arg);
+			return Pair.of(Substate.create(p, SubstateId.ofVirtualSubstate(buf)), arg);
+		}, Spin.UP, Spin.DOWN),
+		DOWN((byte) 4, (txn, i, b) -> SubstateId.fromBuffer(b), Spin.UP, Spin.DOWN),
+		LDOWN((byte) 5, (txn, i, b) -> {
 			var index = b.getInt();
 			if (index < 0 || index >= i) {
 				throw new DeserializeException("Bad local index: " + index);
 			}
 			return SubstateId.ofSubstate(txn.getId(), index);
 		}, Spin.UP, Spin.DOWN),
-		READ((byte) 5, (txn, i, b) -> SubstateId.fromBuffer(b), Spin.UP, Spin.UP),
-		LREAD((byte) 6, (txn, i, b) -> {
-			var index = b.getInt();
-			if (index < 0 || index >= i) {
-				throw new DeserializeException("Bad local index: " + index);
-			}
-			return SubstateId.ofSubstate(txn.getId(), index);
-		}, Spin.UP, Spin.UP),
-		MSG((byte) 7, (txn, i, b) -> {
+		MSG((byte) 6, (txn, i, b) -> {
 			var length = Byte.toUnsignedInt(b.get());
 			var bytes = new byte[length];
 			b.get(bytes);
 			return Hex.toHexString(bytes);
 		}, null, null),
-		SIG((byte) 8, (txn, i, b) -> {
+		SIG((byte) 7, (txn, i, b) -> {
 			return RESerializer.deserializeSignature(b);
 		}, null, null),
 		END((byte) 0, (txn, i, b) -> null, null, null);

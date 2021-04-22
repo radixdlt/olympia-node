@@ -18,7 +18,7 @@
 package com.radixdlt.store.berkeley;
 
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -698,7 +698,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public Optional<Particle> loadRri(Transaction tx, Rri rri) {
+	public Optional<Particle> loadRri(Transaction tx, REAddr rri) {
 		var buf = ByteBuffer.allocate(128);
 		RESerializer.serializeRri(buf, rri);
 		var pos = buf.position();

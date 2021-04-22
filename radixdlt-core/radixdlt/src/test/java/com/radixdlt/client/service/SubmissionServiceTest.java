@@ -54,7 +54,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.mempool.MempoolAdd;
@@ -111,7 +111,7 @@ public class SubmissionServiceTest {
 	@Inject
 	private SubmissionService submissionService;
 
-	private Rri nativeToken = Rri.ofSystem("xrd");
+	private REAddr nativeToken = REAddr.ofNativeToken();
 
 	private final InMemoryEngineStore<LedgerAndBFTProof> engineStore = new InMemoryEngineStore<>();
 	private final Serialization serialization = DefaultSerialization.getInstance();
@@ -225,7 +225,13 @@ public class SubmissionServiceTest {
 		radixEngine.execute(List.of(tx));
 
 		var steps = List.of(
-			TransactionAction.create(ActionType.TRANSFER, ALICE, BOB, UInt256.FOUR, Optional.of(nativeToken)),
+			TransactionAction.create(
+				ActionType.TRANSFER,
+				ALICE_KEYPAIR.getPublicKey(),
+				BOB_KEYPAIR.getPublicKey(),
+				UInt256.FOUR,
+				Optional.of(nativeToken)
+			),
 			TransactionAction.msg("message")
 		);
 
@@ -288,7 +294,9 @@ public class SubmissionServiceTest {
 		radixEngine.execute(List.of(tx));
 
 		var steps = List.of(
-			TransactionAction.create(ActionType.TRANSFER, ALICE, BOB, UInt256.FOUR, Optional.of(nativeToken)),
+			TransactionAction.create(
+				ActionType.TRANSFER, ALICE_KEYPAIR.getPublicKey(), BOB_KEYPAIR.getPublicKey(), UInt256.FOUR, Optional.of(nativeToken)
+			),
 			TransactionAction.msg("message")
 		);
 

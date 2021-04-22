@@ -19,10 +19,10 @@ package com.radix.regression;
 
 import com.google.common.base.Strings;
 import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.AtomStatus;
@@ -35,12 +35,13 @@ import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.Notification;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NotificationType;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 
 import io.reactivex.observers.TestObserver;
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import org.junit.After;
@@ -82,12 +83,12 @@ public class AtomKernelTest {
 
 	@Test
 	public void testAtomTooBig() {
-		final var rri = Rri.of(this.address.getPublicKey(), "toobig");
+		final var rri = REAddr.ofHashedKey(this.address.getPublicKey(), "toobig");
 		TestObserver<?> observer = submitAtom(
 			1 << 20,
 			true,
 			TxLowLevelBuilder.newBuilder()
-				.virtualDown(new RRIParticle(rri))
+				.virtualDown(new REAddrParticle(rri), "toobig".getBytes(StandardCharsets.UTF_8))
 				.up(new UniqueParticle(rri))
 				.particleGroup()
 		);
@@ -99,12 +100,12 @@ public class AtomKernelTest {
 
 	@Test
 	public void testAtomNoFee() {
-		final var rri = Rri.of(this.address.getPublicKey(), "nofee");
+		final var rri = REAddr.ofHashedKey(this.address.getPublicKey(), "nofee");
 		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(
 			10,
 			false,
 			TxLowLevelBuilder.newBuilder()
-				.virtualDown(new RRIParticle(rri))
+				.virtualDown(new REAddrParticle(rri), "nofee".getBytes(StandardCharsets.UTF_8))
 				.up(new UniqueParticle(rri))
 				.particleGroup()
 		);

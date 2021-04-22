@@ -22,16 +22,17 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -65,10 +66,10 @@ public class UniqueTest {
 
 	@Test
 	public void using_someone_elses_mutex_should_fail() {
-		var rri = Rri.of(ECKeyPair.generateNew().getPublicKey(), "smthng");
+		var rri = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "smthng");
 		var builder = TxBuilder.newBuilder(address)
 			.toLowLevelBuilder()
-			.virtualDown(new RRIParticle(rri))
+			.virtualDown(new REAddrParticle(rri), "smthng".getBytes(StandardCharsets.UTF_8))
 			.up(new UniqueParticle(rri))
 			.particleGroup();
 		var sig = keyPair.sign(builder.hashToSign());

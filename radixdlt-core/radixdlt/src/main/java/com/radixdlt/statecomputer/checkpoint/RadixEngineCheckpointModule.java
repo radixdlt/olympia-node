@@ -21,7 +21,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.fees.NativeToken;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 
 /**
  * Configures the module in charge of "weak-subjectivity" or checkpoints
@@ -36,7 +36,7 @@ public class RadixEngineCheckpointModule extends AbstractModule {
 	@Provides
 	@Singleton // Don't want to recompute on each use
 	@NativeToken
-	private Rri nativeToken() {
-		return Rri.NATIVE_TOKEN;
+	private REAddr nativeToken() {
+		return REAddr.ofNativeToken();
 	}
 }

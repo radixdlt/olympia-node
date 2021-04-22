@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import com.radixdlt.constraintmachine.Particle;
+
 import java.util.stream.Collectors;
 
 /**
@@ -37,6 +38,7 @@ import java.util.stream.Collectors;
 // FIXME: rawtypes
 @SuppressWarnings("rawtypes")
 public final class CMAtomOS {
+
 	private static final ParticleDefinition<Particle> VOID_PARTICLE_DEF = ParticleDefinition.builder()
 		.staticValidation(v -> {
 			throw new UnsupportedOperationException("Should not ever call here");
@@ -44,9 +46,12 @@ public final class CMAtomOS {
 		.allowTransitionsFromOutsideScrypts()
 		.build();
 
-	private static final ParticleDefinition<Particle> RRI_PARTICLE_DEF = ParticleDefinition.<RRIParticle>builder()
-		.staticValidation(rri -> Result.success())
-		.rriMapper(RRIParticle::getRri)
+	private static final ParticleDefinition<Particle> RRI_PARTICLE_DEF = ParticleDefinition.<REAddrParticle>builder()
+		.staticValidation(rri -> {
+
+			return Result.success();
+		})
+		.rriMapper(REAddrParticle::getAddr)
 		.virtualizeUp(v -> true)
 		.allowTransitionsFromOutsideScrypts()
 		.build();
@@ -63,7 +68,7 @@ public final class CMAtomOS {
 	) {
 		// RRI particle is a low level particle managed by the OS used for the management of all other resources
 		this.particleDefinitions.put(VoidParticle.class, VOID_PARTICLE_DEF);
-		this.particleDefinitions.put(RRIParticle.class, RRI_PARTICLE_DEF);
+		this.particleDefinitions.put(REAddrParticle.class, RRI_PARTICLE_DEF);
 		this.addressChecker = addressChecker;
 		this.systemNames = systemNames;
 	}

@@ -23,7 +23,7 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.TxnIndex;
 import com.radixdlt.store.CMStore;
@@ -60,7 +60,7 @@ public final class LogCMStore implements CMStore {
 	}
 
 	@Override
-	public Optional<Particle> loadRri(Transaction tx, Rri rri) {
+	public Optional<Particle> loadRri(Transaction tx, REAddr rri) {
 		return immutableIndex.loadRri(tx, rri);
 	}
 

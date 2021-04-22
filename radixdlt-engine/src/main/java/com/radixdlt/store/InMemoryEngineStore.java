@@ -27,7 +27,7 @@ import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,7 +41,7 @@ import java.util.function.BiFunction;
 public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateStore {
 	private final Object lock = new Object();
 	private final Map<SubstateId, REParsedInstruction> storedParticles = new HashMap<>();
-	private final Map<Rri, Particle> rriParticles = new HashMap<>();
+	private final Map<REAddr, Particle> rriParticles = new HashMap<>();
 	private final Set<AID> txnIds = new HashSet<>();
 
 	@Override
@@ -137,7 +137,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	}
 
 	@Override
-	public Optional<Particle> loadRri(Transaction dbTxn, Rri rri) {
+	public Optional<Particle> loadRri(Transaction dbTxn, REAddr rri) {
 		synchronized (lock) {
 			return Optional.ofNullable(rriParticles.get(rri));
 		}

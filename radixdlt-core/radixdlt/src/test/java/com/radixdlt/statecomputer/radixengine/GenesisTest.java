@@ -29,7 +29,7 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.fees.NativeToken;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
@@ -80,7 +80,7 @@ public class GenesisTest {
 		// Arrange
 		createInjector().injectMembers(this);
 
-		var p = immutableIndex.loadRri(null, Rri.NATIVE_TOKEN);
+		var p = immutableIndex.loadRri(null, REAddr.ofNativeToken());
 		assertThat(p)
 			.hasValueSatisfying(particle -> {
 				var tok = (TokenDefinitionParticle) particle;

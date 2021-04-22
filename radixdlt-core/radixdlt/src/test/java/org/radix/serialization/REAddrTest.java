@@ -18,14 +18,14 @@
 package org.radix.serialization;
 
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 
-public class RriTest extends SerializeValue<Rri> {
-	public RriTest() {
-		super(Rri.class, RriTest::get);
+public class REAddrTest extends SerializeValue<REAddr> {
+	public REAddrTest() {
+		super(REAddr.class, REAddrTest::get);
 	}
 
-	private static Rri get() {
-		return Rri.of(ECKeyPair.generateNew().getPublicKey(), "jsh");
+	private static REAddr get() {
+		return REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "jsh");
 	}
 }

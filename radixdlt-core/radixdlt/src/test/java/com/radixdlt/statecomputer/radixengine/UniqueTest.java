@@ -24,7 +24,7 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.EpochCeilingView;
@@ -40,9 +40,10 @@ import com.google.inject.name.Names;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import org.junit.rules.TemporaryFolder;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -70,11 +71,11 @@ public final class UniqueTest {
 	}
 
 	private Txn uniqueTxn(ECKeyPair keyPair) {
-		var rri = Rri.of(keyPair.getPublicKey(), "test");
-		var rriParticle = new RRIParticle(rri);
-		var uniqueParticle = new UniqueParticle(rri);
+		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
+		var rriParticle = new REAddrParticle(addr);
+		var uniqueParticle = new UniqueParticle(addr);
 		var atomBuilder = TxLowLevelBuilder.newBuilder()
-			.virtualDown(rriParticle)
+			.virtualDown(rriParticle, "test".getBytes(StandardCharsets.UTF_8))
 			.up(uniqueParticle)
 			.particleGroup();
 		var sig = keyPair.sign(atomBuilder.hashToSign());

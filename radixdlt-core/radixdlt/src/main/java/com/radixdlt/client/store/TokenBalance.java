@@ -23,7 +23,7 @@ import org.json.JSONObject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.store.berkeley.BalanceEntry;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -43,19 +43,19 @@ public class TokenBalance {
 
 	@JsonProperty("rri")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final Rri rri;
+	private final REAddr rri;
 
 	@JsonProperty("amount")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final UInt384 amount;
 
-	private TokenBalance(Rri rri, UInt384 amount) {
+	private TokenBalance(REAddr rri, UInt384 amount) {
 		this.rri = rri;
 		this.amount = amount;
 	}
 
 	@JsonCreator
-	public static TokenBalance create(Rri rri, UInt384 amount) {
+	public static TokenBalance create(REAddr rri, UInt384 amount) {
 		requireNonNull(rri);
 		requireNonNull(amount);
 
@@ -66,7 +66,7 @@ public class TokenBalance {
 		return create(balanceEntry.getRri(), balanceEntry.getAmount());
 	}
 
-	public Rri getRri() {
+	public REAddr getRri() {
 		return rri;
 	}
 

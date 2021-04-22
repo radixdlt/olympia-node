@@ -19,13 +19,14 @@ package com.radixdlt.client.store.berkeley;
 
 import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atom.actions.CreateFixedToken;
+import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.client.Rri;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt384;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,14 +41,13 @@ import com.radixdlt.client.store.ClientApiStoreException;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
@@ -60,6 +60,7 @@ import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.OperationStatus;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -68,7 +69,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.netty.buffer.ByteBuf;
@@ -164,6 +164,14 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
+	public Result<REAddr> parseRri(String rri) {
+		return Rri.parseFunctional(rri)
+			.flatMap(p -> getTokenDefinition(p.getSecond())
+				.flatMap(t -> Result.ok(p.getSecond()).filter(i -> t.getSymbol().equals(p.getFirst()), "symbol does not match"))
+			);
+	}
+
+	@Override
 	public Result<List<BalanceEntry>> getTokenBalances(RadixAddress address, boolean retrieveStakes) {
 		try (var cursor = addressBalances.openCursor(null, null)) {
 			var key = asKey(address);
@@ -195,7 +203,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
-	public Result<UInt384> getTokenSupply(Rri rri) {
+	public Result<UInt384> getTokenSupply(REAddr rri) {
 		try (var cursor = supplyBalances.openCursor(null, null)) {
 			var key = asKey(rri);
 			var data = entry();
@@ -217,7 +225,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
-	public Result<TokenDefinitionRecord> getTokenDefinition(Rri rri) {
+	public Result<TokenDefinitionRecord> getTokenDefinition(REAddr rri) {
 		try (var cursor = tokenDefinitions.openCursor(null, null)) {
 			var key = asKey(rri);
 			var data = entry();
@@ -228,23 +236,17 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				ELAPSED_APIDB_TOKEN_READ
 			);
 
-			do {
-				if (status != OperationStatus.SUCCESS) {
-					return Result.fail("Unknown RRI " + rri.toString());
-				}
+			if (status != OperationStatus.SUCCESS) {
+				return Result.fail("Unknown RRI " + rri.toString());
+			}
 
-				var definition = restore(serialization, data.getData(), TokenDefinitionRecord.class)
-					.filter(def -> def.rri().equals(rri), "Name not matched");
+			var definition = restore(serialization, data.getData(), TokenDefinitionRecord.class);
+			if (definition.isSuccess()) {
+				return definition;
+			}
 
-				if (definition.isSuccess()) {
-					return definition;
-				}
-
-				status = cursor.getNext(key, data, null);
-			} while (status == OperationStatus.SUCCESS);
+			return Result.fail("Unknown error getting RRI " + rri.toString());
 		}
-
-		return Result.fail("Unknown RRI " + rri.toString());
 	}
 
 	@Override
@@ -566,14 +568,14 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			);
 			storeBalanceEntry(entry0);
 			storeBalanceEntry(entry1);
-		} else {
-			var tokDefs = action.getInstructions().stream()
-				.map(REParsedInstruction::getParticle)
-				.filter(TokenDefinitionParticle.class::isInstance)
-				.map(TokenDefinitionParticle.class::cast)
-				.collect(Collectors.toList());
-
-			tokDefs.forEach(this::storeTokenDefinition);
+		} else if (action.getTxAction() instanceof CreateMutableToken) {
+			var createMutableToken = (CreateMutableToken) action.getTxAction();
+			var record = TokenDefinitionRecord.from(user, createMutableToken);
+			storeTokenDefinition(record);
+		} else if (action.getTxAction() instanceof CreateFixedToken) {
+			var createFixedToken = (CreateFixedToken) action.getTxAction();
+			var record = TokenDefinitionRecord.from(user, createFixedToken);
+			storeTokenDefinition(record);
 		}
 	}
 
@@ -610,10 +612,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		}
 	}
 
-	private void storeTokenDefinition(TokenDefinitionParticle substate) {
-		var record = TokenDefinitionRecord.from(substate);
-		storeTokenDefinition(record);
-	}
 
 	private void storeTokenDefinition(TokenDefinitionRecord tokenDefinition) {
 		var key = asKey(tokenDefinition.rri());
@@ -663,7 +661,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private static DatabaseEntry asKey(BalanceEntry balanceEntry) {
 		var address = buffer().writeBytes(balanceEntry.getOwner().toByteArray());
-		var buf = address.writeBytes(balanceEntry.getRri().getName().getBytes());
+		var buf = address.writeBytes(balanceEntry.getRri().toString().getBytes(StandardCharsets.UTF_8));
 
 		if (balanceEntry.isStake()) {
 			buf.writeBytes(balanceEntry.getDelegate().toByteArray());
@@ -672,8 +670,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		return entry(buf);
 	}
 
-	private static DatabaseEntry asKey(Rri rri) {
-		return entry(writeRRI(buffer(), rri));
+	private static DatabaseEntry asKey(REAddr rri) {
+		return entry(rri.toString().getBytes(StandardCharsets.UTF_8));
 	}
 
 	private static DatabaseEntry asKey(RadixAddress radixAddress) {
@@ -685,11 +683,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 						 .writeBytes(radixAddress.toByteArray())
 						 .writeLong(timestamp.getEpochSecond())
 						 .writeInt(timestamp.getNano()));
-	}
-
-	private static ByteBuf writeRRI(ByteBuf buf, Rri rri) {
-		return buf
-			.writeBytes(rri.toString().getBytes(RadixConstants.STANDARD_CHARSET));
 	}
 
 	private static ByteBuf buffer() {

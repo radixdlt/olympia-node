@@ -23,9 +23,12 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.atomos.REAddrParticle;
+import com.radixdlt.constraintmachine.SubstateWithArg;
+import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.identifiers.REAddr;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -76,22 +79,22 @@ public final class CreateMutableToken implements TxAction {
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		final var tokenRRI = txBuilder.getAddress().map(a -> Rri.of(a.getPublicKey(), symbol))
-			.orElse(Rri.ofSystem(symbol));
+		final var reAddress = txBuilder.getAddress().map(a -> REAddr.ofHashedKey(a.getPublicKey(), symbol))
+			.orElse(REAddr.ofNativeToken());
 
 		txBuilder.down(
-			RRIParticle.class,
-			p -> p.getRri().equals(tokenRRI),
-			Optional.of(new RRIParticle(tokenRRI)),
+			REAddrParticle.class,
+			p -> p.getAddr().equals(reAddress),
+			Optional.of(SubstateWithArg.withArg(new REAddrParticle(reAddress), symbol.getBytes(StandardCharsets.UTF_8))),
 			"RRI not available"
 		);
 		txBuilder.up(new TokenDefinitionParticle(
-			tokenRRI,
+			reAddress,
 			name,
 			getDescription(),
 			getIconUrl(),
 			getTokenUrl(),
-			null
+			txBuilder.getAddress().map(RadixAddress::getPublicKey).orElse(null)
 		));
 	}
 }

@@ -30,12 +30,11 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.common.hash.HashCode;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerIds;
 import com.radixdlt.utils.Longs;
-import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
@@ -107,10 +106,10 @@ public class JacksonCborMapper extends ObjectMapper {
 				JacksonCodecConstants.U30_VALUE,
 				UInt384::toByteArray
 		));
-		cborModule.addSerializer(Rri.class, new JacksonCborObjectBytesSerializer<>(
-				Rri.class,
+		cborModule.addSerializer(REAddr.class, new JacksonCborObjectBytesSerializer<>(
+				REAddr.class,
 				JacksonCodecConstants.RRI_VALUE,
-				id -> id.toString().getBytes(RadixConstants.STANDARD_CHARSET)
+				REAddr::getBytes
 		));
 		cborModule.addSerializer(AID.class, new JacksonCborObjectBytesSerializer<>(
 				AID.class,
@@ -161,10 +160,10 @@ public class JacksonCborMapper extends ObjectMapper {
 				JacksonCodecConstants.U30_VALUE,
 				UInt384::from
 		));
-		cborModule.addDeserializer(Rri.class, new JacksonCborObjectBytesDeserializer<>(
-				Rri.class,
+		cborModule.addDeserializer(REAddr.class, new JacksonCborObjectBytesDeserializer<>(
+				REAddr.class,
 				JacksonCodecConstants.RRI_VALUE,
-				b -> Rri.fromBech32(new String(b, RadixConstants.STANDARD_CHARSET))
+				REAddr::of
 		));
 		cborModule.addDeserializer(AID.class, new JacksonCborObjectBytesDeserializer<>(
 				AID.class,

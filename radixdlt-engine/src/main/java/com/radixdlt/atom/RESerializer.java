@@ -26,13 +26,13 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
-import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
@@ -42,7 +42,7 @@ import java.util.Map;
 
 public final class RESerializer {
 	private static final BiMap<Class<? extends Particle>, Byte> classToByte = HashBiMap.create(Map.of(
-		RRIParticle.class, (byte) 0,
+		REAddrParticle.class, (byte) 0,
 		SystemParticle.class, (byte) 1,
 		TokenDefinitionParticle.class, (byte) 2,
 		TokensParticle.class, (byte) 3,
@@ -92,7 +92,7 @@ public final class RESerializer {
 			throw new DeserializeException("Bad type: " + type);
 		}
 
-		if (c == RRIParticle.class) {
+		if (c == REAddrParticle.class) {
 			return deserializeRRIParticle(buf);
 		} else if (c == SystemParticle.class) {
 			return deserializeSystemParticle(buf);
@@ -114,8 +114,8 @@ public final class RESerializer {
 	public static byte[] serialize(Particle p) {
 		var buf = ByteBuffer.allocate(1024);
 		buf.put(classToByte.get(p.getClass())); // substate type
-		if (p instanceof RRIParticle) {
-			serializeData((RRIParticle) p, buf);
+		if (p instanceof REAddrParticle) {
+			serializeData((REAddrParticle) p, buf);
 		} else if (p instanceof SystemParticle) {
 			serializeData((SystemParticle) p, buf);
 		} else if (p instanceof TokensParticle) {
@@ -140,43 +140,27 @@ public final class RESerializer {
 		return bytes;
 	}
 
-	public static void serializeRri(ByteBuffer buf, Rri rri) {
-		buf.put((byte) (rri.isSystem() ? 0 : 1)); // version
-		if (!rri.isSystem()) {
-			buf.put(rri.getHash());
-		}
-		serializeString(buf, rri.getName());
+	public static void serializeRri(ByteBuffer buf, REAddr rri) {
+		buf.put(rri.getBytes());
 	}
 
-	public static Rri deserializeRri(ByteBuffer buf) throws DeserializeException {
+	public static REAddr deserializeRri(ByteBuffer buf) throws DeserializeException {
 		var v = buf.get(); // version
-		if (v != 0 && v != 1) {
-			throw new DeserializeException("Invalid rri version " + v);
+		var type = REAddr.REAddrType.parse(v);
+		if (type.isEmpty()) {
+			throw new DeserializeException("Unknown address type " + v);
 		}
-		try {
-			var isSystem = v == 0;
-			if (isSystem) {
-				var name = deserializeString(buf);
-				return Rri.ofSystem(name);
-			} else {
-				var hash = new byte[Rri.HASH_BYTES];
-				buf.get(hash);
-				var name = deserializeString(buf);
-				return Rri.of(hash, name);
-			}
-		} catch (IllegalArgumentException e) {
-			throw new DeserializeException("Could not deserialize rri", e);
-		}
+		return type.get().parse(buf);
 	}
 
-	private static void serializeData(RRIParticle rriParticle, ByteBuffer buf) {
-		var rri = rriParticle.getRri();
+	private static void serializeData(REAddrParticle rriParticle, ByteBuffer buf) {
+		var rri = rriParticle.getAddr();
 		serializeRri(buf, rri);
 	}
 
-	private static RRIParticle deserializeRRIParticle(ByteBuffer buf) throws DeserializeException {
+	private static REAddrParticle deserializeRRIParticle(ByteBuffer buf) throws DeserializeException {
 		var rri = deserializeRri(buf);
-		return new RRIParticle(rri);
+		return new REAddrParticle(rri);
 	}
 
 	private static void serializeData(SystemParticle systemParticle, ByteBuffer buf) {
@@ -252,7 +236,13 @@ public final class RESerializer {
 				buf.put(i.toByteArray());
 			},
 			() -> {
-				buf.put((byte) 1);
+				p.getMinter().ifPresentOrElse(
+					m -> {
+						buf.put((byte) 2);
+						serializeKey(buf, m);
+					},
+					() -> buf.put((byte) 1)
+				);
 			}
 		);
 		serializeString(buf, p.getName());
@@ -263,12 +253,26 @@ public final class RESerializer {
 
 	private static TokenDefinitionParticle deserializeTokenDefinitionParticle(ByteBuffer buf) throws DeserializeException {
 		var rri = deserializeRri(buf);
-		var supply = buf.get() != 0 ? null : deserializeUInt256(buf);
+		var type = buf.get();
+		final UInt256 supply;
+		final ECPublicKey minter;
+		if (type == 0) {
+			supply = deserializeUInt256(buf);
+			minter = null;
+		} else if (type == 1) {
+			supply = null;
+			minter = null;
+		} else if (type == 2) {
+			supply = null;
+			minter = deserializeKey(buf);
+		} else {
+			throw new DeserializeException("Unknown token def type " + type);
+		}
 		var name = deserializeString(buf);
 		var description = deserializeString(buf);
 		var url = deserializeString(buf);
 		var iconUrl = deserializeString(buf);
-		return new TokenDefinitionParticle(rri, name, description, iconUrl, url, supply);
+		return new TokenDefinitionParticle(rri, name, description, iconUrl, url, supply, minter);
 	}
 
 	private static UInt256 deserializeUInt256(ByteBuffer buf) {
@@ -318,7 +322,7 @@ public final class RESerializer {
 		buf.put(sBytes); // url
 	}
 
-	private static String deserializeString(ByteBuffer buf) {
+	public static String deserializeString(ByteBuffer buf) {
 		var len = Byte.toUnsignedInt(buf.get()); // url
 		var dest = new byte[len];
 		buf.get(dest);

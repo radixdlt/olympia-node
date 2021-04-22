@@ -28,6 +28,7 @@ import com.radixdlt.atomos.RoutineCalls;
 import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.SignatureValidator;
+import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.VoidParticle;
@@ -46,12 +47,12 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 			new TransitionProcedure<>() {
 				@Override
 				public Result precondition(
-					TokensParticle inputParticle,
+					SubstateWithArg<TokensParticle> in,
 					VoidParticle outputParticle,
 					VoidReducerState voidReducerState,
 					ImmutableIndex immutableIndex
 				) {
-					var p = immutableIndex.loadRri(null, inputParticle.getRri());
+					var p = immutableIndex.loadRri(null, in.getSubstate().getRri());
 					if ((p.isEmpty() || !(p.get() instanceof TokenDefinitionParticle))) {
 						return Result.error("Bad rriId");
 					}
@@ -66,13 +67,14 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 				@Override
 				public InputOutputReducer<TokensParticle, VoidParticle, VoidReducerState> inputOutputReducer() {
 					return (i, o, index, state) -> {
-						return ReducerResult.complete(new BurnToken(i.getRri(), i.getAmount()));
+						var in = i.getSubstate();
+						return ReducerResult.complete(new BurnToken(in.getRri(), in.getAmount()));
 					};
 				}
 
 				@Override
 				public SignatureValidator<TokensParticle, VoidParticle> signatureValidator() {
-					return (i, o, index, pubKey) -> pubKey.map(i.getAddress()::ownedBy).orElse(false);
+					return (i, o, index, pubKey) -> pubKey.map(i.getSubstate().getAddress()::ownedBy).orElse(false);
 				}
 			}
 		);
@@ -86,7 +88,7 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 			new TransitionProcedure<>() {
 				@Override
 				public Result precondition(
-					TokensParticle inputParticle,
+					SubstateWithArg<TokensParticle> in,
 					VoidParticle outputParticle,
 					CreateFungibleTransitionRoutine.UsedAmount inputUsed,
 					ImmutableIndex immutableIndex
@@ -95,7 +97,7 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 						return Result.error("Broken state.");
 					}
 
-					var p = immutableIndex.loadRri(null, inputParticle.getRri());
+					var p = immutableIndex.loadRri(null, in.getSubstate().getRri());
 					if ((p.isEmpty() || !(p.get() instanceof TokenDefinitionParticle))) {
 						return Result.error("Bad rriId");
 					}
@@ -111,15 +113,16 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 				public InputOutputReducer<TokensParticle, VoidParticle, CreateFungibleTransitionRoutine.UsedAmount>
 					inputOutputReducer() {
 					return (i, o, index, state) -> {
-						var amt = i.getAmount().subtract(state.getUsedAmount());
-						var p = (TokenDefinitionParticle) index.loadRri(null, i.getRri()).orElseThrow();
+						var in = i.getSubstate();
+						var amt = in.getAmount().subtract(state.getUsedAmount());
+						var p = (TokenDefinitionParticle) index.loadRri(null, in.getRri()).orElseThrow();
 						return ReducerResult.complete(new BurnToken(p.getRri(), amt));
 					};
 				}
 
 				@Override
 				public SignatureValidator<TokensParticle, VoidParticle> signatureValidator() {
-					return (i, o, index, pubKey) -> pubKey.map(i.getAddress()::ownedBy).orElse(false);
+					return (i, o, index, pubKey) -> pubKey.map(i.getSubstate().getAddress()::ownedBy).orElse(false);
 				}
 			}
 		);
