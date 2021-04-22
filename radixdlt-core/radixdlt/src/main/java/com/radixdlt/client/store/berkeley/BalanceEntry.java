@@ -20,6 +20,7 @@ package com.radixdlt.client.store.berkeley;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
@@ -28,6 +29,7 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.UInt384;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 @SerializerId2("radix.api.balance")
@@ -38,7 +40,7 @@ public class BalanceEntry {
 
 	@JsonProperty("owner")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final ECPublicKey owner;
+	private final byte[] owner;
 
 	@JsonProperty("delegate")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -56,8 +58,29 @@ public class BalanceEntry {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final boolean negative;
 
+	@JsonCreator
+	private static BalanceEntry create(
+		@JsonProperty("owner") byte[] owner,
+		@JsonProperty("delegate") RadixAddress delegate,
+		@JsonProperty("rri") REAddr rri,
+		@JsonProperty("amount") UInt384 amount,
+		@JsonProperty("negative") boolean negative
+	) {
+		return createFull(owner, delegate, rri, amount, negative);
+	}
+
+	public static BalanceEntry create(
+		ECPublicKey owner,
+		RadixAddress delegate,
+		REAddr rri,
+		UInt384 amount,
+		boolean negative
+	) {
+		return createFull(owner == null ? null : owner.getCompressedBytes(), delegate, rri, amount, negative);
+	}
+
 	private BalanceEntry(
-		ECPublicKey owner, RadixAddress delegate, REAddr rri,
+		byte[] owner, RadixAddress delegate, REAddr rri,
 		UInt384 amount, boolean negative
 	) {
 		this.owner = owner;
@@ -68,7 +91,7 @@ public class BalanceEntry {
 	}
 
 	public static BalanceEntry createFull(
-		ECPublicKey owner,
+		byte[] owner,
 		RadixAddress delegate,
 		REAddr rri,
 		UInt384 amount,
@@ -80,25 +103,19 @@ public class BalanceEntry {
 		return new BalanceEntry(owner, delegate, rri, amount, negative);
 	}
 
-	@JsonCreator
-	public static BalanceEntry create(
-		@JsonProperty("owner") ECPublicKey owner,
-		@JsonProperty("delegate") RadixAddress delegate,
-		@JsonProperty("rri") REAddr rri,
-		@JsonProperty("amount") UInt384 amount,
-		@JsonProperty("negative") boolean negative
-	) {
-		return createFull(owner, delegate, rri, amount, negative);
-	}
 
 	public static BalanceEntry createBalance(
 		ECPublicKey owner, RadixAddress delegate, REAddr rri, UInt384 amount
 	) {
-		return createFull(owner, delegate, rri, amount, false);
+		return createFull(owner.getCompressedBytes(), delegate, rri, amount, false);
 	}
 
 	public ECPublicKey getOwner() {
-		return owner;
+		try {
+			return owner == null ? null : ECPublicKey.fromBytes(owner);
+		} catch (PublicKeyException e) {
+			throw new IllegalStateException();
+		}
 	}
 
 	public RadixAddress getDelegate() {
@@ -130,7 +147,7 @@ public class BalanceEntry {
 	}
 
 	public BalanceEntry add(BalanceEntry balanceEntry) {
-		assert Objects.equals(this.owner, balanceEntry.owner);
+		assert Arrays.equals(this.owner, balanceEntry.owner);
 		assert this.rri.equals(balanceEntry.rri);
 
 		if (negative) {
@@ -150,7 +167,7 @@ public class BalanceEntry {
 			var entry = (BalanceEntry) o;
 
 			return negative == entry.negative
-				&& owner.equals(entry.owner)
+				&& Arrays.equals(owner, entry.owner)
 				&& Objects.equals(delegate, entry.delegate)
 				&& rri.equals(entry.rri)
 				&& amount.equals(entry.amount);
@@ -160,12 +177,12 @@ public class BalanceEntry {
 
 	@Override
 	public final int hashCode() {
-		return Objects.hash(owner, delegate, rri, amount, negative);
+		return Objects.hash(Arrays.hashCode(owner), delegate, rri, amount, negative);
 	}
 
 	@Override
 	public String toString() {
-		return "/" + owner + "/" + rri + " = " + (negative ? "-" : "+") + amount.toString()
+		return "/" + getOwner() + "/" + rri + " = " + (negative ? "-" : "+") + amount.toString()
 			+ (delegate == null ? "" : ", delegate " + delegate);
 	}
 

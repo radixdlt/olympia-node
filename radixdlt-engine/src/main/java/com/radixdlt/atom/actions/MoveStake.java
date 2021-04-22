@@ -42,11 +42,11 @@ public final class MoveStake implements TxAction {
 
 		txBuilder.swapFungible(
 			StakedTokensParticle.class,
-			p -> p.getAddress().equals(address) && p.getDelegateKey().equals(from),
+			p -> p.getOwner().equals(address.getPublicKey()) && p.getDelegateKey().equals(from),
 			StakedTokensParticle::getAmount,
-			amt -> new StakedTokensParticle(from, address, amt),
+			amt -> new StakedTokensParticle(from, address.getPublicKey(), amt),
 			amount,
 			"Not enough staked."
-		).with(amt -> new StakedTokensParticle(to, address, amt));
+		).with(amt -> new StakedTokensParticle(to, address.getPublicKey(), amt));
 	}
 }

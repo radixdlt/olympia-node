@@ -24,7 +24,6 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
 public final class MintToken implements TxAction {

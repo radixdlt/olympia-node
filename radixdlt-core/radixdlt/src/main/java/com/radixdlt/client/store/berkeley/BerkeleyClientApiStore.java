@@ -26,6 +26,7 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.client.Rri;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.REParsedAction;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.utils.UInt384;
 import org.apache.logging.log4j.LogManager;
@@ -175,7 +176,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	@Override
 	public Result<List<TokenBalance>> getTokenBalances(RadixAddress address) {
 		try (var cursor = addressBalances.openCursor(null, null)) {
-			var key = asKey(address);
+			var key = asKey(address.getPublicKey());
 			var data = entry();
 			var status = readBalance(() -> cursor.getSearchKeyRange(key, data, null), data);
 
@@ -192,7 +193,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					)
 					.toOptional()
 					.filter(Predicate.not(BalanceEntry::isStake))
-					.filter(entry -> entry.getOwner().equals(address))
+					.filter(entry -> entry.getOwner().equals(address.getPublicKey()))
 					.map(TokenBalance::from)
 					.ifPresent(list::add);
 
@@ -277,7 +278,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private Result<TxHistoryEntry> lookupTransactionInHistory(RadixAddress creator, Txn txn) {
-		var key = asKey(creator, Instant.EPOCH);
+		var key = asKey(creator.getPublicKey(), Instant.EPOCH);
 		var data = entry();
 
 		try (var cursor = transactionHistory.openCursor(null, null)) {
@@ -312,7 +313,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		}
 
 		var instant = ptr.orElse(Instant.EPOCH);
-		var key = asKey(address, instant);
+		var key = asKey(address.getPublicKey(), instant);
 		var data = entry();
 
 		try (var cursor = transactionHistory.openCursor(null, null)) {
@@ -600,7 +601,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private void storeSingleTransaction(AID id, RadixAddress creator) {
 		//Note: since Java 9 the Clock.systemUTC() produces values with real nanosecond resolution.
-		var key = asKey(creator, currentTimestamp.get());
+		var key = asKey(creator.getPublicKey(), currentTimestamp.get());
 		var data = entry(id.getBytes());
 
 		var status = withTime(
@@ -676,13 +677,13 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		return entry(rri.toString().getBytes(StandardCharsets.UTF_8));
 	}
 
-	private static DatabaseEntry asKey(RadixAddress radixAddress) {
-		return entry(buffer().writeBytes(radixAddress.toByteArray()));
+	private static DatabaseEntry asKey(ECPublicKey key) {
+		return entry(buffer().writeBytes(key.getCompressedBytes()));
 	}
 
-	private static DatabaseEntry asKey(RadixAddress radixAddress, Instant timestamp) {
+	private static DatabaseEntry asKey(ECPublicKey key, Instant timestamp) {
 		return entry(buffer()
-						 .writeBytes(radixAddress.toByteArray())
+						 .writeBytes(key.getCompressedBytes())
 						 .writeLong(timestamp.getEpochSecond())
 						 .writeInt(timestamp.getNano()));
 	}

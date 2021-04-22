@@ -58,6 +58,6 @@ public final class StakeTokens implements TxAction {
 			amt -> new TokensParticle(address.getPublicKey(), amt, REAddr.ofNativeToken()),
 			amount,
 			"Not enough balance for staking."
-		).with(amt -> new StakedTokensParticle(delegateKey, address, amt));
+		).with(amt -> new StakedTokensParticle(delegateKey, address.getPublicKey(), amt));
 	}
 }

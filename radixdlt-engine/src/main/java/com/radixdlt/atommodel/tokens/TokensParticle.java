@@ -18,7 +18,6 @@
 package com.radixdlt.atommodel.tokens;
 
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;

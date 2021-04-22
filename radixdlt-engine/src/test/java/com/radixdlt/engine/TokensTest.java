@@ -10,7 +10,6 @@ import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.UInt256;
@@ -45,7 +44,6 @@ public class TokensTest {
 	public void create_new_token_with_no_errors() throws RadixEngineException {
 		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 		REAddr rri = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
 		REAddrParticle rriParticle = new REAddrParticle(rri);
 		TokenDefinitionParticle tokenDefinitionParticle = new TokenDefinitionParticle(
@@ -57,7 +55,7 @@ public class TokensTest {
 			UInt256.TEN
 		);
 		TokensParticle tokensParticle = new TokensParticle(
-			address,
+			keyPair.getPublicKey(),
 			UInt256.TEN,
 			rri
 		);

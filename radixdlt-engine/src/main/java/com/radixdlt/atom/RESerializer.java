@@ -192,16 +192,16 @@ public final class RESerializer {
 	}
 
 	private static void serializeData(StakedTokensParticle p, ByteBuffer buf) {
-		serializeAddress(buf, p.getAddress());
+		serializeKey(buf, p.getOwner());
 		serializeKey(buf, p.getDelegateKey());
 		buf.put(p.getAmount().toByteArray());
 	}
 
 	private static StakedTokensParticle deserializeStakedTokensParticle(ByteBuffer buf) throws DeserializeException {
-		var address = deserializeAddress(buf);
+		var owner = deserializeKey(buf);
 		var delegate = deserializeKey(buf);
 		var amount = deserializeUInt256(buf);
-		return new StakedTokensParticle(delegate, address, amount);
+		return new StakedTokensParticle(delegate, owner, amount);
 	}
 
 	private static void serializeData(ValidatorParticle p, ByteBuffer buf) {
