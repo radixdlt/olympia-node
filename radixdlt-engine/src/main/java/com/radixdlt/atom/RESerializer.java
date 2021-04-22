@@ -290,7 +290,7 @@ public final class RESerializer {
 			var keyBytes = new byte[33];
 			buf.get(keyBytes);
 			return ECPublicKey.fromBytes(keyBytes);
-		} catch (PublicKeyException e) {
+		} catch (PublicKeyException | IllegalArgumentException e) {
 			throw new DeserializeException("Could not deserialize key");
 		}
 	}
@@ -301,11 +301,15 @@ public final class RESerializer {
 		buf.put(address.toByteArray()); // address
 	}
 
-	private static RadixAddress deserializeAddress(ByteBuffer buf) {
+	private static RadixAddress deserializeAddress(ByteBuffer buf) throws DeserializeException {
 		var addressLength = Byte.toUnsignedInt(buf.get()); // address length
 		var addressDest = new byte[addressLength]; // address
 		buf.get(addressDest);
-		return RadixAddress.from(addressDest);
+		try {
+			return RadixAddress.from(addressDest);
+		} catch (IllegalArgumentException e) {
+			throw new DeserializeException("Address deserialization failed.", e);
+		}
 	}
 
 	private static void serializeString(ByteBuffer buf, String s) {

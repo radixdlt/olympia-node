@@ -25,6 +25,7 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Pair;
 import org.bouncycastle.util.encoders.Hex;
 
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
 /**
@@ -89,21 +90,25 @@ public final class REInstruction {
 		}
 
 		public Object readData(Txn txn, int index, ByteBuffer buf) throws DeserializeException {
-			return readData.read(txn, index, buf);
+			try {
+				return readData.read(txn, index, buf);
+			} catch (BufferUnderflowException e) {
+				throw new DeserializeException("Buffer underflow @" + index, e);
+			}
 		}
 
 		public byte opCode() {
 			return opCode;
 		}
 
-		static REOp fromByte(byte op) {
+		static REOp fromByte(byte op) throws DeserializeException {
 			for (var microOp : REOp.values()) {
 				if (microOp.opCode == op) {
 					return microOp;
 				}
 			}
 
-			throw new IllegalArgumentException("Unknown opcode: " + op);
+			throw new DeserializeException("Unknown opcode: " + op);
 		}
 	}
 
