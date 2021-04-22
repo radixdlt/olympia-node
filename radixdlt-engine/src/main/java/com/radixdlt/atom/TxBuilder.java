@@ -95,14 +95,6 @@ public final class TxBuilder {
 		lowLevelBuilder.localDown(index);
 	}
 
-	public void read(SubstateId substateId) {
-		lowLevelBuilder.read(substateId);
-	}
-
-	public void localRead(int index) {
-		lowLevelBuilder.localRead(index);
-	}
-
 	private SubstateCursor createRemoteSubstateCursor(Class<? extends Particle> particleClass) {
 		return SubstateCursor.filter(
 			remoteSubstate.openIndexedCursor(particleClass),
@@ -219,46 +211,6 @@ public final class TxBuilder {
 			return substateDown.get();
 		}
 	}
-
-	public <T extends Particle> T read(
-		Class<T> particleClass,
-		Predicate<T> particlePredicate,
-		String errorMessage
-	) throws TxBuilderException {
-		var localDown = lowLevelBuilder.localUpSubstate().stream()
-			.filter(s -> {
-				if (!particleClass.isInstance(s.getParticle())) {
-					return false;
-				}
-
-				return particlePredicate.test(particleClass.cast(s.getParticle()));
-			})
-			.peek(s -> this.localRead(s.getIndex()))
-			.map(LocalSubstate::getParticle)
-			.map(particleClass::cast)
-			.findFirst();
-
-		if (localDown.isPresent()) {
-			return localDown.get();
-		}
-
-
-		try (var cursor = createRemoteSubstateCursor(particleClass)) {
-			var substateDown = iteratorToStream(cursor)
-				.filter(s -> particlePredicate.test(particleClass.cast(s.getParticle())))
-				.peek(s -> this.read(s.getId()))
-				.map(Substate::getParticle)
-				.map(particleClass::cast)
-				.findFirst();
-
-			if (substateDown.isEmpty()) {
-				throw new TxBuilderException(errorMessage + " (Substate not found)");
-			}
-
-			return substateDown.get();
-		}
-	}
-
 
 	public interface Mapper<T extends Particle, U extends Particle> {
 		U map(T t) throws TxBuilderException;

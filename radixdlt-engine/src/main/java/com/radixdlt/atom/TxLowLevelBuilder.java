@@ -133,20 +133,6 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
-	public TxLowLevelBuilder read(SubstateId substateId) {
-		instruction(REInstruction.REOp.READ, substateId.asBytes());
-		return this;
-	}
-
-	public TxLowLevelBuilder localRead(int index) {
-		var particle = localUpParticles.get(index);
-		if (particle == null) {
-			throw new IllegalStateException("Local particle does not exist: " + index);
-		}
-		instruction(REInstruction.REOp.LREAD, Ints.toByteArray(index));
-		return this;
-	}
-
 	public TxLowLevelBuilder particleGroup() {
 		instruction(REInstruction.REOp.END, new byte[0]);
 		return this;

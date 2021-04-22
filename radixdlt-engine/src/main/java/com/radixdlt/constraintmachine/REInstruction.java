@@ -54,14 +54,6 @@ public final class REInstruction {
 			}
 			return SubstateId.ofSubstate(txn.getId(), index);
 		}, Spin.UP, Spin.DOWN),
-		READ((byte) 5, (txn, i, b) -> SubstateId.fromBuffer(b), Spin.UP, Spin.UP),
-		LREAD((byte) 6, (txn, i, b) -> {
-			var index = b.getInt();
-			if (index < 0 || index >= i) {
-				throw new DeserializeException("Bad local index: " + index);
-			}
-			return SubstateId.ofSubstate(txn.getId(), index);
-		}, Spin.UP, Spin.UP),
 		MSG((byte) 7, (txn, i, b) -> {
 			var length = Byte.toUnsignedInt(b.get());
 			var bytes = new byte[length];
