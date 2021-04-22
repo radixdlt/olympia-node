@@ -51,8 +51,6 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 
 public class TransactionParserTest {
-	private static final byte MAGIC = (byte) 0;
-
 	private final ECKeyPair tokenOwnerKeyPair = ECKeyPair.generateNew();
 	private final ECKeyPair validatorKeyPair = ECKeyPair.generateNew();
 	private final EngineStore<Void> store = new InMemoryEngineStore<>();
@@ -69,7 +67,7 @@ public class TransactionParserTest {
 
 	private RadixEngine<Void> engine;
 
-	private TransactionParser parser = new TransactionParser(tokenRri, 0);
+	private TransactionParser parser = new TransactionParser(tokenRri);
 
 	@Before
 	public void setup() throws Exception {

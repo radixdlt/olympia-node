@@ -17,13 +17,13 @@
 
 package com.radixdlt.client.lib;
 
+import com.radixdlt.client.AccountAddress;
 import com.radixdlt.utils.Pair;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
 
@@ -101,9 +101,9 @@ public class NodeClient {
 
 	//TODO: parse response
 	public Result<JSONObject> callTransactionHistory(
-		RadixAddress address, int size, Optional<String> cursor
+		String address, int size, Optional<String> cursor
 	) {
-		var params = jsonArray().put(address.toString()).put(size);
+		var params = jsonArray().put(address).put(size);
 
 		cursor.ifPresent(params::put);
 
@@ -120,8 +120,8 @@ public class NodeClient {
 			.flatMap(this::parseJson);
 	}
 
-	public RadixAddress toAddress(ECPublicKey publicKey) {
-		return new RadixAddress(magicHolder.get(), publicKey);
+	public String toAddress(ECPublicKey publicKey) {
+		return AccountAddress.of(publicKey);
 	}
 
 	private Result<NodeClient> tryConnect() {

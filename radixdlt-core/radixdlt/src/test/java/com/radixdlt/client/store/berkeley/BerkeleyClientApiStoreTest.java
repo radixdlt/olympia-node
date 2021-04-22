@@ -20,6 +20,7 @@ import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.client.AccountAddress;
 import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.utils.UInt384;
@@ -51,7 +52,6 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.EpochCeilingView;
@@ -84,12 +84,10 @@ import static org.mockito.Mockito.when;
 
 public class BerkeleyClientApiStoreTest {
 	private static final ECKeyPair OWNER_KEYPAIR = ECKeyPair.generateNew();
-	private static final RadixAddress OWNER = new RadixAddress((byte) 0, OWNER_KEYPAIR.getPublicKey());
 	private static final ECKeyPair TOKEN_KEYPAIR = ECKeyPair.generateNew();
-	private static final RadixAddress TOKEN_ADDRESS = new RadixAddress((byte) 0, TOKEN_KEYPAIR.getPublicKey());
 
 	private static final String SYMBOL = "cfee";
-	private static final REAddr TOKEN = REAddr.ofHashedKey(TOKEN_ADDRESS.getPublicKey(), SYMBOL);
+	private static final REAddr TOKEN = REAddr.ofHashedKey(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
 
 	private final Serialization serialization = DefaultSerialization.getInstance();
 	private final BerkeleyLedgerEntryStore ledgerStore = mock(BerkeleyLedgerEntryStore.class);
@@ -244,7 +242,7 @@ public class BerkeleyClientApiStoreTest {
 
 				assertEquals(ActionType.TRANSFER, action.getType());
 				assertEquals(UInt256.FOUR, action.getAmount());
-				assertEquals(TOKEN_ADDRESS.toString(), action.getFrom());
+				assertEquals(AccountAddress.of(TOKEN_KEYPAIR.getPublicKey()), action.getFrom());
 				assertEquals(OWNER_KEYPAIR.getPublicKey().toString(), action.getTo());
 
 				newCursor.set(entry.timestamp());
@@ -332,7 +330,7 @@ public class BerkeleyClientApiStoreTest {
 			mock(SystemCounters.class),
 			mock(ScheduledEventDispatcher.class),
 			ledgerCommitted,
-			new TransactionParser(TOKEN, 0),
+			new TransactionParser(TOKEN),
 			0
 		);
 	}

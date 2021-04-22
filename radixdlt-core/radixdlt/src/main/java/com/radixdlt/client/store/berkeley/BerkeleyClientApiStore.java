@@ -49,7 +49,6 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -253,7 +252,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	@Override
 	public Result<TxHistoryEntry> getTransaction(AID txId) {
 		return retrieveTx(txId)
-			.flatMap(txn -> extractCreator(txn, universeMagic)
+			.flatMap(txn -> extractCreator(txn)
 				.map(Result::ok)
 				.orElseGet(() -> Result.fail("Unable to restore creator from transaction {0}", txn.getId()))
 				.flatMap(creator -> lookupTransactionInHistory(creator, txn)));
@@ -275,8 +274,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		}
 	}
 
-	private Result<TxHistoryEntry> lookupTransactionInHistory(RadixAddress creator, Txn txn) {
-		var key = asKey(creator.getPublicKey(), Instant.EPOCH);
+	private Result<TxHistoryEntry> lookupTransactionInHistory(ECPublicKey creator, Txn txn) {
+		var key = asKey(creator, Instant.EPOCH);
 		var data = entry();
 
 		try (var cursor = transactionHistory.openCursor(null, null)) {
@@ -506,19 +505,18 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 		reTxn.getUser().ifPresentOrElse(
 			p -> {
-				var addr = new RadixAddress(universeMagic, p);
-				storeSingleTransaction(reTxn.getTxn().getId(), addr);
-				reTxn.getActions().forEach(a -> storeAction(addr, a));
+				storeSingleTransaction(reTxn.getTxn().getId(), p);
+				reTxn.getActions().forEach(a -> storeAction(p, a));
 			},
 			() -> reTxn.getActions().forEach(a -> storeAction(null, a))
 		);
 	}
 
-	private void storeAction(RadixAddress user, REParsedAction action) {
+	private void storeAction(ECPublicKey user, REParsedAction action) {
 		if (action.getTxAction() instanceof TransferToken) {
 			var transferToken = (TransferToken) action.getTxAction();
 			var entry0 = BalanceEntry.create(
-				user.getPublicKey(),
+				user,
 				null,
 				transferToken.rri(),
 				UInt384.from(transferToken.amount()),
@@ -536,7 +534,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		} else if (action.getTxAction() instanceof BurnToken) {
 			var burnToken = (BurnToken) action.getTxAction();
 			var entry0 = BalanceEntry.create(
-				user.getPublicKey(),
+				user,
 				null,
 				burnToken.rri(),
 				UInt384.from(burnToken.amount()),
@@ -588,18 +586,18 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			.ifPresent(currentTimestamp::set);
 	}
 
-	private Optional<RadixAddress> extractCreator(Txn tx, byte universeMagic) {
+	private Optional<ECPublicKey> extractCreator(Txn tx) {
 		try {
 			var result = constraintMachine.statelessVerify(tx);
-			return result.getRecovered().map(pk -> new RadixAddress(universeMagic, pk));
+			return result.getRecovered();
 		} catch (RadixEngineException e) {
 			throw new IllegalStateException();
 		}
 	}
 
-	private void storeSingleTransaction(AID id, RadixAddress creator) {
+	private void storeSingleTransaction(AID id, ECPublicKey creator) {
 		//Note: since Java 9 the Clock.systemUTC() produces values with real nanosecond resolution.
-		var key = asKey(creator.getPublicKey(), currentTimestamp.get());
+		var key = asKey(creator, currentTimestamp.get());
 		var data = entry(id.getBytes());
 
 		var status = withTime(

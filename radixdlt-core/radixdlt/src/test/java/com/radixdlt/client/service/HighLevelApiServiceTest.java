@@ -32,7 +32,6 @@ import com.radixdlt.client.store.ActionEntry;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.MessageEntry;
 import com.radixdlt.client.store.TokenDefinitionRecord;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
@@ -57,10 +56,6 @@ public class HighLevelApiServiceTest {
 	private static final RadixAddress OWNER = RadixAddress.from("JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8");
 	private static final RadixAddress TOKEN_ADDRESS = RadixAddress.from("23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x");
 	private static final REAddr TOKEN = REAddr.ofHashedKey(TOKEN_ADDRESS.getPublicKey(), "xrd");
-	private static final byte MAGIC = (byte) 0;
-	private static final RadixAddress V1 = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
-	private static final RadixAddress V2 = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
-	private static final RadixAddress V3 = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
 
 	private final Universe universe = mock(Universe.class);
 	private final ClientApiStore clientApiStore = mock(ClientApiStore.class);
@@ -127,7 +122,7 @@ public class HighLevelApiServiceTest {
 	@Test
 	public void testGetTokenDescription() {
 		var token = REAddr.ofHashedKey(TOKEN_ADDRESS.getPublicKey(), "fff");
-		var definition = TokenDefinitionRecord.from(TOKEN_ADDRESS, mutableTokenDef("fff"));
+		var definition = TokenDefinitionRecord.from(TOKEN_ADDRESS.getPublicKey(), mutableTokenDef("fff"));
 
 		when(clientApiStore.parseRri(any()))
 			.thenReturn(Result.ok(token));

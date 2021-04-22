@@ -18,7 +18,6 @@
 package com.radixdlt.client.store;
 
 import com.google.inject.Inject;
-import com.google.inject.name.Named;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.StakeTokens;
@@ -27,9 +26,9 @@ import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
@@ -38,15 +37,10 @@ import java.util.stream.Collectors;
 
 public final class TransactionParser {
 	private final REAddr nativeToken;
-	private final int magic;
 
 	@Inject
-	public TransactionParser(
-		@NativeToken REAddr nativeToken,
-		@Named("magic") int magic
-	) {
+	public TransactionParser(@NativeToken REAddr nativeToken) {
 		this.nativeToken = nativeToken;
-		this.magic = magic;
 	}
 
 	private UInt256 computeFeePaid(REParsedTxn radixEngineTxn) {
@@ -61,7 +55,7 @@ public final class TransactionParser {
 			.orElse(UInt256.ZERO);
 	}
 
-	private ActionEntry mapToEntry(RadixAddress user, TxAction txAction) {
+	private ActionEntry mapToEntry(ECPublicKey user, TxAction txAction) {
 		if (txAction instanceof TransferToken) {
 			return ActionEntry.transfer(user, (TransferToken) txAction);
 		} else if (txAction instanceof BurnToken) {
@@ -81,7 +75,7 @@ public final class TransactionParser {
 		var fee = computeFeePaid(parsedTxn);
 
 		var actions = parsedTxn.getActions().stream()
-			.map(a -> mapToEntry(parsedTxn.getUser().map(u -> new RadixAddress((byte) magic, u)).orElse(null), a.getTxAction()))
+			.map(a -> mapToEntry(parsedTxn.getUser().orElse(null), a.getTxAction()))
 			.collect(Collectors.toList());
 
 		return Result.ok(TxHistoryEntry.create(txnId, txDate, fee, null, actions));
