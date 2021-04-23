@@ -17,7 +17,6 @@
 package com.radixdlt.client.handler;
 
 import com.radixdlt.client.Rri;
-import com.radixdlt.constraintmachine.ConstraintMachine;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1OutputStream;
@@ -229,7 +228,7 @@ public class HighLevelApiHandlerTest {
 			.thenReturn(Result.ok(aid));
 
 		var blob = randomBytes();
-		var hash = ConstraintMachine.computeHashToSignFromBytes(blob).asBytes();
+		var hash = HashUtils.sha256(blob).asBytes();
 
 		var transaction = jsonObject()
 			.put("blob", Hex.toHexString(blob))
@@ -263,7 +262,7 @@ public class HighLevelApiHandlerTest {
 			.thenReturn(Result.ok(aid));
 
 		var blob = randomBytes();
-		var hash = ConstraintMachine.computeHashToSignFromBytes(blob).asBytes();
+		var hash = HashUtils.sha256(blob).asBytes();
 
 		var transaction = jsonObject()
 			.put("blob", Hex.toHexString(blob))

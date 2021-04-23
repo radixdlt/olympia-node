@@ -155,8 +155,7 @@ public final class TxLowLevelBuilder {
 	}
 
 	public HashCode hashToSign() {
-		var firstHash = HashUtils.sha256(blob());
-		return HashUtils.sha256(firstHash.asBytes());
+		return HashUtils.sha256(blob()); // this is a double hash
 	}
 
 	public TxLowLevelBuilder sig(ECDSASignature signature) {
