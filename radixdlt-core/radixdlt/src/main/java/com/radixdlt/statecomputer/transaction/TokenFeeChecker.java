@@ -20,66 +20,43 @@ package com.radixdlt.statecomputer.transaction;
 
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.engine.PostParsedChecker;
-import com.radixdlt.fees.FeeTable;
 import com.radixdlt.utils.UInt256;
-
-import javax.inject.Inject;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Checks that metadata in the ledger atom is well formed and follows what is
  * needed for both consensus and governance.
  */
 public class TokenFeeChecker implements PostParsedChecker {
-	private static final int MAX_ATOM_SIZE = 1024 * 1024;
-
-	private final FeeTable feeTable;
-
-	@Inject
-	public TokenFeeChecker(
-		FeeTable feeTable
-	) {
-		this.feeTable = feeTable;
-	}
+	public static final UInt256 FIXED_FEE = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3)
+		.multiply(UInt256.from(100));
 
 	@Override
 	public Result check(PermissionLevel permissionLevel, REParsedTxn radixEngineTxn) {
-		var txn = radixEngineTxn.getTxn();
-		final int totalSize = txn.getPayload().length;
-		if (txn.getPayload().length > MAX_ATOM_SIZE) {
-			return Result.error("atom too big: " + totalSize);
-		}
-
 		if (permissionLevel.equals(PermissionLevel.SYSTEM)) {
 			return Result.success();
 		}
 
-		// no need for fees if a system update
-		// TODO: update should also have no message
-		if (!radixEngineTxn.isUserCommand()) {
+		// no fees for system updates
+		if (radixEngineTxn.isSystemOnly()) {
 			return Result.success();
 		}
 
-		// FIXME: This logic needs to move into the constraint machine
+		// FIXME: This logic needs to move into the constraint machine and must be first
+		// FIXME: action checked
 		var feePaid = computeFeePaid(radixEngineTxn);
-
-		Set<Particle> outputParticles = radixEngineTxn.upSubstates().collect(Collectors.toSet());
-		UInt256 requiredMinimumFee = feeTable.feeFor(txn, outputParticles, totalSize);
-		if (feePaid.compareTo(requiredMinimumFee) < 0) {
-			String message = String.format(
-				"atom fee invalid: '%s' is less than required minimum '%s' atom_size: %s",
-				TokenUnitConversions.subunitsToUnits(feePaid),
-				TokenUnitConversions.subunitsToUnits(requiredMinimumFee),
-				totalSize
+		if (feePaid.compareTo(FIXED_FEE) < 0) {
+			return Result.error(
+				String.format("atom fee invalid: '%s' is less than fixed fee of '%s'",
+					TokenUnitConversions.subunitsToUnits(feePaid),
+					TokenUnitConversions.subunitsToUnits(FIXED_FEE)
+				)
 			);
-			return Result.error(message);
 		}
 
 		return Result.success();
@@ -91,7 +68,7 @@ public class TokenFeeChecker implements PostParsedChecker {
 			.map(REParsedAction::getTxAction)
 			.filter(BurnToken.class::isInstance)
 			.map(BurnToken.class::cast)
-			.filter(t -> t.addr().isSystem())
+			.filter(t -> t.addr().isNativeToken())
 			.map(BurnToken::amount)
 			.reduce(UInt256::add)
 			.orElse(UInt256.ZERO);

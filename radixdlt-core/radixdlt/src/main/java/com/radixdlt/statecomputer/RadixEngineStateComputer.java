@@ -273,10 +273,10 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		radixEngineTxns.forEach(t -> {
-			if (t.isUserCommand()) {
-				systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_USER_TRANSACTIONS);
-			} else {
+			if (t.isSystemOnly()) {
 				systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_SYSTEM_TRANSACTIONS);
+			} else {
+				systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_USER_TRANSACTIONS);
 			}
 		});
 

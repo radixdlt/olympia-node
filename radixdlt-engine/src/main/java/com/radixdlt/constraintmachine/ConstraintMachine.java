@@ -53,6 +53,7 @@ import java.util.function.Predicate;
 // FIXME: unchecked, rawtypes
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class ConstraintMachine {
+	private static final int MAX_TXN_SIZE = 1024 * 1024;
 	private static final int MAX_NUM_MESSAGES = 1;
 
 	public static class Builder {
@@ -367,6 +368,10 @@ public final class ConstraintMachine {
 
 	public StatelessVerificationResult statelessVerify(Txn txn) throws RadixEngineException {
 		var verifierState = new StatelessVerificationResult(txn);
+
+		if (txn.getPayload().length > MAX_TXN_SIZE) {
+			throw verifierState.exception("Transaction is too big: " + txn.getPayload().length + " > " + MAX_TXN_SIZE);
+		}
 
 		long particleIndex = 0;
 		int numMessages = 0;
