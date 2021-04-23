@@ -17,11 +17,8 @@
 
 package org.radix.api.jsonrpc;
 
-import org.json.JSONObject;
 import org.junit.Test;
 import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
-import org.radix.api.jsonrpc.handler.AtomHandler;
-import org.radix.api.jsonrpc.handler.LedgerHandler;
 import org.radix.api.jsonrpc.handler.NetworkHandler;
 import org.radix.api.jsonrpc.handler.SystemHandler;
 import org.radix.time.Time;
@@ -43,8 +40,6 @@ public class RadixJsonRpcServerTest {
 		var server = new RadixJsonRpcServer(
 			mock(SystemHandler.class),
 			mock(NetworkHandler.class),
-			mock(AtomHandler.class),
-			mock(LedgerHandler.class),
 			Map.of()
 		);
 
@@ -76,8 +71,6 @@ public class RadixJsonRpcServerTest {
 		var server = new RadixJsonRpcServer(
 			systemHandler,
 			mock(NetworkHandler.class),
-			mock(AtomHandler.class),
-			mock(LedgerHandler.class),
 			Map.of()
 		);
 
@@ -95,8 +88,6 @@ public class RadixJsonRpcServerTest {
 		var server = new RadixJsonRpcServer(
 			mock(SystemHandler.class),
 			mock(NetworkHandler.class),
-			mock(AtomHandler.class),
-			mock(LedgerHandler.class),
 			Map.of(),
 			5
 		);

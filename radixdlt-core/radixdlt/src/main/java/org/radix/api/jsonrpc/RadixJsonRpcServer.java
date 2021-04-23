@@ -22,8 +22,6 @@ import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
-import org.radix.api.jsonrpc.handler.AtomHandler;
-import org.radix.api.jsonrpc.handler.LedgerHandler;
 import org.radix.api.jsonrpc.handler.NetworkHandler;
 import org.radix.api.jsonrpc.handler.SystemHandler;
 
@@ -62,32 +60,24 @@ public final class RadixJsonRpcServer {
 	private final Map<String, JsonRpcHandler> handlers = new HashMap<>();
 	private final SystemHandler systemHandler;
 	private final NetworkHandler networkHandler;
-	private final AtomHandler atomHandler;
-	private final LedgerHandler ledgerHandler;
 
 	@Inject
 	public RadixJsonRpcServer(
 		SystemHandler systemHandler,
 		NetworkHandler networkHandler,
-		AtomHandler atomHandler,
-		LedgerHandler ledgerHandler,
 		Map<String, JsonRpcHandler> additionalHandlers
 	) {
-		this(systemHandler, networkHandler, atomHandler, ledgerHandler, additionalHandlers, DEFAULT_MAX_REQUEST_SIZE);
+		this(systemHandler, networkHandler, additionalHandlers, DEFAULT_MAX_REQUEST_SIZE);
 	}
 
 	public RadixJsonRpcServer(
 		SystemHandler systemHandler,
 		NetworkHandler networkHandler,
-		AtomHandler atomHandler,
-		LedgerHandler ledgerHandler,
 		Map<String, JsonRpcHandler> additionalHandlers,
 		long maxRequestSizeBytes
 	) {
 		this.systemHandler = systemHandler;
 		this.networkHandler = networkHandler;
-		this.atomHandler = atomHandler;
-		this.ledgerHandler = ledgerHandler;
 		this.maxRequestSizeBytes = maxRequestSizeBytes;
 
 		fillHandlers(additionalHandlers);
@@ -106,14 +96,6 @@ public final class RadixJsonRpcServer {
 		//Network info
 		handlers.put("Network.getLivePeers", networkHandler::handleGetLivePeers);
 		handlers.put("Network.getPeers", networkHandler::handleGetPeers);
-
-		//Atom submission/retrieval
-		//TODO: check and fix method naming?
-		handlers.put("Ledger.getAtom", atomHandler::handleGetAtom);
-
-		//Ledger
-		//TODO: check and fix method naming?
-		handlers.put("Atoms.getAtomStatus", ledgerHandler::handleGetAtomStatus);
 
 		handlers.putAll(additionalHandlers);
 
