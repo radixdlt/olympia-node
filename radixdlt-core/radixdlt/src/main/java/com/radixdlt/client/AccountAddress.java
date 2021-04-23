@@ -35,6 +35,8 @@ import org.bitcoinj.core.Bech32;
  * in BIP_0173 for converting witness programs.
  */
 public final class AccountAddress {
+	private static final String ACCOUNT_HRP = "brx"; // "rdx" for mainnet
+
 	private AccountAddress() {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
@@ -49,7 +51,7 @@ public final class AccountAddress {
 
 	public static String of(REAddr addr) {
 		var convert = toBech32Data(addr.getBytes());
-		return Bech32.encode("brx", convert);
+		return Bech32.encode(ACCOUNT_HRP, convert);
 	}
 
 	public static REAddr parse(String v) throws DeserializeException {
@@ -60,8 +62,8 @@ public final class AccountAddress {
 			throw new DeserializeException("Could not decode string: " + v, e);
 		}
 
-		if (!bech32Data.hrp.equals("brx")) {
-			throw new DeserializeException("hrp must be vb but was " + bech32Data.hrp);
+		if (!bech32Data.hrp.equals(ACCOUNT_HRP)) {
+			throw new DeserializeException("hrp must be " + ACCOUNT_HRP + " but was " + bech32Data.hrp);
 		}
 
 		try {
