@@ -17,8 +17,6 @@
 
 package com.radixdlt.client.handler;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.JsonRpcUtil;
@@ -64,8 +62,6 @@ import static com.radixdlt.utils.functional.Optionals.allOf;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class HighLevelApiHandler {
-	private static final Logger log = LogManager.getLogger();
-
 	private final HighLevelApiService highLevelApiService;
 	private final TransactionStatusService transactionStatusService;
 	private final SubmissionService submissionService;
@@ -225,14 +221,15 @@ public class HighLevelApiHandler {
 
 	private JSONObject formatStakePositions(List<BalanceEntry> balances) {
 		var array = fromList(balances, balance ->
-			jsonObject().put("validator", balance.getDelegate()).put("amount", balance.getAmount())
+			jsonObject()
+				.put("validator", balance.getDelegate())
+				.put("amount", balance.getAmount())
 		);
+
 		return jsonObject().put(ARRAY, array);
 	}
 
 	private Result<JSONObject> formatTransactionHistory(RadixAddress address, int size, Optional<Instant> cursor) {
-		log.debug("formatTransactionHistory: {}, {}, {}", address, size, cursor);
-
 		return highLevelApiService
 			.getTransactionHistory(address, size, cursor)
 			.map(tuple -> tuple.map(this::formatHistoryResponse));
