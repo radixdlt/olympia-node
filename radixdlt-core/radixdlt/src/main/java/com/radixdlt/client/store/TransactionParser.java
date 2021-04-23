@@ -26,7 +26,6 @@ import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.constraintmachine.REParsedTxn;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;

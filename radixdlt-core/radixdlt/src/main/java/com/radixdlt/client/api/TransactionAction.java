@@ -26,7 +26,6 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Functions;
-import com.radixdlt.utils.functional.Functions.FN5;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;

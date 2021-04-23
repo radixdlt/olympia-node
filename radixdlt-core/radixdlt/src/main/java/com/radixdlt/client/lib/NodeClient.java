@@ -24,7 +24,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.radixdlt.client.api.TxHistoryEntry;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
 

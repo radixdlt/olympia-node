@@ -4,7 +4,6 @@ import com.google.inject.Inject;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;

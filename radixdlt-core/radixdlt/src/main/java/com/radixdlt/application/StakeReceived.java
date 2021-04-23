@@ -18,7 +18,6 @@
 
 package com.radixdlt.application;
 
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 

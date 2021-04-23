@@ -20,7 +20,6 @@ package com.radixdlt.client.store;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.store.berkeley.BalanceEntry;
 import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
@@ -39,7 +38,7 @@ public interface ClientApiStore {
 	/**
 	 * Retrieve list of immediately spendable token balances or stakes.
 	 *
-	 * @param key client address
+	 * @param addr client address
 	 * @param retrieveStakes {@code true} - retrieve stakes, {@code false} - retrieve spendable balances
 	 *
 	 * @return list of token balances

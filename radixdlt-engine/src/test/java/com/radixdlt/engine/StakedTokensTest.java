@@ -87,7 +87,7 @@ public class StakedTokensTest {
 	public void stake_tokens() throws Exception {
 		var txn = engine.construct(
 			this.tokenOwnerKeyPair.getPublicKey(),
-			new StakeTokens(this.validatorKeyPair.getPublicKey(), UInt256.TEN)
+			new StakeTokens(this.tokenOwnerAccount, this.validatorKeyPair.getPublicKey(), UInt256.TEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 
 		this.engine.execute(List.of(txn));
@@ -97,13 +97,13 @@ public class StakedTokensTest {
 	public void unstake_tokens() throws Exception {
 		var txn = engine.construct(
 			this.tokenOwnerKeyPair.getPublicKey(),
-			new StakeTokens(this.validatorKeyPair.getPublicKey(), UInt256.TEN)
+			new StakeTokens(this.tokenOwnerAccount, this.validatorKeyPair.getPublicKey(), UInt256.TEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn));
 
 		var txn2 = engine.construct(
 			this.tokenOwnerKeyPair.getPublicKey(),
-			new UnstakeTokens(this.validatorKeyPair.getPublicKey(), UInt256.TEN)
+			new UnstakeTokens(this.tokenOwnerAccount, this.validatorKeyPair.getPublicKey(), UInt256.TEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn2));
 	}
@@ -112,22 +112,23 @@ public class StakedTokensTest {
 	public void unstake_partial_tokens() throws Exception {
 		var txn = engine.construct(
 			this.tokenOwnerKeyPair.getPublicKey(),
-			new StakeTokens(this.validatorKeyPair.getPublicKey(), UInt256.TEN)
+			new StakeTokens(this.tokenOwnerAccount, this.validatorKeyPair.getPublicKey(), UInt256.TEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn));
 
 		var txn2 = engine.construct(
 			this.tokenOwnerKeyPair.getPublicKey(),
-			new UnstakeTokens(this.validatorKeyPair.getPublicKey(), UInt256.SEVEN)
+			new UnstakeTokens(this.tokenOwnerAccount, this.validatorKeyPair.getPublicKey(), UInt256.SEVEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn2));
 	}
 
 	@Test
 	public void move_staked_tokens() throws Exception {
-		var txn = this.engine.construct(this.tokenOwnerKeyPair.getPublicKey(), new StakeTokens(validatorKeyPair.getPublicKey(),
-			UInt256.TEN))
-			.signAndBuild(this.tokenOwnerKeyPair::sign);
+		var txn = this.engine.construct(
+			this.tokenOwnerKeyPair.getPublicKey(),
+			new StakeTokens(this.tokenOwnerAccount, this.validatorKeyPair.getPublicKey(), UInt256.TEN)
+		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn));
 
 		var atom2 = this.engine.construct(this.tokenOwnerKeyPair.getPublicKey(), new MoveStake(validatorKeyPair.getPublicKey(),

@@ -70,7 +70,8 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 				public InputOutputReducer<TokensParticle, VoidParticle, VoidReducerState> inputOutputReducer() {
 					return (i, o, index, state) -> {
 						var in = i.getSubstate();
-						return ReducerResult.complete(new BurnToken(in.getResourceAddr(), in.getHoldingAddr(), in.getAmount()));
+						var burnToken = new BurnToken(in.getResourceAddr(), in.getHoldingAddr(), in.getAmount());
+						return ReducerResult.complete(burnToken);
 					};
 				}
 

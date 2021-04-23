@@ -20,7 +20,6 @@ package com.radixdlt.client.handler;
 import com.radixdlt.client.AccountAddress;
 import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.client.store.ClientApiStore;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.functional.Result;
 import org.junit.Assert;
 import org.junit.Before;
