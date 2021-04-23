@@ -117,7 +117,7 @@ public final class RadixJsonRpcServer {
 
 		handlers.putAll(additionalHandlers);
 
-		handlers.keySet().forEach(name -> log.debug("Registered JSON RPC method: {}", name));
+		handlers.keySet().forEach(name -> log.trace("Registered JSON RPC method: {}", name));
 	}
 
 	/**
@@ -151,7 +151,7 @@ public final class RadixJsonRpcServer {
 	 * @return The response to the request, could be a JSON-RPC error
 	 */
 	JSONObject handleRpc(String requestString) {
-		log.debug("RPC: input {}", requestString);
+		log.trace("RPC: input {}", requestString);
 
 		int length = requestString.getBytes(StandardCharsets.UTF_8).length;
 
@@ -180,7 +180,7 @@ public final class RadixJsonRpcServer {
 				.orElseGet(() -> errorResponse(request, RpcError.METHOD_NOT_FOUND, "Method not found"));
 
 		} catch (Exception e) {
-			logValue("exception message", e.getMessage());
+			logValue("Exception while handling request: ", e.getMessage());
 
 			if (request.has("params") && request.get("params") instanceof JSONArray) {
 				return errorResponse(request, RpcError.SERVER_ERROR, e.getMessage(), request.getJSONObject("params"));
@@ -193,7 +193,7 @@ public final class RadixJsonRpcServer {
 	private JSONObject requestTooLongError(int length) {
 		var message = "request too big: " + length + " > " + maxRequestSizeBytes;
 
-		log.debug("RPC error: {}", message);
+		log.trace("RPC error: {}", message);
 		return errorResponse(RpcError.REQUEST_TOO_LONG, message);
 	}
 

@@ -17,33 +17,33 @@
 
 package com.radixdlt.client.store.berkeley;
 
-import com.radixdlt.api.construction.TxnParser;
-import com.radixdlt.atom.actions.BurnToken;
-import com.radixdlt.atom.actions.CreateFixedToken;
-import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.client.Rri;
-import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.REParsedAction;
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.utils.UInt384;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atom.actions.CreateFixedToken;
+import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.client.Rri;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.ClientApiStoreException;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.TransactionParser;
+import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
@@ -53,6 +53,7 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 import com.sleepycat.je.Database;
@@ -67,7 +68,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -190,7 +190,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 						() -> log.error("Error deserializing existing balance while scanning DB for address {}", address)
 					)
 					.toOptional()
-					.filter(Predicate.not(BalanceEntry::isStake))
+					.filter(entry -> entry.isStake() == retrieveStakes)
 					.filter(entry -> entry.getOwner().equals(address))
 					.ifPresent(list::add);
 
@@ -665,27 +665,31 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		return value;
 	}
 
+	private static DatabaseEntry asKey(String rri) {
+		return entry(rri.getBytes(StandardCharsets.UTF_8));
+	}
+
 	private static DatabaseEntry asKey(BalanceEntry balanceEntry) {
-		var address = buffer().writeBytes(balanceEntry.getOwner().toByteArray());
+		var address = buffer().writeBytes(balanceEntry.getOwner().getPublicKey().getCompressedBytes());
 		var buf = address.writeBytes(balanceEntry.rri().getBytes(StandardCharsets.UTF_8));
 
 		if (balanceEntry.isStake()) {
-			buf.writeBytes(balanceEntry.getDelegate().toByteArray());
+			buf.writeBytes(balanceEntry.getDelegate().getPublicKey().getCompressedBytes());
+		} else {
+			buf.writeZero(ECPublicKey.COMPRESSED_BYTES);
 		}
 
 		return entry(buf);
 	}
 
-	private static DatabaseEntry asKey(String rri) {
-		return entry(rri.getBytes(StandardCharsets.UTF_8));
+	private static DatabaseEntry asKey(RadixAddress radixAddress) {
+		return entry(buffer()
+						 .writeBytes(radixAddress.getPublicKey().getCompressedBytes())
+						 .writeZero(ECPublicKey.COMPRESSED_BYTES));
 	}
 
 	private static DatabaseEntry asKey(REAddr addr) {
 		return entry(addr.getBytes());
-	}
-
-	private static DatabaseEntry asKey(RadixAddress radixAddress) {
-		return entry(buffer().writeBytes(radixAddress.toByteArray()));
 	}
 
 	private static DatabaseEntry asKey(RadixAddress radixAddress, Instant timestamp) {
