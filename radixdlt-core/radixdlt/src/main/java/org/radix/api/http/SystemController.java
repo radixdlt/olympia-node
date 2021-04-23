@@ -17,6 +17,13 @@
 
 package org.radix.api.http;
 
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.utils.Bytes;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.radix.api.services.SystemService;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -29,10 +36,15 @@ import static org.radix.api.http.RestUtils.respond;
 
 public final class SystemController implements Controller {
 	private final SystemService systemService;
+	private final VerifiedTxnsAndProof genesis;
 
 	@Inject
-	public SystemController(SystemService systemService) {
+	public SystemController(
+		SystemService systemService,
+		@Genesis VerifiedTxnsAndProof genesis
+	) {
 		this.systemService = systemService;
+		this.genesis = genesis;
 	}
 
 	@Override
@@ -40,7 +52,7 @@ public final class SystemController implements Controller {
 		// System routes
 		handler.get("/api/system", this::respondWithLocalSystem);
 		// Universe routes
-		handler.get("/api/universe", this::respondWithUniverse);
+		handler.get("/system/checkpoints", this::respondWithGenesis);
 	}
 
 	@VisibleForTesting
@@ -49,7 +61,15 @@ public final class SystemController implements Controller {
 	}
 
 	@VisibleForTesting
-	void respondWithUniverse(final HttpServerExchange exchange) {
-		respond(exchange, systemService.getUniverse());
+	void respondWithGenesis(final HttpServerExchange exchange) {
+		var jsonObject = new JSONObject();
+		var txns = new JSONArray();
+		genesis.getTxns().forEach(txn -> txns.put(Bytes.toHexString(txn.getPayload())));
+		jsonObject.put("txns", txns);
+
+		var proof = DefaultSerialization.getInstance().toJsonObject(genesis.getProof(), DsonOutput.Output.ALL);
+		jsonObject.put("proof", proof);
+
+		respond(exchange, jsonObject);
 	}
 }

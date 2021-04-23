@@ -85,7 +85,6 @@ public final class RadixJsonRpcServer {
 
 	private void fillHandlers(Map<String, JsonRpcHandler> additionalHandlers) {
 		//General info
-		handlers.put("Universe.getUniverse", systemHandler::handleGetUniverse);
 		handlers.put("Network.getInfo", systemHandler::handleGetLocalSystem);
 
 		//Network info

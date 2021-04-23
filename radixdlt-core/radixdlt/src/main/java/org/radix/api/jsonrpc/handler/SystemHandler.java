@@ -32,10 +32,6 @@ public class SystemHandler {
 		this.systemService = systemService;
 	}
 
-	public JSONObject handleGetUniverse(JSONObject request) {
-		return response(request, systemService.getUniverse());
-	}
-
 	public JSONObject handleGetLocalSystem(JSONObject request) {
 		return response(request, systemService.getLocalSystem());
 	}
