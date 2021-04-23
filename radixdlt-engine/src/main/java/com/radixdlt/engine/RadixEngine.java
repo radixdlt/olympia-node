@@ -485,7 +485,7 @@ public final class RadixEngine<M> {
 
 			var txBuilder = user != null
 				? TxBuilder.newBuilder(user, filteredStore)
-				: TxBuilder.newSystemBuilder(filteredStore);
+				: TxBuilder.newBuilder(filteredStore);
 			for (var action : actions) {
 				action.execute(txBuilder);
 				txBuilder.particleGroup();

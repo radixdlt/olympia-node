@@ -19,6 +19,7 @@
 package com.radixdlt.application;
 
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Map;
@@ -29,20 +30,20 @@ import java.util.function.BiConsumer;
  * Amount of stake received from each of one's delegators.
  */
 public final class StakeReceived {
-	private final Map<ECPublicKey, UInt256> stakes = new ConcurrentHashMap<>();
+	private final Map<REAddr, UInt256> stakes = new ConcurrentHashMap<>();
 
-	public void addStake(ECPublicKey delegate, UInt256 amount) {
+	public void addStake(REAddr delegate, UInt256 amount) {
 		stakes.merge(delegate, amount, UInt256::add);
 	}
 
-	public void removeStake(ECPublicKey delegate, UInt256 amount) {
+	public void removeStake(REAddr delegate, UInt256 amount) {
 		stakes.computeIfPresent(delegate, (d, cur) -> {
 			var newAmt = cur.subtract(amount);
 			return newAmt.isZero() ? null : newAmt;
 		});
 	}
 
-	public void forEach(BiConsumer<ECPublicKey, UInt256> consumer) {
+	public void forEach(BiConsumer<REAddr, UInt256> consumer) {
 		this.stakes.forEach(consumer);
 	}
 

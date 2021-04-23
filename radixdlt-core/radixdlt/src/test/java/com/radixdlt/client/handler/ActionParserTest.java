@@ -44,8 +44,8 @@ import static com.radixdlt.client.api.ActionType.TRANSFER;
 import static com.radixdlt.client.api.ActionType.UNSTAKE;
 
 public class ActionParserTest {
-	private final ECPublicKey from = ECKeyPair.generateNew().getPublicKey();
-	private final ECPublicKey to = ECKeyPair.generateNew().getPublicKey();
+	private final REAddr from = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
+	private final REAddr to = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
 	private final REAddr rri = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "ckee");
 	private ClientApiStore clientApiStore;
 
@@ -68,7 +68,7 @@ public class ActionParserTest {
 				assertEquals(1, parsed.size());
 
 				parsed.get(0)
-					.map((type, fromAddress, toAddress, amount, rriOptional) -> {
+					.map((type, fromAddress, toAddress, validator, amount, rriOptional) -> {
 						assertEquals(TRANSFER, type);
 						assertEquals(from, fromAddress);
 						assertEquals(to, toAddress);
@@ -81,7 +81,8 @@ public class ActionParserTest {
 
 	@Test
 	public void stakeActionIsParsedCorrectly() {
-		var validatorAddr = ValidatorAddress.of(to);
+		var key = ECKeyPair.generateNew().getPublicKey();
+		var validatorAddr = ValidatorAddress.of(key);
 		var fromAddr = AccountAddress.of(from);
 		var source = "[{\"type\":\"StakeTokens\", \"from\":\"%s\", \"validator\":\"%s\", \"amount\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, fromAddr, validatorAddr, UInt256.NINE)).orElseThrow();
@@ -91,10 +92,10 @@ public class ActionParserTest {
 				assertEquals(1, parsed.size());
 
 				parsed.get(0)
-					.map((type, fromAddress, validatorAddress, amount, rriOptional) -> {
+					.map((type, fromAddress, to, validator, amount, rriOptional) -> {
 						assertEquals(STAKE, type);
 						assertEquals(from, fromAddress);
-						assertEquals(to, validatorAddress);
+						assertEquals(key, validator);
 						assertEquals(amount, UInt256.NINE);
 						return null;
 					});
@@ -103,7 +104,8 @@ public class ActionParserTest {
 
 	@Test
 	public void unstakeActionIsParsedCorrectly() {
-		var validatorAddr = ValidatorAddress.of(to);
+		var key = ECKeyPair.generateNew().getPublicKey();
+		var validatorAddr = ValidatorAddress.of(key);
 		var accountAddr = AccountAddress.of(from);
 		var source = "[{\"type\":\"UnstakeTokens\", \"from\":\"%s\", \"validator\":\"%s\", \"amount\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, accountAddr, validatorAddr, UInt256.NINE)).orElseThrow();
@@ -114,10 +116,10 @@ public class ActionParserTest {
 				assertEquals(1, parsed.size());
 
 				parsed.get(0)
-					.map((type, fromAddress, validatorAddress, amount, rriOptional) -> {
+					.map((type, fromAddress, toAddress, validator, amount, rriOptional) -> {
 						assertEquals(UNSTAKE, type);
 						assertEquals(from, fromAddress);
-						assertEquals(to, validatorAddress);
+						assertEquals(key, validator);
 						assertEquals(amount, UInt256.NINE);
 						return null;
 					});

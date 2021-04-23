@@ -36,11 +36,12 @@ public final class SplitToken implements TxAction {
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var user = txBuilder.getUserOrFail("Must have address");
+		var key = txBuilder.getUserOrFail("Must have address");
+		var userAccount = REAddr.ofPubKeyAccount(key);
 		var substate = txBuilder.findSubstate(
 			TokensParticle.class,
 			p -> p.getRri().equals(rri)
-				&& p.getAddress().equals(user)
+				&& p.getHoldingAddr().equals(userAccount)
 				&& p.getAmount().compareTo(minSize) > 0,
 			"Could not find large particle greater than " + minSize
 		);
@@ -49,7 +50,7 @@ public final class SplitToken implements TxAction {
 		var particle = (TokensParticle) substate.getParticle();
 		var amt1 = particle.getAmount().divide(UInt256.TWO);
 		var amt2 = particle.getAmount().subtract(amt1);
-		txBuilder.up(new TokensParticle(user, amt1, rri));
-		txBuilder.up(new TokensParticle(user, amt2, rri));
+		txBuilder.up(new TokensParticle(userAccount, amt1, rri));
+		txBuilder.up(new TokensParticle(userAccount, amt2, rri));
 	}
 }

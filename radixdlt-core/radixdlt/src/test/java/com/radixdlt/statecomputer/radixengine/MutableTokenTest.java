@@ -105,7 +105,10 @@ public class MutableTokenTest {
 		createInjector().injectMembers(this);
 
 		// Act/Assert
-		var txn = sut.construct(keyPair.getPublicKey(), List.of(new MintToken(REAddr.ofNativeToken(), keyPair.getPublicKey(), UInt256.SEVEN)))
+		var account = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
+		var txn = sut.construct(
+			keyPair.getPublicKey(), List.of(new MintToken(REAddr.ofNativeToken(), account, UInt256.SEVEN))
+		)
 			.signAndBuild(keyPair::sign);
 		assertThatThrownBy(() -> sut.execute(List.of(txn))).isInstanceOf(RadixEngineException.class);
 	}
@@ -122,10 +125,12 @@ public class MutableTokenTest {
 			null
 		);
 
+		var account = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
+		var tokenAddr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
 		var txn = sut.construct(keyPair.getPublicKey(), TxActionListBuilder.create()
 			.createMutableToken(tokDef)
-			.mint(REAddr.ofHashedKey(keyPair.getPublicKey(), "test"), keyPair.getPublicKey(), UInt256.SEVEN)
-			.transfer(REAddr.ofHashedKey(keyPair.getPublicKey(), "test"), keyPair.getPublicKey(), UInt256.FIVE)
+			.mint(tokenAddr, account, UInt256.SEVEN)
+			.transfer(tokenAddr, account, account, UInt256.FIVE)
 			.build()
 		).signAndBuild(keyPair::sign);
 

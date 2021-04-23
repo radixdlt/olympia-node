@@ -172,9 +172,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
-	public Result<List<BalanceEntry>> getTokenBalances(ECPublicKey publicKey, boolean retrieveStakes) {
+	public Result<List<BalanceEntry>> getTokenBalances(REAddr addr, boolean retrieveStakes) {
 		try (var cursor = addressBalances.openCursor(null, null)) {
-			var key = asKey(publicKey);
+			var key = asKey(addr);
 			var data = entry();
 			var status = readBalance(() -> cursor.getSearchKeyRange(key, data, null), data);
 
@@ -187,11 +187,11 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			do {
 				restore(serialization, data.getData(), BalanceEntry.class)
 					.onFailureDo(
-						() -> log.error("Error deserializing existing balance while scanning DB for address {}", publicKey)
+						() -> log.error("Error deserializing existing balance while scanning DB for address {}", addr)
 					)
 					.toOptional()
 					.filter(Predicate.not(BalanceEntry::isStake))
-					.filter(entry -> entry.getOwner().equals(publicKey))
+					.filter(entry -> entry.getOwner().equals(addr))
 					.ifPresent(list::add);
 
 				status = readBalance(() -> cursor.getNext(key, data, null), data);
@@ -253,6 +253,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	public Result<TxHistoryEntry> getTransaction(AID txId) {
 		return retrieveTx(txId)
 			.flatMap(txn -> extractCreator(txn)
+				.map(REAddr::ofPubKeyAccount)
 				.map(Result::ok)
 				.orElseGet(() -> Result.fail("Unable to restore creator from transaction {0}", txn.getId()))
 				.flatMap(creator -> lookupTransactionInHistory(creator, txn)));
@@ -274,8 +275,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		}
 	}
 
-	private Result<TxHistoryEntry> lookupTransactionInHistory(ECPublicKey creator, Txn txn) {
-		var key = asKey(creator, Instant.EPOCH);
+	private Result<TxHistoryEntry> lookupTransactionInHistory(REAddr addr, Txn txn) {
+		var key = asKey(addr, Instant.EPOCH);
 		var data = entry();
 
 		try (var cursor = transactionHistory.openCursor(null, null)) {
@@ -304,13 +305,13 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
-	public Result<List<TxHistoryEntry>> getTransactionHistory(ECPublicKey pubKey, int size, Optional<Instant> ptr) {
+	public Result<List<TxHistoryEntry>> getTransactionHistory(REAddr addr, int size, Optional<Instant> ptr) {
 		if (size <= 0) {
 			return Result.fail("Invalid size specified: {0}", size);
 		}
 
 		var instant = ptr.orElse(Instant.EPOCH);
-		var key = asKey(pubKey, instant);
+		var key = asKey(addr, instant);
 		var data = entry();
 
 		try (var cursor = transactionHistory.openCursor(null, null)) {
@@ -516,7 +517,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		if (action.getTxAction() instanceof TransferToken) {
 			var transferToken = (TransferToken) action.getTxAction();
 			var entry0 = BalanceEntry.create(
-				user,
+				transferToken.from(),
 				null,
 				transferToken.rri(),
 				UInt384.from(transferToken.amount()),
@@ -534,7 +535,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		} else if (action.getTxAction() instanceof BurnToken) {
 			var burnToken = (BurnToken) action.getTxAction();
 			var entry0 = BalanceEntry.create(
-				user,
+				burnToken.from(),
 				null,
 				burnToken.rri(),
 				UInt384.from(burnToken.amount()),
@@ -554,14 +555,14 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			var entry0 = BalanceEntry.create(
 				mintToken.to(),
 				null,
-				mintToken.rri(),
+				mintToken.resourceAddr(),
 				UInt384.from(mintToken.amount()),
 				false
 			);
 			var entry1 = BalanceEntry.create(
 				null,
 				null,
-				mintToken.rri(),
+				mintToken.resourceAddr(),
 				UInt384.from(mintToken.amount()),
 				false
 			);
@@ -597,7 +598,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private void storeSingleTransaction(AID id, ECPublicKey creator) {
 		//Note: since Java 9 the Clock.systemUTC() produces values with real nanosecond resolution.
-		var key = asKey(creator, currentTimestamp.get());
+		var key = asKey(REAddr.ofPubKeyAccount(creator), currentTimestamp.get());
 		var data = entry(id.getBytes());
 
 		var status = withTime(
@@ -659,27 +660,23 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private static DatabaseEntry asKey(BalanceEntry balanceEntry) {
-		var address = buffer().writeBytes(balanceEntry.getOwner().getCompressedBytes());
+		var address = buffer().writeBytes(balanceEntry.getOwner().getBytes());
 		var buf = address.writeBytes(balanceEntry.getRri().toString().getBytes(StandardCharsets.UTF_8));
 
 		if (balanceEntry.isStake()) {
-			buf.writeBytes(balanceEntry.getDelegate().getCompressedBytes());
+			buf.writeBytes(balanceEntry.getDelegate().getBytes());
 		}
 
 		return entry(buf);
 	}
 
-	private static DatabaseEntry asKey(REAddr rri) {
-		return entry(rri.toString().getBytes(StandardCharsets.UTF_8));
+	private static DatabaseEntry asKey(REAddr addr) {
+		return entry(addr.getBytes());
 	}
 
-	private static DatabaseEntry asKey(ECPublicKey key) {
-		return entry(buffer().writeBytes(key.getCompressedBytes()));
-	}
-
-	private static DatabaseEntry asKey(ECPublicKey key, Instant timestamp) {
+	private static DatabaseEntry asKey(REAddr addr, Instant timestamp) {
 		return entry(buffer()
-						 .writeBytes(key.getCompressedBytes())
+						 .writeBytes(addr.getBytes())
 						 .writeLong(timestamp.getEpochSecond())
 						 .writeInt(timestamp.getNano()));
 	}

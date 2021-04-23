@@ -55,8 +55,8 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			TokensParticle::getAmount,
 			StakedTokensParticle::getAmount,
 			(i, o) -> Result.success(),
-			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getAddress()::equals).orElse(false),
-			(i, o, index) -> new StakeTokens(o.getDelegateKey(), o.getAmount()) // FIXME: this isn't 100% correct
+			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getHoldingAddr()::allowToWithdrawFrom).orElse(false),
+			(i, o, index) -> new StakeTokens(o.getOwner(), o.getDelegateKey(), o.getAmount()) // FIXME: this isn't 100% correct
 		));
 
 		// Unstaking
@@ -66,8 +66,8 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			StakedTokensParticle::getAmount,
 			TokensParticle::getAmount,
 			(i, o) -> Result.success(),
-			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getOwner()::equals).orElse(false),
-			(i, o, index) -> new UnstakeTokens(i.getDelegateKey(), o.getAmount()) // FIXME: this isn't 100% correct
+			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
+			(i, o, index) -> new UnstakeTokens(i.getOwner(), i.getDelegateKey(), o.getAmount()) // FIXME: this isn't 100% correct
 		));
 
 		// Stake movement
@@ -81,7 +81,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 				StakedTokensParticle::getOwner,
 				"Can't send staked tokens to another address."
 			),
-			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getOwner()::equals).orElse(false),
+			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
 			(i, o, index) -> Unknown.create()
 		));
 	}

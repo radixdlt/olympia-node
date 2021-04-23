@@ -19,6 +19,7 @@
 package com.radixdlt.application;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
@@ -32,6 +33,7 @@ import com.radixdlt.engine.StateReducer;
 import com.radixdlt.engine.SubstateCacheRegister;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 
@@ -61,16 +63,22 @@ public final class NodeApplicationModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(MempoolAddFailure.class);
 	}
 
+	@Provides
+	@Self
+	private REAddr addr(@Self ECPublicKey self) {
+		return REAddr.ofPubKeyAccount(self);
+	}
+
 	@ProvidesIntoSet
 	private SubstateCacheRegister<?> registeredValidator(@Self ECPublicKey self) {
 		return new SubstateCacheRegister<>(ValidatorParticle.class, p -> p.getKey().equals(self));
 	}
 
 	@ProvidesIntoSet
-	private SubstateCacheRegister<?> registeredSubstate(@Self ECPublicKey self) {
+	private SubstateCacheRegister<?> registeredSubstate(@Self REAddr self) {
 		return new SubstateCacheRegister<>(
 			TokensParticle.class,
-			p -> p.getAddress().equals(self) && p.getRri().isSystem()
+			p -> p.getHoldingAddr().equals(self) && p.getRri().isSystem()
 		);
 	}
 

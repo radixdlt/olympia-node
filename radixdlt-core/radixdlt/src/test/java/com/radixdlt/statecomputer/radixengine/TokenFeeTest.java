@@ -119,7 +119,8 @@ public class TokenFeeTest {
 
 	@Test
 	public void when_validating_atom_with_particles__result_has_no_error() throws Exception {
-		var atom = sut.construct(ecKeyPair.getPublicKey(), new BurnToken(nativeToken, fee))
+		var account = REAddr.ofPubKeyAccount(ecKeyPair.getPublicKey());
+		var atom = sut.construct(ecKeyPair.getPublicKey(), new BurnToken(nativeToken, account, fee))
 			.mutex("test")
 			.signAndBuild(ecKeyPair::sign);
 
@@ -135,7 +136,8 @@ public class TokenFeeTest {
 
 	@Test
 	public void when_validating_atom_with_fee_and_no_change__result_has_no_error() throws Exception {
-		var txn = sut.construct(ecKeyPair.getPublicKey(), new BurnToken(nativeToken, fee))
+		var account = REAddr.ofPubKeyAccount(ecKeyPair.getPublicKey());
+		var txn = sut.construct(ecKeyPair.getPublicKey(), new BurnToken(nativeToken, account, fee))
 			.signAndBuild(ecKeyPair::sign);
 
 		sut.execute(List.of(txn));

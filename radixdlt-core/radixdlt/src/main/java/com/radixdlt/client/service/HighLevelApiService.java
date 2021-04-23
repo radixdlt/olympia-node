@@ -63,8 +63,8 @@ public class HighLevelApiService {
 		return universe.getMagic();
 	}
 
-	public Result<List<TokenBalance>> getTokenBalances(ECPublicKey key) {
-		return clientApiStore.getTokenBalances(key, false)
+	public Result<List<TokenBalance>> getTokenBalances(REAddr addr) {
+		return clientApiStore.getTokenBalances(addr, false)
 			.map(list -> list.stream().map(TokenBalance::from).collect(Collectors.toList()));
 	}
 
@@ -84,7 +84,7 @@ public class HighLevelApiService {
 	}
 
 	public Result<Tuple2<Optional<Instant>, List<TxHistoryEntry>>> getTransactionHistory(
-		ECPublicKey address, int size, Optional<Instant> cursor
+		REAddr address, int size, Optional<Instant> cursor
 	) {
 		return clientApiStore.getTransactionHistory(address, size, cursor)
 			.map(response -> tuple(calculateNewCursor(response), response));
@@ -94,8 +94,8 @@ public class HighLevelApiService {
 		return clientApiStore.getTransaction(txId);
 	}
 
-	public Result<List<BalanceEntry>> getStakePositions(ECPublicKey key) {
-		return clientApiStore.getTokenBalances(key, true);
+	public Result<List<BalanceEntry>> getStakePositions(REAddr addr) {
+		return clientApiStore.getTokenBalances(addr, true);
 	}
 
 	private static Optional<Instant> calculateNewCursor(List<TxHistoryEntry> response) {

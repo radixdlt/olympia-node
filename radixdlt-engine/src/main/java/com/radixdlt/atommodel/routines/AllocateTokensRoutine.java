@@ -86,7 +86,7 @@ public final class AllocateTokensRoutine implements ConstraintRoutine {
 					return (i, o, index, outputUsed) -> {
 						var tokenDef = (TokenDefinitionParticle) index.loadRri(null, o.getRri()).orElseThrow();
 						return ReducerResult.complete(
-							new MintToken(tokenDef.getRri(), o.getAddress(), o.getAmount())
+							new MintToken(tokenDef.getRri(), o.getHoldingAddr(), o.getAmount())
 						);
 					};
 				}

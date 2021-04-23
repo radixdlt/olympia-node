@@ -89,6 +89,7 @@ public class CreateFixedToken implements TxAction {
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
 		final var user = txBuilder.getUserOrFail("Required address for fixed token.");
 		final var tokenAddress = REAddr.ofHashedKey(user, symbol.toLowerCase());
+		final var userAccount = REAddr.ofPubKeyAccount(user);
 		txBuilder.down(
 			REAddrParticle.class,
 			p -> p.getAddr().equals(tokenAddress),
@@ -103,6 +104,6 @@ public class CreateFixedToken implements TxAction {
 			getTokenUrl(),
 			supply
 		));
-		txBuilder.up(new TokensParticle(user, supply, tokenAddress));
+		txBuilder.up(new TokensParticle(userAccount, supply, tokenAddress));
 	}
 }

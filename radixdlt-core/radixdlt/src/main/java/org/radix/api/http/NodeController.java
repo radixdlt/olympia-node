@@ -73,16 +73,19 @@ public final class NodeController implements Controller {
 	private final ImmutableIndex immutableIndex;
 	private final EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher;
 	private final ECPublicKey bftKey;
+	private final REAddr account;
 
 	@Inject
 	public NodeController(
 		@NativeToken REAddr nativeToken,
+		@Self REAddr account,
 		@Self ECPublicKey bftKey,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		ImmutableIndex immutableIndex,
 		EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher
 	) {
 		this.nativeToken = nativeToken;
+		this.account = account;
 		this.bftKey = bftKey;
 		this.radixEngine = radixEngine;
 		this.immutableIndex = immutableIndex;
@@ -176,7 +179,7 @@ public final class NodeController implements Controller {
 				var to = AccountAddress.parse(addressString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
-				return new TransferToken(rri.getSecond(), to, subunits);
+				return new TransferToken(rri.getSecond(), account, to, subunits);
 			}
 			case "MintTokens": {
 				var rri = Rri.parse(paramsObject.getString("rri"));
@@ -190,21 +193,21 @@ public final class NodeController implements Controller {
 				var rri = Rri.parse(paramsObject.getString("rri"));
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
-				return new BurnToken(rri.getSecond(), subunits);
+				return new BurnToken(rri.getSecond(), account, subunits);
 			}
 			case "StakeTokens": {
 				var validatorString = paramsObject.getString("to");
 				var key = ValidatorAddress.parse(validatorString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
-				return new StakeTokens(key, subunits);
+				return new StakeTokens(account, key, subunits);
 			}
 			case "UnstakeTokens": {
 				var addressString = paramsObject.getString("from");
 				var delegate = ValidatorAddress.parse(addressString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
-				return new UnstakeTokens(delegate, subunits);
+				return new UnstakeTokens(account, delegate, subunits);
 			}
 			case "MoveStake": {
 				var fromString = paramsObject.getString("from");
@@ -234,7 +237,7 @@ public final class NodeController implements Controller {
 				var txAction = parseAction(actionObject);
 				actions.add(txAction);
 			}
-			actions.add(new BurnToken(nativeToken, FEE));
+			actions.add(new BurnToken(nativeToken, account, FEE));
 			var completableFuture = new CompletableFuture<MempoolAddSuccess>();
 			var request = NodeApplicationRequest.create(actions, completableFuture);
 			nodeApplicationRequestEventDispatcher.dispatch(request);

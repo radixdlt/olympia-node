@@ -30,12 +30,13 @@ import static org.junit.Assert.assertEquals;
 
 public class BalanceEntryTest {
 	private static final ECPublicKey KEY = ECKeyPair.generateNew().getPublicKey();
+	private static final REAddr ACCT = REAddr.ofPubKeyAccount(KEY);
 	private static final REAddr TOKEN_RRI = REAddr.ofHashedKey(KEY, "xrd");
 
 	@Test
 	public void verifyBalanceCalculation() {
-		BalanceEntry entry1 = BalanceEntry.createBalance(KEY, null, TOKEN_RRI, UInt384.FOUR);
-		BalanceEntry entry2 = BalanceEntry.createBalance(KEY, null, TOKEN_RRI, UInt384.FIVE);
+		BalanceEntry entry1 = BalanceEntry.createBalance(ACCT, null, TOKEN_RRI, UInt384.FOUR);
+		BalanceEntry entry2 = BalanceEntry.createBalance(ACCT, null, TOKEN_RRI, UInt384.FIVE);
 
 		validate(entry1, entry2, UInt384.NINE, false);           		// 4 + 5 => 9
 		validate(entry2, entry1, UInt384.NINE, false);               	// 5 + 4 => 9

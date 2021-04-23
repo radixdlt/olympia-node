@@ -169,8 +169,7 @@ public final class ConstraintScryptEnv implements SysCalls {
 
 				@Override
 				public SignatureValidator<REAddrParticle, O> signatureValidator() {
-					return (in, o, index, pubKey) -> pubKey.flatMap(k -> in.getArg().map(arg -> in.getSubstate().allow(k, arg)))
-						.orElse(false);
+					return (in, o, index, pubKey) -> pubKey.map(k -> in.getSubstate().allow(k, in.getArg())).orElse(false);
 				}
 			}
 		);
@@ -200,8 +199,7 @@ public final class ConstraintScryptEnv implements SysCalls {
 			particleClass1,
 			includeSecondClass,
 			combinedCheck,
-			(in, o, index, pubKey) -> pubKey.flatMap(k -> in.getArg().map(arg -> in.getSubstate().allow(k, arg)))
-				.orElse(false)
+			(in, o, index, pubKey) -> pubKey.map(k -> in.getSubstate().allow(k, in.getArg())).orElse(false)
 		);
 
 		this.executeRoutine(createCombinedTransitionRoutine);

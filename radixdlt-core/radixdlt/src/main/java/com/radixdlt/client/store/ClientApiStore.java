@@ -44,7 +44,7 @@ public interface ClientApiStore {
 	 *
 	 * @return list of token balances
 	 */
-	Result<List<BalanceEntry>> getTokenBalances(ECPublicKey key, boolean retrieveStakes);
+	Result<List<BalanceEntry>> getTokenBalances(REAddr addr, boolean retrieveStakes);
 
 	Result<REAddr> parseRri(String rri);
 
@@ -76,7 +76,7 @@ public interface ClientApiStore {
 	 *
 	 * @return list of transaction history entries.
 	 */
-	Result<List<TxHistoryEntry>> getTransactionHistory(ECPublicKey address, int size, Optional<Instant> cursor);
+	Result<List<TxHistoryEntry>> getTransactionHistory(REAddr address, int size, Optional<Instant> cursor);
 
 	/**
 	 * Retrieve single transaction history entry.

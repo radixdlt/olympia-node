@@ -95,11 +95,11 @@ public final class ActionParser {
 		return Result.fail("Action type {0} is not supported (yet)", type);
 	}
 
-	private static Result<ECPublicKey> from(JSONObject element) {
+	private static Result<REAddr> from(JSONObject element) {
 		return address(element, "from");
 	}
 
-	private static Result<ECPublicKey> to(JSONObject element) {
+	private static Result<REAddr> to(JSONObject element) {
 		return address(element, "to");
 	}
 
@@ -125,7 +125,7 @@ public final class ActionParser {
 			.flatMap(ValidatorAddress::fromString);
 	}
 
-	private static Result<ECPublicKey> address(JSONObject element, String name) {
+	private static Result<REAddr> address(JSONObject element, String name) {
 		return safeString(element, name)
 			.map(AccountAddress::parseFunctional)
 			.orElseGet(() -> fail(element, name));

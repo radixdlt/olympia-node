@@ -64,6 +64,7 @@ public final class MempoolFiller {
 	private final Random random;
 	private final HashSigner hashSigner;
 	private final ECPublicKey self;
+	private final REAddr account;
 	private final REAddr nativeToken;
 	private final UInt256 fee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
 
@@ -74,6 +75,7 @@ public final class MempoolFiller {
 	@Inject
 	public MempoolFiller(
 		@Self ECPublicKey self,
+		@Self REAddr account,
 		@NativeToken REAddr nativeToken,
 		@Named("RadixEngine") HashSigner hashSigner,
 		RadixEngineMempool radixEngineMempool,
@@ -86,6 +88,7 @@ public final class MempoolFiller {
 		SystemCounters systemCounters
 	) {
 		this.self = self;
+		this.account = account;
 		this.nativeToken = nativeToken;
 		this.hashSigner = hashSigner;
 		this.radixEngine = radixEngine;
@@ -134,7 +137,7 @@ public final class MempoolFiller {
 
 			var actions = TxActionListBuilder.create()
 				.splitNative(nativeToken, fee.multiply(UInt256.TWO))
-				.burn(nativeToken, fee)
+				.burn(nativeToken, account, fee)
 				.build();
 
 			var shuttingDown = radixEngineMempool.getShuttingDownSubstates();

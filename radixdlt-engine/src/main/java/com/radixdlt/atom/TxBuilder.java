@@ -65,11 +65,11 @@ public final class TxBuilder {
 		return new TxBuilder(user, SubstateStore.empty());
 	}
 
-	public static TxBuilder newSystemBuilder(SubstateStore remoteSubstate) {
+	public static TxBuilder newBuilder(SubstateStore remoteSubstate) {
 		return new TxBuilder(null, remoteSubstate);
 	}
 
-	public static TxBuilder newSystemBuilder() {
+	public static TxBuilder newBuilder() {
 		return new TxBuilder(null, SubstateStore.empty());
 	}
 

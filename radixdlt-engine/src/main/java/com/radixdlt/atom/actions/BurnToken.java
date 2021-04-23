@@ -27,11 +27,17 @@ import com.radixdlt.utils.UInt256;
 
 public final class BurnToken implements TxAction {
 	private final REAddr rri;
+	private final REAddr accountAddr;
 	private final UInt256 amount;
 
-	public BurnToken(REAddr rri, UInt256 amount) {
+	public BurnToken(REAddr rri, REAddr accountAddr, UInt256 amount) {
 		this.rri = rri;
+		this.accountAddr = accountAddr;
 		this.amount = amount;
+	}
+
+	public REAddr from() {
+		return accountAddr;
 	}
 
 	public REAddr rri() {
@@ -44,12 +50,11 @@ public final class BurnToken implements TxAction {
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var user = txBuilder.getUserOrFail("Must have an address to burn.");
 		txBuilder.deallocateFungible(
 			TokensParticle.class,
-			p -> p.getRri().equals(rri) && p.getAddress().equals(user),
+			p -> p.getRri().equals(rri) && p.getHoldingAddr().equals(accountAddr),
 			TokensParticle::getAmount,
-			amt -> new TokensParticle(user, amt, rri),
+			amt -> new TokensParticle(accountAddr, amt, rri),
 			amount,
 			"Not enough balance to for fee burn."
 		);

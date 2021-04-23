@@ -21,7 +21,6 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.client.AccountAddress;
 import com.radixdlt.client.ValidatorAddress;
-import com.radixdlt.crypto.ECPublicKey;
 import org.json.JSONObject;
 
 import com.radixdlt.atom.actions.BurnToken;
@@ -57,37 +56,37 @@ public class ActionEntry {
 		return new ActionEntry(type, from, to, amount, rri);
 	}
 
-	public static ActionEntry transfer(ECPublicKey user, TransferToken transferToken) {
+	public static ActionEntry transfer(TransferToken transferToken) {
 		return create(
 			ActionType.TRANSFER,
-			AccountAddress.of(user),
+			AccountAddress.of(transferToken.from()),
 			AccountAddress.of(transferToken.to()),
 			transferToken.amount(),
 			transferToken.rri()
 		);
 	}
 
-	public static ActionEntry burn(ECPublicKey user, BurnToken burnToken) {
-		return create(ActionType.BURN, AccountAddress.of(user), null, burnToken.amount(), burnToken.rri());
+	public static ActionEntry burn(BurnToken burnToken) {
+		return create(ActionType.BURN, AccountAddress.of(burnToken.from()), null, burnToken.amount(), burnToken.rri());
 	}
 
-	public static ActionEntry stake(ECPublicKey user, StakeTokens stakeToken, REAddr nativeToken) {
+	public static ActionEntry stake(StakeTokens stakeToken) {
 		return create(
 			ActionType.STAKE,
-			AccountAddress.of(user),
+			AccountAddress.of(stakeToken.from()),
 			ValidatorAddress.of(stakeToken.to()),
 			stakeToken.amount(),
-			nativeToken
+			REAddr.ofNativeToken()
 		);
 	}
 
-	public static ActionEntry unstake(ECPublicKey user, UnstakeTokens unstakeToken, REAddr nativeToken) {
+	public static ActionEntry unstake(UnstakeTokens unstakeToken) {
 		return create(
 			ActionType.UNSTAKE,
 			ValidatorAddress.of(unstakeToken.from()),
-			AccountAddress.of(user),
+			AccountAddress.of(unstakeToken.accountAddr()),
 			unstakeToken.amount(),
-			nativeToken
+			REAddr.ofNativeToken()
 		);
 	}
 

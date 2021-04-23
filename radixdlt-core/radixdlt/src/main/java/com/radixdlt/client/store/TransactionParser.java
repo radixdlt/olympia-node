@@ -55,16 +55,16 @@ public final class TransactionParser {
 			.orElse(UInt256.ZERO);
 	}
 
-	private ActionEntry mapToEntry(ECPublicKey user, TxAction txAction) {
+	private ActionEntry mapToEntry(TxAction txAction) {
 		if (txAction instanceof TransferToken) {
-			return ActionEntry.transfer(user, (TransferToken) txAction);
+			return ActionEntry.transfer((TransferToken) txAction);
 		} else if (txAction instanceof BurnToken) {
 			var burnToken = (BurnToken) txAction;
-			return ActionEntry.burn(user, burnToken);
+			return ActionEntry.burn(burnToken);
 		} else if (txAction instanceof StakeTokens) {
-			return ActionEntry.stake(user, (StakeTokens) txAction, nativeToken);
+			return ActionEntry.stake((StakeTokens) txAction);
 		} else if (txAction instanceof UnstakeTokens) {
-			return ActionEntry.unstake(user, (UnstakeTokens) txAction, nativeToken);
+			return ActionEntry.unstake((UnstakeTokens) txAction);
 		} else {
 			return ActionEntry.unknown();
 		}
@@ -75,7 +75,7 @@ public final class TransactionParser {
 		var fee = computeFeePaid(parsedTxn);
 
 		var actions = parsedTxn.getActions().stream()
-			.map(a -> mapToEntry(parsedTxn.getUser().orElse(null), a.getTxAction()))
+			.map(a -> mapToEntry(a.getTxAction()))
 			.collect(Collectors.toList());
 
 		return Result.ok(TxHistoryEntry.create(txnId, txDate, fee, null, actions));

@@ -45,6 +45,7 @@ public class StakedTokensTest {
 	private EngineStore<Void> store;
 	private REAddr tokenRri;
 	private ECKeyPair tokenOwnerKeyPair = ECKeyPair.generateNew();
+	private REAddr tokenOwnerAccount = REAddr.ofPubKeyAccount(tokenOwnerKeyPair.getPublicKey());
 	private ECKeyPair validatorKeyPair = ECKeyPair.generateNew();
 
 	@Before
@@ -73,7 +74,7 @@ public class StakedTokensTest {
 		var txn0 = engine.construct(
 			TxActionListBuilder.create()
 				.createMutableToken(tokDef)
-				.mint(this.tokenRri, this.tokenOwnerKeyPair.getPublicKey(), UInt256.TEN)
+				.mint(this.tokenRri, tokenOwnerAccount, UInt256.TEN)
 				.build()
 		).buildWithoutSignature();
 		var validatorBuilder = this.engine.construct(this.validatorKeyPair.getPublicKey(), new RegisterValidator());

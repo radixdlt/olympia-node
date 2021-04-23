@@ -23,6 +23,7 @@ import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.StateReducer;
+import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -32,11 +33,11 @@ import java.util.function.Supplier;
  * Balance reducer for local node
  */
 public final class BalanceReducer implements StateReducer<Balances, TokensParticle> {
-	private final ECPublicKey key;
+	private final REAddr addr;
 
 	@Inject
-	public BalanceReducer(@Self ECPublicKey key) {
-		this.key = Objects.requireNonNull(key);
+	public BalanceReducer(@Self REAddr addr) {
+		this.addr = Objects.requireNonNull(addr);
 	}
 
 	@Override
@@ -57,7 +58,7 @@ public final class BalanceReducer implements StateReducer<Balances, TokensPartic
 	@Override
 	public BiFunction<Balances, TokensParticle, Balances> outputReducer() {
 		return (balance, p) -> {
-			if (p.getAddress().equals(key)) {
+			if (p.getHoldingAddr().equals(addr)) {
 				return balance.add(p.getRri(), p.getAmount());
 			}
 			return balance;
@@ -67,7 +68,7 @@ public final class BalanceReducer implements StateReducer<Balances, TokensPartic
 	@Override
 	public BiFunction<Balances, TokensParticle, Balances> inputReducer() {
 		return (balance, p) -> {
-			if (p.getAddress().equals(key)) {
+			if (p.getHoldingAddr().equals(addr)) {
 				return balance.remove(p.getRri(), p.getAmount());
 			}
 			return balance;

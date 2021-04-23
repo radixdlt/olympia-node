@@ -18,8 +18,7 @@
 
 package com.radixdlt.client;
 
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bits;
 import com.radixdlt.utils.functional.Result;
@@ -39,13 +38,12 @@ public final class AccountAddress {
 		return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
 	}
 
-	public static String of(ECPublicKey key) {
-		var bytes = key.getCompressedBytes();
-		var convert = toBech32Data(bytes);
+	public static String of(REAddr addr) {
+		var convert = toBech32Data(addr.getBytes());
 		return Bech32.encode("brx", convert);
 	}
 
-	public static ECPublicKey parse(String v) throws DeserializeException {
+	public static REAddr parse(String v) throws DeserializeException {
 		Bech32.Bech32Data bech32Data;
 		try {
 			bech32Data = Bech32.decode(v);
@@ -56,15 +54,11 @@ public final class AccountAddress {
 		if (!bech32Data.hrp.equals("brx")) {
 			throw new DeserializeException("hrp must be vb but was " + bech32Data.hrp);
 		}
-		var keyBytes = fromBech32Data(bech32Data.data);
-		try {
-			return ECPublicKey.fromBytes(keyBytes);
-		} catch (PublicKeyException e) {
-			throw new DeserializeException("Invalid bytes in validator address: " + v);
-		}
+		var addrBytes = fromBech32Data(bech32Data.data);
+		return REAddr.of(addrBytes);
 	}
 
-	public static Result<ECPublicKey> parseFunctional(String addr) {
+	public static Result<REAddr> parseFunctional(String addr) {
 		try {
 			return Result.ok(parse(addr));
 		} catch (Exception e) {

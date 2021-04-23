@@ -139,11 +139,11 @@ public final class RESerializer {
 		return bytes;
 	}
 
-	public static void serializeRri(ByteBuffer buf, REAddr rri) {
+	public static void serializeREAddr(ByteBuffer buf, REAddr rri) {
 		buf.put(rri.getBytes());
 	}
 
-	public static REAddr deserializeRri(ByteBuffer buf) throws DeserializeException {
+	public static REAddr deserializeREAddr(ByteBuffer buf) throws DeserializeException {
 		var v = buf.get(); // version
 		var type = REAddr.REAddrType.parse(v);
 		if (type.isEmpty()) {
@@ -154,11 +154,11 @@ public final class RESerializer {
 
 	private static void serializeData(REAddrParticle rriParticle, ByteBuffer buf) {
 		var rri = rriParticle.getAddr();
-		serializeRri(buf, rri);
+		serializeREAddr(buf, rri);
 	}
 
 	private static REAddrParticle deserializeRRIParticle(ByteBuffer buf) throws DeserializeException {
-		var rri = deserializeRri(buf);
+		var rri = deserializeREAddr(buf);
 		return new REAddrParticle(rri);
 	}
 
@@ -177,27 +177,27 @@ public final class RESerializer {
 	}
 
 	private static void serializeData(TokensParticle tokensParticle, ByteBuffer buf) {
-		serializeRri(buf, tokensParticle.getRri());
-		serializeKey(buf, tokensParticle.getAddress());
+		serializeREAddr(buf, tokensParticle.getRri());
+		serializeREAddr(buf, tokensParticle.getHoldingAddr());
 		buf.put(tokensParticle.getAmount().toByteArray());
 	}
 
 	private static TokensParticle deserializeTokensParticle(ByteBuffer buf) throws DeserializeException {
-		var rri = deserializeRri(buf);
-		var address = deserializeKey(buf);
+		var rri = deserializeREAddr(buf);
+		var holdingAddr = deserializeREAddr(buf);
 		var amount = deserializeUInt256(buf);
 
-		return new TokensParticle(address, amount, rri);
+		return new TokensParticle(holdingAddr, amount, rri);
 	}
 
 	private static void serializeData(StakedTokensParticle p, ByteBuffer buf) {
-		serializeKey(buf, p.getOwner());
+		serializeREAddr(buf, p.getOwner());
 		serializeKey(buf, p.getDelegateKey());
 		buf.put(p.getAmount().toByteArray());
 	}
 
 	private static StakedTokensParticle deserializeStakedTokensParticle(ByteBuffer buf) throws DeserializeException {
-		var owner = deserializeKey(buf);
+		var owner = deserializeREAddr(buf);
 		var delegate = deserializeKey(buf);
 		var amount = deserializeUInt256(buf);
 		return new StakedTokensParticle(delegate, owner, amount);
@@ -219,16 +219,16 @@ public final class RESerializer {
 	}
 
 	private static void serializeData(UniqueParticle uniqueParticle, ByteBuffer buf) {
-		serializeRri(buf, uniqueParticle.getRri());
+		serializeREAddr(buf, uniqueParticle.getRri());
 	}
 
 	private static UniqueParticle deserializeUniqueParticle(ByteBuffer buf) throws DeserializeException {
-		var rri = deserializeRri(buf);
+		var rri = deserializeREAddr(buf);
 		return new UniqueParticle(rri);
 	}
 
 	private static void serializeData(TokenDefinitionParticle p, ByteBuffer buf) {
-		serializeRri(buf, p.getRri());
+		serializeREAddr(buf, p.getRri());
 		p.getSupply().ifPresentOrElse(
 			i -> {
 				buf.put((byte) 0);
@@ -251,7 +251,7 @@ public final class RESerializer {
 	}
 
 	private static TokenDefinitionParticle deserializeTokenDefinitionParticle(ByteBuffer buf) throws DeserializeException {
-		var rri = deserializeRri(buf);
+		var rri = deserializeREAddr(buf);
 		var type = buf.get();
 		final UInt256 supply;
 		final ECPublicKey minter;

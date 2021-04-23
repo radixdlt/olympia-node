@@ -84,7 +84,9 @@ import static org.mockito.Mockito.when;
 
 public class BerkeleyClientApiStoreTest {
 	private static final ECKeyPair OWNER_KEYPAIR = ECKeyPair.generateNew();
+	private static final REAddr OWNER_ACCOUNT = REAddr.ofPubKeyAccount(OWNER_KEYPAIR.getPublicKey());
 	private static final ECKeyPair TOKEN_KEYPAIR = ECKeyPair.generateNew();
+	private static final REAddr TOKEN_ACCOUNT = REAddr.ofPubKeyAccount(TOKEN_KEYPAIR.getPublicKey());
 
 	private static final String SYMBOL = "cfee";
 	private static final REAddr TOKEN = REAddr.ofHashedKey(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
@@ -134,15 +136,15 @@ public class BerkeleyClientApiStoreTest {
 		var tokenDef = prepareMutableTokenDef(SYMBOL);
 		var tx = engine.construct(TOKEN_KEYPAIR.getPublicKey(), TxActionListBuilder.create()
 			.createMutableToken(tokenDef)
-			.mint(TOKEN, TOKEN_KEYPAIR.getPublicKey(), UInt256.EIGHT)
-			.burn(TOKEN, UInt256.ONE)
-			.transfer(TOKEN, OWNER_KEYPAIR.getPublicKey(), UInt256.FOUR)
+			.mint(TOKEN, TOKEN_ACCOUNT, UInt256.EIGHT)
+			.burn(TOKEN, TOKEN_ACCOUNT, UInt256.ONE)
+			.transfer(TOKEN, TOKEN_ACCOUNT, OWNER_ACCOUNT, UInt256.FOUR)
 			.build()
 		).signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var clientApiStore = prepareApiStore(tx);
 
-		clientApiStore.getTokenBalances(TOKEN_KEYPAIR.getPublicKey(), false)
+		clientApiStore.getTokenBalances(TOKEN_ACCOUNT, false)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
 				assertEquals(UInt384.THREE, list.get(0).getAmount());
@@ -150,7 +152,7 @@ public class BerkeleyClientApiStoreTest {
 			})
 			.onFailureDo(() -> fail("Failure is not expected here"));
 
-		clientApiStore.getTokenBalances(OWNER_KEYPAIR.getPublicKey(), false)
+		clientApiStore.getTokenBalances(OWNER_ACCOUNT, false)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
 				assertEquals(UInt384.FOUR, list.get(0).getAmount());
@@ -177,8 +179,8 @@ public class BerkeleyClientApiStoreTest {
 		var tokenDef = prepareMutableTokenDef(SYMBOL);
 		var tx = engine.construct(TOKEN_KEYPAIR.getPublicKey(), TxActionListBuilder.create()
 			.createMutableToken(tokenDef)
-			.mint(TOKEN, TOKEN_KEYPAIR.getPublicKey(), UInt256.TEN)
-			.burn(TOKEN, UInt256.TWO)
+			.mint(TOKEN, TOKEN_ACCOUNT, UInt256.TEN)
+			.burn(TOKEN, TOKEN_ACCOUNT, UInt256.TWO)
 			.build()
 		).signAndBuild(TOKEN_KEYPAIR::sign);
 
@@ -219,16 +221,16 @@ public class BerkeleyClientApiStoreTest {
 		var tokenDef = prepareMutableTokenDef(SYMBOL);
 		var tx = engine.construct(TOKEN_KEYPAIR.getPublicKey(), TxActionListBuilder.create()
 			.createMutableToken(tokenDef)
-			.mint(TOKEN, TOKEN_KEYPAIR.getPublicKey(), UInt256.TEN)
-			.transfer(TOKEN, OWNER_KEYPAIR.getPublicKey(), UInt256.FOUR)
-			.burn(TOKEN, UInt256.ONE)
+			.mint(TOKEN, TOKEN_ACCOUNT, UInt256.TEN)
+			.transfer(TOKEN, TOKEN_ACCOUNT, OWNER_ACCOUNT, UInt256.FOUR)
+			.burn(TOKEN, TOKEN_ACCOUNT, UInt256.ONE)
 			.build()
 		).signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var clientApiStore = prepareApiStore(tx);
 		var newCursor = new AtomicReference<Instant>();
 
-		clientApiStore.getTransactionHistory(TOKEN_KEYPAIR.getPublicKey(), 1, Optional.empty())
+		clientApiStore.getTransactionHistory(TOKEN_ACCOUNT, 1, Optional.empty())
 			.onFailure(this::failWithMessage)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
@@ -242,15 +244,15 @@ public class BerkeleyClientApiStoreTest {
 
 				assertEquals(ActionType.TRANSFER, action.getType());
 				assertEquals(UInt256.FOUR, action.getAmount());
-				assertEquals(AccountAddress.of(TOKEN_KEYPAIR.getPublicKey()), action.getFrom());
-				assertEquals(AccountAddress.of(OWNER_KEYPAIR.getPublicKey()), action.getTo());
+				assertEquals(AccountAddress.of(TOKEN_ACCOUNT), action.getFrom());
+				assertEquals(AccountAddress.of(REAddr.ofPubKeyAccount(OWNER_KEYPAIR.getPublicKey())), action.getTo());
 
 				newCursor.set(entry.timestamp());
 			});
 
 		assertNotNull(newCursor.get());
 
-		clientApiStore.getTransactionHistory(TOKEN_KEYPAIR.getPublicKey(), 1, Optional.of(newCursor.get()))
+		clientApiStore.getTransactionHistory(TOKEN_ACCOUNT, 1, Optional.of(newCursor.get()))
 			.onFailure(this::failWithMessage)
 			.onSuccess(list -> assertEquals(0, list.size()));
 	}
@@ -260,9 +262,9 @@ public class BerkeleyClientApiStoreTest {
 		var tokenDef = prepareMutableTokenDef(SYMBOL);
 		var tx = engine.construct(TOKEN_KEYPAIR.getPublicKey(), TxActionListBuilder.create()
 			.createMutableToken(tokenDef)
-			.mint(TOKEN, TOKEN_KEYPAIR.getPublicKey(), UInt256.TEN)
-			.transfer(TOKEN, OWNER_KEYPAIR.getPublicKey(), UInt256.FOUR)
-			.burn(TOKEN, UInt256.ONE)
+			.mint(TOKEN, TOKEN_ACCOUNT, UInt256.TEN)
+			.transfer(TOKEN, TOKEN_ACCOUNT, OWNER_ACCOUNT, UInt256.FOUR)
+			.burn(TOKEN, TOKEN_ACCOUNT, UInt256.ONE)
 			.build()
 		).signAndBuild(TOKEN_KEYPAIR::sign);
 
@@ -282,14 +284,14 @@ public class BerkeleyClientApiStoreTest {
 		var tokenDef = prepareMutableTokenDef(SYMBOL);
 		var tx = engine.construct(TOKEN_KEYPAIR.getPublicKey(), TxActionListBuilder.create()
 			.createMutableToken(tokenDef)
-			.mint(TOKEN, TOKEN_KEYPAIR.getPublicKey(), UInt256.TEN)
-			.transfer(TOKEN, OWNER_KEYPAIR.getPublicKey(), UInt256.FOUR)
-			.burn(TOKEN, UInt256.ONE)
+			.mint(TOKEN, TOKEN_ACCOUNT, UInt256.TEN)
+			.transfer(TOKEN, TOKEN_ACCOUNT, OWNER_ACCOUNT, UInt256.FOUR)
+			.burn(TOKEN, TOKEN_ACCOUNT, UInt256.ONE)
 			.build()
 		).signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var clientApiStore = prepareApiStore(tx);
-		clientApiStore.getTransactionHistory(TOKEN_KEYPAIR.getPublicKey(), 0, Optional.empty())
+		clientApiStore.getTransactionHistory(TOKEN_ACCOUNT, 0, Optional.empty())
 			.onSuccess(list -> fail("Request must be rejected"));
 	}
 

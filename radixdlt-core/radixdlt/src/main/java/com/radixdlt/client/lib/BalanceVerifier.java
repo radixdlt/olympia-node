@@ -17,6 +17,8 @@
 
 package com.radixdlt.client.lib;
 
+import com.radixdlt.client.AccountAddress;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt384;
 import org.apache.commons.cli.DefaultParser;
@@ -57,11 +59,11 @@ public class BalanceVerifier {
 
 				NodeClient.connect(baseUrl)
 					.onSuccess(client -> {
-						retrieveBalance(client, pubkeyOf(1));
-						retrieveBalance(client, pubkeyOf(2));
-						retrieveBalance(client, pubkeyOf(3));
-						retrieveBalance(client, pubkeyOf(4));
-						retrieveBalance(client, pubkeyOf(5));
+						retrieveBalance(client, REAddr.ofPubKeyAccount(pubkeyOf(1)));
+						retrieveBalance(client, REAddr.ofPubKeyAccount(pubkeyOf(2)));
+						retrieveBalance(client, REAddr.ofPubKeyAccount(pubkeyOf(3)));
+						retrieveBalance(client, REAddr.ofPubKeyAccount(pubkeyOf(4)));
+						retrieveBalance(client, REAddr.ofPubKeyAccount(pubkeyOf(5)));
 					})
 					.onFailure(failure -> System.out.println(failure.message()));
 			})
@@ -71,12 +73,12 @@ public class BalanceVerifier {
 			});
 	}
 
-	private void retrieveBalance(NodeClient client, ECPublicKey key) {
-		client.callTokenBalances(key).onSuccess(balances -> printBalances(key, balances));
+	private void retrieveBalance(NodeClient client, REAddr addr) {
+		client.callTokenBalances(addr).onSuccess(balances -> printBalances(addr, balances));
 	}
 
-	private void printBalances(ECPublicKey publicKey, List<Pair<String, UInt384>> balances) {
-		System.out.println("Owner: " + publicKey.toString());
+	private void printBalances(REAddr addr, List<Pair<String, UInt384>> balances) {
+		System.out.println("Owner: " + AccountAddress.of(addr));
 		if (balances.isEmpty()) {
 			System.out.println("(empty balances)");
 		} else {

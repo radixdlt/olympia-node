@@ -55,6 +55,7 @@ import static com.radixdlt.client.store.berkeley.BalanceEntry.createBalance;
 
 public class HighLevelApiServiceTest {
 	private static final ECPublicKey OWNER_KEY = ECKeyPair.generateNew().getPublicKey();
+	private static final REAddr OWNER_ACCOUNT = REAddr.ofPubKeyAccount(OWNER_KEY);
 	private static final ECPublicKey TOKEN_KEY = ECKeyPair.generateNew().getPublicKey();
 	private static final REAddr TOKEN = REAddr.ofHashedKey(TOKEN_KEY, "xrd");
 
@@ -82,14 +83,14 @@ public class HighLevelApiServiceTest {
 	@Test
 	public void testGetTokenBalancesForFunds() {
 		var address = TOKEN_KEY;
-		var balance1 = createBalance(OWNER_KEY, null, REAddr.ofHashedKey(address, "fff"), UInt384.FIVE);
-		var balance2 = createBalance(OWNER_KEY, null, REAddr.ofHashedKey(address, "rar"), UInt384.NINE);
+		var balance1 = createBalance(OWNER_ACCOUNT, null, REAddr.ofHashedKey(address, "fff"), UInt384.FIVE);
+		var balance2 = createBalance(OWNER_ACCOUNT, null, REAddr.ofHashedKey(address, "rar"), UInt384.NINE);
 		var balances = Result.ok(List.of(balance1, balance2));
 
-		when(clientApiStore.getTokenBalances(OWNER_KEY, false))
+		when(clientApiStore.getTokenBalances(OWNER_ACCOUNT, false))
 			.thenReturn(balances);
 
-		highLevelApiService.getTokenBalances(OWNER_KEY)
+		highLevelApiService.getTokenBalances(OWNER_ACCOUNT)
 			.onSuccess(list -> {
 				assertEquals(2, list.size());
 				assertEquals(UInt384.FIVE, list.get(0).getAmount());
@@ -101,15 +102,15 @@ public class HighLevelApiServiceTest {
 	@Test
 	@Ignore
 	public void testGetTokenBalancesForStakes() {
-		var balance1 = createBalance(OWNER_KEY, null, REAddr.ofHashedKey(TOKEN_KEY, "fff"), UInt384.FIVE);
-		var balance2 = createBalance(OWNER_KEY, null, REAddr.ofHashedKey(TOKEN_KEY, "rar"), UInt384.NINE);
-		var balance3 = createBalance(OWNER_KEY, null, REAddr.ofNativeToken(), UInt384.TWO);
+		var balance1 = createBalance(OWNER_ACCOUNT, null, REAddr.ofHashedKey(TOKEN_KEY, "fff"), UInt384.FIVE);
+		var balance2 = createBalance(OWNER_ACCOUNT, null, REAddr.ofHashedKey(TOKEN_KEY, "rar"), UInt384.NINE);
+		var balance3 = createBalance(OWNER_ACCOUNT, null, REAddr.ofNativeToken(), UInt384.TWO);
 		var balances = Result.ok(List.of(balance1, balance2, balance3));
 
-		when(clientApiStore.getTokenBalances(OWNER_KEY, true))
+		when(clientApiStore.getTokenBalances(OWNER_ACCOUNT, true))
 			.thenReturn(balances);
 
-		highLevelApiService.getStakePositions(OWNER_KEY)
+		highLevelApiService.getStakePositions(OWNER_ACCOUNT)
 			.onSuccess(list -> {
 				assertEquals(3, list.size());
 				assertEquals(UInt384.FIVE, list.get(0).getAmount());
@@ -142,10 +143,10 @@ public class HighLevelApiServiceTest {
 	public void testGetTransactionHistory() {
 		var entry = createTxHistoryEntry(AID.ZERO);
 
-		when(clientApiStore.getTransactionHistory(eq(OWNER_KEY), eq(1), eq(Optional.empty())))
+		when(clientApiStore.getTransactionHistory(eq(OWNER_ACCOUNT), eq(1), eq(Optional.empty())))
 			.thenReturn(Result.ok(List.of(entry)));
 
-		highLevelApiService.getTransactionHistory(OWNER_KEY, 1, Optional.empty())
+		highLevelApiService.getTransactionHistory(OWNER_ACCOUNT, 1, Optional.empty())
 			.onSuccess(tuple -> tuple.map((cursor, list) -> {
 				assertTrue(cursor.isPresent());
 				assertEquals(entry.timestamp(), cursor.get());

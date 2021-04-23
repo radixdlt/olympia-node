@@ -17,6 +17,7 @@
 
 package com.radixdlt.identifiers;
 
+import com.google.common.collect.BiMap;
 import com.radixdlt.crypto.HashUtils;
 
 import com.radixdlt.crypto.ECPublicKey;
@@ -25,8 +26,10 @@ import org.bouncycastle.util.encoders.Hex;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * A Radix Engine Address. A 1-34 byte array describing a resource or component
@@ -67,7 +70,28 @@ public final class REAddr {
 				}
 				return Optional.empty();
 			}
+		},
+		PUB_KEY((byte) 4) {
+			public REAddr parse(ByteBuffer buf) {
+				var addr = new byte[ECPublicKey.COMPRESSED_BYTES + 1];
+				addr[0] = type;
+				buf.get(addr, 1, ECPublicKey.COMPRESSED_BYTES);
+				return new REAddr(addr);
+			}
+
+			public Optional<String> verify(ByteBuffer buf) {
+				if (buf.remaining() != ECPublicKey.COMPRESSED_BYTES) {
+					return Optional.of("Pub key address must have " + ECPublicKey.COMPRESSED_BYTES + " bytes");
+				}
+				return Optional.empty();
+			}
 		};
+
+		static Map<Byte, REAddrType> opMap;
+		static {
+			opMap = Arrays.stream(REAddrType.values())
+				.collect(Collectors.toMap(REAddrType::byteValue, r -> r));
+		}
 
 		final byte type;
 
@@ -75,19 +99,16 @@ public final class REAddr {
 			this.type = type;
 		}
 
+		public byte byteValue() {
+			return type;
+		}
+
 		public abstract REAddr parse(ByteBuffer buf);
 
 		public abstract Optional<String> verify(ByteBuffer buf);
 
 		public static Optional<REAddrType> parse(byte b) {
-			switch (b) {
-				case 1:
-					return Optional.of(NATIVE_TOKEN);
-				case 3:
-					return Optional.of(HASHED_KEY);
-				default:
-					return Optional.empty();
-			}
+			return Optional.ofNullable(opMap.get(b));
 		}
 	}
 
@@ -125,13 +146,34 @@ public final class REAddr {
 		return Arrays.copyOfRange(hash.asBytes(), 32 - HASHED_KEY_BYTES, 32);
 	}
 
-	public boolean allow(ECPublicKey publicKey, byte[] arg) {
+	public boolean allowToClaimAddress(ECPublicKey publicKey, Optional<byte[]> arg) {
 		if (addr[0] == REAddrType.HASHED_KEY.type) {
-			var hash = REAddr.pkToHash(new String(arg), publicKey);
-			return Arrays.equals(addr, 1, HASHED_KEY_BYTES + 1, hash, 0, HASHED_KEY_BYTES);
+			return arg.map(a -> {
+				var hash = REAddr.pkToHash(new String(a), publicKey);
+				return Arrays.equals(addr, 1, HASHED_KEY_BYTES + 1, hash, 0, HASHED_KEY_BYTES);
+			}).orElse(false);
 		}
 
 		return false;
+	}
+
+	public boolean isAccount() {
+		return getType() == REAddrType.PUB_KEY;
+	}
+
+	public boolean allowToWithdrawFrom(ECPublicKey publicKey) {
+		if (getType() != REAddrType.PUB_KEY) {
+			return false;
+		}
+
+		return Arrays.equals(
+			addr, 1, 1 + ECPublicKey.COMPRESSED_BYTES,
+			publicKey.getCompressedBytes(), 0, ECPublicKey.COMPRESSED_BYTES
+		);
+	}
+
+	public REAddrType getType() {
+		return REAddrType.parse(addr[0]).orElseThrow();
 	}
 
 	public boolean isSystem() {
@@ -164,6 +206,14 @@ public final class REAddr {
 		var buf = ByteBuffer.allocate(HASHED_KEY_BYTES + 1);
 		buf.put(REAddrType.HASHED_KEY.type);
 		buf.put(hash);
+		return create(buf.array());
+	}
+
+	public static REAddr ofPubKeyAccount(ECPublicKey key) {
+		Objects.requireNonNull(key);
+		var buf = ByteBuffer.allocate(ECPublicKey.COMPRESSED_BYTES + 1);
+		buf.put(REAddrType.PUB_KEY.type);
+		buf.put(key.getCompressedBytes());
 		return create(buf.array());
 	}
 

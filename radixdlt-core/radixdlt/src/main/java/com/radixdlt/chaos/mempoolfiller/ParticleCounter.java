@@ -6,6 +6,7 @@ import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.StateReducer;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
@@ -16,14 +17,14 @@ import java.util.function.Supplier;
  * Counts the number of UP substate which pass a predicate
  */
 public final class ParticleCounter implements StateReducer<Integer, TokensParticle> {
-	private final ECPublicKey key;
+	private final REAddr addr;
 	private final UInt256 fee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
 
 	@Inject
 	public ParticleCounter(
-		@Self ECPublicKey key
+		@Self REAddr addr
 	) {
-		this.key = Objects.requireNonNull(key);
+		this.addr = Objects.requireNonNull(addr);
 	}
 
 	@Override
@@ -44,7 +45,7 @@ public final class ParticleCounter implements StateReducer<Integer, TokensPartic
 	@Override
 	public BiFunction<Integer, TokensParticle, Integer> outputReducer() {
 		return (count, p) -> {
-			if (p.getAddress().equals(key)
+			if (p.getHoldingAddr().equals(addr)
 				&& p.getRri().isSystem()
 				&& p.getAmount().compareTo(fee.multiply(UInt256.TWO)) > 0) {
 				return count + 1;
@@ -56,7 +57,7 @@ public final class ParticleCounter implements StateReducer<Integer, TokensPartic
 	@Override
 	public BiFunction<Integer, TokensParticle, Integer> inputReducer() {
 		return (count, p) -> {
-			if (p.getAddress().equals(key)
+			if (p.getHoldingAddr().equals(addr)
 				&& p.getRri().isSystem()
 				&& p.getAmount().compareTo(fee.multiply(UInt256.TWO)) > 0) {
 				return count - 1;

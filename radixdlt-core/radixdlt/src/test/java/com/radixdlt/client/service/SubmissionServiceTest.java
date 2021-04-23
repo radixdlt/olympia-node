@@ -120,7 +120,9 @@ public class SubmissionServiceTest {
 	);
 
 	private static final ECKeyPair ALICE_KEYPAIR = ECKeyPair.generateNew();
+	private static final REAddr ALICE_ACCT = REAddr.ofPubKeyAccount(ALICE_KEYPAIR.getPublicKey());
 	private static final ECKeyPair BOB_KEYPAIR = ECKeyPair.generateNew();
+	private static final REAddr BOB_ACCT = REAddr.ofPubKeyAccount(BOB_KEYPAIR.getPublicKey());
 
 	private static final BFTNode NODE = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
 	private static final Hasher hasher = Sha256Hasher.withDefaultSerialization();
@@ -212,7 +214,8 @@ public class SubmissionServiceTest {
 
 	@Test
 	public void testPrepareTransaction() throws Exception {
-		var action = new TransferToken(nativeToken, ALICE_KEYPAIR.getPublicKey(), BIG_AMOUNT);
+		var acct = REAddr.ofPubKeyAccount(key.getPublicKey());
+		var action = new TransferToken(nativeToken, acct, ALICE_ACCT, BIG_AMOUNT);
 
 		var tx = radixEngine.construct(key.getPublicKey(), List.of(action))
 			.signAndBuild(key::sign);
@@ -222,8 +225,8 @@ public class SubmissionServiceTest {
 		var steps = List.of(
 			TransactionAction.create(
 				ActionType.TRANSFER,
-				ALICE_KEYPAIR.getPublicKey(),
-				BOB_KEYPAIR.getPublicKey(),
+				ALICE_ACCT,
+				BOB_ACCT,
 				UInt256.FOUR,
 				Optional.of(nativeToken)
 			),
@@ -279,7 +282,8 @@ public class SubmissionServiceTest {
 	}
 
 	private Result<PreparedTransaction> buildTransaction() throws TxBuilderException, RadixEngineException {
-		var action = new TransferToken(nativeToken, ALICE_KEYPAIR.getPublicKey(), BIG_AMOUNT);
+		var acct = REAddr.ofPubKeyAccount(key.getPublicKey());
+		var action = new TransferToken(nativeToken, acct, ALICE_ACCT, BIG_AMOUNT);
 
 		var tx = radixEngine.construct(key.getPublicKey(), List.of(action))
 			.signAndBuild(key::sign);
@@ -288,7 +292,7 @@ public class SubmissionServiceTest {
 
 		var steps = List.of(
 			TransactionAction.create(
-				ActionType.TRANSFER, ALICE_KEYPAIR.getPublicKey(), BOB_KEYPAIR.getPublicKey(), UInt256.FOUR, Optional.of(nativeToken)
+				ActionType.TRANSFER, ALICE_ACCT, BOB_ACCT, UInt256.FOUR, Optional.of(nativeToken)
 			),
 			TransactionAction.msg("message")
 		);

@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.identifiers.REAddr;
 
 import java.util.stream.Collectors;
 
@@ -46,12 +47,13 @@ public final class CMAtomOS {
 		.build();
 
 	private static final ParticleDefinition<Particle> RRI_PARTICLE_DEF = ParticleDefinition.<REAddrParticle>builder()
-		.staticValidation(rri -> {
-
-			return Result.success();
-		})
+		.staticValidation(rri -> Result.success())
 		.rriMapper(REAddrParticle::getAddr)
-		.virtualizeUp(v -> true)
+		.virtualizeUp(v ->
+			v.getAddr().getType() == REAddr.REAddrType.NATIVE_TOKEN
+			|| v.getAddr().getType() == REAddr.REAddrType.HASHED_KEY
+			// PUB_KEY type is already an account so cannot down
+		)
 		.allowTransitionsFromOutsideScrypts()
 		.build();
 

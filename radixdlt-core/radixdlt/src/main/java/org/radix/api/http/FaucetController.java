@@ -24,7 +24,7 @@ import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.client.AccountAddress;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.REAddr;
@@ -45,12 +45,15 @@ public final class FaucetController implements Controller {
 	private final REAddr nativeToken;
 	private final UInt256 amount = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
 	private static final UInt256 FEE = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
+	private final REAddr account;
 
 	@Inject
 	public FaucetController(
+		@Self REAddr account,
 		@NativeToken REAddr nativeToken,
 		final EventDispatcher<NodeApplicationRequest> faucetRequestDispatcher
 	) {
+		this.account = account;
 		this.nativeToken = nativeToken;
 		this.faucetRequestDispatcher = faucetRequestDispatcher;
 	}
@@ -66,7 +69,7 @@ public final class FaucetController implements Controller {
 		withBody(exchange, values -> {
 			var params = values.getJSONObject("params");
 			var addressString = params.getString("address");
-			final ECPublicKey address;
+			final REAddr address;
 			try {
 				address = AccountAddress.parse(addressString);
 			} catch (DeserializeException e) {
@@ -75,8 +78,8 @@ public final class FaucetController implements Controller {
 			}
 
 			var actions = TxActionListBuilder.create()
-				.transfer(nativeToken, address, amount)
-				.burn(nativeToken, FEE)
+				.transfer(nativeToken, account, address, amount)
+				.burn(nativeToken, account, FEE)
 				.build();
 
 			var completableFuture = new CompletableFuture<MempoolAddSuccess>();

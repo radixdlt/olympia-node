@@ -39,7 +39,7 @@ public class BalanceEntry {
 
 	@JsonProperty("owner")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final byte[] owner;
+	private final REAddr owner;
 
 	@JsonProperty("delegate")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -59,7 +59,7 @@ public class BalanceEntry {
 
 	@JsonCreator
 	private static BalanceEntry create(
-		@JsonProperty("owner") byte[] owner,
+		@JsonProperty("owner") REAddr owner,
 		@JsonProperty("delegate") byte[] delegate,
 		@JsonProperty("rri") REAddr rri,
 		@JsonProperty("amount") UInt384 amount,
@@ -69,14 +69,14 @@ public class BalanceEntry {
 	}
 
 	public static BalanceEntry create(
-		ECPublicKey owner,
+		REAddr owner,
 		ECPublicKey delegate,
 		REAddr rri,
 		UInt384 amount,
 		boolean negative
 	) {
 		return createFull(
-			owner == null ? null : owner.getCompressedBytes(),
+			owner,
 			delegate == null ? null : delegate.getCompressedBytes(),
 			rri,
 			amount,
@@ -85,7 +85,7 @@ public class BalanceEntry {
 	}
 
 	private BalanceEntry(
-		byte[] owner, byte[] delegate, REAddr rri,
+		REAddr owner, byte[] delegate, REAddr rri,
 		UInt384 amount, boolean negative
 	) {
 		this.owner = owner;
@@ -96,7 +96,7 @@ public class BalanceEntry {
 	}
 
 	public static BalanceEntry createFull(
-		byte[] owner,
+		REAddr owner,
 		byte[] delegate,
 		REAddr rri,
 		UInt384 amount,
@@ -109,10 +109,10 @@ public class BalanceEntry {
 	}
 
 	public static BalanceEntry createBalance(
-		ECPublicKey owner, ECPublicKey delegate, REAddr rri, UInt384 amount
+		REAddr owner, ECPublicKey delegate, REAddr rri, UInt384 amount
 	) {
 		return createFull(
-			owner == null ? null : owner.getCompressedBytes(),
+			owner,
 			delegate == null ? null : delegate.getCompressedBytes(),
 			rri,
 			amount,
@@ -120,12 +120,8 @@ public class BalanceEntry {
 		);
 	}
 
-	public ECPublicKey getOwner() {
-		try {
-			return owner == null ? null : ECPublicKey.fromBytes(owner);
-		} catch (PublicKeyException e) {
-			throw new IllegalStateException();
-		}
+	public REAddr getOwner() {
+		return owner;
 	}
 
 	public ECPublicKey getDelegate() {
@@ -161,7 +157,7 @@ public class BalanceEntry {
 	}
 
 	public BalanceEntry add(BalanceEntry balanceEntry) {
-		assert Arrays.equals(this.owner, balanceEntry.owner);
+		assert Objects.equals(this.owner, balanceEntry.owner);
 		assert this.rri.equals(balanceEntry.rri);
 
 		if (negative) {
@@ -181,7 +177,7 @@ public class BalanceEntry {
 			var entry = (BalanceEntry) o;
 
 			return negative == entry.negative
-				&& Arrays.equals(owner, entry.owner)
+				&& Objects.equals(owner, entry.owner)
 				&& Arrays.equals(delegate, entry.delegate)
 				&& rri.equals(entry.rri)
 				&& amount.equals(entry.amount);
@@ -191,7 +187,7 @@ public class BalanceEntry {
 
 	@Override
 	public final int hashCode() {
-		return Objects.hash(Arrays.hashCode(owner), Arrays.hashCode(delegate), rri, amount, negative);
+		return Objects.hash(owner, Arrays.hashCode(delegate), rri, amount, negative);
 	}
 
 	@Override

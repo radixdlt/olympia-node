@@ -17,7 +17,6 @@
 package com.radixdlt.client.handler;
 
 import com.radixdlt.client.AccountAddress;
-import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECPublicKey;
 import org.bouncycastle.asn1.ASN1EncodableVector;
@@ -29,7 +28,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Test;
 
-import com.radixdlt.client.api.ActionType;
 import com.radixdlt.client.api.TransactionStatus;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.service.HighLevelApiService;
@@ -77,7 +75,8 @@ import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class HighLevelApiHandlerTest {
 	private static final ECPublicKey PUB_KEY = ECKeyPair.generateNew().getPublicKey();
-	private static final String ADDRESS = AccountAddress.of(PUB_KEY);
+	private static final REAddr ACCOUNT_ADDR = REAddr.ofPubKeyAccount(PUB_KEY);
+	private static final String ADDRESS = AccountAddress.of(ACCOUNT_ADDR);
 	private static final ECPublicKey V1 = ECKeyPair.generateNew().getPublicKey();
 	private static final ECPublicKey V2 = ECKeyPair.generateNew().getPublicKey();
 	private static final ECPublicKey V3 = ECKeyPair.generateNew().getPublicKey();
@@ -96,7 +95,7 @@ public class HighLevelApiHandlerTest {
 		var balance2 = TokenBalance.create(REAddr.ofHashedKey(PUB_KEY, "yzs"), UInt384.FIVE);
 		var balance3 = TokenBalance.create(REAddr.ofHashedKey(PUB_KEY, "zxy"), UInt384.EIGHT);
 
-		when(highLevelApiService.getTokenBalances(any(ECPublicKey.class)))
+		when(highLevelApiService.getTokenBalances(any(REAddr.class)))
 			.thenReturn(Result.ok(List.of(balance1, balance2, balance3)));
 
 		var response = handler.handleTokenBalances(requestWith(jsonArray().put(ADDRESS)));
@@ -116,11 +115,11 @@ public class HighLevelApiHandlerTest {
 
 	@Test
 	public void testStakePositions() {
-		var balance1 = createBalance(PUB_KEY, V1, REAddr.ofNativeToken(), UInt384.TWO);
-		var balance2 = createBalance(PUB_KEY, V2, REAddr.ofNativeToken(), UInt384.FIVE);
-		var balance3 = createBalance(PUB_KEY, V3, REAddr.ofNativeToken(), UInt384.EIGHT);
+		var balance1 = createBalance(ACCOUNT_ADDR, V1, REAddr.ofNativeToken(), UInt384.TWO);
+		var balance2 = createBalance(ACCOUNT_ADDR, V2, REAddr.ofNativeToken(), UInt384.FIVE);
+		var balance3 = createBalance(ACCOUNT_ADDR, V3, REAddr.ofNativeToken(), UInt384.EIGHT);
 
-		when(highLevelApiService.getStakePositions(any(ECPublicKey.class)))
+		when(highLevelApiService.getStakePositions(any(REAddr.class)))
 			.thenReturn(Result.ok(List.of(balance1, balance2, balance3)));
 
 		var response = handler.handleStakePositions(requestWith(jsonArray().put(ADDRESS)));
@@ -306,35 +305,6 @@ public class HighLevelApiHandlerTest {
 	}
 
 	private final Random random = new Random();
-
-	private JSONObject randomAction() {
-		var to = ECKeyPair.generateNew().getPublicKey();
-		var token = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "cfee");
-
-		switch (random.nextInt(3)) {
-			case 0:    //transfer
-				return jsonObject()
-					.put("type", ActionType.TRANSFER)
-					.put("from", ADDRESS)
-					.put("to", AccountAddress.of(to))
-					.put("amount", UInt256.SEVEN)
-					.put("tokenIdentifier", token.toString());
-			case 1: //stake
-				return jsonObject()
-					.put("type", ActionType.STAKE)
-					.put("from", ADDRESS)
-					.put("validator", ValidatorAddress.of(to))
-					.put("amount", UInt256.FIVE);
-			case 2: //unstake
-				return jsonObject()
-					.put("type", ActionType.UNSTAKE)
-					.put("from", ValidatorAddress.of(PUB_KEY))
-					.put("validator", ValidatorAddress.of(to))
-					.put("amount", UInt256.FOUR);
-		}
-
-		throw new IllegalStateException("Should not happen");
-	}
 
 	private byte[] randomBytes() {
 		return HashUtils.random256().asBytes();

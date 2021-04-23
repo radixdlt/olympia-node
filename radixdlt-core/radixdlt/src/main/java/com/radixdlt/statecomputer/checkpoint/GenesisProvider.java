@@ -108,7 +108,8 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 			var createTokenActions = TxActionListBuilder.create()
 				.createMutableToken(tokenDefinition);
 			for (var e : issuances.entrySet()) {
-				createTokenActions.mint(rri, e.getKey(), e.getValue());
+				var addr = REAddr.ofPubKeyAccount(e.getKey());
+				createTokenActions.mint(rri, addr, e.getValue());
 			}
 
 			var tokenTxn = branch.construct(createTokenActions.build()).buildWithoutSignature();
@@ -125,9 +126,10 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 
 			// Initial stakes
 			for (var stakeDelegation : stakeDelegations) {
+				var delegateAddr = REAddr.ofPubKeyAccount(stakeDelegation.staker().getPublicKey());
 				var stakerTxn = branch.construct(
 					stakeDelegation.staker().getPublicKey(),
-					new StakeTokens(stakeDelegation.delegate(), stakeDelegation.amount())
+					new StakeTokens(delegateAddr, stakeDelegation.delegate(), stakeDelegation.amount())
 				).signAndBuild(stakeDelegation.staker()::sign);
 				branch.execute(List.of(stakerTxn), PermissionLevel.SYSTEM);
 				genesisTxns.add(stakerTxn);

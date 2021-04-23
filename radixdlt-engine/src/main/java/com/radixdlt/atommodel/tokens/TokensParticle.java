@@ -17,7 +17,6 @@
 
 package com.radixdlt.atommodel.tokens;
 
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -29,21 +28,21 @@ import java.util.Objects;
  */
 public final class TokensParticle implements Particle {
 	private final REAddr tokenAddress;
-	private final ECPublicKey address;
+	private final REAddr holdingAddress;
 	private final UInt256 amount;
 
 	public TokensParticle(
-		ECPublicKey address,
+		REAddr holdingAddress,
 		UInt256 amount,
 		REAddr tokenAddress
 	) {
-		this.address = Objects.requireNonNull(address);
+		this.holdingAddress = Objects.requireNonNull(holdingAddress);
 		this.tokenAddress = Objects.requireNonNull(tokenAddress);
 		this.amount = Objects.requireNonNull(amount);
 	}
 
-	public ECPublicKey getAddress() {
-		return this.address;
+	public REAddr getHoldingAddr() {
+		return this.holdingAddress;
 	}
 
 	public REAddr getRri() {
@@ -56,7 +55,7 @@ public final class TokensParticle implements Particle {
 			getClass().getSimpleName(),
 			tokenAddress,
 			amount,
-			address
+			holdingAddress
 		);
 	}
 
@@ -73,13 +72,13 @@ public final class TokensParticle implements Particle {
 			return false;
 		}
 		TokensParticle that = (TokensParticle) o;
-		return Objects.equals(address, that.address)
+		return Objects.equals(holdingAddress, that.holdingAddress)
 			&& Objects.equals(tokenAddress, that.tokenAddress)
 			&& Objects.equals(amount, that.amount);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(address, tokenAddress, amount);
+		return Objects.hash(holdingAddress, tokenAddress, amount);
 	}
 }

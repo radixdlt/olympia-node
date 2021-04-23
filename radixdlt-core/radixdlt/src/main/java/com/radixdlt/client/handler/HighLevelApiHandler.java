@@ -18,6 +18,7 @@
 package com.radixdlt.client.handler;
 
 import com.radixdlt.client.AccountAddress;
+import com.radixdlt.identifiers.REAddr;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
@@ -216,9 +217,9 @@ public class HighLevelApiHandler {
 			.map(this::formatTxId);
 	}
 
-	private JSONObject formatTokenBalances(ECPublicKey key, List<TokenBalance> balances) {
+	private JSONObject formatTokenBalances(REAddr addr, List<TokenBalance> balances) {
 		return jsonObject()
-			.put("owner", AccountAddress.of(key))
+			.put("owner", AccountAddress.of(addr))
 			.put("tokenBalances", fromList(balances, TokenBalance::asJson));
 	}
 
@@ -229,7 +230,7 @@ public class HighLevelApiHandler {
 		return jsonObject().put(ARRAY, array);
 	}
 
-	private Result<JSONObject> formatTransactionHistory(ECPublicKey address, int size, Optional<Instant> cursor) {
+	private Result<JSONObject> formatTransactionHistory(REAddr address, int size, Optional<Instant> cursor) {
 		log.debug("formatTransactionHistory: {}, {}, {}", address, size, cursor);
 
 		return highLevelApiService
@@ -363,7 +364,7 @@ public class HighLevelApiHandler {
 			.filter(value -> value > 0, "Size parameter must be greater than zero");
 	}
 
-	private static Result<ECPublicKey> parseAddress(JSONObject params) {
+	private static Result<REAddr> parseAddress(JSONObject params) {
 		return AccountAddress.parseFunctional(params.getString("address"));
 	}
 }

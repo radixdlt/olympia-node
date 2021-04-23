@@ -28,6 +28,7 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.client.api.PreparedTransaction;
 import com.radixdlt.client.api.TransactionAction;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
@@ -71,10 +72,11 @@ public final class SubmissionService {
 			return Result.fail("Source addresses for all actions must be the same");
 		}
 
-		var key = addresses.iterator().next();
+		var addr = addresses.iterator().next();
+
 		try {
 			var transaction = radixEngine
-				.construct(key, toActionsAndFee(steps))
+				.construct(toActionsAndFee(addr, steps))
 				.buildForExternalSign()
 				.map(this::toPreparedTx);
 
@@ -84,10 +86,10 @@ public final class SubmissionService {
 		}
 	}
 
-	private List<TxAction> toActionsAndFee(List<TransactionAction> steps) {
+	private List<TxAction> toActionsAndFee(REAddr addr, List<TransactionAction> steps) {
 		return Stream.concat(
-			steps.stream().map(t -> t.toAction((byte) magic)),
-			Stream.of(new BurnToken(REAddr.ofNativeToken(), fixedFee))
+			steps.stream().map(t -> t.toAction()),
+			Stream.of(new BurnToken(REAddr.ofNativeToken(), addr, fixedFee))
 		).collect(Collectors.toList());
 	}
 

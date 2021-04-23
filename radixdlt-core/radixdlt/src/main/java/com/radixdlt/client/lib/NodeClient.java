@@ -18,6 +18,7 @@
 package com.radixdlt.client.lib;
 
 import com.radixdlt.client.AccountAddress;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Pair;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -86,8 +87,8 @@ public class NodeClient {
 		return Result.ok(new NodeClient(baseUrl)).flatMap(NodeClient::tryConnect);
 	}
 
-	public Result<List<Pair<String, UInt384>>> callTokenBalances(ECPublicKey publicKey) {
-		var params = jsonArray().put(toAddress(publicKey).toString());
+	public Result<List<Pair<String, UInt384>>> callTokenBalances(REAddr addr) {
+		var params = jsonArray().put(toAddress(addr));
 
 		return call("tokenBalances", params)
 			.map(this::parseTokenBalances);
@@ -120,8 +121,8 @@ public class NodeClient {
 			.flatMap(this::parseJson);
 	}
 
-	public String toAddress(ECPublicKey publicKey) {
-		return AccountAddress.of(publicKey);
+	public String toAddress(REAddr addr) {
+		return AccountAddress.of(addr);
 	}
 
 	private Result<NodeClient> tryConnect() {

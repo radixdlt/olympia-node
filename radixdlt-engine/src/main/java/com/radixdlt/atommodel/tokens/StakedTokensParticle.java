@@ -19,6 +19,7 @@ package com.radixdlt.atommodel.tokens;
 
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
@@ -29,12 +30,12 @@ import java.util.Objects;
  */
 public final class StakedTokensParticle implements Particle {
 	private final ECPublicKey delegateKey;
-	private final ECPublicKey owner;
+	private final REAddr owner;
 	private final UInt256 amount;
 
 	public StakedTokensParticle(
 		ECPublicKey delegateKey,
-		ECPublicKey owner,
+		REAddr owner,
 		UInt256 amount
 	) {
 		this.delegateKey = Objects.requireNonNull(delegateKey);
@@ -46,7 +47,7 @@ public final class StakedTokensParticle implements Particle {
 		return delegateKey;
 	}
 
-	public ECPublicKey getOwner() {
+	public REAddr getOwner() {
 		return this.owner;
 	}
 
