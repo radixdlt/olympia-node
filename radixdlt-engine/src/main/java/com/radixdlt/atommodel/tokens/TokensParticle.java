@@ -27,17 +27,17 @@ import java.util.Objects;
  *  owned by some key owner and stored in an account.
  */
 public final class TokensParticle implements Particle {
-	private final REAddr tokenAddress;
+	private final REAddr resourceAddr;
 	private final REAddr holdingAddress;
 	private final UInt256 amount;
 
 	public TokensParticle(
 		REAddr holdingAddress,
 		UInt256 amount,
-		REAddr tokenAddress
+		REAddr resourceAddr
 	) {
 		this.holdingAddress = Objects.requireNonNull(holdingAddress);
-		this.tokenAddress = Objects.requireNonNull(tokenAddress);
+		this.resourceAddr = Objects.requireNonNull(resourceAddr);
 		this.amount = Objects.requireNonNull(amount);
 	}
 
@@ -45,15 +45,15 @@ public final class TokensParticle implements Particle {
 		return this.holdingAddress;
 	}
 
-	public REAddr getRri() {
-		return this.tokenAddress;
+	public REAddr getResourceAddr() {
+		return this.resourceAddr;
 	}
 
 	@Override
 	public String toString() {
 		return String.format("%s[%s:%s:%s]",
 			getClass().getSimpleName(),
-			tokenAddress,
+			resourceAddr,
 			amount,
 			holdingAddress
 		);
@@ -73,12 +73,12 @@ public final class TokensParticle implements Particle {
 		}
 		TokensParticle that = (TokensParticle) o;
 		return Objects.equals(holdingAddress, that.holdingAddress)
-			&& Objects.equals(tokenAddress, that.tokenAddress)
+			&& Objects.equals(resourceAddr, that.resourceAddr)
 			&& Objects.equals(amount, that.amount);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(holdingAddress, tokenAddress, amount);
+		return Objects.hash(holdingAddress, resourceAddr, amount);
 	}
 }

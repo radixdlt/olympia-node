@@ -52,13 +52,15 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 					VoidReducerState voidReducerState,
 					ImmutableIndex immutableIndex
 				) {
-					var p = immutableIndex.loadRri(null, in.getSubstate().getRri());
-					if ((p.isEmpty() || !(p.get() instanceof TokenDefinitionParticle))) {
-						return Result.error("Bad rriId");
-					}
-					var token = (TokenDefinitionParticle) p.get();
-					if (!token.isMutable())	{
-						return Result.error("Cannot burn Fixed supply token.");
+					if (!in.getSubstate().getResourceAddr().isSystem()) {
+						var p = immutableIndex.loadRri(null, in.getSubstate().getResourceAddr());
+						if ((p.isEmpty() || !(p.get() instanceof TokenDefinitionParticle))) {
+							return Result.error("Bad rriId");
+						}
+						var token = (TokenDefinitionParticle) p.get();
+						if (!token.isMutable())	{
+							return Result.error("Cannot burn Fixed supply token.");
+						}
 					}
 
 					return Result.success();
@@ -68,7 +70,7 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 				public InputOutputReducer<TokensParticle, VoidParticle, VoidReducerState> inputOutputReducer() {
 					return (i, o, index, state) -> {
 						var in = i.getSubstate();
-						return ReducerResult.complete(new BurnToken(in.getRri(), in.getHoldingAddr(), in.getAmount()));
+						return ReducerResult.complete(new BurnToken(in.getResourceAddr(), in.getHoldingAddr(), in.getAmount()));
 					};
 				}
 
@@ -99,13 +101,15 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 						return Result.error("Broken state.");
 					}
 
-					var p = immutableIndex.loadRri(null, in.getSubstate().getRri());
-					if ((p.isEmpty() || !(p.get() instanceof TokenDefinitionParticle))) {
-						return Result.error("Bad rriId");
-					}
-					var token = (TokenDefinitionParticle) p.get();
-					if (!token.isMutable())	{
-						return Result.error("Cannot burn Fixed supply token.");
+					if (!in.getSubstate().getResourceAddr().isSystem()) {
+						var p = immutableIndex.loadRri(null, in.getSubstate().getResourceAddr());
+						if ((p.isEmpty() || !(p.get() instanceof TokenDefinitionParticle))) {
+							return Result.error("Bad rriId");
+						}
+						var token = (TokenDefinitionParticle) p.get();
+						if (!token.isMutable())	{
+							return Result.error("Cannot burn Fixed supply token.");
+						}
 					}
 
 					return Result.success();
@@ -117,7 +121,7 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 					return (i, o, index, state) -> {
 						var in = i.getSubstate();
 						var amt = in.getAmount().subtract(state.getUsedAmount());
-						return ReducerResult.complete(new BurnToken(in.getRri(), in.getHoldingAddr(), amt));
+						return ReducerResult.complete(new BurnToken(in.getResourceAddr(), in.getHoldingAddr(), amt));
 					};
 				}
 

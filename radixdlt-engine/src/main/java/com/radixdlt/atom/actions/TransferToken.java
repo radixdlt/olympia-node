@@ -42,7 +42,7 @@ public final class TransferToken implements TxAction {
 		return amount;
 	}
 
-	public REAddr rri() {
+	public REAddr addr() {
 		return rri;
 	}
 
@@ -58,7 +58,7 @@ public final class TransferToken implements TxAction {
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.swapFungible(
 			TokensParticle.class,
-			p -> p.getRri().equals(rri) && p.getHoldingAddr().equals(from),
+			p -> p.getResourceAddr().equals(rri) && p.getHoldingAddr().equals(from),
 			TokensParticle::getAmount,
 			amt -> new TokensParticle(from, amt, rri),
 			amount,

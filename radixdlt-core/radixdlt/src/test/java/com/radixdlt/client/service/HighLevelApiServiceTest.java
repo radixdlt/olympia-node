@@ -83,8 +83,12 @@ public class HighLevelApiServiceTest {
 	@Test
 	public void testGetTokenBalancesForFunds() {
 		var address = TOKEN_KEY;
-		var balance1 = createBalance(OWNER_ACCOUNT, null, REAddr.ofHashedKey(address, "fff"), UInt384.FIVE);
-		var balance2 = createBalance(OWNER_ACCOUNT, null, REAddr.ofHashedKey(address, "rar"), UInt384.NINE);
+		var addr1 = REAddr.ofHashedKey(address, "fff");
+		var rri1 = Rri.of("fff", addr1);
+		var addr2 = REAddr.ofHashedKey(address, "rar");
+		var rri2 = Rri.of("rar", addr2);
+		var balance1 = createBalance(OWNER_ACCOUNT, null, rri1, UInt384.FIVE);
+		var balance2 = createBalance(OWNER_ACCOUNT, null, rri2, UInt384.NINE);
 		var balances = Result.ok(List.of(balance1, balance2));
 
 		when(clientApiStore.getTokenBalances(OWNER_ACCOUNT, false))
@@ -102,9 +106,16 @@ public class HighLevelApiServiceTest {
 	@Test
 	@Ignore
 	public void testGetTokenBalancesForStakes() {
-		var balance1 = createBalance(OWNER_ACCOUNT, null, REAddr.ofHashedKey(TOKEN_KEY, "fff"), UInt384.FIVE);
-		var balance2 = createBalance(OWNER_ACCOUNT, null, REAddr.ofHashedKey(TOKEN_KEY, "rar"), UInt384.NINE);
-		var balance3 = createBalance(OWNER_ACCOUNT, null, REAddr.ofNativeToken(), UInt384.TWO);
+		var address = TOKEN_KEY;
+		var addr1 = REAddr.ofHashedKey(address, "fff");
+		var rri1 = Rri.of("fff", addr1);
+		var addr2 = REAddr.ofHashedKey(address, "rar");
+		var rri2 = Rri.of("rar", addr2);
+		var balance1 = createBalance(OWNER_ACCOUNT, null, rri1, UInt384.FIVE);
+		var balance2 = createBalance(OWNER_ACCOUNT, null, rri2, UInt384.NINE);
+		var balance3 = createBalance(OWNER_ACCOUNT, null,
+			Rri.of("xrd", REAddr.ofNativeToken()), UInt384.TWO
+		);
 		var balances = Result.ok(List.of(balance1, balance2, balance3));
 
 		when(clientApiStore.getTokenBalances(OWNER_ACCOUNT, true))
@@ -129,12 +140,12 @@ public class HighLevelApiServiceTest {
 			.thenReturn(Result.ok(token));
 		when(clientApiStore.getTokenDefinition(eq(token)))
 			.thenReturn(Result.ok(definition));
-		when(clientApiStore.getTokenSupply(token))
+		when(clientApiStore.getTokenSupply(any()))
 			.thenReturn(Result.ok(UInt384.NINE));
 
 		var rri = Rri.of("fff", token);
 		highLevelApiService.getTokenDescription(rri)
-			.onSuccess(description -> assertEquals(token, description.rri()))
+			.onSuccess(description -> assertEquals(token, description.addr()))
 			.onSuccess(description -> assertEquals(UInt384.NINE, description.currentSupply()))
 			.onFailureDo(Assert::fail);
 	}

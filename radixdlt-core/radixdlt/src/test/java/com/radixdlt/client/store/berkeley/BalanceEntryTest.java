@@ -18,6 +18,7 @@ package com.radixdlt.client.store.berkeley;
 
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.client.Rri;
 import com.radixdlt.utils.UInt384;
 import org.junit.Test;
 
@@ -31,7 +32,8 @@ import static org.junit.Assert.assertEquals;
 public class BalanceEntryTest {
 	private static final ECPublicKey KEY = ECKeyPair.generateNew().getPublicKey();
 	private static final REAddr ACCT = REAddr.ofPubKeyAccount(KEY);
-	private static final REAddr TOKEN_RRI = REAddr.ofHashedKey(KEY, "xrd");
+	private static final REAddr TOKEN_ADDR = REAddr.ofHashedKey(KEY, "xrd");
+	private static final String TOKEN_RRI = Rri.of("xrd", TOKEN_ADDR);
 
 	@Test
 	public void verifyBalanceCalculation() {

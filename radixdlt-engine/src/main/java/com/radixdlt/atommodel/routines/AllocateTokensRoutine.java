@@ -53,7 +53,7 @@ public final class AllocateTokensRoutine implements ConstraintRoutine {
 					VoidReducerState inputUsed,
 					ImmutableIndex immutableIndex
 				) {
-					var p = immutableIndex.loadRri(null, outputParticle.getRri());
+					var p = immutableIndex.loadRri(null, outputParticle.getResourceAddr());
 					if (p.isEmpty()) {
 						return Result.error("Token does not exist.");
 					}
@@ -76,25 +76,20 @@ public final class AllocateTokensRoutine implements ConstraintRoutine {
 				public PermissionLevel requiredPermissionLevel(
 					SubstateWithArg<VoidParticle> i, TokensParticle o, ImmutableIndex index
 				) {
-					var tokenDef = (TokenDefinitionParticle) index.loadRri(null, o.getRri()).orElseThrow();
-					return tokenDef.getRri().isSystem() ? PermissionLevel.SYSTEM : PermissionLevel.USER;
+					return o.getResourceAddr().isSystem() ? PermissionLevel.SYSTEM : PermissionLevel.USER;
 				}
 
 				@Override
 				public InputOutputReducer<VoidParticle, TokensParticle, VoidReducerState>
 				inputOutputReducer() {
-					return (i, o, index, outputUsed) -> {
-						var tokenDef = (TokenDefinitionParticle) index.loadRri(null, o.getRri()).orElseThrow();
-						return ReducerResult.complete(
-							new MintToken(tokenDef.getRri(), o.getHoldingAddr(), o.getAmount())
-						);
-					};
+					return (i, o, index, outputUsed) ->
+						ReducerResult.complete(new MintToken(o.getResourceAddr(), o.getHoldingAddr(), o.getAmount()));
 				}
 
 				@Override
 				public SignatureValidator<VoidParticle, TokensParticle> signatureValidator() {
 					return (i, o, index, publicKey) -> {
-						var tokenDef = (TokenDefinitionParticle) index.loadRri(null, o.getRri()).orElseThrow();
+						var tokenDef = (TokenDefinitionParticle) index.loadRri(null, o.getResourceAddr()).orElseThrow();
 						return publicKey.flatMap(p -> tokenDef.getMinter().map(p::equals)).orElse(false);
 					};
 				}

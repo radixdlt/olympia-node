@@ -134,7 +134,7 @@ public final class ConstraintMachine {
 				localUpParticles.values().stream()
 					.filter(TokenDefinitionParticle.class::isInstance)
 					.map(TokenDefinitionParticle.class::cast)
-					.filter(p -> p.getRri().equals(rri))
+					.filter(p -> p.getAddr().equals(rri))
 					.findFirst()
 					.map(Particle.class::cast)
 					.or(() -> store.loadRri(txn, rri));
@@ -330,11 +330,6 @@ public final class ConstraintMachine {
 		return Optional.empty();
 	}
 
-	public static HashCode computeHashToSignFromBytes(byte[] blob) {
-		var firstHash = HashUtils.sha256(blob);
-		return HashUtils.sha256(firstHash.asBytes());
-	}
-
 	public static class StatelessVerificationResult {
 		private final List<REInstruction> instructions;
 		private ECDSASignature signature;
@@ -436,14 +431,13 @@ public final class ConstraintMachine {
 		}
 
 		if (sig != null) {
-			var firstHash = HashUtils.sha256(txn.getPayload(), 0, sigPosition);
-			var hashToSign = HashUtils.sha256(firstHash.asBytes());
-			var pubKey = ECPublicKey.recoverFrom(hashToSign, sig)
+			var hash = HashUtils.sha256(txn.getPayload(), 0, sigPosition); // This is a double hash
+			var pubKey = ECPublicKey.recoverFrom(hash, sig)
 				.orElseThrow(() -> new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, "Invalid signature"));
-			if (!pubKey.verify(hashToSign, sig)) {
+			if (!pubKey.verify(hash, sig)) {
 				throw verifierState.exception("Invalid signature");
 			}
-			verifierState.signatureData(hashToSign, sig, pubKey);
+			verifierState.signatureData(hash, sig, pubKey);
 		}
 
 		return verifierState;

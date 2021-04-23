@@ -40,7 +40,7 @@ public final class SplitToken implements TxAction {
 		var userAccount = REAddr.ofPubKeyAccount(key);
 		var substate = txBuilder.findSubstate(
 			TokensParticle.class,
-			p -> p.getRri().equals(rri)
+			p -> p.getResourceAddr().equals(rri)
 				&& p.getHoldingAddr().equals(userAccount)
 				&& p.getAmount().compareTo(minSize) > 0,
 			"Could not find large particle greater than " + minSize

@@ -62,12 +62,12 @@ public class ActionEntry {
 			AccountAddress.of(transferToken.from()),
 			AccountAddress.of(transferToken.to()),
 			transferToken.amount(),
-			transferToken.rri()
+			transferToken.addr()
 		);
 	}
 
 	public static ActionEntry burn(BurnToken burnToken) {
-		return create(ActionType.BURN, AccountAddress.of(burnToken.from()), null, burnToken.amount(), burnToken.rri());
+		return create(ActionType.BURN, AccountAddress.of(burnToken.from()), null, burnToken.amount(), burnToken.addr());
 	}
 
 	public static ActionEntry stake(StakeTokens stakeToken) {

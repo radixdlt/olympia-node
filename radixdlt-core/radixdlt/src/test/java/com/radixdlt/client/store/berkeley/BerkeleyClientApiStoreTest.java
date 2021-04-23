@@ -21,6 +21,7 @@ import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.client.AccountAddress;
+import com.radixdlt.client.Rri;
 import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.utils.UInt384;
@@ -74,9 +75,7 @@ import java.util.stream.Collectors;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -148,7 +147,7 @@ public class BerkeleyClientApiStoreTest {
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
 				assertEquals(UInt384.THREE, list.get(0).getAmount());
-				assertEquals(TOKEN, list.get(0).getRri());
+				assertTrue(list.get(0).rri().startsWith(SYMBOL));
 			})
 			.onFailureDo(() -> fail("Failure is not expected here"));
 
@@ -156,7 +155,7 @@ public class BerkeleyClientApiStoreTest {
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
 				assertEquals(UInt384.FOUR, list.get(0).getAmount());
-				assertEquals(TOKEN, list.get(0).getRri());
+				assertTrue(list.get(0).rri().startsWith(SYMBOL));
 			})
 			.onFailureDo(() -> fail("Failure is not expected here"));
 	}
@@ -164,12 +163,14 @@ public class BerkeleyClientApiStoreTest {
 	@Test
 	public void tokenSupplyIsCalculateProperlyForInitialTokenIssuance() throws Exception {
 		var tokenDef = prepareMutableTokenDef(SYMBOL);
+		var addr = REAddr.ofHashedKey(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
+		var rri = Rri.of(SYMBOL, addr);
 		var tx = engine.construct(TOKEN_KEYPAIR.getPublicKey(), new CreateMutableToken(tokenDef))
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var clientApiStore = prepareApiStore(tx);
 
-		clientApiStore.getTokenSupply(TOKEN)
+		clientApiStore.getTokenSupply(rri)
 			.onSuccess(amount -> assertEquals(UInt384.ZERO, amount))
 			.onFailure(this::failWithMessage);
 	}
@@ -177,6 +178,8 @@ public class BerkeleyClientApiStoreTest {
 	@Test
 	public void tokenSupplyIsCalculateProperlyAfterBurnMint() throws Exception {
 		var tokenDef = prepareMutableTokenDef(SYMBOL);
+		var addr = REAddr.ofHashedKey(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
+		var rri = Rri.of(SYMBOL, addr);
 		var tx = engine.construct(TOKEN_KEYPAIR.getPublicKey(), TxActionListBuilder.create()
 			.createMutableToken(tokenDef)
 			.mint(TOKEN, TOKEN_ACCOUNT, UInt256.TEN)
@@ -186,7 +189,7 @@ public class BerkeleyClientApiStoreTest {
 
 		var clientApiStore = prepareApiStore(tx);
 
-		clientApiStore.getTokenSupply(TOKEN)
+		clientApiStore.getTokenSupply(rri)
 			.onSuccess(amount -> assertEquals(UInt384.EIGHT, amount))
 			.onFailure(this::failWithMessage);
 	}

@@ -19,6 +19,7 @@ package com.radixdlt.client.handler;
 
 import com.radixdlt.client.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.crypto.HashUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
@@ -39,7 +40,6 @@ import com.radixdlt.client.service.ValidatorInfoService;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.berkeley.BalanceEntry;
-import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.ECPublicKey;
@@ -272,7 +272,7 @@ public class HighLevelApiHandler {
 	}
 
 	private Result<ECDSASignature> toRecoverable(byte[] blob, ECDSASignature signature, ECPublicKey publicKey) {
-		return ECKeyUtils.toRecoverable(signature, ConstraintMachine.computeHashToSignFromBytes(blob).asBytes(), publicKey);
+		return ECKeyUtils.toRecoverable(signature, HashUtils.sha256(blob).asBytes(), publicKey);
 	}
 
 	private Result<byte[]> parseBlob(JSONObject request) {

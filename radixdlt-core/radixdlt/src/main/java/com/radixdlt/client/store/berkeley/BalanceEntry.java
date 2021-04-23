@@ -47,7 +47,7 @@ public class BalanceEntry {
 
 	@JsonProperty("rri")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final REAddr rri;
+	private final String rri;
 
 	@JsonProperty("amount")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -61,7 +61,7 @@ public class BalanceEntry {
 	private static BalanceEntry create(
 		@JsonProperty("owner") REAddr owner,
 		@JsonProperty("delegate") byte[] delegate,
-		@JsonProperty("rri") REAddr rri,
+		@JsonProperty("rri") String rri,
 		@JsonProperty("amount") UInt384 amount,
 		@JsonProperty("negative") boolean negative
 	) {
@@ -71,7 +71,7 @@ public class BalanceEntry {
 	public static BalanceEntry create(
 		REAddr owner,
 		ECPublicKey delegate,
-		REAddr rri,
+		String rri,
 		UInt384 amount,
 		boolean negative
 	) {
@@ -85,7 +85,7 @@ public class BalanceEntry {
 	}
 
 	private BalanceEntry(
-		REAddr owner, byte[] delegate, REAddr rri,
+		REAddr owner, byte[] delegate, String rri,
 		UInt384 amount, boolean negative
 	) {
 		this.owner = owner;
@@ -98,7 +98,7 @@ public class BalanceEntry {
 	public static BalanceEntry createFull(
 		REAddr owner,
 		byte[] delegate,
-		REAddr rri,
+		String rri,
 		UInt384 amount,
 		boolean negative
 	) {
@@ -109,7 +109,7 @@ public class BalanceEntry {
 	}
 
 	public static BalanceEntry createBalance(
-		REAddr owner, ECPublicKey delegate, REAddr rri, UInt384 amount
+		REAddr owner, ECPublicKey delegate, String rri, UInt384 amount
 	) {
 		return createFull(
 			owner,
@@ -132,7 +132,7 @@ public class BalanceEntry {
 		}
 	}
 
-	public REAddr getRri() {
+	public String rri() {
 		return rri;
 	}
 

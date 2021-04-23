@@ -177,7 +177,7 @@ public final class RESerializer {
 	}
 
 	private static void serializeData(TokensParticle tokensParticle, ByteBuffer buf) {
-		serializeREAddr(buf, tokensParticle.getRri());
+		serializeREAddr(buf, tokensParticle.getResourceAddr());
 		serializeREAddr(buf, tokensParticle.getHoldingAddr());
 		buf.put(tokensParticle.getAmount().toByteArray());
 	}
@@ -228,7 +228,7 @@ public final class RESerializer {
 	}
 
 	private static void serializeData(TokenDefinitionParticle p, ByteBuffer buf) {
-		serializeREAddr(buf, p.getRri());
+		serializeREAddr(buf, p.getAddr());
 		p.getSupply().ifPresentOrElse(
 			i -> {
 				buf.put((byte) 0);
