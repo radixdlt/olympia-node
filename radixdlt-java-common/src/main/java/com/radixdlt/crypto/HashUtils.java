@@ -135,11 +135,11 @@ public final class HashUtils {
 	 * @return calculated hash
 	 */
 	public static HashCode transactionIdHash(byte[] payload) {
-		return sha256(sha256(payload).asBytes());
+		return sha256(payload);
 	}
 
 	public static HashCode transactionIdHash(ByteBuffer buf) {
-		return sha256(sha256(buf.array(), buf.position(), buf.remaining()).asBytes());
+		return sha256(buf.array(), buf.position(), buf.remaining());
 	}
 
 	private HashUtils() {

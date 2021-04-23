@@ -33,8 +33,6 @@ public final class Atoms {
 
 	public static AID atomIdOf(Atom atom) {
 		var dson = Serialize.getInstance().toDson(atom, DsonOutput.Output.ALL);
-		var firstHash = HashUtils.sha256(dson);
-		var secondHash = HashUtils.sha256(firstHash.asBytes());
-		return AID.from(secondHash.asBytes());
+		return AID.from(HashUtils.sha256(dson).asBytes());
 	}
 }
