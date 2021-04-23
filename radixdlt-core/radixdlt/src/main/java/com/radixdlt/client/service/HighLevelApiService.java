@@ -18,6 +18,7 @@
 package com.radixdlt.client.service;
 
 import com.google.inject.Inject;
+import com.radixdlt.client.Rri;
 import com.radixdlt.client.api.TransactionAction;
 import com.radixdlt.client.handler.ActionParser;
 import com.radixdlt.client.store.ClientApiStore;
@@ -70,7 +71,7 @@ public class HighLevelApiService {
 
 	public Result<TokenDefinitionRecord> getNativeTokenDescription() {
 		return clientApiStore.getTokenDefinition(REAddr.ofNativeToken())
-			.flatMap(r -> clientApiStore.getTokenSupply(REAddr.ofNativeToken()).map(r::withSupply));
+			.flatMap(r -> clientApiStore.getTokenSupply(Rri.of(r.getSymbol(), REAddr.ofNativeToken())).map(r::withSupply));
 	}
 
 	public Result<List<TransactionAction>> parse(JSONArray actions) {
@@ -110,7 +111,7 @@ public class HighLevelApiService {
 
 	private Result<TokenDefinitionRecord> withSupply(String rri, TokenDefinitionRecord definition) {
 		return definition.isMutable()
-			   ? clientApiStore.parseRri(rri).flatMap(clientApiStore::getTokenSupply).map(definition::withSupply)
+			   ? clientApiStore.getTokenSupply(rri).map(definition::withSupply)
 			   : Result.ok(definition);
 	}
 }

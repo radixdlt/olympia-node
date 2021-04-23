@@ -203,7 +203,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
-	public Result<UInt384> getTokenSupply(REAddr rri) {
+	public Result<UInt384> getTokenSupply(String rri) {
 		try (var cursor = supplyBalances.openCursor(null, null)) {
 			var key = asKey(rri);
 			var data = entry();
@@ -225,9 +225,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
-	public Result<TokenDefinitionRecord> getTokenDefinition(REAddr rri) {
+	public Result<TokenDefinitionRecord> getTokenDefinition(REAddr addr) {
 		try (var cursor = tokenDefinitions.openCursor(null, null)) {
-			var key = asKey(rri);
+			var key = asKey(addr);
 			var data = entry();
 
 			var status = withTime(
@@ -237,7 +237,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			);
 
 			if (status != OperationStatus.SUCCESS) {
-				return Result.fail("Unknown RRI " + rri.toString());
+				return Result.fail("Unknown addr " + addr);
 			}
 
 			var definition = restore(serialization, data.getData(), TokenDefinitionRecord.class);
@@ -245,7 +245,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				return definition;
 			}
 
-			return Result.fail("Unknown error getting RRI " + rri.toString());
+			return Result.fail("Unknown error getting addr " + addr);
 		}
 	}
 
@@ -516,17 +516,19 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private void storeAction(RadixAddress user, REParsedAction action) {
 		if (action.getTxAction() instanceof TransferToken) {
 			var transferToken = (TransferToken) action.getTxAction();
+			var rri = getTokenDefinition(transferToken.addr())
+				.toOptional().orElseThrow().rri();
 			var entry0 = BalanceEntry.create(
 				user,
 				null,
-				transferToken.rri(),
+				rri,
 				UInt384.from(transferToken.amount()),
 				true
 			);
 			var entry1 = BalanceEntry.create(
 				transferToken.to(),
 				null,
-				transferToken.rri(),
+				rri,
 				UInt384.from(transferToken.amount()),
 				false
 			);
@@ -534,17 +536,19 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			storeBalanceEntry(entry1);
 		} else if (action.getTxAction() instanceof BurnToken) {
 			var burnToken = (BurnToken) action.getTxAction();
+			var rri = getTokenDefinition(burnToken.addr()).toOptional()
+				.orElseThrow().rri();
 			var entry0 = BalanceEntry.create(
 				user,
 				null,
-				burnToken.rri(),
+				rri,
 				UInt384.from(burnToken.amount()),
 				true
 			);
 			var entry1 = BalanceEntry.create(
 				null,
 				null,
-				burnToken.rri(),
+				rri,
 				UInt384.from(burnToken.amount()),
 				true
 			);
@@ -552,17 +556,19 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			storeBalanceEntry(entry1);
 		} else if (action.getTxAction() instanceof MintToken) {
 			var mintToken = (MintToken) action.getTxAction();
+
+			var rri = getTokenDefinition(mintToken.addr()).toOptional().orElseThrow().rri();
 			var entry0 = BalanceEntry.create(
 				mintToken.to(),
 				null,
-				mintToken.rri(),
+				rri,
 				UInt384.from(mintToken.amount()),
 				false
 			);
 			var entry1 = BalanceEntry.create(
 				null,
 				null,
-				mintToken.rri(),
+				rri,
 				UInt384.from(mintToken.amount()),
 				false
 			);
@@ -614,7 +620,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 
 	private void storeTokenDefinition(TokenDefinitionRecord tokenDefinition) {
-		var key = asKey(tokenDefinition.rri());
+		var key = asKey(tokenDefinition.addr());
 		var value = serializeTo(entry(), tokenDefinition);
 		var status = withTime(
 			() -> tokenDefinitions.putNoOverwrite(null, key, value),
@@ -628,7 +634,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private void storeBalanceEntry(BalanceEntry entry) {
-		var key = entry.isSupply() ? asKey(entry.getRri()) : asKey(entry);
+		var key = entry.isSupply() ? asKey(entry.rri()) : asKey(entry);
 		mergeBalances(key, entry(), entry);
 	}
 
@@ -661,7 +667,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private static DatabaseEntry asKey(BalanceEntry balanceEntry) {
 		var address = buffer().writeBytes(balanceEntry.getOwner().toByteArray());
-		var buf = address.writeBytes(balanceEntry.getRri().toString().getBytes(StandardCharsets.UTF_8));
+		var buf = address.writeBytes(balanceEntry.rri().getBytes(StandardCharsets.UTF_8));
 
 		if (balanceEntry.isStake()) {
 			buf.writeBytes(balanceEntry.getDelegate().toByteArray());
@@ -670,8 +676,12 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		return entry(buf);
 	}
 
-	private static DatabaseEntry asKey(REAddr rri) {
-		return entry(rri.toString().getBytes(StandardCharsets.UTF_8));
+	private static DatabaseEntry asKey(String rri) {
+		return entry(rri.getBytes(StandardCharsets.UTF_8));
+	}
+
+	private static DatabaseEntry asKey(REAddr addr) {
+		return entry(addr.getBytes());
 	}
 
 	private static DatabaseEntry asKey(RadixAddress radixAddress) {

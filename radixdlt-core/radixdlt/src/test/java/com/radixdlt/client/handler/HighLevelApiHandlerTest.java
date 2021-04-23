@@ -16,7 +16,7 @@
  */
 package com.radixdlt.client.handler;
 
-import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.client.Rri;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1OutputStream;
@@ -92,9 +92,12 @@ public class HighLevelApiHandlerTest {
 
 	@Test
 	public void testTokenBalance() {
-		var balance1 = TokenBalance.create(REAddr.ofHashedKey(KNOWN_ADDRESS.getPublicKey(), "xyz"), UInt384.TWO);
-		var balance2 = TokenBalance.create(REAddr.ofHashedKey(KNOWN_ADDRESS.getPublicKey(), "yzs"), UInt384.FIVE);
-		var balance3 = TokenBalance.create(REAddr.ofHashedKey(KNOWN_ADDRESS.getPublicKey(), "zxy"), UInt384.EIGHT);
+		var addr1 = REAddr.ofHashedKey(KNOWN_ADDRESS.getPublicKey(), "xyz");
+		var addr2 = REAddr.ofHashedKey(KNOWN_ADDRESS.getPublicKey(), "yzs");
+		var addr3 = REAddr.ofHashedKey(KNOWN_ADDRESS.getPublicKey(), "zxy");
+		var balance1 = TokenBalance.create(Rri.of("xyz", addr1), UInt384.TWO);
+		var balance2 = TokenBalance.create(Rri.of("yzs", addr2), UInt384.FIVE);
+		var balance3 = TokenBalance.create(Rri.of("zxy", addr3), UInt384.EIGHT);
 
 		when(highLevelApiService.getTokenBalances(any(RadixAddress.class)))
 			.thenReturn(Result.ok(List.of(balance1, balance2, balance3)));
@@ -116,9 +119,9 @@ public class HighLevelApiHandlerTest {
 
 	@Test
 	public void testStakePositions() {
-		var balance1 = createBalance(KNOWN_ADDRESS, V1, REAddr.ofNativeToken(), UInt384.TWO);
-		var balance2 = createBalance(KNOWN_ADDRESS, V2, REAddr.ofNativeToken(), UInt384.FIVE);
-		var balance3 = createBalance(KNOWN_ADDRESS, V3, REAddr.ofNativeToken(), UInt384.EIGHT);
+		var balance1 = createBalance(KNOWN_ADDRESS, V1, "xrd", UInt384.TWO);
+		var balance2 = createBalance(KNOWN_ADDRESS, V2, "xrd", UInt384.FIVE);
+		var balance3 = createBalance(KNOWN_ADDRESS, V3, "xrd", UInt384.EIGHT);
 
 		when(highLevelApiService.getStakePositions(any(RadixAddress.class)))
 			.thenReturn(Result.ok(List.of(balance1, balance2, balance3)));
@@ -225,7 +228,7 @@ public class HighLevelApiHandlerTest {
 			.thenReturn(Result.ok(aid));
 
 		var blob = randomBytes();
-		var hash = ConstraintMachine.computeHashToSignFromBytes(blob).asBytes();
+		var hash = HashUtils.sha256(blob).asBytes();
 
 		var transaction = jsonObject()
 			.put("blob", Hex.toHexString(blob))
@@ -259,7 +262,7 @@ public class HighLevelApiHandlerTest {
 			.thenReturn(Result.ok(aid));
 
 		var blob = randomBytes();
-		var hash = ConstraintMachine.computeHashToSignFromBytes(blob).asBytes();
+		var hash = HashUtils.sha256(blob).asBytes();
 
 		var transaction = jsonObject()
 			.put("blob", Hex.toHexString(blob))

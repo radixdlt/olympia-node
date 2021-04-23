@@ -580,11 +580,11 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 			if (inst.getParticle() instanceof TokenDefinitionParticle) {
 				var p = (TokenDefinitionParticle) inst.getParticle();
-				var rri = p.getRri();
+				var addr = p.getAddr();
 				var buf2 = inst.getInstruction().getDataByteBuffer();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
 				var rriBuf = ByteBuffer.allocate(128);
-				RESerializer.serializeRri(rriBuf, rri);
+				RESerializer.serializeRri(rriBuf, addr);
 				var pos = rriBuf.position();
 				rriDatabase.putNoOverwrite(txn, new DatabaseEntry(rriBuf.array(), 0, pos), value);
 			}

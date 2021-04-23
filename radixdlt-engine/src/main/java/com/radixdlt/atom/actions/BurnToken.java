@@ -34,7 +34,7 @@ public final class BurnToken implements TxAction {
 		this.amount = amount;
 	}
 
-	public REAddr rri() {
+	public REAddr addr() {
 		return rri;
 	}
 
@@ -47,7 +47,7 @@ public final class BurnToken implements TxAction {
 		var user = txBuilder.getAddressOrFail("Must have an address to burn.");
 		txBuilder.deallocateFungible(
 			TokensParticle.class,
-			p -> p.getRri().equals(rri) && p.getAddress().equals(user),
+			p -> p.getResourceAddr().equals(rri) && p.getAddress().equals(user),
 			TokensParticle::getAmount,
 			amt -> new TokensParticle(user, amt, rri),
 			amount,

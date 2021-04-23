@@ -55,7 +55,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 				.map(REParsedInstruction::getParticle)
 				.filter(TokenDefinitionParticle.class::isInstance)
 				.map(TokenDefinitionParticle.class::cast)
-				.forEach(p -> rriParticles.put(p.getRri(), p));
+				.forEach(p -> rriParticles.put(p.getAddr(), p));
 
 			txnIds.add(txn.getId());
 		}

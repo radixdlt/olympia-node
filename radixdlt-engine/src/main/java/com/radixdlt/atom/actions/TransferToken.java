@@ -41,7 +41,7 @@ public final class TransferToken implements TxAction {
 		return amount;
 	}
 
-	public REAddr rri() {
+	public REAddr addr() {
 		return rri;
 	}
 
@@ -54,7 +54,7 @@ public final class TransferToken implements TxAction {
 		var user = txBuilder.getAddressOrFail("Must have an address to transfer.");
 		txBuilder.swapFungible(
 			TokensParticle.class,
-			p -> p.getRri().equals(rri) && p.getAddress().equals(user),
+			p -> p.getResourceAddr().equals(rri) && p.getAddress().equals(user),
 			TokensParticle::getAmount,
 			amt -> new TokensParticle(user, amt, rri),
 			amount,
