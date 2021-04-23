@@ -33,7 +33,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
-import com.google.inject.name.Named;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.client.api.TxHistoryEntry;
@@ -67,7 +66,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -126,7 +124,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final AtomicLong inputCounter = new AtomicLong();
 	private final CompositeDisposable disposable = new CompositeDisposable();
 	private final AtomicReference<Instant> currentTimestamp = new AtomicReference<>(NOW);
-	private final byte universeMagic;
 	private final TxnParser txnParser;
 	private final TransactionParser transactionParser;
 	private final ConstraintMachine constraintMachine;
@@ -146,8 +143,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		SystemCounters systemCounters,
 		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
 		Observable<AtomsCommittedToLedger> ledgerCommitted,
-		TransactionParser transactionParser,
-		@Named("magic") int universeMagic
+		TransactionParser transactionParser
 	) {
 		this.dbEnv = dbEnv;
 		this.constraintMachine = constraintMachine;
@@ -157,7 +153,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		this.systemCounters = systemCounters;
 		this.scheduledFlushEventDispatcher = scheduledFlushEventDispatcher;
 		this.ledgerCommitted = ledgerCommitted;
-		this.universeMagic = (byte) (universeMagic & 0xFF);
 		this.transactionParser = transactionParser;
 
 		open();
@@ -190,7 +185,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 						() -> log.error("Error deserializing existing balance while scanning DB for address {}", addr)
 					)
 					.toOptional()
-					.filter(Predicate.not(BalanceEntry::isStake))
+					.filter(entry -> entry.isStake() == retrieveStakes)
 					.filter(entry -> entry.getOwner().equals(addr))
 					.ifPresent(list::add);
 
@@ -665,19 +660,21 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		return value;
 	}
 
+	private static DatabaseEntry asKey(String rri) {
+		return entry(rri.getBytes(StandardCharsets.UTF_8));
+	}
+
 	private static DatabaseEntry asKey(BalanceEntry balanceEntry) {
 		var address = buffer().writeBytes(balanceEntry.getOwner().getBytes());
 		var buf = address.writeBytes(balanceEntry.rri().getBytes(StandardCharsets.UTF_8));
 
 		if (balanceEntry.isStake()) {
 			buf.writeBytes(balanceEntry.getDelegate().getBytes());
+		} else {
+			buf.writeZero(ECPublicKey.COMPRESSED_BYTES);
 		}
 
 		return entry(buf);
-	}
-
-	private static DatabaseEntry asKey(String rri) {
-		return entry(rri.getBytes(StandardCharsets.UTF_8));
 	}
 
 	private static DatabaseEntry asKey(REAddr addr) {

@@ -20,8 +20,6 @@ package com.radixdlt.client.handler;
 import com.radixdlt.client.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.crypto.HashUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.JsonRpcUtil;
@@ -56,6 +54,7 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.invalidParamsError;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static org.radix.api.jsonrpc.JsonRpcUtil.response;
 import static org.radix.api.jsonrpc.JsonRpcUtil.safeInteger;
+import static org.radix.api.jsonrpc.JsonRpcUtil.safeString;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredArrayParameter;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredParameters;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredStringParameter;
@@ -64,8 +63,6 @@ import static com.radixdlt.utils.functional.Optionals.allOf;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class HighLevelApiHandler {
-	private static final Logger log = LogManager.getLogger();
-
 	private final HighLevelApiService highLevelApiService;
 	private final TransactionStatusService transactionStatusService;
 	private final SubmissionService submissionService;
@@ -167,7 +164,7 @@ public class HighLevelApiHandler {
 	public JSONObject handleValidators(JSONObject request) {
 		return withRequiredParameters(
 			request,
-			List.of("string"),
+			List.of("size"),
 			List.of("cursor"),
 			params -> respondWithValidators(request, params)
 		);
@@ -225,14 +222,15 @@ public class HighLevelApiHandler {
 
 	private JSONObject formatStakePositions(List<BalanceEntry> balances) {
 		var array = fromList(balances, balance ->
-			jsonObject().put("validator", balance.getDelegate()).put("amount", balance.getAmount())
+			jsonObject()
+				.put("validator", balance.getDelegate())
+				.put("amount", balance.getAmount())
 		);
+
 		return jsonObject().put(ARRAY, array);
 	}
 
 	private Result<JSONObject> formatTransactionHistory(REAddr address, int size, Optional<Instant> cursor) {
-		log.debug("formatTransactionHistory: {}, {}, {}", address, size, cursor);
-
 		return highLevelApiService
 			.getTransactionHistory(address, size, cursor)
 			.map(tuple -> tuple.map(this::formatHistoryResponse));
@@ -309,12 +307,7 @@ public class HighLevelApiHandler {
 	}
 
 	private static Optional<ECPublicKey> parseAddressCursor(JSONObject request) {
-		var params = JsonRpcUtil.params(request);
-
-		return params.isEmpty()
-			   ? Optional.empty()
-			   : Optional.of(params.getString(0))
-				   .flatMap(HighLevelApiHandler::parsePublicKey);
+		return safeString(request, 1).flatMap(HighLevelApiHandler::parsePublicKey);
 	}
 
 	private static Optional<ECPublicKey> parsePublicKey(String address) {
@@ -324,10 +317,7 @@ public class HighLevelApiHandler {
 	private static Optional<Instant> parseInstantCursor(JSONObject request) {
 		var params = JsonRpcUtil.params(request);
 
-		return params.length() < 3
-			   ? Optional.empty()
-			   : Optional.of(params.getString(2))
-				   .flatMap(HighLevelApiHandler::instantFromString);
+		return safeString(request, 2).flatMap(HighLevelApiHandler::instantFromString);
 	}
 
 	private static Optional<Instant> instantFromString(String source) {

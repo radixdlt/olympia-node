@@ -28,8 +28,10 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Test;
 
+import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.client.api.TransactionStatus;
 import com.radixdlt.client.api.TxHistoryEntry;
+import com.radixdlt.client.api.ValidatorInfoDetails;
 import com.radixdlt.client.service.HighLevelApiService;
 import com.radixdlt.client.service.SubmissionService;
 import com.radixdlt.client.service.TransactionStatusService;
@@ -51,8 +53,8 @@ import java.io.ByteArrayOutputStream;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -133,8 +135,13 @@ public class HighLevelApiHandlerTest {
 
 		assertEquals(3, list.length());
 		assertEquals(UInt384.TWO, list.getJSONObject(0).get("amount"));
+		assertEquals(balance1.getDelegate(), list.getJSONObject(0).get("validator"));
+
 		assertEquals(UInt384.FIVE, list.getJSONObject(1).get("amount"));
+		assertEquals(balance2.getDelegate(), list.getJSONObject(1).get("validator"));
+
 		assertEquals(UInt384.EIGHT, list.getJSONObject(2).get("amount"));
+		assertEquals(balance3.getDelegate(), list.getJSONObject(2).get("validator"));
 	}
 
 	@Test
@@ -288,6 +295,55 @@ public class HighLevelApiHandlerTest {
 		assertEquals(aid, result.get("txID"));
 	}
 
+	@Test
+	public void testValidators() {
+		var key = Optional.of(V3);
+
+		var validators = List.of(
+			createValidator(V1, "v1", UInt256.FIVE),
+			createValidator(V2, "v2", UInt256.TWO),
+			createValidator(V3, "v3", UInt256.SEVEN)
+		);
+
+		when(validatorInfoService.getValidators(eq(10), eq(Optional.empty())))
+			.thenReturn(Result.ok(tuple(key, validators)));
+
+		var params = jsonArray().put(10);
+		var response = handler.handleValidators(requestWith(params));
+
+		assertNotNull(response);
+		assertTrue(response.has("result"));
+
+		var result = response.getJSONObject("result");
+
+		assertTrue(result.has("cursor"));
+
+		var cursor = result.getString("cursor");
+		assertEquals(cursor, key.map(ValidatorAddress::of).map(Objects::toString).orElseThrow());
+
+		assertTrue(result.has("validators"));
+		var list = result.getJSONArray("validators");
+		assertEquals(3, list.length());
+
+		assertEquals(UInt256.FIVE, list.getJSONObject(0).get("totalDelegatedStake"));
+		assertEquals("v1", list.getJSONObject(0).get("name"));
+
+		assertEquals(UInt256.TWO, list.getJSONObject(1).get("totalDelegatedStake"));
+		assertEquals("v2", list.getJSONObject(1).get("name"));
+
+		assertEquals(UInt256.SEVEN, list.getJSONObject(2).get("totalDelegatedStake"));
+		assertEquals("v3", list.getJSONObject(2).get("name"));
+	}
+
+	private ValidatorInfoDetails createValidator(ECPublicKey v1, String name, UInt256 stake) {
+		return ValidatorInfoDetails.create(
+			v1, v1,
+			name, "http://" + name + ".com",
+			stake, UInt256.ZERO,
+			true
+		);
+	}
+
 	private String encodeToDer(ECDSASignature signature) {
 		try {
 			ASN1EncodableVector vector = new ASN1EncodableVector();
@@ -306,8 +362,6 @@ public class HighLevelApiHandlerTest {
 			return null;
 		}
 	}
-
-	private final Random random = new Random();
 
 	private byte[] randomBytes() {
 		return HashUtils.random256().asBytes();
