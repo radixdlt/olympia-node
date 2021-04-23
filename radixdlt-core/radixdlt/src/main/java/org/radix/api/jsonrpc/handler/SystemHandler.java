@@ -39,8 +39,4 @@ public class SystemHandler {
 	public JSONObject handleGetLocalSystem(JSONObject request) {
 		return response(request, systemService.getLocalSystem());
 	}
-
-	public JSONObject handlePing(JSONObject request) {
-		return response(request, systemService.getPong());
-	}
 }

@@ -39,8 +39,6 @@ public final class SystemController implements Controller {
 	public void configureRoutes(final RoutingHandler handler) {
 		// System routes
 		handler.get("/api/system", this::respondWithLocalSystem);
-		// keep-alive route
-		handler.get("/api/ping", this::respondWithPong);
 		// Universe routes
 		handler.get("/api/universe", this::respondWithUniverse);
 	}
@@ -48,11 +46,6 @@ public final class SystemController implements Controller {
 	@VisibleForTesting
 	void respondWithLocalSystem(final HttpServerExchange exchange) {
 		respond(exchange, systemService.getLocalSystem());
-	}
-
-	@VisibleForTesting
-	void respondWithPong(final HttpServerExchange exchange) {
-		respond(exchange, systemService.getPong());
 	}
 
 	@VisibleForTesting

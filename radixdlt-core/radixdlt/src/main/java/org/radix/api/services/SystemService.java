@@ -18,15 +18,12 @@
 package org.radix.api.services;
 
 import org.json.JSONObject;
-import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
 
 import com.google.inject.Inject;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
-
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public class SystemService {
 	private final Serialization serialization;
@@ -50,9 +47,5 @@ public class SystemService {
 
 	public JSONObject getLocalSystem() {
 		return serialization.toJsonObject(localSystem, DsonOutput.Output.API);
-	}
-
-	public JSONObject getPong() {
-		return jsonObject().put("response", "pong").put("timestamp", Time.currentTimestamp());
 	}
 }

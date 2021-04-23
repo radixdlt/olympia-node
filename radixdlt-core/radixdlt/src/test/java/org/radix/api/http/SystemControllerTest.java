@@ -16,32 +16,15 @@
  */
 package org.radix.api.http;
 
-import org.json.JSONObject;
 import org.junit.Test;
-import org.mockito.stubbing.Answer;
 import org.radix.api.services.SystemService;
-import org.radix.time.Time;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.atomic.AtomicReference;
-
-import io.undertow.io.Sender;
-import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
-import io.undertow.util.HeaderMap;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public class SystemControllerTest {
 	private final SystemService systemService = mock(SystemService.class);
@@ -53,52 +36,6 @@ public class SystemControllerTest {
 		systemController.configureRoutes(handler);
 
 		verify(handler).get(eq("/api/system"), any());
-		verify(handler).get(eq("/api/ping"), any());
-		verify(handler).put(eq("/api/bft/0"), any());
 		verify(handler).get(eq("/api/universe"), any());
-	}
-
-	@Test
-	public void testPingEntryPoint() {
-		var arg = new AtomicReference<String>();
-		var exchange = createExchange(
-			"{\"id\":321, \"method\":\"Ping\"}",
-			invocation -> {
-				arg.set(invocation.getArgument(0, String.class));
-				return null;
-			}
-		);
-		when(systemService.getPong()).thenReturn(jsonObject().put("response", "pong").put("timestamp", Time.currentTimestamp()));
-
-		systemController.respondWithPong(exchange);
-
-		assertNotNull(arg.get());
-
-		var obj = new JSONObject(arg.get());
-		assertNotNull(obj);
-		assertEquals("pong", obj.getString("response"));
-	}
-
-	private static HttpServerExchange createExchange(final String json, final Answer<Void> answer) {
-		var exchange = mock(HttpServerExchange.class);
-		var sender = mock(Sender.class);
-
-		doAnswer(answer).when(sender).send(anyString());
-		when(exchange.getResponseHeaders()).thenReturn(mock(HeaderMap.class));
-		when(exchange.getResponseSender()).thenReturn(sender);
-		when(exchange.getInputStream()).thenReturn(asStream(json));
-		when(exchange.isInIoThread()).thenReturn(true);
-		when(exchange.isResponseStarted()).thenReturn(true);
-		when(exchange.dispatch(any(Runnable.class))).thenAnswer(invocation -> {
-			var runnable = invocation.getArgument(0, Runnable.class);
-			runnable.run();
-			return exchange;
-		});
-
-		return exchange;
-	}
-
-	private static InputStream asStream(final String text) {
-		return new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8));
 	}
 }

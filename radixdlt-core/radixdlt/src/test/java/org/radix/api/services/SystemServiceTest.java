@@ -50,14 +50,6 @@ public class SystemServiceTest {
 	private final SystemService systemService = new SystemService(serialization, universe, localSystem);
 
 	@Test
-	public void pingPong() {
-		var result = systemService.getPong();
-
-		assertNotNull(result);
-		assertEquals("pong", result.getString("response"));
-	}
-
-	@Test
 	public void universeCanBeObtained() {
 		var result = systemService.getUniverse();
 

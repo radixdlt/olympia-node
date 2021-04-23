@@ -31,12 +31,6 @@ public class SystemHandlerTest {
 	private final JSONObject request = jsonObject().put("id", 123);
 
 	@Test
-	public void testHandlePing() {
-		when(systemService.getPong()).thenReturn(jsonObject().put("key", "0"));
-		assertEquals("{\"key\":\"0\"}", systemHandler.handlePing(request).getJSONObject("result").toString());
-	}
-
-	@Test
 	public void testHandleGetUniverse() {
 		when(systemService.getUniverse()).thenReturn(jsonObject().put("key", "3"));
 		assertEquals("{\"key\":\"3\"}", systemHandler.handleGetUniverse(request).getJSONObject("result").toString());

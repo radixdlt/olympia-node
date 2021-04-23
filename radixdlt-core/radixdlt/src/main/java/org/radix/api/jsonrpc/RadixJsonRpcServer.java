@@ -87,7 +87,6 @@ public final class RadixJsonRpcServer {
 		//General info
 		handlers.put("Universe.getUniverse", systemHandler::handleGetUniverse);
 		handlers.put("Network.getInfo", systemHandler::handleGetLocalSystem);
-		handlers.put("Ping", systemHandler::handlePing);
 
 		//Network info
 		handlers.put("Network.getLivePeers", networkHandler::handleGetLivePeers);
