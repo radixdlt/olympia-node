@@ -58,6 +58,7 @@ import java.util.stream.Collectors;
  * Wraps the Radix Engine and emits messages based on success or failure
  */
 public final class RadixEngineStateComputer implements StateComputer {
+	private static final int MAX_TXNS_PER_PROPOSAL = 50; // TODO: Move this into radix engine
 	private static final Logger log = LogManager.getLogger();
 
 	private final RadixEngineMempool mempool;
@@ -154,7 +155,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			.collect(Collectors.toList());
 
 		// TODO: only return commands which will not cause a missing dependency error
-		final List<Txn> txns = mempool.getTxns(10, cmds);
+		final List<Txn> txns = mempool.getTxns(MAX_TXNS_PER_PROPOSAL, cmds);
 		systemCounters.add(SystemCounters.CounterType.MEMPOOL_PROPOSED_TRANSACTION, txns.size());
 		return txns;
 	}
