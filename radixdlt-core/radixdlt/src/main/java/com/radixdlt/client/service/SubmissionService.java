@@ -19,12 +19,10 @@ package com.radixdlt.client.service;
 
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
-import com.google.inject.name.Named;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.BurnToken;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.client.api.PreparedTransaction;
 import com.radixdlt.client.api.TransactionAction;
 import com.radixdlt.crypto.ECDSASignature;
@@ -35,7 +33,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
@@ -46,20 +44,16 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class SubmissionService {
-	private final UInt256 fixedFee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
-	private final int magic;
 
 	@Inject
 	public SubmissionService(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
-		@Named("magic") int magic
+		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher
 	) {
 		this.radixEngine = radixEngine;
 		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
-		this.magic = magic;
 	}
 
 	public Result<PreparedTransaction> prepareTransaction(List<TransactionAction> steps) {
@@ -88,7 +82,7 @@ public final class SubmissionService {
 	private List<TxAction> toActionsAndFee(REAddr addr, List<TransactionAction> steps) {
 		return Stream.concat(
 			steps.stream().map(t -> t.toAction()),
-			Stream.of(new BurnToken(REAddr.ofNativeToken(), addr, fixedFee))
+			Stream.of(new BurnToken(REAddr.ofNativeToken(), addr, TokenFeeChecker.FIXED_FEE))
 		).collect(Collectors.toList());
 	}
 
@@ -118,6 +112,6 @@ public final class SubmissionService {
 	}
 
 	private PreparedTransaction toPreparedTx(byte[] first, HashCode second) {
-		return PreparedTransaction.create(first, second.asBytes(), fixedFee);
+		return PreparedTransaction.create(first, second.asBytes(), TokenFeeChecker.FIXED_FEE);
 	}
 }

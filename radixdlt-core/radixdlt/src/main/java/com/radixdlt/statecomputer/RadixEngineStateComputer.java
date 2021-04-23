@@ -254,8 +254,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private List<REParsedTxn> commitInternal(
 		VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState
 	) {
-		final var atomsToCommit = verifiedTxnsAndProof.getTxns().stream()
-			.collect(Collectors.toList());
+		final var atomsToCommit = verifiedTxnsAndProof.getTxns();
 		var ledgerAndBFTProof = LedgerAndBFTProof.create(
 			verifiedTxnsAndProof.getProof(),
 			vertexStoreState

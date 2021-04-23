@@ -36,7 +36,6 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.client.AccountAddress;
 import com.radixdlt.client.Rri;
 import com.radixdlt.client.ValidatorAddress;
@@ -50,8 +49,8 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
 import com.radixdlt.store.ImmutableIndex;
-import com.radixdlt.utils.UInt256;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 import org.bouncycastle.util.encoders.Hex;
@@ -67,7 +66,6 @@ import static org.radix.api.http.RestUtils.*;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public final class NodeController implements Controller {
-	private static final UInt256 FEE = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(1000));
 	private final REAddr nativeToken;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final ImmutableIndex immutableIndex;
@@ -237,7 +235,7 @@ public final class NodeController implements Controller {
 				var txAction = parseAction(actionObject);
 				actions.add(txAction);
 			}
-			actions.add(new BurnToken(nativeToken, account, FEE));
+			actions.add(new BurnToken(nativeToken, account, TokenFeeChecker.FIXED_FEE));
 			var completableFuture = new CompletableFuture<MempoolAddSuccess>();
 			var request = NodeApplicationRequest.create(actions, completableFuture);
 			nodeApplicationRequestEventDispatcher.dispatch(request);

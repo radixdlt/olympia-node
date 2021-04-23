@@ -60,11 +60,6 @@ public final class REParsedTxn {
 			.allMatch(i -> i.getSubstate().getParticle() instanceof SystemParticle);
 	}
 
-	public boolean isUserCommand() {
-		return actions.stream().flatMap(a -> a.getInstructions().stream())
-			.noneMatch(i -> i.getSubstate().getParticle() instanceof SystemParticle);
-	}
-
 	public List<REParsedInstruction> stateUpdates() {
 		return instructions()
 			.filter(REParsedInstruction::isStateUpdate)

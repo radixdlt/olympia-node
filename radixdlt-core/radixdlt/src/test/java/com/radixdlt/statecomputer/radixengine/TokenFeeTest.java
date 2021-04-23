@@ -42,6 +42,7 @@ import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
+import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
 import com.radixdlt.statecomputer.transaction.TokenFeeModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.EngineStore;
@@ -83,8 +84,6 @@ public class TokenFeeTest {
 	@Inject
 	private EngineStore<LedgerAndBFTProof> engineStore;
 
-	private final UInt256 fee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
-
 	private Injector createInjector() {
 		return Guice.createInjector(
 			new SingleNodeAndPeersDeterministicNetworkModule(),
@@ -115,7 +114,7 @@ public class TokenFeeTest {
 	@Test
 	public void when_validating_atom_with_particles__result_has_no_error() throws Exception {
 		var account = REAddr.ofPubKeyAccount(ecKeyPair.getPublicKey());
-		var atom = sut.construct(ecKeyPair.getPublicKey(), new BurnToken(nativeToken, account, fee))
+		var atom = sut.construct(ecKeyPair.getPublicKey(), new BurnToken(nativeToken, account, TokenFeeChecker.FIXED_FEE))
 			.mutex("test")
 			.signAndBuild(ecKeyPair::sign);
 
@@ -132,7 +131,7 @@ public class TokenFeeTest {
 	@Test
 	public void when_validating_atom_with_fee_and_no_change__result_has_no_error() throws Exception {
 		var account = REAddr.ofPubKeyAccount(ecKeyPair.getPublicKey());
-		var txn = sut.construct(ecKeyPair.getPublicKey(), new BurnToken(nativeToken, account, fee))
+		var txn = sut.construct(ecKeyPair.getPublicKey(), new BurnToken(nativeToken, account, TokenFeeChecker.FIXED_FEE))
 			.signAndBuild(ecKeyPair::sign);
 
 		sut.execute(List.of(txn));
