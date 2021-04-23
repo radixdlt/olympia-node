@@ -19,8 +19,6 @@ package org.radix.api.http;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.radix.api.jsonrpc.RadixJsonRpcServer;
-import org.radix.api.jsonrpc.handler.AtomHandler;
-import org.radix.api.jsonrpc.handler.LedgerHandler;
 import org.radix.api.jsonrpc.handler.NetworkHandler;
 import org.radix.api.jsonrpc.handler.SystemHandler;
 
@@ -52,12 +50,9 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.response;
 public class RpcControllerTest {
 	private final SystemHandler systemHandler = mock(SystemHandler.class);
 	private final NetworkHandler networkHandler = mock(NetworkHandler.class);
-	private final AtomHandler atomHandler = mock(AtomHandler.class);
-	private final LedgerHandler ledgerHandler = mock(LedgerHandler.class);
 	private final RadixJsonRpcServer jsonRpcServer =
-		new RadixJsonRpcServer(systemHandler, networkHandler, atomHandler, ledgerHandler, Map.of());
-	private final RadixHttpWebsocketHandler websocketHandler = mock(RadixHttpWebsocketHandler.class);
-	private final RpcController rpcController = new RpcController(jsonRpcServer, websocketHandler);
+		new RadixJsonRpcServer(systemHandler, networkHandler, Map.of());
+	private final RpcController rpcController = new RpcController(jsonRpcServer);
 
 	@Test
 	public void routesAreConfigured() {
@@ -67,7 +62,6 @@ public class RpcControllerTest {
 
 		verify(handler).post(eq("/rpc"), any());
 		verify(handler).post(eq("/rpc/"), any());
-		verify(handler).get(eq("/rpc"), any());
 	}
 
 	@Test
