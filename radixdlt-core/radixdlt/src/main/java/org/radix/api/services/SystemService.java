@@ -23,26 +23,18 @@ import org.radix.universe.system.LocalSystem;
 import com.google.inject.Inject;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.universe.Universe;
 
 public class SystemService {
 	private final Serialization serialization;
-	private final Universe universe;
 	private final LocalSystem localSystem;
 
 	@Inject
 	public SystemService(
 		Serialization serialization,
-		Universe universe,
 		LocalSystem localSystem
 	) {
 		this.serialization = serialization;
-		this.universe = universe;
 		this.localSystem = localSystem;
-	}
-
-	public JSONObject getUniverse() {
-		return serialization.toJsonObject(universe, DsonOutput.Output.API);
 	}
 
 	public JSONObject getLocalSystem() {

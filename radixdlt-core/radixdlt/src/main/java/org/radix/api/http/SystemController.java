@@ -50,7 +50,7 @@ public final class SystemController implements Controller {
 	@Override
 	public void configureRoutes(final RoutingHandler handler) {
 		// System routes
-		handler.get("/api/system", this::respondWithLocalSystem);
+		handler.get("/system/info", this::respondWithLocalSystem);
 		// Universe routes
 		handler.get("/system/checkpoints", this::respondWithGenesis);
 	}
