@@ -19,7 +19,6 @@ package org.radix.api.http;
 import org.junit.Test;
 import org.radix.api.jsonrpc.RadixJsonRpcServer;
 import org.radix.api.jsonrpc.handler.NetworkHandler;
-import org.radix.api.jsonrpc.handler.SystemHandler;
 
 import java.util.Map;
 import io.undertow.server.RoutingHandler;
@@ -30,10 +29,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public class RpcControllerTest {
-	private final SystemHandler systemHandler = mock(SystemHandler.class);
 	private final NetworkHandler networkHandler = mock(NetworkHandler.class);
-	private final RadixJsonRpcServer jsonRpcServer =
-		new RadixJsonRpcServer(systemHandler, networkHandler, Map.of());
+	private final RadixJsonRpcServer jsonRpcServer = new RadixJsonRpcServer(networkHandler, Map.of());
 	private final RpcController rpcController = new RpcController(jsonRpcServer);
 
 	@Test
