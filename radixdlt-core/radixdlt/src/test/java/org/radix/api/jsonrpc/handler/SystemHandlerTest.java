@@ -37,18 +37,6 @@ public class SystemHandlerTest {
 	}
 
 	@Test
-	public void testHandleBftStart() {
-		when(systemService.bftStart()).thenReturn(jsonObject().put("key", "1"));
-		assertEquals("{\"key\":\"1\"}", systemHandler.handleBftStart(request).getJSONObject("result").toString());
-	}
-
-	@Test
-	public void testHandleBftStop() {
-		when(systemService.bftStop()).thenReturn(jsonObject().put("key", "2"));
-		assertEquals("{\"key\":\"2\"}", systemHandler.handleBftStop(request).getJSONObject("result").toString());
-	}
-
-	@Test
 	public void testHandleGetUniverse() {
 		when(systemService.getUniverse()).thenReturn(jsonObject().put("key", "3"));
 		assertEquals("{\"key\":\"3\"}", systemHandler.handleGetUniverse(request).getJSONObject("result").toString());

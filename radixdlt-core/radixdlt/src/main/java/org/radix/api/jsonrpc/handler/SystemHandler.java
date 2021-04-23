@@ -43,12 +43,4 @@ public class SystemHandler {
 	public JSONObject handlePing(JSONObject request) {
 		return response(request, systemService.getPong());
 	}
-
-	public JSONObject handleBftStart(JSONObject request) {
-		return response(request, systemService.bftStart());
-	}
-
-	public JSONObject handleBftStop(JSONObject request) {
-		return response(request, systemService.bftStop());
-	}
 }

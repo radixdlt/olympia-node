@@ -22,12 +22,9 @@ import org.mockito.stubbing.Answer;
 import org.radix.api.services.SystemService;
 import org.radix.time.Time;
 
-import com.radixdlt.systeminfo.InMemorySystemInfo;
-
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.undertow.io.Sender;
@@ -48,9 +45,7 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public class SystemControllerTest {
 	private final SystemService systemService = mock(SystemService.class);
-	private final InMemorySystemInfo inMemorySystemInfo = mock(InMemorySystemInfo.class);
-	private final SystemController systemController =
-		new SystemController(systemService, inMemorySystemInfo);
+	private final SystemController systemController = new SystemController(systemService);
 
 	@Test
 	public void routesAreConfigured() {
@@ -82,46 +77,6 @@ public class SystemControllerTest {
 		var obj = new JSONObject(arg.get());
 		assertNotNull(obj);
 		assertEquals("pong", obj.getString("response"));
-	}
-
-	@Test
-	public void testHandleBftStateStart() throws InterruptedException {
-		var latch = new CountDownLatch(1);
-		var arg = new AtomicReference<String>();
-		var exchange = createExchange(
-			"{\"id\":321, \"method\":\"BFT.start\", \"state\":true}",
-			invocation -> {
-				arg.set(invocation.getArgument(0, String.class));
-				latch.countDown();
-				return null;
-			}
-		);
-		when(systemService.bftStart()).thenReturn(jsonObject().put("response", "success"));
-
-		systemController.handleBftState(exchange);
-
-		latch.await();
-		assertEquals("{\"response\":\"success\"}", arg.get());
-	}
-
-	@Test
-	public void testHandleBftStateStop() throws InterruptedException {
-		var latch = new CountDownLatch(1);
-		var arg = new AtomicReference<String>();
-		var exchange = createExchange(
-			"{\"id\":321, \"method\":\"BFT.stop\", \"state\":true}",
-			invocation -> {
-				arg.set(invocation.getArgument(0, String.class));
-				latch.countDown();
-				return null;
-			}
-		);
-		when(systemService.bftStart()).thenReturn(jsonObject().put("response", "success"));
-
-		systemController.handleBftState(exchange);
-
-		latch.await();
-		assertEquals("{\"response\":\"success\"}", arg.get());
 	}
 
 	private static HttpServerExchange createExchange(final String json, final Answer<Void> answer) {
