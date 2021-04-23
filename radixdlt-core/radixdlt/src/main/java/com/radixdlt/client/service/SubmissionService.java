@@ -32,7 +32,6 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -72,12 +71,11 @@ public final class SubmissionService {
 			return Result.fail("Source addresses for all actions must be the same");
 		}
 
-		var key = addresses.iterator().next();
-		var addr = new RadixAddress((byte) magic, key);
+		var addr = addresses.iterator().next();
 
 		try {
 			var transaction = radixEngine
-				.construct(addr, toActionsAndFee(steps))
+				.construct(toActionsAndFee(addr, steps))
 				.buildForExternalSign()
 				.map(this::toPreparedTx);
 
@@ -87,10 +85,10 @@ public final class SubmissionService {
 		}
 	}
 
-	private List<TxAction> toActionsAndFee(List<TransactionAction> steps) {
+	private List<TxAction> toActionsAndFee(REAddr addr, List<TransactionAction> steps) {
 		return Stream.concat(
-			steps.stream().map(t -> t.toAction((byte) magic)),
-			Stream.of(new BurnToken(REAddr.ofNativeToken(), fixedFee))
+			steps.stream().map(t -> t.toAction()),
+			Stream.of(new BurnToken(REAddr.ofNativeToken(), addr, fixedFee))
 		).collect(Collectors.toList());
 	}
 

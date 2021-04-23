@@ -16,6 +16,9 @@
  */
 package com.radixdlt.client.handler;
 
+import com.radixdlt.client.AccountAddress;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.client.Rri;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1OutputStream;
@@ -25,7 +28,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Test;
 
-import com.radixdlt.client.Rri;
 import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.client.api.TransactionStatus;
 import com.radixdlt.client.api.TxHistoryEntry;
@@ -43,7 +45,6 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
@@ -75,13 +76,12 @@ import static com.radixdlt.client.store.berkeley.BalanceEntry.createBalance;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class HighLevelApiHandlerTest {
-	private static final byte MAGIC = (byte) 0;
-	private static final String KNOWN_ADDRESS_STRING = "JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor";
-	private static final RadixAddress KNOWN_ADDRESS = RadixAddress.from(KNOWN_ADDRESS_STRING);
-
-	private static final RadixAddress V1 = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
-	private static final RadixAddress V2 = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
-	private static final RadixAddress V3 = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
+	private static final ECPublicKey PUB_KEY = ECKeyPair.generateNew().getPublicKey();
+	private static final REAddr ACCOUNT_ADDR = REAddr.ofPubKeyAccount(PUB_KEY);
+	private static final String ADDRESS = AccountAddress.of(ACCOUNT_ADDR);
+	private static final ECPublicKey V1 = ECKeyPair.generateNew().getPublicKey();
+	private static final ECPublicKey V2 = ECKeyPair.generateNew().getPublicKey();
+	private static final ECPublicKey V3 = ECKeyPair.generateNew().getPublicKey();
 
 	private final HighLevelApiService highLevelApiService = mock(HighLevelApiService.class);
 	private final TransactionStatusService transactionStatusService = mock(TransactionStatusService.class);
@@ -93,22 +93,22 @@ public class HighLevelApiHandlerTest {
 
 	@Test
 	public void testTokenBalance() {
-		var addr1 = REAddr.ofHashedKey(KNOWN_ADDRESS.getPublicKey(), "xyz");
-		var addr2 = REAddr.ofHashedKey(KNOWN_ADDRESS.getPublicKey(), "yzs");
-		var addr3 = REAddr.ofHashedKey(KNOWN_ADDRESS.getPublicKey(), "zxy");
+		var addr1 = REAddr.ofHashedKey(PUB_KEY, "xyz");
+		var addr2 = REAddr.ofHashedKey(PUB_KEY, "yzs");
+		var addr3 = REAddr.ofHashedKey(PUB_KEY, "zxy");
 		var balance1 = TokenBalance.create(Rri.of("xyz", addr1), UInt384.TWO);
 		var balance2 = TokenBalance.create(Rri.of("yzs", addr2), UInt384.FIVE);
 		var balance3 = TokenBalance.create(Rri.of("zxy", addr3), UInt384.EIGHT);
 
-		when(highLevelApiService.getTokenBalances(any(RadixAddress.class)))
+		when(highLevelApiService.getTokenBalances(any(REAddr.class)))
 			.thenReturn(Result.ok(List.of(balance1, balance2, balance3)));
 
-		var response = handler.handleTokenBalances(requestWith(jsonArray().put(KNOWN_ADDRESS_STRING)));
+		var response = handler.handleTokenBalances(requestWith(jsonArray().put(ADDRESS)));
 
 		assertNotNull(response);
 
 		var result = response.getJSONObject("result");
-		assertEquals(KNOWN_ADDRESS_STRING, result.getString("owner"));
+		assertEquals(ADDRESS, result.getString("owner"));
 
 		var list = result.getJSONArray("tokenBalances");
 
@@ -120,14 +120,14 @@ public class HighLevelApiHandlerTest {
 
 	@Test
 	public void testStakePositions() {
-		var balance1 = createBalance(KNOWN_ADDRESS, V1, "xrd", UInt384.TWO);
-		var balance2 = createBalance(KNOWN_ADDRESS, V2, "xrd", UInt384.FIVE);
-		var balance3 = createBalance(KNOWN_ADDRESS, V3, "xrd", UInt384.EIGHT);
+		var balance1 = createBalance(ACCOUNT_ADDR, V1, "xrd", UInt384.TWO);
+		var balance2 = createBalance(ACCOUNT_ADDR, V2, "xrd", UInt384.FIVE);
+		var balance3 = createBalance(ACCOUNT_ADDR, V3, "xrd", UInt384.EIGHT);
 
-		when(highLevelApiService.getStakePositions(any(RadixAddress.class)))
+		when(highLevelApiService.getStakePositions(any(REAddr.class)))
 			.thenReturn(Result.ok(List.of(balance1, balance2, balance3)));
 
-		var response = handler.handleStakePositions(requestWith(jsonArray().put(KNOWN_ADDRESS_STRING)));
+		var response = handler.handleStakePositions(requestWith(jsonArray().put(ADDRESS)));
 
 		assertNotNull(response);
 
@@ -164,7 +164,7 @@ public class HighLevelApiHandlerTest {
 		when(highLevelApiService.getTokenDescription(any(String.class)))
 			.thenReturn(buildToken("fyy"));
 
-		var params = jsonArray().put(REAddr.ofHashedKey(KNOWN_ADDRESS.getPublicKey(), "fyy").toString());
+		var params = jsonArray().put(REAddr.ofHashedKey(PUB_KEY, "fyy").toString());
 		var response = handler.handleTokenInfo(requestWith(params));
 		assertNotNull(response);
 
@@ -182,7 +182,7 @@ public class HighLevelApiHandlerTest {
 		when(highLevelApiService.getTransactionHistory(any(), eq(5), any()))
 			.thenReturn(Result.ok(tuple(Optional.ofNullable(entry.timestamp()), List.of(entry))));
 
-		var params = jsonArray().put(KNOWN_ADDRESS_STRING).put(5);
+		var params = jsonArray().put(ADDRESS).put(5);
 		var response = handler.handleTransactionHistory(requestWith(params));
 
 		assertNotNull(response);
@@ -297,7 +297,7 @@ public class HighLevelApiHandlerTest {
 
 	@Test
 	public void testValidators() {
-		var key = Optional.of(V3.getPublicKey());
+		var key = Optional.of(V3);
 
 		var validators = List.of(
 			createValidator(V1, "v1", UInt256.FIVE),
@@ -335,9 +335,9 @@ public class HighLevelApiHandlerTest {
 		assertEquals("v3", list.getJSONObject(2).get("name"));
 	}
 
-	private ValidatorInfoDetails createValidator(RadixAddress v1, String name, UInt256 stake) {
+	private ValidatorInfoDetails createValidator(ECPublicKey v1, String name, UInt256 stake) {
 		return ValidatorInfoDetails.create(
-			v1.getPublicKey(), v1,
+			v1, v1,
 			name, "http://" + name + ".com",
 			stake, UInt256.ZERO,
 			true
@@ -418,7 +418,7 @@ public class HighLevelApiHandlerTest {
 	private Result<TokenDefinitionRecord> buildToken(String name) {
 		return Result.ok(
 			TokenDefinitionRecord.create(
-				name, name, REAddr.ofHashedKey(KNOWN_ADDRESS.getPublicKey(), name), name + " " + name, UInt384.EIGHT,
+				name, name, REAddr.ofHashedKey(PUB_KEY, name), name + " " + name, UInt384.EIGHT,
 				"http://" + name.toLowerCase() + ".icon.url", "http://" + name.toLowerCase() + "home.url",
 				false
 			));

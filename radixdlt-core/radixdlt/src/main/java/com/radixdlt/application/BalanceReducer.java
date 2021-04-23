@@ -22,7 +22,7 @@ import com.google.inject.Inject;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.StateReducer;
-import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -32,11 +32,11 @@ import java.util.function.Supplier;
  * Balance reducer for local node
  */
 public final class BalanceReducer implements StateReducer<Balances, TokensParticle> {
-	private final RadixAddress address;
+	private final REAddr addr;
 
 	@Inject
-	public BalanceReducer(@Self RadixAddress address) {
-		this.address = Objects.requireNonNull(address);
+	public BalanceReducer(@Self REAddr addr) {
+		this.addr = Objects.requireNonNull(addr);
 	}
 
 	@Override
@@ -57,7 +57,7 @@ public final class BalanceReducer implements StateReducer<Balances, TokensPartic
 	@Override
 	public BiFunction<Balances, TokensParticle, Balances> outputReducer() {
 		return (balance, p) -> {
-			if (p.getAddress().equals(address)) {
+			if (p.getHoldingAddr().equals(addr)) {
 				return balance.add(p.getResourceAddr(), p.getAmount());
 			}
 			return balance;
@@ -67,7 +67,7 @@ public final class BalanceReducer implements StateReducer<Balances, TokensPartic
 	@Override
 	public BiFunction<Balances, TokensParticle, Balances> inputReducer() {
 		return (balance, p) -> {
-			if (p.getAddress().equals(address)) {
+			if (p.getHoldingAddr().equals(addr)) {
 				return balance.remove(p.getResourceAddr(), p.getAmount());
 			}
 			return balance;

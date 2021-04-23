@@ -25,8 +25,8 @@ import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
@@ -45,31 +45,31 @@ import java.util.stream.StreamSupport;
  */
 public final class TxBuilder {
 	private final TxLowLevelBuilder lowLevelBuilder;
-	private final RadixAddress address;
+	private final ECPublicKey user;
 	private final SubstateStore remoteSubstate;
 
 	private TxBuilder(
-		RadixAddress address,
+		ECPublicKey user,
 		SubstateStore remoteSubstate
 	) {
-		this.address = address;
+		this.user = user;
 		this.lowLevelBuilder = TxLowLevelBuilder.newBuilder();
 		this.remoteSubstate = remoteSubstate;
 	}
 
-	public static TxBuilder newBuilder(RadixAddress address, SubstateStore remoteSubstate) {
-		return new TxBuilder(address, remoteSubstate);
+	public static TxBuilder newBuilder(ECPublicKey user, SubstateStore remoteSubstate) {
+		return new TxBuilder(user, remoteSubstate);
 	}
 
-	public static TxBuilder newBuilder(RadixAddress address) {
-		return new TxBuilder(address, SubstateStore.empty());
+	public static TxBuilder newBuilder(ECPublicKey user) {
+		return new TxBuilder(user, SubstateStore.empty());
 	}
 
-	public static TxBuilder newSystemBuilder(SubstateStore remoteSubstate) {
+	public static TxBuilder newBuilder(SubstateStore remoteSubstate) {
 		return new TxBuilder(null, remoteSubstate);
 	}
 
-	public static TxBuilder newSystemBuilder() {
+	public static TxBuilder newBuilder() {
 		return new TxBuilder(null, SubstateStore.empty());
 	}
 
@@ -330,26 +330,26 @@ public final class TxBuilder {
 	}
 
 
-	public Optional<RadixAddress> getAddress() {
-		return Optional.ofNullable(address);
+	public Optional<ECPublicKey> getUser() {
+		return Optional.ofNullable(user);
 	}
 
-	public RadixAddress getAddressOrFail(String errorMessage) throws TxBuilderException {
-		if (address == null) {
+	public ECPublicKey getUserOrFail(String errorMessage) throws TxBuilderException {
+		if (user == null) {
 			throw new TxBuilderException(errorMessage);
 		}
-		return address;
+		return user;
 	}
 
 
 	public void assertHasAddress(String message) throws TxBuilderException {
-		if (address == null) {
+		if (user == null) {
 			throw new TxBuilderException(message);
 		}
 	}
 
 	public void assertIsSystem(String message) throws TxBuilderException {
-		if (address != null) {
+		if (user != null) {
 			throw new TxBuilderException(message);
 		}
 	}
@@ -357,7 +357,7 @@ public final class TxBuilder {
 	public TxBuilder mutex(String id) throws TxBuilderException {
 		assertHasAddress("Must have address");
 
-		final var addr = REAddr.ofHashedKey(address.getPublicKey(), id);
+		final var addr = REAddr.ofHashedKey(user, id);
 		swap(
 			REAddrParticle.class,
 			p -> p.getAddr().equals(addr),

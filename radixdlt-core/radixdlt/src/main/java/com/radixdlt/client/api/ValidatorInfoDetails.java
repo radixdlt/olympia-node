@@ -21,7 +21,6 @@ import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.crypto.ECPublicKey;
 import org.json.JSONObject;
 
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
@@ -30,7 +29,7 @@ import static java.util.Objects.requireNonNull;
 
 public class ValidatorInfoDetails {
 	private final ECPublicKey validator;
-	private final RadixAddress owner;
+	private final ECPublicKey owner;
 	private final String name;
 	private final String infoUrl;
 	private final UInt256 totalStake;
@@ -39,7 +38,7 @@ public class ValidatorInfoDetails {
 
 	private ValidatorInfoDetails(
 		ECPublicKey validator,
-		RadixAddress owner,
+		ECPublicKey owner,
 		String name,
 		String infoUrl,
 		UInt256 totalStake,
@@ -57,7 +56,7 @@ public class ValidatorInfoDetails {
 
 	public static ValidatorInfoDetails create(
 		ECPublicKey validator,
-		RadixAddress owner,
+		ECPublicKey owner,
 		String name,
 		String infoUrl,
 		UInt256 totalStake,

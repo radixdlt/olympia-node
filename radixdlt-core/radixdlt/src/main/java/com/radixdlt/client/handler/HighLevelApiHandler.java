@@ -17,6 +17,9 @@
 
 package com.radixdlt.client.handler;
 
+import com.radixdlt.client.AccountAddress;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.crypto.HashUtils;
 import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.JsonRpcUtil;
@@ -38,9 +41,7 @@ import com.radixdlt.client.store.berkeley.BalanceEntry;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.functional.Result;
 
 import java.time.Instant;
@@ -103,9 +104,9 @@ public class HighLevelApiHandler {
 	public JSONObject handleTokenBalances(JSONObject request) {
 		return withRequiredStringParameter(
 			request,
-			(params, address) -> RadixAddress.fromString(address)
-				.flatMap(radixAddress ->
-							 highLevelApiService.getTokenBalances(radixAddress).map(v -> tuple(radixAddress, v)))
+			(params, address) -> AccountAddress.parseFunctional(address)
+				.flatMap(key ->
+							 highLevelApiService.getTokenBalances(key).map(v -> tuple(key, v)))
 				.map(tuple -> tuple.map(this::formatTokenBalances))
 		);
 	}
@@ -172,7 +173,7 @@ public class HighLevelApiHandler {
 	public JSONObject handleStakePositions(JSONObject request) {
 		return withRequiredStringParameter(
 			request,
-			(params, address) -> RadixAddress.fromString(address)
+			(params, address) -> AccountAddress.parseFunctional(address)
 				.flatMap(highLevelApiService::getStakePositions)
 				.map(this::formatStakePositions)
 		);
@@ -213,9 +214,9 @@ public class HighLevelApiHandler {
 			.map(this::formatTxId);
 	}
 
-	private JSONObject formatTokenBalances(RadixAddress radixAddress, List<TokenBalance> balances) {
+	private JSONObject formatTokenBalances(REAddr addr, List<TokenBalance> balances) {
 		return jsonObject()
-			.put("owner", radixAddress.toString())
+			.put("owner", AccountAddress.of(addr))
 			.put("tokenBalances", fromList(balances, TokenBalance::asJson));
 	}
 
@@ -229,7 +230,7 @@ public class HighLevelApiHandler {
 		return jsonObject().put(ARRAY, array);
 	}
 
-	private Result<JSONObject> formatTransactionHistory(RadixAddress address, int size, Optional<Instant> cursor) {
+	private Result<JSONObject> formatTransactionHistory(REAddr address, int size, Optional<Instant> cursor) {
 		return highLevelApiService
 			.getTransactionHistory(address, size, cursor)
 			.map(tuple -> tuple.map(this::formatHistoryResponse));
@@ -353,7 +354,7 @@ public class HighLevelApiHandler {
 			.filter(value -> value > 0, "Size parameter must be greater than zero");
 	}
 
-	private static Result<RadixAddress> parseAddress(JSONObject params) {
-		return RadixAddress.fromString(params.getString("address"));
+	private static Result<REAddr> parseAddress(JSONObject params) {
+		return AccountAddress.parseFunctional(params.getString("address"));
 	}
 }

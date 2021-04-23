@@ -31,7 +31,6 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerIds;
 import com.radixdlt.utils.Longs;
@@ -91,11 +90,6 @@ public class JacksonCborMapper extends ObjectMapper {
 				JacksonCodecConstants.BYTES_VALUE,
 				Function.identity()
 		));
-		cborModule.addSerializer(RadixAddress.class, new JacksonCborObjectBytesSerializer<>(
-				RadixAddress.class,
-				JacksonCodecConstants.ADDR_VALUE,
-				RadixAddress::toByteArray
-		));
 		cborModule.addSerializer(UInt256.class, new JacksonCborObjectBytesSerializer<>(
 				UInt256.class,
 				JacksonCodecConstants.U20_VALUE,
@@ -144,11 +138,6 @@ public class JacksonCborMapper extends ObjectMapper {
 				byte[].class,
 				JacksonCodecConstants.BYTES_VALUE,
 				Function.identity()
-		));
-		cborModule.addDeserializer(RadixAddress.class, new JacksonCborObjectBytesDeserializer<>(
-				RadixAddress.class,
-				JacksonCodecConstants.ADDR_VALUE,
-				RadixAddress::from
 		));
 		cborModule.addDeserializer(UInt256.class, new JacksonCborObjectBytesDeserializer<>(
 				UInt256.class,

@@ -21,7 +21,6 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.RadixAddress;
 
 /**
  * Generates a new unique rri consumer command. Because new addresses are used
@@ -31,9 +30,8 @@ public class RadixEngineUniqueGenerator implements TxnGenerator {
 	@Override
 	public Txn nextTxn() {
 		var keyPair = ECKeyPair.generateNew();
-		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 		try {
-			return TxBuilder.newBuilder(address)
+			return TxBuilder.newBuilder(keyPair.getPublicKey())
 				.mutex("test")
 				.signAndBuild(keyPair::sign);
 		} catch (TxBuilderException e) {

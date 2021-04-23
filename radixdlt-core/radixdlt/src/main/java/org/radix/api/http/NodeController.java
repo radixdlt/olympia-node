@@ -37,6 +37,7 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.client.AccountAddress;
 import com.radixdlt.client.Rri;
 import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.consensus.bft.Self;
@@ -45,7 +46,6 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.serialization.DeserializeException;
@@ -69,23 +69,23 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 public final class NodeController implements Controller {
 	private static final UInt256 FEE = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(1000));
 	private final REAddr nativeToken;
-	private final RadixAddress selfAddress;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final ImmutableIndex immutableIndex;
 	private final EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher;
 	private final ECPublicKey bftKey;
+	private final REAddr account;
 
 	@Inject
 	public NodeController(
 		@NativeToken REAddr nativeToken,
-		@Self RadixAddress selfAddress,
+		@Self REAddr account,
 		@Self ECPublicKey bftKey,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		ImmutableIndex immutableIndex,
 		EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher
 	) {
 		this.nativeToken = nativeToken;
-		this.selfAddress = selfAddress;
+		this.account = account;
 		this.bftKey = bftKey;
 		this.radixEngine = radixEngine;
 		this.immutableIndex = immutableIndex;
@@ -106,7 +106,7 @@ public final class NodeController implements Controller {
 		stakeReceived.forEach((addr, amt) -> {
 			stakeFrom.put(
 				new JSONObject()
-					.put("delegator", addr)
+					.put("delegator", AccountAddress.of(addr))
 					.put("amount", TokenUnitConversions.subunitsToUnits(amt))
 			);
 		});
@@ -124,7 +124,7 @@ public final class NodeController implements Controller {
 		stakedBalance.forEach((addr, amt) ->
 			stakeTo.put(
 				new JSONObject()
-					.put("delegate", addr)
+					.put("delegate", ValidatorAddress.of(addr))
 					.put("amount", TokenUnitConversions.subunitsToUnits(amt))
 			)
 		);
@@ -141,7 +141,7 @@ public final class NodeController implements Controller {
 	@VisibleForTesting
 	void respondWithNode(HttpServerExchange exchange) {
 		respond(exchange, jsonObject()
-			.put("address", selfAddress)
+			.put("address", AccountAddress.of(REAddr.ofPubKeyAccount(bftKey)))
 			.put("balance", getBalance()));
 	}
 
@@ -176,15 +176,15 @@ public final class NodeController implements Controller {
 			case "TransferTokens": {
 				var rri = Rri.parse(paramsObject.getString("rri"));
 				var addressString = paramsObject.getString("to");
-				var to = RadixAddress.from(addressString);
+				var to = AccountAddress.parse(addressString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
-				return new TransferToken(rri.getSecond(), to, subunits);
+				return new TransferToken(rri.getSecond(), account, to, subunits);
 			}
 			case "MintTokens": {
 				var rri = Rri.parse(paramsObject.getString("rri"));
 				var addressString = paramsObject.getString("to");
-				var to = RadixAddress.from(addressString);
+				var to = AccountAddress.parse(addressString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
 				return new MintToken(rri.getSecond(), to, subunits);
@@ -193,21 +193,21 @@ public final class NodeController implements Controller {
 				var rri = Rri.parse(paramsObject.getString("rri"));
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
-				return new BurnToken(rri.getSecond(), subunits);
+				return new BurnToken(rri.getSecond(), account, subunits);
 			}
 			case "StakeTokens": {
 				var validatorString = paramsObject.getString("to");
 				var key = ValidatorAddress.parse(validatorString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
-				return new StakeTokens(key, subunits);
+				return new StakeTokens(account, key, subunits);
 			}
 			case "UnstakeTokens": {
 				var addressString = paramsObject.getString("from");
 				var delegate = ValidatorAddress.parse(addressString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
-				return new UnstakeTokens(delegate, subunits);
+				return new UnstakeTokens(account, delegate, subunits);
 			}
 			case "MoveStake": {
 				var fromString = paramsObject.getString("from");
@@ -237,7 +237,7 @@ public final class NodeController implements Controller {
 				var txAction = parseAction(actionObject);
 				actions.add(txAction);
 			}
-			actions.add(new BurnToken(nativeToken, FEE));
+			actions.add(new BurnToken(nativeToken, account, FEE));
 			var completableFuture = new CompletableFuture<MempoolAddSuccess>();
 			var request = NodeApplicationRequest.create(actions, completableFuture);
 			nodeApplicationRequestEventDispatcher.dispatch(request);

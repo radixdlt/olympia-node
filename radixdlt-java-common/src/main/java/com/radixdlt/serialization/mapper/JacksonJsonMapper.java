@@ -38,7 +38,6 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerIds;
 import com.radixdlt.utils.UInt256;
@@ -91,11 +90,6 @@ public class JacksonJsonMapper extends ObjectMapper {
 		jsonModule.addSerializer(byte[].class, new JacksonJsonBytesSerializer());
 		jsonModule.addSerializer(String.class, new JacksonJsonStringSerializer());
 		jsonModule.addSerializer(SerializerDummy.class, new JacksonSerializerDummySerializer(idLookup));
-		jsonModule.addSerializer(RadixAddress.class, new JacksonJsonObjectStringSerializer<>(
-				RadixAddress.class,
-				JacksonCodecConstants.ADDR_STR_VALUE,
-				RadixAddress::toString
-		));
 		jsonModule.addSerializer(UInt256.class, new JacksonJsonObjectStringSerializer<>(
 				UInt256.class,
 				JacksonCodecConstants.U20_STR_VALUE,
@@ -133,11 +127,6 @@ public class JacksonJsonMapper extends ObjectMapper {
 		jsonModule.addDeserializer(byte[].class, new JacksonJsonBytesDeserializer());
 		jsonModule.addDeserializer(String.class, new JacksonJsonStringDeserializer());
 		jsonModule.addDeserializer(SerializerDummy.class, new JacksonSerializerDummyDeserializer());
-		jsonModule.addDeserializer(RadixAddress.class, new JacksonJsonObjectStringDeserializer<>(
-				RadixAddress.class,
-				JacksonCodecConstants.ADDR_STR_VALUE,
-				RadixAddress::from
-		));
 		jsonModule.addDeserializer(UInt256.class, new JacksonJsonObjectStringDeserializer<>(
 				UInt256.class,
 				JacksonCodecConstants.U20_STR_VALUE,

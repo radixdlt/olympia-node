@@ -26,7 +26,6 @@ import com.radixdlt.atom.actions.SplitToken;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
 import java.util.ArrayList;
@@ -72,20 +71,20 @@ public class TxActionListBuilder {
 		return this;
 	}
 
-	public TxActionListBuilder transfer(REAddr rri, RadixAddress to, UInt256 amount) {
-		var action = new TransferToken(rri, to, amount);
+	public TxActionListBuilder transfer(REAddr rri, REAddr from, REAddr to, UInt256 amount) {
+		var action = new TransferToken(rri, from, to, amount);
 		actions.add(action);
 		return this;
 	}
 
-	public TxActionListBuilder mint(REAddr rri, RadixAddress to, UInt256 amount) {
+	public TxActionListBuilder mint(REAddr rri, REAddr to, UInt256 amount) {
 		var action = new MintToken(rri, to, amount);
 		actions.add(action);
 		return this;
 	}
 
-	public TxActionListBuilder burn(REAddr rri, UInt256 amount) {
-		var action = new BurnToken(rri, amount);
+	public TxActionListBuilder burn(REAddr rri, REAddr from, UInt256 amount) {
+		var action = new BurnToken(rri, from, amount);
 		actions.add(action);
 		return this;
 	}

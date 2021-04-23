@@ -18,29 +18,30 @@
 package com.radixdlt.atomos;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 
 public final class REAddrParticle implements Particle {
-	private final REAddr rri;
+	private final REAddr addr;
 
-	public REAddrParticle(REAddr rri) {
-		this.rri = rri;
+	public REAddrParticle(REAddr addr) {
+		this.addr = addr;
 	}
 
 	public REAddr getAddr() {
-		return rri;
+		return addr;
 	}
 
-	public boolean allow(ECPublicKey publicKey, byte[] arg) {
-		return rri.allow(publicKey, arg);
+	public boolean allow(ECPublicKey publicKey, Optional<byte[]> arg) {
+		return addr.allowToClaimAddress(publicKey, arg);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.rri);
+		return Objects.hash(this.addr);
 	}
 
 	@Override
@@ -49,11 +50,11 @@ public final class REAddrParticle implements Particle {
 			return false;
 		}
 		final var that = (REAddrParticle) obj;
-		return Objects.equals(this.rri, that.rri);
+		return Objects.equals(this.addr, that.addr);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[(%s)]", getClass().getSimpleName(), rri);
+		return String.format("%s[(%s)]", getClass().getSimpleName(), addr);
 	}
 }

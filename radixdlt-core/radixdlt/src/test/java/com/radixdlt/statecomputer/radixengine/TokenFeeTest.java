@@ -23,7 +23,6 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.TokenUnitConversions;
@@ -37,7 +36,6 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.EpochCeilingView;
@@ -69,8 +67,6 @@ public class TokenFeeTest {
 
 	private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
 
-	private RadixAddress address;
-
 	@Inject
 	@NativeToken
 	private REAddr nativeToken;
@@ -78,10 +74,6 @@ public class TokenFeeTest {
 	@Inject
 	@Genesis
 	private VerifiedTxnsAndProof genesisTxns;
-
-	@Inject
-	@Named("magic")
-	private int magic;
 
 	// FIXME: Hack, need this in order to cause provider for genesis to be stored
 	@Inject
@@ -118,12 +110,12 @@ public class TokenFeeTest {
 	@Before
 	public void setup() {
 		createInjector().injectMembers(this);
-		this.address = new RadixAddress((byte) magic, ecKeyPair.getPublicKey());
 	}
 
 	@Test
 	public void when_validating_atom_with_particles__result_has_no_error() throws Exception {
-		var atom = sut.construct(address, new BurnToken(nativeToken, fee))
+		var account = REAddr.ofPubKeyAccount(ecKeyPair.getPublicKey());
+		var atom = sut.construct(ecKeyPair.getPublicKey(), new BurnToken(nativeToken, account, fee))
 			.mutex("test")
 			.signAndBuild(ecKeyPair::sign);
 
@@ -139,7 +131,8 @@ public class TokenFeeTest {
 
 	@Test
 	public void when_validating_atom_with_fee_and_no_change__result_has_no_error() throws Exception {
-		var txn = sut.construct(address, new BurnToken(nativeToken, fee))
+		var account = REAddr.ofPubKeyAccount(ecKeyPair.getPublicKey());
+		var txn = sut.construct(ecKeyPair.getPublicKey(), new BurnToken(nativeToken, account, fee))
 			.signAndBuild(ecKeyPair::sign);
 
 		sut.execute(List.of(txn));

@@ -26,15 +26,14 @@ import com.radixdlt.atommodel.validators.ValidatorParticle;
 public final class UnregisterValidator implements TxAction {
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var address = txBuilder.getAddressOrFail("Must have address");
-		var key = address.getPublicKey();
+		var user = txBuilder.getUserOrFail("Must have address");
 
 		txBuilder.swap(
 			ValidatorParticle.class,
-			p -> p.getKey().equals(key) && p.isRegisteredForNextEpoch(),
+			p -> p.getKey().equals(user) && p.isRegisteredForNextEpoch(),
 			"Already unregistered."
 		).with(
-			substateDown -> new ValidatorParticle(key, false, substateDown.getName(), substateDown.getUrl())
+			substateDown -> new ValidatorParticle(user, false, substateDown.getName(), substateDown.getUrl())
 		);
 	}
 }

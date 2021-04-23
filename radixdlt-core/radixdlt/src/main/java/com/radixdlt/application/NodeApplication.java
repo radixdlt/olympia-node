@@ -23,10 +23,10 @@ import com.google.inject.name.Named;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import org.apache.logging.log4j.LogManager;
@@ -35,14 +35,14 @@ import org.apache.logging.log4j.Logger;
 public final class NodeApplication {
 	private static final Logger log = LogManager.getLogger();
 
-	private final RadixAddress self;
+	private final ECPublicKey self;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final HashSigner hashSigner;
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 
 	@Inject
 	public NodeApplication(
-		@Self RadixAddress self,
+		@Self ECPublicKey self,
 		@Named("RadixEngine") HashSigner hashSigner,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher

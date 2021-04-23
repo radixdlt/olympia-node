@@ -70,13 +70,16 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 				public InputOutputReducer<TokensParticle, VoidParticle, VoidReducerState> inputOutputReducer() {
 					return (i, o, index, state) -> {
 						var in = i.getSubstate();
-						return ReducerResult.complete(new BurnToken(in.getResourceAddr(), in.getAmount()));
+						var burnToken = new BurnToken(in.getResourceAddr(), in.getHoldingAddr(), in.getAmount());
+						return ReducerResult.complete(burnToken);
 					};
 				}
 
 				@Override
 				public SignatureValidator<TokensParticle, VoidParticle> signatureValidator() {
-					return (i, o, index, pubKey) -> pubKey.map(i.getSubstate().getAddress()::ownedBy).orElse(false);
+					return (i, o, index, pubKey) -> pubKey
+						.map(i.getSubstate().getHoldingAddr()::allowToWithdrawFrom)
+						.orElse(false);
 				}
 			}
 		);
@@ -119,13 +122,14 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 					return (i, o, index, state) -> {
 						var in = i.getSubstate();
 						var amt = in.getAmount().subtract(state.getUsedAmount());
-						return ReducerResult.complete(new BurnToken(in.getResourceAddr(), amt));
+						return ReducerResult.complete(new BurnToken(in.getResourceAddr(), in.getHoldingAddr(), amt));
 					};
 				}
 
 				@Override
 				public SignatureValidator<TokensParticle, VoidParticle> signatureValidator() {
-					return (i, o, index, pubKey) -> pubKey.map(i.getSubstate().getAddress()::ownedBy).orElse(false);
+					return (i, o, index, pubKey)
+						-> pubKey.map(i.getSubstate().getHoldingAddr()::allowToWithdrawFrom).orElse(false);
 				}
 			}
 		);

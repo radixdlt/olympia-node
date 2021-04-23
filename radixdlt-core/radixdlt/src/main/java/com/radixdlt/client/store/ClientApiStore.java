@@ -23,7 +23,6 @@ import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
 
@@ -39,12 +38,12 @@ public interface ClientApiStore {
 	/**
 	 * Retrieve list of immediately spendable token balances or stakes.
 	 *
-	 * @param address client address
+	 * @param addr client address
 	 * @param retrieveStakes {@code true} - retrieve stakes, {@code false} - retrieve spendable balances
 	 *
 	 * @return list of token balances
 	 */
-	Result<List<BalanceEntry>> getTokenBalances(RadixAddress address, boolean retrieveStakes);
+	Result<List<BalanceEntry>> getTokenBalances(REAddr addr, boolean retrieveStakes);
 
 	Result<REAddr> parseRri(String rri);
 
@@ -76,7 +75,7 @@ public interface ClientApiStore {
 	 *
 	 * @return list of transaction history entries.
 	 */
-	Result<List<TxHistoryEntry>> getTransactionHistory(RadixAddress address, int size, Optional<Instant> cursor);
+	Result<List<TxHistoryEntry>> getTransactionHistory(REAddr address, int size, Optional<Instant> cursor);
 
 	/**
 	 * Retrieve single transaction history entry.

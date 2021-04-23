@@ -35,7 +35,6 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -54,7 +53,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class MutableTokenTest {
 	private ECKeyPair keyPair = ECKeyPair.generateNew();
-	private RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
@@ -94,7 +92,7 @@ public class MutableTokenTest {
 			null,
 			null
 		);
-		var txn = sut.construct(address, new CreateMutableToken(tokDef))
+		var txn = sut.construct(keyPair.getPublicKey(), new CreateMutableToken(tokDef))
 			.signAndBuild(keyPair::sign);
 
 		// Act/Assert
@@ -107,7 +105,10 @@ public class MutableTokenTest {
 		createInjector().injectMembers(this);
 
 		// Act/Assert
-		var txn = sut.construct(address, List.of(new MintToken(REAddr.ofNativeToken(), address, UInt256.SEVEN)))
+		var account = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
+		var txn = sut.construct(
+			keyPair.getPublicKey(), List.of(new MintToken(REAddr.ofNativeToken(), account, UInt256.SEVEN))
+		)
 			.signAndBuild(keyPair::sign);
 		assertThatThrownBy(() -> sut.execute(List.of(txn))).isInstanceOf(RadixEngineException.class);
 	}
@@ -124,10 +125,12 @@ public class MutableTokenTest {
 			null
 		);
 
-		var txn = sut.construct(address, TxActionListBuilder.create()
+		var account = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
+		var tokenAddr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
+		var txn = sut.construct(keyPair.getPublicKey(), TxActionListBuilder.create()
 			.createMutableToken(tokDef)
-			.mint(REAddr.ofHashedKey(address.getPublicKey(), "test"), address, UInt256.SEVEN)
-			.transfer(REAddr.ofHashedKey(address.getPublicKey(), "test"), address, UInt256.FIVE)
+			.mint(tokenAddr, account, UInt256.SEVEN)
+			.transfer(tokenAddr, account, account, UInt256.FIVE)
 			.build()
 		).signAndBuild(keyPair::sign);
 
@@ -146,7 +149,7 @@ public class MutableTokenTest {
 			null,
 			null
 		);
-		var atom = sut.construct(address, new CreateMutableToken(tokDef))
+		var atom = sut.construct(keyPair.getPublicKey(), new CreateMutableToken(tokDef))
 			.signAndBuild(keyPair::sign);
 
 		// Act/Assert

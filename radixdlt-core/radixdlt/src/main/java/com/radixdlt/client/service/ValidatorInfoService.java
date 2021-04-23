@@ -18,11 +18,9 @@
 package com.radixdlt.client.service;
 
 import com.google.inject.Inject;
-import com.google.inject.name.Named;
 import com.radixdlt.client.api.ValidatorInfoDetails;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RegisteredValidators;
 import com.radixdlt.statecomputer.Stakes;
@@ -41,15 +39,10 @@ import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class ValidatorInfoService {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private byte magic;
 
 	@Inject
-	public ValidatorInfoService(
-		RadixEngine<LedgerAndBFTProof> radixEngine,
-		@Named("magic") int magic
-	) {
+	public ValidatorInfoService(RadixEngine<LedgerAndBFTProof> radixEngine) {
 		this.radixEngine = radixEngine;
-		this.magic = (byte) magic;
 	}
 
 	public Result<Tuple2<Optional<ECPublicKey>, List<ValidatorInfoDetails>>> getValidators(
@@ -74,7 +67,7 @@ public class ValidatorInfoService {
 	private ValidatorInfoDetails fillDetails(ECPublicKey validatorKey, ValidatorDetails details, Stakes stakes) {
 		return ValidatorInfoDetails.create(
 			validatorKey,
-			new RadixAddress(magic, validatorKey),
+			validatorKey,
 			details.getName(),
 			details.getUrl(),
 			stakes.getStake(validatorKey).orElse(UInt256.ZERO),

@@ -27,7 +27,7 @@ import com.radixdlt.engine.StateReducer;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.identifiers.REAddr;
 
 /**
  * Module responsible for the mempool filler chaos attack
@@ -56,7 +56,7 @@ public final class MempoolFillerModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	private StateReducer<?, ?> particleCounter(@Self RadixAddress self) {
+	private StateReducer<?, ?> particleCounter(@Self REAddr self) {
 		return new ParticleCounter(self);
 	}
 }

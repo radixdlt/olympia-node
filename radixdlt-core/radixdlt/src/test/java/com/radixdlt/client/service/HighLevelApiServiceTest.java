@@ -19,6 +19,8 @@ package com.radixdlt.client.service;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.Rri;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.store.ImmutableIndex;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
@@ -32,10 +34,8 @@ import com.radixdlt.client.store.ActionEntry;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.MessageEntry;
 import com.radixdlt.client.store.TokenDefinitionRecord;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.functional.Result;
 
@@ -54,13 +54,10 @@ import static org.mockito.Mockito.when;
 import static com.radixdlt.client.store.berkeley.BalanceEntry.createBalance;
 
 public class HighLevelApiServiceTest {
-	private static final RadixAddress OWNER = RadixAddress.from("JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8");
-	private static final RadixAddress TOKEN_ADDRESS = RadixAddress.from("23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x");
-	private static final REAddr TOKEN = REAddr.ofHashedKey(TOKEN_ADDRESS.getPublicKey(), "xrd");
-	private static final byte MAGIC = (byte) 0;
-	private static final RadixAddress V1 = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
-	private static final RadixAddress V2 = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
-	private static final RadixAddress V3 = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
+	private static final ECPublicKey OWNER_KEY = ECKeyPair.generateNew().getPublicKey();
+	private static final REAddr OWNER_ACCOUNT = REAddr.ofPubKeyAccount(OWNER_KEY);
+	private static final ECPublicKey TOKEN_KEY = ECKeyPair.generateNew().getPublicKey();
+	private static final REAddr TOKEN = REAddr.ofHashedKey(TOKEN_KEY, "xrd");
 
 	private final Universe universe = mock(Universe.class);
 	private final ClientApiStore clientApiStore = mock(ClientApiStore.class);
@@ -85,19 +82,19 @@ public class HighLevelApiServiceTest {
 
 	@Test
 	public void testGetTokenBalancesForFunds() {
-		var address = TOKEN_ADDRESS.getPublicKey();
+		var address = TOKEN_KEY;
 		var addr1 = REAddr.ofHashedKey(address, "fff");
 		var rri1 = Rri.of("fff", addr1);
 		var addr2 = REAddr.ofHashedKey(address, "rar");
 		var rri2 = Rri.of("rar", addr2);
-		var balance1 = createBalance(OWNER, null, rri1, UInt384.FIVE);
-		var balance2 = createBalance(OWNER, null, rri2, UInt384.NINE);
+		var balance1 = createBalance(OWNER_ACCOUNT, null, rri1, UInt384.FIVE);
+		var balance2 = createBalance(OWNER_ACCOUNT, null, rri2, UInt384.NINE);
 		var balances = Result.ok(List.of(balance1, balance2));
 
-		when(clientApiStore.getTokenBalances(OWNER, false))
+		when(clientApiStore.getTokenBalances(OWNER_ACCOUNT, false))
 			.thenReturn(balances);
 
-		highLevelApiService.getTokenBalances(OWNER)
+		highLevelApiService.getTokenBalances(OWNER_ACCOUNT)
 			.onSuccess(list -> {
 				assertEquals(2, list.size());
 				assertEquals(UInt384.FIVE, list.get(0).getAmount());
@@ -109,22 +106,22 @@ public class HighLevelApiServiceTest {
 	@Test
 	@Ignore
 	public void testGetTokenBalancesForStakes() {
-		var address = TOKEN_ADDRESS.getPublicKey();
+		var address = TOKEN_KEY;
 		var addr1 = REAddr.ofHashedKey(address, "fff");
 		var rri1 = Rri.of("fff", addr1);
 		var addr2 = REAddr.ofHashedKey(address, "rar");
-		var rri2 = Rri.of("rar", addr1);
-		var balance1 = createBalance(OWNER, null, rri1, UInt384.FIVE);
-		var balance2 = createBalance(OWNER, null, rri2, UInt384.NINE);
-		var balance3 = createBalance(OWNER, null,
+		var rri2 = Rri.of("rar", addr2);
+		var balance1 = createBalance(OWNER_ACCOUNT, null, rri1, UInt384.FIVE);
+		var balance2 = createBalance(OWNER_ACCOUNT, null, rri2, UInt384.NINE);
+		var balance3 = createBalance(OWNER_ACCOUNT, null,
 			Rri.of("xrd", REAddr.ofNativeToken()), UInt384.TWO
 		);
 		var balances = Result.ok(List.of(balance1, balance2, balance3));
 
-		when(clientApiStore.getTokenBalances(OWNER, true))
+		when(clientApiStore.getTokenBalances(OWNER_ACCOUNT, true))
 			.thenReturn(balances);
 
-		highLevelApiService.getStakePositions(OWNER)
+		highLevelApiService.getStakePositions(OWNER_ACCOUNT)
 			.onSuccess(list -> {
 				assertEquals(3, list.size());
 				assertEquals(UInt384.FIVE, list.get(0).getAmount());
@@ -136,8 +133,8 @@ public class HighLevelApiServiceTest {
 
 	@Test
 	public void testGetTokenDescription() {
-		var token = REAddr.ofHashedKey(TOKEN_ADDRESS.getPublicKey(), "fff");
-		var definition = TokenDefinitionRecord.from(TOKEN_ADDRESS, mutableTokenDef("fff"));
+		var token = REAddr.ofHashedKey(TOKEN_KEY, "fff");
+		var definition = TokenDefinitionRecord.from(TOKEN_KEY, mutableTokenDef("fff"));
 
 		when(clientApiStore.parseRri(any()))
 			.thenReturn(Result.ok(token));
@@ -157,10 +154,10 @@ public class HighLevelApiServiceTest {
 	public void testGetTransactionHistory() {
 		var entry = createTxHistoryEntry(AID.ZERO);
 
-		when(clientApiStore.getTransactionHistory(eq(OWNER), eq(1), eq(Optional.empty())))
+		when(clientApiStore.getTransactionHistory(eq(OWNER_ACCOUNT), eq(1), eq(Optional.empty())))
 			.thenReturn(Result.ok(List.of(entry)));
 
-		highLevelApiService.getTransactionHistory(OWNER, 1, Optional.empty())
+		highLevelApiService.getTransactionHistory(OWNER_ACCOUNT, 1, Optional.empty())
 			.onSuccess(tuple -> tuple.map((cursor, list) -> {
 				assertTrue(cursor.isPresent());
 				assertEquals(entry.timestamp(), cursor.get());

@@ -20,7 +20,7 @@ package com.radixdlt.client.store;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.client.Rri;
-import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt384;
 import org.json.JSONObject;
 
@@ -128,10 +128,10 @@ public class TokenDefinitionRecord {
 		return create(symbol, name, rri, description, UInt384.ZERO, iconUrl, url, mutable);
 	}
 
-	public static TokenDefinitionRecord from(RadixAddress user, CreateFixedToken createFixedToken) {
+	public static TokenDefinitionRecord from(ECPublicKey user, CreateFixedToken createFixedToken) {
 		final REAddr rri;
 		if (user != null) {
-			rri = REAddr.ofHashedKey(user.getPublicKey(), createFixedToken.getSymbol());
+			rri = REAddr.ofHashedKey(user, createFixedToken.getSymbol());
 		} else {
 			rri = REAddr.ofNativeToken();
 		}
@@ -147,10 +147,10 @@ public class TokenDefinitionRecord {
 		);
 	}
 
-	public static TokenDefinitionRecord from(RadixAddress user, CreateMutableToken createMutableToken) {
+	public static TokenDefinitionRecord from(ECPublicKey user, CreateMutableToken createMutableToken) {
 		final REAddr rri;
 		if (user != null) {
-			rri = REAddr.ofHashedKey(user.getPublicKey(), createMutableToken.getSymbol());
+			rri = REAddr.ofHashedKey(user, createMutableToken.getSymbol());
 		} else {
 			rri = REAddr.ofNativeToken();
 		}

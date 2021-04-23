@@ -27,7 +27,6 @@ import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.berkeley.BalanceEntry;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.ImmutableIndex;
 import com.radixdlt.client.api.TxHistoryEntry;
 
@@ -64,8 +63,8 @@ public class HighLevelApiService {
 		return universe.getMagic();
 	}
 
-	public Result<List<TokenBalance>> getTokenBalances(RadixAddress radixAddress) {
-		return clientApiStore.getTokenBalances(radixAddress, false)
+	public Result<List<TokenBalance>> getTokenBalances(REAddr addr) {
+		return clientApiStore.getTokenBalances(addr, false)
 			.map(list -> list.stream().map(TokenBalance::from).collect(Collectors.toList()));
 	}
 
@@ -85,7 +84,7 @@ public class HighLevelApiService {
 	}
 
 	public Result<Tuple2<Optional<Instant>, List<TxHistoryEntry>>> getTransactionHistory(
-		RadixAddress address, int size, Optional<Instant> cursor
+		REAddr address, int size, Optional<Instant> cursor
 	) {
 		return clientApiStore.getTransactionHistory(address, size, cursor)
 			.map(response -> tuple(calculateNewCursor(response), response));
@@ -95,8 +94,8 @@ public class HighLevelApiService {
 		return clientApiStore.getTransaction(txId);
 	}
 
-	public Result<List<BalanceEntry>> getStakePositions(RadixAddress radixAddress) {
-		return clientApiStore.getTokenBalances(radixAddress, true);
+	public Result<List<BalanceEntry>> getStakePositions(REAddr addr) {
+		return clientApiStore.getTokenBalances(addr, true);
 	}
 
 	private static Optional<Instant> calculateNewCursor(List<TxHistoryEntry> response) {

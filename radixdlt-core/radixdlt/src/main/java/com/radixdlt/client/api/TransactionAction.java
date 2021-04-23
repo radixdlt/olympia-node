@@ -24,25 +24,26 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.functional.Functions.FN5;
+import com.radixdlt.utils.functional.Functions;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 public class TransactionAction {
 	private final ActionType actionType;
-	private final ECPublicKey from;
-	private final ECPublicKey to;
+	private final REAddr from;
+	private final REAddr to;
+	private final ECPublicKey delegate;
 	private final UInt256 amount;
 	private final Optional<REAddr> rri;
 	private final byte[] data;
 
 	private TransactionAction(
 		ActionType actionType,
-		ECPublicKey from,
-		ECPublicKey to,
+		REAddr from,
+		REAddr to,
+		ECPublicKey delegate,
 		UInt256 amount,
 		Optional<REAddr> rri,
 		byte[] data
@@ -51,54 +52,53 @@ public class TransactionAction {
 		this.from = from;
 		this.to = to;
 		this.amount = amount;
+		this.delegate = delegate;
 		this.rri = rri;
 		this.data = data;
 	}
 
 	public static TransactionAction msg(String msg) {
-		return new TransactionAction(ActionType.MSG, null, null, null, null, msg.getBytes(StandardCharsets.UTF_8));
+		return new TransactionAction(ActionType.MSG, null, null, null, null, null, msg.getBytes(StandardCharsets.UTF_8));
 	}
 
 	public static TransactionAction create(
 		ActionType actionType,
-		ECPublicKey from,
-		ECPublicKey to,
+		REAddr from,
+		REAddr to,
 		UInt256 amount,
 		Optional<REAddr> rri
 	) {
-		return new TransactionAction(actionType, from, to, amount, rri, null);
+		return new TransactionAction(actionType, from, to, null, amount, rri, null);
 	}
 
 	public static TransactionAction create(
 		ActionType actionType,
-		ECPublicKey from,
-		ECPublicKey to,
+		REAddr from,
+		ECPublicKey delegate,
 		UInt256 amount,
-		Optional<REAddr> rri,
-		byte[] data
+		Optional<REAddr> rri
 	) {
-		return new TransactionAction(actionType, from, to, amount, rri, data);
+		return new TransactionAction(actionType, from, null, delegate, amount, rri, null);
 	}
 
-	public ECPublicKey getFrom() {
+	public REAddr getFrom() {
 		return from;
 	}
 
-	public <T> T map(FN5<T, ActionType, ECPublicKey, ECPublicKey, UInt256, Optional<REAddr>> mapper) {
-		return mapper.apply(actionType, from, to, amount, rri);
+	public <T> T map(Functions.FN6<T, ActionType, REAddr, REAddr, ECPublicKey, UInt256, Optional<REAddr>> mapper) {
+		return mapper.apply(actionType, from, to, delegate, amount, rri);
 	}
 
-	public TxAction toAction(byte magic) {
+	public TxAction toAction() {
 		switch (actionType) {
 			case MSG:
 				return new IncludeMessage(data);
 			case TRANSFER:
-				var addr = new RadixAddress(magic, to);
-				return new TransferToken(rriValue(), addr, amount);
+				return new TransferToken(rriValue(), from, to, amount);
 			case STAKE:
-				return new StakeTokens(to, amount);
+				return new StakeTokens(from, delegate, amount);
 			case UNSTAKE:
-				return new UnstakeTokens(to, amount);
+				return new UnstakeTokens(from, delegate, amount);
 		}
 		throw new IllegalStateException("Unsupported action type " + actionType);
 	}

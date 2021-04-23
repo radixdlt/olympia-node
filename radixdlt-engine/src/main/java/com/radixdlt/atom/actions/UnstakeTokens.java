@@ -28,12 +28,18 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 public final class UnstakeTokens implements TxAction {
+	private final REAddr accountAddr;
 	private final ECPublicKey delegateAddress;
 	private final UInt256 amount;
 
-	public UnstakeTokens(ECPublicKey delegateAddress, UInt256 amount) {
+	public UnstakeTokens(REAddr accountAddr, ECPublicKey delegateAddress, UInt256 amount) {
+		this.accountAddr = accountAddr;
 		this.delegateAddress = delegateAddress;
 		this.amount = amount;
+	}
+
+	public REAddr accountAddr() {
+		return accountAddr;
 	}
 
 	public ECPublicKey from() {
@@ -46,14 +52,13 @@ public final class UnstakeTokens implements TxAction {
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var address = txBuilder.getAddressOrFail("Must have an address.");
 		txBuilder.swapFungible(
 			StakedTokensParticle.class,
-			p -> p.getAddress().equals(address),
+			p -> p.getOwner().equals(accountAddr),
 			StakedTokensParticle::getAmount,
-			amt -> new StakedTokensParticle(delegateAddress, address, amt),
+			amt -> new StakedTokensParticle(delegateAddress, accountAddr, amt),
 			amount,
 			"Not enough staked."
-		).with(amt -> new TokensParticle(address, amt, REAddr.ofNativeToken()));
+		).with(amt -> new TokensParticle(accountAddr, amt, REAddr.ofNativeToken()));
 	}
 }

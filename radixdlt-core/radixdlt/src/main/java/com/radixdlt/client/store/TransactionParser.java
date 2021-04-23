@@ -18,7 +18,6 @@
 package com.radixdlt.client.store;
 
 import com.google.inject.Inject;
-import com.google.inject.name.Named;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.StakeTokens;
@@ -29,7 +28,6 @@ import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
@@ -38,15 +36,10 @@ import java.util.stream.Collectors;
 
 public final class TransactionParser {
 	private final REAddr nativeToken;
-	private final int magic;
 
 	@Inject
-	public TransactionParser(
-		@NativeToken REAddr nativeToken,
-		@Named("magic") int magic
-	) {
+	public TransactionParser(@NativeToken REAddr nativeToken) {
 		this.nativeToken = nativeToken;
-		this.magic = magic;
 	}
 
 	private UInt256 computeFeePaid(REParsedTxn radixEngineTxn) {
@@ -61,16 +54,16 @@ public final class TransactionParser {
 			.orElse(UInt256.ZERO);
 	}
 
-	private ActionEntry mapToEntry(RadixAddress user, TxAction txAction) {
+	private ActionEntry mapToEntry(TxAction txAction) {
 		if (txAction instanceof TransferToken) {
-			return ActionEntry.transfer(user, (TransferToken) txAction);
+			return ActionEntry.transfer((TransferToken) txAction);
 		} else if (txAction instanceof BurnToken) {
 			var burnToken = (BurnToken) txAction;
-			return ActionEntry.burn(user, burnToken);
+			return ActionEntry.burn(burnToken);
 		} else if (txAction instanceof StakeTokens) {
-			return ActionEntry.stake(user, (StakeTokens) txAction, nativeToken);
+			return ActionEntry.stake((StakeTokens) txAction);
 		} else if (txAction instanceof UnstakeTokens) {
-			return ActionEntry.unstake(user, (UnstakeTokens) txAction, nativeToken);
+			return ActionEntry.unstake((UnstakeTokens) txAction);
 		} else {
 			return ActionEntry.unknown();
 		}
@@ -81,7 +74,7 @@ public final class TransactionParser {
 		var fee = computeFeePaid(parsedTxn);
 
 		var actions = parsedTxn.getActions().stream()
-			.map(a -> mapToEntry(parsedTxn.getUser().map(u -> new RadixAddress((byte) magic, u)).orElse(null), a.getTxAction()))
+			.map(a -> mapToEntry(a.getTxAction()))
 			.collect(Collectors.toList());
 
 		return Result.ok(TxHistoryEntry.create(txnId, txDate, fee, null, actions));

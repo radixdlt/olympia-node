@@ -17,13 +17,13 @@
 
 package com.radixdlt.client.lib;
 
+import com.radixdlt.client.AccountAddress;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Pair;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.radixdlt.client.api.TxHistoryEntry;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
 
@@ -86,8 +86,8 @@ public class NodeClient {
 		return Result.ok(new NodeClient(baseUrl)).flatMap(NodeClient::tryConnect);
 	}
 
-	public Result<List<Pair<String, UInt384>>> callTokenBalances(ECPublicKey publicKey) {
-		var params = jsonArray().put(toAddress(publicKey).toString());
+	public Result<List<Pair<String, UInt384>>> callTokenBalances(REAddr addr) {
+		var params = jsonArray().put(toAddress(addr));
 
 		return call("tokenBalances", params)
 			.map(this::parseTokenBalances);
@@ -101,9 +101,9 @@ public class NodeClient {
 
 	//TODO: parse response
 	public Result<JSONObject> callTransactionHistory(
-		RadixAddress address, int size, Optional<String> cursor
+		String address, int size, Optional<String> cursor
 	) {
-		var params = jsonArray().put(address.toString()).put(size);
+		var params = jsonArray().put(address).put(size);
 
 		cursor.ifPresent(params::put);
 
@@ -120,8 +120,8 @@ public class NodeClient {
 			.flatMap(this::parseJson);
 	}
 
-	public RadixAddress toAddress(ECPublicKey publicKey) {
-		return new RadixAddress(magicHolder.get(), publicKey);
+	public String toAddress(REAddr addr) {
+		return AccountAddress.of(addr);
 	}
 
 	private Result<NodeClient> tryConnect() {

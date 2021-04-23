@@ -37,9 +37,7 @@ import static com.radixdlt.cli.Utils.println;
 			GetMessages.class,
 			GetDetails.class,
 			GetStoredAtoms.class,
-			RegisterValidator.class,
 			UnregisterValidator.class,
-			ShowValidatorConfig.class,
 			ValidatorKeyGenerator.class
 		})
 public class RadixCLI implements Runnable {

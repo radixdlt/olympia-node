@@ -26,7 +26,6 @@ import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import org.junit.Before;
@@ -39,7 +38,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class UniqueTest {
 	private ECKeyPair keyPair = ECKeyPair.generateNew();
-	private RadixAddress address = new RadixAddress((byte) 0, this.keyPair.getPublicKey());
 	private RadixEngine<Void> engine;
 	private EngineStore<Void> store;
 
@@ -58,7 +56,7 @@ public class UniqueTest {
 
 	@Test
 	public void using_own_mutex_should_work() throws Exception {
-		var atom = TxBuilder.newBuilder(address)
+		var atom = TxBuilder.newBuilder(keyPair.getPublicKey())
 			.mutex("np")
 			.signAndBuild(keyPair::sign);
 		this.engine.execute(List.of(atom));
@@ -67,7 +65,7 @@ public class UniqueTest {
 	@Test
 	public void using_someone_elses_mutex_should_fail() {
 		var rri = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "smthng");
-		var builder = TxBuilder.newBuilder(address)
+		var builder = TxBuilder.newBuilder(keyPair.getPublicKey())
 			.toLowLevelBuilder()
 			.virtualDown(new REAddrParticle(rri), "smthng".getBytes(StandardCharsets.UTF_8))
 			.up(new UniqueParticle(rri))

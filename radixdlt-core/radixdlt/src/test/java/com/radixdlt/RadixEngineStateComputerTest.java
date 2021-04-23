@@ -58,7 +58,6 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.LedgerAccumulator;
@@ -212,8 +211,7 @@ public class RadixEngineStateComputerTest {
 	}
 
 	private Txn registerCommand(ECKeyPair keyPair) throws TxBuilderException {
-		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-		return radixEngine.construct(address, new RegisterValidator())
+		return radixEngine.construct(keyPair.getPublicKey(), new RegisterValidator())
 			.signAndBuild(keyPair::sign);
 	}
 

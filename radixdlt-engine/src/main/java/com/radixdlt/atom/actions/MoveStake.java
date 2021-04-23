@@ -23,6 +23,7 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 public final class MoveStake implements TxAction {
@@ -38,15 +39,16 @@ public final class MoveStake implements TxAction {
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var address = txBuilder.getAddressOrFail("Must have an address.");
+		var user = txBuilder.getUserOrFail("Must have an address.");
+		var userAcct = REAddr.ofPubKeyAccount(user);
 
 		txBuilder.swapFungible(
 			StakedTokensParticle.class,
-			p -> p.getAddress().equals(address) && p.getDelegateKey().equals(from),
+			p -> p.getOwner().equals(userAcct) && p.getDelegateKey().equals(from),
 			StakedTokensParticle::getAmount,
-			amt -> new StakedTokensParticle(from, address, amt),
+			amt -> new StakedTokensParticle(from, userAcct, amt),
 			amount,
 			"Not enough staked."
-		).with(amt -> new StakedTokensParticle(to, address, amt));
+		).with(amt -> new StakedTokensParticle(to, userAcct, amt));
 	}
 }

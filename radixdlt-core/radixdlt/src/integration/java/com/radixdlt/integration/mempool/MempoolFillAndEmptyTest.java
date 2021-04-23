@@ -32,17 +32,15 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseLocation;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -55,7 +53,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
  * stragglers left behind.
  */
 public final class MempoolFillAndEmptyTest {
-    private static final Logger logger = LogManager.getLogger();
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
@@ -80,8 +77,8 @@ public final class MempoolFillAndEmptyTest {
                 }
 
                 @ProvidesIntoSet
-                private TokenIssuance mempoolFillerIssuance(@Self RadixAddress self) {
-                    return TokenIssuance.of(self.getPublicKey(), TokenUnitConversions.unitsToSubunits(10000000000L));
+                private TokenIssuance mempoolFillerIssuance(@Self ECPublicKey self) {
+                    return TokenIssuance.of(self, TokenUnitConversions.unitsToSubunits(10000000000L));
                 }
             }
         );

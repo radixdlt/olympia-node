@@ -29,12 +29,18 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 public final class StakeTokens implements TxAction {
+	private final REAddr fromAcct;
 	private final ECPublicKey delegateKey;
 	private final UInt256 amount;
 
-	public StakeTokens(ECPublicKey delegateKey, UInt256 amount) {
+	public StakeTokens(REAddr fromAcct, ECPublicKey delegateKey, UInt256 amount) {
+		this.fromAcct = fromAcct;
 		this.delegateKey = delegateKey;
 		this.amount = amount;
+	}
+
+	public REAddr from() {
+		return fromAcct;
 	}
 
 	public ECPublicKey to() {
@@ -47,17 +53,16 @@ public final class StakeTokens implements TxAction {
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var address = txBuilder.getAddressOrFail("Must have an address.");
 		txBuilder.swapFungible(
 			TokensParticle.class,
 			p -> p.getResourceAddr().isSystem()
-				&& p.getAddress().equals(address)
+				&& p.getHoldingAddr().equals(fromAcct)
 				&& (amount.compareTo(TokenUnitConversions.SUB_UNITS) < 0
 				|| p.getAmount().compareTo(TokenUnitConversions.unitsToSubunits(1)) >= 0),
 			TokensParticle::getAmount,
-			amt -> new TokensParticle(address, amt, REAddr.ofNativeToken()),
+			amt -> new TokensParticle(fromAcct, amt, REAddr.ofNativeToken()),
 			amount,
 			"Not enough balance for staking."
-		).with(amt -> new StakedTokensParticle(delegateKey, address, amt));
+		).with(amt -> new StakedTokensParticle(delegateKey, fromAcct, amt));
 	}
 }

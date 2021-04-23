@@ -34,7 +34,7 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 
@@ -283,12 +283,12 @@ public final class RadixEngine<M> {
 			return engine.construct(actions);
 		}
 
-		public TxBuilder construct(RadixAddress address, TxAction action) throws TxBuilderException {
-			return engine.construct(address, action);
+		public TxBuilder construct(ECPublicKey user, TxAction action) throws TxBuilderException {
+			return engine.construct(user, action);
 		}
 
-		public TxBuilder construct(RadixAddress address, List<TxAction> actions) throws TxBuilderException {
-			return engine.construct(address, actions);
+		public TxBuilder construct(ECPublicKey user, List<TxAction> actions) throws TxBuilderException {
+			return engine.construct(user, actions);
 		}
 
 		public <U> U getComputedState(Class<U> applicationStateClass) {
@@ -451,15 +451,15 @@ public final class RadixEngine<M> {
 		return construct(null, actions);
 	}
 
-	public TxBuilder construct(RadixAddress address, TxAction action) throws TxBuilderException {
-		return construct(address, List.of(action));
+	public TxBuilder construct(ECPublicKey user, TxAction action) throws TxBuilderException {
+		return construct(user, List.of(action));
 	}
 
-	public TxBuilder construct(RadixAddress address, List<TxAction> actions) throws TxBuilderException {
-		return construct(address, actions, Set.of());
+	public TxBuilder construct(ECPublicKey user, List<TxAction> actions) throws TxBuilderException {
+		return construct(user, actions, Set.of());
 	}
 
-	public TxBuilder construct(RadixAddress address, List<TxAction> actions, Set<SubstateId> avoid) throws TxBuilderException {
+	public TxBuilder construct(ECPublicKey user, List<TxAction> actions, Set<SubstateId> avoid) throws TxBuilderException {
 		synchronized (stateUpdateEngineLock) {
 			SubstateStore substateStore = c -> {
 				var cache = substateCache.get(c);
@@ -483,9 +483,9 @@ public final class RadixEngine<M> {
 				i -> !avoid.contains(i.getId())
 			);
 
-			var txBuilder = address != null
-				? TxBuilder.newBuilder(address, filteredStore)
-				: TxBuilder.newSystemBuilder(filteredStore);
+			var txBuilder = user != null
+				? TxBuilder.newBuilder(user, filteredStore)
+				: TxBuilder.newBuilder(filteredStore);
 			for (var action : actions) {
 				action.execute(txBuilder);
 				txBuilder.particleGroup();

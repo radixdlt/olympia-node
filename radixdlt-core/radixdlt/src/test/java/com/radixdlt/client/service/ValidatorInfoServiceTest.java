@@ -114,7 +114,7 @@ public class ValidatorInfoServiceTest {
 	@SuppressWarnings("unchecked")
 	private ValidatorInfoService setUpService() {
 		var radixEngine = (RadixEngine<LedgerAndBFTProof>) mock(RadixEngine.class);
-		var validatorInfoService = new ValidatorInfoService(radixEngine, 0);
+		var validatorInfoService = new ValidatorInfoService(radixEngine);
 
 		var particle1 = new ValidatorParticle(validator1, false, "V1", "http://v1.com");
 		var particle2 = new ValidatorParticle(validator2, false, "V2", "http://v2.com");

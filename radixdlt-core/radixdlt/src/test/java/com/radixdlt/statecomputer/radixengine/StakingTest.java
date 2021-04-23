@@ -23,7 +23,6 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.TokenUnitConversions;
@@ -34,7 +33,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -63,10 +62,6 @@ public class StakingTest {
 	@Inject
 	@Self
 	private ECKeyPair self;
-
-	@Inject
-	@Named("magic")
-	int magic;
 
 	@Inject
 	private EngineStore<LedgerAndBFTProof> engineStore;
@@ -105,11 +100,11 @@ public class StakingTest {
 		// Arrange
 		createInjector().injectMembers(this);
 		var stakes = sut.getComputedState(Stakes.class);
-		var stakerAddress = new RadixAddress((byte) magic, staker.getPublicKey());
 		var staked = stakes.toMap().get(self.getPublicKey());
 
 		// Act
-		var atom = sut.construct(stakerAddress, new StakeTokens(self.getPublicKey(), UInt256.FIVE))
+		var acct = REAddr.ofPubKeyAccount(staker.getPublicKey());
+		var atom = sut.construct(staker.getPublicKey(), new StakeTokens(acct, self.getPublicKey(), UInt256.FIVE))
 			.signAndBuild(staker::sign);
 		sut.execute(List.of(atom));
 
@@ -124,16 +119,16 @@ public class StakingTest {
 		// Arrange
 		createInjector().injectMembers(this);
 		var stakes = sut.getComputedState(Stakes.class);
-		var stakerAddress = new RadixAddress((byte) magic, staker.getPublicKey());
 		var staked = stakes.toMap().get(self.getPublicKey());
-		var txn = sut.construct(stakerAddress, new StakeTokens(self.getPublicKey(), UInt256.FIVE))
+		var acct = REAddr.ofPubKeyAccount(staker.getPublicKey());
+		var txn = sut.construct(staker.getPublicKey(), new StakeTokens(acct, self.getPublicKey(), UInt256.FIVE))
 			.signAndBuild(staker::sign);
 		sut.execute(List.of(txn));
 
 		// Act
 		var nextTxn = sut.construct(
-			stakerAddress,
-			new UnstakeTokens(self.getPublicKey(), UInt256.THREE)
+			staker.getPublicKey(),
+			new UnstakeTokens(acct, self.getPublicKey(), UInt256.THREE)
 		).signAndBuild(staker::sign);
 		sut.execute(List.of(nextTxn));
 

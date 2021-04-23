@@ -40,7 +40,6 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.UInt256;
@@ -52,14 +51,9 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 
 public class TransactionParserTest {
-	private static final byte MAGIC = (byte) 0;
-
 	private final ECKeyPair tokenOwnerKeyPair = ECKeyPair.generateNew();
-	private final RadixAddress tokenOwnerAddress = new RadixAddress(MAGIC, tokenOwnerKeyPair.getPublicKey());
+	private final REAddr tokenOwnerAcct = REAddr.ofPubKeyAccount(tokenOwnerKeyPair.getPublicKey());
 	private final ECKeyPair validatorKeyPair = ECKeyPair.generateNew();
-	private final RadixAddress validatorAddress = new RadixAddress(MAGIC, validatorKeyPair.getPublicKey());
-
-	private final RadixAddress otherAddress = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
 	private final EngineStore<Void> store = new InMemoryEngineStore<>();
 
 	private final REAddr tokenRri = REAddr.ofNativeToken();
@@ -74,7 +68,7 @@ public class TransactionParserTest {
 
 	private RadixEngine<Void> engine;
 
-	private TransactionParser parser = new TransactionParser(tokenRri, 0);
+	private TransactionParser parser = new TransactionParser(tokenRri);
 
 	@Before
 	public void setup() throws Exception {
@@ -94,10 +88,10 @@ public class TransactionParserTest {
 		var txn0 = engine.construct(
 			TxActionListBuilder.create()
 				.createMutableToken(tokDef)
-				.mint(this.tokenRri, this.tokenOwnerAddress, UInt256.TEN)
+				.mint(this.tokenRri, this.tokenOwnerAcct, UInt256.TEN)
 				.build()
 		).buildWithoutSignature();
-		var validatorBuilder = this.engine.construct(this.validatorAddress, new RegisterValidator());
+		var validatorBuilder = this.engine.construct(this.validatorKeyPair.getPublicKey(), new RegisterValidator());
 		var txn1 = validatorBuilder.signAndBuild(this.validatorKeyPair::sign);
 
 		engine.execute(List.of(txn0, txn1), null, PermissionLevel.SYSTEM);
@@ -105,7 +99,9 @@ public class TransactionParserTest {
 
 	@Test
 	public void stakeIsParsedCorrectly() throws Exception {
-		var txn = engine.construct(tokenOwnerAddress, List.of(nativeStake(), new BurnToken(tokenRri, UInt256.TWO)))
+		var txn = engine.construct(tokenOwnerKeyPair.getPublicKey(),
+			List.of(nativeStake(), new BurnToken(tokenRri, tokenOwnerAcct, UInt256.TWO))
+		)
 			.signAndBuild(tokenOwnerKeyPair::sign);
 
 		executeAndDecode(List.of(ActionType.STAKE, ActionType.BURN), UInt256.TWO, txn);
@@ -113,11 +109,13 @@ public class TransactionParserTest {
 
 	@Test
 	public void unstakeIsParsedCorrectly() throws Exception {
-		var txn1 = engine.construct(tokenOwnerAddress, nativeStake())
+		var txn1 = engine.construct(tokenOwnerKeyPair.getPublicKey(), nativeStake())
 			.signAndBuild(tokenOwnerKeyPair::sign);
 		engine.execute(List.of(txn1));
 
-		var txn2 = engine.construct(tokenOwnerAddress, List.of(nativeUnstake(), new BurnToken(tokenRri, UInt256.FOUR)))
+		var txn2 = engine.construct(tokenOwnerKeyPair.getPublicKey(),
+			List.of(nativeUnstake(), new BurnToken(tokenRri, tokenOwnerAcct, UInt256.FOUR))
+		)
 			.signAndBuild(tokenOwnerKeyPair::sign);
 
 		executeAndDecode(List.of(ActionType.UNSTAKE, ActionType.BURN), UInt256.FOUR, txn2);
@@ -126,11 +124,11 @@ public class TransactionParserTest {
 	@Test
 	public void transferIsParsedCorrectly() throws Exception {
 		//Use different token
-		var txn = engine.construct(tokenOwnerAddress, TxActionListBuilder.create()
+		var txn = engine.construct(tokenOwnerKeyPair.getPublicKey(), TxActionListBuilder.create()
 			.createMutableToken(tokDefII)
-			.mint(tokenRriII, tokenOwnerAddress, UInt256.TEN)
-			.transfer(tokenRriII, otherAddress, UInt256.FIVE)
-			.burn(tokenRri, UInt256.FOUR)
+			.mint(tokenRriII, tokenOwnerAcct, UInt256.TEN)
+			.transfer(tokenRriII, tokenOwnerAcct, tokenOwnerAcct, UInt256.FIVE)
+			.burn(tokenRri, tokenOwnerAcct, UInt256.FOUR)
 			.build()
 		).signAndBuild(tokenOwnerKeyPair::sign);
 
@@ -157,11 +155,11 @@ public class TransactionParserTest {
 	}
 
 	private StakeTokens nativeStake() {
-		return new StakeTokens(validatorKeyPair.getPublicKey(), UInt256.FIVE);
+		return new StakeTokens(tokenOwnerAcct, validatorKeyPair.getPublicKey(), UInt256.FIVE);
 	}
 
 	private UnstakeTokens nativeUnstake() {
-		return new UnstakeTokens(validatorKeyPair.getPublicKey(), UInt256.FIVE);
+		return new UnstakeTokens(tokenOwnerAcct, validatorKeyPair.getPublicKey(), UInt256.FIVE);
 	}
 
 	private List<ActionType> toActionTypes(TxHistoryEntry txEntry) {

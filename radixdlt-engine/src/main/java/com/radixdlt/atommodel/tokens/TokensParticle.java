@@ -17,7 +17,6 @@
 
 package com.radixdlt.atommodel.tokens;
 
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -29,21 +28,21 @@ import java.util.Objects;
  */
 public final class TokensParticle implements Particle {
 	private final REAddr resourceAddr;
-	private final RadixAddress address;
+	private final REAddr holdingAddress;
 	private final UInt256 amount;
 
 	public TokensParticle(
-		RadixAddress address,
+		REAddr holdingAddress,
 		UInt256 amount,
 		REAddr resourceAddr
 	) {
-		this.address = Objects.requireNonNull(address);
+		this.holdingAddress = Objects.requireNonNull(holdingAddress);
 		this.resourceAddr = Objects.requireNonNull(resourceAddr);
 		this.amount = Objects.requireNonNull(amount);
 	}
 
-	public RadixAddress getAddress() {
-		return this.address;
+	public REAddr getHoldingAddr() {
+		return this.holdingAddress;
 	}
 
 	public REAddr getResourceAddr() {
@@ -56,7 +55,7 @@ public final class TokensParticle implements Particle {
 			getClass().getSimpleName(),
 			resourceAddr,
 			amount,
-			address
+			holdingAddress
 		);
 	}
 
@@ -73,13 +72,13 @@ public final class TokensParticle implements Particle {
 			return false;
 		}
 		TokensParticle that = (TokensParticle) o;
-		return Objects.equals(address, that.address)
+		return Objects.equals(holdingAddress, that.holdingAddress)
 			&& Objects.equals(resourceAddr, that.resourceAddr)
 			&& Objects.equals(amount, that.amount);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(address, resourceAddr, amount);
+		return Objects.hash(holdingAddress, resourceAddr, amount);
 	}
 }

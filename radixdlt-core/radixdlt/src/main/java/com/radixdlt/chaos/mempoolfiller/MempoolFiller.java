@@ -27,6 +27,7 @@ import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
@@ -34,7 +35,6 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -63,7 +63,8 @@ public final class MempoolFiller {
 	private final PeersView peersView;
 	private final Random random;
 	private final HashSigner hashSigner;
-	private final RadixAddress selfAddress;
+	private final ECPublicKey self;
+	private final REAddr account;
 	private final REAddr nativeToken;
 	private final UInt256 fee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
 
@@ -73,7 +74,8 @@ public final class MempoolFiller {
 
 	@Inject
 	public MempoolFiller(
-		@Self RadixAddress selfAddress,
+		@Self ECPublicKey self,
+		@Self REAddr account,
 		@NativeToken REAddr nativeToken,
 		@Named("RadixEngine") HashSigner hashSigner,
 		RadixEngineMempool radixEngineMempool,
@@ -85,7 +87,8 @@ public final class MempoolFiller {
 		Random random,
 		SystemCounters systemCounters
 	) {
-		this.selfAddress = selfAddress;
+		this.self = self;
+		this.account = account;
 		this.nativeToken = nativeToken;
 		this.hashSigner = hashSigner;
 		this.radixEngine = radixEngine;
@@ -134,14 +137,14 @@ public final class MempoolFiller {
 
 			var actions = TxActionListBuilder.create()
 				.splitNative(nativeToken, fee.multiply(UInt256.TWO))
-				.burn(nativeToken, fee)
+				.burn(nativeToken, account, fee)
 				.build();
 
 			var shuttingDown = radixEngineMempool.getShuttingDownSubstates();
 			var txns = new ArrayList<Txn>();
 			for (int i = 0; i < numTransactions; i++) {
 				try {
-					var builder = radixEngine.construct(selfAddress, actions, shuttingDown);
+					var builder = radixEngine.construct(self, actions, shuttingDown);
 					shuttingDown.addAll(builder.toLowLevelBuilder().remoteDownSubstate());
 					var txn = builder.signAndBuild(hashSigner::sign);
 					txns.add(txn);

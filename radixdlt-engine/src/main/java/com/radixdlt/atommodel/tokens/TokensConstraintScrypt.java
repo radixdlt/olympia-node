@@ -79,11 +79,18 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			TokensParticle.class,
 			TokensParticle::getAmount,
 			TokensParticle::getAmount,
-			(i, o) -> Result.success(),
-			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getAddress()::ownedBy).orElse(false),
+			(i, o) -> {
+				if (!o.getHoldingAddr().isAccount()) {
+					return Result.error("Sending tokens to non holding address");
+				}
+
+				return Result.success();
+			},
+			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getHoldingAddr()::allowToWithdrawFrom).orElse(false),
 			(i, o, index) -> {
 				var p = (TokenDefinitionParticle) index.loadRri(null, i.getResourceAddr()).orElseThrow();
-				return new TransferToken(p.getAddr(), o.getAddress(), o.getAmount()); // FIXME: This isn't 100% correct
+				// FIXME: This isn't 100% correct
+				return new TransferToken(p.getAddr(), i.getHoldingAddr(), o.getHoldingAddr(), o.getAmount());
 			}
 		));
 
