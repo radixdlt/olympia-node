@@ -17,7 +17,6 @@
 
 package com.radixdlt.identifiers;
 
-import com.google.common.collect.BiMap;
 import com.radixdlt.crypto.HashUtils;
 
 import com.radixdlt.crypto.ECPublicKey;
@@ -38,9 +37,10 @@ import java.util.stream.Collectors;
  * The first byte of the address describes the type of address followed by
  * additional data depending on the type.
  *
- * Version
+ * Type (first byte)
  * 0x01 : Native Token, 0 data bytes
- * 0x03 : Hashed Key+Nonce, followed by lower_26_bytes(sha_256_twice(33_byte_compressed_pubkey | arg_nonce))
+ * 0x03 : Hashed Key+Nonce, append lower_26_bytes(sha_256_twice(33_byte_compressed_pubkey | arg_nonce))
+ * 0x04 : Public Key, append 33 bytes of a compressed EC public key
  */
 public final class REAddr {
 	public enum REAddrType {

@@ -28,10 +28,11 @@ import org.bitcoinj.core.Bech32;
 /**
  * Bech-32 encoding/decoding of account addresses.
  *
- * The human-readable part is "vr" for mainnet, "vb" for betanet.
+ * The human-readable part is "rdx" for mainnet, "brx" for betanet.
  *
- * The data part is a conversion of the 33 byte compressed EC public key to Base32
- * similar to specification described in BIP_0173 for converting witness programs.
+ * The data part is a conversion of the 1-34 byte Radix Engine address
+ * {@link com.radixdlt.identifiers.REAddr} to Base32 similar to specification described
+ * in BIP_0173 for converting witness programs.
  */
 public final class AccountAddress {
 	private AccountAddress() {
@@ -62,8 +63,13 @@ public final class AccountAddress {
 		if (!bech32Data.hrp.equals("brx")) {
 			throw new DeserializeException("hrp must be vb but was " + bech32Data.hrp);
 		}
-		var addrBytes = fromBech32Data(bech32Data.data);
-		return REAddr.of(addrBytes);
+
+		try {
+			var addrBytes = fromBech32Data(bech32Data.data);
+			return REAddr.of(addrBytes);
+		} catch (IllegalArgumentException e) {
+			throw new DeserializeException("Invalid address", e);
+		}
 	}
 
 	public static Result<REAddr> parseFunctional(String addr) {

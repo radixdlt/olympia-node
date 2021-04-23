@@ -54,8 +54,10 @@ public class TokensTest {
 			"",
 			UInt256.TEN
 		);
-		TokensParticle tokensParticle = new TokensParticle(
-			keyPair.getPublicKey(),
+
+		var holdingAddress = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
+		var tokensParticle = new TokensParticle(
+			holdingAddress,
 			UInt256.TEN,
 			rri
 		);
