@@ -31,8 +31,6 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.name.Named;
-import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRecoveryModule;
 import com.radixdlt.ConsensusRunnerModule;
@@ -53,9 +51,7 @@ import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.MockedCryptoModule;
 import com.radixdlt.MockedPersistenceStoreModule;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.integration.distributed.MockedAddressBookModule;
 import com.radixdlt.statecomputer.checkpoint.RadixNativeTokenModule;
 import com.radixdlt.store.EngineStore;
@@ -365,12 +361,6 @@ public class SimulationTest {
 					bind(SyncConfig.class).toInstance(syncConfig);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
 				}
-
-				@Provides
-				@Self
-				private RadixAddress radixAddress(@Named("magic") int magic, @Self BFTNode self) {
-					return new RadixAddress((byte) magic, self.getKey());
-				}
 			});
 
 			this.genesisModules.add(new AbstractModule() {
@@ -453,12 +443,6 @@ public class SimulationTest {
 							return Optional.empty();
 						}
 					};
-				}
-
-				@Provides
-				@Self
-				private RadixAddress radixAddress(@Named("magic") int magic, @Self BFTNode self) {
-					return new RadixAddress((byte) magic, self.getKey());
 				}
 			});
 
@@ -569,7 +553,6 @@ public class SimulationTest {
 					@Override
 					protected void configure() {
 						install(new RadixNativeTokenModule());
-						bindConstant().annotatedWith(Names.named("magic")).to(0);
 						bind(VerifiedTxnsAndProof.class).annotatedWith(Genesis.class).toInstance(genesis);
 					}
 
