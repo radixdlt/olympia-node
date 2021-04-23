@@ -118,6 +118,7 @@ public final class LocalSyncService {
 		InvalidSyncResponseSender invalidSyncedCommandsSender,
 		SyncState initialState
 	) {
+		log.info("Creating new LocalSyncService");
 		this.statusRequestDispatcher = Objects.requireNonNull(statusRequestDispatcher);
 		this.syncCheckReceiveStatusTimeoutDispatcher = Objects.requireNonNull(syncCheckReceiveStatusTimeoutDispatcher);
 		this.syncRequestDispatcher = Objects.requireNonNull(syncRequestDispatcher);
