@@ -106,7 +106,7 @@ public final class NodeController implements Controller {
 		stakeReceived.forEach((addr, amt) -> {
 			stakeFrom.put(
 				new JSONObject()
-					.put("delegator", addr)
+					.put("delegator", AccountAddress.of(addr))
 					.put("amount", TokenUnitConversions.subunitsToUnits(amt))
 			);
 		});
@@ -124,7 +124,7 @@ public final class NodeController implements Controller {
 		stakedBalance.forEach((addr, amt) ->
 			stakeTo.put(
 				new JSONObject()
-					.put("delegate", addr)
+					.put("delegate", ValidatorAddress.of(addr))
 					.put("amount", TokenUnitConversions.subunitsToUnits(amt))
 			)
 		);
@@ -141,7 +141,7 @@ public final class NodeController implements Controller {
 	@VisibleForTesting
 	void respondWithNode(HttpServerExchange exchange) {
 		respond(exchange, jsonObject()
-			.put("address", bftKey)
+			.put("address", AccountAddress.of(REAddr.ofPubKeyAccount(bftKey)))
 			.put("balance", getBalance()));
 	}
 
