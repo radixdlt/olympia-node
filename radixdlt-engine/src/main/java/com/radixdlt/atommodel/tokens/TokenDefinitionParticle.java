@@ -29,7 +29,7 @@ import java.util.Optional;
  * Particle representing a fixed supply token definition
  */
 public final class TokenDefinitionParticle implements Particle {
-	private final REAddr rri;
+	private final REAddr addr;
 	private final String name;
 	private final String description;
 	private final String iconUrl;
@@ -38,7 +38,7 @@ public final class TokenDefinitionParticle implements Particle {
 	private final UInt256 supply;
 
 	public TokenDefinitionParticle(
-		REAddr rri,
+		REAddr addr,
 		String name,
 		String description,
 		String iconUrl,
@@ -46,7 +46,7 @@ public final class TokenDefinitionParticle implements Particle {
 		UInt256 supply,
 		ECPublicKey minter
 	) {
-		this.rri = Objects.requireNonNull(rri);
+		this.addr = Objects.requireNonNull(addr);
 		this.name = Objects.requireNonNull(name);
 		this.description = Objects.requireNonNull(description);
 		this.iconUrl = Objects.requireNonNull(iconUrl);
@@ -61,25 +61,25 @@ public final class TokenDefinitionParticle implements Particle {
 	}
 
 	public TokenDefinitionParticle(
-		REAddr rri,
+		REAddr addr,
 		String name,
 		String description,
 		String iconUrl,
 		String url,
 		UInt256 supply
 	) {
-		this(rri, name, description, iconUrl, url, Objects.requireNonNull(supply), null);
+		this(addr, name, description, iconUrl, url, Objects.requireNonNull(supply), null);
 	}
 
 	public TokenDefinitionParticle(
-		REAddr rri,
+		REAddr addr,
 		String name,
 		String description,
 		String iconUrl,
 		String url,
 		ECPublicKey minter
 	) {
-		this(rri, name, description, iconUrl, url, null, minter);
+		this(addr, name, description, iconUrl, url, null, minter);
 	}
 
 	public Optional<ECPublicKey> getMinter() {
@@ -90,8 +90,8 @@ public final class TokenDefinitionParticle implements Particle {
 		return this.supply == null;
 	}
 
-	public REAddr getRri() {
-		return rri;
+	public REAddr getAddr() {
+		return addr;
 	}
 
 	public String getName() {
@@ -117,7 +117,7 @@ public final class TokenDefinitionParticle implements Particle {
 	@Override
 	public String toString() {
 		return String.format("%s[(%s:%s:%s), (%s)]", getClass().getSimpleName(),
-			this.rri, name, supply, description);
+			this.addr, name, supply, description);
 	}
 
 	@Override
@@ -129,7 +129,7 @@ public final class TokenDefinitionParticle implements Particle {
 			return false;
 		}
 		TokenDefinitionParticle that = (TokenDefinitionParticle) o;
-		return Objects.equals(rri, that.rri)
+		return Objects.equals(addr, that.addr)
 			&& Objects.equals(name, that.name)
 			&& Objects.equals(description, that.description)
 			&& Objects.equals(supply, that.supply)
@@ -140,6 +140,6 @@ public final class TokenDefinitionParticle implements Particle {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(rri, name, description, supply, iconUrl, url, minter);
+		return Objects.hash(addr, name, description, supply, iconUrl, url, minter);
 	}
 }

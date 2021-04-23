@@ -134,7 +134,7 @@ public final class ConstraintMachine {
 				localUpParticles.values().stream()
 					.filter(TokenDefinitionParticle.class::isInstance)
 					.map(TokenDefinitionParticle.class::cast)
-					.filter(p -> p.getRri().equals(rri))
+					.filter(p -> p.getAddr().equals(rri))
 					.findFirst()
 					.map(Particle.class::cast)
 					.or(() -> store.loadRri(txn, rri));

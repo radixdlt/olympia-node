@@ -16,6 +16,7 @@
  */
 package com.radixdlt.client.store.berkeley;
 
+import com.radixdlt.client.Rri;
 import com.radixdlt.utils.UInt384;
 import org.junit.Test;
 
@@ -29,7 +30,8 @@ import static org.junit.Assert.assertEquals;
 
 public class BalanceEntryTest {
 	private static final RadixAddress ADDRESS = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
-	private static final REAddr TOKEN_RRI = REAddr.ofHashedKey(ADDRESS.getPublicKey(), "xrd");
+	private static final REAddr TOKEN_ADDR = REAddr.ofHashedKey(ADDRESS.getPublicKey(), "xrd");
+	private static final String TOKEN_RRI = Rri.of("xrd", TOKEN_ADDR);
 
 	@Test
 	public void verifyBalanceCalculation() {

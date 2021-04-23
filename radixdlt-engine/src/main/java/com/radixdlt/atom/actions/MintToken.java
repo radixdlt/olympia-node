@@ -37,7 +37,7 @@ public final class MintToken implements TxAction {
 		this.amount = amount;
 	}
 
-	public REAddr rri() {
+	public REAddr addr() {
 		return rri;
 	}
 

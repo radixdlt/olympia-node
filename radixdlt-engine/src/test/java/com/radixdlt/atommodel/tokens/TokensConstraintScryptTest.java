@@ -49,7 +49,7 @@ public class TokensConstraintScryptTest {
 	@Test
 	public void when_validating_token_instance_with_null_amount__result_has_error() {
 		TokensParticle tokensParticle = mock(TokensParticle.class);
-		when(tokensParticle.getRri()).thenReturn(mock(REAddr.class));
+		when(tokensParticle.getResourceAddr()).thenReturn(mock(REAddr.class));
 		when(tokensParticle.getAmount()).thenReturn(null);
 		assertThat(staticCheck.apply(tokensParticle).getErrorMessage())
 			.contains("null");
@@ -66,7 +66,7 @@ public class TokensConstraintScryptTest {
 	@Test
 	public void when_validating_token_instance_with_zero_amount__result_has_error() {
 		TokensParticle tokensParticle = mock(TokensParticle.class);
-		when(tokensParticle.getRri()).thenReturn(mock(REAddr.class));
+		when(tokensParticle.getResourceAddr()).thenReturn(mock(REAddr.class));
 		when(tokensParticle.getAmount()).thenReturn(UInt256.ZERO);
 		assertThat(staticCheck.apply(tokensParticle).getErrorMessage())
 			.contains("zero");

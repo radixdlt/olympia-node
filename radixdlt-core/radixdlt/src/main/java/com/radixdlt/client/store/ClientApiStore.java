@@ -55,11 +55,11 @@ public interface ClientApiStore {
 	 *
 	 * @return eventually consistent token supply
 	 */
-	Result<UInt384> getTokenSupply(REAddr rri);
+	Result<UInt384> getTokenSupply(String rri);
 
 	/**
 	 * Retrieve token definition. Note that for mutable supply tokens supply is returned zero.
-	 * If actual token supply value is necessary then {@link #getTokenSupply(REAddr)} should be used.
+	 * If actual token supply value is necessary then {@link #getTokenSupply(String)} should be used.
 	 *
 	 * @param rri token for which definition is requested
 	 *

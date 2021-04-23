@@ -57,11 +57,11 @@ public class ActionEntry {
 	}
 
 	public static ActionEntry transfer(RadixAddress user, TransferToken transferToken) {
-		return create(ActionType.TRANSFER, user.toString(), transferToken.to().toString(), transferToken.amount(), transferToken.rri());
+		return create(ActionType.TRANSFER, user.toString(), transferToken.to().toString(), transferToken.amount(), transferToken.addr());
 	}
 
 	public static ActionEntry burn(RadixAddress user, BurnToken burnToken) {
-		return create(ActionType.BURN, user.toString(), null, burnToken.amount(), burnToken.rri());
+		return create(ActionType.BURN, user.toString(), null, burnToken.amount(), burnToken.addr());
 	}
 
 	public static ActionEntry stake(RadixAddress user, StakeTokens stakeToken, REAddr nativeToken) {

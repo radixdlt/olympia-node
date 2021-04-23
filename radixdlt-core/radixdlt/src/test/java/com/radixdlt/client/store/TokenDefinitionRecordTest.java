@@ -28,7 +28,7 @@ public class TokenDefinitionRecordTest {
 			.suppress(Warning.NONFINAL_FIELDS)
 			.withNonnullFields(
 				"name",
-				"rri",
+				"addr",
 				"description",
 				"currentSupply",
 				"iconUrl",

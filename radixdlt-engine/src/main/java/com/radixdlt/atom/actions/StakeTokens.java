@@ -50,7 +50,7 @@ public final class StakeTokens implements TxAction {
 		var address = txBuilder.getAddressOrFail("Must have an address.");
 		txBuilder.swapFungible(
 			TokensParticle.class,
-			p -> p.getRri().isSystem()
+			p -> p.getResourceAddr().isSystem()
 				&& p.getAddress().equals(address)
 				&& (amount.compareTo(TokenUnitConversions.SUB_UNITS) < 0
 				|| p.getAmount().compareTo(TokenUnitConversions.unitsToSubunits(1)) >= 0),

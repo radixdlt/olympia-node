@@ -50,9 +50,9 @@ public class TokenDefinitionRecord {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final String name;
 
-	@JsonProperty("rri")
+	@JsonProperty("addr")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final REAddr rri;
+	private final REAddr addr;
 
 	@JsonProperty("description")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -77,7 +77,7 @@ public class TokenDefinitionRecord {
 	private TokenDefinitionRecord(
 		String symbol,
 		String name,
-		REAddr rri,
+		REAddr addr,
 		String description,
 		UInt384 currentSupply,
 		String iconUrl,
@@ -86,7 +86,7 @@ public class TokenDefinitionRecord {
 	) {
 		this.symbol = symbol;
 		this.name = name;
-		this.rri = rri;
+		this.addr = addr;
 		this.description = description;
 		this.currentSupply = currentSupply;
 		this.iconUrl = iconUrl;
@@ -98,7 +98,7 @@ public class TokenDefinitionRecord {
 	public static TokenDefinitionRecord create(
 		@JsonProperty("symbol") String symbol,
 		@JsonProperty("name") String name,
-		@JsonProperty("rri") REAddr rri,
+		@JsonProperty("addr") REAddr addr,
 		@JsonProperty("description") String description,
 		@JsonProperty("currentSupply") UInt384 currentSupply,
 		@JsonProperty("iconUrl") String iconUrl,
@@ -107,12 +107,12 @@ public class TokenDefinitionRecord {
 	) {
 		Objects.requireNonNull(symbol);
 		Objects.requireNonNull(name);
-		Objects.requireNonNull(rri);
+		Objects.requireNonNull(addr);
 		Objects.requireNonNull(description);
 		Objects.requireNonNull(currentSupply);
 
 		return new TokenDefinitionRecord(
-			symbol, name, rri, description, currentSupply, iconUrl == null ? "" : iconUrl, url == null ? "" : url, mutable
+			symbol, name, addr, description, currentSupply, iconUrl == null ? "" : iconUrl, url == null ? "" : url, mutable
 		);
 	}
 
@@ -169,7 +169,7 @@ public class TokenDefinitionRecord {
 	public JSONObject asJson() {
 		return jsonObject()
 			.put("name", name)
-			.put("rri", Rri.of(symbol, rri))
+			.put("rri", Rri.of(symbol, addr))
 			.put("symbol", symbol)
 			.put("description", description)
 			.put("currentSupply", currentSupply)
@@ -190,8 +190,12 @@ public class TokenDefinitionRecord {
 		return mutable;
 	}
 
-	public REAddr rri() {
-		return rri;
+	public REAddr addr() {
+		return addr;
+	}
+
+	public String rri() {
+		return Rri.of(symbol, addr);
 	}
 
 	public UInt384 currentSupply() {
@@ -203,12 +207,12 @@ public class TokenDefinitionRecord {
 			return this;
 		}
 
-		return create(symbol, name, rri, description, supply, iconUrl, url, true);
+		return create(symbol, name, addr, description, supply, iconUrl, url, true);
 	}
 
 	public String toString() {
 		return String.format("%s{%s:%s:%s:%s:%s:%s:%s}",
-			this.getClass().getSimpleName(), symbol, name, rri, description, currentSupply, iconUrl, url
+			this.getClass().getSimpleName(), symbol, name, addr, description, currentSupply, iconUrl, url
 		);
 	}
 
@@ -223,7 +227,7 @@ public class TokenDefinitionRecord {
 
 			return mutable == that.mutable
 				&& name.equals(that.name)
-				&& rri.equals(that.rri)
+				&& addr.equals(that.addr)
 				&& Objects.equals(symbol, that.symbol)
 				&& Objects.equals(currentSupply, that.currentSupply)
 				&& Objects.equals(description, that.description)
@@ -236,6 +240,6 @@ public class TokenDefinitionRecord {
 
 	@Override
 	public final int hashCode() {
-		return Objects.hash(symbol, name, rri, description, currentSupply, iconUrl, url, mutable);
+		return Objects.hash(symbol, name, addr, description, currentSupply, iconUrl, url, mutable);
 	}
 }

@@ -19,7 +19,6 @@ package com.radixdlt.client.store.berkeley;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
@@ -45,7 +44,7 @@ public class BalanceEntry {
 
 	@JsonProperty("rri")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final REAddr rri;
+	private final String rri;
 
 	@JsonProperty("amount")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -56,8 +55,8 @@ public class BalanceEntry {
 	private final boolean negative;
 
 	private BalanceEntry(
-		RadixAddress owner, RadixAddress delegate, REAddr rri,
-		UInt384 amount, boolean negative
+		RadixAddress owner, RadixAddress delegate,
+		String rri, UInt384 amount, boolean negative
 	) {
 		this.owner = owner;
 		this.delegate = delegate;
@@ -69,7 +68,7 @@ public class BalanceEntry {
 	public static BalanceEntry createFull(
 		RadixAddress owner,
 		RadixAddress delegate,
-		REAddr rri,
+		String rri,
 		UInt384 amount,
 		boolean negative
 	) {
@@ -83,7 +82,7 @@ public class BalanceEntry {
 	public static BalanceEntry create(
 		@JsonProperty("owner") RadixAddress owner,
 		@JsonProperty("delegate") RadixAddress delegate,
-		@JsonProperty("rri") REAddr rri,
+		@JsonProperty("rri") String rri,
 		@JsonProperty("amount") UInt384 amount,
 		@JsonProperty("negative") boolean negative
 	) {
@@ -91,7 +90,7 @@ public class BalanceEntry {
 	}
 
 	public static BalanceEntry createBalance(
-		RadixAddress owner, RadixAddress delegate, REAddr rri, UInt384 amount
+		RadixAddress owner, RadixAddress delegate, String rri, UInt384 amount
 	) {
 		return createFull(owner, delegate, rri, amount, false);
 	}
@@ -104,7 +103,7 @@ public class BalanceEntry {
 		return delegate;
 	}
 
-	public REAddr getRri() {
+	public String rri() {
 		return rri;
 	}
 
