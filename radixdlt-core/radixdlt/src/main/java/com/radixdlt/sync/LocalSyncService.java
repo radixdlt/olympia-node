@@ -195,7 +195,10 @@ public final class LocalSyncService {
 			))
 			.put(handler(
 				SyncingState.class, SyncLedgerUpdateTimeout.class,
-				state -> unused -> this.processSync(state)
+				state -> unused -> {
+					log.info("Sync ledger update timeout at state " + state);
+					return this.processSync(state);
+				}
 			))
 			.build();
 	}
@@ -303,7 +306,7 @@ public final class LocalSyncService {
 		this.updateSyncTargetDiffCounter(currentState);
 
 		if (isFullySynced(currentState)) {
-			log.info("LocalSync: Fully synced to {}", currentState.getTargetHeader());
+			log.trace("LocalSync: Fully synced to {}", currentState.getTargetHeader());
 			// we're fully synced, go to idle and wait for another sync check
 			return this.goToIdle(currentState);
 		}
@@ -441,7 +444,7 @@ public final class LocalSyncService {
 				.withTargetHeader(header)
 				.withCandidatePeers(peers);
 		} else {
-			log.info("LocalSync: skipping as already targeted {}", currentState.getTargetHeader());
+			log.trace("LocalSync: skipping as already targeted {}", currentState.getTargetHeader());
 			return currentState;
 		}
 	}
