@@ -20,6 +20,7 @@ package com.radixdlt.client.store;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.store.berkeley.BalanceEntry;
 import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
+import com.radixdlt.client.store.berkeley.UnstakeEntry;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
@@ -86,6 +87,15 @@ public interface ClientApiStore {
 	 * @return transaction history entry.
 	 */
 	Result<TxHistoryEntry> getTransaction(AID txId);
+
+	/**
+	 * Retrieve pending unstake positions.
+	 *
+	 * @param radixAddress client address
+	 *
+	 * @return unstake positions for specified address.
+	 */
+	Result<List<UnstakeEntry>> getUnstakePositions(RadixAddress radixAddress);
 
 	EventProcessor<ScheduledQueueFlush> queueFlushProcessor();
 }

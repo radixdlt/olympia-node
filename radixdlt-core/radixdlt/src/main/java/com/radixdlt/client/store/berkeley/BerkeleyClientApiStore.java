@@ -31,6 +31,9 @@ import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.client.Rri;
+import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.client.Rri;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.ClientApiStoreException;
@@ -53,6 +56,7 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
@@ -64,6 +68,7 @@ import com.sleepycat.je.OperationStatus;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
@@ -111,6 +116,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private static final String ADDRESS_BALANCE_DB = "radix.address.balance_db";
 	private static final String SUPPLY_BALANCE_DB = "radix.supply.balance_db";
 	private static final String TOKEN_DEFINITION_DB = "radix.token_definition_db";
+	private static final String PENDING_UNSTAKES_DB = "radix.pending_unstakes_db";
 	private static final long DEFAULT_FLUSH_INTERVAL = 100L;
 	private static final int KEY_BUFFER_INITIAL_CAPACITY = 1024;
 	private static final int TIMESTAMP_SIZE = Long.BYTES + Integer.BYTES;
@@ -135,6 +141,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private Database tokenDefinitions;
 	private Database addressBalances;
 	private Database supplyBalances;
+	private Database pendingUnstakes;
 
 	@Inject
 	public BerkeleyClientApiStore(
@@ -258,49 +265,31 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				.flatMap(creator -> lookupTransactionInHistory(creator, txn)));
 	}
 
-	private void storeCollected() {
-		synchronized (txCollector) {
-			log.trace("Storing collected transactions started");
-
-			var count = withTime(
-				() -> txCollector.consumeCollected(this::storeTransactionBatch),
-				() -> systemCounters.increment(COUNT_APIDB_FLUSH_COUNT),
-				ELAPSED_APIDB_FLUSH_TIME
-			);
-
-			inputCounter.addAndGet(-count);
-
-			log.trace("Storing collected transactions finished. {} transactions processed", count);
-		}
-	}
-
-	private Result<TxHistoryEntry> lookupTransactionInHistory(RadixAddress creator, Txn txn) {
-		var key = asKey(creator, Instant.EPOCH);
+	@Override
+	public Result<List<UnstakeEntry>> getUnstakePositions(RadixAddress radixAddress) {
+		var key = asKey(radixAddress.getPublicKey(), Optional.empty(), Optional.empty());
 		var data = entry();
 
-		try (var cursor = transactionHistory.openCursor(null, null)) {
-			var status = readTxHistory(() -> cursor.getSearchKeyRange(key, data, null), data);
+		try (var cursor = pendingUnstakes.openCursor(null, null)) {
+			var status = cursor.getSearchKeyRange(key, data, null);
 
 			if (status != OperationStatus.SUCCESS) {
-				return errorTxNotFound(txn);
+				return Result.ok(List.of());
 			}
+
+			var list = new ArrayList<UnstakeEntry>();
 
 			do {
-				if (AID.fromBytes(data.getData()).fold(__ -> false, aid -> aid.equals(txn.getId()))) {
-					return Result.ok(txn)
-						.flatMap(txnParser::parseTxn)
-						.flatMap(t -> transactionParser.parse(t, instantFromKey(key)));
-				}
+				restore(serialization, data.getData(), UnstakeEntry.class)
+					.filter(entry -> pubKeyFromKeyEquals(key, radixAddress.getPublicKey()), "No match")
+					.onSuccess(list::add);
 
-				status = readTxHistory(() -> cursor.getNext(key, data, null), data);
+				status = cursor.getNext(key, data, null);
 			}
 			while (status == OperationStatus.SUCCESS);
-		}
-		return errorTxNotFound(txn);
-	}
 
-	private Result<TxHistoryEntry> errorTxNotFound(Txn txn) {
-		return Result.fail("Transaction with id {0} not found", txn.getId());
+			return Result.ok(list);
+		}
 	}
 
 	@Override
@@ -363,6 +352,51 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		safeClose(tokenDefinitions);
 		safeClose(addressBalances);
 		safeClose(supplyBalances);
+	}
+
+	private void storeCollected() {
+		synchronized (txCollector) {
+			log.trace("Storing collected transactions started");
+
+			var count = withTime(
+				() -> txCollector.consumeCollected(this::storeTransactionBatch),
+				() -> systemCounters.increment(COUNT_APIDB_FLUSH_COUNT),
+				ELAPSED_APIDB_FLUSH_TIME
+			);
+
+			inputCounter.addAndGet(-count);
+
+			log.trace("Storing collected transactions finished. {} transactions processed", count);
+		}
+	}
+
+	private Result<TxHistoryEntry> lookupTransactionInHistory(RadixAddress creator, Txn txn) {
+		var key = asKey(creator, Instant.EPOCH);
+		var data = entry();
+
+		try (var cursor = transactionHistory.openCursor(null, null)) {
+			var status = readTxHistory(() -> cursor.getSearchKeyRange(key, data, null), data);
+
+			if (status != OperationStatus.SUCCESS) {
+				return errorTxNotFound(txn);
+			}
+
+			do {
+				if (AID.fromBytes(data.getData()).fold(__ -> false, aid -> aid.equals(txn.getId()))) {
+					return Result.ok(txn)
+						.flatMap(txnParser::parseTxn)
+						.flatMap(t -> transactionParser.parse(t, instantFromKey(key)));
+				}
+
+				status = readTxHistory(() -> cursor.getNext(key, data, null), data);
+			}
+			while (status == OperationStatus.SUCCESS);
+		}
+		return errorTxNotFound(txn);
+	}
+
+	private Result<TxHistoryEntry> errorTxNotFound(Txn txn) {
+		return Result.fail("Transaction with id {0} not found", txn.getId());
 	}
 
 	private Instant instantFromKey(DatabaseEntry key) {
@@ -448,6 +482,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			supplyBalances = env.openDatabase(null, SUPPLY_BALANCE_DB, uniqueConfig);
 			tokenDefinitions = env.openDatabase(null, TOKEN_DEFINITION_DB, uniqueConfig);
 			transactionHistory = env.openDatabase(null, EXECUTED_TRANSACTIONS_DB, uniqueConfig);
+			pendingUnstakes = env.openDatabase(null, PENDING_UNSTAKES_DB, createDuplicateConfig());
 
 			if (System.getProperty("db.check_integrity", "1").equals("1")) {
 				//TODO: Implement recovery, basically should be the same as fresh DB handling
@@ -472,6 +507,14 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			.setAllowCreate(true)
 			.setTransactional(true)
 			.setKeyPrefixing(true)
+			.setBtreeComparator(lexicographicalComparator());
+	}
+
+	private DatabaseConfig createDuplicateConfig() {
+		return new DatabaseConfig()
+			.setAllowCreate(true)
+			.setTransactional(true)
+			.setSortedDuplicates(true)
 			.setBtreeComparator(lexicographicalComparator());
 	}
 
@@ -503,21 +546,25 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private void processRETransaction(REParsedTxn reTxn) {
 		extractTimestamp(reTxn.upSubstates());
 
+		var id = reTxn.getTxn().getId();
+
 		reTxn.getUser().ifPresentOrElse(
 			p -> {
 				var addr = new RadixAddress(universeMagic, p);
-				storeSingleTransaction(reTxn.getTxn().getId(), addr);
-				reTxn.getActions().forEach(a -> storeAction(addr, a));
+				storeSingleTransaction(id, addr);
+				reTxn.getActions().forEach(a -> storeAction(addr, a, id));
 			},
-			() -> reTxn.getActions().forEach(a -> storeAction(null, a))
+			() -> reTxn.getActions().forEach(a -> storeAction(null, a, id))
 		);
 	}
 
-	private void storeAction(RadixAddress user, REParsedAction action) {
-		if (action.getTxAction() instanceof TransferToken) {
-			var transferToken = (TransferToken) action.getTxAction();
-			var rri = getTokenDefinition(transferToken.addr())
-				.toOptional().orElseThrow().rri();
+	private void storeAction(RadixAddress user, REParsedAction action, AID id) {
+		var txAction = action.getTxAction();
+
+		if (txAction instanceof TransferToken) {
+			var transferToken = (TransferToken) txAction;
+
+			var rri = getTokenDefinition(transferToken.addr()).toOptional().orElseThrow().rri();
 			var entry0 = BalanceEntry.create(
 				user,
 				null,
@@ -525,6 +572,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				UInt384.from(transferToken.amount()),
 				true
 			);
+
 			var entry1 = BalanceEntry.create(
 				transferToken.to(),
 				null,
@@ -532,12 +580,15 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				UInt384.from(transferToken.amount()),
 				false
 			);
+
 			storeBalanceEntry(entry0);
 			storeBalanceEntry(entry1);
-		} else if (action.getTxAction() instanceof BurnToken) {
-			var burnToken = (BurnToken) action.getTxAction();
-			var rri = getTokenDefinition(burnToken.addr()).toOptional()
-				.orElseThrow().rri();
+
+			checkPendingUnstake(user, transferToken);
+		} else if (txAction instanceof BurnToken) {
+			var burnToken = (BurnToken) txAction;
+
+			var rri = getTokenDefinition(burnToken.addr()).toOptional().orElseThrow().rri();
 			var entry0 = BalanceEntry.create(
 				user,
 				null,
@@ -545,6 +596,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				UInt384.from(burnToken.amount()),
 				true
 			);
+
 			var entry1 = BalanceEntry.create(
 				null,
 				null,
@@ -552,10 +604,11 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				UInt384.from(burnToken.amount()),
 				true
 			);
+
 			storeBalanceEntry(entry0);
 			storeBalanceEntry(entry1);
-		} else if (action.getTxAction() instanceof MintToken) {
-			var mintToken = (MintToken) action.getTxAction();
+		} else if (txAction instanceof MintToken) {
+			var mintToken = (MintToken) txAction;
 
 			var rri = getTokenDefinition(mintToken.addr()).toOptional().orElseThrow().rri();
 			var entry0 = BalanceEntry.create(
@@ -565,6 +618,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				UInt384.from(mintToken.amount()),
 				false
 			);
+
 			var entry1 = BalanceEntry.create(
 				null,
 				null,
@@ -572,16 +626,48 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				UInt384.from(mintToken.amount()),
 				false
 			);
+
 			storeBalanceEntry(entry0);
 			storeBalanceEntry(entry1);
-		} else if (action.getTxAction() instanceof CreateMutableToken) {
-			var createMutableToken = (CreateMutableToken) action.getTxAction();
+		} else if (txAction instanceof CreateMutableToken) {
+			var createMutableToken = (CreateMutableToken) txAction;
 			var record = TokenDefinitionRecord.from(user, createMutableToken);
+
 			storeTokenDefinition(record);
-		} else if (action.getTxAction() instanceof CreateFixedToken) {
-			var createFixedToken = (CreateFixedToken) action.getTxAction();
+		} else if (txAction instanceof CreateFixedToken) {
+			var createFixedToken = (CreateFixedToken) txAction;
 			var record = TokenDefinitionRecord.from(user, createFixedToken);
+
 			storeTokenDefinition(record);
+		} else if (txAction instanceof UnstakeTokens) {
+			createPendingUnstake(user, (UnstakeTokens) txAction, id);
+		}
+	}
+
+	private void checkPendingUnstake(RadixAddress user, TransferToken transferToken) {
+		if (user != null) {
+			var key = asKey(
+				transferToken.to().getPublicKey(),
+				Optional.of(user.getPublicKey()),
+				Optional.of(transferToken.amount())
+			);
+			pendingUnstakes.delete(null, key);
+		}
+	}
+
+	private void createPendingUnstake(RadixAddress user, UnstakeTokens unstake, AID id) {
+		var entry = UnstakeEntry.create(
+			unstake.amount(),
+			new RadixAddress(universeMagic, unstake.from()),
+			0, //TODO: fix 'epochsUntil' when it will be implemented
+			id
+		);
+		var key = asKey(user.getPublicKey(), Optional.of(unstake.from()), Optional.of(unstake.amount()));
+		var data = serializeTo(entry(), entry);
+		var status = pendingUnstakes.putNoOverwrite(null, key, data);
+
+		if (status != OperationStatus.SUCCESS) {
+			log.warn("Pending unstake exists {} for {}", entry, user);
 		}
 	}
 
@@ -617,7 +703,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			log.error("Error while storing transaction {} for {}", id, creator);
 		}
 	}
-
 
 	private void storeTokenDefinition(TokenDefinitionRecord tokenDefinition) {
 		var key = asKey(tokenDefinition.addr());
@@ -690,6 +775,29 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private static DatabaseEntry asKey(REAddr addr) {
 		return entry(addr.getBytes());
+	}
+
+	private static DatabaseEntry asKey(ECPublicKey user, Optional<ECPublicKey> validator, Optional<UInt256> amount) {
+		var buffer = buffer().writeBytes(user.getCompressedBytes());
+
+		validator.ifPresentOrElse(
+			v -> buffer.writeBytes(v.getCompressedBytes()),
+			() -> buffer.writeZero(ECPublicKey.COMPRESSED_BYTES)
+		);
+
+		amount.ifPresentOrElse(
+			a -> buffer.writeBytes(a.toByteArray()),
+			() -> buffer.writeZero(UInt256.BYTES)
+		);
+
+		return entry(buffer);
+	}
+
+	//Key format must match one produced by method above
+	private boolean pubKeyFromKeyEquals(DatabaseEntry key, ECPublicKey publicKey) {
+		var bytes = Arrays.copyOf(key.getData(), ECPublicKey.COMPRESSED_BYTES);
+
+		return Arrays.equals(bytes, publicKey.getCompressedBytes());
 	}
 
 	private static DatabaseEntry asKey(RadixAddress radixAddress, Instant timestamp) {

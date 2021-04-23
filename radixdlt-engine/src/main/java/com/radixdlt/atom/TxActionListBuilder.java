@@ -23,8 +23,11 @@ import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.SplitToken;
+import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
+import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
@@ -86,6 +89,18 @@ public class TxActionListBuilder {
 
 	public TxActionListBuilder burn(REAddr rri, UInt256 amount) {
 		var action = new BurnToken(rri, amount);
+		actions.add(action);
+		return this;
+	}
+
+	public TxActionListBuilder stake(ECPublicKey delegate, UInt256 amount) {
+		var action = new StakeTokens(delegate, amount);
+		actions.add(action);
+		return this;
+	}
+
+	public TxActionListBuilder unstake(ECPublicKey delegate, UInt256 amount) {
+		var action = new UnstakeTokens(delegate, amount);
 		actions.add(action);
 		return this;
 	}

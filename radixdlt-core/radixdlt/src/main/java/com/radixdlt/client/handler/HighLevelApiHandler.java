@@ -35,6 +35,7 @@ import com.radixdlt.client.service.ValidatorInfoService;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.berkeley.BalanceEntry;
+import com.radixdlt.client.store.berkeley.UnstakeEntry;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.ECPublicKey;
@@ -178,6 +179,15 @@ public class HighLevelApiHandler {
 		);
 	}
 
+	public JSONObject handleUnstakePositions(JSONObject request) {
+		return withRequiredStringParameter(
+			request,
+			(params, address) -> RadixAddress.fromString(address)
+				.flatMap(highLevelApiService::getUnstakePositions)
+				.map(this::formatUnstakePositions)
+		);
+	}
+
 	//-----------------------------------------------------------------------------------------------------
 	// internal processing
 	//-----------------------------------------------------------------------------------------------------
@@ -226,6 +236,17 @@ public class HighLevelApiHandler {
 				.put("amount", balance.getAmount())
 		);
 
+		return jsonObject().put(ARRAY, array);
+	}
+
+	private JSONObject formatUnstakePositions(List<UnstakeEntry> balances) {
+		var array = fromList(balances, unstake ->
+			jsonObject()
+				.put("validator", unstake.getValidator())
+				.put("amount", unstake.getAmount())
+				.put("epochsUntil", unstake.getEpochsUntil())
+				.put("withdrawTxID", unstake.getWithdrawTxId())
+		);
 		return jsonObject().put(ARRAY, array);
 	}
 

@@ -101,6 +101,7 @@ public final class SubmissionService {
 
 	public Result<AID> submitTx(byte[] blob, ECDSASignature recoverable, AID txId) {
 		var txn = TxLowLevelBuilder.newBuilder(blob).sig(recoverable).build();
+
 		if (!txn.getId().equals(txId)) {
 			return Result.fail("Provided txID does not match provided transaction");
 		}

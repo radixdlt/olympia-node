@@ -16,20 +16,11 @@
  */
 package com.radixdlt.client.store.berkeley;
 
-import com.radixdlt.api.construction.TxnParser;
-import com.radixdlt.atom.TxActionListBuilder;
-import com.radixdlt.atom.actions.CreateFixedToken;
-import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.client.Rri;
-import com.radixdlt.client.store.TransactionParser;
-import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.utils.UInt384;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import com.radixdlt.client.api.ActionType;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -38,11 +29,19 @@ import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.atom.FixedTokenDefinition;
 import com.radixdlt.atom.MutableTokenDefinition;
+import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atom.actions.CreateFixedToken;
+import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.client.Rri;
+import com.radixdlt.client.api.ActionType;
+import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.counters.SystemCounters;
@@ -57,11 +56,13 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RadixEngineMempool;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt384;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -75,7 +76,10 @@ import java.util.stream.Collectors;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -86,6 +90,8 @@ public class BerkeleyClientApiStoreTest {
 	private static final RadixAddress OWNER = new RadixAddress((byte) 0, OWNER_KEYPAIR.getPublicKey());
 	private static final ECKeyPair TOKEN_KEYPAIR = ECKeyPair.generateNew();
 	private static final RadixAddress TOKEN_ADDRESS = new RadixAddress((byte) 0, TOKEN_KEYPAIR.getPublicKey());
+	private static final ECKeyPair VALIDATOR_KEYPAIR = ECKeyPair.generateNew();
+	private static final RadixAddress VALIDATOR_ADDRESS = new RadixAddress((byte) 0, VALIDATOR_KEYPAIR.getPublicKey());
 
 	private static final String SYMBOL = "cfee";
 	private static final REAddr TOKEN = REAddr.ofHashedKey(TOKEN_ADDRESS.getPublicKey(), SYMBOL);
@@ -106,6 +112,9 @@ public class BerkeleyClientApiStoreTest {
 
 	@Inject
 	private ConstraintMachine constraintMachine;
+
+	@Inject
+	private RadixEngineMempool mempool;
 
 	private Injector createInjector() {
 		return Guice.createInjector(
@@ -272,7 +281,7 @@ public class BerkeleyClientApiStoreTest {
 		).signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var txMap = new HashMap<AID, Txn>();
-		var clientApiStore = prepareApiStore(tx, txMap);
+		var clientApiStore = prepareApiStore(txMap, tx);
 		var txId = txMap.entrySet().stream().findFirst().map(Map.Entry::getKey).orElse(AID.ZERO);
 
 		clientApiStore.getTransaction(txId)
@@ -298,12 +307,12 @@ public class BerkeleyClientApiStoreTest {
 			.onSuccess(list -> fail("Request must be rejected"));
 	}
 
-	private BerkeleyClientApiStore prepareApiStore(Txn tx) throws RadixEngineException {
-		return prepareApiStore(tx, new HashMap<>());
+	private BerkeleyClientApiStore prepareApiStore(Txn... tx) throws RadixEngineException {
+		return prepareApiStore(new HashMap<>(), tx);
 	}
 
 	@SuppressWarnings("unchecked")
-	private BerkeleyClientApiStore prepareApiStore(Txn tx, Map<AID, Txn> txMap) throws RadixEngineException {
+	private BerkeleyClientApiStore prepareApiStore(Map<AID, Txn> txMap, Txn... tx) throws RadixEngineException {
 		var transactions = engine.execute(List.of(tx), null, PermissionLevel.USER)
 			.stream()
 			.map(REParsedTxn::getTxn)

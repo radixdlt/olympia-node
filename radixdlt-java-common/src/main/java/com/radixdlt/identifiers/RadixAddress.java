@@ -32,6 +32,8 @@ import java.util.function.Supplier;
  * base58 address based on a public key
  */
 public final class RadixAddress {
+	public static final int BYTES = 1 + ECPublicKey.COMPRESSED_BYTES + 4;
+
 	/**
 	 * The public key this address represents
 	 */
@@ -67,7 +69,7 @@ public final class RadixAddress {
 	}
 
 	public static RadixAddress from(byte[] raw) {
-		if (raw.length != 1 + ECPublicKey.COMPRESSED_BYTES + 4) {
+		if (raw.length != BYTES) {
 			throw new IllegalArgumentException("Invalid number of bytes for address");
 		}
 

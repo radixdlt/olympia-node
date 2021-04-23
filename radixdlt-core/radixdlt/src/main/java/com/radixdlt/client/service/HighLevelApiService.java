@@ -25,6 +25,7 @@ import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.berkeley.BalanceEntry;
+import com.radixdlt.client.store.berkeley.UnstakeEntry;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
@@ -97,6 +98,10 @@ public class HighLevelApiService {
 
 	public Result<List<BalanceEntry>> getStakePositions(RadixAddress radixAddress) {
 		return clientApiStore.getTokenBalances(radixAddress, true);
+	}
+
+	public Result<List<UnstakeEntry>> getUnstakePositions(RadixAddress radixAddress) {
+		return clientApiStore.getUnstakePositions(radixAddress);
 	}
 
 	private static Optional<Instant> calculateNewCursor(List<TxHistoryEntry> response) {
