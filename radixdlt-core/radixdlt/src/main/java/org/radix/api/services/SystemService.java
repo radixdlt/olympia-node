@@ -17,40 +17,28 @@
 
 package org.radix.api.services;
 
-import com.radixdlt.environment.Runners;
 import org.json.JSONObject;
-import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
 
 import com.google.inject.Inject;
-import com.radixdlt.ModuleRunner;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
-
-import java.util.Map;
-
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
-
-import static java.util.Objects.requireNonNull;
 
 public class SystemService {
 	private final Serialization serialization;
 	private final Universe universe;
 	private final LocalSystem localSystem;
-	private final ModuleRunner consensusRunner;
 
 	@Inject
 	public SystemService(
 		Serialization serialization,
 		Universe universe,
-		LocalSystem localSystem,
-		Map<String, ModuleRunner> moduleRunners
+		LocalSystem localSystem
 	) {
 		this.serialization = serialization;
 		this.universe = universe;
 		this.localSystem = localSystem;
-		this.consensusRunner = requireNonNull(moduleRunners.get(Runners.CONSENSUS));
 	}
 
 	public JSONObject getUniverse() {
@@ -59,19 +47,5 @@ public class SystemService {
 
 	public JSONObject getLocalSystem() {
 		return serialization.toJsonObject(localSystem, DsonOutput.Output.API);
-	}
-
-	public JSONObject getPong() {
-		return jsonObject().put("response", "pong").put("timestamp", Time.currentTimestamp());
-	}
-
-	public JSONObject bftStart() {
-		consensusRunner.start();
-		return jsonObject().put("response", "success");
-	}
-
-	public JSONObject bftStop() {
-		consensusRunner.stop();
-		return jsonObject().put("response", "success");
 	}
 }

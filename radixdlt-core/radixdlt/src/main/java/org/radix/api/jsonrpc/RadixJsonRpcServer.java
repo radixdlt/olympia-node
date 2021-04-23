@@ -84,14 +84,9 @@ public final class RadixJsonRpcServer {
 	}
 
 	private void fillHandlers(Map<String, JsonRpcHandler> additionalHandlers) {
-		//BFT
-		handlers.put("BFT.start", systemHandler::handleBftStart);
-		handlers.put("BFT.stop", systemHandler::handleBftStop);
-
 		//General info
 		handlers.put("Universe.getUniverse", systemHandler::handleGetUniverse);
 		handlers.put("Network.getInfo", systemHandler::handleGetLocalSystem);
-		handlers.put("Ping", systemHandler::handlePing);
 
 		//Network info
 		handlers.put("Network.getLivePeers", networkHandler::handleGetLivePeers);
