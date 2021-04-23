@@ -390,9 +390,22 @@ public final class LocalSyncService {
 			.map(txn -> txn.getId().asHashCode())
 			.collect(ImmutableList.toImmutableList());
 
-		return this.validatorSetVerifier.verifyValidatorSet(syncResponse)
-			&& this.signaturesVerifier.verifyResponseSignatures(syncResponse)
-			&& this.accumulatorVerifier.verify(start, hashes, end);
+		if (!this.validatorSetVerifier.verifyValidatorSet(syncResponse)) {
+			log.warn("Invalid validator set");
+			return false;
+		}
+
+		if (!this.signaturesVerifier.verifyResponseSignatures(syncResponse)) {
+			log.warn("Invalid signatures");
+			return false;
+		}
+
+		if (!this.accumulatorVerifier.verify(start, hashes, end)) {
+			log.warn("Invalid accumulator");
+			return false;
+		}
+
+		return true;
 	}
 
 	private SyncState processSyncRequestTimeout(SyncingState currentState, SyncRequestTimeout syncRequestTimeout) {
