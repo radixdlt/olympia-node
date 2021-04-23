@@ -16,7 +16,6 @@
  */
 package com.radixdlt.client.handler;
 
-import com.radixdlt.client.Rri;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1OutputStream;
@@ -26,9 +25,11 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Test;
 
-import com.radixdlt.client.api.ActionType;
+import com.radixdlt.client.Rri;
+import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.client.api.TransactionStatus;
 import com.radixdlt.client.api.TxHistoryEntry;
+import com.radixdlt.client.api.ValidatorInfoDetails;
 import com.radixdlt.client.service.HighLevelApiService;
 import com.radixdlt.client.service.SubmissionService;
 import com.radixdlt.client.service.TransactionStatusService;
@@ -39,6 +40,7 @@ import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
@@ -46,13 +48,14 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
+import com.radixdlt.utils.functional.Tuple;
 
 import java.io.ByteArrayOutputStream;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -289,6 +292,55 @@ public class HighLevelApiHandlerTest {
 		assertEquals(aid, result.get("txID"));
 	}
 
+	@Test
+	public void testValidators() {
+		var key = Optional.of(V3.getPublicKey());
+
+		var validators = List.of(
+			createValidator(V1, "v1", UInt256.FIVE),
+			createValidator(V2, "v2", UInt256.TWO),
+			createValidator(V3, "v3", UInt256.SEVEN)
+		);
+
+		when(validatorInfoService.getValidators(eq(10), eq(Optional.empty())))
+			.thenReturn(Result.ok(tuple(key, validators)));
+
+		var params = jsonArray().put(10);
+		var response = handler.handleValidators(requestWith(params));
+
+		assertNotNull(response);
+		assertTrue(response.has("result"));
+
+		var result = response.getJSONObject("result");
+
+		assertTrue(result.has("cursor"));
+
+		var cursor = result.getString("cursor");
+		assertEquals(cursor, key.map(ValidatorAddress::of).map(Objects::toString).orElseThrow());
+
+		assertTrue(result.has("validators"));
+		var list = result.getJSONArray("validators");
+		assertEquals(3, list.length());
+
+		assertEquals(UInt256.FIVE, list.getJSONObject(0).get("totalDelegatedStake"));
+		assertEquals("v1", list.getJSONObject(0).get("name"));
+
+		assertEquals(UInt256.TWO, list.getJSONObject(1).get("totalDelegatedStake"));
+		assertEquals("v2", list.getJSONObject(1).get("name"));
+
+		assertEquals(UInt256.SEVEN, list.getJSONObject(2).get("totalDelegatedStake"));
+		assertEquals("v3", list.getJSONObject(2).get("name"));
+	}
+
+	private ValidatorInfoDetails createValidator(RadixAddress v1, String name, UInt256 stake) {
+		return ValidatorInfoDetails.create(
+			v1.getPublicKey(), v1,
+			name, "http://" + name + ".com",
+			stake, UInt256.ZERO,
+			true
+		);
+	}
+
 	private String encodeToDer(ECDSASignature signature) {
 		try {
 			ASN1EncodableVector vector = new ASN1EncodableVector();
@@ -306,37 +358,6 @@ public class HighLevelApiHandlerTest {
 			fail();
 			return null;
 		}
-	}
-
-	private final Random random = new Random();
-
-	private JSONObject randomAction() {
-		var toAddress = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
-		var token = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "cfee");
-
-		switch (random.nextInt(3)) {
-			case 0:    //transfer
-				return jsonObject()
-					.put("type", ActionType.TRANSFER)
-					.put("from", KNOWN_ADDRESS_STRING)
-					.put("to", toAddress.toString())
-					.put("amount", UInt256.SEVEN)
-					.put("tokenIdentifier", token.toString());
-			case 1: //stake
-				return jsonObject()
-					.put("type", ActionType.STAKE)
-					.put("from", KNOWN_ADDRESS_STRING)
-					.put("validator", toAddress.toString())
-					.put("amount", UInt256.FIVE);
-			case 2: //unstake
-				return jsonObject()
-					.put("type", ActionType.UNSTAKE)
-					.put("from", KNOWN_ADDRESS_STRING)
-					.put("validator", toAddress.toString())
-					.put("amount", UInt256.FOUR);
-		}
-
-		throw new IllegalStateException("Should not happen");
 	}
 
 	private byte[] randomBytes() {

@@ -67,8 +67,8 @@ public final class JsonRpcUtil {
 		throw new IllegalStateException("Can't construct");
 	}
 
-	public static JSONArray params(JSONObject request) {
-		return request.getJSONArray("params");
+	public static Optional<JSONArray> params(JSONObject request) {
+		return Optional.ofNullable(request.optJSONArray("params"));
 	}
 
 	public static JSONObject parseError(String message) {
@@ -118,10 +118,11 @@ public final class JsonRpcUtil {
 	}
 
 	public static Optional<String> safeString(JSONObject params, String name) {
-		if (params.has(name)) {
-			return ofNullable(params.get(name).toString());
-		}
-		return Optional.empty();
+		return ofNullable(params.opt(name)).map(Object::toString);
+	}
+
+	public static Optional<String> safeString(JSONObject request, int index) {
+		return params(request).flatMap(params -> ofNullable(params.opt(index)).map(Object::toString));
 	}
 
 	public static JSONObject errorResponse(Object id, RpcError code, String message) {
