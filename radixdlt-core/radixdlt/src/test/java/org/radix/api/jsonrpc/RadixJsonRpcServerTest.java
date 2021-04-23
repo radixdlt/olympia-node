@@ -19,7 +19,6 @@ package org.radix.api.jsonrpc;
 
 import org.junit.Test;
 import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
-import org.radix.api.jsonrpc.handler.NetworkHandler;
 
 import java.util.Map;
 
@@ -30,10 +29,7 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 public class RadixJsonRpcServerTest {
 	@Test
 	public void when_send_json_rpc_request_with_no_id__return_json_error_response() {
-		var server = new RadixJsonRpcServer(
-			mock(NetworkHandler.class),
-			Map.of()
-		);
+		var server = new RadixJsonRpcServer(Map.of());
 
 		var response = server.handleRpc(jsonObject().toString());
 
@@ -48,11 +44,7 @@ public class RadixJsonRpcServerTest {
 
 	@Test
 	public void when_send_oversized_json_rpc_request_with__return_json_error_response() {
-		var server = new RadixJsonRpcServer(
-			mock(NetworkHandler.class),
-			Map.of(),
-			5
-		);
+		var server = new RadixJsonRpcServer(Map.of(), 5);
 
 		var response = server.handleRpc("123456");
 		assertThat(response.getString("jsonrpc")).isEqualTo("2.0");

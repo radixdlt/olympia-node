@@ -22,7 +22,6 @@ import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
-import org.radix.api.jsonrpc.handler.NetworkHandler;
 
 import com.google.common.io.CharStreams;
 import com.google.inject.Inject;
@@ -57,34 +56,23 @@ public final class RadixJsonRpcServer {
 	 * Store to query atoms from
 	 */
 	private final Map<String, JsonRpcHandler> handlers = new HashMap<>();
-	private final NetworkHandler networkHandler;
 
 	@Inject
-	public RadixJsonRpcServer(
-		NetworkHandler networkHandler,
-		Map<String, JsonRpcHandler> additionalHandlers
-	) {
-		this(networkHandler, additionalHandlers, DEFAULT_MAX_REQUEST_SIZE);
+	public RadixJsonRpcServer(Map<String, JsonRpcHandler> additionalHandlers) {
+		this(additionalHandlers, DEFAULT_MAX_REQUEST_SIZE);
 	}
 
 	public RadixJsonRpcServer(
-		NetworkHandler networkHandler,
 		Map<String, JsonRpcHandler> additionalHandlers,
 		long maxRequestSizeBytes
 	) {
-		this.networkHandler = networkHandler;
 		this.maxRequestSizeBytes = maxRequestSizeBytes;
 
 		fillHandlers(additionalHandlers);
 	}
 
 	private void fillHandlers(Map<String, JsonRpcHandler> additionalHandlers) {
-		//Network info
-		handlers.put("Network.getLivePeers", networkHandler::handleGetLivePeers);
-		handlers.put("Network.getPeers", networkHandler::handleGetPeers);
-
 		handlers.putAll(additionalHandlers);
-
 		handlers.keySet().forEach(name -> log.trace("Registered JSON RPC method: {}", name));
 	}
 
