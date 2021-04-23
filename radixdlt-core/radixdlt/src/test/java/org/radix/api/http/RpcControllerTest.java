@@ -56,8 +56,7 @@ public class RpcControllerTest {
 	private final LedgerHandler ledgerHandler = mock(LedgerHandler.class);
 	private final RadixJsonRpcServer jsonRpcServer =
 		new RadixJsonRpcServer(systemHandler, networkHandler, atomHandler, ledgerHandler, Map.of());
-	private final RadixHttpWebsocketHandler websocketHandler = mock(RadixHttpWebsocketHandler.class);
-	private final RpcController rpcController = new RpcController(jsonRpcServer, websocketHandler);
+	private final RpcController rpcController = new RpcController(jsonRpcServer);
 
 	@Test
 	public void routesAreConfigured() {
