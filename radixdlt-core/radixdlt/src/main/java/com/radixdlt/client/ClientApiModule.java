@@ -118,6 +118,12 @@ public class ClientApiModule extends AbstractModule {
 		return highLevelApiHandler::handleStakePositions;
 	}
 
+	@ProvidesIntoMap
+	@StringMapKey("radix.unstakePositions")
+	public JsonRpcHandler unstakePositions(HighLevelApiHandler highLevelApiHandler) {
+		return highLevelApiHandler::handleUnstakePositions;
+	}
+
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> clientApiStore(ClientApiStore clientApiStore) {
 		return new EventProcessorOnRunner<>(

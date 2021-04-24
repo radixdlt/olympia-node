@@ -135,13 +135,13 @@ public class HighLevelApiHandlerTest {
 
 		assertEquals(3, list.length());
 		assertEquals(UInt384.TWO, list.getJSONObject(0).get("amount"));
-		assertEquals(balance1.getDelegate(), list.getJSONObject(0).get("validator"));
+		assertEquals(ValidatorAddress.of(balance1.getDelegate()), list.getJSONObject(0).get("validator"));
 
 		assertEquals(UInt384.FIVE, list.getJSONObject(1).get("amount"));
-		assertEquals(balance2.getDelegate(), list.getJSONObject(1).get("validator"));
+		assertEquals(ValidatorAddress.of(balance2.getDelegate()), list.getJSONObject(1).get("validator"));
 
 		assertEquals(UInt384.EIGHT, list.getJSONObject(2).get("amount"));
-		assertEquals(balance3.getDelegate(), list.getJSONObject(2).get("validator"));
+		assertEquals(ValidatorAddress.of(balance3.getDelegate()), list.getJSONObject(2).get("validator"));
 	}
 
 	@Test

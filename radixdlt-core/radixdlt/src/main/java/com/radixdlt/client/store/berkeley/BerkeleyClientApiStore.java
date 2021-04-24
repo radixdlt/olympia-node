@@ -22,7 +22,9 @@ import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.client.Rri;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.REParsedAction;
@@ -551,7 +553,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			storeBalanceEntry(entry1);
 		} else if (action.getTxAction() instanceof MintToken) {
 			var mintToken = (MintToken) action.getTxAction();
-
 			var rri = getTokenDefinition(mintToken.resourceAddr()).toOptional().orElseThrow().rri();
 			var entry0 = BalanceEntry.create(
 				mintToken.to(),
@@ -565,6 +566,44 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				null,
 				rri,
 				UInt384.from(mintToken.amount()),
+				false
+			);
+			storeBalanceEntry(entry0);
+			storeBalanceEntry(entry1);
+		} else if (action.getTxAction() instanceof StakeTokens) {
+			var stakeTokens = (StakeTokens) action.getTxAction();
+			var rri = getTokenDefinition(REAddr.ofNativeToken()).toOptional().orElseThrow().rri();
+			var entry0 = BalanceEntry.create(
+				stakeTokens.from(),
+				stakeTokens.to(),
+				rri,
+				UInt384.from(stakeTokens.amount()),
+				false
+			);
+			var entry1 = BalanceEntry.create(
+				stakeTokens.from(),
+				null,
+				rri,
+				UInt384.from(stakeTokens.amount()),
+				true
+			);
+			storeBalanceEntry(entry0);
+			storeBalanceEntry(entry1);
+		} else if (action.getTxAction() instanceof UnstakeTokens) {
+			var unstakeTokens = (UnstakeTokens) action.getTxAction();
+			var rri = getTokenDefinition(REAddr.ofNativeToken()).toOptional().orElseThrow().rri();
+			var entry0 = BalanceEntry.create(
+				unstakeTokens.accountAddr(),
+				unstakeTokens.from(),
+				rri,
+				UInt384.from(unstakeTokens.amount()),
+				true
+			);
+			var entry1 = BalanceEntry.create(
+				unstakeTokens.accountAddr(),
+				null,
+				rri,
+				UInt384.from(unstakeTokens.amount()),
 				false
 			);
 			storeBalanceEntry(entry0);
