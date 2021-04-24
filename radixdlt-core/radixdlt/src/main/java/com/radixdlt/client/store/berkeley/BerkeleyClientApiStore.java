@@ -257,7 +257,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		try {
 			return rriCache.get(addr, () -> getTokenDefinition(addr).toOptional().orElseThrow().rri());
 		} catch (ExecutionException e) {
-			throw new IllegalStateException();
+			log.error("Unable to find rri of token at address {}", addr);
+			throw new IllegalStateException(e);
 		}
 	}
 
@@ -629,6 +630,23 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			var createFixedToken = (CreateFixedToken) action.getTxAction();
 			var record = TokenDefinitionRecord.from(user, createFixedToken);
 			storeTokenDefinition(record);
+
+			var entry0 = BalanceEntry.create(
+				REAddr.ofPubKeyAccount(user),
+				null,
+				record.rri(),
+				UInt384.from(createFixedToken.getSupply()),
+				false
+			);
+			var entry1 = BalanceEntry.create(
+				null,
+				null,
+				record.rri(),
+				UInt384.from(createFixedToken.getSupply()),
+				false
+			);
+			storeBalanceEntry(entry0);
+			storeBalanceEntry(entry1);
 		}
 	}
 

@@ -80,8 +80,7 @@ public final class AllocateTokensRoutine implements ConstraintRoutine {
 				}
 
 				@Override
-				public InputOutputReducer<VoidParticle, TokensParticle, VoidReducerState>
-				inputOutputReducer() {
+				public InputOutputReducer<VoidParticle, TokensParticle, VoidReducerState> inputOutputReducer() {
 					return (i, o, index, outputUsed) ->
 						ReducerResult.complete(new MintToken(o.getResourceAddr(), o.getHoldingAddr(), o.getAmount()));
 				}
