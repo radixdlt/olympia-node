@@ -240,7 +240,7 @@ public class BerkeleyClientApiStoreTest {
 
 				var entry = list.get(0);
 
-				assertEquals(UInt256.ONE, entry.getFee());
+				assertEquals(UInt256.ZERO, entry.getFee());
 				assertEquals(4, entry.getActions().size());
 
 				var action = entry.getActions().get(2);
@@ -335,7 +335,7 @@ public class BerkeleyClientApiStoreTest {
 			mock(SystemCounters.class),
 			mock(ScheduledEventDispatcher.class),
 			ledgerCommitted,
-			new TransactionParser(TOKEN)
+			new TransactionParser()
 		);
 	}
 

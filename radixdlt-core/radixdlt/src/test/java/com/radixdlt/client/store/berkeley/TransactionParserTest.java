@@ -68,7 +68,7 @@ public class TransactionParserTest {
 
 	private RadixEngine<Void> engine;
 
-	private TransactionParser parser = new TransactionParser(tokenRri);
+	private final TransactionParser parser = new TransactionParser();
 
 	@Before
 	public void setup() throws Exception {
@@ -104,7 +104,7 @@ public class TransactionParserTest {
 		)
 			.signAndBuild(tokenOwnerKeyPair::sign);
 
-		executeAndDecode(List.of(ActionType.STAKE, ActionType.BURN), UInt256.TWO, txn);
+		executeAndDecode(List.of(ActionType.STAKE), UInt256.TWO, txn);
 	}
 
 	@Test
@@ -118,7 +118,7 @@ public class TransactionParserTest {
 		)
 			.signAndBuild(tokenOwnerKeyPair::sign);
 
-		executeAndDecode(List.of(ActionType.UNSTAKE, ActionType.BURN), UInt256.FOUR, txn2);
+		executeAndDecode(List.of(ActionType.UNSTAKE), UInt256.FOUR, txn2);
 	}
 
 	@Test
@@ -132,7 +132,7 @@ public class TransactionParserTest {
 			.build()
 		).signAndBuild(tokenOwnerKeyPair::sign);
 
-		executeAndDecode(List.of(ActionType.UNKNOWN, ActionType.UNKNOWN, ActionType.TRANSFER, ActionType.BURN), UInt256.FOUR, txn);
+		executeAndDecode(List.of(ActionType.UNKNOWN, ActionType.UNKNOWN, ActionType.TRANSFER), UInt256.FOUR, txn);
 	}
 
 	private void executeAndDecode(List<ActionType> expectedActions, UInt256 fee, Txn... txns) throws Exception {

@@ -17,7 +17,6 @@
 
 package com.radixdlt.client.store;
 
-import com.google.inject.Inject;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.StakeTokens;
@@ -26,7 +25,6 @@ import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.constraintmachine.REParsedTxn;
-import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
@@ -36,20 +34,13 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class TransactionParser {
-	private final REAddr nativeToken;
-
-	@Inject
-	public TransactionParser(@NativeToken REAddr nativeToken) {
-		this.nativeToken = nativeToken;
-	}
-
 	private UInt256 computeFeePaid(REParsedTxn radixEngineTxn) {
 		return radixEngineTxn.getActions()
 			.stream()
 			.map(REParsedAction::getTxAction)
 			.filter(BurnToken.class::isInstance)
 			.map(BurnToken.class::cast)
-			.filter(t -> t.resourceAddr().equals(nativeToken))
+			.filter(t -> t.resourceAddr().isSystem())
 			.map(BurnToken::amount)
 			.reduce(UInt256::add)
 			.orElse(UInt256.ZERO);
@@ -70,12 +61,18 @@ public final class TransactionParser {
 		}
 	}
 
+	private boolean isFeeAction(TxAction action) {
+		return (action instanceof BurnToken) && ((BurnToken) action).resourceAddr().isSystem();
+	}
+
 	public Result<TxHistoryEntry> parse(REParsedTxn parsedTxn, Instant txDate, Function<REAddr, String> addrToRri) {
 		var txnId = parsedTxn.getTxn().getId();
 		var fee = computeFeePaid(parsedTxn);
 
 		var actions = parsedTxn.getActions().stream()
-			.map(a -> mapToEntry(a.getTxAction(), addrToRri))
+			.map(REParsedAction::getTxAction)
+			.filter(a -> !isFeeAction(a))
+			.map(a -> mapToEntry(a, addrToRri))
 			.collect(Collectors.toList());
 
 		return Result.ok(TxHistoryEntry.create(txnId, txDate, fee, null, actions));

@@ -130,7 +130,7 @@ public class ActionEntry {
 
 		switch (type) {
 			case TRANSFER:
-				return json.put("to", to).put("rri", rri.toString());
+				return json.put("to", to).put("rri", rri);
 
 			case UNSTAKE:
 			case STAKE:
