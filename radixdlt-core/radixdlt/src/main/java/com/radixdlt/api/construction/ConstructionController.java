@@ -20,12 +20,17 @@ package com.radixdlt.api.construction;
 
 import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.engine.RadixEngineException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 import org.bouncycastle.util.encoders.Hex;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.radix.api.http.Controller;
+
+import java.util.Objects;
 
 import static org.radix.api.http.RestUtils.respond;
 import static org.radix.api.http.RestUtils.withBody;
@@ -45,6 +50,12 @@ public final class ConstructionController implements Controller {
 		handler.post("/node/parse", this::handleParse);
 	}
 
+	private JSONObject instructionToObject(REInstruction i) {
+		return jsonObject()
+			.put("type", i.getMicroOp())
+			.put("data", Objects.toString(i.getData()));
+	}
+
 	void handleParse(HttpServerExchange exchange) {
 		withBody(exchange, values -> {
 			var transactionHex = values.getString("transaction");
@@ -53,7 +64,12 @@ public final class ConstructionController implements Controller {
 			try {
 				parsedTxn = txnParser.parse(Txn.create(transactionBytes));
 			} catch (RadixEngineException e) {
-				respond(exchange, jsonObject().put("error", e.getMessage()));
+				var statelessParsed = new JSONArray();
+				e.getResult().instructionsParsed().forEach(i -> statelessParsed.put(instructionToObject(i)));
+				respond(exchange, jsonObject()
+					.put("parsed", statelessParsed)
+					.put("error", e.getMessage())
+				);
 				return;
 			}
 

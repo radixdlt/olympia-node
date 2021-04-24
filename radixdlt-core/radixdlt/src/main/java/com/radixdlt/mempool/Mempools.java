@@ -18,7 +18,6 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.atom.Txn;
-import com.radixdlt.utils.Pair;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -40,7 +39,7 @@ public class Mempools {
 			}
 
 			@Override
-			public List<Pair<Txn, Exception>> committed(List<T> committed) {
+			public List<Txn> committed(List<T> committed) {
 				return List.of();
 			}
 

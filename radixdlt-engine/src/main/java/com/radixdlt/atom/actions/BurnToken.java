@@ -40,7 +40,7 @@ public final class BurnToken implements TxAction {
 		return accountAddr;
 	}
 
-	public REAddr addr() {
+	public REAddr resourceAddr() {
 		return resourceAddr;
 	}
 

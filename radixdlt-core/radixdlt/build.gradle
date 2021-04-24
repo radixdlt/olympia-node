@@ -332,27 +332,3 @@ task deb4docker(type: Copy, dependsOn: buildDeb) {
         }
     }
 }
-
-/**
- * Creates the JSON RPC documentation
- */
-task updatejsonschema2md(type: Copy, dependsOn: npmInstall) {
-    from 'header.ejs'
-    into 'node_modules/@adobe/jsonschema2md/templates/md'
-}
-
-task genmarkdown(type: NodeTask, dependsOn: updatejsonschema2md) {
-    script = file('node_modules/@adobe/jsonschema2md/cli.js')
-    args = ["-d", "$projectDir/src/main/resources/schemas", "-o", "$projectDir/src/main/resources/markdown"]
-}
-
-task gendoc(type: NodeTask, dependsOn: genmarkdown) {
-    script = file('create-html.js')
-}
-
-/**
- * Creates the JSON RPC documentation and manages the *.deb file in the docker directory
- */
-task gendocanddeb4docker(dependsOn: [gendoc, deb4docker]) {
-    deb4docker.mustRunAfter(gendoc);
-}

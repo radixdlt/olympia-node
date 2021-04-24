@@ -17,12 +17,16 @@
 
 package com.radixdlt.client.store.berkeley;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.client.Rri;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.REParsedAction;
@@ -64,6 +68,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -132,6 +137,10 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private Database tokenDefinitions;
 	private Database addressBalances;
 	private Database supplyBalances;
+
+	private final Cache<REAddr, String> rriCache = CacheBuilder.newBuilder()
+		.maximumSize(1024)
+		.build();
 
 	@Inject
 	public BerkeleyClientApiStore(
@@ -210,7 +219,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			}
 
 			if (status != OperationStatus.SUCCESS) {
-				return Result.fail("Unknown RRI " + rri.toString());
+				return Result.fail("Unknown RRI " + rri);
 			}
 
 			return restore(serialization, data.getData(), BalanceEntry.class)
@@ -241,6 +250,14 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			}
 
 			return Result.fail("Unknown error getting addr " + addr);
+		}
+	}
+
+	private String getRriOrFail(REAddr addr) {
+		try {
+			return rriCache.get(addr, () -> getTokenDefinition(addr).toOptional().orElseThrow().rri());
+		} catch (ExecutionException e) {
+			throw new IllegalStateException();
 		}
 	}
 
@@ -285,7 +302,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				if (AID.fromBytes(data.getData()).fold(__ -> false, aid -> aid.equals(txn.getId()))) {
 					return Result.ok(txn)
 						.flatMap(txnParser::parseTxn)
-						.flatMap(t -> transactionParser.parse(t, instantFromKey(key)));
+						.flatMap(t -> transactionParser.parse(t, instantFromKey(key), this::getRriOrFail));
 				}
 
 				status = readTxHistory(() -> cursor.getNext(key, data, null), data);
@@ -332,7 +349,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					.flatMap(this::retrieveTx)
 					.onFailure(this::reportError)
 					.flatMap(txnParser::parseTxn)
-					.flatMap(txn -> transactionParser.parse(txn, instantFromKey(key)))
+					.flatMap(txn -> transactionParser.parse(txn, instantFromKey(key), this::getRriOrFail))
 					.onSuccess(list::add);
 
 				status = readTxHistory(() -> cursor.getNext(key, data, null), data);
@@ -499,7 +516,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private void processRETransaction(REParsedTxn reTxn) {
 		extractTimestamp(reTxn.upSubstates());
 
-		reTxn.getUser().ifPresentOrElse(
+		reTxn.getSignedBy().ifPresentOrElse(
 			p -> {
 				storeSingleTransaction(reTxn.getTxn().getId(), p);
 				reTxn.getActions().forEach(a -> storeAction(p, a));
@@ -511,8 +528,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private void storeAction(ECPublicKey user, REParsedAction action) {
 		if (action.getTxAction() instanceof TransferToken) {
 			var transferToken = (TransferToken) action.getTxAction();
-			var rri = getTokenDefinition(transferToken.addr())
-				.toOptional().orElseThrow().rri();
+			var rri = getRriOrFail(transferToken.resourceAddr());
 			var entry0 = BalanceEntry.create(
 				transferToken.from(),
 				null,
@@ -531,8 +547,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			storeBalanceEntry(entry1);
 		} else if (action.getTxAction() instanceof BurnToken) {
 			var burnToken = (BurnToken) action.getTxAction();
-			var rri = getTokenDefinition(burnToken.addr()).toOptional()
-				.orElseThrow().rri();
+			var rri = getRriOrFail(burnToken.resourceAddr());
 			var entry0 = BalanceEntry.create(
 				burnToken.from(),
 				null,
@@ -551,8 +566,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			storeBalanceEntry(entry1);
 		} else if (action.getTxAction() instanceof MintToken) {
 			var mintToken = (MintToken) action.getTxAction();
-
-			var rri = getTokenDefinition(mintToken.resourceAddr()).toOptional().orElseThrow().rri();
+			var rri = getRriOrFail(mintToken.resourceAddr());
 			var entry0 = BalanceEntry.create(
 				mintToken.to(),
 				null,
@@ -565,6 +579,44 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				null,
 				rri,
 				UInt384.from(mintToken.amount()),
+				false
+			);
+			storeBalanceEntry(entry0);
+			storeBalanceEntry(entry1);
+		} else if (action.getTxAction() instanceof StakeTokens) {
+			var stakeTokens = (StakeTokens) action.getTxAction();
+			var rri = getRriOrFail(REAddr.ofNativeToken());
+			var entry0 = BalanceEntry.create(
+				stakeTokens.from(),
+				stakeTokens.to(),
+				rri,
+				UInt384.from(stakeTokens.amount()),
+				false
+			);
+			var entry1 = BalanceEntry.create(
+				stakeTokens.from(),
+				null,
+				rri,
+				UInt384.from(stakeTokens.amount()),
+				true
+			);
+			storeBalanceEntry(entry0);
+			storeBalanceEntry(entry1);
+		} else if (action.getTxAction() instanceof UnstakeTokens) {
+			var unstakeTokens = (UnstakeTokens) action.getTxAction();
+			var rri = getRriOrFail(REAddr.ofNativeToken());
+			var entry0 = BalanceEntry.create(
+				unstakeTokens.accountAddr(),
+				unstakeTokens.from(),
+				rri,
+				UInt384.from(unstakeTokens.amount()),
+				true
+			);
+			var entry1 = BalanceEntry.create(
+				unstakeTokens.accountAddr(),
+				null,
+				rri,
+				UInt384.from(unstakeTokens.amount()),
 				false
 			);
 			storeBalanceEntry(entry0);
@@ -591,7 +643,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private Optional<ECPublicKey> extractCreator(Txn tx) {
 		try {
 			var result = constraintMachine.statelessVerify(tx);
-			return result.getRecovered();
+			return result.getSignedBy();
 		} catch (RadixEngineException e) {
 			throw new IllegalStateException();
 		}

@@ -25,7 +25,6 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.Mempool;
@@ -107,8 +106,8 @@ public final class RadixEngineMempool implements Mempool<REParsedTxn> {
 	}
 
 	@Override
-	public List<Pair<Txn, Exception>> committed(List<REParsedTxn> transactions) {
-		final var removed = new ArrayList<Pair<Txn, Exception>>();
+	public List<Txn> committed(List<REParsedTxn> transactions) {
+		final var removed = new ArrayList<Txn>();
 		final var committedIds = transactions.stream()
 			.map(p -> p.getTxn().getId())
 			.collect(Collectors.toSet());
@@ -127,15 +126,7 @@ public final class RadixEngineMempool implements Mempool<REParsedTxn> {
 					var toRemove = data.remove(txnId);
 					// TODO: Cleanup
 					if (toRemove != null && !committedIds.contains(toRemove.getFirst().getTxn().getId())) {
-						removed.add(Pair.of(toRemove.getFirst().getTxn(),
-							new RadixEngineMempoolException(
-								new RadixEngineException(
-									toRemove.getFirst().getTxn(),
-									RadixEngineErrorCode.CM_ERROR,
-									"Mempool evicted"
-								)
-							)
-						));
+						removed.add(toRemove.getFirst().getTxn());
 					}
 				}
 			});

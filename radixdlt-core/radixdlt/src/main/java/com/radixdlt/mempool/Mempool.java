@@ -17,7 +17,6 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.atom.Txn;
-import com.radixdlt.utils.Pair;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -50,7 +49,7 @@ public interface Mempool<T> {
 
 	List<Txn> scanUpdateAndGet(Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator);
 
-	List<Pair<Txn, Exception>> committed(List<T> committed);
+	List<Txn> committed(List<T> committed);
 
 	int getCount();
 }

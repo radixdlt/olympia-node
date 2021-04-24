@@ -299,7 +299,24 @@ public final class TxBuilder {
 		UInt256 amount,
 		String errorMessage
 	) throws TxBuilderException {
-		var remainder = downFungible(particleClass, particlePredicate, amountMapper, amount, errorMessage);
+		UInt256 spent = UInt256.ZERO;
+		while (spent.compareTo(amount) < 0) {
+			// FIXME: This is a hack due to the constraint machine not being able to
+			// FIXME: handle spins of the same type one after the other yet.
+			if (!spent.isZero()) {
+				particleGroup();
+			}
+
+			var substateDown = down(
+				particleClass,
+				particlePredicate,
+				errorMessage
+			);
+
+			spent = spent.add(amountMapper.apply(substateDown));
+		}
+
+		var remainder = spent.subtract(amount);
 		if (!remainder.isZero()) {
 			up(remainderMapper.map(remainder));
 		}

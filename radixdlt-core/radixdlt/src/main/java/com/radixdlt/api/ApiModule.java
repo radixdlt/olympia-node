@@ -38,7 +38,6 @@ import org.radix.api.http.RadixHttpServer;
 import org.radix.api.http.RpcController;
 import org.radix.api.http.SystemController;
 import org.radix.api.jsonrpc.JsonRpcHandler;
-import org.radix.api.services.AtomsService;
 
 /**
  * Configures the api including http server setup
@@ -55,7 +54,6 @@ public final class ApiModule extends AbstractModule {
 		controllers.addBinding().to(RpcController.class).in(Scopes.SINGLETON);
 		controllers.addBinding().to(SystemController.class).in(Scopes.SINGLETON);
 
-		bind(AtomsService.class).in(Scopes.SINGLETON);
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 				.permitDuplicates();
 		eventBinder.addBinding().toInstance(AtomsCommittedToLedger.class);

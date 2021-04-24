@@ -17,20 +17,17 @@
 
 package org.radix.api.services;
 
-import com.radixdlt.environment.Runners;
 import org.junit.Test;
 import org.radix.universe.system.LocalSystem;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.ModuleRunner;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.network.transport.udp.UDPConstants;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 
 import java.io.IOException;
@@ -39,8 +36,6 @@ import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.radix.Radix.AGENT;
 import static org.radix.Radix.AGENT_VERSION;
 import static org.radix.Radix.PROTOCOL_VERSION;
@@ -49,44 +44,8 @@ public class SystemServiceTest {
 	private static final String PROPERTIES_FILE = "/default.config";
 
 	private final Serialization serialization = DefaultSerialization.getInstance();
-	private final Universe universe = loadUniverse();
 	private final LocalSystem localSystem = assembleLocalSystem();
-	private final ModuleRunner consensusRunner = mock(ModuleRunner.class);
-	private final SystemService systemService =
-		new SystemService(serialization, universe, localSystem, Map.of(Runners.CONSENSUS, consensusRunner));
-
-	@Test
-	public void pingPong() {
-		var result = systemService.getPong();
-
-		assertNotNull(result);
-		assertEquals("pong", result.getString("response"));
-	}
-
-	@Test
-	public void bftCanBeStarted() {
-		var result = systemService.bftStart();
-
-		assertNotNull(result);
-		assertEquals("success", result.getString("response"));
-		verify(consensusRunner).start();
-	}
-
-	@Test
-	public void bftCanBeStopped() {
-		var result = systemService.bftStop();
-
-		assertNotNull(result);
-		assertEquals("success", result.getString("response"));
-		verify(consensusRunner).stop();
-	}
-
-	@Test
-	public void universeCanBeObtained() {
-		var result = systemService.getUniverse();
-
-		assertNotNull(result);
-	}
+	private final SystemService systemService = new SystemService(serialization, localSystem);
 
 	@Test
 	public void localSystemCanBeObtained() {
@@ -99,15 +58,6 @@ public class SystemServiceTest {
 		assertEquals(PROTOCOL_VERSION, agent.get("protocol"));
 		assertEquals(":str:" + AGENT, agent.getString("name"));
 		assertEquals(AGENT_VERSION, agent.get("version"));
-	}
-
-	private static Universe loadUniverse() {
-		try {
-			byte[] bytes = Bytes.fromBase64String(universeBase64());
-			return DefaultSerialization.getInstance().fromDson(bytes, Universe.class);
-		} catch (Exception e) {
-			throw new RuntimeException("Unable to load Universe", e);
-		}
 	}
 
 	private static String universeBase64() throws IOException {

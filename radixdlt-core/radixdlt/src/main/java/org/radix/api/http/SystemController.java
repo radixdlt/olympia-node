@@ -17,47 +17,42 @@
 
 package org.radix.api.http;
 
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.utils.Bytes;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.radix.api.services.SystemService;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.systeminfo.InMemorySystemInfo;
-
-import java.util.Optional;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 
 import static org.radix.api.http.RestUtils.respond;
-import static org.radix.api.http.RestUtils.withBodyAsyncAndDefaultResponse;
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public final class SystemController implements Controller {
 	private final SystemService systemService;
-	private final InMemorySystemInfo inMemorySystemInfo;
+	private final VerifiedTxnsAndProof genesis;
 
 	@Inject
 	public SystemController(
 		SystemService systemService,
-		InMemorySystemInfo inMemorySystemInfo
+		@Genesis VerifiedTxnsAndProof genesis
 	) {
 		this.systemService = systemService;
-		this.inMemorySystemInfo = inMemorySystemInfo;
+		this.genesis = genesis;
 	}
 
 	@Override
 	public void configureRoutes(final RoutingHandler handler) {
 		// System routes
-		handler.get("/api/system", this::respondWithLocalSystem);
-		// keep-alive route
-		handler.get("/api/ping", this::respondWithPong);
-		// BFT routes
-		handler.put("/api/bft/0", this::handleBftState);
+		handler.get("/system/info", this::respondWithLocalSystem);
 		// Universe routes
-		handler.get("/api/universe", this::respondWithUniverse);
+		handler.get("/system/checkpoints", this::respondWithGenesis);
 	}
 
 	@VisibleForTesting
@@ -66,46 +61,15 @@ public final class SystemController implements Controller {
 	}
 
 	@VisibleForTesting
-	void respondWithPong(final HttpServerExchange exchange) {
-		respond(exchange, systemService.getPong());
-	}
+	void respondWithGenesis(final HttpServerExchange exchange) {
+		var jsonObject = new JSONObject();
+		var txns = new JSONArray();
+		genesis.getTxns().forEach(txn -> txns.put(Bytes.toHexString(txn.getPayload())));
+		jsonObject.put("txns", txns);
 
-	@VisibleForTesting
-	void handleBftState(HttpServerExchange exchange) {
-		withBodyAsyncAndDefaultResponse(exchange, values -> {
-			if (values.getBoolean("state")) {
-				respond(exchange, systemService.bftStart());
-			} else {
-				respond(exchange, systemService.bftStop());
-			}
-		});
-	}
+		var proof = DefaultSerialization.getInstance().toJsonObject(genesis.getProof(), DsonOutput.Output.ALL);
+		jsonObject.put("proof", proof);
 
-	@VisibleForTesting
-	void respondWithUniverse(final HttpServerExchange exchange) {
-		respond(exchange, systemService.getUniverse());
-	}
-
-	@VisibleForTesting
-	void respondWithHighestQC(final HttpServerExchange exchange) {
-		var highestQCJson = Optional.ofNullable(inMemorySystemInfo.getHighestQC())
-			.map(this::formatHighestQC)
-			.orElse(jsonObject().put("error", "no qc"));
-
-		respond(exchange, highestQCJson);
-	}
-
-	private JSONObject formatHighestQC(final QuorumCertificate qc) {
-		return jsonObject()
-			.put("epoch", qc.getEpoch())
-			.put("view", qc.getView())
-			.put("vertexId", qc.getProposed().getVertexId());
-	}
-
-	private JSONObject mapSingleVertex(final VerifiedVertex v) {
-		return jsonObject()
-			.put("epoch", v.getParentHeader().getLedgerHeader().getEpoch())
-			.put("view", v.getView().number())
-			.put("hash", v.getId().toString());
+		respond(exchange, jsonObject);
 	}
 }

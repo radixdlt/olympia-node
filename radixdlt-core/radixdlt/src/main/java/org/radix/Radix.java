@@ -166,22 +166,17 @@ public final class Radix {
 		}
 
 		// start API services
-		final RadixHttpServer httpServer = injector.getInstance(RadixHttpServer.class);
+		final var httpServer = injector.getInstance(RadixHttpServer.class);
 		httpServer.start();
+
+		final var consensusRunner = moduleRunners.get(Runners.CONSENSUS);
+		consensusRunner.start();
 
 		final BFTNode self = injector.getInstance(Key.get(BFTNode.class, Self.class));
 		long finish = System.currentTimeMillis();
-		SystemCounters systemCounters = injector.getInstance(SystemCounters.class);
+		var systemCounters = injector.getInstance(SystemCounters.class);
 		systemCounters.set(SystemCounters.CounterType.STARTUP_TIME_MS, finish - start);
 		log.info("Node '{}' started successfully in {} seconds", self, (finish - start) / 1000);
-
-		if (properties.get("consensus.start_on_boot", true)) {
-			final ModuleRunner consensusRunner = moduleRunners.get(Runners.CONSENSUS);
-			consensusRunner.start();
-			log.info("Consensus '{}' started successfully", self);
-		} else {
-			log.info("Consensus '{}' ready, waiting for start signal", self);
-		}
 	}
 
 	private static void dumpExecutionLocation() {

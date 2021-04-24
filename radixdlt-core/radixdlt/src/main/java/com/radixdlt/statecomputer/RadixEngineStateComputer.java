@@ -45,7 +45,6 @@ import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -289,7 +288,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		// TODO: refactor mempool to be less generic and make this more efficient
 		// TODO: Move this into engine
-		List<Pair<Txn, Exception>> removed = this.mempool.committed(txCommitted);
+		List<Txn> removed = this.mempool.committed(txCommitted);
 		systemCounters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
 		if (!removed.isEmpty()) {
 			AtomsRemovedFromMempool atomsRemovedFromMempool = AtomsRemovedFromMempool.create(removed);

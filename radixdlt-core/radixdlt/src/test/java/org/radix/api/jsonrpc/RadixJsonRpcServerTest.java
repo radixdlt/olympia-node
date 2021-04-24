@@ -17,36 +17,19 @@
 
 package org.radix.api.jsonrpc;
 
-import org.json.JSONObject;
 import org.junit.Test;
 import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
-import org.radix.api.jsonrpc.handler.AtomHandler;
-import org.radix.api.jsonrpc.handler.LedgerHandler;
-import org.radix.api.jsonrpc.handler.NetworkHandler;
-import org.radix.api.jsonrpc.handler.SystemHandler;
-import org.radix.time.Time;
-
-import com.radixdlt.serialization.Serialization;
 
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
-import static org.radix.api.jsonrpc.JsonRpcUtil.response;
 
 public class RadixJsonRpcServerTest {
 	@Test
 	public void when_send_json_rpc_request_with_no_id__return_json_error_response() {
-		var server = new RadixJsonRpcServer(
-			mock(SystemHandler.class),
-			mock(NetworkHandler.class),
-			mock(AtomHandler.class),
-			mock(LedgerHandler.class),
-			Map.of()
-		);
+		var server = new RadixJsonRpcServer(Map.of());
 
 		var response = server.handleRpc(jsonObject().toString());
 
@@ -60,46 +43,8 @@ public class RadixJsonRpcServerTest {
 	}
 
 	@Test
-	public void when_send_json_rpc_request_ping__return_pong_and_timestamp() {
-		var request = jsonObject()
-			.put("id", 0)
-			.put("method", "Ping")
-			.put("params", jsonObject());
-
-		var serializer = mock(Serialization.class);
-		when(serializer.toJsonObject(any(), any())).thenAnswer(i -> i.getArguments()[0]);
-
-		var systemHandler = mock(SystemHandler.class);
-		var pong = jsonObject().put("response", "pong").put("timestamp", Time.currentTimestamp());
-		when(systemHandler.handlePing(any())).thenReturn(response(request, pong));
-
-		var server = new RadixJsonRpcServer(
-			systemHandler,
-			mock(NetworkHandler.class),
-			mock(AtomHandler.class),
-			mock(LedgerHandler.class),
-			Map.of()
-		);
-
-		var response = server.handleRpc(request.toString());
-		assertThat(response.getString("jsonrpc")).isEqualTo("2.0");
-		assertThat(response.has("result")).isTrue();
-		assertThat(response.get("id")).isEqualTo(0);
-
-		assertThat(response.getJSONObject("result").get("response")).isEqualTo("pong");
-		assertThat(response.getJSONObject("result").has("timestamp")).isTrue();
-	}
-
-	@Test
 	public void when_send_oversized_json_rpc_request_with__return_json_error_response() {
-		var server = new RadixJsonRpcServer(
-			mock(SystemHandler.class),
-			mock(NetworkHandler.class),
-			mock(AtomHandler.class),
-			mock(LedgerHandler.class),
-			Map.of(),
-			5
-		);
+		var server = new RadixJsonRpcServer(Map.of(), 5);
 
 		var response = server.handleRpc("123456");
 		assertThat(response.getString("jsonrpc")).isEqualTo("2.0");

@@ -353,7 +353,11 @@ public final class ConstraintMachine {
 			this.publicKey = publicKey;
 		}
 
-		public Optional<ECPublicKey> getRecovered() {
+		public List<REInstruction> instructionsParsed() {
+			return instructions;
+		}
+
+		public Optional<ECPublicKey> getSignedBy() {
 			return Optional.ofNullable(publicKey);
 		}
 
@@ -362,7 +366,12 @@ public final class ConstraintMachine {
 		}
 
 		public RadixEngineException exception(String message) {
-			return new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, message + "@" + index() + " parsed: " + instructions);
+			return new RadixEngineException(
+				txn,
+				RadixEngineErrorCode.TXN_ERROR,
+				message + "@" + index() + " parsed: " + instructions,
+				this
+			);
 		}
 	}
 
@@ -438,7 +447,7 @@ public final class ConstraintMachine {
 		if (sig != null) {
 			var hash = HashUtils.sha256(txn.getPayload(), 0, sigPosition); // This is a double hash
 			var pubKey = ECPublicKey.recoverFrom(hash, sig)
-				.orElseThrow(() -> new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, "Invalid signature"));
+				.orElseThrow(() -> verifierState.exception("Invalid signature"));
 			if (!pubKey.verify(hash, sig)) {
 				throw verifierState.exception("Invalid signature");
 			}
@@ -578,10 +587,15 @@ public final class ConstraintMachine {
 		var parsedActions = new ArrayList<REParsedAction>();
 		var error = this.statefulVerify(validationState, result.instructions, parsedActions);
 		if (error.isPresent()) {
-			throw new RadixEngineException(txn, RadixEngineErrorCode.CM_ERROR, error.get().getErrorDescription(), error.get());
+			throw new RadixEngineException(
+				txn,
+				RadixEngineErrorCode.CM_ERROR,
+				error.get().getErrorDescription(),
+				result,
+				error.get()
+			);
 		}
 
-		var signedBy = validationState.signedBy;
-		return new REParsedTxn(txn, signedBy, parsedActions);
+		return new REParsedTxn(txn, result, parsedActions);
 	}
 }

@@ -25,6 +25,7 @@ import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.berkeley.BalanceEntry;
+import com.radixdlt.client.store.berkeley.UnstakeEntry;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.ImmutableIndex;
@@ -96,6 +97,11 @@ public class HighLevelApiService {
 
 	public Result<List<BalanceEntry>> getStakePositions(REAddr addr) {
 		return clientApiStore.getTokenBalances(addr, true);
+	}
+
+	// Everything is immediately spendable in betanet
+	public Result<List<UnstakeEntry>> getUnstakePositions(REAddr addr) {
+		return Result.ok(List.of());
 	}
 
 	private static Optional<Instant> calculateNewCursor(List<TxHistoryEntry> response) {

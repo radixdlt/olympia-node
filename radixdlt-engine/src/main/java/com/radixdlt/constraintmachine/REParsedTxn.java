@@ -35,16 +35,24 @@ import java.util.stream.Stream;
 public final class REParsedTxn {
 	private final Txn txn;
 	private final List<REParsedAction> actions;
-	private final Optional<ECPublicKey> signedBy;
+	private final ConstraintMachine.StatelessVerificationResult statelessResult;
 
-	public REParsedTxn(Txn txn, Optional<ECPublicKey> signedBy, List<REParsedAction> actions) {
+	public REParsedTxn(
+		Txn txn,
+		ConstraintMachine.StatelessVerificationResult statelessResult,
+		List<REParsedAction> actions
+	) {
 		this.txn = txn;
-		this.signedBy = signedBy;
 		this.actions = actions;
+		this.statelessResult = statelessResult;
 	}
 
-	public Optional<ECPublicKey> getUser() {
-		return signedBy;
+	public ConstraintMachine.StatelessVerificationResult getStatelessResult() {
+		return statelessResult;
+	}
+
+	public Optional<ECPublicKey> getSignedBy() {
+		return statelessResult.getSignedBy();
 	}
 
 	public List<REParsedAction> getActions() {

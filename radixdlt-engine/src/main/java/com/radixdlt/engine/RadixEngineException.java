@@ -19,7 +19,7 @@ package com.radixdlt.engine;
 
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.CMError;
-
+import com.radixdlt.constraintmachine.ConstraintMachine.StatelessVerificationResult;
 import java.util.Objects;
 import javax.annotation.Nullable;
 
@@ -30,22 +30,32 @@ import javax.annotation.Nullable;
 public final class RadixEngineException extends Exception {
 	private final RadixEngineErrorCode errorCode;
 	private final CMError cmError;
+	private final StatelessVerificationResult result;
 
 	public RadixEngineException(
-		Txn txn, RadixEngineErrorCode errorCode, String message
+		Txn txn,
+		RadixEngineErrorCode errorCode,
+		String message,
+		StatelessVerificationResult result
 	) {
-		this(txn, errorCode, message, null);
+		this(txn, errorCode, message, result, null);
 	}
 
 	public RadixEngineException(
 		Txn txn,
 		RadixEngineErrorCode errorCode,
 		String message,
+		StatelessVerificationResult result,
 		CMError cmError
 	) {
 		super(message + " " + (cmError == null ? "" : "\n" + cmError) + "\n" + txn);
 		this.errorCode = Objects.requireNonNull(errorCode);
+		this.result = result;
 		this.cmError = cmError;
+	}
+
+	public StatelessVerificationResult getResult() {
+		return result;
 	}
 
 	/**
