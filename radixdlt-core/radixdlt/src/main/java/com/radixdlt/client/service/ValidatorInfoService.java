@@ -21,6 +21,7 @@ import com.google.inject.Inject;
 import com.radixdlt.client.api.ValidatorInfoDetails;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RegisteredValidators;
 import com.radixdlt.statecomputer.Stakes;
@@ -67,7 +68,7 @@ public class ValidatorInfoService {
 	private ValidatorInfoDetails fillDetails(ECPublicKey validatorKey, ValidatorDetails details, Stakes stakes) {
 		return ValidatorInfoDetails.create(
 			validatorKey,
-			validatorKey,
+			REAddr.ofPubKeyAccount(validatorKey),
 			details.getName(),
 			details.getUrl(),
 			stakes.getStake(validatorKey).orElse(UInt256.ZERO),
