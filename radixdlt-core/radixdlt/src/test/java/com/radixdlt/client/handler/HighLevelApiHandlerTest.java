@@ -337,7 +337,7 @@ public class HighLevelApiHandlerTest {
 
 	private ValidatorInfoDetails createValidator(ECPublicKey v1, String name, UInt256 stake) {
 		return ValidatorInfoDetails.create(
-			v1, v1,
+			v1, REAddr.ofPubKeyAccount(v1),
 			name, "http://" + name + ".com",
 			stake, UInt256.ZERO,
 			true
