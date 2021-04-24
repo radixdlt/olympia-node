@@ -17,9 +17,7 @@
 
 package org.radix.api.http;
 
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.utils.Bytes;
 import org.json.JSONArray;
@@ -66,9 +64,7 @@ public final class SystemController implements Controller {
 		var txns = new JSONArray();
 		genesis.getTxns().forEach(txn -> txns.put(Bytes.toHexString(txn.getPayload())));
 		jsonObject.put("txns", txns);
-
-		var proof = DefaultSerialization.getInstance().toJsonObject(genesis.getProof(), DsonOutput.Output.ALL);
-		jsonObject.put("proof", proof);
+		jsonObject.put("proof", genesis.getProof().asJSON());
 
 		respond(exchange, jsonObject);
 	}
