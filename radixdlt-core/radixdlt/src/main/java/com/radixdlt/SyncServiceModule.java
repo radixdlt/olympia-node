@@ -32,7 +32,6 @@ import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.ScheduledEventProducerOnRunner;
-import com.radixdlt.ledger.DtoTxnsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.store.LastProof;
@@ -109,10 +108,10 @@ public class SyncServiceModule extends AbstractModule {
 		EventDispatcher<VerifiedTxnsAndProof> syncCommandsDispatcher
 	) {
 		return resp -> {
-			DtoTxnsAndProof txnsAndProof = resp.getTxnsAndProof();
+			var txnsAndProof = resp.getTxnsAndProof();
 			// TODO: Stateful ledger header verification:
 			// TODO: -verify rootHash matches
-			LedgerProof nextHeader = new LedgerProof(
+			var nextHeader = new LedgerProof(
 				txnsAndProof.getTail().getOpaque(),
 				txnsAndProof.getTail().getLedgerHeader(),
 				txnsAndProof.getTail().getSignatures()

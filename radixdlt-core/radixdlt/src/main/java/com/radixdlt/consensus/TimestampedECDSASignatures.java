@@ -44,7 +44,7 @@ import javax.annotation.concurrent.Immutable;
  * <p>
  * Note that the timestamps can be used together with the
  * {@link VoteData} in a {@link QuorumCertificate} to reconstruct
- * {@link TimestampedVoteData} in order to validate signatures.
+ * {@link ConsensusHasher} in order to validate signatures.
  */
 @Immutable
 @SerializerId2("consensus.timestamped_ecdsa_signatures")

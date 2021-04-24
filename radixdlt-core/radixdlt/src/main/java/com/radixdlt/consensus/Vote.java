@@ -120,7 +120,7 @@ public final class Vote implements ConsensusEvent {
 	public static HashCode getHashOfData(Hasher hasher, VoteData voteData, long timestamp) {
 		var opaque = hasher.hash(voteData);
 		var header = voteData.getCommitted().map(BFTHeader::getLedgerHeader).orElse(null);
-		return hasher.hash(new TimestampedVoteData(opaque, header, timestamp));
+		return ConsensusHasher.toHash(opaque, header, timestamp, hasher);
 	}
 
 	public HashCode getHashOfData(Hasher hasher) {
