@@ -223,7 +223,7 @@ public class HighLevelApiHandler {
 	private JSONObject formatStakePositions(List<BalanceEntry> balances) {
 		var array = fromList(balances, balance ->
 			jsonObject()
-				.put("validator", balance.getDelegate())
+				.put("validator", ValidatorAddress.of(balance.getDelegate()))
 				.put("amount", balance.getAmount())
 		);
 
