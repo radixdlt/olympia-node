@@ -231,16 +231,16 @@ public final class RESerializer {
 		serializeREAddr(buf, p.getAddr());
 		p.getSupply().ifPresentOrElse(
 			i -> {
-				buf.put((byte) 0);
+				buf.put((byte) 2);
 				buf.put(i.toByteArray());
 			},
 			() -> {
 				p.getMinter().ifPresentOrElse(
 					m -> {
-						buf.put((byte) 2);
+						buf.put((byte) 1);
 						serializeKey(buf, m);
 					},
-					() -> buf.put((byte) 1)
+					() -> buf.put((byte) 0)
 				);
 			}
 		);
@@ -256,14 +256,14 @@ public final class RESerializer {
 		final UInt256 supply;
 		final ECPublicKey minter;
 		if (type == 0) {
-			supply = deserializeUInt256(buf);
+			supply = null;
 			minter = null;
 		} else if (type == 1) {
 			supply = null;
-			minter = null;
-		} else if (type == 2) {
-			supply = null;
 			minter = deserializeKey(buf);
+		} else if (type == 2) {
+			supply = deserializeUInt256(buf);
+			minter = null;
 		} else {
 			throw new DeserializeException("Unknown token def type " + type);
 		}

@@ -55,7 +55,7 @@ public final class StakeTokens implements TxAction {
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.swapFungible(
 			TokensParticle.class,
-			p -> p.getResourceAddr().isSystem()
+			p -> p.getResourceAddr().isNativeToken()
 				&& p.getHoldingAddr().equals(fromAcct)
 				&& (amount.compareTo(TokenUnitConversions.SUB_UNITS) < 0
 				|| p.getAmount().compareTo(TokenUnitConversions.unitsToSubunits(1)) >= 0),

@@ -78,7 +78,7 @@ public final class NodeApplicationModule extends AbstractModule {
 	private SubstateCacheRegister<?> registeredSubstate(@Self REAddr self) {
 		return new SubstateCacheRegister<>(
 			TokensParticle.class,
-			p -> p.getHoldingAddr().equals(self) && p.getResourceAddr().isSystem()
+			p -> p.getHoldingAddr().equals(self) && p.getResourceAddr().isNativeToken()
 		);
 	}
 

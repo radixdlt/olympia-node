@@ -45,7 +45,7 @@ public final class ParticleCounter implements StateReducer<Integer, TokensPartic
 	public BiFunction<Integer, TokensParticle, Integer> outputReducer() {
 		return (count, p) -> {
 			if (p.getHoldingAddr().equals(addr)
-				&& p.getResourceAddr().isSystem()
+				&& p.getResourceAddr().isNativeToken()
 				&& p.getAmount().compareTo(fee.multiply(UInt256.TWO)) > 0) {
 				return count + 1;
 			}
@@ -57,7 +57,7 @@ public final class ParticleCounter implements StateReducer<Integer, TokensPartic
 	public BiFunction<Integer, TokensParticle, Integer> inputReducer() {
 		return (count, p) -> {
 			if (p.getHoldingAddr().equals(addr)
-				&& p.getResourceAddr().isSystem()
+				&& p.getResourceAddr().isNativeToken()
 				&& p.getAmount().compareTo(fee.multiply(UInt256.TWO)) > 0) {
 				return count - 1;
 			}

@@ -22,8 +22,8 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public void storeAtom(Transaction dbTxn, Txn txn, List<REParsedInstruction> stateUpdates) {
-		transientStore.storeAtom(dbTxn, txn, stateUpdates);
+	public void storeTxn(Transaction dbTxn, Txn txn, List<REParsedInstruction> stateUpdates) {
+		transientStore.storeTxn(dbTxn, txn, stateUpdates);
 	}
 
 	@Override

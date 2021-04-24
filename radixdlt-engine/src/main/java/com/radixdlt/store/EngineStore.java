@@ -32,7 +32,7 @@ public interface EngineStore<M> extends SubstateStore, CMStore {
 	/**
 	 * Stores the atom into this CMStore
 	 */
-	void storeAtom(Transaction dbTxn, Txn txn, List<REParsedInstruction> instructions);
+	void storeTxn(Transaction dbTxn, Txn txn, List<REParsedInstruction> instructions);
 
 	void storeMetadata(Transaction txn, M metadata);
 
