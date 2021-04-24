@@ -18,7 +18,6 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.atom.Txn;
-import com.radixdlt.utils.Pair;
 
 import java.util.List;
 import java.util.function.Consumer;

@@ -19,7 +19,6 @@ package com.radixdlt.mempool;
 import com.google.common.collect.Lists;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.Collections;
