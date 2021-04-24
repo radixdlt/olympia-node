@@ -91,7 +91,7 @@ public class TokenFeeChecker implements PostParsedChecker {
 			.map(REParsedAction::getTxAction)
 			.filter(BurnToken.class::isInstance)
 			.map(BurnToken.class::cast)
-			.filter(t -> t.addr().isSystem())
+			.filter(t -> t.resourceAddr().isSystem())
 			.map(BurnToken::amount)
 			.reduce(UInt256::add)
 			.orElse(UInt256.ZERO);

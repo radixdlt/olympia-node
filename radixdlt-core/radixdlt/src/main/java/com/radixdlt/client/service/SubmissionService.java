@@ -19,7 +19,6 @@ package com.radixdlt.client.service;
 
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
-import com.google.inject.name.Named;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
@@ -49,17 +48,14 @@ public final class SubmissionService {
 	private final UInt256 fixedFee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
-	private final int magic;
 
 	@Inject
 	public SubmissionService(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
-		@Named("magic") int magic
+		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher
 	) {
 		this.radixEngine = radixEngine;
 		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
-		this.magic = magic;
 	}
 
 	public Result<PreparedTransaction> prepareTransaction(List<TransactionAction> steps) {

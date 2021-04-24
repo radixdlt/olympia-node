@@ -29,6 +29,8 @@ import com.radixdlt.client.api.ActionType;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
+import java.util.function.Function;
+
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 import static java.util.Objects.requireNonNull;
@@ -41,9 +43,9 @@ public class ActionEntry {
 	private final String from;
 	private final String to;
 	private final UInt256 amount;
-	private final REAddr rri;
+	private final String rri;
 
-	private ActionEntry(ActionType type, String from, String to, UInt256 amount, REAddr rri) {
+	private ActionEntry(ActionType type, String from, String to, UInt256 amount, String rri) {
 		this.type = type;
 		this.from = from;
 		this.to = to;
@@ -51,42 +53,48 @@ public class ActionEntry {
 		this.rri = rri;
 	}
 
-	private static ActionEntry create(ActionType type, String from, String to, UInt256 amount, REAddr rri) {
+	private static ActionEntry create(ActionType type, String from, String to, UInt256 amount, String rri) {
 		requireNonNull(type);
 		return new ActionEntry(type, from, to, amount, rri);
 	}
 
-	public static ActionEntry transfer(TransferToken transferToken) {
+	public static ActionEntry transfer(TransferToken transferToken, Function<REAddr, String> addrToRri) {
 		return create(
 			ActionType.TRANSFER,
 			AccountAddress.of(transferToken.from()),
 			AccountAddress.of(transferToken.to()),
 			transferToken.amount(),
-			transferToken.addr()
+			addrToRri.apply(transferToken.resourceAddr())
 		);
 	}
 
-	public static ActionEntry burn(BurnToken burnToken) {
-		return create(ActionType.BURN, AccountAddress.of(burnToken.from()), null, burnToken.amount(), burnToken.addr());
+	public static ActionEntry burn(BurnToken burnToken, Function<REAddr, String> addrToRri) {
+		return create(
+			ActionType.BURN,
+			AccountAddress.of(burnToken.from()),
+			null,
+			burnToken.amount(),
+			addrToRri.apply(burnToken.resourceAddr())
+		);
 	}
 
-	public static ActionEntry stake(StakeTokens stakeToken) {
+	public static ActionEntry stake(StakeTokens stakeToken, Function<REAddr, String> addrToRri) {
 		return create(
 			ActionType.STAKE,
 			AccountAddress.of(stakeToken.from()),
 			ValidatorAddress.of(stakeToken.to()),
 			stakeToken.amount(),
-			REAddr.ofNativeToken()
+			addrToRri.apply(REAddr.ofNativeToken())
 		);
 	}
 
-	public static ActionEntry unstake(UnstakeTokens unstakeToken) {
+	public static ActionEntry unstake(UnstakeTokens unstakeToken, Function<REAddr, String> addrToRri) {
 		return create(
 			ActionType.UNSTAKE,
 			ValidatorAddress.of(unstakeToken.from()),
 			AccountAddress.of(unstakeToken.accountAddr()),
 			unstakeToken.amount(),
-			REAddr.ofNativeToken()
+			addrToRri.apply(REAddr.ofNativeToken())
 		);
 	}
 
@@ -122,7 +130,7 @@ public class ActionEntry {
 
 		switch (type) {
 			case TRANSFER:
-				return json.put("to", to).put("rri", rri.toString());
+				return json.put("to", to).put("rri", rri);
 
 			case UNSTAKE:
 			case STAKE:
