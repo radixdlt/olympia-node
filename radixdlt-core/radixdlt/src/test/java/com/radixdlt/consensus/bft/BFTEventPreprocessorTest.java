@@ -20,11 +20,11 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.utils.Pair;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -59,8 +59,9 @@ public class BFTEventPreprocessorTest {
 		when(proposal.getView()).thenReturn(View.of(4));
 		when(proposal.highQC()).thenReturn(proposalHighQc);
 		when(proposalHighQc.highestCommittedQC()).thenReturn(proposalHighestCommittedQc);
-		when(proposalHighestCommittedQc.getCommittedAndLedgerStateProof())
-			.thenReturn(Optional.of(Pair.of(mock(BFTHeader.class), proposalLedgerProof)));
+		var header = mock(BFTHeader.class);
+		when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
+		when(proposalHighestCommittedQc.getCommitted()).thenReturn(Optional.of(header));
 		when(proposalLedgerProof.isEndOfEpoch()).thenReturn(false);
 		when(bftSyncer.syncToQC(any(), any())).thenReturn(SyncResult.IN_PROGRESS);
 

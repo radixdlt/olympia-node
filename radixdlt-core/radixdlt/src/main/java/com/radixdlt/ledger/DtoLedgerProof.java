@@ -20,11 +20,8 @@ package com.radixdlt.ledger;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -44,24 +41,9 @@ public final class DtoLedgerProof {
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
 	// proposed
-	@JsonProperty("opaque0")
+	@JsonProperty("opaque")
 	@DsonOutput(Output.ALL)
-	private final BFTHeader opaque0;
-
-	// parent
-	@JsonProperty("opaque1")
-	@DsonOutput(Output.ALL)
-	private final BFTHeader opaque1;
-
-	// committed view
-	@JsonProperty("opaque2")
-	@DsonOutput(Output.ALL)
-	private final long opaque2;
-
-	// committed vertexId
-	@JsonProperty("opaque3")
-	@DsonOutput(Output.ALL)
-	private final HashCode opaque3;
+	private final HashCode opaque;
 
 	// committed ledgerState
 	@JsonProperty("ledgerState")
@@ -74,47 +56,17 @@ public final class DtoLedgerProof {
 
 	@JsonCreator
 	public DtoLedgerProof(
-		@JsonProperty("opaque0") BFTHeader opaque0,
-		@JsonProperty("opaque1") BFTHeader opaque1,
-		@JsonProperty("opaque2") long opaque2,
-		@JsonProperty("opaque3") HashCode opaque3,
+		@JsonProperty("opaque") HashCode opaque,
 		@JsonProperty("ledgerState") LedgerHeader ledgerHeader,
 		@JsonProperty("signatures") TimestampedECDSASignatures signatures
 	) {
-		this.opaque0 = Objects.requireNonNull(opaque0);
-		this.opaque1 = Objects.requireNonNull(opaque1);
-		this.opaque2 = opaque2;
-		this.opaque3 = Objects.requireNonNull(opaque3);
+		this.opaque = Objects.requireNonNull(opaque);
 		this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
 		this.signatures = Objects.requireNonNull(signatures);
 	}
 
-	public VoteData toVoteData() {
-		return new VoteData(
-			this.opaque0,
-			this.opaque1,
-			new BFTHeader(
-				View.of(this.opaque2),
-				this.opaque3,
-				this.ledgerHeader
-			)
-		);
-	}
-
-	public BFTHeader getOpaque0() {
-		return opaque0;
-	}
-
-	public BFTHeader getOpaque1() {
-		return opaque1;
-	}
-
-	public long getOpaque2() {
-		return opaque2;
-	}
-
-	public HashCode getOpaque3() {
-		return opaque3;
+	public HashCode getOpaque() {
+		return opaque;
 	}
 
 	public TimestampedECDSASignatures getSignatures() {
@@ -139,16 +91,13 @@ public final class DtoLedgerProof {
 			return false;
 		}
 		DtoLedgerProof that = (DtoLedgerProof) o;
-		return opaque2 == that.opaque2
-				&& Objects.equals(opaque0, that.opaque0)
-				&& Objects.equals(opaque1, that.opaque1)
-				&& Objects.equals(opaque3, that.opaque3)
-				&& Objects.equals(ledgerHeader, that.ledgerHeader)
-				&& Objects.equals(signatures, that.signatures);
+		return Objects.equals(opaque, that.opaque)
+			&& Objects.equals(ledgerHeader, that.ledgerHeader)
+			&& Objects.equals(signatures, that.signatures);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(opaque0, opaque1, opaque2, opaque3, ledgerHeader, signatures);
+		return Objects.hash(opaque, ledgerHeader, signatures);
 	}
 }

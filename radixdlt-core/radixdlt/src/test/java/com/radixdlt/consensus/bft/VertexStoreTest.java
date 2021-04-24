@@ -94,8 +94,9 @@ public class VertexStoreTest {
 		this.genesisVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(MOCKED_HEADER), genesisHash);
 		this.rootQC = QuorumCertificate.ofGenesis(genesisVertex, MOCKED_HEADER);
 		this.sut = VertexStore.create(
-			VerifiedVertexStoreState.create(HighQC.from(rootQC), genesisVertex, Optional.empty()),
+			VerifiedVertexStoreState.create(HighQC.from(rootQC), genesisVertex, Optional.empty(), hasher),
 			ledger,
+			hasher,
 			bftUpdateSender,
 			rebuildUpdateEventDispatcher,
 			bftHighQCUpdateEventDispatcher,
@@ -198,7 +199,8 @@ public class VertexStoreTest {
 			HighQC.from(vertices.get(3).getQC()),
 			vertices.get(0),
 			vertices.stream().skip(1).collect(ImmutableList.toImmutableList()),
-			sut.getHighestTimeoutCertificate()
+			sut.getHighestTimeoutCertificate(),
+			hasher
 		);
 
 		// Act

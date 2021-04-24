@@ -28,15 +28,14 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerProof;
@@ -97,9 +96,7 @@ public class RemoteSyncServiceTest {
 	public void when_remote_sync_request__then_process_it() {
 		SyncRequest request = mock(SyncRequest.class);
 		DtoLedgerProof header = mock(DtoLedgerProof.class);
-		when(header.getOpaque0()).thenReturn(mock(BFTHeader.class));
-		when(header.getOpaque1()).thenReturn(mock(BFTHeader.class));
-		when(header.getOpaque3()).thenReturn(mock(HashCode.class));
+		when(header.getOpaque()).thenReturn(HashUtils.zero256());
 		when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
 		when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
 		when(request.getHeader()).thenReturn(header);
@@ -117,9 +114,7 @@ public class RemoteSyncServiceTest {
 	public void when_remote_sync_request_and_unable__then_dont_do_anything() {
 		SyncRequest request = mock(SyncRequest.class);
 		DtoLedgerProof header = mock(DtoLedgerProof.class);
-		when(header.getOpaque0()).thenReturn(mock(BFTHeader.class));
-		when(header.getOpaque1()).thenReturn(mock(BFTHeader.class));
-		when(header.getOpaque3()).thenReturn(mock(HashCode.class));
+		when(header.getOpaque()).thenReturn(HashUtils.zero256());
 		when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
 		when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
 		when(request.getHeader()).thenReturn(header);
@@ -130,9 +125,7 @@ public class RemoteSyncServiceTest {
 	@Test
 	public void when_remote_sync_request_and_null_return__then_dont_do_anything() {
 		DtoLedgerProof header = mock(DtoLedgerProof.class);
-		when(header.getOpaque0()).thenReturn(mock(BFTHeader.class));
-		when(header.getOpaque1()).thenReturn(mock(BFTHeader.class));
-		when(header.getOpaque3()).thenReturn(mock(HashCode.class));
+		when(header.getOpaque()).thenReturn(HashUtils.zero256());
 		when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
 		when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
 		processor.syncRequestEventProcessor().process(BFTNode.random(), SyncRequest.create(header));

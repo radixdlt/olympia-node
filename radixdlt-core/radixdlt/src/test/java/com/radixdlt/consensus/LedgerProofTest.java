@@ -58,8 +58,8 @@ public class LedgerProofTest {
 		when(l0.getView()).thenReturn(view);
 		when(l0.timestamp()).thenReturn(2468L);
 		when(l0.isEndOfEpoch()).thenReturn(true);
-		LedgerProof ledgerHeaderAndProof = new LedgerProof(
-			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(HashCode.class),
+		var ledgerHeaderAndProof = new LedgerProof(
+			HashUtils.random256(),
 			l0,
 			mock(TimestampedECDSASignatures.class)
 		);
@@ -74,15 +74,15 @@ public class LedgerProofTest {
 	public void testComparsionBetweenDifferentEpochs() {
 		LedgerHeader l0 = mock(LedgerHeader.class);
 		when(l0.getEpoch()).thenReturn(1L);
-		LedgerProof s0 = new LedgerProof(
-			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(HashCode.class),
+		var s0 = new LedgerProof(
+			HashUtils.random256(),
 			l0,
 			mock(TimestampedECDSASignatures.class)
 		);
 		LedgerHeader l1 = mock(LedgerHeader.class);
 		when(l1.getEpoch()).thenReturn(2L);
 		LedgerProof s1 = new LedgerProof(
-			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(HashCode.class),
+			HashUtils.random256(),
 			l1,
 			mock(TimestampedECDSASignatures.class)
 		);
@@ -98,7 +98,7 @@ public class LedgerProofTest {
 		when(accumulatorState.getStateVersion()).thenReturn(2L);
 		when(l0.getAccumulatorState()).thenReturn(accumulatorState);
 		LedgerProof s0 = new LedgerProof(
-			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(HashCode.class),
+			HashUtils.random256(),
 			l0,
 			mock(TimestampedECDSASignatures.class)
 		);
@@ -108,7 +108,7 @@ public class LedgerProofTest {
 		when(accumulatorState1.getStateVersion()).thenReturn(3L);
 		when(l1.getAccumulatorState()).thenReturn(accumulatorState1);
 		LedgerProof s1 = new LedgerProof(
-			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(HashCode.class),
+			HashUtils.random256(),
 			l1,
 			mock(TimestampedECDSASignatures.class)
 		);
@@ -125,7 +125,7 @@ public class LedgerProofTest {
 		when(l0.getAccumulatorState()).thenReturn(accumulatorState);
 		when(l0.isEndOfEpoch()).thenReturn(false);
 		LedgerProof s0 = new LedgerProof(
-			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(HashCode.class),
+			HashUtils.random256(),
 			l0,
 			mock(TimestampedECDSASignatures.class)
 		);
@@ -136,7 +136,7 @@ public class LedgerProofTest {
 		when(l1.getAccumulatorState()).thenReturn(accumulatorState1);
 		when(l1.isEndOfEpoch()).thenReturn(true);
 		LedgerProof s1 = new LedgerProof(
-			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(HashCode.class),
+			HashUtils.random256(),
 			l1,
 			mock(TimestampedECDSASignatures.class)
 		);
@@ -153,7 +153,7 @@ public class LedgerProofTest {
 		when(l0.getAccumulatorState()).thenReturn(accumulatorState);
 		when(l0.isEndOfEpoch()).thenReturn(true);
 		LedgerProof s0 = new LedgerProof(
-			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(HashCode.class),
+			HashUtils.random256(),
 			l0,
 			mock(TimestampedECDSASignatures.class)
 		);
@@ -164,7 +164,7 @@ public class LedgerProofTest {
 		when(l1.getAccumulatorState()).thenReturn(accumulatorState1);
 		when(l1.isEndOfEpoch()).thenReturn(true);
 		LedgerProof s1 = new LedgerProof(
-			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(HashCode.class),
+			HashUtils.random256(),
 			l1,
 			mock(TimestampedECDSASignatures.class)
 		);

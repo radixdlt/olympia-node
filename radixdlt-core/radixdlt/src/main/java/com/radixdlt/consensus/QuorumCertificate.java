@@ -20,6 +20,7 @@ package com.radixdlt.consensus;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.utils.Pair;
 import java.util.Objects;
 
@@ -87,13 +88,15 @@ public final class QuorumCertificate {
 		return voteData.getParent();
 	}
 
-	public Optional<Pair<BFTHeader, LedgerProof>> getCommittedAndLedgerStateProof() {
+	public Optional<BFTHeader> getCommitted() {
+		return voteData.getCommitted();
+	}
+
+	public Optional<Pair<BFTHeader, LedgerProof>> getCommittedAndLedgerStateProof(Hasher hasher) {
 		return voteData.getCommitted().map(committed -> {
-			LedgerProof ledgerStateProof = new LedgerProof(
-				voteData.getProposed(),
-				voteData.getParent(),
-				committed.getView().number(),
-				committed.getVertexId(),
+			var opaque = hasher.hash(voteData);
+			var ledgerStateProof = new LedgerProof(
+				opaque,
 				committed.getLedgerHeader(),
 				signatures
 			);

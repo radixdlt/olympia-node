@@ -24,6 +24,7 @@ import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.store.berkeley.SerializedVertexStoreState;
 import com.radixdlt.utils.Pair;
 import java.util.HashMap;
@@ -63,19 +64,21 @@ public final class VerifiedVertexStoreState {
 	public static VerifiedVertexStoreState create(
 		HighQC highQC,
 		VerifiedVertex root,
-		Optional<TimeoutCertificate> highestTC
+		Optional<TimeoutCertificate> highestTC,
+		Hasher hasher
 	) {
-		return create(highQC, root, ImmutableList.of(), highestTC);
+		return create(highQC, root, ImmutableList.of(), highestTC, hasher);
 	}
 
 	public static VerifiedVertexStoreState create(
 		HighQC highQC,
 		VerifiedVertex root,
 		ImmutableList<VerifiedVertex> vertices,
-		Optional<TimeoutCertificate> highestTC
+		Optional<TimeoutCertificate> highestTC,
+		Hasher hasher
 	) {
 		final Pair<BFTHeader, LedgerProof> headers = highQC.highestCommittedQC()
-			.getCommittedAndLedgerStateProof()
+			.getCommittedAndLedgerStateProof(hasher)
 			.orElseThrow(() -> new IllegalStateException(String.format("highQC=%s does not have commit", highQC)));
 		LedgerProof rootHeader = headers.getSecond();
 		BFTHeader bftHeader = headers.getFirst();
@@ -120,9 +123,9 @@ public final class VerifiedVertexStoreState {
 		return new VerifiedVertexStoreState(highQC, rootHeader, root, idToVertex, vertices, highestTC);
 	}
 
-	public VerifiedVertexStoreState prune() {
-		if (highQC.highestQC().getCommittedAndLedgerStateProof().isPresent()) {
-			Pair<BFTHeader, LedgerProof> newHeaders = highQC.highestQC().getCommittedAndLedgerStateProof().get();
+	public VerifiedVertexStoreState prune(Hasher hasher) {
+		if (highQC.highestQC().getCommittedAndLedgerStateProof(hasher).isPresent()) {
+			Pair<BFTHeader, LedgerProof> newHeaders = highQC.highestQC().getCommittedAndLedgerStateProof(hasher).get();
 			BFTHeader header = newHeaders.getFirst();
 			if (header.getView().gt(root.getView())) {
 				VerifiedVertex newRoot = idToVertex.get(header.getVertexId());

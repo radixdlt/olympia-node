@@ -18,12 +18,9 @@
 package org.radix.serialization;
 
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.TimestampedVoteData;
-import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.ledger.AccumulatorState;
 
 public class TimestampedVoteDataSerializeTest extends SerializeObject<TimestampedVoteData> {
 	public TimestampedVoteDataSerializeTest() {
@@ -33,10 +30,6 @@ public class TimestampedVoteDataSerializeTest extends SerializeObject<Timestampe
 	private static TimestampedVoteData get() {
 		View view = View.of(1234567890L);
 		LedgerHeader ledgerHeader = LedgerHeader.mocked();
-		BFTHeader committed = new BFTHeader(view, HashUtils.random256(), ledgerHeader);
-		BFTHeader parent = new BFTHeader(view.next(), HashUtils.random256(), ledgerHeader);
-		BFTHeader proposed = new BFTHeader(view.next().next(), HashUtils.random256(), ledgerHeader);
-		VoteData voteData = new VoteData(proposed, parent, committed);
-		return new TimestampedVoteData(voteData, System.currentTimeMillis());
+		return new TimestampedVoteData(HashUtils.random256(), ledgerHeader, System.currentTimeMillis());
 	}
 }

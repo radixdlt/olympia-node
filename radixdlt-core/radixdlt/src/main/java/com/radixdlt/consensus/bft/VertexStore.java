@@ -27,9 +27,9 @@ import com.google.common.hash.HashCode;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.TimeoutCertificate;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 
-import com.radixdlt.utils.Pair;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -51,6 +51,7 @@ public final class VertexStore {
 	private final EventDispatcher<BFTRebuildUpdate> bftRebuildDispatcher;
 	private final EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher;
 
+	private final Hasher hasher;
 	private final Ledger ledger;
 
 	private final Map<HashCode, PreparedVertex> vertices = new HashMap<>();
@@ -64,6 +65,7 @@ public final class VertexStore {
 
 	private VertexStore(
 		Ledger ledger,
+		Hasher hasher,
 		VerifiedVertex rootVertex,
 		QuorumCertificate commitQC,
 		QuorumCertificate highestQC,
@@ -74,6 +76,7 @@ public final class VertexStore {
 		Optional<TimeoutCertificate> highestTC
 	) {
 		this.ledger = Objects.requireNonNull(ledger);
+		this.hasher = Objects.requireNonNull(hasher);
 		this.bftUpdateDispatcher = Objects.requireNonNull(bftUpdateDispatcher);
 		this.bftRebuildDispatcher = Objects.requireNonNull(bftRebuildDispatcher);
 		this.highQCUpdateDispatcher = Objects.requireNonNull(highQCUpdateDispatcher);
@@ -88,6 +91,7 @@ public final class VertexStore {
 	public static VertexStore create(
 		VerifiedVertexStoreState vertexStoreState,
 		Ledger ledger,
+		Hasher hasher,
 		EventDispatcher<BFTInsertUpdate> bftUpdateDispatcher,
 		EventDispatcher<BFTRebuildUpdate> bftRebuildDispatcher,
 		EventDispatcher<BFTHighQCUpdate> bftHighQCUpdateDispatcher,
@@ -95,6 +99,7 @@ public final class VertexStore {
 	) {
 		VertexStore vertexStore = new VertexStore(
 			ledger,
+			hasher,
 			vertexStoreState.getRoot(),
 			vertexStoreState.getHighQC().highestCommittedQC(),
 			vertexStoreState.getHighQC().highestQC(),
@@ -112,11 +117,12 @@ public final class VertexStore {
 				// Try pruning to see if that helps catching up to the ledger
 				// This can occur if a node crashes between persisting a new QC and committing
 				// TODO: Cleanup and remove
-				VerifiedVertexStoreState pruned = vertexStoreState.prune();
+				VerifiedVertexStoreState pruned = vertexStoreState.prune(hasher);
 				if (!pruned.equals(vertexStoreState)) {
 					return create(
 						pruned,
 						ledger,
+						hasher,
 						bftUpdateDispatcher,
 						bftRebuildDispatcher,
 						bftHighQCUpdateDispatcher,
@@ -199,7 +205,7 @@ public final class VertexStore {
 		}
 
 		boolean isHighQC = qc.getView().gt(highestQC.getView());
-		boolean isHighCommit = qc.getCommittedAndLedgerStateProof().isPresent();
+		boolean isHighCommit = qc.getCommittedAndLedgerStateProof(hasher).isPresent();
 		if (!isHighQC && !isHighCommit) {
 			return true;
 		}
@@ -209,8 +215,7 @@ public final class VertexStore {
 		}
 
 		if (isHighCommit) {
-			qc.getCommittedAndLedgerStateProof().map(Pair::getFirst)
-				.ifPresent(header -> this.commit(header, qc));
+			qc.getCommitted().ifPresent(header -> this.commit(header, qc));
 		} else {
 			// TODO: we lose all other tail QCs on this save, Not sure if this is okay...investigate...
 			VerifiedVertexStoreState vertexStoreState = getState();
@@ -241,7 +246,8 @@ public final class VertexStore {
 			this.highQC(),
 			this.rootVertex,
 			verticesBuilder.build(),
-			this.highestTC
+			this.highestTC,
+			hasher
 		);
 	}
 

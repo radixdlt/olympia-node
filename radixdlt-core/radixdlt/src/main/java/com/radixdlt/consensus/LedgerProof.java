@@ -48,24 +48,9 @@ public final class LedgerProof {
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
 	// proposed
-	@JsonProperty("opaque0")
+	@JsonProperty("opaque")
 	@DsonOutput(Output.ALL)
-	private final BFTHeader opaque0;
-
-	// parent
-	@JsonProperty("opaque1")
-	@DsonOutput(Output.ALL)
-	private final BFTHeader opaque1;
-
-	// committed view
-	@JsonProperty("opaque2")
-	@DsonOutput(Output.ALL)
-	private final long opaque2;
-
-	// committed vertexId
-	@JsonProperty("opaque3")
-	@DsonOutput(Output.ALL)
-	private final HashCode opaque3;
+	private final HashCode opaque;
 
 	// committed ledgerState
 	@JsonProperty("ledgerState")
@@ -78,28 +63,18 @@ public final class LedgerProof {
 
 	@JsonCreator
 	public LedgerProof(
-		@JsonProperty("opaque0") BFTHeader opaque0,
-		@JsonProperty("opaque1") BFTHeader opaque1,
-		@JsonProperty("opaque2") long opaque2,
-		@JsonProperty("opaque3") HashCode opaque3,
+		@JsonProperty("opaque") HashCode opaque,
 		@JsonProperty("ledgerState") LedgerHeader ledgerHeader,
 		@JsonProperty("signatures") TimestampedECDSASignatures signatures
 	) {
-		this.opaque0 = Objects.requireNonNull(opaque0);
-		this.opaque1 = Objects.requireNonNull(opaque1);
-		this.opaque2 = opaque2;
-		this.opaque3 = Objects.requireNonNull(opaque3);
+		this.opaque = Objects.requireNonNull(opaque);
 		this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
 		this.signatures = Objects.requireNonNull(signatures);
 	}
 
 	public static LedgerProof genesis(AccumulatorState accumulatorState, BFTValidatorSet nextValidators, long timestamp) {
 		LedgerHeader genesisLedgerHeader = LedgerHeader.genesis(accumulatorState, nextValidators, timestamp);
-		BFTHeader header = BFTHeader.ofGenesisAncestor(genesisLedgerHeader);
 		return new LedgerProof(
-			header,
-			header,
-			0,
 			HashUtils.zero256(),
 			genesisLedgerHeader,
 			new TimestampedECDSASignatures()
@@ -126,10 +101,7 @@ public final class LedgerProof {
 
 	public DtoLedgerProof toDto() {
 		return new DtoLedgerProof(
-			opaque0,
-			opaque1,
-			opaque2,
-			opaque3,
+			opaque,
 			ledgerHeader,
 			signatures
 		);
@@ -180,7 +152,7 @@ public final class LedgerProof {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(opaque0, opaque1, opaque2, opaque3, ledgerHeader, signatures);
+		return Objects.hash(opaque, ledgerHeader, signatures);
 	}
 
 	@Override
@@ -190,10 +162,7 @@ public final class LedgerProof {
 		}
 
 		LedgerProof other = (LedgerProof) o;
-		return Objects.equals(this.opaque0, other.opaque0)
-			&& Objects.equals(this.opaque1, other.opaque1)
-			&& this.opaque2 == other.opaque2
-			&& Objects.equals(this.opaque3, other.opaque3)
+		return Objects.equals(this.opaque, other.opaque)
 			&& Objects.equals(this.ledgerHeader, other.ledgerHeader)
 			&& Objects.equals(this.signatures, other.signatures);
 	}

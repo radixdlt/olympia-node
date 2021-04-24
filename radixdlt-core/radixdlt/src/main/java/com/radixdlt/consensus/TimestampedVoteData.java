@@ -19,7 +19,7 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.primitives.Longs;
+import com.google.common.hash.HashCode;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -38,33 +38,27 @@ public final class TimestampedVoteData {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("vote_data")
+	@JsonProperty("opaque")
 	@DsonOutput(Output.ALL)
-	private final VoteData voteData;
+	private final HashCode opaque;
 
-	@JsonProperty("node_timestamp")
+	@JsonProperty("header")
+	@DsonOutput(Output.ALL)
+	private final LedgerHeader header;
+
+	@JsonProperty("ts")
 	@DsonOutput(Output.ALL)
 	private final long nodeTimestamp;
 
 	@JsonCreator
 	public TimestampedVoteData(
-		@JsonProperty("vote_data") VoteData voteData,
-		@JsonProperty("node_timestamp") long nodeTimestamp
+		@JsonProperty("opaque") HashCode opaque,
+		@JsonProperty("header") LedgerHeader header,
+		@JsonProperty("ts") long nodeTimestamp
 	) {
+		this.opaque = opaque;
 		this.nodeTimestamp = nodeTimestamp;
-		this.voteData = voteData;
-	}
-
-	public VoteData getVoteData() {
-		return this.voteData;
-	}
-
-	public BFTHeader getProposed() {
-		return this.voteData == null ? null : this.voteData.getProposed();
-	}
-
-	public long getNodeTimestamp() {
-		return this.nodeTimestamp;
+		this.header = header;
 	}
 
 	@Override
@@ -74,13 +68,15 @@ public final class TimestampedVoteData {
 		}
 		if (o instanceof TimestampedVoteData) {
 			TimestampedVoteData that = (TimestampedVoteData) o;
-			return this.nodeTimestamp == that.nodeTimestamp && Objects.equals(this.voteData, that.voteData);
+			return this.nodeTimestamp == that.nodeTimestamp
+				&& Objects.equals(this.opaque, that.opaque)
+				&& Objects.equals(this.header, that.header);
 		}
 		return false;
 	}
 
 	@Override
 	public int hashCode() {
-		return Longs.hashCode(this.nodeTimestamp) * 31 + Objects.hashCode(this.voteData);
+		return Objects.hash(this.nodeTimestamp, this.header, this.opaque);
 	}
 }

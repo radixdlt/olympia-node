@@ -38,7 +38,6 @@ import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.LedgerProof;
@@ -294,11 +293,8 @@ public class RadixEngineStateComputerTest {
 	public void committing_epoch_high_views_should_fail() throws TxBuilderException {
 		// Arrange
 		var cmd0 = systemUpdateCommand(10, 1);
-		LedgerProof ledgerProof = new LedgerProof(
-			mock(BFTHeader.class),
-			mock(BFTHeader.class),
-			0,
-			HashUtils.zero256(),
+		var ledgerProof = new LedgerProof(
+			HashUtils.random256(),
 			LedgerHeader.create(0, View.of(11), new AccumulatorState(3, HashUtils.zero256()), 0),
 			new TimestampedECDSASignatures()
 		);
@@ -320,11 +316,8 @@ public class RadixEngineStateComputerTest {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		var cmd0 = systemUpdateCommand(0, 2);
 		var cmd1 = registerCommand(keyPair);
-		LedgerProof ledgerProof = new LedgerProof(
-			mock(BFTHeader.class),
-			mock(BFTHeader.class),
-			0,
-			HashUtils.zero256(),
+		var ledgerProof = new LedgerProof(
+			HashUtils.random256(),
 			LedgerHeader.create(0, View.of(9), new AccumulatorState(3, HashUtils.zero256()), 0),
 			new TimestampedECDSASignatures()
 		);
@@ -343,14 +336,11 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void committing_epoch_change_with_different_validator_signed_should_fail() throws Exception {
 		// Arrange
-		ECKeyPair keyPair = ECKeyPair.generateNew();
+		var keyPair = ECKeyPair.generateNew();
 		var cmd0 = systemUpdateCommand(0, 2);
 		var cmd1 = registerCommand(keyPair);
-		LedgerProof ledgerProof = new LedgerProof(
-			mock(BFTHeader.class),
-			mock(BFTHeader.class),
-			0,
-			HashUtils.zero256(),
+		var ledgerProof = new LedgerProof(
+			HashUtils.random256(),
 			LedgerHeader.create(0, View.of(9), new AccumulatorState(3, HashUtils.zero256()), 0,
 				BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))
 			),
@@ -372,11 +362,8 @@ public class RadixEngineStateComputerTest {
 	public void committing_epoch_change_when_there_shouldnt_be_one__should_fail() throws TxBuilderException {
 		// Arrange
 		var cmd0 = systemUpdateCommand(1, 1);
-		LedgerProof ledgerProof = new LedgerProof(
-			mock(BFTHeader.class),
-			mock(BFTHeader.class),
-			0,
-			HashUtils.zero256(),
+		var ledgerProof = new LedgerProof(
+			HashUtils.random256(),
 			LedgerHeader.create(0, View.of(9), new AccumulatorState(3, HashUtils.zero256()), 0,
 				BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))
 			),

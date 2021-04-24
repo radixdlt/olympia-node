@@ -227,8 +227,9 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 				// TODO: need to do the same checks on pacemaker side
 				// TODO: move this to an epoch preprocessor
 				final boolean endOfEpoch = highQC.highestCommittedQC()
-					.getCommittedAndLedgerStateProof()
-					.orElseThrow(() -> new IllegalStateException("Invalid High QC")).getSecond().isEndOfEpoch();
+					.getCommitted()
+					.orElseThrow(() -> new IllegalStateException("Invalid High QC")).getLedgerHeader()
+					.isEndOfEpoch();
 				if (!endOfEpoch) {
 					whenSynced.run();
 				}

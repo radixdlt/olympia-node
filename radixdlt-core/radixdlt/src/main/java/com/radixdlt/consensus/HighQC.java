@@ -134,10 +134,6 @@ public final class HighQC {
 		return this.highestCommittedQC == null ? this.highestQC : this.highestCommittedQC;
 	}
 
-	public LedgerProof proof() {
-		return this.highestCommittedQC().getCommittedAndLedgerStateProof().orElseThrow().getSecond();
-	}
-
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.highestQC, this.highestCommittedQC, this.highestTC);

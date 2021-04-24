@@ -113,10 +113,7 @@ public class SyncServiceModule extends AbstractModule {
 			// TODO: Stateful ledger header verification:
 			// TODO: -verify rootHash matches
 			LedgerProof nextHeader = new LedgerProof(
-				txnsAndProof.getTail().getOpaque0(),
-				txnsAndProof.getTail().getOpaque1(),
-				txnsAndProof.getTail().getOpaque2(),
-				txnsAndProof.getTail().getOpaque3(),
+				txnsAndProof.getTail().getOpaque(),
 				txnsAndProof.getTail().getLedgerHeader(),
 				txnsAndProof.getTail().getSignatures()
 			);

@@ -238,7 +238,7 @@ public class EpochManagerTest {
 				var qc = QuorumCertificate.ofGenesis(verifiedVertex, LedgerHeader.genesis(accumulatorState, validatorSet, 0));
 				return new BFTConfiguration(
 					validatorSet,
-					VerifiedVertexStoreState.create(HighQC.from(qc), verifiedVertex, Optional.empty())
+					VerifiedVertexStoreState.create(HighQC.from(qc), verifiedVertex, Optional.empty(), hasher)
 				);
 			}
 		};
@@ -273,7 +273,7 @@ public class EpochManagerTest {
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
 		BFTConfiguration bftConfiguration = new BFTConfiguration(
 			nextValidatorSet,
-			VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty())
+			VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty(), hasher)
 		);
 		LedgerProof proof = mock(LedgerProof.class);
 		when(proof.getEpoch()).thenReturn(header.getEpoch() + 1);

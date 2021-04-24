@@ -17,13 +17,11 @@
 
 package com.radixdlt.sync.validation;
 
-import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.TimestampedECDSASignature;
 import com.radixdlt.consensus.TimestampedVoteData;
-import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.DtoTxnsAndProof;
 import com.radixdlt.ledger.DtoLedgerProof;
@@ -52,13 +50,14 @@ public final class RemoteSyncResponseSignaturesVerifier {
 		DtoLedgerProof endHeader = commandsAndProof.getTail();
 
 		// TODO: Figure out where this reconstruction should take place
-		VoteData voteData = endHeader.toVoteData();
+		var opaque = endHeader.getOpaque();
+		var header = endHeader.getLedgerHeader();
 		Map<BFTNode, TimestampedECDSASignature> signatures = endHeader.getSignatures().getSignatures();
 		for (Entry<BFTNode, TimestampedECDSASignature> nodeAndSignature : signatures.entrySet()) {
-			BFTNode node = nodeAndSignature.getKey();
-			TimestampedECDSASignature signature = nodeAndSignature.getValue();
-			final TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, signature.timestamp());
-			final HashCode voteDataHash = this.hasher.hash(timestampedVoteData);
+			var node = nodeAndSignature.getKey();
+			var signature = nodeAndSignature.getValue();
+			final var timestampedVoteData = new TimestampedVoteData(opaque, header, signature.timestamp());
+			final var voteDataHash = this.hasher.hash(timestampedVoteData);
 
 			if (!hashVerifier.verify(node.getKey(), voteDataHash, signature.signature())) {
 				return false;

@@ -17,46 +17,12 @@
 
 package com.radixdlt.ledger;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.VoteData;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Before;
 import org.junit.Test;
 
 public class DtoLedgerProofTest {
-	private DtoLedgerProof ledgerHeaderAndProof;
-	private BFTHeader opaque0;
-	private BFTHeader opaque1;
-	private long opaque2 = 12345;
-	private HashCode opaque3;
-	private LedgerHeader ledgerHeader;
-	private TimestampedECDSASignatures signatures;
-
-	@Before
-	public void setup() {
-		this.opaque0 = mock(BFTHeader.class);
-		this.opaque1 = mock(BFTHeader.class);
-		this.opaque3 = mock(HashCode.class);
-		this.ledgerHeader = mock(LedgerHeader.class);
-		this.signatures = mock(TimestampedECDSASignatures.class);
-		this.ledgerHeaderAndProof = new DtoLedgerProof(
-			opaque0, opaque1, opaque2, opaque3, ledgerHeader, signatures
-		);
-	}
-
-	@Test
-	public void when_get_vote_data__then_should_not_be_null() {
-		VoteData voteData = ledgerHeaderAndProof.toVoteData();
-		assertThat(voteData).isNotNull();
-	}
-
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(DtoLedgerProof.class)

@@ -40,6 +40,7 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
@@ -109,8 +110,7 @@ public class ConsensusModuleTest {
 	@Inject
 	private VertexStore vertexStore;
 
-	@Inject
-	private Hasher hasher;
+	private Hasher hasher = Sha256Hasher.withDefaultSerialization();
 
 	private BFTConfiguration bftConfiguration;
 
@@ -125,7 +125,7 @@ public class ConsensusModuleTest {
 		QuorumCertificate qc = QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(accumulatorState, null, 0));
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)));
 		VerifiedVertexStoreState vertexStoreState =
-			VerifiedVertexStoreState.create(HighQC.from(qc), hashedGenesis, Optional.empty());
+			VerifiedVertexStoreState.create(HighQC.from(qc), hashedGenesis, Optional.empty(), hasher);
 		this.bftConfiguration = new BFTConfiguration(validatorSet, vertexStoreState);
 		this.ecKeyPair = ECKeyPair.generateNew();
 		this.requestSender = rmock(RemoteEventDispatcher.class);
