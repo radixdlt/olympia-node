@@ -18,6 +18,7 @@
 package com.radixdlt.client.handler;
 
 import com.radixdlt.client.AccountAddress;
+import com.radixdlt.client.store.berkeley.UnstakeEntry;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.crypto.HashUtils;
 import org.bouncycastle.util.encoders.Hex;
@@ -179,9 +180,30 @@ public class HighLevelApiHandler {
 		);
 	}
 
+	public JSONObject handleUnstakePositions(JSONObject request) {
+		return withRequiredStringParameter(
+			request,
+			(params, address) -> AccountAddress.parseFunctional(address)
+				.flatMap(highLevelApiService::getUnstakePositions)
+				.map(this::formatUnstakePositions)
+		);
+	}
+
 	//-----------------------------------------------------------------------------------------------------
 	// internal processing
 	//-----------------------------------------------------------------------------------------------------
+
+
+	private JSONObject formatUnstakePositions(List<UnstakeEntry> balances) {
+		var array = fromList(balances, unstake ->
+			jsonObject()
+				.put("validator", ValidatorAddress.of(unstake.getValidator()))
+				.put("amount", unstake.getAmount())
+				.put("epochsUntil", unstake.getEpochsUntil())
+				.put("withdrawTxID", unstake.getWithdrawTxId())
+		);
+		return jsonObject().put(ARRAY, array);
+	}
 
 	private Result<JSONObject> respondWithTransactionLookupResult(AID txId) {
 		return highLevelApiService.getTransaction(txId)

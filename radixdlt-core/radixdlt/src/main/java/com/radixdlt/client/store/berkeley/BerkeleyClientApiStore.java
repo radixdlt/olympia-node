@@ -24,6 +24,7 @@ import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.client.Rri;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.REParsedAction;
@@ -585,6 +586,25 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				rri,
 				UInt384.from(stakeTokens.amount()),
 				true
+			);
+			storeBalanceEntry(entry0);
+			storeBalanceEntry(entry1);
+		} else if (action.getTxAction() instanceof UnstakeTokens) {
+			var unstakeTokens = (UnstakeTokens) action.getTxAction();
+			var rri = getTokenDefinition(REAddr.ofNativeToken()).toOptional().orElseThrow().rri();
+			var entry0 = BalanceEntry.create(
+				unstakeTokens.accountAddr(),
+				unstakeTokens.from(),
+				rri,
+				UInt384.from(unstakeTokens.amount()),
+				true
+			);
+			var entry1 = BalanceEntry.create(
+				unstakeTokens.accountAddr(),
+				null,
+				rri,
+				UInt384.from(unstakeTokens.amount()),
+				false
 			);
 			storeBalanceEntry(entry0);
 			storeBalanceEntry(entry1);
