@@ -22,8 +22,6 @@ import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
-import org.radix.api.jsonrpc.handler.NetworkHandler;
-import org.radix.api.jsonrpc.handler.SystemHandler;
 
 import com.google.common.io.CharStreams;
 import com.google.inject.Inject;
@@ -58,42 +56,23 @@ public final class RadixJsonRpcServer {
 	 * Store to query atoms from
 	 */
 	private final Map<String, JsonRpcHandler> handlers = new HashMap<>();
-	private final SystemHandler systemHandler;
-	private final NetworkHandler networkHandler;
 
 	@Inject
-	public RadixJsonRpcServer(
-		SystemHandler systemHandler,
-		NetworkHandler networkHandler,
-		Map<String, JsonRpcHandler> additionalHandlers
-	) {
-		this(systemHandler, networkHandler, additionalHandlers, DEFAULT_MAX_REQUEST_SIZE);
+	public RadixJsonRpcServer(Map<String, JsonRpcHandler> additionalHandlers) {
+		this(additionalHandlers, DEFAULT_MAX_REQUEST_SIZE);
 	}
 
 	public RadixJsonRpcServer(
-		SystemHandler systemHandler,
-		NetworkHandler networkHandler,
 		Map<String, JsonRpcHandler> additionalHandlers,
 		long maxRequestSizeBytes
 	) {
-		this.systemHandler = systemHandler;
-		this.networkHandler = networkHandler;
 		this.maxRequestSizeBytes = maxRequestSizeBytes;
 
 		fillHandlers(additionalHandlers);
 	}
 
 	private void fillHandlers(Map<String, JsonRpcHandler> additionalHandlers) {
-		//General info
-		handlers.put("Universe.getUniverse", systemHandler::handleGetUniverse);
-		handlers.put("Network.getInfo", systemHandler::handleGetLocalSystem);
-
-		//Network info
-		handlers.put("Network.getLivePeers", networkHandler::handleGetLivePeers);
-		handlers.put("Network.getPeers", networkHandler::handleGetPeers);
-
 		handlers.putAll(additionalHandlers);
-
 		handlers.keySet().forEach(name -> log.trace("Registered JSON RPC method: {}", name));
 	}
 

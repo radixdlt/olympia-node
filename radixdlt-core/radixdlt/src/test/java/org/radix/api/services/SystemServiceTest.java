@@ -28,7 +28,6 @@ import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.network.transport.udp.UDPConstants;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 
 import java.io.IOException;
@@ -45,16 +44,8 @@ public class SystemServiceTest {
 	private static final String PROPERTIES_FILE = "/default.config";
 
 	private final Serialization serialization = DefaultSerialization.getInstance();
-	private final Universe universe = loadUniverse();
 	private final LocalSystem localSystem = assembleLocalSystem();
-	private final SystemService systemService = new SystemService(serialization, universe, localSystem);
-
-	@Test
-	public void universeCanBeObtained() {
-		var result = systemService.getUniverse();
-
-		assertNotNull(result);
-	}
+	private final SystemService systemService = new SystemService(serialization, localSystem);
 
 	@Test
 	public void localSystemCanBeObtained() {
@@ -67,15 +58,6 @@ public class SystemServiceTest {
 		assertEquals(PROTOCOL_VERSION, agent.get("protocol"));
 		assertEquals(":str:" + AGENT, agent.getString("name"));
 		assertEquals(AGENT_VERSION, agent.get("version"));
-	}
-
-	private static Universe loadUniverse() {
-		try {
-			byte[] bytes = Bytes.fromBase64String(universeBase64());
-			return DefaultSerialization.getInstance().fromDson(bytes, Universe.class);
-		} catch (Exception e) {
-			throw new RuntimeException("Unable to load Universe", e);
-		}
 	}
 
 	private static String universeBase64() throws IOException {
