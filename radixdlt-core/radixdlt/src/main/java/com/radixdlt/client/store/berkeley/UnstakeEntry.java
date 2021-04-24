@@ -28,6 +28,7 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.UInt256;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 @SerializerId2("radix.api.unstake")
@@ -117,7 +118,7 @@ public class UnstakeEntry {
 			var entry = (UnstakeEntry) o;
 
 			return amount.equals(entry.amount)
-				&& validator.equals(entry.validator)
+				&& Arrays.equals(validator, entry.validator)
 				&& epochsUntil == entry.epochsUntil
 				&& withdrawTxID.equals(entry.withdrawTxID);
 		}
