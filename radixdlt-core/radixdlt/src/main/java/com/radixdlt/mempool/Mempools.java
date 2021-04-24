@@ -40,7 +40,7 @@ public class Mempools {
 			}
 
 			@Override
-			public List<Pair<Txn, Exception>> committed(List<T> committed) {
+			public List<Txn> committed(List<T> committed) {
 				return List.of();
 			}
 

@@ -19,30 +19,24 @@
 package com.radixdlt.statecomputer;
 
 import com.radixdlt.atom.Txn;
-import com.radixdlt.utils.Pair;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.function.BiConsumer;
 
 /**
  * Event describing atoms which have been removed from the mempool
  * after a commit.
  */
 public final class AtomsRemovedFromMempool {
-    private final List<Pair<Txn, Exception>> removed;
+    private final List<Txn> removed;
 
-    private AtomsRemovedFromMempool(List<Pair<Txn, Exception>> removed) {
+    private AtomsRemovedFromMempool(List<Txn> removed) {
         this.removed = removed;
     }
 
-    public static AtomsRemovedFromMempool create(List<Pair<Txn, Exception>> removed) {
+    public static AtomsRemovedFromMempool create(List<Txn> removed) {
         Objects.requireNonNull(removed);
         return new AtomsRemovedFromMempool(removed);
-    }
-
-    public void forEach(BiConsumer<Txn, Exception> biConsumer) {
-        removed.forEach(p -> biConsumer.accept(p.getFirst(), p.getSecond()));
     }
 
     @Override

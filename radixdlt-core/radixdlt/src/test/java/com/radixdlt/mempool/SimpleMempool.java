@@ -72,7 +72,7 @@ public final class SimpleMempool implements Mempool<Txn> {
 	}
 
 	@Override
-	public List<Pair<Txn, Exception>> committed(List<Txn> commands) {
+	public List<Txn> committed(List<Txn> commands) {
 		commands.forEach(this.data::remove);
 		updateCounts();
 		return List.of();

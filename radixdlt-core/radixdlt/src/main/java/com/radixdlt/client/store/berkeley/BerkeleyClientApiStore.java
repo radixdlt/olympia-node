@@ -516,7 +516,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private void processRETransaction(REParsedTxn reTxn) {
 		extractTimestamp(reTxn.upSubstates());
 
-		reTxn.getUser().ifPresentOrElse(
+		reTxn.getSignedBy().ifPresentOrElse(
 			p -> {
 				storeSingleTransaction(reTxn.getTxn().getId(), p);
 				reTxn.getActions().forEach(a -> storeAction(p, a));
@@ -643,7 +643,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private Optional<ECPublicKey> extractCreator(Txn tx) {
 		try {
 			var result = constraintMachine.statelessVerify(tx);
-			return result.getRecovered();
+			return result.getSignedBy();
 		} catch (RadixEngineException e) {
 			throw new IllegalStateException();
 		}

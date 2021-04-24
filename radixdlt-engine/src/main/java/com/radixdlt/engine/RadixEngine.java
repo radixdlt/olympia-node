@@ -341,12 +341,13 @@ public final class RadixEngine<M> {
 		);
 
 		if (checker != null) {
-			Result hookResult = checker.check(permissionLevel, parsedTxn);
+			var hookResult = checker.check(permissionLevel, parsedTxn);
 			if (hookResult.isError()) {
 				throw new RadixEngineException(
 					txn,
 					RadixEngineErrorCode.HOOK_ERROR,
-					"Checker failed: " + hookResult.getErrorMessage()
+					"Checker failed: " + hookResult.getErrorMessage(),
+					parsedTxn.getStatelessResult()
 				);
 			}
 		}
