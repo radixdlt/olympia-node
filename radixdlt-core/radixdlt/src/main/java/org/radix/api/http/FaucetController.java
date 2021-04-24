@@ -30,6 +30,7 @@ import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
 import com.radixdlt.utils.UInt256;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
@@ -44,7 +45,6 @@ public final class FaucetController implements Controller {
 	private final EventDispatcher<NodeApplicationRequest> faucetRequestDispatcher;
 	private final REAddr nativeToken;
 	private final UInt256 amount = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
-	private static final UInt256 FEE = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
 	private final REAddr account;
 
 	@Inject
@@ -79,11 +79,10 @@ public final class FaucetController implements Controller {
 
 			var actions = TxActionListBuilder.create()
 				.transfer(nativeToken, account, address, amount)
-				.burn(nativeToken, account, FEE)
+				.burn(nativeToken, account, TokenFeeChecker.FIXED_FEE)
 				.build();
 
 			var completableFuture = new CompletableFuture<MempoolAddSuccess>();
-
 			var request = NodeApplicationRequest.create(actions, completableFuture);
 			faucetRequestDispatcher.dispatch(request);
 

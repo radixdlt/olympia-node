@@ -189,7 +189,7 @@ public class MempoolRelayTest {
 					bind(PeersView.class).toInstance(() -> allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100));
-					bind(MempoolConfig.class).toInstance(MempoolConfig.of(100L, 100L, 10L, 10L, 10));
+					bind(MempoolConfig.class).toInstance(MempoolConfig.of(500L, 100L, 10L, 10L, 10));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ValidatorAddress.of(ecKeyPair.getPublicKey()));
 				}
@@ -244,10 +244,10 @@ public class MempoolRelayTest {
 
 	@Test
 	public void full_node_should_relay_mempool_messages_so_they_can_be_processed_by_validator() {
-		dispatch(MEMPOOL_FILLER_NODE, MempoolFillerUpdate.class, MempoolFillerUpdate.enable(100, true));
+		dispatch(MEMPOOL_FILLER_NODE, MempoolFillerUpdate.class, MempoolFillerUpdate.enable(500, true));
 		processForCount(100000);
 		dispatch(MEMPOOL_FILLER_NODE, MempoolFillerUpdate.class, MempoolFillerUpdate.disable());
-		processForCount(10000);
+		processForCount(100000);
 
 		// assert that validators have an empty mempool, but not the full nodes
 		this.validators.forEach(n -> assertEquals(0L, getCounter(n, CounterType.MEMPOOL_COUNT)));

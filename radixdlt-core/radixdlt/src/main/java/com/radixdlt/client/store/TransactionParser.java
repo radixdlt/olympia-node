@@ -40,7 +40,7 @@ public final class TransactionParser {
 			.map(REParsedAction::getTxAction)
 			.filter(BurnToken.class::isInstance)
 			.map(BurnToken.class::cast)
-			.filter(t -> t.resourceAddr().isSystem())
+			.filter(t -> t.resourceAddr().isNativeToken())
 			.map(BurnToken::amount)
 			.reduce(UInt256::add)
 			.orElse(UInt256.ZERO);
@@ -62,7 +62,7 @@ public final class TransactionParser {
 	}
 
 	private boolean isFeeAction(TxAction action) {
-		return (action instanceof BurnToken) && ((BurnToken) action).resourceAddr().isSystem();
+		return (action instanceof BurnToken) && ((BurnToken) action).resourceAddr().isNativeToken();
 	}
 
 	public Result<TxHistoryEntry> parse(REParsedTxn parsedTxn, Instant txDate, Function<REAddr, String> addrToRri) {

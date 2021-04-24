@@ -52,7 +52,7 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 					VoidReducerState voidReducerState,
 					ImmutableIndex immutableIndex
 				) {
-					if (!in.getSubstate().getResourceAddr().isSystem()) {
+					if (!in.getSubstate().getResourceAddr().isNativeToken()) {
 						var p = immutableIndex.loadRri(null, in.getSubstate().getResourceAddr());
 						if ((p.isEmpty() || !(p.get() instanceof TokenDefinitionParticle))) {
 							return Result.error("Bad rriId");
@@ -102,7 +102,7 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 						return Result.error("Broken state.");
 					}
 
-					if (!in.getSubstate().getResourceAddr().isSystem()) {
+					if (!in.getSubstate().getResourceAddr().isNativeToken()) {
 						var p = immutableIndex.loadRri(null, in.getSubstate().getResourceAddr());
 						if ((p.isEmpty() || !(p.get() instanceof TokenDefinitionParticle))) {
 							return Result.error("Bad rriId");

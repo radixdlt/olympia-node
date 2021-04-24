@@ -163,7 +163,7 @@ public final class ConstraintScryptEnv implements SysCalls {
 					ImmutableIndex index
 				) {
 					var name = new String(in.getArg().orElseThrow());
-					return systemNames.contains(name) || in.getSubstate().getAddr().isSystem()
+					return systemNames.contains(name) || in.getSubstate().getAddr().isNativeToken()
 						? PermissionLevel.SYSTEM : PermissionLevel.USER;
 				}
 
@@ -194,7 +194,7 @@ public final class ConstraintScryptEnv implements SysCalls {
 		var createCombinedTransitionRoutine = new CreateCombinedTransitionRoutine<>(
 			REAddrParticle.class,
 			particleClass0,
-			(rri, p) -> systemNames.contains(new String(rri.getArg().orElseThrow())) || rri.getSubstate().getAddr().isSystem()
+			(rri, p) -> systemNames.contains(new String(rri.getArg().orElseThrow())) || rri.getSubstate().getAddr().isNativeToken()
 				? PermissionLevel.SYSTEM : PermissionLevel.USER,
 			particleClass1,
 			includeSecondClass,

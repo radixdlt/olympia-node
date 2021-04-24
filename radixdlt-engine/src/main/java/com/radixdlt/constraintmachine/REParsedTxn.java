@@ -63,9 +63,9 @@ public final class REParsedTxn {
 		return txn;
 	}
 
-	public boolean isUserCommand() {
+	public boolean isSystemOnly() {
 		return actions.stream().flatMap(a -> a.getInstructions().stream())
-			.noneMatch(i -> i.getSubstate().getParticle() instanceof SystemParticle);
+			.allMatch(i -> i.getSubstate().getParticle() instanceof SystemParticle);
 	}
 
 	public List<REParsedInstruction> stateUpdates() {

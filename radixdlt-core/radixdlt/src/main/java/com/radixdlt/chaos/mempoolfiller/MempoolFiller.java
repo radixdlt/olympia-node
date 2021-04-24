@@ -22,7 +22,6 @@ import com.google.inject.name.Named;
 import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -39,6 +38,7 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineMempool;
+import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
 import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -66,7 +66,6 @@ public final class MempoolFiller {
 	private final ECPublicKey self;
 	private final REAddr account;
 	private final REAddr nativeToken;
-	private final UInt256 fee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
 
 	private boolean enabled = false;
 	private int numTransactions;
@@ -136,8 +135,8 @@ public final class MempoolFiller {
 			}
 
 			var actions = TxActionListBuilder.create()
-				.splitNative(nativeToken, fee.multiply(UInt256.TWO))
-				.burn(nativeToken, account, fee)
+				.splitNative(nativeToken, TokenFeeChecker.FIXED_FEE.multiply(UInt256.TWO))
+				.burn(nativeToken, account, TokenFeeChecker.FIXED_FEE)
 				.build();
 
 			var shuttingDown = radixEngineMempool.getShuttingDownSubstates();
