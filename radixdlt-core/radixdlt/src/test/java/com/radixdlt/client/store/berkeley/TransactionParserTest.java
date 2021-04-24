@@ -145,7 +145,7 @@ public class TransactionParserTest {
 		var timestamp = Instant.ofEpochMilli(Instant.now().toEpochMilli());
 
 		list.stream()
-			.map(txn -> parser.parse(txn, timestamp))
+			.map(txn -> parser.parse(txn, timestamp, addr -> addr.toString()))
 			.forEach(entry -> entry
 				.onFailureDo(Assert::fail)
 				.onSuccess(historyEntry -> assertEquals(fee, historyEntry.getFee()))

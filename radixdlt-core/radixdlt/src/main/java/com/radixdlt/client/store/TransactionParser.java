@@ -32,6 +32,7 @@ import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
 import java.time.Instant;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class TransactionParser {
@@ -48,33 +49,33 @@ public final class TransactionParser {
 			.map(REParsedAction::getTxAction)
 			.filter(BurnToken.class::isInstance)
 			.map(BurnToken.class::cast)
-			.filter(t -> t.addr().equals(nativeToken))
+			.filter(t -> t.resourceAddr().equals(nativeToken))
 			.map(BurnToken::amount)
 			.reduce(UInt256::add)
 			.orElse(UInt256.ZERO);
 	}
 
-	private ActionEntry mapToEntry(TxAction txAction) {
+	private ActionEntry mapToEntry(TxAction txAction, Function<REAddr, String> addrToRri) {
 		if (txAction instanceof TransferToken) {
-			return ActionEntry.transfer((TransferToken) txAction);
+			return ActionEntry.transfer((TransferToken) txAction, addrToRri);
 		} else if (txAction instanceof BurnToken) {
 			var burnToken = (BurnToken) txAction;
-			return ActionEntry.burn(burnToken);
+			return ActionEntry.burn(burnToken, addrToRri);
 		} else if (txAction instanceof StakeTokens) {
-			return ActionEntry.stake((StakeTokens) txAction);
+			return ActionEntry.stake((StakeTokens) txAction, addrToRri);
 		} else if (txAction instanceof UnstakeTokens) {
-			return ActionEntry.unstake((UnstakeTokens) txAction);
+			return ActionEntry.unstake((UnstakeTokens) txAction, addrToRri);
 		} else {
 			return ActionEntry.unknown();
 		}
 	}
 
-	public Result<TxHistoryEntry> parse(REParsedTxn parsedTxn, Instant txDate) {
+	public Result<TxHistoryEntry> parse(REParsedTxn parsedTxn, Instant txDate, Function<REAddr, String> addrToRri) {
 		var txnId = parsedTxn.getTxn().getId();
 		var fee = computeFeePaid(parsedTxn);
 
 		var actions = parsedTxn.getActions().stream()
-			.map(a -> mapToEntry(a.getTxAction()))
+			.map(a -> mapToEntry(a.getTxAction(), addrToRri))
 			.collect(Collectors.toList());
 
 		return Result.ok(TxHistoryEntry.create(txnId, txDate, fee, null, actions));

@@ -27,12 +27,12 @@ import com.radixdlt.utils.UInt256;
 
 public final class TransferToken implements TxAction {
 	private final REAddr from;
-	private final REAddr rri;
+	private final REAddr resourceAddr;
 	private final REAddr to;
 	private final UInt256 amount;
 
-	public TransferToken(REAddr rri, REAddr from, REAddr to, UInt256 amount) {
-		this.rri = rri;
+	public TransferToken(REAddr resourceAddr, REAddr from, REAddr to, UInt256 amount) {
+		this.resourceAddr = resourceAddr;
 		this.from = from;
 		this.to = to;
 		this.amount = amount;
@@ -42,8 +42,8 @@ public final class TransferToken implements TxAction {
 		return amount;
 	}
 
-	public REAddr addr() {
-		return rri;
+	public REAddr resourceAddr() {
+		return resourceAddr;
 	}
 
 	public REAddr from() {
@@ -58,11 +58,11 @@ public final class TransferToken implements TxAction {
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.swapFungible(
 			TokensParticle.class,
-			p -> p.getResourceAddr().equals(rri) && p.getHoldingAddr().equals(from),
+			p -> p.getResourceAddr().equals(resourceAddr) && p.getHoldingAddr().equals(from),
 			TokensParticle::getAmount,
-			amt -> new TokensParticle(from, amt, rri),
+			amt -> new TokensParticle(from, amt, resourceAddr),
 			amount,
 			"Not enough balance for transfer."
-		).with(amt -> new TokensParticle(to, amount, rri));
+		).with(amt -> new TokensParticle(to, amount, resourceAddr));
 	}
 }
