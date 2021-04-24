@@ -228,9 +228,9 @@ public class PendingVotesTest {
 		BFTHeader proposed = new BFTHeader(parentView.next(), vertexId, mock(LedgerHeader.class));
 		BFTHeader parent = new BFTHeader(parentView, HashUtils.random256(), mock(LedgerHeader.class));
 		VoteData voteData = new VoteData(proposed, parent, null);
-		TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, 123456L);
+		when(vote.getHashOfData(any())).thenReturn(hasher.hash(new TimestampedVoteData(voteData, 123456L)));
 		when(vote.getVoteData()).thenReturn(voteData);
-		when(vote.getTimestampedVoteData()).thenReturn(timestampedVoteData);
+		when(vote.getTimestamp()).thenReturn(123456L);
 		when(vote.getAuthor()).thenReturn(author);
 		when(vote.getView()).thenReturn(parentView);
 		when(vote.getEpoch()).thenReturn(0L);

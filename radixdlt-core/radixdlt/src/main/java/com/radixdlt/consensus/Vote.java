@@ -19,10 +19,12 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.hash.HashCode;
 import com.google.errorprone.annotations.Immutable;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -108,8 +110,12 @@ public final class Vote implements ConsensusEvent {
 		return voteData.getVoteData();
 	}
 
-	public TimestampedVoteData getTimestampedVoteData() {
-		return voteData;
+	public HashCode getHashOfData(Hasher hasher) {
+		return hasher.hash(voteData);
+	}
+
+	public long getTimestamp() {
+		return voteData.getNodeTimestamp();
 	}
 
 	public ECDSASignature getSignature() {

@@ -200,7 +200,7 @@ public final class SafetyRules {
 		HighQC highQC
 	) {
 		final VoteData voteData = constructVoteData(proposedVertex, proposedHeader);
-		final TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, timestamp);
+		final var timestampedVoteData = new TimestampedVoteData(voteData, timestamp);
 
 		final HashCode voteHash = hasher.hash(timestampedVoteData);
 
