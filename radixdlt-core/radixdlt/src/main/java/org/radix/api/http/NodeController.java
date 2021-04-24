@@ -151,6 +151,19 @@ public final class NodeController implements Controller {
 			.put("validator", getValidator()));
 	}
 
+	private UInt256 parseAmount(JSONObject o, String paramName) {
+		final UInt256 subunits;
+		var amt = o.get(paramName);
+		if (amt instanceof Number) {
+			var amountBigInt = o.getBigInteger(paramName);
+			subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
+		} else {
+			var amtString = o.getString(paramName);
+			subunits = UInt256.from(amtString);
+		}
+		return subunits;
+	}
+
 	private TxAction parseAction(JSONObject actionObject) throws IllegalArgumentException, DeserializeException {
 		var actionString = actionObject.getString("action");
 		var paramsObject = actionObject.getJSONObject("params");
@@ -177,46 +190,40 @@ public final class NodeController implements Controller {
 				var rri = Rri.parse(paramsObject.getString("rri"));
 				var addressString = paramsObject.getString("to");
 				var to = AccountAddress.parse(addressString);
-				var amountBigInt = paramsObject.getBigInteger("amount");
-				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
-				return new TransferToken(rri.getSecond(), account, to, subunits);
+				var amt = parseAmount(paramsObject, "amount");
+				return new TransferToken(rri.getSecond(), account, to, amt);
 			}
 			case "MintTokens": {
 				var rri = Rri.parse(paramsObject.getString("rri"));
 				var addressString = paramsObject.getString("to");
 				var to = AccountAddress.parse(addressString);
-				var amountBigInt = paramsObject.getBigInteger("amount");
-				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
-				return new MintToken(rri.getSecond(), to, subunits);
+				var amt = parseAmount(paramsObject, "amount");
+				return new MintToken(rri.getSecond(), to, amt);
 			}
 			case "BurnTokens": {
 				var rri = Rri.parse(paramsObject.getString("rri"));
-				var amountBigInt = paramsObject.getBigInteger("amount");
-				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
-				return new BurnToken(rri.getSecond(), account, subunits);
+				var amt = parseAmount(paramsObject, "amount");
+				return new BurnToken(rri.getSecond(), account, amt);
 			}
 			case "StakeTokens": {
 				var validatorString = paramsObject.getString("to");
 				var key = ValidatorAddress.parse(validatorString);
-				var amountBigInt = paramsObject.getBigInteger("amount");
-				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
-				return new StakeTokens(account, key, subunits);
+				var amt = parseAmount(paramsObject, "amount");
+				return new StakeTokens(account, key, amt);
 			}
 			case "UnstakeTokens": {
 				var addressString = paramsObject.getString("from");
 				var delegate = ValidatorAddress.parse(addressString);
-				var amountBigInt = paramsObject.getBigInteger("amount");
-				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
-				return new UnstakeTokens(account, delegate, subunits);
+				var amt = parseAmount(paramsObject, "amount");
+				return new UnstakeTokens(account, delegate, amt);
 			}
 			case "MoveStake": {
 				var fromString = paramsObject.getString("from");
 				var fromDelegate = ValidatorAddress.parse(fromString);
 				var toString = paramsObject.getString("to");
 				var toDelegate = ValidatorAddress.parse(toString);
-				var amountBigInt = paramsObject.getBigInteger("amount");
-				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
-				return new MoveStake(fromDelegate, toDelegate, subunits);
+				var amt = parseAmount(paramsObject, "amount");
+				return new MoveStake(fromDelegate, toDelegate, amt);
 			}
 			case "RegisterAsValidator":
 				return new RegisterValidator();
@@ -230,19 +237,19 @@ public final class NodeController implements Controller {
 	void handleExecute(HttpServerExchange exchange) {
 		// TODO: implement JSON-RPC 2.0 specification
 		withBody(exchange, values -> {
-			var actionsArray = values.getJSONArray("actions");
-			var actions = new ArrayList<TxAction>();
-			for (int i = 0; i < actionsArray.length(); i++) {
-				var actionObject = actionsArray.getJSONObject(i);
-				var txAction = parseAction(actionObject);
-				actions.add(txAction);
-			}
-			actions.add(new BurnToken(nativeToken, account, FEE));
-			var completableFuture = new CompletableFuture<MempoolAddSuccess>();
-			var request = NodeApplicationRequest.create(actions, completableFuture);
-			nodeApplicationRequestEventDispatcher.dispatch(request);
-
 			try {
+				var actionsArray = values.getJSONArray("actions");
+				var actions = new ArrayList<TxAction>();
+				for (int i = 0; i < actionsArray.length(); i++) {
+					var actionObject = actionsArray.getJSONObject(i);
+					var txAction = parseAction(actionObject);
+					actions.add(txAction);
+				}
+				actions.add(new BurnToken(nativeToken, account, FEE));
+				var completableFuture = new CompletableFuture<MempoolAddSuccess>();
+				var request = NodeApplicationRequest.create(actions, completableFuture);
+				nodeApplicationRequestEventDispatcher.dispatch(request);
+
 				var success = completableFuture.get();
 				respond(exchange, jsonObject()
 					.put("result", jsonObject()
@@ -250,7 +257,7 @@ public final class NodeController implements Controller {
 						.put("transaction_identifier", success.getTxn().getId().toString())
 					)
 				);
-			} catch (ExecutionException e) {
+			} catch (ExecutionException | RuntimeException e) {
 				respond(exchange, jsonObject()
 					.put("error", jsonObject()
 					.put("message", e.getCause().getMessage()))
