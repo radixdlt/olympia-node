@@ -27,7 +27,6 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -341,12 +340,13 @@ public final class RadixEngine<M> {
 		);
 
 		if (checker != null) {
-			Result hookResult = checker.check(permissionLevel, parsedTxn);
+			var hookResult = checker.check(permissionLevel, parsedTxn);
 			if (hookResult.isError()) {
 				throw new RadixEngineException(
 					txn,
 					RadixEngineErrorCode.HOOK_ERROR,
-					"Checker failed: " + hookResult.getErrorMessage()
+					"Checker failed: " + hookResult.getErrorMessage(),
+					parsedTxn.getStatelessResult()
 				);
 			}
 		}

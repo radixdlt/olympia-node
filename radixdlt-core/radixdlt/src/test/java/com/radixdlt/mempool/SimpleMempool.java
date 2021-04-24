@@ -19,7 +19,6 @@ package com.radixdlt.mempool;
 import com.google.common.collect.Lists;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -72,7 +71,7 @@ public final class SimpleMempool implements Mempool<Txn> {
 	}
 
 	@Override
-	public List<Pair<Txn, Exception>> committed(List<Txn> commands) {
+	public List<Txn> committed(List<Txn> commands) {
 		commands.forEach(this.data::remove);
 		updateCounts();
 		return List.of();
