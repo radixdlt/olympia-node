@@ -406,7 +406,7 @@ public final class RadixEngine<M> {
 			// TODO: combine verification and storage
 			var parsedTxn = this.verify(dbTransaction, txn, permissionLevel);
 			try {
-				this.engineStore.storeAtom(dbTransaction, txn, parsedTxn.stateUpdates());
+				this.engineStore.storeTxn(dbTransaction, txn, parsedTxn.stateUpdates());
 			} catch (Exception e) {
 				logger.error("Store of atom failed: {}", parsedTxn);
 				throw e;
@@ -436,6 +436,7 @@ public final class RadixEngine<M> {
 		}
 
 		checker.testMetadata(meta, this::getComputedState);
+
 		if (meta != null) {
 			this.engineStore.storeMetadata(dbTransaction, meta);
 		}

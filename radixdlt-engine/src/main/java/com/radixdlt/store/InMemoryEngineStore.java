@@ -45,7 +45,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	private final Set<AID> txnIds = new HashSet<>();
 
 	@Override
-	public void storeAtom(Transaction dbTxn, Txn txn, List<REParsedInstruction> stateUpdates) {
+	public void storeTxn(Transaction dbTxn, Txn txn, List<REParsedInstruction> stateUpdates) {
 		synchronized (lock) {
 			stateUpdates.stream()
 				.filter(REParsedInstruction::isStateUpdate)
