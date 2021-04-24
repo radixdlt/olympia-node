@@ -27,7 +27,6 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignature;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.TimestampedVoteData;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -56,7 +55,8 @@ public class SerializerTestDataGenerator {
 	public static Vote randomVote() {
 		return new Vote(
 			BFTNode.random(),
-			new TimestampedVoteData(randomVoteData(), random.nextLong()),
+			randomVoteData(),
+			random.nextLong(),
 			randomECDSASignature(),
 			randomHighQC(),
 			Optional.of(randomECDSASignature())

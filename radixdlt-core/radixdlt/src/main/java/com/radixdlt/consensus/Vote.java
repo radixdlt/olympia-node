@@ -53,7 +53,11 @@ public final class Vote implements ConsensusEvent {
 
 	@JsonProperty("vote_data")
 	@DsonOutput(Output.ALL)
-	private final TimestampedVoteData voteData;
+	private final VoteData voteData;
+
+	@JsonProperty("ts")
+	@DsonOutput(Output.ALL)
+	private final long timestamp;
 
 	@JsonProperty("signature")
 	@DsonOutput(Output.ALL)
@@ -64,23 +68,26 @@ public final class Vote implements ConsensusEvent {
 	@JsonCreator
 	Vote(
 		@JsonProperty("author") byte[] author,
-		@JsonProperty("vote_data") TimestampedVoteData voteData,
+		@JsonProperty("vote_data") VoteData voteData,
+		@JsonProperty("ts") long timestamp,
 		@JsonProperty("signature") ECDSASignature signature,
 		@JsonProperty("high_qc") HighQC highQC,
 		@JsonProperty("timeout_signature") ECDSASignature timeoutSignature
 	) throws PublicKeyException {
-		this(BFTNode.fromPublicKeyBytes(author), voteData, signature, highQC, Optional.ofNullable(timeoutSignature));
+		this(BFTNode.fromPublicKeyBytes(author), voteData, timestamp, signature, highQC, Optional.ofNullable(timeoutSignature));
 	}
 
 	public Vote(
 		BFTNode author,
-		TimestampedVoteData voteData,
+		VoteData voteData,
+		long timestamp,
 		ECDSASignature signature,
 		HighQC highQC,
 		Optional<ECDSASignature> timeoutSignature
 	) {
 		this.author = Objects.requireNonNull(author);
 		this.voteData = Objects.requireNonNull(voteData);
+		this.timestamp = timestamp;
 		this.signature = Objects.requireNonNull(signature);
 		this.highQC = Objects.requireNonNull(highQC);
 		this.timeoutSignature = Objects.requireNonNull(timeoutSignature);
@@ -88,7 +95,7 @@ public final class Vote implements ConsensusEvent {
 
 	@Override
 	public long getEpoch() {
-		return voteData.getVoteData().getProposed().getLedgerHeader().getEpoch();
+		return voteData.getProposed().getLedgerHeader().getEpoch();
 	}
 
 	@Override
@@ -107,15 +114,19 @@ public final class Vote implements ConsensusEvent {
 	}
 
 	public VoteData getVoteData() {
-		return voteData.getVoteData();
+		return voteData;
+	}
+
+	public static HashCode getHashOfData(Hasher hasher, VoteData voteData, long timestamp) {
+		return hasher.hash(new TimestampedVoteData(voteData, timestamp));
 	}
 
 	public HashCode getHashOfData(Hasher hasher) {
-		return hasher.hash(voteData);
+		return getHashOfData(hasher, this.voteData, this.timestamp);
 	}
 
 	public long getTimestamp() {
-		return voteData.getNodeTimestamp();
+		return timestamp;
 	}
 
 	public ECDSASignature getSignature() {
@@ -130,6 +141,7 @@ public final class Vote implements ConsensusEvent {
 		return new Vote(
 			this.author,
 			this.voteData,
+			this.timestamp,
 			this.signature,
 			this.highQC,
 			Optional.of(timeoutSignature)
@@ -160,7 +172,7 @@ public final class Vote implements ConsensusEvent {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.author, this.voteData, this.signature, this.highQC, this.timeoutSignature);
+		return Objects.hash(this.author, this.voteData, this.timestamp, this.signature, this.highQC, this.timeoutSignature);
 	}
 
 	@Override
@@ -172,6 +184,7 @@ public final class Vote implements ConsensusEvent {
 			Vote other = (Vote) o;
 			return Objects.equals(this.author, other.author)
 				&& Objects.equals(this.voteData, other.voteData)
+				&& this.timestamp == other.timestamp
 				&& Objects.equals(this.signature, other.signature)
 				&& Objects.equals(this.highQC, other.highQC)
 				&& Objects.equals(this.timeoutSignature, other.timeoutSignature);

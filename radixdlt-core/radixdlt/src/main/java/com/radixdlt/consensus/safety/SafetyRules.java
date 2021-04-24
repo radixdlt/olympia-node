@@ -29,7 +29,6 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.TimestampedVoteData;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
@@ -200,13 +199,11 @@ public final class SafetyRules {
 		HighQC highQC
 	) {
 		final VoteData voteData = constructVoteData(proposedVertex, proposedHeader);
-		final var timestampedVoteData = new TimestampedVoteData(voteData, timestamp);
-
-		final HashCode voteHash = hasher.hash(timestampedVoteData);
+		final var voteHash = Vote.getHashOfData(hasher, voteData, timestamp);
 
 		// TODO make signing more robust by including author in signed hash
 		final ECDSASignature signature = this.signer.sign(voteHash);
-		return new Vote(this.self, timestampedVoteData, signature, highQC, Optional.empty());
+		return new Vote(this.self, voteData, timestamp, signature, highQC, Optional.empty());
 	}
 
 	public Optional<Vote> getLastVote(View view) {

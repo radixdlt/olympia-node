@@ -38,17 +38,15 @@ public class VoteTest {
 	private BFTNode author;
 	private Vote testObject;
 	private VoteData voteData;
-	private TimestampedVoteData timestampedVoteData;
 	private HighQC highQC;
 
 	@Before
 	public void setUp() {
 		BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), mock(LedgerHeader.class));
 		this.voteData = new VoteData(BFTHeader.ofGenesisAncestor(mock(LedgerHeader.class)), parent, null);
-		this.timestampedVoteData = new TimestampedVoteData(this.voteData, 123456L);
 		this.author = mock(BFTNode.class);
 		this.highQC = mock(HighQC.class);
-		this.testObject = new Vote(author, timestampedVoteData, ECDSASignature.zeroSignature(), highQC, Optional.empty());
+		this.testObject = new Vote(author, this.voteData, 123456L, ECDSASignature.zeroSignature(), highQC, Optional.empty());
 	}
 
 	@Test

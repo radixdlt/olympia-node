@@ -48,10 +48,9 @@ public class VoteSerializeTest extends SerializeObject<Vote> {
 		BFTHeader header = new BFTHeader(view, id, ledgerHeader);
 		BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
 		VoteData voteData = new VoteData(header, parent, null);
-		TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, 123456L);
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		HighQC highQC = HighQC.from(qc, qc, Optional.empty());
-		return new Vote(author, timestampedVoteData, ECDSASignature.zeroSignature(), highQC, Optional.empty());
+		return new Vote(author, voteData, 123456L, ECDSASignature.zeroSignature(), highQC, Optional.empty());
 	}
 }
