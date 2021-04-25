@@ -26,6 +26,7 @@ import com.google.inject.name.Named;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.CreateFixedToken;
+import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.client.AccountAddress;
 import com.radixdlt.client.Rri;
 import com.radixdlt.counters.SystemCounters;
@@ -219,47 +220,61 @@ public final class GenerateUniverses {
 
 			var additionalActions = new ArrayList<TxAction>();
 
+			final String hexPubKey;
 			if (cmd.hasOption("pk")) {
-				try {
-					var hexPubKey = cmd.getOptionValue("pk");
-					var pubKey = ECPublicKey.fromHex(hexPubKey);
-					final UInt256 tokenAmt;
-					if (cmd.hasOption("a")) {
-						var amountStr = cmd.getOptionValue("a");
-						var amt = new BigInteger(amountStr);
-						tokenAmt = unitsToSubunits(new BigDecimal(amt));
-					} else {
-						tokenAmt = unitsToSubunits(DEFAULT_ISSUANCE);
-					}
-					tokenIssuancesBuilder.add(TokenIssuance.of(pubKey, tokenAmt));
-					var tokensToCreate = Map.of(
-						"gum", "Gumball",
-						"emunie", "eMunie",
-						"cerb", "Cerb"
-					);
-
-					var accountAddr = REAddr.ofPubKeyAccount(pubKey);
-					tokensToCreate.forEach((symbol, name) -> {
-						var resourceAddr = REAddr.ofHashedKey(pubKey, symbol);
-						additionalActions.add(new CreateFixedToken(
-							resourceAddr,
-							accountAddr,
-							symbol, name, "", "", "",
-							UInt256.MAX_VALUE
-						));
-					});
-
-				} catch (PublicKeyException e) {
-					throw new IllegalStateException("Invalid pub key", e);
-				}
+				hexPubKey = cmd.getOptionValue("pk");
+			} else {
+				hexPubKey = "03fff97bd5755eeea420453a14355235d382f6472f8568a18b2f057a1460297556";
 			}
+
+			final ECPublicKey pubKey;
+			try {
+				pubKey = ECPublicKey.fromHex(hexPubKey);
+			} catch (PublicKeyException e) {
+				throw new IllegalStateException("Invalid pub key", e);
+			}
+			final UInt256 tokenAmt;
+			if (cmd.hasOption("a")) {
+				var amountStr = cmd.getOptionValue("a");
+				var amt = new BigInteger(amountStr);
+				tokenAmt = unitsToSubunits(new BigDecimal(amt));
+			} else {
+				tokenAmt = unitsToSubunits(DEFAULT_ISSUANCE);
+			}
+			tokenIssuancesBuilder.add(TokenIssuance.of(pubKey, tokenAmt));
+			var tokensToCreate = Map.of(
+				"gum", "Gumball",
+				"emunie", "eMunie",
+				"cerb", "Cerb"
+			);
+
+			var accountAddr = REAddr.ofPubKeyAccount(pubKey);
+			var resourceAddrs = new ArrayList<REAddr>();
+			tokensToCreate.forEach((symbol, name) -> {
+				var resourceAddr = REAddr.ofHashedKey(pubKey, symbol);
+				resourceAddrs.add(resourceAddr);
+				additionalActions.add(new CreateFixedToken(
+					resourceAddr,
+					accountAddr,
+					symbol, name, "", "", "",
+					UInt256.MAX_VALUE
+				));
+			});
 
 			if (universeType == UniverseType.DEVELOPMENT) {
 				// Issue tokens to initial validators for now to support application services
 				// FIXME: Remove this
-				validatorKeys.stream()
-					.map(kp -> TokenIssuance.of(kp.getPublicKey(), unitsToSubunits(DEFAULT_ISSUANCE)))
-					.forEach(tokenIssuancesBuilder::add);
+				validatorKeys
+					.forEach(kp -> {
+						var tokenIssuance = TokenIssuance.of(kp.getPublicKey(), unitsToSubunits(DEFAULT_ISSUANCE));
+						tokenIssuancesBuilder.add(tokenIssuance);
+						var keyAddr = REAddr.ofPubKeyAccount(kp.getPublicKey());
+						resourceAddrs.forEach(addr -> {
+							additionalActions.add(
+								new TransferToken(addr, accountAddr, keyAddr, unitsToSubunits(DEFAULT_ISSUANCE))
+							);
+						});
+					});
 			}
 
 			final ImmutableList<TokenIssuance> tokenIssuances = tokenIssuancesBuilder

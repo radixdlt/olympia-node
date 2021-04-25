@@ -20,6 +20,7 @@ package org.radix.api.http;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
+import com.radixdlt.api.faucet.FaucetToken;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
@@ -34,7 +35,9 @@ import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
 import com.radixdlt.utils.UInt256;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
+import org.bouncycastle.util.encoders.Hex;
 
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -42,16 +45,20 @@ import static org.radix.api.http.RestUtils.*;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public final class FaucetController implements Controller {
+	private static final UInt256 AMOUNT = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
+
 	private final EventDispatcher<NodeApplicationRequest> faucetRequestDispatcher;
-	private final UInt256 amount = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
 	private final REAddr account;
+	private final Set<REAddr> tokensToSend;
 
 	@Inject
 	public FaucetController(
 		@Self REAddr account,
+		@FaucetToken Set<REAddr> tokensToSend,
 		final EventDispatcher<NodeApplicationRequest> faucetRequestDispatcher
 	) {
 		this.account = account;
+		this.tokensToSend = tokensToSend;
 		this.faucetRequestDispatcher = faucetRequestDispatcher;
 	}
 
@@ -74,9 +81,13 @@ public final class FaucetController implements Controller {
 				return;
 			}
 
-			var actions = TxActionListBuilder.create()
-				.transfer(REAddr.ofNativeToken(), account, address, amount)
-				.burn(REAddr.ofNativeToken(), account, TokenFeeChecker.FIXED_FEE)
+			var builder = TxActionListBuilder.create();
+
+			for (var tokenAddr : tokensToSend) {
+				builder.transfer(tokenAddr, account, address, AMOUNT);
+			}
+
+			var actions = builder.burn(REAddr.ofNativeToken(), account, TokenFeeChecker.FIXED_FEE)
 				.build();
 
 			var completableFuture = new CompletableFuture<MempoolAddSuccess>();
@@ -85,9 +96,17 @@ public final class FaucetController implements Controller {
 
 			try {
 				var success = completableFuture.get();
-				respond(exchange, jsonObject().put("result", success.getTxn().toString()));
-			} catch (ExecutionException e) {
-				respond(exchange, jsonObject().put("error", jsonObject().put("message", e.getCause().getMessage())));
+				respond(exchange, jsonObject()
+					.put("result", jsonObject()
+						.put("transaction", Hex.toHexString(success.getTxn().getPayload()))
+						.put("transaction_identifier", success.getTxn().getId().toString())
+					)
+				);
+			} catch (ExecutionException | RuntimeException e) {
+				respond(exchange, jsonObject()
+					.put("error", jsonObject()
+						.put("message", e.getCause().getMessage()))
+				);
 			}
 		});
 	}

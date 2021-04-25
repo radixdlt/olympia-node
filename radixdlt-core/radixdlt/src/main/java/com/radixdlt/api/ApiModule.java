@@ -49,7 +49,6 @@ public final class ApiModule extends AbstractModule {
 		var controllers = Multibinder.newSetBinder(binder(), Controller.class);
 		controllers.addBinding().to(ConstructionController.class).in(Scopes.SINGLETON);
 		controllers.addBinding().to(ChaosController.class).in(Scopes.SINGLETON);
-		controllers.addBinding().to(FaucetController.class).in(Scopes.SINGLETON);
 		controllers.addBinding().to(NodeController.class).in(Scopes.SINGLETON);
 		controllers.addBinding().to(RpcController.class).in(Scopes.SINGLETON);
 		controllers.addBinding().to(SystemController.class).in(Scopes.SINGLETON);

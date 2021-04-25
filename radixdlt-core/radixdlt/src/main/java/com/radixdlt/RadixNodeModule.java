@@ -19,6 +19,7 @@ package com.radixdlt;
 
 import com.radixdlt.api.ApiModule;
 
+import com.radixdlt.api.faucet.FaucetModule;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
 import org.apache.logging.log4j.LogManager;
@@ -100,6 +101,10 @@ public final class RadixNodeModule extends AbstractModule {
 		if (properties.get("client_api.enable", false)) {
 			log.info("Enabling high level API");
 			install(new ClientApiModule());
+		}
+		if (properties.get("faucet.enable", true)) {
+			log.info("Enabling faucet API");
+			install(new FaucetModule());
 		}
 
 		// Consensus
