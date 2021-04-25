@@ -25,7 +25,7 @@ import org.json.JSONObject;
 
 import com.radixdlt.utils.UInt256;
 
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 import static java.util.Objects.requireNonNull;
 

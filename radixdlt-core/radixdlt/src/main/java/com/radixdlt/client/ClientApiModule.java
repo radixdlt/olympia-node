@@ -33,7 +33,7 @@ import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
 
-import org.radix.api.jsonrpc.JsonRpcHandler;
+import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.client.handler.HighLevelApiHandler;
 
 public class ClientApiModule extends AbstractModule {

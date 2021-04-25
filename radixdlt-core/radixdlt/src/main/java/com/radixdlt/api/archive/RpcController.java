@@ -6,18 +6,19 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package org.radix.api.http;
+package com.radixdlt.api.archive;
 
-import org.radix.api.jsonrpc.RadixJsonRpcServer;
+import com.radixdlt.api.Controller;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
@@ -25,7 +26,7 @@ import com.google.inject.Inject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 
-import static org.radix.api.http.RestUtils.respondAsync;
+import static com.radixdlt.api.RestUtils.respondAsync;
 
 public final class RpcController implements Controller {
 	private final RadixJsonRpcServer jsonRpcServer;

@@ -16,18 +16,16 @@
  *
  */
 
-package org.radix.api.http;
+package com.radixdlt.api.faucet;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
-import com.radixdlt.api.faucet.FaucetToken;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.client.AccountAddress;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.serialization.DeserializeException;
@@ -36,13 +34,14 @@ import com.radixdlt.utils.UInt256;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 import org.bouncycastle.util.encoders.Hex;
+import com.radixdlt.api.Controller;
 
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import static org.radix.api.http.RestUtils.*;
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.RestUtils.*;
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 public final class FaucetController implements Controller {
 	private static final UInt256 AMOUNT = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);

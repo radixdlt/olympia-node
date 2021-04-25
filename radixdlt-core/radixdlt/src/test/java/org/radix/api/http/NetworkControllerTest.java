@@ -39,7 +39,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 public class NetworkControllerTest {
 	public static final String EUID = "615243";

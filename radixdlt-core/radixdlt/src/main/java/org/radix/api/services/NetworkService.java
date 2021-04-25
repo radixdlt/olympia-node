@@ -39,8 +39,8 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.JsonRpcUtil.jsonArray;
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 public class NetworkService {
 	private final Serialization serialization;

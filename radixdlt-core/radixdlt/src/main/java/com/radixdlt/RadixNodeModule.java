@@ -96,15 +96,23 @@ public final class RadixNodeModule extends AbstractModule {
 
 		install(new DispatcherModule());
 
+
+		// Application
+		install(new NodeApplicationModule());
+
 		// API
 		install(new ApiModule());
 		if (properties.get("client_api.enable", false)) {
 			log.info("Enabling high level API");
 			install(new ClientApiModule());
 		}
-		if (properties.get("faucet.enable", true)) {
+		if (properties.get("faucet.enable", false)) {
 			log.info("Enabling faucet API");
 			install(new FaucetModule());
+		}
+		if (properties.get("chaos.enable", false)) {
+			log.info("Enabling chaos API");
+			install(new ChaosModule());
 		}
 
 		// Consensus
@@ -161,13 +169,6 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new TCPTransportModule(properties));
 		install(new AddressBookModule());
 		install(new HostIpModule(properties));
-
-		// Application
-		install(new NodeApplicationModule());
-
-		if (properties.get("chaos.enable", false)) {
-			install(new ChaosModule());
-		}
 	}
 
 	@Provides

@@ -17,6 +17,7 @@
 
 package org.radix.api.services;
 
+import com.radixdlt.api.system.SystemService;
 import org.junit.Test;
 import org.radix.universe.system.LocalSystem;
 

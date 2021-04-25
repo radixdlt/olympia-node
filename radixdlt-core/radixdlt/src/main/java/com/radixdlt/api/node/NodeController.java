@@ -6,16 +6,17 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package org.radix.api.http;
+package com.radixdlt.api.node;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
@@ -44,7 +45,6 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.REAddr;
 
 import com.radixdlt.mempool.MempoolAddSuccess;
@@ -58,14 +58,15 @@ import io.undertow.server.RoutingHandler;
 import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import com.radixdlt.api.Controller;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import static org.radix.api.http.RestUtils.*;
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.RestUtils.*;
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 public final class NodeController implements Controller {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;

@@ -30,7 +30,7 @@ import com.radixdlt.serialization.SerializerId2;
 
 import java.util.Objects;
 
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 import static java.util.Objects.requireNonNull;
 

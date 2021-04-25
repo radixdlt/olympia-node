@@ -16,13 +16,29 @@
  *
  */
 
-package org.radix.api.jsonrpc;
+package com.radixdlt.api.system;
 
 import org.json.JSONObject;
+import org.radix.universe.system.LocalSystem;
 
-/**
- * Handles Json RPC requests
- */
-public interface JsonRpcHandler {
-	JSONObject execute(JSONObject param);
+import com.google.inject.Inject;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.Serialization;
+
+public class SystemService {
+	private final Serialization serialization;
+	private final LocalSystem localSystem;
+
+	@Inject
+	public SystemService(
+		Serialization serialization,
+		LocalSystem localSystem
+	) {
+		this.serialization = serialization;
+		this.localSystem = localSystem;
+	}
+
+	public JSONObject getLocalSystem() {
+		return serialization.toJsonObject(localSystem, DsonOutput.Output.API);
+	}
 }

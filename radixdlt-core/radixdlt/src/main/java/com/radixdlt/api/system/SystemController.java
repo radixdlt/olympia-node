@@ -6,16 +6,17 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package org.radix.api.http;
+package com.radixdlt.api.system;
 
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
@@ -23,7 +24,7 @@ import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.utils.Bytes;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.radix.api.services.SystemService;
+import com.radixdlt.api.Controller;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
@@ -31,7 +32,7 @@ import com.google.inject.Inject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 
-import static org.radix.api.http.RestUtils.respond;
+import static com.radixdlt.api.RestUtils.respond;
 
 public final class SystemController implements Controller {
 	private final SystemService systemService;

@@ -38,7 +38,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.commons.cli.ParseException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
-import org.radix.api.http.RadixHttpServer;
+import com.radixdlt.api.RadixHttpServer;
 import org.radix.utils.IOUtils;
 
 import java.io.IOException;

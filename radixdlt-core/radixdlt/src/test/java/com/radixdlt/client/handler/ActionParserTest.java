@@ -36,7 +36,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
+import static com.radixdlt.api.JsonRpcUtil.jsonArray;
 
 import static com.radixdlt.client.api.ActionType.STAKE;
 import static com.radixdlt.client.api.ActionType.TRANSFER;

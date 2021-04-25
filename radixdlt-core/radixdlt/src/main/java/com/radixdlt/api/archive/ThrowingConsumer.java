@@ -16,13 +16,9 @@
  *
  */
 
-package org.radix.api.http;
+package com.radixdlt.api.archive;
 
-import io.undertow.server.RoutingHandler;
-
-/**
- * A controller which can serve http requests
- */
-public interface Controller {
-	void configureRoutes(final RoutingHandler handler);
+@FunctionalInterface
+public interface ThrowingConsumer<A> {
+	void accept(A arg1) throws Exception;
 }

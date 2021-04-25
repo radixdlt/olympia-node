@@ -30,13 +30,9 @@ import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
-import org.radix.api.http.ChaosController;
-import org.radix.api.http.Controller;
-import org.radix.api.http.NodeController;
-import org.radix.api.http.RadixHttpServer;
-import org.radix.api.http.RpcController;
-import org.radix.api.http.SystemController;
-import org.radix.api.jsonrpc.JsonRpcHandler;
+import com.radixdlt.api.node.NodeController;
+import com.radixdlt.api.archive.RpcController;
+import com.radixdlt.api.system.SystemController;
 
 /**
  * Configures the api including http server setup
@@ -47,13 +43,12 @@ public final class ApiModule extends AbstractModule {
 		bind(RadixHttpServer.class).in(Scopes.SINGLETON);
 		var controllers = Multibinder.newSetBinder(binder(), Controller.class);
 		controllers.addBinding().to(ConstructionController.class).in(Scopes.SINGLETON);
-		controllers.addBinding().to(ChaosController.class).in(Scopes.SINGLETON);
 		controllers.addBinding().to(NodeController.class).in(Scopes.SINGLETON);
 		controllers.addBinding().to(RpcController.class).in(Scopes.SINGLETON);
 		controllers.addBinding().to(SystemController.class).in(Scopes.SINGLETON);
 
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
-				.permitDuplicates();
+			.permitDuplicates();
 		eventBinder.addBinding().toInstance(AtomsCommittedToLedger.class);
 		eventBinder.addBinding().toInstance(MempoolAddFailure.class);
 		eventBinder.addBinding().toInstance(AtomsRemovedFromMempool.class);

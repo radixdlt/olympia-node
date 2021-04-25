@@ -17,6 +17,7 @@
 
 package org.radix.api.http;
 
+import com.radixdlt.api.Controller;
 import org.radix.api.services.NetworkService;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -25,8 +26,8 @@ import com.google.inject.Inject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 
-import static org.radix.api.http.RestUtils.getParameter;
-import static org.radix.api.http.RestUtils.respond;
+import static com.radixdlt.api.RestUtils.getParameter;
+import static com.radixdlt.api.RestUtils.respond;
 
 public final class NetworkController implements Controller {
 	private final NetworkService networkService;
