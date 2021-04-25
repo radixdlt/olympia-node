@@ -17,9 +17,14 @@
 
 package com.radixdlt.client.store.berkeley;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.inject.Inject;
 import com.radixdlt.api.construction.TxnParser;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
@@ -27,27 +32,21 @@ import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.client.Rri;
-import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.REParsedAction;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.utils.UInt384;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import com.google.inject.Inject;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.client.Rri;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.ClientApiStoreException;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.TransactionParser;
+import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
@@ -56,6 +55,7 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 import com.sleepycat.je.Database;
@@ -66,6 +66,7 @@ import com.sleepycat.je.OperationStatus;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -348,12 +349,16 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			var list = new ArrayList<TxHistoryEntry>();
 
 			do {
-				AID.fromBytes(data.getData())
-					.flatMap(this::retrieveTx)
-					.onFailure(this::reportError)
-					.flatMap(txnParser::parseTxn)
-					.flatMap(txn -> transactionParser.parse(txn, instantFromKey(key), this::getRriOrFail))
-					.onSuccess(list::add);
+				addrFromKey(key)
+					.filter(addr::equals, "Ignored")
+					.onSuccessDo(() -> {
+						AID.fromBytes(data.getData())
+							.flatMap(this::retrieveTx)
+							.onFailure(this::reportError)
+							.flatMap(txnParser::parseTxn)
+							.flatMap(txn -> transactionParser.parse(txn, instantFromKey(key), this::getRriOrFail))
+							.onSuccess(list::add);
+					});
 
 				status = readTxHistory(() -> cursor.getNext(key, data, null), data);
 			}
@@ -384,6 +389,11 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private Instant instantFromKey(DatabaseEntry key) {
 		var buf = Unpooled.wrappedBuffer(key.getData(), key.getSize() - TIMESTAMP_SIZE, TIMESTAMP_SIZE);
 		return Instant.ofEpochSecond(buf.readLong(), buf.readInt());
+	}
+
+	private Result<REAddr> addrFromKey(DatabaseEntry key) {
+		var buf = Arrays.copyOf(key.getData(), ECPublicKey.COMPRESSED_BYTES + 1);
+		return Result.wrap(() -> REAddr.of(buf));
 	}
 
 	private Result<Txn> retrieveTx(AID id) {
