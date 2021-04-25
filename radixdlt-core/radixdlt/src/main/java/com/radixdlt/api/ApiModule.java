@@ -31,7 +31,6 @@ import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.api.node.NodeController;
-import com.radixdlt.api.archive.RpcController;
 import com.radixdlt.api.system.SystemController;
 
 /**
@@ -44,7 +43,6 @@ public final class ApiModule extends AbstractModule {
 		var controllers = Multibinder.newSetBinder(binder(), Controller.class);
 		controllers.addBinding().to(ConstructionController.class).in(Scopes.SINGLETON);
 		controllers.addBinding().to(NodeController.class).in(Scopes.SINGLETON);
-		controllers.addBinding().to(RpcController.class).in(Scopes.SINGLETON);
 		controllers.addBinding().to(SystemController.class).in(Scopes.SINGLETON);
 
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)

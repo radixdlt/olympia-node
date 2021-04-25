@@ -24,6 +24,8 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.api.Controller;
+import com.radixdlt.api.archive.RpcController;
 import com.radixdlt.client.service.ScheduledCacheCleanup;
 import com.radixdlt.client.service.TransactionStatusService;
 import com.radixdlt.client.store.ClientApiStore;
@@ -39,6 +41,9 @@ import com.radixdlt.client.handler.HighLevelApiHandler;
 public class ClientApiModule extends AbstractModule {
 	@Override
 	public void configure() {
+		var controllers = Multibinder.newSetBinder(binder(), Controller.class);
+		controllers.addBinding().to(RpcController.class).in(Scopes.SINGLETON);
+
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 			.permitDuplicates();
 		bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
