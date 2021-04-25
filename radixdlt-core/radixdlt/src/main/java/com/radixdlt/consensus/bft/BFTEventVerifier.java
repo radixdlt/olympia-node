@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.consensus.BFTEventProcessor;
@@ -71,14 +72,22 @@ public final class BFTEventVerifier implements BFTEventProcessor {
 	@Override
 	public void processVote(Vote vote) {
 		validAuthor(vote).ifPresent(node -> {
-			boolean verifiedVoteData = verify(node, vote.getTimestampedVoteData(), vote.getSignature(), vote);
+			boolean verifiedVoteData = verifyHash(node, vote.getHashOfData(hasher), vote.getSignature(), vote);
+			if (!verifiedVoteData) {
+				log.warn("Ignoring invalid vote data {}", vote);
+				return;
+			}
+
 			boolean verifiedTimeoutData = vote.getTimeoutSignature()
 				.map(timeoutSignature -> verify(node, VoteTimeout.of(vote), timeoutSignature, vote))
 				.orElse(true);
 
-			if (verifiedVoteData && verifiedTimeoutData) {
-				forwardTo.processVote(vote);
+			if (!verifiedTimeoutData) {
+				log.warn("Ignoring invalid timeout data {}", vote);
+				return;
 			}
+
+			forwardTo.processVote(vote);
 		});
 	}
 
@@ -120,11 +129,15 @@ public final class BFTEventVerifier implements BFTEventProcessor {
 		return Optional.of(node);
 	}
 
-	private boolean verify(BFTNode author, Object hashable, ECDSASignature signature, Object what) {
-		boolean verified = this.verifier.verify(author.getKey(), this.hasher.hash(hashable), signature);
+	private boolean verifyHash(BFTNode author, HashCode hash, ECDSASignature signature, Object what) {
+		boolean verified = this.verifier.verify(author.getKey(), hash, signature);
 		if (!verified) {
 			log.info("Ignoring invalid signature from {} for {}", author, what);
 		}
 		return verified;
+	}
+
+	private boolean verify(BFTNode author, Object hashable, ECDSASignature signature, Object what) {
+		return verifyHash(author, this.hasher.hash(hashable), signature, what);
 	}
 }

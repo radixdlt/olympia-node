@@ -243,12 +243,14 @@ public class EpochsConsensusModule extends AbstractModule {
 		ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
 		Random random,
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
-		SystemCounters counters
+		SystemCounters counters,
+		Hasher hasher
 	) {
 		return (vertexStore, pacemakerState, configuration) -> new BFTSync(
 			self,
 			syncRequestRateLimiter,
 			vertexStore,
+			hasher,
 			pacemakerState,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
 			requestSender,
@@ -267,11 +269,13 @@ public class EpochsConsensusModule extends AbstractModule {
 		EventDispatcher<BFTRebuildUpdate> rebuildUpdateDispatcher,
 		EventDispatcher<BFTHighQCUpdate> highQCUpdateEventDispatcher,
 		EventDispatcher<BFTCommittedUpdate> committedDispatcher,
-		Ledger ledger
+		Ledger ledger,
+		Hasher hasher
 	) {
 		return vertexStoreState -> VertexStore.create(
 			vertexStoreState,
 			ledger,
+			hasher,
 			updateSender,
 			rebuildUpdateDispatcher,
 			highQCUpdateEventDispatcher,

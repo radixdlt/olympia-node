@@ -27,9 +27,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.hash.HashCode;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -109,7 +107,7 @@ public class StateComputerLedgerTest {
 		this.genesis = UnverifiedVertex.createGenesis(ledgerHeader);
 		this.genesisVertex = new VerifiedVertex(genesis, hasher.hash(genesis));
 		this.genesisQC = QuorumCertificate.ofGenesis(genesisVertex, ledgerHeader);
-		this.currentLedgerHeader = this.genesisQC.getCommittedAndLedgerStateProof()
+		this.currentLedgerHeader = this.genesisQC.getCommittedAndLedgerStateProof(hasher)
 			.map(Pair::getSecond).orElseThrow();
 
 		this.sut = new StateComputerLedger(
@@ -135,7 +133,7 @@ public class StateComputerLedgerTest {
 		this.genesis = UnverifiedVertex.createGenesis(ledgerHeader);
 		this.genesisVertex = new VerifiedVertex(genesis, hasher.hash(genesis));
 		this.genesisQC = QuorumCertificate.ofGenesis(genesisVertex, ledgerHeader);
-		this.currentLedgerHeader = this.genesisQC.getCommittedAndLedgerStateProof()
+		this.currentLedgerHeader = this.genesisQC.getCommittedAndLedgerStateProof(hasher)
 			.map(Pair::getSecond).orElseThrow();
 
 		this.sut = new StateComputerLedger(
@@ -226,10 +224,7 @@ public class StateComputerLedgerTest {
 			1234
 		);
 		final LedgerProof header = new LedgerProof(
-			mock(BFTHeader.class),
-			mock(BFTHeader.class),
-			12345,
-			mock(HashCode.class),
+			HashUtils.random256(),
 			ledgerHeader,
 			new TimestampedECDSASignatures()
 		);

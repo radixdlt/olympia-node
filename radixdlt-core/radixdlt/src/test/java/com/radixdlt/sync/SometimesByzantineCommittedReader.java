@@ -119,12 +119,9 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
 				base.getProof().timestamp(),
 				base.getProof().getNextValidatorSet().orElse(null)
 			);
-			TimestampedECDSASignatures signatures = overwriteSignatures != null ? overwriteSignatures : base.getProof().getSignatures();
-			LedgerProof headerAndProof = new LedgerProof(
-				base.getProof().toDto().getOpaque0(),
-				base.getProof().toDto().getOpaque1(),
-				base.getProof().toDto().getOpaque2(),
-				base.getProof().toDto().getOpaque3(),
+			var signatures = overwriteSignatures != null ? overwriteSignatures : base.getProof().getSignatures();
+			var headerAndProof = new LedgerProof(
+				base.getProof().toDto().getOpaque(),
 				ledgerHeader,
 				signatures
 			);

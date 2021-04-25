@@ -40,6 +40,7 @@ import com.radixdlt.consensus.bft.ViewVotingResult.FormedTC;
 import com.radixdlt.consensus.liveness.PacemakerReducer;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -96,9 +97,10 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 		private SyncStage syncStage;
 		private final LinkedList<VerifiedVertex> fetched = new LinkedList<>();
 
-		SyncState(HighQC highQC, BFTNode author) {
+		SyncState(HighQC highQC, BFTNode author, Hasher hasher) {
 			this.localSyncId = highQC.highestQC().getProposed().getVertexId();
-			Pair<BFTHeader, LedgerProof> pair = highQC.highestCommittedQC().getCommittedAndLedgerStateProof()
+			Pair<BFTHeader, LedgerProof> pair = highQC.highestCommittedQC()
+				.getCommittedAndLedgerStateProof(hasher)
 				.orElseThrow(() -> new IllegalStateException("committedQC must have a commit"));
 			this.committedHeader = pair.getFirst();
 			this.committedProof = pair.getSecond();
@@ -129,6 +131,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 	private static final Logger log = LogManager.getLogger();
 	private final BFTNode self;
 	private final VertexStore vertexStore;
+	private final Hasher hasher;
 	private final PacemakerReducer pacemakerReducer;
 	private final Map<HashCode, SyncState> syncing = new HashMap<>();
 	private final TreeMap<LedgerHeader, List<HashCode>> ledgerSyncing;
@@ -148,6 +151,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 		@Self BFTNode self,
 		RateLimiter syncRequestRateLimiter,
 		VertexStore vertexStore,
+		Hasher hasher,
 		PacemakerReducer pacemakerReducer,
 		Comparator<LedgerHeader> ledgerHeaderComparator,
 		RemoteEventDispatcher<GetVerticesRequest> requestSender,
@@ -161,6 +165,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 		this.self = self;
 		this.syncRequestRateLimiter = Objects.requireNonNull(syncRequestRateLimiter);
 		this.vertexStore = vertexStore;
+		this.hasher = Objects.requireNonNull(hasher);
 		this.pacemakerReducer = pacemakerReducer;
 		this.ledgerSyncing = new TreeMap<>(ledgerHeaderComparator);
 		this.requestSender = requestSender;
@@ -248,7 +253,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 	}
 
 	private void startSync(HighQC highQC, BFTNode author) {
-		final SyncState syncState = new SyncState(highQC, author);
+		final SyncState syncState = new SyncState(highQC, author, hasher);
 		syncing.put(syncState.localSyncId, syncState);
 		if (requiresLedgerSync(syncState)) {
 			this.doCommittedSync(syncState);
@@ -356,11 +361,12 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 			ImmutableList<VerifiedVertex> nonRootVertices = syncState.fetched.stream()
 				.skip(1)
 				.collect(ImmutableList.toImmutableList());
-			VerifiedVertexStoreState vertexStoreState = VerifiedVertexStoreState.create(
+			var vertexStoreState = VerifiedVertexStoreState.create(
 				HighQC.from(syncState.highQC().highestCommittedQC()),
 				syncState.fetched.get(0),
 				nonRootVertices,
-				vertexStore.getHighestTimeoutCertificate()
+				vertexStore.getHighestTimeoutCertificate(),
+				hasher
 			);
 			if (vertexStore.tryRebuild(vertexStoreState)) {
 				// TODO: Move pacemaker outside of sync

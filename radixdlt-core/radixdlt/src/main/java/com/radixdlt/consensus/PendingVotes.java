@@ -100,8 +100,7 @@ public final class PendingVotes {
 	 */
 	public VoteProcessingResult insertVote(Vote vote, BFTValidatorSet validatorSet) {
 		final BFTNode node = vote.getAuthor();
-		final TimestampedVoteData timestampedVoteData = vote.getTimestampedVoteData();
-		final VoteData voteData = timestampedVoteData.getVoteData();
+		final VoteData voteData = vote.getVoteData();
 		final HashCode voteDataHash = this.hasher.hash(voteData);
 		final View voteView = voteData.getProposed().getView();
 
@@ -119,16 +118,14 @@ public final class PendingVotes {
 	}
 
 	private Optional<QuorumCertificate> processVoteForQC(Vote vote, BFTValidatorSet validatorSet) {
-		final TimestampedVoteData timestampedVoteData = vote.getTimestampedVoteData();
-		final VoteData voteData = timestampedVoteData.getVoteData();
+		final VoteData voteData = vote.getVoteData();
 		final HashCode voteDataHash = this.hasher.hash(voteData);
 		final BFTNode node = vote.getAuthor();
 
 		final ValidationState validationState =
 			this.voteState.computeIfAbsent(voteDataHash, k -> validatorSet.newValidationState());
 
-		final boolean signatureAdded =
-			validationState.addSignature(node, timestampedVoteData.getNodeTimestamp(), vote.getSignature());
+		final boolean signatureAdded = validationState.addSignature(node, vote.getTimestamp(), vote.getSignature());
 
 		if (signatureAdded && validationState.complete()) {
 			return Optional.of(new QuorumCertificate(voteData, validationState.signatures()));
@@ -151,8 +148,7 @@ public final class PendingVotes {
 		final ValidationState validationState =
 			this.timeoutVoteState.computeIfAbsent(voteTimeoutHash, k -> validatorSet.newValidationState());
 
-		final boolean signatureAdded =
-			validationState.addSignature(node, vote.getTimestampedVoteData().getNodeTimestamp(), timeoutSignature);
+		final boolean signatureAdded = validationState.addSignature(node, vote.getTimestamp(), timeoutSignature);
 
 		if (signatureAdded && validationState.complete()) {
 			return Optional.of(new TimeoutCertificate(

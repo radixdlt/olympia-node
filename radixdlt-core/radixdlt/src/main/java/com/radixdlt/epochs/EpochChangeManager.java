@@ -64,8 +64,13 @@ public final class EpochChangeManager {
 				header.timestamp()
 			);
 			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-			final VerifiedVertexStoreState initialState =
-				VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty());
+			final var initialState =
+				VerifiedVertexStoreState.create(
+					HighQC.from(genesisQC),
+					verifiedGenesisVertex,
+					Optional.empty(),
+					hasher
+				);
 			BFTConfiguration bftConfiguration = new BFTConfiguration(validatorSet, initialState);
 			return new EpochChange(header, bftConfiguration);
 		});

@@ -251,12 +251,14 @@ public final class ConsensusModule extends AbstractModule {
 		@LastProof LedgerProof ledgerLastProof, // Use this instead of configuration.getRoot()
 		Random random,
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
+		Hasher hasher,
 		SystemCounters counters
 	) {
 		return new BFTSync(
 			self,
 			syncRequestRateLimiter,
 			vertexStore,
+			hasher,
 			pacemakerReducer,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
 			requestSender,
@@ -277,11 +279,13 @@ public final class ConsensusModule extends AbstractModule {
 		EventDispatcher<BFTHighQCUpdate> highQCUpdateEventDispatcher,
 		EventDispatcher<BFTCommittedUpdate> committedSender,
 		BFTConfiguration bftConfiguration,
-		Ledger ledger
+		Ledger ledger,
+		Hasher hasher
 	) {
 		return VertexStore.create(
 			bftConfiguration.getVertexStoreState(),
 			ledger,
+			hasher,
 			updateSender,
 			rebuildUpdateDispatcher,
 			highQCUpdateEventDispatcher,

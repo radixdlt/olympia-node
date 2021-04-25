@@ -116,7 +116,8 @@ public final class LedgerRecoveryModule extends AbstractModule {
 			serializedVertexStoreState.getHighQC(),
 			verifiedRoot,
 			vertices,
-			serializedVertexStoreState.getHighestTC()
+			serializedVertexStoreState.getHighestTC(),
+			hasher
 		);
 	}
 
@@ -133,7 +134,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 			lastEpochProof.timestamp()
 		);
 		var genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-		return VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty());
+		return VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty(), hasher);
 	}
 
 	@Provides

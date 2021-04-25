@@ -21,14 +21,17 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,6 +41,7 @@ import java.util.Optional;
 public class VerifiedVertexStoreStateCreationTest {
 	private VerifiedVertex genesisVertex;
 	private HashCode genesisHash;
+	private Hasher hasher;
 	private static final LedgerHeader MOCKED_HEADER = LedgerHeader.create(
 		0, View.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0
 	);
@@ -46,6 +50,7 @@ public class VerifiedVertexStoreStateCreationTest {
 	public void setup() {
 		this.genesisHash = HashUtils.zero256();
 		this.genesisVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(MOCKED_HEADER), genesisHash);
+		this.hasher = new Sha256Hasher(DefaultSerialization.getInstance());
 	}
 
 	@Test
@@ -57,7 +62,8 @@ public class VerifiedVertexStoreStateCreationTest {
 			VerifiedVertexStoreState.create(
 				HighQC.from(badRootQC),
 				genesisVertex,
-				Optional.empty()
+				Optional.empty(),
+				hasher
 			)
 		).isInstanceOf(IllegalStateException.class);
 	}
@@ -72,7 +78,8 @@ public class VerifiedVertexStoreStateCreationTest {
 			VerifiedVertexStoreState.create(
 				HighQC.from(badRootQC),
 				genesisVertex,
-				Optional.empty()
+				Optional.empty(),
+				hasher
 			)
 		).isInstanceOf(IllegalStateException.class);
 	}
@@ -86,7 +93,8 @@ public class VerifiedVertexStoreStateCreationTest {
 			VerifiedVertexStoreState.create(
 				HighQC.from(badRootQC),
 				genesisVertex,
-				Optional.empty()
+				Optional.empty(),
+				hasher
 			)
 		).isInstanceOf(IllegalStateException.class);
 	}
