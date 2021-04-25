@@ -249,6 +249,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				return definition;
 			}
 
+			definition.onFailure(log::error);
+
 			return Result.fail("Unknown error getting addr " + addr);
 		}
 	}
@@ -628,11 +630,11 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			storeTokenDefinition(record);
 		} else if (action.getTxAction() instanceof CreateFixedToken) {
 			var createFixedToken = (CreateFixedToken) action.getTxAction();
-			var record = TokenDefinitionRecord.from(user, createFixedToken);
+			var record = TokenDefinitionRecord.from(createFixedToken);
 			storeTokenDefinition(record);
 
 			var entry0 = BalanceEntry.create(
-				REAddr.ofPubKeyAccount(user),
+				createFixedToken.getAccountAddr(),
 				null,
 				record.rri(),
 				UInt384.from(createFixedToken.getSupply()),

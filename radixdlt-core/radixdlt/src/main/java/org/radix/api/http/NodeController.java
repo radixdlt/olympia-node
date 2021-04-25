@@ -68,7 +68,6 @@ import static org.radix.api.http.RestUtils.*;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public final class NodeController implements Controller {
-	private final REAddr nativeToken;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final ImmutableIndex immutableIndex;
 	private final EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher;
@@ -77,14 +76,12 @@ public final class NodeController implements Controller {
 
 	@Inject
 	public NodeController(
-		@NativeToken REAddr nativeToken,
 		@Self REAddr account,
 		@Self ECPublicKey bftKey,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		ImmutableIndex immutableIndex,
 		EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher
 	) {
-		this.nativeToken = nativeToken;
 		this.account = account;
 		this.bftKey = bftKey;
 		this.radixEngine = radixEngine;
@@ -112,6 +109,8 @@ public final class NodeController implements Controller {
 		});
 		return new JSONObject()
 			.put("address", ValidatorAddress.of(bftKey))
+			.put("name", validatorInfo.getName())
+			.put("url", validatorInfo.getUrl())
 			.put("registered", validatorInfo.isRegistered())
 			.put("totalStake", TokenUnitConversions.subunitsToUnits(stakeReceived.getTotal()))
 			.put("stakes", stakeFrom);
@@ -184,7 +183,17 @@ public final class NodeController implements Controller {
 				var url = paramsObject.getString("url");
 				var supplyInteger = paramsObject.getBigInteger("supply");
 				var supply = TokenUnitConversions.unitsToSubunits(new BigDecimal(supplyInteger));
-				return new CreateFixedToken(symbol, name, description, iconUrl, url, supply);
+				var reAddr = REAddr.ofHashedKey(bftKey, symbol);
+				return new CreateFixedToken(
+					reAddr,
+					account,
+					symbol,
+					name,
+					description,
+					iconUrl,
+					url,
+					supply
+				);
 			}
 			case "TransferTokens": {
 				var rri = Rri.parse(paramsObject.getString("rri"));
@@ -256,7 +265,7 @@ public final class NodeController implements Controller {
 					var txAction = parseAction(actionObject);
 					actions.add(txAction);
 				}
-				actions.add(new BurnToken(nativeToken, account, TokenFeeChecker.FIXED_FEE));
+				actions.add(new BurnToken(REAddr.ofNativeToken(), account, TokenFeeChecker.FIXED_FEE));
 				var completableFuture = new CompletableFuture<MempoolAddSuccess>();
 				var request = NodeApplicationRequest.create(actions, completableFuture);
 				nodeApplicationRequestEventDispatcher.dispatch(request);

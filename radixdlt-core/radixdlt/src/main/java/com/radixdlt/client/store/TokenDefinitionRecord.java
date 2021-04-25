@@ -108,11 +108,17 @@ public class TokenDefinitionRecord {
 		Objects.requireNonNull(symbol);
 		Objects.requireNonNull(name);
 		Objects.requireNonNull(addr);
-		Objects.requireNonNull(description);
 		Objects.requireNonNull(currentSupply);
 
 		return new TokenDefinitionRecord(
-			symbol, name, addr, description, currentSupply, iconUrl == null ? "" : iconUrl, url == null ? "" : url, mutable
+			symbol,
+			name,
+			addr,
+			description == null ? "" : description,
+			currentSupply,
+			iconUrl == null ? "" : iconUrl,
+			url == null ? "" : url,
+			mutable
 		);
 	}
 
@@ -128,17 +134,12 @@ public class TokenDefinitionRecord {
 		return create(symbol, name, rri, description, UInt384.ZERO, iconUrl, url, mutable);
 	}
 
-	public static TokenDefinitionRecord from(ECPublicKey user, CreateFixedToken createFixedToken) {
-		final REAddr rri;
-		if (user != null) {
-			rri = REAddr.ofHashedKey(user, createFixedToken.getSymbol());
-		} else {
-			rri = REAddr.ofNativeToken();
-		}
+	public static TokenDefinitionRecord from(CreateFixedToken createFixedToken) {
+		final REAddr resourceAddr = createFixedToken.getResourceAddr();
 		return create(
 			createFixedToken.getSymbol(),
 			createFixedToken.getName(),
-			rri,
+			resourceAddr,
 			createFixedToken.getDescription(),
 			UInt384.from(createFixedToken.getSupply()),
 			createFixedToken.getIconUrl(),

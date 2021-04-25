@@ -24,6 +24,7 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
+import com.radixdlt.atom.TxAction;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.utils.UInt256;
@@ -31,6 +32,7 @@ import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -44,6 +46,7 @@ public final class MockedGenesisModule extends AbstractModule {
 		bindConstant().annotatedWith(Names.named("magic")).to(0);
 		Multibinder.newSetBinder(binder(), TokenIssuance.class);
 		bind(new TypeLiteral<VerifiedTxnsAndProof>() { }).annotatedWith(Genesis.class).toProvider(GenesisProvider.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<List<TxAction>>() { }).annotatedWith(Genesis.class).toInstance(List.of());
 	}
 
 	@Provides
