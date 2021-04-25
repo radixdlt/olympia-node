@@ -32,7 +32,6 @@ import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import org.radix.api.http.ChaosController;
 import org.radix.api.http.Controller;
-import org.radix.api.http.FaucetController;
 import org.radix.api.http.NodeController;
 import org.radix.api.http.RadixHttpServer;
 import org.radix.api.http.RpcController;
@@ -49,7 +48,6 @@ public final class ApiModule extends AbstractModule {
 		var controllers = Multibinder.newSetBinder(binder(), Controller.class);
 		controllers.addBinding().to(ConstructionController.class).in(Scopes.SINGLETON);
 		controllers.addBinding().to(ChaosController.class).in(Scopes.SINGLETON);
-		controllers.addBinding().to(FaucetController.class).in(Scopes.SINGLETON);
 		controllers.addBinding().to(NodeController.class).in(Scopes.SINGLETON);
 		controllers.addBinding().to(RpcController.class).in(Scopes.SINGLETON);
 		controllers.addBinding().to(SystemController.class).in(Scopes.SINGLETON);

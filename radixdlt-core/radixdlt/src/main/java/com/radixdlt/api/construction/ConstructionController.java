@@ -23,6 +23,9 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolAddSuccess;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 import org.bouncycastle.util.encoders.Hex;
@@ -31,6 +34,8 @@ import org.json.JSONObject;
 import org.radix.api.http.Controller;
 
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static org.radix.api.http.RestUtils.respond;
 import static org.radix.api.http.RestUtils.withBody;
@@ -39,15 +44,21 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public final class ConstructionController implements Controller {
 	private final TxnParser txnParser;
+	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 
 	@Inject
-	public ConstructionController(TxnParser txnParser) {
+	public ConstructionController(
+		TxnParser txnParser,
+		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher
+	) {
 		this.txnParser = txnParser;
+		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
 	}
 
 	@Override
 	public void configureRoutes(RoutingHandler handler) {
 		handler.post("/node/parse", this::handleParse);
+		handler.post("/node/submit", this::handleSubmit);
 	}
 
 	private JSONObject instructionToObject(REInstruction i) {
@@ -84,6 +95,31 @@ public final class ConstructionController implements Controller {
 			});
 
 			respond(exchange, response);
+		});
+	}
+
+	void handleSubmit(HttpServerExchange exchange) {
+		withBody(exchange, values -> {
+			var transactionHex = values.getString("transaction");
+			var transactionBytes = Hex.decode(transactionHex);
+			var txn = Txn.create(transactionBytes);
+			var completableFuture = new CompletableFuture<MempoolAddSuccess>();
+			var mempoolAdd = MempoolAdd.create(txn, completableFuture);
+			this.mempoolAddEventDispatcher.dispatch(mempoolAdd);
+			try {
+				var success = completableFuture.get();
+				respond(exchange, jsonObject()
+					.put("result", jsonObject()
+						.put("transaction", Hex.toHexString(success.getTxn().getPayload()))
+						.put("transaction_identifier", success.getTxn().getId().toString())
+					)
+				);
+			} catch (ExecutionException | RuntimeException e) {
+				respond(exchange, jsonObject()
+					.put("error", jsonObject()
+						.put("message", e.getCause().getMessage()))
+				);
+			}
 		});
 	}
 }
