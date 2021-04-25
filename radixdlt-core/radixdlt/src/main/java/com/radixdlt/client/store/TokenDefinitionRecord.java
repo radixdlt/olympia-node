@@ -174,8 +174,8 @@ public class TokenDefinitionRecord {
 			.put("symbol", symbol)
 			.put("description", description)
 			.put("currentSupply", currentSupply)
-			.put("iconUrl", iconUrl)
-			.put("url", url)
+			.put("iconURL", iconUrl)
+			.put("tokenInfoURL", url)
 			.put("granularity", "1") // hardcoded for now
 			.put("mutable", mutable);
 	}
