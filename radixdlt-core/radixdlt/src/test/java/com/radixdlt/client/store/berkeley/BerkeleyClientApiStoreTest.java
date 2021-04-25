@@ -208,15 +208,24 @@ public class BerkeleyClientApiStoreTest {
 
 	@Test
 	public void fixedTokenDefinitionIsStoredAndAccessible() throws Exception {
-		var tokenDef = prepareFixedTokenDef();
-		var tx = engine.construct(TOKEN_KEYPAIR.getPublicKey(), new CreateFixedToken(tokenDef))
+		var createFixedToken = new CreateFixedToken(
+			TOKEN,
+			TOKEN_ACCOUNT,
+			SYMBOL,
+			SYMBOL,
+			SYMBOL,
+			null,
+			null,
+			UInt256.ONE
+		);
+		var tx = engine.construct(TOKEN_KEYPAIR.getPublicKey(), createFixedToken)
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var clientApiStore = prepareApiStore(tx);
 
 		clientApiStore.getTokenDefinition(TOKEN)
 			.onFailure(this::failWithMessage)
-			.onSuccess(tokDef -> assertEquals(tokenDef.getName(), tokDef.getName()));
+			.onSuccess(tokDef -> assertEquals(SYMBOL, tokDef.getName()));
 	}
 
 	@Test

@@ -33,7 +33,6 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
@@ -65,10 +64,6 @@ public class TokenFeeTest {
 	private RadixEngine<LedgerAndBFTProof> sut;
 
 	private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
-
-	@Inject
-	@NativeToken
-	private REAddr nativeToken;
 
 	@Inject
 	@Genesis
@@ -112,7 +107,7 @@ public class TokenFeeTest {
 	@Test
 	public void when_validating_atom_with_particles__result_has_no_error() throws Exception {
 		var account = REAddr.ofPubKeyAccount(ecKeyPair.getPublicKey());
-		var atom = sut.construct(ecKeyPair.getPublicKey(), new BurnToken(nativeToken, account, TokenFeeChecker.FIXED_FEE))
+		var atom = sut.construct(ecKeyPair.getPublicKey(), new BurnToken(REAddr.ofNativeToken(), account, TokenFeeChecker.FIXED_FEE))
 			.mutex("test")
 			.signAndBuild(ecKeyPair::sign);
 
@@ -129,7 +124,7 @@ public class TokenFeeTest {
 	@Test
 	public void when_validating_atom_with_fee_and_no_change__result_has_no_error() throws Exception {
 		var account = REAddr.ofPubKeyAccount(ecKeyPair.getPublicKey());
-		var txn = sut.construct(ecKeyPair.getPublicKey(), new BurnToken(nativeToken, account, TokenFeeChecker.FIXED_FEE))
+		var txn = sut.construct(ecKeyPair.getPublicKey(), new BurnToken(REAddr.ofNativeToken(), account, TokenFeeChecker.FIXED_FEE))
 			.signAndBuild(ecKeyPair::sign);
 
 		sut.execute(List.of(txn));

@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.MutableTokenDefinition;
@@ -62,6 +63,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 	private final ValidatorSetBuilder validatorSetBuilder;
 	private final LedgerAccumulator ledgerAccumulator;
 	private final long timestamp;
+	private final List<TxAction> additionalActions;
 
 	@Inject
 	public GenesisProvider(
@@ -72,7 +74,8 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 		@NativeToken MutableTokenDefinition tokenDefinition,
 		@Genesis ImmutableList<TokenIssuance> tokenIssuances,
 		@Genesis ImmutableList<StakeDelegation> stakeDelegations,
-		@Genesis ImmutableList<ECKeyPair> validatorKeys // TODO: Remove private keys, replace with public keys
+		@Genesis ImmutableList<ECKeyPair> validatorKeys, // TODO: Remove private keys, replace with public keys
+		@Genesis List<TxAction> additionalActions
 	) {
 		this.timestamp = timestamp;
 		this.radixEngine = radixEngine;
@@ -82,6 +85,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 		this.tokenIssuances = tokenIssuances;
 		this.validatorKeys = validatorKeys;
 		this.stakeDelegations = stakeDelegations;
+		this.additionalActions = additionalActions;
 	}
 
 	@Override
@@ -119,7 +123,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 			// Initial validator registration
 			for (var validatorKey : validatorKeys) {
 				var validatorTxn = branch.construct(new RegisterValidator(validatorKey.getPublicKey()))
-					.signAndBuild(validatorKey::sign);
+					.buildWithoutSignature();
 				branch.execute(List.of(validatorTxn), PermissionLevel.SYSTEM);
 				genesisTxns.add(validatorTxn);
 			}
@@ -129,9 +133,15 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 				var delegateAddr = REAddr.ofPubKeyAccount(stakeDelegation.staker().getPublicKey());
 				var stakerTxn = branch.construct(
 					new StakeTokens(delegateAddr, stakeDelegation.delegate(), stakeDelegation.amount())
-				).signAndBuild(stakeDelegation.staker()::sign);
+				).buildWithoutSignature();
 				branch.execute(List.of(stakerTxn), PermissionLevel.SYSTEM);
 				genesisTxns.add(stakerTxn);
+			}
+
+			if (!additionalActions.isEmpty()) {
+				var additionalTxn = branch.construct(additionalActions).buildWithoutSignature();
+				branch.execute(List.of(additionalTxn));
+				genesisTxns.add(additionalTxn);
 			}
 
 			var systemTxn = branch.construct(new SystemNextEpoch(timestamp, 0))

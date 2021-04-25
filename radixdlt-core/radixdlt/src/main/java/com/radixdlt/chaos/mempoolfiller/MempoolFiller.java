@@ -32,7 +32,6 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.network.addressbook.PeersView;
@@ -65,7 +64,6 @@ public final class MempoolFiller {
 	private final HashSigner hashSigner;
 	private final ECPublicKey self;
 	private final REAddr account;
-	private final REAddr nativeToken;
 
 	private boolean enabled = false;
 	private int numTransactions;
@@ -75,7 +73,6 @@ public final class MempoolFiller {
 	public MempoolFiller(
 		@Self ECPublicKey self,
 		@Self REAddr account,
-		@NativeToken REAddr nativeToken,
 		@Named("RadixEngine") HashSigner hashSigner,
 		RadixEngineMempool radixEngineMempool,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
@@ -88,7 +85,6 @@ public final class MempoolFiller {
 	) {
 		this.self = self;
 		this.account = account;
-		this.nativeToken = nativeToken;
 		this.hashSigner = hashSigner;
 		this.radixEngine = radixEngine;
 		this.radixEngineMempool = radixEngineMempool;
@@ -135,8 +131,8 @@ public final class MempoolFiller {
 			}
 
 			var actions = TxActionListBuilder.create()
-				.splitNative(nativeToken, TokenFeeChecker.FIXED_FEE.multiply(UInt256.TWO))
-				.burn(nativeToken, account, TokenFeeChecker.FIXED_FEE)
+				.splitNative(REAddr.ofNativeToken(), TokenFeeChecker.FIXED_FEE.multiply(UInt256.TWO))
+				.burn(REAddr.ofNativeToken(), account, TokenFeeChecker.FIXED_FEE)
 				.build();
 
 			var shuttingDown = radixEngineMempool.getShuttingDownSubstates();

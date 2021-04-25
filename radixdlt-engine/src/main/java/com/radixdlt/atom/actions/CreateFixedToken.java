@@ -18,7 +18,6 @@
 
 package com.radixdlt.atom.actions;
 
-import com.radixdlt.atom.FixedTokenDefinition;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
@@ -34,6 +33,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 public class CreateFixedToken implements TxAction {
+	private final REAddr resourceAddr;
+	private final REAddr accountAddr;
 	private final String symbol;
 	private final String name;
 	private final String description;
@@ -41,11 +42,9 @@ public class CreateFixedToken implements TxAction {
 	private final String tokenUrl;
 	private final UInt256 supply;
 
-	public CreateFixedToken(FixedTokenDefinition def) {
-		this(def.getSymbol(), def.getName(), def.getDescription(), def.getIconUrl(), def.getTokenUrl(), def.getSupply());
-	}
-
 	public CreateFixedToken(
+		REAddr resourceAddr,
+		REAddr accountAddr,
 		String symbol,
 		String name,
 		String description,
@@ -53,6 +52,8 @@ public class CreateFixedToken implements TxAction {
 		String tokenUrl,
 		UInt256 supply
 	) {
+		this.resourceAddr = resourceAddr;
+		this.accountAddr = accountAddr;
 		this.symbol = Objects.requireNonNull(symbol);
 		this.name = Objects.requireNonNull(name);
 		this.description = description;
@@ -87,23 +88,23 @@ public class CreateFixedToken implements TxAction {
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		final var user = txBuilder.getUserOrFail("Required address for fixed token.");
-		final var tokenAddress = REAddr.ofHashedKey(user, symbol.toLowerCase());
-		final var userAccount = REAddr.ofPubKeyAccount(user);
+		//final var user = txBuilder.getUserOrFail("Required address for fixed token.");
+		//final var tokenAddress = REAddr.ofHashedKey(user, symbol.toLowerCase());
+		//final var userAccount = REAddr.ofPubKeyAccount(user);
 		txBuilder.down(
 			REAddrParticle.class,
-			p -> p.getAddr().equals(tokenAddress),
-			Optional.of(SubstateWithArg.withArg(new REAddrParticle(tokenAddress), symbol.getBytes(StandardCharsets.UTF_8))),
+			p -> p.getAddr().equals(resourceAddr),
+			Optional.of(SubstateWithArg.withArg(new REAddrParticle(resourceAddr), symbol.getBytes(StandardCharsets.UTF_8))),
 			"RRI not available"
 		);
 		txBuilder.up(new TokenDefinitionParticle(
-			tokenAddress,
+			resourceAddr,
 			name,
 			getDescription(),
 			getIconUrl(),
 			getTokenUrl(),
 			supply
 		));
-		txBuilder.up(new TokensParticle(userAccount, supply, tokenAddress));
+		txBuilder.up(new TokensParticle(accountAddr, supply, resourceAddr));
 	}
 }

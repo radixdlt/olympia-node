@@ -24,6 +24,7 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Named;
 import com.radixdlt.CryptoModule;
+import com.radixdlt.atom.TxAction;
 import com.radixdlt.client.Rri;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -254,6 +255,7 @@ public final class GenerateUniverses {
 					install(RadixEngineConfig.createModule(1, 100, 10000L));
 					install(new RadixEngineModule());
 
+					bind(new TypeLiteral<List<TxAction>>() { }).annotatedWith(Genesis.class).toInstance(List.of());
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());

@@ -43,18 +43,15 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public final class FaucetController implements Controller {
 	private final EventDispatcher<NodeApplicationRequest> faucetRequestDispatcher;
-	private final REAddr nativeToken;
 	private final UInt256 amount = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
 	private final REAddr account;
 
 	@Inject
 	public FaucetController(
 		@Self REAddr account,
-		@NativeToken REAddr nativeToken,
 		final EventDispatcher<NodeApplicationRequest> faucetRequestDispatcher
 	) {
 		this.account = account;
-		this.nativeToken = nativeToken;
 		this.faucetRequestDispatcher = faucetRequestDispatcher;
 	}
 
@@ -78,8 +75,8 @@ public final class FaucetController implements Controller {
 			}
 
 			var actions = TxActionListBuilder.create()
-				.transfer(nativeToken, account, address, amount)
-				.burn(nativeToken, account, TokenFeeChecker.FIXED_FEE)
+				.transfer(REAddr.ofNativeToken(), account, address, amount)
+				.burn(REAddr.ofNativeToken(), account, TokenFeeChecker.FIXED_FEE)
 				.build();
 
 			var completableFuture = new CompletableFuture<MempoolAddSuccess>();
