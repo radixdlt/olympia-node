@@ -75,7 +75,7 @@ public final class EpochChangeManager {
 			return new EpochChange(header, bftConfiguration);
 		});
 
-		EpochsLedgerUpdate epochsLedgerUpdate = new EpochsLedgerUpdate(ledgerUpdate, epochChangeOptional.orElse(null));
+		var epochsLedgerUpdate = new EpochsLedgerUpdate(ledgerUpdate, epochChangeOptional.orElse(null));
 		this.epochsLedgerUpdateSender.dispatch(epochsLedgerUpdate);
 	}
 

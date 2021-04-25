@@ -19,6 +19,7 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
@@ -28,6 +29,8 @@ import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -64,6 +67,19 @@ public final class TimestampedECDSASignatures {
 			: signatures.entrySet().stream().collect(Collectors.toMap(e -> toBFTNode(e.getKey()), Map.Entry::getValue));
 
 		return new TimestampedECDSASignatures(signaturesByNode);
+	}
+
+	public JSONArray asJSON() {
+		var json = new JSONArray();
+		nodeToTimestampedSignature.forEach((node, sig) -> {
+			var obj = new JSONObject()
+				.put("address", ValidatorAddress.of(node.getKey()))
+				.put("signature", sig.signature().toHexString())
+				.put("timestamp", sig.timestamp());
+			json.put(obj);
+		});
+
+		return json;
 	}
 
 	/**

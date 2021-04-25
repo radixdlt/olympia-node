@@ -32,6 +32,9 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.utils.Bytes;
+import org.json.JSONObject;
+
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
@@ -70,6 +73,13 @@ public final class LedgerProof {
 		this.opaque = Objects.requireNonNull(opaque);
 		this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
 		this.signatures = Objects.requireNonNull(signatures);
+	}
+
+	public JSONObject asJSON() {
+		return new JSONObject()
+			.put("opaque", Bytes.toHexString(opaque.asBytes()))
+			.put("header", ledgerHeader.asJSONObject())
+			.put("sigs", signatures.asJSON());
 	}
 
 	public static LedgerProof genesis(AccumulatorState accumulatorState, BFTValidatorSet nextValidators, long timestamp) {

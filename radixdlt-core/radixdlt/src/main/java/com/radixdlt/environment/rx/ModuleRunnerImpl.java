@@ -29,6 +29,8 @@ import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.time.Duration;
 import java.util.List;
@@ -43,7 +45,7 @@ import java.util.stream.Collectors;
  * Executes chaos related events
  */
 public final class ModuleRunnerImpl implements ModuleRunner {
-
+	private static final Logger logger = LogManager.getLogger();
 	private final Scheduler singleThreadScheduler;
 	private final ScheduledExecutorService executorService;
 	private final String threadName;
@@ -141,6 +143,8 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 			if (this.compositeDisposable != null) {
 				return;
 			}
+
+			logger.info("Starting Runner: {}", this.threadName);
 
 			final var disposables = this.subscriptions.stream()
 				.map(s -> s.subscribe(singleThreadScheduler))

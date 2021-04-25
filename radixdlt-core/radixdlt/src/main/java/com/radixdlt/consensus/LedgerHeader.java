@@ -20,6 +20,7 @@ package com.radixdlt.consensus;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
@@ -30,6 +31,10 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.utils.Bytes;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.concurrent.Immutable;
@@ -86,6 +91,29 @@ public final class LedgerHeader {
 		this.accumulatorState = accumulatorState;
 		this.nextValidators = nextValidators;
 		this.timestamp = timestamp;
+	}
+
+	public JSONObject asJSONObject() {
+		var json = new JSONObject()
+			.put("epoch", epoch)
+			.put("view", view.number())
+			.put("version", accumulatorState.getStateVersion())
+			.put("accumulator", Bytes.toHexString(accumulatorState.getAccumulatorHash().asBytes()))
+			.put("timestamp", timestamp);
+
+		if (nextValidators != null) {
+			var validators = new JSONArray();
+			for (var v : nextValidators) {
+				var validatorAddress = ValidatorAddress.of(v.getNode().getKey());
+				validators.put(new JSONObject()
+					.put("address", validatorAddress)
+					.put("stake", v.getPower())
+				);
+			}
+			json.put("nextValidators", validators);
+		}
+
+		return json;
 	}
 
 

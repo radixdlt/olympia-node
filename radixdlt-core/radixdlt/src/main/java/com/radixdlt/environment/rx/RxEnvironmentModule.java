@@ -145,6 +145,20 @@ public final class RxEnvironmentModule extends AbstractModule {
 	}
 
 	@ProvidesIntoMap
+	@StringMapKey(Runners.SYSTEM_INFO)
+	@Singleton
+	public ModuleRunner systemInfoRunner(
+		@Self BFTNode self,
+		Set<EventProcessorOnRunner<?>> processors,
+		RxEnvironment rxEnvironment
+	) {
+		final var runnerName = Runners.SYSTEM_INFO;
+		final var builder = ModuleRunnerImpl.builder();
+		addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
+		return builder.build("SystemInfo " + self);
+	}
+
+	@ProvidesIntoMap
 	@StringMapKey(Runners.CHAOS)
 	@Singleton
 	public ModuleRunner chaosRunner(
@@ -290,7 +304,10 @@ public final class RxEnvironmentModule extends AbstractModule {
 			.map(EventProcessorOnRunner::getEventClass)
 			.collect(Collectors.toSet());
 		eventClasses.forEach(eventClass ->
-			allProcessors.forEach(p -> addToBuilder(eventClass, rxEnvironment, p, builder))
+			allProcessors
+				.stream()
+				.filter(p -> p.getRunnerName().equals(runnerName))
+				.forEach(p -> addToBuilder(eventClass, rxEnvironment, p, builder))
 		);
 	}
 
