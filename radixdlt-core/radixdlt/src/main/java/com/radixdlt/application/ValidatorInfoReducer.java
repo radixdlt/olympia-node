@@ -51,14 +51,18 @@ public final class ValidatorInfoReducer implements StateReducer<ValidatorInfo, V
 
 	@Override
 	public Supplier<ValidatorInfo> initial() {
-		return () -> new ValidatorInfo(false);
+		return () -> new ValidatorInfo("", "", false);
 	}
 
 	@Override
 	public BiFunction<ValidatorInfo, ValidatorParticle, ValidatorInfo> outputReducer() {
 		return (i, r) -> {
 			if (r.getKey().equals(self)) {
-				return new ValidatorInfo(r.isRegisteredForNextEpoch());
+				return new ValidatorInfo(
+					r.getName(),
+					r.getUrl(),
+					r.isRegisteredForNextEpoch()
+				);
 			}
 			return i;
 		};

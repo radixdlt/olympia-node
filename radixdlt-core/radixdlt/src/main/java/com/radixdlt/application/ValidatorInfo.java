@@ -22,10 +22,22 @@ package com.radixdlt.application;
  * Info about node as validator
  */
 public final class ValidatorInfo {
+	private final String name;
+	private final String url;
 	private final boolean registered;
 
-	public ValidatorInfo(boolean registered) {
+	public ValidatorInfo(String name, String url, boolean registered) {
+		this.name = name;
+		this.url = url;
 		this.registered = registered;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public String getUrl() {
+		return url;
 	}
 
 	public boolean isRegistered() {

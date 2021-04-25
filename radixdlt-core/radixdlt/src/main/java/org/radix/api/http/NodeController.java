@@ -109,6 +109,8 @@ public final class NodeController implements Controller {
 		});
 		return new JSONObject()
 			.put("address", ValidatorAddress.of(bftKey))
+			.put("name", validatorInfo.getName())
+			.put("url", validatorInfo.getUrl())
 			.put("registered", validatorInfo.isRegistered())
 			.put("totalStake", TokenUnitConversions.subunitsToUnits(stakeReceived.getTotal()))
 			.put("stakes", stakeFrom);
