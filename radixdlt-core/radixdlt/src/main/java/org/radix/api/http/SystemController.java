@@ -19,6 +19,7 @@ package org.radix.api.http;
 
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.utils.Bytes;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -35,22 +36,35 @@ import static org.radix.api.http.RestUtils.respond;
 public final class SystemController implements Controller {
 	private final SystemService systemService;
 	private final VerifiedTxnsAndProof genesis;
+	private final InMemorySystemInfo inMemorySystemInfo;
 
 	@Inject
 	public SystemController(
+		InMemorySystemInfo inMemorySystemInfo,
 		SystemService systemService,
 		@Genesis VerifiedTxnsAndProof genesis
 	) {
+		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.systemService = systemService;
 		this.genesis = genesis;
 	}
 
 	@Override
 	public void configureRoutes(final RoutingHandler handler) {
-		// System routes
 		handler.get("/system/info", this::respondWithLocalSystem);
-		// Universe routes
 		handler.get("/system/checkpoints", this::respondWithGenesis);
+		handler.get("/system/proof", this::respondWithCurrentProof);
+		handler.get("/system/epochproof", this::respondWithEpochProof);
+	}
+
+	void respondWithCurrentProof(final HttpServerExchange exchange) {
+		var proof = inMemorySystemInfo.getCurrentProof();
+		respond(exchange, proof == null ? new JSONObject() : proof.asJSON());
+	}
+
+	void respondWithEpochProof(final HttpServerExchange exchange) {
+		var proof = inMemorySystemInfo.getEpochProof();
+		respond(exchange, proof == null ? new JSONObject() : proof.asJSON());
 	}
 
 	@VisibleForTesting

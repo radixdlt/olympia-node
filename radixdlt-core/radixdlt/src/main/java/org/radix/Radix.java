@@ -29,7 +29,6 @@ import com.radixdlt.environment.Runners;
 import com.radixdlt.utils.MemoryLeakDetector;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.systeminfo.SystemInfoRunner;
 import com.radixdlt.network.addressbook.PeerManager;
 import com.radixdlt.properties.RuntimeProperties;
 
@@ -146,10 +145,15 @@ public final class Radix {
 		final PeerManager peerManager = injector.getInstance(PeerManager.class);
 		peerManager.start();
 
+		/*
 		final SystemInfoRunner infoStateRunner = injector.getInstance(SystemInfoRunner.class);
 		infoStateRunner.start();
+		 */
 
 		final Map<String, ModuleRunner> moduleRunners = injector.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { }));
+
+		final ModuleRunner systemInfoRunner = moduleRunners.get(Runners.SYSTEM_INFO);
+		systemInfoRunner.start();
 
 		final ModuleRunner syncRunner = moduleRunners.get(Runners.SYNC);
 		syncRunner.start();

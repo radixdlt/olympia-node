@@ -6,6 +6,7 @@ public final class Runners {
 	public static final String APPLICATION = "application";
 	public static final String CHAOS = "chaos";
 	public static final String CONSENSUS = "consensus";
+	public static final String SYSTEM_INFO = "info";
 
 	private Runners() {
 	}
