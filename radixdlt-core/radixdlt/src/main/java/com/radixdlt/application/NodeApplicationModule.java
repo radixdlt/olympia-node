@@ -21,6 +21,7 @@ package com.radixdlt.application;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
@@ -83,6 +84,7 @@ public final class NodeApplicationModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
+	@Singleton
 	public EventProcessorOnRunner<?> nodeApplication(NodeApplication nodeApplication) {
 		return new EventProcessorOnRunner<>(
 			"application",

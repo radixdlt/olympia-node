@@ -35,6 +35,8 @@ import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
 import com.radixdlt.utils.functional.Result;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Objects;
@@ -44,6 +46,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class SubmissionService {
+	private final Logger logger = LogManager.getLogger();
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 
@@ -105,6 +108,7 @@ public final class SubmissionService {
 			var success = completableFuture.get();
 			return Result.ok(success.getTxn().getId());
 		} catch (ExecutionException e) {
+			logger.warn("Unable to fulfill submission request: {}", txId);
 			return Result.fail(e);
 		} catch (InterruptedException e) {
 			throw new IllegalStateException(e);

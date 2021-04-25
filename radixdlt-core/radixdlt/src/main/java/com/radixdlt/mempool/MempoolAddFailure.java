@@ -18,6 +18,7 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.bft.BFTNode;
 
 import java.util.Objects;
 
@@ -27,10 +28,12 @@ import java.util.Objects;
 public final class MempoolAddFailure {
 	private final Txn txn;
 	private final Exception exception;
+	private final BFTNode origin;
 
-	private MempoolAddFailure(Txn txn, Exception exception) {
+	private MempoolAddFailure(Txn txn, Exception exception, BFTNode origin) {
 		this.txn = txn;
 		this.exception = exception;
+		this.origin = origin;
 	}
 
 	public Txn getTxn() {
@@ -41,14 +44,14 @@ public final class MempoolAddFailure {
 		return exception;
 	}
 
-	public static MempoolAddFailure create(Txn txn, Exception exception) {
+	public static MempoolAddFailure create(Txn txn, Exception exception, BFTNode origin) {
 		Objects.requireNonNull(txn);
-		return new MempoolAddFailure(txn, exception);
+		return new MempoolAddFailure(txn, exception, origin);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(txn, exception);
+		return Objects.hash(txn, origin, exception);
 	}
 
 	@Override
@@ -59,11 +62,12 @@ public final class MempoolAddFailure {
 
 		MempoolAddFailure other = (MempoolAddFailure) o;
 		return Objects.equals(this.txn, other.txn)
+			&& Objects.equals(this.origin, other.origin)
 			&& Objects.equals(this.exception, other.exception);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{txn=%s ex=%s}", this.getClass().getSimpleName(), this.txn, this.exception);
+		return String.format("%s{txn=%s origin=%s ex=%s}", this.getClass().getSimpleName(), this.txn, this.origin, this.exception);
 	}
 }
