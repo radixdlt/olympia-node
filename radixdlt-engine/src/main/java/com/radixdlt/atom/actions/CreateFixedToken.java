@@ -52,14 +52,22 @@ public class CreateFixedToken implements TxAction {
 		String tokenUrl,
 		UInt256 supply
 	) {
-		this.resourceAddr = resourceAddr;
-		this.accountAddr = accountAddr;
+		this.resourceAddr = Objects.requireNonNull(resourceAddr);
+		this.accountAddr = Objects.requireNonNull(accountAddr);
 		this.symbol = Objects.requireNonNull(symbol);
 		this.name = Objects.requireNonNull(name);
-		this.description = description;
-		this.iconUrl = iconUrl;
-		this.tokenUrl = tokenUrl;
+		this.description = Objects.requireNonNull(description);
+		this.iconUrl = Objects.requireNonNull(iconUrl);
+		this.tokenUrl = Objects.requireNonNull(tokenUrl);
 		this.supply = Objects.requireNonNull(supply);
+	}
+
+	public REAddr getResourceAddr() {
+		return resourceAddr;
+	}
+
+	public REAddr getAccountAddr() {
+		return accountAddr;
 	}
 
 	public UInt256 getSupply() {
@@ -75,15 +83,15 @@ public class CreateFixedToken implements TxAction {
 	}
 
 	public String getDescription() {
-		return description == null ? "" : description;
+		return description;
 	}
 
 	public String getIconUrl() {
-		return iconUrl == null ? "" : iconUrl;
+		return iconUrl;
 	}
 
 	public String getTokenUrl() {
-		return tokenUrl == null ? "" : tokenUrl;
+		return tokenUrl;
 	}
 
 	@Override

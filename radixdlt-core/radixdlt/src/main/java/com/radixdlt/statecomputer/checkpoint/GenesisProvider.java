@@ -140,7 +140,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 
 			if (!additionalActions.isEmpty()) {
 				var additionalTxn = branch.construct(additionalActions).buildWithoutSignature();
-				branch.execute(List.of(additionalTxn));
+				branch.execute(List.of(additionalTxn), PermissionLevel.SYSTEM);
 				genesisTxns.add(additionalTxn);
 			}
 

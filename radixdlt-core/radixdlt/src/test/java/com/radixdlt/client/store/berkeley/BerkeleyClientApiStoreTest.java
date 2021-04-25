@@ -214,8 +214,8 @@ public class BerkeleyClientApiStoreTest {
 			SYMBOL,
 			SYMBOL,
 			SYMBOL,
-			null,
-			null,
+			"",
+			"",
 			UInt256.ONE
 		);
 		var tx = engine.construct(TOKEN_KEYPAIR.getPublicKey(), createFixedToken)

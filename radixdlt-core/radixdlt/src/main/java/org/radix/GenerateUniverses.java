@@ -25,6 +25,8 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.name.Named;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.actions.CreateFixedToken;
+import com.radixdlt.client.AccountAddress;
 import com.radixdlt.client.Rri;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -79,6 +81,7 @@ import org.radix.universe.output.HelmUniverseOutput;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.file.Files;
@@ -214,6 +217,8 @@ public final class GenerateUniverses {
 				);
 			}
 
+			var additionalActions = new ArrayList<TxAction>();
+
 			if (cmd.hasOption("pk")) {
 				try {
 					var hexPubKey = cmd.getOptionValue("pk");
@@ -227,6 +232,23 @@ public final class GenerateUniverses {
 						tokenAmt = unitsToSubunits(DEFAULT_ISSUANCE);
 					}
 					tokenIssuancesBuilder.add(TokenIssuance.of(pubKey, tokenAmt));
+					var tokensToCreate = Map.of(
+						"gum", "Gumball",
+						"emunie", "eMunie",
+						"cerb", "Cerb"
+					);
+
+					var accountAddr = REAddr.ofPubKeyAccount(pubKey);
+					tokensToCreate.forEach((symbol, name) -> {
+						var resourceAddr = REAddr.ofHashedKey(pubKey, symbol);
+						additionalActions.add(new CreateFixedToken(
+							resourceAddr,
+							accountAddr,
+							symbol, name, "", "", "",
+							UInt256.MAX_VALUE
+						));
+					});
+
 				} catch (PublicKeyException e) {
 					throw new IllegalStateException("Invalid pub key", e);
 				}
@@ -255,7 +277,7 @@ public final class GenerateUniverses {
 					install(RadixEngineConfig.createModule(1, 100, 10000L));
 					install(new RadixEngineModule());
 
-					bind(new TypeLiteral<List<TxAction>>() { }).annotatedWith(Genesis.class).toInstance(List.of());
+					bind(new TypeLiteral<List<TxAction>>() { }).annotatedWith(Genesis.class).toInstance(additionalActions);
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
