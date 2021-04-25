@@ -55,13 +55,13 @@ public class TxActionListBuilder {
 	}
 
 	public TxActionListBuilder registerAsValidator(ECPublicKey validatorKey) {
-		var action = new RegisterValidator(validatorKey);
+		var action = new RegisterValidator(validatorKey, null, null);
 		actions.add(action);
 		return this;
 	}
 
 	public TxActionListBuilder unregisterAsValidator(ECPublicKey validatorKey) {
-		var action = new UnregisterValidator(validatorKey);
+		var action = new UnregisterValidator(validatorKey, null, null);
 		actions.add(action);
 		return this;
 	}

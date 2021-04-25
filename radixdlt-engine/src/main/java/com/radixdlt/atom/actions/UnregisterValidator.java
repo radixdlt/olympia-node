@@ -27,10 +27,18 @@ import com.radixdlt.crypto.ECPublicKey;
 import java.util.Objects;
 
 public final class UnregisterValidator implements TxAction {
-
 	private final ECPublicKey validatorKey;
-	public UnregisterValidator(ECPublicKey validatorKey) {
+	private final String name;
+	private final String url;
+
+	public UnregisterValidator(
+		ECPublicKey validatorKey,
+		String name,
+		String url
+	) {
 		this.validatorKey = Objects.requireNonNull(validatorKey);
+		this.name = name;
+		this.url = url;
 	}
 
 	@Override
@@ -43,8 +51,8 @@ public final class UnregisterValidator implements TxAction {
 			substateDown -> new ValidatorParticle(
 				validatorKey,
 				false,
-				substateDown.getName(),
-				substateDown.getUrl()
+				name == null ? substateDown.getName() : name,
+				url == null ? substateDown.getUrl() : url
 			)
 		);
 	}

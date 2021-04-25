@@ -22,22 +22,16 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
-import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
-import java.util.Optional;
 
-public final class RegisterValidator implements TxAction {
+public class UpdateValidator implements TxAction {
 	private final ECPublicKey validatorKey;
 	private final String name;
 	private final String url;
 
-	public RegisterValidator(ECPublicKey validatorKey) {
-		this(validatorKey, null, null);
-	}
-
-	public RegisterValidator(
+	public UpdateValidator(
 		ECPublicKey validatorKey,
 		String name,
 		String url
@@ -51,13 +45,12 @@ public final class RegisterValidator implements TxAction {
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.swap(
 			ValidatorParticle.class,
-			p -> p.getKey().equals(validatorKey) && !p.isRegisteredForNextEpoch(),
-			Optional.of(SubstateWithArg.noArg(new ValidatorParticle(validatorKey, false))),
-			"Already a validator"
+			p -> p.getKey().equals(validatorKey),
+			"Invalid state."
 		).with(
 			substateDown -> new ValidatorParticle(
 				validatorKey,
-				true,
+				substateDown.isRegisteredForNextEpoch(),
 				name == null ? substateDown.getName() : name,
 				url == null ? substateDown.getUrl() : url
 			)

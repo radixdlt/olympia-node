@@ -36,6 +36,7 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.actions.UpdateValidator;
 import com.radixdlt.client.AccountAddress;
 import com.radixdlt.client.Rri;
 import com.radixdlt.client.ValidatorAddress;
@@ -224,10 +225,21 @@ public final class NodeController implements Controller {
 				var amt = parseAmount(paramsObject, "amount");
 				return new MoveStake(account, fromDelegate, toDelegate, amt);
 			}
-			case "RegisterAsValidator":
-				return new RegisterValidator(bftKey);
-			case "UnregisterAsValidator":
-				return new UnregisterValidator(bftKey);
+			case "RegisterValidator": {
+				var name = paramsObject.has("name") ? paramsObject.getString("name") : null;
+				var url = paramsObject.has("url") ? paramsObject.getString("url") : null;
+				return new RegisterValidator(bftKey, name, url);
+			}
+			case "UnregisterValidator": {
+				var name = paramsObject.has("name") ? paramsObject.getString("name") : null;
+				var url = paramsObject.has("url") ? paramsObject.getString("url") : null;
+				return new UnregisterValidator(bftKey, name, url);
+			}
+			case "UpdateValidator": {
+				var name = paramsObject.has("name") ? paramsObject.getString("name") : null;
+				var url = paramsObject.has("url") ? paramsObject.getString("url") : null;
+				return new UpdateValidator(bftKey, name, url);
+			}
 			default:
 				throw new IllegalArgumentException("Bad action object: " + actionObject);
 		}
