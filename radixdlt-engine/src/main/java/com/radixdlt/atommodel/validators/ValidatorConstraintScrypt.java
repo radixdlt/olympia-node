@@ -24,7 +24,6 @@ import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.TransitionProcedure;
@@ -32,7 +31,6 @@ import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.SignatureValidator;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.store.ImmutableIndex;
 
 import java.util.Objects;
@@ -40,13 +38,7 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 
 /**
- * Constraint Scrypt defining the Validator FSM, specifically the registration/unregistration flow.
- * <p>
- * The Validator FSM is implemented with two particles, UnregisteredValidatorParticle and RegisteredValidatorParticle,
- * both carrying the address of the validator in question and a nonce. The first unregistered Validator particle
- * for an address (with nonce 0) is virtualised as having an UP spin to initialise the FSM. Whenever a validator
- * (identified by their address) transitions between the two states, the nonce must increase (to ensure uniqueness).
- * The atom carrying a transition must be signed by the validator.
+ * Constraint Scrypt defining the Validator FSM.
  */
 public class ValidatorConstraintScrypt implements ConstraintScrypt {
 	@Override
@@ -58,24 +50,9 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 			.build()
 		);
 
-		createTransition(os,
-			ValidatorParticle.class,
-			ValidatorParticle::getKey,
-			ValidatorParticle.class,
-			ValidatorParticle::getKey
-		);
-	}
-
-	private <I extends Particle, O extends Particle> void createTransition(
-		SysCalls os,
-		Class<I> inputParticle,
-		Function<I, ECPublicKey> inputAddressMapper,
-		Class<O> outputParticle,
-		Function<O, ECPublicKey> outputAddressMapper
-	) {
 		os.createTransition(
-			new TransitionToken<>(inputParticle, outputParticle, TypeToken.of(VoidReducerState.class)),
-			new ValidatorTransitionProcedure<>(inputAddressMapper, outputAddressMapper)
+			new TransitionToken<>(ValidatorParticle.class, ValidatorParticle.class, TypeToken.of(VoidReducerState.class)),
+			new ValidatorTransitionProcedure()
 		);
 	}
 
@@ -97,28 +74,21 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 	}
 
 	@VisibleForTesting
-	static class ValidatorTransitionProcedure<I extends Particle, O extends Particle>
-		implements TransitionProcedure<I, O, VoidReducerState> {
-		private final Function<I, ECPublicKey> inputAddressMapper;
-		private final Function<O, ECPublicKey> outputAddressMapper;
-
-		ValidatorTransitionProcedure(
-			Function<I, ECPublicKey> inputAddressMapper,
-			Function<O, ECPublicKey> outputAddressMapper
-		) {
-			this.inputAddressMapper = inputAddressMapper;
-			this.outputAddressMapper = outputAddressMapper;
-		}
+	static class ValidatorTransitionProcedure
+		implements TransitionProcedure<ValidatorParticle, ValidatorParticle, VoidReducerState> {
 
 		@Override
-		public Result precondition(SubstateWithArg<I> in, O outputParticle, VoidReducerState outputUsed, ImmutableIndex index) {
-			var inputAddress = inputAddressMapper.apply(in.getSubstate());
-			var outputAddress = outputAddressMapper.apply(outputParticle);
+		public Result precondition(
+			SubstateWithArg<ValidatorParticle> in,
+			ValidatorParticle out,
+			VoidReducerState outputUsed,
+			ImmutableIndex index
+		) {
 			// ensure transition is between validator particles concerning the same validator address
-			if (!Objects.equals(inputAddress, outputAddress)) {
+			if (!Objects.equals(in.getSubstate().getKey(), out.getKey())) {
 				return Result.error(String.format(
 					"validator addresses do not match: %s != %s",
-					inputAddress, outputAddress
+					in.getSubstate().getKey(), out.getKey()
 				));
 			}
 
@@ -126,14 +96,14 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		}
 
 		@Override
-		public InputOutputReducer<I, O, VoidReducerState> inputOutputReducer() {
+		public InputOutputReducer<ValidatorParticle, ValidatorParticle, VoidReducerState> inputOutputReducer() {
 			return (input, output, index, outputUsed) -> ReducerResult.complete(Unknown.create());
 		}
 
 		@Override
-		public SignatureValidator<I, O> signatureValidator() {
+		public SignatureValidator<ValidatorParticle, ValidatorParticle> signatureValidator() {
 			// verify that the transition was authenticated by the validator address in question
-			return (i, o, index, pubKey) -> pubKey.map(inputAddressMapper.apply(i.getSubstate())::equals).orElse(false);
+			return (i, o, index, pubKey) -> pubKey.map(i.getSubstate().getKey()::equals).orElse(false);
 		}
 	}
 }

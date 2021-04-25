@@ -91,7 +91,7 @@ public class TransactionParserTest {
 				.mint(this.tokenRri, this.tokenOwnerAcct, UInt256.TEN)
 				.build()
 		).buildWithoutSignature();
-		var validatorBuilder = this.engine.construct(this.validatorKeyPair.getPublicKey(), new RegisterValidator());
+		var validatorBuilder = this.engine.construct(new RegisterValidator(this.validatorKeyPair.getPublicKey()));
 		var txn1 = validatorBuilder.signAndBuild(this.validatorKeyPair::sign);
 
 		engine.execute(List.of(txn0, txn1), null, PermissionLevel.SYSTEM);

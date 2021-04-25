@@ -22,18 +22,38 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
+import com.radixdlt.crypto.ECPublicKey;
+
+import java.util.Objects;
 
 public final class UnregisterValidator implements TxAction {
+	private final ECPublicKey validatorKey;
+	private final String name;
+	private final String url;
+
+	public UnregisterValidator(
+		ECPublicKey validatorKey,
+		String name,
+		String url
+	) {
+		this.validatorKey = Objects.requireNonNull(validatorKey);
+		this.name = name;
+		this.url = url;
+	}
+
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var user = txBuilder.getUserOrFail("Must have address");
-
 		txBuilder.swap(
 			ValidatorParticle.class,
-			p -> p.getKey().equals(user) && p.isRegisteredForNextEpoch(),
+			p -> p.getKey().equals(validatorKey) && p.isRegisteredForNextEpoch(),
 			"Already unregistered."
 		).with(
-			substateDown -> new ValidatorParticle(user, false, substateDown.getName(), substateDown.getUrl())
+			substateDown -> new ValidatorParticle(
+				validatorKey,
+				false,
+				name == null ? substateDown.getName() : name,
+				url == null ? substateDown.getUrl() : url
+			)
 		);
 	}
 }

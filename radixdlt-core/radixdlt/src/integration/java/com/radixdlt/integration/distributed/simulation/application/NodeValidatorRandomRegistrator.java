@@ -48,13 +48,13 @@ public final class NodeValidatorRandomRegistrator implements SimulationTest.Simu
 		List<BFTNode> nodes = network.getNodes();
 		this.disposable = Observable.interval(1, 1, TimeUnit.SECONDS)
 			.map(i -> nodes.get(random.nextInt(nodes.size())))
-			.map(node -> network.getDispatcher(NodeApplicationRequest.class, node))
-			.subscribe(d -> {
+			.subscribe(node -> {
+				var d = network.getDispatcher(NodeApplicationRequest.class, node);
 				var builder = TxActionListBuilder.create();
 				if (random.nextBoolean()) {
-					builder.registerAsValidator();
+					builder.registerAsValidator(node.getKey());
 				} else {
-					builder.unregisterAsValidator();
+					builder.unregisterAsValidator(node.getKey());
 				}
 
 				var request = NodeApplicationRequest.create(builder.build());

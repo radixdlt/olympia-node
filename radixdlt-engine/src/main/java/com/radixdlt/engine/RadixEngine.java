@@ -282,14 +282,6 @@ public final class RadixEngine<M> {
 			return engine.construct(actions);
 		}
 
-		public TxBuilder construct(ECPublicKey user, TxAction action) throws TxBuilderException {
-			return engine.construct(user, action);
-		}
-
-		public TxBuilder construct(ECPublicKey user, List<TxAction> actions) throws TxBuilderException {
-			return engine.construct(user, actions);
-		}
-
 		public <U> U getComputedState(Class<U> applicationStateClass) {
 			return engine.getComputedState(applicationStateClass);
 		}

@@ -77,7 +77,7 @@ public class StakedTokensTest {
 				.mint(this.tokenRri, tokenOwnerAccount, UInt256.TEN)
 				.build()
 		).buildWithoutSignature();
-		var validatorBuilder = this.engine.construct(this.validatorKeyPair.getPublicKey(), new RegisterValidator());
+		var validatorBuilder = this.engine.construct(new RegisterValidator(this.validatorKeyPair.getPublicKey()));
 		var txn1 = validatorBuilder.signAndBuild(this.validatorKeyPair::sign);
 
 		this.engine.execute(List.of(txn0, txn1), null, PermissionLevel.SYSTEM);
@@ -86,7 +86,6 @@ public class StakedTokensTest {
 	@Test
 	public void stake_tokens() throws Exception {
 		var txn = engine.construct(
-			this.tokenOwnerKeyPair.getPublicKey(),
 			new StakeTokens(this.tokenOwnerAccount, this.validatorKeyPair.getPublicKey(), UInt256.TEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 
@@ -96,13 +95,11 @@ public class StakedTokensTest {
 	@Test
 	public void unstake_tokens() throws Exception {
 		var txn = engine.construct(
-			this.tokenOwnerKeyPair.getPublicKey(),
 			new StakeTokens(this.tokenOwnerAccount, this.validatorKeyPair.getPublicKey(), UInt256.TEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn));
 
 		var txn2 = engine.construct(
-			this.tokenOwnerKeyPair.getPublicKey(),
 			new UnstakeTokens(this.tokenOwnerAccount, this.validatorKeyPair.getPublicKey(), UInt256.TEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn2));
@@ -111,13 +108,11 @@ public class StakedTokensTest {
 	@Test
 	public void unstake_partial_tokens() throws Exception {
 		var txn = engine.construct(
-			this.tokenOwnerKeyPair.getPublicKey(),
 			new StakeTokens(this.tokenOwnerAccount, this.validatorKeyPair.getPublicKey(), UInt256.TEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn));
 
 		var txn2 = engine.construct(
-			this.tokenOwnerKeyPair.getPublicKey(),
 			new UnstakeTokens(this.tokenOwnerAccount, this.validatorKeyPair.getPublicKey(), UInt256.SEVEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn2));
@@ -126,14 +121,18 @@ public class StakedTokensTest {
 	@Test
 	public void move_staked_tokens() throws Exception {
 		var txn = this.engine.construct(
-			this.tokenOwnerKeyPair.getPublicKey(),
 			new StakeTokens(this.tokenOwnerAccount, this.validatorKeyPair.getPublicKey(), UInt256.TEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn));
 
-		var atom2 = this.engine.construct(this.tokenOwnerKeyPair.getPublicKey(), new MoveStake(validatorKeyPair.getPublicKey(),
-			ECKeyPair.generateNew().getPublicKey(), UInt256.FIVE))
-			.signAndBuild(this.tokenOwnerKeyPair::sign);
+		var atom2 = this.engine.construct(
+			new MoveStake(
+				this.tokenOwnerAccount,
+				validatorKeyPair.getPublicKey(),
+				ECKeyPair.generateNew().getPublicKey(),
+				UInt256.FIVE
+			)
+		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(atom2));
 	}
 }

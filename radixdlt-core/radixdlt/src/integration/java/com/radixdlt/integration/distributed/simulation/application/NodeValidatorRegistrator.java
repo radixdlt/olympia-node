@@ -44,8 +44,10 @@ public final class NodeValidatorRegistrator implements SimulationTest.Simulation
         this.disposable = Observable.fromIterable(nodes)
             .concatMap(i -> Observable.timer(3, TimeUnit.SECONDS).map(l -> i))
             .doOnNext(validationRegistrations::onNext)
-            .map(node -> network.getDispatcher(NodeApplicationRequest.class, node))
-            .subscribe(d -> d.dispatch(NodeApplicationRequest.create(new RegisterValidator())));
+            .subscribe(node -> {
+                var d = network.getDispatcher(NodeApplicationRequest.class, node);
+                d.dispatch(NodeApplicationRequest.create(new RegisterValidator(node.getKey())));
+            });
     }
 
     @Override

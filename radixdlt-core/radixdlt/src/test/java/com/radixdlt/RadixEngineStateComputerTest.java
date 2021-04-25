@@ -210,7 +210,7 @@ public class RadixEngineStateComputerTest {
 	}
 
 	private Txn registerCommand(ECKeyPair keyPair) throws TxBuilderException {
-		return radixEngine.construct(keyPair.getPublicKey(), new RegisterValidator())
+		return radixEngine.construct(new RegisterValidator(keyPair.getPublicKey()))
 			.signAndBuild(keyPair::sign);
 	}
 
