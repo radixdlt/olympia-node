@@ -222,12 +222,12 @@ public final class NodeController implements Controller {
 				var toString = paramsObject.getString("to");
 				var toDelegate = ValidatorAddress.parse(toString);
 				var amt = parseAmount(paramsObject, "amount");
-				return new MoveStake(fromDelegate, toDelegate, amt);
+				return new MoveStake(account, fromDelegate, toDelegate, amt);
 			}
 			case "RegisterAsValidator":
-				return new RegisterValidator();
+				return new RegisterValidator(bftKey);
 			case "UnregisterAsValidator":
-				return new UnregisterValidator();
+				return new UnregisterValidator(bftKey);
 			default:
 				throw new IllegalArgumentException("Bad action object: " + actionObject);
 		}

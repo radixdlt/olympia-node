@@ -25,6 +25,7 @@ import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.SplitToken;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
@@ -53,14 +54,14 @@ public class TxActionListBuilder {
 		return this;
 	}
 
-	public TxActionListBuilder registerAsValidator() {
-		var action = new RegisterValidator();
+	public TxActionListBuilder registerAsValidator(ECPublicKey validatorKey) {
+		var action = new RegisterValidator(validatorKey);
 		actions.add(action);
 		return this;
 	}
 
-	public TxActionListBuilder unregisterAsValidator() {
-		var action = new UnregisterValidator();
+	public TxActionListBuilder unregisterAsValidator(ECPublicKey validatorKey) {
+		var action = new UnregisterValidator(validatorKey);
 		actions.add(action);
 		return this;
 	}

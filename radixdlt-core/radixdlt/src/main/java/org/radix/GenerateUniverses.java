@@ -115,7 +115,7 @@ public final class GenerateUniverses {
 		options.addOption("h", "help",                   false, "Show usage information (this message)");
 		options.addOption("c", "no-cbor-output",         false, "Suppress DSON output");
 		options.addOption("i", "issue-default-tokens",   false, "Issue tokens to default keys 1, 2, 3, 4 and 5 (dev universe only)");
-		options.addOption("p", "pubkey-issuance",   true, "Pub key (hex) to issue tokens to");
+		options.addOption("pk", "pubkey-issuance",   true, "Pub key (hex) to issue tokens to");
 		options.addOption("m", "amount-issuance",   true, "Amount to issue pub key");
 		options.addOption("j", "no-json-output",         false, "Suppress JSON output");
 		options.addOption("p", "include-private-keys",   false, "Include validator and staking private keys in output");
@@ -213,9 +213,9 @@ public final class GenerateUniverses {
 				);
 			}
 
-			if (cmd.hasOption("p")) {
+			if (cmd.hasOption("pk")) {
 				try {
-					var hexPubKey = cmd.getOptionValue("p");
+					var hexPubKey = cmd.getOptionValue("pk");
 					var pubKey = ECPublicKey.fromHex(hexPubKey);
 					final UInt256 tokenAmt;
 					if (cmd.hasOption("a")) {

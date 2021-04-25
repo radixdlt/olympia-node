@@ -26,12 +26,16 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
+import java.util.Objects;
+
 public final class MoveStake implements TxAction {
 	private final ECPublicKey from;
 	private final ECPublicKey to;
 	private final UInt256 amount;
+	private final REAddr accountAddr;
 
-	public MoveStake(ECPublicKey from, ECPublicKey to, UInt256 amount) {
+	public MoveStake(REAddr accountAddr, ECPublicKey from, ECPublicKey to, UInt256 amount) {
+		this.accountAddr = Objects.requireNonNull(accountAddr);
 		this.from = from;
 		this.to = to;
 		this.amount = amount;
@@ -39,16 +43,13 @@ public final class MoveStake implements TxAction {
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var user = txBuilder.getUserOrFail("Must have an address.");
-		var userAcct = REAddr.ofPubKeyAccount(user);
-
 		txBuilder.swapFungible(
 			StakedTokensParticle.class,
-			p -> p.getOwner().equals(userAcct) && p.getDelegateKey().equals(from),
+			p -> p.getOwner().equals(accountAddr) && p.getDelegateKey().equals(from),
 			StakedTokensParticle::getAmount,
-			amt -> new StakedTokensParticle(from, userAcct, amt),
+			amt -> new StakedTokensParticle(from, accountAddr, amt),
 			amount,
 			"Not enough staked."
-		).with(amt -> new StakedTokensParticle(to, userAcct, amt));
+		).with(amt -> new StakedTokensParticle(to, accountAddr, amt));
 	}
 }

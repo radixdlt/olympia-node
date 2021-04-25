@@ -23,21 +23,32 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.constraintmachine.SubstateWithArg;
+import com.radixdlt.crypto.ECPublicKey;
 
+import java.util.Objects;
 import java.util.Optional;
 
 public final class RegisterValidator implements TxAction {
+	private final ECPublicKey validatorKey;
+
+	public RegisterValidator(ECPublicKey validatorKey) {
+		this.validatorKey = Objects.requireNonNull(validatorKey);
+	}
+
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var user = txBuilder.getUserOrFail("Must be a user to register.");
-
 		txBuilder.swap(
 			ValidatorParticle.class,
-			p -> p.getKey().equals(user) && !p.isRegisteredForNextEpoch(),
-			Optional.of(SubstateWithArg.noArg(new ValidatorParticle(user, false))),
+			p -> p.getKey().equals(validatorKey) && !p.isRegisteredForNextEpoch(),
+			Optional.of(SubstateWithArg.noArg(new ValidatorParticle(validatorKey, false))),
 			"Already a validator"
 		).with(
-			substateDown -> new ValidatorParticle(user, true, substateDown.getName(), substateDown.getUrl())
+			substateDown -> new ValidatorParticle(
+				validatorKey,
+				true,
+				substateDown.getName(),
+				substateDown.getUrl()
+			)
 		);
 	}
 }
