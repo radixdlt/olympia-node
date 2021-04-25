@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.safety;
 
+import com.radixdlt.crypto.HashUtils;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -53,7 +54,8 @@ public class SafetyRulesTest {
 	public void setup() {
 		this.safetyState = mock(SafetyState.class);
 		Hasher hasher = mock(Hasher.class);
-		when(hasher.hash(any())).thenReturn(mock(HashCode.class));
+		when(hasher.hash(any())).thenReturn(HashUtils.random256());
+		when(hasher.hashBytes(any())).thenReturn(HashUtils.random256());
 		HashSigner hashSigner = mock(HashSigner.class);
 		when(hashSigner.sign(any(HashCode.class))).thenReturn(ECDSASignature.zeroSignature());
 		this.safetyRules = new SafetyRules(mock(BFTNode.class), safetyState, mock(PersistentSafetyStateStore.class), hasher, hashSigner);

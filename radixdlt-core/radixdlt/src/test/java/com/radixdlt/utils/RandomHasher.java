@@ -20,6 +20,7 @@ package com.radixdlt.utils;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
+import org.bouncycastle.util.encoders.Hex;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -45,6 +46,8 @@ public class RandomHasher implements Hasher {
 
     @Override
     public HashCode hashBytes(byte[] bytes) {
-        throw new UnsupportedOperationException();
+        var key = Hex.toHexString(bytes);
+        cache.putIfAbsent(key, HashUtils.random256());
+        return cache.get(key);
     }
 }

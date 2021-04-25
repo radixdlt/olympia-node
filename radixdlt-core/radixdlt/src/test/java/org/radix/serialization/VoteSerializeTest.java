@@ -26,12 +26,10 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.TimestampedVoteData;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.ledger.AccumulatorState;
 
 import java.util.Optional;
 
