@@ -1,15 +1,21 @@
 package com.radixdlt.cloud;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
 import com.radixdlt.cli.OutputCapture;
 import com.radixdlt.cli.RadixCLI;
 import com.radixdlt.utils.AWSSecretManager;
 import com.radixdlt.utils.AWSSecretsOutputOptions;
+
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.Security;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -17,17 +23,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-
+import java.util.stream.Stream;
 
 public class AWSSecrets {
-
 	private static final Boolean DEFAULT_ENABLE_AWS_SECRETS = false;
 	private static final Boolean DEFAULT_RECREATE_AWS_SECRETS = false;
 	private static final String DEFAULT_NETWORK_NAME = "testnet";
@@ -37,8 +35,7 @@ public class AWSSecrets {
 	}
 
 	public static void main(String[] args) {
-
-		Options options = new Options();
+		var options = new Options();
 		options.addOption("h", "help", false, "Show usage information (this message)");
 		options.addOption("n", "full-node-number", true, "Number of full nodes");
 		options.addOption("p", "node-name-prefix", true, "Text prefix with which node name is numbered");
@@ -46,9 +43,10 @@ public class AWSSecrets {
 		options.addOption("rs", "recreate-aws-secrets", true, "Recreate AWS Secrets(default: " + DEFAULT_RECREATE_AWS_SECRETS + ")");
 		options.addOption("k", "network-name", true, "Network name(default: " + DEFAULT_NETWORK_NAME + ")");
 
-		CommandLineParser parser = new DefaultParser();
+		var parser = new DefaultParser();
 		try {
-			CommandLine cmd = parser.parse(options, args);
+			var cmd = parser.parse(options, args);
+
 			if (!cmd.getArgList().isEmpty()) {
 				System.err.println("Extra arguments: " + cmd.getArgList().stream().collect(Collectors.joining(" ")));
 				usage(options);
@@ -59,67 +57,62 @@ public class AWSSecrets {
 				usage(options);
 				return;
 			}
-			final String fullnodeNamesEnv = Optional.ofNullable((System.getenv("FULLNODE_NAMES"))).orElse("");
-			final List<String> listofFullNodes;
 
-			if (!fullnodeNamesEnv.trim().equals("")) {
-				List<String> rawlist = new ArrayList<String>(Arrays.asList(fullnodeNamesEnv.split(",")));
-				listofFullNodes = rawlist.stream()
+			var listOfFullNodes = Optional.ofNullable(System.getenv("FULLNODE_NAMES"))
+				.map(value -> Stream.of(value.split(","))
 					.map(entry -> entry.replaceAll("[^\\w-]", ""))
-					.collect(Collectors.toList());
-			} else {
-				listofFullNodes = new ArrayList<>();
-			}
+					.collect(Collectors.toList()))
+				.orElse(List.of());
 
-			final int fullNodeCount = Integer
-				.parseInt(getOption(cmd, 'n').orElseThrow(() -> new IllegalArgumentException("Must specify number of full nodes")));
-			if (fullNodeCount <= 0 && listofFullNodes.size() <= 0) {
+			final int fullNodeCount = getOption(cmd, 'n')
+				.map(Integer::parseInt)
+				.orElseThrow(() -> new IllegalArgumentException("Must specify number of full nodes"));
+
+			if (fullNodeCount <= 0 && listOfFullNodes.size() <= 0) {
 				throw new IllegalArgumentException("There must be at least one full node");
 			}
 
-			final String networkName = getOption(cmd, 'k').orElse(DEFAULT_NETWORK_NAME);
-			final String namePrefix = getOption(cmd, 'p').orElse(DEFAULT_PREFIX);
-			final boolean enableAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("as"));
-			final boolean recreateAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("rs"));
+			var networkName = getOption(cmd, 'k').orElse(DEFAULT_NETWORK_NAME);
+			var namePrefix = getOption(cmd, 'p').orElse(DEFAULT_PREFIX);
+			boolean enableAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("as"));
+			boolean recreateAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("rs"));
 
-			final AWSSecretsOutputOptions awsSecretsOutputOptions = new AWSSecretsOutputOptions(
-				enableAwsSecrets, recreateAwsSecrets, networkName);
-			final List<String> fullnodes;
-			if (fullNodeCount > 0) {
-				fullnodes = IntStream.range(0, fullNodeCount).mapToObj(counter -> {
-					return String.format("%s%s", namePrefix, counter);
-				}).collect(Collectors.toList());
-			} else {
-				fullnodes = listofFullNodes;
-			}
+			var awsSecretsOutputOptions = new AWSSecretsOutputOptions(enableAwsSecrets, recreateAwsSecrets, networkName);
 
-			fullnodes.forEach(nodeName -> {
-				final String keyStoreName = String.format("%s.ks", nodeName);
-				final String passwordName = "password";
-				final String keyFileSecretName = String.format("%s/%s/%s", networkName, nodeName, keyStoreName);
-				final String passwordSecretName = String.format("%s/%s/%s", networkName, nodeName, passwordName);
-				final String password = passwordName;
-				try (OutputCapture capture = OutputCapture.startStdout()) {
+			var fullnodes = fullNodeCount > 0
+							? IntStream.range(0, fullNodeCount)
+								.mapToObj(counter -> String.format("%s%s", namePrefix, counter))
+								.collect(Collectors.toList())
+							: listOfFullNodes;
 
-					String[] cmdArgs = {"generate-validator-key", "-k=" + keyStoreName, "-p=" + password};
-					System.out.println(java.util.Arrays.toString(cmdArgs));
+			for (var nodeName : fullnodes) {
+				final var keyStoreName = String.format("%s.ks", nodeName);
+				final var passwordName = "password";
+				final var keyFileSecretName = String.format("%s/%s/%s", networkName, nodeName, keyStoreName);
+				final var passwordSecretName = String.format("%s/%s/%s", networkName, nodeName, passwordName);
+				final var password = passwordName;
+				try (var capture = OutputCapture.startStdout()) {
+					var cmdArgs = new String[]{"generate-validator-key", "-k=" + keyStoreName, "-p=" + password};
+					System.out.println(Arrays.toString(cmdArgs));
 					Security.insertProviderAt(new BouncyCastleProvider(), 1);
 					RadixCLI.execute(cmdArgs);
-					final String output = capture.stop();
-					System.out.println(output.toString());
-					if (output.contains("Unable to generate keypair")) {
-						throw new Exception(output.toString());
-					}
-					Path keyFilePath = Paths.get(keyStoreName);
-					Map<String, Object> keyFileAwsSecret = new HashMap<>();
-					try {
 
-						byte[] data = Files.readAllBytes(keyFilePath);
+					final var output = capture.stop();
+					System.out.println(output);
+
+					if (output.contains("Unable to generate keypair")) {
+						throw new Exception(output);
+					}
+
+					var keyFilePath = Paths.get(keyStoreName);
+					var keyFileAwsSecret = new HashMap<String, Object>();
+					try {
+						var data = Files.readAllBytes(keyFilePath);
 						keyFileAwsSecret.put("key", data);
 					} catch (IOException e) {
 						throw new IllegalStateException("While reading validator keys", e);
 					}
-					Map<String, Object> keyPasswordAwsSecret = new HashMap<>();
+					var keyPasswordAwsSecret = new HashMap<String, Object>();
 					keyPasswordAwsSecret.put("key", password);
 
 					writeBinaryAWSSecret(keyFileAwsSecret, keyFileSecretName, awsSecretsOutputOptions, false, true);
@@ -127,24 +120,25 @@ public class AWSSecrets {
 				} catch (Exception e) {
 					System.out.println(e);
 				}
-			});
-		} catch (ParseException e) {
+			}
+		} catch (
+			ParseException e) {
 			System.out.println(e);
 		}
 	}
 
 	private static void usage(Options options) {
-		HelpFormatter formatter = new HelpFormatter();
-		formatter.printHelp(AWSSecrets.class.getSimpleName(), options, true);
+		new HelpFormatter().printHelp(AWSSecrets.class.getSimpleName(), options, true);
 	}
 
 	private static Optional<String> getOption(CommandLine cmd, char opt) {
-		String value = cmd.getOptionValue(opt);
-		return Optional.ofNullable(value);
+		return Optional.ofNullable(cmd.getOptionValue(opt));
 	}
 
-	private static void writeBinaryAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsOutputOptions awsSecretsOutputOptions,
-		boolean compress, boolean binarySecret) {
+	private static void writeBinaryAWSSecret(
+		Map<String, Object> awsSecret, String secretName, AWSSecretsOutputOptions awsSecretsOutputOptions,
+		boolean compress, boolean binarySecret
+	) {
 		if (!awsSecretsOutputOptions.getEnableAwsSecrets()) {
 			System.out.println("Secret " + secretName + " not stored in AWS");
 			return;

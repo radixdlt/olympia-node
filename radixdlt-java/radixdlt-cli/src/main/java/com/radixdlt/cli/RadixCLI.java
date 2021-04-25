@@ -34,10 +34,6 @@ import static com.radixdlt.cli.Utils.println;
 		mixinStandardHelpOptions = true,
 		subcommands = {
 			KeyGenerator.class,
-			GetMessages.class,
-			GetDetails.class,
-			GetStoredAtoms.class,
-			UnregisterValidator.class,
 			ValidatorKeyGenerator.class
 		})
 public class RadixCLI implements Runnable {
