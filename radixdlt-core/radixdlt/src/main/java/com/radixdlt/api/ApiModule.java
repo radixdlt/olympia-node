@@ -32,7 +32,6 @@ import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import org.radix.api.http.ChaosController;
 import org.radix.api.http.Controller;
-import org.radix.api.http.FaucetController;
 import org.radix.api.http.NodeController;
 import org.radix.api.http.RadixHttpServer;
 import org.radix.api.http.RpcController;
