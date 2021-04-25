@@ -113,10 +113,11 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 			public Result precondition(SubstateWithArg<I> in, O outputParticle, VoidReducerState outputUsed, ImmutableIndex index) {
 				// FIXME: HACK as we are assuming that this is a mutable token creation which is fine for
 				// FIXME: now as it is the only available transition for betanet
-				if (in.getArg().isEmpty()) {
+				var argMaybe = in.getArg();
+				if (argMaybe.isEmpty()) {
 					return Result.error("Rri must be created with a name");
 				}
-				var arg = in.getArg().get();
+				var arg = argMaybe.get();
 				if (!ConstraintScryptEnv.NAME_PATTERN.matcher(new String(arg)).matches()) {
 					return Result.error("invalid rri name");
 				}
