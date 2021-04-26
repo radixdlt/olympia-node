@@ -337,9 +337,15 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				return Result.ok(List.of());
 			}
 
+			status = readTxHistory(() -> cursor.getLast(key, data, null), data);
+
+			if (status != OperationStatus.SUCCESS) {
+				return Result.ok(List.of());
+			}
+
 			// skip first entry if it's the same as the cursor
 			if (instantFromKey(key).equals(instant)) {
-				status = readTxHistory(() -> cursor.getNext(key, data, null), data);
+				status = readTxHistory(() -> cursor.getPrev(key, data, null), data);
 
 				if (status != OperationStatus.SUCCESS) {
 					return Result.ok(List.of());
@@ -360,7 +366,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 							.onSuccess(list::add);
 					});
 
-				status = readTxHistory(() -> cursor.getNext(key, data, null), data);
+				status = readTxHistory(() -> cursor.getPrev(key, data, null), data);
 			}
 			while (status == OperationStatus.SUCCESS && list.size() < size);
 

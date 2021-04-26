@@ -94,7 +94,7 @@ public final class RadixNodeModule extends AbstractModule {
 		install(MempoolConfig.asModule(mempoolMaxSize, 5, 60000, 60000, 100));
 
 		// Sync configuration
-		final long syncPatience = properties.get("sync.patience", 2000L);
+		final long syncPatience = properties.get("sync.patience", 5000L);
 		bind(SyncConfig.class).toInstance(SyncConfig.of(syncPatience, 10, 3000L));
 
 		// Radix Engine configuration

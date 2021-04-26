@@ -101,7 +101,6 @@ public final class GenerateUniverses {
 		= new BigDecimal(UInt256s.toBigInteger(TokenDefinitionUtils.SUB_UNITS));
 	private static final String DEFAULT_UNIVERSE = UniverseType.DEVELOPMENT.toString().toLowerCase();
 	private static final String DEFAULT_TIMESTAMP = String.valueOf(Instant.parse("2020-01-01T00:00:00.00Z").toEpochMilli());
-	private static final String DEFAULT_STAKE = "5000000";
 	private static final String VALIDATOR_TEMPLATE = "validator%s.ks";
 	private static final String STAKER_TEMPLATE = "staker%s.ks";
 	private static final String DEFAULT_HELM_VALUES_OUTPUT_DIRECTORY = ".";
@@ -109,7 +108,10 @@ public final class GenerateUniverses {
 	private static final Boolean DEFAULT_ENABLE_AWS_SECRETS = false;
 	private static final Boolean DEFAULT_RECREATE_AWS_SECRETS = false;
 	private static final String DEFAULT_NETWORK_NAME = "testnet";
-	private static final BigDecimal DEFAULT_ISSUANCE = BigDecimal.valueOf(100_000_000);
+
+	private static final UInt256 DEFAULT_ISSUANCE =
+		UInt256.from("1000000000000000000000000000").multiply(TokenDefinitionUtils.SUB_UNITS);
+	private static final BigDecimal DEFAULT_STAKE = BigDecimal.valueOf(1_000_000L);
 
 	public static void main(String[] args) {
 		Security.insertProviderAt(new BouncyCastleProvider(), 1);
@@ -122,7 +124,6 @@ public final class GenerateUniverses {
 		options.addOption("m", "amount-issuance",   true, "Amount to issue pub key");
 		options.addOption("j", "no-json-output",         false, "Suppress JSON output");
 		options.addOption("p", "include-private-keys",   false, "Include validator and staking private keys in output");
-		options.addOption("S", "stake-amounts",          true,  "Amount of stake for each staked node (default: " + DEFAULT_STAKE + ")");
 		options.addOption("t", "universe-type",          true,  "Specify universe type (default: " + DEFAULT_UNIVERSE + ")");
 		options.addOption("T", "universe-timestamp",     true,  "Specify universe timestamp (default: " + DEFAULT_TIMESTAMP + ")");
 		options.addOption("v", "validator-count",        true,  "Specify number of validators to generate (required)");
@@ -156,9 +157,11 @@ public final class GenerateUniverses {
 			final boolean enableAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("as"));
 			final boolean recreateAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("rs"));
 			final String networkName = getOption(cmd, 'n').orElse(DEFAULT_NETWORK_NAME);
-			final AWSSecretsOutputOptions awsSecretsOutputOptions = new AWSSecretsOutputOptions(enableAwsSecrets, recreateAwsSecrets, networkName);
+			final AWSSecretsOutputOptions awsSecretsOutputOptions = new AWSSecretsOutputOptions(
+				enableAwsSecrets, recreateAwsSecrets, networkName
+			);
 
-			final ImmutableList<UInt256> stakes = parseStake(getOption(cmd, 'S').orElse(DEFAULT_STAKE));
+			final ImmutableList<UInt256> stakes = ImmutableList.of(unitsToSubunits(DEFAULT_STAKE));
 			final UniverseType universeType = parseUniverseType(getOption(cmd, 't').orElse(DEFAULT_UNIVERSE));
 			final long timestampSeconds = Long.parseLong(getOption(cmd, 'T').orElse(DEFAULT_TIMESTAMP));
 			final int validatorsCount = cmd.getOptionValue("v") !=null ?  Integer.parseInt(cmd.getOptionValue("v")) : 0;
@@ -201,18 +204,15 @@ public final class GenerateUniverses {
 			final ImmutableList<ECKeyPair> validatorKeys = keyDetails.stream()
 				.map(KeyDetails::getKeyPair)
 				.collect(ImmutableList.toImmutableList());
-			final ImmutableList<StakeDelegation> stakeDelegations = keysDetailsWithStakeDelegation.stream()
-				.map(KeyDetails::getStakeDelegation)
-				.collect(ImmutableList.toImmutableList());
 
 			final ImmutableList.Builder<TokenIssuance> tokenIssuancesBuilder = ImmutableList.builder();
 			if (universeType == UniverseType.DEVELOPMENT && cmd.hasOption("i")) {
 				tokenIssuancesBuilder.add(
-					TokenIssuance.of(pubkeyOf(1), unitsToSubunits(DEFAULT_ISSUANCE)),
-					TokenIssuance.of(pubkeyOf(2), unitsToSubunits(DEFAULT_ISSUANCE)),
-					TokenIssuance.of(pubkeyOf(3), unitsToSubunits(DEFAULT_ISSUANCE)),
-					TokenIssuance.of(pubkeyOf(4), unitsToSubunits(DEFAULT_ISSUANCE)),
-					TokenIssuance.of(pubkeyOf(5), unitsToSubunits(DEFAULT_ISSUANCE))
+					TokenIssuance.of(pubkeyOf(1), DEFAULT_ISSUANCE),
+					TokenIssuance.of(pubkeyOf(2), DEFAULT_ISSUANCE),
+					TokenIssuance.of(pubkeyOf(3), DEFAULT_ISSUANCE),
+					TokenIssuance.of(pubkeyOf(4), DEFAULT_ISSUANCE),
+					TokenIssuance.of(pubkeyOf(5), DEFAULT_ISSUANCE)
 				);
 			}
 
@@ -237,13 +237,13 @@ public final class GenerateUniverses {
 				var amt = new BigInteger(amountStr);
 				tokenAmt = unitsToSubunits(new BigDecimal(amt));
 			} else {
-				tokenAmt = unitsToSubunits(DEFAULT_ISSUANCE);
+				tokenAmt = DEFAULT_ISSUANCE;
 			}
 			tokenIssuancesBuilder.add(TokenIssuance.of(pubKey, tokenAmt));
 			var tokensToCreate = Map.of(
-				"gum", "Gumball",
-				"emunie", "eMunie",
-				"cerb", "Cerb"
+				"gum", "Gumballs",
+				"emunie", "eMunie Tokens",
+				"cerb", "Cerbys Special Tokens"
 			);
 
 			var accountAddr = REAddr.ofPubKeyAccount(pubKey);
@@ -255,7 +255,7 @@ public final class GenerateUniverses {
 					resourceAddr,
 					accountAddr,
 					symbol, name, "", "", "",
-					UInt256.MAX_VALUE
+					tokenAmt
 				));
 			});
 
@@ -264,20 +264,20 @@ public final class GenerateUniverses {
 				// FIXME: Remove this
 				validatorKeys
 					.forEach(kp -> {
-						var tokenIssuance = TokenIssuance.of(kp.getPublicKey(), unitsToSubunits(DEFAULT_ISSUANCE));
+						var tokenIssuance = TokenIssuance.of(kp.getPublicKey(), DEFAULT_ISSUANCE);
 						tokenIssuancesBuilder.add(tokenIssuance);
 						var keyAddr = REAddr.ofPubKeyAccount(kp.getPublicKey());
 						resourceAddrs.forEach(addr -> {
 							additionalActions.add(
-								new TransferToken(addr, accountAddr, keyAddr, unitsToSubunits(DEFAULT_ISSUANCE))
+								new TransferToken(addr, accountAddr, keyAddr, unitsToSubunits(BigDecimal.valueOf(1_000_000L)))
 							);
 						});
 					});
 			}
 
-			final ImmutableList<TokenIssuance> tokenIssuances = tokenIssuancesBuilder
-				.addAll(getTokenIssuances(stakeDelegations))
-				.build();
+			var stakeDelegations = keyDetails.stream().map(KeyDetails::getKeyPair)
+				.map(k -> StakeDelegation.of(pubKey, k.getPublicKey(), unitsToSubunits(DEFAULT_STAKE)))
+				.collect(ImmutableList.toImmutableList());
 
 			final long timestamp = TimeUnit.SECONDS.toMillis(timestampSeconds);
 
@@ -297,7 +297,7 @@ public final class GenerateUniverses {
 					bind(new TypeLiteral<VerifiedTxnsAndProof>() { }).toProvider(GenesisProvider.class).in(Scopes.SINGLETON);
 					bindConstant().annotatedWith(Genesis.class).to(timestamp);
 					bind(new TypeLiteral<ImmutableList<TokenIssuance>>() { }).annotatedWith(Genesis.class)
-						.toInstance(tokenIssuances);
+						.toInstance(tokenIssuancesBuilder.build());
 					bind(new TypeLiteral<ImmutableList<StakeDelegation>>() { }).annotatedWith(Genesis.class)
 						.toInstance(stakeDelegations);
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
@@ -381,7 +381,10 @@ public final class GenerateUniverses {
 		).collect(ImmutableList.toImmutableList());
 	}
 
-	private static ImmutableList<KeyDetails> getStakeDelegationUsingExistingKeyList(List<KeyDetails> keyDetails, List<UInt256> stakes) {
+	private static ImmutableList<KeyDetails> getStakeDelegationUsingExistingKeyList(
+		List<KeyDetails> keyDetails,
+		List<UInt256> stakes
+	) {
 		final Iterator<UInt256> stakesCycle = Iterators.cycle(stakes);
 		return keyDetails.stream().map(
 			keyDetail -> {
@@ -397,21 +400,17 @@ public final class GenerateUniverses {
 				"wallet",
 				"RADIX_STAKER_KEYSTORE_PASSWORD",
 				"RADIX_STAKER_KEY_PASSWORD");
-			StakeDelegation stakeDelegation = StakeDelegation.of(stakerKey, validator.getKeyPair().getPublicKey(), stakesCycle.next());
+			StakeDelegation stakeDelegation = StakeDelegation.of(
+				stakerKey.getPublicKey(),
+				validator.getKeyPair().getPublicKey(),
+				stakesCycle.next()
+			);
 			validator.setStakeDelegation(stakeDelegation);
 			validator.setStakerKeyStore(keyStore);
 			return validator;
 		} catch (CryptoException | IOException e) {
 			throw new IllegalStateException("While reading staker keys", e);
 		}
-	}
-
-
-	// We just generate issuances in the amounts of the stake delegations here
-	private static ImmutableList<TokenIssuance> getTokenIssuances(ImmutableList<StakeDelegation> stakeDelegations) {
-		return stakeDelegations.stream()
-			.map(sd -> TokenIssuance.of(sd.staker().getPublicKey(), sd.amount()))
-			.collect(ImmutableList.toImmutableList());
 	}
 
 	private static ECPublicKey pubkeyOf(int pk) {
@@ -462,8 +461,6 @@ public final class GenerateUniverses {
 					if (template.startsWith(VALIDATOR_PREFIX)) {
 						validator.put("seedsRemote", "");
 						validator.put("privateKey", Bytes.toBase64String(keys.get(i).getKeyPair().getPrivateKey()));
-					} else if (template.startsWith("STAKER")) {
-						validator.put("stakingKey", Bytes.toBase64String(keys.get(i).getStakeDelegation().staker().getPrivateKey()));
 					}
 					return validator;
 				})
