@@ -8,7 +8,6 @@ node.key.path=$RADIXDLT_VALIDATOR_KEY_LOCATION
 network.seeds=$RADIXDLT_NETWORK_SEEDS_REMOTE
 network.discovery.urls=$RADIXDLT_NETWORK_DISCOVERY_URLS
 
-consensus.pacemaker_timeout_millis=$RADIXDLT_PACEMAKER_TIMEOUT_MILLIS
 chaos.enable=$RADIXDLT_CHAOS_ENABLE
 
 host.ip=$RADIXDLT_HOST_IP_ADDRESS

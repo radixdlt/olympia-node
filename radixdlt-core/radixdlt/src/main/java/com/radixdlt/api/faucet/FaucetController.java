@@ -33,6 +33,8 @@ import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
 import com.radixdlt.utils.UInt256;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
 import com.radixdlt.api.Controller;
 
@@ -44,6 +46,7 @@ import static com.radixdlt.api.RestUtils.*;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 public final class FaucetController implements Controller {
+	private static final Logger logger = LogManager.getLogger();
 	private static final UInt256 AMOUNT = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
 
 	private final EventDispatcher<NodeApplicationRequest> faucetRequestDispatcher;
@@ -102,6 +105,7 @@ public final class FaucetController implements Controller {
 					)
 				);
 			} catch (ExecutionException | RuntimeException e) {
+				logger.warn("Unable to fulfill faucet request {}", e.getMessage());
 				respond(exchange, jsonObject()
 					.put("error", jsonObject()
 						.put("message", e.getCause().getMessage()))

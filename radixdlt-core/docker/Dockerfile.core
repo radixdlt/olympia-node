@@ -13,7 +13,6 @@ CMD ["/bin/bash", "-xe", "/opt/radixdlt/bin/radixdlt"]
 # set default environment variables
 ENV RADIXDLT_HOME=/home/radixdlt \
     RADIXDLT_NETWORK_SEEDS_REMOTE=127.0.0.1 \
-    RADIXDLT_PACEMAKER_TIMEOUT_MILLIS=1000 \
     RADIXDLT_CHAOS_ENABLE=true \
     RADIXDLT_DB_LOCATION=./RADIXDB \
     RADIXDLT_VALIDATOR_KEY_LOCATION=/home/radixdlt/node.ks \

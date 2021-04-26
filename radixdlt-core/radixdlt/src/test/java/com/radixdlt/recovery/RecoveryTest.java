@@ -23,6 +23,7 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
+import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -176,8 +177,8 @@ public class RecoveryTest {
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(ImmutableList.of(self));
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(epochCeilingView));
-					bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L));
+					install(MempoolConfig.asModule(10, 10));
+					install(RadixEngineConfig.asModule(1, Integer.MAX_VALUE, epochCeilingView, 50));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
 					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Vote>>() { }, ProcessOnDispatch.class)

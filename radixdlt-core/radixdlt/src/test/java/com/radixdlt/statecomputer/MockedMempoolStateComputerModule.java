@@ -31,7 +31,7 @@ import com.radixdlt.ledger.MockPrepared;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.SimpleMempool;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolRejectedException;
@@ -58,11 +58,11 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private Mempool<Txn> mempool(
-		MempoolConfig mempoolConfig,
 		SystemCounters systemCounters,
-		Random random
+		Random random,
+		@MempoolMaxSize int mempoolMaxSize
 	) {
-		return new SimpleMempool(mempoolConfig, systemCounters, random);
+		return new SimpleMempool(systemCounters, mempoolMaxSize, random);
 	}
 
 	@Provides

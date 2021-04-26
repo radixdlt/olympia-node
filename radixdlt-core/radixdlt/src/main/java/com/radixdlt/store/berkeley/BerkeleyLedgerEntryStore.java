@@ -17,38 +17,38 @@
 
 package com.radixdlt.store.berkeley;
 
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.identifiers.REAddr;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.radixdlt.atom.RESerializer;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.RESerializer;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.store.TxnIndex;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.StoreConfig;
+import com.radixdlt.store.TxnIndex;
 import com.radixdlt.store.berkeley.atom.AppendLog;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.Longs;
@@ -624,6 +624,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			var idKey = entry(aid);
 			failIfNotSuccess(atomIdDatabase.put(transaction, idKey, atomPosData), "Atom Id write for", aid);
 			addBytesWrite(atomPosData, idKey);
+
+			systemCounters.increment(CounterType.COUNT_BDB_LEDGER_COMMIT);
 
 			// Update particles
 			stateUpdates.forEach(i -> this.updateParticle(transaction, i));

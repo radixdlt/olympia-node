@@ -91,8 +91,8 @@ public class ActionEntry {
 	public static ActionEntry unstake(UnstakeTokens unstakeToken, Function<REAddr, String> addrToRri) {
 		return create(
 			ActionType.UNSTAKE,
-			ValidatorAddress.of(unstakeToken.from()),
 			AccountAddress.of(unstakeToken.accountAddr()),
+			ValidatorAddress.of(unstakeToken.from()),
 			unstakeToken.amount(),
 			addrToRri.apply(REAddr.ofNativeToken())
 		);

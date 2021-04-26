@@ -30,13 +30,12 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.Stakes;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseLocation;
@@ -75,17 +74,16 @@ public class StakingTest {
 
 	private Injector createInjector() {
 		return Guice.createInjector(
+			MempoolConfig.asModule(1000, 10),
+			RadixEngineConfig.asModule(1, 100, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
-					bind(MempoolConfig.class).toInstance(MempoolConfig.of(1000L, 10L));
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100));
 				}
-
 
 				@ProvidesIntoSet
 				private TokenIssuance mempoolFillerIssuance() {

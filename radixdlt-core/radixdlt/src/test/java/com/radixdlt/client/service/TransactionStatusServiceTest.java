@@ -76,7 +76,7 @@ public class TransactionStatusServiceTest {
 		var scheduledCacheCleanup = mockEventDispatcher();
 
 		var txn = randomTxn();
-		var one = MempoolAddFailure.create(txn, null);
+		var one = MempoolAddFailure.create(txn, null, null);
 		var rejected = Observable.just(one);
 
 		var transactionStatusService = new TransactionStatusService(
@@ -116,7 +116,7 @@ public class TransactionStatusServiceTest {
 		var txnCommitted = randomTxn();
 		var committed = Observable.just(AtomsCommittedToLedger.create(List.of(txnCommitted), List.of()));
 		var txnRejected = randomTxn();
-		var rejected = Observable.just(MempoolAddFailure.create(txnRejected, null));
+		var rejected = Observable.just(MempoolAddFailure.create(txnRejected, null, null));
 
 		var start = Instant.now().minus(Duration.ofSeconds(10 * 60 + 1));
 		var clockValues = List.of(start, start, start, start, start, start, Instant.now()).iterator();

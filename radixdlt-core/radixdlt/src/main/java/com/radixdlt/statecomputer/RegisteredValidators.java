@@ -23,8 +23,10 @@ import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -69,6 +71,14 @@ public final class RegisteredValidators {
             .stream()
 			.map(p -> mapper.apply(p.getKey(), ValidatorDetails.fromParticle(p)))
             .collect(Collectors.toList());
+    }
+
+    public <T> Optional<T> mapSingle(ECPublicKey validatorKey, Function<ValidatorDetails, T> mapper) {
+        return validatorParticles.stream()
+            .filter(p -> p.getKey().equals(validatorKey))
+            .findFirst()
+            .map(ValidatorDetails::fromParticle)
+            .map(mapper);
     }
 
     @Override

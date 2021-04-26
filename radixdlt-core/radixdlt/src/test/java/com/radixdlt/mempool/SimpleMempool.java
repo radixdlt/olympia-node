@@ -36,31 +36,28 @@ import java.util.function.Predicate;
  */
 public final class SimpleMempool implements Mempool<Txn> {
 	private final Set<Txn> data = new HashSet<>();
-
-	private final MempoolConfig mempoolConfig;
-
 	private final SystemCounters counters;
-
 	private final Random random;
+	private final int maxSize;
 
 	public SimpleMempool(
-		MempoolConfig mempoolConfig,
 		SystemCounters counters,
+		int maxSize,
 		Random random
 	) {
-		if (mempoolConfig.maxSize() <= 0) {
-			throw new IllegalArgumentException("mempool.maxSize must be positive: " + mempoolConfig.maxSize());
+		if (maxSize <= 0) {
+			throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
 		}
-		this.mempoolConfig = Objects.requireNonNull(mempoolConfig);
 		this.counters = Objects.requireNonNull(counters);
+		this.maxSize = maxSize;
 		this.random = Objects.requireNonNull(random);
 	}
 
 	@Override
 	public void add(Txn txn) throws MempoolFullException, MempoolDuplicateException {
-		if (this.data.size() >= this.mempoolConfig.maxSize()) {
+		if (this.data.size() >= maxSize) {
 			throw new MempoolFullException(
-				String.format("Mempool full: %s of %s items", this.data.size(), this.mempoolConfig.maxSize())
+				String.format("Mempool full: %s of %s items", this.data.size(), maxSize)
 			);
 		}
 		if (!this.data.add(txn)) {
@@ -110,12 +107,12 @@ public final class SimpleMempool implements Mempool<Txn> {
 
 	private void updateCounts() {
 		this.counters.set(SystemCounters.CounterType.MEMPOOL_COUNT, this.data.size());
-		this.counters.set(SystemCounters.CounterType.MEMPOOL_MAXCOUNT, this.mempoolConfig.maxSize());
+		this.counters.set(SystemCounters.CounterType.MEMPOOL_MAXCOUNT, maxSize);
 	}
 
 	@Override
 	public String toString() {
 		return String.format("%s[%x:%s/%s]",
-			getClass().getSimpleName(), System.identityHashCode(this), this.data.size(), this.mempoolConfig.maxSize());
+			getClass().getSimpleName(), System.identityHashCode(this), this.data.size(), maxSize);
 	}
 }

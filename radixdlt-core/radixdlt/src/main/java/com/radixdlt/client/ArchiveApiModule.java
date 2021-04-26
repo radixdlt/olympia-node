@@ -49,6 +49,7 @@ public class ArchiveApiModule extends AbstractModule {
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 			.permitDuplicates();
 		bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
+		bind(TransactionStatusService.class).in(Scopes.SINGLETON);
 		eventBinder.addBinding().toInstance(ScheduledQueueFlush.class);
 		eventBinder.addBinding().toInstance(ScheduledCacheCleanup.class);
 	}
@@ -129,6 +130,24 @@ public class ArchiveApiModule extends AbstractModule {
 	@StringMapKey("radix.unstakePositions")
 	public JsonRpcHandler unstakePositions(HighLevelApiHandler highLevelApiHandler) {
 		return highLevelApiHandler::handleUnstakePositions;
+	}
+
+	@ProvidesIntoMap
+	@StringMapKey("radix.lookupValidator")
+	public JsonRpcHandler lookupValidator(HighLevelApiHandler highLevelApiHandler) {
+		return highLevelApiHandler::handleLookupValidator;
+	}
+
+	@ProvidesIntoMap
+	@StringMapKey("radix.networkTransactionThroughput")
+	public JsonRpcHandler networkTransactionThroughput(HighLevelApiHandler highLevelApiHandler) {
+		return highLevelApiHandler::handleNetworkTransactionThroughput;
+	}
+
+	@ProvidesIntoMap
+	@StringMapKey("radix.networkTransactionDemand")
+	public JsonRpcHandler networkTransactionDemand(HighLevelApiHandler highLevelApiHandler) {
+		return highLevelApiHandler::handleNetworkTransactionDemand;
 	}
 
 	@ProvidesIntoSet

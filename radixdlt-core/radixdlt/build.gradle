@@ -250,8 +250,8 @@ tasks.getByName("createGenerateUniversesScripts") {
 tasks.getByName("startScripts").dependsOn createGenerateUniversesScripts
 
 task createGenerateNodeKeyScripts(type: CreateStartScripts) {
-  mainClassName = 'org.radix.GenerateNodeKey'
-  applicationName = 'generate_node_key'
+  mainClassName = 'com.radixdlt.keygen.KeyGenerator'
+  applicationName = 'keygen'
 }
 
 tasks.getByName("createGenerateNodeKeyScripts").outputDir = tasks.getByName("startScripts").outputDir

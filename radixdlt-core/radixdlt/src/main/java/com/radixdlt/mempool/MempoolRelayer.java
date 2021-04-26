@@ -40,22 +40,28 @@ import java.util.Objects;
 public final class MempoolRelayer {
 	private final PeersView peersView;
 	private final RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher;
-	private final MempoolConfig mempoolConfig;
 	private final SystemCounters counters;
 	private final Mempool<?> mempool;
+	private final long initialDelay;
+	private final long repeatDelay;
+	private final int maxPeers;
 
 	@Inject
 	public MempoolRelayer(
 		Mempool<?> mempool,
 		RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher,
 		PeersView peersView,
-		MempoolConfig mempoolConfig,
+		@MempoolRelayInitialDelay long initialDelay,
+		@MempoolRelayRepeatDelay long repeatDelay,
+		@MempoolRelayMaxPeers int maxPeers,
 		SystemCounters counters
 	) {
 		this.mempool = mempool;
 		this.remoteEventDispatcher = Objects.requireNonNull(remoteEventDispatcher);
 		this.peersView = Objects.requireNonNull(peersView);
-		this.mempoolConfig = Objects.requireNonNull(mempoolConfig);
+		this.initialDelay = initialDelay;
+		this.repeatDelay = repeatDelay;
+		this.maxPeers = maxPeers;
 		this.counters = Objects.requireNonNull(counters);
 	}
 
@@ -71,11 +77,11 @@ public final class MempoolRelayer {
 	public EventProcessor<MempoolRelayTrigger> mempoolRelayTriggerEventProcessor() {
 		return ev -> {
 			final var now = System.currentTimeMillis();
-			final var maxAddTime = now - this.mempoolConfig.commandRelayInitialDelay();
+			final var maxAddTime = now - initialDelay;
 			final var txns = mempool.scanUpdateAndGet(
 				m -> m.getInserted() <= maxAddTime
 					&& now >= m.getLastRelayed().orElse(0L)
-					+ this.mempoolConfig.commandRelayRepeatDelay(),
+					+ repeatDelay,
 				m -> m.setLastRelayed(now)
 			);
 			if (!txns.isEmpty()) {
@@ -90,7 +96,7 @@ public final class MempoolRelayer {
 		peers.removeAll(ignorePeers);
 		Collections.shuffle(peers);
 		peers.stream()
-			.limit(mempoolConfig.relayMaxPeers())
+			.limit(maxPeers)
 			.forEach(peer -> {
 				counters.add(CounterType.MEMPOOL_RELAYER_SENT_COUNT, txns.size());
 				this.remoteEventDispatcher.dispatch(peer, mempoolAddMsg);

@@ -31,8 +31,6 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.network.TimeSupplier;
-import com.radixdlt.statecomputer.MaxValidators;
-import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
@@ -45,8 +43,8 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
 	public void configure() {
 		bind(SyncConfig.class).toInstance(SyncConfig.of(500, 10, 3000, 10, Long.MAX_VALUE));
 		bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
-		bind(Integer.class).annotatedWith(MinValidators.class).toInstance(1);
-		bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(Integer.MAX_VALUE);
+
+
 		bind(Long.class).annotatedWith(PacemakerTimeout.class).toInstance(1000L);
 		bind(Double.class).annotatedWith(PacemakerRate.class).toInstance(2.0);
 		bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(6);
