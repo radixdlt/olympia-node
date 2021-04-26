@@ -28,7 +28,6 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
-import com.google.inject.name.Names;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.SubstateId;
@@ -69,12 +68,10 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
-import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
-import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
-import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 
@@ -134,11 +131,10 @@ public class RadixEngineStateComputerTest {
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
 				bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(engineStore);
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
-				bindConstant().annotatedWith(Names.named("magic")).to(0);
-				bindConstant().annotatedWith(MinValidators.class).to(1);
-				bindConstant().annotatedWith(MaxValidators.class).to(100);
 				bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L));
-				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10));
+
+				install(RadixEngineConfig.asModule(1, 100, 10, 50));
+
 				bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 
 				bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() { })

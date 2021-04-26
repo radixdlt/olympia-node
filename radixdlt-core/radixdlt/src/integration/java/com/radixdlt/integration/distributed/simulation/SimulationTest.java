@@ -357,7 +357,7 @@ public class SimulationTest {
 			modules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
-					install(RadixEngineConfig.createModule(minValidators, maxValidators, epochHighView));
+					install(RadixEngineConfig.asModule(minValidators, maxValidators, epochHighView, 50));
 					bind(SyncConfig.class).toInstance(syncConfig);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
 				}
@@ -368,7 +368,7 @@ public class SimulationTest {
 				protected void configure() {
 					install(new MockedCryptoModule());
 					install(new RadixEngineModule());
-					install(RadixEngineConfig.createModule(minValidators, maxValidators, epochHighView));
+					install(RadixEngineConfig.asModule(minValidators, maxValidators, epochHighView, 50));
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
 						.toInstance(nodes);
@@ -422,7 +422,7 @@ public class SimulationTest {
 				protected void configure() {
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
 					bind(MempoolConfig.class).toInstance(MempoolConfig.of(100L, 10L));
-					install(RadixEngineConfig.createModule(minValidators, maxValidators, epochHighView));
+					install(RadixEngineConfig.asModule(minValidators, maxValidators, epochHighView, 5));
 				}
 
 				@Provides
@@ -456,7 +456,7 @@ public class SimulationTest {
 					install(new MockedCryptoModule());
 					install(new RadixEngineModule());
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
-					install(RadixEngineConfig.createModule(minValidators, maxValidators, epochHighView));
+					install(RadixEngineConfig.asModule(minValidators, maxValidators, epochHighView, 50));
 				}
 			});
 

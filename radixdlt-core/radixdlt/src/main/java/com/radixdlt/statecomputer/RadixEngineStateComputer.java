@@ -57,12 +57,12 @@ import java.util.stream.Collectors;
  * Wraps the Radix Engine and emits messages based on success or failure
  */
 public final class RadixEngineStateComputer implements StateComputer {
-	private static final int MAX_TXNS_PER_PROPOSAL = 50; // TODO: Move this into radix engine
 	private static final Logger log = LogManager.getLogger();
 
 	private final RadixEngineMempool mempool;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final View epochCeilingView;
+	private final int maxTxnsPerProposal;
 	private final ValidatorSetBuilder validatorSetBuilder;
 
 	private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
@@ -76,7 +76,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 	public RadixEngineStateComputer(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		RadixEngineMempool mempool,
-		@EpochCeilingView View epochCeilingView,
+		@EpochCeilingView View epochCeilingView, // TODO: Move this into radixEngine
+		@MaxTxnsPerProposal int maxTxnsPerProposal, // TODO: Move this into radixEngine
 		ValidatorSetBuilder validatorSetBuilder,
 		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
 		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher,
@@ -91,6 +92,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.epochCeilingView = epochCeilingView;
+		this.maxTxnsPerProposal = maxTxnsPerProposal;
 		this.validatorSetBuilder = Objects.requireNonNull(validatorSetBuilder);
 		this.mempool = Objects.requireNonNull(mempool);
 		this.mempoolAddSuccessEventDispatcher = Objects.requireNonNull(mempoolAddedCommandEventDispatcher);
@@ -154,7 +156,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			.collect(Collectors.toList());
 
 		// TODO: only return commands which will not cause a missing dependency error
-		final List<Txn> txns = mempool.getTxns(MAX_TXNS_PER_PROPOSAL, cmds);
+		final List<Txn> txns = mempool.getTxns(maxTxnsPerProposal, cmds);
 		systemCounters.add(SystemCounters.CounterType.MEMPOOL_PROPOSED_TRANSACTION, txns.size());
 		return txns;
 	}

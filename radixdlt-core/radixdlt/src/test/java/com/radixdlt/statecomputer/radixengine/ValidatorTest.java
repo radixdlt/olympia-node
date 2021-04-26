@@ -26,13 +26,12 @@ import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseLocation;
 import org.junit.Rule;
@@ -53,6 +52,7 @@ public class ValidatorTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			new SingleNodeAndPeersDeterministicNetworkModule(),
+			RadixEngineConfig.asModule(1, 100, 100, 50),
 			new MockedGenesisModule(),
 			new AbstractModule() {
 				@Override
@@ -60,7 +60,6 @@ public class ValidatorTest {
 					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
 					bind(MempoolConfig.class).toInstance(MempoolConfig.of(1000L, 10L));
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100));
 				}
 			}
 		);

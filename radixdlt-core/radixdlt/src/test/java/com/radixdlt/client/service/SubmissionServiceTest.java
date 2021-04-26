@@ -21,6 +21,7 @@ import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import org.junit.Assert;
 import org.junit.Before;
@@ -32,7 +33,6 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
-import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
@@ -45,7 +45,6 @@ import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -64,11 +63,8 @@ import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
-import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.MaxValidators;
-import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.RegisteredValidators;
@@ -137,17 +133,15 @@ public class SubmissionServiceTest {
 
 			@Override
 			public void configure() {
+				install(RadixEngineConfig.asModule(1, 100, 10, 50));
+
 				bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
 					.toInstance(registeredNodes);
 				bind(Serialization.class).toInstance(serialization);
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
 				bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(engineStore);
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
-				bindConstant().annotatedWith(Names.named("magic")).to(0);
-				bindConstant().annotatedWith(MinValidators.class).to(1);
-				bindConstant().annotatedWith(MaxValidators.class).to(100);
 				bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L));
-				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10));
 
 				bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 				bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() { })

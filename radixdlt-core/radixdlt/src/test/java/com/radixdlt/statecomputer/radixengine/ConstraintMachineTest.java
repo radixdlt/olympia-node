@@ -25,12 +25,11 @@ import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseLocation;
 import org.junit.Rule;
@@ -51,6 +50,7 @@ public class ConstraintMachineTest {
 
 	private Injector createInjector() {
 		return Guice.createInjector(
+			RadixEngineConfig.asModule(1, 100, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
 			new AbstractModule() {
@@ -59,7 +59,6 @@ public class ConstraintMachineTest {
 					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
 					bind(MempoolConfig.class).toInstance(MempoolConfig.of(1000L, 10L));
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100));
 				}
 			}
 		);

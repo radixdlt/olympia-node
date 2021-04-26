@@ -140,7 +140,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 		Guice.createInjector(
 			new MockedGenesisModule(),
 			new RadixEngineModule(),
-			RadixEngineConfig.createModule(1, 10, 10),
+			RadixEngineConfig.asModule(1, 10, 10, 50),
 			new CryptoModule(),
 			new AbstractModule() {
 				@Override

@@ -30,7 +30,6 @@ import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyPair;
@@ -42,7 +41,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.network.addressbook.PeersView;
-import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
@@ -77,15 +76,14 @@ public class MempoolTest {
 	private Injector getInjector() {
 		return Guice.createInjector(
 			new SingleNodeAndPeersDeterministicNetworkModule(),
+			RadixEngineConfig.asModule(1, 100, 100, 50),
 			new MockedGenesisModule(),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("numPeers")).to(NUM_PEERS);
 					bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L, 200L, 500L, 10));
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100L));
-					bindConstant().annotatedWith(DatabaseLocation.class)
-						.to(folder.getRoot().getAbsolutePath());
+					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
 			}
 		);

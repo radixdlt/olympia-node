@@ -27,7 +27,6 @@ import com.radixdlt.CryptoModule;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.client.AccountAddress;
 import com.radixdlt.client.Rri;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -82,7 +81,6 @@ import org.radix.universe.output.HelmUniverseOutput;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.file.Files;
@@ -289,7 +287,7 @@ public final class GenerateUniverses {
 					bind(UniverseType.class).toInstance(universeType);
 					install(new CryptoModule());
 					install(new RadixNativeTokenModule());
-					install(RadixEngineConfig.createModule(1, 100, 10000L));
+					install(RadixEngineConfig.asModule(1, 100, 100000L, 50));
 					install(new RadixEngineModule());
 
 					bind(new TypeLiteral<List<TxAction>>() { }).annotatedWith(Genesis.class).toInstance(additionalActions);

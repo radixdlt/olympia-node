@@ -26,7 +26,6 @@ import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
@@ -36,7 +35,7 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseLocation;
 import org.assertj.core.api.Condition;
@@ -64,11 +63,11 @@ public class PacemakerTest {
 		return Guice.createInjector(
 			new MockedGenesisModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
+			RadixEngineConfig.asModule(1, Integer.MAX_VALUE, 100, 50),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100L));
 					bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L));
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}

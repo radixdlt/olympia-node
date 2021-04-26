@@ -141,7 +141,7 @@ public class RecoveryLivenessTest {
 			new MockedGenesisModule(),
 			new CryptoModule(),
 			new RadixEngineModule(),
-			RadixEngineConfig.createModule(1, 100, epochCeilingView),
+			RadixEngineConfig.asModule(1, 100, epochCeilingView, 50),
 			new AbstractModule() {
 				@Override
 				public void configure() {

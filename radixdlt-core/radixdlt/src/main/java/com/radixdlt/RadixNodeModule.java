@@ -20,7 +20,11 @@ package com.radixdlt;
 import com.radixdlt.api.ApiModule;
 
 import com.radixdlt.api.faucet.FaucetModule;
-import com.radixdlt.statecomputer.RadixEngineConfig;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.MaxTxnsPerProposal;
+import com.radixdlt.statecomputer.MaxValidators;
+import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -78,16 +82,34 @@ public final class RadixNodeModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(RuntimeProperties.class).toInstance(properties);
-		bind(MempoolConfig.class).toInstance(MempoolConfig.of(properties.get("mempool.maxSize", 1000), 5L));
-		final long syncPatience = properties.get("sync.patience", 2000L);
-		bind(SyncConfig.class).toInstance(SyncConfig.of(syncPatience, 10, 3000L));
-		bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(properties.get("bft.sync.patience", 200));
 
+		// Consensus configuration
+		// These cannot be changed without introducing possibilities of
+		// going out of sync with consensus.
+		bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(properties.get("bft.sync.patience", 200));
 		// Default values mean that pacemakers will sync if they are within 5 views of each other.
 		// 5 consecutive failing views will take 1*(2^6)-1 seconds = 63 seconds.
-		bindConstant().annotatedWith(PacemakerTimeout.class).to(properties.get("consensus.pacemaker_timeout_millis", 1000L));
-		bindConstant().annotatedWith(PacemakerRate.class).to(properties.get("consensus.pacemaker_rate", 2.0));
-		bindConstant().annotatedWith(PacemakerMaxExponent.class).to(properties.get("consensus.pacemaker_max_exponent", 6));
+		bindConstant().annotatedWith(PacemakerTimeout.class).to(3000L);
+		bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
+		bindConstant().annotatedWith(PacemakerMaxExponent.class).to(6);
+
+		// Mempool configuration
+		bind(MempoolConfig.class).toInstance(
+			MempoolConfig.of(properties.get("mempool.maxSize", 10000), 5L)
+		);
+
+		// Sync configuration
+		final long syncPatience = properties.get("sync.patience", 2000L);
+		bind(SyncConfig.class).toInstance(SyncConfig.of(syncPatience, 10, 3000L));
+
+		// Radix Engine configuration
+		// These cannot be changed without introducing possible forks with
+		// the network.
+		// TODO: Move these deeper into radix engine.
+		bindConstant().annotatedWith(MinValidators.class).to(1);
+		bindConstant().annotatedWith(MaxValidators.class).to(100);
+		bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100000L));
+		bindConstant().annotatedWith(MaxTxnsPerProposal.class).to(50);
 
 		// System (e.g. time, random)
 		install(new SystemModule());
@@ -132,7 +154,6 @@ public final class RadixNodeModule extends AbstractModule {
 
 		// State Computer
 		install(new RadixEngineStateComputerModule());
-		install(RadixEngineConfig.createModule(1, 100, 10000L));
 		install(new RadixEngineModule());
 		install(new RadixEngineValidatorComputersModule());
 		install(new RadixEngineStoreModule());

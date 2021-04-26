@@ -155,7 +155,7 @@ public class MempoolRelayTest {
 			new MockedGenesisModule(),
 			new CryptoModule(),
 			new RadixEngineModule(),
-			RadixEngineConfig.createModule(1, 100, 100),
+			RadixEngineConfig.asModule(1, 100, 100, 50),
 			new AbstractModule() {
 				@Override
 				public void configure() {

@@ -27,11 +27,10 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.ImmutableIndex;
@@ -61,6 +60,7 @@ public class GenesisTest {
 
 	private Injector createInjector() {
 		return Guice.createInjector(
+			RadixEngineConfig.asModule(1, 100, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
 			new AbstractModule() {
@@ -69,7 +69,6 @@ public class GenesisTest {
 					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
 					bind(MempoolConfig.class).toInstance(MempoolConfig.of(1000L, 10L));
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100));
 				}
 			}
 		);
