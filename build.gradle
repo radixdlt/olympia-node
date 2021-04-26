@@ -188,8 +188,8 @@ subprojects {
             }
 
             dependency 'com.google.code.gson:gson:2.8.2'
-            dependency 'org.bouncycastle:bcprov-jdk15to18:1.65'
-            dependency 'org.bouncycastle:bcpkix-jdk15to18:1.65'
+            dependency 'org.bouncycastle:bcprov-jdk15on:1.68'
+            dependency 'org.bouncycastle:bcpkix-jdk15on:1.68'
 
             dependency 'org.json:json:20180813'
 
