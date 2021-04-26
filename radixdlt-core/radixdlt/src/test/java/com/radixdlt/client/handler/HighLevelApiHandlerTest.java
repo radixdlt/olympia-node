@@ -66,8 +66,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.JsonRpcUtil.jsonArray;
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 import static com.radixdlt.client.api.TransactionStatus.CONFIRMED;
 import static com.radixdlt.client.api.TransactionStatus.FAILED;

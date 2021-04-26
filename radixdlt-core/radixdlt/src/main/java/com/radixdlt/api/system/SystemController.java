@@ -6,47 +6,62 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package org.radix.api.http;
+package com.radixdlt.api.system;
 
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.network.addressbook.AddressBook;
+import com.radixdlt.network.addressbook.PeerWithSystem;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.utils.Bytes;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.radix.api.services.SystemService;
+import com.radixdlt.api.Controller;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
+import org.radix.universe.system.LocalSystem;
 
-import static org.radix.api.http.RestUtils.respond;
+import java.util.stream.Stream;
+
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.RestUtils.respond;
 
 public final class SystemController implements Controller {
-	private final SystemService systemService;
+	private final LocalSystem localSystem;
 	private final VerifiedTxnsAndProof genesis;
 	private final InMemorySystemInfo inMemorySystemInfo;
+	private final AddressBook addressBook;
+	private final PeerWithSystem localPeer;
 
 	@Inject
 	public SystemController(
 		InMemorySystemInfo inMemorySystemInfo,
-		SystemService systemService,
+		LocalSystem localSystem,
+		AddressBook addressBook,
 		@Genesis VerifiedTxnsAndProof genesis
 	) {
 		this.inMemorySystemInfo = inMemorySystemInfo;
-		this.systemService = systemService;
+		this.addressBook = addressBook;
 		this.genesis = genesis;
+		this.localSystem = localSystem;
+		this.localPeer = new PeerWithSystem(this.localSystem);
 	}
 
 	@Override
@@ -55,6 +70,7 @@ public final class SystemController implements Controller {
 		handler.get("/system/checkpoints", this::respondWithGenesis);
 		handler.get("/system/proof", this::respondWithCurrentProof);
 		handler.get("/system/epochproof", this::respondWithEpochProof);
+		handler.get("/system/peers", this::respondWithLivePeers);
 	}
 
 	void respondWithCurrentProof(final HttpServerExchange exchange) {
@@ -69,7 +85,8 @@ public final class SystemController implements Controller {
 
 	@VisibleForTesting
 	void respondWithLocalSystem(final HttpServerExchange exchange) {
-		respond(exchange, systemService.getLocalSystem());
+		var json = DefaultSerialization.getInstance().toJsonObject(localSystem, DsonOutput.Output.API);
+		respond(exchange, json);
 	}
 
 	@VisibleForTesting
@@ -81,5 +98,28 @@ public final class SystemController implements Controller {
 		jsonObject.put("proof", genesis.getProof().asJSON());
 
 		respond(exchange, jsonObject);
+	}
+
+
+	private Stream<PeerWithSystem> selfAndOthers(Stream<PeerWithSystem> others) {
+		return Stream.concat(Stream.of(this.localPeer), others).distinct();
+	}
+
+	private void respondWithLivePeers(final HttpServerExchange exchange) {
+		var peerArray = new JSONArray();
+		selfAndOthers(this.addressBook.recentPeers())
+			.map(peer -> {
+				var json = jsonObject().put("address", ValidatorAddress.of(peer.getSystem().getKey()));
+				peer.getSystem().supportedTransports().filter(t -> t.name().equals("TCP")).forEach(t -> {
+					String port = t.metadata().get("port");
+					String host = t.metadata().get("host");
+					json.put("endpoint", host + ":" + port);
+				});
+
+				return json;
+			})
+			.forEach(peerArray::put);
+
+		respond(exchange, peerArray);
 	}
 }

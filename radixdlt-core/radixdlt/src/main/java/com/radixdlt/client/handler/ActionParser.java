@@ -34,7 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.radix.api.jsonrpc.JsonRpcUtil.safeString;
+import static com.radixdlt.api.JsonRpcUtil.safeString;
 
 import static com.radixdlt.utils.functional.Result.allOf;
 
