@@ -109,7 +109,8 @@ public final class GenerateUniverses {
 	private static final Boolean DEFAULT_RECREATE_AWS_SECRETS = false;
 	private static final String DEFAULT_NETWORK_NAME = "testnet";
 
-	private static final BigDecimal DEFAULT_ISSUANCE = BigDecimal.valueOf(100_000_000_000L);
+	private static final UInt256 DEFAULT_ISSUANCE =
+		UInt256.from("1000000000000000000000000000").multiply(TokenDefinitionUtils.SUB_UNITS);
 	private static final BigDecimal DEFAULT_STAKE = BigDecimal.valueOf(1_000_000L);
 
 	public static void main(String[] args) {
@@ -204,15 +205,14 @@ public final class GenerateUniverses {
 				.map(KeyDetails::getKeyPair)
 				.collect(ImmutableList.toImmutableList());
 
-
 			final ImmutableList.Builder<TokenIssuance> tokenIssuancesBuilder = ImmutableList.builder();
 			if (universeType == UniverseType.DEVELOPMENT && cmd.hasOption("i")) {
 				tokenIssuancesBuilder.add(
-					TokenIssuance.of(pubkeyOf(1), unitsToSubunits(DEFAULT_ISSUANCE)),
-					TokenIssuance.of(pubkeyOf(2), unitsToSubunits(DEFAULT_ISSUANCE)),
-					TokenIssuance.of(pubkeyOf(3), unitsToSubunits(DEFAULT_ISSUANCE)),
-					TokenIssuance.of(pubkeyOf(4), unitsToSubunits(DEFAULT_ISSUANCE)),
-					TokenIssuance.of(pubkeyOf(5), unitsToSubunits(DEFAULT_ISSUANCE))
+					TokenIssuance.of(pubkeyOf(1), DEFAULT_ISSUANCE),
+					TokenIssuance.of(pubkeyOf(2), DEFAULT_ISSUANCE),
+					TokenIssuance.of(pubkeyOf(3), DEFAULT_ISSUANCE),
+					TokenIssuance.of(pubkeyOf(4), DEFAULT_ISSUANCE),
+					TokenIssuance.of(pubkeyOf(5), DEFAULT_ISSUANCE)
 				);
 			}
 
@@ -237,7 +237,7 @@ public final class GenerateUniverses {
 				var amt = new BigInteger(amountStr);
 				tokenAmt = unitsToSubunits(new BigDecimal(amt));
 			} else {
-				tokenAmt = unitsToSubunits(DEFAULT_ISSUANCE);
+				tokenAmt = DEFAULT_ISSUANCE;
 			}
 			tokenIssuancesBuilder.add(TokenIssuance.of(pubKey, tokenAmt));
 			var tokensToCreate = Map.of(
@@ -255,7 +255,7 @@ public final class GenerateUniverses {
 					resourceAddr,
 					accountAddr,
 					symbol, name, "", "", "",
-					UInt256.MAX_VALUE
+					tokenAmt
 				));
 			});
 
@@ -264,12 +264,12 @@ public final class GenerateUniverses {
 				// FIXME: Remove this
 				validatorKeys
 					.forEach(kp -> {
-						var tokenIssuance = TokenIssuance.of(kp.getPublicKey(), unitsToSubunits(DEFAULT_ISSUANCE));
+						var tokenIssuance = TokenIssuance.of(kp.getPublicKey(), DEFAULT_ISSUANCE);
 						tokenIssuancesBuilder.add(tokenIssuance);
 						var keyAddr = REAddr.ofPubKeyAccount(kp.getPublicKey());
 						resourceAddrs.forEach(addr -> {
 							additionalActions.add(
-								new TransferToken(addr, accountAddr, keyAddr, unitsToSubunits(DEFAULT_ISSUANCE))
+								new TransferToken(addr, accountAddr, keyAddr, unitsToSubunits(BigDecimal.valueOf(1_000_000L)))
 							);
 						});
 					});
