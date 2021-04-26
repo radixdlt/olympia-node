@@ -37,7 +37,7 @@ public class RadixNativeTokenModule extends AbstractModule {
 		return new MutableTokenDefinition(
 			TokenDefinitionUtils.getNativeTokenShortCode(),
 			"Rads",
-			"Radix Native Tokens",
+			"Radix Betanet Tokens",
 			RADIX_ICON_URL,
 			RADIX_TOKEN_URL
 		);
