@@ -28,21 +28,21 @@ import com.radixdlt.utils.UInt256;
  * a specified amount.
  */
 public final class StakeDelegation {
-	private final ECKeyPair staker;
+	private final ECPublicKey staker;
 	private final ECPublicKey delegate;
 	private final UInt256 amount;
 
-	private StakeDelegation(ECKeyPair staker, ECPublicKey delegate, UInt256 amount) {
+	private StakeDelegation(ECPublicKey staker, ECPublicKey delegate, UInt256 amount) {
 		this.staker = Objects.requireNonNull(staker);
 		this.delegate = Objects.requireNonNull(delegate);
 		this.amount = Objects.requireNonNull(amount);
 	}
 
-	public static StakeDelegation of(ECKeyPair staker, ECPublicKey delegate, UInt256 amount) {
+	public static StakeDelegation of(ECPublicKey staker, ECPublicKey delegate, UInt256 amount) {
 		return new StakeDelegation(staker, delegate, amount);
 	}
 
-	public ECKeyPair staker() {
+	public ECPublicKey staker() {
 		return this.staker;
 	}
 
