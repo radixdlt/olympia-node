@@ -120,7 +120,7 @@ public final class RadixNodeModule extends AbstractModule {
 			log.info("Enabling high level API");
 			install(new ArchiveApiModule());
 		}
-		if (properties.get("faucet.enable", false)) {
+		if (properties.get("faucet.enable", true)) {
 			log.info("Enabling faucet API");
 			install(new FaucetModule());
 		}
