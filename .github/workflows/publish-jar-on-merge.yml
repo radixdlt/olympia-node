@@ -8,7 +8,6 @@ on:
     branches:
       - rc\/*
       - release\/*
-      - prod-universe
 jobs:
   cancel_running_workflows:
     name: Cancel running workflows
