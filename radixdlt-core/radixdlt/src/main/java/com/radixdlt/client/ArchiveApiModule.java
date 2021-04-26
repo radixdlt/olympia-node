@@ -20,12 +20,11 @@ package com.radixdlt.client;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
+import com.radixdlt.api.Controller;
 import com.radixdlt.client.service.ScheduledCacheCleanup;
 import com.radixdlt.client.service.TransactionStatusService;
 import com.radixdlt.client.store.ClientApiStore;
@@ -41,10 +40,16 @@ import com.radixdlt.client.handler.HighLevelApiHandler;
 public class ArchiveApiModule extends AbstractModule {
 	@Override
 	public void configure() {
+		// TODO: Enable when splitting ports
+		/*
 		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
 			.addBinding(Runners.ARCHIVE_API)
 			.to(ArchiveServer.class);
 		bind(ArchiveServer.class).in(Scopes.SINGLETON);
+		 */
+		// TODO: Disable when splitting ports
+		var controllers = Multibinder.newSetBinder(binder(), Controller.class);
+		controllers.addBinding().to(RpcController.class).in(Scopes.SINGLETON);
 
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 			.permitDuplicates();
