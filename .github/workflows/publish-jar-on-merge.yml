@@ -11,7 +11,6 @@ on:
       - prod-universe
 jobs:
   cancel_running_workflows:
-    if: ${{ startsWith(github.ref, 'refs/heads/release/') ||  startsWith(github.ref, 'refs/heads/rc') }}
     name: Cancel running workflows
     runs-on: ubuntu-20.04
     steps:
@@ -20,7 +19,6 @@ jobs:
         with:
           access_token: ${{ github.token }}
   build:
-    if: ${{ startsWith(github.ref, 'refs/heads/release/') ||  startsWith(github.ref, 'refs/heads/rc') }}
     runs-on: ubuntu-latest
     name: Build JARs
     steps:
@@ -72,7 +70,6 @@ jobs:
           rm -f ~/.gradle/caches/modules-2/modules-2.lock
           rm -f ~/.gradle/caches/modules-2/gc.properties
   publish-jar:
-    if: ${{ startsWith(github.ref, 'refs/heads/release/') ||  startsWith(github.ref, 'refs/heads/rc') }}
     needs: build
     name: Publish JAR to Github package repository
     runs-on: ubuntu-latest
