@@ -53,7 +53,6 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewQuorumReached;
 import com.radixdlt.consensus.bft.ViewVotingResult.FormedQC;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
@@ -73,7 +72,6 @@ import com.radixdlt.integration.distributed.deterministic.NodeEvents.NodeEventPr
 import com.radixdlt.integration.distributed.deterministic.NodeEventsModule;
 import com.radixdlt.integration.distributed.deterministic.SafetyCheckerModule;
 import com.radixdlt.network.addressbook.PeersView;
-import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -140,7 +138,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 		Guice.createInjector(
 			new MockedGenesisModule(),
 			new RadixEngineModule(),
-			RadixEngineConfig.createModule(1, 10, 10),
+			RadixEngineConfig.asModule(1, 10, 10, 50),
 			new CryptoModule(),
 			new AbstractModule() {
 				@Override
@@ -198,6 +196,8 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
+			MempoolConfig.asModule(10, 10),
+			RadixEngineConfig.asModule(1, 10, 88, 50),
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {
 				@Override
@@ -207,8 +207,6 @@ public class OneNodeAlwaysAliveSafetyTest {
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(PeersView.class).toInstance(List::of);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(88L));
-					bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ValidatorAddress.of(ecKeyPair.getPublicKey()));
 				}

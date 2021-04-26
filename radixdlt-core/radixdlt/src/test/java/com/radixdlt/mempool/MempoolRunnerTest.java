@@ -80,8 +80,9 @@ public final class MempoolRunnerTest {
 				bind(LedgerAccumulator.class).toInstance(mock(LedgerAccumulator.class));
 				bind(LedgerAccumulatorVerifier.class).toInstance(mock(LedgerAccumulatorVerifier.class));
 				bind(new TypeLiteral<Comparator<LedgerProof>>() { }).toInstance(mock(Comparator.class));
-				bind(MempoolConfig.class).toInstance(MempoolConfig.of(100L, 10L));
 				bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+
+				install(MempoolConfig.asModule(100, 10));
 				install(new MockedKeyModule());
 				install(new MockedCryptoModule());
 				install(new RxEnvironmentModule());

@@ -23,6 +23,7 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.api.config.ConfigController;
 import com.radixdlt.api.construction.ConstructionController;
 import com.radixdlt.client.service.ScheduledCacheCleanup;
 import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
@@ -51,6 +52,7 @@ public final class ApiModule extends AbstractModule {
 		controllers.addBinding().to(NodeController.class).in(Scopes.SINGLETON);
 		controllers.addBinding().to(RpcController.class).in(Scopes.SINGLETON);
 		controllers.addBinding().to(SystemController.class).in(Scopes.SINGLETON);
+		controllers.addBinding().to(ConfigController.class).in(Scopes.SINGLETON);
 
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 				.permitDuplicates();

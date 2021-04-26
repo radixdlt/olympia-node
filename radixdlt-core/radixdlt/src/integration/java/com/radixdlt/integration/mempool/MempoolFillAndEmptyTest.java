@@ -29,7 +29,6 @@ import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.mempoolfiller.ScheduledMempoolFill;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
@@ -38,7 +37,7 @@ import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProces
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseLocation;
 import org.junit.Rule;
@@ -64,6 +63,8 @@ public final class MempoolFillAndEmptyTest {
 
     private Injector createInjector() {
         return Guice.createInjector(
+            MempoolConfig.asModule(1000, 10),
+            RadixEngineConfig.asModule(1, 10, 100, 10),
             new SingleNodeAndPeersDeterministicNetworkModule(),
             new MockedGenesisModule(),
             new MempoolFillerModule(),
@@ -71,9 +72,7 @@ public final class MempoolFillAndEmptyTest {
                 @Override
                 protected void configure() {
                     bindConstant().annotatedWith(Names.named("numPeers")).to(0);
-                    bind(MempoolConfig.class).toInstance(MempoolConfig.of(1000L, 10L));
                     bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-                    bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100));
                 }
 
                 @ProvidesIntoSet
@@ -93,7 +92,7 @@ public final class MempoolFillAndEmptyTest {
             }
         }
 
-        for (int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 10000; i++) {
             ControlledMessage msg = network.nextMessage().value();
             processor.handleMessage(msg.origin(), msg.message());
             if (systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT) == 0) {

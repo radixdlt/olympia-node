@@ -28,8 +28,8 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolMetadata;
-import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolRejectedException;
@@ -41,7 +41,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -58,26 +57,26 @@ public final class RadixEngineMempool implements Mempool<REParsedTxn> {
 
 	private final ConcurrentHashMap<AID, Pair<REParsedTxn, MempoolMetadata>> data = new ConcurrentHashMap<>();
 	private final Map<SubstateId, Set<AID>> substateIndex = new ConcurrentHashMap<>();
-	private final MempoolConfig mempoolConfig;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+	private final int maxSize;
 
 	@Inject
 	public RadixEngineMempool(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		MempoolConfig mempoolConfig
+		@MempoolMaxSize int maxSize
 	) {
-		if (mempoolConfig.maxSize() <= 0) {
-			throw new IllegalArgumentException("mempool.maxSize must be positive: " + mempoolConfig.maxSize());
+		if (maxSize <= 0) {
+			throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
 		}
+		this.maxSize = maxSize;
 		this.radixEngine = radixEngine;
-		this.mempoolConfig = Objects.requireNonNull(mempoolConfig);
 	}
 
 	@Override
 	public void add(Txn txn) throws MempoolRejectedException {
-		if (this.data.size() >= this.mempoolConfig.maxSize()) {
+		if (this.data.size() >= maxSize) {
 			throw new MempoolFullException(
-				String.format("Mempool full: %s of %s items", this.data.size(), this.mempoolConfig.maxSize())
+				String.format("Mempool full: %s of %s items", this.data.size(), maxSize)
 			);
 		}
 
@@ -188,6 +187,6 @@ public final class RadixEngineMempool implements Mempool<REParsedTxn> {
 	@Override
 	public String toString() {
 		return String.format("%s[%x:%s/%s]",
-			getClass().getSimpleName(), System.identityHashCode(this), this.data.size(), this.mempoolConfig.maxSize());
+			getClass().getSimpleName(), System.identityHashCode(this), this.data.size(), maxSize);
 	}
 }

@@ -67,7 +67,6 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageQueue;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.network.addressbook.PeersView;
-import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -141,7 +140,7 @@ public class RecoveryLivenessTest {
 			new MockedGenesisModule(),
 			new CryptoModule(),
 			new RadixEngineModule(),
-			RadixEngineConfig.createModule(1, 100, epochCeilingView),
+			RadixEngineConfig.asModule(1, 100, epochCeilingView, 50),
 			new AbstractModule() {
 				@Override
 				public void configure() {
@@ -180,6 +179,8 @@ public class RecoveryLivenessTest {
 
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
+			MempoolConfig.asModule(10, 10),
+			RadixEngineConfig.asModule(1, 100, epochCeilingView, 50),
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {
 				@Override
@@ -189,8 +190,6 @@ public class RecoveryLivenessTest {
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(PeersView.class).toInstance(() -> allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(epochCeilingView));
-					bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ValidatorAddress.of(ecKeyPair.getPublicKey()));
 				}
