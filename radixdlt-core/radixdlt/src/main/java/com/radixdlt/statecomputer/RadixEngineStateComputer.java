@@ -129,12 +129,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 				mempool.add(txn);
 				systemCounters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
 			} catch (MempoolDuplicateException e) {
-				var failure = MempoolAddFailure.create(txn, e);
+				var failure = MempoolAddFailure.create(txn, e, origin);
 				// Idempotent commands
 				log.trace("Mempool duplicate txn: {} origin: {}", txn, origin);
 				return;
 			} catch (MempoolRejectedException e) {
-				var failure = MempoolAddFailure.create(txn, e);
+				var failure = MempoolAddFailure.create(txn, e, origin);
 				mempoolAddFailureEventDispatcher.dispatch(failure);
 				mempoolAdd.onFailure(e); // Required for blocking web apis
 				return;
