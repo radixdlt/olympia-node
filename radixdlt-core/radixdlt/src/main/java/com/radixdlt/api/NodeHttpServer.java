@@ -40,7 +40,8 @@ import static java.util.logging.Logger.getLogger;
  * Radix Node API
  */
 public final class NodeHttpServer implements ModuleRunner {
-	private static final int DEFAULT_PORT = 3333;
+	// TODO: Update to 3333 when splitting ports
+	private static final int DEFAULT_PORT = 8080;
 	private final int port;
 	private final Set<Controller> controllers;
 
