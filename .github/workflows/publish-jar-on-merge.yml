@@ -8,7 +8,7 @@ on:
     branches:
       - rc\/*
       - release\/*
-      - prod-universe-30
+      - prod-universe
 jobs:
   cancel_running_workflows:
     if: ${{ startsWith(github.ref, 'refs/heads/release/') ||  startsWith(github.ref, 'refs/heads/rc') }}
