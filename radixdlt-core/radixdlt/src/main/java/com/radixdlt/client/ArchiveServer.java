@@ -16,16 +16,13 @@
  *
  */
 
-package com.radixdlt.api;
+package com.radixdlt.client;
 
 import com.google.inject.Inject;
+import com.radixdlt.ModuleRunner;
 import com.radixdlt.properties.RuntimeProperties;
 import com.stijndewitt.undertow.cors.AllowAll;
 import com.stijndewitt.undertow.cors.Filter;
-
-import java.util.Set;
-import java.util.logging.Level;
-
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
@@ -33,24 +30,24 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 import io.undertow.util.StatusCodes;
 
+import java.util.logging.Level;
+
 import static java.util.logging.Logger.getLogger;
 
-/**
- * Radix REST API
- */
-//TODO: switch to Netty
-public final class RadixHttpServer {
-	public static final int DEFAULT_PORT = 8080;
-
+public class ArchiveServer implements ModuleRunner {
+	private static final int DEFAULT_PORT = 8080;
 	private final int port;
-	private final Set<Controller> controllers;
+	private final RpcController rpcController;
 
 	private Undertow server;
 
 	@Inject
-	public RadixHttpServer(Set<Controller> controllers, RuntimeProperties properties) {
-		this.port = properties.get("cp.port", DEFAULT_PORT);
-		this.controllers = controllers;
+	public ArchiveServer(
+		RpcController rpcController,
+		RuntimeProperties properties
+	) {
+		this.port = properties.get("client_api.port", DEFAULT_PORT);
+		this.rpcController = rpcController;
 	}
 
 	private static void fallbackHandler(HttpServerExchange exchange) {
@@ -67,21 +64,25 @@ public final class RadixHttpServer {
 		);
 	}
 
+	@Override
 	public void start() {
 		server = Undertow.builder()
 			.addHttpListener(port, "0.0.0.0")
 			.setHandler(configureRoutes())
 			.build();
-
 		server.start();
+	}
+
+	@Override
+	public void stop() {
+		this.server.stop();
 	}
 
 	private HttpHandler configureRoutes() {
 		var handler = Handlers.routing(true); // add path params to query params with this flag
-
-		controllers.forEach(c -> c.configureRoutes(handler));
-		handler.setFallbackHandler(RadixHttpServer::fallbackHandler);
-		handler.setInvalidMethodHandler(RadixHttpServer::invalidMethodHandler);
+		rpcController.configureRoutes(handler);
+		handler.setFallbackHandler(ArchiveServer::fallbackHandler);
+		handler.setInvalidMethodHandler(ArchiveServer::invalidMethodHandler);
 
 		return wrapWithCorsFilter(handler);
 	}
@@ -95,9 +96,5 @@ public final class RadixHttpServer {
 		filter.setUrlPattern("^.*$");
 
 		return filter;
-	}
-
-	public void stop() {
-		this.server.stop();
 	}
 }

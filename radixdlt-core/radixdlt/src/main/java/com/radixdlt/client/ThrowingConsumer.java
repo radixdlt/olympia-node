@@ -16,7 +16,7 @@
  *
  */
 
-package com.radixdlt.api.archive;
+package com.radixdlt.client;
 
 @FunctionalInterface
 public interface ThrowingConsumer<A> {

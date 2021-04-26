@@ -16,7 +16,7 @@
  *
  */
 
-package com.radixdlt.api.archive;
+package com.radixdlt.client;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -45,7 +45,7 @@ import static com.radixdlt.api.JsonRpcUtil.parseError;
 /**
  * Stateless Json Rpc 2.0 Server
  */
-public final class RadixJsonRpcServer {
+public final class JsonRpcServer {
 	private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
 	private static final Logger log = LogManager.getLogger();
 
@@ -60,11 +60,11 @@ public final class RadixJsonRpcServer {
 	private final Map<String, JsonRpcHandler> handlers = new HashMap<>();
 
 	@Inject
-	public RadixJsonRpcServer(Map<String, JsonRpcHandler> additionalHandlers) {
+	public JsonRpcServer(Map<String, JsonRpcHandler> additionalHandlers) {
 		this(additionalHandlers, DEFAULT_MAX_REQUEST_SIZE);
 	}
 
-	public RadixJsonRpcServer(
+	public JsonRpcServer(
 		Map<String, JsonRpcHandler> additionalHandlers,
 		long maxRequestSizeBytes
 	) {

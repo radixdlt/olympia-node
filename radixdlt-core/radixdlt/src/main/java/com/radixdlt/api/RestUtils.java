@@ -18,7 +18,7 @@
 
 package com.radixdlt.api;
 
-import com.radixdlt.api.archive.ThrowingConsumer;
+import com.radixdlt.client.ThrowingConsumer;
 import org.json.JSONException;
 import org.json.JSONObject;
 

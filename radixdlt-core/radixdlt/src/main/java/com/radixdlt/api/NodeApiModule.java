@@ -23,10 +23,12 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.construction.ConstructionController;
 import com.radixdlt.client.service.ScheduledCacheCleanup;
 import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
 import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.environment.Runners;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
@@ -36,10 +38,14 @@ import com.radixdlt.api.system.SystemController;
 /**
  * Configures the api including http server setup
  */
-public final class ApiModule extends AbstractModule {
+public final class NodeApiModule extends AbstractModule {
 	@Override
 	public void configure() {
-		bind(RadixHttpServer.class).in(Scopes.SINGLETON);
+		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
+			.addBinding(Runners.NODE_API)
+			.to(NodeHttpServer.class);
+		bind(NodeHttpServer.class).in(Scopes.SINGLETON);
+
 		var controllers = Multibinder.newSetBinder(binder(), Controller.class);
 		controllers.addBinding().to(ConstructionController.class).in(Scopes.SINGLETON);
 		controllers.addBinding().to(NodeController.class).in(Scopes.SINGLETON);
@@ -52,8 +58,5 @@ public final class ApiModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(AtomsRemovedFromMempool.class);
 		eventBinder.addBinding().toInstance(ScheduledQueueFlush.class);
 		eventBinder.addBinding().toInstance(ScheduledCacheCleanup.class);
-
-		// For additional handlers
-		MapBinder.newMapBinder(binder(), String.class, JsonRpcHandler.class);
 	}
 }

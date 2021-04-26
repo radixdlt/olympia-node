@@ -23,6 +23,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.RadixNodeModule;
+import com.radixdlt.client.ArchiveServer;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
@@ -38,7 +39,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.commons.cli.ParseException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
-import com.radixdlt.api.RadixHttpServer;
+import com.radixdlt.api.NodeHttpServer;
 import org.radix.utils.IOUtils;
 
 import java.io.IOException;
@@ -145,33 +146,33 @@ public final class Radix {
 		final PeerManager peerManager = injector.getInstance(PeerManager.class);
 		peerManager.start();
 
-		/*
-		final SystemInfoRunner infoStateRunner = injector.getInstance(SystemInfoRunner.class);
-		infoStateRunner.start();
-		 */
-
 		final Map<String, ModuleRunner> moduleRunners = injector.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { }));
 
-		final ModuleRunner systemInfoRunner = moduleRunners.get(Runners.SYSTEM_INFO);
+		final var systemInfoRunner = moduleRunners.get(Runners.SYSTEM_INFO);
 		systemInfoRunner.start();
 
-		final ModuleRunner syncRunner = moduleRunners.get(Runners.SYNC);
+		final var syncRunner = moduleRunners.get(Runners.SYNC);
 		syncRunner.start();
 
-		final ModuleRunner mempoolReceiverRunner = moduleRunners.get(Runners.MEMPOOL);
+		final var mempoolReceiverRunner = moduleRunners.get(Runners.MEMPOOL);
 		mempoolReceiverRunner.start();
 
-		final ModuleRunner applicationRunner = moduleRunners.get(Runners.APPLICATION);
+		final var applicationRunner = moduleRunners.get(Runners.APPLICATION);
 		applicationRunner.start();
 
-		final ModuleRunner chaosRunner = moduleRunners.get(Runners.CHAOS);
+		final var chaosRunner = moduleRunners.get(Runners.CHAOS);
 		if (chaosRunner != null) {
 			chaosRunner.start();
 		}
 
 		// start API services
-		final var httpServer = injector.getInstance(RadixHttpServer.class);
+		final var httpServer = moduleRunners.get(Runners.NODE_API);
 		httpServer.start();
+
+		final var archiveServer = moduleRunners.get(Runners.ARCHIVE_API);
+		if (archiveServer != null) {
+			archiveServer.start();
+		}
 
 		final var consensusRunner = moduleRunners.get(Runners.CONSENSUS);
 		consensusRunner.start();

@@ -16,7 +16,7 @@
  *
  */
 
-package com.radixdlt.api.archive;
+package com.radixdlt.client;
 
 import org.junit.Test;
 import com.radixdlt.api.JsonRpcUtil.RpcError;
@@ -26,10 +26,10 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
-public class RadixJsonRpcServerTest {
+public class JsonRpcServerTest {
 	@Test
 	public void when_send_json_rpc_request_with_no_id__return_json_error_response() {
-		var server = new RadixJsonRpcServer(Map.of());
+		var server = new JsonRpcServer(Map.of());
 
 		var response = server.handleRpc(jsonObject().toString());
 
@@ -44,7 +44,7 @@ public class RadixJsonRpcServerTest {
 
 	@Test
 	public void when_send_oversized_json_rpc_request_with__return_json_error_response() {
-		var server = new RadixJsonRpcServer(Map.of(), 5);
+		var server = new JsonRpcServer(Map.of(), 5);
 
 		var response = server.handleRpc("123456");
 		assertThat(response.getString("jsonrpc")).isEqualTo("2.0");

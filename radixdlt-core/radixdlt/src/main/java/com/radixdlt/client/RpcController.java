@@ -16,7 +16,7 @@
  *
  */
 
-package com.radixdlt.api.archive;
+package com.radixdlt.client;
 
 import com.radixdlt.api.Controller;
 
@@ -29,10 +29,10 @@ import io.undertow.server.RoutingHandler;
 import static com.radixdlt.api.RestUtils.respondAsync;
 
 public final class RpcController implements Controller {
-	private final RadixJsonRpcServer jsonRpcServer;
+	private final JsonRpcServer jsonRpcServer;
 
 	@Inject
-	public RpcController(RadixJsonRpcServer jsonRpcServer) {
+	public RpcController(JsonRpcServer jsonRpcServer) {
 		this.jsonRpcServer = jsonRpcServer;
 	}
 

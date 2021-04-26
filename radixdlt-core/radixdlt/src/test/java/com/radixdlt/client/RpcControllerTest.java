@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  *
  */
-package com.radixdlt.api.archive;
+package com.radixdlt.client;
 
 import org.junit.Test;
 
@@ -28,7 +28,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public class RpcControllerTest {
-	private final RadixJsonRpcServer jsonRpcServer = new RadixJsonRpcServer(Map.of());
+	private final JsonRpcServer jsonRpcServer = new JsonRpcServer(Map.of());
 	private final RpcController rpcController = new RpcController(jsonRpcServer);
 
 	@Test
