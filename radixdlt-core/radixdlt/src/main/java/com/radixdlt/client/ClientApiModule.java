@@ -125,6 +125,24 @@ public class ClientApiModule extends AbstractModule {
 		return highLevelApiHandler::handleUnstakePositions;
 	}
 
+	@ProvidesIntoMap
+	@StringMapKey("radix.lookupValidator")
+	public JsonRpcHandler lookupValidator(HighLevelApiHandler highLevelApiHandler) {
+		return highLevelApiHandler::handleLookupValidator;
+	}
+
+	@ProvidesIntoMap
+	@StringMapKey("radix.networkTransactionThroughput")
+	public JsonRpcHandler networkTransactionThroughput(HighLevelApiHandler highLevelApiHandler) {
+		return highLevelApiHandler::handleNetworkTransactionThroughput;
+	}
+
+	@ProvidesIntoMap
+	@StringMapKey("radix.networkTransactionDemand")
+	public JsonRpcHandler networkTransactionDemand(HighLevelApiHandler highLevelApiHandler) {
+		return highLevelApiHandler::handleNetworkTransactionDemand;
+	}
+
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> clientApiStore(ClientApiStore clientApiStore) {
 		return new EventProcessorOnRunner<>(

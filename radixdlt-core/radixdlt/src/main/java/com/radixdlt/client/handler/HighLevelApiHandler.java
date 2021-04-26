@@ -18,6 +18,7 @@
 package com.radixdlt.client.handler;
 
 import com.radixdlt.client.AccountAddress;
+import com.radixdlt.client.service.NetworkInfoService;
 import com.radixdlt.client.store.berkeley.UnstakeEntry;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.crypto.HashUtils;
@@ -61,6 +62,7 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredParameters;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredStringParameter;
 
 import static com.radixdlt.utils.functional.Optionals.allOf;
+import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class HighLevelApiHandler {
@@ -68,6 +70,8 @@ public class HighLevelApiHandler {
 	private final TransactionStatusService transactionStatusService;
 	private final SubmissionService submissionService;
 	private final ValidatorInfoService validatorInfoService;
+	private final NetworkInfoService networkInfoService;
+
 	private final byte magic;
 
 	@Inject
@@ -75,12 +79,15 @@ public class HighLevelApiHandler {
 		HighLevelApiService highLevelApiService,
 		TransactionStatusService transactionStatusService,
 		SubmissionService submissionService,
-		ValidatorInfoService validatorInfoService
+		ValidatorInfoService validatorInfoService,
+		NetworkInfoService networkInfoService
 	) {
 		this.highLevelApiService = highLevelApiService;
 		this.transactionStatusService = transactionStatusService;
 		this.submissionService = submissionService;
 		this.validatorInfoService = validatorInfoService;
+		this.networkInfoService = networkInfoService;
+
 		this.magic = (byte) highLevelApiService.getUniverseMagic();
 	}
 
@@ -115,14 +122,16 @@ public class HighLevelApiHandler {
 	public JSONObject handleTransactionStatus(JSONObject request) {
 		return withRequiredStringParameter(
 			request,
-			(params, idString) -> AID.fromString(idString).map(this::formatTransactionStatus)
+			(params, idString) -> AID.fromString(idString)
+				.map(txId -> transactionStatusService.getTransactionStatus(txId).asJson(formatTxId(txId)))
 		);
 	}
 
 	public JSONObject handleLookupTransaction(JSONObject request) {
 		return withRequiredStringParameter(
 			request,
-			(params, idString) -> AID.fromString(idString).flatMap(this::respondWithTransactionLookupResult)
+			(params, idString) -> AID.fromString(idString)
+				.flatMap(txId -> highLevelApiService.getTransaction(txId).map(TxHistoryEntry::asJson))
 		);
 	}
 
@@ -167,7 +176,7 @@ public class HighLevelApiHandler {
 			request,
 			List.of("size"),
 			List.of("cursor"),
-			params -> respondWithValidators(request, params)
+			params -> allOf(Result.ok(request), parseSize(params)).flatMap(this::formatValidators)
 		);
 	}
 
@@ -189,10 +198,26 @@ public class HighLevelApiHandler {
 		);
 	}
 
+	public JSONObject handleLookupValidator(JSONObject request) {
+		return withRequiredStringParameter(
+			request,
+			(params, address) -> ValidatorAddress.fromString(address)
+				.flatMap(validatorInfoService::getValidator)
+				.map(ValidatorInfoDetails::asJson)
+		);
+	}
+
+	public JSONObject handleNetworkTransactionThroughput(JSONObject request) {
+		return response(request, jsonObject().put("tps", networkInfoService.throughput()));
+	}
+
+	public JSONObject handleNetworkTransactionDemand(JSONObject request) {
+		return response(request, jsonObject().put("tps", networkInfoService.demand()));
+	}
+
 	//-----------------------------------------------------------------------------------------------------
 	// internal processing
 	//-----------------------------------------------------------------------------------------------------
-
 
 	private JSONObject formatUnstakePositions(List<UnstakeEntry> balances) {
 		var array = fromList(balances, unstake ->
@@ -205,23 +230,13 @@ public class HighLevelApiHandler {
 		return jsonObject().put(ARRAY, array);
 	}
 
-	private Result<JSONObject> respondWithTransactionLookupResult(AID txId) {
-		return highLevelApiService.getTransaction(txId)
-			.map(TxHistoryEntry::asJson);
-	}
-
 	private Result<JSONObject> respondWithTransactionHistory(JSONObject params, Optional<Instant> cursor) {
-		return Result.allOf(parseAddress(params), parseSize(params), Result.ok(cursor))
+		return allOf(parseAddress(params), parseSize(params), Result.ok(cursor))
 			.flatMap(this::formatTransactionHistory);
 	}
 
-	private Result<JSONObject> respondWithValidators(JSONObject request, JSONObject params) {
-		return Result.allOf(Result.ok(request), parseSize(params))
-			.flatMap(this::formatValidators);
-	}
-
 	private Result<JSONObject> respondFinalizationResult(JSONObject params) {
-		return Result.allOf(parseBlob(params), parseSignatureDer(params), parsePublicKey(params))
+		return allOf(parseBlob(params), parseSignatureDer(params), parsePublicKey(params))
 			.flatMap((blob, signature, publicKey) ->
 						 toRecoverable(blob, signature, publicKey)
 							 .flatMap(recoverable -> submissionService.calculateTxId(blob, recoverable)))
@@ -229,7 +244,7 @@ public class HighLevelApiHandler {
 	}
 
 	private Result<JSONObject> respondSubmissionResult(JSONObject params) {
-		return Result.allOf(parseBlob(params), parseSignatureDer(params), parsePublicKey(params), parseTxId(params))
+		return allOf(parseBlob(params), parseSignatureDer(params), parsePublicKey(params), parseTxId(params))
 			.flatMap((blob, signature, publicKey, txId) ->
 						 toRecoverable(blob, signature, publicKey)
 							 .flatMap(recoverable -> submissionService.submitTx(blob, recoverable, txId)))
@@ -262,10 +277,6 @@ public class HighLevelApiHandler {
 		return validatorInfoService
 			.getValidators(size, parseAddressCursor(request))
 			.map(tuple -> tuple.map(this::formatValidatorResponse));
-	}
-
-	private JSONObject formatTransactionStatus(AID txId) {
-		return transactionStatusService.getTransactionStatus(txId).asJson(formatTxId(txId));
 	}
 
 	private JSONObject formatTxId(AID txId) {
