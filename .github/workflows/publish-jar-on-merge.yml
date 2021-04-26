@@ -8,6 +8,7 @@ on:
     branches:
       - rc\/*
       - release\/*
+      - prod-universe-30
 jobs:
   cancel_running_workflows:
     if: ${{ startsWith(github.ref, 'refs/heads/release/') ||  startsWith(github.ref, 'refs/heads/rc') }}
@@ -49,7 +50,7 @@ jobs:
           fi
           version=$(./gradlew radixCiVersion | grep radixdlt-version | cut -d: -f2)
           echo "Version: $version"
-          ./gradlew build -x test
+          ./gradlew clean build -x test
       - name: Archive radixdlt-core build distributions
         uses: actions/upload-artifact@v2
         with:
