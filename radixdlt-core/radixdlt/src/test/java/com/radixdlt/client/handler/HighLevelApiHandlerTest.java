@@ -17,6 +17,7 @@
 package com.radixdlt.client.handler;
 
 import com.radixdlt.client.AccountAddress;
+import com.radixdlt.client.service.NetworkInfoService;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.client.Rri;
 import org.bouncycastle.asn1.ASN1EncodableVector;
@@ -87,8 +88,11 @@ public class HighLevelApiHandlerTest {
 	private final TransactionStatusService transactionStatusService = mock(TransactionStatusService.class);
 	private final SubmissionService submissionService = mock(SubmissionService.class);
 	private final ValidatorInfoService validatorInfoService = mock(ValidatorInfoService.class);
+	private final NetworkInfoService networkInfoService = mock(NetworkInfoService.class);
 	private final HighLevelApiHandler handler = new HighLevelApiHandler(
-		highLevelApiService, transactionStatusService, submissionService, validatorInfoService
+		highLevelApiService, transactionStatusService,
+		submissionService, validatorInfoService,
+		networkInfoService
 	);
 
 	@Test
@@ -333,6 +337,54 @@ public class HighLevelApiHandlerTest {
 
 		assertEquals(UInt256.SEVEN, list.getJSONObject(2).get("totalDelegatedStake"));
 		assertEquals("v3", list.getJSONObject(2).get("name"));
+	}
+
+	@Test
+	public void testLookupValidator() {
+		when(validatorInfoService.getValidator(eq(V1)))
+			.thenReturn(Result.ok(createValidator(V1, "v1", UInt256.FIVE)));
+
+		var params = jsonArray().put(ValidatorAddress.of(V1));
+		var response = handler.handleLookupValidator(requestWith(params));
+
+		assertNotNull(response);
+		assertTrue(response.has("result"));
+
+		var result = response.getJSONObject("result");
+
+		assertNotNull(result);
+
+		assertEquals(UInt256.FIVE, result.get("totalDelegatedStake"));
+		assertEquals("http://v1.com", result.get("infoURL"));
+		assertEquals("v1", result.get("name"));
+	}
+
+	@Test
+	public void testNetworkTransactionThroughput() {
+		when(networkInfoService.throughput())
+			.thenReturn(123L);
+
+		var response = handler.handleNetworkTransactionThroughput(requestWith());
+
+		assertTrue(response.has("result"));
+
+		var result = response.getJSONObject("result");
+
+		assertEquals(123L, result.get("tps"));
+	}
+
+	@Test
+	public void testNetworkTransactionDemand() {
+		when(networkInfoService.demand())
+			.thenReturn(123L);
+
+		var response = handler.handleNetworkTransactionDemand(requestWith());
+
+		assertTrue(response.has("result"));
+
+		var result = response.getJSONObject("result");
+
+		assertEquals(123L, result.get("tps"));
 	}
 
 	private ValidatorInfoDetails createValidator(ECPublicKey v1, String name, UInt256 stake) {
