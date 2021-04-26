@@ -6,16 +6,17 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package org.radix.api.http;
+package com.radixdlt.chaos;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
@@ -28,13 +29,14 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.serialization.DeserializeException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
+import com.radixdlt.api.Controller;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import static org.radix.api.http.RestUtils.*;
-import static org.radix.api.http.RestUtils.respond;
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.RestUtils.*;
+import static com.radixdlt.api.RestUtils.respond;
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 public final class ChaosController implements Controller {
 	private final EventDispatcher<MempoolFillerUpdate> mempoolDispatcher;

@@ -16,13 +16,9 @@
  *
  */
 
-package org.radix.api.jsonrpc;
+package com.radixdlt.client;
 
-import org.json.JSONObject;
-
-/**
- * Handles Json RPC requests
- */
-public interface JsonRpcHandler {
-	JSONObject execute(JSONObject param);
+@FunctionalInterface
+public interface ThrowingConsumer<A> {
+	void accept(A arg1) throws Exception;
 }

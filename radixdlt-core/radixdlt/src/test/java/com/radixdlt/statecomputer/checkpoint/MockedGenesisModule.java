@@ -60,7 +60,7 @@ public final class MockedGenesisModule extends AbstractModule {
 	public ImmutableList<StakeDelegation> stakeDelegations(
 		@Genesis ImmutableList<ECKeyPair> initialValidators
 	) {
-		return initialValidators.stream().map(v -> StakeDelegation.of(v, v.getPublicKey(), UInt256.ONE))
+		return initialValidators.stream().map(v -> StakeDelegation.of(v.getPublicKey(), v.getPublicKey(), UInt256.ONE))
 			.collect(ImmutableList.toImmutableList());
 	}
 

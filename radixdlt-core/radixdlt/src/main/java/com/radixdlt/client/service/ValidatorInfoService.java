@@ -18,6 +18,7 @@
 package com.radixdlt.client.service;
 
 import com.google.inject.Inject;
+import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.client.api.ValidatorInfoDetails;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
@@ -63,6 +64,17 @@ public class ValidatorInfoService {
 		var newCursor = list.stream().reduce(FunctionalUtils::findLast).map(ValidatorInfoDetails::getValidatorKey);
 
 		return Result.ok(tuple(newCursor, list));
+	}
+
+	public Result<ValidatorInfoDetails> getValidator(ECPublicKey validatorPublicKey) {
+		var validators = radixEngine.getComputedState(RegisteredValidators.class);
+		var stakes = radixEngine.getComputedState(Stakes.class);
+
+		return Result.fromOptional(
+			validators.mapSingle(validatorPublicKey, details -> fillDetails(validatorPublicKey, details, stakes)),
+			"Validator {0} not found",
+			ValidatorAddress.of(validatorPublicKey)
+		);
 	}
 
 	private ValidatorInfoDetails fillDetails(ECPublicKey validatorKey, ValidatorDetails details, Stakes stakes) {

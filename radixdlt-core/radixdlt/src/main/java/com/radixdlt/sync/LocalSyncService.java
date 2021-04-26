@@ -375,7 +375,7 @@ public final class LocalSyncService {
 		} else {
 			this.syncLedgerUpdateTimeoutDispatcher.dispatch(
 				SyncLedgerUpdateTimeout.create(),
-				500L
+				1000L
 			);
 			this.verifiedSender.sendVerifiedSyncResponse(syncResponse);
 			return currentState.clearWaitingFor();

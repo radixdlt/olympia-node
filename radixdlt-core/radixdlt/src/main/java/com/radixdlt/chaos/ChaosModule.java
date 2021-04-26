@@ -18,8 +18,11 @@
 package com.radixdlt.chaos;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.chaos.messageflooder.MessageFlooderModule;
+import com.radixdlt.api.Controller;
 
 /**
  * Module for chaos type functions
@@ -27,6 +30,8 @@ import com.radixdlt.chaos.messageflooder.MessageFlooderModule;
 public final class ChaosModule extends AbstractModule {
 	@Override
 	public void configure() {
+		var controllers = Multibinder.newSetBinder(binder(), Controller.class);
+		controllers.addBinding().to(ChaosController.class).in(Scopes.SINGLETON);
 		install(new MessageFlooderModule());
 		install(new MempoolFillerModule());
 	}

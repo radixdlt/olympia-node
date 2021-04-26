@@ -94,7 +94,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 		final var issuances = tokenIssuances.stream()
 			.collect(ImmutableMap.toImmutableMap(TokenIssuance::receiver, TokenIssuance::amount, UInt256::add));
 		final var requiredDelegations = stakeDelegations.stream()
-			.collect(ImmutableMap.toImmutableMap(sd -> sd.staker().getPublicKey(), StakeDelegation::amount, UInt256::add));
+			.collect(ImmutableMap.toImmutableMap(StakeDelegation::staker, StakeDelegation::amount, UInt256::add));
 		requiredDelegations.forEach((pk, amount) -> {
 			final var issuedAmount = issuances.getOrDefault(pk, UInt256.ZERO);
 			if (amount.compareTo(issuedAmount) > 0) {
@@ -130,7 +130,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 
 			// Initial stakes
 			for (var stakeDelegation : stakeDelegations) {
-				var delegateAddr = REAddr.ofPubKeyAccount(stakeDelegation.staker().getPublicKey());
+				var delegateAddr = REAddr.ofPubKeyAccount(stakeDelegation.staker());
 				var stakerTxn = branch.construct(
 					new StakeTokens(delegateAddr, stakeDelegation.delegate(), stakeDelegation.amount())
 				).buildWithoutSignature();

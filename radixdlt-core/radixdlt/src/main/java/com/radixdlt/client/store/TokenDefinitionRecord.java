@@ -34,7 +34,7 @@ import com.radixdlt.serialization.SerializerId2;
 
 import java.util.Objects;
 
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 @SerializerId2("radix.api.token")
 public class TokenDefinitionRecord {

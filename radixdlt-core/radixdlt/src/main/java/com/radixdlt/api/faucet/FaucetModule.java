@@ -31,8 +31,7 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-import org.radix.api.http.Controller;
-import org.radix.api.http.FaucetController;
+import com.radixdlt.api.Controller;
 
 import java.util.Set;
 import java.util.stream.Collectors;

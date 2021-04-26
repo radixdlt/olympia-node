@@ -1,23 +1,25 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package org.radix.api.http;
+package com.radixdlt.api;
 
 import com.google.inject.Inject;
+import com.radixdlt.ModuleRunner;
 import com.radixdlt.properties.RuntimeProperties;
 import com.stijndewitt.undertow.cors.AllowAll;
 import com.stijndewitt.undertow.cors.Filter;
@@ -35,20 +37,22 @@ import io.undertow.util.StatusCodes;
 import static java.util.logging.Logger.getLogger;
 
 /**
- * Radix REST API
+ * Radix Node API
  */
-//TODO: switch to Netty
-public final class RadixHttpServer {
-	public static final int DEFAULT_PORT = 8080;
-
+public final class NodeHttpServer implements ModuleRunner {
+	// TODO: Update to 3333 when splitting ports
+	private static final int DEFAULT_PORT = 8080;
 	private final int port;
 	private final Set<Controller> controllers;
 
 	private Undertow server;
 
 	@Inject
-	public RadixHttpServer(Set<Controller> controllers, RuntimeProperties properties) {
-		this.port = properties.get("cp.port", DEFAULT_PORT);
+	public NodeHttpServer(
+		Set<Controller> controllers,
+		RuntimeProperties properties
+	) {
+		this.port = properties.get("node_api.port", DEFAULT_PORT);
 		this.controllers = controllers;
 	}
 
@@ -66,21 +70,26 @@ public final class RadixHttpServer {
 		);
 	}
 
+	@Override
 	public void start() {
 		server = Undertow.builder()
 			.addHttpListener(port, "0.0.0.0")
 			.setHandler(configureRoutes())
 			.build();
-
 		server.start();
+	}
+
+	@Override
+	public void stop() {
+		this.server.stop();
 	}
 
 	private HttpHandler configureRoutes() {
 		var handler = Handlers.routing(true); // add path params to query params with this flag
 
 		controllers.forEach(c -> c.configureRoutes(handler));
-		handler.setFallbackHandler(RadixHttpServer::fallbackHandler);
-		handler.setInvalidMethodHandler(RadixHttpServer::invalidMethodHandler);
+		handler.setFallbackHandler(NodeHttpServer::fallbackHandler);
+		handler.setInvalidMethodHandler(NodeHttpServer::invalidMethodHandler);
 
 		return wrapWithCorsFilter(handler);
 	}
@@ -94,9 +103,5 @@ public final class RadixHttpServer {
 		filter.setUrlPattern("^.*$");
 
 		return filter;
-	}
-
-	public void stop() {
-		this.server.stop();
 	}
 }

@@ -17,7 +17,7 @@
 
 package com.radixdlt;
 
-import com.radixdlt.api.ApiModule;
+import com.radixdlt.api.NodeApiModule;
 
 import com.radixdlt.api.faucet.FaucetModule;
 import com.radixdlt.statecomputer.RadixEngineConfig;
@@ -34,7 +34,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.application.NodeApplicationModule;
 import com.radixdlt.chaos.ChaosModule;
-import com.radixdlt.client.ClientApiModule;
+import com.radixdlt.client.ArchiveApiModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -94,7 +94,7 @@ public final class RadixNodeModule extends AbstractModule {
 		install(MempoolConfig.asModule(mempoolMaxSize, 5, 60000, 60000, 100));
 
 		// Sync configuration
-		final long syncPatience = properties.get("sync.patience", 2000L);
+		final long syncPatience = properties.get("sync.patience", 5000L);
 		bind(SyncConfig.class).toInstance(SyncConfig.of(syncPatience, 10, 3000L));
 
 		// Radix Engine configuration
@@ -110,15 +110,23 @@ public final class RadixNodeModule extends AbstractModule {
 
 		install(new DispatcherModule());
 
+
+		// Application
+		install(new NodeApplicationModule());
+
 		// API
-		install(new ApiModule());
+		install(new NodeApiModule());
 		if (properties.get("client_api.enable", false)) {
 			log.info("Enabling high level API");
-			install(new ClientApiModule());
+			install(new ArchiveApiModule());
 		}
-		if (properties.get("faucet.enable", true)) {
+		if (properties.get("faucet.enable", false)) {
 			log.info("Enabling faucet API");
 			install(new FaucetModule());
+		}
+		if (properties.get("chaos.enable", false)) {
+			log.info("Enabling chaos API");
+			install(new ChaosModule());
 		}
 
 		// Consensus
@@ -174,13 +182,6 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new TCPTransportModule(properties));
 		install(new AddressBookModule());
 		install(new HostIpModule(properties));
-
-		// Application
-		install(new NodeApplicationModule());
-
-		if (properties.get("chaos.enable", false)) {
-			install(new ChaosModule());
-		}
 	}
 
 	@Provides

@@ -30,8 +30,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-import static org.radix.api.jsonrpc.JsonRpcUtil.fromList;
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.JsonRpcUtil.fromList;
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 import static java.util.Objects.requireNonNull;
 

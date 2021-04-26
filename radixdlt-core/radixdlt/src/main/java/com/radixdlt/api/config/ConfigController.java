@@ -19,6 +19,7 @@
 package com.radixdlt.api.config;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.Controller;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
@@ -31,9 +32,8 @@ import com.radixdlt.statecomputer.MinValidators;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 import org.json.JSONObject;
-import org.radix.api.http.Controller;
 
-import static org.radix.api.http.RestUtils.respond;
+import static com.radixdlt.api.RestUtils.respond;
 
 public class ConfigController implements Controller {
 	private final long pacemakerTimeout;
