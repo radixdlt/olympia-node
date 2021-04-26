@@ -131,8 +131,8 @@ public class RadixEngineStateComputerTest {
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
 				bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(engineStore);
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
-				bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L));
 
+				install(MempoolConfig.asModule(10, 10));
 				install(RadixEngineConfig.asModule(1, 100, 10, 50));
 
 				bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);

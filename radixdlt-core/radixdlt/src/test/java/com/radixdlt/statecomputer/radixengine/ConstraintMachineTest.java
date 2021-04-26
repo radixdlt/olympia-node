@@ -50,6 +50,7 @@ public class ConstraintMachineTest {
 
 	private Injector createInjector() {
 		return Guice.createInjector(
+			MempoolConfig.asModule(1000, 10),
 			RadixEngineConfig.asModule(1, 100, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
@@ -57,7 +58,6 @@ public class ConstraintMachineTest {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
-					bind(MempoolConfig.class).toInstance(MempoolConfig.of(1000L, 10L));
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
 			}

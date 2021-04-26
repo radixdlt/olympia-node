@@ -407,11 +407,7 @@ public class SimulationTest {
 
 		public Builder ledgerAndMempool() {
 			this.ledgerType = LedgerType.LEDGER_AND_LOCALMEMPOOL;
-			this.modules.add(new AbstractModule() {
-				public void configure() {
-					bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L));
-				}
-			});
+			this.modules.add(MempoolConfig.asModule(10, 10));
 			return this;
 		}
 
@@ -421,7 +417,7 @@ public class SimulationTest {
 				@Override
 				protected void configure() {
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
-					bind(MempoolConfig.class).toInstance(MempoolConfig.of(100L, 10L));
+					install(MempoolConfig.asModule(100, 10));
 					install(RadixEngineConfig.asModule(minValidators, maxValidators, epochHighView, 5));
 				}
 

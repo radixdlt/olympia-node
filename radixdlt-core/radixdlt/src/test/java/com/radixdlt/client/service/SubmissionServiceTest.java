@@ -134,6 +134,7 @@ public class SubmissionServiceTest {
 			@Override
 			public void configure() {
 				install(RadixEngineConfig.asModule(1, 100, 10, 50));
+				install(MempoolConfig.asModule(10, 10));
 
 				bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
 					.toInstance(registeredNodes);
@@ -141,7 +142,6 @@ public class SubmissionServiceTest {
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
 				bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(engineStore);
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
-				bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L));
 
 				bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 				bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() { })

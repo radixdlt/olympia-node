@@ -108,14 +108,14 @@ public class BerkeleyClientApiStoreTest {
 
 	private Injector createInjector() {
 		return Guice.createInjector(
-			new SingleNodeAndPeersDeterministicNetworkModule(),
+			MempoolConfig.asModule(1000, 0),
 			RadixEngineConfig.asModule(1, 100, 100, 50),
+			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
-					bind(MempoolConfig.class).toInstance(MempoolConfig.of(1000L, 0L));
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
 			}

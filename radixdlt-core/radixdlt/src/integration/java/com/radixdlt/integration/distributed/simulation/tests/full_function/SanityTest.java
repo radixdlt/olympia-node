@@ -17,7 +17,6 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.full_function;
 
-import com.google.inject.AbstractModule;
 import com.radixdlt.integration.distributed.simulation.monitors.application.ApplicationMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
@@ -44,12 +43,7 @@ public class SanityTest {
 			NetworkLatencies.fixed()
 		)
 		.fullFunctionNodes(10L, SyncConfig.of(400L, 10, 2000L))
-		.addNodeModule(new AbstractModule() {
-			@Override
-			protected void configure() {
-				bind(MempoolConfig.class).toInstance(MempoolConfig.of(1000L, 10L));
-			}
-		})
+		.addNodeModule(MempoolConfig.asModule(1000, 10))
 		.addTestModules(
 			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(1, TimeUnit.SECONDS),

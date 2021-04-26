@@ -64,6 +64,7 @@ public class MempoolFillerTest {
 
 	private Injector getInjector() {
 		return Guice.createInjector(
+			MempoolConfig.asModule(10, 10),
 			RadixEngineConfig.asModule(1, 100, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
@@ -71,9 +72,7 @@ public class MempoolFillerTest {
 				@Override
 				protected void configure() {
 				    install(new MempoolFillerModule());
-
 					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
-					bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L));
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
 

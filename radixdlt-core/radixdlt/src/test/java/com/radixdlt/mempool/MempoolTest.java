@@ -71,18 +71,19 @@ public class MempoolTest {
 	@Inject private RadixEngineStateComputer stateComputer;
 	@Inject private SystemCounters systemCounters;
 	@Inject private PeersView peersView;
-	@Inject private MempoolConfig mempoolConfig;
+	@Inject @MempoolRelayInitialDelay private long initialDelay;
+	@Inject @MempoolRelayRepeatDelay private long repeatDelay;
 
 	private Injector getInjector() {
 		return Guice.createInjector(
-			new SingleNodeAndPeersDeterministicNetworkModule(),
+			MempoolConfig.asModule(10, 10, 200, 500, 10),
 			RadixEngineConfig.asModule(1, 100, 100, 50),
+			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("numPeers")).to(NUM_PEERS);
-					bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L, 200L, 500L, 10));
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
 			}
@@ -307,7 +308,7 @@ public class MempoolTest {
 		assertThat(network.allMessages()).isEmpty();
 
 		// should relay after initial delay
-		Thread.sleep(mempoolConfig.commandRelayInitialDelay());
+		Thread.sleep(initialDelay);
 		processor.handleMessage(self, MempoolRelayTrigger.create());
 		assertThat(network.allMessages())
 			.extracting(ControlledMessage::message)
@@ -319,7 +320,7 @@ public class MempoolTest {
 		assertThat(network.allMessages()).isEmpty();
 
 		// should relay after repeat delay
-		Thread.sleep(mempoolConfig.commandRelayRepeatDelay());
+		Thread.sleep(repeatDelay);
 		processor.handleMessage(self, MempoolRelayTrigger.create());
 		assertThat(network.allMessages())
 			.extracting(ControlledMessage::message)

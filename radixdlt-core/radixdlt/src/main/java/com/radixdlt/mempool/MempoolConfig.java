@@ -17,71 +17,36 @@
 
 package com.radixdlt.mempool;
 
+import com.google.inject.AbstractModule;
+
 /**
  * Configuration parameters for mempool.
  */
-public interface MempoolConfig {
-	static MempoolConfig of(long maxSize, long throttleMs) {
-		return of(maxSize, throttleMs, 60000L, 60000L, 100);
+public final class MempoolConfig {
+	private MempoolConfig() {
+		throw new IllegalStateException("Cannot instantiate.");
 	}
 
-	static MempoolConfig of(
-		long maxSize,
+	public static AbstractModule asModule(int maxSize, long throttleMs) {
+		return asModule(maxSize, throttleMs, 60000, 60000, 100);
+	}
+
+	public static AbstractModule asModule(
+		int maxSize,
 		long throttleMs,
-		long commandRelayInitialDelay,
-		long commandRelayRepeatDelay,
+		long relayInitialDelay,
+		long relayRepeatDelay,
 		int relayMaxPeers
 	) {
-		return new MempoolConfig() {
+		return new AbstractModule() {
 			@Override
-			public long maxSize() {
-				return maxSize;
-			}
-
-			@Override
-			public long throttleMs() {
-				return throttleMs;
-			}
-
-			@Override
-			public long commandRelayInitialDelay() {
-				return commandRelayInitialDelay;
-			}
-
-			@Override
-			public long commandRelayRepeatDelay() {
-				return commandRelayRepeatDelay;
-			}
-
-			@Override
-			public int relayMaxPeers() {
-				return relayMaxPeers;
+			protected void configure() {
+				bindConstant().annotatedWith(MempoolMaxSize.class).to(maxSize);
+				bindConstant().annotatedWith(MempoolThrottleMs.class).to(throttleMs);
+				bindConstant().annotatedWith(MempoolRelayInitialDelay.class).to(relayInitialDelay);
+				bindConstant().annotatedWith(MempoolRelayRepeatDelay.class).to(relayRepeatDelay);
+				bindConstant().annotatedWith(MempoolRelayMaxPeers.class).to(relayMaxPeers);
 			}
 		};
 	}
-
-	/**
-	 * Maximum number of commands that a mempool can store.
-	 */
-	long maxSize();
-
-	/**
-	The amount of time in milliseconds to throttle mempool additions
-	 */
-	long throttleMs();
-
-	/**
-	 * Specifies how long a command needs to stay in a mempool in order to be relayed to other peers.
-	 */
-	long commandRelayInitialDelay();
-
-	/**
-	 * Specifies how often command is re-relayed once it's eligible for relay as per commandRelayInitialDelay().
-	 */
-	long commandRelayRepeatDelay();
-
-	/**
-	 * Maximum numbers of peers to relay the command to.
-	 */
-	int relayMaxPeers();
 }

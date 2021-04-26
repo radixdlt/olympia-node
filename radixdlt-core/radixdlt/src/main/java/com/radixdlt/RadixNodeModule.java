@@ -20,11 +20,7 @@ package com.radixdlt;
 import com.radixdlt.api.ApiModule;
 
 import com.radixdlt.api.faucet.FaucetModule;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.statecomputer.EpochCeilingView;
-import com.radixdlt.statecomputer.MaxTxnsPerProposal;
-import com.radixdlt.statecomputer.MaxValidators;
-import com.radixdlt.statecomputer.MinValidators;
+import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -94,9 +90,8 @@ public final class RadixNodeModule extends AbstractModule {
 		bindConstant().annotatedWith(PacemakerMaxExponent.class).to(6);
 
 		// Mempool configuration
-		bind(MempoolConfig.class).toInstance(
-			MempoolConfig.of(properties.get("mempool.maxSize", 10000), 5L)
-		);
+		var mempoolMaxSize = properties.get("mempool.maxSize", 10000);
+		install(MempoolConfig.asModule(mempoolMaxSize, 5, 60000, 60000, 100));
 
 		// Sync configuration
 		final long syncPatience = properties.get("sync.patience", 2000L);
@@ -106,10 +101,7 @@ public final class RadixNodeModule extends AbstractModule {
 		// These cannot be changed without introducing possible forks with
 		// the network.
 		// TODO: Move these deeper into radix engine.
-		bindConstant().annotatedWith(MinValidators.class).to(1);
-		bindConstant().annotatedWith(MaxValidators.class).to(100);
-		bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100000L));
-		bindConstant().annotatedWith(MaxTxnsPerProposal.class).to(50);
+		install(RadixEngineConfig.asModule(1, 100, 100000, 50));
 
 		// System (e.g. time, random)
 		install(new SystemModule());

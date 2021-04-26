@@ -41,26 +41,26 @@ public class MempoolReceiverModule extends AbstractModule {
 	@ProvidesIntoSet
 	private EventProcessorOnRunner<?> mempoolAddEventProcessor(
 		StateComputerLedger stateComputerLedger,
-		MempoolConfig mempoolConfig
+		@MempoolThrottleMs long mempoolThrottleMs
 	) {
 		return new EventProcessorOnRunner<>(
 			Runners.MEMPOOL,
 			MempoolAdd.class,
 			stateComputerLedger.mempoolAddEventProcessor(),
-			mempoolConfig.throttleMs()
+			mempoolThrottleMs
 		);
 	}
 
 	@ProvidesIntoSet
 	private RemoteEventProcessorOnRunner<?> mempoolAddRemoteEventProcessor(
 		StateComputerLedger stateComputerLedger,
-		MempoolConfig mempoolConfig
+		@MempoolThrottleMs long mempoolThrottleMs
 	) {
 		return new RemoteEventProcessorOnRunner<>(
 			Runners.MEMPOOL,
 			MempoolAdd.class,
 			stateComputerLedger.mempoolAddRemoteEventProcessor(),
-			mempoolConfig.throttleMs()
+			mempoolThrottleMs
 		);
 	}
 

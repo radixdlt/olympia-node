@@ -61,14 +61,14 @@ public class PacemakerTest {
 
 	private Injector createRunner() {
 		return Guice.createInjector(
+			MempoolConfig.asModule(10, 10),
+			RadixEngineConfig.asModule(1, Integer.MAX_VALUE, 100, 50),
 			new MockedGenesisModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
-			RadixEngineConfig.asModule(1, Integer.MAX_VALUE, 100, 50),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
-					bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L));
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
 			}
