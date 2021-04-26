@@ -39,12 +39,16 @@ public class SyncStateTest {
             .verify();
 
         EqualsVerifier.forClass(SyncState.SyncCheckState.class)
-                .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-                .verify();
+            .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+            .verify();
 
         EqualsVerifier.forClass(SyncState.SyncingState.class)
-                .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-                .verify();
+            .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+            .verify();
+
+        EqualsVerifier.forClass(SyncState.PendingRequest.class)
+            .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+            .verify();
     }
 
     @Test
