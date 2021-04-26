@@ -50,6 +50,7 @@ public class ArchiveApiModule extends AbstractModule {
 		// TODO: Disable when splitting ports
 		var controllers = Multibinder.newSetBinder(binder(), Controller.class);
 		controllers.addBinding().to(RpcController.class).in(Scopes.SINGLETON);
+		controllers.addBinding().to(UniverseController.class).in(Scopes.SINGLETON);
 
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 			.permitDuplicates();
