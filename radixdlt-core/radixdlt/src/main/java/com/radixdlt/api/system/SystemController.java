@@ -94,7 +94,7 @@ public final class SystemController implements Controller {
 		var jsonObject = new JSONObject();
 		var txns = new JSONArray();
 		genesis.getTxns().forEach(txn -> txns.put(Bytes.toHexString(txn.getPayload())));
-		jsonObject.put("txns", txns);
+		jsonObject.put("txn", txns.get(0));
 		jsonObject.put("proof", genesis.getProof().asJSON());
 
 		respond(exchange, jsonObject);

@@ -42,6 +42,11 @@ public class TxActionListBuilder {
 		return new TxActionListBuilder();
 	}
 
+	public TxActionListBuilder action(TxAction txAction) {
+		actions.add(txAction);
+		return this;
+	}
+
 	public TxActionListBuilder createMutableToken(MutableTokenDefinition def) {
 		var action = new CreateMutableToken(
 			def.getSymbol(),

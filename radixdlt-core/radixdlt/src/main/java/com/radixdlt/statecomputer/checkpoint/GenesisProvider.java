@@ -26,8 +26,6 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.MutableTokenDefinition;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.consensus.LedgerProof;
@@ -48,7 +46,6 @@ import com.radixdlt.utils.UInt256;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -105,65 +102,44 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 		});
 
 		var branch = radixEngine.transientBranch();
-		var genesisTxns = new ArrayList<Txn>();
+		var genesisBuilder = TxActionListBuilder.create();
 		var rri = REAddr.ofNativeToken();
 		try {
 			// Network token
-			var createTokenActions = TxActionListBuilder.create()
-				.createMutableToken(tokenDefinition);
+			genesisBuilder.createMutableToken(tokenDefinition);
 			for (var e : issuances.entrySet()) {
 				var addr = REAddr.ofPubKeyAccount(e.getKey());
-				createTokenActions.mint(rri, addr, e.getValue());
+				genesisBuilder.mint(rri, addr, e.getValue());
 			}
-
-			var tokenTxn = branch.construct(createTokenActions.build()).buildWithoutSignature();
-			branch.execute(List.of(tokenTxn), PermissionLevel.SYSTEM);
-			genesisTxns.add(tokenTxn);
 
 			// Initial validator registration
 			for (var validatorKey : validatorKeys) {
-				var validatorTxn = branch.construct(new RegisterValidator(validatorKey.getPublicKey()))
-					.buildWithoutSignature();
-				branch.execute(List.of(validatorTxn), PermissionLevel.SYSTEM);
-				genesisTxns.add(validatorTxn);
+				genesisBuilder.registerAsValidator(validatorKey.getPublicKey());
 			}
 
 			// Initial stakes
 			for (var stakeDelegation : stakeDelegations) {
 				var delegateAddr = REAddr.ofPubKeyAccount(stakeDelegation.staker());
-				var stakerTxn = branch.construct(
-					new StakeTokens(delegateAddr, stakeDelegation.delegate(), stakeDelegation.amount())
-				).buildWithoutSignature();
-				branch.execute(List.of(stakerTxn), PermissionLevel.SYSTEM);
-				genesisTxns.add(stakerTxn);
+				var stakeTokens = new StakeTokens(delegateAddr, stakeDelegation.delegate(), stakeDelegation.amount());
+				genesisBuilder.action(stakeTokens);
 			}
 
 			if (!additionalActions.isEmpty()) {
-				var additionalTxn = branch.construct(additionalActions).buildWithoutSignature();
-				branch.execute(List.of(additionalTxn), PermissionLevel.SYSTEM);
-				genesisTxns.add(additionalTxn);
+				additionalActions.forEach(genesisBuilder::action);
 			}
 
-			var systemTxn = branch.construct(new SystemNextEpoch(timestamp, 0))
-				.buildWithoutSignature();
-			branch.execute(List.of(systemTxn), PermissionLevel.SYSTEM);
-			genesisTxns.add(systemTxn);
+			genesisBuilder.action(new SystemNextEpoch(timestamp, 0));
+
+			var txn = branch.construct(genesisBuilder.build()).buildWithoutSignature();
+			branch.execute(List.of(txn), PermissionLevel.SYSTEM);
+
 			final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
 				branch.getComputedState(RegisteredValidators.class),
 				branch.getComputedState(Stakes.class)
 			);
 			radixEngine.deleteBranches();
 
-			AccumulatorState accumulatorState = null;
-
-			for (var txn : genesisTxns) {
-				if (accumulatorState == null) {
-					accumulatorState = new AccumulatorState(0, txn.getId().asHashCode());
-				} else {
-					accumulatorState = ledgerAccumulator.accumulate(accumulatorState, txn.getId().asHashCode());
-				}
-			}
-
+			var accumulatorState = new AccumulatorState(0, txn.getId().asHashCode());
 			var genesisProof = LedgerProof.genesis(
 				accumulatorState,
 				genesisValidatorSet,
@@ -173,7 +149,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 				throw new IllegalStateException("Genesis must be end of epoch");
 			}
 
-			return VerifiedTxnsAndProof.create(genesisTxns, genesisProof);
+			return VerifiedTxnsAndProof.create(List.of(txn), genesisProof);
 		} catch (TxBuilderException | RadixEngineException e) {
 			throw new IllegalStateException(e);
 		}
