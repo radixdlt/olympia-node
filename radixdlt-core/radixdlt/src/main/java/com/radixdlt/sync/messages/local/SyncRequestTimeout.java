@@ -17,7 +17,6 @@
 
 package com.radixdlt.sync.messages.local;
 
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 
 import java.util.Objects;
@@ -28,28 +27,29 @@ import java.util.Objects;
 public final class SyncRequestTimeout {
 
 	private final BFTNode peer;
-	private final LedgerProof currentHeader;
+	private final long requestId;
 
-	public static SyncRequestTimeout create(BFTNode peer, LedgerProof currentHeader) {
-		return new SyncRequestTimeout(peer, currentHeader);
+	public static SyncRequestTimeout create(BFTNode peer, long requestId) {
+		return new SyncRequestTimeout(peer, requestId);
 	}
 
-	private SyncRequestTimeout(BFTNode peer, LedgerProof currentHeader) {
+	private SyncRequestTimeout(BFTNode peer, long requestId) {
 		this.peer = peer;
-		this.currentHeader = currentHeader;
+		this.requestId = requestId;
 	}
 
 	public BFTNode getPeer() {
 		return peer;
 	}
 
-	public LedgerProof getCurrentHeader() {
-		return currentHeader;
+	public long getRequestId() {
+		return requestId;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{peer=%s currentHeader=%s}", this.getClass().getSimpleName(), peer, currentHeader);
+		return String.format("%s{peer=%s requestId=%s}",
+			this.getClass().getSimpleName(), peer, requestId);
 	}
 
 	@Override
@@ -61,11 +61,12 @@ public final class SyncRequestTimeout {
 			return false;
 		}
 		SyncRequestTimeout that = (SyncRequestTimeout) o;
-		return Objects.equals(peer, that.peer) && Objects.equals(currentHeader, that.currentHeader);
+		return Objects.equals(peer, that.peer)
+			&& requestId == that.requestId;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(peer, currentHeader);
+		return Objects.hash(peer, requestId);
 	}
 }

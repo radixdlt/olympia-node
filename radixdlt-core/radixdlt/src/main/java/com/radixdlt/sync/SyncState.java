@@ -187,11 +187,50 @@ public interface SyncState {
 		}
 	}
 
+	final class PendingRequest {
+		private final BFTNode peer;
+		private final long requestId;
+
+		public static PendingRequest create(BFTNode peer, long requestId) {
+			return new PendingRequest(peer, requestId);
+		}
+
+		private PendingRequest(BFTNode peer, long requestId) {
+			this.peer = peer;
+			this.requestId = requestId;
+		}
+
+		public BFTNode getPeer() {
+			return peer;
+		}
+
+		public long getRequestId() {
+			return requestId;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+			final var that = (PendingRequest) o;
+			return requestId == that.requestId && Objects.equals(peer, that.peer);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(peer, requestId);
+		}
+	}
+
 	final class SyncingState implements SyncState {
 		private final LedgerProof currentHeader;
 		private final ImmutableList<BFTNode> candidatePeers;
 		private final LedgerProof targetHeader;
-		private final Optional<BFTNode> waitingForResponseFrom;
+		private final Optional<PendingRequest> pendingRequest;
 
 		public static SyncingState init(
 			LedgerProof currentHeader,
@@ -205,19 +244,24 @@ public interface SyncState {
 			LedgerProof currentHeader,
 			ImmutableList<BFTNode> candidatePeers,
 			LedgerProof targetHeader,
-			Optional<BFTNode> waitingForResponseFrom
+			Optional<PendingRequest> pendingRequest
 		) {
 			this.currentHeader = currentHeader;
 			this.candidatePeers = candidatePeers;
 			this.targetHeader = targetHeader;
-			this.waitingForResponseFrom = waitingForResponseFrom;
+			this.pendingRequest = pendingRequest;
 		}
 
-		public SyncingState withWaitingFor(BFTNode peer) {
-			return new SyncingState(currentHeader, candidatePeers, targetHeader, Optional.of(peer));
+		public SyncingState withPendingRequest(BFTNode peer, long requestId) {
+			return new SyncingState(
+				currentHeader,
+				candidatePeers,
+				targetHeader,
+				Optional.of(PendingRequest.create(peer, requestId))
+			);
 		}
 
-		public SyncingState clearWaitingFor() {
+		public SyncingState clearPendingRequest() {
 			return new SyncingState(currentHeader, candidatePeers, targetHeader, Optional.empty());
 		}
 
@@ -226,12 +270,12 @@ public interface SyncState {
 				currentHeader,
 				ImmutableList.copyOf(Collections2.filter(candidatePeers, not(equalTo(peer)))),
 				targetHeader,
-				waitingForResponseFrom
+				pendingRequest
 			);
 		}
 
 		public SyncingState withTargetHeader(LedgerProof newTargetHeader) {
-			return new SyncingState(currentHeader, candidatePeers, newTargetHeader, waitingForResponseFrom);
+			return new SyncingState(currentHeader, candidatePeers, newTargetHeader, pendingRequest);
 		}
 
 		public SyncingState withCandidatePeers(ImmutableList<BFTNode> peers) {
@@ -242,16 +286,20 @@ public interface SyncState {
 					.addAll(candidatePeers)
 					.build(),
 				targetHeader,
-				waitingForResponseFrom
+				pendingRequest
 			);
 		}
 
 		public boolean waitingForResponse() {
-			return this.waitingForResponseFrom.isPresent();
+			return this.pendingRequest.isPresent();
 		}
 
 		public boolean waitingForResponseFrom(BFTNode peer) {
-			return this.waitingForResponseFrom.stream().anyMatch(p -> p.equals(peer));
+			return this.pendingRequest.stream().anyMatch(pr -> pr.getPeer().equals(peer));
+		}
+
+		public Optional<PendingRequest> getPendingRequest() {
+			return this.pendingRequest;
 		}
 
 		public ImmutableList<BFTNode> candidatePeers() {
@@ -269,7 +317,7 @@ public interface SyncState {
 
 		@Override
 		public SyncingState withCurrentHeader(LedgerProof newCurrentHeader) {
-			return new SyncingState(newCurrentHeader, candidatePeers, targetHeader, waitingForResponseFrom);
+			return new SyncingState(newCurrentHeader, candidatePeers, targetHeader, pendingRequest);
 		}
 
 		@Override
@@ -290,12 +338,12 @@ public interface SyncState {
 			return Objects.equals(currentHeader, that.currentHeader)
 				&& Objects.equals(candidatePeers, that.candidatePeers)
 				&& Objects.equals(targetHeader, that.targetHeader)
-				&& Objects.equals(waitingForResponseFrom, that.waitingForResponseFrom);
+				&& Objects.equals(pendingRequest, that.pendingRequest);
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(currentHeader, candidatePeers, targetHeader, waitingForResponseFrom);
+			return Objects.hash(currentHeader, candidatePeers, targetHeader, pendingRequest);
 		}
 	}
 }
