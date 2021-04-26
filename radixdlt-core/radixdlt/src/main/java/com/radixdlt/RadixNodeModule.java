@@ -129,7 +129,7 @@ public final class RadixNodeModule extends AbstractModule {
 			var controllers = Multibinder.newSetBinder(binder(), Controller.class);
 			controllers.addBinding().to(UniverseController.class).in(Scopes.SINGLETON);
 		}
-		if (properties.get("faucet.enable", false)) {
+		if (properties.get("faucet.enable", true)) {
 			log.info("Enabling faucet API");
 			install(new FaucetModule());
 		}
