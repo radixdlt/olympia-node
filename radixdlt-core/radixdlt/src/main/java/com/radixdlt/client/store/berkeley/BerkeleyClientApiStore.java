@@ -73,6 +73,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.netty.buffer.ByteBuf;
@@ -332,13 +333,11 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 		try (var cursor = transactionHistory.openCursor(null, null)) {
 			var status = readTxHistory(() -> cursor.getSearchKeyRange(key, data, null), data);
-
 			if (status != OperationStatus.SUCCESS) {
 				return Result.ok(List.of());
 			}
 
 			status = readTxHistory(() -> cursor.getLast(key, data, null), data);
-
 			if (status != OperationStatus.SUCCESS) {
 				return Result.ok(List.of());
 			}
@@ -536,12 +535,36 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		extractTimestamp(reTxn.upSubstates());
 
 		reTxn.getSignedBy().ifPresentOrElse(
-			p -> {
-				storeSingleTransaction(reTxn.getTxn().getId(), p);
-				reTxn.getActions().forEach(a -> storeAction(p, a));
-			},
+			p -> reTxn.getActions().forEach(a -> storeAction(p, a)),
 			() -> reTxn.getActions().forEach(a -> storeAction(null, a))
 		);
+
+		var addressesInActions = reTxn.getActions().stream()
+			.map(REParsedAction::getTxAction)
+			.flatMap(a -> {
+				if (a instanceof TransferToken) {
+					var transferToken = (TransferToken) a;
+					return Stream.of(transferToken.from(), transferToken.to());
+				} else if (a instanceof BurnToken) {
+					var burnToken = (BurnToken) a;
+					return Stream.of(burnToken.from());
+				} else if (a instanceof MintToken) {
+					var mintToken = (MintToken) a;
+					return Stream.of(mintToken.to());
+				} else if (a instanceof CreateFixedToken) {
+					var createFixedToken = (CreateFixedToken) a;
+					return Stream.of(createFixedToken.getAccountAddr());
+				}
+
+				return Stream.empty();
+			});
+
+		var addresses = Stream.concat(
+			addressesInActions,
+			reTxn.getSignedBy().stream().map(REAddr::ofPubKeyAccount)
+		).collect(Collectors.toSet());
+
+		addresses.forEach(accountAddr -> storeSingleTransaction(reTxn.getTxn().getId(), accountAddr));
 	}
 
 	private void storeAction(ECPublicKey user, REParsedAction action) {
@@ -564,6 +587,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			);
 			storeBalanceEntry(entry0);
 			storeBalanceEntry(entry1);
+
+
 		} else if (action.getTxAction() instanceof BurnToken) {
 			var burnToken = (BurnToken) action.getTxAction();
 			var rri = getRriOrFail(burnToken.resourceAddr());
@@ -685,9 +710,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		}
 	}
 
-	private void storeSingleTransaction(AID id, ECPublicKey creator) {
+	private void storeSingleTransaction(AID id, REAddr accountAddr) {
 		//Note: since Java 9 the Clock.systemUTC() produces values with real nanosecond resolution.
-		var key = asKey(REAddr.ofPubKeyAccount(creator), currentTimestamp.get());
+		var key = asKey(accountAddr, currentTimestamp.get());
 		var data = entry(id.getBytes());
 
 		var status = withTime(
@@ -697,7 +722,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		);
 
 		if (status != OperationStatus.SUCCESS) {
-			log.error("Error while storing transaction {} for {}", id, creator);
+			log.error("Error while storing transaction {} for {}", id, accountAddr);
 		}
 	}
 
