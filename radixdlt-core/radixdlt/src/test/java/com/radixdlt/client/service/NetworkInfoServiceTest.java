@@ -20,30 +20,43 @@ import org.junit.Test;
 
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
 
 import static com.radixdlt.counters.SystemCounters.*;
 
 public class NetworkInfoServiceTest {
-	private SystemCounters systemCounters = new SystemCountersImpl();
-	private NetworkInfoService networkInfoService = new NetworkInfoService(systemCounters);
+	@SuppressWarnings("unchecked")
+	private final ScheduledEventDispatcher<ScheduledStatsCollecting> dispatcher = mock(ScheduledEventDispatcher.class);
+	private final SystemCounters systemCounters = new SystemCountersImpl();
+	private final NetworkInfoService networkInfoService = new NetworkInfoService(systemCounters, dispatcher);
 
 	@Test
-	public void testDemand() throws InterruptedException {
+	public void testDemand() {
 		assertEquals(0, networkInfoService.demand());
-		Thread.sleep(1100);
 
-		systemCounters.increment(CounterType.MEMPOOL_PROPOSED_TRANSACTION);
+		systemCounters.add(CounterType.MEMPOOL_PROPOSED_TRANSACTION, 1L);
+		updateStats(10, CounterType.MEMPOOL_PROPOSED_TRANSACTION);
+
 		assertEquals(1, networkInfoService.demand());
 	}
 
 	@Test
-	public void testThroughput() throws InterruptedException {
+	public void testThroughput() {
 		assertEquals(0, networkInfoService.throughput());
-		Thread.sleep(1100);
 
-		systemCounters.increment(CounterType.ELAPSED_BDB_LEDGER_COMMIT);
+		systemCounters.add(CounterType.ELAPSED_BDB_LEDGER_COMMIT, 1L);
+		updateStats(10, CounterType.ELAPSED_BDB_LEDGER_COMMIT);
+
 		assertEquals(1, networkInfoService.throughput());
+	}
+
+	private void updateStats(int times, CounterType counterType) {
+		for (int i = 0; i < times; i++) {
+			systemCounters.increment(counterType);
+			networkInfoService.updateStats().process(ScheduledStatsCollecting.create());
+		}
 	}
 }
