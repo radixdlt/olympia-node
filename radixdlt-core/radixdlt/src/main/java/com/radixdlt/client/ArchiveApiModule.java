@@ -57,8 +57,11 @@ public class ArchiveApiModule extends AbstractModule {
 			.permitDuplicates();
 		bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
 		bind(TransactionStatusService.class).in(Scopes.SINGLETON);
+		bind(NetworkInfoService.class).in(Scopes.SINGLETON);
+
 		eventBinder.addBinding().toInstance(ScheduledQueueFlush.class);
 		eventBinder.addBinding().toInstance(ScheduledCacheCleanup.class);
+		eventBinder.addBinding().toInstance(ScheduledStatsCollecting.class);
 	}
 
 	@ProvidesIntoMap
