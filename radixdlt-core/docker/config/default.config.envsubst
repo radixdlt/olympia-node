@@ -16,3 +16,4 @@ db.location=$RADIXDLT_DB_LOCATION
 node_api.port=$RADIXDLT_NODE_API_PORT
 client_api.enable=$RADIXDLT_ENABLE_CLIENT_API
 client_api.port=$RADIXDLT_CLIENT_API_PORT
+universe_api.enable=$RADIXDLT_UNIVERSE_ENABLE
