@@ -265,7 +265,9 @@ public class BerkeleyClientApiStoreTest {
 
 		clientApiStore.getTransactionHistory(TOKEN_ACCOUNT, 1, Optional.of(newCursor.get()))
 			.onFailure(this::failWithMessage)
-			.onSuccess(list -> assertEquals(0, list.size()));
+			.onSuccess(list -> {
+				assertEquals(0, list.size());
+			});
 	}
 
 	@Test

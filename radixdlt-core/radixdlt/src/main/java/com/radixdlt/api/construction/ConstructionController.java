@@ -85,7 +85,10 @@ public final class ConstructionController implements Controller {
 			}
 
 			var ops = jsonArray();
-			var response = jsonObject().put("operations", ops);
+			var response = jsonObject()
+				.put("transaction_identifier", parsedTxn.getTxn().getId())
+				.put("transaction_size", parsedTxn.getTxn().getPayload().length)
+				.put("operations", ops);
 			parsedTxn.instructions().forEach(i -> {
 				var jsonOp = jsonObject()
 					.put("type", i.getInstruction().getMicroOp())
