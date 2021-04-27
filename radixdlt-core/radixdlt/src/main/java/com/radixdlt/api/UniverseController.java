@@ -16,11 +16,10 @@
  *
  */
 
-package com.radixdlt.client;
+package com.radixdlt.api;
 
 import com.google.inject.Inject;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.api.Controller;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.universe.Universe;
 import io.undertow.server.HttpServerExchange;

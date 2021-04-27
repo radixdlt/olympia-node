@@ -17,8 +17,12 @@
 
 package com.radixdlt;
 
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.api.Controller;
 import com.radixdlt.api.NodeApiModule;
 
+import com.radixdlt.api.UniverseController;
 import com.radixdlt.api.faucet.FaucetModule;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
@@ -120,7 +124,12 @@ public final class RadixNodeModule extends AbstractModule {
 			log.info("Enabling high level API");
 			install(new ArchiveApiModule());
 		}
-		if (properties.get("faucet.enable", true)) {
+		if (properties.get("universe_api.enable", false)) {
+			log.info("Enabling Universe API");
+			var controllers = Multibinder.newSetBinder(binder(), Controller.class);
+			controllers.addBinding().to(UniverseController.class).in(Scopes.SINGLETON);
+		}
+		if (properties.get("faucet.enable", false)) {
 			log.info("Enabling faucet API");
 			install(new FaucetModule());
 		}
