@@ -138,6 +138,29 @@ public class MutableTokenTest {
 	}
 
 	@Test
+	public void mint_to_non_account_address_should_fail() throws Exception {
+		// Arrange
+		createInjector().injectMembers(this);
+		var tokDef = new MutableTokenDefinition(
+			"test",
+			"test",
+			"desc",
+			null,
+			null
+		);
+
+		var tokenAddr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
+		var txn = sut.construct(keyPair.getPublicKey(), TxActionListBuilder.create()
+			.createMutableToken(tokDef)
+			.mint(tokenAddr, REAddr.ofHashedKey(keyPair.getPublicKey(), "test"), UInt256.SEVEN)
+			.build()
+		).signAndBuild(keyPair::sign);
+
+		// Act/Assert
+		assertThatThrownBy(() -> sut.execute(List.of(txn))).isInstanceOf(RadixEngineException.class);
+	}
+
+	@Test
 	public void can_create_no_description_token() throws TxBuilderException, RadixEngineException {
 		// Arrange
 		createInjector().injectMembers(this);

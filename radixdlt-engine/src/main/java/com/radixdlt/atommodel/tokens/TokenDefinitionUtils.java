@@ -108,6 +108,9 @@ public final class TokenDefinitionUtils {
 		if (tokensParticle.getAmount().isZero()) {
 			return Result.error("amount must not be zero");
 		}
+		if (!tokensParticle.getHoldingAddr().isAccount()) {
+			return Result.error("Tokens must be held by holding address.");
+		}
 
 		return Result.success();
 	}
