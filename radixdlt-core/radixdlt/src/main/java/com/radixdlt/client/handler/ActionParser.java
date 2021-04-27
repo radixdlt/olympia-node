@@ -17,8 +17,10 @@
 
 package com.radixdlt.client.handler;
 
+import com.radixdlt.atom.TxErrorCode;
 import com.radixdlt.client.AccountAddress;
 import com.radixdlt.client.ValidatorAddress;
+import com.radixdlt.client.service.ExtendedFailure;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.crypto.ECPublicKey;
 import org.json.JSONArray;
@@ -28,14 +30,21 @@ import com.radixdlt.client.api.ActionType;
 import com.radixdlt.client.api.TransactionAction;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static com.radixdlt.api.JsonRpcUtil.*;
 import static com.radixdlt.api.JsonRpcUtil.safeString;
 
+import static com.radixdlt.atom.TxErrorCode.INVALID_ACTION;
+import static com.radixdlt.atom.TxErrorCode.INVALID_ACTION_TYPE;
+import static com.radixdlt.atom.TxErrorCode.INVALID_ADDRESS;
+import static com.radixdlt.atom.TxErrorCode.INVALID_RRI;
+import static com.radixdlt.atom.TxErrorCode.INVALID_VALIDATOR_ADDRESS;
 import static com.radixdlt.utils.functional.Result.allOf;
 
 public final class ActionParser {
@@ -48,16 +57,15 @@ public final class ActionParser {
 
 		for (var o : actions) {
 			if (!(o instanceof JSONObject)) {
-				return Result.fail("Unable to recognize action description {0}", o);
+				return fail(INVALID_ACTION, "Unable to recognize action description {0}", o);
 			}
 
 			var element = (JSONObject) o;
 
-			var result = Result.fromOptional(
-				safeString(element, "type")
-					.flatMap(ActionType::fromString),
-				"Action type is missing or can not be parsed in {0}", element
-			)
+			var actionType = safeString(element, "type").flatMap(ActionType::fromString);
+
+			var result = actionType.map(Result::ok)
+				.orElseGet(() -> fail(INVALID_ACTION, "Action type is missing or can not be parsed in {0}", element))
 				.flatMap(type -> parseByType(type, element, clientApiStore))
 				.onSuccess(list::add);
 
@@ -92,7 +100,7 @@ public final class ActionParser {
 				).map(TransactionAction::create);
 		}
 
-		return Result.fail("Action type {0} is not supported (yet)", type);
+		return fail(INVALID_ACTION_TYPE, "Action type {0} is not supported (yet)", type);
 	}
 
 	private static Result<REAddr> from(JSONObject element) {
@@ -111,27 +119,40 @@ public final class ActionParser {
 		return safeString(element, "amount")
 			.flatMap(UInt256::fromString)
 			.map(Result::ok)
-			.orElseGet(() -> fail(element, "amount"));
+			.orElseGet(() -> fieldFailure(INVALID_ACTION, element, "amount"));
 	}
 
 	private static Result<Optional<REAddr>> rri(JSONObject element, ClientApiStore clientApiStore) {
-		return Result.fromOptional(safeString(element, "tokenIdentifier"), "Field tokenIdentifier is missing in {0}", element)
+		var tokenIdentifier = safeString(element, "tokenIdentifier");
+
+		return tokenIdentifier.map(Result::ok)
+			.orElseGet(() -> fail(INVALID_ACTION, "Field tokenIdentifier is missing in {0}", element))
 			.flatMap(clientApiStore::parseRri)
+			.mapFailure(failure -> addErrorCode(INVALID_RRI, failure))
 			.map(Optional::of);
+	}
+
+	private static Failure addErrorCode(TxErrorCode errorCode, Failure failure) {
+		if (failure instanceof ExtendedFailure) {
+			return failure;
+		}
+
+		return ExtendedFailure.create(errorCode.code(), failure.message());
 	}
 
 	private static Result<ECPublicKey> validator(JSONObject element, String name) {
 		return Result.fromOptional(safeString(element, name), "")
-			.flatMap(ValidatorAddress::fromString);
+			.flatMap(ValidatorAddress::fromString)
+			.mapFailure(failure -> addErrorCode(INVALID_VALIDATOR_ADDRESS, failure));
 	}
 
 	private static Result<REAddr> address(JSONObject element, String name) {
 		return safeString(element, name)
 			.map(AccountAddress::parseFunctional)
-			.orElseGet(() -> fail(element, name));
+			.orElseGet(() -> fieldFailure(INVALID_ADDRESS, element, name));
 	}
 
-	private static <T> Result<T> fail(JSONObject element, String field) {
-		return Result.fail("Field {1} is missing or contains invalid value in {0}", element, field);
+	private static <T> Result<T> fieldFailure(TxErrorCode errorCode, JSONObject element, String field) {
+		return fail(errorCode, "Field {1} is missing or contains invalid value in {0}", element, field);
 	}
 }

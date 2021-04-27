@@ -173,7 +173,11 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	public Result<REAddr> parseRri(String rri) {
 		return Rri.parseFunctional(rri)
 			.flatMap(p -> getTokenDefinition(p.getSecond())
-				.flatMap(t -> Result.ok(p.getSecond()).filter(i -> t.getSymbol().equals(p.getFirst()), "symbol does not match"))
+				.flatMap(t -> Result.ok(p.getSecond())
+					.filter(
+						i -> t.getSymbol().equals(p.getFirst()),
+						"Input symbol {0} does not match existing definition of {1}", rri, t.getSymbol()
+					))
 			);
 	}
 

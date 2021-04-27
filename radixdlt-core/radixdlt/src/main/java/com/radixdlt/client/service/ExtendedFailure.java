@@ -19,6 +19,7 @@ package com.radixdlt.client.service;
 
 import com.radixdlt.utils.functional.Failure;
 
+import java.text.MessageFormat;
 import java.util.Objects;
 
 public final class ExtendedFailure implements Failure {
@@ -30,8 +31,8 @@ public final class ExtendedFailure implements Failure {
 		this.message = message;
 	}
 
-	public static ExtendedFailure create(int code, String message) {
-		return new ExtendedFailure(code, message);
+	public static ExtendedFailure create(int code, String format, Object... values) {
+		return new ExtendedFailure(code, MessageFormat.format(format, values));
 	}
 
 	@Override
@@ -63,6 +64,6 @@ public final class ExtendedFailure implements Failure {
 
 	@Override
 	public String toString() {
-		return "Error: " + code +	": '" + message + "'";
+		return "Error: " + code + ": '" + message + "'";
 	}
 }

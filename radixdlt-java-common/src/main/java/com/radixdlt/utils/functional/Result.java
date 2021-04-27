@@ -112,6 +112,10 @@ public interface Result<T> {
 		});
 	}
 
+	default Result<T> mapFailure(Function<? super Failure, Failure> mapper) {
+		return fold(failure -> Result.fail(mapper.apply(failure)), __ -> this);
+	}
+
 	/**
 	 * Combine current instance with another result. If current instance holds
 	 * success then result is equivalent to current instance, otherwise other

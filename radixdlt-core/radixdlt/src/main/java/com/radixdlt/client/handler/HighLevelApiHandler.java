@@ -23,6 +23,7 @@ import com.radixdlt.client.store.berkeley.UnstakeEntry;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.crypto.HashUtils;
 import org.bouncycastle.util.encoders.Hex;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import com.radixdlt.api.JsonRpcUtil;
 
@@ -295,7 +296,7 @@ public class HighLevelApiHandler {
 			.put("validators", fromList(transactions, ValidatorInfoDetails::asJson));
 	}
 
-	private List<TransactionAction> mergeMessageAction(org.json.JSONArray params, List<TransactionAction> steps) {
+	private List<TransactionAction> mergeMessageAction(JSONArray params, List<TransactionAction> steps) {
 		return params.length() == 1 ? steps : ImmutableList.<TransactionAction>builder()
 			.addAll(steps)
 			.add(TransactionAction.msg(params.getString(1)))

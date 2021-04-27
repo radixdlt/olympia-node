@@ -22,6 +22,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.radixdlt.atom.TxErrorCode;
 import com.radixdlt.client.service.ExtendedFailure;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
@@ -63,10 +64,14 @@ public final class JsonRpcUtil {
 		public int code() {
 			return code;
 		}
-	}
 
+	}
 	private JsonRpcUtil() {
 		throw new IllegalStateException("Can't construct");
+	}
+
+	public static <T> Result<T> fail(TxErrorCode errorCode, String message, Object... parameters) {
+		return Result.fail(ExtendedFailure.create(errorCode.code(), message, parameters));
 	}
 
 	public static Optional<JSONArray> params(JSONObject request) {

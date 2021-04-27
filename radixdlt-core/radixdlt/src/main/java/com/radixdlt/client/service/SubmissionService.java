@@ -17,6 +17,9 @@
 
 package com.radixdlt.client.service;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.atom.TxAction;
@@ -37,8 +40,6 @@ import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
 import com.radixdlt.utils.functional.Result;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Objects;
@@ -46,6 +47,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static com.radixdlt.api.JsonRpcUtil.fail;
 
 public final class SubmissionService {
 	private final Logger logger = LogManager.getLogger();
@@ -67,7 +70,7 @@ public final class SubmissionService {
 			.collect(Collectors.toSet());
 
 		if (addresses.size() != 1) {
-			return Result.fail("Source addresses for all actions must be the same");
+			return fail(TxErrorCode.DIFFERENT_SOURCE_ADDRESSES, "Source addresses for all actions must be the same");
 		}
 
 		var addr = addresses.iterator().next();
@@ -80,7 +83,7 @@ public final class SubmissionService {
 
 			return Result.ok(transaction);
 		} catch (TxBuilderException e) {
-			return Result.fail(ExtendedFailure.create(e.getCode().code(), e.getMessage()));
+			return fail(e.getCode(), e.getMessage());
 		} catch (Exception e) {
 			return Result.fail(e.getMessage());
 		}
