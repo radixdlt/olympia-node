@@ -21,6 +21,7 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.TxErrorCode;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -49,6 +50,7 @@ public final class MoveStake implements TxAction {
 			StakedTokensParticle::getAmount,
 			amt -> new StakedTokensParticle(from, accountAddr, amt),
 			amount,
+			TxErrorCode.NOT_ENOUGH_STAKED,
 			"Not enough staked."
 		).with(amt -> new StakedTokensParticle(to, accountAddr, amt));
 	}

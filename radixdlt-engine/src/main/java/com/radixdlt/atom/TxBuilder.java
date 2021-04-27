@@ -121,6 +121,7 @@ public final class TxBuilder {
 	public <T extends Particle> Substate findSubstate(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
+		TxErrorCode errorCode,
 		String errorMessage
 	) throws TxBuilderException {
 		try (var cursor = createRemoteSubstateCursor(particleClass)) {
@@ -129,7 +130,7 @@ public final class TxBuilder {
 				.findFirst();
 
 			if (substateRead.isEmpty()) {
-				throw new TxBuilderException(errorMessage);
+				throw new TxBuilderException(errorCode, errorMessage);
 			}
 
 			return substateRead.get();
@@ -139,6 +140,7 @@ public final class TxBuilder {
 	public <T extends Particle> T find(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
+		TxErrorCode errorCode,
 		String errorMessage
 	) throws TxBuilderException {
 		try (var cursor = createRemoteSubstateCursor(particleClass)) {
@@ -151,7 +153,7 @@ public final class TxBuilder {
 				.filter(particlePredicate)
 				.findFirst();
 			if (substateRead.isEmpty()) {
-				throw new TxBuilderException(errorMessage);
+				throw new TxBuilderException(errorCode, errorMessage);
 			}
 
 			return substateRead.get();
@@ -161,23 +163,26 @@ public final class TxBuilder {
 	private <T extends Particle> T down(
 		Class<T> particleClass,
 		Optional<SubstateWithArg<T>> virtualParticle,
+		TxErrorCode errorCode,
 		String errorMessage
 	) throws TxBuilderException {
-		return down(particleClass, p -> true, virtualParticle, errorMessage);
+		return down(particleClass, p -> true, virtualParticle, errorCode, errorMessage);
 	}
 
 	private <T extends Particle> T down(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
+		TxErrorCode errorCode,
 		String errorMessage
 	) throws TxBuilderException {
-		return down(particleClass, particlePredicate, Optional.empty(), errorMessage);
+		return down(particleClass, particlePredicate, Optional.empty(), errorCode, errorMessage);
 	}
 
 	public <T extends Particle> T down(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		Optional<SubstateWithArg<T>> virtualParticle,
+		TxErrorCode errorCode,
 		String errorMessage
 	) throws TxBuilderException {
 		var localDown = lowLevelBuilder.localUpSubstate().stream()
@@ -210,7 +215,7 @@ public final class TxBuilder {
 				});
 
 			if (substateDown.isEmpty()) {
-				throw new TxBuilderException(errorMessage + " (Substate not found)");
+				throw new TxBuilderException(errorCode, errorMessage + " (Substate not found)");
 			}
 
 			return substateDown.get();
@@ -228,9 +233,10 @@ public final class TxBuilder {
 	public <T extends Particle, U extends Particle> Replacer<T, U> swap(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
+		TxErrorCode errorCode,
 		String errorMessage
 	) throws TxBuilderException {
-		T t = down(particleClass, particlePredicate, errorMessage);
+		T t = down(particleClass, particlePredicate, errorCode, errorMessage);
 		return replacer -> {
 			U u = replacer.map(t);
 			up(u);
@@ -240,9 +246,10 @@ public final class TxBuilder {
 	private <T extends Particle, U extends Particle> Replacer<T, U> swap(
 		Class<T> particleClass,
 		Optional<SubstateWithArg<T>> virtualParticle,
+		TxErrorCode errorCode,
 		String errorMessage
 	) throws TxBuilderException {
-		T t = down(particleClass, virtualParticle, errorMessage);
+		T t = down(particleClass, virtualParticle, errorCode, errorMessage);
 		return replacer -> {
 			U u = replacer.map(t);
 			up(u);
@@ -253,9 +260,10 @@ public final class TxBuilder {
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		Optional<SubstateWithArg<T>> virtualParticle,
+		TxErrorCode errorCode,
 		String errorMessage
 	) throws TxBuilderException {
-		T t = down(particleClass, particlePredicate, virtualParticle, errorMessage);
+		T t = down(particleClass, particlePredicate, virtualParticle, errorCode, errorMessage);
 		return replacer -> {
 			U u = replacer.map(t);
 			up(u);
@@ -275,6 +283,7 @@ public final class TxBuilder {
 		Predicate<T> particlePredicate,
 		Function<T, UInt256> amountMapper,
 		UInt256 amount,
+		TxErrorCode errorCode,
 		String errorMessage
 	) throws TxBuilderException {
 		UInt256 spent = UInt256.ZERO;
@@ -282,6 +291,7 @@ public final class TxBuilder {
 			var substateDown = down(
 				particleClass,
 				particlePredicate,
+				errorCode,
 				errorMessage
 			);
 
@@ -297,6 +307,7 @@ public final class TxBuilder {
 		Function<T, UInt256> amountMapper,
 		FungibleMapper<T> remainderMapper,
 		UInt256 amount,
+		TxErrorCode errorCode,
 		String errorMessage
 	) throws TxBuilderException {
 		UInt256 spent = UInt256.ZERO;
@@ -310,6 +321,7 @@ public final class TxBuilder {
 			var substateDown = down(
 				particleClass,
 				particlePredicate,
+				errorCode,
 				errorMessage
 			);
 
@@ -328,6 +340,7 @@ public final class TxBuilder {
 		Function<T, UInt256> amountMapper,
 		FungibleMapper<T> remainderMapper,
 		UInt256 amount,
+		TxErrorCode errorCode,
 		String errorMessage
 	) {
 		return mapper -> {
@@ -338,6 +351,7 @@ public final class TxBuilder {
 				particlePredicate.and(p -> !p.equals(substateUp)), // HACK to allow mempool filler to do it's thing
 				amountMapper,
 				amount,
+				errorCode,
 				errorMessage
 			);
 			if (!remainder.isZero()) {
@@ -353,21 +367,20 @@ public final class TxBuilder {
 
 	public ECPublicKey getUserOrFail(String errorMessage) throws TxBuilderException {
 		if (user == null) {
-			throw new TxBuilderException(errorMessage);
+			throw new TxBuilderException(TxErrorCode.ADDRESS_IS_MISSING, errorMessage);
 		}
 		return user;
 	}
 
-
 	public void assertHasAddress(String message) throws TxBuilderException {
 		if (user == null) {
-			throw new TxBuilderException(message);
+			throw new TxBuilderException(TxErrorCode.ADDRESS_IS_MISSING, message);
 		}
 	}
 
 	public void assertIsSystem(String message) throws TxBuilderException {
 		if (user != null) {
-			throw new TxBuilderException(message);
+			throw new TxBuilderException(TxErrorCode.NOT_A_SYSTEM, message);
 		}
 	}
 
@@ -379,6 +392,7 @@ public final class TxBuilder {
 			REAddrParticle.class,
 			p -> p.getAddr().equals(addr),
 			Optional.of(SubstateWithArg.withArg(new REAddrParticle(addr), id.getBytes(StandardCharsets.UTF_8))),
+			TxErrorCode.RRI_NOT_AVAILABLE,
 			"RRI not available"
 		).with(r -> new UniqueParticle(addr));
 

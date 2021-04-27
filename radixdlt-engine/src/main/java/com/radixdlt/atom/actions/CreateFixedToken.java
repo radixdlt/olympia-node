@@ -21,6 +21,7 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.TxErrorCode;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atomos.REAddrParticle;
@@ -103,6 +104,7 @@ public class CreateFixedToken implements TxAction {
 			REAddrParticle.class,
 			p -> p.getAddr().equals(resourceAddr),
 			Optional.of(SubstateWithArg.withArg(new REAddrParticle(resourceAddr), symbol.getBytes(StandardCharsets.UTF_8))),
+			TxErrorCode.RRI_NOT_AVAILABLE,
 			"RRI not available"
 		);
 		txBuilder.up(new TokenDefinitionParticle(

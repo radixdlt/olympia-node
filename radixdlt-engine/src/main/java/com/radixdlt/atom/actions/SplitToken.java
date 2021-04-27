@@ -21,6 +21,7 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.TxErrorCode;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -43,6 +44,7 @@ public final class SplitToken implements TxAction {
 			p -> p.getResourceAddr().equals(rri)
 				&& p.getHoldingAddr().equals(userAccount)
 				&& p.getAmount().compareTo(minSize) > 0,
+			TxErrorCode.INSUFFICIENT_FUNDS,
 			"Could not find large particle greater than " + minSize
 		);
 

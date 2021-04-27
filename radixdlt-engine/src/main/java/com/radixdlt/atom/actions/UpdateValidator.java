@@ -21,6 +21,7 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.TxErrorCode;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.crypto.ECPublicKey;
 
@@ -46,6 +47,7 @@ public class UpdateValidator implements TxAction {
 		txBuilder.swap(
 			ValidatorParticle.class,
 			p -> p.getKey().equals(validatorKey),
+			TxErrorCode.INVALID_STATE,
 			"Invalid state."
 		).with(
 			substateDown -> new ValidatorParticle(

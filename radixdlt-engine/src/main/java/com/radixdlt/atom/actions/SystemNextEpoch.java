@@ -21,6 +21,7 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.TxErrorCode;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 
@@ -45,6 +46,7 @@ public final class SystemNextEpoch implements TxAction {
 			currentEpoch == 0
 				? Optional.of(SubstateWithArg.noArg(new SystemParticle(0, 0, 0)))
 				: Optional.empty(),
+			TxErrorCode.NO_SYSTEM_PARTICLE,
 			"No System particle available"
 		).with(substateDown -> new SystemParticle(substateDown.getEpoch() + 1, 0, timestamp));
 	}

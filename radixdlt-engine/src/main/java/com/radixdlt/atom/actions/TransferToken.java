@@ -21,6 +21,7 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.TxErrorCode;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -62,6 +63,7 @@ public final class TransferToken implements TxAction {
 			TokensParticle::getAmount,
 			amt -> new TokensParticle(from, amt, resourceAddr),
 			amount,
+			TxErrorCode.INSUFFICIENT_FUNDS,
 			"Not enough balance for transfer."
 		).with(amt -> new TokensParticle(to, amount, resourceAddr));
 	}

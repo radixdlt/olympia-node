@@ -22,6 +22,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.radixdlt.client.service.ExtendedFailure;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
@@ -81,7 +82,14 @@ public final class JsonRpcUtil {
 	}
 
 	public static JSONObject invalidParamsError(JSONObject request, Failure failure) {
-		return errorResponse(request, RpcError.INVALID_PARAMS, failure.message());
+		var response = errorResponse(request, RpcError.INVALID_PARAMS, failure.message());
+
+		if (failure instanceof ExtendedFailure) {
+			var extended = (ExtendedFailure) failure;
+			response.put("code", extended.code());
+		}
+
+		return response;
 	}
 
 	public static Result<JSONObject> jsonObject(String data) {
@@ -140,13 +148,6 @@ public final class JsonRpcUtil {
 
 	public static JSONObject errorResponse(RpcError code, String message) {
 		return errorResponse(JSONObject.NULL, code, message);
-	}
-
-	public static JSONObject notification(String method, JSONObject params) {
-		return jsonObject()
-			.put("jsonrpc", "2.0")
-			.put("method", method)
-			.put("params", params);
 	}
 
 	private static JSONObject commonFields(Object id) {

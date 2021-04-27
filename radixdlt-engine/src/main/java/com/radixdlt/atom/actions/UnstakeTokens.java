@@ -21,6 +21,7 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.TxErrorCode;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.crypto.ECPublicKey;
@@ -58,6 +59,7 @@ public final class UnstakeTokens implements TxAction {
 			StakedTokensParticle::getAmount,
 			amt -> new StakedTokensParticle(delegateAddress, accountAddr, amt),
 			amount,
+			TxErrorCode.NOT_ENOUGH_STAKED,
 			"Not enough staked."
 		).with(amt -> new TokensParticle(accountAddr, amt, REAddr.ofNativeToken()));
 	}

@@ -23,12 +23,11 @@ import java.util.Objects;
 /**
  * Simplest failure descriptor.
  */
-public final class Failure {
-	private final String message;
-
-	private Failure(String message) {
-		this.message = message;
-	}
+public interface Failure {
+	/**
+	 * Message associated with the failure.
+	 */
+	String message();
 
 	/**
 	 * Create instance of Failure with given message.
@@ -37,8 +36,32 @@ public final class Failure {
 	 *
 	 * @return created instance of Failure
 	 */
-	public static Failure failure(final String message) {
-		return new Failure(message);
+	static Failure failure(final String message) {
+		return new Failure() {
+			@Override
+			public String message() {
+				return message;
+			}
+
+			@Override
+			public int hashCode() {
+				return Objects.hash(message);
+			}
+
+			@Override
+			public boolean equals(final Object obj) {
+				if (obj == this) {
+					return true;
+				}
+
+				return (obj instanceof Failure) && Objects.equals(((Failure) obj).message(), message);
+			}
+
+			@Override
+			public String toString() {
+				return message;
+			}
+		};
 	}
 
 	/**
@@ -51,30 +74,7 @@ public final class Failure {
 	 *
 	 * @see MessageFormat for supported format string options
 	 */
-	public static Failure failure(final String format, Object... values) {
-		return new Failure(MessageFormat.format(format, values));
-	}
-
-	public String message() {
-		return message;
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(message);
-	}
-
-	@Override
-	public boolean equals(final Object obj) {
-		if (obj == this) {
-			return true;
-		}
-
-		return (obj instanceof Failure) && Objects.equals(((Failure) obj).message(), message);
-	}
-
-	@Override
-	public String toString() {
-		return message;
+	static Failure failure(final String format, Object... values) {
+		return failure(MessageFormat.format(format, values));
 	}
 }

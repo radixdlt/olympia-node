@@ -21,6 +21,7 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.TxErrorCode;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -56,6 +57,7 @@ public final class BurnToken implements TxAction {
 			TokensParticle::getAmount,
 			amt -> new TokensParticle(accountAddr, amt, resourceAddr),
 			amount,
+			TxErrorCode.INSUFFICIENT_FUNDS_FOR_FEE,
 			"Not enough balance to for fee burn."
 		);
 	}

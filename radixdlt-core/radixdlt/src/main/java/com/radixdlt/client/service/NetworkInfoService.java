@@ -81,7 +81,7 @@ public class NetworkInfoService {
 		private final MovingAverage calculator;
 		private long lastValue;
 
-		public ValueHolder(long averagingFactor) {
+		private ValueHolder(long averagingFactor) {
 			this.calculator = MovingAverage.create(averagingFactor);
 		}
 

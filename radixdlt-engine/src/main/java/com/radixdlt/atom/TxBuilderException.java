@@ -22,7 +22,14 @@ package com.radixdlt.atom;
  * Exception which occurs when trying to build a transaction
  */
 public class TxBuilderException extends Exception {
-	public TxBuilderException(String message) {
+	private final TxErrorCode code;
+
+	public TxBuilderException(TxErrorCode code, String message) {
 		super(message);
+		this.code = code;
+	}
+
+	public TxErrorCode getCode() {
+		return code;
 	}
 }

@@ -20,6 +20,8 @@ package com.radixdlt.client.service;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.TxErrorCode;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.BurnToken;
@@ -77,6 +79,8 @@ public final class SubmissionService {
 				.map(this::toPreparedTx);
 
 			return Result.ok(transaction);
+		} catch (TxBuilderException e) {
+			return Result.fail(ExtendedFailure.create(e.getCode().code(), e.getMessage()));
 		} catch (Exception e) {
 			return Result.fail(e.getMessage());
 		}
@@ -84,7 +88,7 @@ public final class SubmissionService {
 
 	private List<TxAction> toActionsAndFee(REAddr addr, List<TransactionAction> steps) {
 		return Stream.concat(
-			steps.stream().map(t -> t.toAction()),
+			steps.stream().map(TransactionAction::toAction),
 			Stream.of(new BurnToken(REAddr.ofNativeToken(), addr, TokenFeeChecker.FIXED_FEE))
 		).collect(Collectors.toList());
 	}
@@ -97,7 +101,7 @@ public final class SubmissionService {
 	public Result<AID> submitTx(byte[] blob, ECDSASignature recoverable, AID txId) {
 		var txn = TxLowLevelBuilder.newBuilder(blob).sig(recoverable).build();
 		if (!txn.getId().equals(txId)) {
-			return Result.fail("Provided txID does not match provided transaction");
+			return submissionFailure("Provided txID does not match provided transaction");
 		}
 
 		var completableFuture = new CompletableFuture<MempoolAddSuccess>();
@@ -109,10 +113,14 @@ public final class SubmissionService {
 			return Result.ok(success.getTxn().getId());
 		} catch (ExecutionException e) {
 			logger.warn("Unable to fulfill submission request: {}", txId);
-			return Result.fail(e);
+			return submissionFailure(e.getMessage());
 		} catch (InterruptedException e) {
 			throw new IllegalStateException(e);
 		}
+	}
+
+	private Result<AID> submissionFailure(String message) {
+		return Result.fail(ExtendedFailure.create(TxErrorCode.SUBMISSION_FAILURE.code(), message));
 	}
 
 	private PreparedTransaction toPreparedTx(byte[] first, HashCode second) {

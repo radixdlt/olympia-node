@@ -22,6 +22,7 @@ import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.TxErrorCode;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.crypto.ECPublicKey;
@@ -62,6 +63,7 @@ public final class StakeTokens implements TxAction {
 			TokensParticle::getAmount,
 			amt -> new TokensParticle(fromAcct, amt, REAddr.ofNativeToken()),
 			amount,
+			TxErrorCode.INSUFFICIENT_FUNDS,
 			"Not enough balance for staking."
 		).with(amt -> new StakedTokensParticle(delegateKey, fromAcct, amt));
 	}

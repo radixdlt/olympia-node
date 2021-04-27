@@ -39,6 +39,10 @@ public final class ExtendedFailure implements Failure {
 		return message;
 	}
 
+	public int code() {
+		return code;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
