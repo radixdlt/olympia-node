@@ -54,7 +54,11 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			StakedTokensParticle.class,
 			TokensParticle::getAmount,
 			StakedTokensParticle::getAmount,
-			(i, o) -> Result.success(),
+			checkEquals(
+				TokensParticle::getHoldingAddr,
+				StakedTokensParticle::getOwner,
+				"Can only stake with self as owner"
+			),
 			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getHoldingAddr()::allowToWithdrawFrom).orElse(false),
 			(i, o, index) -> new StakeTokens(o.getOwner(), o.getDelegateKey(), o.getAmount()) // FIXME: this isn't 100% correct
 		));
@@ -65,7 +69,11 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			TokensParticle.class,
 			StakedTokensParticle::getAmount,
 			TokensParticle::getAmount,
-			(i, o) -> Result.success(),
+			checkEquals(
+				StakedTokensParticle::getOwner,
+				TokensParticle::getHoldingAddr,
+				"Can only unstake back to self"
+			),
 			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
 			(i, o, index) -> new UnstakeTokens(i.getOwner(), i.getDelegateKey(), o.getAmount()) // FIXME: this isn't 100% correct
 		));
