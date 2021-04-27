@@ -49,7 +49,7 @@ jobs:
           fi
           version=$(./gradlew radixCiVersion | grep radixdlt-version | cut -d: -f2)
           echo "Version: $version"
-          ./gradlew build -x test
+          ./gradlew clean build -x test
       - name: Archive radixdlt-core build distributions
         uses: actions/upload-artifact@v2
         with:
