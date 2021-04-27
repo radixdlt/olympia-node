@@ -21,9 +21,9 @@ import java.util.List;
 import java.util.Objects;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.network.p2p.RadixNodeUri;
 import org.radix.network.messaging.Message;
 
-import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
@@ -34,7 +34,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public final class PeersMessage extends Message {
 	@JsonProperty("peers")
 	@DsonOutput(Output.ALL)
-	private final ImmutableList<PeerWithSystem> peers;
+	private final ImmutableList<RadixNodeUri> peers;
 
 	// For serializer
 	private PeersMessage() {
@@ -46,13 +46,13 @@ public final class PeersMessage extends Message {
 		this(magic, ImmutableList.of());
 	}
 
-	public PeersMessage(int magic, ImmutableList<PeerWithSystem> peers) {
+	public PeersMessage(int magic, ImmutableList<RadixNodeUri> peers) {
 		super(magic);
 
 		this.peers = peers;
 	}
 
-	public List<PeerWithSystem> getPeers() {
+	public List<RadixNodeUri> getPeers() {
 		return peers;
 	}
 

@@ -29,7 +29,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.network.addressbook.PeersView;
+import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.sync.SyncState.IdleState;
 import com.radixdlt.sync.SyncState.SyncCheckState;
 import com.radixdlt.sync.SyncState.SyncingState;
@@ -37,8 +37,6 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Comparator;
 import java.util.Objects;
@@ -46,6 +44,7 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.annotation.concurrent.NotThreadSafe;
 
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
@@ -216,10 +215,11 @@ public final class LocalSyncService {
 	}
 
 	private ImmutableSet<BFTNode> choosePeersForSyncCheck() {
-		final var allPeers = new ArrayList<>(this.peersView.peers());
+		final var allPeers = this.peersView.peers().collect(Collectors.toList());
 		Collections.shuffle(allPeers);
 		return allPeers.stream()
 			.limit(this.syncConfig.syncCheckMaxPeers())
+			.map(PeersView.PeerInfo::bftNode)
 			.collect(ImmutableSet.toImmutableSet());
 	}
 
@@ -313,9 +313,8 @@ public final class LocalSyncService {
 			return currentState; // we're already waiting for a response from peer
 		}
 
-		List<BFTNode> currentPeers = this.peersView.peers();
 		final Optional<BFTNode> peerToUse = currentState.candidatePeers().stream()
-			.filter(currentPeers::contains)
+			.filter(peersView::hasPeer)
 			.findFirst();
 
 		return peerToUse

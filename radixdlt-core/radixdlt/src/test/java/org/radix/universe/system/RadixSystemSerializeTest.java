@@ -25,7 +25,6 @@ import org.junit.Test;
 import org.radix.Radix;
 import org.radix.serialization.SerializeMessageObject;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.ECKeyPair;
 
 import static org.junit.Assert.*;
@@ -46,7 +45,7 @@ public class RadixSystemSerializeTest extends SerializeMessageObject<RadixSystem
 	public void sensibleToString() {
 		ECKeyPair key = ECKeyPair.generateNew();
 		RadixSystem system = new RadixSystem(
-				key.getPublicKey(), Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, ImmutableList.of());
+			key.getPublicKey(), Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION);
 
 		assertEquals(key.getPublicKey().euid().toString(), system.toString());
 	}
@@ -54,9 +53,9 @@ public class RadixSystemSerializeTest extends SerializeMessageObject<RadixSystem
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(RadixSystem.class)
-				.suppress(Warning.NONFINAL_FIELDS)
-				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-				.usingGetClass()
-				.verify();
+			.suppress(Warning.NONFINAL_FIELDS)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.usingGetClass()
+			.verify();
 	}
 }

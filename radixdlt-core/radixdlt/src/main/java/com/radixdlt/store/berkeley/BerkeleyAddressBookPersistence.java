@@ -17,14 +17,13 @@
 
 package com.radixdlt.store.berkeley;
 
+/*
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.network.addressbook.PeerPersistence;
-import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -43,11 +42,13 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.function.Consumer;
+*/
 
 /**
  * Persistence for peers.
  */
-public class BerkeleyAddressBookPersistence implements PeerPersistence {
+public class BerkeleyAddressBookPersistence {
+	/*
 	private static final Logger log = LogManager.getLogger();
 
 	private final Serialization serialization;
@@ -176,5 +177,6 @@ public class BerkeleyAddressBookPersistence implements PeerPersistence {
 	private void addBytesWrite(int bytesWrite) {
 		this.systemCounters.add(CounterType.COUNT_BDB_ADDRESS_BOOK_BYTES_WRITE, bytesWrite);
 	}
+	 */
 }
 

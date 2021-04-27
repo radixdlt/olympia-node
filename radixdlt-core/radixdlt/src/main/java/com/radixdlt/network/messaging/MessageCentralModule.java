@@ -23,7 +23,6 @@ import com.google.inject.Singleton;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.network.transport.FirstMatchTransportManager;
 import com.radixdlt.properties.RuntimeProperties;
 
 /**
@@ -51,6 +50,5 @@ public final class MessageCentralModule extends AbstractModule {
 
 		// MessageCentral dependencies
 		bind(MessageCentralConfiguration.class).toInstance(this.config);
-		bind(TransportManager.class).to(FirstMatchTransportManager.class);
 	}
 }

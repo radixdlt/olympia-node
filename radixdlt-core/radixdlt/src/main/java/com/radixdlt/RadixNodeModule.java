@@ -24,6 +24,8 @@ import com.radixdlt.api.NodeApiModule;
 
 import com.radixdlt.api.UniverseController;
 import com.radixdlt.api.faucet.FaucetModule;
+import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
+import com.radixdlt.network.p2p.P2PModule;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
@@ -52,14 +54,9 @@ import com.radixdlt.keys.PersistedBFTKeyModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.middleware2.InfoSupplier;
-import com.radixdlt.network.NetworkModule;
-import com.radixdlt.network.addressbook.AddressBookModule;
-import com.radixdlt.network.hostip.HostIp;
+import com.radixdlt.network.messaging.MessagingModule;
 import com.radixdlt.network.hostip.HostIpModule;
 import com.radixdlt.network.messaging.MessageCentralModule;
-import com.radixdlt.network.transport.tcp.TCPConfiguration;
-import com.radixdlt.network.transport.tcp.TCPTransportModule;
-import com.radixdlt.network.transport.udp.UDPTransportModule;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
@@ -186,25 +183,19 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new SystemInfoModule());
 
 		// Network
-		install(new NetworkModule());
+		install(new MessagingModule());
 		install(new MessageCentralModule(properties));
 		install(new UDPTransportModule(properties));
 		install(new TCPTransportModule(properties));
 		install(new AddressBookModule());
 		install(new HostIpModule(properties));
+		install(new P2PModule(properties));
+		install(new PeerLivenessMonitorModule());
 	}
 
 	@Provides
 	@Singleton
-	LocalSystem localSystem(
-		@Self BFTNode self,
-		InfoSupplier infoSupplier,
-		HostIp hostIp,
-		TCPConfiguration tcpConfiguration
-	) {
-		final var host = hostIp.hostIp().orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
-		final var listenPort = tcpConfiguration.listenPort(30000);
-		final var broadcastPort = tcpConfiguration.broadcastPort(listenPort); // defaults to listen port
-		return LocalSystem.create(self, infoSupplier, host, broadcastPort);
+	LocalSystem localSystem(@Self BFTNode self, InfoSupplier infoSupplier) {
+		return LocalSystem.create(self, infoSupplier);
 	}
 }

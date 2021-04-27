@@ -17,13 +17,13 @@
 
 package com.radixdlt.chaos.mempoolfiller;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
@@ -34,7 +34,7 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.network.addressbook.PeersView;
+import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineMempool;
 import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
@@ -43,7 +43,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 /**
@@ -160,7 +159,9 @@ public final class MempoolFiller {
 				);
 			}
 
-			List<BFTNode> peers = peersView.peers();
+			final var peers = peersView.peers()
+				.map(PeersView.PeerInfo::bftNode)
+				.collect(ImmutableList.toImmutableList());
 			txns.forEach(txn -> {
 				int index = random.nextInt(sendToSelf ? peers.size() + 1 : peers.size());
 				var mempoolAdd = MempoolAdd.create(txn);

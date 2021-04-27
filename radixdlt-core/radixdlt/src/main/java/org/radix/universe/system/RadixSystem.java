@@ -19,11 +19,9 @@ package org.radix.universe.system;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.network.transport.TransportInfo;
 
 import org.bouncycastle.util.encoders.Hex;
 import org.radix.containers.BasicContainer;
@@ -35,7 +33,6 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
 
 import static com.radixdlt.serialization.MapHelper.mapOf;
 
@@ -51,10 +48,6 @@ public class RadixSystem extends BasicContainer {
 
 	private String agent;
 
-	@JsonProperty("transports")
-	@DsonOutput(Output.ALL)
-	private ImmutableList<TransportInfo> transports;
-
 	private ECPublicKey key;
 
 	public RadixSystem() {
@@ -63,18 +56,16 @@ public class RadixSystem extends BasicContainer {
 		this.agent = "unknown";
 		this.agentVersion = 0;
 		this.protocolVersion = 0;
-		this.transports = ImmutableList.of();
 		this.key = null;
 	}
 
-	public RadixSystem(ECPublicKey key, String agent, int agentVersion, int protocolVersion, ImmutableList<TransportInfo> transports) {
+	public RadixSystem(ECPublicKey key, String agent, int agentVersion, int protocolVersion) {
 		this();
 
 		this.key = key;
 		this.agent = agent;
 		this.agentVersion = agentVersion;
 		this.protocolVersion = protocolVersion;
-		this.transports = transports;
 	}
 
 	public String getAgent() {
@@ -87,14 +78,6 @@ public class RadixSystem extends BasicContainer {
 
 	public int getProtocolVersion() {
 		return this.protocolVersion;
-	}
-
-	public boolean hasTransports() {
-		return !this.transports.isEmpty();
-	}
-
-	public Stream<TransportInfo> supportedTransports() {
-		return transports.stream();
 	}
 
 	public ECPublicKey getKey() {
@@ -165,12 +148,11 @@ public class RadixSystem extends BasicContainer {
 		return agentVersion == that.agentVersion
 			&& protocolVersion == that.protocolVersion
 			&& Objects.equals(agent, that.agent)
-			&& Objects.equals(transports, that.transports)
 			&& Objects.equals(key, that.key);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(agentVersion, protocolVersion, agent, transports, key);
+		return Objects.hash(agentVersion, protocolVersion, agent, key);
 	}
 }

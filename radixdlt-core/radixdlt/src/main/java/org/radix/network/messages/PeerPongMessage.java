@@ -17,49 +17,26 @@
 
 package org.radix.network.messages;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.primitives.UnsignedLong;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import org.radix.universe.system.RadixSystem;
-import org.radix.universe.system.SystemMessage;
+import org.radix.network.messaging.Message;
 
 import java.util.Objects;
 
-@SerializerId2("peer.pong")
-public final class PeerPongMessage extends SystemMessage {
-	@JsonProperty("nonce")
-	@DsonOutput(Output.ALL)
-	private long nonce;
-
-	@JsonProperty("payload")
-	@DsonOutput(Output.ALL)
-	private long payload;
+@SerializerId2("p2p.pong")
+public final class PeerPongMessage extends Message {
 
 	PeerPongMessage() {
 		// for serializer
+		super(0);
 	}
 
-	public PeerPongMessage(int magic, long nonce, long payload, RadixSystem system) {
-		super(system, magic);
-
-		this.nonce = nonce;
-		this.payload = payload;
-	}
-
-	public long getNonce() {
-		return nonce;
-	}
-
-	public long getPayload() {
-		return payload;
+	public PeerPongMessage(int magic) {
+		super(magic);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s:%s]",
-			getClass().getSimpleName(), getSystem().getNID(), formatNonce(nonce), UnsignedLong.fromLongBits(payload));
+		return String.format("%s[]", getClass().getSimpleName());
 	}
 
 	@Override
@@ -70,21 +47,13 @@ public final class PeerPongMessage extends SystemMessage {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-		PeerPongMessage that = (PeerPongMessage) o;
-		return nonce == that.nonce
-				&& payload == that.payload
-				&& Objects.equals(getTimestamp(), that.getTimestamp())
-				&& Objects.equals(getMagic(), that.getMagic())
-				&& Objects.equals(getSystem(), that.getSystem())
-				&& Objects.equals(getSignature(), that.getSignature());
+		final var that = (PeerPongMessage) o;
+		return Objects.equals(getTimestamp(), that.getTimestamp())
+				&& Objects.equals(getMagic(), that.getMagic());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(nonce, payload, getTimestamp(), getMagic(), getSystem(), getSignature());
-	}
-
-	private String formatNonce(long nonce) {
-		return Long.toHexString(nonce);
+		return Objects.hash(getTimestamp(), getMagic());
 	}
 }

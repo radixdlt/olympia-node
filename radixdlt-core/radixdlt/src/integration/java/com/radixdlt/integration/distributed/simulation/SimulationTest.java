@@ -51,7 +51,7 @@ import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.MockedCryptoModule;
 import com.radixdlt.MockedPersistenceStoreModule;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
-import com.radixdlt.integration.distributed.MockedAddressBookModule;
+import com.radixdlt.integration.distributed.MockedPeersViewModule;
 import com.radixdlt.statecomputer.checkpoint.RadixNativeTokenModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -513,7 +513,7 @@ public class SimulationTest {
 			modules.add(new MockedSystemModule());
 			modules.add(new MockedKeyModule());
 			modules.add(new MockedCryptoModule());
-			modules.add(new MockedAddressBookModule(this.addressBookNodes));
+			modules.add(new MockedPeersViewModule(this.addressBookNodes));
 
 			// Functional
 			modules.add(new FunctionalNodeModule(

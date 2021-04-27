@@ -17,22 +17,34 @@
 
 package com.radixdlt.middleware2.network;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageCentralMockProvider;
 
+import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.utils.RandomHasher;
 import io.reactivex.rxjava3.subscribers.TestSubscriber;
 import org.junit.Before;
@@ -41,7 +53,6 @@ import org.radix.universe.system.RadixSystem;
 
 public class MessageCentralValidatorSyncTest {
 	private BFTNode self;
-	private AddressBook addressBook;
 	private MessageCentral messageCentral;
 	private MessageCentralValidatorSync sync;
 	private Hasher hasher;
@@ -53,22 +64,57 @@ public class MessageCentralValidatorSyncTest {
 		ECPublicKey pubKey = mock(ECPublicKey.class);
 		when(pubKey.euid()).thenReturn(selfEUID);
 		when(self.getKey()).thenReturn(pubKey);
-		this.addressBook = mock(AddressBook.class);
 		this.messageCentral = MessageCentralMockProvider.get();
 		this.hasher = new RandomHasher();
-		this.sync = new MessageCentralValidatorSync(self, 0, addressBook, messageCentral, hasher);
+		this.sync = new MessageCentralValidatorSync(self, 0, messageCentral, hasher);
+	}
+
+	@Test
+	public void when_send_rpc_to_self__then_illegal_state_exception_should_be_thrown() {
+		assertThatThrownBy(() -> sync.sendGetVerticesRequest(self, mock(GetVerticesRequest.class)))
+			.isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	public void when_send_response__then_message_central_will_send_response() {
+		VerifiedVertex vertex = mock(VerifiedVertex.class);
+		when(vertex.toSerializable()).thenReturn(mock(UnverifiedVertex.class));
+		ImmutableList<VerifiedVertex> vertices = ImmutableList.of(vertex);
+
+		BFTNode node = mock(BFTNode.class);
+		ECPublicKey ecPublicKey = mock(ECPublicKey.class);
+		when(ecPublicKey.euid()).thenReturn(mock(EUID.class));
+		when(node.getKey()).thenReturn(ecPublicKey);
+
+		sync.sendGetVerticesResponse(node, vertices);
+		verify(messageCentral, times(1)).send(any(), any(GetVerticesResponseMessage.class));
+	}
+
+	@Test
+	public void when_send_error_response__then_message_central_will_send_error_response() {
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		HighQC highQC = mock(HighQC.class);
+		when(highQC.highestQC()).thenReturn(qc);
+		when(highQC.highestCommittedQC()).thenReturn(qc);
+		BFTNode node = mock(BFTNode.class);
+		ECPublicKey ecPublicKey = mock(ECPublicKey.class);
+		when(ecPublicKey.euid()).thenReturn(mock(EUID.class));
+		when(node.getKey()).thenReturn(ecPublicKey);
+		final var request = new GetVerticesRequest(HashUtils.random256(), 3);
+
+		sync.sendGetVerticesErrorResponse(node, highQC, request);
+
+		verify(messageCentral, times(1)).send(eq(NodeId.fromPublicKey(ecPublicKey)), any(GetVerticesErrorResponseMessage.class));
 	}
 
 	@Test
 	public void when_subscribed_to_rpc_requests__then_should_receive_requests() {
-		Peer peer = mock(Peer.class);
-		when(peer.hasSystem()).thenReturn(true);
 		RadixSystem system = mock(RadixSystem.class);
 		when(system.getKey()).thenReturn(ECKeyPair.generateNew().getPublicKey());
-		when(peer.getSystem()).thenReturn(system);
 		HashCode vertexId0 = mock(HashCode.class);
 		HashCode vertexId1 = mock(HashCode.class);
 
+		final var peer = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
 		TestSubscriber<GetVerticesRequest> testObserver = sync.requests().map(RemoteEvent::getEvent).test();
 		messageCentral.send(peer, new GetVerticesRequestMessage(0, vertexId0, 1));
 		messageCentral.send(peer, new GetVerticesRequestMessage(0, vertexId1, 1));
@@ -77,4 +123,5 @@ public class MessageCentralValidatorSyncTest {
 		testObserver.assertValueAt(0, v -> v.getVertexId().equals(vertexId0));
 		testObserver.assertValueAt(1, v -> v.getVertexId().equals(vertexId1));
 	}
+
 }

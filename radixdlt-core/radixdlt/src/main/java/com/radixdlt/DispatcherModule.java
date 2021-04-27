@@ -24,7 +24,13 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.mempool.MempoolRelayTrigger;
-
+import com.radixdlt.network.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
+import com.radixdlt.network.p2p.discovery.DiscoverPeers;
+import com.radixdlt.network.p2p.PeerEvent;
+import com.radixdlt.network.p2p.liveness.PeerPingTimeout;
+import com.radixdlt.network.p2p.liveness.PeersLivenessCheckTrigger;
+import com.radixdlt.network.p2p.liveness.Ping;
+import com.radixdlt.network.p2p.liveness.Pong;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -237,6 +243,25 @@ public class DispatcherModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), epochsLedgerUpdateKey, ProcessOnDispatch.class);
 
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() { });
+
+		configureP2p();
+	}
+
+	private void configureP2p() {
+		bind(new TypeLiteral<EventDispatcher<PeerEvent>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(PeerEvent.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<PeersLivenessCheckTrigger>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(PeersLivenessCheckTrigger.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<ScheduledEventDispatcher<PeerPingTimeout>>() { })
+			.toProvider(Dispatchers.scheduledDispatcherProvider(PeerPingTimeout.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<ScheduledEventDispatcher<PeerOutboundConnectionTimeout>>() { })
+			.toProvider(Dispatchers.scheduledDispatcherProvider(PeerOutboundConnectionTimeout.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<RemoteEventDispatcher<Ping>>() { })
+			.toProvider(Dispatchers.remoteDispatcherProvider(Ping.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<RemoteEventDispatcher<Pong>>() { })
+			.toProvider(Dispatchers.remoteDispatcherProvider(Pong.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<DiscoverPeers>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(DiscoverPeers.class)).in(Scopes.SINGLETON);
 	}
 
 	@Provides

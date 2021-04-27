@@ -29,7 +29,7 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.deterministic.DeterministicEnvironmentModule;
-import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;

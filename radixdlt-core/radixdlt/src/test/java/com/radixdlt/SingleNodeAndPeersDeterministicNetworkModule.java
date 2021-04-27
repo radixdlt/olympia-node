@@ -30,7 +30,7 @@ import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.network.addressbook.PeersView;
+import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 
 import java.util.List;
@@ -50,8 +50,11 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
     @Provides
     @Singleton
     public PeersView peers(@Named("numPeers") int numPeers) {
-        List<BFTNode> peers = Stream.generate(BFTNode::random).limit(numPeers).collect(Collectors.toList());
-        return () -> peers;
+        final var peers = Stream.generate(BFTNode::random)
+            .limit(numPeers)
+            .map(PeersView.PeerInfo::fromBftNode)
+            .collect(ImmutableList.toImmutableList());
+        return peers::stream;
     }
 
     @Provides
@@ -70,7 +73,10 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
     @Singleton
     public DeterministicNetwork network(@Self BFTNode self, PeersView peersView) {
         return new DeterministicNetwork(
-            Stream.concat(Stream.of(self), peersView.peers().stream()).collect(Collectors.toList()),
+            Stream.concat(
+                Stream.of(self),
+                peersView.peers().map(PeersView.PeerInfo::bftNode)
+            ).collect(Collectors.toList()),
             MessageSelector.firstSelector(),
             MessageMutator.nothing()
         );

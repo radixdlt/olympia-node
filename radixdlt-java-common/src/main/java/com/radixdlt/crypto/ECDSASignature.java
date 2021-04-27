@@ -42,6 +42,8 @@ import java.util.Objects;
  */
 @SerializerId2("sig")
 public final class ECDSASignature implements Signature {
+	public static final byte UNCOMPRESSED_PREFIX = 0x04;
+
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(Output.ALL)

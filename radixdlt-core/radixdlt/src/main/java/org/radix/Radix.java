@@ -27,10 +27,10 @@ import com.radixdlt.client.ArchiveServer;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
+import com.radixdlt.network.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.utils.MemoryLeakDetector;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.network.addressbook.PeerManager;
 import com.radixdlt.properties.RuntimeProperties;
 
 import java.util.Map;
@@ -142,11 +142,10 @@ public final class Radix {
 		long start = System.currentTimeMillis();
 		Injector injector = Guice.createInjector(new RadixNodeModule(properties));
 
-		// setup networking
-		final PeerManager peerManager = injector.getInstance(PeerManager.class);
-		peerManager.start();
-
 		final Map<String, ModuleRunner> moduleRunners = injector.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { }));
+
+		final var p2pNetworkRunner = moduleRunners.get(Runners.P2P_NETWORK);
+		p2pNetworkRunner.start();
 
 		final var systemInfoRunner = moduleRunners.get(Runners.SYSTEM_INFO);
 		systemInfoRunner.start();
@@ -163,6 +162,13 @@ public final class Radix {
 		final var chaosRunner = moduleRunners.get(Runners.CHAOS);
 		if (chaosRunner != null) {
 			chaosRunner.start();
+		}
+
+		final var peerServer = injector.getInstance(PeerServerBootstrap.class);
+		try {
+			peerServer.start();
+		} catch (InterruptedException e) {
+			log.error("Cannot start p2p server", e);
 		}
 
 		// start API services

@@ -23,8 +23,10 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.util.Modules;
 import com.radixdlt.MockedKeyModule;
+import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
@@ -37,6 +39,7 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.EUID;
@@ -44,7 +47,7 @@ import com.radixdlt.FunctionalNodeModule;
 import com.radixdlt.MockedCryptoModule;
 import com.radixdlt.MockedPersistenceStoreModule;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.network.addressbook.PeersView;
+import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.recovery.MockedRecoveryModule;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.integration.distributed.deterministic.configuration.NodeIndexAndWeight;
@@ -55,7 +58,7 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.sync.MockedCommittedReaderModule;
 import com.radixdlt.sync.SyncConfig;
@@ -185,8 +188,9 @@ public final class DeterministicTest {
 			modules.add(new AbstractModule() {
 				@Provides
 				private PeersView peersView(@Self BFTNode self) {
-					var peers = nodes.stream().filter(n -> !self.equals(n)).collect(Collectors.toList());
-					return () -> peers;
+					return () -> nodes.stream()
+						.filter(n -> !self.equals(n))
+						.map(PeersView.PeerInfo::fromBftNode);
 				}
 
 				@Provides

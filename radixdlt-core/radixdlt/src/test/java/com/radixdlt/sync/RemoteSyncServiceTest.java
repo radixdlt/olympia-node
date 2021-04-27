@@ -34,15 +34,13 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.network.addressbook.PeerWithSystem;
-import com.radixdlt.network.addressbook.PeersView;
+import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
@@ -53,7 +51,6 @@ import java.util.Optional;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.radix.universe.system.RadixSystem;
 
 public class RemoteSyncServiceTest {
 
@@ -154,13 +151,5 @@ public class RemoteSyncServiceTest {
 
 		verifyNoMoreInteractions(peersView);
 		verifyNoMoreInteractions(statusUpdateDispatcher);
-	}
-
-	private PeerWithSystem createPeer() {
-		final var peer = mock(PeerWithSystem.class);
-		final var system = mock(RadixSystem.class);
-		when(system.getKey()).thenReturn(ECKeyPair.generateNew().getPublicKey());
-		when(peer.getSystem()).thenReturn(system);
-		return peer;
 	}
 }

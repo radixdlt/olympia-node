@@ -18,7 +18,7 @@
 package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
-import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.utils.TimeSupplier;
 import java.util.Random;
 
 public class MockedSystemModule extends AbstractModule {

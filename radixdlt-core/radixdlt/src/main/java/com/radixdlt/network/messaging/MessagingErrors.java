@@ -20,7 +20,7 @@ package com.radixdlt.network.messaging;
 import com.radixdlt.utils.functional.Failure;
 
 public enum MessagingErrors implements Failure {
-	PEER_IS_BANNED(1, "Peer is banned"),
+	MESSAGE_EXPIRED(1, "Message expired"),
 	UNKNOWN_PEER(2, "Peer not present in address book"),
 	INVALID_SIGNATURE(3, "Invalid signature"),
 	NULL_NID(4, "Null NID"),

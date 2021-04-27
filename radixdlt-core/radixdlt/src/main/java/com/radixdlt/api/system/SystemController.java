@@ -21,8 +21,7 @@ package com.radixdlt.api.system;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.PeerWithSystem;
+import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
@@ -38,8 +37,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 import org.radix.universe.system.LocalSystem;
 
-import java.util.stream.Stream;
-
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.RestUtils.respond;
 
@@ -47,21 +44,19 @@ public final class SystemController implements Controller {
 	private final LocalSystem localSystem;
 	private final VerifiedTxnsAndProof genesis;
 	private final InMemorySystemInfo inMemorySystemInfo;
-	private final AddressBook addressBook;
-	private final PeerWithSystem localPeer;
+	private final PeersView peersView;
 
 	@Inject
 	public SystemController(
 		InMemorySystemInfo inMemorySystemInfo,
 		LocalSystem localSystem,
-		AddressBook addressBook,
+		PeersView peersView,
 		@Genesis VerifiedTxnsAndProof genesis
 	) {
 		this.inMemorySystemInfo = inMemorySystemInfo;
-		this.addressBook = addressBook;
+		this.peersView = peersView;
 		this.genesis = genesis;
 		this.localSystem = localSystem;
-		this.localPeer = new PeerWithSystem(this.localSystem);
 	}
 
 	@Override
@@ -101,18 +96,14 @@ public final class SystemController implements Controller {
 	}
 
 
-	private Stream<PeerWithSystem> selfAndOthers(Stream<PeerWithSystem> others) {
-		return Stream.concat(Stream.of(this.localPeer), others).distinct();
-	}
-
 	private void respondWithLivePeers(final HttpServerExchange exchange) {
 		var peerArray = new JSONArray();
-		selfAndOthers(this.addressBook.recentPeers())
+		this.peersView.peers()
 			.map(peer -> {
-				var json = jsonObject().put("address", ValidatorAddress.of(peer.getSystem().getKey()));
-				peer.getSystem().supportedTransports().filter(t -> t.name().equals("TCP")).forEach(t -> {
-					String port = t.metadata().get("port");
-					String host = t.metadata().get("host");
+				var json = jsonObject().put("address", ValidatorAddress.of(peer.getNodeId().getPublicKey()));
+				peer.getUri().stream().forEach(uri -> {
+					final var port = uri.getPort();
+					final var host = uri.getHost();
 					json.put("endpoint", host + ":" + port);
 				});
 

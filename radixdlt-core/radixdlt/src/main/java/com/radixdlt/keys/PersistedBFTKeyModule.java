@@ -26,6 +26,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.properties.RuntimeProperties;
 
@@ -50,6 +51,12 @@ public final class PersistedBFTKeyModule extends AbstractModule {
 	@Self
 	ECPublicKey key(@Self BFTNode bftNode) {
 		return bftNode.getKey();
+	}
+
+	@Provides
+	@Self
+	ECKeyPair ecKeyPair(PersistedBFTKeyManager keyManager) {
+		return keyManager.getKeyPair();
 	}
 
 	@Provides

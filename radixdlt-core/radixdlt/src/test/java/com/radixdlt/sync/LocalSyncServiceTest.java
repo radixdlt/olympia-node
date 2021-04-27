@@ -45,10 +45,12 @@ import com.radixdlt.ledger.DtoTxnsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 
+import java.util.Arrays;
 import java.util.Comparator;
-import java.util.List;
+import java.util.stream.Stream;
 
-import com.radixdlt.network.addressbook.PeersView;
+import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.network.p2p.PeersView.PeerInfo;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
@@ -64,9 +66,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class LocalSyncServiceTest {
-
 	private LocalSyncService localSyncService;
-
 	private RemoteEventDispatcher<StatusRequest> statusRequestDispatcher;
 	private ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutDispatcher;
 	private RemoteEventDispatcher<SyncRequest> syncRequestDispatcher;
@@ -126,7 +126,7 @@ public class LocalSyncServiceTest {
 		final var peer2 = createPeer();
 		final var peer3 = createPeer();
 
-		when(peersView.peers()).thenReturn(List.of(peer1, peer2, peer3));
+		setupPeersView(peer1, peer2, peer3);
 
 		final LedgerProof currentHeader = mock(LedgerProof.class);
 		this.setupSyncServiceWithState(SyncState.IdleState.init(currentHeader));
@@ -156,7 +156,7 @@ public class LocalSyncServiceTest {
 	public void when_status_response_received_at_non_sync_check__then_should_be_ignored() {
 		final LedgerProof currentHeader = mock(LedgerProof.class);
 		final LedgerProof statusHeader = mock(LedgerProof.class);
-		final BFTNode sender = mock(BFTNode.class);
+		final BFTNode sender = createPeer();
 
 		this.setupSyncServiceWithState(SyncState.IdleState.init(currentHeader));
 		this.localSyncService.statusResponseEventProcessor().process(sender, StatusResponse.create(statusHeader));
@@ -174,8 +174,8 @@ public class LocalSyncServiceTest {
 	public void when_unexpected_status_response_received__then_should_be_ignored() {
 		final LedgerProof currentHeader = mock(LedgerProof.class);
 		final LedgerProof statusHeader = mock(LedgerProof.class);
-		final BFTNode expectedPeer = mock(BFTNode.class);
-		final BFTNode unexpectedPeer = mock(BFTNode.class);
+		final BFTNode expectedPeer = createPeer();
+		final BFTNode unexpectedPeer = createPeer();
 
 		this.setupSyncServiceWithState(SyncState.SyncCheckState.init(currentHeader, ImmutableSet.of(expectedPeer)));
 		this.localSyncService.statusResponseEventProcessor().process(unexpectedPeer, StatusResponse.create(statusHeader));
@@ -190,8 +190,8 @@ public class LocalSyncServiceTest {
 	public void when_duplicate_status_response_received__then_should_be_ignored() {
 		final LedgerProof currentHeader = mock(LedgerProof.class);
 		final LedgerProof statusHeader = mock(LedgerProof.class);
-		final BFTNode expectedPeer = mock(BFTNode.class);
-		final BFTNode alreadyReceivedPeer = mock(BFTNode.class);
+		final BFTNode expectedPeer = createPeer();
+		final BFTNode alreadyReceivedPeer = createPeer();
 
 		final var syncState =
 			SyncState.SyncCheckState.init(currentHeader, ImmutableSet.of(expectedPeer))
@@ -212,15 +212,15 @@ public class LocalSyncServiceTest {
 		final LedgerProof statusHeader1 = createHeaderAtStateVersion(2L);
 		final LedgerProof statusHeader2 = createHeaderAtStateVersion(20L);
 		final LedgerProof statusHeader3 = createHeaderAtStateVersion(15L);
-		final BFTNode waiting1 = mock(BFTNode.class);
-		final BFTNode waiting2 = mock(BFTNode.class);
-		final BFTNode waiting3 = mock(BFTNode.class);
+		final BFTNode waiting1 = createPeer();
+		final BFTNode waiting2 = createPeer();
+		final BFTNode waiting3 = createPeer();
 
 		final var syncState = SyncState.SyncCheckState.init(
 			currentHeader, ImmutableSet.of(waiting1, waiting2, waiting3));
 		this.setupSyncServiceWithState(syncState);
 
-		when(peersView.peers()).thenReturn(List.of(waiting2));
+		setupPeersView(waiting2);
 
 		this.localSyncService.statusResponseEventProcessor().process(waiting1, StatusResponse.create(statusHeader1));
 		this.localSyncService.statusResponseEventProcessor().process(waiting2, StatusResponse.create(statusHeader2));
@@ -232,8 +232,8 @@ public class LocalSyncServiceTest {
 	@Test
 	public void when_status_timeout_with_no_responses__then_should_reschedule_another_check() {
 		final LedgerProof currentHeader = createHeaderAtStateVersion(10L);
-		final BFTNode waiting1 = mock(BFTNode.class);
-		when(peersView.peers()).thenReturn(List.of(waiting1));
+		final BFTNode waiting1 = createPeer();
+		setupPeersView(waiting1);
 
 		final var syncState = SyncState.SyncCheckState.init(
 			currentHeader, ImmutableSet.of(waiting1));
@@ -252,9 +252,9 @@ public class LocalSyncServiceTest {
 		final LedgerProof currentHeader = createHeaderAtStateVersion(10L);
 		final LedgerProof statusHeader1 = createHeaderAtStateVersion(12L);
 		final LedgerProof statusHeader2 = createHeaderAtStateVersion(20L);
-		final BFTNode waiting1 = mock(BFTNode.class);
-		final BFTNode waiting2 = mock(BFTNode.class);
-		when(peersView.peers()).thenReturn(List.of(waiting1, waiting2));
+		final var waiting1 = createPeer();
+		final var waiting2 = createPeer();
+		setupPeersView(waiting1, waiting2);
 
 		final var syncState = SyncState.SyncCheckState.init(
 			currentHeader, ImmutableSet.of(waiting1, waiting2));
@@ -278,9 +278,9 @@ public class LocalSyncServiceTest {
 		final var currentHeader = createHeaderAtStateVersion(10L);
 		final var targetHeader = createHeaderAtStateVersion(20L);
 
-		final var peer1 = mock(BFTNode.class);
-		final var peer2 = mock(BFTNode.class);
-		when(peersView.peers()).thenReturn(List.of(peer1, peer2));
+		final var peer1 = createPeer();
+		final var peer2 = createPeer();
+		setupPeersView(peer1, peer2);
 
 		final var requestId = 1L;
 		final var originalCandidates = ImmutableList.of(peer1, peer2);
@@ -299,9 +299,9 @@ public class LocalSyncServiceTest {
 		final var currentHeader = createHeaderAtStateVersion(10L);
 		final var targetHeader = createHeaderAtStateVersion(20L);
 
-		final var peer1 = mock(BFTNode.class);
-		final var peer2 = mock(BFTNode.class);
-		when(peersView.peers()).thenReturn(List.of(peer1, peer2));
+		final var peer1 = createPeer();
+		final var peer2 = createPeer();
+		setupPeersView(peer1, peer2);
 
 		final var requestId = 1L;
 		final var originalCandidates = ImmutableList.of(peer1, peer2);
@@ -342,8 +342,8 @@ public class LocalSyncServiceTest {
 		final var currentHeader = createHeaderAtStateVersion(19L);
 		final var targetHeader = createHeaderAtStateVersion(20L);
 
-		final var peer1 = mock(BFTNode.class);
-		when(peersView.peers()).thenReturn(List.of(peer1));
+		final var peer1 = createPeer();
+		setupPeersView(peer1);
 
 		final var syncState = SyncState.SyncingState.init(
 			currentHeader, ImmutableList.of(peer1), targetHeader).withPendingRequest(peer1, 1L);
@@ -382,8 +382,8 @@ public class LocalSyncServiceTest {
 		final var currentHeader = createHeaderAtStateVersion(19L);
 		final var targetHeader = createHeaderAtStateVersion(20L);
 
-		final var peer1 = mock(BFTNode.class);
-		when(peersView.peers()).thenReturn(List.of(peer1));
+		final var peer1 = createPeer();
+		setupPeersView(peer1);
 
 		final var syncState = SyncState.SyncingState.init(
 				currentHeader, ImmutableList.of(peer1), targetHeader).withPendingRequest(peer1, 1L);
@@ -401,8 +401,8 @@ public class LocalSyncServiceTest {
 		final var currentHeader = createHeaderAtStateVersion(19L);
 		final var targetHeader = createHeaderAtStateVersion(21L);
 
-		final var peer1 = mock(BFTNode.class);
-		when(peersView.peers()).thenReturn(List.of(peer1));
+		final var peer1 = createPeer();
+		when(peersView.hasPeer(peer1)).thenReturn(true);
 
 		final var syncState = SyncState.SyncingState.init(
 			currentHeader, ImmutableList.of(peer1), targetHeader);
@@ -420,8 +420,8 @@ public class LocalSyncServiceTest {
 		final var currentHeader = createHeaderAtStateVersion(19L);
 		final var targetHeader = createHeaderAtStateVersion(21L);
 
-		final var peer1 = mock(BFTNode.class);
-		when(peersView.peers()).thenReturn(List.of(peer1));
+		final var peer1 = createPeer();
+		setupPeersView(peer1);
 
 		final var syncState = SyncState.IdleState.init(currentHeader);
 		this.setupSyncServiceWithState(syncState);
@@ -440,9 +440,9 @@ public class LocalSyncServiceTest {
 		final var targetHeader = createHeaderAtStateVersion(21L);
 		final var newTargetHeader = createHeaderAtStateVersion(22L);
 
-		final var peer1 = mock(BFTNode.class);
-		final var peer2 = mock(BFTNode.class);
-		when(peersView.peers()).thenReturn(List.of(peer1, peer2));
+		final var peer1 = createPeer();
+		final var peer2 = createPeer();
+		setupPeersView(peer1, peer2);
 
 		final var syncState = SyncState.SyncingState.init(
 			currentHeader, ImmutableList.of(peer1), targetHeader).withPendingRequest(peer1, 1L);
@@ -465,9 +465,9 @@ public class LocalSyncServiceTest {
 		final var targetHeader = createHeaderAtStateVersion(21L);
 		final var newTargetHeader = createHeaderAtStateVersion(20L);
 
-		final var peer1 = mock(BFTNode.class);
-		final var peer2 = mock(BFTNode.class);
-		when(peersView.peers()).thenReturn(List.of(peer1, peer2));
+		final var peer1 = createPeer();
+		final var peer2 = createPeer();
+		setupPeersView(peer1, peer2);
 
 		final var syncState = SyncState.SyncingState.init(
 			currentHeader, ImmutableList.of(peer1), targetHeader).withPendingRequest(peer1, 1L);
@@ -517,6 +517,13 @@ public class LocalSyncServiceTest {
 		when(header.getAccumulatorState()).thenReturn(accumulatorState);
 		when(accumulatorState.getStateVersion()).thenReturn(version);
 		return header;
+	}
+
+	private void setupPeersView(BFTNode... bftNodes) {
+		when(peersView.peers()).thenReturn(Stream.of(bftNodes).map(PeerInfo::fromBftNode));
+		Arrays.stream(bftNodes).forEach(peer ->
+			when(peersView.hasPeer(peer)).thenReturn(true)
+		);
 	}
 
 	private BFTNode createPeer() {

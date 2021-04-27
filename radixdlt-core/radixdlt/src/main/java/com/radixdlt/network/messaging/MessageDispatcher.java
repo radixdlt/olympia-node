@@ -17,28 +17,24 @@
 
 package com.radixdlt.network.messaging;
 
-import com.radixdlt.consensus.HashSigner;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.concurrent.CompletableFuture;
 
-import com.radixdlt.crypto.Hasher;
-
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.network.TimeSupplier;
-import com.radixdlt.network.addressbook.Peer;
-import com.radixdlt.network.transport.SendResult;
-import com.radixdlt.network.transport.Transport;
-import com.radixdlt.network.transport.TransportOutboundConnection;
+import com.radixdlt.utils.TimeSupplier;
+import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.transport.PeerChannel;
+import com.radixdlt.network.p2p.PeerManager;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.utils.Compress;
 
+import com.radixdlt.utils.functional.Result;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
-import org.radix.network.messaging.SignedMessage;
 
 /*
  * This could be moved into MessageCentralImpl at some stage, but has been
@@ -52,80 +48,58 @@ class MessageDispatcher {
 	private final SystemCounters counters;
 	private final Serialization serialization;
 	private final TimeSupplier timeSource;
-	private final Hasher hasher;
-	private final HashSigner hashSigner;
+	private final PeerManager peerManager;
 
 	MessageDispatcher(
 		SystemCounters counters,
 		MessageCentralConfiguration config,
 		Serialization serialization,
 		TimeSupplier timeSource,
-		Hasher hasher,
-		HashSigner hashSigner
+		PeerManager peerManager
 	) {
 		this.messageTtlMs = config.messagingTimeToLive(30_000L);
 		this.counters = counters;
 		this.serialization = serialization;
 		this.timeSource = timeSource;
-		this.hasher = hasher;
-		this.hashSigner = hashSigner;
+		this.peerManager = peerManager;
 	}
 
-	CompletableFuture<SendResult> send(TransportManager transportManager, final OutboundMessageEvent outboundMessage) {
-		final Message message = outboundMessage.message();
-		final Peer peer = outboundMessage.peer();
+	CompletableFuture<Result<Object>> send(final OutboundMessageEvent outboundMessage) {
+		final var message = outboundMessage.message();
+		final var receiver = outboundMessage.receiver();
 
 		if (timeSource.currentTime() - message.getTimestamp() > messageTtlMs) {
-			String msg = String.format("TTL for %s message to %s has expired", message.getClass().getSimpleName(), peer);
+			String msg = String.format("TTL for %s message to %s has expired", message.getClass().getSimpleName(), receiver);
 			log.warn(msg);
 			this.counters.increment(CounterType.MESSAGES_OUTBOUND_ABORTED);
-			return CompletableFuture.completedFuture(SendResult.failure(new IOException(msg)));
+			return CompletableFuture.completedFuture(Result.fail(new IOException(msg)));
 		}
 
-		if (message instanceof SignedMessage) {
-			SignedMessage signedMessage = (SignedMessage) message;
-			if (signedMessage.getSignature() == null) {
-				byte[] hash = hasher.hash(signedMessage).asBytes();
-				signedMessage.setSignature(hashSigner.sign(hash));
-			}
-		}
+		final var bytes = serialize(message);
 
-		byte[] bytes = serialize(message);
-		return findTransportAndOpenConnection(transportManager, peer, bytes)
-			.thenCompose(conn -> send(conn, message, bytes))
+		return peerManager.findOrCreateChannel(outboundMessage.receiver())
+			.thenApply(channel -> send(channel, bytes))
 			.thenApply(this::updateStatistics)
-			.exceptionally(t -> completionException(t, peer, message));
+			.exceptionally(t -> completionException(t, receiver, message));
 	}
 
-	private CompletableFuture<SendResult> send(TransportOutboundConnection conn, Message message, byte[] bytes) {
-		log.trace("Sending to {}: {}", conn, message);
+	private Result<Object> send(PeerChannel channel, byte[] bytes) {
 		this.counters.add(CounterType.NETWORKING_SENT_BYTES, bytes.length);
-		return conn.send(bytes);
+		return channel.send(bytes);
 	}
 
-	private SendResult completionException(Throwable cause, Peer receiver, Message message) {
-		String msg = String.format("Send %s to %s failed", message.getClass().getSimpleName(), receiver);
+	private Result<Object> completionException(Throwable cause, NodeId receiver, Message message) {
+		final var msg = String.format("Send %s to %s failed", message.getClass().getSimpleName(), receiver);
 		log.warn("{}: {}", msg, cause.getMessage());
-		return SendResult.failure(new IOException(msg, cause));
+		return Result.fail(new IOException(msg, cause));
 	}
 
-	private SendResult updateStatistics(SendResult result) {
+	private Result<Object> updateStatistics(Result<Object> result) {
 		this.counters.increment(CounterType.MESSAGES_OUTBOUND_PROCESSED);
-		if (result.isComplete()) {
+		if (result.isSuccess()) {
 			this.counters.increment(CounterType.MESSAGES_OUTBOUND_SENT);
 		}
 		return result;
-	}
-
-	@SuppressWarnings("resource")
-	// Resource warning suppression OK here -> caller is responsible
-	private CompletableFuture<TransportOutboundConnection> findTransportAndOpenConnection(
-		TransportManager transportManager,
-		Peer peer,
-		byte[] bytes
-	) {
-		Transport transport = transportManager.findTransport(peer, bytes);
-		return transport.control().open(peer.connectionData(transport.name()));
 	}
 
 	private byte[] serialize(Message out) {

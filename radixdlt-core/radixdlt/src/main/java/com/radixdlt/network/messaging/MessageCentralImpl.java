@@ -17,43 +17,29 @@
 
 package com.radixdlt.network.messaging;
 
-import com.radixdlt.consensus.HashSigner;
-import java.io.IOException;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-import com.radixdlt.crypto.Hasher;
-import java.util.stream.Collectors;
-
+import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.PeerManager;
 import io.reactivex.rxjava3.core.Observable;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
-import org.radix.universe.system.LocalSystem;
-import org.radix.universe.system.SystemMessage;
 import org.radix.utils.SimpleThreadPool;
 
-import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.network.TimeSupplier;
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.Peer;
-import com.radixdlt.network.addressbook.PeerWithTransport;
-import com.radixdlt.network.transport.Transport;
-import com.radixdlt.network.transport.TransportInfo;
+import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.serialization.Serialization;
 
 final class MessageCentralImpl implements MessageCentral {
 	private static final Logger log = LogManager.getLogger();
 
 	// Dependencies
-	private final TransportManager connectionManager;
-	private final AddressBook addressBook;
 	private final SystemCounters counters;
 
 	// Message dispatching
@@ -62,9 +48,6 @@ final class MessageCentralImpl implements MessageCentral {
 
 	// Our time base for System.nanoTime() differences.  Per documentation can only compare deltas
 	private final long timeBase = System.nanoTime();
-
-	// Listeners we are managing
-	private final List<Transport> transports;
 
 	private final RateLimiter outboundLogRateLimiter = RateLimiter.create(1.0);
 	private final RateLimiter discardedInboundMessagesLogRateLimiter = RateLimiter.create(1.0);
@@ -79,23 +62,16 @@ final class MessageCentralImpl implements MessageCentral {
 	MessageCentralImpl(
 		MessageCentralConfiguration config,
 		Serialization serialization,
-		TransportManager transportManager,
-		AddressBook addressBook,
+		PeerManager peerManager,
 		TimeSupplier timeSource,
 		EventQueueFactory<OutboundMessageEvent> outboundEventQueueFactory,
-		LocalSystem localSystem,
-		SystemCounters counters,
-		Hasher hasher,
-		HashSigner hashSigner
+		SystemCounters counters
 	) {
 		this.counters = Objects.requireNonNull(counters);
 		this.outboundQueue = outboundEventQueueFactory.createEventQueue(
 			config.messagingOutboundQueueMax(16384),
 			OutboundMessageEvent.comparator()
 		);
-
-		this.connectionManager = Objects.requireNonNull(transportManager);
-		this.addressBook = Objects.requireNonNull(addressBook);
 
 		Objects.requireNonNull(timeSource);
 		Objects.requireNonNull(serialization);
@@ -105,21 +81,15 @@ final class MessageCentralImpl implements MessageCentral {
 			config,
 			serialization,
 			timeSource,
-			hasher,
-			hashSigner
+			peerManager
 		);
 
 		this.messagePreprocessor = new MessagePreprocessor(
 			counters,
 			config,
 			timeSource,
-			localSystem,
-			this.addressBook,
-			hasher,
 			serialization
 		);
-
-		this.transports = Lists.newArrayList(transportManager.transports());
 
 		// Start outbound processing thread
 		this.outboundThreadPool = new SimpleThreadPool<>(
@@ -131,11 +101,7 @@ final class MessageCentralImpl implements MessageCentral {
 		);
 		this.outboundThreadPool.start();
 
-		List<Observable<InboundMessage>> inboundMessages = this.transports.stream()
-			.map(Transport::start)
-			.collect(Collectors.toList());
-
-		this.peerMessages = Observable.merge(inboundMessages)
+		this.peerMessages = peerManager.messages()
 			.map(this::processInboundMessage)
 			.filter(Optional::isPresent)
 			.map(Optional::get)
@@ -154,7 +120,7 @@ final class MessageCentralImpl implements MessageCentral {
 				},
 				messageFromPeer -> {
 					if (log.isTraceEnabled()) {
-						log.trace("Received from {}: {}", hostId(messageFromPeer.getPeer()), messageFromPeer.getMessage());
+						log.trace("Received from {}: {}", messageFromPeer.getSource(), messageFromPeer.getMessage());
 					}
 					return Optional.of(messageFromPeer);
 				}
@@ -176,45 +142,19 @@ final class MessageCentralImpl implements MessageCentral {
 
 	@Override
 	public void close() {
-		this.transports.forEach(this::closeWithLog);
-		this.transports.clear();
 		this.outboundThreadPool.stop();
 	}
 
 	@Override
-	public void sendSystemMessage(TransportInfo transportInfo, SystemMessage message) {
-		PeerWithTransport peer = new PeerWithTransport(transportInfo);
-		OutboundMessageEvent event = new OutboundMessageEvent(peer, message, System.nanoTime() - timeBase);
+	public void send(NodeId receiver, Message message) {
+		final var event = new OutboundMessageEvent(receiver, message, System.nanoTime() - timeBase);
 		if (!outboundQueue.offer(event) && outboundLogRateLimiter.tryAcquire()) {
-			log.error("Outbound message to {} dropped", peer);
-		}
-	}
-
-	@Override
-	public void send(Peer peer, Message message) {
-		OutboundMessageEvent event = new OutboundMessageEvent(peer, message, System.nanoTime() - timeBase);
-		if (!outboundQueue.offer(event) && outboundLogRateLimiter.tryAcquire()) {
-			log.error("Outbound message to {} dropped", peer);
+			log.error("Outbound message to {} dropped", receiver);
 		}
 	}
 
 	private void outboundMessageProcessor(OutboundMessageEvent outbound) {
 		this.counters.set(CounterType.MESSAGES_OUTBOUND_PENDING, outboundQueue.size());
-		messageDispatcher.send(connectionManager, outbound);
-	}
-
-	private void closeWithLog(Transport t) {
-		try {
-			t.close();
-		} catch (IOException e) {
-			log.error(String.format("Error closing transport %s", t), e);
-		}
-	}
-
-	private String hostId(Peer peer) {
-		return peer.supportedTransports()
-			.findFirst()
-			.map(ti -> String.format("%s:%s", ti.name(), ti.metadata()))
-			.orElse("None");
+		messageDispatcher.send(outbound);
 	}
 }

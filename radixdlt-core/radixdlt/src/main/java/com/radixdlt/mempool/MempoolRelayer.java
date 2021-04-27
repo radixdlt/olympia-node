@@ -25,13 +25,13 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.network.addressbook.PeersView;
+import com.radixdlt.network.p2p.PeersView;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Relays commands from the local mempool to node neighbors.
@@ -92,7 +92,9 @@ public final class MempoolRelayer {
 
 	private void relayCommands(List<Txn> txns, ImmutableList<BFTNode> ignorePeers) {
 		final var mempoolAddMsg = MempoolAdd.create(txns);
-		final var peers = new ArrayList<>(this.peersView.peers());
+		final var peers = this.peersView.peers()
+			.map(PeersView.PeerInfo::bftNode)
+			.collect(Collectors.toList());
 		peers.removeAll(ignorePeers);
 		Collections.shuffle(peers);
 		peers.stream()

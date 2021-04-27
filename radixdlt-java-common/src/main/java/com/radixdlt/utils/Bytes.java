@@ -17,6 +17,7 @@
 
 package com.radixdlt.utils;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Base64;
 
@@ -186,6 +187,10 @@ public class Bytes {
 		return Base64.getDecoder().decode(s);
 	}
 
+	public static byte[] fromBase58String(String s) {
+		return Base58.fromBase58(s);
+	}
+
 	private static char toHexChar(int value) {
 		return hexChars[value & 0xF];
 	}
@@ -218,5 +223,24 @@ public class Bytes {
 			trimLeadingZeros += 1;
 		}
 		return Arrays.copyOfRange(bytes, trimLeadingZeros, bytes.length);
+	}
+
+	public static byte[] bigIntegerToBytes(BigInteger b, int numBytes) {
+		final var bytes = new byte[numBytes];
+		final var biBytes = b.toByteArray();
+		final var start = biBytes.length == numBytes + 1 ? 1 : 0;
+		final var length = Math.min(biBytes.length, numBytes);
+		System.arraycopy(biBytes, start, bytes, numBytes - length, length);
+		return bytes;
+	}
+
+	public static byte[] xor(byte[] a, byte[] b) {
+		final var ret = new byte[a.length];
+		var i = 0;
+		while (i < a.length) {
+			ret[i] = (byte) (a[i] ^ b[i]);
+			i += 1;
+		}
+		return ret;
 	}
 }
