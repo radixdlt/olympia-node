@@ -228,6 +228,7 @@ task generateProdUniverse(type: Exec) {
     description = "Generate production universe"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
             "org.radix.GenerateUniverses",
+            "--universe-type=production",
             "--include-private-keys",
             "--no-json-output",
             "--pubkey-issuance=${pubKey}",
