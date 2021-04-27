@@ -40,6 +40,9 @@ def networkName = properties.get('network-name', 'test')
 def enableAWSSecret = properties.get('enableAWSSecret', false)
 def recreateAWSSecret = properties.get('recreateAWSSecret', false)
 def nodeNamePrefix = properties.get('nodeNamePrefix',"node");
+def pubKey = properties.get('pubKey');
+def tokensToIssue = properties.get('tokensToIssue', 0);
+
 startScripts {
     classpath = files('src/resources') + classpath
     // ^^ will prepend '$APP_HOME/lib/resources' to the classpath, which we'll use it as a pattern below
@@ -210,6 +213,29 @@ task generateDevUniverse(type: Exec) {
         "--enable-aws-secrets=${enableAWSSecret}",
         "--recreate-aws-secrets=${recreateAWSSecret}",
         "--network-name=${networkName}"
+}
+
+task generateProdUniverse(type: Exec) {
+    dependsOn compileJava
+
+    //Alternative solution (slower, but does not require manual maintenance):
+    //dependsOn tasks.withType(Jar)
+    dependsOn ':radixdlt-java-common:jar'
+    dependsOn ':radixdlt-engine:jar'
+    environment "NODE_NAME_PREFIX",nodeNamePrefix
+    environment "NODE_NAMES",nodeNames
+    group = "Execution"
+    description = "Generate production universe"
+    commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
+            "org.radix.GenerateUniverses",
+            "--universe-type=production",
+            "--include-private-keys",
+            "--no-json-output",
+            "--pubkey-issuance=${pubKey}",
+            "--amount-issuance=${tokensToIssue}",
+            "--enable-aws-secrets=${enableAWSSecret}",
+            "--recreate-aws-secrets=${recreateAWSSecret}",
+            "--network-name=${networkName}"
 }
 
 task generateJsonUniverse(type: Exec) {
