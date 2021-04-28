@@ -25,11 +25,13 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
+import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
 import java.io.File;
 import java.security.Security;
 
+import static com.radixdlt.utils.functional.Failure.failure;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 
@@ -61,8 +63,8 @@ public class KeyGenerator {
 
 	private void run(String[] args) {
 		parseParameters(args)
-			.filter(commandLine -> !commandLine.hasOption("h"), "")
-			.filter(commandLine -> commandLine.getOptions().length != 0, "")
+			.filter(commandLine -> !commandLine.hasOption("h"), failure(0, ""))
+			.filter(commandLine -> commandLine.getOptions().length != 0, failure(0, ""))
 			.flatMap(cli -> allOf(parseKeystore(cli), parsePassword(cli), parseKeypair(cli))
 				.flatMap(this::generateKeypair))
 			.onFailure(failure -> usage(failure.message()))
@@ -106,7 +108,7 @@ public class KeyGenerator {
 	}
 
 	private Result<String> requiredString(CommandLine commandLine, String opt) {
-		return fromOptional(ofNullable(commandLine.getOptionValue(opt)), "Parameter '-" + opt + "' is mandatory");
+		return fromOptional(ofNullable(commandLine.getOptionValue(opt)), "Parameter -{0} is mandatory", opt);
 	}
 
 	private Result<CommandLine> parseParameters(String[] args) {

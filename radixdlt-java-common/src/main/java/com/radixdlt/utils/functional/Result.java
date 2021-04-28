@@ -44,6 +44,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static com.radixdlt.utils.functional.Failure.failure;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 /**
@@ -77,6 +78,17 @@ public interface Result<T> {
 	@SuppressWarnings("unchecked")
 	default <R> Result<R> map(final Function<? super T, R> mapper) {
 		return fold(l -> (Result<R>) this, r -> ok(mapper.apply(r)));
+	}
+
+	/**
+	 * Transform failure. Useful for tweaking error codes/messages/etc.
+	 *
+	 * @param mapper transformation function for failure
+	 *
+	 * @return transformed instance
+	 */
+	default Result<T> mapFailure(final Function<? super Failure, Failure> mapper) {
+		return fold(failure -> mapper.apply(failure).result(), __ -> this);
 	}
 
 	/**
@@ -180,32 +192,16 @@ public interface Result<T> {
 	}
 
 	/**
-	 * Filter contained value with given predicate. Provided string is passed as failure reason
+	 * Filter contained value with given predicate. Provided failure is used for the result
 	 * if predicate returns {@code false}.
 	 *
 	 * @param predicate Predicate to check
-	 * @param message Message which will be used in case if predicate returns {@code false}
+	 * @param failure Failure which will be used in case if predicate returns {@code false}
 	 *
-	 * @return the same instance if predicate returns {@code true} or new failure result with provided message.
+	 * @return the same instance if predicate returns {@code true} or new failure result with provided failure.
 	 */
-	default Result<T> filter(Predicate<T> predicate, String message) {
-		return flatMap(v -> predicate.test(v) ? this : fail(message));
-	}
-
-	/**
-	 * Filter contained value with given predicate. Provided string and parameters are passed
-	 * as failure reason if predicate returns {@code false}.
-	 *
-	 * @param predicate Predicate to check
-	 * @param message Message which will be used in case if predicate returns {@code false}
-	 * @param values Message parameters
-	 *
-	 * @return the same instance if predicate returns {@code true} or new failure result with provided message.
-	 *
-	 * @see Failure#failure(String, Object...) for more details
-	 */
-	default Result<T> filter(Predicate<T> predicate, String message, Object... values) {
-		return flatMap(v -> predicate.test(v) ? this : fail(message, values));
+	default Result<T> filter(Predicate<T> predicate, Failure failure) {
+		return flatMap(v -> predicate.test(v) ? this : failure.result());
 	}
 
 	/**
@@ -224,12 +220,12 @@ public interface Result<T> {
 	 * Convert instance into {@link Result}
 	 *
 	 * @param source input instance of {@link Optional}
-	 * @param message message to use when input is empty instance.
+	 * @param failure failure to use when input is empty instance.
 	 *
 	 * @return created instance
 	 */
-	static <T> Result<T> fromOptional(Optional<T> source, String message) {
-		return source.map(Result::ok).orElseGet(() -> fail(message));
+	static <T> Result<T> fromOptional(Optional<T> source, Failure failure) {
+		return source.map(Result::ok).orElseGet(failure::result);
 	}
 
 	/**
@@ -244,7 +240,7 @@ public interface Result<T> {
 	 * @see Failure#failure(String, Object...) for more details
 	 */
 	static <T> Result<T> fromOptional(Optional<T> source, String format, Object... args) {
-		return source.map(Result::ok).orElseGet(() -> fail(format, args));
+		return fromOptional(source, Failure.failure(format, args));
 	}
 
 	/**
@@ -258,7 +254,7 @@ public interface Result<T> {
 		try {
 			return ok(supplier.get());
 		} catch (Throwable e) {
-			return fail(e);
+			return failure(e).result();
 		}
 	}
 
@@ -282,40 +278,6 @@ public interface Result<T> {
 	 */
 	static <R> Result<R> fail(final Failure value) {
 		return new ResultFail<R>(value);
-	}
-
-	/**
-	 * Create an instance of simple failure operation result.
-	 *
-	 * @param message Error message
-	 *
-	 * @return created instance
-	 */
-	static <R> Result<R> fail(final String message) {
-		return new ResultFail<R>(Failure.failure(message));
-	}
-
-	/**
-	 * Create an instance of simple failure operation result from exception.
-	 *
-	 * @param throwable Exception to convert
-	 *
-	 * @return created instance
-	 */
-	static <R> Result<R> fail(final Throwable throwable) {
-		return new ResultFail<R>(Failure.failure(throwable.getMessage()));
-	}
-
-	/**
-	 * Create an instance of simple failure operation result.
-	 *
-	 * @param format Error message format string
-	 * @param values Error message values
-	 *
-	 * @return created instance
-	 */
-	static <R> Result<R> fail(final String format, Object... values) {
-		return new ResultFail<R>(Failure.failure(format, values));
 	}
 
 	final class ResultOk<R> implements Result<R> {

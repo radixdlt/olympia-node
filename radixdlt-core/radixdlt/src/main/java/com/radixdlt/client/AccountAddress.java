@@ -75,10 +75,6 @@ public final class AccountAddress {
 	}
 
 	public static Result<REAddr> parseFunctional(String addr) {
-		try {
-			return Result.ok(parse(addr));
-		} catch (Exception e) {
-			return Result.fail(e);
-		}
+		return Result.wrap(() -> parse(addr));
 	}
 }

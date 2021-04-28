@@ -117,13 +117,13 @@ public final class AID implements Comparable<AID> {
 	 * @return An AID with those bytes
 	 */
 	public static AID from(byte[] bytes, int offset) {
-		Objects.requireNonNull(bytes, "bytes is required");
+		Objects.requireNonNull(bytes, "AID decoding error: input must not be null");
 		if (offset < 0) {
-			throw new IllegalArgumentException("Offset must be >= 0: " + offset);
+			throw new IllegalArgumentException("AID decoding error: offset must be >= 0: " + offset);
 		}
 		if (offset + BYTES > bytes.length) {
 			throw new IllegalArgumentException(
-				String.format("Bytes length must be %d but is %d", offset + BYTES, bytes.length)
+				String.format("AID decoding error: length must be %d but is %d", offset + BYTES, bytes.length)
 			);
 		}
 		return new AID(Arrays.copyOfRange(bytes, offset, offset + BYTES));
@@ -155,10 +155,10 @@ public final class AID implements Comparable<AID> {
 	 * @return Success {@link Result} if value can be successfully parsed and failure {@link Result} otherwise.
 	 */
 	public static Result<AID> fromString(String input) {
-		return fromOptional(ofNullable(input), "AID string is 'null'")
-			.filter(bytes -> bytes.length() == BYTES * 2, "AID string is of incorrect length")
+		return fromOptional(ofNullable(input), IdErrors.AID_IS_NULL)
+			.filter(bytes -> bytes.length() == BYTES * 2, IdErrors.INVALID_LENGTH)
 			.map(Bytes::fromHexString)
-			.filter(bytes -> bytes.length == HASH_BYTES, "AID string converted to bytes has incorrect length")
+			.filter(bytes -> bytes.length == HASH_BYTES, IdErrors.INVALID_LENGTH)
 			.map(AID::new);
 	}
 
@@ -170,11 +170,7 @@ public final class AID implements Comparable<AID> {
 	 * @return Success result in case of successful conversion and failure result in case of error.
 	 */
 	public static Result<AID> fromBytes(byte[] bytes) {
-		try {
-			return Result.ok(from(bytes));
-		} catch (IllegalArgumentException e) {
-			return Result.fail("Error while decoding AID from bytes: {0}", e.getMessage());
-		}
+		return Result.wrap(() -> from(bytes));
 	}
 
 	@Override

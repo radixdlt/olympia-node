@@ -20,27 +20,30 @@ package com.radixdlt.client;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.json.JSONArray;
 import org.json.JSONObject;
-import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.JsonRpcUtil.RpcError;
 
 import com.google.common.io.CharStreams;
 import com.google.inject.Inject;
+import com.radixdlt.api.JsonRpcHandler;
+import com.radixdlt.api.JsonRpcUtil;
+import com.radixdlt.api.JsonRpcUtil.RpcError;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import io.undertow.server.HttpServerExchange;
 
-import static com.radixdlt.api.JsonRpcUtil.errorResponse;
+import static com.radixdlt.api.JsonRpcUtil.protocolError;
 import static com.radixdlt.api.JsonRpcUtil.invalidParamsError;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.JsonRpcUtil.methodNotFound;
 import static com.radixdlt.api.JsonRpcUtil.parseError;
+import static com.radixdlt.api.JsonRpcUtil.serverError;
+
+import static java.util.Optional.ofNullable;
 
 /**
  * Stateless Json Rpc 2.0 Server
@@ -125,34 +128,27 @@ public final class JsonRpcServer {
 
 	private JSONObject handle(JSONObject request) {
 		if (!request.has("id")) {
-			return invalidParamsError("The 'id' missing");
+			return invalidParamsError(request, "The 'id' missing");
 		}
 
 		if (!request.has("method")) {
-			return invalidParamsError("The method name is missing");
+			return invalidParamsError(request, "The method must be specified");
 		}
 
 		try {
-			return Optional.ofNullable(handlers.get(logValue("method", request.getString("method"))))
+			return ofNullable(handlers.get(logValue("method", request.getString("method"))))
 				.map(handler -> handler.execute(request))
-				.orElseGet(() -> errorResponse(request, RpcError.METHOD_NOT_FOUND, "Method not found"));
+				.orElseGet(() -> methodNotFound(request));
 
 		} catch (Exception e) {
-			logValue("Exception while handling request: ", e.getMessage());
-
-			if (request.has("params") && request.get("params") instanceof JSONArray) {
-				return errorResponse(request, RpcError.SERVER_ERROR, e.getMessage(), request.getJSONObject("params"));
-			} else {
-				return errorResponse(request, RpcError.SERVER_ERROR, e.getMessage());
-			}
+			log.warn("Exception while handling request: ", e);
+			return serverError(request, e);
 		}
 	}
 
 	private JSONObject requestTooLongError(int length) {
-		var message = "request too big: " + length + " > " + maxRequestSizeBytes;
-
-		log.trace("RPC error: {}", message);
-		return errorResponse(RpcError.REQUEST_TOO_LONG, message);
+		log.trace("RPC error: Request too big: {} > {}",length, maxRequestSizeBytes);
+		return JsonRpcUtil.requestTooLongError(length);
 	}
 
 	private static <T> T logValue(String message, T value) {

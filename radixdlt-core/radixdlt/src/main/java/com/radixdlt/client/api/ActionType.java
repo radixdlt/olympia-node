@@ -17,6 +17,9 @@
 
 package com.radixdlt.client.api;
 
+import com.radixdlt.utils.functional.Failure;
+import com.radixdlt.utils.functional.Result;
+
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
@@ -50,7 +53,9 @@ public enum ActionType {
 		return text;
 	}
 
-	public static Optional<ActionType> fromString(String action) {
-		return Optional.ofNullable(TO_ACTION_TYPE.get(action));
+	public static Result<ActionType> fromString(String action) {
+		return Optional.ofNullable(TO_ACTION_TYPE.get(action))
+			.map(Result::ok)
+			.orElseGet(() -> Failure.failure("Unknown action type {0}", action).result());
 	}
 }

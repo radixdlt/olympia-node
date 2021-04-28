@@ -44,6 +44,14 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Optional;
 
+import static com.radixdlt.network.messaging.MessagingErrors.INVALID_AGENT_VERSION;
+import static com.radixdlt.network.messaging.MessagingErrors.INVALID_SIGNATURE;
+import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_FROM_SELF;
+import static com.radixdlt.network.messaging.MessagingErrors.NULL_NID;
+import static com.radixdlt.network.messaging.MessagingErrors.PEER_IS_BANNED;
+import static com.radixdlt.network.messaging.MessagingErrors.UNKNOWN_PEER;
+import static com.radixdlt.utils.functional.Failure.failure;
+
 /**
  * Handles incoming messages. Deserializes raw messages and validates them.
  */
@@ -99,7 +107,7 @@ final class MessagePreprocessor {
 
 		final var isBanned = maybeExistingPeer.map(Peer::isBanned).orElse(false);
 		if (isBanned || currentTime - message.getTimestamp() > messageTtlMs) {
-			return Result.fail("Peer is banned");
+			return PEER_IS_BANNED.result();
 		}
 
 		if (message instanceof SystemMessage) {
@@ -107,13 +115,13 @@ final class MessagePreprocessor {
 			return maybeUpdatedPeer.map(updatedPeer -> new MessageFromPeer<>(updatedPeer, message));
 		} else if (maybeExistingPeer.isEmpty()) {
 			// the only case where peer can be empty is a SystemMessage
-			return Result.fail("Peer not present in address book");
+			return UNKNOWN_PEER.result();
 		} else {
 			// peer is present and this is not a SystemMessage, just check the signature
 			final var peer = maybeExistingPeer.get();
 			if (message instanceof SignedMessage && !checkSignature((SignedMessage) message, peer.getSystem())) {
 				this.counters.increment(CounterType.MESSAGES_INBOUND_BADSIGNATURE);
-				return Result.fail("Invalid signature");
+				return INVALID_SIGNATURE.result();
 			} else {
 				// all good
 				return Result.ok(new MessageFromPeer<>(peer, message));
@@ -140,7 +148,7 @@ final class MessagePreprocessor {
 
 		if (!checkSignature(systemMessage, system)) {
 			this.counters.increment(CounterType.MESSAGES_INBOUND_BADSIGNATURE);
-			return Result.fail("Bad signature");
+			return INVALID_SIGNATURE.result();
 		}
 
 		final var updatedPeer = this.addressBook.addOrUpdatePeer(maybeExistingPeer, system, source);
@@ -148,20 +156,20 @@ final class MessagePreprocessor {
 
 		if (system.getNID() == null || EUID.ZERO.equals(system.getNID())) {
 			updatedPeer.ban(String.format("%s:%s gave null NID", updatedPeer, messageType));
-			return Result.fail("Null NID");
+			return NULL_NID.result();
 		}
 
 		if (systemMessage.getSystem().getAgentVersion() <= Radix.REFUSE_AGENT_VERSION) {
 			updatedPeer.ban(String.format("Old peer %s %s:%s", updatedPeer, system.getAgent(), system.getProtocolVersion()));
-			return Result.fail("Invalid agent version");
+			return INVALID_AGENT_VERSION.result();
 		}
 
 		if (system.getNID().equals(this.localSystem.getNID())) {
-			return Result.fail("Message from self");
+			return MESSAGE_FROM_SELF.result();
 		}
 
 		if (checkPeerBanned(system.getNID(), messageType)) {
-			return Result.fail("Peer banned");
+			return PEER_IS_BANNED.result();
 		}
 
 		return Result.ok(updatedPeer);

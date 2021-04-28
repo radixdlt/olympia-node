@@ -65,11 +65,7 @@ public final class Rri {
 	}
 
 	public static Result<Pair<String, REAddr>> parseFunctional(String rri) {
-		try {
-			return Result.ok(parse(rri));
-		} catch (IllegalArgumentException e) {
-			return Result.fail(e);
-		}
+		return Result.wrap(() -> parse(rri));
 	}
 
 	public static String of(String symbol, REAddr addr) {

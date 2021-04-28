@@ -82,6 +82,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
+import static com.radixdlt.client.api.ApiErrors.SYMBOL_DOES_NOT_MATCH;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_BYTES_READ;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_BYTES_WRITE;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_READ;
@@ -108,6 +109,7 @@ import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_APIDB_TRA
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_APIDB_TRANSACTION_WRITE;
 import static com.radixdlt.serialization.DsonOutput.Output;
 import static com.radixdlt.serialization.SerializationUtils.restore;
+import static com.radixdlt.utils.functional.Failure.failure;
 
 public class BerkeleyClientApiStore implements ClientApiStore {
 	private static final Logger log = LogManager.getLogger();
@@ -172,8 +174,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	@Override
 	public Result<REAddr> parseRri(String rri) {
 		return Rri.parseFunctional(rri)
-			.flatMap(p -> getTokenDefinition(p.getSecond())
-				.flatMap(t -> Result.ok(p.getSecond()).filter(i -> t.getSymbol().equals(p.getFirst()), "symbol does not match"))
+			.flatMap(p -> getTokenDefinition(p.getSecond()).flatMap(
+				t -> Result.ok(p.getSecond())
+					.filter(i -> t.getSymbol().equals(p.getFirst()), SYMBOL_DOES_NOT_MATCH))
 			);
 	}
 
@@ -221,7 +224,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			}
 
 			if (status != OperationStatus.SUCCESS) {
-				return Result.fail("Unknown RRI " + rri);
+				return failure("Unknown RRI {0}", rri).result();
 			}
 
 			return restore(serialization, data.getData(), BalanceEntry.class)
@@ -243,7 +246,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			);
 
 			if (status != OperationStatus.SUCCESS) {
-				return Result.fail("Unknown addr " + addr);
+				return failure("Unknown address {0}", addr).result();
 			}
 
 			var definition = restore(serialization, data.getData(), TokenDefinitionRecord.class);
@@ -253,7 +256,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 			definition.onFailure(log::error);
 
-			return Result.fail("Unknown error getting addr " + addr);
+			return failure("Unknown error getting address {0}", addr).result();
 		}
 	}
 
@@ -272,7 +275,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			.flatMap(txn -> extractCreator(txn)
 				.map(REAddr::ofPubKeyAccount)
 				.map(Result::ok)
-				.orElseGet(() -> Result.fail("Unable to restore creator from transaction {0}", txn.getId()))
+				.orElseGet(() -> failure("Unable to restore creator from transaction {0}", txn.getId()).result())
 				.flatMap(creator -> lookupTransactionInHistory(creator, txn)));
 	}
 
@@ -318,13 +321,13 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private Result<TxHistoryEntry> errorTxNotFound(Txn txn) {
-		return Result.fail("Transaction with id {0} not found", txn.getId());
+		return failure("Transaction with id {0} not found", txn.getId()).result();
 	}
 
 	@Override
 	public Result<List<TxHistoryEntry>> getTransactionHistory(REAddr addr, int size, Optional<Instant> ptr) {
 		if (size <= 0) {
-			return Result.fail("Invalid size specified: {0}", size);
+			return failure("Invalid size specified: {0}", size).result();
 		}
 
 		var instant = ptr.orElse(Instant.EPOCH);
@@ -355,7 +358,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 			do {
 				addrFromKey(key)
-					.filter(addr::equals, "Ignored")
+					.filter(addr::equals, Failure.failure(0, "Ignored"))
 					.onSuccessDo(() -> {
 						AID.fromBytes(data.getData())
 							.flatMap(this::retrieveTx)
@@ -404,7 +407,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private Result<Txn> retrieveTx(AID id) {
 		return store.get(id)
 			.map(Result::ok)
-			.orElseGet(() -> Result.fail("Unable to retrieve transaction by ID {0} ", id));
+			.orElseGet(() -> failure("Unable to retrieve transaction by ID {0} ", id).result());
 	}
 
 	private <T> T readBalance(Supplier<T> supplier, DatabaseEntry data) {

@@ -18,19 +18,19 @@
 package com.radixdlt.client.lib;
 
 import com.radixdlt.client.AccountAddress;
+import com.radixdlt.client.api.ApiErrors;
+import com.radixdlt.client.handler.ClientLibErrors;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Pair;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -45,6 +45,10 @@ import okhttp3.RequestBody;
 import static com.radixdlt.api.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
+import static com.radixdlt.client.handler.ClientLibErrors.INVALID_NETWORK_ID;
+import static com.radixdlt.client.handler.ClientLibErrors.MISSING_FIELD;
+import static com.radixdlt.client.handler.ClientLibErrors.MISSING_NETWORK_ID;
+import static com.radixdlt.utils.functional.Failure.failure;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 
@@ -80,7 +84,7 @@ public class NodeClient {
 
 	public static Result<NodeClient> connect(String baseUrl) {
 		if (baseUrl == null) {
-			return Result.fail("Base URL is mandatory");
+			return ApiErrors.BASE_URL_IS_MANDATORY.result();
 		}
 
 		return Result.ok(new NodeClient(baseUrl)).flatMap(NodeClient::tryConnect);
@@ -91,23 +95,6 @@ public class NodeClient {
 
 		return call("tokenBalances", params)
 			.map(this::parseTokenBalances);
-	}
-
-	public Result<JSONObject> callLookupTransaction(String txId) {
-		var params = jsonArray().put(txId);
-
-		return call("lookupTransaction", params);
-	}
-
-	//TODO: parse response
-	public Result<JSONObject> callTransactionHistory(
-		String address, int size, Optional<String> cursor
-	) {
-		var params = jsonArray().put(address).put(size);
-
-		cursor.ifPresent(params::put);
-
-		return call("transactionHistory", params);
 	}
 
 	public Result<JSONObject> call(String method, JSONObject params) {
@@ -129,11 +116,15 @@ public class NodeClient {
 
 		return call("networkId", params)
 			.map(obj -> obj.getJSONObject("result"))
-			.flatMap(obj -> fromOptional(ofNullable(obj.opt("networkId")), "Network ID not found"))
-			.filter(Integer.class::isInstance, "Network ID is not an integer")
+			.flatMap(this::extractNetworkIdField)
+			.filter(Integer.class::isInstance, INVALID_NETWORK_ID)
 			.map(Integer.class::cast)
 			.onSuccess(magic -> magicHolder.set(magic.byteValue()))
 			.map(__ -> this);
+	}
+
+	private Result<Object> extractNetworkIdField(JSONObject obj) {
+		return fromOptional(ofNullable(obj.opt("networkId")), MISSING_NETWORK_ID);
 	}
 
 	private JSONObject wrap(String method, Object params) {
@@ -155,11 +146,6 @@ public class NodeClient {
 		return parseArray(array, this::parseTokenBalanceEntry);
 	}
 
-	private Result<List<TxHistoryEntry>> parseTxHistory(JSONObject response) {
-		return fromOptional(ofNullable(response.optJSONArray("transactions")), "Missing 'transactions' in response")
-			.map(array -> parseArray(array, this::parseTxHistoryEntry));
-	}
-
 	private <T> List<T> parseArray(JSONArray array, Function<Object, Result<T>> mapper) {
 		var list = new ArrayList<T>();
 		array.forEach(obj -> mapper.apply(obj).onSuccess(list::add));
@@ -168,7 +154,7 @@ public class NodeClient {
 
 	private Result<Pair<String, UInt384>> parseTokenBalanceEntry(Object obj) {
 		if (!(obj instanceof JSONObject)) {
-			return Result.fail("Not an JSON object");
+			return ApiErrors.NOT_A_JSON_OBJECT.result();
 		}
 
 		var object = (JSONObject) obj;
@@ -176,23 +162,12 @@ public class NodeClient {
 			.map(Pair::of);
 	}
 
-	private Result<TxHistoryEntry> parseTxHistoryEntry(Object obj) {
-		if (!(obj instanceof JSONObject)) {
-			return Result.fail("Not an JSON object");
-		}
-		return Result.fail("Not implemented yet");
-	}
-
-	private Result<Optional<String>> parseCursor(JSONObject response) {
-		return Result.ok(ofNullable(response.optString("cursor")));
-	}
-
 	private Result<JSONObject> parseJson(String text) {
 		return Result.wrap(() -> new JSONObject(text));
 	}
 
 	private static Result<String> string(JSONObject object, String name) {
-		return fromOptional(ofNullable(object.optString(name)), "Field '" + name + "' is missing");
+		return fromOptional(ofNullable(object.optString(name)), MISSING_FIELD.with(name));
 	}
 
 	private static Result<String> rri(JSONObject object) {
@@ -210,9 +185,9 @@ public class NodeClient {
 		try (var response = client.newCall(request).execute(); var responseBody = response.body()) {
 			return responseBody != null
 				   ? Result.ok(responseBody.string())
-				   : Result.fail("No content in response");
+				   : ApiErrors.NO_CONTENT.result();
 		} catch (IOException e) {
-			return Result.fail(e);
+			return failure(e).result();
 		}
 	}
 }

@@ -20,6 +20,7 @@ package com.radixdlt.utils;
 import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
+import com.radixdlt.utils.functional.Result;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -236,12 +237,8 @@ public final class UInt256 implements Comparable<UInt256> {
 	 *
 	 * @return Present {@link Optional} if value can be parsed and {@link Optional#empty()} otherwise.
 	 */
-	public static Optional<UInt256> fromString(String input) {
-		try {
-			return Optional.of(from(input));
-		} catch (Exception e) {
-			return Optional.empty();
-		}
+	public static Result<UInt256> fromString(String input) {
+		return Result.wrap(() -> from(input));
 	}
 
 	// Pad short (< BYTES length) array with appropriate lead bytes.

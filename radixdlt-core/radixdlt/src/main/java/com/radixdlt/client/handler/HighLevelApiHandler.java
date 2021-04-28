@@ -17,33 +17,32 @@
 
 package com.radixdlt.client.handler;
 
-import com.radixdlt.client.AccountAddress;
-import com.radixdlt.client.service.NetworkInfoService;
-import com.radixdlt.client.store.berkeley.UnstakeEntry;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.crypto.HashUtils;
 import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONObject;
-import com.radixdlt.api.JsonRpcUtil;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import com.radixdlt.client.AccountAddress;
 import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.client.api.PreparedTransaction;
 import com.radixdlt.client.api.TransactionAction;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.api.ValidatorInfoDetails;
 import com.radixdlt.client.service.HighLevelApiService;
+import com.radixdlt.client.service.NetworkInfoService;
 import com.radixdlt.client.service.SubmissionService;
 import com.radixdlt.client.service.TransactionStatusService;
 import com.radixdlt.client.service.ValidatorInfoService;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.berkeley.BalanceEntry;
+import com.radixdlt.client.store.berkeley.UnstakeEntry;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.functional.Result;
 
 import java.time.Instant;
@@ -60,7 +59,7 @@ import static com.radixdlt.api.JsonRpcUtil.safeString;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredArrayParameter;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
-
+import static com.radixdlt.client.api.ApiErrors.SIZE_MUST_BE_GREATER_THAN_ZERO;
 import static com.radixdlt.utils.functional.Optionals.allOf;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Tuple.tuple;
@@ -307,13 +306,7 @@ public class HighLevelApiHandler {
 	}
 
 	private Result<byte[]> parseBlob(JSONObject request) {
-		try {
-			var blob = Hex.decodeStrict(request.getJSONObject("transaction").getString("blob"));
-
-			return Result.ok(blob);
-		} catch (Exception e) {
-			return Result.fail(e.getMessage());
-		}
+		return Result.wrap(() -> Hex.decodeStrict(request.getJSONObject("transaction").getString("blob")));
 	}
 
 	private Result<ECDSASignature> parseSignatureDer(JSONObject request) {
@@ -348,8 +341,6 @@ public class HighLevelApiHandler {
 	}
 
 	private static Optional<Instant> parseInstantCursor(JSONObject request) {
-		var params = JsonRpcUtil.params(request);
-
 		return safeString(request, 2).flatMap(HighLevelApiHandler::instantFromString);
 	}
 
@@ -382,9 +373,7 @@ public class HighLevelApiHandler {
 
 	private static Result<Integer> parseSize(JSONObject params) {
 		return safeInteger(params, "size")
-			.map(Result::ok)
-			.orElseGet(() -> Result.fail("Size parameter is not a valid integer"))
-			.filter(value -> value > 0, "Size parameter must be greater than zero");
+			.filter(value -> value > 0, SIZE_MUST_BE_GREATER_THAN_ZERO);
 	}
 
 	private static Result<REAddr> parseAddress(JSONObject params) {

@@ -17,15 +17,15 @@
 
 package com.radixdlt.client.handler;
 
-import com.radixdlt.client.AccountAddress;
-import com.radixdlt.client.ValidatorAddress;
-import com.radixdlt.client.store.ClientApiStore;
-import com.radixdlt.crypto.ECPublicKey;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.radixdlt.client.AccountAddress;
+import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.client.api.ActionType;
 import com.radixdlt.client.api.TransactionAction;
+import com.radixdlt.client.store.ClientApiStore;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
@@ -34,9 +34,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static com.radixdlt.api.JsonRpcUtil.safeString;
-
+import static com.radixdlt.utils.functional.Failure.failure;
 import static com.radixdlt.utils.functional.Result.allOf;
+
+import static java.util.Optional.ofNullable;
 
 public final class ActionParser {
 	private static final Result<Optional<REAddr>> EMPTY_RESULT = Result.ok(Optional.empty());
@@ -48,16 +49,13 @@ public final class ActionParser {
 
 		for (var o : actions) {
 			if (!(o instanceof JSONObject)) {
-				return Result.fail("Unable to recognize action description {0}", o);
+				return failure("Unable to recognize action description {0}", o).result();
 			}
 
 			var element = (JSONObject) o;
 
-			var result = Result.fromOptional(
-				safeString(element, "type")
-					.flatMap(ActionType::fromString),
-				"Action type is missing or can not be parsed in {0}", element
-			)
+			var result = safeString(element, "type")
+				.flatMap(ActionType::fromString)
 				.flatMap(type -> parseByType(type, element, clientApiStore))
 				.onSuccess(list::add);
 
@@ -92,7 +90,7 @@ public final class ActionParser {
 				).map(TransactionAction::create);
 		}
 
-		return Result.fail("Action type {0} is not supported (yet)", type);
+		return failure("Action type {0} is not supported (yet)", type).result();
 	}
 
 	private static Result<REAddr> from(JSONObject element) {
@@ -109,29 +107,28 @@ public final class ActionParser {
 
 	private static Result<UInt256> amount(JSONObject element) {
 		return safeString(element, "amount")
-			.flatMap(UInt256::fromString)
-			.map(Result::ok)
-			.orElseGet(() -> fail(element, "amount"));
+			.flatMap(UInt256::fromString);
 	}
 
 	private static Result<Optional<REAddr>> rri(JSONObject element, ClientApiStore clientApiStore) {
-		return Result.fromOptional(safeString(element, "tokenIdentifier"), "Field tokenIdentifier is missing in {0}", element)
+		return safeString(element, "tokenIdentifier")
 			.flatMap(clientApiStore::parseRri)
 			.map(Optional::of);
 	}
 
 	private static Result<ECPublicKey> validator(JSONObject element, String name) {
-		return Result.fromOptional(safeString(element, name), "")
+		return safeString(element, name)
 			.flatMap(ValidatorAddress::fromString);
 	}
 
 	private static Result<REAddr> address(JSONObject element, String name) {
 		return safeString(element, name)
-			.map(AccountAddress::parseFunctional)
-			.orElseGet(() -> fail(element, name));
+			.flatMap(AccountAddress::parseFunctional);
 	}
 
-	private static <T> Result<T> fail(JSONObject element, String field) {
-		return Result.fail("Field {1} is missing or contains invalid value in {0}", element, field);
+	private static Result<String> safeString(JSONObject params, String name) {
+		return ofNullable(params.opt(name))
+			.map(Object::toString).map(Result::ok)
+			.orElseGet(() -> failure("Field {0} is missing or contains invalid value", name).result());
 	}
 }

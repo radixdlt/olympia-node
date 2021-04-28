@@ -24,6 +24,8 @@ import com.radixdlt.utils.functional.Result;
 
 import java.nio.charset.StandardCharsets;
 
+import static com.radixdlt.utils.functional.Failure.failure;
+
 /**
  * Collection of Serialization-related utilities
  */
@@ -43,7 +45,7 @@ public class SerializationUtils {
 		try {
 			return Result.ok(serialization.fromDson(data, clazz));
 		} catch (DeserializeException e) {
-			return Result.fail("Unable to deserialize {0}", clazz.getSimpleName());
+			return failure("Unable to deserialize {0}", clazz.getSimpleName()).result();
 		}
 	}
 }

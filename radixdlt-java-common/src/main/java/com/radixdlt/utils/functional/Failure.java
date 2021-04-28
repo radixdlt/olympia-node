@@ -23,11 +23,13 @@ import java.util.Objects;
 /**
  * Simplest failure descriptor.
  */
-public final class Failure {
-	private final String message;
+public interface Failure {
+	String message();
 
-	private Failure(String message) {
-		this.message = message;
+	int code();
+
+	default <T> Result<T> result() {
+		return Result.fail(this);
 	}
 
 	/**
@@ -37,8 +39,59 @@ public final class Failure {
 	 *
 	 * @return created instance of Failure
 	 */
-	public static Failure failure(final String message) {
-		return new Failure(message);
+	static Failure failure(String message) {
+		return failure(0, message);
+	}
+
+	/**
+	 * Create instance of Failure with given message and code.
+	 *
+	 * @param message failure message
+	 *
+	 * @return created instance of Failure
+	 */
+	static Failure failure(int code, String message) {
+		return new Failure() {
+			@Override
+			public String message() {
+				return message;
+			}
+
+			@Override
+			public int code() {
+				return code;
+			}
+
+			@Override
+			public int hashCode() {
+				return Objects.hash(message);
+			}
+
+			@Override
+			public boolean equals(Object obj) {
+				if (obj == this) {
+					return true;
+				}
+
+				return (obj instanceof Failure) && Objects.equals(((Failure) obj).message(), message);
+			}
+
+			@Override
+			public String toString() {
+				return message;
+			}
+		};
+	}
+
+	/**
+	 * Create instance of Failure from provided {@link Throwable}.
+	 *
+	 * @param throwable exception
+	 *
+	 * @return created instance of Failure
+	 */
+	static Failure failure(Throwable throwable) {
+		return failure(throwable.getMessage());
 	}
 
 	/**
@@ -51,30 +104,11 @@ public final class Failure {
 	 *
 	 * @see MessageFormat for supported format string options
 	 */
-	public static Failure failure(final String format, Object... values) {
-		return new Failure(MessageFormat.format(format, values));
+	static Failure failure(String format, Object... values) {
+		return failure(MessageFormat.format(format, values));
 	}
 
-	public String message() {
-		return message;
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(message);
-	}
-
-	@Override
-	public boolean equals(final Object obj) {
-		if (obj == this) {
-			return true;
-		}
-
-		return (obj instanceof Failure) && Objects.equals(((Failure) obj).message(), message);
-	}
-
-	@Override
-	public String toString() {
-		return message;
+	static Failure failure(int code, String format, Object... values) {
+		return failure(code, MessageFormat.format(format, values));
 	}
 }

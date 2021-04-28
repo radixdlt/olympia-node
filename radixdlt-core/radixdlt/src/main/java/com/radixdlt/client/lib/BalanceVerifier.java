@@ -21,6 +21,7 @@ import com.radixdlt.client.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt384;
+
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
@@ -31,10 +32,13 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.utils.Ints;
+import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
 import java.security.Security;
 import java.util.List;
+
+import static com.radixdlt.utils.functional.Failure.failure;
 
 import static java.util.Optional.ofNullable;
 
@@ -53,7 +57,10 @@ public class BalanceVerifier {
 
 	private void run(String[] args) {
 		Result.wrap(() -> new DefaultParser().parse(options, args))
-			.filter(cmd -> cmd.getArgList().isEmpty() && !cmd.hasOption('h'), "Invalid command line options")
+			.filter(
+				cmd -> cmd.getArgList().isEmpty() && !cmd.hasOption('h'),
+				failure(0, "Invalid command line options")
+			)
 			.onSuccess(cmd -> {
 				var baseUrl = ofNullable(cmd.getOptionValue('h')).orElse(DEFAULT_HOST);
 
