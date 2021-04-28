@@ -1,12 +1,8 @@
 name: radixdlt-keygen-publish-docker
+
 on:
-  #  create:
-  #    branches:
-  #      - release\/*
   push:
     branches:
-      - rc\/*
-      - release\/*
       - ci/node-keygen-artifact
 jobs:
   #  cancel_running_workflows:
