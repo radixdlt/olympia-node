@@ -24,8 +24,11 @@ import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.store.TxnIndex;
+import com.radixdlt.utils.Bytes;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 import org.bouncycastle.util.encoders.Hex;
@@ -44,13 +47,16 @@ import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 public final class ConstructionController implements Controller {
 	private final TxnParser txnParser;
+	private final TxnIndex txnIndex;
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 
 	@Inject
 	public ConstructionController(
+		TxnIndex txnIndex,
 		TxnParser txnParser,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher
 	) {
+		this.txnIndex = txnIndex;
 		this.txnParser = txnParser;
 		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
 	}
@@ -58,6 +64,7 @@ public final class ConstructionController implements Controller {
 	@Override
 	public void configureRoutes(RoutingHandler handler) {
 		handler.post("/node/parse", this::handleParse);
+		handler.post("/node/txn", this::handleGetTxn);
 		handler.post("/node/submit", this::handleSubmit);
 	}
 
@@ -65,6 +72,22 @@ public final class ConstructionController implements Controller {
 		return jsonObject()
 			.put("type", i.getMicroOp())
 			.put("data", Objects.toString(i.getData()));
+	}
+
+
+	void handleGetTxn(HttpServerExchange exchange) {
+		withBody(exchange, values -> {
+			var transactionId = AID.from(values.getString("tx_ID"));
+			txnIndex.get(transactionId)
+				.ifPresentOrElse(
+					txn -> {
+						respond(exchange, new JSONObject().put("transaction", Bytes.toHexString(txn.getPayload())));
+					},
+					() -> {
+						respond(exchange, new JSONObject().put("error", "Not found"));
+					}
+				);
+		});
 	}
 
 	void handleParse(HttpServerExchange exchange) {
