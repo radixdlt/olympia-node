@@ -54,7 +54,7 @@ public final class UnstakeTokens implements TxAction {
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.swapFungible(
 			StakedTokensParticle.class,
-			p -> p.getOwner().equals(accountAddr),
+			p -> p.getOwner().equals(accountAddr) && p.getDelegateKey().equals(delegateAddress),
 			StakedTokensParticle::getAmount,
 			amt -> new StakedTokensParticle(delegateAddress, accountAddr, amt),
 			amount,
