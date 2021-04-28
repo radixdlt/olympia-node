@@ -3,7 +3,7 @@ name: radixdlt-keygen-publish-docker
 on:
   push:
     branches:
-      - ci/node-keygen-artifact
+      - ci\/node-keygen-artifact
 jobs:
   #  cancel_running_workflows:
   #    if: ${{ startsWith(github.ref, 'refs/heads/release/') ||  startsWith(github.ref, 'refs/heads/rc') }}
