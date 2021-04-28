@@ -122,7 +122,6 @@ jobs:
            echo "Workflow triggered by on a release branch"
           else
             echo "Workflow triggered by on a rc branch"
-              #echo "DOCKER_CREDS=${{ secrets.GCR_EU_DEV_JSON_KEY }}" >> $GITHUB_ENV
             echo "IMAGE=eu.gcr.io/dev-container-repo/keygen" >> $GITHUB_ENV
             export CI_VERSION=true
           fi
