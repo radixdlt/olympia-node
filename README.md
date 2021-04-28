@@ -1,25 +1,17 @@
 # radixdlt
 
-This is the monorepo for consensus, networking and Java client library for the [Radix DLT](https://www.radixdlt.com)
+This is the monorepo for consensus, execution, and networking for the [Radix DLT](https://www.radixdlt.com)
 Distributed Ledger.
 
 It includes a variant implementation of the [HotStuff](https://arxiv.org/abs/1803.05069) BFT-style consensus.
-
-## Table of contents
-
-- [Subdirectories](#subdirectories)
-- [Contribute](#contribute)
-- [Links](#links)
-- [License](#license)
 
 ## Subdirectories
 Here we have:
 
 - [radixdlt-core](radixdlt-core/README.md): The core consensus and networking modules
-- [radixdlt-engine](radixdlt-engine/README.md): The Radix execution environment which provides an engine for a real-time, distributed state machine
+- [radixdlt-engine](radixdlt-engine/README.md): The Radix execution layer which provides
+  a UTXO-based state machine
 - [radixdlt-java-common](radixdlt-java-common/README.md): Common Java utilities used by various modules
-- [radixdlt-java](radixdlt-java/README.md): The Java client access library
-- [radixdlt-regression](radixdlt-regression/README.md): Regression tests
 
 ## Contribute
 
@@ -44,6 +36,4 @@ Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) in all your interactions
 
 ## License
 
-The `radixdlt-core`, `radixdlt-engine`, `radixdlt-java-common`, `radixdlt-regression` code is released under the [Apache 2.0 License](LICENSE).
-
-The `radixdlt-java` library is released under the [MIT License](radixdlt-java/LICENSE).
+The `radixdlt-core`, `radixdlt-engine`, `radixdlt-java-common` code is released under the [Apache 2.0 License](LICENSE).
