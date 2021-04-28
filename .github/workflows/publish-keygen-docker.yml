@@ -5,7 +5,7 @@ on:
     branches:
 #      - rc\/*
 #      - release\/*
-      - ci\/*
+      - 'ci/node-keygen-artifact'
 jobs:
   #  cancel_running_workflows:
   #    if: ${{ startsWith(github.ref, 'refs/heads/release/') ||  startsWith(github.ref, 'refs/heads/rc') }}
@@ -120,10 +120,10 @@ jobs:
         run: |
           if [[ "$GITHUB_REF" == *"refs/heads/release"* ]]; then
            echo "Workflow triggered by on a release branch"
-#            echo "DOCKER_CREDS=${{ secrets.GCR_EU_DEV_JSON_KEY }}" >> $GITHUB_ENV
+              #echo "DOCKER_CREDS=${{ secrets.GCR_EU_DEV_JSON_KEY }}" >> $GITHUB_ENV
           else
             echo "Workflow triggered by on a rc branch"
-#            echo "DOCKER_CREDS=${{ secrets.GCR_EU_DEV_JSON_KEY }}" >> $GITHUB_ENV
+              #echo "DOCKER_CREDS=${{ secrets.GCR_EU_DEV_JSON_KEY }}" >> $GITHUB_ENV
             echo "IMAGE=eu.gcr.io/dev-container-repo/keygen" >> $GITHUB_ENV
             export CI_VERSION=true
           fi
