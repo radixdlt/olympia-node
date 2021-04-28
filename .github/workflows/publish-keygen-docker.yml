@@ -1,5 +1,4 @@
 name: radixdlt-keygen-publish-docker
-
 on:
   #  create:
   #    branches:
