@@ -139,7 +139,7 @@ jobs:
       - name: Docker build and push
         uses: docker/build-push-action@v2
         with:
-          file: ./radixdlt-${ env.RADIXDLT_CORE_VERSION_RAW }}/Dockerfile
+          file: ./radixdlt-${{ env.RADIXDLT_CORE_VERSION_RAW }}/Dockerfile
           tags: |
             ${{ env.IMAGE }}:${{ env.RADIXDLT_CORE_VERSION }}
           push: ${{ env.PUBLISH }}
