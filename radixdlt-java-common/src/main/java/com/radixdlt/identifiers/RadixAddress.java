@@ -28,6 +28,8 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+import static com.radixdlt.utils.CommonErrors.INVALID_RADIX_ADDRESS;
+
 /**
  * base58 address based on a public key
  */
@@ -102,7 +104,7 @@ public final class RadixAddress {
 	}
 
 	public static Result<RadixAddress> fromString(String address) {
-		return Result.wrap(() -> from(Base58.fromBase58(address)));
+		return Result.wrap(INVALID_RADIX_ADDRESS, () -> from(Base58.fromBase58(address)));
 	}
 
 	public byte[] toByteArray() {

@@ -23,10 +23,26 @@ public enum ApiErrors implements Failure {
 	BASE_URL_IS_MANDATORY(2501, "Base URL is mandatory"),
 	NOT_A_JSON_OBJECT(2502, "Not an JSON object"),
 	NO_CONTENT(2503, "No content in response"),
-	SYMBOL_DOES_NOT_MATCH(2504, "Symbol does not match"),
-	SIZE_MUST_BE_GREATER_THAN_ZERO(2505, "Size must be greater than zero"),
-	MISSING_PARAMS_FIELD(2506, "The 'params' field must be present and must be a JSON array"),
-	INVALID_NETWORK_ID(2507, "Network ID is not an integer");
+	SYMBOL_DOES_NOT_MATCH(2504, "Symbol {0} does not match"),
+	INVALID_PAGE_SIZE(2505, "Size {0} must be greater than zero"),
+	MISSING_PARAMS(2506, "The 'params' field must be present and must be a JSON array"),
+	INVALID_NETWORK_ID(2507, "Network ID is not an integer"),
+	UNKNOWN_VALIDATOR(2508, "Validator {0} not found"),
+	INVALID_VALIDATOR_ADDRESS(2509, "Invalid validator address {0}"),
+	INVALID_ACCOUNT_ADDRESS(2510, "Invalid account address {0}"),
+	INVALID_BLOB(2511, "Invalid blob {0}"),
+	INVALID_SIGNATURE_DER(2512, "Invalid signature DER {0}"),
+	INVALID_PUBLIC_KEY(2513, "Invalid public key {0}"),
+	INVALID_TX_ID(2514, "Invalid TX ID {0}"),
+	UNABLE_TO_PREPARE_TX(2515, "Unable to prepare transaction {0}"),
+	UNKNOWN_ACTION(2516, "Unknown action {0}"),
+	UNSUPPORTED_ACTION(2517, "Action type {0} is not supported"),
+	INVALID_ACTION_DATA(2518, "Action data are invalid {0}"),
+	MISSING_FIELD(2519, "Field {0} is missing or invalid"),
+	UNKNOWN_RRI(2520, "Unknown RRI {0}"),
+	UNKNOWN_ACCOUNT_ADDRESS(2521, "Unknown account address {0}"),
+	UNABLE_TO_RESTORE_CREATOR(2522, "Unable to restore creator from transaction {0}"),
+	UNKNOWN_TX_ID(2523, "Transaction with id {0} not found");
 
 	private final int code;
 	private final String message;

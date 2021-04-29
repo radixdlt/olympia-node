@@ -88,7 +88,7 @@ public class KeyGenerator {
 
 		System.out.printf("Writing keypair '%s' [public key: %s]%ninto %s keystore %s%n", keypairName, publicKey, isNew, keystore);
 
-		return Result.wrap(() -> {
+		return Result.wrap(Failure.failure(0, "Error: {0}"), () -> {
 			RadixKeyStore.fromFile(keystoreFile, password.toCharArray(), newFile)
 				.writeKeyPair(keypairName, keyPair);
 			return null;
@@ -108,10 +108,16 @@ public class KeyGenerator {
 	}
 
 	private Result<String> requiredString(CommandLine commandLine, String opt) {
-		return fromOptional(ofNullable(commandLine.getOptionValue(opt)), "Parameter -{0} is mandatory", opt);
+		return fromOptional(
+			ofNullable(commandLine.getOptionValue(opt)),
+			Failure.failure(0, "Parameter -{0} is mandatory", opt)
+		);
 	}
 
 	private Result<CommandLine> parseParameters(String[] args) {
-		return Result.wrap(() -> new DefaultParser().parse(options, args));
+		return Result.wrap(
+			Failure.failure(0, "Error parsing command line parameters: {0}"),
+			() -> new DefaultParser().parse(options, args)
+		);
 	}
 }

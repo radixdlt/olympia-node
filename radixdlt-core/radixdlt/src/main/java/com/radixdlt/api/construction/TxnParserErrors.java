@@ -15,23 +15,17 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.network.messaging;
+package com.radixdlt.api.construction;
 
 import com.radixdlt.utils.functional.Failure;
 
-public enum MessagingErrors implements Failure {
-	//TODO: create system-wide error code list
-	PEER_IS_BANNED(1, "Peer is banned"),
-	UNKNOWN_PEER(2, "Peer not present in address book"),
-	INVALID_SIGNATURE(3, "Invalid signature"),
-	NULL_NID(4, "Null NID"),
-	INVALID_AGENT_VERSION(5, "Invalid agent version"),
-	MESSAGE_FROM_SELF(6, "Message from self");
+public enum TxnParserErrors implements Failure {
+	TRANSACTION_PARSING_ERROR(2401, "Unable to parse transaction {0}");
 
 	private final int code;
 	private final String message;
 
-	MessagingErrors(int code, String message) {
+	TxnParserErrors(int code, String message) {
 		this.code = code;
 		this.message = message;
 	}
@@ -45,4 +39,5 @@ public enum MessagingErrors implements Failure {
 	public int code() {
 		return code;
 	}
+
 }

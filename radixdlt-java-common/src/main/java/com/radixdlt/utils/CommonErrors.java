@@ -15,19 +15,22 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.identifiers;
+package com.radixdlt.utils;
 
 import com.radixdlt.utils.functional.Failure;
 
-public enum IdErrors implements Failure {
-
+public enum CommonErrors implements Failure {
 	AID_IS_NULL(1601, "AID string is 'null'"),
-	INVALID_LENGTH(1602, "AID string has incorrect length");
+	INVALID_LENGTH(1602, "AID string has incorrect length {0}"),
+	UNABLE_TO_DECODE(1603, "Unable to decode: {0}"),
+	UNABLE_TO_DESERIALIZE(1604, "Unable to deserialize: {0}"),
+	CANT_MAKE_RECOVERABLE(1701, "Unable to convert signature to recoverable {0}"),
+	INVALID_RADIX_ADDRESS(1702, "Invalid RadixAddress {0}");
 
 	private final int code;
 	private final String message;
 
-	IdErrors(int code, String message) {
+	CommonErrors(int code, String message) {
 		this.code = code;
 		this.message = message;
 	}

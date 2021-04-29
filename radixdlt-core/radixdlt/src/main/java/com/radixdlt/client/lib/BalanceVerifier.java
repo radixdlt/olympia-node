@@ -17,21 +17,20 @@
 
 package com.radixdlt.client.lib;
 
-import com.radixdlt.client.AccountAddress;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.UInt384;
-
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import com.radixdlt.client.AccountAddress;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Ints;
+import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
@@ -56,7 +55,7 @@ public class BalanceVerifier {
 	}
 
 	private void run(String[] args) {
-		Result.wrap(() -> new DefaultParser().parse(options, args))
+		Result.wrap(Failure.failure(0, "BalanceVerifier error: {0}"), () -> new DefaultParser().parse(options, args))
 			.filter(
 				cmd -> cmd.getArgList().isEmpty() && !cmd.hasOption('h'),
 				failure(0, "Invalid command line options")

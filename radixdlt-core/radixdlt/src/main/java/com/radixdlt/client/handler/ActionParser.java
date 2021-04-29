@@ -34,7 +34,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static com.radixdlt.utils.functional.Failure.failure;
+import static com.radixdlt.client.api.ApiErrors.INVALID_ACTION_DATA;
+import static com.radixdlt.client.api.ApiErrors.MISSING_FIELD;
+import static com.radixdlt.client.api.ApiErrors.UNSUPPORTED_ACTION;
 import static com.radixdlt.utils.functional.Result.allOf;
 
 import static java.util.Optional.ofNullable;
@@ -49,7 +51,7 @@ public final class ActionParser {
 
 		for (var o : actions) {
 			if (!(o instanceof JSONObject)) {
-				return failure("Unable to recognize action description {0}", o).result();
+				return INVALID_ACTION_DATA.with(o).result();
 			}
 
 			var element = (JSONObject) o;
@@ -90,7 +92,7 @@ public final class ActionParser {
 				).map(TransactionAction::create);
 		}
 
-		return failure("Action type {0} is not supported (yet)", type).result();
+		return UNSUPPORTED_ACTION.with(type).result();
 	}
 
 	private static Result<REAddr> from(JSONObject element) {
@@ -128,7 +130,8 @@ public final class ActionParser {
 
 	private static Result<String> safeString(JSONObject params, String name) {
 		return ofNullable(params.opt(name))
-			.map(Object::toString).map(Result::ok)
-			.orElseGet(() -> failure("Field {0} is missing or contains invalid value", name).result());
+			.map(Object::toString)
+			.map(Result::ok)
+			.orElseGet(() -> MISSING_FIELD.with(name).result());
 	}
 }

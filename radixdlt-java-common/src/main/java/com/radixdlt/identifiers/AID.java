@@ -26,6 +26,9 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
 
+import static com.radixdlt.utils.CommonErrors.AID_IS_NULL;
+import static com.radixdlt.utils.CommonErrors.INVALID_LENGTH;
+import static com.radixdlt.utils.CommonErrors.UNABLE_TO_DECODE;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 
 import static java.util.Optional.ofNullable;
@@ -155,10 +158,10 @@ public final class AID implements Comparable<AID> {
 	 * @return Success {@link Result} if value can be successfully parsed and failure {@link Result} otherwise.
 	 */
 	public static Result<AID> fromString(String input) {
-		return fromOptional(ofNullable(input), IdErrors.AID_IS_NULL)
-			.filter(bytes -> bytes.length() == BYTES * 2, IdErrors.INVALID_LENGTH)
+		return fromOptional(ofNullable(input), AID_IS_NULL)
+			.filter(bytes -> bytes.length() == BYTES * 2, INVALID_LENGTH)
 			.map(Bytes::fromHexString)
-			.filter(bytes -> bytes.length == HASH_BYTES, IdErrors.INVALID_LENGTH)
+			.filter(bytes -> bytes.length == HASH_BYTES, INVALID_LENGTH)
 			.map(AID::new);
 	}
 
@@ -170,7 +173,7 @@ public final class AID implements Comparable<AID> {
 	 * @return Success result in case of successful conversion and failure result in case of error.
 	 */
 	public static Result<AID> fromBytes(byte[] bytes) {
-		return Result.wrap(() -> from(bytes));
+		return Result.wrap(UNABLE_TO_DECODE, () -> from(bytes));
 	}
 
 	@Override

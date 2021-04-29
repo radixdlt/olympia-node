@@ -50,7 +50,6 @@ import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_FROM_SELF;
 import static com.radixdlt.network.messaging.MessagingErrors.NULL_NID;
 import static com.radixdlt.network.messaging.MessagingErrors.PEER_IS_BANNED;
 import static com.radixdlt.network.messaging.MessagingErrors.UNKNOWN_PEER;
-import static com.radixdlt.utils.functional.Failure.failure;
 
 /**
  * Handles incoming messages. Deserializes raw messages and validates them.

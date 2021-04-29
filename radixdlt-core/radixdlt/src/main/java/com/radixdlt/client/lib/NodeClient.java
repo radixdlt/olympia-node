@@ -17,14 +17,13 @@
 
 package com.radixdlt.client.lib;
 
-import com.radixdlt.client.AccountAddress;
-import com.radixdlt.client.api.ApiErrors;
-import com.radixdlt.client.handler.ClientLibErrors;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.Pair;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.radixdlt.client.AccountAddress;
+import com.radixdlt.client.api.ApiErrors;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
 
@@ -44,11 +43,11 @@ import okhttp3.RequestBody;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
-
+import static com.radixdlt.client.handler.ClientLibErrors.CONNECTION_ERROR;
 import static com.radixdlt.client.handler.ClientLibErrors.INVALID_NETWORK_ID;
 import static com.radixdlt.client.handler.ClientLibErrors.MISSING_FIELD;
 import static com.radixdlt.client.handler.ClientLibErrors.MISSING_NETWORK_ID;
-import static com.radixdlt.utils.functional.Failure.failure;
+import static com.radixdlt.utils.CommonErrors.UNABLE_TO_DECODE;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 
@@ -163,7 +162,7 @@ public class NodeClient {
 	}
 
 	private Result<JSONObject> parseJson(String text) {
-		return Result.wrap(() -> new JSONObject(text));
+		return Result.wrap(UNABLE_TO_DECODE, () -> new JSONObject(text));
 	}
 
 	private static Result<String> string(JSONObject object, String name) {
@@ -187,7 +186,7 @@ public class NodeClient {
 				   ? Result.ok(responseBody.string())
 				   : ApiErrors.NO_CONTENT.result();
 		} catch (IOException e) {
-			return failure(e).result();
+			return CONNECTION_ERROR.with(e.getMessage()).result();
 		}
 	}
 }

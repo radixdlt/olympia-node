@@ -17,6 +17,9 @@
 
 package com.radixdlt.client.service;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.atom.TxAction;
@@ -34,11 +37,7 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
-import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Objects;
@@ -48,8 +47,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.radixdlt.atom.actions.ActionErrors.DIFFERENT_SOURCE_ADDRESSES;
+import static com.radixdlt.atom.actions.ActionErrors.SUBMISSION_FAILURE;
 import static com.radixdlt.atom.actions.ActionErrors.TRANSACTION_ADDRESS_DOES_NOT_MATCH;
-import static com.radixdlt.utils.functional.Failure.failure;
+import static com.radixdlt.client.api.ApiErrors.UNABLE_TO_PREPARE_TX;
 
 public final class SubmissionService {
 	private final Logger logger = LogManager.getLogger();
@@ -77,6 +77,7 @@ public final class SubmissionService {
 		var addr = addresses.iterator().next();
 
 		return Result.wrap(
+			UNABLE_TO_PREPARE_TX,
 			() -> radixEngine
 				.construct(toActionsAndFee(addr, steps))
 				.buildForExternalSign()
@@ -113,7 +114,7 @@ public final class SubmissionService {
 			return Result.ok(success.getTxn().getId());
 		} catch (ExecutionException e) {
 			logger.warn("Unable to fulfill submission request: {}", txId);
-			return Failure.failure(e).result();
+			return SUBMISSION_FAILURE.with(e.getMessage()).result();
 		} catch (InterruptedException e) {
 			// unrecoverable error, propagate
 			throw new IllegalStateException(e);

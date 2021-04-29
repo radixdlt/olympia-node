@@ -21,7 +21,6 @@ package com.radixdlt.api;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
@@ -30,7 +29,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.radixdlt.client.api.ApiErrors.MISSING_PARAMS_FIELD;
+import static com.radixdlt.client.api.ApiErrors.MISSING_PARAMS;
+import static com.radixdlt.utils.CommonErrors.UNABLE_TO_DECODE;
 import static com.radixdlt.utils.functional.Failure.failure;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 
@@ -68,9 +68,8 @@ public final class JsonRpcUtil {
 		throw new IllegalStateException("Can't construct");
 	}
 
-
 	public static Result<JSONObject> jsonObject(String data) {
-		return Result.wrap(() -> new JSONObject(data));
+		return Result.wrap(UNABLE_TO_DECODE, () -> new JSONObject(data));
 	}
 
 	public static JSONObject jsonObject() {
@@ -88,7 +87,7 @@ public final class JsonRpcUtil {
 	}
 
 	public static Result<Integer> safeInteger(JSONObject params, String name) {
-		return Result.wrap(() -> params.getInt(name));
+		return Result.wrap(UNABLE_TO_DECODE, () -> params.getInt(name));
 	}
 
 	public static Optional<String> safeString(JSONObject request, int index) {
@@ -101,10 +100,6 @@ public final class JsonRpcUtil {
 
 	public static JSONObject methodNotFound(JSONObject request) {
 		return extendedError(request, RpcError.METHOD_NOT_FOUND, "Method not found");
-	}
-
-	public static JSONObject invalidParamsError(JSONObject request, Failure failure) {
-		return invalidParamsError(request, failure.message());
 	}
 
 	public static JSONObject invalidParamsError(JSONObject request, String message) {
@@ -128,11 +123,13 @@ public final class JsonRpcUtil {
 	}
 
 	private static JSONObject extendedError(JSONObject request, RpcError error, String message) {
-		var response = jsonObject().put("code", error).put("message", message);
+		var response = jsonObject().put("code", error.code()).put("message", message);
 
 		params(request).ifPresent(params -> response.put("data", params));
 
-		return commonFields(request.get("id")).put("error", response);
+		var id = ofNullable(request.opt("id")).orElse(JSONObject.NULL);
+
+		return  commonFields(id).put("error", response);
 	}
 
 	private static JSONObject errorResponse(Object id, RpcError code, String message) {
@@ -185,7 +182,7 @@ public final class JsonRpcUtil {
 	) {
 		return withParameters(
 			request,
-			params -> params.length() > required.size(),
+			params -> params.length() >= required.size(),
 			params -> fn.apply(toNamed(required, optional, params))
 		);
 	}
@@ -210,10 +207,10 @@ public final class JsonRpcUtil {
 			.map(JSONArray.class::cast)
 			.filter(predicate, failure(RpcError.INVALID_PARAMS.code(), "Parameter not present"))
 			.flatMap(fn)
-			.fold(failure -> invalidParamsError(request, failure), response -> response(request, response));
+			.fold(failure -> invalidParamsError(request, failure.message()), response -> response(request, response));
 	}
 
 	private static Result<JSONArray> retrieveParams(JSONObject request) {
-		return fromOptional(ofNullable(request.optJSONArray("params")), MISSING_PARAMS_FIELD);
+		return fromOptional(ofNullable(request.optJSONArray("params")), MISSING_PARAMS);
 	}
 }

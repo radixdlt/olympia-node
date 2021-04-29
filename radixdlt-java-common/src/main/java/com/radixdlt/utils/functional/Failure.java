@@ -32,15 +32,23 @@ public interface Failure {
 		return Result.fail(this);
 	}
 
+	default <T> Failure with(Object... params) {
+		return failure(code(), message(), params);
+	}
+
 	/**
-	 * Create instance of Failure with given message.
+	 * Create instance of Failure with given code, message format string and parameters.
 	 *
-	 * @param message failure message
+	 * @param code format string
+	 * @param format message format string
+	 * @param values parameters
 	 *
 	 * @return created instance of Failure
+	 *
+	 * @see MessageFormat for supported format string options
 	 */
-	static Failure failure(String message) {
-		return failure(0, message);
+	static Failure failure(int code, String format, Object... values) {
+		return failure(code, MessageFormat.format(format, values));
 	}
 
 	/**
@@ -81,34 +89,5 @@ public interface Failure {
 				return message;
 			}
 		};
-	}
-
-	/**
-	 * Create instance of Failure from provided {@link Throwable}.
-	 *
-	 * @param throwable exception
-	 *
-	 * @return created instance of Failure
-	 */
-	static Failure failure(Throwable throwable) {
-		return failure(throwable.getMessage());
-	}
-
-	/**
-	 * Create instance of Failure with given message and parameters.
-	 *
-	 * @param format format string
-	 * @param values parameters
-	 *
-	 * @return created instance of Failure
-	 *
-	 * @see MessageFormat for supported format string options
-	 */
-	static Failure failure(String format, Object... values) {
-		return failure(MessageFormat.format(format, values));
-	}
-
-	static Failure failure(int code, String format, Object... values) {
-		return failure(code, MessageFormat.format(format, values));
 	}
 }

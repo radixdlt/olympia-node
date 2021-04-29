@@ -26,7 +26,6 @@ import com.google.common.io.CharStreams;
 import com.google.inject.Inject;
 import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.api.JsonRpcUtil;
-import com.radixdlt.api.JsonRpcUtil.RpcError;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -36,7 +35,6 @@ import java.util.Map;
 
 import io.undertow.server.HttpServerExchange;
 
-import static com.radixdlt.api.JsonRpcUtil.protocolError;
 import static com.radixdlt.api.JsonRpcUtil.invalidParamsError;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.JsonRpcUtil.methodNotFound;
@@ -147,7 +145,7 @@ public final class JsonRpcServer {
 	}
 
 	private JSONObject requestTooLongError(int length) {
-		log.trace("RPC error: Request too big: {} > {}",length, maxRequestSizeBytes);
+		log.trace("RPC error: Request too big: {} > {}", length, maxRequestSizeBytes);
 		return JsonRpcUtil.requestTooLongError(length);
 	}
 

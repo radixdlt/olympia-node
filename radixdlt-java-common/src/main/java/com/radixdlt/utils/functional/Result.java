@@ -44,7 +44,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import static com.radixdlt.utils.functional.Failure.failure;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 /**
@@ -76,7 +75,7 @@ public interface Result<T> {
 	 * @return transformed value (in case of success) or current instance (in case of failure)
 	 */
 	@SuppressWarnings("unchecked")
-	default <R> Result<R> map(final Function<? super T, R> mapper) {
+	default <R> Result<R> map(Function<? super T, R> mapper) {
 		return fold(l -> (Result<R>) this, r -> ok(mapper.apply(r)));
 	}
 
@@ -87,7 +86,7 @@ public interface Result<T> {
 	 *
 	 * @return transformed instance
 	 */
-	default Result<T> mapFailure(final Function<? super Failure, Failure> mapper) {
+	default Result<T> mapFailure(Function<? super Failure, Failure> mapper) {
 		return fold(failure -> mapper.apply(failure).result(), __ -> this);
 	}
 
@@ -101,7 +100,7 @@ public interface Result<T> {
 	 * @return transformed value (in case of success) or current instance (in case of failure)
 	 */
 	@SuppressWarnings("unchecked")
-	default <R> Result<R> flatMap(final Function<? super T, Result<R>> mapper) {
+	default <R> Result<R> flatMap(Function<? super T, Result<R>> mapper) {
 		return fold(t -> (Result<R>) this, mapper);
 	}
 
@@ -114,7 +113,7 @@ public interface Result<T> {
 	 *
 	 * @return current instance
 	 */
-	default Result<T> apply(final Consumer<? super Failure> failureConsumer, final Consumer<? super T> successConsumer) {
+	default Result<T> apply(Consumer<? super Failure> failureConsumer, Consumer<? super T> successConsumer) {
 		return fold(t -> {
 			failureConsumer.accept(t);
 			return this;
@@ -133,7 +132,7 @@ public interface Result<T> {
 	 *
 	 * @return current instance in case of success or replacement instance in case of failure.
 	 */
-	default Result<T> or(final Result<T> replacement) {
+	default Result<T> or(Result<T> replacement) {
 		return fold(t -> replacement, t -> this);
 	}
 
@@ -146,7 +145,7 @@ public interface Result<T> {
 	 *
 	 * @return current instance in case of success or result returned by supplier in case of failure.
 	 */
-	default Result<T> or(final Supplier<Result<T>> supplier) {
+	default Result<T> or(Supplier<Result<T>> supplier) {
 		return fold(t -> supplier.get(), t -> this);
 	}
 
@@ -201,7 +200,7 @@ public interface Result<T> {
 	 * @return the same instance if predicate returns {@code true} or new failure result with provided failure.
 	 */
 	default Result<T> filter(Predicate<T> predicate, Failure failure) {
-		return flatMap(v -> predicate.test(v) ? this : failure.result());
+		return flatMap(v -> predicate.test(v) ? this : failure.with(v).result());
 	}
 
 	/**
@@ -229,32 +228,17 @@ public interface Result<T> {
 	}
 
 	/**
-	 * Convert instance into {@link Result}
-	 *
-	 * @param source input instance of {@link Optional}
-	 * @param format format string to use when input is empty instance.
-	 * @param args additional arguments for the message format
-	 *
-	 * @return created instance
-	 *
-	 * @see Failure#failure(String, Object...) for more details
-	 */
-	static <T> Result<T> fromOptional(Optional<T> source, String format, Object... args) {
-		return fromOptional(source, Failure.failure(format, args));
-	}
-
-	/**
 	 * Wrap call to function which may throw an exception.
 	 *
 	 * @param supplier the function to call.
 	 *
 	 * @return success instance if call was successful and failure instance if function threw an exception.
 	 */
-	static <T> Result<T> wrap(ThrowingSupplier<T> supplier) {
+	static <T> Result<T> wrap(Failure failure, ThrowingSupplier<T> supplier) {
 		try {
 			return ok(supplier.get());
 		} catch (Throwable e) {
-			return failure(e).result();
+			return failure.with(e).result();
 		}
 	}
 
@@ -265,7 +249,7 @@ public interface Result<T> {
 	 *
 	 * @return created instance
 	 */
-	static <R> Result<R> ok(final R value) {
+	static <R> Result<R> ok(R value) {
 		return new ResultOk<>(value);
 	}
 
@@ -276,21 +260,21 @@ public interface Result<T> {
 	 *
 	 * @return created instance
 	 */
-	static <R> Result<R> fail(final Failure value) {
+	static <R> Result<R> fail(Failure value) {
 		return new ResultFail<R>(value);
 	}
 
 	final class ResultOk<R> implements Result<R> {
 		private final R value;
 
-		protected ResultOk(final R value) {
+		protected ResultOk(R value) {
 			this.value = value;
 		}
 
 		@Override
 		public <T> T fold(
-			final Function<? super Failure, ? extends T> leftMapper,
-			final Function<? super R, ? extends T> rightMapper
+			Function<? super Failure, ? extends T> leftMapper,
+			Function<? super R, ? extends T> rightMapper
 		) {
 			return rightMapper.apply(value);
 		}
@@ -301,7 +285,7 @@ public interface Result<T> {
 		}
 
 		@Override
-		public boolean equals(final Object obj) {
+		public boolean equals(Object obj) {
 			if (this == obj) {
 				return true;
 			}
@@ -319,24 +303,24 @@ public interface Result<T> {
 		}
 
 		@Override
-		public Result<R> onSuccess(final Consumer<R> consumer) {
+		public Result<R> onSuccess(Consumer<R> consumer) {
 			consumer.accept(value);
 			return this;
 		}
 
 		@Override
-		public Result<R> onSuccessDo(final Runnable action) {
+		public Result<R> onSuccessDo(Runnable action) {
 			action.run();
 			return this;
 		}
 
 		@Override
-		public Result<R> onFailure(final Consumer<? super Failure> consumer) {
+		public Result<R> onFailure(Consumer<? super Failure> consumer) {
 			return this;
 		}
 
 		@Override
-		public Result<R> onFailureDo(final Runnable action) {
+		public Result<R> onFailureDo(Runnable action) {
 			return this;
 		}
 	}
@@ -344,14 +328,14 @@ public interface Result<T> {
 	final class ResultFail<R> implements Result<R> {
 		private final Failure value;
 
-		protected ResultFail(final Failure value) {
+		protected ResultFail(Failure value) {
 			this.value = value;
 		}
 
 		@Override
 		public <T> T fold(
-			final Function<? super Failure, ? extends T> leftMapper,
-			final Function<? super R, ? extends T> rightMapper
+			Function<? super Failure, ? extends T> leftMapper,
+			Function<? super R, ? extends T> rightMapper
 		) {
 			return leftMapper.apply(value);
 		}
@@ -362,7 +346,7 @@ public interface Result<T> {
 		}
 
 		@Override
-		public boolean equals(final Object obj) {
+		public boolean equals(Object obj) {
 			if (this == obj) {
 				return true;
 			}
@@ -380,23 +364,23 @@ public interface Result<T> {
 		}
 
 		@Override
-		public Result<R> onSuccess(final Consumer<R> consumer) {
+		public Result<R> onSuccess(Consumer<R> consumer) {
 			return this;
 		}
 
 		@Override
-		public Result<R> onSuccessDo(final Runnable action) {
+		public Result<R> onSuccessDo(Runnable action) {
 			return this;
 		}
 
 		@Override
-		public Result<R> onFailure(final Consumer<? super Failure> consumer) {
+		public Result<R> onFailure(Consumer<? super Failure> consumer) {
 			consumer.accept(value);
 			return this;
 		}
 
 		@Override
-		public Result<R> onFailureDo(final Runnable action) {
+		public Result<R> onFailureDo(Runnable action) {
 			action.run();
 			return this;
 		}

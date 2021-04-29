@@ -17,7 +17,6 @@
 
 package com.radixdlt.client.api;
 
-import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.Arrays;
@@ -25,6 +24,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.radixdlt.client.api.ApiErrors.UNKNOWN_ACTION;
 
 public enum ActionType {
 	MSG("Message"),
@@ -56,6 +57,6 @@ public enum ActionType {
 	public static Result<ActionType> fromString(String action) {
 		return Optional.ofNullable(TO_ACTION_TYPE.get(action))
 			.map(Result::ok)
-			.orElseGet(() -> Failure.failure("Unknown action type {0}", action).result());
+			.orElseGet(() -> UNKNOWN_ACTION.with(action).result());
 	}
 }

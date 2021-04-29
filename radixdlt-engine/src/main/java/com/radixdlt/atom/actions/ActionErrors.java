@@ -20,7 +20,7 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.utils.functional.Failure;
 
 public enum ActionErrors implements Failure {
-	SUBMISSION_FAILURE(1500, "Transaction submission failed"),
+	SUBMISSION_FAILURE(1500, "Transaction submission failed: {0}"),
 
 	MALFORMED_TRANSACTION(1300, "Transaction request is malformed"),
 

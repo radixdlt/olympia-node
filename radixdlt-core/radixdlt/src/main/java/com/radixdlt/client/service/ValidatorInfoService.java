@@ -28,8 +28,8 @@ import com.radixdlt.statecomputer.RegisteredValidators;
 import com.radixdlt.statecomputer.Stakes;
 import com.radixdlt.statecomputer.ValidatorDetails;
 import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.FunctionalUtils;
+import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Tuple.Tuple2;
 
 import java.util.Comparator;
@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static com.radixdlt.client.api.ApiErrors.UNKNOWN_VALIDATOR;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class ValidatorInfoService {
@@ -72,8 +73,7 @@ public class ValidatorInfoService {
 
 		return Result.fromOptional(
 			validators.mapSingle(validatorPublicKey, details -> fillDetails(validatorPublicKey, details, stakes)),
-			"Validator {0} not found",
-			ValidatorAddress.of(validatorPublicKey)
+			UNKNOWN_VALIDATOR.with(ValidatorAddress.of(validatorPublicKey))
 		);
 	}
 

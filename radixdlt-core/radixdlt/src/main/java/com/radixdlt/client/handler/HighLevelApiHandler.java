@@ -59,9 +59,15 @@ import static com.radixdlt.api.JsonRpcUtil.safeString;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredArrayParameter;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
-import static com.radixdlt.client.api.ApiErrors.SIZE_MUST_BE_GREATER_THAN_ZERO;
+import static com.radixdlt.client.api.ApiErrors.INVALID_BLOB;
+import static com.radixdlt.client.api.ApiErrors.INVALID_PAGE_SIZE;
+import static com.radixdlt.client.api.ApiErrors.INVALID_PUBLIC_KEY;
+import static com.radixdlt.client.api.ApiErrors.INVALID_SIGNATURE_DER;
+import static com.radixdlt.client.api.ApiErrors.INVALID_TX_ID;
 import static com.radixdlt.utils.functional.Optionals.allOf;
 import static com.radixdlt.utils.functional.Result.allOf;
+import static com.radixdlt.utils.functional.Result.ok;
+import static com.radixdlt.utils.functional.Result.wrap;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class HighLevelApiHandler {
@@ -97,7 +103,7 @@ public class HighLevelApiHandler {
 	public JSONObject handleNativeToken(JSONObject request) {
 		return highLevelApiService.getNativeTokenDescription()
 			.map(TokenDefinitionRecord::asJson)
-			.fold(failure -> invalidParamsError(request, failure), response -> response(request, response));
+			.fold(failure -> invalidParamsError(request, failure.message()), response -> response(request, response));
 	}
 
 	public JSONObject handleTokenInfo(JSONObject request) {
@@ -175,7 +181,7 @@ public class HighLevelApiHandler {
 			request,
 			List.of("size"),
 			List.of("cursor"),
-			params -> allOf(Result.ok(request), parseSize(params)).flatMap(this::formatValidators)
+			params -> allOf(ok(request), parseSize(params)).flatMap(this::formatValidators)
 		);
 	}
 
@@ -230,7 +236,7 @@ public class HighLevelApiHandler {
 	}
 
 	private Result<JSONObject> respondWithTransactionHistory(JSONObject params, Optional<Instant> cursor) {
-		return allOf(parseAddress(params), parseSize(params), Result.ok(cursor))
+		return allOf(parseAddress(params), parseSize(params), ok(cursor))
 			.flatMap(this::formatTransactionHistory);
 	}
 
@@ -306,25 +312,31 @@ public class HighLevelApiHandler {
 	}
 
 	private Result<byte[]> parseBlob(JSONObject request) {
-		return Result.wrap(() -> Hex.decodeStrict(request.getJSONObject("transaction").getString("blob")));
+		return wrap(INVALID_BLOB, () -> Hex.decodeStrict(request.getJSONObject("transaction").getString("blob")));
 	}
 
 	private Result<ECDSASignature> parseSignatureDer(JSONObject request) {
-		return Result.wrap(() -> {
-			var signature = Hex.decodeStrict(request.getString("signatureDER"));
-			return ECDSASignature.decodeFromDER(signature);
-		});
+		return wrap(
+			INVALID_SIGNATURE_DER,
+			() -> {
+				var signature = Hex.decodeStrict(request.getString("signatureDER"));
+				return ECDSASignature.decodeFromDER(signature);
+			}
+		);
 	}
 
 	private Result<ECPublicKey> parsePublicKey(JSONObject request) {
-		return Result.wrap(() -> {
-			var pubKeyBytes = Hex.decodeStrict(request.getString("publicKeyOfSigner"));
-			return ECPublicKey.fromBytes(pubKeyBytes);
-		});
+		return wrap(
+			INVALID_PUBLIC_KEY,
+			() -> {
+				var pubKeyBytes = Hex.decodeStrict(request.getString("publicKeyOfSigner"));
+				return ECPublicKey.fromBytes(pubKeyBytes);
+			}
+		);
 	}
 
 	private Result<AID> parseTxId(JSONObject request) {
-		return Result.wrap(() -> Hex.decodeStrict(request.getString("txID")))
+		return wrap(INVALID_TX_ID, () -> Hex.decodeStrict(request.getString("txID")))
 			.flatMap(AID::fromBytes);
 	}
 
@@ -373,7 +385,7 @@ public class HighLevelApiHandler {
 
 	private static Result<Integer> parseSize(JSONObject params) {
 		return safeInteger(params, "size")
-			.filter(value -> value > 0, SIZE_MUST_BE_GREATER_THAN_ZERO);
+			.filter(value -> value > 0, INVALID_PAGE_SIZE);
 	}
 
 	private static Result<REAddr> parseAddress(JSONObject params) {

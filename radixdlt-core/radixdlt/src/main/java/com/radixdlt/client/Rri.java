@@ -18,12 +18,15 @@
 
 package com.radixdlt.client;
 
+import org.bitcoinj.core.Bech32;
+
 import com.radixdlt.atomos.ConstraintScryptEnv;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Bits;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.functional.Result;
-import org.bitcoinj.core.Bech32;
+
+import static com.radixdlt.utils.CommonErrors.UNABLE_TO_DECODE;
 
 /**
  * A Radix resource identifier which encodes addresses with a resource behind them in
@@ -54,18 +57,18 @@ public final class Rri {
 	public static Pair<String, REAddr> parse(String rri) {
 		var data = Bech32.decode(rri);
 		if (!data.hrp.endsWith(RRI_HRP_SUFFIX)) {
-			throw new IllegalArgumentException("hrp suffix must be " + RRI_HRP_SUFFIX);
+			throw new IllegalArgumentException("Address hrp suffix must be " + RRI_HRP_SUFFIX + "(" + rri + ")");
 		}
 		var symbol = data.hrp.substring(0, data.hrp.length() - RRI_HRP_SUFFIX.length());
 		if (!ConstraintScryptEnv.NAME_PATTERN.matcher(symbol).matches()) {
-			throw new IllegalArgumentException("Invalid symbol");
+			throw new IllegalArgumentException("Invalid symbol in address (" + rri + ")");
 		}
 		var addrBytes = fromBech32Data(data.data);
 		return Pair.of(symbol, REAddr.of(addrBytes));
 	}
 
 	public static Result<Pair<String, REAddr>> parseFunctional(String rri) {
-		return Result.wrap(() -> parse(rri));
+		return Result.wrap(UNABLE_TO_DECODE, () -> parse(rri));
 	}
 
 	public static String of(String symbol, REAddr addr) {
