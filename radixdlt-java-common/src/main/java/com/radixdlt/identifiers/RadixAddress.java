@@ -28,7 +28,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-import static com.radixdlt.utils.CommonErrors.INVALID_RADIX_ADDRESS;
+import static com.radixdlt.identifiers.CommonErrors.INVALID_RADIX_ADDRESS;
 
 /**
  * base58 address based on a public key

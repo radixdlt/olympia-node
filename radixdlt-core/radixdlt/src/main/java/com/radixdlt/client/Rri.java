@@ -26,7 +26,7 @@ import com.radixdlt.utils.Bits;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.functional.Result;
 
-import static com.radixdlt.utils.CommonErrors.UNABLE_TO_DECODE;
+import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DECODE;
 
 /**
  * A Radix resource identifier which encodes addresses with a resource behind them in

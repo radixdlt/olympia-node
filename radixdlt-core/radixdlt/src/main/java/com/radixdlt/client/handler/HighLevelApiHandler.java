@@ -22,8 +22,8 @@ import org.json.JSONObject;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.radixdlt.client.AccountAddress;
-import com.radixdlt.client.ValidatorAddress;
+import com.radixdlt.identifiers.AccountAddress;
+import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.client.api.PreparedTransaction;
 import com.radixdlt.client.api.TransactionAction;
 import com.radixdlt.client.api.TxHistoryEntry;

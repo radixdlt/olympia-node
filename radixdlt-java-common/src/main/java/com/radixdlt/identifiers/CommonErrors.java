@@ -15,20 +15,24 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.client.handler;
+package com.radixdlt.identifiers;
 
 import com.radixdlt.utils.functional.Failure;
 
-public enum ClientLibErrors implements Failure {
-	INVALID_NETWORK_ID(1001, "Network ID {0} is not an integer"),
-	MISSING_NETWORK_ID(1002, "Network ID not found"),
-	MISSING_FIELD(1003, "Field {0} is missing"),
-	CONNECTION_ERROR(1004, "Error: {0}");
+public enum CommonErrors implements Failure {
+	INVALID_VALIDATOR_ADDRESS(2509, "Invalid validator address {0}"),
+	INVALID_ACCOUNT_ADDRESS(2510, "Invalid account address {0}"),
+	AID_IS_NULL(1601, "AID string is 'null'"),
+	INVALID_LENGTH(1602, "AID string has incorrect length {0}"),
+	UNABLE_TO_DECODE(1603, "Unable to decode: {0}"),
+	UNABLE_TO_DESERIALIZE(1604, "Unable to deserialize: {0}"),
+	CANT_MAKE_RECOVERABLE(1701, "Unable to convert signature to recoverable {0}"),
+	INVALID_RADIX_ADDRESS(1702, "Invalid RadixAddress {0}");
 
 	private final int code;
 	private final String message;
 
-	ClientLibErrors(int code, String message) {
+	CommonErrors(int code, String message) {
 		this.code = code;
 		this.message = message;
 	}

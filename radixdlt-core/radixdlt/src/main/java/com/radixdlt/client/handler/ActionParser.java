@@ -20,8 +20,8 @@ package com.radixdlt.client.handler;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import com.radixdlt.client.AccountAddress;
-import com.radixdlt.client.ValidatorAddress;
+import com.radixdlt.identifiers.AccountAddress;
+import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.client.api.ActionType;
 import com.radixdlt.client.api.TransactionAction;
 import com.radixdlt.client.store.ClientApiStore;

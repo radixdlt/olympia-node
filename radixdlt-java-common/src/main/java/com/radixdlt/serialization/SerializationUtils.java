@@ -24,7 +24,7 @@ import com.radixdlt.utils.functional.Result;
 
 import java.nio.charset.StandardCharsets;
 
-import static com.radixdlt.utils.CommonErrors.UNABLE_TO_DESERIALIZE;
+import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DESERIALIZE;
 
 /**
  * Collection of Serialization-related utilities

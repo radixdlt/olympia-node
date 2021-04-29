@@ -21,6 +21,7 @@ package com.radixdlt.client;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bytes;
 import org.junit.Test;

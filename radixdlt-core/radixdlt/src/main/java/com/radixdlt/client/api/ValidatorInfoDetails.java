@@ -17,8 +17,8 @@
 
 package com.radixdlt.client.api;
 
-import com.radixdlt.client.AccountAddress;
-import com.radixdlt.client.ValidatorAddress;
+import com.radixdlt.identifiers.AccountAddress;
+import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import org.json.JSONObject;

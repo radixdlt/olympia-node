@@ -82,7 +82,6 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
-import static com.radixdlt.client.api.ApiErrors.INVALID_ACCOUNT_ADDRESS;
 import static com.radixdlt.client.api.ApiErrors.INVALID_PAGE_SIZE;
 import static com.radixdlt.client.api.ApiErrors.SYMBOL_DOES_NOT_MATCH;
 import static com.radixdlt.client.api.ApiErrors.UNABLE_TO_RESTORE_CREATOR;
@@ -113,6 +112,7 @@ import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_APIDB_TOK
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_APIDB_TOKEN_WRITE;
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_APIDB_TRANSACTION_READ;
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_APIDB_TRANSACTION_WRITE;
+import static com.radixdlt.identifiers.CommonErrors.INVALID_ACCOUNT_ADDRESS;
 import static com.radixdlt.serialization.DsonOutput.Output;
 import static com.radixdlt.serialization.SerializationUtils.restore;
 

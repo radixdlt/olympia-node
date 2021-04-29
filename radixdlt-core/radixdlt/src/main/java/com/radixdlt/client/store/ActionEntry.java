@@ -19,8 +19,8 @@ package com.radixdlt.client.store;
 
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.client.AccountAddress;
-import com.radixdlt.client.ValidatorAddress;
+import com.radixdlt.identifiers.AccountAddress;
+import com.radixdlt.identifiers.ValidatorAddress;
 import org.json.JSONObject;
 
 import com.radixdlt.atom.actions.BurnToken;

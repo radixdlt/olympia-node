@@ -44,7 +44,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-import static com.radixdlt.utils.CommonErrors.CANT_MAKE_RECOVERABLE;
+import static com.radixdlt.identifiers.CommonErrors.CANT_MAKE_RECOVERABLE;
 
 /**
  * Utilities used by both {@link ECPublicKey} and {@link ECKeyPair}.

@@ -16,7 +16,7 @@
  *
  */
 
-package com.radixdlt.client;
+package com.radixdlt.identifiers;
 
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
@@ -27,7 +27,7 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bits;
 import com.radixdlt.utils.functional.Result;
 
-import static com.radixdlt.client.api.ApiErrors.INVALID_VALIDATOR_ADDRESS;
+import static com.radixdlt.identifiers.CommonErrors.INVALID_VALIDATOR_ADDRESS;
 
 /**
  * Bech-32 encoding/decoding of validators. Validators are represented as 33-byte

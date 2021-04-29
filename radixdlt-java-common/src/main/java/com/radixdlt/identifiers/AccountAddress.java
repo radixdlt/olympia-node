@@ -16,17 +16,16 @@
  *
  */
 
-package com.radixdlt.client;
+package com.radixdlt.identifiers;
 
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
 
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bits;
 import com.radixdlt.utils.functional.Result;
 
-import static com.radixdlt.client.api.ApiErrors.INVALID_ACCOUNT_ADDRESS;
+import static com.radixdlt.identifiers.CommonErrors.INVALID_ACCOUNT_ADDRESS;
 
 /**
  * Bech-32 encoding/decoding of account addresses.

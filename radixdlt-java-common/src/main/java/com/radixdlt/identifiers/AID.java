@@ -26,9 +26,9 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
 
-import static com.radixdlt.utils.CommonErrors.AID_IS_NULL;
-import static com.radixdlt.utils.CommonErrors.INVALID_LENGTH;
-import static com.radixdlt.utils.CommonErrors.UNABLE_TO_DECODE;
+import static com.radixdlt.identifiers.CommonErrors.AID_IS_NULL;
+import static com.radixdlt.identifiers.CommonErrors.INVALID_LENGTH;
+import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DECODE;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 
 import static java.util.Optional.ofNullable;

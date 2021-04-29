@@ -20,7 +20,7 @@ import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.client.AccountAddress;
+import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.client.Rri;
 import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.constraintmachine.ConstraintMachine;

@@ -15,13 +15,13 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.client.lib;
+package com.radixdlt.client.application.lib.lib;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import com.radixdlt.client.AccountAddress;
-import com.radixdlt.client.api.ApiErrors;
+import com.radixdlt.client.lib.ClientLibErrors;
+import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt384;
@@ -41,13 +41,13 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 
-import static com.radixdlt.api.JsonRpcUtil.jsonArray;
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
-import static com.radixdlt.client.handler.ClientLibErrors.CONNECTION_ERROR;
-import static com.radixdlt.client.handler.ClientLibErrors.INVALID_NETWORK_ID;
-import static com.radixdlt.client.handler.ClientLibErrors.MISSING_FIELD;
-import static com.radixdlt.client.handler.ClientLibErrors.MISSING_NETWORK_ID;
-import static com.radixdlt.utils.CommonErrors.UNABLE_TO_DECODE;
+import static com.radixdlt.client.lib.ClientLibErrors.CONNECTION_ERROR;
+import static com.radixdlt.client.lib.ClientLibErrors.INVALID_NETWORK_ID;
+import static com.radixdlt.client.lib.ClientLibErrors.MISSING_FIELD;
+import static com.radixdlt.client.lib.ClientLibErrors.MISSING_NETWORK_ID;
+import static com.radixdlt.client.lib.ClientLibErrors.NOT_A_JSON_OBJECT;
+import static com.radixdlt.client.lib.ClientLibErrors.NO_CONTENT;
+import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DECODE;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 
@@ -83,10 +83,18 @@ public class NodeClient {
 
 	public static Result<NodeClient> connect(String baseUrl) {
 		if (baseUrl == null) {
-			return ApiErrors.BASE_URL_IS_MANDATORY.result();
+			return ClientLibErrors.BASE_URL_IS_MANDATORY.result();
 		}
 
 		return Result.ok(new NodeClient(baseUrl)).flatMap(NodeClient::tryConnect);
+	}
+
+	private static JSONObject jsonObject() {
+		return new JSONObject();
+	}
+
+	private static JSONArray jsonArray() {
+		return new JSONArray();
 	}
 
 	public Result<List<Pair<String, UInt384>>> callTokenBalances(REAddr addr) {
@@ -153,7 +161,7 @@ public class NodeClient {
 
 	private Result<Pair<String, UInt384>> parseTokenBalanceEntry(Object obj) {
 		if (!(obj instanceof JSONObject)) {
-			return ApiErrors.NOT_A_JSON_OBJECT.result();
+			return NOT_A_JSON_OBJECT.result();
 		}
 
 		var object = (JSONObject) obj;
@@ -184,7 +192,7 @@ public class NodeClient {
 		try (var response = client.newCall(request).execute(); var responseBody = response.body()) {
 			return responseBody != null
 				   ? Result.ok(responseBody.string())
-				   : ApiErrors.NO_CONTENT.result();
+				   : NO_CONTENT.result();
 		} catch (IOException e) {
 			return CONNECTION_ERROR.with(e.getMessage()).result();
 		}
