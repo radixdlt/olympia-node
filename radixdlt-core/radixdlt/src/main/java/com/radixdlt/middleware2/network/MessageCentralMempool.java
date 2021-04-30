@@ -82,8 +82,7 @@ public final class MessageCentralMempool {
 				final BFTNode node = BFTNode.create(msg.getPeer().getSystem().getKey());
 				return RemoteEvent.create(
 					node,
-					MempoolAdd.create(msg.getMessage().getTxns()),
-					MempoolAdd.class
+					MempoolAdd.create(msg.getMessage().getTxns())
 				);
 			})
 			.toFlowable(BackpressureStrategy.BUFFER);

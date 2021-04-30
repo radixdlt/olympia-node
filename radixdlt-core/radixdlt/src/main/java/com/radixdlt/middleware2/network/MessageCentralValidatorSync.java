@@ -132,7 +132,7 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender, 
 			m -> m.getPeer().hasSystem(),
 			(peer, msg) -> {
 				final BFTNode node = BFTNode.create(peer.getSystem().getKey());
-				return RemoteEvent.create(node, new GetVerticesRequest(msg.getVertexId(), msg.getCount()), GetVerticesRequest.class);
+				return RemoteEvent.create(node, new GetVerticesRequest(msg.getVertexId(), msg.getCount()));
 			}
 		);
 	}
@@ -148,7 +148,7 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender, 
 					.map(v -> new VerifiedVertex(v, hasher.hash(v)))
 					.collect(ImmutableList.toImmutableList());
 
-				return RemoteEvent.create(node, new GetVerticesResponse(hashedVertices), GetVerticesResponse.class);
+				return RemoteEvent.create(node, new GetVerticesResponse(hashedVertices));
 			}
 		);
 	}

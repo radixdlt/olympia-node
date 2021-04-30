@@ -27,22 +27,19 @@ import java.util.Objects;
  * @param <T> the event class
  */
 public final class RemoteEvent<T> {
-	private final Class<T> eventClass;
 	private final T event;
 	private final BFTNode origin;
 
-	private RemoteEvent(BFTNode origin, T event, Class<T> eventClass) {
+	private RemoteEvent(BFTNode origin, T event) {
 		this.origin = origin;
 		this.event = event;
-		this.eventClass = eventClass;
 	}
 
-	public static <T> RemoteEvent<T> create(BFTNode origin, T event, Class<T> eventClass) {
+	public static <T> RemoteEvent<T> create(BFTNode origin, T event) {
 		Objects.requireNonNull(origin);
 		Objects.requireNonNull(event);
-		Objects.requireNonNull(eventClass);
 
-		return new RemoteEvent<>(origin, event, eventClass);
+		return new RemoteEvent<>(origin, event);
 	}
 
 	public BFTNode getOrigin() {
