@@ -100,15 +100,15 @@ public class ValidatorDTO {
 
 	@Override
 	public String toString() {
-		return "ValidatorDTO(" +
-			"address='" + address + '\'' +
-			", ownerAddress='" + ownerAddress + '\'' +
-			", name='" + name + '\'' +
-			", infoURL='" + infoURL + '\'' +
-			", totalDelegatedStake=" + totalDelegatedStake +
-			", ownerDelegation=" + ownerDelegation +
-			", isExternalStakeAccepted=" + isExternalStakeAccepted +
-			')';
+		return "ValidatorDTO("
+			+ "address='" + address + '\''
+			+ ", ownerAddress='" + ownerAddress + '\''
+			+ ", name='" + name + '\''
+			+ ", infoURL='" + infoURL + '\''
+			+ ", totalDelegatedStake=" + totalDelegatedStake
+			+ ", ownerDelegation=" + ownerDelegation
+			+ ", isExternalStakeAccepted=" + isExternalStakeAccepted
+			+ ')';
 	}
 
 	public String getAddress() {

@@ -84,13 +84,13 @@ public class TransactionDTO {
 
 	@Override
 	public String toString() {
-		return "Transaction(" +
-			"txID=" + txID +
-			", sentAt=" + sentAt +
-			", fee=" + fee +
-			", message='" + message + '\'' +
-			", actions=" + actions +
-			')';
+		return "Transaction("
+			+ "txID=" + txID
+			+ ", sentAt=" + sentAt
+			+ ", fee=" + fee
+			+ ", message='" + message + '\''
+			+ ", actions=" + actions
+			+ ')';
 	}
 
 	public AID getTxID() {

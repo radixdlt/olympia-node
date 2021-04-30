@@ -28,7 +28,8 @@ public enum ClientLibraryErrors implements Failure {
 	MISSING_NETWORK_ID(1005, "Network ID not found"),
 	MISSING_FIELD(1006, "Field {0} is missing"),
 	CONNECTION_ERROR(1007, "Error: {0}"),
-	UNABLE_TO_READ_RESPONSE_BODY(1008, "Error while retrieving response body {0}");
+	UNABLE_TO_READ_RESPONSE_BODY(1008, "Error while retrieving response body {0}"),
+	API_ERROR(1009, "API returned error response {0}");
 
 	private final int code;
 	private final String message;

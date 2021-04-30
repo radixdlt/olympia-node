@@ -18,6 +18,7 @@
 package com.radixdlt.client.lib.api;
 
 import com.radixdlt.client.lib.dto.NetworkIdDTO;
+import com.radixdlt.client.lib.dto.NetworkStatsDTO;
 import com.radixdlt.client.lib.dto.StakePositionsDTO;
 import com.radixdlt.client.lib.dto.TokenBalancesDTO;
 import com.radixdlt.client.lib.dto.TokenInfoDTO;
@@ -29,7 +30,6 @@ import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponseDTO;
 import com.radixdlt.client.lib.impl.SynchronousRadixApiClient;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
@@ -49,11 +49,12 @@ public interface RadixApi {
 	Result<List<StakePositionsDTO>> stakePositions(AccountAddress address);
 	Result<List<UnstakePositionsDTO>> unstakePositions(AccountAddress address);
 	Result<TransactionStatusDTO> statusOfTransaction(AID txId);
-	Result<Long> networkTransactionThroughput();
-	Result<Long> networkTransactionDemand();
+	Result<NetworkStatsDTO> networkTransactionThroughput();
+	Result<NetworkStatsDTO> networkTransactionDemand();
 	Result<ValidatorsResponseDTO> validators(int size, Optional<NavigationCursor> cursor);
 	Result<ValidatorDTO> lookupValidator(String validatorAddress);
-//	Result<BuiltTransactionDTO> buildTransaction(TransactionRequest request);
+	//TODO: finish
+	//	Result<BuiltTransactionDTO> buildTransaction(TransactionRequest request);
 	//Result<> finalizeTransaction();
 	//Result<> submitTransaction();
 }

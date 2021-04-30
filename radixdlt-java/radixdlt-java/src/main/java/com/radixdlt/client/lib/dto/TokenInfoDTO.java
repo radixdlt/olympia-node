@@ -117,17 +117,17 @@ public class TokenInfoDTO {
 
 	@Override
 	public String toString() {
-		return "TokenInfo(" +
-			"name='" + name + '\'' +
-			", rri=" + rri +
-			", symbol='" + symbol + '\'' +
-			", description='" + description + '\'' +
-			", granularity=" + granularity +
-			", isSupplyMutable=" + isSupplyMutable +
-			", currentSupply=" + currentSupply +
-			", tokenInfoURL='" + tokenInfoURL + '\'' +
-			", iconURL='" + iconURL + '\'' +
-			')';
+		return "TokenInfo("
+			+ "name='" + name + '\''
+			+ ", rri=" + rri
+			+ ", symbol='" + symbol + '\''
+			+ ", description='" + description + '\''
+			+ ", granularity=" + granularity
+			+ ", isSupplyMutable=" + isSupplyMutable
+			+ ", currentSupply=" + currentSupply
+			+ ", tokenInfoURL='" + tokenInfoURL + '\''
+			+ ", iconURL='" + iconURL + '\''
+			+ ')';
 	}
 
 	public String getName() {

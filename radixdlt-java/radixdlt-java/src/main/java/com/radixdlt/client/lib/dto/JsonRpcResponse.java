@@ -56,6 +56,10 @@ public class JsonRpcResponse<T> {
 		return result;
 	}
 
+	public ErrorInfo rawError() {
+		return error;
+	}
+
 	public String getVersion() {
 		return version;
 	}

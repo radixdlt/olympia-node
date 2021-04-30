@@ -107,14 +107,14 @@ public class ActionDTO {
 
 	@Override
 	public String toString() {
-		return "Action(" +
-			"type=" + type +
-			", from=" + from +
-			", to=" + to +
-			", validator=" + validator +
-			", amount=" + amount +
-			", rri=" + rri +
-			')';
+		return "Action("
+			+ "type=" + type
+			+ ", from=" + from
+			+ ", to=" + to
+			+ ", validator=" + validator
+			+ ", amount=" + amount
+			+ ", rri=" + rri
+			+ ')';
 	}
 
 	public ActionType getType() {

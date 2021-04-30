@@ -19,6 +19,7 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.utils.functional.Failure;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -76,5 +77,15 @@ public class ErrorInfo {
 	@Override
 	public String toString() {
 		return "{" + code + ", '" + message + "'}";
+	}
+
+	public Failure toFailure() {
+		var text = (message == null && data == null)
+			   ? "<empty>"
+			   : message == null
+				 ? data.toString()
+				 : message;
+
+		return Failure.failure(code, text);
 	}
 }

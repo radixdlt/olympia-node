@@ -25,6 +25,7 @@ import com.radixdlt.client.lib.api.RadixApi;
 import com.radixdlt.client.lib.dto.JsonRpcRequest;
 import com.radixdlt.client.lib.dto.JsonRpcResponse;
 import com.radixdlt.client.lib.dto.NetworkIdDTO;
+import com.radixdlt.client.lib.dto.NetworkStatsDTO;
 import com.radixdlt.client.lib.dto.RpcMethod;
 import com.radixdlt.client.lib.dto.StakePositionsDTO;
 import com.radixdlt.client.lib.dto.TokenBalancesDTO;
@@ -36,7 +37,6 @@ import com.radixdlt.client.lib.dto.UnstakePositionsDTO;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponseDTO;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.functional.Result;
 
 import java.io.IOException;
@@ -85,15 +85,9 @@ public class SynchronousRadixApiClient implements RadixApi {
 	private final String baseUrl;
 	private final OkHttpClient client;
 
-	private SynchronousRadixApiClient(String baseUrl) {
+	private SynchronousRadixApiClient(String baseUrl, OkHttpClient client) {
 		this.baseUrl = sanitize(baseUrl);
-		this.client = new OkHttpClient.Builder()
-			.connectionSpecs(List.of(ConnectionSpec.CLEARTEXT))
-			.connectTimeout(30, TimeUnit.SECONDS)
-			.writeTimeout(30, TimeUnit.SECONDS)
-			.readTimeout(30, TimeUnit.SECONDS)
-			.pingInterval(30, TimeUnit.SECONDS)
-			.build();
+		this.client = client;
 	}
 
 	private static String sanitize(String baseUrl) {
@@ -103,8 +97,12 @@ public class SynchronousRadixApiClient implements RadixApi {
 	}
 
 	public static Result<SynchronousRadixApiClient> connect(String url) {
+		return connect(url, createClient());
+	}
+
+	public static Result<SynchronousRadixApiClient> connect(String url, OkHttpClient client) {
 		return ofNullable(url)
-			.map(baseUrl -> Result.ok(new SynchronousRadixApiClient(baseUrl)))
+			.map(baseUrl -> Result.ok(new SynchronousRadixApiClient(baseUrl, client)))
 			.orElseGet(() -> Result.fail(BASE_URL_IS_MANDATORY));
 	}
 
@@ -157,13 +155,13 @@ public class SynchronousRadixApiClient implements RadixApi {
 	}
 
 	@Override
-	public Result<Long> networkTransactionThroughput() {
-		return call(request(NETWORK_TRANSACTION_THROUGHPUT), new TypeReference<JsonRpcResponse<Long>>() { });
+	public Result<NetworkStatsDTO> networkTransactionThroughput() {
+		return call(request(NETWORK_TRANSACTION_THROUGHPUT), new TypeReference<JsonRpcResponse<NetworkStatsDTO>>() { });
 	}
 
 	@Override
-	public Result<Long> networkTransactionDemand() {
-		return call(request(NETWORK_TRANSACTION_DEMAND), new TypeReference<JsonRpcResponse<Long>>() { });
+	public Result<NetworkStatsDTO> networkTransactionDemand() {
+		return call(request(NETWORK_TRANSACTION_DEMAND), new TypeReference<JsonRpcResponse<NetworkStatsDTO>>() { });
 	}
 
 	@Override
@@ -187,20 +185,18 @@ public class SynchronousRadixApiClient implements RadixApi {
 		return serialize(request)
 			.map(value -> RequestBody.create(MEDIA_TYPE, value))
 			.flatMap(this::doCall)
-			.flatMap(body -> deserialize(body, typeReference));
-	}
-
-	private Result<RadixApi> tryConnect() {
-		return networkId().map(__ -> this);
+			.flatMap(body -> deserialize(body, typeReference))
+			.flatMap(response -> response.rawError() == null
+								 ? Result.ok(response.rawResult())
+								 : Result.fail(response.rawError().toFailure()));
 	}
 
 	private Result<String> serialize(JsonRpcRequest request) {
 		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper.writeValueAsString(request));
 	}
 
-	private <T> Result<T> deserialize(String body, TypeReference<JsonRpcResponse<T>> typeReference) {
-		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper.readValue(body, typeReference))
-			.map(JsonRpcResponse::rawResult);
+	private <T> Result<JsonRpcResponse<T>> deserialize(String body, TypeReference<JsonRpcResponse<T>> typeReference) {
+		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper.readValue(body, typeReference));
 	}
 
 	private Result<String> doCall(RequestBody requestBody) {
@@ -208,7 +204,8 @@ public class SynchronousRadixApiClient implements RadixApi {
 
 		try (var response = client.newCall(request).execute(); var responseBody = response.body()) {
 			return fromOptional(NO_CONTENT, ofNullable(responseBody))
-				.flatMap(responseBody1 -> Result.wrap(UNABLE_TO_READ_RESPONSE_BODY, responseBody1::string));
+				.flatMap(responseBody1 -> Result.wrap(UNABLE_TO_READ_RESPONSE_BODY, responseBody1::string))
+				.onSuccess(text -> System.out.println(text));
 		} catch (IOException e) {
 			return UNABLE_TO_READ_RESPONSE_BODY.with(e.getMessage()).result();
 		}
@@ -216,5 +213,15 @@ public class SynchronousRadixApiClient implements RadixApi {
 
 	private Request buildRequest(RequestBody requestBody) {
 		return new Request.Builder().url(baseUrl + "/rpc").post(requestBody).build();
+	}
+
+	private static  OkHttpClient createClient() {
+		return new OkHttpClient.Builder()
+			.connectionSpecs(List.of(ConnectionSpec.CLEARTEXT))
+			.connectTimeout(30, TimeUnit.SECONDS)
+			.writeTimeout(30, TimeUnit.SECONDS)
+			.readTimeout(30, TimeUnit.SECONDS)
+			.pingInterval(30, TimeUnit.SECONDS)
+			.build();
 	}
 }

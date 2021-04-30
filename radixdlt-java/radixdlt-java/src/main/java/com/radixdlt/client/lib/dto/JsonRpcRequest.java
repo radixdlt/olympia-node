@@ -38,7 +38,7 @@ public class JsonRpcRequest {
 		this.parameters.addAll(parameters);
 	}
 
-	public static JsonRpcRequest create(String method, Long id, Object ...parameters) {
+	public static JsonRpcRequest create(String method, Long id, Object... parameters) {
 		return new JsonRpcRequest(VERSION, id.toString(), method, List.of(parameters));
 	}
 
@@ -62,7 +62,7 @@ public class JsonRpcRequest {
 		return method;
 	}
 
-	public JsonRpcRequest addParameters(Object ...params) {
+	public JsonRpcRequest addParameters(Object... params) {
 		parameters.addAll(List.of(params));
 		return this;
 	}

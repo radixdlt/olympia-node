@@ -19,7 +19,6 @@ package com.radixdlt.client.lib.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.lib.dto.ActionDTO;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 import java.util.ArrayList;
