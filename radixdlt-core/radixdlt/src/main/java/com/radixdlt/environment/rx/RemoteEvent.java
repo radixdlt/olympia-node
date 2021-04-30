@@ -18,7 +18,6 @@
 package com.radixdlt.environment.rx;
 
 import com.radixdlt.consensus.bft.BFTNode;
-import io.reactivex.rxjava3.core.Maybe;
 import java.util.Objects;
 
 /**
@@ -44,16 +43,6 @@ public final class RemoteEvent<T> {
 		Objects.requireNonNull(eventClass);
 
 		return new RemoteEvent<>(origin, event, eventClass);
-	}
-
-	public static <T> Maybe<RemoteEvent<T>> ofEventType(RemoteEvent<?> event, Class<T> eventClass) {
-		if (event.eventClass == eventClass) {
-			@SuppressWarnings("unchecked")
-			RemoteEvent<T> casted = (RemoteEvent<T>) event;
-			return Maybe.just(casted);
-		} else {
-			return Maybe.empty();
-		}
 	}
 
 	public BFTNode getOrigin() {

@@ -45,6 +45,7 @@ import com.radixdlt.consensus.liveness.ExponentialPacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
@@ -92,6 +93,7 @@ public final class ConsensusModule extends AbstractModule {
 		bind(PacemakerReducer.class).to(PacemakerState.class);
 		bind(ExponentialPacemakerTimeoutCalculator.class).in(Scopes.SINGLETON);
 		bind(PacemakerTimeoutCalculator.class).to(ExponentialPacemakerTimeoutCalculator.class);
+		bind(VertexStoreBFTSyncRequestProcessor.class).in(Scopes.SINGLETON);
 
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 				.permitDuplicates();
@@ -231,11 +233,21 @@ public final class ConsensusModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
+	private RemoteEventProcessor<GetVerticesResponse> bftSyncResponseProcessor(BFTSync bftSync) {
+		return bftSync.responseProcessor();
+	}
+
+	@ProvidesIntoSet
 	private RemoteEventProcessor<GetVerticesRequest> bftSyncRequestProcessor(
 		VertexStore vertexStore,
-		SyncVerticesResponseSender responseSender
+		SyncVerticesResponseSender responseSender,
+		RemoteEventDispatcher<GetVerticesResponse> responseDispatcher
 	) {
-		return new VertexStoreBFTSyncRequestProcessor(vertexStore, responseSender);
+		return new VertexStoreBFTSyncRequestProcessor(
+			vertexStore,
+			responseSender,
+			responseDispatcher
+		);
 	}
 
 	@Provides

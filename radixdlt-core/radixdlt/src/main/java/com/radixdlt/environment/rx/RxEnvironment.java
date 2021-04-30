@@ -93,6 +93,10 @@ public final class RxEnvironment implements Environment {
 
 	@Override
 	public <T> RemoteEventDispatcher<T> getRemoteDispatcher(Class<T> eventClass) {
+		if (!remoteDispatchers.containsKey(eventClass)) {
+			throw new IllegalStateException("No dispatcher for " + eventClass);
+		}
+
 		@SuppressWarnings("unchecked")
 		final RemoteEventDispatcher<T> dispatcher = (RemoteEventDispatcher<T>) remoteDispatchers.get(eventClass).dispatcher();
 		return dispatcher;

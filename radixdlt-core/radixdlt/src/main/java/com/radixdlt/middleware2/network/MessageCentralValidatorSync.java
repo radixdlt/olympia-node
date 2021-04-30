@@ -47,6 +47,7 @@ import org.radix.network.messaging.Message;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 /**
  * Network interface for syncing vertices using the MessageCentral
@@ -79,7 +80,12 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender, 
 		return this::sendGetVerticesRequest;
 	}
 
-	public void sendGetVerticesRequest(BFTNode node, GetVerticesRequest request) {
+	public RemoteEventDispatcher<GetVerticesResponse> verticesResponseDispatcher() {
+		return this::sendGetVerticesResponse;
+	}
+
+
+	private void sendGetVerticesRequest(BFTNode node, GetVerticesRequest request) {
 		if (this.self.equals(node)) {
 			throw new IllegalStateException("Should never need to retrieve a vertex from self.");
 		}
@@ -94,17 +100,17 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender, 
 		this.messageCentral.send(peer.get(), vertexRequest);
 	}
 
-	@Override
-	public void sendGetVerticesResponse(BFTNode node, ImmutableList<VerifiedVertex> vertices) {
-		var rawVertices = vertices.stream().map(VerifiedVertex::toSerializable).collect(ImmutableList.toImmutableList());
-		GetVerticesResponseMessage response = new GetVerticesResponseMessage(
+	private void sendGetVerticesResponse(BFTNode node, GetVerticesResponse response) {
+		var rawVertices = response.getVertices().stream()
+			.map(VerifiedVertex::toSerializable).collect(Collectors.toList());
+		var msg = new GetVerticesResponseMessage(
 			this.magic,
 			rawVertices
 		);
 
 		final Optional<PeerWithSystem> peerMaybe = this.addressBook.peer(node.getKey().euid());
 		peerMaybe.ifPresentOrElse(
-			p -> this.messageCentral.send(p, response),
+			p -> this.messageCentral.send(p, msg),
 			() -> log.warn("{}: Peer {} not in address book when sending GetVerticesResponse", this.self, node)
 		);
 	}
@@ -131,8 +137,7 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender, 
 		);
 	}
 
-	@Override
-	public Flowable<GetVerticesResponse> responses() {
+	public Flowable<RemoteEvent<GetVerticesResponse>> responses() {
 		return this.createFlowable(
 			GetVerticesResponseMessage.class,
 			m -> m.getPeer().hasSystem(),
@@ -143,7 +148,7 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender, 
 					.map(v -> new VerifiedVertex(v, hasher.hash(v)))
 					.collect(ImmutableList.toImmutableList());
 
-				return new GetVerticesResponse(node, hashedVertices);
+				return RemoteEvent.create(node, new GetVerticesResponse(hashedVertices), GetVerticesResponse.class);
 			}
 		);
 	}

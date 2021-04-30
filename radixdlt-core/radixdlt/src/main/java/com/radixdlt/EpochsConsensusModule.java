@@ -57,6 +57,7 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
@@ -104,6 +105,11 @@ public class EpochsConsensusModule extends AbstractModule {
     @Provides
 	private RemoteEventProcessor<GetVerticesRequest> localGetVerticesRequestRemoteEventProcessor(EpochManager epochManager) {
 		return epochManager.localGetVerticesRequestRemoteEventProcessor();
+	}
+
+	@Provides
+	private RemoteEventProcessor<GetVerticesResponse> responseRemoteEventProcessor(EpochManager epochManager) {
+		return epochManager.responseRemoteEventProcessor();
 	}
 
 	@Provides
@@ -229,9 +235,14 @@ public class EpochsConsensusModule extends AbstractModule {
 
 	@Provides
 	private BFTSyncRequestProcessorFactory vertexStoreSyncVerticesRequestProcessorFactory(
-		SyncVerticesResponseSender syncVerticesResponseSender
+		SyncVerticesResponseSender syncVerticesResponseSender,
+		RemoteEventDispatcher<GetVerticesResponse> responseDispatcher
 	) {
-		return vertexStore -> new VertexStoreBFTSyncRequestProcessor(vertexStore, syncVerticesResponseSender);
+		return vertexStore -> new VertexStoreBFTSyncRequestProcessor(
+			vertexStore,
+			syncVerticesResponseSender,
+			responseDispatcher
+		);
 	}
 
 	@Provides

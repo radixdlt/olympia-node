@@ -47,44 +47,6 @@ public class SimulationNetworkTest {
 	}
 
 	@Test
-	public void when_send_vote_to_self_twice__then_should_receive_both() {
-		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.getNetwork(node1).remoteBftEvents()
-			.toObservable()
-			.subscribe(testObserver);
-		Vote vote = mock(Vote.class);
-		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
-		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
-		testObserver.awaitCount(2);
-		testObserver.assertValues(vote, vote);
-	}
-
-	@Test
-	public void when_self_and_other_send_vote_to_self__then_should_receive_both() {
-		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.getNetwork(node1).remoteBftEvents()
-			.toObservable()
-			.subscribe(testObserver);
-		Vote vote = mock(Vote.class);
-		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
-		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
-		testObserver.awaitCount(2);
-		testObserver.assertValues(vote, vote);
-	}
-
-	@Test
-	public void when_send_vote_to_self__then_should_receive_it() {
-		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.getNetwork(node1).remoteBftEvents()
-			.toObservable()
-			.subscribe(testObserver);
-		Vote vote = mock(Vote.class);
-		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
-		testObserver.awaitCount(1);
-		testObserver.assertValue(vote);
-	}
-
-	@Test
 	public void when_broadcast_proposal__then_should_receive_it() {
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetwork(node1).localBftEvents()

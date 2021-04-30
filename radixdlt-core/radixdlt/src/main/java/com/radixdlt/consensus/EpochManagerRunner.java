@@ -28,6 +28,7 @@ import com.radixdlt.consensus.epoch.Epoched;
 
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.rx.RemoteEvent;
@@ -81,6 +82,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 		Observable<EpochViewUpdate> localViewUpdates,
 		EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor,
 		Flowable<RemoteEvent<GetVerticesRequest>> verticesRequests,
+		Flowable<RemoteEvent<GetVerticesResponse>> verticesResponses,
 		BFTEventsRx networkRx,
 		Observable<Epoched<ScheduledLocalTimeout>> timeouts,
 		SyncVerticesRPCRx rpcRx,
@@ -104,7 +106,11 @@ public final class EpochManagerRunner implements ModuleRunner {
 				req -> epochManager.localGetVerticesRequestRemoteEventProcessor().process(req.getOrigin(), req.getEvent()),
 				singleThreadScheduler
 			),
-			new Subscription<>(rpcRx.responses(), epochManager::processGetVerticesResponse, singleThreadScheduler),
+			new Subscription<>(
+				verticesResponses,
+				resp -> epochManager.responseRemoteEventProcessor().process(resp.getOrigin(), resp.getEvent()),
+				singleThreadScheduler
+			),
 			new Subscription<>(rpcRx.errorResponses(), epochManager::processGetVerticesErrorResponse, singleThreadScheduler)
 		);
 	}

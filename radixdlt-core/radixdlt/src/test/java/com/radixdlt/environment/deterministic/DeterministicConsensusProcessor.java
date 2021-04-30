@@ -47,6 +47,7 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 	private final BFTEventProcessor bftEventProcessor;
 	private final BFTSync vertexStoreSync;
 	private final Set<RemoteEventProcessor<GetVerticesRequest>> verticesRequestProcessors;
+	private final Set<RemoteEventProcessor<GetVerticesResponse>> verticesResponseProcessors;
 	private final Set<EventProcessor<BFTHighQCUpdate>> bftHighQCUpdateProcessors;
 	private final Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors;
 	private final Set<EventProcessor<BFTRebuildUpdate>> bftRebuildUpdateProcessors;
@@ -59,6 +60,7 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 		BFTEventProcessor bftEventProcessor,
 		BFTSync vertexStoreSync,
 		Set<RemoteEventProcessor<GetVerticesRequest>> verticesRequestProcessors,
+		Set<RemoteEventProcessor<GetVerticesResponse>> verticesResponseProcessors,
 		Set<EventProcessor<ViewUpdate>> viewUpdateProcessors,
 		Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors,
 		Set<EventProcessor<BFTRebuildUpdate>> bftRebuildUpdateProcessors,
@@ -69,6 +71,7 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 		this.bftEventProcessor = Objects.requireNonNull(bftEventProcessor);
 		this.vertexStoreSync = Objects.requireNonNull(vertexStoreSync);
 		this.verticesRequestProcessors = Objects.requireNonNull(verticesRequestProcessors);
+		this.verticesResponseProcessors = Objects.requireNonNull(verticesResponseProcessors);
 		this.bftUpdateProcessors = Objects.requireNonNull(bftUpdateProcessors);
 		this.bftRebuildUpdateProcessors = Objects.requireNonNull(bftRebuildUpdateProcessors);
 		this.bftHighQCUpdateProcessors = Objects.requireNonNull(bftHighQCUpdateProcessors);
@@ -95,7 +98,7 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 		} else if (message instanceof GetVerticesRequest) {
 			verticesRequestProcessors.forEach(p -> p.process(origin, (GetVerticesRequest) message));
 		} else if (message instanceof GetVerticesResponse) {
-			vertexStoreSync.responseProcessor().process((GetVerticesResponse) message);
+			verticesResponseProcessors.forEach(p -> p.process(origin, (GetVerticesResponse) message));
 		} else if (message instanceof GetVerticesErrorResponse) {
 			vertexStoreSync.processGetVerticesErrorResponse((GetVerticesErrorResponse) message);
 		} else if (message instanceof BFTHighQCUpdate) {

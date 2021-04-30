@@ -18,20 +18,17 @@
 package com.radixdlt.environment.deterministic.network;
 
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
 
 /**
@@ -49,13 +46,6 @@ public final class ControlledSender implements DeterministicSender, Environment 
 		this.self = self;
 		this.senderIndex = senderIndex;
 		this.localChannel = ChannelId.of(this.senderIndex, this.senderIndex);
-	}
-
-	@Override
-	public void sendGetVerticesResponse(BFTNode node, ImmutableList<VerifiedVertex> vertices) {
-		GetVerticesResponse response = new GetVerticesResponse(self, vertices);
-		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
-		handleMessage(new ControlledMessage(self, channelId, response, arrivalTime(channelId)));
 	}
 
 	@Override

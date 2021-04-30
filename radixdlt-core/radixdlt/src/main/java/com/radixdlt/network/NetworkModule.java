@@ -28,6 +28,7 @@ import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.environment.rx.RemoteEvent;
@@ -89,6 +90,11 @@ public final class NetworkModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> vertexResponseDispatcher(MessageCentralValidatorSync messageCentralValidatorSync) {
+		return RxRemoteDispatcher.create(GetVerticesResponse.class, messageCentralValidatorSync.verticesResponseDispatcher());
+	}
+
+	@ProvidesIntoSet
 	private RxRemoteDispatcher<?> syncRequestDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
 		return RxRemoteDispatcher.create(SyncRequest.class, messageCentralLedgerSync.syncRequestDispatcher());
 	}
@@ -116,6 +122,11 @@ public final class NetworkModule extends AbstractModule {
 	@Provides
 	private Flowable<RemoteEvent<GetVerticesRequest>> vertexSyncRequests(MessageCentralValidatorSync validatorSync) {
 		return validatorSync.requests();
+	}
+
+	@Provides
+	private Flowable<RemoteEvent<GetVerticesResponse>> vertexSyncResponses(MessageCentralValidatorSync validatorSync) {
+		return validatorSync.responses();
 	}
 
 	// TODO: Clean this up, convert the rest of remote events into this

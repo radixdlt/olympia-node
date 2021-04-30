@@ -116,6 +116,7 @@ public class ConsensusModuleTest {
 
 	private ECKeyPair ecKeyPair;
 	private RemoteEventDispatcher<GetVerticesRequest> requestSender;
+	private RemoteEventDispatcher<GetVerticesResponse> responseSender;
 
 	@Before
 	public void setup() {
@@ -129,6 +130,7 @@ public class ConsensusModuleTest {
 		this.bftConfiguration = new BFTConfiguration(validatorSet, vertexStoreState);
 		this.ecKeyPair = ECKeyPair.generateNew();
 		this.requestSender = rmock(RemoteEventDispatcher.class);
+		this.responseSender = rmock(RemoteEventDispatcher.class);
 
 		Guice.createInjector(
 			new ConsensusModule(),
@@ -157,6 +159,7 @@ public class ConsensusModuleTest {
 				bind(new TypeLiteral<EventDispatcher<ViewQuorumReached>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() { }).toInstance(rmock(RemoteEventDispatcher.class));
 				bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesRequest>>() { }).toInstance(requestSender);
+				bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesResponse>>() { }).toInstance(responseSender);
 				bind(new TypeLiteral<EventDispatcher<NoVote>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<ScheduledEventDispatcher<View>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
 				bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() { })
@@ -256,8 +259,8 @@ public class ConsensusModuleTest {
 
 		// Act
 		nothrowSleep(100); // FIXME: Remove when rate limit on send removed
-		GetVerticesResponse response = new GetVerticesResponse(bftNode, ImmutableList.of(nextNextVertex.getSecond()));
-		bftSync.responseProcessor().process(response);
+		GetVerticesResponse response = new GetVerticesResponse(ImmutableList.of(nextNextVertex.getSecond()));
+		bftSync.responseProcessor().process(bftNode, response);
 
 		// Assert
 		verify(requestSender, times(1))
@@ -279,11 +282,11 @@ public class ConsensusModuleTest {
 		bftSync.syncToQC(unsyncedHighQC2, bftNode2);
 
 		nothrowSleep(100);
-		final var response1 = new GetVerticesResponse(bftNode1, ImmutableList.of(proposedVertex1.getSecond()));
-		bftSync.responseProcessor().process(response1);
+		final var response1 = new GetVerticesResponse(ImmutableList.of(proposedVertex1.getSecond()));
+		bftSync.responseProcessor().process(bftNode1, response1);
 
-		final var response2 = new GetVerticesResponse(bftNode2, ImmutableList.of(proposedVertex2.getSecond()));
-		bftSync.responseProcessor().process(response2);
+		final var response2 = new GetVerticesResponse(ImmutableList.of(proposedVertex2.getSecond()));
+		bftSync.responseProcessor().process(bftNode2, response2);
 
 		verify(requestSender, times(1))
 			.dispatch(eq(bftNode1), argThat(r -> r.getCount() == 1 && r.getVertexId().equals(proposedVertex1.getSecond().getId())));

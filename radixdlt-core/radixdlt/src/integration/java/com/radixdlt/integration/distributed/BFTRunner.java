@@ -32,6 +32,7 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
@@ -85,6 +86,8 @@ public class BFTRunner implements ModuleRunner {
 		Set<EventProcessor<ScheduledLocalTimeout>> timeoutProcessors,
 		Flowable<RemoteEvent<GetVerticesRequest>> verticesRequests,
 		Set<RemoteEventProcessor<GetVerticesRequest>> requestProcessors,
+		Flowable<RemoteEvent<GetVerticesResponse>> verticesResponses,
+		Set<RemoteEventProcessor<GetVerticesResponse>> responseProcessors,
 		BFTEventsRx networkRx,
 		SyncVerticesRPCRx rpcRx,
 		BFTEventProcessor bftEventProcessor,
@@ -114,9 +117,9 @@ public class BFTRunner implements ModuleRunner {
 			verticesRequests.toObservable()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(r -> requestProcessors.forEach(p -> p.process(r.getOrigin(), r.getEvent()))),
-			rpcRx.responses().toObservable()
+			verticesResponses.toObservable()
 				.observeOn(singleThreadScheduler)
-				.doOnNext(resp -> vertexStoreSync.responseProcessor().process(resp)),
+				.doOnNext(resp -> responseProcessors.forEach(p -> p.process(resp.getOrigin(), resp.getEvent()))),
 			rpcRx.errorResponses().toObservable()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(vertexStoreSync::processGetVerticesErrorResponse),

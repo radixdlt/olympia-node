@@ -28,6 +28,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
@@ -74,6 +75,11 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> vertexResponseDispatcher(SimulatedNetworkImpl network) {
+		return RxRemoteDispatcher.create(GetVerticesResponse.class, network.remoteEventDispatcher(GetVerticesResponse.class));
+	}
+
+	@ProvidesIntoSet
 	private RxRemoteDispatcher<?> voteDispatcher(SimulatedNetworkImpl network) {
 		return RxRemoteDispatcher.create(Vote.class, network.remoteEventDispatcher(Vote.class));
 	}
@@ -103,12 +109,17 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 		return RxRemoteDispatcher.create(LedgerStatusUpdate.class, network.remoteEventDispatcher(LedgerStatusUpdate.class));
 	}
 
-
 	@Provides
 	private Flowable<RemoteEvent<GetVerticesRequest>> vertexRequests(SimulatedNetworkImpl network) {
 		return network.remoteEvents(GetVerticesRequest.class);
 	}
 
+	@Provides
+	private Flowable<RemoteEvent<GetVerticesResponse>> vertexResponses(SimulatedNetworkImpl network) {
+		return network.remoteEvents(GetVerticesResponse.class);
+	}
+
+	/*
 	@Provides
 	private Flowable<RemoteEvent<SyncRequest>> syncRequests(SimulatedNetworkImpl network) {
 		return network.remoteEvents(SyncRequest.class);
@@ -133,4 +144,5 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	private Flowable<RemoteEvent<LedgerStatusUpdate>> ledgerStatusUpdates(SimulatedNetworkImpl network) {
 		return network.remoteEvents(LedgerStatusUpdate.class);
 	}
+	 */
 }

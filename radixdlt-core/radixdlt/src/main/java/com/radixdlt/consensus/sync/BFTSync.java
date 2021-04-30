@@ -44,6 +44,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
@@ -382,9 +383,9 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 		this.syncToQC(syncState.highQC(), syncState.author);
 	}
 
-	private void processVerticesResponseForCommittedSync(SyncState syncState, GetVerticesResponse response) {
+	private void processVerticesResponseForCommittedSync(SyncState syncState, BFTNode sender, GetVerticesResponse response) {
 		log.debug("SYNC_STATE: Processing vertices {} View {} From {} CurrentLedgerHeader {}",
-			syncState, response.getVertices().get(0).getView(), response.getSender(), this.currentLedgerHeader
+			syncState, response.getVertices().get(0).getView(), sender, this.currentLedgerHeader
 		);
 
 		syncState.fetched.addAll(response.getVertices());
@@ -448,11 +449,11 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 		}
 	}
 
-	public EventProcessor<GetVerticesResponse> responseProcessor() {
+	public RemoteEventProcessor<GetVerticesResponse> responseProcessor() {
 		return this::processGetVerticesResponse;
 	}
 
-	private void processGetVerticesResponse(GetVerticesResponse response) {
+	private void processGetVerticesResponse(BFTNode sender, GetVerticesResponse response) {
 		// TODO: check response
 
 		log.debug("SYNC_VERTICES: Received GetVerticesResponse {}", response);
@@ -468,7 +469,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 				}
 				switch (syncState.syncStage) {
 					case GET_COMMITTED_VERTICES:
-						processVerticesResponseForCommittedSync(syncState, response);
+						processVerticesResponseForCommittedSync(syncState, sender, response);
 						break;
 					case GET_QC_VERTICES:
 						processVerticesResponseForQCSync(syncState, response);

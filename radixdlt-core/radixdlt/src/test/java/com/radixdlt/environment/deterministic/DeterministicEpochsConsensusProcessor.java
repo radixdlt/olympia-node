@@ -68,6 +68,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		EventProcessor<BFTInsertUpdate> bftUpdateProcessor,
 		Set<EventProcessor<BFTHighQCUpdate>> bftHighQcUpdateProcessors,
 		RemoteEventProcessor<GetVerticesRequest> verticesRequestProcessor,
+		RemoteEventProcessor<GetVerticesResponse> verticesResponseProcessor,
 		EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor,
 		EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor,
 		Set<EventProcessorOnRunner<?>> processorOnRunners,
@@ -91,6 +92,10 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		remoteProcessorsBuilder.put(
 			GetVerticesRequest.class,
 			(node, event) -> verticesRequestProcessor.process(node, (GetVerticesRequest) event)
+		);
+		remoteProcessorsBuilder.put(
+			GetVerticesResponse.class,
+			(node, event) -> verticesResponseProcessor.process(node, (GetVerticesResponse) event)
 		);
 		remoteEventProcessors = remoteProcessorsBuilder.build();
 	}
@@ -134,8 +139,6 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			} else {
 				throw new IllegalArgumentException("Unknown epoch message type: " + epochedMessage.getClass().getName());
 			}
-		} else if (message instanceof GetVerticesResponse) {
-			this.epochManager.processGetVerticesResponse((GetVerticesResponse) message);
 		} else if (message instanceof GetVerticesErrorResponse) {
 			this.epochManager.processGetVerticesErrorResponse((GetVerticesErrorResponse) message);
 		} else if (message instanceof LedgerUpdate) {
