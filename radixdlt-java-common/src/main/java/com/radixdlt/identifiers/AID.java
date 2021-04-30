@@ -17,6 +17,7 @@
 
 package com.radixdlt.identifiers;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.google.common.hash.HashCode;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.utils.Bytes;
@@ -139,6 +140,7 @@ public final class AID implements Comparable<AID> {
 	 *
 	 * @return An AID with those bytes
 	 */
+	@JsonCreator
 	public static AID from(String hexBytes) {
 		Objects.requireNonNull(hexBytes, "hexBytes is required");
 		if (hexBytes.length() != BYTES * 2) {
@@ -158,7 +160,7 @@ public final class AID implements Comparable<AID> {
 	 * @return Success {@link Result} if value can be successfully parsed and failure {@link Result} otherwise.
 	 */
 	public static Result<AID> fromString(String input) {
-		return fromOptional(ofNullable(input), AID_IS_NULL)
+		return fromOptional(AID_IS_NULL, ofNullable(input))
 			.filter(bytes -> bytes.length() == BYTES * 2, INVALID_LENGTH)
 			.map(Bytes::fromHexString)
 			.filter(bytes -> bytes.length == HASH_BYTES, INVALID_LENGTH)

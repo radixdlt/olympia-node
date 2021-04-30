@@ -109,8 +109,7 @@ public class KeyGenerator {
 
 	private Result<String> requiredString(CommandLine commandLine, String opt) {
 		return fromOptional(
-			ofNullable(commandLine.getOptionValue(opt)),
-			Failure.failure(0, "Parameter -{0} is mandatory", opt)
+			Failure.failure(0, "Parameter -{0} is mandatory", opt), ofNullable(commandLine.getOptionValue(opt))
 		);
 	}
 

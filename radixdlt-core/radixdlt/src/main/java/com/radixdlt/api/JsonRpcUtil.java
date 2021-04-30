@@ -211,6 +211,6 @@ public final class JsonRpcUtil {
 	}
 
 	private static Result<JSONArray> retrieveParams(JSONObject request) {
-		return fromOptional(ofNullable(request.optJSONArray("params")), MISSING_PARAMS);
+		return fromOptional(MISSING_PARAMS, ofNullable(request.optJSONArray("params")));
 	}
 }

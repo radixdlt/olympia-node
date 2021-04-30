@@ -72,8 +72,8 @@ public class ValidatorInfoService {
 		var stakes = radixEngine.getComputedState(Stakes.class);
 
 		return Result.fromOptional(
-			validators.mapSingle(validatorPublicKey, details -> fillDetails(validatorPublicKey, details, stakes)),
-			UNKNOWN_VALIDATOR.with(ValidatorAddress.of(validatorPublicKey))
+			UNKNOWN_VALIDATOR.with(ValidatorAddress.of(validatorPublicKey)),
+			validators.mapSingle(validatorPublicKey, details -> fillDetails(validatorPublicKey, details, stakes))
 		);
 	}
 

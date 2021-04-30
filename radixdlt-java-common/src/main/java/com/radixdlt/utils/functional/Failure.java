@@ -86,7 +86,7 @@ public interface Failure {
 
 			@Override
 			public String toString() {
-				return message;
+				return "{" + code + ", '" + message + "'}";
 			}
 		};
 	}

@@ -17,6 +17,7 @@
 
 package com.radixdlt.utils;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
@@ -202,6 +203,7 @@ public final class UInt256 implements Comparable<UInt256> {
 	 *
 	 * @throws NumberFormatException if {@code s} is not a valid integer number.
 	 */
+	@JsonCreator
 	public static UInt256 from(String s) {
 		Objects.requireNonNull(s);
 

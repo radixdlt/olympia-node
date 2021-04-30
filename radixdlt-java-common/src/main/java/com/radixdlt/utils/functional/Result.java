@@ -218,12 +218,12 @@ public interface Result<T> {
 	/**
 	 * Convert instance into {@link Result}
 	 *
-	 * @param source input instance of {@link Optional}
 	 * @param failure failure to use when input is empty instance.
 	 *
+	 * @param source input instance of {@link Optional}
 	 * @return created instance
 	 */
-	static <T> Result<T> fromOptional(Optional<T> source, Failure failure) {
+	static <T> Result<T> fromOptional(Failure failure, Optional<T> source) {
 		return source.map(Result::ok).orElseGet(failure::result);
 	}
 
