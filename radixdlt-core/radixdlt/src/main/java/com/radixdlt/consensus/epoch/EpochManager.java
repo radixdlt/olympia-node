@@ -35,9 +35,7 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
-import com.radixdlt.consensus.sync.EmptyBFTSyncResponseProcessor;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.sync.BFTSyncResponseProcessor;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -99,13 +97,13 @@ public final class EpochManager {
 
 	private EpochChange currentEpoch;
 
-	private BFTSyncResponseProcessor syncBFTResponseProcessor;
 	private EventProcessor<VertexRequestTimeout> syncTimeoutProcessor;
 	private EventProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
 	private BFTEventProcessor bftEventProcessor;
 
 	private Set<RemoteEventProcessor<GetVerticesRequest>> syncRequestProcessors;
 	private Set<RemoteEventProcessor<GetVerticesResponse>> syncResponseProcessors;
+	private Set<RemoteEventProcessor<GetVerticesErrorResponse>> syncErrorResponseProcessors;
 
 	private Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors;
 	private Set<EventProcessor<BFTRebuildUpdate>> bftRebuildProcessors;
@@ -120,6 +118,7 @@ public final class EpochManager {
 		BFTEventProcessor initialBFTEventProcessor,
 		Set<RemoteEventProcessor<GetVerticesRequest>> initialSyncRequestProcessors,
 		Set<RemoteEventProcessor<GetVerticesResponse>> initialSyncResponseProcessors,
+		Set<RemoteEventProcessor<GetVerticesErrorResponse>> initialSyncErrorResponseProcessors,
 		BFTSync initialBFTSync,
 		Set<EventProcessor<BFTInsertUpdate>> initialBFTUpdateProcessors,
 		Set<EventProcessor<BFTRebuildUpdate>> initialBFTRebuildUpdateProcessors,
@@ -138,23 +137,24 @@ public final class EpochManager {
 		PacemakerStateFactory pacemakerStateFactory,
 		PersistentSafetyStateStore persistentSafetyStateStore
 	) {
+		var isValidator = initialEpoch.getBFTConfiguration().getValidatorSet().containsNode(self);
 		// TODO: these should all be removed
-		if (!initialEpoch.getBFTConfiguration().getValidatorSet().containsNode(self)) {
+		if (!isValidator) {
 			this.bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
-			this.syncBFTResponseProcessor = EmptyBFTSyncResponseProcessor.INSTANCE;
 			this.syncLedgerUpdateProcessor = update -> { };
 			this.syncTimeoutProcessor = timeout -> { };
 		} else {
 			this.bftEventProcessor = Objects.requireNonNull(initialBFTEventProcessor);
-			this.syncBFTResponseProcessor = initialBFTSync;
 			this.syncLedgerUpdateProcessor = initialBFTSync.baseLedgerUpdateEventProcessor();
 			this.syncTimeoutProcessor = initialBFTSync.vertexRequestTimeoutEventProcessor();
 		}
 
 		this.ledgerStatusUpdateDispatcher = Objects.requireNonNull(ledgerStatusUpdateDispatcher);
 
-		this.syncResponseProcessors = initialSyncResponseProcessors;
-		this.syncRequestProcessors = initialSyncRequestProcessors;
+		this.syncResponseProcessors = isValidator ? initialSyncResponseProcessors : Set.of();
+		this.syncRequestProcessors = isValidator ? initialSyncRequestProcessors : Set.of();
+		this.syncErrorResponseProcessors = isValidator ? initialSyncErrorResponseProcessors : Set.of();
+
 		this.bftUpdateProcessors = initialBFTUpdateProcessors;
 		this.bftRebuildProcessors = initialBFTRebuildUpdateProcessors;
 
@@ -183,8 +183,9 @@ public final class EpochManager {
 			this.bftRebuildProcessors = Set.of();
 			this.bftUpdateProcessors = Set.of();
 			this.syncRequestProcessors = Set.of();
+			this.syncResponseProcessors = Set.of();
+			this.syncErrorResponseProcessors = Set.of();
 			this.bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
-			this.syncBFTResponseProcessor = EmptyBFTSyncResponseProcessor.INSTANCE;
 			this.syncLedgerUpdateProcessor = update -> { };
 			this.syncTimeoutProcessor = timeout -> { };
 			return;
@@ -222,10 +223,8 @@ public final class EpochManager {
 			bftConfiguration
 		);
 
-		this.syncBFTResponseProcessor = bftSync;
 		this.syncLedgerUpdateProcessor = bftSync.baseLedgerUpdateEventProcessor();
 		this.syncTimeoutProcessor = bftSync.vertexRequestTimeoutEventProcessor();
-
 
 		this.bftEventProcessor = bftFactory.create(
 			self,
@@ -239,6 +238,7 @@ public final class EpochManager {
 		);
 
 		this.syncResponseProcessors = Set.of(bftSync.responseProcessor());
+		this.syncErrorResponseProcessors = Set.of(bftSync.errorResponseProcessor());
 		this.syncRequestProcessors = Set.of(bftSyncRequestProcessorFactory.create(vertexStore));
 		this.bftRebuildProcessors = ImmutableSet.of(bftEventProcessor::processBFTRebuildUpdate);
 		this.bftUpdateProcessors = ImmutableSet.of(bftSync::processBFTUpdate, bftEventProcessor::processBFTUpdate);
@@ -397,12 +397,29 @@ public final class EpochManager {
 		};
 	}
 
-	public RemoteEventProcessor<GetVerticesRequest> localGetVerticesRequestRemoteEventProcessor() {
+	public RemoteEventProcessor<GetVerticesRequest> bftSyncRequestProcessor() {
 		return (node, request) -> syncRequestProcessors.forEach(p -> p.process(node, request));
 	}
 
-	public RemoteEventProcessor<GetVerticesResponse> responseRemoteEventProcessor() {
+	public RemoteEventProcessor<GetVerticesResponse> bftSyncResponseProcessor() {
 		return (node, resp) -> syncResponseProcessors.forEach(p -> p.process(node, resp));
+	}
+
+	public RemoteEventProcessor<GetVerticesErrorResponse> bftSyncErrorResponseProcessor() {
+		return (node, err) -> {
+			log.debug("SYNC_ERROR: Received GetVerticesErrorResponse {}", err);
+			final var responseEpoch = err.highQC().highestQC().getEpoch();
+			if (responseEpoch < this.currentEpoch()) {
+				log.debug("SYNC_ERROR: Ignoring lower epoch error response: {} current epoch: {}", err, this.currentEpoch());
+				return;
+			}
+			if (responseEpoch > this.currentEpoch()) {
+				log.debug("SYNC_ERROR: Received higher epoch error response: {} current epoch: {}", err, this.currentEpoch());
+			} else {
+				// Current epoch
+				syncErrorResponseProcessors.forEach(p -> p.process(node, err));
+			}
+		};
 	}
 
 	public EventProcessor<VertexRequestTimeout> timeoutEventProcessor() {
@@ -411,20 +428,5 @@ public final class EpochManager {
 
 	private void processGetVerticesLocalTimeout(VertexRequestTimeout timeout) {
 		syncTimeoutProcessor.process(timeout);
-	}
-
-	public void processGetVerticesErrorResponse(GetVerticesErrorResponse response) {
-		log.debug("SYNC_ERROR: Received GetVerticesErrorResponse {}", response);
-		final var responseEpoch = response.highQC().highestQC().getEpoch();
-		if (responseEpoch < this.currentEpoch()) {
-			log.debug("SYNC_ERROR: Ignoring lower epoch error response: {} current epoch: {}", response, this.currentEpoch());
-			return;
-		}
-		if (responseEpoch > this.currentEpoch()) {
-			log.debug("SYNC_ERROR: Received higher epoch error response: {} current epoch: {}", response, this.currentEpoch());
-		} else {
-			// Current epoch
-			syncBFTResponseProcessor.processGetVerticesErrorResponse(response);
-		}
 	}
 }

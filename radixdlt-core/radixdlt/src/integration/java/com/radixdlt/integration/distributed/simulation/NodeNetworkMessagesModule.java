@@ -22,14 +22,13 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTEventsRx;
-import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
@@ -53,9 +52,7 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(BFTEventsRx.class).to(SimulatedNetworkImpl.class);
-		bind(SyncVerticesRPCRx.class).to(SimulatedNetworkImpl.class);
 		bind(ProposalBroadcaster.class).to(SimulatedNetworkImpl.class);
-		bind(SyncVerticesResponseSender.class).to(SimulatedNetworkImpl.class);
 		bind(RxRemoteEnvironment.class).to(SimulatedNetworkImpl.class).in(Scopes.SINGLETON);
 	}
 
@@ -78,6 +75,12 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	private RxRemoteDispatcher<?> vertexResponseDispatcher(SimulatedNetworkImpl network) {
 		return RxRemoteDispatcher.create(GetVerticesResponse.class, network.remoteEventDispatcher(GetVerticesResponse.class));
 	}
+
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> bftSyncErrorDispatcher(SimulatedNetworkImpl network) {
+		return RxRemoteDispatcher.create(GetVerticesErrorResponse.class, network.remoteEventDispatcher(GetVerticesErrorResponse.class));
+	}
+
 
 	@ProvidesIntoSet
 	private RxRemoteDispatcher<?> voteDispatcher(SimulatedNetworkImpl network) {
@@ -117,6 +120,11 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	@Provides
 	private Flowable<RemoteEvent<GetVerticesResponse>> vertexResponses(SimulatedNetworkImpl network) {
 		return network.remoteEvents(GetVerticesResponse.class);
+	}
+
+	@Provides
+	private Flowable<RemoteEvent<GetVerticesErrorResponse>> errorResponses(SimulatedNetworkImpl network) {
+		return network.remoteEvents(GetVerticesErrorResponse.class);
 	}
 
 	/*

@@ -25,11 +25,10 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTEventsRx;
-import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
@@ -62,10 +61,7 @@ public final class NetworkModule extends AbstractModule {
 		// Network BFT/Epoch Sync messages
 		//TODO: make rate limits configurable
 		bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class).toInstance(RateLimiter.create(50.0));
-
 		bind(MessageCentralValidatorSync.class).in(Scopes.SINGLETON);
-		bind(SyncVerticesResponseSender.class).to(MessageCentralValidatorSync.class);
-		bind(SyncVerticesRPCRx.class).to(MessageCentralValidatorSync.class);
 
 		// Network BFT messages
 		bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
@@ -92,6 +88,14 @@ public final class NetworkModule extends AbstractModule {
 	@ProvidesIntoSet
 	private RxRemoteDispatcher<?> vertexResponseDispatcher(MessageCentralValidatorSync messageCentralValidatorSync) {
 		return RxRemoteDispatcher.create(GetVerticesResponse.class, messageCentralValidatorSync.verticesResponseDispatcher());
+	}
+
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> vertexErrorResponseDispatcher(MessageCentralValidatorSync messageCentralValidatorSync) {
+		return RxRemoteDispatcher.create(
+			GetVerticesErrorResponse.class,
+			messageCentralValidatorSync.verticesErrorResponseDispatcher()
+		);
 	}
 
 	@ProvidesIntoSet
@@ -127,6 +131,11 @@ public final class NetworkModule extends AbstractModule {
 	@Provides
 	private Flowable<RemoteEvent<GetVerticesResponse>> vertexSyncResponses(MessageCentralValidatorSync validatorSync) {
 		return validatorSync.responses();
+	}
+
+	@Provides
+	private Flowable<RemoteEvent<GetVerticesErrorResponse>> bftSyncErrorResponses(MessageCentralValidatorSync validatorSync) {
+		return validatorSync.errorResponses();
 	}
 
 	// TODO: Clean this up, convert the rest of remote events into this

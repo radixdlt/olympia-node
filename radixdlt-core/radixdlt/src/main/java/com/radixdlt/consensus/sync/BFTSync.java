@@ -70,7 +70,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Manages keeping the VertexStore and pacemaker in sync for consensus
  */
-public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
+public final class BFTSync implements BFTSyncer {
 	private enum SyncStage {
 		PREPARING,
 		GET_COMMITTED_VERTICES,
@@ -435,8 +435,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 		}
 	}
 
-	@Override
-	public void processGetVerticesErrorResponse(GetVerticesErrorResponse response) {
+	private void processGetVerticesErrorResponse(BFTNode sender, GetVerticesErrorResponse response) {
 		// TODO: check response
 		final var request = response.request();
 		final var syncRequestState = bftSyncing.get(request);
@@ -444,9 +443,13 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 			log.debug("SYNC_VERTICES: Received GetVerticesErrorResponse: {} highQC: {}", response, vertexStore.highQC());
 			if (response.highQC().highestQC().getView().compareTo(vertexStore.highQC().highestQC().getView()) > 0) {
 				// error response indicates that the node has moved on from last sync so try and sync to a new qc
-				syncToQC(response.highQC(), response.getSender());
+				syncToQC(response.highQC(), sender);
 			}
 		}
+	}
+
+	public RemoteEventProcessor<GetVerticesErrorResponse> errorResponseProcessor() {
+		return this::processGetVerticesErrorResponse;
 	}
 
 	public RemoteEventProcessor<GetVerticesResponse> responseProcessor() {

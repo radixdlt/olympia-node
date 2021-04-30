@@ -22,7 +22,6 @@ import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
@@ -31,6 +30,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSync;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
@@ -88,8 +88,9 @@ public class BFTRunner implements ModuleRunner {
 		Set<RemoteEventProcessor<GetVerticesRequest>> requestProcessors,
 		Flowable<RemoteEvent<GetVerticesResponse>> verticesResponses,
 		Set<RemoteEventProcessor<GetVerticesResponse>> responseProcessors,
+		Flowable<RemoteEvent<GetVerticesErrorResponse>> verticesErrorResponses,
+		Set<RemoteEventProcessor<GetVerticesErrorResponse>> errorResponseProcessors,
 		BFTEventsRx networkRx,
-		SyncVerticesRPCRx rpcRx,
 		BFTEventProcessor bftEventProcessor,
 		BFTSync vertexStoreSync,
 		@Self BFTNode self
@@ -120,9 +121,9 @@ public class BFTRunner implements ModuleRunner {
 			verticesResponses.toObservable()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(resp -> responseProcessors.forEach(p -> p.process(resp.getOrigin(), resp.getEvent()))),
-			rpcRx.errorResponses().toObservable()
+			verticesErrorResponses.toObservable()
 				.observeOn(singleThreadScheduler)
-				.doOnNext(vertexStoreSync::processGetVerticesErrorResponse),
+				.doOnNext(err -> errorResponseProcessors.forEach(p -> p.process(err.getOrigin(), err.getEvent()))),
 			bftUpdates
 				.observeOn(singleThreadScheduler)
 				.doOnNext(update -> bftUpdateProcessors.forEach(p -> p.process(update))),

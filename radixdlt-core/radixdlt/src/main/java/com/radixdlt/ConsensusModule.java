@@ -44,6 +44,7 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.liveness.ExponentialPacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
@@ -62,7 +63,6 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
-import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
@@ -238,14 +238,19 @@ public final class ConsensusModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
+	private RemoteEventProcessor<GetVerticesErrorResponse> bftSyncErrorResponseProcessor(BFTSync bftSync) {
+		return bftSync.errorResponseProcessor();
+	}
+
+	@ProvidesIntoSet
 	private RemoteEventProcessor<GetVerticesRequest> bftSyncRequestProcessor(
 		VertexStore vertexStore,
-		SyncVerticesResponseSender responseSender,
+		RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseDispatcher,
 		RemoteEventDispatcher<GetVerticesResponse> responseDispatcher
 	) {
 		return new VertexStoreBFTSyncRequestProcessor(
 			vertexStore,
-			responseSender,
+			errorResponseDispatcher,
 			responseDispatcher
 		);
 	}

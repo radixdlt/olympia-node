@@ -27,7 +27,6 @@ import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.sync.BFTSyncResponseProcessor;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
@@ -41,7 +40,6 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 	public void configure() {
 		MapBinder<String, ModuleRunner> moduleRunners = MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class);
 		moduleRunners.addBinding(Runners.CONSENSUS).to(BFTRunner.class).in(Scopes.SINGLETON);
-		bind(BFTSyncResponseProcessor.class).to(BFTSync.class).in(Scopes.SINGLETON);
 
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 			.permitDuplicates();

@@ -27,6 +27,7 @@ import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
 
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
@@ -83,9 +84,9 @@ public final class EpochManagerRunner implements ModuleRunner {
 		EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor,
 		Flowable<RemoteEvent<GetVerticesRequest>> verticesRequests,
 		Flowable<RemoteEvent<GetVerticesResponse>> verticesResponses,
+		Flowable<RemoteEvent<GetVerticesErrorResponse>> bftSyncErrorResponses,
 		BFTEventsRx networkRx,
 		Observable<Epoched<ScheduledLocalTimeout>> timeouts,
-		SyncVerticesRPCRx rpcRx,
 		EpochManager epochManager
 	) {
 		this.epochManager = Objects.requireNonNull(epochManager);
@@ -103,15 +104,19 @@ public final class EpochManagerRunner implements ModuleRunner {
 			new Subscription<>(networkRx.remoteBftEvents(), epochManager::processConsensusEvent, singleThreadScheduler),
 			new Subscription<>(
 				verticesRequests,
-				req -> epochManager.localGetVerticesRequestRemoteEventProcessor().process(req.getOrigin(), req.getEvent()),
+				req -> epochManager.bftSyncRequestProcessor().process(req.getOrigin(), req.getEvent()),
 				singleThreadScheduler
 			),
 			new Subscription<>(
 				verticesResponses,
-				resp -> epochManager.responseRemoteEventProcessor().process(resp.getOrigin(), resp.getEvent()),
+				resp -> epochManager.bftSyncResponseProcessor().process(resp.getOrigin(), resp.getEvent()),
 				singleThreadScheduler
 			),
-			new Subscription<>(rpcRx.errorResponses(), epochManager::processGetVerticesErrorResponse, singleThreadScheduler)
+			new Subscription<>(
+				bftSyncErrorResponses,
+				resp -> epochManager.bftSyncErrorResponseProcessor().process(resp.getOrigin(), resp.getEvent()),
+				singleThreadScheduler
+			)
 		);
 	}
 

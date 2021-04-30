@@ -19,6 +19,7 @@ package com.radixdlt;
 
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.client.service.ScheduledCacheCleanup;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import org.apache.logging.log4j.Level;
@@ -180,6 +181,8 @@ public class DispatcherModule extends AbstractModule {
 		// BFT Sync
 		bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesResponse>>() { })
 			.toProvider(Dispatchers.remoteDispatcherProvider(GetVerticesResponse.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesErrorResponse>>() { })
+			.toProvider(Dispatchers.remoteDispatcherProvider(GetVerticesErrorResponse.class)).in(Scopes.SINGLETON);
 
 		bind(new TypeLiteral<RemoteEventDispatcher<MempoolAdd>>() { })
 			.toProvider(Dispatchers.remoteDispatcherProvider(MempoolAdd.class)).in(Scopes.SINGLETON);

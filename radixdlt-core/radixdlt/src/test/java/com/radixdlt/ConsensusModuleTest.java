@@ -58,6 +58,7 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
@@ -79,7 +80,6 @@ import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
@@ -117,6 +117,7 @@ public class ConsensusModuleTest {
 	private ECKeyPair ecKeyPair;
 	private RemoteEventDispatcher<GetVerticesRequest> requestSender;
 	private RemoteEventDispatcher<GetVerticesResponse> responseSender;
+	private RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseSender;
 
 	@Before
 	public void setup() {
@@ -131,6 +132,7 @@ public class ConsensusModuleTest {
 		this.ecKeyPair = ECKeyPair.generateNew();
 		this.requestSender = rmock(RemoteEventDispatcher.class);
 		this.responseSender = rmock(RemoteEventDispatcher.class);
+		this.errorResponseSender = rmock(RemoteEventDispatcher.class);
 
 		Guice.createInjector(
 			new ConsensusModule(),
@@ -160,6 +162,7 @@ public class ConsensusModuleTest {
 				bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() { }).toInstance(rmock(RemoteEventDispatcher.class));
 				bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesRequest>>() { }).toInstance(requestSender);
 				bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesResponse>>() { }).toInstance(responseSender);
+				bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesErrorResponse>>() { }).toInstance(errorResponseSender);
 				bind(new TypeLiteral<EventDispatcher<NoVote>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<ScheduledEventDispatcher<View>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
 				bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() { })
@@ -168,7 +171,6 @@ public class ConsensusModuleTest {
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 				bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
 				bind(ProposalBroadcaster.class).toInstance(mock(ProposalBroadcaster.class));
-				bind(SyncVerticesResponseSender.class).toInstance(mock(SyncVerticesResponseSender.class));
 				bind(NextTxnsGenerator.class).toInstance(mock(NextTxnsGenerator.class));
 				bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 				bind(TimeSupplier.class).toInstance(mock(TimeSupplier.class));

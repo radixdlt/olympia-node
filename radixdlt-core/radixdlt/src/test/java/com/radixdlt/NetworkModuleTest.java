@@ -28,7 +28,6 @@ import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.BFTEventsRx;
-import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
@@ -73,7 +72,6 @@ public class NetworkModuleTest {
 		);
 
 		List<Class<?>> classesToCheckFor = Arrays.asList(
-			SyncVerticesRPCRx.class,
 			ProposalBroadcaster.class,
 			BFTEventsRx.class
 		);

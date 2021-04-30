@@ -72,10 +72,10 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
-import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
@@ -123,7 +123,6 @@ public class EpochManagerTest {
 	private ProposalBroadcaster proposalBroadcaster = mock(ProposalBroadcaster.class);
 	private ScheduledEventDispatcher<GetVerticesRequest> timeoutScheduler = rmock(ScheduledEventDispatcher.class);
 	private EventDispatcher<LocalSyncRequest> syncLedgerRequestSender = rmock(EventDispatcher.class);
-	private SyncVerticesResponseSender syncVerticesResponseSender = mock(SyncVerticesResponseSender.class);
 	private RemoteEventDispatcher<Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
 	private Mempool mempool = mock(Mempool.class);
 	private StateComputer stateComputer = new StateComputer() {
@@ -180,6 +179,8 @@ public class EpochManagerTest {
 					.toInstance(rmock(RemoteEventDispatcher.class));
 				bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesResponse>>() { })
 					.toInstance(rmock(RemoteEventDispatcher.class));
+				bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesErrorResponse>>() { })
+					.toInstance(rmock(RemoteEventDispatcher.class));
 				bind(new TypeLiteral<RemoteEventDispatcher<LedgerStatusUpdate>>() { })
 					.toInstance(rmock(RemoteEventDispatcher.class));
 
@@ -187,7 +188,6 @@ public class EpochManagerTest {
 				bind(NextTxnsGenerator.class).toInstance(nextTxnsGenerator);
 				bind(ProposalBroadcaster.class).toInstance(proposalBroadcaster);
 				bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-				bind(SyncVerticesResponseSender.class).toInstance(syncVerticesResponseSender);
 				bind(Mempool.class).toInstance(mempool);
 				bind(StateComputer.class).toInstance(stateComputer);
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));

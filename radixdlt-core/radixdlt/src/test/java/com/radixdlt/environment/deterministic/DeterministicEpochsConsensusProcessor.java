@@ -27,7 +27,6 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
@@ -139,8 +138,6 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			} else {
 				throw new IllegalArgumentException("Unknown epoch message type: " + epochedMessage.getClass().getName());
 			}
-		} else if (message instanceof GetVerticesErrorResponse) {
-			this.epochManager.processGetVerticesErrorResponse((GetVerticesErrorResponse) message);
 		} else if (message instanceof LedgerUpdate) {
 			// Don't need to process
 		} else if (message instanceof AtomsCommittedToLedger) {

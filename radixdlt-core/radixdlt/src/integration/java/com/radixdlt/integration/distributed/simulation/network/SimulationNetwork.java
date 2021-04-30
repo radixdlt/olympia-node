@@ -20,15 +20,10 @@ package com.radixdlt.integration.distributed.simulation.network;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.BFTEventsRx;
-import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
-import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
@@ -75,7 +70,7 @@ public class SimulationNetwork {
 
 		public <T> Maybe<RemoteEvent<T>> remoteEvent(Class<T> eventClass) {
 			if (!sender.equals(receiver) && eventClass.isInstance(content)) {
-				return Maybe.just(RemoteEvent.create(sender, (T) content));
+				return Maybe.just(RemoteEvent.create(sender, eventClass.cast(content)));
 			}
 
 			return Maybe.empty();
@@ -137,7 +132,7 @@ public class SimulationNetwork {
 	}
 
 	public class SimulatedNetworkImpl implements
-		ProposalBroadcaster, SyncVerticesResponseSender, BFTEventsRx, SyncVerticesRPCRx, RxRemoteEnvironment {
+		ProposalBroadcaster, BFTEventsRx, RxRemoteEnvironment {
 		private final Flowable<MessageInTransit> myMessages;
 		private final BFTNode thisNode;
 
@@ -165,12 +160,6 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public void sendGetVerticesErrorResponse(BFTNode node, HighQC syncInfo, GetVerticesRequest request) {
-			GetVerticesErrorResponse vertexResponse = new GetVerticesErrorResponse(thisNode, syncInfo, request);
-			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, node));
-		}
-
-		@Override
 		public Flowable<ConsensusEvent> localBftEvents() {
 			return myMessages.map(MessageInTransit::getContent).ofType(ConsensusEvent.class);
 		}
@@ -178,11 +167,6 @@ public class SimulationNetwork {
 		@Override
 		public Flowable<ConsensusEvent> remoteBftEvents() {
 			return remoteEvents(Vote.class).map(RemoteEvent::getEvent);
-		}
-
-		@Override
-		public Flowable<GetVerticesErrorResponse> errorResponses() {
-			return myMessages.map(MessageInTransit::getContent).ofType(GetVerticesErrorResponse.class);
 		}
 
 		@Override

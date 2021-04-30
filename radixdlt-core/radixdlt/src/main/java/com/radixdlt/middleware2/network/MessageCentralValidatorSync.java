@@ -20,13 +20,10 @@ package com.radixdlt.middleware2.network;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.crypto.Hasher;
@@ -52,7 +49,7 @@ import java.util.stream.Collectors;
 /**
  * Network interface for syncing vertices using the MessageCentral
  */
-public class MessageCentralValidatorSync implements SyncVerticesResponseSender, SyncVerticesRPCRx {
+public class MessageCentralValidatorSync {
 	private static final Logger log = LogManager.getLogger();
 
 	private final BFTNode self;
@@ -84,6 +81,9 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender, 
 		return this::sendGetVerticesResponse;
 	}
 
+	public RemoteEventDispatcher<GetVerticesErrorResponse> verticesErrorResponseDispatcher() {
+		return this::sendGetVerticesErrorResponse;
+	}
 
 	private void sendGetVerticesRequest(BFTNode node, GetVerticesRequest request) {
 		if (this.self.equals(node)) {
@@ -115,13 +115,13 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender, 
 		);
 	}
 
-	@Override
-	public void sendGetVerticesErrorResponse(BFTNode node, HighQC highQC, GetVerticesRequest request) {
-		final var requestMsg = new GetVerticesRequestMessage(this.magic, request.getVertexId(), request.getCount());
-		GetVerticesErrorResponseMessage response = new GetVerticesErrorResponseMessage(this.magic, highQC, requestMsg);
-		final Optional<PeerWithSystem> peerMaybe = this.addressBook.peer(node.getKey().euid());
+	public void sendGetVerticesErrorResponse(BFTNode node, GetVerticesErrorResponse response) {
+		var request = response.request();
+		var requestMsg = new GetVerticesRequestMessage(this.magic, request.getVertexId(), request.getCount());
+		var msg = new GetVerticesErrorResponseMessage(this.magic, response.highQC(), requestMsg);
+		var peerMaybe = this.addressBook.peer(node.getKey().euid());
 		peerMaybe.ifPresentOrElse(
-			p -> this.messageCentral.send(p, response),
+			p -> this.messageCentral.send(p, msg),
 			() -> log.warn("{}: Peer {} not in address book when sending GetVerticesErrorResponse", this.self, node)
 		);
 	}
@@ -153,15 +153,14 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender, 
 		);
 	}
 
-	@Override
-	public Flowable<GetVerticesErrorResponse> errorResponses() {
+	public Flowable<RemoteEvent<GetVerticesErrorResponse>> errorResponses() {
 		return this.createFlowable(
 			GetVerticesErrorResponseMessage.class,
 			m -> m.getPeer().hasSystem(),
 			(src, msg) -> {
 				final var node = BFTNode.create(src.getSystem().getKey());
 				final var request = new GetVerticesRequest(msg.request().getVertexId(), msg.request().getCount());
-				return new GetVerticesErrorResponse(node, msg.highQC(), request);
+				return RemoteEvent.create(node, new GetVerticesErrorResponse(msg.highQC(), request));
 			}
 		);
 	}
