@@ -121,8 +121,6 @@ public final class RxEnvironmentModule extends AbstractModule {
 		bind(new TypeLiteral<Observable<EpochsLedgerUpdate>>() { }).toProvider(new ObservableProvider<>(EpochsLedgerUpdate.class));
 		bind(new TypeLiteral<Observable<AtomsRemovedFromMempool>>() { }).toProvider(new ObservableProvider<>(AtomsRemovedFromMempool.class));
 
-		bind(new TypeLiteral<Flowable<RemoteEvent<MempoolAdd>>>() { }).toProvider(new RemoteEventsProvider<>(MempoolAdd.class));
-
 		Multibinder.newSetBinder(binder(), new TypeLiteral<RxRemoteDispatcher<?>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnRunner<?>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<RemoteEventProcessorOnRunner<?>>() { });
