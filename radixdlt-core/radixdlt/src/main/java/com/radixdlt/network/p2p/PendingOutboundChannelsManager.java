@@ -56,8 +56,9 @@ public final class PendingOutboundChannelsManager {
 			if (this.pendingChannels.containsKey(remoteNodeId)) {
 				return this.pendingChannels.get(remoteNodeId);
 			} else {
-				final var channelFuture = this.peerOutboundBootstrap.createOutboundChannel(uri);
+				final var channelFuture = new CompletableFuture<PeerChannel>();
 				this.pendingChannels.put(remoteNodeId, channelFuture);
+				this.peerOutboundBootstrap.initOutboundConnection(uri);
 				this.timeoutEventDispatcher.dispatch(new PeerOutboundConnectionTimeout(uri), config.peerConnectionTimeout());
 				return channelFuture;
 			}

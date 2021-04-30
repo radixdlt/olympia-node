@@ -18,8 +18,6 @@
 package com.radixdlt.network.p2p.transport;
 
 import com.radixdlt.network.p2p.transport.handshake.Secrets;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufInputStream;
 import org.bouncycastle.crypto.StreamCipher;
 import org.bouncycastle.crypto.digests.KeccakDigest;
 import org.bouncycastle.crypto.engines.AESEngine;
@@ -93,12 +91,6 @@ public final class FrameCodec {
 		doSum(egressMac, macBuffer);
 		updateMac(egressMac, macBuffer, macBuffer, 0, true);
 		out.write(macBuffer, 0, 16);
-	}
-
-	public Optional<byte[]> tryReadSingleFrame(ByteBuf buf) throws IOException {
-		try (ByteBufInputStream bufInputStream = new ByteBufInputStream(buf)) {
-			return tryReadSingleFrame(bufInputStream.readAllBytes());
-		}
 	}
 
 	public Optional<byte[]> tryReadSingleFrame(byte[] input) throws IOException {

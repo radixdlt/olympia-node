@@ -24,6 +24,66 @@ import com.radixdlt.properties.RuntimeProperties;
  */
 public interface P2PConfig {
 
+	static P2PConfig of(
+		int maxInboundChannels, int maxOutboundChannels,
+		long pingTimeout, int peerConnectionTimeout,
+		long discoveryInterval, long peerLivenessCheckInterval,
+		int defaultPort, String listenHost, int listenPort,
+		int channelBufferSize
+	) {
+		return new P2PConfig() {
+			@Override
+			public int maxInboundChannels() {
+				return maxInboundChannels;
+			}
+
+			@Override
+			public int maxOutboundChannels() {
+				return maxOutboundChannels;
+			}
+
+			@Override
+			public long pingTimeout() {
+				return pingTimeout;
+			}
+
+			@Override
+			public int peerConnectionTimeout() {
+				return peerConnectionTimeout;
+			}
+
+			@Override
+			public long discoveryInterval() {
+				return discoveryInterval;
+			}
+
+			@Override
+			public long peerLivenessCheckInterval() {
+				return peerLivenessCheckInterval;
+			}
+
+			@Override
+			public int defaultPort() {
+				return defaultPort;
+			}
+
+			@Override
+			public String listenHost() {
+				return listenHost;
+			}
+
+			@Override
+			public int listenPort() {
+				return listenPort;
+			}
+
+			@Override
+			public int channelBufferSize() {
+				return channelBufferSize;
+			}
+		};
+	}
+
 	/**
 	 * Get the maximum number of inbound open channels allowed.
 	 * Note that each channel consumes some resources on the host

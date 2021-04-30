@@ -33,7 +33,6 @@ import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.functional.Result;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -59,7 +58,7 @@ import java.util.Optional;
  * creating the frame and message codec
  * and forwarding the messages to MessageCentral.
  */
-public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
+public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 	private static final Logger log = LogManager.getLogger();
 
 	enum ChannelState {
@@ -83,7 +82,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 	private NodeId remoteNodeId;
 	private FrameCodec frameCodec;
 
-	PeerChannel(
+	public PeerChannel(
 		P2PConfig config,
 		SystemCounters counters,
 		Serialization serialization,
@@ -123,14 +122,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 		return inboundMessages;
 	}
 
-	private void handleHandshakeData(ByteBuf buf) throws IOException, InvalidCipherTextException, PublicKeyException {
-		byte[] data;
-		if (buf.hasArray()) {
-			data = buf.nioBuffer().array();
-		} else {
-			data = new byte[buf.readableBytes()];
-			buf.readBytes(data);
-		}
+	private void handleHandshakeData(byte[] data) throws IOException, InvalidCipherTextException, PublicKeyException {
 		if (this.isInitiator) {
 			final var handshakeResult = this.authHandshaker.handleResponseMessage(data);
 			this.finalizeHandshake(handshakeResult);
@@ -148,7 +140,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 		peerEventDispatcher.dispatch(PeerConnected.create(this));
 	}
 
-	private void handleMessage(ByteBuf buf) throws IOException {
+	private void handleMessage(byte[] buf) throws IOException {
 		synchronized (this.lock) {
 			final var maybeFrame = this.frameCodec.tryReadSingleFrame(buf);
 			maybeFrame.ifPresentOrElse(
@@ -160,14 +152,15 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws PublicKeyException {
+		this.state = ChannelState.AUTH_HANDSHAKE;
+
 		if (this.isInitiator) {
 			this.initHandshake(this.remoteNodeId);
 		}
-		this.state = ChannelState.AUTH_HANDSHAKE;
 	}
 
 	@Override
-	protected void channelRead0(ChannelHandlerContext ctx, ByteBuf buf) throws Exception {
+	public void channelRead0(ChannelHandlerContext ctx, byte[] buf) throws Exception {
 		switch (this.state) {
 			case INACTIVE:
 				throw new RuntimeException("Unexpected read on inactive channel");
@@ -198,8 +191,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 	}
 
 	private void write(byte[] data) {
-		final var buf = this.nettyChannel.alloc().directBuffer(data.length).writeBytes(data);
-		this.nettyChannel.writeAndFlush(buf);
+		this.nettyChannel.writeAndFlush(data);
 	}
 
 	public Result<Object> send(byte[] data) {

@@ -54,7 +54,7 @@ public final class RemoteEventProcessorOnRunner<T> {
     }
 
     public <U> Optional<RemoteEventProcessor<U>> getProcessor(Class<U> c) {
-        if (c.equals(eventClass)) {
+        if (c.isAssignableFrom(eventClass)) {
             return Optional.of((RemoteEventProcessor<U>) processor);
         }
 

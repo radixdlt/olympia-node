@@ -61,7 +61,7 @@ public final class PeerDiscovery {
 
 	private void tryConnectToSomeKnownPeers() {
 		final var remainingSlots = this.peerManager.getRemainingOutboundSlots();
-		final var maxSlotsToUse = (remainingSlots / 2) - 5; // let's always leave a few free slots
+		final var maxSlotsToUse = Math.max(0, (remainingSlots / 2) - 2); // let's always leave some free slots
 		this.addressBook.bestKnownEntries()
 			.filter(not(e -> peerManager.isPeerConnected(e.getNodeId())))
 			.limit(maxSlotsToUse)

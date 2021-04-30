@@ -32,6 +32,8 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
+import io.netty.handler.codec.bytes.ByteArrayDecoder;
+import io.netty.handler.codec.bytes.ByteArrayEncoder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -112,7 +114,9 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 		// capability of reading partial frames and multiple frames from a single data read
 		socketChannel.pipeline()
 			.addLast("unpack", new LengthFieldBasedFrameDecoder(packetLength, 0, headerLength, 0, headerLength))
+			.addLast("bytesDecoder", new ByteArrayDecoder())
 			.addLast("handler", channel)
-			.addLast("pack", new LengthFieldPrepender(headerLength));
+			.addLast("pack", new LengthFieldPrepender(headerLength))
+			.addLast("bytesEncoder", new ByteArrayEncoder());
 	}
 }

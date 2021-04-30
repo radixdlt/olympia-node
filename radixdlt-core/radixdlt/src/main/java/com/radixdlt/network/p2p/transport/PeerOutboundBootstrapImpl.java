@@ -35,7 +35,6 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 @Singleton
 public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
@@ -68,8 +67,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 	}
 
 	@Override
-	public CompletableFuture<PeerChannel> createOutboundChannel(RadixNodeUri uri) {
-		final var future = new CompletableFuture<PeerChannel>();
+	public void initOutboundConnection(RadixNodeUri uri) {
 		final var bootstrap = new Bootstrap();
 		bootstrap.group(clientWorkerGroup)
 			.channel(NioSocketChannel.class)
@@ -85,6 +83,5 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 				Optional.of(uri)
 			))
 			.connect(uri.getHost(), uri.getPort());
-		return future;
 	}
 }
