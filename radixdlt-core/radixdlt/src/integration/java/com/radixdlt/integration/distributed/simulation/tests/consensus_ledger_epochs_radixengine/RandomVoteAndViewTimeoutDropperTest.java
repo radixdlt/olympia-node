@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 
 import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRandomRegistrator;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
+import com.radixdlt.statecomputer.RadixEngineConfig;
 import org.apache.commons.collections4.MapUtils;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -47,7 +48,9 @@ public class RandomVoteAndViewTimeoutDropperTest {
 			NetworkLatencies.fixed(),
 			NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.2)
 		)
-		.ledgerAndRadixEngineWithEpochHighView(10)
+		.addNodeModule(RadixEngineConfig.asModule(2, 50, 10, 5))
+		.addGenesisModule(RadixEngineConfig.asModule(2, 50, 10, 5))
+		.ledgerAndRadixEngineWithEpochHighView()
 		.addTestModules(
 			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(20, TimeUnit.SECONDS),
