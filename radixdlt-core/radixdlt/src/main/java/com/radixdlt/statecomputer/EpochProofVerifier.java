@@ -75,7 +75,10 @@ public final class EpochProofVerifier implements BatchVerifier<LedgerAndBFTProof
 				final var signedValidatorSet = metadata.getProof().getNextValidatorSet()
 					.orElseThrow(() -> new ByzantineQuorumException("RE has changed epochs but proofs don't show."));
 				if (!signedValidatorSet.equals(reNextValidatorSet)) {
-					throw new ByzantineQuorumException("RE validator set does not agree with signed validator set");
+					throw new ByzantineQuorumException(String.format(
+						"RE validator set %s does not agree with signed validator set %s",
+						reNextValidatorSet, signedValidatorSet
+					));
 				}
 			} else {
 				if (metadata != null) {
