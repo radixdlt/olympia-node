@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRandomRegistrator;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
+import com.radixdlt.statecomputer.RadixEngineConfig;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
@@ -42,7 +43,9 @@ public class RandomValidatorsTest {
 			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed()
 		)
-		.ledgerAndRadixEngineWithEpochHighView(10)
+		.addNodeModule(RadixEngineConfig.asModule(2, 50, 10, 5))
+		.addGenesisModule(RadixEngineConfig.asModule(2, 50, 10, 5))
+		.ledgerAndRadixEngineWithEpochHighView()
 		.addTestModules(
 			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(1, TimeUnit.SECONDS),

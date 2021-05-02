@@ -300,10 +300,6 @@ public class SimulationTest {
 			return numNodes(numNodes, numInitialValidators, maxValidators, initialStakes);
 		}
 
-		public Builder numNodes(int numNodes, int numInitialValidators, int maxValidators) {
-			return numNodes(numNodes, numInitialValidators, maxValidators, ImmutableList.of(UInt256.ONE));
-		}
-
 		public Builder numNodes(int numNodes, int numInitialValidators) {
 			return numNodes(numNodes, numInitialValidators, ImmutableList.of(UInt256.ONE));
 		}
@@ -411,14 +407,13 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder ledgerAndRadixEngineWithEpochHighView(long epochHighView) {
+		public Builder ledgerAndRadixEngineWithEpochHighView() {
 			this.ledgerType = LedgerType.LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE;
 			this.modules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
 					install(MempoolConfig.asModule(100, 10));
-					install(RadixEngineConfig.asModule(minValidators, maxValidators, epochHighView, 5));
 				}
 
 				@Provides
@@ -452,7 +447,6 @@ public class SimulationTest {
 					install(new MockedCryptoModule());
 					install(new RadixEngineModule());
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
-					install(RadixEngineConfig.asModule(minValidators, maxValidators, epochHighView, 50));
 				}
 			});
 
