@@ -56,9 +56,9 @@ public class CreateFixedToken implements TxAction {
 		this.accountAddr = Objects.requireNonNull(accountAddr);
 		this.symbol = Objects.requireNonNull(symbol);
 		this.name = Objects.requireNonNull(name);
-		this.description = Objects.requireNonNull(description);
-		this.iconUrl = Objects.requireNonNull(iconUrl);
-		this.tokenUrl = Objects.requireNonNull(tokenUrl);
+		this.description = description;
+		this.iconUrl = iconUrl;
+		this.tokenUrl = tokenUrl;
 		this.supply = Objects.requireNonNull(supply);
 	}
 
@@ -83,36 +83,33 @@ public class CreateFixedToken implements TxAction {
 	}
 
 	public String getDescription() {
-		return description;
+		return description == null ? "" : description;
 	}
 
 	public String getIconUrl() {
-		return iconUrl;
+		return iconUrl == null ? "" : iconUrl;
 	}
 
 	public String getTokenUrl() {
-		return tokenUrl;
+		return tokenUrl == null ? "" : tokenUrl;
 	}
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		//final var user = txBuilder.getUserOrFail("Required address for fixed token.");
-		//final var tokenAddress = REAddr.ofHashedKey(user, symbol.toLowerCase());
-		//final var userAccount = REAddr.ofPubKeyAccount(user);
 		txBuilder.down(
 			REAddrParticle.class,
-			p -> p.getAddr().equals(resourceAddr),
-			Optional.of(SubstateWithArg.withArg(new REAddrParticle(resourceAddr), symbol.getBytes(StandardCharsets.UTF_8))),
+			p -> p.getAddr().equals(getResourceAddr()),
+			Optional.of(SubstateWithArg.withArg(new REAddrParticle(getResourceAddr()), getSymbol().getBytes(StandardCharsets.UTF_8))),
 			"RRI not available"
 		);
 		txBuilder.up(new TokenDefinitionParticle(
-			resourceAddr,
-			name,
+			getResourceAddr(),
+			getName(),
 			getDescription(),
 			getIconUrl(),
 			getTokenUrl(),
-			supply
+			getSupply()
 		));
-		txBuilder.up(new TokensParticle(accountAddr, supply, resourceAddr));
+		txBuilder.up(new TokensParticle(getAccountAddr(), getSupply(), getResourceAddr()));
 	}
 }

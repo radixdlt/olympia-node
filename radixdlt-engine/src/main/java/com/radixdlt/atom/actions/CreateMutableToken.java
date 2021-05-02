@@ -49,7 +49,7 @@ public final class CreateMutableToken implements TxAction {
 		String iconUrl,
 		String tokenUrl
 	) {
-		this.symbol = symbol.toLowerCase();
+		this.symbol = Objects.requireNonNull(symbol).toLowerCase();
 		this.name = Objects.requireNonNull(name);
 		this.description = description;
 		this.iconUrl = iconUrl;
@@ -78,18 +78,18 @@ public final class CreateMutableToken implements TxAction {
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		final var reAddress = txBuilder.getUser().map(a -> REAddr.ofHashedKey(a, symbol))
+		final var reAddress = txBuilder.getUser().map(a -> REAddr.ofHashedKey(a, getSymbol()))
 			.orElse(REAddr.ofNativeToken());
 
 		txBuilder.down(
 			REAddrParticle.class,
 			p -> p.getAddr().equals(reAddress),
-			Optional.of(SubstateWithArg.withArg(new REAddrParticle(reAddress), symbol.getBytes(StandardCharsets.UTF_8))),
+			Optional.of(SubstateWithArg.withArg(new REAddrParticle(reAddress), getSymbol().getBytes(StandardCharsets.UTF_8))),
 			"RRI not available"
 		);
 		txBuilder.up(new TokenDefinitionParticle(
 			reAddress,
-			name,
+			getName(),
 			getDescription(),
 			getIconUrl(),
 			getTokenUrl(),

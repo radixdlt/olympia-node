@@ -36,9 +36,9 @@ public final class MoveStake implements TxAction {
 
 	public MoveStake(REAddr accountAddr, ECPublicKey from, ECPublicKey to, UInt256 amount) {
 		this.accountAddr = Objects.requireNonNull(accountAddr);
-		this.from = from;
-		this.to = to;
-		this.amount = amount;
+		this.from = Objects.requireNonNull(from);
+		this.to = Objects.requireNonNull(to);
+		this.amount = Objects.requireNonNull(amount);
 	}
 
 	@Override

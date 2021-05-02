@@ -25,13 +25,15 @@ import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
+import java.util.Objects;
+
 public final class SplitToken implements TxAction {
 	private final REAddr rri;
 	private final UInt256 minSize;
 
 	public SplitToken(REAddr rri, UInt256 minSize) {
-		this.rri = rri;
-		this.minSize = minSize;
+		this.rri = Objects.requireNonNull(rri);
+		this.minSize = Objects.requireNonNull(minSize);
 	}
 
 	@Override

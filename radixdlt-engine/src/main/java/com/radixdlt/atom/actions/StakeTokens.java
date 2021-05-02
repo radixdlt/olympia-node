@@ -28,15 +28,17 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
+import java.util.Objects;
+
 public final class StakeTokens implements TxAction {
 	private final REAddr fromAcct;
 	private final ECPublicKey delegateKey;
 	private final UInt256 amount;
 
 	public StakeTokens(REAddr fromAcct, ECPublicKey delegateKey, UInt256 amount) {
-		this.fromAcct = fromAcct;
-		this.delegateKey = delegateKey;
-		this.amount = amount;
+		this.fromAcct = Objects.requireNonNull(fromAcct);
+		this.delegateKey = Objects.requireNonNull(delegateKey);
+		this.amount = Objects.requireNonNull(amount);
 	}
 
 	public REAddr from() {
@@ -56,13 +58,13 @@ public final class StakeTokens implements TxAction {
 		txBuilder.swapFungible(
 			TokensParticle.class,
 			p -> p.getResourceAddr().isNativeToken()
-				&& p.getHoldingAddr().equals(fromAcct)
-				&& (amount.compareTo(TokenUnitConversions.SUB_UNITS) < 0
+				&& p.getHoldingAddr().equals(from())
+				&& (amount().compareTo(TokenUnitConversions.SUB_UNITS) < 0
 				|| p.getAmount().compareTo(TokenUnitConversions.unitsToSubunits(1)) >= 0),
 			TokensParticle::getAmount,
-			amt -> new TokensParticle(fromAcct, amt, REAddr.ofNativeToken()),
-			amount,
+			amt -> new TokensParticle(from(), amt, REAddr.ofNativeToken()),
+			amount(),
 			"Not enough balance for staking."
-		).with(amt -> new StakedTokensParticle(delegateKey, fromAcct, amt));
+		).with(amt -> new StakedTokensParticle(to(), from(), amt));
 	}
 }

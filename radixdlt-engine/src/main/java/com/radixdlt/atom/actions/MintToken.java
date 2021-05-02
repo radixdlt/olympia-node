@@ -25,15 +25,17 @@ import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
+import java.util.Objects;
+
 public final class MintToken implements TxAction {
 	private final REAddr resourceAddr;
 	private final REAddr to;
 	private final UInt256 amount;
 
 	public MintToken(REAddr resourceAddr, REAddr to, UInt256 amount) {
-		this.resourceAddr = resourceAddr;
-		this.to = to;
-		this.amount = amount;
+		this.resourceAddr = Objects.requireNonNull(resourceAddr);
+		this.to = Objects.requireNonNull(to);
+		this.amount = Objects.requireNonNull(amount);
 	}
 
 	public REAddr resourceAddr() {
@@ -50,6 +52,6 @@ public final class MintToken implements TxAction {
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.up(new TokensParticle(to, amount, resourceAddr));
+		txBuilder.up(new TokensParticle(to(), amount(), resourceAddr()));
 	}
 }
