@@ -21,7 +21,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -33,7 +32,6 @@ import com.radixdlt.network.messaging.MessageCentralMockProvider;
 
 import java.util.Optional;
 
-import io.reactivex.rxjava3.subscribers.TestSubscriber;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -49,16 +47,6 @@ public class MessageCentralBFTNetworkTest {
 		this.addressBook = mock(AddressBook.class);
 		this.messageCentral = MessageCentralMockProvider.get();
 		this.network = new MessageCentralBFTNetwork(self, 0, addressBook, messageCentral);
-	}
-
-	@Test
-	public void when_send_vote_to_self__then_should_receive_vote_message() {
-		TestSubscriber<ConsensusEvent> testObserver = TestSubscriber.create();
-		network.localBftEvents().subscribe(testObserver);
-		Vote vote = mock(Vote.class);
-		network.voteDispatcher().dispatch(self, vote);
-		testObserver.awaitCount(1);
-		testObserver.assertValue(vote);
 	}
 
 	@Test

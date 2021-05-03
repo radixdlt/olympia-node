@@ -18,7 +18,8 @@
 package com.radixdlt.environment.deterministic;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.consensus.ConsensusEvent;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
@@ -28,7 +29,6 @@ import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
@@ -54,7 +54,6 @@ import javax.inject.Inject;
  */
 @NotThreadSafe
 public final class DeterministicEpochsConsensusProcessor implements DeterministicMessageProcessor {
-	private final EpochManager epochManager;
 	private final Map<Class<?>, EventProcessor<Object>>	eventProcessors;
 	private final Map<Class<?>, RemoteEventProcessor<Object>> remoteEventProcessors;
 	private final Set<StartProcessor> startProcessors;
@@ -65,7 +64,8 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 	@Inject
 	public DeterministicEpochsConsensusProcessor(
 		Set<StartProcessor> startProcessors,
-		EpochManager epochManager,
+		Set<EventProcessor<Vote>> voteProcessors,
+		Set<EventProcessor<Proposal>> proposalProcessors,
 		Set<EventProcessor<Epoched<ScheduledLocalTimeout>>> epochTimeoutProcessors,
 		Set<RemoteEventProcessor<GetVerticesRequest>> verticesRequestProcessors,
 		Set<RemoteEventProcessor<GetVerticesResponse>> verticesResponseProcessors,
@@ -79,7 +79,6 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		Set<RemoteEventProcessorOnRunner<?>> remoteProcessorOnRunners
 	) {
 		this.startProcessors = Objects.requireNonNull(startProcessors);
-		this.epochManager = Objects.requireNonNull(epochManager);
 		this.epochTimeoutProcessors = Objects.requireNonNull(epochTimeoutProcessors);
 		this.processorOnRunners = Objects.requireNonNull(processorOnRunners);
 		this.remoteProcessorOnRunners = Objects.requireNonNull(remoteProcessorOnRunners);
@@ -98,6 +97,8 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			EpochsLedgerUpdate.class,
 			e -> epochsLedgerUpdateEventProcessors.forEach(p -> p.process((EpochsLedgerUpdate) e))
 		);
+		processorsBuilder.put(Vote.class, e -> voteProcessors.forEach(p -> p.process((Vote) e)));
+		processorsBuilder.put(Proposal.class, e -> proposalProcessors.forEach(p -> p.process((Proposal) e)));
 		this.eventProcessors = processorsBuilder.build();
 
 		ImmutableMap.Builder<Class<?>, RemoteEventProcessor<Object>> remoteProcessorsBuilder = ImmutableMap.builder();
@@ -139,8 +140,6 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			// FIXME: Should remove this message type but required due to guice dependency graph
 			// FIXME: Should be fixable once an Epoch Environment is implemented
 			return;
-		} else if (message instanceof ConsensusEvent) {
-			this.epochManager.processConsensusEvent((ConsensusEvent) message);
 		} else if (message instanceof Epoched) {
 			Epoched<?> epoched = (Epoched<?>) message;
 			Object epochedMessage = epoched.event();

@@ -24,7 +24,6 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
@@ -127,13 +126,23 @@ public final class NetworkModule extends AbstractModule {
 	}
 
 	@Provides
-	private Flowable<ConsensusEvent> localConsensusEvents(MessageCentralBFTNetwork bftNetwork) {
-		return bftNetwork.localBftEvents();
+	private Flowable<Proposal> localProposals(MessageCentralBFTNetwork bftNetwork) {
+		return bftNetwork.localProposals();
 	}
 
 	@Provides
-	private Flowable<RemoteEvent<ConsensusEvent>> remoteConsensusEvents(MessageCentralBFTNetwork bftNetwork) {
-		return bftNetwork.remoteBftEvents();
+	private Flowable<Vote> localVotes(MessageCentralBFTNetwork bftNetwork) {
+		return bftNetwork.localVotes();
+	}
+
+	@Provides
+	private Flowable<RemoteEvent<Vote>> remoteVotes(MessageCentralBFTNetwork bftNetwork) {
+		return bftNetwork.remoteVotes();
+	}
+
+	@Provides
+	private Flowable<RemoteEvent<Proposal>> remoteProposals(MessageCentralBFTNetwork bftNetwork) {
+		return bftNetwork.remoteProposals();
 	}
 
 	@Provides

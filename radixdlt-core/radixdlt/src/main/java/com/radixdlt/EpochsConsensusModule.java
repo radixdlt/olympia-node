@@ -104,6 +104,16 @@ public class EpochsConsensusModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
+	private EventProcessor<Vote> voteProcessor(EpochManager epochManager) {
+		return epochManager::processConsensusEvent;
+	}
+
+	@ProvidesIntoSet
+	private EventProcessor<Proposal> proposalProcessor(EpochManager epochManager) {
+		return epochManager::processConsensusEvent;
+	}
+
+	@ProvidesIntoSet
 	private EventProcessor<Epoched<ScheduledLocalTimeout>> epochTimeoutProcessor(EpochManager epochManager) {
 		return epochManager::processLocalTimeout;
 	}

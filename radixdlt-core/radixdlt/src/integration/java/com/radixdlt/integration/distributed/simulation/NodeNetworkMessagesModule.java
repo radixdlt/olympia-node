@@ -21,7 +21,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -115,13 +114,23 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	}
 
 	@Provides
-	private Flowable<ConsensusEvent> localConsensusEvents(SimulatedNetworkImpl network) {
-		return network.localEvents(ConsensusEvent.class);
+	private Flowable<Proposal> localProposals(SimulatedNetworkImpl network) {
+		return network.localEvents(Proposal.class);
 	}
 
 	@Provides
-	private Flowable<RemoteEvent<ConsensusEvent>> remoteConsensusEvents(SimulatedNetworkImpl network) {
-		return network.remoteEvents(ConsensusEvent.class);
+	private Flowable<Vote> localVotes(SimulatedNetworkImpl network) {
+		return network.localEvents(Vote.class);
+	}
+
+	@Provides
+	private Flowable<RemoteEvent<Proposal>> remoteProposals(SimulatedNetworkImpl network) {
+		return network.remoteEvents(Proposal.class);
+	}
+
+	@Provides
+	private Flowable<RemoteEvent<Vote>> remoteVotes(SimulatedNetworkImpl network) {
+		return network.remoteEvents(Vote.class);
 	}
 
 	@Provides
@@ -138,31 +147,4 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	private Flowable<RemoteEvent<GetVerticesErrorResponse>> errorResponses(SimulatedNetworkImpl network) {
 		return network.remoteEvents(GetVerticesErrorResponse.class);
 	}
-
-	/*
-	@Provides
-	private Flowable<RemoteEvent<SyncRequest>> syncRequests(SimulatedNetworkImpl network) {
-		return network.remoteEvents(SyncRequest.class);
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<SyncResponse>> syncResponses(SimulatedNetworkImpl network) {
-		return network.remoteEvents(SyncResponse.class);
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<StatusRequest>> statusRequests(SimulatedNetworkImpl network) {
-		return network.remoteEvents(StatusRequest.class);
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<StatusResponse>> statusResponses(SimulatedNetworkImpl network) {
-		return network.remoteEvents(StatusResponse.class);
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<LedgerStatusUpdate>> ledgerStatusUpdates(SimulatedNetworkImpl network) {
-		return network.remoteEvents(LedgerStatusUpdate.class);
-	}
-	 */
 }

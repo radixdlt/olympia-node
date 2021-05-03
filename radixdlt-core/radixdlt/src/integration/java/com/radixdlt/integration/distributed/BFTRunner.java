@@ -18,7 +18,6 @@
 package com.radixdlt.integration.distributed;
 
 import com.radixdlt.ModuleRunner;
-import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -88,10 +87,12 @@ public class BFTRunner implements ModuleRunner {
 		Set<RemoteEventProcessor<GetVerticesResponse>> responseProcessors,
 		Flowable<RemoteEvent<GetVerticesErrorResponse>> verticesErrorResponses,
 		Set<RemoteEventProcessor<GetVerticesErrorResponse>> errorResponseProcessors,
-		Flowable<ConsensusEvent> localConsensusEvents,
-		Flowable<RemoteEvent<ConsensusEvent>> remoteConsensusEvents,
-		Set<EventProcessor<Proposal>> proposalProcessors,
+		Flowable<Vote> localVotes,
+		Flowable<RemoteEvent<Vote>> remoteVotes,
 		Set<EventProcessor<Vote>> voteProcessors,
+		Flowable<Proposal> localProposals,
+		Flowable<RemoteEvent<Proposal>> remoteProposals,
+		Set<EventProcessor<Proposal>> proposalProcessors,
 		Set<StartProcessor> startProcessors,
 		@Self BFTNode self
 	) {
@@ -109,20 +110,12 @@ public class BFTRunner implements ModuleRunner {
 			viewUpdates
 				.observeOn(singleThreadScheduler)
 				.doOnNext(v -> viewUpdateProcessors.forEach(p -> p.process(v))),
-			Observable.merge(
-				localConsensusEvents.toObservable(),
-				remoteConsensusEvents.toObservable().map(RemoteEvent::getEvent)
-			)
+			Observable.merge(localVotes.toObservable(), remoteVotes.toObservable().map(RemoteEvent::getEvent))
 				.observeOn(singleThreadScheduler)
-				.doOnNext(e -> {
-					if (e instanceof Proposal) {
-						proposalProcessors.forEach(p -> p.process((Proposal) e));
-					} else if (e instanceof Vote) {
-						voteProcessors.forEach(p -> p.process((Vote) e));
-					} else {
-						throw new IllegalStateException(self + ": Unknown consensus event: " + e);
-					}
-				}),
+				.doOnNext(e -> voteProcessors.forEach(p -> p.process(e))),
+			Observable.merge(localProposals.toObservable(), remoteProposals.toObservable().map(RemoteEvent::getEvent))
+				.observeOn(singleThreadScheduler)
+				.doOnNext(e -> proposalProcessors.forEach(p -> p.process(e))),
 			verticesRequests.toObservable()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(r -> requestProcessors.forEach(p -> p.process(r.getOrigin(), r.getEvent()))),

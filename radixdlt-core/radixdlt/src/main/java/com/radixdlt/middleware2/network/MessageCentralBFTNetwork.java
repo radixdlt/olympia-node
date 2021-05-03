@@ -29,6 +29,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.network.messaging.MessageFromPeer;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.processors.PublishProcessor;
@@ -70,20 +71,45 @@ public final class MessageCentralBFTNetwork {
 		this.localMessages = PublishProcessor.create();
 	}
 
-	public Flowable<ConsensusEvent> localBftEvents() {
-		return localMessages.onBackpressureBuffer(255, false, true /* unbounded for local messages */);
+	public Flowable<Proposal> localProposals() {
+		return localMessages
+			.onBackpressureBuffer(255, false, true /* unbounded for local messages */)
+			.ofType(Proposal.class);
 	}
 
-	public Flowable<RemoteEvent<ConsensusEvent>> remoteBftEvents() {
-		return this.messageCentral
-			.messagesOf(ConsensusEventMessage.class)
-			.toFlowable(BackpressureStrategy.BUFFER)
-			.filter(m -> m.getPeer().hasSystem())
+	public Flowable<Vote> localVotes() {
+		return localMessages
+			.onBackpressureBuffer(255, false, true /* unbounded for local messages */)
+			.ofType(Vote.class);
+	}
+
+	public Flowable<RemoteEvent<Vote>> remoteVotes() {
+		return remoteBftEvents()
+			.filter(m -> m.getMessage().getConsensusMessage() instanceof Vote)
 			.map(m -> {
 				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
 				final var msg = m.getMessage();
-				return RemoteEvent.create(node, msg.getConsensusMessage());
+				var vote = (Vote) msg.getConsensusMessage();
+				return RemoteEvent.create(node, vote);
 			});
+	}
+
+	public Flowable<RemoteEvent<Proposal>> remoteProposals() {
+		return remoteBftEvents()
+			.filter(m -> m.getMessage().getConsensusMessage() instanceof Proposal)
+			.map(m -> {
+				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
+				final var msg = m.getMessage();
+				var proposal = (Proposal) msg.getConsensusMessage();
+				return RemoteEvent.create(node, proposal);
+			});
+	}
+
+	private Flowable<MessageFromPeer<ConsensusEventMessage>> remoteBftEvents() {
+		return this.messageCentral
+			.messagesOf(ConsensusEventMessage.class)
+			.toFlowable(BackpressureStrategy.BUFFER)
+			.filter(m -> m.getPeer().hasSystem());
 	}
 
 	public RemoteEventDispatcher<Proposal> proposalDispatcher() {
