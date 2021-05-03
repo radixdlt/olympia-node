@@ -18,7 +18,6 @@
 package com.radixdlt.integration.distributed;
 
 import com.radixdlt.ModuleRunner;
-import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
@@ -34,6 +33,7 @@ import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.environment.StartProcessor;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.utils.ThreadFactories;
@@ -64,7 +64,7 @@ public class BFTRunner implements ModuleRunner {
 	private final Object lock = new Object();
 	private final ExecutorService singleThreadExecutor;
 	private final Scheduler singleThreadScheduler;
-	private final BFTEventProcessor bftEventProcessor;
+	private final Set<StartProcessor> startProcessors;
 	private final BFTNode self;
 	private Disposable disposable;
 
@@ -92,10 +92,10 @@ public class BFTRunner implements ModuleRunner {
 		Flowable<RemoteEvent<ConsensusEvent>> remoteConsensusEvents,
 		Set<EventProcessor<Proposal>> proposalProcessors,
 		Set<EventProcessor<Vote>> voteProcessors,
-		BFTEventProcessor bftEventProcessor,
+		Set<StartProcessor> startProcessors,
 		@Self BFTNode self
 	) {
-		this.bftEventProcessor = Objects.requireNonNull(bftEventProcessor);
+		this.startProcessors = Objects.requireNonNull(startProcessors);
 		this.singleThreadExecutor = Executors.newSingleThreadExecutor(ThreadFactories.daemonThreads("ConsensusRunner " + self));
 		this.singleThreadScheduler = Schedulers.from(this.singleThreadExecutor);
 		this.self = Objects.requireNonNull(self);
@@ -166,7 +166,7 @@ public class BFTRunner implements ModuleRunner {
 		boolean started = false;
 		synchronized (lock) {
 			if (disposable == null) {
-				singleThreadExecutor.submit(bftEventProcessor::start);
+				singleThreadExecutor.submit(() -> startProcessors.forEach(StartProcessor::start));
 				disposable = this.events.connect();
 				started = true;
 			}

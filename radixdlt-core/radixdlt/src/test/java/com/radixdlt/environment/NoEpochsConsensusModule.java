@@ -38,6 +38,11 @@ import com.radixdlt.ledger.LedgerUpdate;
 public class NoEpochsConsensusModule extends AbstractModule {
 
 	@ProvidesIntoSet
+	private StartProcessor startProcessor(BFTEventProcessor processor) {
+		return processor::start;
+	}
+
+	@ProvidesIntoSet
 	private EventProcessor<Proposal> proposalProcessor(BFTEventProcessor processor) {
 		return processor::processProposal;
 	}

@@ -18,7 +18,6 @@
 package com.radixdlt.environment.deterministic;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
@@ -33,6 +32,7 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.environment.StartProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 
@@ -43,7 +43,7 @@ import java.util.Set;
  * Consensus only (no epochs) deterministic consensus processor
  */
 public class DeterministicConsensusProcessor implements DeterministicMessageProcessor {
-	private final BFTEventProcessor bftEventProcessor;
+	private final Set<StartProcessor> startProcessors;
 	private final Set<RemoteEventProcessor<GetVerticesRequest>> verticesRequestProcessors;
 	private final Set<RemoteEventProcessor<GetVerticesResponse>> verticesResponseProcessors;
 	private final Set<RemoteEventProcessor<GetVerticesErrorResponse>> bftSyncErrorResponseProcessors;
@@ -59,7 +59,7 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 
 	@Inject
 	public DeterministicConsensusProcessor(
-		BFTEventProcessor bftEventProcessor,
+		Set<StartProcessor> startProcessors,
 		Set<RemoteEventProcessor<GetVerticesRequest>> verticesRequestProcessors,
 		Set<RemoteEventProcessor<GetVerticesResponse>> verticesResponseProcessors,
 		Set<RemoteEventProcessor<GetVerticesErrorResponse>> bftSyncErrorResponseProcessors,
@@ -73,7 +73,7 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 		Set<EventProcessor<Vote>> voteProcessors,
 		Set<EventProcessor<VertexRequestTimeout>> vertexTimeoutProcessors
 	) {
-		this.bftEventProcessor = Objects.requireNonNull(bftEventProcessor);
+		this.startProcessors = Objects.requireNonNull(startProcessors);
 		this.verticesRequestProcessors = Objects.requireNonNull(verticesRequestProcessors);
 		this.verticesResponseProcessors = Objects.requireNonNull(verticesResponseProcessors);
 		this.bftSyncErrorResponseProcessors = Objects.requireNonNull(bftSyncErrorResponseProcessors);
@@ -90,7 +90,7 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 
 	@Override
 	public void start() {
-		this.bftEventProcessor.start();
+		this.startProcessors.forEach(StartProcessor::start);
 	}
 
 	@Override
