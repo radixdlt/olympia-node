@@ -19,6 +19,7 @@ package com.radixdlt;
 
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.client.service.ScheduledCacheCleanup;
+import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.mempool.MempoolRelayTrigger;
@@ -143,11 +144,7 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<EventDispatcher<ScheduledMempoolFill>>() { })
 				.toProvider(Dispatchers.dispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<NoVote>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(
-				NoVote.class,
-				v -> CounterType.BFT_REJECTED,
-				true
-			))
+			.toProvider(Dispatchers.dispatcherProvider(NoVote.class, v -> CounterType.BFT_REJECTED, true))
 			.in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<InvalidProposedTxn>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(
@@ -177,6 +174,10 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledQueueFlush.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledCacheCleanup>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledCacheCleanup.class)).in(Scopes.SINGLETON);
+
+		// BFT
+		bind(new TypeLiteral<RemoteEventDispatcher<Proposal>>() { })
+			.toProvider(Dispatchers.remoteDispatcherProvider(Proposal.class)).in(Scopes.SINGLETON);
 
 		// BFT Sync
 		bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesResponse>>() { })

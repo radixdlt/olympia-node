@@ -20,7 +20,6 @@ package com.radixdlt.environment.deterministic.network;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.Streams;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.utils.Pair;
 
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -42,7 +41,7 @@ public final class DeterministicNetwork {
 	private static final Logger log = LogManager.getLogger();
 	private static final long DEFAULT_LATENCY = 50L; // virtual milliseconds
 
-	public interface DeterministicSender extends ProposalBroadcaster {
+	public interface DeterministicSender {
 		// Aggregation, no additional stuff
 	}
 

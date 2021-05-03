@@ -29,7 +29,6 @@ import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
@@ -92,7 +91,6 @@ public class BFTRunner implements ModuleRunner {
 		Set<RemoteEventProcessor<GetVerticesErrorResponse>> errorResponseProcessors,
 		BFTEventsRx networkRx,
 		BFTEventProcessor bftEventProcessor,
-		BFTSync vertexStoreSync,
 		@Self BFTNode self
 	) {
 		this.bftEventProcessor = Objects.requireNonNull(bftEventProcessor);

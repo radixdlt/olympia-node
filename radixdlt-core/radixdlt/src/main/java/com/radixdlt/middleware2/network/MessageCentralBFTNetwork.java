@@ -22,14 +22,12 @@ import com.google.inject.name.Named;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 
 import com.radixdlt.environment.RemoteEventDispatcher;
 
 import java.util.Objects;
 
 import java.util.Optional;
-import java.util.Set;
 
 import com.radixdlt.network.messaging.MessageFromPeer;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
@@ -50,7 +48,7 @@ import com.radixdlt.network.messaging.MessageCentral;
  * BFT Network sending and receiving layer used on top of the MessageCentral
  * layer.
  */
-public final class MessageCentralBFTNetwork implements ProposalBroadcaster, BFTEventsRx {
+public final class MessageCentralBFTNetwork implements BFTEventsRx {
 	private static final Logger log = LogManager.getLogger();
 
 	private final BFTNode self;
@@ -87,15 +85,16 @@ public final class MessageCentralBFTNetwork implements ProposalBroadcaster, BFTE
 			.map(ConsensusEventMessage::getConsensusMessage);
 	}
 
-	@Override
-	public void broadcastProposal(Proposal proposal, Set<BFTNode> nodes) {
-		for (BFTNode node : nodes) {
-			if (this.self.equals(node)) {
-				this.localMessages.onNext(proposal);
-			} else {
-				ConsensusEventMessage message = new ConsensusEventMessage(this.magic, proposal);
-				send(message, node);
-			}
+	public RemoteEventDispatcher<Proposal> proposalDispatcher() {
+		return this::sendProposal;
+	}
+
+	private void sendProposal(BFTNode receiver, Proposal proposal) {
+		if (this.self.equals(receiver)) {
+			this.localMessages.onNext(proposal);
+		} else {
+			ConsensusEventMessage message = new ConsensusEventMessage(this.magic, proposal);
+			send(message, receiver);
 		}
 	}
 

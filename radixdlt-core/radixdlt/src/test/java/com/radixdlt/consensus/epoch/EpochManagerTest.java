@@ -43,6 +43,7 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
@@ -65,7 +66,6 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.bft.View;
@@ -120,9 +120,9 @@ public class EpochManagerTest {
 	private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
 
 	private NextTxnsGenerator nextTxnsGenerator = mock(NextTxnsGenerator.class);
-	private ProposalBroadcaster proposalBroadcaster = mock(ProposalBroadcaster.class);
 	private ScheduledEventDispatcher<GetVerticesRequest> timeoutScheduler = rmock(ScheduledEventDispatcher.class);
 	private EventDispatcher<LocalSyncRequest> syncLedgerRequestSender = rmock(EventDispatcher.class);
+	private RemoteEventDispatcher<Proposal> proposalDispatcher = rmock(RemoteEventDispatcher.class);
 	private RemoteEventDispatcher<Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
 	private Mempool mempool = mock(Mempool.class);
 	private StateComputer stateComputer = new StateComputer() {
@@ -174,6 +174,7 @@ public class EpochManagerTest {
 						.toInstance(rmock(ScheduledEventDispatcher.class));
 				bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() { })
 					.toInstance(rmock(ScheduledEventDispatcher.class));
+				bind(new TypeLiteral<RemoteEventDispatcher<Proposal>>() { }).toInstance(proposalDispatcher);
 				bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() { }).toInstance(voteDispatcher);
 				bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesRequest>>() { })
 					.toInstance(rmock(RemoteEventDispatcher.class));
@@ -186,7 +187,6 @@ public class EpochManagerTest {
 
 				bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
 				bind(NextTxnsGenerator.class).toInstance(nextTxnsGenerator);
-				bind(ProposalBroadcaster.class).toInstance(proposalBroadcaster);
 				bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 				bind(Mempool.class).toInstance(mempool);
 				bind(StateComputer.class).toInstance(stateComputer);
@@ -287,7 +287,7 @@ public class EpochManagerTest {
 		epochManager.epochsLedgerUpdateEventProcessor().process(epochsLedgerUpdate);
 
 		// Assert
-		verify(proposalBroadcaster, never()).broadcastProposal(argThat(p -> p.getEpoch() == epochChange.getEpoch()), any());
+		verify(proposalDispatcher, never()).dispatch(any(Iterable.class), argThat(p -> p.getEpoch() == epochChange.getEpoch()));
 		verify(voteDispatcher, never()).dispatch(any(BFTNode.class), any());
 	}
 }

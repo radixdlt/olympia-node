@@ -29,10 +29,10 @@ import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 
 import com.radixdlt.ledger.AccumulatorState;
@@ -51,7 +51,7 @@ public final class MessageFlooder {
 
 	private Logger logger = LogManager.getLogger();
 
-	private final ProposalBroadcaster proposalBroadcaster;
+	private final RemoteEventDispatcher<Proposal> proposalDispatcher;
 	private final ScheduledEventDispatcher<ScheduledMessageFlood> scheduledFloodEventDispatcher;
 	private final BFTNode self;
 
@@ -62,11 +62,11 @@ public final class MessageFlooder {
 	@Inject
 	public MessageFlooder(
 		@Self BFTNode self,
-		ProposalBroadcaster proposalBroadcaster,
+		RemoteEventDispatcher<Proposal> proposalDispatcher,
 		ScheduledEventDispatcher<ScheduledMessageFlood> scheduledFloodEventDispatcher
 	) {
 		this.self = Objects.requireNonNull(self);
-		this.proposalBroadcaster = Objects.requireNonNull(proposalBroadcaster);
+		this.proposalDispatcher = Objects.requireNonNull(proposalDispatcher);
 		this.scheduledFloodEventDispatcher = Objects.requireNonNull(scheduledFloodEventDispatcher);
 	}
 
@@ -110,7 +110,7 @@ public final class MessageFlooder {
 
 			Proposal proposal = createProposal();
 			for (int i = 0; i < messagesPerSec; i++) {
-				proposalBroadcaster.broadcastProposal(proposal, Set.of(nodeToAttack));
+				proposalDispatcher.dispatch(Set.of(nodeToAttack), proposal);
 			}
 
 			scheduledFloodEventDispatcher.dispatch(ScheduledMessageFlood.create(), 1000);

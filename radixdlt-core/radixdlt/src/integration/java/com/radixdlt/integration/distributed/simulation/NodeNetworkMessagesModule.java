@@ -22,10 +22,10 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTEventsRx;
+import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
@@ -52,7 +52,6 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(BFTEventsRx.class).to(SimulatedNetworkImpl.class);
-		bind(ProposalBroadcaster.class).to(SimulatedNetworkImpl.class);
 		bind(RxRemoteEnvironment.class).to(SimulatedNetworkImpl.class).in(Scopes.SINGLETON);
 	}
 
@@ -81,6 +80,10 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 		return RxRemoteDispatcher.create(GetVerticesErrorResponse.class, network.remoteEventDispatcher(GetVerticesErrorResponse.class));
 	}
 
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> proposalDispatcher(SimulatedNetworkImpl network) {
+		return RxRemoteDispatcher.create(Proposal.class, network.remoteEventDispatcher(Proposal.class));
+	}
 
 	@ProvidesIntoSet
 	private RxRemoteDispatcher<?> voteDispatcher(SimulatedNetworkImpl network) {

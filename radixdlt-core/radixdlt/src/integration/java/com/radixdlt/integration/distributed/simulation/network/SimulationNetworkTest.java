@@ -19,10 +19,8 @@ package com.radixdlt.integration.distributed.simulation.network;
 
 import static org.mockito.Mockito.mock;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
@@ -44,18 +42,6 @@ public class SimulationNetworkTest {
 		node2 = mock(BFTNode.class);
 		this.channelCommunication = new InOrderChannels(msg -> 50);
 		this.network = new SimulationNetwork(channelCommunication);
-	}
-
-	@Test
-	public void when_broadcast_proposal__then_should_receive_it() {
-		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.getNetwork(node1).localBftEvents()
-			.toObservable()
-			.subscribe(testObserver);
-		Proposal proposal = mock(Proposal.class);
-		network.getNetwork(node1).broadcastProposal(proposal, ImmutableSet.of(node1, node2));
-		testObserver.awaitCount(1);
-		testObserver.assertValue(proposal);
 	}
 
 	@Test

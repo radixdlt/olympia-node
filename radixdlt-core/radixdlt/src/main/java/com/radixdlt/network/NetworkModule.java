@@ -25,11 +25,11 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTEventsRx;
+import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
@@ -65,7 +65,6 @@ public final class NetworkModule extends AbstractModule {
 
 		// Network BFT messages
 		bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
-		bind(ProposalBroadcaster.class).to(MessageCentralBFTNetwork.class);
 		bind(BFTEventsRx.class).to(MessageCentralBFTNetwork.class);
 		bind(PeersView.class).to(AddressBookPeersView.class);
 	}
@@ -73,6 +72,11 @@ public final class NetworkModule extends AbstractModule {
 	@ProvidesIntoSet
 	private RxRemoteDispatcher<?> mempoolAddDispatcher(MessageCentralMempool messageCentralMempool) {
 		return RxRemoteDispatcher.create(MempoolAdd.class, messageCentralMempool.mempoolAddRemoteEventDispatcher());
+	}
+
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> proposalDispatcher(MessageCentralBFTNetwork bftNetwork) {
+		return RxRemoteDispatcher.create(Proposal.class, bftNetwork.proposalDispatcher());
 	}
 
 	@ProvidesIntoSet

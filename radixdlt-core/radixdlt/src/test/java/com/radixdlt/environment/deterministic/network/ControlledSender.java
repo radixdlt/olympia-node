@@ -22,9 +22,7 @@ import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import java.util.Set;
 
-import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
 
@@ -43,15 +41,6 @@ public final class ControlledSender implements DeterministicSender, Environment 
 		this.self = self;
 		this.senderIndex = senderIndex;
 		this.localChannel = ChannelId.of(this.senderIndex, this.senderIndex);
-	}
-
-	@Override
-	public void broadcastProposal(Proposal proposal, Set<BFTNode> nodes) {
-		for (BFTNode node : nodes) {
-			int receiverIndex = this.network.lookup(node);
-			ChannelId channelId = ChannelId.of(this.senderIndex, receiverIndex);
-			handleMessage(new ControlledMessage(self, channelId, proposal, arrivalTime(channelId)));
-		}
 	}
 
 	@Override

@@ -27,7 +27,6 @@ import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
-import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.Environment;
@@ -45,8 +44,6 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork.Deter
 public class DeterministicEnvironmentModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		bind(ProposalBroadcaster.class).to(DeterministicSender.class);
-
 		bind(DeterministicSender.class).to(ControlledSender.class);
 
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);

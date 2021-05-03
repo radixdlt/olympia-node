@@ -27,6 +27,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
@@ -52,7 +53,6 @@ import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.PacemakerStateFactory;
-import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
@@ -199,11 +199,11 @@ public class EpochsConsensusModule extends AbstractModule {
 	private PacemakerFactory pacemakerFactory(
 		@Self BFTNode self,
 		SystemCounters counters,
-		ProposalBroadcaster proposalBroadcaster,
 		NextTxnsGenerator nextTxnsGenerator,
 		Hasher hasher,
 		EventDispatcher<EpochLocalTimeoutOccurrence> timeoutEventDispatcher,
 		ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>> localTimeoutSender,
+		RemoteEventDispatcher<Proposal> proposalDispatcher,
 		RemoteEventDispatcher<Vote> voteDispatcher,
 		TimeSupplier timeSupplier
 	) {
@@ -224,7 +224,7 @@ public class EpochsConsensusModule extends AbstractModule {
 			(scheduledTimeout, ms) -> localTimeoutSender.dispatch(Epoched.from(epoch, scheduledTimeout), ms),
 			timeoutCalculator,
 			nextTxnsGenerator,
-			proposalBroadcaster,
+			proposalDispatcher,
 			hasher,
 			voteDispatcher,
 			timeSupplier,

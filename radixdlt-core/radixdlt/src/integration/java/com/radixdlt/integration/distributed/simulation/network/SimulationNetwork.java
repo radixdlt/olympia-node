@@ -21,9 +21,7 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.Proposal;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
@@ -36,7 +34,6 @@ import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -131,8 +128,7 @@ public class SimulationNetwork {
 			.toSerialized();
 	}
 
-	public class SimulatedNetworkImpl implements
-		ProposalBroadcaster, BFTEventsRx, RxRemoteEnvironment {
+	public class SimulatedNetworkImpl implements BFTEventsRx, RxRemoteEnvironment {
 		private final Flowable<MessageInTransit> myMessages;
 		private final BFTNode thisNode;
 
@@ -150,13 +146,6 @@ public class SimulationNetwork {
 				.publish()
 				.refCount(), BackpressureStrategy.BUFFER)
 			.onBackpressureBuffer(255, false, true /* unbounded */);
-		}
-
-		@Override
-		public void broadcastProposal(Proposal proposal, Set<BFTNode> nodes) {
-			for (BFTNode reader : nodes) {
-				receivedMessages.onNext(MessageInTransit.newMessage(proposal, thisNode, reader));
-			}
 		}
 
 		@Override

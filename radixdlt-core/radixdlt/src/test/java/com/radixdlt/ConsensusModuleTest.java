@@ -40,6 +40,7 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
@@ -71,7 +72,6 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -160,6 +160,7 @@ public class ConsensusModuleTest {
 					.toInstance(rmock(ScheduledEventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<ViewQuorumReached>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() { }).toInstance(rmock(RemoteEventDispatcher.class));
+				bind(new TypeLiteral<RemoteEventDispatcher<Proposal>>() { }).toInstance(rmock(RemoteEventDispatcher.class));
 				bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesRequest>>() { }).toInstance(requestSender);
 				bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesResponse>>() { }).toInstance(responseSender);
 				bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesErrorResponse>>() { }).toInstance(errorResponseSender);
@@ -170,7 +171,6 @@ public class ConsensusModuleTest {
 
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 				bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
-				bind(ProposalBroadcaster.class).toInstance(mock(ProposalBroadcaster.class));
 				bind(NextTxnsGenerator.class).toInstance(mock(NextTxnsGenerator.class));
 				bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 				bind(TimeSupplier.class).toInstance(mock(TimeSupplier.class));
