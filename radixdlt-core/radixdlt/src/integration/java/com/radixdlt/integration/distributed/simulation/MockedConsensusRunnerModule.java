@@ -22,15 +22,12 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.ModuleRunner;
-import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
-import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.integration.distributed.BFTRunner;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -40,6 +37,7 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 	public void configure() {
 		MapBinder<String, ModuleRunner> moduleRunners = MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class);
 		moduleRunners.addBinding(Runners.CONSENSUS).to(BFTRunner.class).in(Scopes.SINGLETON);
+		install(new NoEpochsConsensusModule());
 
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 			.permitDuplicates();
@@ -49,18 +47,4 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(LedgerUpdate.class);
 	}
 
-	@ProvidesIntoSet
-	private EventProcessor<ScheduledLocalTimeout> timeoutProcessor(BFTEventProcessor processor) {
-		return processor::processLocalTimeout;
-	}
-
-	@ProvidesIntoSet
-	public EventProcessor<VertexRequestTimeout> bftSyncTimeoutProcessor(BFTSync bftSync) {
-		return bftSync.vertexRequestTimeoutEventProcessor();
-	}
-
-	@ProvidesIntoSet
-	private EventProcessor<ViewUpdate> viewUpdateProcessor(BFTEventProcessor processor) {
-		return processor::processViewUpdate;
-	}
 }

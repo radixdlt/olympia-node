@@ -23,10 +23,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.util.Modules;
 import com.radixdlt.MockedKeyModule;
-import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -38,9 +36,9 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.FunctionalNodeModule;
 import com.radixdlt.MockedCryptoModule;
@@ -243,16 +241,7 @@ public final class DeterministicTest {
 				protected void configure() {
 					bind(BFTValidatorSet.class).toInstance(validatorSet);
 					bind(DeterministicMessageProcessor.class).to(DeterministicConsensusProcessor.class);
-				}
-
-				@ProvidesIntoSet
-				private EventProcessor<ScheduledLocalTimeout> timeoutProcessor(BFTEventProcessor processor) {
-					return processor::processLocalTimeout;
-				}
-
-				@ProvidesIntoSet
-				private EventProcessor<ViewUpdate> viewUpdateProcessor(BFTEventProcessor processor) {
-					return processor::processViewUpdate;
+					install(new NoEpochsConsensusModule());
 				}
 			});
 		}

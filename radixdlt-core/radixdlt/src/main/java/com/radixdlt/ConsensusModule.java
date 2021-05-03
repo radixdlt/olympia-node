@@ -24,7 +24,6 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
@@ -45,9 +44,7 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.liveness.ExponentialPacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
-import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
@@ -67,12 +64,9 @@ import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastProof;
@@ -138,26 +132,6 @@ public final class ConsensusModule extends AbstractModule {
 				.bftSyncer(bftSyncer)
 				.validatorSet(validatorSet)
 				.build();
-	}
-
-	@ProvidesIntoSet
-	public EventProcessor<BFTRebuildUpdate> bftRebuildUpdateEventProcessor(BFTEventProcessor eventProcessor) {
-		return eventProcessor::processBFTRebuildUpdate;
-	}
-
-	@ProvidesIntoSet
-	public EventProcessor<BFTInsertUpdate> bftUpdateEventProcessor(BFTEventProcessor eventProcessor) {
-		return eventProcessor::processBFTUpdate;
-	}
-
-	@ProvidesIntoSet
-	public EventProcessor<BFTInsertUpdate> bftSync(BFTSync bftSync) {
-		return bftSync::processBFTUpdate;
-	}
-
-	@ProvidesIntoSet
-	public EventProcessor<LedgerUpdate> baseLedgerUpdateEventProcessor(BFTSync bftSync) {
-		return bftSync.baseLedgerUpdateEventProcessor();
 	}
 
 	@Provides
@@ -232,20 +206,6 @@ public final class ConsensusModule extends AbstractModule {
 		);
 	}
 
-	@ProvidesIntoSet
-	private RemoteEventProcessor<GetVerticesResponse> bftSyncResponseProcessor(BFTSync bftSync) {
-		return bftSync.responseProcessor();
-	}
-
-	@ProvidesIntoSet
-	private RemoteEventProcessor<GetVerticesErrorResponse> bftSyncErrorResponseProcessor(BFTSync bftSync) {
-		return bftSync.errorResponseProcessor();
-	}
-
-	@ProvidesIntoSet
-	private RemoteEventProcessor<GetVerticesRequest> bftSyncRequestProcessor(VertexStoreBFTSyncRequestProcessor processor) {
-		return processor;
-	}
 
 	@Provides
 	@Singleton
