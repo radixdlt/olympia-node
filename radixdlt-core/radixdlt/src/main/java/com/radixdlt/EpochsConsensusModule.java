@@ -103,19 +103,29 @@ public class EpochsConsensusModule extends AbstractModule {
 		return epochManager::start;
 	}
 
-    @Provides
+	@ProvidesIntoSet
+	private EventProcessor<Epoched<ScheduledLocalTimeout>> epochTimeoutProcessor(EpochManager epochManager) {
+		return epochManager::processLocalTimeout;
+	}
+
+    @ProvidesIntoSet
     private EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor(EpochManager epochManager) {
         return epochManager.epochsLedgerUpdateEventProcessor();
     }
 
-    @Provides
+    @ProvidesIntoSet
 	private RemoteEventProcessor<GetVerticesRequest> localGetVerticesRequestRemoteEventProcessor(EpochManager epochManager) {
 		return epochManager.bftSyncRequestProcessor();
 	}
 
-	@Provides
+	@ProvidesIntoSet
 	private RemoteEventProcessor<GetVerticesResponse> responseRemoteEventProcessor(EpochManager epochManager) {
 		return epochManager.bftSyncResponseProcessor();
+	}
+
+	@ProvidesIntoSet
+	private RemoteEventProcessor<GetVerticesErrorResponse> errorResponseRemoteEventProcessor(EpochManager epochManager) {
+		return epochManager.bftSyncErrorResponseProcessor();
 	}
 
 	@Provides
@@ -134,6 +144,12 @@ public class EpochsConsensusModule extends AbstractModule {
 	}
 
 	@Provides
+	private EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor(EpochManager epochManager) {
+		return epochManager.epochViewUpdateEventProcessor();
+	}
+
+
+	@Provides
 	private EpochChange initialEpoch(
 		@LastEpochProof LedgerProof proof,
 		BFTConfiguration initialBFTConfig
@@ -148,11 +164,6 @@ public class EpochsConsensusModule extends AbstractModule {
 			Comparator.comparing(v -> v.getNode().getKey().euid()),
 			ROTATING_WEIGHTED_LEADERS_CACHE_SIZE
 		);
-	}
-
-	@Provides
-	private EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor(EpochManager epochManager) {
-		return epochManager.epochViewUpdateEventProcessor();
 	}
 
 	@ProvidesIntoSet

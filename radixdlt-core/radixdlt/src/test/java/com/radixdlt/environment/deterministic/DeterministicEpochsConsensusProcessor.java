@@ -58,6 +58,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 	private final Map<Class<?>, EventProcessor<Object>>	eventProcessors;
 	private final Map<Class<?>, RemoteEventProcessor<Object>> remoteEventProcessors;
 	private final Set<StartProcessor> startProcessors;
+	private final Set<EventProcessor<Epoched<ScheduledLocalTimeout>>> epochTimeoutProcessors;
 	private final Set<EventProcessorOnRunner<?>> processorOnRunners;
 	private final Set<RemoteEventProcessorOnRunner<?>> remoteProcessorOnRunners;
 
@@ -65,19 +66,21 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 	public DeterministicEpochsConsensusProcessor(
 		Set<StartProcessor> startProcessors,
 		EpochManager epochManager,
+		Set<EventProcessor<Epoched<ScheduledLocalTimeout>>> epochTimeoutProcessors,
+		Set<RemoteEventProcessor<GetVerticesRequest>> verticesRequestProcessors,
+		Set<RemoteEventProcessor<GetVerticesResponse>> verticesResponseProcessors,
 		EventProcessor<VertexRequestTimeout> vertexRequestTimeoutEventProcessor,
 		EventProcessor<BFTRebuildUpdate> rebuildUpdateEventProcessor,
 		EventProcessor<BFTInsertUpdate> bftUpdateProcessor,
 		Set<EventProcessor<BFTHighQCUpdate>> bftHighQcUpdateProcessors,
-		RemoteEventProcessor<GetVerticesRequest> verticesRequestProcessor,
-		RemoteEventProcessor<GetVerticesResponse> verticesResponseProcessor,
 		EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor,
-		EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor,
+		Set<EventProcessor<EpochsLedgerUpdate>> epochsLedgerUpdateEventProcessors,
 		Set<EventProcessorOnRunner<?>> processorOnRunners,
 		Set<RemoteEventProcessorOnRunner<?>> remoteProcessorOnRunners
 	) {
 		this.startProcessors = Objects.requireNonNull(startProcessors);
 		this.epochManager = Objects.requireNonNull(epochManager);
+		this.epochTimeoutProcessors = Objects.requireNonNull(epochTimeoutProcessors);
 		this.processorOnRunners = Objects.requireNonNull(processorOnRunners);
 		this.remoteProcessorOnRunners = Objects.requireNonNull(remoteProcessorOnRunners);
 
@@ -86,19 +89,25 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		processorsBuilder.put(VertexRequestTimeout.class, e -> vertexRequestTimeoutEventProcessor.process((VertexRequestTimeout) e));
 		processorsBuilder.put(BFTInsertUpdate.class, e -> bftUpdateProcessor.process((BFTInsertUpdate) e));
 		processorsBuilder.put(BFTRebuildUpdate.class, e -> rebuildUpdateEventProcessor.process((BFTRebuildUpdate) e));
-		processorsBuilder.put(BFTHighQCUpdate.class, e -> bftHighQcUpdateProcessors.forEach(p -> p.process((BFTHighQCUpdate) e)));
+		processorsBuilder.put(
+			BFTHighQCUpdate.class,
+			e -> bftHighQcUpdateProcessors.forEach(p -> p.process((BFTHighQCUpdate) e))
+		);
 		processorsBuilder.put(EpochViewUpdate.class, e -> epochViewUpdateEventProcessor.process((EpochViewUpdate)  e));
-		processorsBuilder.put(EpochsLedgerUpdate.class, e -> epochsLedgerUpdateEventProcessor.process((EpochsLedgerUpdate)  e));
+		processorsBuilder.put(
+			EpochsLedgerUpdate.class,
+			e -> epochsLedgerUpdateEventProcessors.forEach(p -> p.process((EpochsLedgerUpdate) e))
+		);
 		this.eventProcessors = processorsBuilder.build();
 
 		ImmutableMap.Builder<Class<?>, RemoteEventProcessor<Object>> remoteProcessorsBuilder = ImmutableMap.builder();
 		remoteProcessorsBuilder.put(
 			GetVerticesRequest.class,
-			(node, event) -> verticesRequestProcessor.process(node, (GetVerticesRequest) event)
+			(node, event) -> verticesRequestProcessors.forEach(p -> p.process(node, (GetVerticesRequest) event))
 		);
 		remoteProcessorsBuilder.put(
 			GetVerticesResponse.class,
-			(node, event) -> verticesResponseProcessor.process(node, (GetVerticesResponse) event)
+			(node, event) -> verticesResponseProcessors.forEach(p -> p.process(node, (GetVerticesResponse) event))
 		);
 		remoteEventProcessors = remoteProcessorsBuilder.build();
 	}
@@ -138,7 +147,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			if (epochedMessage instanceof ScheduledLocalTimeout) {
 				@SuppressWarnings("unchecked")
 				Epoched<ScheduledLocalTimeout> epochTimeout = (Epoched<ScheduledLocalTimeout>) message;
-				this.epochManager.processLocalTimeout(epochTimeout);
+				this.epochTimeoutProcessors.forEach(p -> p.process(epochTimeout));
 			} else {
 				throw new IllegalArgumentException("Unknown epoch message type: " + epochedMessage.getClass().getName());
 			}

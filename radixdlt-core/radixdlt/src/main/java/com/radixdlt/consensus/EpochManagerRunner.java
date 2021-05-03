@@ -32,6 +32,7 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.StartProcessor;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
@@ -66,7 +67,6 @@ public final class EpochManagerRunner implements ModuleRunner {
 	private final Object lock = new Object();
 	private final ExecutorService singleThreadExecutor;
 	private final Scheduler singleThreadScheduler;
-	private final EpochManager epochManager;
 	private final Set<StartProcessor> startProcessors;
 	private final List<Subscription<?>> subscriptions;
 
@@ -77,7 +77,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 		@Self BFTNode self,
 		Set<StartProcessor> startProcessors,
 		Observable<EpochsLedgerUpdate> ledgerUpdates,
-		EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor,
+		Set<EventProcessor<EpochsLedgerUpdate>> epochsLedgerUpdateEventProcessors,
 		Observable<BFTInsertUpdate> bftUpdates,
 		EventProcessor<BFTInsertUpdate> bftUpdateProcessor,
 		Observable<BFTRebuildUpdate> bftRebuilds,
@@ -87,25 +87,28 @@ public final class EpochManagerRunner implements ModuleRunner {
 		Observable<EpochViewUpdate> localViewUpdates,
 		EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor,
 		Flowable<RemoteEvent<GetVerticesRequest>> verticesRequests,
+		Set<RemoteEventProcessor<GetVerticesRequest>> verticesRequestProcessors,
 		Flowable<RemoteEvent<GetVerticesResponse>> verticesResponses,
+		Set<RemoteEventProcessor<GetVerticesResponse>> verticesResponseProcessors,
 		Flowable<RemoteEvent<GetVerticesErrorResponse>> bftSyncErrorResponses,
+		Set<RemoteEventProcessor<GetVerticesErrorResponse>> bftSyncErrorProcessors,
 		Flowable<ConsensusEvent> localConsensusEvents,
 		Flowable<RemoteEvent<ConsensusEvent>> remoteConsensusEvents,
 		Observable<Epoched<ScheduledLocalTimeout>> timeouts,
+		Set<EventProcessor<Epoched<ScheduledLocalTimeout>>> epochTimeoutProcessors,
 		EpochManager epochManager
 	) {
 		this.startProcessors = Objects.requireNonNull(startProcessors);
-		this.epochManager = Objects.requireNonNull(epochManager);
 		this.singleThreadExecutor = Executors.newSingleThreadExecutor(ThreadFactories.daemonThreads("ConsensusRunner " + self));
 		this.singleThreadScheduler = Schedulers.from(this.singleThreadExecutor);
 
 		this.subscriptions = List.of(
-			new Subscription<>(ledgerUpdates, epochsLedgerUpdateEventProcessor::process, singleThreadScheduler),
+			new Subscription<>(ledgerUpdates, epochsLedgerUpdateEventProcessors, singleThreadScheduler),
 			new Subscription<>(bftUpdates, bftUpdateProcessor::process, singleThreadScheduler),
 			new Subscription<>(bftRebuilds, bftRebuildProcessor::process, singleThreadScheduler),
 			new Subscription<>(bftSyncTimeouts, vertexRequestTimeoutEventProcessor::process, singleThreadScheduler),
 			new Subscription<>(localViewUpdates, epochViewUpdateEventProcessor::process, singleThreadScheduler),
-			new Subscription<>(timeouts, epochManager::processLocalTimeout, singleThreadScheduler),
+			new Subscription<>(timeouts, epochTimeoutProcessors, singleThreadScheduler),
 			new Subscription<>(localConsensusEvents, epochManager::processConsensusEvent, singleThreadScheduler),
 			new Subscription<>(
 				remoteConsensusEvents.map(RemoteEvent::getEvent),
@@ -114,17 +117,17 @@ public final class EpochManagerRunner implements ModuleRunner {
 			),
 			new Subscription<>(
 				verticesRequests,
-				req -> epochManager.bftSyncRequestProcessor().process(req.getOrigin(), req.getEvent()),
+				r -> verticesRequestProcessors.forEach(p -> p.process(r)),
 				singleThreadScheduler
 			),
 			new Subscription<>(
 				verticesResponses,
-				resp -> epochManager.bftSyncResponseProcessor().process(resp.getOrigin(), resp.getEvent()),
+				r -> verticesResponseProcessors.forEach(p -> p.process(r)),
 				singleThreadScheduler
 			),
 			new Subscription<>(
 				bftSyncErrorResponses,
-				resp -> epochManager.bftSyncErrorResponseProcessor().process(resp.getOrigin(), resp.getEvent()),
+				r -> bftSyncErrorProcessors.forEach(p -> p.process(r)),
 				singleThreadScheduler
 			)
 		);
@@ -198,6 +201,13 @@ public final class EpochManagerRunner implements ModuleRunner {
 		final Observable<T> observable;
 		final Consumer<T> consumer;
 		private final Scheduler scheduler;
+
+		Subscription(Observable<T> observable, Set<EventProcessor<T>> processors, Scheduler scheduler) {
+			this.flowable = null;
+			this.observable = observable;
+			this.consumer = t -> processors.forEach(p -> p.process(t));
+			this.scheduler = scheduler;
+		}
 
 		Subscription(Flowable<T> flowable, Consumer<T> consumer, Scheduler scheduler) {
 			this.flowable = flowable;
