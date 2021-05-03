@@ -20,8 +20,6 @@ package com.radixdlt.integration.distributed.simulation.network;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.environment.rx.RemoteEvent;
@@ -42,20 +40,6 @@ public class SimulationNetworkTest {
 		node2 = mock(BFTNode.class);
 		this.channelCommunication = new InOrderChannels(msg -> 50);
 		this.network = new SimulationNetwork(channelCommunication);
-	}
-
-	@Test
-	public void when_disabling_messages_and_send_vote_message_to_other_node__then_should_not_receive_it() {
-		SimulationNetwork network = new SimulationNetwork(new InOrderChannels(msg -> -1));
-
-		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.getNetwork(node2).localBftEvents()
-			.toObservable()
-			.subscribe(testObserver);
-		Vote vote = mock(Vote.class);
-		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
-		testObserver.awaitCount(1);
-		testObserver.assertEmpty();
 	}
 
 	@Test

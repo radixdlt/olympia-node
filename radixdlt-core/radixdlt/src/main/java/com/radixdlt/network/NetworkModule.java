@@ -24,7 +24,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.BFTEventsRx;
+import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
@@ -65,7 +65,6 @@ public final class NetworkModule extends AbstractModule {
 
 		// Network BFT messages
 		bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
-		bind(BFTEventsRx.class).to(MessageCentralBFTNetwork.class);
 		bind(PeersView.class).to(AddressBookPeersView.class);
 	}
 
@@ -125,6 +124,16 @@ public final class NetworkModule extends AbstractModule {
 	@ProvidesIntoSet
 	private RxRemoteDispatcher<?> ledgerStatusUpdateDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
 		return RxRemoteDispatcher.create(LedgerStatusUpdate.class, messageCentralLedgerSync.ledgerStatusUpdateDispatcher());
+	}
+
+	@Provides
+	private Flowable<ConsensusEvent> localConsensusEvents(MessageCentralBFTNetwork bftNetwork) {
+		return bftNetwork.localBftEvents();
+	}
+
+	@Provides
+	private Flowable<RemoteEvent<ConsensusEvent>> remoteConsensusEvents(MessageCentralBFTNetwork bftNetwork) {
+		return bftNetwork.remoteBftEvents();
 	}
 
 	@Provides

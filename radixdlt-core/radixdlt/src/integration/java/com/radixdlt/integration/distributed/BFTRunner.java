@@ -19,7 +19,6 @@ package com.radixdlt.integration.distributed;
 
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
@@ -89,7 +88,8 @@ public class BFTRunner implements ModuleRunner {
 		Set<RemoteEventProcessor<GetVerticesResponse>> responseProcessors,
 		Flowable<RemoteEvent<GetVerticesErrorResponse>> verticesErrorResponses,
 		Set<RemoteEventProcessor<GetVerticesErrorResponse>> errorResponseProcessors,
-		BFTEventsRx networkRx,
+		Flowable<ConsensusEvent> localConsensusEvents,
+		Flowable<RemoteEvent<ConsensusEvent>> remoteConsensusEvents,
 		BFTEventProcessor bftEventProcessor,
 		@Self BFTNode self
 	) {
@@ -107,11 +107,12 @@ public class BFTRunner implements ModuleRunner {
 			viewUpdates
 				.observeOn(singleThreadScheduler)
 				.doOnNext(v -> viewUpdateProcessors.forEach(p -> p.process(v))),
-			networkRx.localBftEvents().toObservable()
+			localConsensusEvents.toObservable()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(this::processConsensusEvent),
-			networkRx.remoteBftEvents().toObservable()
+			remoteConsensusEvents.toObservable()
 				.observeOn(singleThreadScheduler)
+				.map(RemoteEvent::getEvent)
 				.doOnNext(this::processConsensusEvent),
 			verticesRequests.toObservable()
 				.observeOn(singleThreadScheduler)

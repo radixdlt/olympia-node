@@ -21,7 +21,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.BFTEventsRx;
+import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -51,7 +51,6 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		bind(BFTEventsRx.class).to(SimulatedNetworkImpl.class);
 		bind(RxRemoteEnvironment.class).to(SimulatedNetworkImpl.class).in(Scopes.SINGLETON);
 	}
 
@@ -113,6 +112,16 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	@ProvidesIntoSet
 	private RxRemoteDispatcher<?> ledgerStatusUpdateDispatcher(SimulatedNetworkImpl network) {
 		return RxRemoteDispatcher.create(LedgerStatusUpdate.class, network.remoteEventDispatcher(LedgerStatusUpdate.class));
+	}
+
+	@Provides
+	private Flowable<ConsensusEvent> localConsensusEvents(SimulatedNetworkImpl network) {
+		return network.localEvents(ConsensusEvent.class);
+	}
+
+	@Provides
+	private Flowable<RemoteEvent<ConsensusEvent>> remoteConsensusEvents(SimulatedNetworkImpl network) {
+		return network.remoteEvents(ConsensusEvent.class);
 	}
 
 	@Provides

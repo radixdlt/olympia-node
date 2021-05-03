@@ -18,9 +18,6 @@
 package com.radixdlt.integration.distributed.simulation.network;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.BFTEventsRx;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
@@ -63,6 +60,14 @@ public class SimulationNetwork {
 
 		private static MessageInTransit newMessage(Object content, BFTNode sender, BFTNode receiver) {
 			return new MessageInTransit(content, sender, receiver, 0, 0);
+		}
+
+		public <T> Maybe<T> localEvent(Class<T> eventClass) {
+			if (sender.equals(receiver) && eventClass.isInstance(content)) {
+				return Maybe.just(eventClass.cast(content));
+			}
+
+			return Maybe.empty();
 		}
 
 		public <T> Maybe<RemoteEvent<T>> remoteEvent(Class<T> eventClass) {
@@ -128,7 +133,7 @@ public class SimulationNetwork {
 			.toSerialized();
 	}
 
-	public class SimulatedNetworkImpl implements BFTEventsRx, RxRemoteEnvironment {
+	public class SimulatedNetworkImpl implements RxRemoteEnvironment {
 		private final Flowable<MessageInTransit> myMessages;
 		private final BFTNode thisNode;
 
@@ -148,14 +153,8 @@ public class SimulationNetwork {
 			.onBackpressureBuffer(255, false, true /* unbounded */);
 		}
 
-		@Override
-		public Flowable<ConsensusEvent> localBftEvents() {
-			return myMessages.map(MessageInTransit::getContent).ofType(ConsensusEvent.class);
-		}
-
-		@Override
-		public Flowable<ConsensusEvent> remoteBftEvents() {
-			return remoteEvents(Vote.class).map(RemoteEvent::getEvent);
+		public <T> Flowable<T> localEvents(Class<T> eventClass) {
+			return myMessages.flatMapMaybe(m -> m.localEvent(eventClass));
 		}
 
 		@Override
@@ -164,9 +163,7 @@ public class SimulationNetwork {
 		}
 
 		public <T> RemoteEventDispatcher<T> remoteEventDispatcher(Class<T> eventClass) {
-			return (node, event) -> {
-				sendRemoteEvent(node, event);
-			};
+			return this::sendRemoteEvent;
 		}
 
 		private <T> void sendRemoteEvent(BFTNode node, T event) {

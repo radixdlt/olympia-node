@@ -17,11 +17,12 @@
 
 package com.radixdlt.integration.distributed.simulation.monitors.consensus;
 
+import com.radixdlt.consensus.ConsensusEvent;
+import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
-import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,7 +37,7 @@ public class AllProposalsHaveDirectParentsInvariant implements TestInvariant {
 	public Observable<TestInvariantError> check(RunningNetwork network) {
 		List<Observable<UnverifiedVertex>> correctProposals = network.getNodes().stream()
 			.map(network.getUnderlyingNetwork()::getNetwork)
-			.map(net -> Flowable.merge(net.localBftEvents(), net.remoteBftEvents()))
+			.map(net -> net.remoteEvents(ConsensusEvent.class).map(RemoteEvent::getEvent))
 			.map(p -> p.ofType(Proposal.class).toObservable().map(Proposal::getVertex))
 			.collect(Collectors.toList());
 

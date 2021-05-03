@@ -85,7 +85,8 @@ public final class EpochManagerRunner implements ModuleRunner {
 		Flowable<RemoteEvent<GetVerticesRequest>> verticesRequests,
 		Flowable<RemoteEvent<GetVerticesResponse>> verticesResponses,
 		Flowable<RemoteEvent<GetVerticesErrorResponse>> bftSyncErrorResponses,
-		BFTEventsRx networkRx,
+		Flowable<ConsensusEvent> localConsensusEvents,
+		Flowable<RemoteEvent<ConsensusEvent>> remoteConsensusEvents,
 		Observable<Epoched<ScheduledLocalTimeout>> timeouts,
 		EpochManager epochManager
 	) {
@@ -100,8 +101,12 @@ public final class EpochManagerRunner implements ModuleRunner {
 			new Subscription<>(bftSyncTimeouts, vertexRequestTimeoutEventProcessor::process, singleThreadScheduler),
 			new Subscription<>(localViewUpdates, epochViewUpdateEventProcessor::process, singleThreadScheduler),
 			new Subscription<>(timeouts, epochManager::processLocalTimeout, singleThreadScheduler),
-			new Subscription<>(networkRx.localBftEvents(), epochManager::processConsensusEvent, singleThreadScheduler),
-			new Subscription<>(networkRx.remoteBftEvents(), epochManager::processConsensusEvent, singleThreadScheduler),
+			new Subscription<>(localConsensusEvents, epochManager::processConsensusEvent, singleThreadScheduler),
+			new Subscription<>(
+				remoteConsensusEvents.map(RemoteEvent::getEvent),
+				epochManager::processConsensusEvent,
+				singleThreadScheduler
+			),
 			new Subscription<>(
 				verticesRequests,
 				req -> epochManager.bftSyncRequestProcessor().process(req.getOrigin(), req.getEvent()),

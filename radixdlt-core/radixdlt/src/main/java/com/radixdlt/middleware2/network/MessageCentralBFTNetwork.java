@@ -19,7 +19,6 @@ package com.radixdlt.middleware2.network;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 
@@ -29,7 +28,7 @@ import java.util.Objects;
 
 import java.util.Optional;
 
-import com.radixdlt.network.messaging.MessageFromPeer;
+import com.radixdlt.environment.rx.RemoteEvent;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.processors.PublishProcessor;
@@ -48,7 +47,7 @@ import com.radixdlt.network.messaging.MessageCentral;
  * BFT Network sending and receiving layer used on top of the MessageCentral
  * layer.
  */
-public final class MessageCentralBFTNetwork implements BFTEventsRx {
+public final class MessageCentralBFTNetwork {
 	private static final Logger log = LogManager.getLogger();
 
 	private final BFTNode self;
@@ -71,18 +70,20 @@ public final class MessageCentralBFTNetwork implements BFTEventsRx {
 		this.localMessages = PublishProcessor.create();
 	}
 
-	@Override
 	public Flowable<ConsensusEvent> localBftEvents() {
 		return localMessages.onBackpressureBuffer(255, false, true /* unbounded for local messages */);
 	}
 
-	@Override
-	public Flowable<ConsensusEvent> remoteBftEvents() {
+	public Flowable<RemoteEvent<ConsensusEvent>> remoteBftEvents() {
 		return this.messageCentral
 			.messagesOf(ConsensusEventMessage.class)
 			.toFlowable(BackpressureStrategy.BUFFER)
-			.map(MessageFromPeer::getMessage)
-			.map(ConsensusEventMessage::getConsensusMessage);
+			.filter(m -> m.getPeer().hasSystem())
+			.map(m -> {
+				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
+				final var msg = m.getMessage();
+				return RemoteEvent.create(node, msg.getConsensusMessage());
+			});
 	}
 
 	public RemoteEventDispatcher<Proposal> proposalDispatcher() {
