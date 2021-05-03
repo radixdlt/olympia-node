@@ -101,9 +101,8 @@ jobs:
           echo "Version: $version"
           echo "RADIXDLT_CORE_VERSION_RAW=$version" >> $GITHUB_ENV
           unzip radixdlt-core/radixdlt/build/distributions/radixdlt-${version}.zip
-          cd radixdlt-${version}
-          cp radixdlt-core/docker/Dockerfile.keygen Dockerfile
-          cat Dockerfile
+          cp radixdlt-core/docker/Dockerfile.keygen radixdlt-${version}/Dockerfile
+          cat radixdlt-${version}/Dockerfile
 
       - name: Set Environment Variables
         run: |
@@ -118,8 +117,13 @@ jobs:
           TAG=$(echo $RADIXDLT_CORE_VERSION_RAW | sed 's/~/-/g')
           echo "TAG $TAG"
           echo "RADIXDLT_CORE_VERSION=$TAG" >> $GITHUB_ENV
-          echo "PUBLISH=true" >> $GITHUB_ENV
-      - name: Login to Dockerhub
+          echo "PUBLISH=false" >> $GITHUB_ENV
+#      - name: Login to Dockerhub
+#        uses: docker/login-action@v1
+#        with:
+#          username: ${{ secrets.DOCKERHUB_USERNAME }}
+#          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Login to GCR
         uses: docker/login-action@v1
         with:
           registry: eu.gcr.io
