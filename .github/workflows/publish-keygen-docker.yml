@@ -89,7 +89,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: build-libraries
-      - name: Prepare Dockerfile
+      - name: Prepare Dockerfile context
         run: |
           if [[ "$GITHUB_REF" == *"refs/heads/release"* ]]; then
               echo "Workflow triggered by on a release branch"
@@ -105,10 +105,17 @@ jobs:
       - name: Set Environment Variables
         run: |
           if [[ "$GITHUB_REF" == *"refs/heads/release"* ]]; then
-           echo "Workflow triggered by on a release branch"
+            echo "Workflow triggered by on a release branch"
+            echo "IMAGE=docker.io/keygen" >> $GITHUB_ENV
+            echo "DOCKER_REGISTRY=docker.io" >> $GITHUB_ENV
+            echo "DOCKER_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
+            echo "DOCKER_PASSWORD=${{ env.DOCKER_PASSWORD }}" >> $GITHUB_ENV
           else
             echo "Workflow triggered by on a rc branch"
             echo "IMAGE=eu.gcr.io/dev-container-repo/keygen" >> $GITHUB_ENV
+            echo "DOCKER_REGISTRY=eu.gcr.io" >> $GITHUB_ENV
+            echo "DOCKER_USERNAME=_json_key" >> $GITHUB_ENV
+            echo "DOCKER_PASSWORD=${{ secrets.GCR_EU_DEV_JSON_KEY }}" >> $GITHUB_ENV
             export CI_VERSION=true
           fi
           echo "Version: $RADIXDLT_CORE_VERSION_RAW"
@@ -116,17 +123,13 @@ jobs:
           echo "TAG $TAG"
           echo "RADIXDLT_CORE_VERSION=$TAG" >> $GITHUB_ENV
           echo "PUBLISH=false" >> $GITHUB_ENV
-#      - name: Login to Dockerhub
-#        uses: docker/login-action@v1
-#        with:
-#          username: ${{ secrets.DOCKERHUB_USERNAME }}
-#          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Login to GCR
+      #GCR for dev and Dockerhub for releases
+      - name: Login to Docker registry
         uses: docker/login-action@v1
         with:
-          registry: eu.gcr.io
-          username: _json_key
-          password: ${{ secrets.GCR_EU_DEV_JSON_KEY }}
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PASSWORD }}
       - name: Docker build and push
         uses: docker/build-push-action@v2
         with:
