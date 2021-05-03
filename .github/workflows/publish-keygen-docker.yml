@@ -115,7 +115,8 @@ jobs:
             echo "IMAGE=eu.gcr.io/dev-container-repo/keygen" >> $GITHUB_ENV
             echo "DOCKER_REGISTRY=eu.gcr.io" >> $GITHUB_ENV
             echo "DOCKER_USERNAME=_json_key" >> $GITHUB_ENV
-            echo "DOCKER_PASSWORD=${{ secrets.GCR_EU_DEV_JSON_KEY }}" >> $GITHUB_ENV
+            echo "DOCKER_PASSWORD=\'${{ secrets.GCR_EU_DEV_JSON_KEY }}\'" 
+            echo "DOCKER_PASSWORD=\'${{ secrets.GCR_EU_DEV_JSON_KEY }}\'" >> $GITHUB_ENV
             export CI_VERSION=true
           fi
           echo "Version: $RADIXDLT_CORE_VERSION_RAW"
