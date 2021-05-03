@@ -102,18 +102,7 @@ jobs:
           echo "RADIXDLT_CORE_VERSION_RAW=$version" >> $GITHUB_ENV
           unzip radixdlt-core/radixdlt/build/distributions/radixdlt-${version}.zip
           cd radixdlt-${version}
-
-          cat <<EOT >> Dockerfile
-          FROM adoptopenjdk/openjdk11:latest
-          RUN mkdir -p /keygen/bin keygen/lib
-
-          ADD bin/ /keygen/bin
-          ADD lib/ /keygen/lib
-          WORKDIR /keygen/
-
-          ENTRYPOINT ["bin/keygen"]
-          EOT
-          echo "generated Dockerfile"
+          cp radixdlt-core/docker/Dockerfile.keygen Dockerfile
           cat Dockerfile
 
       - name: Set Environment Variables
