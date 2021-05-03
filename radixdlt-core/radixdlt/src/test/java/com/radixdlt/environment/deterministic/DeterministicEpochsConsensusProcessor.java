@@ -35,6 +35,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
+import com.radixdlt.environment.StartProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAddFailure;
@@ -56,11 +57,13 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 	private final EpochManager epochManager;
 	private final Map<Class<?>, EventProcessor<Object>>	eventProcessors;
 	private final Map<Class<?>, RemoteEventProcessor<Object>> remoteEventProcessors;
+	private final Set<StartProcessor> startProcessors;
 	private final Set<EventProcessorOnRunner<?>> processorOnRunners;
 	private final Set<RemoteEventProcessorOnRunner<?>> remoteProcessorOnRunners;
 
 	@Inject
 	public DeterministicEpochsConsensusProcessor(
+		Set<StartProcessor> startProcessors,
 		EpochManager epochManager,
 		EventProcessor<VertexRequestTimeout> vertexRequestTimeoutEventProcessor,
 		EventProcessor<BFTRebuildUpdate> rebuildUpdateEventProcessor,
@@ -73,6 +76,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		Set<EventProcessorOnRunner<?>> processorOnRunners,
 		Set<RemoteEventProcessorOnRunner<?>> remoteProcessorOnRunners
 	) {
+		this.startProcessors = Objects.requireNonNull(startProcessors);
 		this.epochManager = Objects.requireNonNull(epochManager);
 		this.processorOnRunners = Objects.requireNonNull(processorOnRunners);
 		this.remoteProcessorOnRunners = Objects.requireNonNull(remoteProcessorOnRunners);
@@ -101,7 +105,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 
 	@Override
 	public void start() {
-		epochManager.start();
+		startProcessors.forEach(StartProcessor::start);
 	}
 
 	@SuppressWarnings("unchecked")

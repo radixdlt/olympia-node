@@ -32,6 +32,7 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.StartProcessor;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.utils.ThreadFactories;
@@ -45,6 +46,7 @@ import io.reactivex.rxjava3.functions.Consumer;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -65,6 +67,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 	private final ExecutorService singleThreadExecutor;
 	private final Scheduler singleThreadScheduler;
 	private final EpochManager epochManager;
+	private final Set<StartProcessor> startProcessors;
 	private final List<Subscription<?>> subscriptions;
 
 	private Disposable disposable;
@@ -72,6 +75,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 	@Inject
 	public EpochManagerRunner(
 		@Self BFTNode self,
+		Set<StartProcessor> startProcessors,
 		Observable<EpochsLedgerUpdate> ledgerUpdates,
 		EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor,
 		Observable<BFTInsertUpdate> bftUpdates,
@@ -90,6 +94,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 		Observable<Epoched<ScheduledLocalTimeout>> timeouts,
 		EpochManager epochManager
 	) {
+		this.startProcessors = Objects.requireNonNull(startProcessors);
 		this.epochManager = Objects.requireNonNull(epochManager);
 		this.singleThreadExecutor = Executors.newSingleThreadExecutor(ThreadFactories.daemonThreads("ConsensusRunner " + self));
 		this.singleThreadScheduler = Schedulers.from(this.singleThreadExecutor);
@@ -135,7 +140,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 		boolean started = false;
 		synchronized (lock) {
 			if (disposable == null) {
-				singleThreadExecutor.submit(epochManager::start);
+				singleThreadExecutor.submit(() -> startProcessors.forEach(StartProcessor::start));
 
 				@SuppressWarnings("unchecked")
 				final var disposables = this.subscriptions.stream()
