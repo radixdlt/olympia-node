@@ -90,6 +90,8 @@ public class BFTRunner implements ModuleRunner {
 		Set<RemoteEventProcessor<GetVerticesErrorResponse>> errorResponseProcessors,
 		Flowable<ConsensusEvent> localConsensusEvents,
 		Flowable<RemoteEvent<ConsensusEvent>> remoteConsensusEvents,
+		Set<EventProcessor<Proposal>> proposalProcessors,
+		Set<EventProcessor<Vote>> voteProcessors,
 		BFTEventProcessor bftEventProcessor,
 		@Self BFTNode self
 	) {
@@ -107,13 +109,20 @@ public class BFTRunner implements ModuleRunner {
 			viewUpdates
 				.observeOn(singleThreadScheduler)
 				.doOnNext(v -> viewUpdateProcessors.forEach(p -> p.process(v))),
-			localConsensusEvents.toObservable()
+			Observable.merge(
+				localConsensusEvents.toObservable(),
+				remoteConsensusEvents.toObservable().map(RemoteEvent::getEvent)
+			)
 				.observeOn(singleThreadScheduler)
-				.doOnNext(this::processConsensusEvent),
-			remoteConsensusEvents.toObservable()
-				.observeOn(singleThreadScheduler)
-				.map(RemoteEvent::getEvent)
-				.doOnNext(this::processConsensusEvent),
+				.doOnNext(e -> {
+					if (e instanceof Proposal) {
+						proposalProcessors.forEach(p -> p.process((Proposal) e));
+					} else if (e instanceof Vote) {
+						voteProcessors.forEach(p -> p.process((Vote) e));
+					} else {
+						throw new IllegalStateException(self + ": Unknown consensus event: " + e);
+					}
+				}),
 			verticesRequests.toObservable()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(r -> requestProcessors.forEach(p -> p.process(r.getOrigin(), r.getEvent()))),
@@ -145,16 +154,6 @@ public class BFTRunner implements ModuleRunner {
 				System.exit(-1);
 			})
 			.publish();
-	}
-
-	private void processConsensusEvent(ConsensusEvent e) {
-		if (e instanceof Proposal) {
-			bftEventProcessor.processProposal((Proposal) e);
-		} else if (e instanceof Vote) {
-			bftEventProcessor.processVote((Vote) e);
-		} else {
-			throw new IllegalStateException(self + ": Unknown consensus event: " + e);
-		}
 	}
 
 	/**

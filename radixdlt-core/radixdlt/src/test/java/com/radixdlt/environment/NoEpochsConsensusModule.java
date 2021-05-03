@@ -21,6 +21,8 @@ package com.radixdlt.environment;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTEventProcessor;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.ViewUpdate;
@@ -34,6 +36,16 @@ import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 
 public class NoEpochsConsensusModule extends AbstractModule {
+
+	@ProvidesIntoSet
+	private EventProcessor<Proposal> proposalProcessor(BFTEventProcessor processor) {
+		return processor::processProposal;
+	}
+
+	@ProvidesIntoSet
+	private EventProcessor<Vote> voteProcessor(BFTEventProcessor processor) {
+		return processor::processVote;
+	}
 
 	@ProvidesIntoSet
 	private EventProcessor<ScheduledLocalTimeout> timeoutProcessor(BFTEventProcessor processor) {
