@@ -109,7 +109,7 @@ jobs:
             echo "IMAGE=docker.io/keygen" >> $GITHUB_ENV
             echo "DOCKER_REGISTRY=docker.io" >> $GITHUB_ENV
             echo "DOCKER_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
-            echo "DOCKER_PASSWORD=${{ env.DOCKER_PASSWORD }}" >> $GITHUB_ENV
+            echo "DOCKER_PASSWORD=${{ secrets.DOCKERHUB_PASSWORD }}" >> $GITHUB_ENV
           else
             echo "Workflow triggered by on a rc branch"
             echo "IMAGE=eu.gcr.io/dev-container-repo/keygen" >> $GITHUB_ENV
