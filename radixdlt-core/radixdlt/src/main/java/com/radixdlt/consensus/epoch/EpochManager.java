@@ -51,6 +51,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
+import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
@@ -116,12 +117,8 @@ public final class EpochManager {
 	public EpochManager(
 		@Self BFTNode self,
 		BFTEventProcessor initialBFTEventProcessor,
-		Set<RemoteEventProcessor<GetVerticesRequest>> initialSyncRequestProcessors,
-		Set<RemoteEventProcessor<GetVerticesResponse>> initialSyncResponseProcessors,
-		Set<RemoteEventProcessor<GetVerticesErrorResponse>> initialSyncErrorResponseProcessors,
+		VertexStoreBFTSyncRequestProcessor requestProcessor,
 		BFTSync initialBFTSync,
-		Set<EventProcessor<BFTInsertUpdate>> initialBFTUpdateProcessors,
-		Set<EventProcessor<BFTRebuildUpdate>> initialBFTRebuildUpdateProcessors,
 		RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher,
 		EpochChange initialEpoch,
 		PacemakerFactory pacemakerFactory,
@@ -148,16 +145,18 @@ public final class EpochManager {
 			this.syncLedgerUpdateProcessor = initialBFTSync.baseLedgerUpdateEventProcessor();
 			this.syncTimeoutProcessor = initialBFTSync.vertexRequestTimeoutEventProcessor();
 		}
+		this.syncResponseProcessors = isValidator ? Set.of(initialBFTSync.responseProcessor()) : Set.of();
+		this.syncRequestProcessors = isValidator ? Set.of(requestProcessor) : Set.of();
+		this.syncErrorResponseProcessors = isValidator ? Set.of(initialBFTSync.errorResponseProcessor()) : Set.of();
+		this.bftUpdateProcessors = isValidator
+			? Set.of(initialBFTSync::processBFTUpdate, initialBFTEventProcessor::processBFTUpdate)
+			: Set.of();
+		this.bftRebuildProcessors = isValidator
+			? Set.of(initialBFTEventProcessor::processBFTRebuildUpdate)
+			: Set.of();
+
 
 		this.ledgerStatusUpdateDispatcher = Objects.requireNonNull(ledgerStatusUpdateDispatcher);
-
-		this.syncResponseProcessors = isValidator ? initialSyncResponseProcessors : Set.of();
-		this.syncRequestProcessors = isValidator ? initialSyncRequestProcessors : Set.of();
-		this.syncErrorResponseProcessors = isValidator ? initialSyncErrorResponseProcessors : Set.of();
-
-		this.bftUpdateProcessors = initialBFTUpdateProcessors;
-		this.bftRebuildProcessors = initialBFTRebuildUpdateProcessors;
-
 		this.currentEpoch = Objects.requireNonNull(initialEpoch);
 		this.self = Objects.requireNonNull(self);
 		this.pacemakerFactory = Objects.requireNonNull(pacemakerFactory);

@@ -243,16 +243,8 @@ public final class ConsensusModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	private RemoteEventProcessor<GetVerticesRequest> bftSyncRequestProcessor(
-		VertexStore vertexStore,
-		RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseDispatcher,
-		RemoteEventDispatcher<GetVerticesResponse> responseDispatcher
-	) {
-		return new VertexStoreBFTSyncRequestProcessor(
-			vertexStore,
-			errorResponseDispatcher,
-			responseDispatcher
-		);
+	private RemoteEventProcessor<GetVerticesRequest> bftSyncRequestProcessor(VertexStoreBFTSyncRequestProcessor processor) {
+		return processor;
 	}
 
 	@Provides
