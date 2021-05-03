@@ -101,9 +101,7 @@ jobs:
           echo "Version: $version"
           echo "RADIXDLT_CORE_VERSION_RAW=$version" >> $GITHUB_ENV
           unzip radixdlt-core/radixdlt/build/distributions/radixdlt-${version}.zip
-          cp radixdlt-core/docker/Dockerfile.keygen radixdlt-${version}/Dockerfile
-          cat radixdlt-${version}/Dockerfile
-
+          
       - name: Set Environment Variables
         run: |
           if [[ "$GITHUB_REF" == *"refs/heads/release"* ]]; then
@@ -132,7 +130,7 @@ jobs:
       - name: Docker build and push
         uses: docker/build-push-action@v2
         with:
-          file: ./radixdlt-${{ env.RADIXDLT_CORE_VERSION_RAW }}/Dockerfile
+          file: radixdlt-core/docker/Dockerfile.keygen
           tags: |
             ${{ env.IMAGE }}:${{ env.RADIXDLT_CORE_VERSION }}
           push: ${{ env.PUBLISH }}

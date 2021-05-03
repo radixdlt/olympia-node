@@ -8,5 +8,3 @@ ADD lib/ /keygen/lib
 WORKDIR /keygen/
 
 ENTRYPOINT ["bin/keygen"]
-EOT
-echo "generated Dockerfile"
