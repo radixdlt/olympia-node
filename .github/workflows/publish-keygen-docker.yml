@@ -104,6 +104,7 @@ jobs:
           
       - name: Set Environment Variables
         run: |
+          echo "GITHUB_REF $GITHUB_REF"
           if [[ "$GITHUB_REF" == *"refs/heads/release"* ]]; then
             echo "Workflow triggered by on a release branch"
             echo "IMAGE=docker.io/keygen" >> $GITHUB_ENV
@@ -120,13 +121,13 @@ jobs:
       #GCR for dev and Dockerhub for releases
       - name: Login to Dockerhub (release)
         uses: docker/login-action@v1
-        if: ${{ github.ref == 'refs/heads/release/' }}
+        if: startsWith(github.ref, 'refs/heads/release/')
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
       - name: Login to GCR (rc)
         uses: docker/login-action@v1
-        if: ${{ github.ref == 'ci/node-keygen-artifact' }}
+        if: startsWith(github.ref, 'ci/node-keygen-artifact')
         with:
           registry: eu.gcr.io
           username: _json_key
