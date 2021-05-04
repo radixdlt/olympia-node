@@ -69,11 +69,11 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		Set<EventProcessor<Epoched<ScheduledLocalTimeout>>> epochTimeoutProcessors,
 		Set<RemoteEventProcessor<GetVerticesRequest>> verticesRequestProcessors,
 		Set<RemoteEventProcessor<GetVerticesResponse>> verticesResponseProcessors,
-		EventProcessor<VertexRequestTimeout> vertexRequestTimeoutEventProcessor,
-		EventProcessor<BFTRebuildUpdate> rebuildUpdateEventProcessor,
-		EventProcessor<BFTInsertUpdate> bftUpdateProcessor,
+		Set<EventProcessor<VertexRequestTimeout>> vertexRequestTimeoutEventProcessors,
+		Set<EventProcessor<BFTRebuildUpdate>> rebuildUpdateEventProcessors,
+		Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors,
 		Set<EventProcessor<BFTHighQCUpdate>> bftHighQcUpdateProcessors,
-		EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor,
+		Set<EventProcessor<EpochViewUpdate>> epochViewUpdateEventProcessors,
 		Set<EventProcessor<EpochsLedgerUpdate>> epochsLedgerUpdateEventProcessors,
 		Set<EventProcessorOnRunner<?>> processorOnRunners,
 		Set<RemoteEventProcessorOnRunner<?>> remoteProcessorOnRunners
@@ -85,14 +85,20 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 
 		ImmutableMap.Builder<Class<?>, EventProcessor<Object>> processorsBuilder = ImmutableMap.builder();
 		// TODO: allow randomization in processing order for a given message
-		processorsBuilder.put(VertexRequestTimeout.class, e -> vertexRequestTimeoutEventProcessor.process((VertexRequestTimeout) e));
-		processorsBuilder.put(BFTInsertUpdate.class, e -> bftUpdateProcessor.process((BFTInsertUpdate) e));
-		processorsBuilder.put(BFTRebuildUpdate.class, e -> rebuildUpdateEventProcessor.process((BFTRebuildUpdate) e));
+		processorsBuilder.put(
+			VertexRequestTimeout.class,
+			e -> vertexRequestTimeoutEventProcessors.forEach(p -> p.process((VertexRequestTimeout) e))
+		);
+		processorsBuilder.put(BFTInsertUpdate.class, e -> bftUpdateProcessors.forEach(p -> p.process((BFTInsertUpdate) e)));
+		processorsBuilder.put(BFTRebuildUpdate.class, e -> rebuildUpdateEventProcessors.forEach(p -> p.process((BFTRebuildUpdate) e)));
 		processorsBuilder.put(
 			BFTHighQCUpdate.class,
 			e -> bftHighQcUpdateProcessors.forEach(p -> p.process((BFTHighQCUpdate) e))
 		);
-		processorsBuilder.put(EpochViewUpdate.class, e -> epochViewUpdateEventProcessor.process((EpochViewUpdate)  e));
+		processorsBuilder.put(
+			EpochViewUpdate.class,
+			e -> epochViewUpdateEventProcessors.forEach(p -> p.process((EpochViewUpdate)  e))
+		);
 		processorsBuilder.put(
 			EpochsLedgerUpdate.class,
 			e -> epochsLedgerUpdateEventProcessors.forEach(p -> p.process((EpochsLedgerUpdate) e))

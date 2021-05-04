@@ -138,26 +138,25 @@ public class EpochsConsensusModule extends AbstractModule {
 		return epochManager.bftSyncErrorResponseProcessor();
 	}
 
-	@Provides
+	@ProvidesIntoSet
 	private EventProcessor<BFTInsertUpdate> bftUpdateProcessor(EpochManager epochManager) {
 		return epochManager::processBFTUpdate;
 	}
 
-	@Provides
+	@ProvidesIntoSet
 	private EventProcessor<BFTRebuildUpdate> bftRebuildUpdateEventProcessor(EpochManager epochManager) {
 		return epochManager.bftRebuildUpdateEventProcessor();
 	}
 
-	@Provides
+	@ProvidesIntoSet
 	private EventProcessor<VertexRequestTimeout> bftSyncTimeoutProcessor(EpochManager epochManager) {
 		return epochManager.timeoutEventProcessor();
 	}
 
-	@Provides
+	@ProvidesIntoSet
 	private EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor(EpochManager epochManager) {
 		return epochManager.epochViewUpdateEventProcessor();
 	}
-
 
 	@Provides
 	private EpochChange initialEpoch(

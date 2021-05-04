@@ -22,7 +22,6 @@ import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
 
@@ -79,13 +78,13 @@ public final class EpochManagerRunner implements ModuleRunner {
 		Observable<EpochsLedgerUpdate> ledgerUpdates,
 		Set<EventProcessor<EpochsLedgerUpdate>> epochsLedgerUpdateEventProcessors,
 		Observable<BFTInsertUpdate> bftUpdates,
-		EventProcessor<BFTInsertUpdate> bftUpdateProcessor,
+		Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors,
 		Observable<BFTRebuildUpdate> bftRebuilds,
-		EventProcessor<BFTRebuildUpdate> bftRebuildProcessor,
+		Set<EventProcessor<BFTRebuildUpdate>> bftRebuildProcessors,
 		Observable<VertexRequestTimeout> bftSyncTimeouts,
-		EventProcessor<VertexRequestTimeout> vertexRequestTimeoutEventProcessor,
+		Set<EventProcessor<VertexRequestTimeout>> vertexRequestTimeoutEventProcessors,
 		Observable<EpochViewUpdate> localViewUpdates,
-		EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor,
+		Set<EventProcessor<EpochViewUpdate>> epochViewUpdateEventProcessors,
 		Flowable<RemoteEvent<GetVerticesRequest>> verticesRequests,
 		Set<RemoteEventProcessor<GetVerticesRequest>> verticesRequestProcessors,
 		Flowable<RemoteEvent<GetVerticesResponse>> verticesResponses,
@@ -107,10 +106,10 @@ public final class EpochManagerRunner implements ModuleRunner {
 
 		this.subscriptions = List.of(
 			new Subscription<>(ledgerUpdates, epochsLedgerUpdateEventProcessors, singleThreadScheduler),
-			new Subscription<>(bftUpdates, bftUpdateProcessor::process, singleThreadScheduler),
-			new Subscription<>(bftRebuilds, bftRebuildProcessor::process, singleThreadScheduler),
-			new Subscription<>(bftSyncTimeouts, vertexRequestTimeoutEventProcessor::process, singleThreadScheduler),
-			new Subscription<>(localViewUpdates, epochViewUpdateEventProcessor::process, singleThreadScheduler),
+			new Subscription<>(bftUpdates, bftUpdateProcessors, singleThreadScheduler),
+			new Subscription<>(bftRebuilds, bftRebuildProcessors, singleThreadScheduler),
+			new Subscription<>(bftSyncTimeouts, vertexRequestTimeoutEventProcessors, singleThreadScheduler),
+			new Subscription<>(localViewUpdates, epochViewUpdateEventProcessors, singleThreadScheduler),
 			new Subscription<>(timeouts, epochTimeoutProcessors, singleThreadScheduler),
 			new Subscription<>(
 				Flowable.merge(localProposals, remoteProposals.map(RemoteEvent::getEvent)),
