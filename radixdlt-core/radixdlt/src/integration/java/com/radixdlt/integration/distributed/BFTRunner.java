@@ -87,12 +87,14 @@ public class BFTRunner implements ModuleRunner {
 		Set<RemoteEventProcessor<GetVerticesResponse>> responseProcessors,
 		Flowable<RemoteEvent<GetVerticesErrorResponse>> verticesErrorResponses,
 		Set<RemoteEventProcessor<GetVerticesErrorResponse>> errorResponseProcessors,
-		Flowable<Vote> localVotes,
+		Observable<Vote> localVotes,
+		Set<EventProcessor<Vote>> localVoteProcessors,
 		Flowable<RemoteEvent<Vote>> remoteVotes,
-		Set<EventProcessor<Vote>> voteProcessors,
-		Flowable<Proposal> localProposals,
+		Set<RemoteEventProcessor<Vote>> remoteVoteProcessors,
+		Observable<Proposal> localProposals,
+		Set<EventProcessor<Proposal>> localProposalProcessors,
 		Flowable<RemoteEvent<Proposal>> remoteProposals,
-		Set<EventProcessor<Proposal>> proposalProcessors,
+		Set<RemoteEventProcessor<Proposal>> remoteProposalProcessors,
 		Set<StartProcessor> startProcessors,
 		@Self BFTNode self
 	) {
@@ -110,12 +112,18 @@ public class BFTRunner implements ModuleRunner {
 			viewUpdates
 				.observeOn(singleThreadScheduler)
 				.doOnNext(v -> viewUpdateProcessors.forEach(p -> p.process(v))),
-			Observable.merge(localVotes.toObservable(), remoteVotes.toObservable().map(RemoteEvent::getEvent))
+			localVotes
 				.observeOn(singleThreadScheduler)
-				.doOnNext(e -> voteProcessors.forEach(p -> p.process(e))),
-			Observable.merge(localProposals.toObservable(), remoteProposals.toObservable().map(RemoteEvent::getEvent))
+				.doOnNext(v -> localVoteProcessors.forEach(p -> p.process(v))),
+			remoteVotes.toObservable()
 				.observeOn(singleThreadScheduler)
-				.doOnNext(e -> proposalProcessors.forEach(p -> p.process(e))),
+				.doOnNext(v -> remoteVoteProcessors.forEach(p -> p.process(v))),
+			localProposals
+				.observeOn(singleThreadScheduler)
+				.doOnNext(e -> localProposalProcessors.forEach(p -> p.process(e))),
+			remoteProposals.toObservable()
+				.observeOn(singleThreadScheduler)
+				.doOnNext(e -> remoteProposalProcessors.forEach(p -> p.process(e))),
 			verticesRequests.toObservable()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(r -> requestProcessors.forEach(p -> p.process(r.getOrigin(), r.getEvent()))),

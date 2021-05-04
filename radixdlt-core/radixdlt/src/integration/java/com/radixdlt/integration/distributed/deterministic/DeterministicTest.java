@@ -26,6 +26,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.util.Modules;
 import com.radixdlt.MockedKeyModule;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
@@ -72,6 +73,7 @@ import java.util.Random;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -186,8 +188,9 @@ public final class DeterministicTest {
 			modules.add(new MockedCommittedReaderModule());
 			modules.add(new AbstractModule() {
 				@Provides
-				private PeersView peersView() {
-					return () -> nodes;
+				private PeersView peersView(@Self BFTNode self) {
+					var peers = nodes.stream().filter(n -> !self.equals(n)).collect(Collectors.toList());
+					return () -> peers;
 				}
 
 				@Provides

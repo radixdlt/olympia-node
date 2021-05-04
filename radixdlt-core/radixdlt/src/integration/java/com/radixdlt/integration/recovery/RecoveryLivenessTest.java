@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.recovery;
 
+import com.google.inject.Provides;
 import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
@@ -188,10 +189,15 @@ public class RecoveryLivenessTest {
 					bind(VerifiedTxnsAndProof.class).annotatedWith(Genesis.class).toInstance(genesisTxns);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
-					bind(PeersView.class).toInstance(() -> allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ValidatorAddress.of(ecKeyPair.getPublicKey()));
+				}
+
+				@Provides
+				private PeersView peersView(@Self BFTNode self) {
+					var peers = allNodes.stream().filter(n -> !self.equals(n)).collect(Collectors.toList());
+					return () -> peers;
 				}
 			}
 		);

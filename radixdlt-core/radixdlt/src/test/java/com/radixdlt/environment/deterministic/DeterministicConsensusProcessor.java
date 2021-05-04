@@ -24,6 +24,7 @@ import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
@@ -53,12 +54,16 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 	private final Set<EventProcessor<ViewUpdate>> viewUpdateProcessors;
 	private final Set<EventProcessor<ScheduledLocalTimeout>> timeoutProcessors;
 	private final Set<EventProcessor<LedgerUpdate>> ledgerUpdateProcessors;
-	private final Set<EventProcessor<Proposal>> proposalProcessors;
-	private final Set<EventProcessor<Vote>> voteProcessors;
+	private final Set<EventProcessor<Proposal>> localProposalProcessors;
+	private final Set<RemoteEventProcessor<Proposal>> remoteProposalProcessors;
+	private final Set<EventProcessor<Vote>> localVoteProcessors;
+	private final Set<RemoteEventProcessor<Vote>> remoteVoteProcessors;
 	private final Set<EventProcessor<VertexRequestTimeout>> vertexTimeoutProcessors;
+	private final BFTNode self;
 
 	@Inject
 	public DeterministicConsensusProcessor(
+		@Self BFTNode self,
 		Set<StartProcessor> startProcessors,
 		Set<RemoteEventProcessor<GetVerticesRequest>> verticesRequestProcessors,
 		Set<RemoteEventProcessor<GetVerticesResponse>> verticesResponseProcessors,
@@ -69,10 +74,13 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 		Set<EventProcessor<BFTHighQCUpdate>> bftHighQCUpdateProcessors,
 		Set<EventProcessor<ScheduledLocalTimeout>> timeoutProcessors,
 		Set<EventProcessor<LedgerUpdate>> ledgerUpdateProcessors,
-		Set<EventProcessor<Proposal>> proposalProcessors,
-		Set<EventProcessor<Vote>> voteProcessors,
+		Set<EventProcessor<Proposal>> localProposalProcessors,
+		Set<RemoteEventProcessor<Proposal>> remoteProposalProcessors,
+		Set<EventProcessor<Vote>> localVoteProcessors,
+		Set<RemoteEventProcessor<Vote>> remoteVoteProcessors,
 		Set<EventProcessor<VertexRequestTimeout>> vertexTimeoutProcessors
 	) {
+		this.self = Objects.requireNonNull(self);
 		this.startProcessors = Objects.requireNonNull(startProcessors);
 		this.verticesRequestProcessors = Objects.requireNonNull(verticesRequestProcessors);
 		this.verticesResponseProcessors = Objects.requireNonNull(verticesResponseProcessors);
@@ -83,8 +91,10 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 		this.viewUpdateProcessors = Objects.requireNonNull(viewUpdateProcessors);
 		this.timeoutProcessors = Objects.requireNonNull(timeoutProcessors);
 		this.ledgerUpdateProcessors = Objects.requireNonNull(ledgerUpdateProcessors);
-		this.proposalProcessors = Objects.requireNonNull(proposalProcessors);
-		this.voteProcessors = Objects.requireNonNull(voteProcessors);
+		this.localVoteProcessors = Objects.requireNonNull(localVoteProcessors);
+		this.remoteVoteProcessors = Objects.requireNonNull(remoteVoteProcessors);
+		this.localProposalProcessors = Objects.requireNonNull(localProposalProcessors);
+		this.remoteProposalProcessors = Objects.requireNonNull(remoteProposalProcessors);
 		this.vertexTimeoutProcessors = Objects.requireNonNull(vertexTimeoutProcessors);
 	}
 
@@ -98,9 +108,17 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 		if (message instanceof ScheduledLocalTimeout) {
 			timeoutProcessors.forEach(p -> p.process((ScheduledLocalTimeout) message));
 		} else if (message instanceof Proposal) {
-			proposalProcessors.forEach(p -> p.process((Proposal) message));
+			if (origin.equals(self)) {
+				localProposalProcessors.forEach(p -> p.process((Proposal) message));
+			} else {
+				remoteProposalProcessors.forEach(p -> p.process(origin, (Proposal) message));
+			}
 		} else if (message instanceof Vote) {
-			voteProcessors.forEach(p -> p.process((Vote) message));
+			if (origin.equals(self)) {
+				localVoteProcessors.forEach(p -> p.process((Vote) message));
+			} else {
+				remoteVoteProcessors.forEach(p -> p.process(origin, (Vote) message));
+			}
 		} else if (message instanceof ViewUpdate) {
 			viewUpdateProcessors.forEach(p -> p.process((ViewUpdate) message));
 		} else if (message instanceof GetVerticesRequest) {

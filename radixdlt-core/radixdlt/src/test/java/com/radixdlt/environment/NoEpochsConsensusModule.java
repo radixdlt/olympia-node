@@ -48,8 +48,18 @@ public class NoEpochsConsensusModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
+	private RemoteEventProcessor<Proposal> remoteProposalProcessor(BFTEventProcessor processor) {
+		return (node, proposal) -> processor.processProposal(proposal);
+	}
+
+	@ProvidesIntoSet
 	private EventProcessor<Vote> voteProcessor(BFTEventProcessor processor) {
 		return processor::processVote;
+	}
+
+	@ProvidesIntoSet
+	private RemoteEventProcessor<Vote> remoteVoteProcessor(BFTEventProcessor processor) {
+		return (node, vote) -> processor.processVote(vote);
 	}
 
 	@ProvidesIntoSet
