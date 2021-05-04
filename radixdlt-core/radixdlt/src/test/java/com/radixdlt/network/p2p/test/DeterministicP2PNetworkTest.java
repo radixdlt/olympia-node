@@ -31,7 +31,7 @@ public class DeterministicP2PNetworkTest {
 	protected P2PTestNetworkRunner testNetworkRunner;
 
 	protected P2PConfig defaultConfig() {
-		return P2PConfig.of(10, 10, 1000L, 1000, 1000L, 1000L, 30000, "unused", 1, 255);
+		return P2PConfig.of(10, 10, 1000L, 1000, 1000L, 1000L, 30000, "unused", 1, 1, 255);
 	}
 
 	protected void setupTestRunner(int numNodes, P2PConfig p2pConfig) throws Exception {

@@ -1,12 +1,12 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,19 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.serialization;
+package com.radixdlt.network.p2p.discovery;
 
-import org.radix.network.messages.TestMessage;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-/**
- * Check serialization of TestMessage
- */
-public class TestMessageSerializeTest extends SerializeMessageObject<TestMessage> {
-	public TestMessageSerializeTest() {
-		super(TestMessage.class, TestMessageSerializeTest::get);
-	}
-
-	private static TestMessage get() {
-		return new TestMessage(123);
+public final class GetPeersTest {
+	@Test
+	public void equalsTest() {
+		EqualsVerifier.forClass(GetPeers.class)
+			.verify();
 	}
 }

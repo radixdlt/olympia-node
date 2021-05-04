@@ -17,16 +17,29 @@
 
 package com.radixdlt.network.p2p;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.serialization.DsonOutput;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Objects;
 
 public final class RadixNodeUri {
 	private final String host;
 	private final int port;
 	private final NodeId nodeId;
+
+	@JsonCreator
+	public static RadixNodeUri fromJsonValue(String uri) throws URISyntaxException, PublicKeyException {
+		if (uri.startsWith(":str:")) {
+			return fromUri(new URI(uri.substring(5)));
+		} else {
+			return fromUri(new URI(uri));
+		}
+	}
 
 	public static RadixNodeUri fromUri(URI uri) throws PublicKeyException {
 		return new RadixNodeUri(uri.getHost(), uri.getPort(), extractNodeId(uri));
@@ -57,9 +70,15 @@ public final class RadixNodeUri {
 		return nodeId;
 	}
 
+	@JsonValue
+	@DsonOutput(DsonOutput.Output.ALL)
+	public String getUriString() {
+		return String.format("radix://%s@%s:%s", nodeId.getPublicKey().toBase58(), host, port);
+	}
+
 	@Override
 	public String toString() {
-		return String.format("radix://%s@%s:%s", nodeId.getPublicKey().toBase58(), host, port);
+		return getUriString();
 	}
 
 	@Override

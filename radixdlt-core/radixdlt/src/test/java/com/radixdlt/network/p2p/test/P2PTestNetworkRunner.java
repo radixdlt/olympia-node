@@ -28,6 +28,7 @@ import com.radixdlt.DispatcherModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.environment.deterministic.DeterministicMessageProcessor;
@@ -80,12 +81,12 @@ public final class P2PTestNetworkRunner {
 		final var builder = ImmutableList.<TestNode>builder();
 		for (int i = 0; i < numNodes; i++) {
 			final var nodeKey = nodesKeys.get(i);
-			final var injector = createInjector(p2pNetwork, network, p2pConfig, nodeKey, i);
 			final var uri = RadixNodeUri.fromUri(new URI(String.format(
 				"radix://%s@127.0.0.1:%s",
 				nodeKey.getPublicKey().toBase58(),
 				p2pConfig.listenPort() + i
 			)));
+			final var injector = createInjector(p2pNetwork, network, p2pConfig, nodeKey, uri, i);
 			builder.add(new TestNode(injector, uri, nodeKey));
 		}
 
@@ -101,19 +102,21 @@ public final class P2PTestNetworkRunner {
 		DeterministicNetwork network,
 		P2PConfig p2PConfig,
 		ECKeyPair nodeKey,
+		RadixNodeUri selfUri,
 		int selfNodeIndex
 	) throws ParseException {
 		final var properties = new RuntimeProperties(new JSONObject(), new String[] {});
 		return Guice.createInjector(
 				Modules.override(new P2PModule(properties)).with(
-						new AbstractModule() {
-							@Override
-							protected void configure() {
-								bind(PeerOutboundBootstrap.class)
-									.toInstance(uri -> p2pNetwork.createChannel(selfNodeIndex, uri));
-								bind(P2PConfig.class).toInstance(p2PConfig);
-							}
+					new AbstractModule() {
+						@Override
+						protected void configure() {
+							bind(PeerOutboundBootstrap.class)
+								.toInstance(uri -> p2pNetwork.createChannel(selfNodeIndex, uri));
+							bind(P2PConfig.class).toInstance(p2PConfig);
+							bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
 						}
+					}
 				),
 				new DeterministicEnvironmentModule(),
 				new DispatcherModule(),
@@ -121,6 +124,7 @@ public final class P2PTestNetworkRunner {
 					@Override
 					protected void configure() {
 						bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(nodeKey);
+						bind(ECPublicKey.class).annotatedWith(Self.class).toInstance(nodeKey.getPublicKey());
 						bind(BFTNode.class).annotatedWith(Self.class).toInstance(BFTNode.create(nodeKey.getPublicKey()));
 						bind(ControlledSenderFactory.class).toInstance(network::createSender);
 						bind(RuntimeProperties.class).toInstance(properties);

@@ -1,12 +1,12 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,22 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.network.messages;
+package com.radixdlt.network.p2p.liveness;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
-import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 
-public class PeerPongMessageTest {
+public final class PingTest {
 	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(PeerPongMessage.class)
-			.withIgnoredFields("instance")
-			.suppress(Warning.NONFINAL_FIELDS)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.withRedefinedSuperclass()
+	public void equalsTest() {
+		EqualsVerifier.forClass(Ping.class)
 			.verify();
 	}
 }

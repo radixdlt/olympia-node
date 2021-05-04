@@ -17,10 +17,8 @@
 
 package org.radix.network.messages;
 
-import java.util.List;
 import java.util.Objects;
-
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import org.radix.network.messaging.Message;
 
@@ -30,29 +28,29 @@ import com.radixdlt.serialization.SerializerId2;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-@SerializerId2("network.message.peers")
-public final class PeersMessage extends Message {
+@SerializerId2("p2p.discovery.peers_response")
+public final class PeersResponseMessage extends Message {
 	@JsonProperty("peers")
 	@DsonOutput(Output.ALL)
-	private final ImmutableList<RadixNodeUri> peers;
+	private final ImmutableSet<RadixNodeUri> peers;
 
 	// For serializer
-	private PeersMessage() {
+	private PeersResponseMessage() {
 		super(0);
-		peers = ImmutableList.of();
+		peers = ImmutableSet.of();
 	}
 
-	public PeersMessage(int magic) {
-		this(magic, ImmutableList.of());
+	public PeersResponseMessage(int magic) {
+		this(magic, ImmutableSet.of());
 	}
 
-	public PeersMessage(int magic, ImmutableList<RadixNodeUri> peers) {
+	public PeersResponseMessage(int magic, ImmutableSet<RadixNodeUri> peers) {
 		super(magic);
 
 		this.peers = peers;
 	}
 
-	public List<RadixNodeUri> getPeers() {
+	public ImmutableSet<RadixNodeUri> getPeers() {
 		return peers;
 	}
 
@@ -69,7 +67,7 @@ public final class PeersMessage extends Message {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-		PeersMessage that = (PeersMessage) o;
+		final var that = (PeersResponseMessage) o;
 		return Objects.equals(peers, that.peers)
 			&& Objects.equals(getTimestamp(), that.getTimestamp())
 			&& Objects.equals(getMagic(), that.getMagic());

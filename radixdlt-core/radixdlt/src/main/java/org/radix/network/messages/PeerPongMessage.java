@@ -22,7 +22,7 @@ import org.radix.network.messaging.Message;
 
 import java.util.Objects;
 
-@SerializerId2("p2p.pong")
+@SerializerId2("p2p.liveness.pong")
 public final class PeerPongMessage extends Message {
 
 	PeerPongMessage() {

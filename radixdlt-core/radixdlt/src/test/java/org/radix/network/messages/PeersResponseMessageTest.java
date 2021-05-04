@@ -17,6 +17,7 @@
 
 package org.radix.network.messages;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -26,26 +27,25 @@ import org.radix.serialization.SerializeMessageObject;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class GetPeersMessageTest extends SerializeMessageObject<GetPeersMessage> {
+public class PeersResponseMessageTest extends SerializeMessageObject<PeersResponseMessage> {
 
-	public GetPeersMessageTest() {
-		super(GetPeersMessage.class, GetPeersMessage::new);
+	public PeersResponseMessageTest() {
+		super(PeersResponseMessage.class, () -> new PeersResponseMessage(1));
 	}
 
 	@Test
 	public void sensibleToString() {
-		String s = new GetPeersMessage().toString();
+		String s = new PeersResponseMessage(1, ImmutableSet.of()).toString();
 
-		assertThat(s).contains(GetPeersMessage.class.getSimpleName());
+		assertThat(s).contains(PeersResponseMessage.class.getSimpleName());
 	}
 
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(GetPeersMessage.class)
-				.withIgnoredFields("instance")
-				.suppress(Warning.NONFINAL_FIELDS)
-				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-				.verify();
+		EqualsVerifier.forClass(PeersResponseMessage.class)
+			.withIgnoredFields("instance")
+			.suppress(Warning.NONFINAL_FIELDS)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
 	}
-
 }

@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -15,22 +15,32 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.network.messages;
+package com.radixdlt.network.p2p.discovery;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import nl.jqno.equalsverifier.Warning;
-import org.junit.Test;
+public final class GetPeers {
 
-public class PeerPongMessageTest {
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(PeerPongMessage.class)
-			.withIgnoredFields("instance")
-			.suppress(Warning.NONFINAL_FIELDS)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.withRedefinedSuperclass()
-			.verify();
+	public static GetPeers create() {
+		return new GetPeers();
+	}
+
+	private GetPeers() {
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{}", this.getClass().getSimpleName());
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		return o instanceof GetPeers;
+	}
+
+	@Override
+	public int hashCode() {
+		return 1;
 	}
 }

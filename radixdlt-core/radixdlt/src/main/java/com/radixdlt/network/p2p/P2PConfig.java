@@ -28,7 +28,7 @@ public interface P2PConfig {
 		int maxInboundChannels, int maxOutboundChannels,
 		long pingTimeout, int peerConnectionTimeout,
 		long discoveryInterval, long peerLivenessCheckInterval,
-		int defaultPort, String listenHost, int listenPort,
+		int defaultPort, String listenHost, int listenPort, int broadcastPort,
 		int channelBufferSize
 	) {
 		return new P2PConfig() {
@@ -75,6 +75,11 @@ public interface P2PConfig {
 			@Override
 			public int listenPort() {
 				return listenPort;
+			}
+
+			@Override
+			public int broadcastPort() {
+				return broadcastPort;
 			}
 
 			@Override
@@ -136,6 +141,11 @@ public interface P2PConfig {
 	int listenPort();
 
 	/**
+	 * Get node's port number to broadcast to other peers.
+	 */
+	int broadcastPort();
+
+	/**
 	 * Get the buffer size of incoming messages for each TCP connection.
 	 *
 	 * @return the size of a message buffer
@@ -161,6 +171,11 @@ public interface P2PConfig {
 			}
 
 			@Override
+			public int broadcastPort() {
+				return properties.get("network.p2p.broadcast_port", listenPort());
+			}
+
+			@Override
 			public int maxInboundChannels() {
 				return properties.get("network.p2p.max_inbound_channels", 20);
 			}
@@ -172,7 +187,7 @@ public interface P2PConfig {
 
 			@Override
 			public long pingTimeout() {
-				return properties.get("network.p2p.ping_timeout", 10000);
+				return properties.get("network.p2p.ping_timeout", 5000);
 			}
 
 			@Override
@@ -182,7 +197,7 @@ public interface P2PConfig {
 
 			@Override
 			public long discoveryInterval() {
-				return properties.get("network.p2p.discovery_interval", 10000);
+				return properties.get("network.p2p.discovery_interval", 30_000);
 			}
 
 			@Override

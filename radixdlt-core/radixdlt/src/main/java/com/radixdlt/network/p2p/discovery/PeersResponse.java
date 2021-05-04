@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -15,28 +15,32 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.network.messages;
+package com.radixdlt.network.p2p.discovery;
 
-import com.radixdlt.serialization.SerializerId2;
-import org.radix.network.messaging.Message;
+import com.google.common.collect.ImmutableSet;
+import com.radixdlt.network.p2p.RadixNodeUri;
 
 import java.util.Objects;
 
-@SerializerId2("p2p.liveness.ping")
-public final class PeerPingMessage extends Message {
+public final class PeersResponse {
 
-	PeerPingMessage() {
-		// for serializer
-		super(0);
+	private final ImmutableSet<RadixNodeUri> peers;
+
+	public static PeersResponse create(ImmutableSet<RadixNodeUri> peers) {
+		return new PeersResponse(peers);
 	}
 
-	public PeerPingMessage(int magic) {
-		super(magic);
+	private PeersResponse(ImmutableSet<RadixNodeUri> peers) {
+		this.peers = peers;
+	}
+
+	public ImmutableSet<RadixNodeUri> getPeers() {
+		return peers;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[]", getClass().getSimpleName());
+		return String.format("%s{}", this.getClass().getSimpleName());
 	}
 
 	@Override
@@ -47,13 +51,12 @@ public final class PeerPingMessage extends Message {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-		final var that = (PeerPingMessage) o;
-		return Objects.equals(getTimestamp(), that.getTimestamp())
-			&& Objects.equals(getMagic(), that.getMagic());
+		final var that = (PeersResponse) o;
+		return Objects.equals(peers, that.peers);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(getTimestamp(), getMagic());
+		return Objects.hash(peers);
 	}
 }

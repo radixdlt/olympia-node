@@ -35,10 +35,13 @@ import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.middleware2.network.MessageCentralMempool;
+import com.radixdlt.middleware2.network.MessageCentralPeerDiscovery;
 import com.radixdlt.middleware2.network.MessageCentralPeerLiveness;
 import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
+import com.radixdlt.network.p2p.discovery.GetPeers;
+import com.radixdlt.network.p2p.discovery.PeersResponse;
 import com.radixdlt.network.p2p.liveness.Ping;
 import com.radixdlt.network.p2p.liveness.Pong;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
@@ -131,6 +134,16 @@ public final class MessagingModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> getPeersDispatcher(MessageCentralPeerDiscovery messageCentralPeerDiscovery) {
+		return RxRemoteDispatcher.create(GetPeers.class, messageCentralPeerDiscovery.getPeersDispatcher());
+	}
+
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> peersResponseDispatcher(MessageCentralPeerDiscovery messageCentralPeerDiscovery) {
+		return RxRemoteDispatcher.create(PeersResponse.class, messageCentralPeerDiscovery.peersResponseDispatcher());
+	}
+
+	@ProvidesIntoSet
 	private RxRemoteDispatcher<?> ledgerStatusUpdateDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
 		return RxRemoteDispatcher.create(LedgerStatusUpdate.class, messageCentralLedgerSync.ledgerStatusUpdateDispatcher());
 	}
@@ -144,7 +157,9 @@ public final class MessagingModule extends AbstractModule {
 		MessageCentralLedgerSync messageCentralLedgerSync,
 		MessageCentralPeerLiveness messageCentralPeerLiveness,
 		MessageCentralBFTNetwork messageCentralBFT,
-		MessageCentralValidatorSync messageCentralBFTSync
+		MessageCentralValidatorSync messageCentralBFTSync,
+		MessageCentralPeerLiveness messageCentralPeerLiveness,
+		MessageCentralPeerDiscovery messageCentralPeerDiscovery
 	) {
 		return new RxRemoteEnvironment() {
 			@Override
@@ -175,6 +190,10 @@ public final class MessagingModule extends AbstractModule {
 					return messageCentralPeerLiveness.pings().map(m -> (RemoteEvent<T>) m);
 				} else if (remoteEventClass == Pong.class) {
 					return messageCentralPeerLiveness.pongs().map(m -> (RemoteEvent<T>) m);
+				} else if (remoteEventClass == GetPeers.class) {
+					return messageCentralPeerDiscovery.getPeersEvents().map(m -> (RemoteEvent<T>) m);
+				} else if (remoteEventClass == PeersResponse.class) {
+					return messageCentralPeerDiscovery.peersResponses().map(m -> (RemoteEvent<T>) m);
 				} else {
 					throw new IllegalStateException();
 				}

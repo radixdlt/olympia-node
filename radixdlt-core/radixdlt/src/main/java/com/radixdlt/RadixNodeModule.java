@@ -24,6 +24,7 @@ import com.radixdlt.api.NodeApiModule;
 
 import com.radixdlt.api.UniverseController;
 import com.radixdlt.api.faucet.FaucetModule;
+import com.radixdlt.network.p2p.PeerDiscoveryModule;
 import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
 import com.radixdlt.network.p2p.P2PModule;
 import com.radixdlt.statecomputer.RadixEngineConfig;
@@ -190,6 +191,7 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new AddressBookModule());
 		install(new HostIpModule(properties));
 		install(new P2PModule(properties));
+		install(new PeerDiscoveryModule());
 		install(new PeerLivenessMonitorModule());
 	}
 

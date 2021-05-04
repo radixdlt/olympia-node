@@ -93,7 +93,7 @@ public final class AddressBook {
 		}
 	}
 
-	public Stream<RadixNodeUri> bestKnownEntries() {
+	public Stream<RadixNodeUri> bestCandidatesToConnect() {
 		return this.knownPeers.values()
 			.stream()
 			.filter(not(AddressBookEntry::isBanned))

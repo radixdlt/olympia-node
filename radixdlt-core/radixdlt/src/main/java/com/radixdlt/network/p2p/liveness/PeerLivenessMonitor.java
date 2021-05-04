@@ -59,6 +59,9 @@ public final class PeerLivenessMonitor {
 		RemoteEventDispatcher<Pong> pongEventDispatcher,
 		ScheduledEventDispatcher<PeerPingTimeout> pingTimeoutEventDispatcher
 	) {
+		if (config.peerLivenessCheckInterval() <= config.pingTimeout()) {
+			throw new IllegalArgumentException("pingTimeout must be smaller than livenessCheckInterval");
+		}
 		this.config = Objects.requireNonNull(config);
 		this.peersView = Objects.requireNonNull(peersView);
 		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
@@ -85,10 +88,8 @@ public final class PeerLivenessMonitor {
 
 	public EventProcessor<PeerPingTimeout> pingTimeoutEventProcessor() {
 		return timeout -> {
-			System.out.println("PING TIMEOUT EVENT RECEIVED");
 			final var waitingForPeer = this.waitingForPong.remove(timeout.getNodeId());
 			if (waitingForPeer) {
-				System.out.println("TRIGGERING LSOT LIVENESS EVENT");
 				this.peerEventDispatcher.dispatch(PeerLostLiveness.create(timeout.getNodeId()));
 			}
 		};

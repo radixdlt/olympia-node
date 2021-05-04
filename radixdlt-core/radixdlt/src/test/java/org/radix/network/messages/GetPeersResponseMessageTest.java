@@ -17,7 +17,6 @@
 
 package org.radix.network.messages;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -27,25 +26,26 @@ import org.radix.serialization.SerializeMessageObject;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class PeersMessageTest extends SerializeMessageObject<PeersMessage> {
+public class GetPeersResponseMessageTest extends SerializeMessageObject<GetPeersMessage> {
 
-	public PeersMessageTest() {
-		super(PeersMessage.class, () -> new PeersMessage(1));
+	public GetPeersResponseMessageTest() {
+		super(GetPeersMessage.class, GetPeersMessage::new);
 	}
 
 	@Test
 	public void sensibleToString() {
-		String s = new PeersMessage(1, ImmutableList.of()).toString();
+		String s = new GetPeersMessage().toString();
 
-		assertThat(s).contains(PeersMessage.class.getSimpleName());
+		assertThat(s).contains(GetPeersMessage.class.getSimpleName());
 	}
 
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(PeersMessage.class)
+		EqualsVerifier.forClass(GetPeersMessage.class)
 				.withIgnoredFields("instance")
 				.suppress(Warning.NONFINAL_FIELDS)
 				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 				.verify();
 	}
+
 }

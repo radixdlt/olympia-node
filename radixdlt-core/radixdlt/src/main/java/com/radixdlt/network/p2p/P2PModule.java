@@ -22,19 +22,18 @@ import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
-import com.radixdlt.environment.ScheduledEventProducerOnRunner;
-import com.radixdlt.network.p2p.discovery.DiscoverPeers;
-import com.radixdlt.network.p2p.discovery.PeerDiscovery;
+import com.radixdlt.network.hostip.HostIp;
 import com.radixdlt.network.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
 import com.radixdlt.network.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.network.p2p.transport.PeerOutboundBootstrapImpl;
 import com.radixdlt.properties.RuntimeProperties;
 
-import java.time.Duration;
+import java.net.URI;
 
 public final class P2PModule extends AbstractModule {
 
@@ -50,7 +49,6 @@ public final class P2PModule extends AbstractModule {
 			.permitDuplicates();
 		eventBinder.addBinding().toInstance(PeerEvent.class);
 		eventBinder.addBinding().toInstance(PeerOutboundConnectionTimeout.class);
-		eventBinder.addBinding().toInstance(DiscoverPeers.class);
 
 		bind(PeersView.class).to(PeerManagerPeersView.class);
 		bind(PeerOutboundBootstrap.class).to(PeerOutboundBootstrapImpl.class);
@@ -87,33 +85,18 @@ public final class P2PModule extends AbstractModule {
 		);
 	}
 
-	@ProvidesIntoSet
-	public ScheduledEventProducerOnRunner<?> discoverPeersEventProducer(
-		EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher,
-		P2PConfig config
-	) {
-		return new ScheduledEventProducerOnRunner<>(
-			Runners.P2P_NETWORK,
-			discoverPeersEventDispatcher,
-			DiscoverPeers::create,
-			Duration.ofMillis(500L),
-			Duration.ofMillis(config.discoveryInterval())
-		);
-	}
-
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> discoverPeersEventProcessor(
-		PeerDiscovery peerDiscovery
-	) {
-		return new EventProcessorOnRunner<>(
-			Runners.P2P_NETWORK,
-			DiscoverPeers.class,
-			peerDiscovery.discoverPeersEventProcessor()
-		);
-	}
-
 	@Provides
 	public P2PConfig p2pConfig() {
 		return P2PConfig.fromRuntimeProperties(this.properties);
+	}
+
+	@Provides
+	@Self
+	public RadixNodeUri selfUri(@Self ECPublicKey selfKey, HostIp hostIp, P2PConfig p2PConfig) throws Exception {
+		final var host = hostIp.hostIp().orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
+		final var port = p2PConfig.broadcastPort();
+		return RadixNodeUri.fromUri(new URI(String.format(
+			"radix://%s@%s:%s", selfKey.toBase58(), host, port
+		)));
 	}
 }
