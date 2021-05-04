@@ -6,15 +6,15 @@ on:
       - rc\/*
       - release\/*
 jobs:
-    cancel_running_workflows:
-      if: ${{ startsWith(github.ref, 'refs/heads/release/') ||  startsWith(github.ref, 'refs/heads/rc') }}
-      name: Cancel running workflows
-      runs-on: ubuntu-20.04
-      steps:
-        - name: cancel running workflows
-          uses: styfle/cancel-workflow-action@0.8.0
-          with:
-            access_token: ${{ github.token }}
+  cancel_running_workflows:
+    if: ${{ startsWith(github.ref, 'refs/heads/release/') ||  startsWith(github.ref, 'refs/heads/rc') }}
+    name: Cancel running workflows
+    runs-on: ubuntu-20.04
+    steps:
+      - name: cancel running workflows
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
   build:
     if: ${{ startsWith(github.ref, 'refs/heads/release/') ||  startsWith(github.ref, 'refs/heads/rc') }}
     runs-on: ubuntu-latest
