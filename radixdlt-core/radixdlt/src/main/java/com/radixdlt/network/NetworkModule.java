@@ -46,6 +46,7 @@ import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Observable;
 
 /**
  * Network related module
@@ -126,12 +127,12 @@ public final class NetworkModule extends AbstractModule {
 	}
 
 	@Provides
-	private Flowable<Proposal> localProposals(MessageCentralBFTNetwork bftNetwork) {
+	private Observable<Proposal> localProposals(MessageCentralBFTNetwork bftNetwork) {
 		return bftNetwork.localProposals();
 	}
 
 	@Provides
-	private Flowable<Vote> localVotes(MessageCentralBFTNetwork bftNetwork) {
+	private Observable<Vote> localVotes(MessageCentralBFTNetwork bftNetwork) {
 		return bftNetwork.localVotes();
 	}
 

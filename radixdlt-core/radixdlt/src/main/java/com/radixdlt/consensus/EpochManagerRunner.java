@@ -91,12 +91,14 @@ public final class EpochManagerRunner implements ModuleRunner {
 		Set<RemoteEventProcessor<GetVerticesResponse>> verticesResponseProcessors,
 		Flowable<RemoteEvent<GetVerticesErrorResponse>> bftSyncErrorResponses,
 		Set<RemoteEventProcessor<GetVerticesErrorResponse>> bftSyncErrorProcessors,
-		Flowable<Proposal> localProposals,
+		Observable<Proposal> localProposals,
+		Set<EventProcessor<Proposal>> localProposalProcessors,
 		Flowable<RemoteEvent<Proposal>> remoteProposals,
-		Set<EventProcessor<Proposal>> proposalProcessors,
-		Flowable<Vote> localVotes,
+		Set<RemoteEventProcessor<Proposal>> remoteProposalProcessors,
+		Observable<Vote> localVotes,
+		Set<EventProcessor<Vote>> localVoteProcessors,
 		Flowable<RemoteEvent<Vote>> remoteVotes,
-		Set<EventProcessor<Vote>> voteProcessors,
+		Set<RemoteEventProcessor<Vote>> remoteVoteProcessors,
 		Observable<Epoched<ScheduledLocalTimeout>> timeouts,
 		Set<EventProcessor<Epoched<ScheduledLocalTimeout>>> epochTimeoutProcessors
 	) {
@@ -111,16 +113,10 @@ public final class EpochManagerRunner implements ModuleRunner {
 			new Subscription<>(bftSyncTimeouts, vertexRequestTimeoutEventProcessors, singleThreadScheduler),
 			new Subscription<>(localViewUpdates, epochViewUpdateEventProcessors, singleThreadScheduler),
 			new Subscription<>(timeouts, epochTimeoutProcessors, singleThreadScheduler),
-			new Subscription<>(
-				Flowable.merge(localProposals, remoteProposals.map(RemoteEvent::getEvent)),
-				proposal -> proposalProcessors.forEach(p -> p.process(proposal)),
-				singleThreadScheduler
-			),
-			new Subscription<>(
-				Flowable.merge(localVotes, remoteVotes.map(RemoteEvent::getEvent)),
-				vote -> voteProcessors.forEach(p -> p.process(vote)),
-				singleThreadScheduler
-			),
+			new Subscription<>(localProposals, localProposalProcessors, singleThreadScheduler),
+			new Subscription<>(remoteProposals, r -> remoteProposalProcessors.forEach(p -> p.process(r)), singleThreadScheduler),
+			new Subscription<>(localVotes, localVoteProcessors, singleThreadScheduler),
+			new Subscription<>(remoteVotes, r -> remoteVoteProcessors.forEach(p -> p.process(r)), singleThreadScheduler),
 			new Subscription<>(
 				verticesRequests,
 				r -> verticesRequestProcessors.forEach(p -> p.process(r)),

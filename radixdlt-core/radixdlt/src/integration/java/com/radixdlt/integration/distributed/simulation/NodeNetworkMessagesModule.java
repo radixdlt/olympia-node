@@ -40,6 +40,7 @@ import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import com.radixdlt.mempool.MempoolAdd;
 import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Observable;
 
 public class NodeNetworkMessagesModule extends AbstractModule {
 	private final SimulationNetwork simulationNetwork;
@@ -114,12 +115,12 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	}
 
 	@Provides
-	private Flowable<Proposal> localProposals(SimulatedNetworkImpl network) {
+	private Observable<Proposal> localProposals(SimulatedNetworkImpl network) {
 		return network.localEvents(Proposal.class);
 	}
 
 	@Provides
-	private Flowable<Vote> localVotes(SimulatedNetworkImpl network) {
+	private Observable<Vote> localVotes(SimulatedNetworkImpl network) {
 		return network.localEvents(Vote.class);
 	}
 

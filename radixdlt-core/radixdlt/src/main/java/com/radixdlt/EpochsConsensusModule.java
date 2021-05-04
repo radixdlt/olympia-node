@@ -104,13 +104,23 @@ public class EpochsConsensusModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	private EventProcessor<Vote> voteProcessor(EpochManager epochManager) {
+	private EventProcessor<Vote> localVoteProcessor(EpochManager epochManager) {
 		return epochManager::processConsensusEvent;
 	}
 
 	@ProvidesIntoSet
-	private EventProcessor<Proposal> proposalProcessor(EpochManager epochManager) {
+	private RemoteEventProcessor<Vote> remoteVoteProcessor(EpochManager epochManager) {
+		return (node, vote) -> epochManager.processConsensusEvent(vote);
+	}
+
+	@ProvidesIntoSet
+	private EventProcessor<Proposal> localProposalProcessor(EpochManager epochManager) {
 		return epochManager::processConsensusEvent;
+	}
+
+	@ProvidesIntoSet
+	private RemoteEventProcessor<Proposal> remoteProposalProcessor(EpochManager epochManager) {
+		return (node, proposal) -> epochManager.processConsensusEvent(proposal);
 	}
 
 	@ProvidesIntoSet

@@ -24,6 +24,7 @@ import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
@@ -54,6 +55,7 @@ import javax.inject.Inject;
  */
 @NotThreadSafe
 public final class DeterministicEpochsConsensusProcessor implements DeterministicMessageProcessor {
+	private final BFTNode self;
 	private final Map<Class<?>, EventProcessor<Object>>	eventProcessors;
 	private final Map<Class<?>, RemoteEventProcessor<Object>> remoteEventProcessors;
 	private final Set<StartProcessor> startProcessors;
@@ -63,9 +65,12 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 
 	@Inject
 	public DeterministicEpochsConsensusProcessor(
+		@Self BFTNode self,
 		Set<StartProcessor> startProcessors,
-		Set<EventProcessor<Vote>> voteProcessors,
-		Set<EventProcessor<Proposal>> proposalProcessors,
+		Set<EventProcessor<Vote>> localVoteProcessors,
+		Set<RemoteEventProcessor<Vote>> remoteVoteProcessors,
+		Set<EventProcessor<Proposal>> localProposalProcessors,
+		Set<RemoteEventProcessor<Proposal>> remoteProposalProcessors,
 		Set<EventProcessor<Epoched<ScheduledLocalTimeout>>> epochTimeoutProcessors,
 		Set<RemoteEventProcessor<GetVerticesRequest>> verticesRequestProcessors,
 		Set<RemoteEventProcessor<GetVerticesResponse>> verticesResponseProcessors,
@@ -78,6 +83,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		Set<EventProcessorOnRunner<?>> processorOnRunners,
 		Set<RemoteEventProcessorOnRunner<?>> remoteProcessorOnRunners
 	) {
+		this.self = Objects.requireNonNull(self);
 		this.startProcessors = Objects.requireNonNull(startProcessors);
 		this.epochTimeoutProcessors = Objects.requireNonNull(epochTimeoutProcessors);
 		this.processorOnRunners = Objects.requireNonNull(processorOnRunners);
@@ -103,11 +109,19 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			EpochsLedgerUpdate.class,
 			e -> epochsLedgerUpdateEventProcessors.forEach(p -> p.process((EpochsLedgerUpdate) e))
 		);
-		processorsBuilder.put(Vote.class, e -> voteProcessors.forEach(p -> p.process((Vote) e)));
-		processorsBuilder.put(Proposal.class, e -> proposalProcessors.forEach(p -> p.process((Proposal) e)));
+		processorsBuilder.put(Vote.class, e -> localVoteProcessors.forEach(p -> p.process((Vote) e)));
+		processorsBuilder.put(Proposal.class, e -> localProposalProcessors.forEach(p -> p.process((Proposal) e)));
 		this.eventProcessors = processorsBuilder.build();
 
 		ImmutableMap.Builder<Class<?>, RemoteEventProcessor<Object>> remoteProcessorsBuilder = ImmutableMap.builder();
+		remoteProcessorsBuilder.put(
+			Vote.class,
+			(node, event) -> remoteVoteProcessors.forEach(p -> p.process(node, (Vote) event))
+		);
+		remoteProcessorsBuilder.put(
+			Proposal.class,
+			(node, event) -> remoteProposalProcessors.forEach(p -> p.process(node, (Proposal) event))
+		);
 		remoteProcessorsBuilder.put(
 			GetVerticesRequest.class,
 			(node, event) -> verticesRequestProcessors.forEach(p -> p.process(node, (GetVerticesRequest) event))
@@ -168,25 +182,26 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			// Don't need to process
 		} else {
 			boolean messageHandled = false;
+			if (Objects.equals(self, origin)) {
+				for (EventProcessorOnRunner<?> p : processorOnRunners) {
+					messageHandled = tryExecute(message, p) || messageHandled;
+				}
 
-			for (EventProcessorOnRunner<?> p : processorOnRunners) {
-				messageHandled = tryExecute(message, p) || messageHandled;
-			}
+				var processor = eventProcessors.get(message.getClass());
+				if (processor != null) {
+					processor.process(message);
+					messageHandled = true;
+				}
+			} else {
+				var remoteEventProcessor = remoteEventProcessors.get(message.getClass());
+				if (remoteEventProcessor != null) {
+					remoteEventProcessor.process(origin, message);
+					messageHandled = true;
+				}
 
-			for (RemoteEventProcessorOnRunner<?> p : remoteProcessorOnRunners) {
-				messageHandled = tryExecute(origin, message, p) || messageHandled;
-			}
-
-			EventProcessor<Object> processor = eventProcessors.get(message.getClass());
-			if (processor != null) {
-				processor.process(message);
-				messageHandled = true;
-			}
-
-			RemoteEventProcessor<Object> remoteEventProcessor = remoteEventProcessors.get(message.getClass());
-			if (remoteEventProcessor != null) {
-				remoteEventProcessor.process(origin, message);
-				messageHandled = true;
+				for (RemoteEventProcessorOnRunner<?> p : remoteProcessorOnRunners) {
+					messageHandled = tryExecute(origin, message, p) || messageHandled;
+				}
 			}
 
 			if (!messageHandled) {

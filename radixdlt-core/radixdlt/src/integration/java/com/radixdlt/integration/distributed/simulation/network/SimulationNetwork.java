@@ -153,8 +153,8 @@ public class SimulationNetwork {
 			.onBackpressureBuffer(255, false, true /* unbounded */);
 		}
 
-		public <T> Flowable<T> localEvents(Class<T> eventClass) {
-			return myMessages.flatMapMaybe(m -> m.localEvent(eventClass));
+		public <T> Observable<T> localEvents(Class<T> eventClass) {
+			return myMessages.flatMapMaybe(m -> m.localEvent(eventClass)).toObservable();
 		}
 
 		@Override
