@@ -1,107 +1,107 @@
-#name: radixdlt-core-publish-jar
-#
-#on:
-#  create:
-#    branches:
-#      - release\/*
-#  push:
-#    branches:
-#      - rc\/*
-#      - release\/*
-#jobs:
-#  cancel_running_workflows:
-#    if: ${{ startsWith(github.ref, 'refs/heads/release/') ||  startsWith(github.ref, 'refs/heads/rc') }}
-#    name: Cancel running workflows
-#    runs-on: ubuntu-20.04
-#    steps:
-#      - name: cancel running workflows
-#        uses: styfle/cancel-workflow-action@0.8.0
-#        with:
-#          access_token: ${{ github.token }}
-#  build:
-#    if: ${{ startsWith(github.ref, 'refs/heads/release/') ||  startsWith(github.ref, 'refs/heads/rc') }}
-#    runs-on: ubuntu-latest
-#    name: Build JARs
-#    steps:
-#      - uses: actions/checkout@v2
-#        with:
-#          fetch-depth: 0
-#      - name: Set up JDK 1.11
-#        uses: actions/setup-java@v1
-#        with:
-#          java-version: 1.11
-#      - name: Cache Gradle packages
-#        uses: actions/cache@v2
-#        with:
-#          path: |
-#            ~/.gradle/caches
-#            ~/.gradle/wrapper
-#          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-#          restore-keys: |
-#            ${{ runner.os }}-gradle-
-#      - name: Build radixdlt
-#        run: |
-#          if [[ "$GITHUB_REF" == *"refs/heads/release"* ]]; then
-#              echo "Workflow triggered by on a release branch"
-#          else
-#            echo "Workflow triggered by on a rc branch"
-#            export CI_VERSION=true
-#          fi
-#          version=$(./gradlew radixCiVersion | grep radixdlt-version | cut -d: -f2)
-#          echo "Version: $version"
-#          ./gradlew clean build -x test
-#      - name: Archive radixdlt-core build distributions
-#        uses: actions/upload-artifact@v2
-#        with:
-#          name: build-distribution
-#          path: |
-#            radixdlt-core/radixdlt/build/distributions
-#            retention-days: 1
-#      - name: Archive radixdlt-core build libraries
-#        uses: actions/upload-artifact@v2
-#        with:
-#          name: build-libraries
-#          path: |
-#            radixdlt-core/radixdlt/build/libs
-#            retention-days: 1
-#      - name: Cleanup Gradle Cache
-#        # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
-#        # Restoring these files from a GitHub Actions cache might cause problems for future builds.
-#        run: |
-#          rm -f ~/.gradle/caches/modules-2/modules-2.lock
-#          rm -f ~/.gradle/caches/modules-2/gc.properties
-#  publish-jar:
-#    if: ${{ startsWith(github.ref, 'refs/heads/release/') ||  startsWith(github.ref, 'refs/heads/rc') }}
-#    needs: build
-#    name: Publish JAR to Github package repository
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v2
-#        with:
-#          fetch-depth: 0
-#      - name: Set up JDK 1.11
-#        uses: actions/setup-java@v1
-#        with:
-#          java-version: 1.11
-#      - name: Download distribution artifact
-#        uses: actions/download-artifact@v2
-#        with:
-#          name: build-distribution
-#      - name: Download build artifact
-#        uses: actions/download-artifact@v2
-#        with:
-#          name: build-libraries
-#      - name: Publish radixdlt-core
-#        run: |
-#          if [[ "$GITHUB_REF" == *"refs/heads/release"* ]]; then
-#              echo "Workflow triggered by on a release branch"
-#          else
-#            echo "Workflow triggered by on a rc branch"
-#            export CI_VERSION=true
-#          fi
-#          version=$(./gradlew radixCiVersion | grep radixdlt-version | cut -d: -f2)
-#          echo "Version: $version"
-#          ./gradlew publish
-#        env:
-#          GPR_USER: ${{ secrets.GPR_USER }}
-#          GPR_TOKEN: ${{ secrets.GPR_TOKEN }}
+name: radixdlt-core-publish-jar
+
+on:
+  create:
+    branches:
+      - release\/*
+  push:
+    branches:
+      - rc\/*
+      - release\/*
+jobs:
+  cancel_running_workflows:
+    if: ${{ startsWith(github.ref, 'refs/heads/release/') ||  startsWith(github.ref, 'refs/heads/rc') }}
+    name: Cancel running workflows
+    runs-on: ubuntu-20.04
+    steps:
+      - name: cancel running workflows
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
+  build:
+    if: ${{ startsWith(github.ref, 'refs/heads/release/') ||  startsWith(github.ref, 'refs/heads/rc') }}
+    runs-on: ubuntu-latest
+    name: Build JARs
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Set up JDK 1.11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.11
+      - name: Cache Gradle packages
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      - name: Build radixdlt
+        run: |
+          if [[ "$GITHUB_REF" == *"refs/heads/release"* ]]; then
+              echo "Workflow triggered by on a release branch"
+          else
+            echo "Workflow triggered by on a rc branch"
+            export CI_VERSION=true
+          fi
+          version=$(./gradlew radixCiVersion | grep radixdlt-version | cut -d: -f2)
+          echo "Version: $version"
+          ./gradlew clean build -x test
+      - name: Archive radixdlt-core build distributions
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-distribution
+          path: |
+            radixdlt-core/radixdlt/build/distributions
+            retention-days: 1
+      - name: Archive radixdlt-core build libraries
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-libraries
+          path: |
+            radixdlt-core/radixdlt/build/libs
+            retention-days: 1
+      - name: Cleanup Gradle Cache
+        # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
+        # Restoring these files from a GitHub Actions cache might cause problems for future builds.
+        run: |
+          rm -f ~/.gradle/caches/modules-2/modules-2.lock
+          rm -f ~/.gradle/caches/modules-2/gc.properties
+  publish-jar:
+    if: ${{ startsWith(github.ref, 'refs/heads/release/') ||  startsWith(github.ref, 'refs/heads/rc') }}
+    needs: build
+    name: Publish JAR to Github package repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Set up JDK 1.11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.11
+      - name: Download distribution artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: build-distribution
+      - name: Download build artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: build-libraries
+      - name: Publish radixdlt-core
+        run: |
+          if [[ "$GITHUB_REF" == *"refs/heads/release"* ]]; then
+              echo "Workflow triggered by on a release branch"
+          else
+            echo "Workflow triggered by on a rc branch"
+            export CI_VERSION=true
+          fi
+          version=$(./gradlew radixCiVersion | grep radixdlt-version | cut -d: -f2)
+          echo "Version: $version"
+          ./gradlew publish
+        env:
+          GPR_USER: ${{ secrets.GPR_USER }}
+          GPR_TOKEN: ${{ secrets.GPR_TOKEN }}

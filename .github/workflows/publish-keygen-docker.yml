@@ -3,21 +3,20 @@ name: radixdlt-keygen-publish-docker
 on:
   push:
     branches:
-#      - rc\/*
-#      - release\/*
-      - 'ci/node-keygen-artifact'
+      - rc\/*
+      - release\/*
 jobs:
-  #  cancel_running_workflows:
-  #    if: ${{ startsWith(github.ref, 'refs/heads/release/') ||  startsWith(github.ref, 'refs/heads/rc') }}
-  #    name: Cancel running workflows
-  #    runs-on: ubuntu-20.04
-  #    steps:
-  #      - name: cancel running workflows
-  #        uses: styfle/cancel-workflow-action@0.8.0
-  #        with:
-  #          access_token: ${{ github.token }}
+    cancel_running_workflows:
+      if: ${{ startsWith(github.ref, 'refs/heads/release/') ||  startsWith(github.ref, 'refs/heads/rc') }}
+      name: Cancel running workflows
+      runs-on: ubuntu-20.04
+      steps:
+        - name: cancel running workflows
+          uses: styfle/cancel-workflow-action@0.8.0
+          with:
+            access_token: ${{ github.token }}
   build:
-    #    if: ${{ startsWith(github.ref, 'refs/heads/release/') ||  startsWith(github.ref, 'refs/heads/rc') }}
+    if: ${{ startsWith(github.ref, 'refs/heads/release/') ||  startsWith(github.ref, 'refs/heads/rc') }}
     runs-on: ubuntu-latest
     name: Build JARs
     steps:
@@ -127,7 +126,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
       - name: Login to GCR (rc)
         uses: docker/login-action@v1
-        if: startsWith(github.ref, 'refs/heads/ci/node-keygen-artifact')
+        if: startsWith(github.ref, 'refs/heads/rc')
         with:
           registry: eu.gcr.io
           username: _json_key
