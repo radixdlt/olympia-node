@@ -21,19 +21,19 @@ package com.radixdlt.application;
 import com.google.inject.Inject;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.StateReducer;
+import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 public final class StakedBalanceReducer implements StateReducer<StakedBalance, StakedTokensParticle> {
-	private final ECPublicKey key;
+	private final REAddr accountAddr;
 
 	@Inject
-	public StakedBalanceReducer(@Self ECPublicKey key) {
-		this.key = Objects.requireNonNull(key);
+	public StakedBalanceReducer(@Self REAddr accountAddr) {
+		this.accountAddr = Objects.requireNonNull(accountAddr);
 	}
 
 	@Override
@@ -54,7 +54,7 @@ public final class StakedBalanceReducer implements StateReducer<StakedBalance, S
 	@Override
 	public BiFunction<StakedBalance, StakedTokensParticle, StakedBalance> outputReducer() {
 		return (stakes, p) -> {
-			if (p.getOwner().equals(key)) {
+			if (p.getOwner().equals(accountAddr)) {
 				stakes.addStake(p.getDelegateKey(), p.getAmount());
 			}
 			return stakes;
@@ -64,7 +64,7 @@ public final class StakedBalanceReducer implements StateReducer<StakedBalance, S
 	@Override
 	public BiFunction<StakedBalance, StakedTokensParticle, StakedBalance> inputReducer() {
 		return (balance, p) -> {
-			if (p.getOwner().equals(key)) {
+			if (p.getOwner().equals(accountAddr)) {
 				balance.removeStake(p.getDelegateKey(), p.getAmount());
 			}
 			return balance;

@@ -1,13 +1,6 @@
 # radix-engine-library
 
-radix-engine-library is an engine for a real-time, distributed state machine.
-
-## Table of contents
-
-- [Changelog](CHANGELOG.md)
-- [Contribute](#contribute)
-- [Links](#links)
-- [License](#license)
+radix-engine-library is a UTXO-based state machine.
 
 ## Contribute
 
