@@ -54,7 +54,7 @@ public class ValidatorInfoService {
 		var stakes = radixEngine.getComputedState(Stakes.class);
 
 		var result = validators.map((address, details) -> fillDetails(address, details, stakes));
-		result.sort(Comparator.comparing(ValidatorInfoDetails::getValidatorAddress));
+		result.sort(Comparator.comparing(ValidatorInfoDetails::getTotalStake).reversed());
 
 		var paged = cursor
 			.map(key -> FunctionalUtils.skipUntil(result, v -> v.getValidatorKey().equals(key)))
