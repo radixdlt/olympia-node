@@ -40,6 +40,7 @@ import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastStoredProof;
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt256;
 import org.junit.Rule;
 import org.junit.Test;
@@ -48,6 +49,7 @@ import org.junit.rules.TemporaryFolder;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.assertNotNull;
 
 
 public class MutableTokenTest {
@@ -58,6 +60,9 @@ public class MutableTokenTest {
 
 	@Inject
 	private RadixEngine<LedgerAndBFTProof> sut;
+
+	@Inject
+	private BerkeleyLedgerEntryStore ledgerEntryStore;
 
 	// FIXME: Hack, need this in order to cause provider for genesis to be stored
 	@Inject
@@ -96,6 +101,8 @@ public class MutableTokenTest {
 
 		// Act/Assert
 		assertThatThrownBy(() -> sut.execute(List.of(txn))).isInstanceOf(RadixEngineException.class);
+
+		assertNotNull(ledgerEntryStore);
 	}
 
 	@Test
