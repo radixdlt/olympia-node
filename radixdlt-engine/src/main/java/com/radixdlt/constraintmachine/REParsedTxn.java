@@ -103,6 +103,6 @@ public final class REParsedTxn {
 
 	@Override
 	public String toString() {
-		return "REParsedTxn(" + txn + ", " + actions + ')';
+		return String.format("%s[%s][%s]", getClass().getSimpleName(), txn, actions);
 	}
 }
