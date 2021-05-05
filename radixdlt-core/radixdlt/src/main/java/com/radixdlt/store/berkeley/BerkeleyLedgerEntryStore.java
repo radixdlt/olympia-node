@@ -633,6 +633,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			if (transaction != null) {
 				transaction.abort();
 			}
+			log.warn("Error while storing atom: ", e);
 			throw new BerkeleyStoreException("Unable to store atom:\n" + txn, e);
 		}
 	}
@@ -679,6 +680,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			var atomCursorStatus = atomCursor.getSearchKeyRange(atomSearchKey, atomPosData, DEFAULT);
 			do {
 				if (atomCursorStatus != SUCCESS) {
+					log.info("Error {} while searching for atom ", atomCursorStatus);
 					throw new BerkeleyStoreException("Atom database search failure");
 				}
 				var offset = fromByteArray(atomPosData.getData());
@@ -690,6 +692,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 			return VerifiedTxnsAndProof.create(txns.build(), nextHeader);
 		} catch (IOException e) {
+			log.info("Error while reading atom from store", e);
 			throw new BerkeleyStoreException("Unable to read from atom store.", e);
 		} finally {
 			addTime(startTime, CounterType.ELAPSED_BDB_LEDGER_ENTRIES, CounterType.COUNT_BDB_LEDGER_ENTRIES);
