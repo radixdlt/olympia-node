@@ -17,7 +17,6 @@
 
 package com.radixdlt.atommodel.tokens;
 
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -28,15 +27,17 @@ import java.util.Objects;
  *  A particle which represents an amount of staked fungible tokens
  *  owned by some key owner, stored in an account and staked to a delegate address.
  */
-public final class StakedTokensParticle implements Particle {
-	private final ECPublicKey delegateKey;
-	private final REAddr owner;
+public final class StakedTokensParticle implements Fungible {
 	private final UInt256 amount;
 
+	// Bucket keys
+	private final REAddr owner;
+	private final ECPublicKey delegateKey;
+
 	public StakedTokensParticle(
-		ECPublicKey delegateKey,
+		UInt256 amount,
 		REAddr owner,
-		UInt256 amount
+		ECPublicKey delegateKey
 	) {
 		this.delegateKey = Objects.requireNonNull(delegateKey);
 		this.owner = Objects.requireNonNull(owner);
@@ -61,6 +62,7 @@ public final class StakedTokensParticle implements Particle {
 		);
 	}
 
+	@Override
 	public UInt256 getAmount() {
 		return this.amount;
 	}

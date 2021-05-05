@@ -52,8 +52,6 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
 			TokensParticle.class,
 			StakedTokensParticle.class,
-			TokensParticle::getAmount,
-			StakedTokensParticle::getAmount,
 			checkEquals(
 				TokensParticle::getHoldingAddr,
 				StakedTokensParticle::getOwner,
@@ -67,8 +65,6 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
 			StakedTokensParticle.class,
 			TokensParticle.class,
-			StakedTokensParticle::getAmount,
-			TokensParticle::getAmount,
 			checkEquals(
 				StakedTokensParticle::getOwner,
 				TokensParticle::getHoldingAddr,
@@ -82,8 +78,6 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
 			StakedTokensParticle.class,
 			StakedTokensParticle.class,
-			StakedTokensParticle::getAmount,
-			StakedTokensParticle::getAmount,
 			checkEquals(
 				StakedTokensParticle::getOwner,
 				StakedTokensParticle::getOwner,

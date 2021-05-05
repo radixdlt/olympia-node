@@ -19,6 +19,7 @@ package com.radixdlt.atommodel.routines;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.TxAction;
+import com.radixdlt.atommodel.tokens.Fungible;
 import com.radixdlt.atomos.ConstraintRoutine;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.RoutineCalls;
@@ -41,7 +42,7 @@ import java.util.function.Function;
 /**
  * Transition Procedure for one to one fungible types
  */
-public class CreateFungibleTransitionRoutine<I extends Particle, O extends Particle> implements ConstraintRoutine {
+public class CreateFungibleTransitionRoutine<I extends Fungible, O extends Fungible> implements ConstraintRoutine {
 	public interface ActionMapper<I, O> {
 		TxAction map(I i, O o, ImmutableIndex index);
 	}
@@ -96,8 +97,6 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 
 	private final Class<I> inputClass;
 	private final Class<O> outputClass;
-	private final Function<I, UInt256> inputAmountMapper;
-	private final Function<O, UInt256> outputAmountMapper;
 	private final BiFunction<I, O, Result> transition;
 	private final SignatureValidator<I, O> signatureValidator;
 	private final ActionMapper<I, O> actionMapper;
@@ -106,20 +105,14 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 	public CreateFungibleTransitionRoutine(
 		Class<I> inputClass,
 		Class<O> outputClass,
-		Function<I, UInt256> inputAmountMapper,
-		Function<O, UInt256> outputAmountMapper,
 		BiFunction<I, O, Result> transition,
 		SignatureValidator<I, O> signatureValidator,
 		ActionMapper<I, O> actionMapper
 	) {
-		Objects.requireNonNull(inputAmountMapper);
-		Objects.requireNonNull(outputAmountMapper);
 		Objects.requireNonNull(transition);
 
 		this.inputClass = inputClass;
 		this.outputClass = outputClass;
-		this.inputAmountMapper = inputAmountMapper;
-		this.outputAmountMapper = outputAmountMapper;
 		this.transition = transition;
 		this.signatureValidator = signatureValidator;
 		this.actionMapper = actionMapper;
@@ -148,8 +141,8 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 			@Override
 			public InputOutputReducer<I, O, VoidReducerState> inputOutputReducer() {
 				return (input, output, index, v) -> {
-					var i = inputAmountMapper.apply(input.getSubstate());
-					var o = outputAmountMapper.apply(output);
+					var i = input.getSubstate().getAmount();
+					var o = output.getAmount();
 					var compare = i.compareTo(o);
 					var txAction = actionMapper.map(input.getSubstate(), output, index);
 					if (compare == 0) {
@@ -178,8 +171,8 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 			@Override
 			public InputOutputReducer<I, O, UsedAmount> inputOutputReducer() {
 				return (input, output, index, used) -> {
-					var i = inputAmountMapper.apply(input.getSubstate());
-					var o = outputAmountMapper.apply(output);
+					var i = input.getSubstate().getAmount();
+					var o = output.getAmount();
 					if (used.isInput) {
 						i = i.subtract(used.getUsedAmount());
 					} else {

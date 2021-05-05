@@ -56,7 +56,7 @@ public final class UnstakeTokens implements TxAction {
 			StakedTokensParticle.class,
 			p -> p.getOwner().equals(accountAddr) && p.getDelegateKey().equals(delegateAddress),
 			StakedTokensParticle::getAmount,
-			amt -> new StakedTokensParticle(delegateAddress, accountAddr, amt),
+			amt -> new StakedTokensParticle(amt, accountAddr, delegateAddress),
 			amount,
 			"Not enough staked."
 		).with(amt -> new TokensParticle(accountAddr, amt, REAddr.ofNativeToken()));

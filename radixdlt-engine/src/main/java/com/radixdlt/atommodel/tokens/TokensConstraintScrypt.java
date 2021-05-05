@@ -77,8 +77,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
 			TokensParticle.class,
 			TokensParticle.class,
-			TokensParticle::getAmount,
-			TokensParticle::getAmount,
 			(i, o) -> Result.success(),
 			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getHoldingAddr()::allowToWithdrawFrom).orElse(false),
 			(i, o, index) -> {
