@@ -19,6 +19,8 @@
 package com.radixdlt.environment;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
@@ -36,6 +38,15 @@ import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 
 public class NoEpochsConsensusModule extends AbstractModule {
+	@Override
+	public void configure() {
+		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
+			.permitDuplicates();
+		eventBinder.addBinding().toInstance(ScheduledLocalTimeout.class);
+		eventBinder.addBinding().toInstance(VertexRequestTimeout.class);
+		eventBinder.addBinding().toInstance(ViewUpdate.class);
+		eventBinder.addBinding().toInstance(LedgerUpdate.class);
+	}
 
 	@ProvidesIntoSet
 	private StartProcessorOnRunner startProcessor(BFTEventProcessor processor) {

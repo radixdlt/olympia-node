@@ -576,16 +576,8 @@ public class SimulationTest {
 
 			// Runners
 			modules.add(new RxEnvironmentModule());
-			if (ledgerType.hasConsensus) {
-				if (!ledgerType.hasEpochs) {
-					modules.add(new MockedConsensusRunnerModule());
-				}
-			}
 			if (ledgerType.hasLedger && ledgerType.hasSync) {
 				modules.add(new MockedCommittedReaderModule());
-				if (!ledgerType.hasEpochs) {
-					modules.add(new NoEpochsSyncModule());
-				}
 			}
 
 			return new SimulationTest(

@@ -20,6 +20,8 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.radixdlt.application.NodeApplicationModule;
+import com.radixdlt.environment.NoEpochsConsensusModule;
+import com.radixdlt.environment.NoEpochsSyncModule;
 import com.radixdlt.ledger.MockedCommandGeneratorModule;
 import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
@@ -83,6 +85,8 @@ public final class FunctionalNodeModule extends AbstractModule {
 			install(new ConsensusModule());
 			if (hasEpochs) {
 				install(new EpochsConsensusModule());
+			} else {
+				install(new NoEpochsConsensusModule());
 			}
 		}
 
@@ -94,6 +98,8 @@ public final class FunctionalNodeModule extends AbstractModule {
 				install(new SyncServiceModule());
 				if (hasEpochs) {
 					install(new EpochsSyncModule());
+				} else {
+					install(new NoEpochsSyncModule());
 				}
 			}
 		}

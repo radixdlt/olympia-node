@@ -39,7 +39,6 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.FunctionalNodeModule;
 import com.radixdlt.MockedCryptoModule;
@@ -240,7 +239,6 @@ public final class DeterministicTest {
 				@Override
 				protected void configure() {
 					bind(BFTValidatorSet.class).toInstance(validatorSet);
-					install(new NoEpochsConsensusModule());
 				}
 			});
 		}
