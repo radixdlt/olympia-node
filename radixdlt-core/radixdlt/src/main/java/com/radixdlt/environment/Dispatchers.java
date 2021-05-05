@@ -21,6 +21,8 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -116,8 +118,17 @@ public final class Dispatchers {
 	private static final class RemoteDispatcherProvider<T> implements Provider<RemoteEventDispatcher<T>> {
 		@Inject
 		private Provider<Environment> environmentProvider;
+
 		@Inject
 		private SystemCounters systemCounters;
+
+		@Inject
+		@Self
+		private BFTNode self;
+
+		@Inject
+		private Set<EventProcessorOnDispatch<?>> onDispatchProcessors;
+
 		private final SystemCounters.CounterType counterType;
 		private final Class<T> c;
 
@@ -135,9 +146,18 @@ public final class Dispatchers {
 
 		@Override
 		public RemoteEventDispatcher<T> get() {
-			RemoteEventDispatcher<T> dispatcher = environmentProvider.get().getRemoteDispatcher(c);
+			var remoteDispatcher = environmentProvider.get().getRemoteDispatcher(c);
+			var localDispatcher = environmentProvider.get().getDispatcher(c);
+			final Set<EventProcessor<T>> onDispatch = onDispatchProcessors.stream()
+				.flatMap(p -> p.getProcessor(c).stream())
+				.collect(Collectors.toSet());
 			return (node, e) -> {
-				dispatcher.dispatch(node, e);
+				if (node.equals(self)) {
+					localDispatcher.dispatch(e);
+				} else {
+					remoteDispatcher.dispatch(node, e);
+				}
+				onDispatch.forEach(p -> p.process(e));
 				if (counterType != null) {
 					systemCounters.increment(counterType);
 				}

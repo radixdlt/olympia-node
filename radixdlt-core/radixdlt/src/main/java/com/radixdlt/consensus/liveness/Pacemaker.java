@@ -90,8 +90,8 @@ public final class Pacemaker {
 		PacemakerTimeoutCalculator timeoutCalculator,
 		NextTxnsGenerator nextTxnsGenerator,
 		RemoteEventDispatcher<Proposal> proposalDispatcher,
-		Hasher hasher,
 		RemoteEventDispatcher<Vote> voteDispatcher,
+		Hasher hasher,
 		TimeSupplier timeSupplier,
 		ViewUpdate initialViewUpdate,
 		SystemCounters systemCounters
@@ -218,7 +218,8 @@ public final class Pacemaker {
 				vote -> this.voteDispatcher.dispatch(this.validatorSet.nodes(), vote),
 				/* otherwise, we asynchronously insert an empty vertex and, when done,
 					we send a timeout vote on it (see processBFTUpdate) */
-				() -> createTimeoutVertexAndSendVote(view));
+				() -> createTimeoutVertexAndSendVote(view)
+			);
 
 		rescheduleTimeout(scheduledTimeout);
 	}

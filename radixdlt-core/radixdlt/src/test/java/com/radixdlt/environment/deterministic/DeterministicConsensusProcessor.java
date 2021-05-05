@@ -17,26 +17,14 @@
 
 package com.radixdlt.environment.deterministic;
 
-import com.google.inject.Inject;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTHighQCUpdate;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.ViewUpdate;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
-import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.VertexRequestTimeout;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.RemoteEventProcessor;
-import com.radixdlt.environment.StartProcessor;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.statecomputer.AtomsCommittedToLedger;
+import com.radixdlt.environment.EventProcessorOnRunner;
+import com.radixdlt.environment.RemoteEventProcessorOnRunner;
+import com.radixdlt.environment.StartProcessorOnRunner;
 
+import javax.inject.Inject;
 import java.util.Objects;
 import java.util.Set;
 
@@ -44,103 +32,63 @@ import java.util.Set;
  * Consensus only (no epochs) deterministic consensus processor
  */
 public class DeterministicConsensusProcessor implements DeterministicMessageProcessor {
-	private final Set<StartProcessor> startProcessors;
-	private final Set<RemoteEventProcessor<GetVerticesRequest>> verticesRequestProcessors;
-	private final Set<RemoteEventProcessor<GetVerticesResponse>> verticesResponseProcessors;
-	private final Set<RemoteEventProcessor<GetVerticesErrorResponse>> bftSyncErrorResponseProcessors;
-	private final Set<EventProcessor<BFTHighQCUpdate>> bftHighQCUpdateProcessors;
-	private final Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors;
-	private final Set<EventProcessor<BFTRebuildUpdate>> bftRebuildUpdateProcessors;
-	private final Set<EventProcessor<ViewUpdate>> viewUpdateProcessors;
-	private final Set<EventProcessor<ScheduledLocalTimeout>> timeoutProcessors;
-	private final Set<EventProcessor<LedgerUpdate>> ledgerUpdateProcessors;
-	private final Set<EventProcessor<Proposal>> localProposalProcessors;
-	private final Set<RemoteEventProcessor<Proposal>> remoteProposalProcessors;
-	private final Set<EventProcessor<Vote>> localVoteProcessors;
-	private final Set<RemoteEventProcessor<Vote>> remoteVoteProcessors;
-	private final Set<EventProcessor<VertexRequestTimeout>> vertexTimeoutProcessors;
 	private final BFTNode self;
+	private final Set<StartProcessorOnRunner> startProcessors;
+	private final Set<EventProcessorOnRunner<?>> processorOnRunners;
+	private final Set<RemoteEventProcessorOnRunner<?>> remoteProcessorOnRunners;
 
 	@Inject
 	public DeterministicConsensusProcessor(
 		@Self BFTNode self,
-		Set<StartProcessor> startProcessors,
-		Set<RemoteEventProcessor<GetVerticesRequest>> verticesRequestProcessors,
-		Set<RemoteEventProcessor<GetVerticesResponse>> verticesResponseProcessors,
-		Set<RemoteEventProcessor<GetVerticesErrorResponse>> bftSyncErrorResponseProcessors,
-		Set<EventProcessor<ViewUpdate>> viewUpdateProcessors,
-		Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors,
-		Set<EventProcessor<BFTRebuildUpdate>> bftRebuildUpdateProcessors,
-		Set<EventProcessor<BFTHighQCUpdate>> bftHighQCUpdateProcessors,
-		Set<EventProcessor<ScheduledLocalTimeout>> timeoutProcessors,
-		Set<EventProcessor<LedgerUpdate>> ledgerUpdateProcessors,
-		Set<EventProcessor<Proposal>> localProposalProcessors,
-		Set<RemoteEventProcessor<Proposal>> remoteProposalProcessors,
-		Set<EventProcessor<Vote>> localVoteProcessors,
-		Set<RemoteEventProcessor<Vote>> remoteVoteProcessors,
-		Set<EventProcessor<VertexRequestTimeout>> vertexTimeoutProcessors
+		Set<StartProcessorOnRunner> startProcessors,
+		Set<EventProcessorOnRunner<?>> processorOnRunners,
+		Set<RemoteEventProcessorOnRunner<?>> remoteProcessorOnRunners
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.startProcessors = Objects.requireNonNull(startProcessors);
-		this.verticesRequestProcessors = Objects.requireNonNull(verticesRequestProcessors);
-		this.verticesResponseProcessors = Objects.requireNonNull(verticesResponseProcessors);
-		this.bftSyncErrorResponseProcessors = Objects.requireNonNull(bftSyncErrorResponseProcessors);
-		this.bftUpdateProcessors = Objects.requireNonNull(bftUpdateProcessors);
-		this.bftRebuildUpdateProcessors = Objects.requireNonNull(bftRebuildUpdateProcessors);
-		this.bftHighQCUpdateProcessors = Objects.requireNonNull(bftHighQCUpdateProcessors);
-		this.viewUpdateProcessors = Objects.requireNonNull(viewUpdateProcessors);
-		this.timeoutProcessors = Objects.requireNonNull(timeoutProcessors);
-		this.ledgerUpdateProcessors = Objects.requireNonNull(ledgerUpdateProcessors);
-		this.localVoteProcessors = Objects.requireNonNull(localVoteProcessors);
-		this.remoteVoteProcessors = Objects.requireNonNull(remoteVoteProcessors);
-		this.localProposalProcessors = Objects.requireNonNull(localProposalProcessors);
-		this.remoteProposalProcessors = Objects.requireNonNull(remoteProposalProcessors);
-		this.vertexTimeoutProcessors = Objects.requireNonNull(vertexTimeoutProcessors);
+		this.processorOnRunners = Objects.requireNonNull(processorOnRunners);
+		this.remoteProcessorOnRunners = Objects.requireNonNull(remoteProcessorOnRunners);
 	}
 
 	@Override
 	public void start() {
-		this.startProcessors.forEach(StartProcessor::start);
+		startProcessors.forEach(p -> p.getProcessor().start());
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <T> boolean tryExecute(T event, TypeLiteral<?> msgType, EventProcessorOnRunner<?> processor) {
+		if (msgType != null) {
+			var typeLiteral = (TypeLiteral<T>) msgType;
+			final var maybeProcessor = processor.getProcessor(typeLiteral);
+			maybeProcessor.ifPresent(p -> p.process(event));
+			return maybeProcessor.isPresent();
+		} else {
+			final var eventClass = (Class<T>) event.getClass();
+			final var maybeProcessor = processor.getProcessor(eventClass);
+			maybeProcessor.ifPresent(p -> p.process(event));
+			return maybeProcessor.isPresent();
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <T> boolean tryExecute(BFTNode origin, T event, RemoteEventProcessorOnRunner<?> processor) {
+		final var eventClass = (Class<T>) event.getClass();
+		final var maybeProcessor = processor.getProcessor(eventClass);
+		maybeProcessor.ifPresent(p -> p.process(origin, event));
+		return maybeProcessor.isPresent();
 	}
 
 	@Override
-	public void handleMessage(BFTNode origin, Object message) {
-		if (message instanceof ScheduledLocalTimeout) {
-			timeoutProcessors.forEach(p -> p.process((ScheduledLocalTimeout) message));
-		} else if (message instanceof Proposal) {
-			if (origin.equals(self)) {
-				localProposalProcessors.forEach(p -> p.process((Proposal) message));
-			} else {
-				remoteProposalProcessors.forEach(p -> p.process(origin, (Proposal) message));
+	public void handleMessage(BFTNode origin, Object message, TypeLiteral<?> msgType) {
+		boolean messageHandled = false;
+		if (Objects.equals(self, origin)) {
+			for (EventProcessorOnRunner<?> p : processorOnRunners) {
+				messageHandled = tryExecute(message, msgType, p) || messageHandled;
 			}
-		} else if (message instanceof Vote) {
-			if (origin.equals(self)) {
-				localVoteProcessors.forEach(p -> p.process((Vote) message));
-			} else {
-				remoteVoteProcessors.forEach(p -> p.process(origin, (Vote) message));
-			}
-		} else if (message instanceof ViewUpdate) {
-			viewUpdateProcessors.forEach(p -> p.process((ViewUpdate) message));
-		} else if (message instanceof GetVerticesRequest) {
-			verticesRequestProcessors.forEach(p -> p.process(origin, (GetVerticesRequest) message));
-		} else if (message instanceof GetVerticesResponse) {
-			verticesResponseProcessors.forEach(p -> p.process(origin, (GetVerticesResponse) message));
-		} else if (message instanceof GetVerticesErrorResponse) {
-			bftSyncErrorResponseProcessors.forEach(p -> p.process(origin, (GetVerticesErrorResponse) message));
-		} else if (message instanceof BFTHighQCUpdate) {
-			bftHighQCUpdateProcessors.forEach(p -> p.process((BFTHighQCUpdate) message));
-		} else if (message instanceof BFTInsertUpdate) {
-			bftUpdateProcessors.forEach(p -> p.process((BFTInsertUpdate) message));
-		} else if (message instanceof BFTRebuildUpdate) {
-			bftRebuildUpdateProcessors.forEach(p -> p.process((BFTRebuildUpdate) message));
-		} else if (message instanceof LedgerUpdate) {
-			ledgerUpdateProcessors.forEach(p -> p.process((LedgerUpdate) message));
-		} else if (message instanceof VertexRequestTimeout) {
-			vertexTimeoutProcessors.forEach(p -> p.process((VertexRequestTimeout) message));
-		} else if (message instanceof AtomsCommittedToLedger) {
-			// Don't need to process
 		} else {
-			throw new IllegalArgumentException("Unknown message type: " + message.getClass().getName());
+			for (RemoteEventProcessorOnRunner<?> p : remoteProcessorOnRunners) {
+				messageHandled = tryExecute(origin, message, p) || messageHandled;
+			}
 		}
 	}
 }

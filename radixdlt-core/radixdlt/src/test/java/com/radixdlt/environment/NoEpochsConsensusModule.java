@@ -38,77 +38,136 @@ import com.radixdlt.ledger.LedgerUpdate;
 public class NoEpochsConsensusModule extends AbstractModule {
 
 	@ProvidesIntoSet
-	private StartProcessor startProcessor(BFTEventProcessor processor) {
-		return processor::start;
+	private StartProcessorOnRunner startProcessor(BFTEventProcessor processor) {
+		return new StartProcessorOnRunner(
+			Runners.CONSENSUS,
+			processor::start
+		);
 	}
 
 	@ProvidesIntoSet
-	private EventProcessor<Proposal> proposalProcessor(BFTEventProcessor processor) {
-		return processor::processProposal;
+	private EventProcessorOnRunner<?> proposalProcessor(BFTEventProcessor processor) {
+		return new EventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			Proposal.class,
+			processor::processProposal
+		);
 	}
 
 	@ProvidesIntoSet
-	private RemoteEventProcessor<Proposal> remoteProposalProcessor(BFTEventProcessor processor) {
-		return (node, proposal) -> processor.processProposal(proposal);
+	private RemoteEventProcessorOnRunner<?> remoteProposalProcessor(BFTEventProcessor processor) {
+		return new RemoteEventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			Proposal.class,
+			(node, proposal) -> processor.processProposal(proposal)
+		);
 	}
 
 	@ProvidesIntoSet
-	private EventProcessor<Vote> voteProcessor(BFTEventProcessor processor) {
-		return processor::processVote;
+	private EventProcessorOnRunner<?> voteProcessor(BFTEventProcessor processor) {
+		return new EventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			Vote.class,
+			processor::processVote
+		);
 	}
 
 	@ProvidesIntoSet
-	private RemoteEventProcessor<Vote> remoteVoteProcessor(BFTEventProcessor processor) {
-		return (node, vote) -> processor.processVote(vote);
+	private RemoteEventProcessorOnRunner<?> remoteVoteProcessor(BFTEventProcessor processor) {
+		return new RemoteEventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			Vote.class,
+			(node, vote) -> processor.processVote(vote)
+		);
 	}
 
 	@ProvidesIntoSet
-	private EventProcessor<ScheduledLocalTimeout> timeoutProcessor(BFTEventProcessor processor) {
-		return processor::processLocalTimeout;
+	private EventProcessorOnRunner<?> timeoutProcessor(BFTEventProcessor processor) {
+		return new EventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			ScheduledLocalTimeout.class,
+			processor::processLocalTimeout
+		);
 	}
 
 	@ProvidesIntoSet
-	public EventProcessor<VertexRequestTimeout> bftSyncTimeoutProcessor(BFTSync bftSync) {
-		return bftSync.vertexRequestTimeoutEventProcessor();
+	public EventProcessorOnRunner<?> bftSyncTimeoutProcessor(BFTSync bftSync) {
+		return new EventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			VertexRequestTimeout.class,
+			bftSync.vertexRequestTimeoutEventProcessor()
+		);
 	}
 
 	@ProvidesIntoSet
-	private EventProcessor<ViewUpdate> viewUpdateProcessor(BFTEventProcessor processor) {
-		return processor::processViewUpdate;
+	private EventProcessorOnRunner<?> viewUpdateProcessor(BFTEventProcessor processor) {
+		return new EventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			ViewUpdate.class,
+			processor::processViewUpdate
+		);
 	}
 
 	@ProvidesIntoSet
-	private RemoteEventProcessor<GetVerticesResponse> bftSyncResponseProcessor(BFTSync bftSync) {
-		return bftSync.responseProcessor();
+	private RemoteEventProcessorOnRunner<?> bftSyncResponseProcessor(BFTSync bftSync) {
+		return new RemoteEventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			GetVerticesResponse.class,
+			bftSync.responseProcessor()
+		);
 	}
 
 	@ProvidesIntoSet
-	private RemoteEventProcessor<GetVerticesErrorResponse> bftSyncErrorResponseProcessor(BFTSync bftSync) {
-		return bftSync.errorResponseProcessor();
+	private RemoteEventProcessorOnRunner<?> bftSyncErrorResponseProcessor(BFTSync bftSync) {
+		return new RemoteEventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			GetVerticesErrorResponse.class,
+			bftSync.errorResponseProcessor()
+		);
 	}
 
 	@ProvidesIntoSet
-	private RemoteEventProcessor<GetVerticesRequest> bftSyncRequestProcessor(VertexStoreBFTSyncRequestProcessor processor) {
-		return processor;
+	private RemoteEventProcessorOnRunner<?> bftSyncRequestProcessor(VertexStoreBFTSyncRequestProcessor processor) {
+		return new RemoteEventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			GetVerticesRequest.class,
+			processor
+		);
 	}
 
 	@ProvidesIntoSet
-	public EventProcessor<BFTRebuildUpdate> bftRebuildUpdateEventProcessor(BFTEventProcessor eventProcessor) {
-		return eventProcessor::processBFTRebuildUpdate;
+	public EventProcessorOnRunner<?> bftRebuildUpdateEventProcessor(BFTEventProcessor eventProcessor) {
+		return new EventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			BFTRebuildUpdate.class,
+			eventProcessor::processBFTRebuildUpdate
+		);
 	}
 
 	@ProvidesIntoSet
-	public EventProcessor<BFTInsertUpdate> bftUpdateEventProcessor(BFTEventProcessor eventProcessor) {
-		return eventProcessor::processBFTUpdate;
+	public EventProcessorOnRunner<?> bftUpdateEventProcessor(BFTEventProcessor eventProcessor) {
+		return new EventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			BFTInsertUpdate.class,
+			eventProcessor::processBFTUpdate
+		);
 	}
 
 	@ProvidesIntoSet
-	public EventProcessor<BFTInsertUpdate> bftSync(BFTSync bftSync) {
-		return bftSync::processBFTUpdate;
+	public EventProcessorOnRunner<?> bftSync(BFTSync bftSync) {
+		return new EventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			BFTInsertUpdate.class,
+			bftSync::processBFTUpdate
+		);
 	}
 
 	@ProvidesIntoSet
-	public EventProcessor<LedgerUpdate> baseLedgerUpdateEventProcessor(BFTSync bftSync) {
-		return bftSync.baseLedgerUpdateEventProcessor();
+	public EventProcessorOnRunner<?> baseLedgerUpdateEventProcessor(BFTSync bftSync) {
+		return new EventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			LedgerUpdate.class,
+			bftSync.baseLedgerUpdateEventProcessor()
+		);
 	}
 }

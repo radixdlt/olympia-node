@@ -179,6 +179,9 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<RemoteEventDispatcher<Proposal>>() { })
 			.toProvider(Dispatchers.remoteDispatcherProvider(Proposal.class)).in(Scopes.SINGLETON);
 
+		bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() { })
+			.toProvider(Dispatchers.remoteDispatcherProvider(Vote.class)).in(Scopes.SINGLETON);
+
 		// BFT Sync
 		bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesResponse>>() { })
 			.toProvider(Dispatchers.remoteDispatcherProvider(GetVerticesResponse.class)).in(Scopes.SINGLETON);
@@ -238,9 +241,6 @@ public class DispatcherModule extends AbstractModule {
 
 		final var viewQuorumReachedKey = new TypeLiteral<EventProcessor<ViewQuorumReached>>() { };
 		Multibinder.newSetBinder(binder(), viewQuorumReachedKey, ProcessOnDispatch.class);
-
-		final var voteKey = new TypeLiteral<EventProcessor<Vote>>() { };
-		Multibinder.newSetBinder(binder(), voteKey, ProcessOnDispatch.class);
 
 		final var ledgerUpdateKey = new TypeLiteral<EventProcessor<LedgerUpdate>>() { };
 		Multibinder.newSetBinder(binder(), ledgerUpdateKey, ProcessOnDispatch.class);
@@ -449,18 +449,6 @@ public class DispatcherModule extends AbstractModule {
 		};
 	}
 
-	@Provides
-	private RemoteEventDispatcher<Vote> voteDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<Vote>> processors,
-		Environment environment
-	) {
-		RemoteEventDispatcher<Vote> dispatcher = environment.getRemoteDispatcher(Vote.class);
-		return (node, vote) -> {
-			logger.trace("Vote sending to {}: {}", node, vote);
-			dispatcher.dispatch(node, vote);
-			processors.forEach(e -> e.process(vote));
-		};
-	}
 
 	@Provides
 	@Singleton

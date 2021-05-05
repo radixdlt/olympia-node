@@ -19,6 +19,7 @@ package com.radixdlt.integration.recovery;
 
 import com.google.inject.Provides;
 import com.radixdlt.client.ValidatorAddress;
+import com.radixdlt.environment.deterministic.DeterministicConsensusProcessor;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -160,7 +161,7 @@ public class RecoveryLivenessTest {
 		for (Supplier<Injector> nodeCreator : nodeCreators) {
 			this.nodes.add(nodeCreator.get());
 		}
-		this.nodes.forEach(i -> i.getInstance(DeterministicEpochsConsensusProcessor.class).start());
+		this.nodes.forEach(i -> i.getInstance(DeterministicConsensusProcessor.class).start());
 	}
 
 	boolean mutate(ControlledMessage message, MessageQueue queue) {
@@ -207,7 +208,7 @@ public class RecoveryLivenessTest {
 		this.network.dropMessages(m -> m.channelId().receiverIndex() == index);
 		Injector injector = nodeCreators.get(index).get();
 		stopDatabase(this.nodes.set(index, injector));
-		withThreadCtx(injector, () -> injector.getInstance(DeterministicEpochsConsensusProcessor.class).start());
+		withThreadCtx(injector, () -> injector.getInstance(DeterministicConsensusProcessor.class).start());
 	}
 
 	private void initSync() {
@@ -238,7 +239,8 @@ public class RecoveryLivenessTest {
 		String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
 		ThreadContext.put("bftNode", bftNode);
 		try {
-			injector.getInstance(DeterministicEpochsConsensusProcessor.class).handleMessage(msg.value().origin(), msg.value().message());
+			injector.getInstance(DeterministicConsensusProcessor.class)
+				.handleMessage(msg.value().origin(), msg.value().message(), msg.value().typeLiteral());
 		} finally {
 			ThreadContext.remove("bftNode");
 		}

@@ -33,6 +33,7 @@ import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.deterministic.DeterministicConsensusProcessor;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
@@ -55,7 +56,7 @@ public final class MempoolFillAndEmptyTest {
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
-    @Inject private DeterministicEpochsConsensusProcessor processor;
+    @Inject private DeterministicConsensusProcessor processor;
     @Inject private DeterministicNetwork network;
     @Inject private EventDispatcher<MempoolFillerUpdate> mempoolFillerUpdateEventDispatcher;
     @Inject private EventDispatcher<ScheduledMempoolFill> scheduledMempoolFillEventDispatcher;
@@ -86,7 +87,7 @@ public final class MempoolFillAndEmptyTest {
     private void fillAndEmptyMempool() {
         while (systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT) < 1000) {
             ControlledMessage msg = network.nextMessage().value();
-            processor.handleMessage(msg.origin(), msg.message());
+            processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
             if (msg.message() instanceof EpochViewUpdate) {
                 scheduledMempoolFillEventDispatcher.dispatch(ScheduledMempoolFill.create());
             }
@@ -94,7 +95,7 @@ public final class MempoolFillAndEmptyTest {
 
         for (int i = 0; i < 10000; i++) {
             ControlledMessage msg = network.nextMessage().value();
-            processor.handleMessage(msg.origin(), msg.message());
+            processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
             if (systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT) == 0) {
                 break;
             }

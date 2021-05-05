@@ -257,7 +257,7 @@ public final class DeterministicTest {
 				public void configure() {
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
 					bind(BFTValidatorSet.class).toInstance(epochToValidatorSetMapping.apply(1L));
-					bind(DeterministicMessageProcessor.class).to(DeterministicEpochsConsensusProcessor.class);
+					bind(DeterministicMessageProcessor.class).to(DeterministicConsensusProcessor.class);
 					bind(new TypeLiteral<EventProcessor<EpochView>>() { }).toInstance(epochView -> { });
 					bind(new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() { }).toInstance(t -> { });
 				}

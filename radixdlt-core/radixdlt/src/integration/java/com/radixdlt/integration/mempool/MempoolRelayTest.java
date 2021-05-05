@@ -23,6 +23,7 @@ import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.client.ValidatorAddress;
+import com.radixdlt.environment.deterministic.DeterministicConsensusProcessor;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -144,7 +145,7 @@ public class MempoolRelayTest {
 			.map(Supplier::get)
 			.collect(ImmutableList.toImmutableList());
 
-		this.nodes.forEach(i -> i.getInstance(DeterministicEpochsConsensusProcessor.class).start());
+		this.nodes.forEach(i -> i.getInstance(DeterministicConsensusProcessor.class).start());
 	}
 
 	private void injectGenesisAtomToThis(ImmutableList<ECKeyPair> nodeKeys) {
@@ -223,8 +224,8 @@ public class MempoolRelayTest {
 		final var nodeIndex = msg.value().channelId().receiverIndex();
 		final var injector = this.nodes.get(nodeIndex);
 		withThreadCtx(injector, () ->
-			injector.getInstance(DeterministicEpochsConsensusProcessor.class)
-				.handleMessage(msg.value().origin(), msg.value().message())
+			injector.getInstance(DeterministicConsensusProcessor.class)
+				.handleMessage(msg.value().origin(), msg.value().message(), msg.value().typeLiteral())
 		);
 		return msg;
 	}

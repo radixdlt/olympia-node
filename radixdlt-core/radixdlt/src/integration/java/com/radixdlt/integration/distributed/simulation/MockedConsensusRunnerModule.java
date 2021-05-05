@@ -18,25 +18,18 @@
 package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.NoEpochsConsensusModule;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.integration.distributed.BFTRunner;
 import com.radixdlt.ledger.LedgerUpdate;
 
 public class MockedConsensusRunnerModule extends AbstractModule {
 	@Override
 	public void configure() {
-		MapBinder<String, ModuleRunner> moduleRunners = MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class);
-		moduleRunners.addBinding(Runners.CONSENSUS).to(BFTRunner.class).in(Scopes.SINGLETON);
 		install(new NoEpochsConsensusModule());
 
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
@@ -46,5 +39,4 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(ViewUpdate.class);
 		eventBinder.addBinding().toInstance(LedgerUpdate.class);
 	}
-
 }

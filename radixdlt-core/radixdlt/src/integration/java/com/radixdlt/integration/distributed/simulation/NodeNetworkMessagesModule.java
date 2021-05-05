@@ -28,7 +28,6 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
@@ -39,8 +38,6 @@ import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import com.radixdlt.mempool.MempoolAdd;
-import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.core.Observable;
 
 public class NodeNetworkMessagesModule extends AbstractModule {
 	private final SimulationNetwork simulationNetwork;
@@ -112,40 +109,5 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	@ProvidesIntoSet
 	private RxRemoteDispatcher<?> ledgerStatusUpdateDispatcher(SimulatedNetworkImpl network) {
 		return RxRemoteDispatcher.create(LedgerStatusUpdate.class, network.remoteEventDispatcher(LedgerStatusUpdate.class));
-	}
-
-	@Provides
-	private Observable<Proposal> localProposals(SimulatedNetworkImpl network) {
-		return network.localEvents(Proposal.class);
-	}
-
-	@Provides
-	private Observable<Vote> localVotes(SimulatedNetworkImpl network) {
-		return network.localEvents(Vote.class);
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<Proposal>> remoteProposals(SimulatedNetworkImpl network) {
-		return network.remoteEvents(Proposal.class);
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<Vote>> remoteVotes(SimulatedNetworkImpl network) {
-		return network.remoteEvents(Vote.class);
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<GetVerticesRequest>> vertexRequests(SimulatedNetworkImpl network) {
-		return network.remoteEvents(GetVerticesRequest.class);
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<GetVerticesResponse>> vertexResponses(SimulatedNetworkImpl network) {
-		return network.remoteEvents(GetVerticesResponse.class);
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<GetVerticesErrorResponse>> errorResponses(SimulatedNetworkImpl network) {
-		return network.remoteEvents(GetVerticesErrorResponse.class);
 	}
 }

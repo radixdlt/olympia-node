@@ -94,6 +94,8 @@ public final class ConsensusModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(ViewUpdate.class);
 		eventBinder.addBinding().toInstance(BFTRebuildUpdate.class);
 		eventBinder.addBinding().toInstance(BFTInsertUpdate.class);
+		eventBinder.addBinding().toInstance(Proposal.class);
+		eventBinder.addBinding().toInstance(Vote.class);
 	}
 
 	@Provides
@@ -198,8 +200,8 @@ public final class ConsensusModule extends AbstractModule {
 			timeoutCalculator,
 			nextTxnsGenerator,
 			proposalDispatcher,
-			hasher,
 			voteDispatcher,
+			hasher,
 			timeSupplier,
 			initialViewUpdate,
 			systemCounters

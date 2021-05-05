@@ -33,7 +33,6 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRecoveryModule;
-import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.FunctionalNodeModule;
 import com.radixdlt.LedgerRecoveryModule;
 import com.radixdlt.MockedKeyModule;
@@ -580,8 +579,6 @@ public class SimulationTest {
 			if (ledgerType.hasConsensus) {
 				if (!ledgerType.hasEpochs) {
 					modules.add(new MockedConsensusRunnerModule());
-				} else {
-					modules.add(new ConsensusRunnerModule());
 				}
 			}
 			if (ledgerType.hasLedger && ledgerType.hasSync) {

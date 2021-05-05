@@ -154,6 +154,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 					message.origin(),
 					message.channelId(),
 					mutateProposal(p, receiverIndex * factor),
+					message.typeLiteral(),
 					message.arrivalTime()
 				);
 			}

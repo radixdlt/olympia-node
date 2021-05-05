@@ -101,8 +101,8 @@ public class PacemakerTest {
 			this.timeoutCalculator,
 			this.nextTxnsGenerator,
 			this.proposalDispatcher,
+			this.voteDispatcher,
 			hasher,
-			voteDispatcher,
 			timeSupplier,
 			initialViewUpdate,
 			new SystemCountersImpl()

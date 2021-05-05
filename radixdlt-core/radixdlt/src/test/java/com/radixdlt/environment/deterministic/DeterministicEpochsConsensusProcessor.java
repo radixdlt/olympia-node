@@ -18,6 +18,7 @@
 package com.radixdlt.environment.deterministic;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
@@ -36,7 +37,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
-import com.radixdlt.environment.StartProcessor;
+import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAddFailure;
@@ -56,39 +57,40 @@ import javax.inject.Inject;
 @NotThreadSafe
 public final class DeterministicEpochsConsensusProcessor implements DeterministicMessageProcessor {
 	private final BFTNode self;
-	private final Map<Class<?>, EventProcessor<Object>>	eventProcessors;
-	private final Map<Class<?>, RemoteEventProcessor<Object>> remoteEventProcessors;
-	private final Set<StartProcessor> startProcessors;
-	private final Set<EventProcessor<Epoched<ScheduledLocalTimeout>>> epochTimeoutProcessors;
+	//private final Map<Class<?>, EventProcessor<Object>>	eventProcessors;
+	//private final Map<Class<?>, RemoteEventProcessor<Object>> remoteEventProcessors;
+	private final Set<StartProcessorOnRunner> startProcessors;
+	//private final Set<EventProcessor<Epoched<ScheduledLocalTimeout>>> epochTimeoutProcessors;
 	private final Set<EventProcessorOnRunner<?>> processorOnRunners;
 	private final Set<RemoteEventProcessorOnRunner<?>> remoteProcessorOnRunners;
 
 	@Inject
 	public DeterministicEpochsConsensusProcessor(
 		@Self BFTNode self,
-		Set<StartProcessor> startProcessors,
-		Set<EventProcessor<Vote>> localVoteProcessors,
-		Set<RemoteEventProcessor<Vote>> remoteVoteProcessors,
-		Set<EventProcessor<Proposal>> localProposalProcessors,
-		Set<RemoteEventProcessor<Proposal>> remoteProposalProcessors,
-		Set<EventProcessor<Epoched<ScheduledLocalTimeout>>> epochTimeoutProcessors,
-		Set<RemoteEventProcessor<GetVerticesRequest>> verticesRequestProcessors,
-		Set<RemoteEventProcessor<GetVerticesResponse>> verticesResponseProcessors,
-		Set<EventProcessor<VertexRequestTimeout>> vertexRequestTimeoutEventProcessors,
-		Set<EventProcessor<BFTRebuildUpdate>> rebuildUpdateEventProcessors,
-		Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors,
-		Set<EventProcessor<BFTHighQCUpdate>> bftHighQcUpdateProcessors,
-		Set<EventProcessor<EpochViewUpdate>> epochViewUpdateEventProcessors,
-		Set<EventProcessor<EpochsLedgerUpdate>> epochsLedgerUpdateEventProcessors,
+		Set<StartProcessorOnRunner> startProcessors,
+		//Set<EventProcessor<Vote>> localVoteProcessors,
+		//Set<RemoteEventProcessor<Vote>> remoteVoteProcessors,
+		//Set<EventProcessor<Proposal>> localProposalProcessors,
+		//Set<RemoteEventProcessor<Proposal>> remoteProposalProcessors,
+		//Set<EventProcessor<Epoched<ScheduledLocalTimeout>>> epochTimeoutProcessors,
+		//Set<RemoteEventProcessor<GetVerticesRequest>> verticesRequestProcessors,
+		//Set<RemoteEventProcessor<GetVerticesResponse>> verticesResponseProcessors,
+		//Set<EventProcessor<VertexRequestTimeout>> vertexRequestTimeoutEventProcessors,
+		//Set<EventProcessor<BFTRebuildUpdate>> rebuildUpdateEventProcessors,
+		//Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors,
+		//Set<EventProcessor<BFTHighQCUpdate>> bftHighQcUpdateProcessors,
+		//Set<EventProcessor<EpochViewUpdate>> epochViewUpdateEventProcessors,
+		//Set<EventProcessor<EpochsLedgerUpdate>> epochsLedgerUpdateEventProcessors,
 		Set<EventProcessorOnRunner<?>> processorOnRunners,
 		Set<RemoteEventProcessorOnRunner<?>> remoteProcessorOnRunners
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.startProcessors = Objects.requireNonNull(startProcessors);
-		this.epochTimeoutProcessors = Objects.requireNonNull(epochTimeoutProcessors);
+		//this.epochTimeoutProcessors = Objects.requireNonNull(epochTimeoutProcessors);
 		this.processorOnRunners = Objects.requireNonNull(processorOnRunners);
 		this.remoteProcessorOnRunners = Objects.requireNonNull(remoteProcessorOnRunners);
 
+		/*
 		ImmutableMap.Builder<Class<?>, EventProcessor<Object>> processorsBuilder = ImmutableMap.builder();
 		// TODO: allow randomization in processing order for a given message
 		processorsBuilder.put(
@@ -131,19 +133,27 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			(node, event) -> verticesResponseProcessors.forEach(p -> p.process(node, (GetVerticesResponse) event))
 		);
 		remoteEventProcessors = remoteProcessorsBuilder.build();
+		 */
 	}
 
 	@Override
 	public void start() {
-		startProcessors.forEach(StartProcessor::start);
+		startProcessors.forEach(p -> p.getProcessor().start());
 	}
 
 	@SuppressWarnings("unchecked")
-	private static <T> boolean tryExecute(T event, EventProcessorOnRunner<?> processor) {
-		final var eventClass = (Class<T>) event.getClass();
-		final var maybeProcessor = processor.getProcessor(eventClass);
-		maybeProcessor.ifPresent(p -> p.process(event));
-		return maybeProcessor.isPresent();
+	private static <T> boolean tryExecute(T event, TypeLiteral<?> msgType, EventProcessorOnRunner<?> processor) {
+		if (msgType != null) {
+			var typeLiteral = (TypeLiteral<T>) msgType;
+			final var maybeProcessor = processor.getProcessor(typeLiteral);
+			maybeProcessor.ifPresent(p -> p.process(event));
+			return maybeProcessor.isPresent();
+		} else {
+			final var eventClass = (Class<T>) event.getClass();
+			final var maybeProcessor = processor.getProcessor(eventClass);
+			maybeProcessor.ifPresent(p -> p.process(event));
+			return maybeProcessor.isPresent();
+		}
 	}
 
 	@SuppressWarnings("unchecked")
@@ -155,21 +165,11 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 	}
 
 	@Override
-	public void handleMessage(BFTNode origin, Object message) {
+	public void handleMessage(BFTNode origin, Object message, TypeLiteral<?> msgType) {
 		if (message instanceof ViewUpdate || message instanceof ScheduledLocalTimeout) {
 			// FIXME: Should remove this message type but required due to guice dependency graph
 			// FIXME: Should be fixable once an Epoch Environment is implemented
 			return;
-		} else if (message instanceof Epoched) {
-			Epoched<?> epoched = (Epoched<?>) message;
-			Object epochedMessage = epoched.event();
-			if (epochedMessage instanceof ScheduledLocalTimeout) {
-				@SuppressWarnings("unchecked")
-				Epoched<ScheduledLocalTimeout> epochTimeout = (Epoched<ScheduledLocalTimeout>) message;
-				this.epochTimeoutProcessors.forEach(p -> p.process(epochTimeout));
-			} else {
-				throw new IllegalArgumentException("Unknown epoch message type: " + epochedMessage.getClass().getName());
-			}
 		} else if (message instanceof LedgerUpdate) {
 			// Don't need to process
 		} else if (message instanceof AtomsCommittedToLedger) {
@@ -184,29 +184,35 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			boolean messageHandled = false;
 			if (Objects.equals(self, origin)) {
 				for (EventProcessorOnRunner<?> p : processorOnRunners) {
-					messageHandled = tryExecute(message, p) || messageHandled;
+					messageHandled = tryExecute(message, msgType, p) || messageHandled;
 				}
 
+				/*
 				var processor = eventProcessors.get(message.getClass());
 				if (processor != null) {
 					processor.process(message);
 					messageHandled = true;
 				}
+				 */
 			} else {
+				/*
 				var remoteEventProcessor = remoteEventProcessors.get(message.getClass());
 				if (remoteEventProcessor != null) {
 					remoteEventProcessor.process(origin, message);
 					messageHandled = true;
 				}
+				 */
 
 				for (RemoteEventProcessorOnRunner<?> p : remoteProcessorOnRunners) {
 					messageHandled = tryExecute(origin, message, p) || messageHandled;
 				}
 			}
 
+			/*
 			if (!messageHandled) {
 				throw new IllegalArgumentException("Unknown message type: " + message.getClass().getName());
 			}
+			 */
 		}
 	}
 }

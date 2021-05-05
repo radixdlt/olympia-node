@@ -122,7 +122,7 @@ public class MempoolTest {
 		var txn = createTxn(keyPair);
 
 		// Act
-		processor.handleMessage(self, MempoolAdd.create(txn));
+		processor.handleMessage(self, MempoolAdd.create(txn), null);
 
 		// Assert
 		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(1);
@@ -139,7 +139,7 @@ public class MempoolTest {
 		var txn = createTxn(keyPair);
 
 		// Act
-		processor.handleMessage(getFirstPeer(), MempoolAdd.create(txn));
+		processor.handleMessage(getFirstPeer(), MempoolAdd.create(txn), null);
 
 		// Assert
 		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(1);
@@ -156,7 +156,7 @@ public class MempoolTest {
 		var txn = createTxn(keyPair);
 
 		// Act
-		processor.handleMessage(self, MempoolAddSuccess.create(txn));
+		processor.handleMessage(self, MempoolAddSuccess.create(txn), null);
 
 		// Assert
 		assertThat(systemCounters.get(CounterType.MEMPOOL_RELAYER_SENT_COUNT)).isEqualTo(NUM_PEERS);
@@ -170,7 +170,7 @@ public class MempoolTest {
 		var txn = createTxn(keyPair);
 
 		// Act
-		processor.handleMessage(self, MempoolAddSuccess.create(txn, getFirstPeer()));
+		processor.handleMessage(self, MempoolAddSuccess.create(txn, getFirstPeer()), null);
 
 		// Assert
 		assertThat(systemCounters.get(CounterType.MEMPOOL_RELAYER_SENT_COUNT)).isEqualTo(NUM_PEERS - 1);
@@ -183,10 +183,10 @@ public class MempoolTest {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		var txn = createTxn(keyPair);
 		MempoolAdd mempoolAdd = MempoolAdd.create(txn);
-		processor.handleMessage(getFirstPeer(), mempoolAdd);
+		processor.handleMessage(getFirstPeer(), mempoolAdd, null);
 
 		// Act
-		processor.handleMessage(getFirstPeer(), mempoolAdd);
+		processor.handleMessage(getFirstPeer(), mempoolAdd, null);
 
 		// Assert
 		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(1);
@@ -199,12 +199,12 @@ public class MempoolTest {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		var txn = createTxn(keyPair, 2);
 		MempoolAdd mempoolAdd = MempoolAdd.create(txn);
-		processor.handleMessage(getFirstPeer(), mempoolAdd);
+		processor.handleMessage(getFirstPeer(), mempoolAdd, null);
 
 		// Act
 		var txn2 = createTxn(keyPair, 1);
 		MempoolAdd mempoolAddSuccess2 = MempoolAdd.create(txn2);
-		processor.handleMessage(getFirstPeer(), mempoolAddSuccess2);
+		processor.handleMessage(getFirstPeer(), mempoolAddSuccess2, null);
 
 		// Assert
 		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(2);
@@ -218,7 +218,7 @@ public class MempoolTest {
 
 		// Act
 		MempoolAdd mempoolAdd = MempoolAdd.create(txn);
-		processor.handleMessage(getFirstPeer(), mempoolAdd);
+		processor.handleMessage(getFirstPeer(), mempoolAdd, null);
 
 		// Assert
 		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(0);
@@ -238,7 +238,7 @@ public class MempoolTest {
 
 		// Act
 		MempoolAdd mempoolAdd = MempoolAdd.create(txn);
-		processor.handleMessage(getFirstPeer(), mempoolAdd);
+		processor.handleMessage(getFirstPeer(), mempoolAdd, null);
 
 		// Assert
 		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(0);
@@ -251,7 +251,7 @@ public class MempoolTest {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		var txn = createTxn(keyPair, 2);
 		MempoolAdd mempoolAdd = MempoolAdd.create(txn);
-		processor.handleMessage(getFirstPeer(), mempoolAdd);
+		processor.handleMessage(getFirstPeer(), mempoolAdd, null);
 
 		// Act
 		var txn2 = createTxn(keyPair, 1);
@@ -272,9 +272,9 @@ public class MempoolTest {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		var txn = createTxn(keyPair, 2);
 		MempoolAdd mempoolAdd = MempoolAdd.create(txn);
-		processor.handleMessage(getFirstPeer(), mempoolAdd);
+		processor.handleMessage(getFirstPeer(), mempoolAdd, null);
 		var txn2 = createTxn(keyPair, 3);
-		processor.handleMessage(getFirstPeer(), MempoolAdd.create(txn2));
+		processor.handleMessage(getFirstPeer(), MempoolAdd.create(txn2), null);
 
 		// Act
 		var txn3 = createTxn(keyPair, 1);
@@ -296,7 +296,7 @@ public class MempoolTest {
 		final var keyPair = ECKeyPair.generateNew();
 		final var txn = createTxn(keyPair);
 		final var mempoolAdd = MempoolAdd.create(txn);
-		processor.handleMessage(self, mempoolAdd);
+		processor.handleMessage(self, mempoolAdd, null);
 		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(1);
 
 		assertThat(network.allMessages())
@@ -304,24 +304,24 @@ public class MempoolTest {
 		network.dropMessages(msg -> msg.message() instanceof MempoolAddSuccess);
 
 		// should not relay immediately
-		processor.handleMessage(self, MempoolRelayTrigger.create());
+		processor.handleMessage(self, MempoolRelayTrigger.create(), null);
 		assertThat(network.allMessages()).isEmpty();
 
 		// should relay after initial delay
 		Thread.sleep(initialDelay);
-		processor.handleMessage(self, MempoolRelayTrigger.create());
+		processor.handleMessage(self, MempoolRelayTrigger.create(), null);
 		assertThat(network.allMessages())
 			.extracting(ControlledMessage::message)
 			.hasOnlyElementsOfType(MempoolAdd.class);
 		network.dropMessages(msg -> msg.message() instanceof MempoolAdd);
 
 		// should not relay again immediately
-		processor.handleMessage(self, MempoolRelayTrigger.create());
+		processor.handleMessage(self, MempoolRelayTrigger.create(), null);
 		assertThat(network.allMessages()).isEmpty();
 
 		// should relay after repeat delay
 		Thread.sleep(repeatDelay);
-		processor.handleMessage(self, MempoolRelayTrigger.create());
+		processor.handleMessage(self, MempoolRelayTrigger.create(), null);
 		assertThat(network.allMessages())
 			.extracting(ControlledMessage::message)
 			.hasOnlyElementsOfType(MempoolAdd.class);

@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -13,20 +13,27 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt;
+package com.radixdlt.environment;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.consensus.EpochManagerRunner;
-import com.radixdlt.environment.Runners;
+import java.util.Objects;
 
-public class ConsensusRunnerModule extends AbstractModule {
-	@Override
-	public void configure() {
-		MapBinder<String, ModuleRunner> moduleRunners = MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class);
-		moduleRunners.addBinding(Runners.CONSENSUS).to(EpochManagerRunner.class).in(Scopes.SINGLETON);
+public class StartProcessorOnRunner {
+	private final String runnerName;
+	private final StartProcessor processor;
+
+	public StartProcessorOnRunner(String runnerName, StartProcessor processor) {
+		this.runnerName = Objects.requireNonNull(runnerName);
+		this.processor = Objects.requireNonNull(processor);
+	}
+
+	public String getRunnerName() {
+		return runnerName;
+	}
+
+	public StartProcessor getProcessor() {
+		return processor;
 	}
 }

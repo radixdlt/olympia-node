@@ -111,7 +111,7 @@ public final class DeterministicNodes {
 		try {
 			log.debug("Received message {} at {}", nextMsg, timedNextMsg.time());
 			nodeInstances.get(receiverIndex).getInstance(DeterministicMessageProcessor.class)
-				.handleMessage(sender, nextMsg.message());
+				.handleMessage(sender, nextMsg.message(), nextMsg.typeLiteral());
 		} finally {
 			ThreadContext.remove("bftNode");
 		}

@@ -45,13 +45,13 @@ public final class ControlledSender implements DeterministicSender, Environment 
 
 	@Override
 	public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
-		return e -> handleMessage(new ControlledMessage(self, this.localChannel, e, arrivalTime(this.localChannel)));
+		return e -> handleMessage(new ControlledMessage(self, this.localChannel, e, null, arrivalTime(this.localChannel)));
 	}
 
 	@Override
 	public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass) {
 		return (t, milliseconds) -> {
-			ControlledMessage msg = new ControlledMessage(self, this.localChannel, t, arrivalTime(this.localChannel) + milliseconds);
+			ControlledMessage msg = new ControlledMessage(self, this.localChannel, t, null, arrivalTime(this.localChannel) + milliseconds);
 			handleMessage(msg);
 		};
 	}
@@ -59,7 +59,7 @@ public final class ControlledSender implements DeterministicSender, Environment 
 	@Override
 	public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(TypeLiteral<T> typeLiteral) {
 		return (t, milliseconds) -> {
-			ControlledMessage msg = new ControlledMessage(self, this.localChannel, t, arrivalTime(this.localChannel) + milliseconds);
+			ControlledMessage msg = new ControlledMessage(self, this.localChannel, t, typeLiteral, arrivalTime(this.localChannel) + milliseconds);
 			handleMessage(msg);
 		};
 	}
@@ -68,7 +68,7 @@ public final class ControlledSender implements DeterministicSender, Environment 
 	public <T> RemoteEventDispatcher<T> getRemoteDispatcher(Class<T> eventClass) {
 		return (node, e) -> {
 			ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
-			handleMessage(new ControlledMessage(self, channelId, e, arrivalTime(channelId)));
+			handleMessage(new ControlledMessage(self, channelId, e, null, arrivalTime(channelId)));
 		};
 	}
 

@@ -17,6 +17,10 @@
 
 package com.radixdlt.recovery;
 
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.environment.EventProcessorOnDispatch;
+import com.radixdlt.environment.Runners;
+import com.radixdlt.environment.deterministic.DeterministicConsensusProcessor;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -149,7 +153,7 @@ public class RecoveryTest {
 		).injectMembers(this);
 
 		this.currentInjector = createRunner(ecKeyPair);
-		this.currentInjector.getInstance(DeterministicEpochsConsensusProcessor.class).start();
+		this.currentInjector.getInstance(DeterministicConsensusProcessor.class).start();
 	}
 
 	@After
@@ -181,9 +185,15 @@ public class RecoveryTest {
 					install(RadixEngineConfig.asModule(1, Integer.MAX_VALUE, epochCeilingView, 50));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
-					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Vote>>() { }, ProcessOnDispatch.class)
-						.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { });
 					bind(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { }).in(Scopes.SINGLETON);
+				}
+
+				@ProvidesIntoSet
+				private EventProcessorOnDispatch<?> lastVote(DeterministicSavedLastEvent<Vote> lastEvent) {
+					return new EventProcessorOnDispatch<>(
+						Vote.class,
+						lastEvent
+					);
 				}
 			},
 			new PersistedNodeForTestingModule()
@@ -210,16 +220,15 @@ public class RecoveryTest {
 	private void restartNode() {
 		this.network.dropMessages(m -> m.channelId().receiverIndex() == 0 && m.channelId().senderIndex() == 0);
 		this.currentInjector = createRunner(ecKeyPair);
-		DeterministicEpochsConsensusProcessor processor = currentInjector.getInstance(DeterministicEpochsConsensusProcessor.class);
+		var processor = currentInjector.getInstance(DeterministicConsensusProcessor.class);
 		processor.start();
 	}
 
 	private void processForCount(int messageCount) {
 		for (int i = 0; i < messageCount; i++) {
 			Timed<ControlledMessage> msg = this.network.nextMessage();
-			DeterministicEpochsConsensusProcessor runner = currentInjector
-				.getInstance(DeterministicEpochsConsensusProcessor.class);
-			runner.handleMessage(msg.value().origin(), msg.value().message());
+			var runner = currentInjector.getInstance(DeterministicConsensusProcessor.class);
+			runner.handleMessage(msg.value().origin(), msg.value().message(), msg.value().typeLiteral());
 		}
 	}
 

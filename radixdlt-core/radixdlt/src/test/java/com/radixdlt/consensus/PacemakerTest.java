@@ -23,6 +23,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
@@ -30,6 +31,7 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.environment.deterministic.DeterministicConsensusProcessor;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
@@ -51,7 +53,7 @@ public class PacemakerTest {
 	public TemporaryFolder folder = new TemporaryFolder();
 
 	@Inject
-	private DeterministicEpochsConsensusProcessor processor;
+	private DeterministicConsensusProcessor processor;
 
 	@Inject
 	private ViewUpdate initialViewUpdate;
@@ -105,9 +107,9 @@ public class PacemakerTest {
 
 		// Act
 		ControlledMessage timeoutMsg = network.nextMessage(e -> Epoched.isInstance(e.message(), ScheduledLocalTimeout.class)).value();
-		processor.handleMessage(timeoutMsg.origin(), timeoutMsg.message());
+		processor.handleMessage(timeoutMsg.origin(), timeoutMsg.message(), new TypeLiteral<Epoched<ScheduledLocalTimeout>>() { });
 		ControlledMessage bftUpdateMsg = network.nextMessage(e -> e.message() instanceof BFTInsertUpdate).value();
-		processor.handleMessage(bftUpdateMsg.origin(), bftUpdateMsg.message());
+		processor.handleMessage(bftUpdateMsg.origin(), bftUpdateMsg.message(), null);
 
 		// Assert
 		assertThat(network.allMessages())
@@ -122,14 +124,14 @@ public class PacemakerTest {
 		createRunner().injectMembers(this);
 		processor.start();
 		ControlledMessage timeoutMsg = network.nextMessage(e -> Epoched.isInstance(e.message(), ScheduledLocalTimeout.class)).value();
-		processor.handleMessage(timeoutMsg.origin(), timeoutMsg.message());
+		processor.handleMessage(timeoutMsg.origin(), timeoutMsg.message(), new TypeLiteral<Epoched<ScheduledLocalTimeout>>() { });
 		ControlledMessage bftUpdateMsg = network.nextMessage(e -> e.message() instanceof BFTInsertUpdate).value();
-		processor.handleMessage(bftUpdateMsg.origin(), bftUpdateMsg.message());
+		processor.handleMessage(bftUpdateMsg.origin(), bftUpdateMsg.message(), null);
 
 		// Act
 		ControlledMessage viewTimeout = network.nextMessage(e ->
 			(e.message() instanceof Vote) && ((Vote) e.message()).isTimeout()).value();
-		processor.handleMessage(viewTimeout.origin(), viewTimeout.message());
+		processor.handleMessage(viewTimeout.origin(), viewTimeout.message(), null);
 
 		// Assert
 		assertThat(network.allMessages())

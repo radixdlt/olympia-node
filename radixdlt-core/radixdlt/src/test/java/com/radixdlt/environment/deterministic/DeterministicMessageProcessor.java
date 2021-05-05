@@ -17,6 +17,7 @@
 
 package com.radixdlt.environment.deterministic;
 
+import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.BFTNode;
 
 /**
@@ -24,5 +25,5 @@ import com.radixdlt.consensus.bft.BFTNode;
  */
 public interface DeterministicMessageProcessor {
 	void start();
-	void handleMessage(BFTNode origin, Object o);
+	void handleMessage(BFTNode origin, Object o, TypeLiteral<?> msgType);
 }

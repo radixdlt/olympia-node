@@ -49,6 +49,7 @@ import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.ScheduledEventProducerOnRunner;
+import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAddFailure;
@@ -139,6 +140,27 @@ public final class RxEnvironmentModule extends AbstractModule {
 			ses,
 			dispatchers
 		);
+	}
+
+	@ProvidesIntoMap
+	@StringMapKey(Runners.CONSENSUS)
+	@Singleton
+	public ModuleRunner consensusRunner(
+		@Self BFTNode self,
+		Set<EventProcessorOnRunner<?>> processors,
+		RxEnvironment rxEnvironment,
+		Set<RemoteEventProcessorOnRunner<?>> remoteProcessors,
+		RxRemoteEnvironment rxRemoteEnvironment,
+		Set<ScheduledEventProducerOnRunner<?>> scheduledEventProducers,
+		Set<StartProcessorOnRunner> startProcessors
+	) {
+		final var runnerName = Runners.CONSENSUS;
+		final var builder = ModuleRunnerImpl.builder();
+		addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
+		addRemoteProcessorsOnRunner(remoteProcessors, rxRemoteEnvironment, runnerName, builder);
+		addScheduledEventProducersOnRunner(scheduledEventProducers, runnerName, builder);
+		addStartProcessorsOnRunner(startProcessors, runnerName, builder);
+		return builder.build("ConsensusRunner " + self);
 	}
 
 	@ProvidesIntoMap
@@ -240,6 +262,24 @@ public final class RxEnvironmentModule extends AbstractModule {
 	}
 
 	private static <T> void addToBuilder(
+		TypeLiteral<T> typeLiteral,
+		RxEnvironment rxEnvironment,
+		EventProcessorOnRunner<?> processor,
+		ModuleRunnerImpl.Builder builder
+	) {
+		if (processor.getRateLimitDelayMs() > 0) {
+			final Flowable<T> events = rxEnvironment.getObservable(typeLiteral)
+				.toFlowable(BackpressureStrategy.DROP)
+				.onBackpressureBuffer(100, null, BackpressureOverflowStrategy.DROP_LATEST)
+				.concatMap(e -> Flowable.timer(processor.getRateLimitDelayMs(), TimeUnit.MILLISECONDS).map(l -> e));
+			processor.getProcessor(typeLiteral).ifPresent(p -> builder.add(events, p));
+		} else {
+			final Observable<T> events = rxEnvironment.getObservable(typeLiteral);
+			processor.getProcessor(typeLiteral).ifPresent(p -> builder.add(events, p));
+		}
+	}
+
+	private static <T> void addToBuilder(
 		Class<T> eventClass,
 		RxEnvironment rxEnvironment,
 		EventProcessorOnRunner<?> processor,
@@ -275,6 +315,17 @@ public final class RxEnvironmentModule extends AbstractModule {
 			);
 	}
 
+	private void addStartProcessorsOnRunner(
+		Set<StartProcessorOnRunner> allStartProcessors,
+		String runnerName,
+		ModuleRunnerImpl.Builder builder
+	) {
+		allStartProcessors.stream()
+			.filter(p -> p.getRunnerName().equals(runnerName))
+			.map(StartProcessorOnRunner::getProcessor)
+			.forEach(builder::add);
+	}
+
 	private void addRemoteProcessorsOnRunner(
 		Set<RemoteEventProcessorOnRunner<?>> allRemoteProcessors,
 		RxRemoteEnvironment rxRemoteEnvironment,
@@ -286,7 +337,10 @@ public final class RxEnvironmentModule extends AbstractModule {
 			.map(RemoteEventProcessorOnRunner::getEventClass)
 			.collect(Collectors.toSet());
 		remoteEventClasses.forEach(eventClass ->
-			allRemoteProcessors.forEach(p -> addToBuilder(eventClass, rxRemoteEnvironment, p, builder))
+			allRemoteProcessors
+				.stream()
+				.filter(p -> p.getRunnerName().equals(runnerName))
+				.forEach(p -> addToBuilder(eventClass, rxRemoteEnvironment, p, builder))
 		);
 	}
 
@@ -296,15 +350,24 @@ public final class RxEnvironmentModule extends AbstractModule {
 		String runnerName,
 		ModuleRunnerImpl.Builder builder
 	) {
-		final var eventClasses = allProcessors.stream()
+		final var runnerProcessors = allProcessors.stream()
 			.filter(p -> p.getRunnerName().equals(runnerName))
-			.map(EventProcessorOnRunner::getEventClass)
+			.collect(Collectors.toSet());
+
+		final var eventClasses = runnerProcessors.stream()
+			.filter(e -> e.getEventClass().isPresent())
+			.map(e -> e.getEventClass().get())
 			.collect(Collectors.toSet());
 		eventClasses.forEach(eventClass ->
-			allProcessors
-				.stream()
-				.filter(p -> p.getRunnerName().equals(runnerName))
-				.forEach(p -> addToBuilder(eventClass, rxEnvironment, p, builder))
+			runnerProcessors.forEach(p -> addToBuilder(eventClass, rxEnvironment, p, builder))
+		);
+
+		final var typeLiterals = runnerProcessors.stream()
+			.filter(e -> e.getTypeLiteral().isPresent())
+			.map(e -> e.getTypeLiteral().get())
+			.collect(Collectors.toSet());
+		typeLiterals.forEach(typeLiteral ->
+			runnerProcessors.forEach(p -> addToBuilder(typeLiteral, rxEnvironment, p, builder))
 		);
 	}
 

@@ -66,12 +66,16 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.environment.RemoteEventProcessorOnRunner;
+import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.environment.StartProcessor;
+import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
@@ -96,76 +100,132 @@ public class EpochsConsensusModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(VertexRequestTimeout.class);
 		eventBinder.addBinding().toInstance(LedgerUpdate.class);
 		eventBinder.addBinding().toInstance(EpochsLedgerUpdate.class);
+		eventBinder.addBinding().toInstance(Epoched.class);
 	}
 
 	@ProvidesIntoSet
-	private StartProcessor startProcessor(EpochManager epochManager) {
-		return epochManager::start;
+	private StartProcessorOnRunner startProcessor(EpochManager epochManager) {
+		return new StartProcessorOnRunner(
+			Runners.CONSENSUS,
+			epochManager::start
+		);
 	}
 
 	@ProvidesIntoSet
-	private EventProcessor<Vote> localVoteProcessor(EpochManager epochManager) {
-		return epochManager::processConsensusEvent;
+	private EventProcessorOnRunner<?> localVoteProcessor(EpochManager epochManager) {
+		return new EventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			Vote.class,
+			epochManager::processConsensusEvent
+		);
 	}
 
 	@ProvidesIntoSet
-	private RemoteEventProcessor<Vote> remoteVoteProcessor(EpochManager epochManager) {
-		return (node, vote) -> epochManager.processConsensusEvent(vote);
+	private RemoteEventProcessorOnRunner<?> remoteVoteProcessor(EpochManager epochManager) {
+		return new RemoteEventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			Vote.class,
+			(node, vote) -> epochManager.processConsensusEvent(vote)
+		);
 	}
 
 	@ProvidesIntoSet
-	private EventProcessor<Proposal> localProposalProcessor(EpochManager epochManager) {
-		return epochManager::processConsensusEvent;
+	private EventProcessorOnRunner<?> localProposalProcessor(EpochManager epochManager) {
+		return new EventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			Proposal.class,
+			epochManager::processConsensusEvent
+		);
 	}
 
 	@ProvidesIntoSet
-	private RemoteEventProcessor<Proposal> remoteProposalProcessor(EpochManager epochManager) {
-		return (node, proposal) -> epochManager.processConsensusEvent(proposal);
+	private RemoteEventProcessorOnRunner<?> remoteProposalProcessor(EpochManager epochManager) {
+		return new RemoteEventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			Proposal.class,
+			(node, proposal) -> epochManager.processConsensusEvent(proposal)
+		);
 	}
 
 	@ProvidesIntoSet
-	private EventProcessor<Epoched<ScheduledLocalTimeout>> epochTimeoutProcessor(EpochManager epochManager) {
-		return epochManager::processLocalTimeout;
+	private EventProcessorOnRunner<?> epochTimeoutProcessor(EpochManager epochManager) {
+		return new EventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			new TypeLiteral<Epoched<ScheduledLocalTimeout>>() { },
+			epochManager::processLocalTimeout
+		);
 	}
 
     @ProvidesIntoSet
-    private EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor(EpochManager epochManager) {
-        return epochManager.epochsLedgerUpdateEventProcessor();
+    private EventProcessorOnRunner<?> epochsLedgerUpdateEventProcessor(EpochManager epochManager) {
+		return new EventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			EpochsLedgerUpdate.class,
+			epochManager.epochsLedgerUpdateEventProcessor()
+		);
     }
 
     @ProvidesIntoSet
-	private RemoteEventProcessor<GetVerticesRequest> localGetVerticesRequestRemoteEventProcessor(EpochManager epochManager) {
-		return epochManager.bftSyncRequestProcessor();
+	private RemoteEventProcessorOnRunner<?> localGetVerticesRequestRemoteEventProcessor(EpochManager epochManager) {
+		return new RemoteEventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			GetVerticesRequest.class,
+			epochManager.bftSyncRequestProcessor()
+		);
 	}
 
 	@ProvidesIntoSet
-	private RemoteEventProcessor<GetVerticesResponse> responseRemoteEventProcessor(EpochManager epochManager) {
-		return epochManager.bftSyncResponseProcessor();
+	private RemoteEventProcessorOnRunner<?> responseRemoteEventProcessor(EpochManager epochManager) {
+		return new RemoteEventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			GetVerticesResponse.class,
+			epochManager.bftSyncResponseProcessor()
+		);
 	}
 
 	@ProvidesIntoSet
-	private RemoteEventProcessor<GetVerticesErrorResponse> errorResponseRemoteEventProcessor(EpochManager epochManager) {
-		return epochManager.bftSyncErrorResponseProcessor();
+	private RemoteEventProcessorOnRunner<?> errorResponseRemoteEventProcessor(EpochManager epochManager) {
+		return new RemoteEventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			GetVerticesErrorResponse.class,
+			epochManager.bftSyncErrorResponseProcessor()
+		);
 	}
 
 	@ProvidesIntoSet
-	private EventProcessor<BFTInsertUpdate> bftUpdateProcessor(EpochManager epochManager) {
-		return epochManager::processBFTUpdate;
+	private EventProcessorOnRunner<?> bftUpdateProcessor(EpochManager epochManager) {
+		return new EventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			BFTInsertUpdate.class,
+			epochManager::processBFTUpdate
+		);
 	}
 
 	@ProvidesIntoSet
-	private EventProcessor<BFTRebuildUpdate> bftRebuildUpdateEventProcessor(EpochManager epochManager) {
-		return epochManager.bftRebuildUpdateEventProcessor();
+	private EventProcessorOnRunner<?> bftRebuildUpdateEventProcessor(EpochManager epochManager) {
+		return new EventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			BFTRebuildUpdate.class,
+			epochManager.bftRebuildUpdateEventProcessor()
+		);
 	}
 
 	@ProvidesIntoSet
-	private EventProcessor<VertexRequestTimeout> bftSyncTimeoutProcessor(EpochManager epochManager) {
-		return epochManager.timeoutEventProcessor();
+	private EventProcessorOnRunner<?> bftSyncTimeoutProcessor(EpochManager epochManager) {
+		return new EventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			VertexRequestTimeout.class,
+			epochManager.timeoutEventProcessor()
+		);
 	}
 
 	@ProvidesIntoSet
-	private EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor(EpochManager epochManager) {
-		return epochManager.epochViewUpdateEventProcessor();
+	private EventProcessorOnRunner<?> epochViewUpdateEventProcessor(EpochManager epochManager) {
+		return new EventProcessorOnRunner<>(
+			Runners.CONSENSUS,
+			EpochViewUpdate.class,
+			epochManager.epochViewUpdateEventProcessor()
+		);
 	}
 
 	@Provides
@@ -261,8 +321,8 @@ public class EpochsConsensusModule extends AbstractModule {
 			timeoutCalculator,
 			nextTxnsGenerator,
 			proposalDispatcher,
-			hasher,
 			voteDispatcher,
+			hasher,
 			timeSupplier,
 			initialViewUpdate,
 			counters

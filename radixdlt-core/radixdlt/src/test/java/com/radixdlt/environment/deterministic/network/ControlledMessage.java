@@ -17,6 +17,7 @@
 
 package com.radixdlt.environment.deterministic.network;
 
+import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Objects;
 
@@ -27,21 +28,23 @@ public final class ControlledMessage {
 	private final BFTNode origin;
 	private final ChannelId channelId;
 	private final Object message;
+	private final TypeLiteral<?> typeLiteral;
 	private final long arrivalTime;
 
-	public ControlledMessage(BFTNode origin, ChannelId channelId, Object message, long arrivalTime) {
+	public ControlledMessage(BFTNode origin, ChannelId channelId, Object message, TypeLiteral<?> typeLiteral, long arrivalTime) {
 		this.origin = origin;
 		this.channelId = channelId;
 		this.message = message;
+		this.typeLiteral = typeLiteral;
 		this.arrivalTime = arrivalTime;
 	}
 
 	public ControlledMessage withAdditionalDelay(long additionalDelay) {
-		return new ControlledMessage(this.origin, this.channelId, this.message, this.arrivalTime + additionalDelay);
+		return new ControlledMessage(this.origin, this.channelId, this.message, this.typeLiteral, this.arrivalTime + additionalDelay);
 	}
 
 	public ControlledMessage withArrivalTime(long arrivalTime) {
-		return new ControlledMessage(this.origin, this.channelId, this.message, arrivalTime);
+		return new ControlledMessage(this.origin, this.channelId, this.message, this.typeLiteral, arrivalTime);
 	}
 
 	public BFTNode origin() {
@@ -54,6 +57,10 @@ public final class ControlledMessage {
 
 	public Object message() {
 		return this.message;
+	}
+
+	public TypeLiteral<?> typeLiteral() {
+		return typeLiteral;
 	}
 
 	public long arrivalTime() {

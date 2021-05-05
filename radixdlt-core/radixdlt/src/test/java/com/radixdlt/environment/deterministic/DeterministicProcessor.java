@@ -17,6 +17,7 @@
 
 package com.radixdlt.environment.deterministic;
 
+import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessorOnRunner;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 public final class DeterministicProcessor implements DeterministicMessageProcessor {
 	private final BFTNode self;
 	private final Map<Class<?>, List<EventProcessorOnRunner<?>>> processors;
+	private final Map<TypeLiteral<?>, List<EventProcessorOnRunner<?>>> typeLiteralProcessors;
 	private final Map<Class<?>, List<RemoteEventProcessorOnRunner<?>>> remoteProcessors;
 
 	@Inject
@@ -41,7 +43,11 @@ public final class DeterministicProcessor implements DeterministicMessageProcess
 	) {
 		this.self = self;
 		this.processors = processorOnRunners.stream()
-			.collect(Collectors.<EventProcessorOnRunner<?>, Class<?>>groupingBy(EventProcessorOnRunner::getEventClass));
+			.filter(r -> r.getEventClass().isPresent())
+			.collect(Collectors.<EventProcessorOnRunner<?>, Class<?>>groupingBy(r -> r.getEventClass().get()));
+		this.typeLiteralProcessors = processorOnRunners.stream()
+			.filter(r -> r.getTypeLiteral().isPresent())
+			.collect(Collectors.<EventProcessorOnRunner<?>, TypeLiteral<?>>groupingBy(r -> r.getTypeLiteral().get()));
 		this.remoteProcessors = remoteEventProcessorOnRunners.stream()
 			.collect(Collectors.<RemoteEventProcessorOnRunner<?>, Class<?>>groupingBy(RemoteEventProcessorOnRunner::getEventClass));
 	}
@@ -51,12 +57,17 @@ public final class DeterministicProcessor implements DeterministicMessageProcess
 		// No-op
 	}
 
-	private <T> void execute(BFTNode sender, T event) {
+	private <T> void execute(BFTNode sender, T event, TypeLiteral<?> msgType) {
 		Class<T> eventClass = (Class<T>) event.getClass();
 
 		if (sender.equals(self)) {
-			List<EventProcessorOnRunner<?>> eventProcessors = processors.get(eventClass);
-			eventProcessors.forEach(p -> p.getProcessor(eventClass).ifPresent(r -> r.process(event)));
+			if (msgType != null) {
+				var eventProcessors = typeLiteralProcessors.get(msgType);
+				eventProcessors.forEach(p -> p.getProcessor(eventClass).ifPresent(r -> r.process(event)));
+			} else {
+				List<EventProcessorOnRunner<?>> eventProcessors = processors.get(eventClass);
+				eventProcessors.forEach(p -> p.getProcessor(eventClass).ifPresent(r -> r.process(event)));
+			}
 		} else {
 			List<RemoteEventProcessorOnRunner<?>> eventProcessors = remoteProcessors.get(eventClass);
 			eventProcessors.forEach(p -> p.getProcessor(eventClass).ifPresent(r -> r.process(sender, event)));
@@ -64,7 +75,7 @@ public final class DeterministicProcessor implements DeterministicMessageProcess
 	}
 
 	@Override
-	public void handleMessage(BFTNode origin, Object message) {
-	    this.execute(origin, message);
+	public void handleMessage(BFTNode origin, Object message, TypeLiteral<?> msgType) {
+	    this.execute(origin, message, msgType);
 	}
 }

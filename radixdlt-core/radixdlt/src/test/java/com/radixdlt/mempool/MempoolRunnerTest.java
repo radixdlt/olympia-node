@@ -23,6 +23,7 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.DispatcherModule;
 import com.radixdlt.MockedCryptoModule;
 import com.radixdlt.MockedKeyModule;
@@ -34,6 +35,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
@@ -81,7 +83,7 @@ public final class MempoolRunnerTest {
 				bind(LedgerAccumulatorVerifier.class).toInstance(mock(LedgerAccumulatorVerifier.class));
 				bind(new TypeLiteral<Comparator<LedgerProof>>() { }).toInstance(mock(Comparator.class));
 				bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-
+				Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);
 				install(MempoolConfig.asModule(100, 10));
 				install(new MockedKeyModule());
 				install(new MockedCryptoModule());
