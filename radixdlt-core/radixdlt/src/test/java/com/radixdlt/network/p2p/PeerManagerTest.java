@@ -27,7 +27,7 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
 
 	@Test
 	public void when_findOrCreateChannel_then_should_create_if_not_exists() throws Exception {
-		setupTestRunner(3, defaultConfig());
+		setupTestRunner(3, defaultProperties());
 
 		final var node1Uri = testNetworkRunner.getUri(1);
 

@@ -92,9 +92,9 @@ public final class P2PModule extends AbstractModule {
 
 	@Provides
 	@Self
-	public RadixNodeUri selfUri(@Self ECPublicKey selfKey, HostIp hostIp, P2PConfig p2PConfig) throws Exception {
+	public RadixNodeUri selfUri(@Self ECPublicKey selfKey, HostIp hostIp, P2PConfig p2pConfig) throws Exception {
 		final var host = hostIp.hostIp().orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
-		final var port = p2PConfig.broadcastPort();
+		final var port = p2pConfig.broadcastPort();
 		return RadixNodeUri.fromUri(new URI(String.format(
 			"radix://%s@%s:%s", selfKey.toBase58(), host, port
 		)));

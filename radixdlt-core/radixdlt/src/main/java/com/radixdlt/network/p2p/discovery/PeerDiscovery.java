@@ -73,6 +73,7 @@ public final class PeerDiscovery {
 
 	public EventProcessor<DiscoverPeers> discoverPeersEventProcessor() {
 		return unused -> {
+			System.out.println("Discover event processor...");
 			final var seedNodes = seedNodesConfigParser.getResolvedSeedNodes();
 			this.addressBook.addUncheckedPeers(seedNodes);
 
@@ -93,6 +94,7 @@ public final class PeerDiscovery {
 	private void tryConnectToSomeKnownPeers() {
 		final var remainingSlots = this.peerManager.getRemainingOutboundSlots();
 		final var maxSlotsToUse = Math.max(0, (remainingSlots / 2) - 2); // let's always leave some free slots
+		System.out.println("Try connect to some...");
 		this.addressBook.bestCandidatesToConnect()
 			.filter(not(e -> peerManager.isPeerConnected(e.getNodeId())))
 			.limit(maxSlotsToUse)

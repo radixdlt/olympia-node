@@ -84,6 +84,6 @@ public final class PeerServerBootstrap {
 				Optional.empty()
 			));
 
-		serverBootstrap.bind(config.listenHost(), config.listenPort()).sync();
+		serverBootstrap.bind(config.listenAddress(), config.listenPort()).sync();
 	}
 }

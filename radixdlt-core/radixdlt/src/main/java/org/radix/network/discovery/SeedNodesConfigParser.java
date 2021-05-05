@@ -21,7 +21,6 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -32,7 +31,6 @@ import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.utils.Pair;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.properties.RuntimeProperties;
 
 // TODO: move to PeerDiscovery
 public final class SeedNodesConfigParser {
@@ -41,16 +39,9 @@ public final class SeedNodesConfigParser {
 	private final Set<RadixNodeUri> resolvedSeedNodes = new HashSet<>();
 
 	@Inject
-	public SeedNodesConfigParser(RuntimeProperties properties, P2PConfig config) {
+	public SeedNodesConfigParser(P2PConfig config) {
 		this.defaultPort = config.defaultPort();
-
-		this.unresolvedUris.addAll(
-			Arrays.stream(properties.get("network.seeds", "").split(","))
-				.map(String::trim)
-				.filter(hn -> !hn.isEmpty())
-				.collect(Collectors.toSet())
-		);
-
+		this.unresolvedUris.addAll(config.seedNodes());
 		this.resolveHostNames();
 	}
 

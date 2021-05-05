@@ -17,77 +17,49 @@
 
 package com.radixdlt.network.p2p;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.properties.RuntimeProperties;
+
+import java.util.Arrays;
 
 /**
  * Static configuration data for P2P layer.
  */
 public interface P2PConfig {
+	/**
+	 * List of seed nodes for discovery.
+	 */
+	ImmutableList<String> seedNodes();
 
-	static P2PConfig of(
-		int maxInboundChannels, int maxOutboundChannels,
-		long pingTimeout, int peerConnectionTimeout,
-		long discoveryInterval, long peerLivenessCheckInterval,
-		int defaultPort, String listenHost, int listenPort, int broadcastPort,
-		int channelBufferSize
-	) {
-		return new P2PConfig() {
-			@Override
-			public int maxInboundChannels() {
-				return maxInboundChannels;
-			}
+	/**
+	 * Default port to use for discovery seed nodes.
+	 */
+	int defaultPort();
 
-			@Override
-			public int maxOutboundChannels() {
-				return maxOutboundChannels;
-			}
+	/**
+	 * An interval at which peer discovery rounds trigger.
+	 */
+	long discoveryInterval();
 
-			@Override
-			public long pingTimeout() {
-				return pingTimeout;
-			}
+	/**
+	 * Get the host to bind the p2p server to.
+	 */
+	String listenAddress();
 
-			@Override
-			public int peerConnectionTimeout() {
-				return peerConnectionTimeout;
-			}
+	/**
+	 * Get the port number to bind the p2p server to.
+	 */
+	int listenPort();
 
-			@Override
-			public long discoveryInterval() {
-				return discoveryInterval;
-			}
+	/**
+	 * Get node's port number to broadcast to other peers.
+	 */
+	int broadcastPort();
 
-			@Override
-			public long peerLivenessCheckInterval() {
-				return peerLivenessCheckInterval;
-			}
-
-			@Override
-			public int defaultPort() {
-				return defaultPort;
-			}
-
-			@Override
-			public String listenHost() {
-				return listenHost;
-			}
-
-			@Override
-			public int listenPort() {
-				return listenPort;
-			}
-
-			@Override
-			public int broadcastPort() {
-				return broadcastPort;
-			}
-
-			@Override
-			public int channelBufferSize() {
-				return channelBufferSize;
-			}
-		};
-	}
+	/**
+	 * The timeout for initiating outbound peer connection.
+	 */
+	int peerConnectionTimeout();
 
 	/**
 	 * Get the maximum number of inbound open channels allowed.
@@ -106,19 +78,11 @@ public interface P2PConfig {
 	int maxOutboundChannels();
 
 	/**
-	 * The timeout for receiving a Pong message. PeerLivenessLost event is triggered if pong is not received on time.
+	 * Get the buffer size of incoming messages for each TCP connection.
+	 *
+	 * @return the size of a message buffer
 	 */
-	long pingTimeout();
-
-	/**
-	 * The timeout for initiating peer connection.
-	 */
-	int peerConnectionTimeout();
-
-	/**
-	 * An interval at which peer discovery rounds trigger.
-	 */
-	long discoveryInterval();
+	int channelBufferSize();
 
 	/**
 	 * An interval at which peer liveness check is triggered (ping message).
@@ -126,31 +90,9 @@ public interface P2PConfig {
 	long peerLivenessCheckInterval();
 
 	/**
-	 * Default port to use for discovered nodes' addresses.
+	 * The timeout for receiving a Pong message. PeerLivenessLost event is triggered if pong is not received on time.
 	 */
-	int defaultPort();
-
-	/**
-	 * Get the host to bind the p2p server to.
-	 */
-	String listenHost();
-
-	/**
-	 * Get the port number to bind the p2p server to.
-	 */
-	int listenPort();
-
-	/**
-	 * Get node's port number to broadcast to other peers.
-	 */
-	int broadcastPort();
-
-	/**
-	 * Get the buffer size of incoming messages for each TCP connection.
-	 *
-	 * @return the size of a message buffer
-	 */
-	int channelBufferSize();
+	long pingTimeout();
 
 	/**
 	 * Create a configuration from specified {@link RuntimeProperties}.
@@ -161,7 +103,25 @@ public interface P2PConfig {
 	static P2PConfig fromRuntimeProperties(RuntimeProperties properties) {
 		return new P2PConfig() {
 			@Override
-			public String listenHost() {
+			public ImmutableList<String> seedNodes() {
+				return Arrays.stream(properties.get("network.p2p.seed_nodes", "").split(","))
+					.map(String::trim)
+					.filter(hn -> !hn.isEmpty())
+					.collect(ImmutableList.toImmutableList());
+			}
+
+			@Override
+			public int defaultPort() {
+				return properties.get("network.p2p.default_port", 30000);
+			}
+
+			@Override
+			public long discoveryInterval() {
+				return properties.get("network.p2p.discovery_interval", 30_000);
+			}
+
+			@Override
+			public String listenAddress() {
 				return properties.get("network.p2p.listen_address", "0.0.0.0");
 			}
 
@@ -176,28 +136,23 @@ public interface P2PConfig {
 			}
 
 			@Override
-			public int maxInboundChannels() {
-				return properties.get("network.p2p.max_inbound_channels", 20);
-			}
-
-			@Override
-			public int maxOutboundChannels() {
-				return properties.get("network.p2p.max_outbound_channels", 20);
-			}
-
-			@Override
-			public long pingTimeout() {
-				return properties.get("network.p2p.ping_timeout", 5000);
-			}
-
-			@Override
 			public int peerConnectionTimeout() {
 				return properties.get("network.p2p.peer_connection_timeout", 5000);
 			}
 
 			@Override
-			public long discoveryInterval() {
-				return properties.get("network.p2p.discovery_interval", 30_000);
+			public int maxInboundChannels() {
+				return properties.get("network.p2p.max_inbound_channels", 1024);
+			}
+
+			@Override
+			public int maxOutboundChannels() {
+				return properties.get("network.p2p.max_outbound_channels", 1024);
+			}
+
+			@Override
+			public int channelBufferSize() {
+				return properties.get("network.p2p.channel_buffer_size", 255);
 			}
 
 			@Override
@@ -206,13 +161,8 @@ public interface P2PConfig {
 			}
 
 			@Override
-			public int defaultPort() {
-				return properties.get("network.p2p.default_port", 30000);
-			}
-
-			@Override
-			public int channelBufferSize() {
-				return properties.get("network.p2p.channel_buffer_size", 255);
+			public long pingTimeout() {
+				return properties.get("network.p2p.ping_timeout", 5000);
 			}
 		};
 	}

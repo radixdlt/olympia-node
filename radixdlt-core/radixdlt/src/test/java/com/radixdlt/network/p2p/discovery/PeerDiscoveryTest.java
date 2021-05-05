@@ -30,7 +30,7 @@ public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
 
 	@Test
 	public void when_discover_peers_then_should_connect_to_some_peers() throws Exception {
-		setupTestRunner(5, defaultConfig());
+		setupTestRunner(5, defaultProperties());
 
 		// add 4 peers to the addr book
 		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(

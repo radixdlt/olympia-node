@@ -38,6 +38,8 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.P2PModule;
+import com.radixdlt.network.p2p.PeerDiscoveryModule;
+import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
 import com.radixdlt.network.p2p.PeerManager;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
@@ -100,7 +102,7 @@ public final class P2PTestNetworkRunner {
 	private static Injector createInjector(
 		MockP2PNetwork p2pNetwork,
 		DeterministicNetwork network,
-		P2PConfig p2PConfig,
+		P2PConfig p2pConfig,
 		ECKeyPair nodeKey,
 		RadixNodeUri selfUri,
 		int selfNodeIndex
@@ -113,11 +115,13 @@ public final class P2PTestNetworkRunner {
 						protected void configure() {
 							bind(PeerOutboundBootstrap.class)
 								.toInstance(uri -> p2pNetwork.createChannel(selfNodeIndex, uri));
-							bind(P2PConfig.class).toInstance(p2PConfig);
+							bind(P2PConfig.class).toInstance(p2pConfig);
 							bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
 						}
 					}
 				),
+				new PeerDiscoveryModule(),
+				new PeerLivenessMonitorModule(),
 				new DeterministicEnvironmentModule(),
 				new DispatcherModule(),
 				new AbstractModule() {

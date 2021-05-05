@@ -24,18 +24,28 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.deterministic.DeterministicMessageProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.properties.RuntimeProperties;
 import io.reactivex.rxjava3.schedulers.Timed;
+import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.ThreadContext;
+import org.json.JSONObject;
 
 public class DeterministicP2PNetworkTest {
 	protected P2PTestNetworkRunner testNetworkRunner;
 
-	protected P2PConfig defaultConfig() {
-		return P2PConfig.of(10, 10, 1000L, 1000, 1000L, 1000L, 30000, "unused", 1, 1, 255);
+	protected RuntimeProperties defaultProperties() {
+		try {
+			final var props = new RuntimeProperties(new JSONObject(), new String[] {});
+			props.set("network.p2p.max_inbound_channels", 10);
+			props.set("network.p2p.max_outbound_channels", 10);
+			return props;
+		} catch (ParseException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
-	protected void setupTestRunner(int numNodes, P2PConfig p2pConfig) throws Exception {
-		this.testNetworkRunner = P2PTestNetworkRunner.create(numNodes, p2pConfig);
+	protected void setupTestRunner(int numNodes, RuntimeProperties properties) throws Exception {
+		this.testNetworkRunner = P2PTestNetworkRunner.create(numNodes, P2PConfig.fromRuntimeProperties(properties));
 	}
 
 	protected void processForCount(int messageCount) {

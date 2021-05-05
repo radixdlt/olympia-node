@@ -18,39 +18,34 @@
 package org.radix.network.discovery;
 
 import java.io.IOException;
+
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.p2p.P2PConfig;
 import org.junit.Before;
 import org.junit.Test;
-import com.radixdlt.properties.RuntimeProperties;
-import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class SeedNodesConfigParserTest {
-	private RuntimeProperties config;
-	private P2PConfig p2PConfig;
+	private P2PConfig p2pConfig;
 
 	@Before
 	public void setUp() throws IOException {
-		config = defaultProperties();
-		p2PConfig = mock(P2PConfig.class);
-		when(p2PConfig.defaultPort()).thenReturn(30000);
+		p2pConfig = mock(P2PConfig.class);
+		when(p2pConfig.defaultPort()).thenReturn(30000);
 	}
 
 	@Test
 	public void parse_seads_from_config() {
-		doReturn(String.format(
+		doReturn(ImmutableList.of(String.format(
 			"radix://%s@1.1.1.1",
 			ECKeyPair.generateNew().getPublicKey().toBase58()
-		)).when(config).get("network.seeds", "");
-		SeedNodesConfigParser testSubject = new SeedNodesConfigParser(config, p2PConfig);
+		))).when(p2pConfig).seedNodes();
+		final var testSubject = new SeedNodesConfigParser(p2pConfig);
 		assertEquals(1, testSubject.getResolvedSeedNodes().size());
-	}
-
-	private static RuntimeProperties defaultProperties() {
-		RuntimeProperties properties = mock(RuntimeProperties.class);
-		doAnswer(invocation -> invocation.getArgument(1)).when(properties).get(any(), any());
-		return properties;
 	}
 }
