@@ -127,9 +127,9 @@ public class ValidatorInfoServiceTest {
 		when(radixEngine.getComputedState(eq(RegisteredValidators.class))).thenReturn(validators);
 
 		var stakes = Stakes.create()
-			.add(validator1, UInt256.TEN)
+			.add(validator1, UInt256.FIVE)
 			.add(validator2, UInt256.EIGHT)
-			.add(validator3, UInt256.FIVE);
+			.add(validator3, UInt256.TEN);
 
 		when(radixEngine.getComputedState(eq(Stakes.class))).thenReturn(stakes);
 		return validatorInfoService;

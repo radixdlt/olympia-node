@@ -82,6 +82,10 @@ public class ValidatorInfoDetails {
 		return validator;
 	}
 
+	public UInt256 getTotalStake() {
+		return totalStake;
+	}
+
 	public JSONObject asJson() {
 		return jsonObject()
 			.put("address", getValidatorAddress())
