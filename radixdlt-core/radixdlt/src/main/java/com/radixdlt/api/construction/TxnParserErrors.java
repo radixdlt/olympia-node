@@ -39,5 +39,4 @@ public enum TxnParserErrors implements Failure {
 	public int code() {
 		return code;
 	}
-
 }

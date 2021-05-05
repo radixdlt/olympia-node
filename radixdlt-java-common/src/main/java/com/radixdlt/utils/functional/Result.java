@@ -80,17 +80,6 @@ public interface Result<T> {
 	}
 
 	/**
-	 * Transform failure. Useful for tweaking error codes/messages/etc.
-	 *
-	 * @param mapper transformation function for failure
-	 *
-	 * @return transformed instance
-	 */
-	default Result<T> mapFailure(Function<? super Failure, Failure> mapper) {
-		return fold(failure -> mapper.apply(failure).result(), __ -> this);
-	}
-
-	/**
 	 * Transform operation result into another operation result. In case if current
 	 * instance (this) is an error, transformation function is not invoked
 	 * and value remains the same.

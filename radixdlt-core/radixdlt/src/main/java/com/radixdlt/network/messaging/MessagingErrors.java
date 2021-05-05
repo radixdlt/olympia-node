@@ -20,7 +20,6 @@ package com.radixdlt.network.messaging;
 import com.radixdlt.utils.functional.Failure;
 
 public enum MessagingErrors implements Failure {
-	//TODO: create system-wide error code list
 	PEER_IS_BANNED(1, "Peer is banned"),
 	UNKNOWN_PEER(2, "Peer not present in address book"),
 	INVALID_SIGNATURE(3, "Invalid signature"),
