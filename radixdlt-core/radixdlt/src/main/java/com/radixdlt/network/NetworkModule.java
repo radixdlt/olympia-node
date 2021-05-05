@@ -46,7 +46,6 @@ import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.core.Observable;
 
 /**
  * Network related module
@@ -126,53 +125,30 @@ public final class NetworkModule extends AbstractModule {
 		return RxRemoteDispatcher.create(LedgerStatusUpdate.class, messageCentralLedgerSync.ledgerStatusUpdateDispatcher());
 	}
 
-	@Provides
-	private Observable<Proposal> localProposals(MessageCentralBFTNetwork bftNetwork) {
-		return bftNetwork.localProposals();
-	}
-
-	@Provides
-	private Observable<Vote> localVotes(MessageCentralBFTNetwork bftNetwork) {
-		return bftNetwork.localVotes();
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<Vote>> remoteVotes(MessageCentralBFTNetwork bftNetwork) {
-		return bftNetwork.remoteVotes();
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<Proposal>> remoteProposals(MessageCentralBFTNetwork bftNetwork) {
-		return bftNetwork.remoteProposals();
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<GetVerticesRequest>> vertexSyncRequests(MessageCentralValidatorSync validatorSync) {
-		return validatorSync.requests();
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<GetVerticesResponse>> vertexSyncResponses(MessageCentralValidatorSync validatorSync) {
-		return validatorSync.responses();
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<GetVerticesErrorResponse>> bftSyncErrorResponses(MessageCentralValidatorSync validatorSync) {
-		return validatorSync.errorResponses();
-	}
-
-	// TODO: Clean this up, convert the rest of remote events into this
+	// TODO: Clean this up
 	@Provides
 	@Singleton
 	@SuppressWarnings("unchecked")
 	RxRemoteEnvironment rxRemoteEnvironment(
+		MessageCentralBFTNetwork messageCentralBFT,
+		MessageCentralValidatorSync messageCentralBFTSync,
 		MessageCentralMempool messageCentralMempool,
 		MessageCentralLedgerSync messageCentralLedgerSync
 	) {
 	    return new RxRemoteEnvironment() {
 			@Override
 			public <T> Flowable<RemoteEvent<T>> remoteEvents(Class<T> remoteEventClass) {
-				if (remoteEventClass == MempoolAdd.class) {
+				if (remoteEventClass == Vote.class) {
+					return messageCentralBFT.remoteVotes().map(m -> (RemoteEvent<T>) m);
+				} else if (remoteEventClass == Proposal.class) {
+					return messageCentralBFT.remoteProposals().map(m -> (RemoteEvent<T>) m);
+				} else if (remoteEventClass == GetVerticesRequest.class) {
+					return messageCentralBFTSync.requests().map(m -> (RemoteEvent<T>) m);
+				} else if (remoteEventClass == GetVerticesResponse.class) {
+					return messageCentralBFTSync.responses().map(m -> (RemoteEvent<T>) m);
+				} else if (remoteEventClass == GetVerticesErrorResponse.class) {
+					return messageCentralBFTSync.errorResponses().map(m -> (RemoteEvent<T>) m);
+				} else if (remoteEventClass == MempoolAdd.class) {
 					return messageCentralMempool.mempoolComands().map(m -> (RemoteEvent<T>) m);
 				} else if (remoteEventClass == SyncRequest.class) {
 					return messageCentralLedgerSync.syncRequests().map(m -> (RemoteEvent<T>) m);

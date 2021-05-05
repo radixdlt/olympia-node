@@ -25,6 +25,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventDispatcher;
@@ -37,6 +38,8 @@ import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.ScheduledEventProducerOnRunner;
 import com.radixdlt.environment.StartProcessorOnRunner;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.utils.ThreadFactories;
 import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
@@ -68,6 +71,11 @@ public final class RxEnvironmentModule extends AbstractModule {
 
 		// TODO: Remove, still required by BerkeleyClientAPIStore.java
 		bind(new TypeLiteral<Observable<AtomsCommittedToLedger>>() { }).toProvider(new ObservableProvider<>(AtomsCommittedToLedger.class));
+
+		// TODO: Remove, still required by SimulationNodes.java
+		bind(new TypeLiteral<Observable<LedgerUpdate>>() { }).toProvider(new ObservableProvider<>(LedgerUpdate.class));
+		bind(new TypeLiteral<Observable<EpochsLedgerUpdate>>() { }).toProvider(new ObservableProvider<>(EpochsLedgerUpdate.class));
+		bind(new TypeLiteral<Observable<BFTHighQCUpdate>>() { }).toProvider(new ObservableProvider<>(BFTHighQCUpdate.class));
 
 		Multibinder.newSetBinder(binder(), new TypeLiteral<RxRemoteDispatcher<?>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnRunner<?>>() { });

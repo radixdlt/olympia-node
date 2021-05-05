@@ -37,6 +37,9 @@ import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 
+/**
+ * Sets up processors for consensus which doesn't support epochs
+ */
 public class NoEpochsConsensusModule extends AbstractModule {
 	@Override
 	public void configure() {
