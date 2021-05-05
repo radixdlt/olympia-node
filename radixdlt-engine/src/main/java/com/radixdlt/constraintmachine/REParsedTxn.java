@@ -100,4 +100,9 @@ public final class REParsedTxn {
 		return Objects.equals(this.txn, other.txn)
 			&& Objects.equals(this.actions, other.actions);
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s[%s][%s]", getClass().getSimpleName(), txn, actions);
+	}
 }
