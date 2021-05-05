@@ -633,7 +633,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			if (transaction != null) {
 				transaction.abort();
 			}
-			log.warn("Error while storing atom: ", e);
 			throw new BerkeleyStoreException("Unable to store atom:\n" + txn, e);
 		}
 	}
