@@ -131,7 +131,7 @@ dependencies {
     // generateDevUniverse task to depend on those projects
     implementation project(':radixdlt-engine')
     implementation project(':radixdlt-java-common')
-    implementation 'com.github.radixdlt:jackson-databind:feature~strict-property-ordering-downgraded-version-SNAPSHOT'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
 
     implementation "com.github.akarnokd:rxjava3-extensions"
     implementation 'io.reactivex.rxjava3:rxjava'

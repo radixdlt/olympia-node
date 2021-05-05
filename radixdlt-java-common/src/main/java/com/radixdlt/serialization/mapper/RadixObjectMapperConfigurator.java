@@ -44,7 +44,7 @@ public class RadixObjectMapperConfigurator {
 		objectMapper.registerModule(new GuavaModule());
 
 		objectMapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, sortProperties);
-		objectMapper.configure(MapperFeature.STRICT_PROPERTIES_ORDERING, sortProperties);
+		objectMapper.configure(MapperFeature.SORT_CREATOR_PROPERTIES_FIRST, !sortProperties);
 		objectMapper.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, sortProperties);
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		objectMapper.setVisibility(objectMapper.getSerializationConfig().getDefaultVisibilityChecker()
