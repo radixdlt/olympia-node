@@ -41,7 +41,7 @@ dependencies {
     api 'org.bouncycastle:bcprov-jdk15on'
     api 'org.bouncycastle:bcpkix-jdk15on'
     api 'org.json:json'
-    api 'com.github.radixdlt:jackson-databind'
+    api 'com.fasterxml.jackson.core:jackson-databind'
     api 'com.fasterxml.jackson.core:jackson-core'
     api 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor'
     api 'com.fasterxml.jackson.datatype:jackson-datatype-json-org'
