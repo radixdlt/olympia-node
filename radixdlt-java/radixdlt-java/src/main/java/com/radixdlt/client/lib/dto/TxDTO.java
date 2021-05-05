@@ -19,46 +19,30 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.identifiers.AID;
 
-import java.util.Objects;
+import static java.util.Objects.requireNonNull;
 
-public class NetworkStatsDTO {
-	private final long tps;
+public class TxDTO {
+	private final AID txId;
 
-	private NetworkStatsDTO(long tps) {
-		this.tps = tps;
+	private TxDTO(AID txId) {
+		this.txId = txId;
 	}
 
 	@JsonCreator
-	public static NetworkStatsDTO create(@JsonProperty(value = "tps", required = true) long tps) {
-		return new NetworkStatsDTO(tps);
+	public static TxDTO create(@JsonProperty(value = "txID", required = true) AID txId) {
+		requireNonNull(txId);
+
+		return new TxDTO(txId);
 	}
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-
-		if (!(o instanceof NetworkStatsDTO)) {
-			return false;
-		}
-
-		var that = (NetworkStatsDTO) o;
-		return tps == that.tps;
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(tps);
+	public AID getTxId() {
+		return txId;
 	}
 
 	@Override
 	public String toString() {
-		return "TPS:" + tps;
-	}
-
-	public long getTps() {
-		return tps;
+		return "Tx(" + txId.toJson() + ')';
 	}
 }

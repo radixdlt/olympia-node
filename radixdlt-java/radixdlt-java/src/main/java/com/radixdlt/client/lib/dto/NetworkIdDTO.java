@@ -34,10 +34,6 @@ public class NetworkIdDTO {
 		return new NetworkIdDTO(networkId);
 	}
 
-	public int getNetworkId() {
-		return networkId;
-	}
-
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -55,5 +51,9 @@ public class NetworkIdDTO {
 	@Override
 	public String toString() {
 		return "NetworkId(" + networkId + ')';
+	}
+
+	public int getNetworkId() {
+		return networkId;
 	}
 }

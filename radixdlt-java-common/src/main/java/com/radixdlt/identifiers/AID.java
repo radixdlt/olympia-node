@@ -18,6 +18,7 @@
 package com.radixdlt.identifiers;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.hash.HashCode;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.utils.Bytes;
@@ -70,6 +71,11 @@ public final class AID implements Comparable<AID> {
 
 	public HashCode asHashCode() {
 		return HashCode.fromBytes(value);
+	}
+
+	@JsonValue
+	public String toJson() {
+		return Bytes.toHexString(this.value);
 	}
 
 	@Override

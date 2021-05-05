@@ -113,7 +113,8 @@ public final class ActionParser {
 	}
 
 	private static Result<Optional<REAddr>> rri(JSONObject element, ClientApiStore clientApiStore) {
-		return safeString(element, "tokenIdentifier")
+		//TODO: remove support for "tokenIdentifier"
+		return safeString(element, "rri").or(() -> safeString(element, "tokenIdentifier"))
 			.flatMap(clientApiStore::parseRri)
 			.map(Optional::of);
 	}

@@ -21,6 +21,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class JsonRpcRequest {
 	private static final String VERSION = "2.0";
@@ -39,7 +42,21 @@ public class JsonRpcRequest {
 	}
 
 	public static JsonRpcRequest create(String method, Long id, Object... parameters) {
-		return new JsonRpcRequest(VERSION, id.toString(), method, List.of(parameters));
+		var list = Stream.of(parameters).filter(obj -> isNotEmpty(obj)).collect(Collectors.toList());
+
+		return new JsonRpcRequest(VERSION, id.toString(), method, list);
+	}
+
+	private static boolean isNotEmpty(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+
+		if (obj instanceof Optional) {
+			return ((Optional) obj).isPresent();
+		}
+
+		return true;
 	}
 
 	@JsonProperty("jsonrpc")

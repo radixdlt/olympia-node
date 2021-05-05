@@ -18,6 +18,7 @@
 package com.radixdlt.client.lib.api;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
@@ -65,6 +66,11 @@ public class AccountAddress {
 	@Override
 	public int hashCode() {
 		return Objects.hash(address);
+	}
+
+	@JsonValue
+	public String toAccountAddress() {
+		return com.radixdlt.identifiers.AccountAddress.of(address);
 	}
 
 	@Override

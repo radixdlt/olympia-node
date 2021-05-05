@@ -44,18 +44,6 @@ public class ErrorInfo {
 		return new ErrorInfo(code, message, data);
 	}
 
-	public int getCode() {
-		return code;
-	}
-
-	public Optional<String> getMessage() {
-		return Optional.ofNullable(message);
-	}
-
-	public Optional<Object> getData() {
-		return Optional.ofNullable(data);
-	}
-
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -87,5 +75,17 @@ public class ErrorInfo {
 				 : message;
 
 		return Failure.failure(code, text);
+	}
+
+	public int getCode() {
+		return code;
+	}
+
+	public Optional<String> getMessage() {
+		return Optional.ofNullable(message);
+	}
+
+	public Optional<Object> getData() {
+		return Optional.ofNullable(data);
 	}
 }

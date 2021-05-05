@@ -16,16 +16,22 @@
  */
 package com.radixdlt.client.lib.impl;
 
-import org.junit.Assert;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
 
 import com.radixdlt.client.lib.api.AccountAddress;
+import com.radixdlt.client.lib.api.TransactionRequest;
+import com.radixdlt.client.lib.dto.FinalizedTransaction;
+import com.radixdlt.client.lib.dto.TokenBalancesDTO;
 import com.radixdlt.client.lib.dto.TransactionHistoryDTO;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.Ints;
+import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
 import java.io.IOException;
@@ -36,6 +42,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
@@ -45,7 +52,7 @@ import static org.mockito.Mockito.when;
 
 public class SynchronousRadixApiClientTest {
 	private static final String BASE_URL = "http://localhost:8080/";
-	private static final AccountAddress ACCOUNT_ADDRESS = AccountAddress.create(pubkeyOf(1));
+	private static final AccountAddress ACCOUNT_ADDRESS = AccountAddress.create(keyPairOf(1).getPublicKey());
 
 	private static final String NETWORK_ID = "{\"result\":{\"networkId\":2},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
 	private static final String NATIVE_TOKEN = "{\"result\":{\"tokenInfoURL\":\"https://tokens.radixdlt.com/\","
@@ -102,6 +109,15 @@ public class SynchronousRadixApiClientTest {
 		+ "\"message\":"
 		+ "\"Unable to restore creator from transaction "
 		+ "7cc3526729b27e4bdfedbb140f3a566ffc2ab582de8e1e94c2358c8466d842a3\"}}";
+	private static final String BUILT_TRANSACTION = "{\"result\":{\"fee\":\"100000000000000000\",\"transaction\":{\"blob\":"
+		+ "\"0103010402c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5000000000000000000000000000000000"
+		+ "0000000000000000000000000000009045b83c55858c7620061d2bbc12ff86ea2ea466e576e7ea55f086901f2d9a520660000000301030"
+		+ "1040279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798000000000000000000000000002cd76fe086b93ce"
+		+ "2f768a00b229ffffffffff7000500000002010301040279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f817980"
+		+ "00000000000000000000000002cd76fe086b93ce2f768a009bf5a87a275fff700\",\"hashOfBlobToSign\":\"5dc6006f467be27975d"
+		+ "0f8f33ad94506e0df53956aae642341b12e2a094e39a2\"}},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String FINALIZE_TRANSACTION = "{\"result\":{\"txID\":"
+		+ "\"a41e12e424431e8f5f8b86eddc36fb84c6a1811d9005607258f799675a3bc338\"},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
 	private final OkHttpClient client = mock(OkHttpClient.class);
 
@@ -110,7 +126,7 @@ public class SynchronousRadixApiClientTest {
 		prepareClient(NETWORK_ID)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.networkId()
-				.onFailureDo(Assert::fail)
+				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(networkIdDTO -> assertEquals(2, networkIdDTO.getNetworkId())));
 	}
 
@@ -119,7 +135,7 @@ public class SynchronousRadixApiClientTest {
 		prepareClient(NATIVE_TOKEN)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.nativeToken()
-				.onFailureDo(Assert::fail)
+				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(tokenInfoDTO -> assertEquals("Rads", tokenInfoDTO.getName())));
 	}
 
@@ -128,7 +144,7 @@ public class SynchronousRadixApiClientTest {
 		prepareClient(NATIVE_TOKEN)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.tokenInfo("xrd_rb1qya85pwq")
-				.onFailureDo(Assert::fail)
+				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(tokenInfoDTO -> assertEquals("Rads", tokenInfoDTO.getName())));
 	}
 
@@ -138,7 +154,7 @@ public class SynchronousRadixApiClientTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(
 				client -> client.transactionHistory(ACCOUNT_ADDRESS, 10, Optional.empty())
-					.onFailureDo(Assert::fail)
+					.onFailure(failure -> fail(failure.toString()))
 					.onSuccess(transactionHistoryDTO -> assertNotNull(transactionHistoryDTO.getCursor()))
 					.onSuccess(transactionHistoryDTO -> assertNotNull(transactionHistoryDTO.getTransactions()))
 					.map(TransactionHistoryDTO::getTransactions)
@@ -149,11 +165,31 @@ public class SynchronousRadixApiClientTest {
 	}
 
 	@Test
+	public void testTokenBalances() throws IOException {
+		prepareClient(TOKEN_BALANCES)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> client.tokenBalances(ACCOUNT_ADDRESS)
+				.onFailure(failure -> fail(failure.toString()))
+				.onSuccess(tokenBalancesDTO -> assertEquals(ACCOUNT_ADDRESS, tokenBalancesDTO.getOwner()))
+				.map(TokenBalancesDTO::getTokenBalances)
+				.onSuccess(balances -> assertEquals(1, balances.size())));
+	}
+
+	@Test
+	public void testErrorResponse() throws IOException {
+		prepareClient(ERROR_RESPONSE)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> client.lookupTransaction(AID.ZERO)
+				.onFailure(failure -> assertEquals(-32602, failure.code()))
+				.onSuccess(__ -> fail()));
+	}
+
+	@Test
 	public void testDemand() throws IOException {
 		prepareClient(DEMAND)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.networkTransactionDemand()
-				.onFailureDo(Assert::fail)
+				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(networkStatsDTO -> assertEquals(5L, networkStatsDTO.getTps())));
 	}
 
@@ -162,8 +198,74 @@ public class SynchronousRadixApiClientTest {
 		prepareClient(THROUGHPUT)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.networkTransactionThroughput()
-				.onFailureDo(Assert::fail)
+				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(networkStatsDTO -> assertEquals(8L, networkStatsDTO.getTps())));
+	}
+
+	@Test
+	public void testBuildTransaction() throws IOException {
+		var hash = Hex.decode("5dc6006f467be27975d0f8f33ad94506e0df53956aae642341b12e2a094e39a2");
+		var keyPairOf1 = keyPairOf(1);
+		var keyPairOf2 = keyPairOf(2);
+
+		var request = TransactionRequest.createBuilder()
+			.transfer(
+				AccountAddress.create(keyPairOf1.getPublicKey()),
+				AccountAddress.create(keyPairOf2.getPublicKey()),
+				UInt256.NINE,
+				"xrd_rb1qya85pwq"
+			)
+			.build();
+
+		prepareClient(BUILT_TRANSACTION)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> client.buildTransaction(request)
+				.onFailure(failure -> fail(failure.toString()))
+				.onSuccess(dto -> assertEquals(UInt256.from(100000000000000000L), dto.getFee()))
+				.onSuccess(dto -> assertArrayEquals(hash, dto.getTransaction().getHashToSign()))
+			);
+	}
+
+	@Test
+	public void testFinalizeTransaction() throws Exception {
+		var request = buildFinalizedTransaction();
+		var txId = AID.from("a41e12e424431e8f5f8b86eddc36fb84c6a1811d9005607258f799675a3bc338");
+
+		prepareClient(FINALIZE_TRANSACTION)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> client.finalizeTransaction(request)
+				.onFailure(failure -> fail(failure.toString()))
+				.onSuccess(dto -> assertEquals(txId, dto.getTxId()))
+			);
+	}
+
+	@Test
+	public void testSubmitTransaction() throws Exception {
+		var txId = AID.from("a41e12e424431e8f5f8b86eddc36fb84c6a1811d9005607258f799675a3bc338");
+		var request = buildFinalizedTransaction().withTxId(txId);
+
+		prepareClient(FINALIZE_TRANSACTION)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> client.submitTransaction(request)
+				.onFailure(failure -> fail(failure.toString()))
+				.onSuccess(dto -> assertEquals(txId, dto.getTxId()))
+			);
+	}
+
+	private FinalizedTransaction buildFinalizedTransaction() throws PublicKeyException {
+		var blob = Hex.decode("0103010402c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee"
+								  + "5000000000000000000000000000000000000000000000000000000000000000904fcdcdd43e66c"
+								  + "ff732ba9a0cbd484cdd9fa9579388b67e3878fd981280a48372e00000003010301040279be667ef"
+								  + "9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798000000000000000000000000"
+								  + "002cd76fe086b93ce2f768a00b229ffffffffff7000500000002010301040279be667ef9dcbbac5"
+								  + "5a06295ce870b07029bfcdb2dce28d959f2815b16f81798000000000000000000000000002cd76f"
+								  + "e086b93ce2f768a009bf5a87a275fff700");
+		var sig = ECDSASignature.decodeFromDER(Hex.decode("30440220768a67a36549e11f19ddb6e2c172c3"
+															  + "f2f2996600413f1d2f246667ab2de81ddf022070f3bb613bcba"
+															  + "2704728b99fad91668e2d67593f73b7c3567eae61596242f64c"));
+		var pubkey = ECPublicKey.fromHex("0479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8"
+											 + "1798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8");
+		return FinalizedTransaction.create(blob, sig, pubkey, null);
 	}
 
 	private Result<SynchronousRadixApiClient> prepareClient(String responseBody) throws IOException {
@@ -179,15 +281,15 @@ public class SynchronousRadixApiClientTest {
 		return SynchronousRadixApiClient.connect(BASE_URL, client);
 	}
 
-	private static ECPublicKey pubkeyOf(int pk) {
-		final byte[] privateKey = new byte[ECKeyPair.BYTES];
+	private static ECKeyPair keyPairOf(int pk) {
+		var privateKey = new byte[ECKeyPair.BYTES];
+
 		Ints.copyTo(pk, privateKey, ECKeyPair.BYTES - Integer.BYTES);
-		ECKeyPair kp;
+
 		try {
-			kp = ECKeyPair.fromPrivateKey(privateKey);
+			return ECKeyPair.fromPrivateKey(privateKey);
 		} catch (PrivateKeyException | PublicKeyException e) {
 			throw new IllegalArgumentException("Error while generating public key", e);
 		}
-		return kp.getPublicKey();
 	}
 }

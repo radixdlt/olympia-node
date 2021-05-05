@@ -17,11 +17,15 @@
 
 package com.radixdlt.client.lib.impl;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.RadixApi;
+import com.radixdlt.client.lib.api.TransactionRequest;
+import com.radixdlt.client.lib.dto.BuiltTransactionDTO;
+import com.radixdlt.client.lib.dto.FinalizedTransaction;
 import com.radixdlt.client.lib.dto.JsonRpcRequest;
 import com.radixdlt.client.lib.dto.JsonRpcResponse;
 import com.radixdlt.client.lib.dto.NetworkIdDTO;
@@ -33,6 +37,7 @@ import com.radixdlt.client.lib.dto.TokenInfoDTO;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistoryDTO;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
+import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositionsDTO;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponseDTO;
@@ -54,6 +59,8 @@ import okhttp3.RequestBody;
 import static com.radixdlt.client.lib.api.ClientLibraryErrors.BASE_URL_IS_MANDATORY;
 import static com.radixdlt.client.lib.api.ClientLibraryErrors.NO_CONTENT;
 import static com.radixdlt.client.lib.api.ClientLibraryErrors.UNABLE_TO_READ_RESPONSE_BODY;
+import static com.radixdlt.client.lib.dto.RpcMethod.BUILD_TRANSACTION;
+import static com.radixdlt.client.lib.dto.RpcMethod.FINALIZE_TRANSACTION;
 import static com.radixdlt.client.lib.dto.RpcMethod.LOOKUP_TRANSACTION;
 import static com.radixdlt.client.lib.dto.RpcMethod.LOOKUP_VALIDATOR;
 import static com.radixdlt.client.lib.dto.RpcMethod.NATIVE_TOKEN;
@@ -62,6 +69,7 @@ import static com.radixdlt.client.lib.dto.RpcMethod.NETWORK_TRANSACTION_DEMAND;
 import static com.radixdlt.client.lib.dto.RpcMethod.NETWORK_TRANSACTION_THROUGHPUT;
 import static com.radixdlt.client.lib.dto.RpcMethod.STAKE_POSITIONS;
 import static com.radixdlt.client.lib.dto.RpcMethod.STATUS_OF_TRANSACTION;
+import static com.radixdlt.client.lib.dto.RpcMethod.SUBMIT_TRANSACTION;
 import static com.radixdlt.client.lib.dto.RpcMethod.TOKEN_BALANCES;
 import static com.radixdlt.client.lib.dto.RpcMethod.TOKEN_INFO;
 import static com.radixdlt.client.lib.dto.RpcMethod.TRANSACTION_HISTORY;
@@ -77,7 +85,7 @@ public class SynchronousRadixApiClient implements RadixApi {
 	private static final ObjectMapper objectMapper;
 
 	static {
-		objectMapper = new ObjectMapper();
+		objectMapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_ABSENT);
 	}
 
 	private final AtomicLong idCounter = new AtomicLong();
@@ -108,22 +116,22 @@ public class SynchronousRadixApiClient implements RadixApi {
 
 	@Override
 	public Result<NetworkIdDTO> networkId() {
-		return call(request(NETWORK_ID), new TypeReference<JsonRpcResponse<NetworkIdDTO>>() { });
+		return call(request(NETWORK_ID), new TypeReference<JsonRpcResponse<NetworkIdDTO>>() {});
 	}
 
 	@Override
 	public Result<TokenInfoDTO> nativeToken() {
-		return call(request(NATIVE_TOKEN), new TypeReference<JsonRpcResponse<TokenInfoDTO>>() { });
+		return call(request(NATIVE_TOKEN), new TypeReference<JsonRpcResponse<TokenInfoDTO>>() {});
 	}
 
 	@Override
 	public Result<TokenInfoDTO> tokenInfo(String rri) {
-		return call(request(TOKEN_INFO, rri), new TypeReference<JsonRpcResponse<TokenInfoDTO>>() { });
+		return call(request(TOKEN_INFO, rri), new TypeReference<JsonRpcResponse<TokenInfoDTO>>() {});
 	}
 
 	@Override
 	public Result<TokenBalancesDTO> tokenBalances(AccountAddress address) {
-		return call(request(TOKEN_BALANCES, address.toString()), new TypeReference<JsonRpcResponse<TokenBalancesDTO>>() { });
+		return call(request(TOKEN_BALANCES, address.toString()), new TypeReference<JsonRpcResponse<TokenBalancesDTO>>() {});
 	}
 
 	@Override
@@ -131,37 +139,37 @@ public class SynchronousRadixApiClient implements RadixApi {
 		var request = request(TRANSACTION_HISTORY, address.toString(), size);
 		cursor.ifPresent(cursorValue -> request.addParameters(cursorValue.value()));
 
-		return call(request, new TypeReference<JsonRpcResponse<TransactionHistoryDTO>>() { });
+		return call(request, new TypeReference<JsonRpcResponse<TransactionHistoryDTO>>() {});
 	}
 
 	@Override
 	public Result<TransactionDTO> lookupTransaction(AID txId) {
-		return call(request(LOOKUP_TRANSACTION, txId.toString()), new TypeReference<JsonRpcResponse<TransactionDTO>>() { });
+		return call(request(LOOKUP_TRANSACTION, txId.toString()), new TypeReference<JsonRpcResponse<TransactionDTO>>() {});
 	}
 
 	@Override
 	public Result<List<StakePositionsDTO>> stakePositions(AccountAddress address) {
-		return call(request(STAKE_POSITIONS, address.toString()), new TypeReference<JsonRpcResponse<List<StakePositionsDTO>>>() { });
+		return call(request(STAKE_POSITIONS, address.toString()), new TypeReference<JsonRpcResponse<List<StakePositionsDTO>>>() {});
 	}
 
 	@Override
 	public Result<List<UnstakePositionsDTO>> unstakePositions(AccountAddress address) {
-		return call(request(UNSTAKE_POSITIONS, address.toString()), new TypeReference<JsonRpcResponse<List<UnstakePositionsDTO>>>() { });
+		return call(request(UNSTAKE_POSITIONS, address.toString()), new TypeReference<JsonRpcResponse<List<UnstakePositionsDTO>>>() {});
 	}
 
 	@Override
 	public Result<TransactionStatusDTO> statusOfTransaction(AID txId) {
-		return call(request(STATUS_OF_TRANSACTION, txId.toString()), new TypeReference<JsonRpcResponse<TransactionStatusDTO>>() { });
+		return call(request(STATUS_OF_TRANSACTION, txId.toString()), new TypeReference<JsonRpcResponse<TransactionStatusDTO>>() {});
 	}
 
 	@Override
 	public Result<NetworkStatsDTO> networkTransactionThroughput() {
-		return call(request(NETWORK_TRANSACTION_THROUGHPUT), new TypeReference<JsonRpcResponse<NetworkStatsDTO>>() { });
+		return call(request(NETWORK_TRANSACTION_THROUGHPUT), new TypeReference<JsonRpcResponse<NetworkStatsDTO>>() {});
 	}
 
 	@Override
 	public Result<NetworkStatsDTO> networkTransactionDemand() {
-		return call(request(NETWORK_TRANSACTION_DEMAND), new TypeReference<JsonRpcResponse<NetworkStatsDTO>>() { });
+		return call(request(NETWORK_TRANSACTION_DEMAND), new TypeReference<JsonRpcResponse<NetworkStatsDTO>>() {});
 	}
 
 	@Override
@@ -169,12 +177,36 @@ public class SynchronousRadixApiClient implements RadixApi {
 		var request = request(VALIDATORS, size);
 		cursor.ifPresent(cursorValue -> request.addParameters(cursorValue.value()));
 
-		return call(request, new TypeReference<JsonRpcResponse<ValidatorsResponseDTO>>() { });
+		return call(request, new TypeReference<JsonRpcResponse<ValidatorsResponseDTO>>() {});
 	}
 
 	@Override
 	public Result<ValidatorDTO> lookupValidator(String validatorAddress) {
-		return call(request(LOOKUP_VALIDATOR, validatorAddress), new TypeReference<JsonRpcResponse<ValidatorDTO>>() { });
+		return call(request(LOOKUP_VALIDATOR, validatorAddress), new TypeReference<JsonRpcResponse<ValidatorDTO>>() {});
+	}
+
+	@Override
+	public Result<BuiltTransactionDTO> buildTransaction(TransactionRequest request) {
+		return call(
+			request(BUILD_TRANSACTION, request.getActions(), request.getMessage()),
+			new TypeReference<JsonRpcResponse<BuiltTransactionDTO>>() {}
+		);
+	}
+
+	@Override
+	public Result<TxDTO> finalizeTransaction(FinalizedTransaction request) {
+		return call(
+			request(FINALIZE_TRANSACTION, request.getBlob(), request.getSignature(), request.getPublicKey()),
+			new TypeReference<JsonRpcResponse<TxDTO>>() {}
+		);
+	}
+
+	@Override
+	public Result<TxDTO> submitTransaction(FinalizedTransaction request) {
+		return call(
+			request(SUBMIT_TRANSACTION, request.getBlob(), request.getSignature(), request.getPublicKey(), request.getTxId()),
+			new TypeReference<JsonRpcResponse<TxDTO>>() {}
+		);
 	}
 
 	private JsonRpcRequest request(RpcMethod method, Object... parameters) {
@@ -192,7 +224,8 @@ public class SynchronousRadixApiClient implements RadixApi {
 	}
 
 	private Result<String> serialize(JsonRpcRequest request) {
-		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper.writeValueAsString(request));
+		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper.writeValueAsString(request))
+			.onSuccess(System.out::println);
 	}
 
 	private <T> Result<JsonRpcResponse<T>> deserialize(String body, TypeReference<JsonRpcResponse<T>> typeReference) {
@@ -215,7 +248,7 @@ public class SynchronousRadixApiClient implements RadixApi {
 		return new Request.Builder().url(baseUrl + "/rpc").post(requestBody).build();
 	}
 
-	private static  OkHttpClient createClient() {
+	private static OkHttpClient createClient() {
 		return new OkHttpClient.Builder()
 			.connectionSpecs(List.of(ConnectionSpec.CLEARTEXT))
 			.connectTimeout(30, TimeUnit.SECONDS)

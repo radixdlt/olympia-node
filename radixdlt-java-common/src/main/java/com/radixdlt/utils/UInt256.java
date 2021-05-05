@@ -18,6 +18,7 @@
 package com.radixdlt.utils;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
@@ -818,6 +819,11 @@ public final class UInt256 implements Comparable<UInt256> {
 			return Objects.equals(this.high, other.high) && Objects.equals(this.low, other.low);
 		}
 		return false;
+	}
+
+	@JsonValue
+	public String toJson() {
+		return toString(10);
 	}
 
 	@Override

@@ -19,6 +19,7 @@ package com.radixdlt.client.lib.api;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DeserializeException;
 
@@ -38,10 +39,6 @@ public class ValidatorAddress {
 		var publicKey = com.radixdlt.identifiers.ValidatorAddress.parse(address);
 		return new ValidatorAddress(publicKey);
 	}
-
-//	public static ValidatorAddress create(ECPublicKey publicKey) {
-//		return new ValidatorAddress(publicKey);
-//	}
 
 	public ECPublicKey getAddress() {
 		return address;
@@ -64,6 +61,11 @@ public class ValidatorAddress {
 	@Override
 	public int hashCode() {
 		return Objects.hash(address);
+	}
+
+	@JsonValue
+	public String toValidatorAddress() {
+		return com.radixdlt.identifiers.ValidatorAddress.of(address);
 	}
 
 	@Override

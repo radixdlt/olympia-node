@@ -17,6 +17,8 @@
 
 package com.radixdlt.client.lib.api;
 
+import com.radixdlt.client.lib.dto.BuiltTransactionDTO;
+import com.radixdlt.client.lib.dto.FinalizedTransaction;
 import com.radixdlt.client.lib.dto.NetworkIdDTO;
 import com.radixdlt.client.lib.dto.NetworkStatsDTO;
 import com.radixdlt.client.lib.dto.StakePositionsDTO;
@@ -25,6 +27,7 @@ import com.radixdlt.client.lib.dto.TokenInfoDTO;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistoryDTO;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
+import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositionsDTO;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponseDTO;
@@ -41,20 +44,34 @@ public interface RadixApi {
 	}
 
 	Result<NetworkIdDTO> networkId();
+
 	Result<TokenInfoDTO> nativeToken();
+
 	Result<TokenInfoDTO> tokenInfo(String rri);
+
 	Result<TokenBalancesDTO> tokenBalances(AccountAddress address);
+
 	Result<TransactionHistoryDTO> transactionHistory(AccountAddress address, int size, Optional<NavigationCursor> cursor);
+
 	Result<TransactionDTO> lookupTransaction(AID txId);
+
 	Result<List<StakePositionsDTO>> stakePositions(AccountAddress address);
+
 	Result<List<UnstakePositionsDTO>> unstakePositions(AccountAddress address);
+
 	Result<TransactionStatusDTO> statusOfTransaction(AID txId);
+
 	Result<NetworkStatsDTO> networkTransactionThroughput();
+
 	Result<NetworkStatsDTO> networkTransactionDemand();
+
 	Result<ValidatorsResponseDTO> validators(int size, Optional<NavigationCursor> cursor);
+
 	Result<ValidatorDTO> lookupValidator(String validatorAddress);
-	//TODO: finish
-	//	Result<BuiltTransactionDTO> buildTransaction(TransactionRequest request);
-	//Result<> finalizeTransaction();
-	//Result<> submitTransaction();
+
+	Result<BuiltTransactionDTO> buildTransaction(TransactionRequest request);
+
+	Result<TxDTO> finalizeTransaction(FinalizedTransaction request);
+
+	Result<TxDTO> submitTransaction(FinalizedTransaction request);
 }

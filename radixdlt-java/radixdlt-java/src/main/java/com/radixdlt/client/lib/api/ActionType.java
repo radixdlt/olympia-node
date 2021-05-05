@@ -18,6 +18,7 @@
 package com.radixdlt.client.lib.api;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.Arrays;
@@ -44,14 +45,14 @@ public enum ActionType {
 	private final String text;
 
 	private static final Map<String, ActionType> TO_ACTION_TYPE = Arrays.stream(ActionType.values())
-		.collect(Collectors.toMap(ActionType::toString, Function.identity()));
+		.collect(Collectors.toMap(ActionType::toJson, Function.identity()));
 
 	ActionType(String text) {
 		this.text = text;
 	}
 
-	@Override
-	public String toString() {
+	@JsonValue
+	public String toJson() {
 		return text;
 	}
 

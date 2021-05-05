@@ -26,19 +26,23 @@ import java.util.List;
 import java.util.Optional;
 
 public class TransactionRequest {
-	private final Optional<String> message;
 	private final List<ActionDTO> actions;
+	private final Optional<String> message;
 
 	private TransactionRequest(Optional<String> message, List<ActionDTO> actions) {
 		this.message = message;
 		this.actions = actions;
 	}
 
-	public TransactionRequestBuilder createBuilder() {
+	public static TransactionRequestBuilder createBuilder() {
 		return new TransactionRequestBuilder();
 	}
 
 	@JsonProperty("message")
+	public String getRawMessage() {
+		return message.orElse(null);
+	}
+
 	public Optional<String> getMessage() {
 		return message;
 	}

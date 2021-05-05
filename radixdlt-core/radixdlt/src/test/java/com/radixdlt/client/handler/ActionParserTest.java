@@ -59,7 +59,7 @@ public class ActionParserTest {
 	public void transferActionIsParsedCorrectly() {
 		var fromAddr = AccountAddress.of(from);
 		var toAddr = AccountAddress.of(to);
-		var source = "[{\"type\":\"TokenTransfer\", \"from\":\"%s\", \"to\":\"%s\", \"amount\":\"%s\", \"tokenIdentifier\":\"%s\"}]";
+		var source = "[{\"type\":\"TokenTransfer\", \"from\":\"%s\", \"to\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, fromAddr, toAddr, UInt256.NINE, rri));
 
 		ActionParser.parse(actions, clientApiStore)

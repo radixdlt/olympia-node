@@ -18,6 +18,7 @@
 package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.ActionType;
@@ -117,26 +118,32 @@ public class ActionDTO {
 			+ ')';
 	}
 
+	@JsonIgnore
 	public ActionType getType() {
 		return type;
 	}
 
+	@JsonIgnore
 	public Optional<AccountAddress> getFrom() {
 		return Optional.ofNullable(from);
 	}
 
+	@JsonIgnore
 	public Optional<AccountAddress> getTo() {
 		return Optional.ofNullable(to);
 	}
 
+	@JsonIgnore
 	public Optional<ValidatorAddress> getValidator() {
 		return Optional.ofNullable(validator);
 	}
 
+	@JsonIgnore
 	public Optional<UInt256> getAmount() {
 		return Optional.ofNullable(amount);
 	}
 
+	@JsonIgnore
 	public Optional<String> getRri() {
 		return Optional.ofNullable(rri);
 	}

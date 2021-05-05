@@ -44,30 +44,6 @@ public class JsonRpcResponse<T> {
 		this.error = error;
 	}
 
-	public Optional<ErrorInfo> error() {
-		return Optional.ofNullable(error);
-	}
-
-	public Optional<T> result() {
-		return Optional.ofNullable(result);
-	}
-
-	public T rawResult() {
-		return result;
-	}
-
-	public ErrorInfo rawError() {
-		return error;
-	}
-
-	public String getVersion() {
-		return version;
-	}
-
-	public String getId() {
-		return id;
-	}
-
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -93,5 +69,29 @@ public class JsonRpcResponse<T> {
 	@Override
 	public String toString() {
 		return "JsonRpcResponse(" + version + ", " + id + ", " + result + ", " + error + ')';
+	}
+
+	public Optional<ErrorInfo> error() {
+		return Optional.ofNullable(error);
+	}
+
+	public Optional<T> result() {
+		return Optional.ofNullable(result);
+	}
+
+	public T rawResult() {
+		return result;
+	}
+
+	public ErrorInfo rawError() {
+		return error;
+	}
+
+	public String getVersion() {
+		return version;
+	}
+
+	public String getId() {
+		return id;
 	}
 }
