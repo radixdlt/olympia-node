@@ -116,22 +116,22 @@ public class SynchronousRadixApiClient implements RadixApi {
 
 	@Override
 	public Result<NetworkIdDTO> networkId() {
-		return call(request(NETWORK_ID), new TypeReference<JsonRpcResponse<NetworkIdDTO>>() {});
+		return call(request(NETWORK_ID), new TypeReference<JsonRpcResponse<NetworkIdDTO>>() { });
 	}
 
 	@Override
 	public Result<TokenInfoDTO> nativeToken() {
-		return call(request(NATIVE_TOKEN), new TypeReference<JsonRpcResponse<TokenInfoDTO>>() {});
+		return call(request(NATIVE_TOKEN), new TypeReference<JsonRpcResponse<TokenInfoDTO>>() { });
 	}
 
 	@Override
 	public Result<TokenInfoDTO> tokenInfo(String rri) {
-		return call(request(TOKEN_INFO, rri), new TypeReference<JsonRpcResponse<TokenInfoDTO>>() {});
+		return call(request(TOKEN_INFO, rri), new TypeReference<JsonRpcResponse<TokenInfoDTO>>() { });
 	}
 
 	@Override
 	public Result<TokenBalancesDTO> tokenBalances(AccountAddress address) {
-		return call(request(TOKEN_BALANCES, address.toString()), new TypeReference<JsonRpcResponse<TokenBalancesDTO>>() {});
+		return call(request(TOKEN_BALANCES, address.toString()), new TypeReference<JsonRpcResponse<TokenBalancesDTO>>() { });
 	}
 
 	@Override
@@ -139,37 +139,37 @@ public class SynchronousRadixApiClient implements RadixApi {
 		var request = request(TRANSACTION_HISTORY, address.toString(), size);
 		cursor.ifPresent(cursorValue -> request.addParameters(cursorValue.value()));
 
-		return call(request, new TypeReference<JsonRpcResponse<TransactionHistoryDTO>>() {});
+		return call(request, new TypeReference<JsonRpcResponse<TransactionHistoryDTO>>() { });
 	}
 
 	@Override
 	public Result<TransactionDTO> lookupTransaction(AID txId) {
-		return call(request(LOOKUP_TRANSACTION, txId.toString()), new TypeReference<JsonRpcResponse<TransactionDTO>>() {});
+		return call(request(LOOKUP_TRANSACTION, txId.toString()), new TypeReference<JsonRpcResponse<TransactionDTO>>() { });
 	}
 
 	@Override
 	public Result<List<StakePositionsDTO>> stakePositions(AccountAddress address) {
-		return call(request(STAKE_POSITIONS, address.toString()), new TypeReference<JsonRpcResponse<List<StakePositionsDTO>>>() {});
+		return call(request(STAKE_POSITIONS, address.toString()), new TypeReference<JsonRpcResponse<List<StakePositionsDTO>>>() { });
 	}
 
 	@Override
 	public Result<List<UnstakePositionsDTO>> unstakePositions(AccountAddress address) {
-		return call(request(UNSTAKE_POSITIONS, address.toString()), new TypeReference<JsonRpcResponse<List<UnstakePositionsDTO>>>() {});
+		return call(request(UNSTAKE_POSITIONS, address.toString()), new TypeReference<JsonRpcResponse<List<UnstakePositionsDTO>>>() { });
 	}
 
 	@Override
 	public Result<TransactionStatusDTO> statusOfTransaction(AID txId) {
-		return call(request(STATUS_OF_TRANSACTION, txId.toString()), new TypeReference<JsonRpcResponse<TransactionStatusDTO>>() {});
+		return call(request(STATUS_OF_TRANSACTION, txId.toString()), new TypeReference<JsonRpcResponse<TransactionStatusDTO>>() { });
 	}
 
 	@Override
 	public Result<NetworkStatsDTO> networkTransactionThroughput() {
-		return call(request(NETWORK_TRANSACTION_THROUGHPUT), new TypeReference<JsonRpcResponse<NetworkStatsDTO>>() {});
+		return call(request(NETWORK_TRANSACTION_THROUGHPUT), new TypeReference<JsonRpcResponse<NetworkStatsDTO>>() { });
 	}
 
 	@Override
 	public Result<NetworkStatsDTO> networkTransactionDemand() {
-		return call(request(NETWORK_TRANSACTION_DEMAND), new TypeReference<JsonRpcResponse<NetworkStatsDTO>>() {});
+		return call(request(NETWORK_TRANSACTION_DEMAND), new TypeReference<JsonRpcResponse<NetworkStatsDTO>>() { });
 	}
 
 	@Override
@@ -177,19 +177,19 @@ public class SynchronousRadixApiClient implements RadixApi {
 		var request = request(VALIDATORS, size);
 		cursor.ifPresent(cursorValue -> request.addParameters(cursorValue.value()));
 
-		return call(request, new TypeReference<JsonRpcResponse<ValidatorsResponseDTO>>() {});
+		return call(request, new TypeReference<JsonRpcResponse<ValidatorsResponseDTO>>() { });
 	}
 
 	@Override
 	public Result<ValidatorDTO> lookupValidator(String validatorAddress) {
-		return call(request(LOOKUP_VALIDATOR, validatorAddress), new TypeReference<JsonRpcResponse<ValidatorDTO>>() {});
+		return call(request(LOOKUP_VALIDATOR, validatorAddress), new TypeReference<JsonRpcResponse<ValidatorDTO>>() { });
 	}
 
 	@Override
 	public Result<BuiltTransactionDTO> buildTransaction(TransactionRequest request) {
 		return call(
 			request(BUILD_TRANSACTION, request.getActions(), request.getMessage()),
-			new TypeReference<JsonRpcResponse<BuiltTransactionDTO>>() {}
+			new TypeReference<JsonRpcResponse<BuiltTransactionDTO>>() { }
 		);
 	}
 
@@ -197,7 +197,7 @@ public class SynchronousRadixApiClient implements RadixApi {
 	public Result<TxDTO> finalizeTransaction(FinalizedTransaction request) {
 		return call(
 			request(FINALIZE_TRANSACTION, request.getBlob(), request.getSignature(), request.getPublicKey()),
-			new TypeReference<JsonRpcResponse<TxDTO>>() {}
+			new TypeReference<JsonRpcResponse<TxDTO>>() { }
 		);
 	}
 
@@ -205,7 +205,7 @@ public class SynchronousRadixApiClient implements RadixApi {
 	public Result<TxDTO> submitTransaction(FinalizedTransaction request) {
 		return call(
 			request(SUBMIT_TRANSACTION, request.getBlob(), request.getSignature(), request.getPublicKey(), request.getTxId()),
-			new TypeReference<JsonRpcResponse<TxDTO>>() {}
+			new TypeReference<JsonRpcResponse<TxDTO>>() { }
 		);
 	}
 

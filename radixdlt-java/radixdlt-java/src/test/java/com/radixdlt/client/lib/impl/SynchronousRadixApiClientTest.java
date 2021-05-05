@@ -260,11 +260,13 @@ public class SynchronousRadixApiClientTest {
 								  + "002cd76fe086b93ce2f768a00b229ffffffffff7000500000002010301040279be667ef9dcbbac5"
 								  + "5a06295ce870b07029bfcdb2dce28d959f2815b16f81798000000000000000000000000002cd76f"
 								  + "e086b93ce2f768a009bf5a87a275fff700");
-		var sig = ECDSASignature.decodeFromDER(Hex.decode("30440220768a67a36549e11f19ddb6e2c172c3"
-															  + "f2f2996600413f1d2f246667ab2de81ddf022070f3bb613bcba"
-															  + "2704728b99fad91668e2d67593f73b7c3567eae61596242f64c"));
-		var pubkey = ECPublicKey.fromHex("0479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8"
-											 + "1798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8");
+		var sig = ECDSASignature.decodeFromHexDer("30440220768a67a36549e11f19ddb6e2c172c3"
+													  + "f2f2996600413f1d2f246667ab2de81ddf0220"
+													  + "70f3bb613bcba2704728b99fad91668e2d6759"
+													  + "3f73b7c3567eae61596242f64c");
+		var pubkey = ECPublicKey.fromHex("0479be667ef9dcbbac55a06295ce870b07029bfcdb2dce"
+											 + "28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8"
+											 + "fd17b448a68554199c47d08ffb10d4b8");
 		return FinalizedTransaction.create(blob, sig, pubkey, null);
 	}
 

@@ -24,7 +24,6 @@ import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.util.encoders.Hex;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;

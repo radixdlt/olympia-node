@@ -20,6 +20,7 @@ package com.radixdlt.crypto;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.DLSequence;
+import org.bouncycastle.util.encoders.Hex;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -149,6 +150,10 @@ public final class ECDSASignature implements Signature {
 	}
 
 	//WARNING: Never ever use this method to restore recoverable signature! It misses 'v' bit necessary for recovery.
+	public static ECDSASignature decodeFromHexDer(String input) {
+		return decodeFromDER(Hex.decode(input));
+	}
+
 	public static ECDSASignature decodeFromDER(byte[] bytes) {
 		try (ASN1InputStream decoder = new ASN1InputStream(bytes)) {
 			var seq = (DLSequence) decoder.readObject();
