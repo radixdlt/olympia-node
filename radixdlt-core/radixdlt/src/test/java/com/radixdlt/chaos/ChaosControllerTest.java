@@ -58,8 +58,8 @@ public class ChaosControllerTest {
 		var handler = mock(RoutingHandler.class);
 		chaosController.configureRoutes(handler);
 
-		verify(handler).put(eq("/api/chaos/message-flooder"), any());
-		verify(handler).put(eq("/api/chaos/mempool-filler"), any());
+		verify(handler).put(eq("/chaos/message-flooder"), any());
+		verify(handler).put(eq("/chaos/mempool-filler"), any());
 	}
 
 	@Test
