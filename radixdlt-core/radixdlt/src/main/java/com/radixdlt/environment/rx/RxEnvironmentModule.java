@@ -29,39 +29,15 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
-import com.radixdlt.chaos.mempoolfiller.ScheduledMempoolFill;
-import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
-import com.radixdlt.chaos.messageflooder.ScheduledMessageFlood;
-import com.radixdlt.consensus.bft.BFTHighQCUpdate;
-import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
-import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.ViewUpdate;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
-import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.ScheduledEventProducerOnRunner;
 import com.radixdlt.environment.StartProcessorOnRunner;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
-import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
-import com.radixdlt.sync.messages.local.LocalSyncRequest;
-import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
-import com.radixdlt.sync.messages.local.SyncCheckTrigger;
-import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
-import com.radixdlt.sync.messages.local.SyncRequestTimeout;
 import com.radixdlt.utils.ThreadFactories;
 import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
@@ -90,36 +66,8 @@ public final class RxEnvironmentModule extends AbstractModule {
 		bind(Environment.class).to(RxEnvironment.class);
 		bind(ScheduledExecutorService.class).toInstance(ses);
 
-		bind(new TypeLiteral<Observable<MempoolAddSuccess>>() { }).toProvider(new ObservableProvider<>(MempoolAddSuccess.class));
-		bind(new TypeLiteral<Observable<MempoolAddFailure>>() { }).toProvider(new ObservableProvider<>(MempoolAddFailure.class));
-		bind(new TypeLiteral<Observable<MempoolRelayTrigger>>() { }).toProvider(new ObservableProvider<>(MempoolRelayTrigger.class));
-		bind(new TypeLiteral<Observable<ScheduledLocalTimeout>>() { }).toProvider(new ObservableProvider<>(ScheduledLocalTimeout.class));
-		bind(new TypeLiteral<Observable<BFTInsertUpdate>>() { }).toProvider(new ObservableProvider<>(BFTInsertUpdate.class));
-		bind(new TypeLiteral<Observable<BFTRebuildUpdate>>() { }).toProvider(new ObservableProvider<>(BFTRebuildUpdate.class));
-		bind(new TypeLiteral<Observable<BFTHighQCUpdate>>() { }).toProvider(new ObservableProvider<>(BFTHighQCUpdate.class));
-		bind(new TypeLiteral<Observable<BFTCommittedUpdate>>() { }).toProvider(new ObservableProvider<>(BFTCommittedUpdate.class));
-		bind(new TypeLiteral<Observable<VertexRequestTimeout>>() { }).toProvider(new ObservableProvider<>(VertexRequestTimeout.class));
-		bind(new TypeLiteral<Observable<LocalSyncRequest>>() { }).toProvider(new ObservableProvider<>(LocalSyncRequest.class));
-		bind(new TypeLiteral<Observable<SyncCheckTrigger>>() { }).toProvider(new ObservableProvider<>(SyncCheckTrigger.class));
-		bind(new TypeLiteral<Observable<SyncCheckReceiveStatusTimeout>>() { })
-			.toProvider(new ObservableProvider<>(SyncCheckReceiveStatusTimeout.class));
-		bind(new TypeLiteral<Observable<SyncRequestTimeout>>() { }).toProvider(new ObservableProvider<>(SyncRequestTimeout.class));
-		bind(new TypeLiteral<Observable<SyncLedgerUpdateTimeout>>() { }).toProvider(new ObservableProvider<>(SyncLedgerUpdateTimeout.class));
-		bind(new TypeLiteral<Observable<LocalTimeoutOccurrence>>() { }).toProvider(new ObservableProvider<>(LocalTimeoutOccurrence.class));
-		bind(new TypeLiteral<Observable<EpochLocalTimeoutOccurrence>>() { })
-			.toProvider(new ObservableProvider<>(EpochLocalTimeoutOccurrence.class));
-		bind(new TypeLiteral<Observable<EpochViewUpdate>>() { }).toProvider(new ObservableProvider<>(EpochViewUpdate.class));
-		bind(new TypeLiteral<Observable<ViewUpdate>>() { }).toProvider(new ObservableProvider<>(ViewUpdate.class));
+		// TODO: Remove, still required by BerkeleyClientAPIStore.java
 		bind(new TypeLiteral<Observable<AtomsCommittedToLedger>>() { }).toProvider(new ObservableProvider<>(AtomsCommittedToLedger.class));
-		bind(new TypeLiteral<Observable<MessageFlooderUpdate>>() { }).toProvider(new ObservableProvider<>(MessageFlooderUpdate.class));
-		bind(new TypeLiteral<Observable<ScheduledMessageFlood>>() { }).toProvider(new ObservableProvider<>(ScheduledMessageFlood.class));
-		bind(new TypeLiteral<Observable<MempoolFillerUpdate>>() { }).toProvider(new ObservableProvider<>(MempoolFillerUpdate.class));
-		bind(new TypeLiteral<Observable<ScheduledMempoolFill>>() { }).toProvider(new ObservableProvider<>(ScheduledMempoolFill.class));
-		bind(new TypeLiteral<Observable<Epoched<ScheduledLocalTimeout>>>() { })
-			.toProvider(new ObservableProvider<>(new TypeLiteral<Epoched<ScheduledLocalTimeout>>() { }));
-		bind(new TypeLiteral<Observable<LedgerUpdate>>() { }).toProvider(new ObservableProvider<>(LedgerUpdate.class));
-		bind(new TypeLiteral<Observable<EpochsLedgerUpdate>>() { }).toProvider(new ObservableProvider<>(EpochsLedgerUpdate.class));
-		bind(new TypeLiteral<Observable<AtomsRemovedFromMempool>>() { }).toProvider(new ObservableProvider<>(AtomsRemovedFromMempool.class));
 
 		Multibinder.newSetBinder(binder(), new TypeLiteral<RxRemoteDispatcher<?>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnRunner<?>>() { });
@@ -132,7 +80,7 @@ public final class RxEnvironmentModule extends AbstractModule {
 	private RxEnvironment rxEnvironment(
 		ScheduledExecutorService ses,
 		Set<RxRemoteDispatcher<?>> dispatchers,
-		@LocalEvents Set<Class<?>> localProcessedEventClasses
+		@LocalEvents Set<Class<?>> localProcessedEventClasses // TODO: remove, infer from ProcessorOnRunners
 	) {
 		return new RxEnvironment(
 			Set.of(new TypeLiteral<Epoched<ScheduledLocalTimeout>>() { }),

@@ -11,6 +11,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * Classes which are used as local events
+ * TODO: Remove and infer LocalEvents from ProcessorOnRunners
  */
 @Qualifier
 @Target({ FIELD, PARAMETER, METHOD })
