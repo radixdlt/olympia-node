@@ -33,8 +33,7 @@ import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.deterministic.DeterministicConsensusProcessor;
-import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
+import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.mempool.MempoolConfig;
@@ -56,7 +55,7 @@ public final class MempoolFillAndEmptyTest {
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
-    @Inject private DeterministicConsensusProcessor processor;
+    @Inject private DeterministicProcessor processor;
     @Inject private DeterministicNetwork network;
     @Inject private EventDispatcher<MempoolFillerUpdate> mempoolFillerUpdateEventDispatcher;
     @Inject private EventDispatcher<ScheduledMempoolFill> scheduledMempoolFillEventDispatcher;

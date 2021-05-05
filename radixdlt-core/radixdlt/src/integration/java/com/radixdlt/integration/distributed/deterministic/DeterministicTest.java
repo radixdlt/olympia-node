@@ -51,9 +51,6 @@ import com.radixdlt.integration.distributed.deterministic.configuration.EpochNod
 import com.radixdlt.integration.distributed.deterministic.configuration.NodeIndexAndWeight;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
-import com.radixdlt.environment.deterministic.DeterministicConsensusProcessor;
-import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
-import com.radixdlt.environment.deterministic.DeterministicMessageProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
@@ -243,7 +240,6 @@ public final class DeterministicTest {
 				@Override
 				protected void configure() {
 					bind(BFTValidatorSet.class).toInstance(validatorSet);
-					bind(DeterministicMessageProcessor.class).to(DeterministicConsensusProcessor.class);
 					install(new NoEpochsConsensusModule());
 				}
 			});
@@ -257,7 +253,6 @@ public final class DeterministicTest {
 				public void configure() {
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
 					bind(BFTValidatorSet.class).toInstance(epochToValidatorSetMapping.apply(1L));
-					bind(DeterministicMessageProcessor.class).to(DeterministicConsensusProcessor.class);
 					bind(new TypeLiteral<EventProcessor<EpochView>>() { }).toInstance(epochView -> { });
 					bind(new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() { }).toInstance(t -> { });
 				}

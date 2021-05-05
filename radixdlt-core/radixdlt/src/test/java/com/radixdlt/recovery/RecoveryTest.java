@@ -19,8 +19,7 @@ package com.radixdlt.recovery;
 
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.environment.EventProcessorOnDispatch;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.environment.deterministic.DeterministicConsensusProcessor;
+import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -49,7 +48,6 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
@@ -69,10 +67,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
-import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
@@ -153,7 +148,7 @@ public class RecoveryTest {
 		).injectMembers(this);
 
 		this.currentInjector = createRunner(ecKeyPair);
-		this.currentInjector.getInstance(DeterministicConsensusProcessor.class).start();
+		this.currentInjector.getInstance(DeterministicProcessor.class).start();
 	}
 
 	@After
@@ -220,14 +215,14 @@ public class RecoveryTest {
 	private void restartNode() {
 		this.network.dropMessages(m -> m.channelId().receiverIndex() == 0 && m.channelId().senderIndex() == 0);
 		this.currentInjector = createRunner(ecKeyPair);
-		var processor = currentInjector.getInstance(DeterministicConsensusProcessor.class);
+		var processor = currentInjector.getInstance(DeterministicProcessor.class);
 		processor.start();
 	}
 
 	private void processForCount(int messageCount) {
 		for (int i = 0; i < messageCount; i++) {
 			Timed<ControlledMessage> msg = this.network.nextMessage();
-			var runner = currentInjector.getInstance(DeterministicConsensusProcessor.class);
+			var runner = currentInjector.getInstance(DeterministicProcessor.class);
 			runner.handleMessage(msg.value().origin(), msg.value().message(), msg.value().typeLiteral());
 		}
 	}

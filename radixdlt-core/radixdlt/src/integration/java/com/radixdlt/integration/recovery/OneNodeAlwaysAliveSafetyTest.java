@@ -18,7 +18,7 @@
 package com.radixdlt.integration.recovery;
 
 import com.radixdlt.client.ValidatorAddress;
-import com.radixdlt.environment.deterministic.DeterministicConsensusProcessor;
+import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -64,7 +64,6 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
-import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
@@ -238,7 +237,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 		String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
 		ThreadContext.put("bftNode", bftNode);
 		try {
-			injector.getInstance(DeterministicConsensusProcessor.class).start();
+			injector.getInstance(DeterministicProcessor.class).start();
 		} finally {
 			ThreadContext.remove("bftNode");
 		}
@@ -253,7 +252,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 		String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
 		ThreadContext.put("bftNode", bftNode);
 		try {
-			injector.getInstance(DeterministicConsensusProcessor.class)
+			injector.getInstance(DeterministicProcessor.class)
 				.handleMessage(msg.value().origin(), msg.value().message(), msg.value().typeLiteral());
 		} finally {
 			ThreadContext.remove("bftNode");

@@ -51,7 +51,13 @@ public final class ControlledSender implements DeterministicSender, Environment 
 	@Override
 	public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass) {
 		return (t, milliseconds) -> {
-			ControlledMessage msg = new ControlledMessage(self, this.localChannel, t, null, arrivalTime(this.localChannel) + milliseconds);
+			var msg = new ControlledMessage(
+				self,
+				this.localChannel,
+				t,
+				null,
+				arrivalTime(this.localChannel) + milliseconds
+			);
 			handleMessage(msg);
 		};
 	}
@@ -59,7 +65,13 @@ public final class ControlledSender implements DeterministicSender, Environment 
 	@Override
 	public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(TypeLiteral<T> typeLiteral) {
 		return (t, milliseconds) -> {
-			ControlledMessage msg = new ControlledMessage(self, this.localChannel, t, typeLiteral, arrivalTime(this.localChannel) + milliseconds);
+			var msg = new ControlledMessage(
+				self,
+				this.localChannel,
+				t,
+				typeLiteral,
+				arrivalTime(this.localChannel) + milliseconds
+			);
 			handleMessage(msg);
 		};
 	}

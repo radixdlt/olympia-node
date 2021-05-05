@@ -31,8 +31,7 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.environment.deterministic.DeterministicConsensusProcessor;
-import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
+import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 
@@ -53,7 +52,7 @@ public class PacemakerTest {
 	public TemporaryFolder folder = new TemporaryFolder();
 
 	@Inject
-	private DeterministicConsensusProcessor processor;
+	private DeterministicProcessor processor;
 
 	@Inject
 	private ViewUpdate initialViewUpdate;

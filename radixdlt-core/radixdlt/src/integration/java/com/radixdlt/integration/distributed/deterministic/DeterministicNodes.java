@@ -28,8 +28,8 @@ import com.google.inject.util.Modules;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
-import com.radixdlt.environment.deterministic.DeterministicMessageProcessor;
 import com.radixdlt.environment.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.utils.Pair;
@@ -90,7 +90,7 @@ public final class DeterministicNodes {
 	public void start() {
 		for (int index = 0; index < this.nodeInstances.size(); index++) {
 			Injector injector = nodeInstances.get(index);
-			DeterministicMessageProcessor processor = injector.getInstance(DeterministicMessageProcessor.class);
+			var processor = injector.getInstance(DeterministicProcessor.class);
 			String bftNode = " " + this.nodeLookup.inverse().get(index);
 			ThreadContext.put("bftNode", bftNode);
 			try {
@@ -110,7 +110,7 @@ public final class DeterministicNodes {
 		ThreadContext.put("bftNode", bftNode);
 		try {
 			log.debug("Received message {} at {}", nextMsg, timedNextMsg.time());
-			nodeInstances.get(receiverIndex).getInstance(DeterministicMessageProcessor.class)
+			nodeInstances.get(receiverIndex).getInstance(DeterministicProcessor.class)
 				.handleMessage(sender, nextMsg.message(), nextMsg.typeLiteral());
 		} finally {
 			ThreadContext.remove("bftNode");
