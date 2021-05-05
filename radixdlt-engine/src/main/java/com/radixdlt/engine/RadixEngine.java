@@ -400,8 +400,7 @@ public final class RadixEngine<M> {
 			try {
 				this.engineStore.storeTxn(dbTransaction, txn, parsedTxn.stateUpdates());
 			} catch (Exception e) {
-				logger.error("Store of atom failed. Cause:", e);
-				logger.error("Store of atom failed: {}", parsedTxn);
+				logger.error("Store of atom failed: " + parsedTxn, e);
 				throw e;
 			}
 
