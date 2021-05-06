@@ -24,6 +24,7 @@ import com.radixdlt.network.p2p.transport.PeerOutboundBootstrap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -88,7 +89,7 @@ public final class PendingOutboundChannelsManager {
 			synchronized (lock) {
 				final var maybeFuture = this.pendingChannels.remove(timeout.getUri().getNodeId());
 				if (maybeFuture != null) {
-					maybeFuture.completeExceptionally(new RuntimeException("Peer connection timeout"));
+					maybeFuture.completeExceptionally(new IOException("Peer connection timeout"));
 				}
 			}
 		};

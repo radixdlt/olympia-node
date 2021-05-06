@@ -52,6 +52,8 @@ import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.Optional;
 
+import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
+
 /**
  * Class that manages TCP connection channel.
  * It takes care of the initial handshake,
@@ -197,7 +199,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 	public Result<Object> send(byte[] data) {
 		synchronized (this.lock) {
 			if (this.state != ChannelState.ACTIVE) {
-				return Result.fail(new RuntimeException("Channel inactive"));
+				return IO_ERROR.result();
 			} else {
 				try {
 					final var baos = new ByteArrayOutputStream();
@@ -205,7 +207,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 					this.write(baos.toByteArray());
 					return Result.ok(new Object());
 				} catch (IOException e) {
-					return Result.fail(e);
+					return IO_ERROR.result();
 				}
 			}
 		}

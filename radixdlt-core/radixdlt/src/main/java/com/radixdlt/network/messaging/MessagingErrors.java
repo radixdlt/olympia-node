@@ -21,11 +21,9 @@ import com.radixdlt.utils.functional.Failure;
 
 public enum MessagingErrors implements Failure {
 	MESSAGE_EXPIRED(1, "Message expired"),
-	UNKNOWN_PEER(2, "Peer not present in address book"),
-	INVALID_SIGNATURE(3, "Invalid signature"),
-	NULL_NID(4, "Null NID"),
-	INVALID_AGENT_VERSION(5, "Invalid agent version"),
-	MESSAGE_FROM_SELF(6, "Message from self");
+	IO_ERROR(2, "IO Error"),
+	SELF_CONNECTION_ATTEMPT(3, "Attempt to connect to self"),
+	OUTBOUND_CHANNELS_LIMIT_REACHED(4, "Max number of outbound channels reached");
 
 	private final int code;
 	private final String message;

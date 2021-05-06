@@ -46,6 +46,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
+import static com.radixdlt.network.messaging.MessagingErrors.OUTBOUND_CHANNELS_LIMIT_REACHED;
+import static com.radixdlt.network.messaging.MessagingErrors.SELF_CONNECTION_ATTEMPT;
 import static java.util.function.Predicate.not;
 
 /**
@@ -127,11 +129,11 @@ public final class PeerManager {
 	private Result<Object> canConnectTo(NodeId nodeId) {
 		if (nodeId.equals(self)) {
 			log.info("Ignoring self connection attempt");
-			return Result.fail("Can't connect to self");
+			return SELF_CONNECTION_ATTEMPT.result();
 		}
 
 		if (this.getRemainingOutboundSlots() <= 0) {
-			return Result.fail("Outbound channels limit reached");
+			return OUTBOUND_CHANNELS_LIMIT_REACHED.result();
 		}
 
 		return Result.ok(new Object());

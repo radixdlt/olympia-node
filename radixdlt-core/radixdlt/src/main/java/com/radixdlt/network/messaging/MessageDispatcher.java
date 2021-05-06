@@ -36,6 +36,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
 
+import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
+import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_EXPIRED;
+
 /*
  * This could be moved into MessageCentralImpl at some stage, but has been
  * separated out so that we can check if all the functionality here is
@@ -72,7 +75,7 @@ class MessageDispatcher {
 			String msg = String.format("TTL for %s message to %s has expired", message.getClass().getSimpleName(), receiver);
 			log.warn(msg);
 			this.counters.increment(CounterType.MESSAGES_OUTBOUND_ABORTED);
-			return CompletableFuture.completedFuture(Result.fail(new IOException(msg)));
+			return CompletableFuture.completedFuture(MESSAGE_EXPIRED.result());
 		}
 
 		final var bytes = serialize(message);
@@ -91,7 +94,7 @@ class MessageDispatcher {
 	private Result<Object> completionException(Throwable cause, NodeId receiver, Message message) {
 		final var msg = String.format("Send %s to %s failed", message.getClass().getSimpleName(), receiver);
 		log.warn("{}: {}", msg, cause.getMessage());
-		return Result.fail(new IOException(msg, cause));
+		return IO_ERROR.result();
 	}
 
 	private Result<Object> updateStatistics(Result<Object> result) {
