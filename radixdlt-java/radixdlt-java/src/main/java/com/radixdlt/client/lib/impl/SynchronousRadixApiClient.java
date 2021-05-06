@@ -224,8 +224,7 @@ public class SynchronousRadixApiClient implements RadixApi {
 	}
 
 	private Result<String> serialize(JsonRpcRequest request) {
-		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper.writeValueAsString(request))
-			.onSuccess(System.out::println);
+		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper.writeValueAsString(request));
 	}
 
 	private <T> Result<JsonRpcResponse<T>> deserialize(String body, TypeReference<JsonRpcResponse<T>> typeReference) {
@@ -237,8 +236,7 @@ public class SynchronousRadixApiClient implements RadixApi {
 
 		try (var response = client.newCall(request).execute(); var responseBody = response.body()) {
 			return fromOptional(NO_CONTENT, ofNullable(responseBody))
-				.flatMap(responseBody1 -> Result.wrap(UNABLE_TO_READ_RESPONSE_BODY, responseBody1::string))
-				.onSuccess(text -> System.out.println(text));
+				.flatMap(responseBody1 -> Result.wrap(UNABLE_TO_READ_RESPONSE_BODY, responseBody1::string));
 		} catch (IOException e) {
 			return UNABLE_TO_READ_RESPONSE_BODY.with(e.getMessage()).result();
 		}

@@ -20,6 +20,8 @@ package com.radixdlt.client.api;
 import com.radixdlt.utils.functional.Failure;
 
 public enum ApiErrors implements Failure {
+	INVALID_HEX_STRING(2502, "The value {0} is not a correct hexadecimal string"),
+	MISSING_PARAMETER(2503, "The parameter {0} is missing"),
 	SYMBOL_DOES_NOT_MATCH(2504, "Symbol {0} does not match"),
 	INVALID_PAGE_SIZE(2505, "Size {0} must be greater than zero"),
 	MISSING_PARAMS(2506, "The 'params' field must be present and must be a JSON array"),

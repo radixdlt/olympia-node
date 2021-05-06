@@ -16,7 +16,6 @@
  */
 package com.radixdlt.client.lib.api;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import com.radixdlt.serialization.DeserializeException;
@@ -24,7 +23,6 @@ import com.radixdlt.utils.UInt256;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class TransactionRequestTest {
 	@Test
@@ -36,7 +34,6 @@ public class TransactionRequestTest {
 		var request = TransactionRequest.createBuilder()
 			.transfer(from, to, UInt256.EIGHT, rri).build();
 
-		request.getMessage().ifPresent(__ -> fail());
 		assertEquals(1, request.getActions().size());
 
 		var action = request.getActions().get(0);
@@ -62,7 +59,6 @@ public class TransactionRequestTest {
 		var request = TransactionRequest.createBuilder()
 			.stake(from, validator, UInt256.SEVEN).build();
 
-		request.getMessage().ifPresent(__ -> fail());
 		assertEquals(1, request.getActions().size());
 
 		var action = request.getActions().get(0);
@@ -86,7 +82,6 @@ public class TransactionRequestTest {
 		var request = TransactionRequest.createBuilder()
 			.unstake(from, validator, UInt256.SIX).build();
 
-		request.getMessage().ifPresent(__ -> fail());
 		assertEquals(1, request.getActions().size());
 
 		var action = request.getActions().get(0);
@@ -113,9 +108,7 @@ public class TransactionRequestTest {
 			.message("Text")
 			.build();
 
-		request.getMessage()
-			.ifPresentOrElse(text -> assertEquals("Text", text), Assert::fail);
-
+		assertEquals("Text", request.getMessage());
 		assertEquals(1, request.getActions().size());
 
 		var action = request.getActions().get(0);

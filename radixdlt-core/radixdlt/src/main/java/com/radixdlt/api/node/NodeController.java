@@ -51,7 +51,6 @@ import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
-import com.radixdlt.store.ImmutableIndex;
 import com.radixdlt.utils.UInt256;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
@@ -70,7 +69,6 @@ import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 public final class NodeController implements Controller {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final ImmutableIndex immutableIndex;
 	private final EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher;
 	private final ECPublicKey bftKey;
 	private final REAddr account;
@@ -80,13 +78,11 @@ public final class NodeController implements Controller {
 		@Self REAddr account,
 		@Self ECPublicKey bftKey,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		ImmutableIndex immutableIndex,
 		EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher
 	) {
 		this.account = account;
 		this.bftKey = bftKey;
 		this.radixEngine = radixEngine;
-		this.immutableIndex = immutableIndex;
 		this.nodeApplicationRequestEventDispatcher = nodeApplicationRequestEventDispatcher;
 	}
 
