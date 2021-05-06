@@ -17,6 +17,7 @@
 
 package com.radixdlt.store.berkeley;
 
+import com.radixdlt.atommodel.system.SystemParticle;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -112,7 +113,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	private Database proofDatabase; // Write/Delete
 	private SecondaryDatabase epochProofDatabase;
 
-	private Database rriDatabase;
+	private Database addrDatabase;
 
 	private AppendLog atomLog; //Atom data append only log
 
@@ -133,7 +134,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 	public void close() {
 		safeClose(atomDatabase);
-		safeClose(rriDatabase);
+		safeClose(addrDatabase);
 
 		safeClose(atomIdDatabase);
 
@@ -292,7 +293,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			var env = dbEnv.getEnvironment();
 			atomDatabase = env.openDatabase(null, ATOMS_DB_NAME, primaryConfig);
 
-			rriDatabase = env.openDatabase(null, RRI_DB_NAME, rriConfig);
+			addrDatabase = env.openDatabase(null, RRI_DB_NAME, rriConfig);
 			particleDatabase = env.openDatabase(null, PARTICLE_DB_NAME, primaryConfig);
 			upParticleDatabase = env.openSecondaryDatabase(null, UP_PARTICLE_DB_NAME, particleDatabase, upParticleConfig);
 
@@ -583,7 +584,11 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				var addr = p.getAddr();
 				var buf2 = inst.getInstruction().getDataByteBuffer();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
-				rriDatabase.putNoOverwrite(txn, new DatabaseEntry(addr.getBytes()), value);
+				addrDatabase.putNoOverwrite(txn, new DatabaseEntry(addr.getBytes()), value);
+			} else if (inst.getParticle() instanceof SystemParticle) {
+				var buf2 = inst.getInstruction().getDataByteBuffer();
+				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
+				addrDatabase.put(txn, new DatabaseEntry(REAddr.ofSystem().getBytes()), value);
 			}
 		} else if (inst.isShutDown()) {
 			if (inst.getSubstate().getId().isVirtual()) {
@@ -703,7 +708,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		var pos = buf.position();
 		var key = new DatabaseEntry(buf.array(), 0, pos);
 		var value = entry();
-		var status = rriDatabase.get(unwrap(tx), key, value, DEFAULT);
+		var status = addrDatabase.get(unwrap(tx), key, value, DEFAULT);
 		if (status != SUCCESS) {
 			return Optional.empty();
 		}
