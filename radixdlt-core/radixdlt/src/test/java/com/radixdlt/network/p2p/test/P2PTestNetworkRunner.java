@@ -46,10 +46,13 @@ import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.network.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.store.DatabaseCacheSize;
+import com.radixdlt.store.DatabaseLocation;
 import org.apache.commons.cli.ParseException;
 import org.json.JSONObject;
+import org.junit.rules.TemporaryFolder;
 
-import java.net.URI;
+import java.io.IOException;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -83,11 +86,8 @@ public final class P2PTestNetworkRunner {
 		final var builder = ImmutableList.<TestNode>builder();
 		for (int i = 0; i < numNodes; i++) {
 			final var nodeKey = nodesKeys.get(i);
-			final var uri = RadixNodeUri.fromUri(new URI(String.format(
-				"radix://%s@127.0.0.1:%s",
-				nodeKey.getPublicKey().toBase58(),
-				p2pConfig.listenPort() + i
-			)));
+			final var uri = RadixNodeUri.fromPubKeyAndAddress(
+				nodeKey.getPublicKey(), "127.0.0.1", p2pConfig.listenPort() + i);
 			final var injector = createInjector(p2pNetwork, network, p2pConfig, nodeKey, uri, i);
 			builder.add(new TestNode(injector, uri, nodeKey));
 		}
@@ -127,6 +127,16 @@ public final class P2PTestNetworkRunner {
 				new AbstractModule() {
 					@Override
 					protected void configure() {
+						final var dbDir = new TemporaryFolder();
+						try {
+							dbDir.create();
+						} catch (IOException e) {
+							throw new RuntimeException(e);
+						}
+						bindConstant().annotatedWith(DatabaseLocation.class)
+							.to(dbDir.getRoot().getAbsolutePath());
+						bindConstant().annotatedWith(DatabaseCacheSize.class)
+							.to((long) (Runtime.getRuntime().maxMemory() * 0.125));
 						bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(nodeKey);
 						bind(ECPublicKey.class).annotatedWith(Self.class).toInstance(nodeKey.getPublicKey());
 						bind(BFTNode.class).annotatedWith(Self.class).toInstance(BFTNode.create(nodeKey.getPublicKey()));

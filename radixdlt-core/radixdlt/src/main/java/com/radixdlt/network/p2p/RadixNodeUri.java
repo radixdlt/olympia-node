@@ -21,10 +21,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.serialization.DsonOutput;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 public final class RadixNodeUri {
@@ -33,12 +33,12 @@ public final class RadixNodeUri {
 	private final NodeId nodeId;
 
 	@JsonCreator
-	public static RadixNodeUri fromJsonValue(String uri) throws URISyntaxException, PublicKeyException {
-		if (uri.startsWith(":str:")) {
-			return fromUri(new URI(uri.substring(5)));
-		} else {
-			return fromUri(new URI(uri));
-		}
+	public static RadixNodeUri deserialize(byte[] uri) throws URISyntaxException, PublicKeyException {
+		return fromUri(new URI(new String(uri)));
+	}
+
+	public static RadixNodeUri fromPubKeyAndAddress(ECPublicKey publicKey, String host, int port) {
+		return new RadixNodeUri(host, port, NodeId.fromPublicKey(publicKey));
 	}
 
 	public static RadixNodeUri fromUri(URI uri) throws PublicKeyException {
@@ -71,8 +71,11 @@ public final class RadixNodeUri {
 	}
 
 	@JsonValue
-	@DsonOutput(DsonOutput.Output.ALL)
-	public String getUriString() {
+	private byte[] getSerializedValue() {
+		return getUriString().getBytes(StandardCharsets.UTF_8);
+	}
+
+	private String getUriString() {
 		return String.format("radix://%s@%s:%s", nodeId.getPublicKey().toBase58(), host, port);
 	}
 

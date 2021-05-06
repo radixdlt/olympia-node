@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -17,17 +17,20 @@
 
 package com.radixdlt.store.berkeley;
 
-/*
+import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.addressbook.AddressBookEntry;
+import com.radixdlt.network.p2p.addressbook.AddressBookPersistence;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.DatabaseEnvironment;
-import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -41,22 +44,20 @@ import com.sleepycat.je.TransactionConfig;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
-import java.util.function.Consumer;
-*/
 
 /**
- * Persistence for peers.
+ * Persistence for address book entries.
  */
-public class BerkeleyAddressBookPersistence {
-	/*
+@Singleton
+public final class BerkeleyAddressBookPersistence implements AddressBookPersistence  {
 	private static final Logger log = LogManager.getLogger();
 
 	private final Serialization serialization;
 	private final DatabaseEnvironment dbEnv;
 	private final SystemCounters systemCounters;
-	private Database peersByNidDB;
+	private Database entriesDb;
 
-
+	@Inject
 	public BerkeleyAddressBookPersistence(
 		Serialization serialization,
 		DatabaseEnvironment dbEnv,
@@ -65,15 +66,17 @@ public class BerkeleyAddressBookPersistence {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.dbEnv = Objects.requireNonNull(dbEnv);
 		this.systemCounters = Objects.requireNonNull(systemCounters);
+
+		this.open();
 	}
 
 	@Override
-	public void start() {
-		DatabaseConfig config = new DatabaseConfig();
+	public void open() {
+		final var config = new DatabaseConfig();
 		config.setAllowCreate(true);
 
 		try {
-			this.peersByNidDB = this.dbEnv.getEnvironment().openDatabase(null, "peers_by_nid", config);
+			this.entriesDb = this.dbEnv.getEnvironment().openDatabase(null, "address_book_entries", config);
 		} catch (DatabaseException | IllegalArgumentException | IllegalStateException ex) {
         	throw new IllegalStateException("while opening database", ex);
 		}
@@ -85,7 +88,7 @@ public class BerkeleyAddressBookPersistence {
 
 		try {
 			transaction = this.dbEnv.getEnvironment().beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
-			this.dbEnv.getEnvironment().truncateDatabase(transaction, "peers_by_nid", false);
+			this.dbEnv.getEnvironment().truncateDatabase(transaction, "address_book_entries", false);
 			transaction.commit();
 		} catch (DatabaseNotFoundException dsnfex) {
 			if (transaction != null) {
@@ -102,21 +105,21 @@ public class BerkeleyAddressBookPersistence {
 
 	@Override
 	public void close() {
-		if (this.peersByNidDB != null) {
-			this.peersByNidDB.close();
-			this.peersByNidDB = null;
+		if (this.entriesDb != null) {
+			this.entriesDb.close();
+			this.entriesDb = null;
 		}
 	}
 
 	@Override
-	public boolean savePeer(PeerWithSystem peer) {
+	public boolean saveEntry(AddressBookEntry entry) {
+		log.info("Berkeley saveEntry: " + entry);
 		final var start = System.nanoTime();
 		try {
-			DatabaseEntry key = new DatabaseEntry(peer.getNID().toByteArray());
-			byte[] bytes = serialization.toDson(peer, Output.PERSIST);
-			DatabaseEntry value = new DatabaseEntry(bytes);
+			final var key = new DatabaseEntry(entry.getNodeId().getPublicKey().getBytes());
+			final var value = new DatabaseEntry(serialization.toDson(entry, Output.PERSIST));
 
-			if (peersByNidDB.put(null, key, value) == OperationStatus.SUCCESS) {
+			if (entriesDb.put(null, key, value) == OperationStatus.SUCCESS) {
 				addBytesWrite(key.getSize() + value.getSize());
 				return true;
 			}
@@ -128,12 +131,12 @@ public class BerkeleyAddressBookPersistence {
 	}
 
 	@Override
-	public boolean deletePeer(EUID nid) {
+	public boolean removeEntry(NodeId nodeId) {
 		final var start = System.nanoTime();
 		try {
-			DatabaseEntry key = new DatabaseEntry(nid.toByteArray());
+			final var key = new DatabaseEntry(nodeId.getPublicKey().getBytes());
 
-			if (peersByNidDB.delete(null, key) == OperationStatus.SUCCESS) {
+			if (entriesDb.delete(null, key) == OperationStatus.SUCCESS) {
 				systemCounters.increment(CounterType.COUNT_BDB_ADDRESS_BOOK_DELETES);
 				return true;
 			}
@@ -144,18 +147,21 @@ public class BerkeleyAddressBookPersistence {
 	}
 
 	@Override
-	public void forEachPersistedPeer(Consumer<PeerWithSystem> c) {
+	public ImmutableList<AddressBookEntry> getAllEntries() {
 		final var start = System.nanoTime();
 		try {
-			try (Cursor cursor = this.peersByNidDB.openCursor(null, null)) {
-				DatabaseEntry key = new DatabaseEntry();
-				DatabaseEntry value = new DatabaseEntry();
+			try (var cursor = this.entriesDb.openCursor(null, null)) {
+				final var key = new DatabaseEntry();
+				final var value = new DatabaseEntry();
 
+				final var builder = ImmutableList.<AddressBookEntry>builder();
 				while (cursor.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
 					addBytesRead(key.getSize() + value.getSize());
-					PeerWithSystem peer = this.serialization.fromDson(value.getData(), PeerWithSystem.class);
-					c.accept(peer);
+					final var entry = serialization.fromDson(value.getData(), AddressBookEntry.class);
+					builder.add(entry);
 				}
+
+				return builder.build();
 			} catch (IOException ex) {
 				throw new UncheckedIOException("Error while loading database", ex);
 			}
@@ -177,6 +183,4 @@ public class BerkeleyAddressBookPersistence {
 	private void addBytesWrite(int bytesWrite) {
 		this.systemCounters.add(CounterType.COUNT_BDB_ADDRESS_BOOK_BYTES_WRITE, bytesWrite);
 	}
-	 */
 }
-

@@ -17,9 +17,15 @@
 
 package com.radixdlt.network.p2p.addressbook;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.RadixNodeUri;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -27,10 +33,33 @@ import java.util.Optional;
 
 import static java.util.function.Predicate.not;
 
+@SerializerId2("network.p2p.addressbook.address_book_entry")
 public final class AddressBookEntry {
+	// Placeholder for the serializer ID
+	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
+	@DsonOutput(DsonOutput.Output.ALL)
+	private SerializerDummy serializer = SerializerDummy.DUMMY;
+
+	@JsonProperty("nodeId")
+	@DsonOutput(DsonOutput.Output.ALL)
 	private final NodeId nodeId;
+
+	@JsonProperty("isBanned")
+	@DsonOutput(DsonOutput.Output.ALL)
 	private final boolean isBanned;
+
+	@JsonProperty("knownAddresses")
+	@DsonOutput(DsonOutput.Output.ALL)
 	private final ImmutableSet<PeerAddressEntry> knownAddresses;
+
+	@JsonCreator
+	private static AddressBookEntry deserialize(
+		@JsonProperty("nodeId") NodeId nodeId,
+		@JsonProperty("isBanned") boolean isBanned,
+		@JsonProperty("knownAddresses") ImmutableSet<PeerAddressEntry> knownAddresses
+	) {
+		return new AddressBookEntry(nodeId, isBanned, knownAddresses);
+	}
 
 	public static AddressBookEntry create(RadixNodeUri uri) {
 		return create(uri, Optional.empty());
@@ -48,10 +77,10 @@ public final class AddressBookEntry {
 		);
 	}
 
-	private AddressBookEntry(NodeId nodeId, boolean isBanned, ImmutableSet<PeerAddressEntry> knownAddresses) {
+	AddressBookEntry(NodeId nodeId, boolean isBanned, ImmutableSet<PeerAddressEntry> knownAddresses) {
 		this.nodeId = Objects.requireNonNull(nodeId);
 		this.isBanned = isBanned;
-		this.knownAddresses = knownAddresses;
+		this.knownAddresses = Objects.requireNonNull(knownAddresses);
 	}
 
 	public NodeId getNodeId() {
@@ -139,9 +168,26 @@ public final class AddressBookEntry {
 		return Objects.hash(nodeId, isBanned, knownAddresses);
 	}
 
+	@SerializerId2("network.p2p.addressbook.peer_address_entry")
 	public static final class PeerAddressEntry {
+		// Placeholder for the serializer ID
+		@JsonProperty(SerializerConstants.SERIALIZER_NAME)
+		@DsonOutput(DsonOutput.Output.ALL)
+		private SerializerDummy serializer = SerializerDummy.DUMMY;
+
+		@JsonProperty("uri")
+		@DsonOutput(DsonOutput.Output.ALL)
 		private final RadixNodeUri uri;
+
 		private final Optional<Instant> lastSuccessfulConnection;
+
+		@JsonCreator
+		private static PeerAddressEntry deserialize(
+			@JsonProperty("uri") RadixNodeUri uri,
+			@JsonProperty("lastSuccessfulConnection") Long lastSuccessfulConnectionMillis
+		) {
+			return new PeerAddressEntry(uri, Optional.ofNullable(lastSuccessfulConnectionMillis).map(Instant::ofEpochMilli));
+		}
 
 		PeerAddressEntry(RadixNodeUri uri, Optional<Instant> lastSuccessfulConnection) {
 			this.uri = Objects.requireNonNull(uri);
@@ -154,6 +200,12 @@ public final class AddressBookEntry {
 
 		public Optional<Instant> getLastSuccessfulConnection() {
 			return lastSuccessfulConnection;
+		}
+
+		@JsonProperty("lastSuccessfulConnection")
+		@DsonOutput(DsonOutput.Output.ALL)
+		private Long getLastSuccessfulConnectionForSerializer() {
+			return lastSuccessfulConnection.map(Instant::toEpochMilli).orElse(null);
 		}
 
 		public PeerAddressEntry withLastSuccessfulConnection(Instant lastSuccessfulConnection) {

@@ -22,21 +22,14 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import org.radix.network.messages.PeersResponseMessage;
 
-import java.net.URI;
-
 public class PeersResponseMessageSerializeTest extends SerializeMessageObject<PeersResponseMessage> {
 	public PeersResponseMessageSerializeTest() {
 		super(PeersResponseMessage.class, PeersResponseMessageSerializeTest::get);
 	}
 
 	private static PeersResponseMessage get() {
-		try {
-			final var pubKey = ECKeyPair.generateNew().getPublicKey();
-			final var uri = RadixNodeUri.fromUri(new URI(
-				String.format("radix://%s@%s:%s", pubKey.toBase58(), "127.0.0.1", 30000)));
-			return new PeersResponseMessage(1, ImmutableSet.of(uri));
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		final var pubKey = ECKeyPair.generateNew().getPublicKey();
+		final var uri = RadixNodeUri.fromPubKeyAndAddress(pubKey, "127.0.0.1", 30000);
+		return new PeersResponseMessage(1, ImmutableSet.of(uri));
 	}
 }

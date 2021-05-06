@@ -40,7 +40,7 @@ public class SeedNodesConfigParserTest {
 	}
 
 	@Test
-	public void parse_seads_from_config() {
+	public void parse_seeds_from_config() {
 		doReturn(ImmutableList.of(String.format(
 			"radix://%s@1.1.1.1",
 			ECKeyPair.generateNew().getPublicKey().toBase58()

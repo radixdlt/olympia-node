@@ -29,11 +29,11 @@ import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.network.hostip.HostIp;
 import com.radixdlt.network.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
+import com.radixdlt.network.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.network.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.network.p2p.transport.PeerOutboundBootstrapImpl;
 import com.radixdlt.properties.RuntimeProperties;
-
-import java.net.URI;
+import com.radixdlt.store.berkeley.BerkeleyAddressBookPersistence;
 
 public final class P2PModule extends AbstractModule {
 
@@ -52,6 +52,7 @@ public final class P2PModule extends AbstractModule {
 
 		bind(PeersView.class).to(PeerManagerPeersView.class);
 		bind(PeerOutboundBootstrap.class).to(PeerOutboundBootstrapImpl.class);
+		bind(AddressBookPersistence.class).to(BerkeleyAddressBookPersistence.class);
 	}
 
 	@ProvidesIntoSet
@@ -92,11 +93,9 @@ public final class P2PModule extends AbstractModule {
 
 	@Provides
 	@Self
-	public RadixNodeUri selfUri(@Self ECPublicKey selfKey, HostIp hostIp, P2PConfig p2pConfig) throws Exception {
+	public RadixNodeUri selfUri(@Self ECPublicKey selfKey, HostIp hostIp, P2PConfig p2pConfig) {
 		final var host = hostIp.hostIp().orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
 		final var port = p2pConfig.broadcastPort();
-		return RadixNodeUri.fromUri(new URI(String.format(
-			"radix://%s@%s:%s", selfKey.toBase58(), host, port
-		)));
+		return RadixNodeUri.fromPubKeyAndAddress(selfKey, host, port);
 	}
 }

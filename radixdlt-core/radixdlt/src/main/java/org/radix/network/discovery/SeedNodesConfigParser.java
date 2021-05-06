@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.google.inject.Inject;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.P2PConfig;
@@ -76,13 +77,11 @@ public final class SeedNodesConfigParser {
 		try {
 			final var parsedUri = new URI(rawUri);
 			final var resolved = InetAddress.getByName(parsedUri.getHost());
-			final var newUri = new URI(String.format(
-				"radix://%s@%s:%s",
-				parsedUri.getUserInfo(),
+			return Optional.of(RadixNodeUri.fromPubKeyAndAddress(
+				ECPublicKey.fromBase58(parsedUri.getUserInfo()),
 				resolved.getHostAddress(),
-				(parsedUri.getPort() > 0 ? parsedUri.getPort() : defaultPort)
+				parsedUri.getPort() > 0 ? parsedUri.getPort() : defaultPort
 			));
-			return Optional.of(RadixNodeUri.fromUri(newUri));
 		} catch (UnknownHostException | URISyntaxException | PublicKeyException e) {
 			return Optional.empty();
 		}

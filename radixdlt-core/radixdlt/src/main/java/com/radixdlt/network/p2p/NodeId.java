@@ -17,12 +17,21 @@
 
 package com.radixdlt.network.p2p;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 public final class NodeId {
 	private final ECPublicKey publicKey;
+
+	@JsonCreator
+	public static NodeId deserialize(byte[] pubKeyBase58) throws PublicKeyException {
+		return fromPublicKey(ECPublicKey.fromBase58(new String(pubKeyBase58)));
+	}
 
 	public static NodeId fromPublicKey(ECPublicKey publicKey) {
 		return new NodeId(publicKey);
@@ -34,6 +43,11 @@ public final class NodeId {
 
 	public ECPublicKey getPublicKey() {
 		return publicKey;
+	}
+
+	@JsonValue
+	public byte[] getPublicKeyBase58() {
+		return publicKey.toBase58().getBytes(StandardCharsets.UTF_8);
 	}
 
 	@Override
