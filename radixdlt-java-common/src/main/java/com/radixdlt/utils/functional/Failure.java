@@ -59,35 +59,50 @@ public interface Failure {
 	 * @return created instance of Failure
 	 */
 	static Failure failure(int code, String message) {
-		return new Failure() {
-			@Override
-			public String message() {
-				return message;
+		return new FailureImpl(code, message);
+	}
+
+	class FailureImpl implements Failure {
+		private final int code;
+		private final String message;
+
+		private FailureImpl(int code, String message) {
+			this.message = message;
+			this.code = code;
+		}
+
+		@Override
+		public String message() {
+			return message;
+		}
+
+		@Override
+		public int code() {
+			return code;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
 			}
 
-			@Override
-			public int code() {
-				return code;
+			if (!(o instanceof FailureImpl)) {
+				return false;
 			}
 
-			@Override
-			public int hashCode() {
-				return Objects.hash(message);
-			}
+			var failure = (FailureImpl) o;
+			return code == failure.code && Objects.equals(message, failure.message);
+		}
 
-			@Override
-			public boolean equals(Object obj) {
-				if (obj == this) {
-					return true;
-				}
+		@Override
+		public int hashCode() {
+			return Objects.hash(message, code);
+		}
 
-				return (obj instanceof Failure) && Objects.equals(((Failure) obj).message(), message);
-			}
-
-			@Override
-			public String toString() {
-				return "{" + code + ", '" + message + "'}";
-			}
-		};
+		@Override
+		public String toString() {
+			return "{" + code + ", '" + message + "'}";
+		}
 	}
 }
