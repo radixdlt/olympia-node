@@ -24,6 +24,8 @@ import com.radixdlt.utils.functional.Result;
 
 import java.nio.charset.StandardCharsets;
 
+import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DESERIALIZE;
+
 /**
  * Collection of Serialization-related utilities
  */
@@ -40,10 +42,6 @@ public class SerializationUtils {
 	}
 
 	public static <T> Result<T> restore(Serialization serialization, byte[] data, Class<T> clazz) {
-		try {
-			return Result.ok(serialization.fromDson(data, clazz));
-		} catch (DeserializeException e) {
-			return Result.fail("Unable to deserialize {0}", clazz.getSimpleName());
-		}
+		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> serialization.fromDson(data, clazz));
 	}
 }

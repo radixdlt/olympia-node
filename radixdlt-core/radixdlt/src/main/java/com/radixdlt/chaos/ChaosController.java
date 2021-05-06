@@ -22,7 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
-import com.radixdlt.client.ValidatorAddress;
+import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventDispatcher;
 

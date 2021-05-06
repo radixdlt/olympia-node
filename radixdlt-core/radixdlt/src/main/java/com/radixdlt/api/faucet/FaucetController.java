@@ -23,7 +23,7 @@ import com.google.inject.Inject;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.client.AccountAddress;
+import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.REAddr;

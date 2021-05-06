@@ -17,10 +17,10 @@
 
 package com.radixdlt.identifiers;
 
-import com.radixdlt.crypto.HashUtils;
+import org.bouncycastle.util.encoders.Hex;
 
 import com.radixdlt.crypto.ECPublicKey;
-import org.bouncycastle.util.encoders.Hex;
+import com.radixdlt.crypto.HashUtils;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -191,7 +191,7 @@ public final class REAddr {
 		var buf = ByteBuffer.wrap(addr);
 		var type = REAddrType.parse(buf.get());
 		if (type.isEmpty()) {
-			throw new IllegalArgumentException("Unknown type: " + type);
+			throw new IllegalArgumentException("Unknown address type: " + type);
 		}
 		var error = type.get().verify(buf);
 		error.ifPresent(str -> {

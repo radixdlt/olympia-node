@@ -17,11 +17,15 @@
 
 package com.radixdlt.client.api;
 
+import com.radixdlt.utils.functional.Result;
+
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.radixdlt.client.api.ApiErrors.UNKNOWN_ACTION;
 
 public enum ActionType {
 	MSG("Message"),
@@ -50,7 +54,9 @@ public enum ActionType {
 		return text;
 	}
 
-	public static Optional<ActionType> fromString(String action) {
-		return Optional.ofNullable(TO_ACTION_TYPE.get(action));
+	public static Result<ActionType> fromString(String action) {
+		return Optional.ofNullable(TO_ACTION_TYPE.get(action))
+			.map(Result::ok)
+			.orElseGet(() -> UNKNOWN_ACTION.with(action).result());
 	}
 }

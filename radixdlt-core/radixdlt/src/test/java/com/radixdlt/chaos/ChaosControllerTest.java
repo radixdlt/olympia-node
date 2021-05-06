@@ -17,7 +17,7 @@
  */
 package com.radixdlt.chaos;
 
-import com.radixdlt.client.ValidatorAddress;
+import com.radixdlt.identifiers.ValidatorAddress;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
