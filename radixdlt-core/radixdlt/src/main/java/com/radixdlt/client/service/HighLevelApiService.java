@@ -28,7 +28,6 @@ import com.radixdlt.client.store.berkeley.BalanceEntry;
 import com.radixdlt.client.store.berkeley.UnstakeEntry;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.store.ImmutableIndex;
 import com.radixdlt.client.api.TxHistoryEntry;
 
 import com.radixdlt.universe.Universe;
@@ -47,17 +46,14 @@ public class HighLevelApiService {
 
 	private final Universe universe;
 	private final ClientApiStore clientApiStore;
-	private final ImmutableIndex immutableIndex;
 
 	@Inject
 	public HighLevelApiService(
 		Universe universe,
-		ClientApiStore clientApiStore,
-		ImmutableIndex immutableIndex
+		ClientApiStore clientApiStore
 	) {
 		this.universe = universe;
 		this.clientApiStore = clientApiStore;
-		this.immutableIndex = immutableIndex;
 	}
 
 	public int getUniverseMagic() {

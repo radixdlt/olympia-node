@@ -29,7 +29,6 @@ import org.junit.Test;
 
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine.UsedAmount;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.SignatureValidator;

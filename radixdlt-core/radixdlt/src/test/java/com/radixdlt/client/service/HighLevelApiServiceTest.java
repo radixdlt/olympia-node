@@ -21,7 +21,6 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.Rri;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.store.ImmutableIndex;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import org.junit.Assert;
@@ -69,8 +68,7 @@ public class HighLevelApiServiceTest {
 		var nativeTokenParticle = new TokenDefinitionParticle(
 			TOKEN, "XRD", "XRD XRD", "", "", null, null
 		);
-		ImmutableIndex immutableIndex = (dbTxn, rriId) -> Optional.of(nativeTokenParticle);
-		highLevelApiService = new HighLevelApiService(universe, clientApiStore, immutableIndex);
+		highLevelApiService = new HighLevelApiService(universe, clientApiStore);
 	}
 
 	@Test

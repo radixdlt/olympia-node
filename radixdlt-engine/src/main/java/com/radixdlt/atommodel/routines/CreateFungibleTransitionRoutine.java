@@ -23,7 +23,6 @@ import com.radixdlt.atommodel.tokens.Fungible;
 import com.radixdlt.atomos.ConstraintRoutine;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.RoutineCalls;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.TransitionProcedure;
@@ -37,7 +36,6 @@ import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 /**
  * Transition Procedure for one to one fungible types
