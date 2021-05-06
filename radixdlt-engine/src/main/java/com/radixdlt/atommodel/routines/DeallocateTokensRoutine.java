@@ -33,7 +33,7 @@ import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.VoidParticle;
 import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.store.ImmutableIndex;
+import com.radixdlt.store.ReadableAddrs;
 
 public final class DeallocateTokensRoutine implements ConstraintRoutine {
 	@Override
@@ -50,10 +50,10 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 					SubstateWithArg<TokensParticle> in,
 					VoidParticle outputParticle,
 					VoidReducerState voidReducerState,
-					ImmutableIndex immutableIndex
+					ReadableAddrs readableAddrs
 				) {
 					if (!in.getSubstate().getResourceAddr().isNativeToken()) {
-						var p = immutableIndex.loadRri(null, in.getSubstate().getResourceAddr());
+						var p = readableAddrs.loadAddr(null, in.getSubstate().getResourceAddr());
 						if ((p.isEmpty() || !(p.get() instanceof TokenDefinitionParticle))) {
 							return Result.error("Bad rriId");
 						}
@@ -96,14 +96,14 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 					SubstateWithArg<TokensParticle> in,
 					VoidParticle outputParticle,
 					CreateFungibleTransitionRoutine.UsedAmount inputUsed,
-					ImmutableIndex immutableIndex
+					ReadableAddrs readableAddrs
 				) {
 					if (!inputUsed.isInput()) {
 						return Result.error("Broken state.");
 					}
 
 					if (!in.getSubstate().getResourceAddr().isNativeToken()) {
-						var p = immutableIndex.loadRri(null, in.getSubstate().getResourceAddr());
+						var p = readableAddrs.loadAddr(null, in.getSubstate().getResourceAddr());
 						if ((p.isEmpty() || !(p.get() instanceof TokenDefinitionParticle))) {
 							return Result.error("Bad rriId");
 						}

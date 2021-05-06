@@ -34,7 +34,7 @@ import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.VoidParticle;
 import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.store.ImmutableIndex;
+import com.radixdlt.store.ReadableAddrs;
 
 public final class AllocateTokensRoutine implements ConstraintRoutine {
 	@Override
@@ -51,9 +51,9 @@ public final class AllocateTokensRoutine implements ConstraintRoutine {
 					SubstateWithArg<VoidParticle> in,
 					TokensParticle outputParticle,
 					VoidReducerState inputUsed,
-					ImmutableIndex immutableIndex
+					ReadableAddrs readableAddrs
 				) {
-					var p = immutableIndex.loadRri(null, outputParticle.getResourceAddr());
+					var p = readableAddrs.loadAddr(null, outputParticle.getResourceAddr());
 					if (p.isEmpty()) {
 						return Result.error("Token does not exist.");
 					}
@@ -74,7 +74,7 @@ public final class AllocateTokensRoutine implements ConstraintRoutine {
 
 				@Override
 				public PermissionLevel requiredPermissionLevel(
-					SubstateWithArg<VoidParticle> i, TokensParticle o, ImmutableIndex index
+					SubstateWithArg<VoidParticle> i, TokensParticle o, ReadableAddrs index
 				) {
 					return o.getResourceAddr().isNativeToken() ? PermissionLevel.SYSTEM : PermissionLevel.USER;
 				}
@@ -88,7 +88,7 @@ public final class AllocateTokensRoutine implements ConstraintRoutine {
 				@Override
 				public SignatureValidator<VoidParticle, TokensParticle> signatureValidator() {
 					return (i, o, index, publicKey) -> {
-						var tokenDef = (TokenDefinitionParticle) index.loadRri(null, o.getResourceAddr()).orElseThrow();
+						var tokenDef = (TokenDefinitionParticle) index.loadAddr(null, o.getResourceAddr()).orElseThrow();
 						return publicKey.flatMap(p -> tokenDef.getMinter().map(p::equals)).orElse(false);
 					};
 				}

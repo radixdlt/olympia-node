@@ -33,7 +33,7 @@ import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.CMStore;
-import com.radixdlt.store.ImmutableIndex;
+import com.radixdlt.store.ReadableAddrs;
 import com.radixdlt.utils.Pair;
 
 import java.nio.ByteBuffer;
@@ -130,7 +130,7 @@ public final class ConstraintMachine {
 			this.signedBy = signedBy;
 		}
 
-		public ImmutableIndex immutableIndex() {
+		public ReadableAddrs immutableIndex() {
 			return (txn, rri) ->
 				localUpParticles.values().stream()
 					.filter(TokenDefinitionParticle.class::isInstance)
@@ -138,7 +138,7 @@ public final class ConstraintMachine {
 					.filter(p -> p.getAddr().equals(rri))
 					.findFirst()
 					.map(Particle.class::cast)
-					.or(() -> store.loadRri(txn, rri));
+					.or(() -> store.loadAddr(txn, rri));
 		}
 
 		public Optional<Particle> loadUpParticle(SubstateId substateId) {

@@ -32,7 +32,7 @@ import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.SignatureValidator;
-import com.radixdlt.store.ImmutableIndex;
+import com.radixdlt.store.ReadableAddrs;
 
 /**
  * Allows for the update of the epoch, timestamp and view state.
@@ -84,7 +84,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 				public PermissionLevel requiredPermissionLevel(
 					SubstateWithArg<SystemParticle> i,
 					SystemParticle o,
-					ImmutableIndex index
+					ReadableAddrs index
 				) {
 					return PermissionLevel.SUPER_USER;
 				}
@@ -94,7 +94,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 					SubstateWithArg<SystemParticle> in,
 					SystemParticle outputParticle,
 					VoidReducerState outputUsed,
-					ImmutableIndex immutableIndex
+					ReadableAddrs readableAddrs
 				) {
 					if (in.getArg().isPresent()) {
 						return Result.error("No arguments allowed");

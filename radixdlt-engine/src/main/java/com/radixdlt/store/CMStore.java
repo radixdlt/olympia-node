@@ -25,7 +25,7 @@ import java.util.Optional;
 /**
  * Read only store interface for Constraint Machine validation
  */
-public interface CMStore extends ImmutableIndex {
+public interface CMStore extends ReadableAddrs {
 	/**
 	 * Hack for atomic transaction, better to implement
 	 * whole function in single interface in future.

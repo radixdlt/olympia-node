@@ -697,7 +697,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public Optional<Particle> loadRri(Transaction tx, REAddr rri) {
+	public Optional<Particle> loadAddr(Transaction tx, REAddr rri) {
 		var buf = ByteBuffer.allocate(128);
 		RESerializer.serializeREAddr(buf, rri);
 		var pos = buf.position();

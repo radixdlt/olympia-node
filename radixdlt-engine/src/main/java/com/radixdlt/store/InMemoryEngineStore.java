@@ -42,7 +42,6 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	private final Object lock = new Object();
 	private final Map<SubstateId, REParsedInstruction> storedParticles = new HashMap<>();
 	private final Map<REAddr, Particle> rriParticles = new HashMap<>();
-	private final Set<AID> txnIds = new HashSet<>();
 
 	@Override
 	public void storeTxn(Transaction dbTxn, Txn txn, List<REParsedInstruction> stateUpdates) {
@@ -56,18 +55,12 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 				.filter(TokenDefinitionParticle.class::isInstance)
 				.map(TokenDefinitionParticle.class::cast)
 				.forEach(p -> rriParticles.put(p.getAddr(), p));
-
-			txnIds.add(txn.getId());
 		}
 	}
 
 	@Override
 	public void storeMetadata(Transaction txn, M metadata) {
 		 // No-op
-	}
-
-	public boolean containsTxn(AID txnId) {
-		return txnIds.contains(txnId);
 	}
 
 	@Override
@@ -137,7 +130,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	}
 
 	@Override
-	public Optional<Particle> loadRri(Transaction dbTxn, REAddr rri) {
+	public Optional<Particle> loadAddr(Transaction dbTxn, REAddr rri) {
 		synchronized (lock) {
 			return Optional.ofNullable(rriParticles.get(rri));
 		}

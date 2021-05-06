@@ -20,7 +20,7 @@ package com.radixdlt.atommodel.routines;
 import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atommodel.tokens.Fungible;
 import com.radixdlt.constraintmachine.SubstateWithArg;
-import com.radixdlt.store.ImmutableIndex;
+import com.radixdlt.store.ReadableAddrs;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 import java.util.Objects;
@@ -91,7 +91,7 @@ public class CreateFungibleTransitionRoutineTest {
 		assertThat(procedure.inputOutputReducer().reduce(
 			SubstateWithArg.noArg(new FungibleSubstate(UInt256.ONE)),
 			new FungibleSubstate(UInt256.ONE),
-			mock(ImmutableIndex.class),
+			mock(ReadableAddrs.class),
 			null
 		).isComplete()).isTrue();
 
@@ -99,7 +99,7 @@ public class CreateFungibleTransitionRoutineTest {
 		assertThat(procedure.inputOutputReducer().reduce(
 			SubstateWithArg.noArg(new FungibleSubstate(UInt256.ONE)),
 			new FungibleSubstate(UInt256.ONE),
-			mock(ImmutableIndex.class),
+			mock(ReadableAddrs.class),
 			null
 		).isComplete()).isTrue();
 	}
@@ -116,7 +116,7 @@ public class CreateFungibleTransitionRoutineTest {
 		var state = procedure.inputOutputReducer().reduce(
 			SubstateWithArg.noArg(new FungibleSubstate(UInt256.TWO)),
 			new FungibleSubstate(UInt256.ONE),
-			mock(ImmutableIndex.class),
+			mock(ReadableAddrs.class),
 			null
 		).getIncomplete().get();
 
@@ -138,7 +138,7 @@ public class CreateFungibleTransitionRoutineTest {
 		var state = procedure.inputOutputReducer().reduce(
 			SubstateWithArg.noArg(new FungibleSubstate(UInt256.ONE)),
 			new FungibleSubstate(UInt256.TWO),
-			mock(ImmutableIndex.class),
+			mock(ReadableAddrs.class),
 			null
 		).getIncomplete().get();
 
@@ -160,7 +160,7 @@ public class CreateFungibleTransitionRoutineTest {
 		assertThat(procedure.inputOutputReducer().reduce(
 			SubstateWithArg.noArg(new FungibleSubstate(UInt256.TWO)),
 			new FungibleSubstate(UInt256.TWO),
-			mock(ImmutableIndex.class),
+			mock(ReadableAddrs.class),
 			null
 		).getIncomplete()).isEmpty();
 	}
@@ -177,14 +177,14 @@ public class CreateFungibleTransitionRoutineTest {
 		assertThat(procedure.inputOutputReducer().reduce(
 			SubstateWithArg.noArg(new FungibleSubstate(UInt256.ONE)),
 			new FungibleSubstate(UInt256.TWO),
-			mock(ImmutableIndex.class),
+			mock(ReadableAddrs.class),
 			new UsedAmount(false, UInt256.ONE, Unknown.create())
 		).getIncomplete()).isEmpty();
 
 		assertThat(procedure.inputOutputReducer().reduce(
 			SubstateWithArg.noArg(new FungibleSubstate(UInt256.TWO)),
 			new FungibleSubstate(UInt256.ONE),
-			mock(ImmutableIndex.class),
+			mock(ReadableAddrs.class),
 			new UsedAmount(true, UInt256.ONE, Unknown.create())
 		).getIncomplete()).isEmpty();
 	}

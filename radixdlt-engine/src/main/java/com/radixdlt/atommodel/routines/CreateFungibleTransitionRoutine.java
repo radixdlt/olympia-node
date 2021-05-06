@@ -31,7 +31,7 @@ import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.SignatureValidator;
-import com.radixdlt.store.ImmutableIndex;
+import com.radixdlt.store.ReadableAddrs;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
@@ -42,7 +42,7 @@ import java.util.function.BiFunction;
  */
 public class CreateFungibleTransitionRoutine<I extends Fungible, O extends Fungible> implements ConstraintRoutine {
 	public interface ActionMapper<I, O> {
-		TxAction map(I i, O o, ImmutableIndex index);
+		TxAction map(I i, O o, ReadableAddrs index);
 	}
 
 	public static final class UsedAmount implements ReducerState {
@@ -132,7 +132,7 @@ public class CreateFungibleTransitionRoutine<I extends Fungible, O extends Fungi
 	public TransitionProcedure<I, O, VoidReducerState> getProcedure0() {
 		return new TransitionProcedure<I, O, VoidReducerState>() {
 			@Override
-			public Result precondition(SubstateWithArg<I> in, O outputParticle, VoidReducerState outputUsed, ImmutableIndex index) {
+			public Result precondition(SubstateWithArg<I> in, O outputParticle, VoidReducerState outputUsed, ReadableAddrs index) {
 				return transition.apply(in.getSubstate(), outputParticle);
 			}
 
@@ -162,7 +162,7 @@ public class CreateFungibleTransitionRoutine<I extends Fungible, O extends Fungi
 	public TransitionProcedure<I, O, UsedAmount> getProcedure1() {
 		return new TransitionProcedure<I, O, UsedAmount>() {
 			@Override
-			public Result precondition(SubstateWithArg<I> in, O outputParticle, UsedAmount used, ImmutableIndex index) {
+			public Result precondition(SubstateWithArg<I> in, O outputParticle, UsedAmount used, ReadableAddrs index) {
 				return transition.apply(in.getSubstate(), outputParticle);
 			}
 

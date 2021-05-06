@@ -33,7 +33,7 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.ImmutableIndex;
+import com.radixdlt.store.ReadableAddrs;
 import com.radixdlt.store.LastStoredProof;
 import org.junit.Rule;
 import org.junit.Test;
@@ -56,7 +56,7 @@ public class GenesisTest {
 	private LedgerProof ledgerProof;
 
 	@Inject
-	private ImmutableIndex immutableIndex;
+	private ReadableAddrs readableAddrs;
 
 	private Injector createInjector() {
 		return Guice.createInjector(
@@ -79,7 +79,7 @@ public class GenesisTest {
 		// Arrange
 		createInjector().injectMembers(this);
 
-		var p = immutableIndex.loadRri(null, REAddr.ofNativeToken());
+		var p = readableAddrs.loadAddr(null, REAddr.ofNativeToken());
 		assertThat(p)
 			.hasValueSatisfying(particle -> {
 				var tok = (TokenDefinitionParticle) particle;
