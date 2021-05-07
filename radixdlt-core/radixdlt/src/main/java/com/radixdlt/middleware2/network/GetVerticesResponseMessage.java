@@ -23,6 +23,8 @@ import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
+
+import java.util.List;
 import java.util.Objects;
 import org.radix.network.messaging.Message;
 
@@ -33,7 +35,7 @@ import org.radix.network.messaging.Message;
 public final class GetVerticesResponseMessage extends Message {
 	@JsonProperty("vertices")
 	@DsonOutput(Output.ALL)
-	private final ImmutableList<UnverifiedVertex> vertices;
+	private final List<UnverifiedVertex> vertices;
 
 	GetVerticesResponseMessage() {
 		// Serializer only
@@ -41,12 +43,12 @@ public final class GetVerticesResponseMessage extends Message {
 		this.vertices = null;
 	}
 
-	GetVerticesResponseMessage(int magic, ImmutableList<UnverifiedVertex> vertices) {
+	GetVerticesResponseMessage(int magic, List<UnverifiedVertex> vertices) {
 		super(magic);
 		this.vertices = Objects.requireNonNull(vertices);
 	}
 
-	public ImmutableList<UnverifiedVertex> getVertices() {
+	public List<UnverifiedVertex> getVertices() {
 		return vertices == null ? ImmutableList.of() : vertices;
 	}
 

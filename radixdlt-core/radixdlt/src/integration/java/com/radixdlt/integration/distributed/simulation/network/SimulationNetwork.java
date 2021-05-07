@@ -17,33 +17,20 @@
 
 package com.radixdlt.integration.distributed.simulation.network;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.BFTEventsRx;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
-import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
-import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
 
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -60,6 +47,10 @@ public class SimulationNetwork {
 		private final long delayAfterPrevious;
 
 		private MessageInTransit(Object content, BFTNode sender, BFTNode receiver, long delay, long delayAfterPrevious) {
+			if (content instanceof RemoteEvent) {
+				throw new IllegalArgumentException("Message in transit should not be RemoteEvent");
+			}
+
 			this.content = Objects.requireNonNull(content);
 			this.sender = sender;
 			this.receiver = receiver;
@@ -69,6 +60,22 @@ public class SimulationNetwork {
 
 		private static MessageInTransit newMessage(Object content, BFTNode sender, BFTNode receiver) {
 			return new MessageInTransit(content, sender, receiver, 0, 0);
+		}
+
+		public <T> Maybe<T> localEvent(Class<T> eventClass) {
+			if (sender.equals(receiver) && eventClass.isInstance(content)) {
+				return Maybe.just(eventClass.cast(content));
+			}
+
+			return Maybe.empty();
+		}
+
+		public <T> Maybe<RemoteEvent<T>> remoteEvent(Class<T> eventClass) {
+			if (!sender.equals(receiver) && eventClass.isInstance(content)) {
+				return Maybe.just(RemoteEvent.create(sender, eventClass.cast(content)));
+			}
+
+			return Maybe.empty();
 		}
 
 		MessageInTransit delayed(long delay) {
@@ -126,9 +133,8 @@ public class SimulationNetwork {
 			.toSerialized();
 	}
 
-	public class SimulatedNetworkImpl implements
-		ProposalBroadcaster, SyncVerticesResponseSender, BFTEventsRx, SyncVerticesRPCRx, RxRemoteEnvironment {
-		private final Flowable<Object> myMessages;
+	public class SimulatedNetworkImpl implements RxRemoteEnvironment {
+		private final Flowable<MessageInTransit> myMessages;
 		private final BFTNode thisNode;
 
 		private SimulatedNetworkImpl(BFTNode node) {
@@ -141,65 +147,27 @@ public class SimulationNetwork {
 				.flatMap(groupedObservable ->
 					channelCommunication
 						.transform(groupedObservable.getKey(), node, groupedObservable)
-						.map(MessageInTransit::getContent)
 				)
 				.publish()
 				.refCount(), BackpressureStrategy.BUFFER)
 			.onBackpressureBuffer(255, false, true /* unbounded */);
 		}
 
-		@Override
-		public void broadcastProposal(Proposal proposal, Set<BFTNode> nodes) {
-			for (BFTNode reader : nodes) {
-				receivedMessages.onNext(MessageInTransit.newMessage(proposal, thisNode, reader));
-			}
-		}
-
-		@Override
-		public void sendGetVerticesResponse(BFTNode node, ImmutableList<VerifiedVertex> vertices) {
-			GetVerticesResponse vertexResponse = new GetVerticesResponse(thisNode, vertices);
-			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, node));
-		}
-
-		@Override
-		public void sendGetVerticesErrorResponse(BFTNode node, HighQC syncInfo, GetVerticesRequest request) {
-			GetVerticesErrorResponse vertexResponse = new GetVerticesErrorResponse(thisNode, syncInfo, request);
-			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, node));
-		}
-
-		@Override
-		public Flowable<ConsensusEvent> localBftEvents() {
-			return myMessages.ofType(ConsensusEvent.class);
-		}
-
-		@Override
-		public Flowable<ConsensusEvent> remoteBftEvents() {
-			return remoteEvents(Vote.class).map(RemoteEvent::getEvent);
-		}
-
-		@Override
-		public Flowable<GetVerticesResponse> responses() {
-			return myMessages.ofType(GetVerticesResponse.class);
-		}
-
-		@Override
-		public Flowable<GetVerticesErrorResponse> errorResponses() {
-			return myMessages.ofType(GetVerticesErrorResponse.class);
+		public <T> Observable<T> localEvents(Class<T> eventClass) {
+			return myMessages.flatMapMaybe(m -> m.localEvent(eventClass)).toObservable();
 		}
 
 		@Override
 		public <T> Flowable<RemoteEvent<T>> remoteEvents(Class<T> eventClass) {
-			return myMessages.ofType(RemoteEvent.class)
-				.flatMapMaybe(e -> RemoteEvent.ofEventType(e, eventClass));
+			return myMessages.flatMapMaybe(m -> m.remoteEvent(eventClass));
 		}
 
 		public <T> RemoteEventDispatcher<T> remoteEventDispatcher(Class<T> eventClass) {
-			return (node, event) -> sendRemoteEvent(node, event, eventClass);
+			return this::sendRemoteEvent;
 		}
 
-		private <T> void sendRemoteEvent(BFTNode node, T event, Class<T> eventClass) {
-			RemoteEvent<T> remoteEvent = RemoteEvent.create(thisNode, event, eventClass);
-			receivedMessages.onNext(MessageInTransit.newMessage(remoteEvent, thisNode, node));
+		private <T> void sendRemoteEvent(BFTNode node, T event) {
+			receivedMessages.onNext(MessageInTransit.newMessage(event, thisNode, node));
 		}
 	}
 

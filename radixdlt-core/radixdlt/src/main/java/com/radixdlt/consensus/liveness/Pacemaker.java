@@ -67,9 +67,9 @@ public final class Pacemaker {
 	private final SafetyRules safetyRules;
 	private final ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender;
 	private final PacemakerTimeoutCalculator timeoutCalculator;
-	private final ProposalBroadcaster proposalBroadcaster;
 	private final NextTxnsGenerator nextTxnsGenerator;
 	private final Hasher hasher;
+	private final RemoteEventDispatcher<Proposal> proposalDispatcher;
 	private final RemoteEventDispatcher<Vote> voteDispatcher;
 	private final EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher;
 	private final TimeSupplier timeSupplier;
@@ -89,9 +89,9 @@ public final class Pacemaker {
 		ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
 		NextTxnsGenerator nextTxnsGenerator,
-		ProposalBroadcaster proposalBroadcaster,
-		Hasher hasher,
+		RemoteEventDispatcher<Proposal> proposalDispatcher,
 		RemoteEventDispatcher<Vote> voteDispatcher,
+		Hasher hasher,
 		TimeSupplier timeSupplier,
 		ViewUpdate initialViewUpdate,
 		SystemCounters systemCounters
@@ -105,7 +105,7 @@ public final class Pacemaker {
 		this.timeoutDispatcher = Objects.requireNonNull(timeoutDispatcher);
 		this.timeoutCalculator = Objects.requireNonNull(timeoutCalculator);
 		this.nextTxnsGenerator = Objects.requireNonNull(nextTxnsGenerator);
-		this.proposalBroadcaster = Objects.requireNonNull(proposalBroadcaster);
+		this.proposalDispatcher = Objects.requireNonNull(proposalDispatcher);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
 		this.timeSupplier = Objects.requireNonNull(timeSupplier);
@@ -158,7 +158,7 @@ public final class Pacemaker {
 			Optional<Proposal> proposalMaybe = generateProposal(latestViewUpdate.getCurrentView());
 			proposalMaybe.ifPresent(proposal -> {
 				log.trace("Broadcasting proposal: {}", proposal);
-				this.proposalBroadcaster.broadcastProposal(proposal, this.validatorSet.nodes());
+				this.proposalDispatcher.dispatch(this.validatorSet.nodes(), proposal);
 				this.counters.increment(CounterType.BFT_PROPOSALS_MADE);
 			});
 		}
@@ -218,7 +218,8 @@ public final class Pacemaker {
 				vote -> this.voteDispatcher.dispatch(this.validatorSet.nodes(), vote),
 				/* otherwise, we asynchronously insert an empty vertex and, when done,
 					we send a timeout vote on it (see processBFTUpdate) */
-				() -> createTimeoutVertexAndSendVote(view));
+				() -> createTimeoutVertexAndSendVote(view)
+			);
 
 		rescheduleTimeout(scheduledTimeout);
 	}

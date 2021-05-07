@@ -17,6 +17,8 @@
 
 package com.radixdlt.environment;
 
+import com.google.inject.TypeLiteral;
+
 import java.util.Objects;
 import java.util.Optional;
 
@@ -26,42 +28,70 @@ import java.util.Optional;
  * @param <T> The event class
  */
 public final class EventProcessorOnRunner<T> {
-    private final String runnerName;
-    private final Class<T> eventClass;
-    private final EventProcessor<T> processor;
-    private final long rateLimitDelayMs;
+	private final String runnerName;
+	private final Class<T> eventClass;
+	private final TypeLiteral<T> typeLiteral;
+	private final EventProcessor<T> processor;
+	private final long rateLimitDelayMs;
 
-    public EventProcessorOnRunner(String runnerName, Class<T> eventClass, EventProcessor<T> processor) {
-        this(runnerName, eventClass, processor, 0);
-    }
+	public EventProcessorOnRunner(String runnerName, Class<T> eventClass, EventProcessor<T> processor) {
+		this(runnerName, eventClass, null, processor, 0);
+	}
 
-    public EventProcessorOnRunner(String runnerName, Class<T> eventClass, EventProcessor<T> processor, long rateLimitDelayMs) {
-        this.runnerName = Objects.requireNonNull(runnerName);
-        this.eventClass = Objects.requireNonNull(eventClass);
-        this.processor = Objects.requireNonNull(processor);
-        if (rateLimitDelayMs < 0) {
-            throw new IllegalArgumentException("rateLimitDelayMs must be >= 0.");
-        }
-        this.rateLimitDelayMs = rateLimitDelayMs;
-    }
+	public EventProcessorOnRunner(String runnerName, TypeLiteral<T> typeLiteral, EventProcessor<T> processor) {
+		this(runnerName, null, typeLiteral, processor, 0);
+	}
 
-    public long getRateLimitDelayMs() {
-        return rateLimitDelayMs;
-    }
+	public EventProcessorOnRunner(String runnerName, Class<T> eventClass, EventProcessor<T> processor, long rateLimitDelayMs) {
+		this(runnerName, eventClass, null, processor, rateLimitDelayMs);
+	}
 
-    public String getRunnerName() {
-        return runnerName;
-    }
+	private EventProcessorOnRunner(
+		String runnerName,
+		Class<T> eventClass,
+		TypeLiteral<T> typeLiteral,
+		EventProcessor<T> processor,
+		long rateLimitDelayMs
+	) {
+		this.runnerName = Objects.requireNonNull(runnerName);
+		this.eventClass = eventClass;
+		this.typeLiteral = typeLiteral;
+		this.processor = Objects.requireNonNull(processor);
+		if (rateLimitDelayMs < 0) {
+			throw new IllegalArgumentException("rateLimitDelayMs must be >= 0.");
+		}
+		this.rateLimitDelayMs = rateLimitDelayMs;
+	}
 
-    public <U> Optional<EventProcessor<U>> getProcessor(Class<U> c) {
-        if (c.equals(eventClass)) {
-            return Optional.of((EventProcessor<U>) processor);
-        }
+	public long getRateLimitDelayMs() {
+		return rateLimitDelayMs;
+	}
 
-        return Optional.empty();
-    }
+	public String getRunnerName() {
+		return runnerName;
+	}
 
-    public Class<T> getEventClass() {
-        return eventClass;
-    }
+	public <U> Optional<EventProcessor<U>> getProcessor(Class<U> c) {
+		if (c.equals(eventClass)) {
+			return Optional.of((EventProcessor<U>) processor);
+		}
+
+		return Optional.empty();
+	}
+
+	public <U> Optional<EventProcessor<U>> getProcessor(TypeLiteral<U> c) {
+		if (c.equals(typeLiteral)) {
+			return Optional.of((EventProcessor<U>) processor);
+		}
+
+		return Optional.empty();
+	}
+
+	public Optional<Class<T>> getEventClass() {
+		return Optional.ofNullable(eventClass);
+	}
+
+	public Optional<TypeLiteral<T>> getTypeLiteral() {
+		return Optional.ofNullable(typeLiteral);
+	}
 }

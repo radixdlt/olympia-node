@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -13,17 +13,27 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt.consensus.sync;
+package com.radixdlt.environment;
 
-/**
- * Processor of vertex store events
- */
-public interface BFTSyncResponseProcessor {
-	/**
-	 * Process a get vertices error response
-	 * @param response the get vertices error response
-	 */
-	void processGetVerticesErrorResponse(GetVerticesErrorResponse response);
+import java.util.Objects;
+
+public class StartProcessorOnRunner {
+	private final String runnerName;
+	private final StartProcessor processor;
+
+	public StartProcessorOnRunner(String runnerName, StartProcessor processor) {
+		this.runnerName = Objects.requireNonNull(runnerName);
+		this.processor = Objects.requireNonNull(processor);
+	}
+
+	public String getRunnerName() {
+		return runnerName;
+	}
+
+	public StartProcessor getProcessor() {
+		return processor;
+	}
 }

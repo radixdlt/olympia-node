@@ -24,12 +24,12 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
@@ -54,24 +54,19 @@ import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
-import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastProof;
@@ -92,12 +87,15 @@ public final class ConsensusModule extends AbstractModule {
 		bind(PacemakerReducer.class).to(PacemakerState.class);
 		bind(ExponentialPacemakerTimeoutCalculator.class).in(Scopes.SINGLETON);
 		bind(PacemakerTimeoutCalculator.class).to(ExponentialPacemakerTimeoutCalculator.class);
+		bind(VertexStoreBFTSyncRequestProcessor.class).in(Scopes.SINGLETON);
 
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 				.permitDuplicates();
 		eventBinder.addBinding().toInstance(ViewUpdate.class);
 		eventBinder.addBinding().toInstance(BFTRebuildUpdate.class);
 		eventBinder.addBinding().toInstance(BFTInsertUpdate.class);
+		eventBinder.addBinding().toInstance(Proposal.class);
+		eventBinder.addBinding().toInstance(Vote.class);
 	}
 
 	@Provides
@@ -136,26 +134,6 @@ public final class ConsensusModule extends AbstractModule {
 				.bftSyncer(bftSyncer)
 				.validatorSet(validatorSet)
 				.build();
-	}
-
-	@ProvidesIntoSet
-	public EventProcessor<BFTRebuildUpdate> bftRebuildUpdateEventProcessor(BFTEventProcessor eventProcessor) {
-		return eventProcessor::processBFTRebuildUpdate;
-	}
-
-	@ProvidesIntoSet
-	public EventProcessor<BFTInsertUpdate> bftUpdateEventProcessor(BFTEventProcessor eventProcessor) {
-		return eventProcessor::processBFTUpdate;
-	}
-
-	@ProvidesIntoSet
-	public EventProcessor<BFTInsertUpdate> bftSync(BFTSync bftSync) {
-		return bftSync::processBFTUpdate;
-	}
-
-	@ProvidesIntoSet
-	public EventProcessor<LedgerUpdate> baseLedgerUpdateEventProcessor(BFTSync bftSync) {
-		return bftSync.baseLedgerUpdateEventProcessor();
 	}
 
 	@Provides
@@ -203,8 +181,8 @@ public final class ConsensusModule extends AbstractModule {
 		ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
 		NextTxnsGenerator nextTxnsGenerator,
-		ProposalBroadcaster proposalBroadcaster,
 		Hasher hasher,
+		RemoteEventDispatcher<Proposal> proposalDispatcher,
 		RemoteEventDispatcher<Vote> voteDispatcher,
 		TimeSupplier timeSupplier,
 		ViewUpdate initialViewUpdate,
@@ -221,22 +199,15 @@ public final class ConsensusModule extends AbstractModule {
 			timeoutSender,
 			timeoutCalculator,
 			nextTxnsGenerator,
-			proposalBroadcaster,
-			hasher,
+			proposalDispatcher,
 			voteDispatcher,
+			hasher,
 			timeSupplier,
 			initialViewUpdate,
 			systemCounters
 		);
 	}
 
-	@ProvidesIntoSet
-	private RemoteEventProcessor<GetVerticesRequest> bftSyncRequestProcessor(
-		VertexStore vertexStore,
-		SyncVerticesResponseSender responseSender
-	) {
-		return new VertexStoreBFTSyncRequestProcessor(vertexStore, responseSender);
-	}
 
 	@Provides
 	@Singleton

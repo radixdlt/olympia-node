@@ -58,7 +58,7 @@ public final class MessageCentralLedgerSync {
 			.filter(m -> m.getPeer().hasSystem())
 			.map(m -> {
 				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
-				return RemoteEvent.create(node, StatusRequest.create(), StatusRequest.class);
+				return RemoteEvent.create(node, StatusRequest.create());
 			});
 	}
 
@@ -69,7 +69,7 @@ public final class MessageCentralLedgerSync {
 			.map(m -> {
 				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
 				final var msg = m.getMessage();
-				return RemoteEvent.create(node, StatusResponse.create(msg.getHeader()), StatusResponse.class);
+				return RemoteEvent.create(node, StatusResponse.create(msg.getHeader()));
 			});
 	}
 
@@ -80,7 +80,7 @@ public final class MessageCentralLedgerSync {
 			.map(m -> {
 				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
 				final var msg = m.getMessage();
-				return RemoteEvent.create(node, SyncRequest.create(msg.getCurrentHeader()), SyncRequest.class);
+				return RemoteEvent.create(node, SyncRequest.create(msg.getCurrentHeader()));
 			});
 	}
 
@@ -91,7 +91,7 @@ public final class MessageCentralLedgerSync {
 			.map(m -> {
 				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
 				final var msg = m.getMessage();
-				return RemoteEvent.create(node, SyncResponse.create(msg.getCommands()), SyncResponse.class);
+				return RemoteEvent.create(node, SyncResponse.create(msg.getCommands()));
 			});
 	}
 
@@ -102,7 +102,7 @@ public final class MessageCentralLedgerSync {
 			.map(m -> {
 				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
 				final var header = m.getMessage().getHeader();
-				return RemoteEvent.create(node, LedgerStatusUpdate.create(header), LedgerStatusUpdate.class);
+				return RemoteEvent.create(node, LedgerStatusUpdate.create(header));
 			});
 	}
 

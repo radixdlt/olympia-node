@@ -18,25 +18,18 @@
 package com.radixdlt.consensus.sync;
 
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Objects;
 
 /**
  * An error response to the GetVertices call
  */
 public final class GetVerticesErrorResponse {
-	private final BFTNode sender;
 	private final HighQC highQC;
 	private final GetVerticesRequest request;
 
-	public GetVerticesErrorResponse(BFTNode sender, HighQC highQC, GetVerticesRequest request) {
-		this.sender = Objects.requireNonNull(sender);
+	public GetVerticesErrorResponse(HighQC highQC, GetVerticesRequest request) {
 		this.highQC = Objects.requireNonNull(highQC);
 		this.request = Objects.requireNonNull(request);
-	}
-
-	public BFTNode getSender() {
-		return this.sender;
 	}
 
 	public HighQC highQC() {
@@ -49,6 +42,6 @@ public final class GetVerticesErrorResponse {
 
 	@Override
 	public String toString() {
-		return String.format("%s{%s->%s}", this.getClass().getSimpleName(), this.sender, this.highQC);
+		return String.format("%s{%s}", this.getClass().getSimpleName(), this.highQC);
 	}
 }

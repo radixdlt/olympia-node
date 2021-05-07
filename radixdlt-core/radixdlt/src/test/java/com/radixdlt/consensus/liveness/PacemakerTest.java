@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.Vote;
@@ -71,8 +72,8 @@ public class PacemakerTest {
 	private SafetyRules safetyRules = mock(SafetyRules.class);
 	private PacemakerTimeoutCalculator timeoutCalculator = mock(PacemakerTimeoutCalculator.class);
 	private NextTxnsGenerator nextTxnsGenerator = mock(NextTxnsGenerator.class);
-	private ProposalBroadcaster proposalBroadcaster = mock(ProposalBroadcaster.class);
 	private RemoteEventDispatcher<Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
+	private RemoteEventDispatcher<Proposal> proposalDispatcher = rmock(RemoteEventDispatcher.class);
 	private EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher = rmock(EventDispatcher.class);
 	private ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender = rmock(ScheduledEventDispatcher.class);
 	private TimeSupplier timeSupplier = mock(TimeSupplier.class);
@@ -99,9 +100,9 @@ public class PacemakerTest {
 			this.timeoutSender,
 			this.timeoutCalculator,
 			this.nextTxnsGenerator,
-			this.proposalBroadcaster,
+			this.proposalDispatcher,
+			this.voteDispatcher,
 			hasher,
-			voteDispatcher,
 			timeSupplier,
 			initialViewUpdate,
 			new SystemCountersImpl()

@@ -19,6 +19,9 @@ package com.radixdlt;
 
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.client.service.ScheduledCacheCleanup;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -141,11 +144,7 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<EventDispatcher<ScheduledMempoolFill>>() { })
 				.toProvider(Dispatchers.dispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<NoVote>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(
-				NoVote.class,
-				v -> CounterType.BFT_REJECTED,
-				true
-			))
+			.toProvider(Dispatchers.dispatcherProvider(NoVote.class, v -> CounterType.BFT_REJECTED, true))
 			.in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<InvalidProposedTxn>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(
@@ -175,6 +174,19 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledQueueFlush.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledCacheCleanup>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledCacheCleanup.class)).in(Scopes.SINGLETON);
+
+		// BFT
+		bind(new TypeLiteral<RemoteEventDispatcher<Proposal>>() { })
+			.toProvider(Dispatchers.remoteDispatcherProvider(Proposal.class)).in(Scopes.SINGLETON);
+
+		bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() { })
+			.toProvider(Dispatchers.remoteDispatcherProvider(Vote.class)).in(Scopes.SINGLETON);
+
+		// BFT Sync
+		bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesResponse>>() { })
+			.toProvider(Dispatchers.remoteDispatcherProvider(GetVerticesResponse.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesErrorResponse>>() { })
+			.toProvider(Dispatchers.remoteDispatcherProvider(GetVerticesErrorResponse.class)).in(Scopes.SINGLETON);
 
 		bind(new TypeLiteral<RemoteEventDispatcher<MempoolAdd>>() { })
 			.toProvider(Dispatchers.remoteDispatcherProvider(MempoolAdd.class)).in(Scopes.SINGLETON);
@@ -229,9 +241,6 @@ public class DispatcherModule extends AbstractModule {
 
 		final var viewQuorumReachedKey = new TypeLiteral<EventProcessor<ViewQuorumReached>>() { };
 		Multibinder.newSetBinder(binder(), viewQuorumReachedKey, ProcessOnDispatch.class);
-
-		final var voteKey = new TypeLiteral<EventProcessor<Vote>>() { };
-		Multibinder.newSetBinder(binder(), voteKey, ProcessOnDispatch.class);
 
 		final var ledgerUpdateKey = new TypeLiteral<EventProcessor<LedgerUpdate>>() { };
 		Multibinder.newSetBinder(binder(), ledgerUpdateKey, ProcessOnDispatch.class);
@@ -440,18 +449,6 @@ public class DispatcherModule extends AbstractModule {
 		};
 	}
 
-	@Provides
-	private RemoteEventDispatcher<Vote> voteDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<Vote>> processors,
-		Environment environment
-	) {
-		RemoteEventDispatcher<Vote> dispatcher = environment.getRemoteDispatcher(Vote.class);
-		return (node, vote) -> {
-			logger.trace("Vote sending to {}: {}", node, vote);
-			dispatcher.dispatch(node, vote);
-			processors.forEach(e -> e.process(vote));
-		};
-	}
 
 	@Provides
 	@Singleton

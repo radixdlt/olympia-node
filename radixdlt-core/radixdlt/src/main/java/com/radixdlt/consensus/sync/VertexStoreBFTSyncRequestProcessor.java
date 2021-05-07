@@ -17,15 +17,12 @@
 
 package com.radixdlt.consensus.sync;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import java.util.Objects;
-import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -35,32 +32,18 @@ import org.apache.logging.log4j.Logger;
 public final class VertexStoreBFTSyncRequestProcessor implements RemoteEventProcessor<GetVerticesRequest> {
 	private static final Logger log = LogManager.getLogger();
 	private final VertexStore vertexStore;
-	private final SyncVerticesResponseSender syncVerticesResponseSender;
-
-	/**
-	 * An asynchronous supplier which retrieves data for a vertex with a given id
-	 */
-	public interface SyncVerticesResponseSender {
-		/**
-		 * Send a response to a given request
-		 * @param node the node to send to
-		 * @param vertices the response data of vertices
-		 */
-		void sendGetVerticesResponse(BFTNode node, ImmutableList<VerifiedVertex> vertices);
-
-		/**
-		 * Send an error response to a given request
-		 * @param node the node to send to
-		 * @param highQC sync info
-		 * @param request The request that failed
-		 */
-		void sendGetVerticesErrorResponse(BFTNode node, HighQC highQC, GetVerticesRequest request);
-	}
+	private final RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseDispatcher;
+	private final RemoteEventDispatcher<GetVerticesResponse> responseDispatcher;
 
 	@Inject
-	public VertexStoreBFTSyncRequestProcessor(VertexStore vertexStore, SyncVerticesResponseSender syncVerticesResponseSender) {
+	public VertexStoreBFTSyncRequestProcessor(
+		VertexStore vertexStore,
+		RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseDispatcher,
+		RemoteEventDispatcher<GetVerticesResponse> responseDispatcher
+	) {
 		this.vertexStore = Objects.requireNonNull(vertexStore);
-		this.syncVerticesResponseSender = Objects.requireNonNull(syncVerticesResponseSender);
+		this.errorResponseDispatcher = Objects.requireNonNull(errorResponseDispatcher);
+		this.responseDispatcher = Objects.requireNonNull(responseDispatcher);
 	}
 
 	@Override
@@ -68,15 +51,15 @@ public final class VertexStoreBFTSyncRequestProcessor implements RemoteEventProc
 		// TODO: Handle nodes trying to DDOS this endpoint
 
 		log.debug("SYNC_VERTICES: Received GetVerticesRequest {}", request);
-		Optional<ImmutableList<VerifiedVertex>> verticesMaybe = vertexStore.getVertices(request.getVertexId(), request.getCount());
+		var verticesMaybe = vertexStore.getVertices(request.getVertexId(), request.getCount());
 		verticesMaybe.ifPresentOrElse(
 			fetched -> {
 				log.debug("SYNC_VERTICES: Sending Response {}", fetched);
-				this.syncVerticesResponseSender.sendGetVerticesResponse(sender, fetched);
+				this.responseDispatcher.dispatch(sender, new GetVerticesResponse(fetched));
 			},
 			() -> {
 				log.debug("SYNC_VERTICES: Sending error response {}", vertexStore.highQC());
-				this.syncVerticesResponseSender.sendGetVerticesErrorResponse(sender, vertexStore.highQC(), request);
+				this.errorResponseDispatcher.dispatch(sender, new GetVerticesErrorResponse(vertexStore.highQC(), request));
 			}
 		);
 	}

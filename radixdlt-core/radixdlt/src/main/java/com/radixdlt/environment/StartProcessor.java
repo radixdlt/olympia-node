@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -13,24 +13,11 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt.consensus.liveness;
+package com.radixdlt.environment;
 
-import java.util.Set;
-
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.bft.BFTNode;
-
-/**
- * Broadcaster of proposal messages.
- */
-public interface ProposalBroadcaster {
-	/**
-	 * Send a proposal to the specified validators.
-	 *
-	 * @param proposal the proposal message to send
-	 * @param validators the validators to send the message to
-	 */
-	void broadcastProposal(Proposal proposal, Set<BFTNode> validators);
+public interface StartProcessor {
+	void start();
 }

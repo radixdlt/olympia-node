@@ -18,20 +18,12 @@
 package com.radixdlt.environment.deterministic.network;
 
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
-import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
 
 /**
@@ -52,37 +44,20 @@ public final class ControlledSender implements DeterministicSender, Environment 
 	}
 
 	@Override
-	public void sendGetVerticesResponse(BFTNode node, ImmutableList<VerifiedVertex> vertices) {
-		GetVerticesResponse response = new GetVerticesResponse(self, vertices);
-		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
-		handleMessage(new ControlledMessage(self, channelId, response, arrivalTime(channelId)));
-	}
-
-	@Override
-	public void sendGetVerticesErrorResponse(BFTNode node, HighQC highQC, GetVerticesRequest request) {
-		GetVerticesErrorResponse response = new GetVerticesErrorResponse(this.self, highQC, request);
-		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
-		handleMessage(new ControlledMessage(self, channelId, response, arrivalTime(channelId)));
-	}
-
-	@Override
-	public void broadcastProposal(Proposal proposal, Set<BFTNode> nodes) {
-		for (BFTNode node : nodes) {
-			int receiverIndex = this.network.lookup(node);
-			ChannelId channelId = ChannelId.of(this.senderIndex, receiverIndex);
-			handleMessage(new ControlledMessage(self, channelId, proposal, arrivalTime(channelId)));
-		}
-	}
-
-	@Override
 	public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
-		return e -> handleMessage(new ControlledMessage(self, this.localChannel, e, arrivalTime(this.localChannel)));
+		return e -> handleMessage(new ControlledMessage(self, this.localChannel, e, null, arrivalTime(this.localChannel)));
 	}
 
 	@Override
 	public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass) {
 		return (t, milliseconds) -> {
-			ControlledMessage msg = new ControlledMessage(self, this.localChannel, t, arrivalTime(this.localChannel) + milliseconds);
+			var msg = new ControlledMessage(
+				self,
+				this.localChannel,
+				t,
+				null,
+				arrivalTime(this.localChannel) + milliseconds
+			);
 			handleMessage(msg);
 		};
 	}
@@ -90,7 +65,13 @@ public final class ControlledSender implements DeterministicSender, Environment 
 	@Override
 	public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(TypeLiteral<T> typeLiteral) {
 		return (t, milliseconds) -> {
-			ControlledMessage msg = new ControlledMessage(self, this.localChannel, t, arrivalTime(this.localChannel) + milliseconds);
+			var msg = new ControlledMessage(
+				self,
+				this.localChannel,
+				t,
+				typeLiteral,
+				arrivalTime(this.localChannel) + milliseconds
+			);
 			handleMessage(msg);
 		};
 	}
@@ -99,7 +80,7 @@ public final class ControlledSender implements DeterministicSender, Environment 
 	public <T> RemoteEventDispatcher<T> getRemoteDispatcher(Class<T> eventClass) {
 		return (node, e) -> {
 			ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
-			handleMessage(new ControlledMessage(self, channelId, e, arrivalTime(channelId)));
+			handleMessage(new ControlledMessage(self, channelId, e, null, arrivalTime(channelId)));
 		};
 	}
 

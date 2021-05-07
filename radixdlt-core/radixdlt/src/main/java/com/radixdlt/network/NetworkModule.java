@@ -24,12 +24,11 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.BFTEventsRx;
-import com.radixdlt.consensus.SyncVerticesRPCRx;
+import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
-import com.radixdlt.consensus.liveness.ProposalBroadcaster;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
@@ -61,21 +60,21 @@ public final class NetworkModule extends AbstractModule {
 		// Network BFT/Epoch Sync messages
 		//TODO: make rate limits configurable
 		bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class).toInstance(RateLimiter.create(50.0));
-
 		bind(MessageCentralValidatorSync.class).in(Scopes.SINGLETON);
-		bind(SyncVerticesResponseSender.class).to(MessageCentralValidatorSync.class);
-		bind(SyncVerticesRPCRx.class).to(MessageCentralValidatorSync.class);
 
 		// Network BFT messages
 		bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
-		bind(ProposalBroadcaster.class).to(MessageCentralBFTNetwork.class);
-		bind(BFTEventsRx.class).to(MessageCentralBFTNetwork.class);
 		bind(PeersView.class).to(AddressBookPeersView.class);
 	}
 
 	@ProvidesIntoSet
 	private RxRemoteDispatcher<?> mempoolAddDispatcher(MessageCentralMempool messageCentralMempool) {
 		return RxRemoteDispatcher.create(MempoolAdd.class, messageCentralMempool.mempoolAddRemoteEventDispatcher());
+	}
+
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> proposalDispatcher(MessageCentralBFTNetwork bftNetwork) {
+		return RxRemoteDispatcher.create(Proposal.class, bftNetwork.proposalDispatcher());
 	}
 
 	@ProvidesIntoSet
@@ -86,6 +85,19 @@ public final class NetworkModule extends AbstractModule {
 	@ProvidesIntoSet
 	private RxRemoteDispatcher<?> vertexRequestDispatcher(MessageCentralValidatorSync messageCentralValidatorSync) {
 		return RxRemoteDispatcher.create(GetVerticesRequest.class, messageCentralValidatorSync.verticesRequestDispatcher());
+	}
+
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> vertexResponseDispatcher(MessageCentralValidatorSync messageCentralValidatorSync) {
+		return RxRemoteDispatcher.create(GetVerticesResponse.class, messageCentralValidatorSync.verticesResponseDispatcher());
+	}
+
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> vertexErrorResponseDispatcher(MessageCentralValidatorSync messageCentralValidatorSync) {
+		return RxRemoteDispatcher.create(
+			GetVerticesErrorResponse.class,
+			messageCentralValidatorSync.verticesErrorResponseDispatcher()
+		);
 	}
 
 	@ProvidesIntoSet
@@ -113,23 +125,30 @@ public final class NetworkModule extends AbstractModule {
 		return RxRemoteDispatcher.create(LedgerStatusUpdate.class, messageCentralLedgerSync.ledgerStatusUpdateDispatcher());
 	}
 
-	@Provides
-	private Flowable<RemoteEvent<GetVerticesRequest>> vertexSyncRequests(MessageCentralValidatorSync validatorSync) {
-		return validatorSync.requests();
-	}
-
-	// TODO: Clean this up, convert the rest of remote events into this
+	// TODO: Clean this up
 	@Provides
 	@Singleton
 	@SuppressWarnings("unchecked")
 	RxRemoteEnvironment rxRemoteEnvironment(
+		MessageCentralBFTNetwork messageCentralBFT,
+		MessageCentralValidatorSync messageCentralBFTSync,
 		MessageCentralMempool messageCentralMempool,
 		MessageCentralLedgerSync messageCentralLedgerSync
 	) {
 	    return new RxRemoteEnvironment() {
 			@Override
 			public <T> Flowable<RemoteEvent<T>> remoteEvents(Class<T> remoteEventClass) {
-				if (remoteEventClass == MempoolAdd.class) {
+				if (remoteEventClass == Vote.class) {
+					return messageCentralBFT.remoteVotes().map(m -> (RemoteEvent<T>) m);
+				} else if (remoteEventClass == Proposal.class) {
+					return messageCentralBFT.remoteProposals().map(m -> (RemoteEvent<T>) m);
+				} else if (remoteEventClass == GetVerticesRequest.class) {
+					return messageCentralBFTSync.requests().map(m -> (RemoteEvent<T>) m);
+				} else if (remoteEventClass == GetVerticesResponse.class) {
+					return messageCentralBFTSync.responses().map(m -> (RemoteEvent<T>) m);
+				} else if (remoteEventClass == GetVerticesErrorResponse.class) {
+					return messageCentralBFTSync.errorResponses().map(m -> (RemoteEvent<T>) m);
+				} else if (remoteEventClass == MempoolAdd.class) {
 					return messageCentralMempool.mempoolComands().map(m -> (RemoteEvent<T>) m);
 				} else if (remoteEventClass == SyncRequest.class) {
 					return messageCentralLedgerSync.syncRequests().map(m -> (RemoteEvent<T>) m);

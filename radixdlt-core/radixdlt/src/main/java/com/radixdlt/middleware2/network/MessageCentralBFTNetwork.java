@@ -19,22 +19,21 @@ package com.radixdlt.middleware2.network;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 
 import com.radixdlt.environment.RemoteEventDispatcher;
 
 import java.util.Objects;
 
 import java.util.Optional;
-import java.util.Set;
 
+import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.network.messaging.MessageFromPeer;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.processors.PublishProcessor;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
@@ -50,14 +49,14 @@ import com.radixdlt.network.messaging.MessageCentral;
  * BFT Network sending and receiving layer used on top of the MessageCentral
  * layer.
  */
-public final class MessageCentralBFTNetwork implements ProposalBroadcaster, BFTEventsRx {
+public final class MessageCentralBFTNetwork {
 	private static final Logger log = LogManager.getLogger();
 
 	private final BFTNode self;
 	private final int magic;
 	private final AddressBook addressBook;
 	private final MessageCentral messageCentral;
-	private final PublishProcessor<ConsensusEvent> localMessages;
+	private final PublishSubject<ConsensusEvent> localMessages;
 
 	@Inject
 	public MessageCentralBFTNetwork(
@@ -70,32 +69,56 @@ public final class MessageCentralBFTNetwork implements ProposalBroadcaster, BFTE
 		this.self = Objects.requireNonNull(self);
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
-		this.localMessages = PublishProcessor.create();
+		this.localMessages = PublishSubject.create();
 	}
 
-	@Override
-	public Flowable<ConsensusEvent> localBftEvents() {
-		return localMessages.onBackpressureBuffer(255, false, true /* unbounded for local messages */);
+	public Observable<Proposal> localProposals() {
+		return localMessages.ofType(Proposal.class);
 	}
 
-	@Override
-	public Flowable<ConsensusEvent> remoteBftEvents() {
+	public Observable<Vote> localVotes() {
+		return localMessages.ofType(Vote.class);
+	}
+
+	public Flowable<RemoteEvent<Vote>> remoteVotes() {
+		return remoteBftEvents()
+			.filter(m -> m.getMessage().getConsensusMessage() instanceof Vote)
+			.map(m -> {
+				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
+				final var msg = m.getMessage();
+				var vote = (Vote) msg.getConsensusMessage();
+				return RemoteEvent.create(node, vote);
+			});
+	}
+
+	public Flowable<RemoteEvent<Proposal>> remoteProposals() {
+		return remoteBftEvents()
+			.filter(m -> m.getMessage().getConsensusMessage() instanceof Proposal)
+			.map(m -> {
+				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
+				final var msg = m.getMessage();
+				var proposal = (Proposal) msg.getConsensusMessage();
+				return RemoteEvent.create(node, proposal);
+			});
+	}
+
+	private Flowable<MessageFromPeer<ConsensusEventMessage>> remoteBftEvents() {
 		return this.messageCentral
 			.messagesOf(ConsensusEventMessage.class)
 			.toFlowable(BackpressureStrategy.BUFFER)
-			.map(MessageFromPeer::getMessage)
-			.map(ConsensusEventMessage::getConsensusMessage);
+			.filter(m -> m.getPeer().hasSystem());
 	}
 
-	@Override
-	public void broadcastProposal(Proposal proposal, Set<BFTNode> nodes) {
-		for (BFTNode node : nodes) {
-			if (this.self.equals(node)) {
-				this.localMessages.onNext(proposal);
-			} else {
-				ConsensusEventMessage message = new ConsensusEventMessage(this.magic, proposal);
-				send(message, node);
-			}
+	public RemoteEventDispatcher<Proposal> proposalDispatcher() {
+		return this::sendProposal;
+	}
+
+	private void sendProposal(BFTNode receiver, Proposal proposal) {
+		if (this.self.equals(receiver)) {
+			this.localMessages.onNext(proposal);
+		} else {
+			ConsensusEventMessage message = new ConsensusEventMessage(this.magic, proposal);
+			send(message, receiver);
 		}
 	}
 

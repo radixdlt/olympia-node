@@ -17,7 +17,6 @@
 
 package com.radixdlt.consensus.sync;
 
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import java.util.List;
 import java.util.Objects;
@@ -27,15 +26,9 @@ import java.util.Objects;
  */
 public final class GetVerticesResponse {
 	private final List<VerifiedVertex> vertices;
-	private final BFTNode sender;
 
-	public GetVerticesResponse(BFTNode sender, List<VerifiedVertex> vertices) {
-		this.sender = Objects.requireNonNull(sender);
+	public GetVerticesResponse(List<VerifiedVertex> vertices) {
 		this.vertices = Objects.requireNonNull(vertices);
-	}
-
-	public BFTNode getSender() {
-		return sender;
 	}
 
 	public List<VerifiedVertex> getVertices() {

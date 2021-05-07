@@ -17,6 +17,8 @@
 
 package com.radixdlt.integration.recovery;
 
+import com.google.inject.Provides;
+import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
@@ -59,7 +61,6 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
-import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
@@ -159,7 +160,7 @@ public class RecoveryLivenessTest {
 		for (Supplier<Injector> nodeCreator : nodeCreators) {
 			this.nodes.add(nodeCreator.get());
 		}
-		this.nodes.forEach(i -> i.getInstance(DeterministicEpochsConsensusProcessor.class).start());
+		this.nodes.forEach(i -> i.getInstance(DeterministicProcessor.class).start());
 	}
 
 	boolean mutate(ControlledMessage message, MessageQueue queue) {
@@ -188,10 +189,15 @@ public class RecoveryLivenessTest {
 					bind(VerifiedTxnsAndProof.class).annotatedWith(Genesis.class).toInstance(genesisTxns);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
-					bind(PeersView.class).toInstance(() -> allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ValidatorAddress.of(ecKeyPair.getPublicKey()));
+				}
+
+				@Provides
+				private PeersView peersView(@Self BFTNode self) {
+					var peers = allNodes.stream().filter(n -> !self.equals(n)).collect(Collectors.toList());
+					return () -> peers;
 				}
 			}
 		);
@@ -201,7 +207,7 @@ public class RecoveryLivenessTest {
 		this.network.dropMessages(m -> m.channelId().receiverIndex() == index);
 		Injector injector = nodeCreators.get(index).get();
 		stopDatabase(this.nodes.set(index, injector));
-		withThreadCtx(injector, () -> injector.getInstance(DeterministicEpochsConsensusProcessor.class).start());
+		withThreadCtx(injector, () -> injector.getInstance(DeterministicProcessor.class).start());
 	}
 
 	private void initSync() {
@@ -232,7 +238,8 @@ public class RecoveryLivenessTest {
 		String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
 		ThreadContext.put("bftNode", bftNode);
 		try {
-			injector.getInstance(DeterministicEpochsConsensusProcessor.class).handleMessage(msg.value().origin(), msg.value().message());
+			injector.getInstance(DeterministicProcessor.class)
+				.handleMessage(msg.value().origin(), msg.value().message(), msg.value().typeLiteral());
 		} finally {
 			ThreadContext.remove("bftNode");
 		}

@@ -23,11 +23,10 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.util.Modules;
 import com.radixdlt.MockedKeyModule;
-import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
@@ -38,7 +37,6 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.EUID;
@@ -52,9 +50,6 @@ import com.radixdlt.integration.distributed.deterministic.configuration.EpochNod
 import com.radixdlt.integration.distributed.deterministic.configuration.NodeIndexAndWeight;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
-import com.radixdlt.environment.deterministic.DeterministicConsensusProcessor;
-import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
-import com.radixdlt.environment.deterministic.DeterministicMessageProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
@@ -74,6 +69,7 @@ import java.util.Random;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -188,8 +184,9 @@ public final class DeterministicTest {
 			modules.add(new MockedCommittedReaderModule());
 			modules.add(new AbstractModule() {
 				@Provides
-				private PeersView peersView() {
-					return () -> nodes;
+				private PeersView peersView(@Self BFTNode self) {
+					var peers = nodes.stream().filter(n -> !self.equals(n)).collect(Collectors.toList());
+					return () -> peers;
 				}
 
 				@Provides
@@ -242,17 +239,6 @@ public final class DeterministicTest {
 				@Override
 				protected void configure() {
 					bind(BFTValidatorSet.class).toInstance(validatorSet);
-					bind(DeterministicMessageProcessor.class).to(DeterministicConsensusProcessor.class);
-				}
-
-				@ProvidesIntoSet
-				private EventProcessor<ScheduledLocalTimeout> timeoutProcessor(BFTEventProcessor processor) {
-					return processor::processLocalTimeout;
-				}
-
-				@ProvidesIntoSet
-				private EventProcessor<ViewUpdate> viewUpdateProcessor(BFTEventProcessor processor) {
-					return processor::processViewUpdate;
 				}
 			});
 		}
@@ -265,7 +251,6 @@ public final class DeterministicTest {
 				public void configure() {
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
 					bind(BFTValidatorSet.class).toInstance(epochToValidatorSetMapping.apply(1L));
-					bind(DeterministicMessageProcessor.class).to(DeterministicEpochsConsensusProcessor.class);
 					bind(new TypeLiteral<EventProcessor<EpochView>>() { }).toInstance(epochView -> { });
 					bind(new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() { }).toInstance(t -> { });
 				}

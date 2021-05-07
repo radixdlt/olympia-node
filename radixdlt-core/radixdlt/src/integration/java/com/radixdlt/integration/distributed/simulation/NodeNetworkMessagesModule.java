@@ -21,15 +21,13 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.BFTEventsRx;
-import com.radixdlt.consensus.SyncVerticesRPCRx;
+import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.liveness.ProposalBroadcaster;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
-import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
@@ -40,7 +38,6 @@ import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import com.radixdlt.mempool.MempoolAdd;
-import io.reactivex.rxjava3.core.Flowable;
 
 public class NodeNetworkMessagesModule extends AbstractModule {
 	private final SimulationNetwork simulationNetwork;
@@ -51,10 +48,6 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		bind(BFTEventsRx.class).to(SimulatedNetworkImpl.class);
-		bind(SyncVerticesRPCRx.class).to(SimulatedNetworkImpl.class);
-		bind(ProposalBroadcaster.class).to(SimulatedNetworkImpl.class);
-		bind(SyncVerticesResponseSender.class).to(SimulatedNetworkImpl.class);
 		bind(RxRemoteEnvironment.class).to(SimulatedNetworkImpl.class).in(Scopes.SINGLETON);
 	}
 
@@ -71,6 +64,21 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	@ProvidesIntoSet
 	private RxRemoteDispatcher<?> vertexRequestDispatcher(SimulatedNetworkImpl network) {
 		return RxRemoteDispatcher.create(GetVerticesRequest.class, network.remoteEventDispatcher(GetVerticesRequest.class));
+	}
+
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> vertexResponseDispatcher(SimulatedNetworkImpl network) {
+		return RxRemoteDispatcher.create(GetVerticesResponse.class, network.remoteEventDispatcher(GetVerticesResponse.class));
+	}
+
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> bftSyncErrorDispatcher(SimulatedNetworkImpl network) {
+		return RxRemoteDispatcher.create(GetVerticesErrorResponse.class, network.remoteEventDispatcher(GetVerticesErrorResponse.class));
+	}
+
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> proposalDispatcher(SimulatedNetworkImpl network) {
+		return RxRemoteDispatcher.create(Proposal.class, network.remoteEventDispatcher(Proposal.class));
 	}
 
 	@ProvidesIntoSet
@@ -101,36 +109,5 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	@ProvidesIntoSet
 	private RxRemoteDispatcher<?> ledgerStatusUpdateDispatcher(SimulatedNetworkImpl network) {
 		return RxRemoteDispatcher.create(LedgerStatusUpdate.class, network.remoteEventDispatcher(LedgerStatusUpdate.class));
-	}
-
-
-	@Provides
-	private Flowable<RemoteEvent<GetVerticesRequest>> vertexRequests(SimulatedNetworkImpl network) {
-		return network.remoteEvents(GetVerticesRequest.class);
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<SyncRequest>> syncRequests(SimulatedNetworkImpl network) {
-		return network.remoteEvents(SyncRequest.class);
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<SyncResponse>> syncResponses(SimulatedNetworkImpl network) {
-		return network.remoteEvents(SyncResponse.class);
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<StatusRequest>> statusRequests(SimulatedNetworkImpl network) {
-		return network.remoteEvents(StatusRequest.class);
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<StatusResponse>> statusResponses(SimulatedNetworkImpl network) {
-		return network.remoteEvents(StatusResponse.class);
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<LedgerStatusUpdate>> ledgerStatusUpdates(SimulatedNetworkImpl network) {
-		return network.remoteEvents(LedgerStatusUpdate.class);
 	}
 }

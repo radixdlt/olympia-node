@@ -17,10 +17,12 @@
 
 package com.radixdlt.integration.mempool;
 
+import com.google.inject.Provides;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
@@ -55,7 +57,6 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
-import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -143,7 +144,7 @@ public class MempoolRelayTest {
 			.map(Supplier::get)
 			.collect(ImmutableList.toImmutableList());
 
-		this.nodes.forEach(i -> i.getInstance(DeterministicEpochsConsensusProcessor.class).start());
+		this.nodes.forEach(i -> i.getInstance(DeterministicProcessor.class).start());
 	}
 
 	private void injectGenesisAtomToThis(ImmutableList<ECKeyPair> nodeKeys) {
@@ -186,10 +187,15 @@ public class MempoolRelayTest {
 					bind(new TypeLiteral<VerifiedTxnsAndProof>() { }).annotatedWith(Genesis.class).toInstance(genesisTxns);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
-					bind(PeersView.class).toInstance(() -> allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ValidatorAddress.of(ecKeyPair.getPublicKey()));
+				}
+
+				@Provides
+				private PeersView peersView(@Self BFTNode node) {
+					var peers = allNodes.stream().filter(n -> !node.equals(n)).collect(Collectors.toList());
+					return () -> peers;
 				}
 			}
 		);
@@ -217,8 +223,8 @@ public class MempoolRelayTest {
 		final var nodeIndex = msg.value().channelId().receiverIndex();
 		final var injector = this.nodes.get(nodeIndex);
 		withThreadCtx(injector, () ->
-			injector.getInstance(DeterministicEpochsConsensusProcessor.class)
-				.handleMessage(msg.value().origin(), msg.value().message())
+			injector.getInstance(DeterministicProcessor.class)
+				.handleMessage(msg.value().origin(), msg.value().message(), msg.value().typeLiteral())
 		);
 		return msg;
 	}

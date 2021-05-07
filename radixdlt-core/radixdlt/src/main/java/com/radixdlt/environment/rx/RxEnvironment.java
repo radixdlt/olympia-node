@@ -17,30 +17,32 @@
 
 package com.radixdlt.environment.rx;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.subjects.BehaviorSubject;
+import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
+
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Environment which utilizes RXJava to distribute events from
  * dispatchers to processors.
  */
 public final class RxEnvironment implements Environment {
-	private final ImmutableMap<Class<?>, Subject<?>> subjects;
-	private final ImmutableMap<TypeLiteral<?>, Subject<?>> typeLiteralSubjects;
+	private final Map<Class<?>, Subject<?>> subjects;
+	private final Map<TypeLiteral<?>, Subject<?>> typeLiteralSubjects;
 	private final ScheduledExecutorService executorService;
-	private final ImmutableMap<Class<?>, RxRemoteDispatcher<?>> remoteDispatchers;
+	private final Map<Class<?>, RxRemoteDispatcher<?>> remoteDispatchers;
 
 	public RxEnvironment(
 		Set<TypeLiteral<?>> localEventTypeLiterals,
@@ -49,11 +51,12 @@ public final class RxEnvironment implements Environment {
 		Set<RxRemoteDispatcher<?>> remoteDispatchers
 	) {
 		this.typeLiteralSubjects = localEventTypeLiterals.stream()
-				.collect(ImmutableMap.toImmutableMap(c -> c, c -> BehaviorSubject.create().toSerialized()));
+				.collect(Collectors.toMap(c -> c, c -> ReplaySubject.create(5).toSerialized()));
 		this.subjects = localEventClasses.stream()
-			.collect(ImmutableMap.toImmutableMap(c -> c, c -> BehaviorSubject.create().toSerialized()));
+			.collect(Collectors.toMap(c -> c, c -> ReplaySubject.create(5).toSerialized()));
 		this.executorService = Objects.requireNonNull(executorService);
-		this.remoteDispatchers = remoteDispatchers.stream().collect(ImmutableMap.toImmutableMap(RxRemoteDispatcher::eventClass, d -> d));
+		this.remoteDispatchers = remoteDispatchers.stream()
+			.collect(Collectors.toMap(RxRemoteDispatcher::eventClass, d -> d));
 	}
 
 	private <T> Optional<Subject<T>> getSubject(TypeLiteral<T> t) {
@@ -93,6 +96,10 @@ public final class RxEnvironment implements Environment {
 
 	@Override
 	public <T> RemoteEventDispatcher<T> getRemoteDispatcher(Class<T> eventClass) {
+		if (!remoteDispatchers.containsKey(eventClass)) {
+			throw new IllegalStateException("No dispatcher for " + eventClass);
+		}
+
 		@SuppressWarnings("unchecked")
 		final RemoteEventDispatcher<T> dispatcher = (RemoteEventDispatcher<T>) remoteDispatchers.get(eventClass).dispatcher();
 		return dispatcher;
