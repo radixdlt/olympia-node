@@ -22,6 +22,7 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
+import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
@@ -29,15 +30,21 @@ import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 
-public final class StakingConstraintScrypt implements ConstraintScrypt {
+public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 	@Override
 	public void main(SysCalls os) {
 		os.registerParticle(
 			StakedTokensParticle.class,
 			ParticleDefinition.<StakedTokensParticle>builder()
+				.staticValidation(TokenDefinitionUtils::staticCheck)
+				.rriMapper(p -> REAddr.ofNativeToken())
+				.build()
+		);
+
+		os.registerParticle(
+			ExitingStake.class,
+			ParticleDefinition.<ExitingStake>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.rriMapper(p -> REAddr.ofNativeToken())
 				.build()
@@ -52,45 +59,52 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
 			TokensParticle.class,
 			StakedTokensParticle.class,
-			checkEquals(
-				TokensParticle::getHoldingAddr,
-				StakedTokensParticle::getOwner,
-				"Can only stake with self as owner"
-			),
+			(i, o, r) -> {
+				if (!Objects.equals(i.getHoldingAddr(), o.getOwner())) {
+					return Result.error("Owner must remain the same");
+				}
+				return Result.success();
+			},
 			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getHoldingAddr()::allowToWithdrawFrom).orElse(false),
 			(i, o, index) -> new StakeTokens(o.getOwner(), o.getDelegateKey(), o.getAmount()) // FIXME: this isn't 100% correct
+		));
+
+		// For change
+		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
+			StakedTokensParticle.class,
+			StakedTokensParticle.class,
+			(i, o, r) -> {
+				if (!Objects.equals(i.getOwner(), o.getOwner())) {
+					return Result.error("Owners must be same");
+				}
+				if (!Objects.equals(i.getDelegateKey(), o.getDelegateKey())) {
+					return Result.error("Delegate must be same");
+				}
+
+				return Result.success();
+			},
+			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
+			(i, o, index) -> Unknown.create()
 		));
 
 		// Unstaking
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
 			StakedTokensParticle.class,
-			TokensParticle.class,
-			checkEquals(
-				StakedTokensParticle::getOwner,
-				TokensParticle::getHoldingAddr,
-				"Can only unstake back to self"
-			),
-			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
+			ExitingStake.class,
+			(i, o, r) -> {
+				if (!Objects.equals(i.getOwner(), o.getOwner())) {
+					return Result.error("Must unstake to self");
+				}
+
+				var system = (SystemParticle) r.loadAddr(null, REAddr.ofSystem()).orElseThrow();
+				if (system.getEpoch() != o.getEpochExit()) {
+					return Result.error("Incorrect epoch: " + o.getEpochExit() + " current is: " + system.getEpoch());
+				}
+
+				return Result.success();
+			},
+			(i, o, readable, pubKey) -> pubKey.map(i.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
 			(i, o, index) -> new UnstakeTokens(i.getOwner(), i.getDelegateKey(), o.getAmount()) // FIXME: this isn't 100% correct
 		));
-
-		// Stake movement
-		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
-			StakedTokensParticle.class,
-			StakedTokensParticle.class,
-			checkEquals(
-				StakedTokensParticle::getOwner,
-				StakedTokensParticle::getOwner,
-				"Can't send staked tokens to another address."
-			),
-			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
-			(i, o, index) -> Unknown.create()
-		));
-	}
-
-	private static <L, R, R0, R1> BiFunction<L, R, Result> checkEquals(
-		Function<L, R0> leftMapper0, Function<R, R0> rightMapper0, String errorMessage0
-	) {
-		return (l, r) -> Result.of(Objects.equals(leftMapper0.apply(l), rightMapper0.apply(r)), errorMessage0);
 	}
 }

@@ -188,6 +188,10 @@ public final class REAddr {
 		return REAddrType.parse(addr[0]).orElseThrow();
 	}
 
+	public boolean isSystem() {
+		return addr[0] == REAddrType.SYSTEM.type;
+	}
+
 	public boolean isNativeToken() {
 		return addr[0] == REAddrType.NATIVE_TOKEN.type;
 	}

@@ -24,6 +24,7 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.crypto.ECPublicKey;
@@ -131,14 +132,23 @@ public final class ConstraintMachine {
 		}
 
 		public ReadableAddrs immutableIndex() {
-			return (txn, rri) ->
-				localUpParticles.values().stream()
-					.filter(TokenDefinitionParticle.class::isInstance)
-					.map(TokenDefinitionParticle.class::cast)
-					.filter(p -> p.getAddr().equals(rri))
-					.findFirst()
-					.map(Particle.class::cast)
-					.or(() -> store.loadAddr(txn, rri));
+			return (txn, addr) -> {
+				if (addr.isSystem()) {
+					return localUpParticles.values().stream()
+						.filter(SystemParticle.class::isInstance)
+						.findFirst()
+						.or(() -> store.loadAddr(txn, addr))
+						.or(() -> Optional.of(new SystemParticle(0, 0, 0))); // A bit of a hack
+				} else {
+					return localUpParticles.values().stream()
+						.filter(TokenDefinitionParticle.class::isInstance)
+						.map(TokenDefinitionParticle.class::cast)
+						.filter(p -> p.getAddr().equals(addr))
+						.findFirst()
+						.map(Particle.class::cast)
+						.or(() -> store.loadAddr(txn, addr));
+				}
+			};
 		}
 
 		public Optional<Particle> loadUpParticle(SubstateId substateId) {

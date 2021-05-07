@@ -22,8 +22,11 @@ import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.actions.MoveStake;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atom.actions.DeprecatedUnstakeTokens;
 import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.atommodel.tokens.StakingConstraintScrypt;
+import com.radixdlt.atommodel.system.SystemConstraintScrypt;
+import com.radixdlt.atommodel.tokens.StakingConstraintScryptV1;
+import com.radixdlt.atommodel.tokens.StakingConstraintScryptV2;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import org.junit.Before;
 import org.junit.Test;
@@ -53,9 +56,10 @@ public class StakedTokensTest {
 		this.tokenRri = REAddr.ofNativeToken();
 
 		final var cmAtomOS = new CMAtomOS();
+		cmAtomOS.load(new SystemConstraintScrypt());
 		cmAtomOS.load(new ValidatorConstraintScrypt());
 		cmAtomOS.load(new TokensConstraintScrypt());
-		cmAtomOS.load(new StakingConstraintScrypt());
+		cmAtomOS.load(new StakingConstraintScryptV2());
 		final var cm = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
@@ -75,12 +79,11 @@ public class StakedTokensTest {
 			TxActionListBuilder.create()
 				.createMutableToken(tokDef)
 				.mint(this.tokenRri, tokenOwnerAccount, UInt256.TEN)
+				.registerAsValidator(this.validatorKeyPair.getPublicKey())
 				.build()
 		).buildWithoutSignature();
-		var validatorBuilder = this.engine.construct(new RegisterValidator(this.validatorKeyPair.getPublicKey()));
-		var txn1 = validatorBuilder.signAndBuild(this.validatorKeyPair::sign);
 
-		this.engine.execute(List.of(txn0, txn1), null, PermissionLevel.SYSTEM);
+		this.engine.execute(List.of(txn0), null, PermissionLevel.SYSTEM);
 	}
 
 	@Test

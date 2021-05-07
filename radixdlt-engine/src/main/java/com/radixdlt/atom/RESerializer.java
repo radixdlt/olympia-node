@@ -21,6 +21,7 @@ package com.radixdlt.atom;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.atommodel.tokens.ExitingStake;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
@@ -47,7 +48,8 @@ public final class RESerializer {
 		TokensParticle.class, (byte) 3,
 		StakedTokensParticle.class, (byte) 4,
 		ValidatorParticle.class, (byte) 5,
-		UniqueParticle.class, (byte) 6
+		UniqueParticle.class, (byte) 6,
+		ExitingStake.class, (byte) 7
 	));
 
 	private RESerializer() {
@@ -99,6 +101,8 @@ public final class RESerializer {
 			return deserializeTokensParticle(buf);
 		} else if (c == StakedTokensParticle.class) {
 			return deserializeStakedTokensParticle(buf);
+		} else if (c == ExitingStake.class) {
+			return deserializeExitingStake(buf);
 		} else if (c == ValidatorParticle.class) {
 			return deserializeValidatorParticle(buf);
 		} else if (c == UniqueParticle.class) {
@@ -127,6 +131,8 @@ public final class RESerializer {
 			serializeData((UniqueParticle) p, buf);
 		} else if (p instanceof TokenDefinitionParticle) {
 			serializeData((TokenDefinitionParticle) p, buf);
+		} else if (p instanceof ExitingStake) {
+			serializeData((ExitingStake) p, buf);
 		} else {
 			throw new IllegalStateException("Unknown particle: " + p);
 		}
@@ -188,6 +194,19 @@ public final class RESerializer {
 		var amount = deserializeUInt256(buf);
 
 		return new TokensParticle(holdingAddr, amount, rri);
+	}
+
+	private static void serializeData(ExitingStake p, ByteBuffer buf) {
+		serializeREAddr(buf, p.getOwner());
+		buf.putLong(p.getEpochExit());
+		buf.put(p.getAmount().toByteArray());
+	}
+
+	private static ExitingStake deserializeExitingStake(ByteBuffer buf) throws DeserializeException {
+		var owner = deserializeREAddr(buf);
+		var epochExit = buf.getLong();
+		var amount = deserializeUInt256(buf);
+		return new ExitingStake(amount, owner, epochExit);
 	}
 
 	private static void serializeData(StakedTokensParticle p, ByteBuffer buf) {
