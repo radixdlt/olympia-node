@@ -55,8 +55,8 @@ public class KeyGenerator {
 			.addOption("k", "keystore", true, "Keystore name")
 			.addOption("p", "password", true, "Password for keystore")
 			.addOption("n", "keypair-name", true, "Key pair name (optional, default name is 'node')")
-			.addOption("pk", "show-public-key", false, "Prints the public key of an existing " +
-					"keypair and exits");
+			.addOption("pk", "show-public-key", false, "Prints the public key of an existing "
+					+ "keypair and exits");
 	}
 
 	public static void main(String[] args) {
