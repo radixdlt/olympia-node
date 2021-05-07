@@ -16,7 +16,7 @@
  */
 package com.radixdlt.client.handler;
 
-import com.radixdlt.client.AccountAddress;
+import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.client.service.NetworkInfoService;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.client.Rri;
@@ -29,7 +29,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Test;
 
-import com.radixdlt.client.ValidatorAddress;
+import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.client.api.TransactionStatus;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.api.ValidatorInfoDetails;
@@ -66,6 +66,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static com.radixdlt.api.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 

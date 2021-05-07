@@ -43,6 +43,6 @@ public final class TxnParser {
 	}
 
 	public Result<REParsedTxn> parseTxn(Txn txn) {
-		return Result.wrap(() -> parse(txn));
+		return Result.wrap(TxnParserErrors.TRANSACTION_PARSING_ERROR, () -> parse(txn));
 	}
 }

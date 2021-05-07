@@ -17,14 +17,18 @@
 
 package com.radixdlt.utils;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
+import com.radixdlt.utils.functional.Result;
 
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.Optional;
+
+import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DECODE;
 
 /**
  * A 256-bit unsigned integer, with comparison and some basic arithmetic
@@ -200,6 +204,7 @@ public final class UInt256 implements Comparable<UInt256> {
 	 *
 	 * @throws NumberFormatException if {@code s} is not a valid integer number.
 	 */
+	@JsonCreator
 	public static UInt256 from(String s) {
 		Objects.requireNonNull(s);
 
@@ -230,18 +235,14 @@ public final class UInt256 implements Comparable<UInt256> {
 
 	/**
 	 * Functional style friendly version of {@link #from(String)}. Instead of throwing exceptions
-	 * this method returns {@link Optional#empty()}.
+	 * this method returns {@link Result}.
 	 *
 	 * @param input The string to parse
 	 *
-	 * @return Present {@link Optional} if value can be parsed and {@link Optional#empty()} otherwise.
+	 * @return Success {@link Result} if value can be parsed and failure {@link Result} otherwise.
 	 */
-	public static Optional<UInt256> fromString(String input) {
-		try {
-			return Optional.of(from(input));
-		} catch (Exception e) {
-			return Optional.empty();
-		}
+	public static Result<UInt256> fromString(String input) {
+		return Result.wrap(UNABLE_TO_DECODE, () -> from(input));
 	}
 
 	// Pad short (< BYTES length) array with appropriate lead bytes.
@@ -265,11 +266,11 @@ public final class UInt256 implements Comparable<UInt256> {
 	UInt256(byte[] bytes) {
 		int[] ints = new int[BYTES / Integer.BYTES];
 		int intIndex = ints.length;
-		int intLen = (bytes.length < Integer.BYTES) ? bytes.length : Integer.BYTES;
+		int intLen = Math.min(bytes.length, Integer.BYTES);
 		int byteIndex = bytes.length - intLen;
 		while (intIndex > 0 && intLen > 0) {
 			ints[--intIndex] = Ints.fromByteArray(bytes, byteIndex, intLen);
-			intLen = (byteIndex < Integer.BYTES) ? byteIndex : Integer.BYTES;
+			intLen = Math.min(byteIndex, Integer.BYTES);
 			byteIndex -= intLen;
 		}
 		this.high = UInt128.from(ints[0], ints[1], ints[2], ints[3]);
@@ -818,6 +819,11 @@ public final class UInt256 implements Comparable<UInt256> {
 			return Objects.equals(this.high, other.high) && Objects.equals(this.low, other.low);
 		}
 		return false;
+	}
+
+	@JsonValue
+	public String toJson() {
+		return toString(10);
 	}
 
 	@Override

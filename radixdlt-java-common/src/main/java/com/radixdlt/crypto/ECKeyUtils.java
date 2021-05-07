@@ -44,6 +44,8 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Predicate;
 
+import static com.radixdlt.identifiers.CommonErrors.CANT_MAKE_RECOVERABLE;
+
 /**
  * Utilities used by both {@link ECPublicKey} and {@link ECKeyPair}.
  */
@@ -212,10 +214,13 @@ public class ECKeyUtils {
 	 * @return recoverable signature
 	 */
 	public static Result<ECDSASignature> toRecoverable(ECDSASignature signature, byte[] hash, ECPublicKey publicKey) {
-		return Result.wrap(() -> {
-			var v = calculateV(signature.getR(), signature.getS(), publicKey.getBytes(), hash);
-			return ECDSASignature.create(signature.getR(), signature.getS(), v);
-		});
+		return Result.wrap(
+			CANT_MAKE_RECOVERABLE,
+			() -> {
+				var v = calculateV(signature.getR(), signature.getS(), publicKey.getBytes(), hash);
+				return ECDSASignature.create(signature.getR(), signature.getS(), v);
+			}
+		);
 	}
 
 	static Optional<ECPoint> recoverFromSignature(int v, BigInteger r, BigInteger s, byte[] hash) {

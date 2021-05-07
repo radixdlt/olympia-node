@@ -17,10 +17,12 @@
 
 package com.radixdlt.client.handler;
 
-import com.radixdlt.client.AccountAddress;
-import com.radixdlt.client.ValidatorAddress;
+import com.radixdlt.identifiers.AccountAddress;
+import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.utils.functional.Result;
+
+import org.json.JSONArray;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,7 +38,6 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static com.radixdlt.api.JsonRpcUtil.jsonArray;
 
 import static com.radixdlt.client.api.ActionType.STAKE;
 import static com.radixdlt.client.api.ActionType.TRANSFER;
@@ -58,8 +59,8 @@ public class ActionParserTest {
 	public void transferActionIsParsedCorrectly() {
 		var fromAddr = AccountAddress.of(from);
 		var toAddr = AccountAddress.of(to);
-		var source = "[{\"type\":\"TokenTransfer\", \"from\":\"%s\", \"to\":\"%s\", \"amount\":\"%s\", \"tokenIdentifier\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, fromAddr, toAddr, UInt256.NINE, rri)).orElseThrow();
+		var source = "[{\"type\":\"TokenTransfer\", \"from\":\"%s\", \"to\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
+		var actions = jsonArray(String.format(source, fromAddr, toAddr, UInt256.NINE, rri));
 
 		ActionParser.parse(actions, clientApiStore)
 			.onFailure(this::fail)
@@ -84,7 +85,7 @@ public class ActionParserTest {
 		var validatorAddr = ValidatorAddress.of(key);
 		var fromAddr = AccountAddress.of(from);
 		var source = "[{\"type\":\"StakeTokens\", \"from\":\"%s\", \"validator\":\"%s\", \"amount\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, fromAddr, validatorAddr, UInt256.NINE)).orElseThrow();
+		var actions = jsonArray(String.format(source, fromAddr, validatorAddr, UInt256.NINE));
 		ActionParser.parse(actions, clientApiStore)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
@@ -107,7 +108,7 @@ public class ActionParserTest {
 		var validatorAddr = ValidatorAddress.of(key);
 		var accountAddr = AccountAddress.of(from);
 		var source = "[{\"type\":\"UnstakeTokens\", \"from\":\"%s\", \"validator\":\"%s\", \"amount\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, accountAddr, validatorAddr, UInt256.NINE)).orElseThrow();
+		var actions = jsonArray(String.format(source, accountAddr, validatorAddr, UInt256.NINE));
 
 		ActionParser.parse(actions, clientApiStore)
 			.onFailure(this::fail)
@@ -131,7 +132,7 @@ public class ActionParserTest {
 		var toAccount = AccountAddress.of(to);
 
 		var source = "[{\"type\":\"MintTokens\", \"from\":\"%s\", \"to\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, fromAccount, toAccount, UInt256.NINE, rri)).orElseThrow();
+		var actions = jsonArray(String.format(source, fromAccount, toAccount, UInt256.NINE, rri));
 
 		ActionParser.parse(actions, clientApiStore)
 			.onFailure(System.out::println)
@@ -141,7 +142,7 @@ public class ActionParserTest {
 	@Test
 	public void unknownActionTypeIsRejected() {
 		var source = "[{\"type\":\"CreateTokens\", \"from\":\"%s\", \"to\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, from, to, UInt256.NINE, rri)).orElseThrow();
+		var actions = jsonArray(String.format(source, from, to, UInt256.NINE, rri));
 
 		ActionParser.parse(actions, clientApiStore)
 			.onFailure(System.out::println)
@@ -151,11 +152,15 @@ public class ActionParserTest {
 	@Test
 	public void invalidAddressIsRejected() {
 		var source = "[{\"type\":\"TokenTransfer\", \"from\":\"abc%s\", \"to\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, from, to, UInt256.NINE, rri)).orElseThrow();
+		var actions = jsonArray(String.format(source, from, to, UInt256.NINE, rri));
 
 		ActionParser.parse(actions, clientApiStore)
 			.onFailure(System.out::println)
 			.onSuccess(v -> Assert.fail("Operation succeeded, while failure is expected"));
+	}
+
+	private static JSONArray jsonArray(String format) {
+		return new JSONArray(format);
 	}
 
 	private void fail(Failure failure) {

@@ -17,8 +17,8 @@
 
 package com.radixdlt.integration.recovery;
 
-import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
+import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;

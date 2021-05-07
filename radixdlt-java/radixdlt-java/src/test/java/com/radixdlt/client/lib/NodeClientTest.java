@@ -14,7 +14,7 @@
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
-package com.radixdlt.client.lib;
+package com.radixdlt.client.application.lib.lib;
 
 import org.junit.Ignore;
 import org.junit.Test;

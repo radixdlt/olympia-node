@@ -16,20 +16,22 @@
  *
  */
 
-package com.radixdlt.client;
+package com.radixdlt.identifiers;
 
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.utils.Bits;
-import com.radixdlt.utils.functional.Result;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
 
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.utils.Bits;
+import com.radixdlt.utils.functional.Result;
+
+import static com.radixdlt.identifiers.CommonErrors.INVALID_ACCOUNT_ADDRESS;
+
 /**
  * Bech-32 encoding/decoding of account addresses.
- *
+ * <p>
  * The human-readable part is "rdx" for mainnet, "brx" for betanet.
- *
+ * <p>
  * The data part is a conversion of the 1-34 byte Radix Engine address
  * {@link com.radixdlt.identifiers.REAddr} to Base32 similar to specification described
  * in BIP_0173 for converting witness programs.
@@ -75,10 +77,6 @@ public final class AccountAddress {
 	}
 
 	public static Result<REAddr> parseFunctional(String addr) {
-		try {
-			return Result.ok(parse(addr));
-		} catch (Exception e) {
-			return Result.fail(e);
-		}
+		return Result.wrap(INVALID_ACCOUNT_ADDRESS, () -> parse(addr));
 	}
 }
