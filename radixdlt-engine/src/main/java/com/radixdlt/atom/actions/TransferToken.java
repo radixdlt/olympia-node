@@ -59,7 +59,6 @@ public final class TransferToken implements TxAction {
 		txBuilder.swapFungible(
 			TokensParticle.class,
 			p -> p.getResourceAddr().equals(resourceAddr) && p.getHoldingAddr().equals(from),
-			TokensParticle::getAmount,
 			amt -> new TokensParticle(from, amt, resourceAddr),
 			amount,
 			"Not enough balance for transfer."

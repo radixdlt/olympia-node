@@ -52,7 +52,6 @@ public class AccountAddressTest {
 	private final Map<String, String> invalidAddresses = Map.of(
 		"vb1qvz3anvawgvm7pwvjs7xmjg48dvndczkgnufh475k2tqa2vm5c6cq9u3702", "invalid hrp",
 		"brx1xhv8x3", "invalid address length 0",
-		"brx1qqnrjk8r", "invalid address type (0)",
 		"brx1qsqsyqcyq5rqzjh9c6", "invalid length for address type 4"
 	);
 

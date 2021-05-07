@@ -20,6 +20,7 @@ package com.radixdlt.atom;
 
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
+import com.radixdlt.atommodel.tokens.Fungible;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.Particle;
@@ -270,10 +271,9 @@ public final class TxBuilder {
 		void with(FungibleMapper<U> mapper) throws TxBuilderException;
 	}
 
-	private <T extends Particle> UInt256 downFungible(
+	private <T extends Fungible> UInt256 downFungible(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
-		Function<T, UInt256> amountMapper,
 		UInt256 amount,
 		String errorMessage
 	) throws TxBuilderException {
@@ -285,16 +285,15 @@ public final class TxBuilder {
 				errorMessage
 			);
 
-			spent = spent.add(amountMapper.apply(substateDown));
+			spent = spent.add(substateDown.getAmount());
 		}
 
 		return spent.subtract(amount);
 	}
 
-	public <T extends Particle> void deallocateFungible(
+	public <T extends Fungible> void deallocateFungible(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
-		Function<T, UInt256> amountMapper,
 		FungibleMapper<T> remainderMapper,
 		UInt256 amount,
 		String errorMessage
@@ -313,7 +312,7 @@ public final class TxBuilder {
 				errorMessage
 			);
 
-			spent = spent.add(amountMapper.apply(substateDown));
+			spent = spent.add(substateDown.getAmount());
 		}
 
 		var remainder = spent.subtract(amount);
@@ -322,10 +321,9 @@ public final class TxBuilder {
 		}
 	}
 
-	public <T extends Particle, U extends Particle> FungibleReplacer<U> swapFungible(
+	public <T extends Fungible, U extends Fungible> FungibleReplacer<U> swapFungible(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
-		Function<T, UInt256> amountMapper,
 		FungibleMapper<T> remainderMapper,
 		UInt256 amount,
 		String errorMessage
@@ -336,7 +334,6 @@ public final class TxBuilder {
 			var remainder = downFungible(
 				particleClass,
 				particlePredicate.and(p -> !p.equals(substateUp)), // HACK to allow mempool filler to do it's thing
-				amountMapper,
 				amount,
 				errorMessage
 			);

@@ -55,7 +55,6 @@ public final class UnstakeTokens implements TxAction {
 		txBuilder.swapFungible(
 			StakedTokensParticle.class,
 			p -> p.getOwner().equals(accountAddr) && p.getDelegateKey().equals(delegateAddress),
-			StakedTokensParticle::getAmount,
 			amt -> new StakedTokensParticle(amt, accountAddr, delegateAddress),
 			amount,
 			"Not enough staked."

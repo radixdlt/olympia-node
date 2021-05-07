@@ -68,12 +68,7 @@ public final class AccountAddress {
 
 		try {
 			var addrBytes = fromBech32Data(bech32Data.data);
-			var reAddr = REAddr.of(addrBytes);
-			if (!reAddr.isAccount()) {
-				throw new DeserializeException("Address is not an account");
-			}
-
-			return reAddr;
+			return REAddr.of(addrBytes);
 		} catch (IllegalArgumentException e) {
 			throw new DeserializeException("Invalid address", e);
 		}

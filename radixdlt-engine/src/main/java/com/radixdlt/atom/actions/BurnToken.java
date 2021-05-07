@@ -53,7 +53,6 @@ public final class BurnToken implements TxAction {
 		txBuilder.deallocateFungible(
 			TokensParticle.class,
 			p -> p.getResourceAddr().equals(resourceAddr) && p.getHoldingAddr().equals(accountAddr),
-			TokensParticle::getAmount,
 			amt -> new TokensParticle(accountAddr, amt, resourceAddr),
 			amount,
 			"Not enough balance to for fee burn."
