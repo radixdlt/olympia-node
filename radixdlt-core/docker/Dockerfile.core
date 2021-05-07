@@ -31,3 +31,8 @@ COPY scripts/config_radixdlt.sh /opt/radixdlt/config_radixdlt.sh
 # copy configuration templates
 WORKDIR /home/radixdlt
 COPY config/ /home/radixdlt/
+
+# Add healthcheck
+COPY scripts/docker-healthcheck.sh /home/radixdlt/
+HEALTHCHECK CMD sh /home/radixdlt/docker-healthcheck.sh
+RUN chmod +x /home/radixdlt/docker-healthcheck.sh
