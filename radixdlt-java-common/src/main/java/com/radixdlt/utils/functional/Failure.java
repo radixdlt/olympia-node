@@ -23,58 +23,86 @@ import java.util.Objects;
 /**
  * Simplest failure descriptor.
  */
-public final class Failure {
-	private final String message;
+public interface Failure {
+	String message();
 
-	private Failure(String message) {
-		this.message = message;
+	int code();
+
+	default <T> Result<T> result() {
+		return Result.fail(this);
+	}
+
+	default <T> Failure with(Object... params) {
+		return failure(code(), message(), params);
 	}
 
 	/**
-	 * Create instance of Failure with given message.
+	 * Create instance of Failure with given code, message format string and parameters.
 	 *
-	 * @param message failure message
-	 *
-	 * @return created instance of Failure
-	 */
-	public static Failure failure(final String message) {
-		return new Failure(message);
-	}
-
-	/**
-	 * Create instance of Failure with given message and parameters.
-	 *
-	 * @param format format string
+	 * @param code format string
+	 * @param format message format string
 	 * @param values parameters
 	 *
 	 * @return created instance of Failure
 	 *
 	 * @see MessageFormat for supported format string options
 	 */
-	public static Failure failure(final String format, Object... values) {
-		return new Failure(MessageFormat.format(format, values));
+	static Failure failure(int code, String format, Object... values) {
+		return failure(code, MessageFormat.format(format, values));
 	}
 
-	public String message() {
-		return message;
+	/**
+	 * Create instance of Failure with given message and code.
+	 *
+	 * @param message failure message
+	 *
+	 * @return created instance of Failure
+	 */
+	static Failure failure(int code, String message) {
+		return new FailureImpl(code, message);
 	}
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(message);
-	}
+	class FailureImpl implements Failure {
+		private final int code;
+		private final String message;
 
-	@Override
-	public boolean equals(final Object obj) {
-		if (obj == this) {
-			return true;
+		private FailureImpl(int code, String message) {
+			this.message = message;
+			this.code = code;
 		}
 
-		return (obj instanceof Failure) && Objects.equals(((Failure) obj).message(), message);
-	}
+		@Override
+		public String message() {
+			return message;
+		}
 
-	@Override
-	public String toString() {
-		return message;
+		@Override
+		public int code() {
+			return code;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+
+			if (!(o instanceof FailureImpl)) {
+				return false;
+			}
+
+			var failure = (FailureImpl) o;
+			return code == failure.code && Objects.equals(message, failure.message);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(message, code);
+		}
+
+		@Override
+		public String toString() {
+			return "{" + code + ", '" + message + "'}";
+		}
 	}
 }

@@ -24,6 +24,8 @@ import com.radixdlt.utils.functional.Result;
 import java.util.Arrays;
 import java.util.Objects;
 
+import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DECODE;
+
 /**
  * A 384-bit unsigned integer, with comparison and some basic arithmetic
  * operations.
@@ -232,7 +234,7 @@ public final class UInt384 implements Comparable<UInt384> {
 	 * @return Success {@link Result} if value can be successfully parsed and failure {@link Result} otherwise.
 	 */
 	public static Result<UInt384> fromString(String input) {
-		return Result.wrap(() -> from(input));
+		return Result.wrap(UNABLE_TO_DECODE, () -> from(input));
 	}
 
 	// Pad short (< BYTES length) array with appropriate lead bytes.

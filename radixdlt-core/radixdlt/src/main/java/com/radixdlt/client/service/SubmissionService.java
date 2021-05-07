@@ -17,6 +17,9 @@
 
 package com.radixdlt.client.service;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.atom.TxAction;
@@ -35,8 +38,6 @@ import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
 import com.radixdlt.utils.functional.Result;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Objects;
@@ -44,6 +45,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static com.radixdlt.atom.actions.ActionErrors.DIFFERENT_SOURCE_ADDRESSES;
+import static com.radixdlt.atom.actions.ActionErrors.SUBMISSION_FAILURE;
+import static com.radixdlt.atom.actions.ActionErrors.TRANSACTION_ADDRESS_DOES_NOT_MATCH;
+import static com.radixdlt.client.api.ApiErrors.UNABLE_TO_PREPARE_TX;
 
 public final class SubmissionService {
 	private final Logger logger = LogManager.getLogger();
@@ -65,26 +71,23 @@ public final class SubmissionService {
 			.collect(Collectors.toSet());
 
 		if (addresses.size() != 1) {
-			return Result.fail("Source addresses for all actions must be the same");
+			return DIFFERENT_SOURCE_ADDRESSES.result();
 		}
 
 		var addr = addresses.iterator().next();
 
-		try {
-			var transaction = radixEngine
+		return Result.wrap(
+			UNABLE_TO_PREPARE_TX,
+			() -> radixEngine
 				.construct(toActionsAndFee(addr, steps))
 				.buildForExternalSign()
-				.map(this::toPreparedTx);
-
-			return Result.ok(transaction);
-		} catch (Exception e) {
-			return Result.fail(e.getMessage());
-		}
+				.map(this::toPreparedTx)
+		);
 	}
 
 	private List<TxAction> toActionsAndFee(REAddr addr, List<TransactionAction> steps) {
 		return Stream.concat(
-			steps.stream().map(t -> t.toAction()),
+			steps.stream().map(TransactionAction::toAction),
 			Stream.of(new BurnToken(REAddr.ofNativeToken(), addr, TokenFeeChecker.FIXED_FEE))
 		).collect(Collectors.toList());
 	}
@@ -96,12 +99,14 @@ public final class SubmissionService {
 
 	public Result<AID> submitTx(byte[] blob, ECDSASignature recoverable, AID txId) {
 		var txn = TxLowLevelBuilder.newBuilder(blob).sig(recoverable).build();
+
 		if (!txn.getId().equals(txId)) {
-			return Result.fail("Provided txID does not match provided transaction");
+			return TRANSACTION_ADDRESS_DOES_NOT_MATCH.result();
 		}
 
 		var completableFuture = new CompletableFuture<MempoolAddSuccess>();
 		var mempoolAdd = MempoolAdd.create(txn, completableFuture);
+
 		this.mempoolAddEventDispatcher.dispatch(mempoolAdd);
 
 		try {
@@ -109,8 +114,9 @@ public final class SubmissionService {
 			return Result.ok(success.getTxn().getId());
 		} catch (ExecutionException e) {
 			logger.warn("Unable to fulfill submission request: {}", txId);
-			return Result.fail(e);
+			return SUBMISSION_FAILURE.with(e.getMessage()).result();
 		} catch (InterruptedException e) {
+			// unrecoverable error, propagate
 			throw new IllegalStateException(e);
 		}
 	}

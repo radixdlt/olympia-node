@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.radixdlt.client.ValidatorAddress;
+import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;

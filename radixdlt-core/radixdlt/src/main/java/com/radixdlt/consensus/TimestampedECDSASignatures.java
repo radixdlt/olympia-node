@@ -19,7 +19,7 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.ValidatorAddress;
+import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;

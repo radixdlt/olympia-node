@@ -32,7 +32,6 @@ import com.google.inject.util.Modules;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
@@ -135,8 +134,6 @@ public class SimulationNodes {
 
 		Observable<Pair<BFTNode, LedgerUpdate>> ledgerUpdates();
 
-		Observable<Pair<BFTNode, BFTHighQCUpdate>> highQCs();
-
 		<T> EventDispatcher<T> getDispatcher(Class<T> eventClass, BFTNode node);
 
 		SimulationNetwork getUnderlyingNetwork();
@@ -209,19 +206,6 @@ public class SimulationNodes {
 					.collect(Collectors.toSet());
 
 				return Observable.merge(committedCommands);
-			}
-
-			@Override
-			public Observable<Pair<BFTNode, BFTHighQCUpdate>> highQCs() {
-				Set<Observable<Pair<BFTNode, BFTHighQCUpdate>>> highQCs = nodeInstances.stream()
-					.map(i -> {
-						BFTNode node = i.getInstance(Key.get(BFTNode.class, Self.class));
-						return i.getInstance(Key.get(new TypeLiteral<Observable<BFTHighQCUpdate>>() { }))
-							.map(v -> Pair.of(node, v));
-					})
-					.collect(Collectors.toSet());
-
-				return Observable.merge(highQCs);
 			}
 
 			@Override

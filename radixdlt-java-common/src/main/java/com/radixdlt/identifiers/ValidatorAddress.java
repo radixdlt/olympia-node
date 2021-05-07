@@ -16,7 +16,10 @@
  *
  */
 
-package com.radixdlt.client;
+package com.radixdlt.identifiers;
+
+import org.bitcoinj.core.AddressFormatException;
+import org.bitcoinj.core.Bech32;
 
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
@@ -24,15 +27,14 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bits;
 import com.radixdlt.utils.functional.Result;
 
-import org.bitcoinj.core.AddressFormatException;
-import org.bitcoinj.core.Bech32;
+import static com.radixdlt.identifiers.CommonErrors.INVALID_VALIDATOR_ADDRESS;
 
 /**
  * Bech-32 encoding/decoding of validators. Validators are represented as 33-byte
  * compressed EC Public Keys.
- *
+ * <p>
  * The human-readable part is "vr" for mainnet, "vb" for betanet.
- *
+ * <p>
  * The data part is a conversion of the 33 byte compressed EC public key to Base32
  * similar to specification described in BIP_0173 for converting witness programs.
  */
@@ -77,6 +79,6 @@ public final class ValidatorAddress {
 	}
 
 	public static Result<ECPublicKey> fromString(String input) {
-		return Result.wrap(() -> parse(input));
+		return Result.wrap(INVALID_VALIDATOR_ADDRESS, () -> parse(input));
 	}
 }

@@ -82,6 +82,12 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
+import static com.radixdlt.client.api.ApiErrors.INVALID_PAGE_SIZE;
+import static com.radixdlt.client.api.ApiErrors.SYMBOL_DOES_NOT_MATCH;
+import static com.radixdlt.client.api.ApiErrors.UNABLE_TO_RESTORE_CREATOR;
+import static com.radixdlt.client.api.ApiErrors.UNKNOWN_ACCOUNT_ADDRESS;
+import static com.radixdlt.client.api.ApiErrors.UNKNOWN_RRI;
+import static com.radixdlt.client.api.ApiErrors.UNKNOWN_TX_ID;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_BYTES_READ;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_BYTES_WRITE;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_READ;
@@ -106,6 +112,7 @@ import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_APIDB_TOK
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_APIDB_TOKEN_WRITE;
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_APIDB_TRANSACTION_READ;
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_APIDB_TRANSACTION_WRITE;
+import static com.radixdlt.identifiers.CommonErrors.INVALID_ACCOUNT_ADDRESS;
 import static com.radixdlt.serialization.DsonOutput.Output;
 import static com.radixdlt.serialization.SerializationUtils.restore;
 
@@ -172,8 +179,10 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	@Override
 	public Result<REAddr> parseRri(String rri) {
 		return Rri.parseFunctional(rri)
-			.flatMap(p -> getTokenDefinition(p.getSecond())
-				.flatMap(t -> Result.ok(p.getSecond()).filter(i -> t.getSymbol().equals(p.getFirst()), "symbol does not match"))
+			.flatMap(
+				p -> getTokenDefinition(p.getSecond())
+					.flatMap(t -> Result.ok(p.getSecond())
+						.filter(i -> t.getSymbol().equals(p.getFirst()), SYMBOL_DOES_NOT_MATCH.with(t.getSymbol())))
 			);
 	}
 
@@ -221,7 +230,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			}
 
 			if (status != OperationStatus.SUCCESS) {
-				return Result.fail("Unknown RRI " + rri);
+				return UNKNOWN_RRI.with(rri).result();
 			}
 
 			return restore(serialization, data.getData(), BalanceEntry.class)
@@ -243,17 +252,11 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			);
 
 			if (status != OperationStatus.SUCCESS) {
-				return Result.fail("Unknown addr " + addr);
+				return UNKNOWN_ACCOUNT_ADDRESS.with(addr).result();
 			}
 
-			var definition = restore(serialization, data.getData(), TokenDefinitionRecord.class);
-			if (definition.isSuccess()) {
-				return definition;
-			}
-
-			definition.onFailure(log::error);
-
-			return Result.fail("Unknown error getting addr " + addr);
+			return restore(serialization, data.getData(), TokenDefinitionRecord.class)
+				.onFailure(log::error);
 		}
 	}
 
@@ -272,7 +275,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			.flatMap(txn -> extractCreator(txn)
 				.map(REAddr::ofPubKeyAccount)
 				.map(Result::ok)
-				.orElseGet(() -> Result.fail("Unable to restore creator from transaction {0}", txn.getId()))
+				.orElseGet(() -> UNABLE_TO_RESTORE_CREATOR.with(txn.getId()).result())
 				.flatMap(creator -> lookupTransactionInHistory(creator, txn)));
 	}
 
@@ -300,7 +303,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			var status = readTxHistory(() -> cursor.getSearchKeyRange(key, data, null), data);
 
 			if (status != OperationStatus.SUCCESS) {
-				return errorTxNotFound(txn);
+				return UNKNOWN_TX_ID.with(txn.getId()).result();
 			}
 
 			do {
@@ -314,17 +317,13 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			}
 			while (status == OperationStatus.SUCCESS);
 		}
-		return errorTxNotFound(txn);
-	}
-
-	private Result<TxHistoryEntry> errorTxNotFound(Txn txn) {
-		return Result.fail("Transaction with id {0} not found", txn.getId());
+		return UNKNOWN_TX_ID.with(txn.getId()).result();
 	}
 
 	@Override
 	public Result<List<TxHistoryEntry>> getTransactionHistory(REAddr addr, int size, Optional<Instant> ptr) {
 		if (size <= 0) {
-			return Result.fail("Invalid size specified: {0}", size);
+			return INVALID_PAGE_SIZE.with(size).result();
 		}
 
 		var instant = ptr.orElse(Instant.EPOCH);
@@ -355,7 +354,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 			do {
 				addrFromKey(key)
-					.filter(addr::equals, "Ignored")
+					.filter(addr::equals, Failure.failure(0, "Ignored"))
 					.onSuccessDo(() -> {
 						AID.fromBytes(data.getData())
 							.flatMap(this::retrieveTx)
@@ -398,13 +397,13 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private Result<REAddr> addrFromKey(DatabaseEntry key) {
 		var buf = Arrays.copyOf(key.getData(), ECPublicKey.COMPRESSED_BYTES + 1);
-		return Result.wrap(() -> REAddr.of(buf));
+		return Result.wrap(INVALID_ACCOUNT_ADDRESS, () -> REAddr.of(buf));
 	}
 
 	private Result<Txn> retrieveTx(AID id) {
 		return store.get(id)
 			.map(Result::ok)
-			.orElseGet(() -> Result.fail("Unable to retrieve transaction by ID {0} ", id));
+			.orElseGet(() -> UNKNOWN_TX_ID.with(id).result());
 	}
 
 	private <T> T readBalance(Supplier<T> supplier, DatabaseEntry data) {

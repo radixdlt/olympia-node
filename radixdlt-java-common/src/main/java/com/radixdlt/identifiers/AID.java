@@ -17,6 +17,8 @@
 
 package com.radixdlt.identifiers;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.hash.HashCode;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.utils.Bytes;
@@ -26,6 +28,9 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
 
+import static com.radixdlt.identifiers.CommonErrors.AID_IS_NULL;
+import static com.radixdlt.identifiers.CommonErrors.INVALID_LENGTH;
+import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DECODE;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 
 import static java.util.Optional.ofNullable;
@@ -66,6 +71,11 @@ public final class AID implements Comparable<AID> {
 
 	public HashCode asHashCode() {
 		return HashCode.fromBytes(value);
+	}
+
+	@JsonValue
+	public String toJson() {
+		return Bytes.toHexString(this.value);
 	}
 
 	@Override
@@ -117,13 +127,13 @@ public final class AID implements Comparable<AID> {
 	 * @return An AID with those bytes
 	 */
 	public static AID from(byte[] bytes, int offset) {
-		Objects.requireNonNull(bytes, "bytes is required");
+		Objects.requireNonNull(bytes, "AID decoding error: input must not be null");
 		if (offset < 0) {
-			throw new IllegalArgumentException("Offset must be >= 0: " + offset);
+			throw new IllegalArgumentException("AID decoding error: offset must be >= 0: " + offset);
 		}
 		if (offset + BYTES > bytes.length) {
 			throw new IllegalArgumentException(
-				String.format("Bytes length must be %d but is %d", offset + BYTES, bytes.length)
+				String.format("AID decoding error: length must be %d but is %d", offset + BYTES, bytes.length)
 			);
 		}
 		return new AID(Arrays.copyOfRange(bytes, offset, offset + BYTES));
@@ -136,6 +146,7 @@ public final class AID implements Comparable<AID> {
 	 *
 	 * @return An AID with those bytes
 	 */
+	@JsonCreator
 	public static AID from(String hexBytes) {
 		Objects.requireNonNull(hexBytes, "hexBytes is required");
 		if (hexBytes.length() != BYTES * 2) {
@@ -155,10 +166,10 @@ public final class AID implements Comparable<AID> {
 	 * @return Success {@link Result} if value can be successfully parsed and failure {@link Result} otherwise.
 	 */
 	public static Result<AID> fromString(String input) {
-		return fromOptional(ofNullable(input), "AID string is 'null'")
-			.filter(bytes -> bytes.length() == BYTES * 2, "AID string is of incorrect length")
+		return fromOptional(AID_IS_NULL, ofNullable(input))
+			.filter(bytes -> bytes.length() == BYTES * 2, INVALID_LENGTH)
 			.map(Bytes::fromHexString)
-			.filter(bytes -> bytes.length == HASH_BYTES, "AID string converted to bytes has incorrect length")
+			.filter(bytes -> bytes.length == HASH_BYTES, INVALID_LENGTH)
 			.map(AID::new);
 	}
 
@@ -170,11 +181,7 @@ public final class AID implements Comparable<AID> {
 	 * @return Success result in case of successful conversion and failure result in case of error.
 	 */
 	public static Result<AID> fromBytes(byte[] bytes) {
-		try {
-			return Result.ok(from(bytes));
-		} catch (IllegalArgumentException e) {
-			return Result.fail("Error while decoding AID from bytes: {0}", e.getMessage());
-		}
+		return Result.wrap(UNABLE_TO_DECODE, () -> from(bytes));
 	}
 
 	@Override

@@ -19,18 +19,23 @@
 package com.radixdlt.api;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import static com.radixdlt.client.api.ApiErrors.INVALID_HEX_STRING;
+import static com.radixdlt.client.api.ApiErrors.MISSING_PARAMETER;
+import static com.radixdlt.client.api.ApiErrors.MISSING_PARAMS;
+import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DECODE;
+import static com.radixdlt.utils.functional.Result.fail;
 import static com.radixdlt.utils.functional.Result.fromOptional;
+import static com.radixdlt.utils.functional.Result.ok;
+import static com.radixdlt.utils.functional.Result.wrap;
 
 import static java.util.Optional.ofNullable;
 
@@ -39,8 +44,6 @@ import static java.util.Optional.ofNullable;
  */
 public final class JsonRpcUtil {
 	public static final String ARRAY = "___array___";
-
-	private static final Result<JSONObject> MISSING_PARAMETER = Result.fail("Parameter not present");
 
 	/**
 	 * The following found at: https://www.jsonrpc.org/specification
@@ -68,24 +71,8 @@ public final class JsonRpcUtil {
 		throw new IllegalStateException("Can't construct");
 	}
 
-	public static Optional<JSONArray> params(JSONObject request) {
-		return Optional.ofNullable(request.optJSONArray("params"));
-	}
-
-	public static JSONObject parseError(String message) {
-		return errorResponse(RpcError.PARSE_ERROR, message);
-	}
-
-	public static JSONObject invalidParamsError(String message) {
-		return errorResponse(RpcError.INVALID_PARAMS, message);
-	}
-
-	public static JSONObject invalidParamsError(JSONObject request, Failure failure) {
-		return errorResponse(request, RpcError.INVALID_PARAMS, failure.message());
-	}
-
 	public static Result<JSONObject> jsonObject(String data) {
-		return Result.wrap(() -> new JSONObject(data));
+		return Result.wrap(UNABLE_TO_DECODE, () -> new JSONObject(data));
 	}
 
 	public static JSONObject jsonObject() {
@@ -96,67 +83,85 @@ public final class JsonRpcUtil {
 		return new JSONArray();
 	}
 
-	public static Optional<JSONArray> jsonArray(String data) {
-		try {
-			return Optional.of(new JSONArray(data));
-		} catch (JSONException e) {
-			return Optional.empty();
-		}
-	}
-
 	public static <T> JSONArray fromList(List<T> input, Function<T, JSONObject> mapper) {
 		var array = jsonArray();
 		input.forEach(element -> array.put(mapper.apply(element)));
 		return array;
 	}
 
-	public static Optional<Integer> safeInteger(JSONObject params, String name) {
-		try {
-			return Optional.of(params.getInt(name));
-		} catch (JSONException e) {
-			return Optional.empty();
-		}
+	public static Result<Integer> safeInteger(JSONObject params, String name) {
+		return Result.wrap(UNABLE_TO_DECODE, () -> params.getInt(name));
 	}
 
-	public static Optional<String> safeString(JSONObject params, String name) {
-		return ofNullable(params.opt(name)).map(Object::toString);
+	public static Result<JSONArray> safeArray(JSONObject params, String name) {
+		return Result.fromOptional(MISSING_PARAMETER.with(name), ofNullable(params.optJSONArray(name)));
 	}
 
-	public static Optional<String> safeString(JSONObject request, int index) {
-		return params(request).flatMap(params -> ofNullable(params.opt(index)).map(Object::toString));
+	public static Result<String> safeString(JSONObject params, String name) {
+		return Result.fromOptional(
+			MISSING_PARAMETER.with(name),
+			ofNullable(params.opt(name))
+				.filter(String.class::isInstance)
+				.map(String.class::cast)
+		);
 	}
 
-	public static JSONObject errorResponse(Object id, RpcError code, String message) {
-		return commonFields(id).put("error", jsonObject().put("code", code.code()).put("message", message));
+	public static Result<JSONObject> safeObject(JSONObject params, String name) {
+		return Result.fromOptional(MISSING_PARAMETER.with(name), ofNullable(params.optJSONObject(name)));
 	}
 
-	public static JSONObject errorResponse(JSONObject request, RpcError code, String message, JSONObject data) {
-		return errorResponse(request, code, message).put("data", data);
+	public static Result<byte[]> safeBlob(JSONObject params, String name) {
+		return safeString(params, name)
+			.flatMap(param -> wrap(INVALID_HEX_STRING, () -> Bytes.fromHexString(param)));
 	}
 
-	public static JSONObject errorResponse(JSONObject request, RpcError code, String message) {
-		return errorResponse(request.get("id"), code, message);
+	public static JSONObject parseError(String message) {
+		return protocolError(RpcError.PARSE_ERROR, message);
 	}
 
-	public static JSONObject errorResponse(RpcError code, String message) {
+	public static JSONObject methodNotFound(JSONObject request) {
+		return extendedError(request, RpcError.METHOD_NOT_FOUND, "Method not found");
+	}
+
+	public static JSONObject invalidParamsError(JSONObject request, String message) {
+		return extendedError(request, RpcError.INVALID_PARAMS, message);
+	}
+
+	public static JSONObject requestTooLongError(int length) {
+		return protocolError(RpcError.REQUEST_TOO_LONG, String.format("Request is too big: %d", length));
+	}
+
+	public static JSONObject serverError(JSONObject request, Exception e) {
+		return extendedError(request, RpcError.SERVER_ERROR, e.getMessage());
+	}
+
+	public static JSONObject protocolError(RpcError code, String message) {
 		return errorResponse(JSONObject.NULL, code, message);
 	}
 
-	public static JSONObject notification(String method, JSONObject params) {
-		return jsonObject()
-			.put("jsonrpc", "2.0")
-			.put("method", method)
-			.put("params", params);
+	private static JSONObject extendedError(JSONObject request, RpcError error, String message) {
+		var response = jsonObject().put("code", error.code()).put("message", message);
+
+		ofNullable(request.opt("params")).ifPresent(params -> response.put("data", params));
+
+		var id = ofNullable(request.opt("id")).orElse(JSONObject.NULL);
+
+		return commonFields(id).put("error", response);
+	}
+
+	private static JSONObject errorResponse(Object id, RpcError code, String message) {
+		return commonFields(id).put("error", jsonObject().put("code", code.code()).put("message", message));
 	}
 
 	private static JSONObject commonFields(Object id) {
-		return jsonObject().put("id", id).put("jsonrpc", "2.0");
+		return jsonObject().put("jsonrpc", "2.0").put("id", id);
 	}
 
 	public static JSONObject response(JSONObject request, Object result) {
 		//FIXME: replace hack with proper solution
 		if (result instanceof JSONObject) {
 			var array = ((JSONObject) result).optJSONArray(ARRAY);
+
 			if (array != null) {
 				return commonFields(request.get("id")).put("result", array);
 			}
@@ -165,25 +170,17 @@ public final class JsonRpcUtil {
 		return commonFields(request.get("id")).put("result", result);
 	}
 
-
 	public static JSONObject withRequiredStringParameter(
 		JSONObject request,
-		BiFunction<JSONArray, String, Result<JSONObject>> fn
+		String name,
+		Function<String, Result<JSONObject>> fn
 	) {
-		return withParameters(request, params ->
-			params.length() == 1
-			? fn.apply(params, params.getString(0))
-			: MISSING_PARAMETER);
-	}
-
-	public static JSONObject withRequiredArrayParameter(
-		JSONObject request,
-		BiFunction<JSONArray, JSONArray, Result<JSONObject>> fn
-	) {
-		return withParameters(request, params ->
-			!params.isEmpty()
-			? fn.apply(params, params.getJSONArray(0))
-			: MISSING_PARAMETER);
+		return withRequiredParameters(
+			request,
+			List.of(name),
+			List.of(),
+			params -> safeString(params, name).flatMap(fn)
+		);
 	}
 
 	public static JSONObject withRequiredParameters(
@@ -192,33 +189,39 @@ public final class JsonRpcUtil {
 		List<String> optional,
 		Function<JSONObject, Result<JSONObject>> fn
 	) {
-		return withParameters(request, params -> {
-			if (params.length() < required.size()) {
-				return MISSING_PARAMETER;
-			}
-			var o = new JSONObject();
-			for (int i = 0; i < required.size(); i++) {
-				o.put(required.get(i), params.get(i));
-			}
-			for (int j = 0; j < params.length() - required.size(); j++) {
-				o.put(optional.get(j), params.get(required.size() + j));
-			}
-
-			return fn.apply(o);
-		});
-	}
-
-	private static JSONObject withParameters(JSONObject request, Function<JSONArray, Result<JSONObject>> fn) {
-		return retrieveParams(request)
-			.map(JSONArray.class::cast)
+		return params(request)
+			.flatMap(params -> sanitizeParams(params, required, optional))
 			.flatMap(fn)
-			.fold(failure -> invalidParamsError(request, failure), response -> response(request, response));
+			.fold(failure -> invalidParamsError(request, failure.message()), response -> response(request, response));
 	}
 
-	private static Result<JSONArray> retrieveParams(JSONObject request) {
-		return fromOptional(
-			ofNullable(request.optJSONArray("params")),
-			"The 'params' field must be present and must be a JSON array"
-		);
+	private static Result<JSONObject> sanitizeParams(Object params, List<String> required, List<String> optional) {
+		if (params instanceof JSONObject) {
+			return ok((JSONObject) params);
+		}
+
+		if (params instanceof JSONArray) {
+			return ok(toNamed((JSONArray) params, required, optional));
+		}
+
+		return fail(Failure.failure(RpcError.INVALID_REQUEST.code(), "Unable to parse request 'params' field"));
+	}
+
+	private static JSONObject toNamed(JSONArray params, List<String> required, List<String> optional) {
+		var newParams = new JSONObject();
+
+		for (int i = 0; i < required.size(); i++) {
+			newParams.put(required.get(i), params.get(i));
+		}
+
+		for (int j = 0; j < params.length() - required.size(); j++) {
+			newParams.put(optional.get(j), params.get(required.size() + j));
+		}
+
+		return newParams;
+	}
+
+	private static Result<Object> params(JSONObject request) {
+		return fromOptional(MISSING_PARAMS, ofNullable(request.opt("params")));
 	}
 }
