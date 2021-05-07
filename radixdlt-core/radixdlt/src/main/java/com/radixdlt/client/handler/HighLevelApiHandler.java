@@ -17,13 +17,10 @@
 
 package com.radixdlt.client.handler;
 
-import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONObject;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.radixdlt.identifiers.AccountAddress;
-import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.client.api.PreparedTransaction;
 import com.radixdlt.client.api.TransactionAction;
 import com.radixdlt.client.api.TxHistoryEntry;
@@ -42,7 +39,9 @@ import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.utils.functional.Result;
 
 import java.time.Instant;
@@ -54,16 +53,16 @@ import static com.radixdlt.api.JsonRpcUtil.fromList;
 import static com.radixdlt.api.JsonRpcUtil.invalidParamsError;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.JsonRpcUtil.response;
+import static com.radixdlt.api.JsonRpcUtil.safeArray;
+import static com.radixdlt.api.JsonRpcUtil.safeBlob;
 import static com.radixdlt.api.JsonRpcUtil.safeInteger;
+import static com.radixdlt.api.JsonRpcUtil.safeObject;
 import static com.radixdlt.api.JsonRpcUtil.safeString;
-import static com.radixdlt.api.JsonRpcUtil.withRequiredArrayParameter;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
-import static com.radixdlt.client.api.ApiErrors.INVALID_BLOB;
 import static com.radixdlt.client.api.ApiErrors.INVALID_PAGE_SIZE;
 import static com.radixdlt.client.api.ApiErrors.INVALID_PUBLIC_KEY;
 import static com.radixdlt.client.api.ApiErrors.INVALID_SIGNATURE_DER;
-import static com.radixdlt.client.api.ApiErrors.INVALID_TX_ID;
 import static com.radixdlt.utils.functional.Optionals.allOf;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.ok;
@@ -109,7 +108,8 @@ public class HighLevelApiHandler {
 	public JSONObject handleTokenInfo(JSONObject request) {
 		return withRequiredStringParameter(
 			request,
-			(params, tokenId) -> highLevelApiService.getTokenDescription(tokenId)
+			"rri",
+			(tokenId) -> highLevelApiService.getTokenDescription(tokenId)
 				.map(TokenDefinitionRecord::asJson)
 		);
 	}
@@ -117,17 +117,18 @@ public class HighLevelApiHandler {
 	public JSONObject handleTokenBalances(JSONObject request) {
 		return withRequiredStringParameter(
 			request,
-			(params, address) -> AccountAddress.parseFunctional(address)
-				.flatMap(key ->
-							 highLevelApiService.getTokenBalances(key).map(v -> tuple(key, v)))
-				.map(tuple -> tuple.map(this::formatTokenBalances))
+			"address",
+			(address) -> AccountAddress.parseFunctional(address)
+				.flatMap(key -> highLevelApiService.getTokenBalances(key).map(v -> tuple(key, v)))
+				.map(tuple -> tuple.map(HighLevelApiHandler::formatTokenBalances))
 		);
 	}
 
 	public JSONObject handleTransactionStatus(JSONObject request) {
 		return withRequiredStringParameter(
 			request,
-			(params, idString) -> AID.fromString(idString)
+			"txID",
+			(idString) -> AID.fromString(idString)
 				.map(txId -> transactionStatusService.getTransactionStatus(txId).asJson(formatTxId(txId)))
 		);
 	}
@@ -135,17 +136,23 @@ public class HighLevelApiHandler {
 	public JSONObject handleLookupTransaction(JSONObject request) {
 		return withRequiredStringParameter(
 			request,
-			(params, idString) -> AID.fromString(idString)
+			"txID",
+			(idString) -> AID.fromString(idString)
 				.flatMap(txId -> highLevelApiService.getTransaction(txId).map(TxHistoryEntry::asJson))
 		);
 	}
 
 	public JSONObject handleBuildTransaction(JSONObject request) {
-		return withRequiredArrayParameter(request, (params, actions) ->
-			highLevelApiService.parse(actions)
-				.map(steps -> mergeMessageAction(params, steps))
-				.flatMap(submissionService::prepareTransaction)
-				.map(PreparedTransaction::asJson)
+		return withRequiredParameters(
+			request,
+			List.of("actions"),
+			List.of("message"),
+			params -> safeArray(params, "actions").flatMap(
+				actions -> highLevelApiService.parse(actions)
+					.map(steps -> mergeMessageAction(params, steps))
+					.flatMap(submissionService::prepareTransaction)
+					.map(PreparedTransaction::asJson)
+			)
 		);
 	}
 
@@ -154,7 +161,9 @@ public class HighLevelApiHandler {
 			request,
 			List.of("address", "size"),
 			List.of("cursor"),
-			params -> respondWithTransactionHistory(params, parseInstantCursor(request))
+			params -> allOf(parseAddress(params), parseSize(params), ok(parseInstantCursor(params)))
+				.flatMap(highLevelApiService::getTransactionHistory)
+				.map(tuple -> tuple.map(HighLevelApiHandler::formatHistoryResponse))
 		);
 	}
 
@@ -163,7 +172,10 @@ public class HighLevelApiHandler {
 			request,
 			List.of("transaction", "signatureDER", "publicKeyOfSigner"),
 			List.of(),
-			this::respondFinalizationResult
+			params -> allOf(parseBlob(params), parseSignatureDer(params), parsePublicKey(params))
+				.flatMap((blob, signature, publicKey) -> toRecoverable(blob, signature, publicKey)
+					.flatMap(recoverable -> submissionService.calculateTxId(blob, recoverable)))
+				.map(HighLevelApiHandler::formatTxId)
 		);
 	}
 
@@ -172,7 +184,10 @@ public class HighLevelApiHandler {
 			request,
 			List.of("transaction", "signatureDER", "publicKeyOfSigner", "txID"),
 			List.of(),
-			this::respondSubmissionResult
+			params -> allOf(parseBlob(params), parseSignatureDer(params), parsePublicKey(params), parseTxId(params))
+				.flatMap((blob, signature, publicKey, txId) -> toRecoverable(blob, signature, publicKey)
+					.flatMap(recoverable -> submissionService.submitTx(blob, recoverable, txId)))
+				.map(HighLevelApiHandler::formatTxId)
 		);
 	}
 
@@ -181,14 +196,18 @@ public class HighLevelApiHandler {
 			request,
 			List.of("size"),
 			List.of("cursor"),
-			params -> allOf(ok(request), parseSize(params)).flatMap(this::formatValidators)
+			params -> allOf(parseSize(params), ok(parseAddressCursor(params)))
+				.flatMap((size, cursor) -> validatorInfoService
+					.getValidators(size, cursor)
+					.map(tuple -> tuple.map(HighLevelApiHandler::formatValidatorResponse)))
 		);
 	}
 
 	public JSONObject handleStakePositions(JSONObject request) {
 		return withRequiredStringParameter(
 			request,
-			(params, address) -> AccountAddress.parseFunctional(address)
+			"address",
+			(address) -> AccountAddress.parseFunctional(address)
 				.flatMap(highLevelApiService::getStakePositions)
 				.map(this::formatStakePositions)
 		);
@@ -197,16 +216,18 @@ public class HighLevelApiHandler {
 	public JSONObject handleUnstakePositions(JSONObject request) {
 		return withRequiredStringParameter(
 			request,
-			(params, address) -> AccountAddress.parseFunctional(address)
+			"address",
+			(address) -> AccountAddress.parseFunctional(address)
 				.flatMap(highLevelApiService::getUnstakePositions)
-				.map(this::formatUnstakePositions)
+				.map(HighLevelApiHandler::formatUnstakePositions)
 		);
 	}
 
 	public JSONObject handleLookupValidator(JSONObject request) {
 		return withRequiredStringParameter(
 			request,
-			(params, address) -> ValidatorAddress.fromString(address)
+			"validatorAddress",
+			(address) -> ValidatorAddress.fromString(address)
 				.flatMap(validatorInfoService::getValidator)
 				.map(ValidatorInfoDetails::asJson)
 		);
@@ -224,7 +245,7 @@ public class HighLevelApiHandler {
 	// internal processing
 	//-----------------------------------------------------------------------------------------------------
 
-	private JSONObject formatUnstakePositions(List<UnstakeEntry> balances) {
+	private static JSONObject formatUnstakePositions(List<UnstakeEntry> balances) {
 		var array = fromList(balances, unstake ->
 			jsonObject()
 				.put("validator", ValidatorAddress.of(unstake.getValidator()))
@@ -235,28 +256,7 @@ public class HighLevelApiHandler {
 		return jsonObject().put(ARRAY, array);
 	}
 
-	private Result<JSONObject> respondWithTransactionHistory(JSONObject params, Optional<Instant> cursor) {
-		return allOf(parseAddress(params), parseSize(params), ok(cursor))
-			.flatMap(this::formatTransactionHistory);
-	}
-
-	private Result<JSONObject> respondFinalizationResult(JSONObject params) {
-		return allOf(parseBlob(params), parseSignatureDer(params), parsePublicKey(params))
-			.flatMap((blob, signature, publicKey) ->
-						 toRecoverable(blob, signature, publicKey)
-							 .flatMap(recoverable -> submissionService.calculateTxId(blob, recoverable)))
-			.map(this::formatTxId);
-	}
-
-	private Result<JSONObject> respondSubmissionResult(JSONObject params) {
-		return allOf(parseBlob(params), parseSignatureDer(params), parsePublicKey(params), parseTxId(params))
-			.flatMap((blob, signature, publicKey, txId) ->
-						 toRecoverable(blob, signature, publicKey)
-							 .flatMap(recoverable -> submissionService.submitTx(blob, recoverable, txId)))
-			.map(this::formatTxId);
-	}
-
-	private JSONObject formatTokenBalances(REAddr addr, List<TokenBalance> balances) {
+	private static JSONObject formatTokenBalances(REAddr addr, List<TokenBalance> balances) {
 		return jsonObject()
 			.put("owner", AccountAddress.of(addr))
 			.put("tokenBalances", fromList(balances, TokenBalance::asJson));
@@ -272,98 +272,80 @@ public class HighLevelApiHandler {
 		return jsonObject().put(ARRAY, array);
 	}
 
-	private Result<JSONObject> formatTransactionHistory(REAddr address, int size, Optional<Instant> cursor) {
-		return highLevelApiService
-			.getTransactionHistory(address, size, cursor)
-			.map(tuple -> tuple.map(this::formatHistoryResponse));
-	}
-
-	private Result<JSONObject> formatValidators(JSONObject request, int size) {
-		return validatorInfoService
-			.getValidators(size, parseAddressCursor(request))
-			.map(tuple -> tuple.map(this::formatValidatorResponse));
-	}
-
-	private JSONObject formatTxId(AID txId) {
+	private static JSONObject formatTxId(AID txId) {
 		return jsonObject().put("txID", txId);
 	}
 
-	private JSONObject formatHistoryResponse(Optional<Instant> cursor, List<TxHistoryEntry> transactions) {
+	private static JSONObject formatHistoryResponse(Optional<Instant> cursor, List<TxHistoryEntry> transactions) {
 		return jsonObject()
 			.put("cursor", cursor.map(HighLevelApiHandler::asCursor).orElse(""))
 			.put("transactions", fromList(transactions, TxHistoryEntry::asJson));
 	}
 
-	private JSONObject formatValidatorResponse(Optional<ECPublicKey> cursor, List<ValidatorInfoDetails> transactions) {
+	private static JSONObject formatValidatorResponse(Optional<ECPublicKey> cursor, List<ValidatorInfoDetails> transactions) {
 		return jsonObject()
 			.put("cursor", cursor.map(ValidatorAddress::of).orElse(""))
 			.put("validators", fromList(transactions, ValidatorInfoDetails::asJson));
 	}
 
-	private List<TransactionAction> mergeMessageAction(org.json.JSONArray params, List<TransactionAction> steps) {
-		return params.length() == 1 ? steps : ImmutableList.<TransactionAction>builder()
-			.addAll(steps)
-			.add(TransactionAction.msg(params.getString(1)))
-			.build();
+	private static List<TransactionAction> mergeMessageAction(JSONObject params, List<TransactionAction> steps) {
+		return safeString(params, "message")
+			.fold(
+				__ -> steps,
+				message -> ImmutableList.<TransactionAction>builder()
+					.addAll(steps)
+					.add(TransactionAction.msg(message))
+					.build()
+			);
 	}
 
-	private Result<ECDSASignature> toRecoverable(byte[] blob, ECDSASignature signature, ECPublicKey publicKey) {
+	private static Result<ECDSASignature> toRecoverable(byte[] blob, ECDSASignature signature, ECPublicKey publicKey) {
 		return ECKeyUtils.toRecoverable(signature, HashUtils.sha256(blob).asBytes(), publicKey);
-	}
-
-	private Result<byte[]> parseBlob(JSONObject request) {
-		return wrap(INVALID_BLOB, () -> Hex.decodeStrict(request.getJSONObject("transaction").getString("blob")));
-	}
-
-	private Result<ECDSASignature> parseSignatureDer(JSONObject request) {
-		return wrap(
-			INVALID_SIGNATURE_DER,
-			() -> {
-				var signature = Hex.decodeStrict(request.getString("signatureDER"));
-				return ECDSASignature.decodeFromDER(signature);
-			}
-		);
-	}
-
-	private Result<ECPublicKey> parsePublicKey(JSONObject request) {
-		return wrap(
-			INVALID_PUBLIC_KEY,
-			() -> {
-				var pubKeyBytes = Hex.decodeStrict(request.getString("publicKeyOfSigner"));
-				return ECPublicKey.fromBytes(pubKeyBytes);
-			}
-		);
-	}
-
-	private Result<AID> parseTxId(JSONObject request) {
-		return wrap(INVALID_TX_ID, () -> Hex.decodeStrict(request.getString("txID")))
-			.flatMap(AID::fromBytes);
 	}
 
 	private static String asCursor(Instant instant) {
 		return "" + instant.getEpochSecond() + ":" + instant.getNano();
 	}
 
-	private static Optional<ECPublicKey> parseAddressCursor(JSONObject request) {
-		return safeString(request, 1).flatMap(HighLevelApiHandler::parsePublicKey);
+	private static Result<byte[]> parseBlob(JSONObject params) {
+		return safeObject(params, "transaction")
+			.flatMap(txObj -> safeBlob(txObj, "blob"));
+	}
+
+	private static Result<ECDSASignature> parseSignatureDer(JSONObject params) {
+		return safeBlob(params, "signatureDER")
+			.flatMap(param -> wrap(INVALID_SIGNATURE_DER, () -> ECDSASignature.decodeFromDER(param)));
+	}
+
+	private static Result<ECPublicKey> parsePublicKey(JSONObject params) {
+		return safeBlob(params, "publicKeyOfSigner")
+			.flatMap(param -> wrap(INVALID_PUBLIC_KEY, () -> ECPublicKey.fromBytes(param)));
+	}
+
+	private static Result<AID> parseTxId(JSONObject params) {
+		return safeString(params, "txID").flatMap(AID::fromString);
+	}
+
+	private static Optional<ECPublicKey> parseAddressCursor(JSONObject params) {
+		return safeString(params, "cursor")
+			.toOptional()
+			.flatMap(HighLevelApiHandler::parsePublicKey);
 	}
 
 	private static Optional<ECPublicKey> parsePublicKey(String address) {
 		return ValidatorAddress.fromString(address).toOptional();
 	}
 
-	private static Optional<Instant> parseInstantCursor(JSONObject request) {
-		return safeString(request, 2).flatMap(HighLevelApiHandler::instantFromString);
-	}
-
-	private static Optional<Instant> instantFromString(String source) {
-		return Optional.of(source.split(":"))
-			.filter(v -> v.length == 2)
-			.flatMap(HighLevelApiHandler::parseInstant);
+	private static Optional<Instant> parseInstantCursor(JSONObject params) {
+		return safeString(params, "cursor")
+			.toOptional()
+			.flatMap(source -> Optional.of(source.split(":"))
+				.filter(v -> v.length == 2)
+				.flatMap(HighLevelApiHandler::parseInstant));
 	}
 
 	private static Optional<Instant> parseInstant(String[] pair) {
-		return allOf(parseLong(pair[0]).filter(v -> v > 0), parseInt(pair[1]).filter(v -> v > 0))
+		return allOf(parseLong(pair[0]).filter(v -> v > 0), parseInt(pair[1]).filter(v -> v >= 0))
 			.map(Instant::ofEpochSecond);
 	}
 

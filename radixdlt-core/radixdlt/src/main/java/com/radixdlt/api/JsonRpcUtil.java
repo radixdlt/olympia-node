@@ -21,18 +21,21 @@ package com.radixdlt.api;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
+import static com.radixdlt.client.api.ApiErrors.INVALID_HEX_STRING;
+import static com.radixdlt.client.api.ApiErrors.MISSING_PARAMETER;
 import static com.radixdlt.client.api.ApiErrors.MISSING_PARAMS;
 import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DECODE;
-import static com.radixdlt.utils.functional.Failure.failure;
+import static com.radixdlt.utils.functional.Result.fail;
 import static com.radixdlt.utils.functional.Result.fromOptional;
+import static com.radixdlt.utils.functional.Result.ok;
+import static com.radixdlt.utils.functional.Result.wrap;
 
 import static java.util.Optional.ofNullable;
 
@@ -90,8 +93,26 @@ public final class JsonRpcUtil {
 		return Result.wrap(UNABLE_TO_DECODE, () -> params.getInt(name));
 	}
 
-	public static Optional<String> safeString(JSONObject request, int index) {
-		return params(request).flatMap(params -> ofNullable(params.opt(index)).map(Object::toString));
+	public static Result<JSONArray> safeArray(JSONObject params, String name) {
+		return Result.fromOptional(MISSING_PARAMETER.with(name), ofNullable(params.optJSONArray(name)));
+	}
+
+	public static Result<String> safeString(JSONObject params, String name) {
+		return Result.fromOptional(
+			MISSING_PARAMETER.with(name),
+			ofNullable(params.opt(name))
+				.filter(String.class::isInstance)
+				.map(String.class::cast)
+		);
+	}
+
+	public static Result<JSONObject> safeObject(JSONObject params, String name) {
+		return Result.fromOptional(MISSING_PARAMETER.with(name), ofNullable(params.optJSONObject(name)));
+	}
+
+	public static Result<byte[]> safeBlob(JSONObject params, String name) {
+		return safeString(params, name)
+			.flatMap(param -> wrap(INVALID_HEX_STRING, () -> Bytes.fromHexString(param)));
 	}
 
 	public static JSONObject parseError(String message) {
@@ -118,18 +139,14 @@ public final class JsonRpcUtil {
 		return errorResponse(JSONObject.NULL, code, message);
 	}
 
-	private static Optional<JSONArray> params(JSONObject request) {
-		return Optional.ofNullable(request.optJSONArray("params"));
-	}
-
 	private static JSONObject extendedError(JSONObject request, RpcError error, String message) {
 		var response = jsonObject().put("code", error.code()).put("message", message);
 
-		params(request).ifPresent(params -> response.put("data", params));
+		ofNullable(request.opt("params")).ifPresent(params -> response.put("data", params));
 
 		var id = ofNullable(request.opt("id")).orElse(JSONObject.NULL);
 
-		return  commonFields(id).put("error", response);
+		return commonFields(id).put("error", response);
 	}
 
 	private static JSONObject errorResponse(Object id, RpcError code, String message) {
@@ -144,6 +161,7 @@ public final class JsonRpcUtil {
 		//FIXME: replace hack with proper solution
 		if (result instanceof JSONObject) {
 			var array = ((JSONObject) result).optJSONArray(ARRAY);
+
 			if (array != null) {
 				return commonFields(request.get("id")).put("result", array);
 			}
@@ -154,23 +172,14 @@ public final class JsonRpcUtil {
 
 	public static JSONObject withRequiredStringParameter(
 		JSONObject request,
-		BiFunction<JSONArray, String, Result<JSONObject>> fn
+		String name,
+		Function<String, Result<JSONObject>> fn
 	) {
-		return withParameters(
+		return withRequiredParameters(
 			request,
-			params -> params.length() == 1,
-			params -> fn.apply(params, params.getString(0))
-		);
-	}
-
-	public static JSONObject withRequiredArrayParameter(
-		JSONObject request,
-		BiFunction<JSONArray, JSONArray, Result<JSONObject>> fn
-	) {
-		return withParameters(
-			request,
-			params -> !params.isEmpty(),
-			params -> fn.apply(params, params.getJSONArray(0))
+			List.of(name),
+			List.of(),
+			params -> safeString(params, name).flatMap(fn)
 		);
 	}
 
@@ -180,37 +189,39 @@ public final class JsonRpcUtil {
 		List<String> optional,
 		Function<JSONObject, Result<JSONObject>> fn
 	) {
-		return withParameters(
-			request,
-			params -> params.length() >= required.size(),
-			params -> fn.apply(toNamed(required, optional, params))
-		);
-	}
-
-	private static JSONObject toNamed(List<String> required, List<String> optional, JSONArray params) {
-		var o = new JSONObject();
-		for (int i = 0; i < required.size(); i++) {
-			o.put(required.get(i), params.get(i));
-		}
-		for (int j = 0; j < params.length() - required.size(); j++) {
-			o.put(optional.get(j), params.get(required.size() + j));
-		}
-		return o;
-	}
-
-	private static JSONObject withParameters(
-		JSONObject request,
-		Predicate<JSONArray> predicate,
-		Function<JSONArray, Result<JSONObject>> fn
-	) {
-		return retrieveParams(request)
-			.map(JSONArray.class::cast)
-			.filter(predicate, failure(RpcError.INVALID_PARAMS.code(), "Parameter not present"))
+		return params(request)
+			.flatMap(params -> sanitizeParams(params, required, optional))
 			.flatMap(fn)
 			.fold(failure -> invalidParamsError(request, failure.message()), response -> response(request, response));
 	}
 
-	private static Result<JSONArray> retrieveParams(JSONObject request) {
-		return fromOptional(MISSING_PARAMS, ofNullable(request.optJSONArray("params")));
+	private static Result<JSONObject> sanitizeParams(Object params, List<String> required, List<String> optional) {
+		if (params instanceof JSONObject) {
+			return ok((JSONObject) params);
+		}
+
+		if (params instanceof JSONArray) {
+			return ok(toNamed((JSONArray) params, required, optional));
+		}
+
+		return fail(Failure.failure(RpcError.INVALID_REQUEST.code(), "Unable to parse request 'params' field"));
+	}
+
+	private static JSONObject toNamed(JSONArray params, List<String> required, List<String> optional) {
+		var newParams = new JSONObject();
+
+		for (int i = 0; i < required.size(); i++) {
+			newParams.put(required.get(i), params.get(i));
+		}
+
+		for (int j = 0; j < params.length() - required.size(); j++) {
+			newParams.put(optional.get(j), params.get(required.size() + j));
+		}
+
+		return newParams;
+	}
+
+	private static Result<Object> params(JSONObject request) {
+		return fromOptional(MISSING_PARAMS, ofNullable(request.opt("params")));
 	}
 }

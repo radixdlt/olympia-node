@@ -23,13 +23,12 @@ import com.radixdlt.utils.UInt256;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public class TransactionRequest {
 	private final List<ActionDTO> actions;
-	private final Optional<String> message;
+	private final String message;
 
-	private TransactionRequest(Optional<String> message, List<ActionDTO> actions) {
+	private TransactionRequest(String message, List<ActionDTO> actions) {
 		this.message = message;
 		this.actions = actions;
 	}
@@ -39,11 +38,7 @@ public class TransactionRequest {
 	}
 
 	@JsonProperty("message")
-	public String getRawMessage() {
-		return message.orElse(null);
-	}
-
-	public Optional<String> getMessage() {
+	public String getMessage() {
 		return message;
 	}
 
@@ -80,7 +75,7 @@ public class TransactionRequest {
 		}
 
 		public TransactionRequest build() {
-			return new TransactionRequest(Optional.ofNullable(message), actions);
+			return new TransactionRequest(message, actions);
 		}
 	}
 }
