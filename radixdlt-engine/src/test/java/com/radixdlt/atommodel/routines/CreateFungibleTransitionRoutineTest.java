@@ -83,7 +83,7 @@ public class CreateFungibleTransitionRoutineTest {
 	public void when_validating_a_simple_fungible_transfer__then_validation_should_succeed() {
 		TransitionProcedure<FungibleSubstate, FungibleSubstate, VoidReducerState> procedure = new CreateFungibleTransitionRoutine<>(
 			FungibleSubstate.class, FungibleSubstate.class,
-			(a, b) -> Result.success(),
+			(a, b, r) -> Result.success(),
 			mock(SignatureValidatorFungible.class),
 			(i, o, index) -> Unknown.create()
 		).getProcedure0();
@@ -108,7 +108,7 @@ public class CreateFungibleTransitionRoutineTest {
 	public void when_validating_a_two_to_one_transfer__then_execution_should_pop_output_and_one_left_on_input() {
 		TransitionProcedure<FungibleSubstate, FungibleSubstate, VoidReducerState> procedure = new CreateFungibleTransitionRoutine<>(
 			FungibleSubstate.class, FungibleSubstate.class,
-			(a, b) -> Result.success(),
+			(a, b, r) -> Result.success(),
 			mock(SignatureValidatorFungible.class),
 			(i, o, index) -> Unknown.create()
 		).getProcedure0();
@@ -130,7 +130,7 @@ public class CreateFungibleTransitionRoutineTest {
 	public void when_validating_a_one_to_two_transfer__then_input_should_succeed_and_one_left_on_stack() {
 		TransitionProcedure<FungibleSubstate, FungibleSubstate, VoidReducerState> procedure = new CreateFungibleTransitionRoutine<>(
 			FungibleSubstate.class, FungibleSubstate.class,
-			(a, b) -> Result.success(),
+			(a, b, r) -> Result.success(),
 			mock(SignatureValidatorFungible.class),
 			(i, o, index) -> Unknown.create()
 		).getProcedure0();
@@ -152,7 +152,7 @@ public class CreateFungibleTransitionRoutineTest {
 	public void when_validating_a_two_to_two_transfer__then_input_should_succeed_and_zero_left_on_stack() {
 		TransitionProcedure<FungibleSubstate, FungibleSubstate, VoidReducerState> procedure = new CreateFungibleTransitionRoutine<>(
 			FungibleSubstate.class, FungibleSubstate.class,
-			(a, b) -> Result.success(),
+			(a, b, r) -> Result.success(),
 			mock(SignatureValidatorFungible.class),
 			(i, o, index) -> Unknown.create()
 		).getProcedure0();
@@ -169,7 +169,7 @@ public class CreateFungibleTransitionRoutineTest {
 	public void when_validating_a_one_to_two_one_transfer__then_input_should_succeed_and_zero_left_on_stack() {
 		TransitionProcedure<FungibleSubstate, FungibleSubstate, UsedAmount> procedure = new CreateFungibleTransitionRoutine<>(
 			FungibleSubstate.class, FungibleSubstate.class,
-			(a, b) -> Result.success(),
+			(a, b, r) -> Result.success(),
 			mock(SignatureValidatorFungible.class),
 			(i, o, index) -> Unknown.create()
 		).getProcedure1();

@@ -32,6 +32,16 @@ import com.radixdlt.identifiers.REAddr;
 import java.util.Objects;
 
 public final class StakingConstraintScryptV2 implements ConstraintScrypt {
+	private final int epochsLocked;
+
+	public StakingConstraintScryptV2(int epochsLocked) {
+		if (epochsLocked < 0) {
+			throw new IllegalArgumentException("epochsLocked must be >= 0");
+		}
+
+		this.epochsLocked = epochsLocked;
+	}
+
 	@Override
 	public void main(SysCalls os) {
 		os.registerParticle(
@@ -65,8 +75,8 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 				}
 				return Result.success();
 			},
-			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getHoldingAddr()::allowToWithdrawFrom).orElse(false),
-			(i, o, index) -> new StakeTokens(o.getOwner(), o.getDelegateKey(), o.getAmount()) // FIXME: this isn't 100% correct
+			(i, o, r, pubKey) -> pubKey.map(i.getSubstate().getHoldingAddr()::allowToWithdrawFrom).orElse(false),
+			(i, o, r) -> new StakeTokens(o.getOwner(), o.getDelegateKey(), o.getAmount()) // FIXME: this isn't 100% correct
 		));
 
 		// For change
@@ -83,11 +93,11 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 
 				return Result.success();
 			},
-			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
-			(i, o, index) -> Unknown.create()
+			(i, o, r, pubKey) -> pubKey.map(i.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
+			(i, o, r) -> Unknown.create()
 		));
 
-		// Unstaking
+		// Exiting
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
 			StakedTokensParticle.class,
 			ExitingStake.class,
@@ -103,8 +113,25 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 
 				return Result.success();
 			},
-			(i, o, readable, pubKey) -> pubKey.map(i.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
-			(i, o, index) -> new UnstakeTokens(i.getOwner(), i.getDelegateKey(), o.getAmount()) // FIXME: this isn't 100% correct
+			(i, o, r, pubKey) -> pubKey.map(i.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
+			(i, o, r) -> new UnstakeTokens(i.getOwner(), i.getDelegateKey(), o.getAmount()) // FIXME: this isn't 100% correct
+		));
+
+		// Exit
+		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
+			ExitingStake.class,
+			TokensParticle.class,
+			(i, o, r) -> {
+				var system = (SystemParticle) r.loadAddr(null, REAddr.ofSystem()).orElseThrow();
+				var epochUnlocked = i.getEpochExit() + epochsLocked;
+				if (system.getEpoch() < epochUnlocked) {
+					return Result.error("Cannot unlock tokens until epoch: " + epochUnlocked + " current: " + system.getEpoch());
+				}
+
+				return Result.success();
+			},
+			(i, o, r, pubKey) -> pubKey.map(i.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
+			(i, o, r) -> Unknown.create()
 		));
 	}
 }
