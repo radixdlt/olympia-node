@@ -28,6 +28,7 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.client.Rri;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -37,6 +38,7 @@ import com.radixdlt.crypto.exception.CryptoException;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 
+import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -48,6 +50,7 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.GenesisProvider;
+import com.radixdlt.sync.CommittedReader;
 import org.apache.logging.log4j.util.Strings;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
@@ -289,6 +292,10 @@ public final class GenerateUniverses {
 					install(new RadixNativeTokenModule());
 					install(RadixEngineConfig.asModule(1, 100, 100000L, 50));
 					install(new RadixEngineModule());
+
+					// TODO: This is a hack
+					// Mocked just to get epoch
+					bind(CommittedReader.class).toInstance(CommittedReader.mocked());
 
 					bind(new TypeLiteral<List<TxAction>>() { }).annotatedWith(Genesis.class).toInstance(additionalActions);
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());

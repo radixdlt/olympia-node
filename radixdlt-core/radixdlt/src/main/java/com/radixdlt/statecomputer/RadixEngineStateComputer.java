@@ -28,6 +28,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.counters.SystemCounters;
@@ -51,6 +52,7 @@ import org.apache.logging.log4j.Logger;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 /**
@@ -70,15 +72,17 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher;
 	private final EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher;
 	private final EventDispatcher<AtomsCommittedToLedger> committedDispatcher;
+	private final TreeMap<Long, ConstraintMachine> epochToConstraintMachine;
 	private final SystemCounters systemCounters;
 
 	@Inject
 	public RadixEngineStateComputer(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		RadixEngineMempool mempool,
+		TreeMap<Long, ConstraintMachine> epochToConstraintMachine,
+		RadixEngineMempool mempool, // TODO: Move this into radixEngine
 		@EpochCeilingView View epochCeilingView, // TODO: Move this into radixEngine
 		@MaxTxnsPerProposal int maxTxnsPerProposal, // TODO: Move this into radixEngine
-		ValidatorSetBuilder validatorSetBuilder,
+		ValidatorSetBuilder validatorSetBuilder, // TODO: Move this into radixEngine
 		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
 		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher,
 		EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher,
@@ -91,6 +95,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		this.radixEngine = Objects.requireNonNull(radixEngine);
+		this.epochToConstraintMachine = epochToConstraintMachine;
 		this.epochCeilingView = epochCeilingView;
 		this.maxTxnsPerProposal = maxTxnsPerProposal;
 		this.validatorSetBuilder = Objects.requireNonNull(validatorSetBuilder);
@@ -131,7 +136,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 				mempool.add(txn);
 				systemCounters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
 			} catch (MempoolDuplicateException e) {
-				var failure = MempoolAddFailure.create(txn, e, origin);
 				// Idempotent commands
 				log.trace("Mempool duplicate txn: {} origin: {}", txn, origin);
 				return;
@@ -257,10 +261,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 		VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState
 	) {
 		final var atomsToCommit = verifiedTxnsAndProof.getTxns();
-		var ledgerAndBFTProof = LedgerAndBFTProof.create(
-			verifiedTxnsAndProof.getProof(),
-			vertexStoreState
-		);
+		var proof = verifiedTxnsAndProof.getProof();
+		var ledgerAndBFTProof = LedgerAndBFTProof.create(proof, vertexStoreState);
 
 		final List<REParsedTxn> radixEngineTxns;
 		try {
@@ -271,6 +273,14 @@ public final class RadixEngineStateComputer implements StateComputer {
 			);
 		} catch (RadixEngineException e) {
 			throw new ByzantineQuorumException(String.format("Trying to commit bad atoms:\n%s", atomsToCommit), e);
+		}
+
+		// Next epoch
+		if (proof.getNextValidatorSet().isPresent()) {
+			var nextCM = epochToConstraintMachine.get(proof.getEpoch() + 1);
+			if (nextCM != null) {
+				this.radixEngine.replaceConstraintMachine(nextCM);
+			}
 		}
 
 		radixEngineTxns.forEach(t -> {

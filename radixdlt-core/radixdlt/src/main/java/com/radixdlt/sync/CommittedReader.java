@@ -30,4 +30,23 @@ public interface CommittedReader {
 	VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start);
 	Optional<LedgerProof> getEpochProof(long epoch);
 	Optional<LedgerProof> getLastProof();
+
+	static CommittedReader mocked() {
+		return new CommittedReader() {
+			@Override
+			public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
+				return null;
+			}
+
+			@Override
+			public Optional<LedgerProof> getEpochProof(long epoch) {
+				return Optional.empty();
+			}
+
+			@Override
+			public Optional<LedgerProof> getLastProof() {
+				return Optional.empty();
+			}
+		};
+	}
 }

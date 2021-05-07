@@ -82,8 +82,18 @@ public final class LedgerProof {
 			.put("sigs", signatures.asJSON());
 	}
 
+	public static LedgerProof mock() {
+		var acc = new AccumulatorState(0, HashUtils.zero256());
+		var header = LedgerHeader.create(0, View.genesis(), acc, 0);
+		return new LedgerProof(
+			HashUtils.zero256(),
+			header,
+			new TimestampedECDSASignatures()
+		);
+	}
+
 	public static LedgerProof genesis(AccumulatorState accumulatorState, BFTValidatorSet nextValidators, long timestamp) {
-		LedgerHeader genesisLedgerHeader = LedgerHeader.genesis(accumulatorState, nextValidators, timestamp);
+		var genesisLedgerHeader = LedgerHeader.genesis(accumulatorState, nextValidators, timestamp);
 		return new LedgerProof(
 			HashUtils.zero256(),
 			genesisLedgerHeader,

@@ -28,6 +28,7 @@ import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
+import com.radixdlt.sync.CommittedReader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -143,6 +144,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 			new AbstractModule() {
 				@Override
 				public void configure() {
+					bind(CommittedReader.class).toInstance(CommittedReader.mocked());
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());

@@ -54,7 +54,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	@Singleton
 	@LastStoredProof
 	LedgerProof lastStoredProof(
-		RadixEngine<LedgerAndBFTProof> radixEngine,
+		RadixEngine<LedgerAndBFTProof> radixEngine, // TODO: Remove
 		CommittedReader committedReader,
 		@Genesis VerifiedTxnsAndProof genesis,
 		EventDispatcher<AtomsCommittedToLedger> committedDispatcher // FIXME: this is hack so client can get genesis

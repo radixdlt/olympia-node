@@ -34,6 +34,7 @@ import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
+import com.radixdlt.sync.CommittedReader;
 import org.apache.logging.log4j.ThreadContext;
 import org.junit.After;
 import org.junit.Before;
@@ -162,6 +163,7 @@ public class MempoolRelayTest {
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class).toInstance(validatorsKeys);
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
+					bind(CommittedReader.class).toInstance(CommittedReader.mocked());
 				}
 
 				@ProvidesIntoSet
