@@ -171,6 +171,45 @@ public class PendingVotesTest {
 	}
 
 	@Test
+	public void when_voting_again__previous_timeoutvote_is_removed() {
+		BFTNode author = mock(BFTNode.class);
+		Vote vote = makeSignedVoteFor(author, View.genesis(), HashUtils.random256());
+		when(vote.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASignature.class)));
+		when(vote.isTimeout()).thenReturn(true);
+
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
+		ValidationState validationState = mock(ValidationState.class);
+		TimestampedECDSASignatures signatures = mock(TimestampedECDSASignatures.class);
+		when(validationState.signatures()).thenReturn(signatures);
+		when(validationState.isEmpty()).thenReturn(true);
+		when(validatorSet.newValidationState()).thenReturn(validationState);
+		when(validatorSet.containsNode(any())).thenReturn(true);
+
+		VoteData voteData = mock(VoteData.class);
+		BFTHeader proposed = vote.getVoteData().getProposed();
+		when(voteData.getProposed()).thenReturn(proposed);
+
+		// Preconditions
+		assertEquals(
+			VoteProcessingResult.accepted(),
+			this.pendingVotes.insertVote(vote, validatorSet)
+		);
+		assertEquals(1, this.pendingVotes.voteStateSize());
+		assertEquals(1, this.pendingVotes.timeoutVoteStateSize());
+		assertEquals(1, this.pendingVotes.previousVotesSize());
+
+		Vote vote2 = makeSignedVoteFor(author, View.of(1), HashUtils.random256());
+		// Need a different hash for this (different) vote
+		assertEquals(
+			VoteProcessingResult.accepted(),
+			this.pendingVotes.insertVote(vote2, validatorSet)
+		);
+		assertEquals(1, this.pendingVotes.voteStateSize());
+		assertEquals(0, this.pendingVotes.timeoutVoteStateSize());
+		assertEquals(1, this.pendingVotes.previousVotesSize());
+	}
+
+	@Test
 	public void when_submitting_a_duplicate_vote__then_can_be_replaced_if_has_timeout() {
 		final var vertexId1 = HashUtils.random256();
 		final var vertexId2 = HashUtils.random256();
