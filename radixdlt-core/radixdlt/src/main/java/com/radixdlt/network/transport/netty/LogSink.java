@@ -62,12 +62,12 @@ public interface LogSink {
 
 			@Override
 			public void trace(String message) {
-				log.trace(message);
+				//log.trace(message);
 			}
 
 			@Override
 			public void trace(String message, Throwable ex) {
-				log.trace(message, ex);
+				//log.trace(message, ex);
 			}
 
 		};
