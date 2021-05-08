@@ -19,7 +19,6 @@ package com.radixdlt.engine;
 
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxActionListBuilder;
-import com.radixdlt.atom.actions.MoveStake;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
@@ -116,23 +115,5 @@ public class StakedTokensTest {
 			new UnstakeTokens(this.tokenOwnerAccount, this.validatorKeyPair.getPublicKey(), UInt256.SEVEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn2));
-	}
-
-	@Test
-	public void move_staked_tokens() throws Exception {
-		var txn = this.engine.construct(
-			new StakeTokens(this.tokenOwnerAccount, this.validatorKeyPair.getPublicKey(), UInt256.TEN)
-		).signAndBuild(this.tokenOwnerKeyPair::sign);
-		this.engine.execute(List.of(txn));
-
-		var atom2 = this.engine.construct(
-			new MoveStake(
-				this.tokenOwnerAccount,
-				validatorKeyPair.getPublicKey(),
-				ECKeyPair.generateNew().getPublicKey(),
-				UInt256.FIVE
-			)
-		).signAndBuild(this.tokenOwnerKeyPair::sign);
-		this.engine.execute(List.of(atom2));
 	}
 }

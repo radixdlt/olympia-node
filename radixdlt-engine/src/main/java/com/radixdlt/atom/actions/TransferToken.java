@@ -21,6 +21,7 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -56,9 +57,14 @@ public final class TransferToken implements TxAction {
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
+		var epoch = txBuilder.find(SystemParticle.class, p -> true)
+			.map(SystemParticle::getEpoch).orElse(0L);
+
 		txBuilder.swapFungible(
 			TokensParticle.class,
-			p -> p.getResourceAddr().equals(resourceAddr) && p.getHoldingAddr().equals(from),
+			p -> p.getResourceAddr().equals(resourceAddr)
+				&& p.getHoldingAddr().equals(from)
+				&& p.getEpochUnlocked().map(e -> e <= epoch).orElse(true),
 			amt -> new TokensParticle(from, amt, resourceAddr),
 			amount,
 			"Not enough balance for transfer."

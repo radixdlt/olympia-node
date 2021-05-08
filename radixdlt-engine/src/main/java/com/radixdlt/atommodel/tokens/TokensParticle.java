@@ -112,11 +112,12 @@ public final class TokensParticle implements Fungible {
 		TokensParticle that = (TokensParticle) o;
 		return Objects.equals(holdingAddress, that.holdingAddress)
 			&& Objects.equals(resourceAddr, that.resourceAddr)
+			&& Objects.equals(epochUnlocked, that.epochUnlocked)
 			&& Objects.equals(amount, that.amount);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(holdingAddress, resourceAddr, amount);
+		return Objects.hash(holdingAddress, resourceAddr, epochUnlocked, amount);
 	}
 }

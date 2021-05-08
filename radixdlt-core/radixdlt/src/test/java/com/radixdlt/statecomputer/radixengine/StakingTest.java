@@ -25,13 +25,16 @@ import com.google.inject.Injector;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.application.TokenUnitConversions;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -50,6 +53,7 @@ import org.radix.TokenIssuance;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class StakingTest {
 	@Rule
@@ -87,7 +91,7 @@ public class StakingTest {
 
 				@ProvidesIntoSet
 				private TokenIssuance mempoolFillerIssuance() {
-					return TokenIssuance.of(staker.getPublicKey(), TokenUnitConversions.unitsToSubunits(10000000000L));
+					return TokenIssuance.of(staker.getPublicKey(), UInt256.FIVE);
 				}
 			}
 		);
@@ -102,7 +106,7 @@ public class StakingTest {
 
 		// Act
 		var acct = REAddr.ofPubKeyAccount(staker.getPublicKey());
-		var atom = sut.construct(staker.getPublicKey(), new StakeTokens(acct, self.getPublicKey(), UInt256.FIVE))
+		var atom = sut.construct(new StakeTokens(acct, self.getPublicKey(), UInt256.FIVE))
 			.signAndBuild(staker::sign);
 		sut.execute(List.of(atom));
 
@@ -119,20 +123,67 @@ public class StakingTest {
 		var stakes = sut.getComputedState(Stakes.class);
 		var staked = stakes.toMap().get(self.getPublicKey());
 		var acct = REAddr.ofPubKeyAccount(staker.getPublicKey());
-		var txn = sut.construct(staker.getPublicKey(), new StakeTokens(acct, self.getPublicKey(), UInt256.FIVE))
+		var txn = sut.construct(new StakeTokens(acct, self.getPublicKey(), UInt256.FIVE))
 			.signAndBuild(staker::sign);
 		sut.execute(List.of(txn));
 
 		// Act
-		var nextTxn = sut.construct(
-			staker.getPublicKey(),
-			new UnstakeTokens(acct, self.getPublicKey(), UInt256.THREE)
-		).signAndBuild(staker::sign);
+		var nextTxn = sut.construct(new UnstakeTokens(acct, self.getPublicKey(), UInt256.THREE))
+			.signAndBuild(staker::sign);
 		sut.execute(List.of(nextTxn));
 
 		// Assert
 		var nextStaked = sut.getComputedState(Stakes.class);
 		assertThat(nextStaked.toMap().get(self.getPublicKey()))
 			.isEqualTo(UInt256.FIVE.add(staked).subtract(UInt256.THREE));
+	}
+
+	@Test
+	public void cant_construct_transfer_with_unstaked_tokens_immediately() throws Exception {
+		// Arrange
+		createInjector().injectMembers(this);
+		var acct = REAddr.ofPubKeyAccount(staker.getPublicKey());
+		var acct2 = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
+		var txn = sut.construct(new StakeTokens(acct, self.getPublicKey(), UInt256.FIVE))
+			.signAndBuild(staker::sign);
+		sut.execute(List.of(txn));
+		var nextTxn = sut.construct(new UnstakeTokens(acct, self.getPublicKey(), UInt256.FIVE))
+			.signAndBuild(staker::sign);
+		sut.execute(List.of(nextTxn));
+
+		// Act
+		// Assert
+		assertThatThrownBy(() -> sut.construct(new TransferToken(REAddr.ofNativeToken(), acct, acct2, UInt256.FIVE)))
+			.isInstanceOf(TxBuilderException.class);
+	}
+
+	@Test
+	public void cant_spend_unstaked_tokens_immediately() throws Exception {
+		// Arrange
+		createInjector().injectMembers(this);
+		var acct = REAddr.ofPubKeyAccount(staker.getPublicKey());
+		var acct2 = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
+		var txn = sut.construct(new StakeTokens(acct, self.getPublicKey(), UInt256.FIVE))
+			.signAndBuild(staker::sign);
+		sut.execute(List.of(txn));
+		var nextTxn = sut.construct(new UnstakeTokens(acct, self.getPublicKey(), UInt256.FIVE))
+			.signAndBuild(staker::sign);
+		sut.execute(List.of(nextTxn));
+
+		// Act
+		// Assert
+		var txn2 = sut.construct(txBuilder ->
+			txBuilder.swapFungible(
+				TokensParticle.class,
+				p -> p.getResourceAddr().equals(REAddr.ofNativeToken())
+						&& p.getHoldingAddr().equals(acct),
+				amt -> new TokensParticle(acct, amt, REAddr.ofNativeToken()),
+				UInt256.FIVE,
+				"Not enough balance for transfer."
+			).with(amt -> new TokensParticle(acct2, amt, REAddr.ofNativeToken()))
+		).signAndBuild(staker::sign);
+
+		assertThatThrownBy(() -> sut.execute(List.of(txn2)))
+			.isInstanceOf(RadixEngineException.class);
 	}
 }
