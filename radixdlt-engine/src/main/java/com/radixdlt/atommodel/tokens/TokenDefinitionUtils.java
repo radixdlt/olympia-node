@@ -87,14 +87,6 @@ public final class TokenDefinitionUtils {
 		return Result.success();
 	}
 
-	public static Result staticCheck(ExitingStake exitingStake) {
-		if (exitingStake.getEpochExit() < 0)  {
-			return Result.error("Invalid epoch");
-		}
-
-		return Result.success();
-	}
-
 	public static Result staticCheck(StakedTokensParticle stakedParticle) {
 		if (stakedParticle.getDelegateKey() == null) {
 			return Result.error("delegateAddress must not be null");
@@ -117,7 +109,7 @@ public final class TokenDefinitionUtils {
 			return Result.error("amount must not be zero");
 		}
 		if (!tokensParticle.getHoldingAddr().isAccount()) {
-			return Result.error("Tokens must be held by holding address.");
+			return Result.error("Tokens must be held by holding address: " + tokensParticle.getHoldingAddr());
 		}
 
 		return Result.success();

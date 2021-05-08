@@ -77,9 +77,7 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 
 				@Override
 				public SignatureValidator<TokensParticle, VoidParticle> signatureValidator() {
-					return (i, o, index, pubKey) -> pubKey
-						.map(i.getSubstate().getHoldingAddr()::allowToWithdrawFrom)
-						.orElse(false);
+					return (i, o, r, pubKey) -> i.getSubstate().allowedToWithdraw(pubKey, r);
 				}
 			}
 		);
@@ -128,8 +126,7 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 
 				@Override
 				public SignatureValidator<TokensParticle, VoidParticle> signatureValidator() {
-					return (i, o, index, pubKey)
-						-> pubKey.map(i.getSubstate().getHoldingAddr()::allowToWithdrawFrom).orElse(false);
+					return (i, o, r, pubKey) -> i.getSubstate().allowedToWithdraw(pubKey, r);
 				}
 			}
 		);

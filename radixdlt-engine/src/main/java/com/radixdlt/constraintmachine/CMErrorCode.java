@@ -22,7 +22,6 @@ package com.radixdlt.constraintmachine;
  * TODO: add numeric codes
  */
 public enum CMErrorCode {
-	INCORRECT_SIGNATURE("Incorrect signature"),
 	TOO_MANY_REQUIRED_SIGNATURES("Too many required signatures"),
 	TOO_MANY_MESSAGES("Too many messages"),
 	DATA_TOO_LARGE("Data is too large"),

@@ -18,10 +18,7 @@
 
 package com.radixdlt.atom;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.tokens.ExitingStake;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
@@ -38,19 +35,36 @@ import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Map;
 
 public final class RESerializer {
-	private static final BiMap<Class<? extends Particle>, Byte> classToByte = HashBiMap.create(Map.of(
-		REAddrParticle.class, (byte) 0,
-		SystemParticle.class, (byte) 1,
-		TokenDefinitionParticle.class, (byte) 2,
-		TokensParticle.class, (byte) 3,
-		StakedTokensParticle.class, (byte) 4,
-		ValidatorParticle.class, (byte) 5,
-		UniqueParticle.class, (byte) 6,
-		ExitingStake.class, (byte) 7
-	));
+	private enum SubstateType {
+		RE_ADDR((byte) 0),
+		SYSTEM((byte) 1),
+		TOKEN_DEF((byte) 2),
+		TOKENS((byte) 3),
+		STAKED_TOKENS((byte) 4),
+		VALIDATOR((byte) 5),
+		UNIQUE((byte) 6),
+		TOKENS_LOCKED((byte) 7);
+
+		private final byte id;
+
+		SubstateType(byte id) {
+			this.id = id;
+		}
+	}
+
+	private static Map<Class<? extends Particle>, List<Byte>> classToByteTypes = Map.of(
+		REAddrParticle.class, List.of(SubstateType.RE_ADDR.id),
+		SystemParticle.class, List.of(SubstateType.SYSTEM.id),
+		TokenDefinitionParticle.class, List.of(SubstateType.TOKEN_DEF.id),
+		TokensParticle.class, List.of(SubstateType.TOKENS.id, SubstateType.TOKENS_LOCKED.id),
+		StakedTokensParticle.class, List.of(SubstateType.STAKED_TOKENS.id),
+		ValidatorParticle.class, List.of(SubstateType.VALIDATOR.id),
+		UniqueParticle.class, List.of(SubstateType.UNIQUE.id)
+	);
 
 	private RESerializer() {
 		throw new IllegalStateException("Cannot instantiate.");
@@ -78,8 +92,8 @@ public final class RESerializer {
 		return ECDSASignature.deserialize(rArray, sArray, v);
 	}
 
-	public static byte classToByte(Class<? extends Particle> particleClass) {
-		return classToByte.get(particleClass);
+	public static List<Byte> classToBytes(Class<? extends Particle> particleClass) {
+		return classToByteTypes.get(particleClass);
 	}
 
 	public static Particle deserialize(byte[] bytes) throws DeserializeException {
@@ -88,35 +102,29 @@ public final class RESerializer {
 
 	public static Particle deserialize(ByteBuffer buf) throws DeserializeException {
 		var type = buf.get();
-		var c = classToByte.inverse().get(type);
-		if (c == null) {
-			throw new DeserializeException("Bad type: " + type);
-		}
-
-		if (c == REAddrParticle.class) {
+		if (type == SubstateType.RE_ADDR.id) {
 			return deserializeRRIParticle(buf);
-		} else if (c == SystemParticle.class) {
+		} else if (type == SubstateType.SYSTEM.id) {
 			return deserializeSystemParticle(buf);
-		} else if (c == TokensParticle.class) {
+		} else if (type == SubstateType.TOKENS.id) {
 			return deserializeTokensParticle(buf);
-		} else if (c == StakedTokensParticle.class) {
+		} else if (type == SubstateType.TOKENS_LOCKED.id) {
+			return deserializeTokensLockedParticle(buf);
+		} else if (type == SubstateType.STAKED_TOKENS.id) {
 			return deserializeStakedTokensParticle(buf);
-		} else if (c == ExitingStake.class) {
-			return deserializeExitingStake(buf);
-		} else if (c == ValidatorParticle.class) {
+		} else if (type == SubstateType.VALIDATOR.id) {
 			return deserializeValidatorParticle(buf);
-		} else if (c == UniqueParticle.class) {
+		} else if (type == SubstateType.UNIQUE.id) {
 			return deserializeUniqueParticle(buf);
-		} else if (c == TokenDefinitionParticle.class) {
+		} else if (type == SubstateType.TOKEN_DEF.id) {
 			return deserializeTokenDefinitionParticle(buf);
 		} else {
-			throw new DeserializeException("Unsupported type: " + c);
+			throw new DeserializeException("Unsupported type: " + type);
 		}
 	}
 
 	public static byte[] serialize(Particle p) {
 		var buf = ByteBuffer.allocate(1024);
-		buf.put(classToByte.get(p.getClass())); // substate type
 		if (p instanceof REAddrParticle) {
 			serializeData((REAddrParticle) p, buf);
 		} else if (p instanceof SystemParticle) {
@@ -131,8 +139,6 @@ public final class RESerializer {
 			serializeData((UniqueParticle) p, buf);
 		} else if (p instanceof TokenDefinitionParticle) {
 			serializeData((TokenDefinitionParticle) p, buf);
-		} else if (p instanceof ExitingStake) {
-			serializeData((ExitingStake) p, buf);
 		} else {
 			throw new IllegalStateException("Unknown particle: " + p);
 		}
@@ -159,6 +165,8 @@ public final class RESerializer {
 	}
 
 	private static void serializeData(REAddrParticle rriParticle, ByteBuffer buf) {
+		buf.put(SubstateType.RE_ADDR.id);
+
 		var rri = rriParticle.getAddr();
 		serializeREAddr(buf, rri);
 	}
@@ -169,6 +177,8 @@ public final class RESerializer {
 	}
 
 	private static void serializeData(SystemParticle systemParticle, ByteBuffer buf) {
+		buf.put(SubstateType.SYSTEM.id);
+
 		buf.putLong(systemParticle.getEpoch());
 		buf.putLong(systemParticle.getView());
 		buf.putLong(systemParticle.getTimestamp());
@@ -183,9 +193,16 @@ public final class RESerializer {
 	}
 
 	private static void serializeData(TokensParticle tokensParticle, ByteBuffer buf) {
+		tokensParticle.getEpochUnlocked().ifPresentOrElse(
+			e -> buf.put(SubstateType.TOKENS_LOCKED.id),
+			() -> buf.put(SubstateType.TOKENS.id)
+		);
+
 		serializeREAddr(buf, tokensParticle.getResourceAddr());
 		serializeREAddr(buf, tokensParticle.getHoldingAddr());
 		buf.put(tokensParticle.getAmount().toByteArray());
+
+		tokensParticle.getEpochUnlocked().ifPresent(buf::putLong);
 	}
 
 	private static TokensParticle deserializeTokensParticle(ByteBuffer buf) throws DeserializeException {
@@ -196,20 +213,18 @@ public final class RESerializer {
 		return new TokensParticle(holdingAddr, amount, rri);
 	}
 
-	private static void serializeData(ExitingStake p, ByteBuffer buf) {
-		serializeREAddr(buf, p.getOwner());
-		buf.putLong(p.getEpochExit());
-		buf.put(p.getAmount().toByteArray());
-	}
-
-	private static ExitingStake deserializeExitingStake(ByteBuffer buf) throws DeserializeException {
-		var owner = deserializeREAddr(buf);
-		var epochExit = buf.getLong();
+	private static TokensParticle deserializeTokensLockedParticle(ByteBuffer buf) throws DeserializeException {
+		var rri = deserializeREAddr(buf);
+		var holdingAddr = deserializeREAddr(buf);
 		var amount = deserializeUInt256(buf);
-		return new ExitingStake(amount, owner, epochExit);
+		var epochUnlocked = buf.getLong();
+
+		return new TokensParticle(holdingAddr, amount, rri, epochUnlocked);
 	}
 
 	private static void serializeData(StakedTokensParticle p, ByteBuffer buf) {
+		buf.put(SubstateType.STAKED_TOKENS.id);
+
 		serializeREAddr(buf, p.getOwner());
 		serializeKey(buf, p.getDelegateKey());
 		buf.put(p.getAmount().toByteArray());
@@ -223,6 +238,8 @@ public final class RESerializer {
 	}
 
 	private static void serializeData(ValidatorParticle p, ByteBuffer buf) {
+		buf.put(SubstateType.VALIDATOR.id);
+
 		serializeKey(buf, p.getKey());
 		buf.put((byte) (p.isRegisteredForNextEpoch() ? 1 : 0)); // isRegistered
 		serializeString(buf, p.getName());
@@ -238,6 +255,8 @@ public final class RESerializer {
 	}
 
 	private static void serializeData(UniqueParticle uniqueParticle, ByteBuffer buf) {
+		buf.put(SubstateType.UNIQUE.id);
+
 		serializeREAddr(buf, uniqueParticle.getRri());
 	}
 
@@ -247,6 +266,8 @@ public final class RESerializer {
 	}
 
 	private static void serializeData(TokenDefinitionParticle p, ByteBuffer buf) {
+		buf.put(SubstateType.TOKEN_DEF.id);
+
 		serializeREAddr(buf, p.getAddr());
 		p.getSupply().ifPresentOrElse(
 			i -> {

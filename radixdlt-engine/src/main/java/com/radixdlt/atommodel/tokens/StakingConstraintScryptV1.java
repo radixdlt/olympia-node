@@ -29,7 +29,6 @@ import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public final class StakingConstraintScryptV1 implements ConstraintScrypt {
@@ -71,7 +70,8 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 				"Can only unstake back to self"
 			),
 			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
-			(i, o, index) -> new DeprecatedUnstakeTokens(i.getOwner(), i.getDelegateKey(), o.getAmount()) // FIXME: this isn't 100% correct
+			// FIXME: this isn't 100% correct
+			(i, o, index) -> new DeprecatedUnstakeTokens(i.getOwner(), i.getDelegateKey(), o.getAmount())
 		));
 
 		// Stake movement

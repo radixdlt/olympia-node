@@ -22,8 +22,9 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.tokens.ExitingStake;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
+import com.radixdlt.atommodel.tokens.StakingConstraintScryptV2;
+import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -53,14 +54,14 @@ public class UnstakeTokens implements TxAction {
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var epoch = txBuilder.find(SystemParticle.class, p -> true)
-			.map(SystemParticle::getEpoch).orElse(0L);
+		var epochUnlocked = txBuilder.find(SystemParticle.class, p -> true)
+			.map(SystemParticle::getEpoch).orElse(0L) + StakingConstraintScryptV2.EPOCHS_LOCKED;
 		txBuilder.swapFungible(
 			StakedTokensParticle.class,
 			p -> p.getOwner().equals(accountAddr) && p.getDelegateKey().equals(delegateAddress),
 			amt -> new StakedTokensParticle(amt, accountAddr, delegateAddress),
 			amount,
 			"Not enough staked."
-		).with(amt -> new ExitingStake(amt, accountAddr, epoch));
+		).with(amt -> new TokensParticle(accountAddr, amt, REAddr.ofNativeToken(), epochUnlocked));
 	}
 }

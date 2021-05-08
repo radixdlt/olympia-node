@@ -335,7 +335,7 @@ public final class ConstraintMachine {
 		var signatureVerified = transitionProcedure.signatureValidator()
 			.verify(input, outputParticle, validationState.immutableIndex(), validationState.signedBy);
 		if (!signatureVerified) {
-			return Optional.of(Pair.of(CMErrorCode.INCORRECT_SIGNATURE, null));
+			return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
 		}
 
 		return Optional.empty();

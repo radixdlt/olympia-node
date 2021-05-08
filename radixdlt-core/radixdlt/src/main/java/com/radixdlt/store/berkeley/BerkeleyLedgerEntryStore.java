@@ -491,10 +491,25 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 	@Override
 	public SubstateCursor openIndexedCursor(Class<? extends Particle> particleClass) {
-		final byte[] indexableBytes = new byte[] {RESerializer.classToByte(particleClass)};
-		var cursor = new BerkeleySubstateCursor(upParticleDatabase, indexableBytes);
-		cursor.open();
-		return cursor;
+		var typeBytes = RESerializer.classToBytes(particleClass);
+		if (typeBytes.size() == 1) {
+			final byte[] indexableBytes = new byte[] {typeBytes.get(0)};
+			var cursor = new BerkeleySubstateCursor(upParticleDatabase, indexableBytes);
+			cursor.open();
+			return cursor;
+		} else if (typeBytes.size() == 2) {
+			final byte[] indexableBytes = new byte[] {typeBytes.get(0)};
+			var cursor = new BerkeleySubstateCursor(upParticleDatabase, indexableBytes);
+			cursor.open();
+			return SubstateCursor.concat(cursor, () -> {
+				final byte[] type2 = new byte[] {typeBytes.get(1)};
+				var cursor2 = new BerkeleySubstateCursor(upParticleDatabase, type2);
+				cursor2.open();
+				return cursor2;
+			});
+		} else {
+			throw new IllegalStateException("Cannot handle more than 2 types per class");
+		}
 	}
 
 	public <U extends Particle, V> V reduceUpParticles(
@@ -502,22 +517,23 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		V initial,
 		BiFunction<V, U, V> outputReducer
 	) {
-		final byte[] indexableBytes = new byte[] {RESerializer.classToByte(particleClass)};
-
+		var typeBytes = RESerializer.classToBytes(particleClass);
 		V v = initial;
-		try (var particleCursor = upParticleDatabase.openCursor(null, null)) {
-			var index = entry(indexableBytes);
-			var value = entry();
-			var status = particleCursor.getSearchKey(index, null, value, null);
-			while (status == SUCCESS) {
-				U particle;
-				try {
-					particle = (U) RESerializer.deserialize(value.getData());
-				} catch (DeserializeException e) {
-					throw new IllegalStateException();
+		for (Byte indexableByte : typeBytes) {
+			try (var particleCursor = upParticleDatabase.openCursor(null, null)) {
+				var index = entry(new byte[] {indexableByte});
+				var value = entry();
+				var status = particleCursor.getSearchKey(index, null, value, null);
+				while (status == SUCCESS) {
+					U particle;
+					try {
+						particle = (U) RESerializer.deserialize(value.getData());
+					} catch (DeserializeException e) {
+						throw new IllegalStateException();
+					}
+					v = outputReducer.apply(v, particle);
+					status = particleCursor.getNextDup(index, null, value, null);
 				}
-				v = outputReducer.apply(v, particle);
-				status = particleCursor.getNextDup(index, null, value, null);
 			}
 		}
 

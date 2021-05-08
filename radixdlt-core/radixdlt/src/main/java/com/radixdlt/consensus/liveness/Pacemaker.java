@@ -266,7 +266,7 @@ public final class Pacemaker {
 		this.voteDispatcher.dispatch(this.validatorSet.nodes(), timeoutVote);
 	}
 
-	private void  updateTimeoutCounters(ScheduledLocalTimeout scheduledTimeout) {
+	private void updateTimeoutCounters(ScheduledLocalTimeout scheduledTimeout) {
 		if (scheduledTimeout.count() == 0) {
 			counters.increment(CounterType.BFT_TIMED_OUT_VIEWS);
 		}
