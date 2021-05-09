@@ -54,7 +54,9 @@ public class KeyGenerator {
 			.addOption("h", "help", false, "Show usage information (this message)")
 			.addOption("k", "keystore", true, "Keystore name")
 			.addOption("p", "password", true, "Password for keystore")
-			.addOption("n", "keypair-name", true, "Key pair name (optional, default name is 'node')");
+			.addOption("n", "keypair-name", true, "Key pair name (optional, default name is 'node')")
+			.addOption("pk", "show-public-key", false, "Prints the public key of an existing "
+					+ "keypair and exits");
 	}
 
 	public static void main(String[] args) {
@@ -65,7 +67,7 @@ public class KeyGenerator {
 		parseParameters(args)
 			.filter(commandLine -> !commandLine.hasOption("h"), failure(0, ""))
 			.filter(commandLine -> commandLine.getOptions().length != 0, failure(0, ""))
-			.flatMap(cli -> allOf(parseKeystore(cli), parsePassword(cli), parseKeypair(cli))
+			.flatMap(cli -> allOf(parseKeystore(cli), parsePassword(cli), parseKeypair(cli), parseShowPk(cli))
 				.flatMap(this::generateKeypair))
 			.onFailure(failure -> usage(failure.message()))
 			.onSuccessDo(() -> System.out.println("Done"));
@@ -78,10 +80,14 @@ public class KeyGenerator {
 		new HelpFormatter().printHelp(KeyGenerator.class.getSimpleName(), options, true);
 	}
 
-	private Result<Void> generateKeypair(String keystore, String password, String keypairName) {
+	private Result<Void> generateKeypair(String keystore, String password, String keypairName, Boolean shouldShowPk) {
 		var keystoreFile = new File(keystore);
 		var newFile = !keystoreFile.canWrite();
 		var isNew = newFile ? "new" : "existing";
+
+		if (shouldShowPk) {
+			return printPublicKey(keystoreFile, password, keypairName, newFile);
+		}
 
 		var keyPair = ECKeyPair.generateNew();
 		var publicKey = keyPair.getPublicKey().toHex();
@@ -91,6 +97,24 @@ public class KeyGenerator {
 		return Result.wrap(Failure.failure(0, "Error: {0}"), () -> {
 			RadixKeyStore.fromFile(keystoreFile, password.toCharArray(), newFile)
 				.writeKeyPair(keypairName, keyPair);
+			return null;
+		});
+	}
+
+	private Result<Boolean> parseShowPk(CommandLine commandLine) {
+		return Result.ok(commandLine.hasOption("pk"));
+	}
+
+	private Result<Void> printPublicKey(File keystoreFile, String password, String keypairName, boolean newFile) {
+		if (!keystoreFile.exists() || !keystoreFile.canRead()) {
+			return Result.fail(Failure.failure(1, "keystore file '{0}' does not exist or is not accessible",
+					keystoreFile));
+		}
+
+		return Result.wrap(Failure.failure(0, "Error: {0}"), () -> {
+			ECKeyPair keyPair = RadixKeyStore.fromFile(keystoreFile, password.toCharArray(), newFile)
+					.readKeyPair(keypairName, false);
+			System.out.printf("Public key of keypair '%s': %s%n", keypairName, keyPair.getPublicKey().toHex());
 			return null;
 		});
 	}
