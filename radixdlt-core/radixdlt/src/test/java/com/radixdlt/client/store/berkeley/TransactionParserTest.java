@@ -19,7 +19,9 @@ package com.radixdlt.client.store.berkeley;
 import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.RegisterValidator;
-import com.radixdlt.atommodel.tokens.StakingConstraintScrypt;
+import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atommodel.system.SystemConstraintScrypt;
+import com.radixdlt.atommodel.tokens.StakingConstraintScryptV2;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,7 +30,6 @@ import com.radixdlt.client.api.ActionType;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
@@ -73,9 +74,10 @@ public class TransactionParserTest {
 	@Before
 	public void setup() throws Exception {
 		final var cmAtomOS = new CMAtomOS();
+		cmAtomOS.load(new SystemConstraintScrypt());
 		cmAtomOS.load(new ValidatorConstraintScrypt());
 		cmAtomOS.load(new TokensConstraintScrypt());
-		cmAtomOS.load(new StakingConstraintScrypt());
+		cmAtomOS.load(new StakingConstraintScryptV2());
 
 		final var cm = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())

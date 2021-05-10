@@ -35,7 +35,6 @@ import com.radixdlt.store.ReadableAddrs;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
-import java.util.function.BiFunction;
 
 /**
  * Transition Procedure for one to one fungible types
@@ -95,23 +94,26 @@ public class CreateFungibleTransitionRoutine<I extends Fungible, O extends Fungi
 
 	private final Class<I> inputClass;
 	private final Class<O> outputClass;
-	private final BiFunction<I, O, Result> transition;
+	private final Verifier<I, O> transitionVerifier;
 	private final SignatureValidator<I, O> signatureValidator;
 	private final ActionMapper<I, O> actionMapper;
 
+	public interface Verifier<I extends Fungible, O extends Fungible> {
+		Result verify(I in, O out, ReadableAddrs readableAddrs);
+	}
 
 	public CreateFungibleTransitionRoutine(
 		Class<I> inputClass,
 		Class<O> outputClass,
-		BiFunction<I, O, Result> transition,
+		Verifier<I, O> transitionVerifier,
 		SignatureValidator<I, O> signatureValidator,
 		ActionMapper<I, O> actionMapper
 	) {
-		Objects.requireNonNull(transition);
+		Objects.requireNonNull(transitionVerifier);
 
 		this.inputClass = inputClass;
 		this.outputClass = outputClass;
-		this.transition = transition;
+		this.transitionVerifier = transitionVerifier;
 		this.signatureValidator = signatureValidator;
 		this.actionMapper = actionMapper;
 	}
@@ -132,8 +134,13 @@ public class CreateFungibleTransitionRoutine<I extends Fungible, O extends Fungi
 	public TransitionProcedure<I, O, VoidReducerState> getProcedure0() {
 		return new TransitionProcedure<I, O, VoidReducerState>() {
 			@Override
-			public Result precondition(SubstateWithArg<I> in, O outputParticle, VoidReducerState outputUsed, ReadableAddrs index) {
-				return transition.apply(in.getSubstate(), outputParticle);
+			public Result precondition(
+				SubstateWithArg<I> in,
+				O outputParticle,
+				VoidReducerState outputUsed,
+				ReadableAddrs readable
+			) {
+				return transitionVerifier.verify(in.getSubstate(), outputParticle, readable);
 			}
 
 			@Override
@@ -162,8 +169,8 @@ public class CreateFungibleTransitionRoutine<I extends Fungible, O extends Fungi
 	public TransitionProcedure<I, O, UsedAmount> getProcedure1() {
 		return new TransitionProcedure<I, O, UsedAmount>() {
 			@Override
-			public Result precondition(SubstateWithArg<I> in, O outputParticle, UsedAmount used, ReadableAddrs index) {
-				return transition.apply(in.getSubstate(), outputParticle);
+			public Result precondition(SubstateWithArg<I> in, O outputParticle, UsedAmount used, ReadableAddrs readable) {
+				return transitionVerifier.verify(in.getSubstate(), outputParticle, readable);
 			}
 
 			@Override

@@ -17,9 +17,13 @@
 
 package com.radixdlt.atommodel.tokens;
 
+import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.store.ReadableAddrs;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  *  A particle which represents an amount of transferrable fungible tokens
@@ -29,7 +33,10 @@ public final class TokensParticle implements Fungible {
 	private final REAddr resourceAddr;
 	private final UInt256 amount;
 
+	// Bucket
 	private final REAddr holdingAddress;
+	// Bucket properties
+	private final Long epochUnlocked;
 
 	public TokensParticle(
 		REAddr holdingAddress,
@@ -39,6 +46,36 @@ public final class TokensParticle implements Fungible {
 		this.holdingAddress = Objects.requireNonNull(holdingAddress);
 		this.resourceAddr = Objects.requireNonNull(resourceAddr);
 		this.amount = Objects.requireNonNull(amount);
+		this.epochUnlocked = null;
+	}
+
+	public TokensParticle(
+		REAddr holdingAddress,
+		UInt256 amount,
+		REAddr resourceAddr,
+		Long epochUnlocked
+	) {
+		this.holdingAddress = Objects.requireNonNull(holdingAddress);
+		this.resourceAddr = Objects.requireNonNull(resourceAddr);
+		this.amount = Objects.requireNonNull(amount);
+		this.epochUnlocked = epochUnlocked;
+	}
+
+	public boolean allowedToWithdraw(Optional<ECPublicKey> key, ReadableAddrs readable) {
+		if (!key.map(holdingAddress::allowToWithdrawFrom).orElse(false)) {
+			return false;
+		}
+
+		if (epochUnlocked == null) {
+			return true;
+		}
+
+		var system = (SystemParticle) readable.loadAddr(null, REAddr.ofSystem()).orElseThrow();
+		return system.getEpoch() >= epochUnlocked;
+	}
+
+	public Optional<Long> getEpochUnlocked() {
+		return Optional.ofNullable(epochUnlocked);
 	}
 
 	public REAddr getHoldingAddr() {
@@ -75,11 +112,12 @@ public final class TokensParticle implements Fungible {
 		TokensParticle that = (TokensParticle) o;
 		return Objects.equals(holdingAddress, that.holdingAddress)
 			&& Objects.equals(resourceAddr, that.resourceAddr)
+			&& Objects.equals(epochUnlocked, that.epochUnlocked)
 			&& Objects.equals(amount, that.amount);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(holdingAddress, resourceAddr, amount);
+		return Objects.hash(holdingAddress, resourceAddr, epochUnlocked, amount);
 	}
 }

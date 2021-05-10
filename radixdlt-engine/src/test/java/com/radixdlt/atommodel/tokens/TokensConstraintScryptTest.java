@@ -42,7 +42,7 @@ public class TokensConstraintScryptTest {
 		CMAtomOS cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new ValidatorConstraintScrypt());
 		cmAtomOS.load(new TokensConstraintScrypt());
-		cmAtomOS.load(new StakingConstraintScrypt());
+		cmAtomOS.load(new StakingConstraintScryptV1());
 		staticCheck = cmAtomOS.buildParticleStaticCheck();
 	}
 

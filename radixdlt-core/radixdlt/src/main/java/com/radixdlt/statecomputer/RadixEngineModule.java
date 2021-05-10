@@ -25,7 +25,8 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.tokens.StakingConstraintScrypt;
+import com.radixdlt.atommodel.tokens.StakingConstraintScryptV1;
+import com.radixdlt.atommodel.tokens.StakingConstraintScryptV2;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
@@ -78,18 +79,32 @@ public class RadixEngineModule extends AbstractModule {
 		var treeMap = new TreeMap<Long, ConstraintMachine>();
 
 		// V1 Betanet ConstraintMachine
-		final CMAtomOS os = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
-		os.load(new ValidatorConstraintScrypt()); // load before TokensConstraintScrypt due to dependency
-		os.load(new TokensConstraintScrypt());
-		os.load(new StakingConstraintScrypt());
-		os.load(new UniqueParticleConstraintScrypt());
-		os.load(new SystemConstraintScrypt());
-		var betanetV1 = new ConstraintMachine.Builder()
-			.setVirtualStoreLayer(os.virtualizedUpParticles())
-			.setParticleTransitionProcedures(os.buildTransitionProcedures())
-			.setParticleStaticCheck(os.buildParticleStaticCheck())
+		final CMAtomOS v1 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
+		v1.load(new ValidatorConstraintScrypt()); // load before TokensConstraintScrypt due to dependency
+		v1.load(new TokensConstraintScrypt());
+		v1.load(new StakingConstraintScryptV1());
+		v1.load(new UniqueParticleConstraintScrypt());
+		v1.load(new SystemConstraintScrypt());
+		var betanet1 = new ConstraintMachine.Builder()
+			.setVirtualStoreLayer(v1.virtualizedUpParticles())
+			.setParticleTransitionProcedures(v1.buildTransitionProcedures())
+			.setParticleStaticCheck(v1.buildParticleStaticCheck())
 			.build();
-		treeMap.put(0L, betanetV1);
+		treeMap.put(0L, betanet1);
+
+		// V2 Betanet ConstraintMachine
+		final CMAtomOS v2 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
+		v2.load(new ValidatorConstraintScrypt()); // load before TokensConstraintScrypt due to dependency
+		v2.load(new TokensConstraintScrypt());
+		v2.load(new StakingConstraintScryptV2());
+		v2.load(new UniqueParticleConstraintScrypt());
+		v2.load(new SystemConstraintScrypt());
+		var betanet2 = new ConstraintMachine.Builder()
+			.setVirtualStoreLayer(v2.virtualizedUpParticles())
+			.setParticleTransitionProcedures(v2.buildTransitionProcedures())
+			.setParticleStaticCheck(v2.buildParticleStaticCheck())
+			.build();
+		treeMap.put(1L, betanet2);
 
 		return treeMap;
 	}

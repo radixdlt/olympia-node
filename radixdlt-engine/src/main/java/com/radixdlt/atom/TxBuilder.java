@@ -137,25 +137,19 @@ public final class TxBuilder {
 		}
 	}
 
-	public <T extends Particle> T find(
+	public <T extends Particle> Optional<T> find(
 		Class<T> particleClass,
-		Predicate<T> particlePredicate,
-		String errorMessage
+		Predicate<T> particlePredicate
 	) throws TxBuilderException {
 		try (var cursor = createRemoteSubstateCursor(particleClass)) {
-			var substateRead = Streams.concat(
+			return Streams.concat(
 				lowLevelBuilder.localUpSubstate().stream().map(LocalSubstate::getParticle),
-				iteratorToStream(cursor)
+				iteratorToStream(cursor).map(Substate::getParticle)
 			)
 				.filter(particleClass::isInstance)
 				.map(particleClass::cast)
 				.filter(particlePredicate)
 				.findFirst();
-			if (substateRead.isEmpty()) {
-				throw new TxBuilderException(errorMessage);
-			}
-
-			return substateRead.get();
 		}
 	}
 

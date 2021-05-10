@@ -20,7 +20,7 @@ package com.radixdlt.atommodel.tokens;
 
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.Unknown;
-import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.actions.DeprecatedUnstakeTokens;
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
@@ -29,10 +29,9 @@ import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public final class StakingConstraintScrypt implements ConstraintScrypt {
+public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 	@Override
 	public void main(SysCalls os) {
 		os.registerParticle(
@@ -71,7 +70,8 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 				"Can only unstake back to self"
 			),
 			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
-			(i, o, index) -> new UnstakeTokens(i.getOwner(), i.getDelegateKey(), o.getAmount()) // FIXME: this isn't 100% correct
+			// FIXME: this isn't 100% correct
+			(i, o, index) -> new DeprecatedUnstakeTokens(i.getOwner(), i.getDelegateKey(), o.getAmount())
 		));
 
 		// Stake movement
@@ -88,9 +88,9 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 		));
 	}
 
-	private static <L, R, R0, R1> BiFunction<L, R, Result> checkEquals(
+	private static <L extends Fungible, R extends Fungible, R0, R1> CreateFungibleTransitionRoutine.Verifier<L, R> checkEquals(
 		Function<L, R0> leftMapper0, Function<R, R0> rightMapper0, String errorMessage0
 	) {
-		return (l, r) -> Result.of(Objects.equals(leftMapper0.apply(l), rightMapper0.apply(r)), errorMessage0);
+		return (l, r, verifier) -> Result.of(Objects.equals(leftMapper0.apply(l), rightMapper0.apply(r)), errorMessage0);
 	}
 }
