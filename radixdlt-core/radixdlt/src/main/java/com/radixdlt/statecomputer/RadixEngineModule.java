@@ -32,6 +32,7 @@ import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.PostParsedChecker;
 import com.radixdlt.engine.BatchVerifier;
@@ -39,11 +40,13 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.engine.SubstateCacheRegister;
 import com.radixdlt.store.EngineStore;
+import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * Module which manages execution of commands
@@ -71,18 +74,35 @@ public class RadixEngineModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private ConstraintMachine buildConstraintMachine() {
+	private TreeMap<Long, ConstraintMachine> epochToConstraintMachine() {
+		var treeMap = new TreeMap<Long, ConstraintMachine>();
+
+		// V1 Betanet ConstraintMachine
 		final CMAtomOS os = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
 		os.load(new ValidatorConstraintScrypt()); // load before TokensConstraintScrypt due to dependency
 		os.load(new TokensConstraintScrypt());
 		os.load(new StakingConstraintScrypt());
 		os.load(new UniqueParticleConstraintScrypt());
 		os.load(new SystemConstraintScrypt());
-		return new ConstraintMachine.Builder()
+		var betanetV1 = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(os.virtualizedUpParticles())
 			.setParticleTransitionProcedures(os.buildTransitionProcedures())
 			.setParticleStaticCheck(os.buildParticleStaticCheck())
 			.build();
+		treeMap.put(0L, betanetV1);
+
+		return treeMap;
+	}
+
+	@Provides
+	@Singleton
+	private ConstraintMachine buildConstraintMachine(
+		CommittedReader committedReader, // TODO: This is a hack, remove
+		TreeMap<Long, ConstraintMachine> epochToConstraintMachine
+	) {
+		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
+		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
+		return epochToConstraintMachine.floorEntry(epoch).getValue();
 	}
 
 	@Provides

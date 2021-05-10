@@ -135,6 +135,8 @@ public class RecoveryTest {
 			new AbstractModule() {
 				@Override
 				public void configure() {
+					// HACK
+					bind(CommittedReader.class).toInstance(CommittedReader.mocked());
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)

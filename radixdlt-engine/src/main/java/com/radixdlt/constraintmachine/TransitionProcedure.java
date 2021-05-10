@@ -18,7 +18,7 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atomos.Result;
-import com.radixdlt.store.ImmutableIndex;
+import com.radixdlt.store.ReadableAddrs;
 
 /**
  * Application level "Bytecode" to be run per particle in the Constraint machine
@@ -26,11 +26,11 @@ import com.radixdlt.store.ImmutableIndex;
 public interface TransitionProcedure<I extends Particle, O extends Particle, U extends ReducerState> {
 	// TODO: move permission level to the "OS" level of paths rather than transitions
 
-	Result precondition(SubstateWithArg<I> in, O outputParticle, U outputUsed, ImmutableIndex immutableIndex);
+	Result precondition(SubstateWithArg<I> in, O outputParticle, U outputUsed, ReadableAddrs readableAddrs);
 
 	InputOutputReducer<I, O, U> inputOutputReducer();
 
-	default PermissionLevel requiredPermissionLevel(SubstateWithArg<I> in, O outputParticle, ImmutableIndex index) {
+	default PermissionLevel requiredPermissionLevel(SubstateWithArg<I> in, O outputParticle, ReadableAddrs index) {
 		return PermissionLevel.USER;
 	}
 

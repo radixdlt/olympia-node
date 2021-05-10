@@ -31,7 +31,7 @@ import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.SignatureValidator;
-import com.radixdlt.store.ImmutableIndex;
+import com.radixdlt.store.ReadableAddrs;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -139,7 +139,7 @@ public final class ConstraintScryptEnv implements SysCalls {
 					SubstateWithArg<REAddrParticle> in,
 					O outputParticle,
 					VoidReducerState outputUsed,
-					ImmutableIndex index
+					ReadableAddrs index
 				) {
 					if (in.getArg().isEmpty()) {
 						return Result.error("Rri must be created with a name");
@@ -160,7 +160,7 @@ public final class ConstraintScryptEnv implements SysCalls {
 				public PermissionLevel requiredPermissionLevel(
 					SubstateWithArg<REAddrParticle> in,
 					O outputParticle,
-					ImmutableIndex index
+					ReadableAddrs index
 				) {
 					var name = new String(in.getArg().orElseThrow());
 					return systemNames.contains(name) || in.getSubstate().getAddr().isNativeToken()
@@ -220,7 +220,7 @@ public final class ConstraintScryptEnv implements SysCalls {
 		final TransitionProcedure<Particle, Particle, ReducerState> transformedProcedure
 			= new TransitionProcedure<Particle, Particle, ReducerState>() {
 				@Override
-				public PermissionLevel requiredPermissionLevel(SubstateWithArg<Particle> i, Particle o, ImmutableIndex index) {
+				public PermissionLevel requiredPermissionLevel(SubstateWithArg<Particle> i, Particle o, ReadableAddrs index) {
 					var in = i.getArg()
 						.map(arg -> SubstateWithArg.withArg((I) i.getSubstate(), arg))
 						.orElseGet(() -> SubstateWithArg.noArg((I) i.getSubstate()));
@@ -232,7 +232,7 @@ public final class ConstraintScryptEnv implements SysCalls {
 					SubstateWithArg<Particle> in,
 					Particle outputParticle,
 					ReducerState outputUsed,
-					ImmutableIndex index
+					ReadableAddrs index
 				) {
 					// RRIs must be the same across RRI particle transitions
 					if (inputDefinition.getRriMapper() != null && outputDefinition.getRriMapper() != null) {

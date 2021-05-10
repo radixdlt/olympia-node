@@ -44,6 +44,18 @@ import java.util.stream.Collectors;
  */
 public final class REAddr {
 	public enum REAddrType {
+		SYSTEM((byte) 0) {
+			public REAddr parse(ByteBuffer buf) {
+				return REAddr.ofSystem();
+			}
+
+			public Optional<String> verify(ByteBuffer buf) {
+				if (buf.hasRemaining()) {
+					return Optional.of("System must not have bytes");
+				}
+				return Optional.empty();
+			}
+		},
 		NATIVE_TOKEN((byte) 1) {
 			public REAddr parse(ByteBuffer buf) {
 				return REAddr.ofNativeToken();
@@ -215,6 +227,10 @@ public final class REAddr {
 		buf.put(REAddrType.PUB_KEY.type);
 		buf.put(key.getCompressedBytes());
 		return create(buf.array());
+	}
+
+	public static REAddr ofSystem() {
+		return create(new byte[] {REAddrType.SYSTEM.type});
 	}
 
 	public static REAddr ofNativeToken() {

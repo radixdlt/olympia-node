@@ -19,10 +19,10 @@ package com.radixdlt.atommodel.routines;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.TxAction;
+import com.radixdlt.atommodel.tokens.Fungible;
 import com.radixdlt.atomos.ConstraintRoutine;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.RoutineCalls;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.TransitionProcedure;
@@ -31,19 +31,18 @@ import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.SignatureValidator;
-import com.radixdlt.store.ImmutableIndex;
+import com.radixdlt.store.ReadableAddrs;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 /**
  * Transition Procedure for one to one fungible types
  */
-public class CreateFungibleTransitionRoutine<I extends Particle, O extends Particle> implements ConstraintRoutine {
+public class CreateFungibleTransitionRoutine<I extends Fungible, O extends Fungible> implements ConstraintRoutine {
 	public interface ActionMapper<I, O> {
-		TxAction map(I i, O o, ImmutableIndex index);
+		TxAction map(I i, O o, ReadableAddrs index);
 	}
 
 	public static final class UsedAmount implements ReducerState {
@@ -96,8 +95,6 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 
 	private final Class<I> inputClass;
 	private final Class<O> outputClass;
-	private final Function<I, UInt256> inputAmountMapper;
-	private final Function<O, UInt256> outputAmountMapper;
 	private final BiFunction<I, O, Result> transition;
 	private final SignatureValidator<I, O> signatureValidator;
 	private final ActionMapper<I, O> actionMapper;
@@ -106,20 +103,14 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 	public CreateFungibleTransitionRoutine(
 		Class<I> inputClass,
 		Class<O> outputClass,
-		Function<I, UInt256> inputAmountMapper,
-		Function<O, UInt256> outputAmountMapper,
 		BiFunction<I, O, Result> transition,
 		SignatureValidator<I, O> signatureValidator,
 		ActionMapper<I, O> actionMapper
 	) {
-		Objects.requireNonNull(inputAmountMapper);
-		Objects.requireNonNull(outputAmountMapper);
 		Objects.requireNonNull(transition);
 
 		this.inputClass = inputClass;
 		this.outputClass = outputClass;
-		this.inputAmountMapper = inputAmountMapper;
-		this.outputAmountMapper = outputAmountMapper;
 		this.transition = transition;
 		this.signatureValidator = signatureValidator;
 		this.actionMapper = actionMapper;
@@ -141,15 +132,15 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 	public TransitionProcedure<I, O, VoidReducerState> getProcedure0() {
 		return new TransitionProcedure<I, O, VoidReducerState>() {
 			@Override
-			public Result precondition(SubstateWithArg<I> in, O outputParticle, VoidReducerState outputUsed, ImmutableIndex index) {
+			public Result precondition(SubstateWithArg<I> in, O outputParticle, VoidReducerState outputUsed, ReadableAddrs index) {
 				return transition.apply(in.getSubstate(), outputParticle);
 			}
 
 			@Override
 			public InputOutputReducer<I, O, VoidReducerState> inputOutputReducer() {
 				return (input, output, index, v) -> {
-					var i = inputAmountMapper.apply(input.getSubstate());
-					var o = outputAmountMapper.apply(output);
+					var i = input.getSubstate().getAmount();
+					var o = output.getAmount();
 					var compare = i.compareTo(o);
 					var txAction = actionMapper.map(input.getSubstate(), output, index);
 					if (compare == 0) {
@@ -171,15 +162,15 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 	public TransitionProcedure<I, O, UsedAmount> getProcedure1() {
 		return new TransitionProcedure<I, O, UsedAmount>() {
 			@Override
-			public Result precondition(SubstateWithArg<I> in, O outputParticle, UsedAmount used, ImmutableIndex index) {
+			public Result precondition(SubstateWithArg<I> in, O outputParticle, UsedAmount used, ReadableAddrs index) {
 				return transition.apply(in.getSubstate(), outputParticle);
 			}
 
 			@Override
 			public InputOutputReducer<I, O, UsedAmount> inputOutputReducer() {
 				return (input, output, index, used) -> {
-					var i = inputAmountMapper.apply(input.getSubstate());
-					var o = outputAmountMapper.apply(output);
+					var i = input.getSubstate().getAmount();
+					var o = output.getAmount();
 					if (used.isInput) {
 						i = i.subtract(used.getUsedAmount());
 					} else {

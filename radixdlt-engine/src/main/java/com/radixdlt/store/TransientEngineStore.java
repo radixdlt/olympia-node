@@ -68,8 +68,8 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public Optional<Particle> loadRri(Transaction dbTxn, REAddr rri) {
-		return transientStore.loadRri(dbTxn, rri)
-			.or(() -> base.loadRri(dbTxn, rri));
+	public Optional<Particle> loadAddr(Transaction dbTxn, REAddr rri) {
+		return transientStore.loadAddr(dbTxn, rri)
+			.or(() -> base.loadAddr(dbTxn, rri));
 	}
 }

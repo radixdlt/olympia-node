@@ -140,7 +140,6 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	private final ConstraintMachine constraintMachine;
 	private final EngineStore<M> engineStore;
 	private final PostParsedChecker checker;
 	private final Object stateUpdateEngineLock = new Object();
@@ -148,6 +147,8 @@ public final class RadixEngine<M> {
 	private final Map<Class<?>, SubstateCache<?>> substateCache = new HashMap<>();
 	private final List<RadixEngineBranch<M>> branches = new ArrayList<>();
 	private final BatchVerifier<M> batchVerifier;
+
+	private ConstraintMachine constraintMachine;
 
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
@@ -236,6 +237,12 @@ public final class RadixEngine<M> {
 	public <U> U getComputedState(Class<U> applicationStateClass, String name) {
 		synchronized (stateUpdateEngineLock) {
 			return applicationStateClass.cast(stateComputers.get(Pair.of(applicationStateClass, name)).curValue);
+		}
+	}
+
+	public void replaceConstraintMachine(ConstraintMachine constraintMachine) {
+		synchronized (stateUpdateEngineLock) {
+			this.constraintMachine = constraintMachine;
 		}
 	}
 

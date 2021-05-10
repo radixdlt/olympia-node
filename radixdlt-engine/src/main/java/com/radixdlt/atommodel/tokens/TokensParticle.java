@@ -17,7 +17,6 @@
 
 package com.radixdlt.atommodel.tokens;
 
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
@@ -26,10 +25,11 @@ import java.util.Objects;
  *  A particle which represents an amount of transferrable fungible tokens
  *  owned by some key owner and stored in an account.
  */
-public final class TokensParticle implements Particle {
+public final class TokensParticle implements Fungible {
 	private final REAddr resourceAddr;
-	private final REAddr holdingAddress;
 	private final UInt256 amount;
+
+	private final REAddr holdingAddress;
 
 	public TokensParticle(
 		REAddr holdingAddress,
@@ -59,6 +59,7 @@ public final class TokensParticle implements Particle {
 		);
 	}
 
+	@Override
 	public UInt256 getAmount() {
 		return this.amount;
 	}

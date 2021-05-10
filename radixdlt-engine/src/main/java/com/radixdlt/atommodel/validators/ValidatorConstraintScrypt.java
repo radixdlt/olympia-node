@@ -31,7 +31,7 @@ import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.SignatureValidator;
-import com.radixdlt.store.ImmutableIndex;
+import com.radixdlt.store.ReadableAddrs;
 
 import java.util.Objects;
 import java.util.function.Function;
@@ -82,7 +82,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 			SubstateWithArg<ValidatorParticle> in,
 			ValidatorParticle out,
 			VoidReducerState outputUsed,
-			ImmutableIndex index
+			ReadableAddrs index
 		) {
 			// ensure transition is between validator particles concerning the same validator address
 			if (!Objects.equals(in.getSubstate().getKey(), out.getKey())) {

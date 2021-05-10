@@ -85,6 +85,7 @@ import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.statecomputer.transaction.EmptyTransactionCheckModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
+import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
 
@@ -134,6 +135,9 @@ public class RadixEngineStateComputerTest {
 
 				install(MempoolConfig.asModule(10, 10));
 				install(RadixEngineConfig.asModule(1, 100, 10, 50));
+
+				// HACK
+				bind(CommittedReader.class).toInstance(CommittedReader.mocked());
 
 				bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 

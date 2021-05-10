@@ -59,10 +59,9 @@ public final class StakeTokens implements TxAction {
 				&& p.getHoldingAddr().equals(fromAcct)
 				&& (amount.compareTo(TokenUnitConversions.SUB_UNITS) < 0
 				|| p.getAmount().compareTo(TokenUnitConversions.unitsToSubunits(1)) >= 0),
-			TokensParticle::getAmount,
 			amt -> new TokensParticle(fromAcct, amt, REAddr.ofNativeToken()),
 			amount,
 			"Not enough balance for staking."
-		).with(amt -> new StakedTokensParticle(delegateKey, fromAcct, amt));
+		).with(amt -> new StakedTokensParticle(amt, fromAcct, delegateKey));
 	}
 }

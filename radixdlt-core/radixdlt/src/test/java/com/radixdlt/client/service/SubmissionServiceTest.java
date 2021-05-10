@@ -23,6 +23,7 @@ import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
+import com.radixdlt.sync.CommittedReader;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -142,6 +143,7 @@ public class SubmissionServiceTest {
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
 				bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(engineStore);
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
+				bind(CommittedReader.class).toInstance(CommittedReader.mocked());
 
 				bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 				bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() { })

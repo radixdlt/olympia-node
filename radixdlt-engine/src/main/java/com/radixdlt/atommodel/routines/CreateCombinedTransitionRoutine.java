@@ -37,7 +37,7 @@ import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.SignatureValidator;
-import com.radixdlt.store.ImmutableIndex;
+import com.radixdlt.store.ReadableAddrs;
 
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
@@ -105,12 +105,12 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	public TransitionProcedure<I, O, VoidReducerState> getProcedure0() {
 		return new TransitionProcedure<I, O, VoidReducerState>() {
 			@Override
-			public PermissionLevel requiredPermissionLevel(SubstateWithArg<I> in, O outputParticle, ImmutableIndex index) {
+			public PermissionLevel requiredPermissionLevel(SubstateWithArg<I> in, O outputParticle, ReadableAddrs index) {
 				return permissionLevel.apply(in, outputParticle);
 			}
 
 			@Override
-			public Result precondition(SubstateWithArg<I> in, O outputParticle, VoidReducerState outputUsed, ImmutableIndex index) {
+			public Result precondition(SubstateWithArg<I> in, O outputParticle, VoidReducerState outputUsed, ReadableAddrs index) {
 				// FIXME: HACK as we are assuming that this is a mutable token creation which is fine for
 				// FIXME: now as it is the only available transition for betanet
 				var argMaybe = in.getArg();
@@ -159,7 +159,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 				SubstateWithArg<I> inputParticle,
 				V outputParticle,
 				UsedParticle<O> inputUsed,
-				ImmutableIndex index
+				ReadableAddrs index
 			) {
 				return combinedCheck.apply(inputUsed.usedParticle, outputParticle);
 			}

@@ -18,8 +18,9 @@
 package com.radixdlt.atommodel.routines;
 
 import com.radixdlt.atom.actions.Unknown;
+import com.radixdlt.atommodel.tokens.Fungible;
 import com.radixdlt.constraintmachine.SubstateWithArg;
-import com.radixdlt.store.ImmutableIndex;
+import com.radixdlt.store.ReadableAddrs;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 import java.util.Objects;
@@ -28,7 +29,6 @@ import org.junit.Test;
 
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine.UsedAmount;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.SignatureValidator;
@@ -38,13 +38,14 @@ import static org.mockito.Mockito.mock;
 
 public class CreateFungibleTransitionRoutineTest {
 
-	private static final class Fungible implements Particle {
+	private static final class FungibleSubstate implements Fungible {
 		private final UInt256 amount;
-		Fungible(UInt256 amount) {
+		FungibleSubstate(UInt256 amount) {
 			this.amount = amount;
 		}
 
-		UInt256 getAmount() {
+		@Override
+		public UInt256 getAmount() {
 			return amount;
 		}
 
@@ -55,10 +56,10 @@ public class CreateFungibleTransitionRoutineTest {
 
 		@Override
 		public boolean equals(Object obj) {
-			if (!(obj instanceof Fungible)) {
+			if (!(obj instanceof FungibleSubstate)) {
 				return false;
 			}
-			final var that = (Fungible) obj;
+			final var that = (FungibleSubstate) obj;
 			return Objects.equals(this.amount, that.amount);
 		}
 
@@ -68,7 +69,7 @@ public class CreateFungibleTransitionRoutineTest {
 		}
 	}
 
-	interface SignatureValidatorFungible extends SignatureValidator<Fungible, Fungible> {
+	interface SignatureValidatorFungible extends SignatureValidator<FungibleSubstate, FungibleSubstate> {
 		// Empty
 	}
 
@@ -80,42 +81,42 @@ public class CreateFungibleTransitionRoutineTest {
 
 	@Test
 	public void when_validating_a_simple_fungible_transfer__then_validation_should_succeed() {
-		TransitionProcedure<Fungible, Fungible, VoidReducerState> procedure = new CreateFungibleTransitionRoutine<>(
-			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
+		TransitionProcedure<FungibleSubstate, FungibleSubstate, VoidReducerState> procedure = new CreateFungibleTransitionRoutine<>(
+			FungibleSubstate.class, FungibleSubstate.class,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class),
 			(i, o, index) -> Unknown.create()
 		).getProcedure0();
 
 		assertThat(procedure.inputOutputReducer().reduce(
-			SubstateWithArg.noArg(new Fungible(UInt256.ONE)),
-			new Fungible(UInt256.ONE),
-			mock(ImmutableIndex.class),
+			SubstateWithArg.noArg(new FungibleSubstate(UInt256.ONE)),
+			new FungibleSubstate(UInt256.ONE),
+			mock(ReadableAddrs.class),
 			null
 		).isComplete()).isTrue();
 
 
 		assertThat(procedure.inputOutputReducer().reduce(
-			SubstateWithArg.noArg(new Fungible(UInt256.ONE)),
-			new Fungible(UInt256.ONE),
-			mock(ImmutableIndex.class),
+			SubstateWithArg.noArg(new FungibleSubstate(UInt256.ONE)),
+			new FungibleSubstate(UInt256.ONE),
+			mock(ReadableAddrs.class),
 			null
 		).isComplete()).isTrue();
 	}
 
 	@Test
 	public void when_validating_a_two_to_one_transfer__then_execution_should_pop_output_and_one_left_on_input() {
-		TransitionProcedure<Fungible, Fungible, VoidReducerState> procedure = new CreateFungibleTransitionRoutine<>(
-			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
+		TransitionProcedure<FungibleSubstate, FungibleSubstate, VoidReducerState> procedure = new CreateFungibleTransitionRoutine<>(
+			FungibleSubstate.class, FungibleSubstate.class,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class),
 			(i, o, index) -> Unknown.create()
 		).getProcedure0();
 
 		var state = procedure.inputOutputReducer().reduce(
-			SubstateWithArg.noArg(new Fungible(UInt256.TWO)),
-			new Fungible(UInt256.ONE),
-			mock(ImmutableIndex.class),
+			SubstateWithArg.noArg(new FungibleSubstate(UInt256.TWO)),
+			new FungibleSubstate(UInt256.ONE),
+			mock(ReadableAddrs.class),
 			null
 		).getIncomplete().get();
 
@@ -127,17 +128,17 @@ public class CreateFungibleTransitionRoutineTest {
 
 	@Test
 	public void when_validating_a_one_to_two_transfer__then_input_should_succeed_and_one_left_on_stack() {
-		TransitionProcedure<Fungible, Fungible, VoidReducerState> procedure = new CreateFungibleTransitionRoutine<>(
-			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
+		TransitionProcedure<FungibleSubstate, FungibleSubstate, VoidReducerState> procedure = new CreateFungibleTransitionRoutine<>(
+			FungibleSubstate.class, FungibleSubstate.class,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class),
 			(i, o, index) -> Unknown.create()
 		).getProcedure0();
 
 		var state = procedure.inputOutputReducer().reduce(
-			SubstateWithArg.noArg(new Fungible(UInt256.ONE)),
-			new Fungible(UInt256.TWO),
-			mock(ImmutableIndex.class),
+			SubstateWithArg.noArg(new FungibleSubstate(UInt256.ONE)),
+			new FungibleSubstate(UInt256.TWO),
+			mock(ReadableAddrs.class),
 			null
 		).getIncomplete().get();
 
@@ -149,41 +150,41 @@ public class CreateFungibleTransitionRoutineTest {
 
 	@Test
 	public void when_validating_a_two_to_two_transfer__then_input_should_succeed_and_zero_left_on_stack() {
-		TransitionProcedure<Fungible, Fungible, VoidReducerState> procedure = new CreateFungibleTransitionRoutine<>(
-			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
+		TransitionProcedure<FungibleSubstate, FungibleSubstate, VoidReducerState> procedure = new CreateFungibleTransitionRoutine<>(
+			FungibleSubstate.class, FungibleSubstate.class,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class),
 			(i, o, index) -> Unknown.create()
 		).getProcedure0();
 
 		assertThat(procedure.inputOutputReducer().reduce(
-			SubstateWithArg.noArg(new Fungible(UInt256.TWO)),
-			new Fungible(UInt256.TWO),
-			mock(ImmutableIndex.class),
+			SubstateWithArg.noArg(new FungibleSubstate(UInt256.TWO)),
+			new FungibleSubstate(UInt256.TWO),
+			mock(ReadableAddrs.class),
 			null
 		).getIncomplete()).isEmpty();
 	}
 
 	@Test
 	public void when_validating_a_one_to_two_one_transfer__then_input_should_succeed_and_zero_left_on_stack() {
-		TransitionProcedure<Fungible, Fungible, UsedAmount> procedure = new CreateFungibleTransitionRoutine<>(
-			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
+		TransitionProcedure<FungibleSubstate, FungibleSubstate, UsedAmount> procedure = new CreateFungibleTransitionRoutine<>(
+			FungibleSubstate.class, FungibleSubstate.class,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class),
 			(i, o, index) -> Unknown.create()
 		).getProcedure1();
 
 		assertThat(procedure.inputOutputReducer().reduce(
-			SubstateWithArg.noArg(new Fungible(UInt256.ONE)),
-			new Fungible(UInt256.TWO),
-			mock(ImmutableIndex.class),
+			SubstateWithArg.noArg(new FungibleSubstate(UInt256.ONE)),
+			new FungibleSubstate(UInt256.TWO),
+			mock(ReadableAddrs.class),
 			new UsedAmount(false, UInt256.ONE, Unknown.create())
 		).getIncomplete()).isEmpty();
 
 		assertThat(procedure.inputOutputReducer().reduce(
-			SubstateWithArg.noArg(new Fungible(UInt256.TWO)),
-			new Fungible(UInt256.ONE),
-			mock(ImmutableIndex.class),
+			SubstateWithArg.noArg(new FungibleSubstate(UInt256.TWO)),
+			new FungibleSubstate(UInt256.ONE),
+			mock(ReadableAddrs.class),
 			new UsedAmount(true, UInt256.ONE, Unknown.create())
 		).getIncomplete()).isEmpty();
 	}

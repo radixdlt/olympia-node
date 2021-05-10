@@ -536,6 +536,11 @@ public class SimulationTest {
 				modules.add(new MockedRadixEngineStoreModule());
 				// Hack to get nodes to have the same genesis atom
 				genesisModules.add(new MockedGenesisModule());
+				genesisModules.add(new AbstractModule() {
+					public void configure() {
+						bind(CommittedReader.class).toInstance(CommittedReader.mocked());
+					}
+				});
 				var genesis = Guice.createInjector(genesisModules)
 					.getInstance(Key.get(VerifiedTxnsAndProof.class, Genesis.class));
 				modules.add(new AbstractModule() {

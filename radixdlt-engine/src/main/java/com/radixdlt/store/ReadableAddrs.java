@@ -26,6 +26,6 @@ import java.util.Optional;
 /**
  * Index into immutable substates
  */
-public interface ImmutableIndex {
-	Optional<Particle> loadRri(CMStore.Transaction dbTxn, REAddr rri);
+public interface ReadableAddrs {
+	Optional<Particle> loadAddr(CMStore.Transaction dbTxn, REAddr addr);
 }

@@ -27,7 +27,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.TxnIndex;
 import com.radixdlt.store.CMStore;
-import com.radixdlt.store.ImmutableIndex;
+import com.radixdlt.store.ReadableAddrs;
 
 import java.nio.ByteBuffer;
 import java.util.Optional;
@@ -38,15 +38,15 @@ import java.util.Optional;
  */
 public final class LogCMStore implements CMStore {
 	private final TxnIndex txnIndex;
-	private final ImmutableIndex immutableIndex;
+	private final ReadableAddrs readableAddrs;
 
 	@Inject
 	public LogCMStore(
 		TxnIndex txnIndex,
-		ImmutableIndex immutableIndex
+		ReadableAddrs readableAddrs
 	) {
 		this.txnIndex = txnIndex;
-		this.immutableIndex = immutableIndex;
+		this.readableAddrs = readableAddrs;
 	}
 
 	@Override
@@ -60,8 +60,8 @@ public final class LogCMStore implements CMStore {
 	}
 
 	@Override
-	public Optional<Particle> loadRri(Transaction tx, REAddr rri) {
-		return immutableIndex.loadRri(tx, rri);
+	public Optional<Particle> loadAddr(Transaction tx, REAddr rri) {
+		return readableAddrs.loadAddr(tx, rri);
 	}
 
 	@Override

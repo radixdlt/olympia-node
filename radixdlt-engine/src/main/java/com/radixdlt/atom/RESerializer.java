@@ -200,7 +200,7 @@ public final class RESerializer {
 		var owner = deserializeREAddr(buf);
 		var delegate = deserializeKey(buf);
 		var amount = deserializeUInt256(buf);
-		return new StakedTokensParticle(delegate, owner, amount);
+		return new StakedTokensParticle(amount, owner, delegate);
 	}
 
 	private static void serializeData(ValidatorParticle p, ByteBuffer buf) {
