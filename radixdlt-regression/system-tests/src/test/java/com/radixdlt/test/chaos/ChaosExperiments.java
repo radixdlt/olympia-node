@@ -38,7 +38,7 @@ public class ChaosExperiments {
 
     @Test
     public void pre_release_experiment() {
-        ChaosExperimentUtils.livenessCheckIgnoringOffline(ansible.toNetwork());
+        //ChaosExperimentUtils.livenessCheckIgnoringOffline(ansible.toNetwork());
 
         Set<Action> actions = Set.of(
                 new NetworkAction(ansible, 0.3),
@@ -54,7 +54,7 @@ public class ChaosExperiments {
             ChaosExperimentUtils.waitSeconds(20);
         });
 
-        ChaosExperimentUtils.livenessCheckIgnoringOffline(ansible.toNetwork());
+        //ChaosExperimentUtils.livenessCheckIgnoringOffline(ansible.toNetwork());
     }
 
 }

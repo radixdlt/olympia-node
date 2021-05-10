@@ -21,10 +21,7 @@ import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
-import com.radixdlt.client.core.network.HttpClients;
-import com.radixdlt.test.LivenessCheck;
-import com.radixdlt.test.RemoteBFTNetwork;
-import com.radixdlt.test.RemoteBFTNetworkBridge;
+import com.radixdlt.client.lib.network.HttpClients;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -32,7 +29,6 @@ import okhttp3.Response;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.assertj.core.util.Lists;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.platform.commons.util.StringUtils;
@@ -43,9 +39,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import static org.awaitility.Awaitility.await;
 
@@ -96,26 +90,6 @@ public class ChaosExperimentUtils {
 
     public static String getSshIdentityLocation() {
         return Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
-    }
-
-    /**
-     * runs a single liveness check while ignoring the offline nodes
-     */
-    public static void livenessCheckIgnoringOffline(RemoteBFTNetwork network) {
-        Set<String> nodesToIgnore = network.getNodeIds().parallelStream().filter(nodeId -> {
-            try {
-                RemoteBFTNetworkBridge.of(network).queryEndpointJson(nodeId, "api/ping")
-                        .blockingGet();
-                return false;
-            } catch (Exception e) {
-                return true;
-            }
-        }).collect(Collectors.toSet());
-
-        LivenessCheck.with(5, TimeUnit.SECONDS, 5, TimeUnit.SECONDS)
-                .withNodesToIgnore(Lists.newArrayList(nodesToIgnore))
-                .check(RemoteBFTNetworkBridge.of(network))
-                .blockingGet();
     }
 
     public static String runCommandOverSsh(String host, String command) {

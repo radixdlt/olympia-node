@@ -17,8 +17,6 @@
 
 package com.radixdlt.test.chaos.ansible;
 
-import com.radixdlt.test.RemoteBFTNetwork;
-import com.radixdlt.test.StaticClusterNetwork;
 import com.radixdlt.test.chaos.utils.ChaosExperimentUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -33,7 +31,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * We have our own image with ansible and several playbook. We use this image via docker.
@@ -124,15 +121,6 @@ public class AnsibleImageWrapper {
     public String getRandomNodeHost() {
         List<String> addressList = Lists.newArrayList(getNodeAddressList());
         return addressList.get(new Random().nextInt(addressList.size()));
-    }
-
-    /**
-     * This is needed to bridge the older code (using {@link RemoteBFTNetwork} and the tests here.
-     * Hardcoded to HTTPS, but can be externalized to a property.
-     */
-    public RemoteBFTNetwork toNetwork() {
-        return StaticClusterNetwork.from(getNodeAddressList().stream().map(address -> "https://" + address)
-                .collect(Collectors.toSet()));
     }
 
     public void tearDown() {

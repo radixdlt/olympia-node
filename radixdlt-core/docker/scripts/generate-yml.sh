@@ -116,11 +116,5 @@ do
     fi
 done
 
-echo "  faucet:">>${file_name}
-echo "    extends:">>${file_name}
-echo "      file: faucet.yml">>${file_name}
-echo "      service: faucet">>${file_name}
-echo "    networks:">>${file_name}
-echo "      - $network_name">>${file_name}
 echo "networks:">>${file_name}
 echo "  $network_name:">>${file_name}

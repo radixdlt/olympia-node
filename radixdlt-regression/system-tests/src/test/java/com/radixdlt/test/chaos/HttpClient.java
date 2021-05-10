@@ -17,7 +17,7 @@
 
 package com.radixdlt.test.chaos;
 
-import com.radixdlt.client.core.network.HttpClients;
+import com.radixdlt.client.lib.network.HttpClients;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
