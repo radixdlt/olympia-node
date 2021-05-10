@@ -19,7 +19,8 @@ package com.radixdlt.network.p2p.transport;
 
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECKeyOps;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.PeerEvent;
@@ -51,7 +52,8 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 	private final SystemCounters counters;
 	private final Serialization serialization;
 	private final SecureRandom secureRandom;
-	private final ECKeyPair nodeKey;
+	private final ECKeyOps ecKeyOps;
+	private final ECPublicKey nodeKey;
 	private final EventDispatcher<PeerEvent> peerEventDispatcher;
 	private final Optional<RadixNodeUri> uri;
 
@@ -60,7 +62,8 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 		SystemCounters counters,
 		Serialization serialization,
 		SecureRandom secureRandom,
-		@Self ECKeyPair nodeKey,
+		ECKeyOps ecKeyOps,
+		@Self ECPublicKey nodeKey,
 		EventDispatcher<PeerEvent> peerEventDispatcher,
 		Optional<RadixNodeUri> uri
 	) {
@@ -68,6 +71,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 		this.counters = Objects.requireNonNull(counters);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.secureRandom = Objects.requireNonNull(secureRandom);
+		this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
 		this.nodeKey = Objects.requireNonNull(nodeKey);
 		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
 		this.uri = Objects.requireNonNull(uri);
@@ -80,6 +84,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 			counters,
 			serialization,
 			secureRandom,
+			ecKeyOps,
 			nodeKey,
 			peerEventDispatcher,
 			uri,

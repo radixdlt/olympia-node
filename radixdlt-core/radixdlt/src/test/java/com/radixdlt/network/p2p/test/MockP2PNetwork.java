@@ -18,6 +18,7 @@
 package com.radixdlt.network.p2p.test;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.exception.PublicKeyException;
 
 import com.google.inject.Key;
@@ -57,7 +58,8 @@ final class MockP2PNetwork {
 			clientPeer.injector.getInstance(SystemCounters.class),
 			clientPeer.injector.getInstance(Serialization.class),
 			new SecureRandom(),
-			clientPeer.keyPair,
+			ECKeyOps.fromKeyPair(clientPeer.keyPair),
+			clientPeer.keyPair.getPublicKey(),
 			clientPeer.injector.getInstance(new Key<EventDispatcher<PeerEvent>>() { }),
 			Optional.of(serverPeerUri),
 			clientSocketChannel
@@ -68,7 +70,8 @@ final class MockP2PNetwork {
 			serverPeer.injector.getInstance(SystemCounters.class),
 			serverPeer.injector.getInstance(Serialization.class),
 			new SecureRandom(),
-			serverPeer.keyPair,
+			ECKeyOps.fromKeyPair(serverPeer.keyPair),
+			serverPeer.keyPair.getPublicKey(),
 			serverPeer.injector.getInstance(new Key<EventDispatcher<PeerEvent>>() { }),
 			Optional.empty(),
 			serverSocketChannel

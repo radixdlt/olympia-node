@@ -49,18 +49,20 @@ public final class ECIESCoder {
 		return decrypt(privKey, cipher, null);
 	}
 
-	public static byte[] decrypt(BigInteger privKey, byte[] cipher, byte[] macData)
-			throws IOException, InvalidCipherTextException {
+	public static byte[] decrypt(BigInteger privKey, byte[] cipher, byte[] macData) throws InvalidCipherTextException {
 		final var is = new ByteArrayInputStream(cipher);
-		final var ephemBytes = new byte[2 * ((ECKeyUtils.domain().getCurve().getFieldSize() + 7) / 8) + 1];
-		is.read(ephemBytes);
-		final var ephem = ECKeyUtils.domain().getCurve().decodePoint(ephemBytes);
-		final var iv = new byte[KEY_SIZE / 8];
-		is.read(iv);
-		final var cipherBody = new byte[is.available()];
-		is.read(cipherBody);
-
-		return decrypt(ephem, privKey, iv, cipherBody, macData);
+		try {
+			final var ephemBytes = new byte[2 * ((ECKeyUtils.domain().getCurve().getFieldSize() + 7) / 8) + 1];
+			is.read(ephemBytes);
+			final var ephem = ECKeyUtils.domain().getCurve().decodePoint(ephemBytes);
+			final var iv = new byte[KEY_SIZE / 8];
+			is.read(iv);
+			final var cipherBody = new byte[is.available()];
+			is.read(cipherBody);
+			return decrypt(ephem, privKey, iv, cipherBody, macData);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public static byte[] decrypt(ECPoint ephem, BigInteger prv, byte[] iv, byte[] cipher, byte[] macData) throws InvalidCipherTextException {

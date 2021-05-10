@@ -19,7 +19,8 @@ package com.radixdlt.network.p2p.transport;
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECKeyOps;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.messaging.InboundMessage;
@@ -89,7 +90,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		SystemCounters counters,
 		Serialization serialization,
 		SecureRandom secureRandom,
-		ECKeyPair nodeKey,
+		ECKeyOps ecKeyOps,
+		ECPublicKey nodeKey,
 		EventDispatcher<PeerEvent> peerEventDispatcher,
 		Optional<RadixNodeUri> uri,
 		SocketChannel nettyChannel
@@ -99,7 +101,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
 		this.uri = Objects.requireNonNull(uri);
 		uri.ifPresent(u -> this.remoteNodeId = u.getNodeId());
-		this.authHandshaker = new AuthHandshaker(serialization, secureRandom, nodeKey);
+		this.authHandshaker = new AuthHandshaker(serialization, secureRandom, ecKeyOps, nodeKey);
 		this.nettyChannel = Objects.requireNonNull(nettyChannel);
 
 		this.isInitiator = uri.isPresent();

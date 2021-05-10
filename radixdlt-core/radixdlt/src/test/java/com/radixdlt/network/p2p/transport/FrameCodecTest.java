@@ -18,6 +18,7 @@
 package com.radixdlt.network.p2p.transport;
 
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshaker;
 import com.radixdlt.network.p2p.transport.handshake.Secrets;
@@ -62,8 +63,8 @@ public final class FrameCodecTest {
 	}
 
 	private Pair<Secrets, Secrets> agreeSecrets(ECKeyPair nodeKey1, ECKeyPair nodeKey2) throws Exception {
-		final var handshaker1 = new AuthHandshaker(serialization, secureRandom, nodeKey1);
-		final var handshaker2 = new AuthHandshaker(serialization, secureRandom, nodeKey2);
+		final var handshaker1 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), nodeKey1.getPublicKey());
+		final var handshaker2 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), nodeKey2.getPublicKey());
 
 		final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
 		final var handshaker2ResultPair = handshaker2.handleInitialMessage(initMessage);

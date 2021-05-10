@@ -20,6 +20,7 @@ package com.radixdlt.network.p2p.transport.handshake;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECIESCoder;
+import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.ECPublicKey;
@@ -57,7 +58,8 @@ public final class AuthHandshaker {
 
 	private final Serialization serialization;
 	private final SecureRandom secureRandom;
-	private final ECKeyPair nodeKey;
+	private final ECKeyOps ecKeyOps;
+	private final ECPublicKey nodeKey;
 	private final byte[] nonce;
 	private final ECKeyPair ephemeralKey;
 	private boolean isInitiator = false;
@@ -65,9 +67,10 @@ public final class AuthHandshaker {
 	private Optional<byte[]> responsePacketOpt = Optional.empty();
 	private Optional<ECPublicKey> remotePubKeyOpt;
 
-	public AuthHandshaker(Serialization serialization, SecureRandom secureRandom, ECKeyPair nodeKey) {
+	public AuthHandshaker(Serialization serialization, SecureRandom secureRandom, ECKeyOps ecKeyOps, ECPublicKey nodeKey) {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.secureRandom = Objects.requireNonNull(secureRandom);
+		this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
 		this.nodeKey = Objects.requireNonNull(nodeKey);
 		this.nonce = randomBytes(NONCE_SIZE);
 		this.ephemeralKey = ECKeyPair.generateNew();
@@ -96,18 +99,12 @@ public final class AuthHandshaker {
 	}
 
 	private AuthInitiateMessage createAuthInitiateMessage(ECPublicKey remotePubKey) {
-		final var agreement = new ECDHBasicAgreement();
-		agreement.init(new ECPrivateKeyParameters(new BigInteger(1, nodeKey.getPrivateKey()), ECKeyUtils.domain()));
-		final var sharedSecret =
-			bigIntegerToBytes(
-				agreement.calculateAgreement(new ECPublicKeyParameters(remotePubKey.getEcPoint(), ECKeyUtils.domain())),
-				NONCE_SIZE
-			);
+		final var sharedSecret = bigIntegerToBytes(ecKeyOps.ecdhAgreement(remotePubKey), NONCE_SIZE);
 		final var messageToSign = xor(sharedSecret, nonce);
 		final var signature = ephemeralKey.sign(messageToSign);
 		return new AuthInitiateMessage(
 			signature,
-			HashCode.fromBytes(nodeKey.getPublicKey().getBytes()),
+			HashCode.fromBytes(nodeKey.getBytes()),
 			HashCode.fromBytes(nonce)
 		);
 	}
@@ -116,13 +113,7 @@ public final class AuthHandshaker {
 			throws IOException, InvalidCipherTextException, PublicKeyException {
 		final var sizeBytes = Arrays.copyOfRange(data, 0, 2);
 		final var encryptedPayload = Arrays.copyOfRange(data, 2, data.length);
-
-		final var plaintext = ECIESCoder.decrypt(
-			new BigInteger(1, nodeKey.getPrivateKey()),
-			encryptedPayload,
-			sizeBytes
-		);
-
+		final var plaintext = ecKeyOps.eciesDecrypt(encryptedPayload, sizeBytes);
 		final var message = serialization.fromDson(plaintext, AuthInitiateMessage.class);
 
 		final var response = new AuthResponseMessage(
@@ -158,25 +149,15 @@ public final class AuthHandshaker {
 	public AuthHandshakeResult handleResponseMessage(byte[] data) throws IOException, InvalidCipherTextException, PublicKeyException {
 		final var sizeBytes = Arrays.copyOfRange(data, 0, 2);
 		final var encryptedPayload = Arrays.copyOfRange(data, 2, data.length);
-
-		final var plaintext = ECIESCoder.decrypt(
-			new BigInteger(1, nodeKey.getPrivateKey()),
-			encryptedPayload,
-			sizeBytes
-		);
-
+		final var plaintext = ecKeyOps.eciesDecrypt(encryptedPayload, sizeBytes);
 		final var message = serialization.fromDson(plaintext, AuthResponseMessage.class);
-
 		this.responsePacketOpt = Optional.of(data);
-
 		final var remoteEphemeralKey = ECPublicKey.fromBytes(message.getEphemeralPublicKey().asBytes());
 		return finalizeHandshake(remoteEphemeralKey, message.getNonce());
 	}
 
 	private ECPublicKey extractEphemeralKey(ECDSASignature signature, HashCode nonce, ECPublicKey publicKey) {
-		final var agreement = new ECDHBasicAgreement();
-		agreement.init(new ECPrivateKeyParameters(new BigInteger(1, nodeKey.getPrivateKey()), ECKeyUtils.domain()));
-		final var sharedSecret = agreement.calculateAgreement(new ECPublicKeyParameters(publicKey.getEcPoint(), ECKeyUtils.domain()));
+		final var sharedSecret = ecKeyOps.ecdhAgreement(publicKey);
 		final var token = bigIntegerToBytes(sharedSecret, NONCE_SIZE);
 		final var signed = xor(token, nonce.asBytes());
 		return ECPublicKey.recoverFrom(HashCode.fromBytes(signed), signature).orElseThrow();

@@ -27,6 +27,7 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.DispatcherModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
@@ -140,6 +141,7 @@ public final class P2PTestNetworkRunner {
 						bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(nodeKey);
 						bind(ECPublicKey.class).annotatedWith(Self.class).toInstance(nodeKey.getPublicKey());
 						bind(BFTNode.class).annotatedWith(Self.class).toInstance(BFTNode.create(nodeKey.getPublicKey()));
+						bind(ECKeyOps.class).toInstance(ECKeyOps.fromKeyPair(nodeKey));
 						bind(ControlledSenderFactory.class).toInstance(network::createSender);
 						bind(RuntimeProperties.class).toInstance(properties);
 						bind(Serialization.class).toInstance(DefaultSerialization.getInstance());

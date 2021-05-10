@@ -21,7 +21,8 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECKeyOps;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeerEvent;
@@ -42,7 +43,8 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 	private final SystemCounters counters;
 	private final Serialization serialization;
 	private final SecureRandom secureRandom;
-	private final ECKeyPair nodeKey;
+	private final ECKeyOps ecKeyOps;
+	private final ECPublicKey nodeKey;
 	private final EventDispatcher<PeerEvent> peerEventDispatcher;
 
 	private final NioEventLoopGroup clientWorkerGroup;
@@ -53,13 +55,15 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 		SystemCounters counters,
 		Serialization serialization,
 		SecureRandom secureRandom,
-		@Self ECKeyPair nodeKey,
+		ECKeyOps ecKeyOps,
+		@Self ECPublicKey nodeKey,
 		EventDispatcher<PeerEvent> peerEventDispatcher
 	) {
 		this.config = Objects.requireNonNull(config);
 		this.counters = Objects.requireNonNull(counters);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.secureRandom = Objects.requireNonNull(secureRandom);
+		this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
 		this.nodeKey = Objects.requireNonNull(nodeKey);
 		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
 
@@ -78,6 +82,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 				counters,
 				serialization,
 				secureRandom,
+				ecKeyOps,
 				nodeKey,
 				peerEventDispatcher,
 				Optional.of(uri)

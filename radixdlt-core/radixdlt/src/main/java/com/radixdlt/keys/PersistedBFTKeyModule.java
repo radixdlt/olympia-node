@@ -26,7 +26,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.properties.RuntimeProperties;
 
@@ -54,9 +54,8 @@ public final class PersistedBFTKeyModule extends AbstractModule {
 	}
 
 	@Provides
-	@Self
-	ECKeyPair ecKeyPair(PersistedBFTKeyManager keyManager) {
-		return keyManager.getKeyPair();
+	ECKeyOps ecKeyOps(PersistedBFTKeyManager keyManager) {
+		return ECKeyOps.fromKeyPair(keyManager.getKeyPair());
 	}
 
 	@Provides
