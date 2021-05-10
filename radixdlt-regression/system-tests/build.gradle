@@ -76,33 +76,6 @@ task bddTest(type: Test) {
     }
 }
 
-task dockerSystemTests(type: Test) {
-    useJUnit {
-        includeCategories 'com.radixdlt.test.Docker'
-    }
-    testLogging.showStandardStreams = true
-    systemProperties System.getProperties()
-    systemProperties['logs.dir'] = "${testResultsDir}/dockerSystemTests"
-    exclude "Runner.class"
-    jacoco {
-        // We don't want these tests included in code coverage.
-        enabled false
-    }
-}
-
-task clusterSystemTests(type: Test) {
-    useJUnit {
-        includeCategories 'com.radixdlt.test.Cluster'
-    }
-    testLogging.showStandardStreams = true
-    systemProperties System.getProperties()
-    exclude "Runner.class"
-    jacoco {
-        // We don't want these tests included in code coverage.
-        enabled false
-    }
-}
-
 task chaosExperiments(type: Test) {
     filter {
         includeTestsMatching "com.radixdlt.test.chaos.*"
@@ -115,16 +88,3 @@ task chaosExperiments(type: Test) {
     }
 }
 
-task ephemeralClusterSystemTests(type: Test) {
-    useJUnit {
-        includeCategories 'com.radixdlt.test.EphemeralCluster'
-    }
-    testLogging.showStandardStreams = true
-    systemProperties System.getProperties()
-    systemProperties['logs.dir'] = "${testResultsDir}/ephemeralClusterSystemTests"
-    exclude "Runner.class"
-    jacoco {
-        // We don't want these tests included in code coverage.
-        enabled false
-    }
-}

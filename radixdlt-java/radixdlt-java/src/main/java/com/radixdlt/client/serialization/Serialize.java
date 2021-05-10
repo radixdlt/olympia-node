@@ -22,67 +22,53 @@
 
 package com.radixdlt.client.serialization;
 
-import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.validators.ValidatorParticle;
-
-import java.util.Arrays;
-import java.util.Collection;
-
+import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
-
 import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.client.core.address.RadixUniverseConfig;
-import com.radixdlt.client.core.ledger.AtomEvent;
+import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.client.core.network.jsonrpc.NodeRunnerData;
-import com.radixdlt.client.core.network.jsonrpc.RadixLocalSystem;
-import com.radixdlt.client.core.network.jsonrpc.RadixSystem;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationPolicy;
 import com.radixdlt.serialization.SerializerIds;
 
+import java.util.Arrays;
+import java.util.Collection;
+
 public final class Serialize {
 
-	private static class Holder {
-		static final Serialization INSTANCE = Serialization.create(createIds(getClasses()), createPolicy(getClasses()));
+    private static class Holder {
+        static final Serialization INSTANCE = Serialization.create(createIds(getClasses()), createPolicy(getClasses()));
 
-		private static SerializerIds createIds(Collection<Class<?>> classes) {
-			return CollectionScanningSerializerIds.create(classes);
-		}
+        private static SerializerIds createIds(Collection<Class<?>> classes) {
+            return CollectionScanningSerializerIds.create(classes);
+        }
 
-		private static SerializationPolicy createPolicy(Collection<Class<?>> classes) {
-			return CollectionScanningSerializationPolicy.create(classes);
-		}
+        private static SerializationPolicy createPolicy(Collection<Class<?>> classes) {
+            return CollectionScanningSerializationPolicy.create(classes);
+        }
 
-		private static Collection<Class<?>> getClasses() {
-			return Arrays.asList(
-				Atom.class,
-				AtomEvent.class,
-				Particle.class,
-				TokenDefinitionParticle.class,
-				TokensParticle.class,
-				StakedTokensParticle.class,
-				UniqueParticle.class,
-				ValidatorParticle.class,
-				SystemParticle.class,
-				ECDSASignature.class,
-				NodeRunnerData.class,
-				RadixLocalSystem.class,
-				RadixSystem.class,
-				RadixUniverseConfig.class
-			);
-		}
-	}
+        private static Collection<Class<?>> getClasses() {
+            return Arrays.asList(
+                    Particle.class,
+                    TokenDefinitionParticle.class,
+                    TokensParticle.class,
+                    StakedTokensParticle.class,
+                    UniqueParticle.class,
+                    ValidatorParticle.class,
+                    SystemParticle.class,
+                    ECDSASignature.class
+                    );
+        }
+    }
 
-	private Serialize() {
-		throw new IllegalStateException("Can't construct");
-	}
+    private Serialize() {
+        throw new IllegalStateException("Can't construct");
+    }
 
-	public static Serialization getInstance() {
-		return Holder.INSTANCE;
-	}
+    public static Serialization getInstance() {
+        return Holder.INSTANCE;
+    }
 }

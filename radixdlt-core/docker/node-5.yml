@@ -29,6 +29,7 @@ services:
     networks:
       - five_nodes
     ports:
+      - "3334:3333"
       - "8081:8080"
       - "9012:9011"
       - "50506:50505"
@@ -43,6 +44,7 @@ services:
     networks:
       - five_nodes
     ports:
+      - "3335:3333"
       - "8082:8080"
       - "9013:9011"
       - "50507:50505"
@@ -57,6 +59,7 @@ services:
     networks:
       - five_nodes
     ports:
+      - "3336:3333"
       - "8083:8080"
       - "9014:9011"
       - "50508:50505"
@@ -71,13 +74,10 @@ services:
     networks:
       - five_nodes
     ports:
+      - "3337:3333"
       - "8084:8080"
       - "9015:9011"
       - "50509:50505"
-  faucet:
-    extends:
-      file: faucet.yml
-      service: faucet
     networks:
       - five_nodes
 networks:

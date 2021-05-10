@@ -11,20 +11,11 @@ all:
 build-core:
 	cd radixdlt && ../../gradlew deb4docker
 
-build-faucet:
-	cd faucet-service && ../../gradlew deb4docker
-
 .PHONY: package
-package: build-core build-faucet
+package: build-core
 	docker-compose -f docker/node-1.yml build
 	docker tag radixdlt/radixdlt-core:develop $(CORE_REPO):$(TAG)
-	docker tag radixdlt/faucet:develop $(FAUCET_REPO):$(TAG)
 
 .PHONY: publish
 publish: package
 	docker push $(CORE_REPO):$(TAG)
-	docker push $(FAUCET_REPO):$(TAG)
-
-.PHONY: package-test
-package-test:
-	docker build -t radixcore-test:$(TAG) -f docker/Dockerfile.test .

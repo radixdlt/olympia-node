@@ -24,6 +24,7 @@ package com.radixdlt.client.core.network;
 
 import static org.junit.Assert.assertTrue;
 
+import com.radixdlt.client.lib.network.HttpClients;
 import okhttp3.OkHttpClient;
 import org.junit.Test;
 

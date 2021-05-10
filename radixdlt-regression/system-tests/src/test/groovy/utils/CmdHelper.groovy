@@ -25,8 +25,6 @@ import org.apache.logging.log4j.Logger
 import java.nio.file.Files
 import java.nio.file.Paths
 
-import static utils.Generic.listToDelimitedString
-
 class CmdHelper {
     private static final Logger logger = LogManager.getLogger()
 
@@ -37,11 +35,11 @@ class CmdHelper {
         def serr = new StringBuffer()
         def process
         logger.debug("------Executing command ${cmd}-----")
-        env?logger.debug("------Environment variables ${env}-----"):""
-        workdir?logger.debug("------Working dir ${workdir}-----"):""
+        env ? logger.debug("------Environment variables ${env}-----") : ""
+        workdir ? logger.debug("------Working dir ${workdir}-----") : ""
         process = cmd.execute(
                 env ?: null,
-                workdir? new File(workdir):null
+                workdir ? new File(workdir) : null
         )
 
         process.consumeProcessOutput(sout, serr)
@@ -74,7 +72,7 @@ class CmdHelper {
     }
 
 
-    static List node(options, universe,validatorKey) {
+    static List node(options, universe, validatorKey) {
         String[] env = ["JAVA_OPTS=-server -Xms2g -Xmx2g -Djava.security.egd=file:/dev/urandom -Dcom.sun.management.jmxremote.port=${options.rmiPort} -Dcom.sun.management.jmxremote.rmi.port=${options.rmiPort} -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -agentlib:jdwp=transport=dt_socket,address=${options.socketAddressPort},suspend=n,server=y",
                         "RADIXDLT_NETWORK_SEEDS_REMOTE=${listToDelimitedString(options.remoteSeeds)}",
                         "RADIXDLT_HOST_IP_ADDRESS=${options.nodeName}",
@@ -173,7 +171,8 @@ class CmdHelper {
     }
 
     static void checkNGenerateKey() {
-        def file = new File(Generic.keyStorePath())
+        //def file = new File(Generic.keyStorePath()) // TODO fix this
+        def file = new File()
         if (!file.exists()) {
             List options = ["generate-key", "--password=test123"]
             def key, error
@@ -223,7 +222,7 @@ class CmdHelper {
             // More details on /sys/class/net can be found on this link https://www.kernel.org/doc/Documentation/ABI/testing/sysfs-class-net
             def string = "/bin/bash -c".tokenize() << ("grep -l ${Integer.parseInt(iflink[0])} /sys/class/net/veth*/ifindex" as String)
             (veth, error) = runCommand(string)
-            if(error){
+            if (error) {
                 throw new IllegalStateException("Docker container is not running ")
             }
             return veth
@@ -274,41 +273,41 @@ class CmdHelper {
         return output;
     }
 
-    static void captureLogs(String containerId,String testName) {
+    static void captureLogs(String containerId, String testName) {
         Files.createDirectories(Paths.get("${System.getProperty('logs.dir')}/${testName}"));
-        runCommand(['bash', '-c', "docker logs ${containerId} &> ${System.getProperty('logs.dir')}/${testName}/test${containerId.substring(0,11)}.log"]);
+        runCommand(['bash', '-c', "docker logs ${containerId} &> ${System.getProperty('logs.dir')}/${testName}/test${containerId.substring(0, 11)}.log"]);
     }
 
-    static String[] generateUniverseValidators(int numNodes){
-        String[] exportVars,error
+    static String[] generateUniverseValidators(int numNodes) {
+        String[] exportVars, error
         if (isRunningOnWindows()) {
             //exportVars = TempUniverseCreator.getHardcodedUniverse(); TODO a bit weird but this helps development on windows
             throw new RuntimeException("For these tests to run on windows, you need to find a way to provide a universe.")
         }
         String gradlewPath = System.getenv('CORE_DIR')
-        (exportVars, error) =  runCommand("${gradlewPath}/gradlew -P validators=${numNodes} :radixdlt:clean :radixdlt:generateDevUniverse",
-                null,false, true,"${System.getenv('CORE_DIR')}/radixdlt-core/radixdlt");
-        String[] envVars =  exportVars
+        (exportVars, error) = runCommand("${gradlewPath}/gradlew -P validators=${numNodes} :radixdlt:clean :radixdlt:generateDevUniverse",
+                null, false, true, "${System.getenv('CORE_DIR')}/radixdlt-core/radixdlt");
+        String[] envVars = exportVars
                 .findAll({ it.contains("export") })
-                .collect({it.replaceAll("export","")})
+                .collect({ it.replaceAll("export", "") })
         if (envVars.size() > 0)
             return envVars
         else
             throw new Exception("Universe environment variables weren't generated")
     }
 
-    static void cleanCoreGradleOutput(){
+    static void cleanCoreGradleOutput() {
         String gradlewPath = System.getProperty("user.dir")
-        runCommand("${gradlewPath}/gradlew :radixdlt:clean",null,true,true,"${System.getenv('CORE_DIR')}");
+        runCommand("${gradlewPath}/gradlew :radixdlt:clean", null, true, true, "${System.getenv('CORE_DIR')}");
     }
 
-    static String getNodeValidator(String[] allEnvVariables,options){
+    static String getNodeValidator(String[] allEnvVariables, options) {
 
-        return allEnvVariables.find { it.contains("RADIXDLT_VALIDATOR_${options["nodeIndex"]}_PRIVKEY")}.split("KEY=")[1]
+        return allEnvVariables.find { it.contains("RADIXDLT_VALIDATOR_${options["nodeIndex"]}_PRIVKEY") }.split("KEY=")[1]
     }
 
-    static  String getUniverse(String[] allEnvVariables){
-        return allEnvVariables.find { it.contains("RADIXDLT_UNIVERSE=")}.split("UNIVERSE=")[1]
+    static String getUniverse(String[] allEnvVariables) {
+        return allEnvVariables.find { it.contains("RADIXDLT_UNIVERSE=") }.split("UNIVERSE=")[1]
     }
 
     static boolean testRunningOnDocker() {

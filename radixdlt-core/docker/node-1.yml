@@ -18,10 +18,6 @@ services:
       - "10000:10000/tcp"
       - "20000:20000/tcp"
       - "30000:30000/tcp"
-  faucet:
-    extends:
-      file: faucet.yml
-      service: faucet
     networks:
       - single_node
 networks:

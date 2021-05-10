@@ -29,13 +29,10 @@ services:
     networks:
       - two_nodes
     ports:
+      - "3334:3333"
       - "8081:8080"
       - "9012:9011"
       - "50506:50505"
-  faucet:
-    extends:
-      file: faucet.yml
-      service: faucet
     networks:
       - two_nodes
 networks:
