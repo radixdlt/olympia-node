@@ -27,8 +27,12 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.Controller;
+import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.api.UniverseController;
+import com.radixdlt.client.handler.HighLevelApiHandler;
+import com.radixdlt.client.service.NetworkInfoService;
 import com.radixdlt.client.service.ScheduledCacheCleanup;
+import com.radixdlt.client.service.ScheduledStatsCollecting;
 import com.radixdlt.client.service.TransactionStatusService;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.berkeley.BerkeleyClientApiStore;
@@ -36,9 +40,6 @@ import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
-
-import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.client.handler.HighLevelApiHandler;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 
 public class ArchiveApiModule extends AbstractModule {
@@ -55,13 +56,16 @@ public class ArchiveApiModule extends AbstractModule {
 		controllers.addBinding().to(RpcController.class).in(Scopes.SINGLETON);
 		controllers.addBinding().to(UniverseController.class).in(Scopes.SINGLETON);
 
-		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
+		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
 			.permitDuplicates();
 		bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
 		bind(TransactionStatusService.class).in(Scopes.SINGLETON);
+		bind(NetworkInfoService.class).in(Scopes.SINGLETON);
+
 		eventBinder.addBinding().toInstance(AtomsCommittedToLedger.class);
 		eventBinder.addBinding().toInstance(ScheduledQueueFlush.class);
 		eventBinder.addBinding().toInstance(ScheduledCacheCleanup.class);
+		eventBinder.addBinding().toInstance(ScheduledStatsCollecting.class);
 	}
 
 	@ProvidesIntoMap
@@ -175,6 +179,15 @@ public class ArchiveApiModule extends AbstractModule {
 			Runners.APPLICATION,
 			ScheduledCacheCleanup.class,
 			transactionStatusService.cacheCleanupProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> networkInfoService(NetworkInfoService networkInfoService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			ScheduledStatsCollecting.class,
+			networkInfoService.updateStats()
 		);
 	}
 }

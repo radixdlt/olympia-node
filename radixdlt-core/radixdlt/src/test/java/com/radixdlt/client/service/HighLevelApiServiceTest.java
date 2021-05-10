@@ -16,26 +16,25 @@
  */
 package com.radixdlt.client.service;
 
-import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.client.Rri;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.UInt384;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.client.Rri;
+import com.radixdlt.client.api.ActionEntry;
 import com.radixdlt.client.api.TxHistoryEntry;
-import com.radixdlt.client.store.ActionEntry;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.MessageEntry;
 import com.radixdlt.client.store.TokenDefinitionRecord;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.universe.Universe;
+import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
 
 import java.time.Instant;
@@ -65,9 +64,6 @@ public class HighLevelApiServiceTest {
 
 	@Before
 	public void setup() {
-		var nativeTokenParticle = new TokenDefinitionParticle(
-			TOKEN, "XRD", "XRD XRD", "", "", null, null
-		);
 		highLevelApiService = new HighLevelApiService(universe, clientApiStore);
 	}
 
@@ -112,7 +108,7 @@ public class HighLevelApiServiceTest {
 		var balance1 = createBalance(OWNER_ACCOUNT, null, rri1, UInt384.FIVE);
 		var balance2 = createBalance(OWNER_ACCOUNT, null, rri2, UInt384.NINE);
 		var balance3 = createBalance(OWNER_ACCOUNT, null,
-			Rri.of("xrd", REAddr.ofNativeToken()), UInt384.TWO
+									 Rri.of("xrd", REAddr.ofNativeToken()), UInt384.TWO
 		);
 		var balances = Result.ok(List.of(balance1, balance2, balance3));
 
