@@ -22,18 +22,17 @@
 
 package com.radixdlt.client.lib.network;
 
-import static org.junit.Assert.assertTrue;
-
-import com.radixdlt.client.lib.network.HttpClients;
 import okhttp3.OkHttpClient;
 import org.junit.Test;
 
+import static org.junit.Assert.assertTrue;
+
 public class HttpClientsTest {
-	@Test
-	public void testClientCreation() {
-		OkHttpClient client = HttpClients.getSslAllTrustingClient();
-		for (int i = 0; i < 10; i++) {
-			assertTrue(client == HttpClients.getSslAllTrustingClient());
-		}
-	}
+    @Test
+    public void testClientCreation() {
+        OkHttpClient client = HttpClients.getSslAllTrustingClient();
+        for (int i = 0; i < 10; i++) {
+            assertTrue(client == HttpClients.getSslAllTrustingClient());
+        }
+    }
 }
