@@ -4,7 +4,6 @@ include ':radixdlt-cli'
 include ':radixdlt-engine'
 include ':radixdlt-java'
 include ':radixdlt-java-common'
-include ':radixdlt-java-examples'
 include ':radixdlt-regression'
 include ':radixdlt-regression:system-tests'
 
@@ -13,6 +12,5 @@ project(':radixdlt-cli').projectDir = new File('radixdlt-java/radixdlt-cli')
 project(':radixdlt-engine').projectDir = new File('radixdlt-engine')
 project(':radixdlt-java').projectDir = new File('radixdlt-java/radixdlt-java')
 project(':radixdlt-java-common').projectDir = new File('radixdlt-java-common')
-project(':radixdlt-java-examples').projectDir = new File('radixdlt-java/examples')
 project(':radixdlt-regression').projectDir = new File('radixdlt-regression')
 project(':radixdlt-regression:system-tests').projectDir = new File('radixdlt-regression/system-tests')
