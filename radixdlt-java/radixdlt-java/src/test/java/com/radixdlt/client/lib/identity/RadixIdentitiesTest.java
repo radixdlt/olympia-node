@@ -20,21 +20,22 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-package com.radixdlt.client.application.translate.unique;
+package com.radixdlt.client.lib.identity;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
-import com.radixdlt.identifiers.RadixAddress;
+import java.io.Writer;
+
 import org.junit.Test;
 
-public class UniqueIdTest {
-	@Test
-	public void when_unique_id_is_created_with_null__then_null_pointer_exception_is_thrown() {
-		assertThatThrownBy(() -> new UniqueId(null, "test"))
-			.isInstanceOf(NullPointerException.class);
+public class RadixIdentitiesTest {
 
-		assertThatThrownBy(() -> new UniqueId(mock(RadixAddress.class), null))
-			.isInstanceOf(NullPointerException.class);
+	@Test
+	public void newEncryptedIdentityWriterTest() throws Exception {
+		Writer writer = mock(Writer.class);
+		RadixIdentities.createNewEncryptedIdentity(writer, "Password");
+		verify(writer, times(1)).flush();
 	}
 }

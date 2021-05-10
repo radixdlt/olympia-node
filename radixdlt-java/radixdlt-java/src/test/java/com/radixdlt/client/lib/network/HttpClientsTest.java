@@ -20,23 +20,20 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-package com.radixdlt.client.application.identity;
+package com.radixdlt.client.lib.network;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.assertTrue;
 
-import java.io.Writer;
-
-import com.radixdlt.client.lib.identity.RadixIdentities;
+import com.radixdlt.client.lib.network.HttpClients;
+import okhttp3.OkHttpClient;
 import org.junit.Test;
 
-public class RadixIdentitiesTest {
-
+public class HttpClientsTest {
 	@Test
-	public void newEncryptedIdentityWriterTest() throws Exception {
-		Writer writer = mock(Writer.class);
-		RadixIdentities.createNewEncryptedIdentity(writer, "Password");
-		verify(writer, times(1)).flush();
+	public void testClientCreation() {
+		OkHttpClient client = HttpClients.getSslAllTrustingClient();
+		for (int i = 0; i < 10; i++) {
+			assertTrue(client == HttpClients.getSslAllTrustingClient());
+		}
 	}
 }

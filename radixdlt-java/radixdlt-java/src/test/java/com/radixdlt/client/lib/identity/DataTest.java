@@ -20,20 +20,32 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-package com.radixdlt.client.core.network;
+package com.radixdlt.client.lib.identity;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.radixdlt.client.lib.network.HttpClients;
-import okhttp3.OkHttpClient;
+import com.radixdlt.client.lib.identity.Data.DataBuilder;
 import org.junit.Test;
 
-public class HttpClientsTest {
+public class DataTest {
 	@Test
-	public void testClientCreation() {
-		OkHttpClient client = HttpClients.getSslAllTrustingClient();
-		for (int i = 0; i < 10; i++) {
-			assertTrue(client == HttpClients.getSslAllTrustingClient());
-		}
+	public void builderNoBytesTest() {
+		DataBuilder dataBuilder = new DataBuilder();
+		assertThatThrownBy(dataBuilder::build).isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	public void builderUnencryptedTest() {
+		Data data = new DataBuilder().bytes(new byte[] {}).unencrypted().build();
+		assertEquals(0, data.getBytes().length);
+		assertNull(data.getEncryptor());
+	}
+
+	@Test
+	public void builderNoReadersTest() {
+		assertThatThrownBy(() -> new DataBuilder().bytes(new byte[] {}).build())
+			.isInstanceOf(IllegalStateException.class);
 	}
 }
