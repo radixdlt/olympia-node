@@ -28,8 +28,10 @@ import java.util.stream.Collectors;
 import com.google.inject.Inject;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.identifiers.NodeAddress;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Pair;
 import com.google.common.collect.ImmutableSet;
 
@@ -78,11 +80,11 @@ public final class SeedNodesConfigParser {
 			final var parsedUri = new URI(rawUri);
 			final var resolved = InetAddress.getByName(parsedUri.getHost());
 			return Optional.of(RadixNodeUri.fromPubKeyAndAddress(
-				ECPublicKey.fromBase58(parsedUri.getUserInfo()),
+				NodeAddress.parse(parsedUri.getUserInfo()),
 				resolved.getHostAddress(),
 				parsedUri.getPort() > 0 ? parsedUri.getPort() : defaultPort
 			));
-		} catch (UnknownHostException | URISyntaxException | PublicKeyException e) {
+		} catch (UnknownHostException | URISyntaxException | DeserializeException e) {
 			return Optional.empty();
 		}
 	}

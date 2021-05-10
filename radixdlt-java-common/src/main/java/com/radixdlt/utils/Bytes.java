@@ -187,10 +187,6 @@ public class Bytes {
 		return Base64.getDecoder().decode(s);
 	}
 
-	public static byte[] fromBase58String(String s) {
-		return Base58.fromBase58(s);
-	}
-
 	private static char toHexChar(int value) {
 		return hexChars[value & 0xF];
 	}

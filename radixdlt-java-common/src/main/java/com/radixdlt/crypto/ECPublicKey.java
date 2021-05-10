@@ -17,7 +17,6 @@
 
 package com.radixdlt.crypto;
 
-import com.radixdlt.utils.Base58;
 import org.bouncycastle.math.ec.ECPoint;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -78,10 +77,6 @@ public final class ECPublicKey {
 		return fromBytes(Bytes.fromBase64String(base64));
 	}
 
-	public static ECPublicKey fromBase58(String base58) throws PublicKeyException {
-		return fromBytes(Bytes.fromBase58String(base58));
-	}
-
 	public static Optional<ECPublicKey> recoverFrom(HashCode hash, ECDSASignature signature) {
 		return ECKeyUtils.recoverFromSignature(signature, hash.asBytes())
 			.map(ECPublicKey::new);
@@ -119,10 +114,6 @@ public final class ECPublicKey {
 
 	public String toBase64() {
 		return Bytes.toBase64String(getBytes());
-	}
-
-	public String toBase58() {
-		return Base58.toBase58(getBytes());
 	}
 
 	public String toHex() {

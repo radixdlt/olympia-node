@@ -29,8 +29,8 @@ public final class NodeId {
 	private final ECPublicKey publicKey;
 
 	@JsonCreator
-	public static NodeId deserialize(byte[] pubKeyBase58) throws PublicKeyException {
-		return fromPublicKey(ECPublicKey.fromBase58(new String(pubKeyBase58)));
+	public static NodeId deserialize(byte[] pubKeyBase64) throws PublicKeyException {
+		return fromPublicKey(ECPublicKey.fromBase64(new String(pubKeyBase64)));
 	}
 
 	public static NodeId fromPublicKey(ECPublicKey publicKey) {
@@ -46,8 +46,8 @@ public final class NodeId {
 	}
 
 	@JsonValue
-	public byte[] getPublicKeyBase58() {
-		return publicKey.toBase58().getBytes(StandardCharsets.UTF_8);
+	public byte[] getPublicKeyBase64() {
+		return publicKey.toBase64().getBytes(StandardCharsets.UTF_8);
 	}
 
 	@Override
@@ -69,6 +69,6 @@ public final class NodeId {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), publicKey.toBase58());
+		return String.format("%s[%s]", getClass().getSimpleName(), publicKey.toBase64());
 	}
 }

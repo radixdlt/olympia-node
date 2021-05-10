@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.NodeAddress;
 import com.radixdlt.network.p2p.P2PConfig;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,7 +44,7 @@ public class SeedNodesConfigParserTest {
 	public void parse_seeds_from_config() {
 		doReturn(ImmutableList.of(String.format(
 			"radix://%s@1.1.1.1",
-			ECKeyPair.generateNew().getPublicKey().toBase58()
+			NodeAddress.of(ECKeyPair.generateNew().getPublicKey())
 		))).when(p2pConfig).seedNodes();
 		final var testSubject = new SeedNodesConfigParser(p2pConfig);
 		assertEquals(1, testSubject.getResolvedSeedNodes().size());

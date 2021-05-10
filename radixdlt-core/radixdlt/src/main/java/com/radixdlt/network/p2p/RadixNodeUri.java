@@ -20,7 +20,8 @@ package com.radixdlt.network.p2p;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.identifiers.NodeAddress;
+import com.radixdlt.serialization.DeserializeException;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -33,7 +34,7 @@ public final class RadixNodeUri {
 	private final NodeId nodeId;
 
 	@JsonCreator
-	public static RadixNodeUri deserialize(byte[] uri) throws URISyntaxException, PublicKeyException {
+	public static RadixNodeUri deserialize(byte[] uri) throws URISyntaxException, DeserializeException {
 		return fromUri(new URI(new String(uri)));
 	}
 
@@ -41,7 +42,7 @@ public final class RadixNodeUri {
 		return new RadixNodeUri(host, port, NodeId.fromPublicKey(publicKey));
 	}
 
-	public static RadixNodeUri fromUri(URI uri) throws PublicKeyException {
+	public static RadixNodeUri fromUri(URI uri) throws DeserializeException {
 		return new RadixNodeUri(uri.getHost(), uri.getPort(), extractNodeId(uri));
 	}
 
@@ -54,8 +55,8 @@ public final class RadixNodeUri {
 		this.nodeId = Objects.requireNonNull(nodeId);
 	}
 
-	private static NodeId extractNodeId(URI uri) throws PublicKeyException {
-		return NodeId.fromPublicKey(ECPublicKey.fromBase58(uri.getUserInfo()));
+	private static NodeId extractNodeId(URI uri) throws DeserializeException {
+		return NodeId.fromPublicKey(NodeAddress.parse(uri.getUserInfo()));
 	}
 
 	public String getHost() {
@@ -76,7 +77,7 @@ public final class RadixNodeUri {
 	}
 
 	private String getUriString() {
-		return String.format("radix://%s@%s:%s", nodeId.getPublicKey().toBase58(), host, port);
+		return String.format("radix://%s@%s:%s", NodeAddress.of(nodeId.getPublicKey()), host, port);
 	}
 
 	@Override
