@@ -261,7 +261,7 @@ public class DispatcherModule extends AbstractModule {
 		Environment environment,
 		SystemCounters systemCounters
 	) {
-		EventDispatcher<LocalSyncRequest> envDispatcher = environment.getDispatcher(LocalSyncRequest.class);
+		var envDispatcher = environment.getDispatcher(LocalSyncRequest.class);
 		return req -> {
 			if (logger.isTraceEnabled()) {
 				Class<?> callingClass = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
@@ -287,7 +287,7 @@ public class DispatcherModule extends AbstractModule {
 		@ProcessOnDispatch Set<EventProcessor<ScheduledLocalTimeout>> processors,
 		Environment environment
 	) {
-		ScheduledEventDispatcher<ScheduledLocalTimeout> dispatcher = environment.getScheduledDispatcher(ScheduledLocalTimeout.class);
+		var dispatcher = environment.getScheduledDispatcher(ScheduledLocalTimeout.class);
 		return (timeout, ms) -> {
 			dispatcher.dispatch(timeout, ms);
 			processors.forEach(e -> e.process(timeout));
@@ -319,7 +319,7 @@ public class DispatcherModule extends AbstractModule {
 		Environment environment,
 		SystemCounters systemCounters
 	) {
-		EventDispatcher<BFTInsertUpdate> dispatcher = environment.getDispatcher(BFTInsertUpdate.class);
+		var dispatcher = environment.getDispatcher(BFTInsertUpdate.class);
 		return update -> {
 			if (update.getSiblingsCount() > 1) {
 				systemCounters.increment(CounterType.BFT_VERTEX_STORE_FORKS);
@@ -338,7 +338,7 @@ public class DispatcherModule extends AbstractModule {
 		Environment environment,
 		SystemCounters systemCounters
 	) {
-		EventDispatcher<BFTRebuildUpdate> dispatcher = environment.getDispatcher(BFTRebuildUpdate.class);
+		var dispatcher = environment.getDispatcher(BFTRebuildUpdate.class);
 		return update -> {
 			long stateVersion = update.getVertexStoreState().getRootHeader().getStateVersion();
 			systemCounters.set(CounterType.BFT_STATE_VERSION, stateVersion);
@@ -353,7 +353,7 @@ public class DispatcherModule extends AbstractModule {
 		@ProcessOnDispatch Set<EventProcessor<BFTHighQCUpdate>> processors,
 		Environment environment
 	) {
-		EventDispatcher<BFTHighQCUpdate> dispatcher = environment.getDispatcher(BFTHighQCUpdate.class);
+		var dispatcher = environment.getDispatcher(BFTHighQCUpdate.class);
 		return update -> {
 			dispatcher.dispatch(update);
 			processors.forEach(p -> p.process(update));
@@ -387,7 +387,7 @@ public class DispatcherModule extends AbstractModule {
 				processors.forEach(e -> e.process(commit));
 			};
 		} else {
-			EventDispatcher<BFTCommittedUpdate> dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
+			var dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
 			return commit -> {
 				long stateVersion = commit.getVertexStoreState().getRootHeader().getStateVersion();
 				systemCounters.set(CounterType.BFT_STATE_VERSION, stateVersion);
@@ -409,7 +409,7 @@ public class DispatcherModule extends AbstractModule {
 		if (asyncProcessors.isEmpty()) {
 			return viewTimeout -> syncProcessors.forEach(e -> e.process(viewTimeout));
 		} else {
-			EventDispatcher<LocalTimeoutOccurrence> dispatcher = environment.getDispatcher(LocalTimeoutOccurrence.class);
+			var dispatcher = environment.getDispatcher(LocalTimeoutOccurrence.class);
 			return timeout -> {
 				syncProcessors.forEach(e -> e.process(timeout));
 				dispatcher.dispatch(timeout);
@@ -429,7 +429,7 @@ public class DispatcherModule extends AbstractModule {
 				processors.forEach(e -> e.process(timeout));
 			};
 		} else {
-			EventDispatcher<EpochLocalTimeoutOccurrence> dispatcher = environment.getDispatcher(EpochLocalTimeoutOccurrence.class);
+			var dispatcher = environment.getDispatcher(EpochLocalTimeoutOccurrence.class);
 			return timeout -> {
 				logger.info("LOCAL_TIMEOUT_OCCURRENCE: {}", timeout);
 				dispatcher.dispatch(timeout);
@@ -444,7 +444,7 @@ public class DispatcherModule extends AbstractModule {
 		Environment environment,
 		SystemCounters counters
 	) {
-		RemoteEventDispatcher<GetVerticesRequest> dispatcher = environment.getRemoteDispatcher(GetVerticesRequest.class);
+		var dispatcher = environment.getRemoteDispatcher(GetVerticesRequest.class);
 		return (node, request) -> {
 			counters.increment(CounterType.BFT_SYNC_REQUESTS_SENT);
 			dispatcher.dispatch(node, request);
@@ -458,8 +458,8 @@ public class DispatcherModule extends AbstractModule {
 		@ProcessOnDispatch Set<EventProcessor<ViewUpdate>> processors,
 		Environment environment
 	) {
-		EventDispatcher<ViewUpdate> dispatcher = environment.getDispatcher(ViewUpdate.class);
-		final RateLimiter logLimiter = RateLimiter.create(1.0);
+		var dispatcher = environment.getDispatcher(ViewUpdate.class);
+		var logLimiter = RateLimiter.create(1.0);
 		return viewUpdate -> {
 			Level logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
 			logger.log(logLevel, "NextSyncView: {}", viewUpdate);
@@ -474,8 +474,8 @@ public class DispatcherModule extends AbstractModule {
 		@ProcessOnDispatch Set<EventProcessor<EpochViewUpdate>> processors,
 		Environment environment
 	) {
-		final RateLimiter logLimiter = RateLimiter.create(1.0);
-		EventDispatcher<EpochViewUpdate> dispatcher = environment.getDispatcher(EpochViewUpdate.class);
+		var logLimiter = RateLimiter.create(1.0);
+		var dispatcher = environment.getDispatcher(EpochViewUpdate.class);
 		return epochViewUpdate -> {
 			Level logLevel = logLimiter.tryAcquire() ? Level.DEBUG : Level.TRACE;
 			logger.log(logLevel, "NextSyncView: {}", epochViewUpdate);
@@ -490,7 +490,7 @@ public class DispatcherModule extends AbstractModule {
 		@ProcessOnDispatch Set<EventProcessor<LedgerUpdate>> processors,
 		Environment environment
 	) {
-		EventDispatcher<LedgerUpdate> dispatcher = environment.getDispatcher(LedgerUpdate.class);
+		var dispatcher = environment.getDispatcher(LedgerUpdate.class);
 		return u -> {
 			dispatcher.dispatch(u);
 			processors.forEach(e -> e.process(u));
@@ -503,7 +503,7 @@ public class DispatcherModule extends AbstractModule {
 		@ProcessOnDispatch Set<EventProcessor<EpochsLedgerUpdate>> processors,
 		Environment environment
 	) {
-		EventDispatcher<EpochsLedgerUpdate> dispatcher = environment.getDispatcher(EpochsLedgerUpdate.class);
+		var dispatcher = environment.getDispatcher(EpochsLedgerUpdate.class);
 		return u -> {
 			dispatcher.dispatch(u);
 			processors.forEach(e -> e.process(u));
