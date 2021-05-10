@@ -24,6 +24,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.mempool.MempoolRelayTrigger;
+
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -117,7 +118,7 @@ public class DispatcherModule extends AbstractModule {
 				MempoolAddFailure.class,
 				m -> {
 					if (m.getException() instanceof RadixEngineMempoolException) {
-						RadixEngineMempoolException e = (RadixEngineMempoolException) m.getException();
+						var e = (RadixEngineMempoolException) m.getException();
 						if (e.getException().getErrorCode().equals(RadixEngineErrorCode.HOOK_ERROR)) {
 							return CounterType.MEMPOOL_ERRORS_HOOK;
 						} else if (e.getException().getErrorCode().equals(RadixEngineErrorCode.CM_ERROR)) {
@@ -143,7 +144,7 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<EventDispatcher<MempoolFillerUpdate>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MempoolFillerUpdate.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<ScheduledMempoolFill>>() { })
-				.toProvider(Dispatchers.dispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.dispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<NoVote>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(NoVote.class, v -> CounterType.BFT_REJECTED, true))
 			.in(Scopes.SINGLETON);
@@ -153,7 +154,6 @@ public class DispatcherModule extends AbstractModule {
 				v -> CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS,
 				true
 			)).in(Scopes.SINGLETON);
-
 		bind(new TypeLiteral<ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(new TypeLiteral<Epoched<ScheduledLocalTimeout>>() { }))
 			.in(Scopes.SINGLETON);
@@ -166,7 +166,8 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<ScheduledEventDispatcher<SyncLedgerUpdateTimeout>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(SyncLedgerUpdateTimeout.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout>>() { })
-			.toProvider(Dispatchers.scheduledDispatcherProvider(SyncCheckReceiveStatusTimeout.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.scheduledDispatcherProvider(SyncCheckReceiveStatusTimeout.class))
+			.in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<SyncCheckTrigger>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(SyncCheckTrigger.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMempoolFill>>() { })
@@ -181,7 +182,6 @@ public class DispatcherModule extends AbstractModule {
 		// BFT
 		bind(new TypeLiteral<RemoteEventDispatcher<Proposal>>() { })
 			.toProvider(Dispatchers.remoteDispatcherProvider(Proposal.class)).in(Scopes.SINGLETON);
-
 		bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() { })
 			.toProvider(Dispatchers.remoteDispatcherProvider(Vote.class)).in(Scopes.SINGLETON);
 
@@ -190,7 +190,6 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.remoteDispatcherProvider(GetVerticesResponse.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesErrorResponse>>() { })
 			.toProvider(Dispatchers.remoteDispatcherProvider(GetVerticesErrorResponse.class)).in(Scopes.SINGLETON);
-
 		bind(new TypeLiteral<RemoteEventDispatcher<MempoolAdd>>() { })
 			.toProvider(Dispatchers.remoteDispatcherProvider(MempoolAdd.class)).in(Scopes.SINGLETON);
 
@@ -264,7 +263,7 @@ public class DispatcherModule extends AbstractModule {
 		var envDispatcher = environment.getDispatcher(LocalSyncRequest.class);
 		return req -> {
 			if (logger.isTraceEnabled()) {
-				Class<?> callingClass = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+				var callingClass = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 				logger.trace("LOCAL_SYNC_REQUEST dispatched by {}", callingClass);
 			}
 
