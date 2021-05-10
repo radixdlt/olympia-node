@@ -282,19 +282,42 @@ public class LocalSyncServiceTest {
 		final var peer2 = mock(BFTNode.class);
 		when(peersView.peers()).thenReturn(List.of(peer1, peer2));
 
+		final var requestId = 1L;
 		final var originalCandidates = ImmutableList.of(peer1, peer2);
 		final var syncState = SyncState.SyncingState.init(
-			currentHeader, originalCandidates, targetHeader).withWaitingFor(peer1);
+			currentHeader, originalCandidates, targetHeader).withPendingRequest(peer1, requestId);
 		this.setupSyncServiceWithState(syncState);
 
 		this.localSyncService.syncRequestTimeoutEventProcessor()
-			.process(SyncRequestTimeout.create(peer1, currentHeader));
+			.process(SyncRequestTimeout.create(peer1, requestId));
 
 		verify(syncRequestDispatcher, times(1)).dispatch(eq(peer2), any());
 	}
 
 	@Test
-	public void when_syncing_timeout_for_unexpected_peer__then_should_ignore() {
+	public void when_syncing_timeout_for_different_peer_same_request_id__then_should_ignore() {
+		final var currentHeader = createHeaderAtStateVersion(10L);
+		final var targetHeader = createHeaderAtStateVersion(20L);
+
+		final var peer1 = mock(BFTNode.class);
+		final var peer2 = mock(BFTNode.class);
+		when(peersView.peers()).thenReturn(List.of(peer1, peer2));
+
+		final var requestId = 1L;
+		final var originalCandidates = ImmutableList.of(peer1, peer2);
+		final var syncState = SyncState.SyncingState.init(
+			currentHeader, originalCandidates, targetHeader).withPendingRequest(peer1, requestId);
+		this.setupSyncServiceWithState(syncState);
+
+		// waiting for response from peer1, but got a timeout for peer2
+		this.localSyncService.syncRequestTimeoutEventProcessor()
+			.process(SyncRequestTimeout.create(peer2, requestId));
+
+		verifyNoMoreInteractions(syncRequestDispatcher);
+	}
+
+	@Test
+	public void when_syncing_timeout_for_same_peer_different_request_id__then_should_ignore() {
 		final var currentHeader = createHeaderAtStateVersion(10L);
 		final var targetHeader = createHeaderAtStateVersion(20L);
 
@@ -304,12 +327,12 @@ public class LocalSyncServiceTest {
 
 		final var originalCandidates = ImmutableList.of(peer1, peer2);
 		final var syncState = SyncState.SyncingState.init(
-			currentHeader, originalCandidates, targetHeader).withWaitingFor(peer1);
+			currentHeader, originalCandidates, targetHeader).withPendingRequest(peer1, 2L);
 		this.setupSyncServiceWithState(syncState);
 
-		// waiting for response from peer1, but got a timeout for peer2
+		// waiting for response for request id 2, but got a timeout for 1
 		this.localSyncService.syncRequestTimeoutEventProcessor()
-			.process(SyncRequestTimeout.create(peer2, currentHeader));
+			.process(SyncRequestTimeout.create(peer1, 1L));
 
 		verifyNoMoreInteractions(syncRequestDispatcher);
 	}
@@ -323,7 +346,7 @@ public class LocalSyncServiceTest {
 		when(peersView.peers()).thenReturn(List.of(peer1));
 
 		final var syncState = SyncState.SyncingState.init(
-			currentHeader, ImmutableList.of(peer1), targetHeader).withWaitingFor(peer1);
+			currentHeader, ImmutableList.of(peer1), targetHeader).withPendingRequest(peer1, 1L);
 		this.setupSyncServiceWithState(syncState);
 
 		final var respHeadLedgerHeader = mock(LedgerHeader.class);
@@ -363,7 +386,7 @@ public class LocalSyncServiceTest {
 		when(peersView.peers()).thenReturn(List.of(peer1));
 
 		final var syncState = SyncState.SyncingState.init(
-				currentHeader, ImmutableList.of(peer1), targetHeader).withWaitingFor(peer1);
+				currentHeader, ImmutableList.of(peer1), targetHeader).withPendingRequest(peer1, 1L);
 		this.setupSyncServiceWithState(syncState);
 
 		this.localSyncService.ledgerUpdateEventProcessor().process(
@@ -422,7 +445,7 @@ public class LocalSyncServiceTest {
 		when(peersView.peers()).thenReturn(List.of(peer1, peer2));
 
 		final var syncState = SyncState.SyncingState.init(
-			currentHeader, ImmutableList.of(peer1), targetHeader).withWaitingFor(peer1);
+			currentHeader, ImmutableList.of(peer1), targetHeader).withPendingRequest(peer1, 1L);
 		this.setupSyncServiceWithState(syncState);
 
 		this.localSyncService.ledgerStatusUpdateEventProcessor().process(
@@ -447,7 +470,7 @@ public class LocalSyncServiceTest {
 		when(peersView.peers()).thenReturn(List.of(peer1, peer2));
 
 		final var syncState = SyncState.SyncingState.init(
-			currentHeader, ImmutableList.of(peer1), targetHeader).withWaitingFor(peer1);
+			currentHeader, ImmutableList.of(peer1), targetHeader).withPendingRequest(peer1, 1L);
 		this.setupSyncServiceWithState(syncState);
 
 		this.localSyncService.ledgerStatusUpdateEventProcessor().process(

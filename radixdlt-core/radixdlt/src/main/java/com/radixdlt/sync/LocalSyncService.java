@@ -44,6 +44,7 @@ import java.util.Comparator;
 import java.util.Objects;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import javax.annotation.concurrent.NotThreadSafe;
 
@@ -81,6 +82,7 @@ public final class LocalSyncService {
 
 	private static final Logger log = LogManager.getLogger();
 
+	private final AtomicLong requestIdCounter = new AtomicLong();
 	private final RemoteEventDispatcher<StatusRequest> statusRequestDispatcher;
 	private final ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutDispatcher;
 	private final RemoteEventDispatcher<SyncRequest> syncRequestDispatcher;
@@ -329,13 +331,14 @@ public final class LocalSyncService {
 
 		final var currentHeader = currentState.getCurrentHeader();
 
+		final var requestId = requestIdCounter.incrementAndGet();
 		this.syncRequestDispatcher.dispatch(peer, SyncRequest.create(currentHeader.toDto()));
 		this.syncRequestTimeoutDispatcher.dispatch(
-			SyncRequestTimeout.create(peer, currentHeader),
+			SyncRequestTimeout.create(peer, requestId),
 			this.syncConfig.syncRequestTimeout()
 		);
 
-		return currentState.withWaitingFor(peer);
+		return currentState.withPendingRequest(peer, requestId);
 	}
 
 	private boolean isFullySynced(SyncState.SyncingState syncingState) {
@@ -359,7 +362,7 @@ public final class LocalSyncService {
 			// didn't receive any commands, remove from candidate peers and processSync
 			return this.processSync(
 				currentState
-					.clearWaitingFor()
+					.clearPendingRequest()
 					.removeCandidate(sender)
 			);
 		} else if (!this.verifyResponse(syncResponse)) {
@@ -369,7 +372,7 @@ public final class LocalSyncService {
 			invalidSyncedCommandsSender.sendInvalidSyncResponse(syncResponse);
 			return this.processSync(
 				currentState
-					.clearWaitingFor()
+					.clearPendingRequest()
 					.removeCandidate(sender)
 			);
 		} else {
@@ -378,7 +381,7 @@ public final class LocalSyncService {
 				1000L
 			);
 			this.verifiedSender.sendVerifiedSyncResponse(syncResponse);
-			return currentState.clearWaitingFor();
+			return currentState.clearPendingRequest();
 		}
 	}
 
@@ -409,8 +412,12 @@ public final class LocalSyncService {
 	}
 
 	private SyncState processSyncRequestTimeout(SyncingState currentState, SyncRequestTimeout syncRequestTimeout) {
-		if (!currentState.waitingForResponseFrom(syncRequestTimeout.getPeer())
-			|| !currentState.getCurrentHeader().equals(syncRequestTimeout.getCurrentHeader())) {
+		final var timeoutMatchesRequest = currentState.getPendingRequest().stream()
+			.anyMatch(pr -> pr.getRequestId() == syncRequestTimeout.getRequestId()
+				&& pr.getPeer().equals(syncRequestTimeout.getPeer())
+			);
+
+		if (!timeoutMatchesRequest) {
 			return currentState; // ignore, this timeout is no longer valid
 		}
 
@@ -418,7 +425,7 @@ public final class LocalSyncService {
 
 		return this.processSync(
 			currentState
-				.clearWaitingFor()
+				.clearPendingRequest()
 				.removeCandidate(syncRequestTimeout.getPeer())
 		);
 	}

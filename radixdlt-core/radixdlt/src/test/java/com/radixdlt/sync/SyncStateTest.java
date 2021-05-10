@@ -39,12 +39,16 @@ public class SyncStateTest {
             .verify();
 
         EqualsVerifier.forClass(SyncState.SyncCheckState.class)
-                .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-                .verify();
+            .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+            .verify();
 
         EqualsVerifier.forClass(SyncState.SyncingState.class)
-                .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-                .verify();
+            .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+            .verify();
+
+        EqualsVerifier.forClass(SyncState.PendingRequest.class)
+            .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+            .verify();
     }
 
     @Test
@@ -123,12 +127,12 @@ public class SyncStateTest {
         assertFalse(initialState.waitingForResponse());
 
         final var peer = mock(BFTNode.class);
-        final var newState = initialState.withWaitingFor(peer);
+        final var newState = initialState.withPendingRequest(peer, 1L);
 
         assertTrue(newState.waitingForResponse());
         assertTrue(newState.waitingForResponseFrom(peer));
 
-        assertFalse(newState.clearWaitingFor().waitingForResponse());
+        assertFalse(newState.clearPendingRequest().waitingForResponse());
     }
 
     @Test
