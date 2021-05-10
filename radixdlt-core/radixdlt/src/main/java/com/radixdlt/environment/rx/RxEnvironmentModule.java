@@ -40,6 +40,8 @@ import com.radixdlt.environment.ScheduledEventProducerOnRunner;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.utils.ThreadFactories;
 import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
@@ -71,6 +73,10 @@ public final class RxEnvironmentModule extends AbstractModule {
 
 		// TODO: Remove, still required by BerkeleyClientAPIStore.java
 		bind(new TypeLiteral<Observable<AtomsCommittedToLedger>>() { }).toProvider(new ObservableProvider<>(AtomsCommittedToLedger.class));
+
+		// TODO: Remove, still required by TransactionStatusService.java
+		bind(new TypeLiteral<Observable<MempoolAddSuccess>>() { }).toProvider(new ObservableProvider<>(MempoolAddSuccess.class));
+		bind(new TypeLiteral<Observable<MempoolAddFailure>>() { }).toProvider(new ObservableProvider<>(MempoolAddFailure.class));
 
 		// TODO: Remove, still required by SimulationNodes.java
 		bind(new TypeLiteral<Observable<LedgerUpdate>>() { }).toProvider(new ObservableProvider<>(LedgerUpdate.class));
