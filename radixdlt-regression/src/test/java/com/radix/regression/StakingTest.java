@@ -20,7 +20,7 @@ package com.radix.regression;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
-import com.radixdlt.client.application.identity.RadixIdentities;
+import com.radixdlt.client.lib.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.application.TokenUnitConversions;

@@ -21,7 +21,7 @@
  */
 package com.radixdlt.cli;
 
-import com.radixdlt.client.application.identity.RadixIdentities;
+import com.radixdlt.client.lib.identity.RadixIdentities;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import picocli.CommandLine.Command;
@@ -43,26 +43,26 @@ import static com.radixdlt.cli.Utils.println;
  * The password is required and it should not be empty.
  */
 @Command(name = "generate-key", mixinStandardHelpOptions = true,
-		description = "Generate key")
+        description = "Generate key")
 public class KeyGenerator implements Runnable {
 
-	@Option(names = {"-p", "--password"}, paramLabel = "PASSWORD", description = "password", required = true)
-	private String password;
+    @Option(names = {"-p", "--password"}, paramLabel = "PASSWORD", description = "password", required = true)
+    private String password;
 
-	@Override
-	public void run() {
-		if (password == null || password.isBlank()) {
-			println("The password must be provided");
-			return;
-		}
+    @Override
+    public void run() {
+        if (password == null || password.isBlank()) {
+            println("The password must be provided");
+            return;
+        }
 
-		try (PrintWriter writer = new PrintWriter(System.out)) {
-			RadixIdentities.createNewEncryptedIdentity(writer, password);
-			writer.flush();
-		} catch (IOException | GeneralSecurityException | PrivateKeyException | PublicKeyException e) {
-			println("Unable to generate keys due to following error:\n" + e.getMessage());
-			return;
-		}
-		println("Done");
-	}
+        try (PrintWriter writer = new PrintWriter(System.out)) {
+            RadixIdentities.createNewEncryptedIdentity(writer, password);
+            writer.flush();
+        } catch (IOException | GeneralSecurityException | PrivateKeyException | PublicKeyException e) {
+            println("Unable to generate keys due to following error:\n" + e.getMessage());
+            return;
+        }
+        println("Done");
+    }
 }

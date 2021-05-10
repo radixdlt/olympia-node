@@ -24,8 +24,8 @@ package com.radixdlt.client.examples;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.application.RadixApplicationAPI;
-import com.radixdlt.client.application.identity.RadixIdentities;
-import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.lib.identity.RadixIdentities;
+import com.radixdlt.client.lib.identity.RadixIdentity;
 import com.radixdlt.client.core.Bootstrap;
 
 public class ValidatorExample {

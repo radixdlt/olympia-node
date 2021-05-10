@@ -20,23 +20,34 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-package com.radixdlt.client.application.identity;
+package com.radixdlt.client.lib.identity;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import java.util.Map;
 
-import java.io.Writer;
+public class UnencryptedData {
+	private final Map<String, Object> metaData;
+	private final byte[] data;
+	private final boolean isFromEncryptedSource;
 
-import com.radixdlt.client.lib.identity.RadixIdentities;
-import org.junit.Test;
+	public UnencryptedData(byte[] data, Map<String, Object> metaData, boolean isFromEncryptedSource) {
+		this.data = data;
+		this.metaData = metaData;
+		this.isFromEncryptedSource = isFromEncryptedSource;
+	}
 
-public class RadixIdentitiesTest {
+	/**
+	 * @return whether this bytes came from an encrypted source
+	 */
+	public boolean isFromEncryptedSource() {
+		return isFromEncryptedSource;
+	}
 
-	@Test
-	public void newEncryptedIdentityWriterTest() throws Exception {
-		Writer writer = mock(Writer.class);
-		RadixIdentities.createNewEncryptedIdentity(writer, "Password");
-		verify(writer, times(1)).flush();
+	public Map<String, Object> getMetaData() {
+		return metaData;
+	}
+
+	// TODO: make immutable
+	public byte[] getData() {
+		return data;
 	}
 }

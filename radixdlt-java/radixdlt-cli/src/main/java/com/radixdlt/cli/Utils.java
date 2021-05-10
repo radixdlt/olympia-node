@@ -22,101 +22,74 @@
 package com.radixdlt.cli;
 
 import com.radixdlt.cli.Composite.IdentityInfo;
-import com.radixdlt.client.application.RadixApplicationAPI;
-import com.radixdlt.client.application.identity.RadixIdentities;
-import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.core.BootstrapByTrustedNode;
-import com.radixdlt.client.core.network.RadixNode;
+import com.radixdlt.client.lib.identity.RadixIdentities;
+import com.radixdlt.client.lib.identity.RadixIdentity;
 import com.radixdlt.crypto.exception.KeyStoreException;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import okhttp3.Request;
 
 import java.io.IOException;
 
 public final class Utils {
-	private Utils() {
-	}
+    private Utils() {
+    }
 
-	private static final String KEYFILE_NAME = System.getenv("RADCLI_ENCRYPTED_KEYFILE");
-	private static final String UNENCRYPTED_KEYFILE_NAME = System.getenv("RADCLI_UNENCRYPTED_KEYFILE");
-	private static final String KEYFILE_PASSWORD = System.getenv("RADCLI_PWD");
-	private static final String KEY_NAME = System.getenv("RADCLI_KEYNAME");
-	private static final String RADIX_BOOTSTRAP_TRUSTED_NODE = "RADIX_BOOTSTRAP_TRUSTED_NODE";
+    private static final String KEYFILE_NAME = System.getenv("RADCLI_ENCRYPTED_KEYFILE");
+    private static final String UNENCRYPTED_KEYFILE_NAME = System.getenv("RADCLI_UNENCRYPTED_KEYFILE");
+    private static final String KEYFILE_PASSWORD = System.getenv("RADCLI_PWD");
+    private static final String KEY_NAME = System.getenv("RADCLI_KEYNAME");
+    private static final String RADIX_BOOTSTRAP_TRUSTED_NODE = "RADIX_BOOTSTRAP_TRUSTED_NODE";
 
-	public static RadixIdentity getIdentiyUsingEnvVar()
-			throws PrivateKeyException, KeyStoreException, PublicKeyException, IOException {
-		if (KEYFILE_NAME != null && KEYFILE_PASSWORD != null && KEY_NAME != null) {
-			return RadixIdentities.loadOrCreateEncryptedFile(KEYFILE_NAME, KEYFILE_PASSWORD, KEY_NAME);
-		} else if (UNENCRYPTED_KEYFILE_NAME != null) {
-			return RadixIdentities.loadOrCreateFile(UNENCRYPTED_KEYFILE_NAME);
-		}
+    public static RadixIdentity getIdentiyUsingEnvVar()
+            throws PrivateKeyException, KeyStoreException, PublicKeyException, IOException {
+        if (KEYFILE_NAME != null && KEYFILE_PASSWORD != null && KEY_NAME != null) {
+            return RadixIdentities.loadOrCreateEncryptedFile(KEYFILE_NAME, KEYFILE_PASSWORD, KEY_NAME);
+        } else if (UNENCRYPTED_KEYFILE_NAME != null) {
+            return RadixIdentities.loadOrCreateFile(UNENCRYPTED_KEYFILE_NAME);
+        }
 
-		println("Key required in form of environment variable ["
-				+ "RADCLI_ENCRYPTED_KEYFILE & RADCLI_PWD & RADCLI_KEYNAME] "
-				+ "or RADCLI_UNENCRYPTED_KEYFILE"
-		);
-		println("Run help -h option to check the usage");
+        println("Key required in form of environment variable ["
+                + "RADCLI_ENCRYPTED_KEYFILE & RADCLI_PWD & RADCLI_KEYNAME] "
+                + "or RADCLI_UNENCRYPTED_KEYFILE"
+        );
+        println("Run help -h option to check the usage");
 
-		System.exit(-1);
-		return null;
-	}
+        System.exit(-1);
+        return null;
+    }
 
-	public static RadixIdentity getIdentity(String keyFile, String password, String keyName)
-			throws PrivateKeyException, KeyStoreException, PublicKeyException, IOException {
-		if (keyFile == null || password == null) {
-			println("Key file name and password are required");
-			System.exit(-1);
-		}
-		return RadixIdentities.loadOrCreateEncryptedFile(keyFile, password, keyName);
-	}
+    public static RadixIdentity getIdentity(String keyFile, String password, String keyName)
+            throws PrivateKeyException, KeyStoreException, PublicKeyException, IOException {
+        if (keyFile == null || password == null) {
+            println("Key file name and password are required");
+            System.exit(-1);
+        }
+        return RadixIdentities.loadOrCreateEncryptedFile(keyFile, password, keyName);
+    }
 
 
-	public static RadixIdentity getIdentity(IdentityInfo info)
-			throws PrivateKeyException, PublicKeyException, IOException, KeyStoreException {
-		if (info != null) {
-			if (info.encrypted() != null) {
-				return getIdentity(info.encrypted().keyStore(), info.encrypted().password(), info.encrypted().keypair());
-			} else if (info.unencryptedKeyFile() != null) {
-				return RadixIdentities.loadOrCreateFile(info.unencryptedKeyFile());
-			}
-		}
-		return getIdentiyUsingEnvVar();
-	}
+    public static RadixIdentity getIdentity(IdentityInfo info)
+            throws PrivateKeyException, PublicKeyException, IOException, KeyStoreException {
+        if (info != null) {
+            if (info.encrypted() != null) {
+                return getIdentity(info.encrypted().keyStore(), info.encrypted().password(), info.encrypted().keypair());
+            } else if (info.unencryptedKeyFile() != null) {
+                return RadixIdentities.loadOrCreateFile(info.unencryptedKeyFile());
+            }
+        }
+        return getIdentiyUsingEnvVar();
+    }
 
-	public static RadixApplicationAPI getAPI(IdentityInfo identityInfo) {
-		try {
-			return RadixApplicationAPI.create(getRadixNode(), getIdentity(identityInfo));
-		} catch (PrivateKeyException | PublicKeyException | IOException | KeyStoreException e) {
-			println("Unable to get access to Radix Application API due to following error:\n" + e.getMessage());
-			System.exit(-1);
-			// Unreachable
-			return null;
-		}
-	}
+    public static void println(final String message) {
+        System.out.println(message);
+    }
 
-	public static BootstrapByTrustedNode getRadixNode() {
-		String bootstrapByTrustedNode = System.getenv(RADIX_BOOTSTRAP_TRUSTED_NODE);
+    public static void printf(String format, Object... args) {
+        System.out.printf(format, args);
+    }
 
-		if (bootstrapByTrustedNode == null) {
-			println("RADIX_BOOTSTRAP_TRUSTED_NODE env variable not set, using default http://localhost:8080");
-			bootstrapByTrustedNode = "http://localhost:8080";
-		}
-		printfln("Using Bootstrap Mechanism: RADIX_BOOTSTRAP_TRUSTED_NODE %s",  bootstrapByTrustedNode);
-		RadixNode trustedNode = new RadixNode(new Request.Builder().url(bootstrapByTrustedNode).build());
-		return new BootstrapByTrustedNode(trustedNode);
-	}
-
-	public static void println(final String message) {
-		System.out.println(message);
-	}
-
-	public static void printf(String format, Object... args) {
-		System.out.printf(format, args);
-	}
-
-	public static void printfln(String format, Object... args) {
-		System.out.printf(format, args);
-		System.out.println();
-	}
+    public static void printfln(String format, Object... args) {
+        System.out.printf(format, args);
+        System.out.println();
+    }
 }

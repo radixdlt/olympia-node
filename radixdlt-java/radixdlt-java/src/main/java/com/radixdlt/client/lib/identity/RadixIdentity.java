@@ -20,23 +20,21 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-package com.radixdlt.client.application.identity;
+package com.radixdlt.client.lib.identity;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import com.radixdlt.crypto.ECPublicKey;
+import io.reactivex.Single;
 
-import java.io.Writer;
+public interface RadixIdentity {
 
-import com.radixdlt.client.lib.identity.RadixIdentities;
-import org.junit.Test;
+    /**
+     * Transforms a possibly encrypted bytes object into an unencrypted one.
+     * If decryption fails then return an empty Maybe.
+     *
+     * @param data bytes to transform
+     * @return either the unencrypted version of the bytes or an error
+     */
+    Single<UnencryptedData> decrypt(Data data);
 
-public class RadixIdentitiesTest {
-
-	@Test
-	public void newEncryptedIdentityWriterTest() throws Exception {
-		Writer writer = mock(Writer.class);
-		RadixIdentities.createNewEncryptedIdentity(writer, "Password");
-		verify(writer, times(1)).flush();
-	}
+    ECPublicKey getPublicKey();
 }
