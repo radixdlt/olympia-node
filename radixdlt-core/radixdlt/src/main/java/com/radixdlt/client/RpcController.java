@@ -40,6 +40,8 @@ public final class RpcController implements Controller {
 	public void configureRoutes(RoutingHandler handler) {
 		handler.post("/rpc", this::handleRpc);
 		handler.post("/rpc/", this::handleRpc);
+		handler.post("/archive", this::handleRpc);
+		handler.post("/archive/", this::handleRpc);
 	}
 
 	@VisibleForTesting

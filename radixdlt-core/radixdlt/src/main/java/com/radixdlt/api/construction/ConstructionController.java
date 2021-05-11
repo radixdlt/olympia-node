@@ -74,7 +74,6 @@ public final class ConstructionController implements Controller {
 			.put("data", Objects.toString(i.getData()));
 	}
 
-
 	void handleGetTxn(HttpServerExchange exchange) {
 		withBody(exchange, values -> {
 			var transactionId = AID.from(values.getString("tx_ID"));

@@ -130,9 +130,4 @@ public final class RestUtils {
 				});
 		});
 	}
-
-	public static Optional<String> getParameter(HttpServerExchange exchange, String name) {
-		// our routing handler puts path params into query params by default so we don't need to include them manually
-		return Optional.ofNullable(exchange.getQueryParameters().get(name)).map(Deque::getFirst);
-	}
 }
