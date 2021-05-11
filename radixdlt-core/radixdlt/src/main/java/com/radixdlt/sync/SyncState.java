@@ -281,10 +281,12 @@ public interface SyncState {
 		public SyncingState withCandidatePeers(ImmutableList<BFTNode> peers) {
 			return new SyncingState(
 				currentHeader,
-				new ImmutableList.Builder<BFTNode>()
-					.addAll(peers)
-					.addAll(candidatePeers)
-					.build(),
+					ImmutableSet.copyOf(
+						new ImmutableList.Builder<BFTNode>()
+						.addAll(peers)
+						.addAll(candidatePeers)
+						.build()
+					).asList(),
 				targetHeader,
 				pendingRequest
 			);
