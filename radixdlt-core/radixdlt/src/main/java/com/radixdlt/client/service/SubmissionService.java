@@ -23,6 +23,7 @@ import org.apache.logging.log4j.Logger;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.BurnToken;
@@ -37,10 +38,12 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
+import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -66,7 +69,7 @@ public final class SubmissionService {
 		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
 	}
 
-	public Result<PreparedTransaction> prepareTransaction(List<TransactionAction> steps) {
+	public Result<PreparedTransaction> prepareTransaction(List<TransactionAction> steps, Optional<String> message) {
 		var addresses = steps.stream().map(TransactionAction::getFrom)
 			.filter(Objects::nonNull)
 			.collect(Collectors.toSet());
@@ -81,10 +84,15 @@ public final class SubmissionService {
 
 		return Result.wrap(
 			UNABLE_TO_PREPARE_TX,
-			() -> radixEngine
-				.construct(toActionsAndFee(addr, steps))
-				.buildForExternalSign()
-				.map(this::toPreparedTx)
+			() -> {
+				var txBuilder = radixEngine.construct(toActionsAndFee(addr, steps));
+
+				message.ifPresent(text -> txBuilder.message(text.getBytes(RadixConstants.STANDARD_CHARSET)));
+
+				return txBuilder
+					.buildForExternalSign()
+					.map(this::toPreparedTx);
+			}
 		);
 	}
 

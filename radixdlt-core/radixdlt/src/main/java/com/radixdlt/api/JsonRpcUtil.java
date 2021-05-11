@@ -26,6 +26,7 @@ import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 import static com.radixdlt.client.api.ApiErrors.INVALID_HEX_STRING;
@@ -98,12 +99,13 @@ public final class JsonRpcUtil {
 	}
 
 	public static Result<String> safeString(JSONObject params, String name) {
-		return Result.fromOptional(
-			MISSING_PARAMETER.with(name),
-			ofNullable(params.opt(name))
-				.filter(String.class::isInstance)
-				.map(String.class::cast)
-		);
+		return Result.fromOptional(MISSING_PARAMETER.with(name), optString(params, name));
+	}
+
+	public static Optional<String> optString(JSONObject params, String name) {
+		return ofNullable(params.opt(name))
+			.filter(String.class::isInstance)
+			.map(String.class::cast);
 	}
 
 	public static Result<JSONObject> safeObject(JSONObject params, String name) {

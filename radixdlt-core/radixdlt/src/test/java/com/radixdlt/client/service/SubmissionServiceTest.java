@@ -225,11 +225,10 @@ public class SubmissionServiceTest {
 				BOB_ACCT,
 				UInt256.FOUR,
 				Optional.of(nativeToken)
-			),
-			TransactionAction.msg("message")
+			)
 		);
 
-		var result = submissionService.prepareTransaction(steps);
+		var result = submissionService.prepareTransaction(steps, Optional.of("message"));
 
 		result
 			.onFailureDo(Assert::fail)
@@ -289,10 +288,9 @@ public class SubmissionServiceTest {
 		var steps = List.of(
 			TransactionAction.create(
 				ActionType.TRANSFER, ALICE_ACCT, BOB_ACCT, UInt256.FOUR, Optional.of(nativeToken)
-			),
-			TransactionAction.msg("message")
+			)
 		);
 
-		return submissionService.prepareTransaction(steps);
+		return submissionService.prepareTransaction(steps, Optional.of("message"));
 	}
 }

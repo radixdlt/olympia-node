@@ -52,6 +52,7 @@ import static com.radixdlt.api.JsonRpcUtil.ARRAY;
 import static com.radixdlt.api.JsonRpcUtil.fromList;
 import static com.radixdlt.api.JsonRpcUtil.invalidParamsError;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.JsonRpcUtil.optString;
 import static com.radixdlt.api.JsonRpcUtil.response;
 import static com.radixdlt.api.JsonRpcUtil.safeArray;
 import static com.radixdlt.api.JsonRpcUtil.safeBlob;
@@ -149,8 +150,7 @@ public class HighLevelApiHandler {
 			List.of("message"),
 			params -> safeArray(params, "actions").flatMap(
 				actions -> highLevelApiService.parse(actions)
-					.map(steps -> mergeMessageAction(params, steps))
-					.flatMap(submissionService::prepareTransaction)
+					.flatMap(steps -> submissionService.prepareTransaction(steps, optString(params, "message")))
 					.map(PreparedTransaction::asJson)
 			)
 		);
@@ -286,17 +286,6 @@ public class HighLevelApiHandler {
 		return jsonObject()
 			.put("cursor", cursor.map(ValidatorAddress::of).orElse(""))
 			.put("validators", fromList(transactions, ValidatorInfoDetails::asJson));
-	}
-
-	private static List<TransactionAction> mergeMessageAction(JSONObject params, List<TransactionAction> steps) {
-		return safeString(params, "message")
-			.fold(
-				__ -> steps,
-				message -> ImmutableList.<TransactionAction>builder()
-					.addAll(steps)
-					.add(TransactionAction.msg(message))
-					.build()
-			);
 	}
 
 	private static Result<ECDSASignature> toRecoverable(byte[] blob, ECDSASignature signature, ECPublicKey publicKey) {

@@ -27,7 +27,6 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.actions.IncludeMessage;
 import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -40,7 +39,6 @@ import com.radixdlt.store.EngineStore;
 
 import com.radixdlt.store.TransientEngineStore;
 import com.radixdlt.utils.Pair;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,8 +50,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
@@ -224,10 +220,8 @@ public final class RadixEngine<M> {
 
 	/**
 	 * Retrieves the latest state
-	 *
 	 * @param applicationStateClass the class of the state to retrieve
 	 * @param <U> the class of the state to retrieve
-	 *
 	 * @return the current state
 	 */
 	public <U> U getComputedState(Class<U> applicationStateClass) {
@@ -236,10 +230,8 @@ public final class RadixEngine<M> {
 
 	/**
 	 * Retrieves the latest state
-	 *
 	 * @param applicationStateClass the class of the state to retrieve
 	 * @param <U> the class of the state to retrieve
-	 *
 	 * @return the current state
 	 */
 	public <U> U getComputedState(Class<U> applicationStateClass, String name) {
@@ -377,7 +369,6 @@ public final class RadixEngine<M> {
 	 *
 	 * @param txns transactions to execute
 	 * @param permissionLevel permission level to execute on
-	 *
 	 * @throws RadixEngineException on state conflict or dependency issues
 	 */
 	public List<REParsedTxn> execute(List<Txn> txns, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
@@ -468,9 +459,7 @@ public final class RadixEngine<M> {
 		return construct(user, actions, Set.of());
 	}
 
-	public TxBuilder construct(ECPublicKey user, List<TxAction> inputActions, Set<SubstateId> avoid) throws TxBuilderException {
-		var actions = reorderMessageAction(inputActions);
-
+	public TxBuilder construct(ECPublicKey user, List<TxAction> actions, Set<SubstateId> avoid) throws TxBuilderException {
 		synchronized (stateUpdateEngineLock) {
 			SubstateStore substateStore = c -> {
 				var cache = substateCache.get(c);
@@ -494,29 +483,15 @@ public final class RadixEngine<M> {
 				i -> !avoid.contains(i.getId())
 			);
 
-			var txBuilder = TxBuilder.newBuilder(user, filteredStore);
-
+			var txBuilder = user != null
+				? TxBuilder.newBuilder(user, filteredStore)
+				: TxBuilder.newBuilder(filteredStore);
 			for (var action : actions) {
 				action.execute(txBuilder);
-
-				if (action instanceof IncludeMessage) {
-					continue; // Do not wrap message into dedicated particle group
-				}
 				txBuilder.particleGroup();
 			}
 
 			return txBuilder;
 		}
-	}
-
-	private List<TxAction> reorderMessageAction(List<TxAction> inputActions) {
-		return inputActions.stream()
-			.filter(IncludeMessage.class::isInstance)
-			.findFirst()
-			.map(msgAction -> Stream.concat(
-				Stream.of(msgAction),
-				inputActions.stream().filter(Predicate.not(IncludeMessage.class::isInstance))
-			).collect(Collectors.toList()))
-			.orElse(inputActions);
 	}
 }
