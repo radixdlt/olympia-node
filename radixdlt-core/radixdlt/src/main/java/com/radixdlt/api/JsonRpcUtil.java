@@ -120,11 +120,11 @@ public final class JsonRpcUtil {
 	}
 
 	public static JSONObject methodNotFound(JSONObject request) {
-		return extendedError(request, RpcError.METHOD_NOT_FOUND, "Method not found");
+		return extendedError(request, RpcError.METHOD_NOT_FOUND.code(), "Method not found");
 	}
 
 	public static JSONObject invalidParamsError(JSONObject request, String message) {
-		return extendedError(request, RpcError.INVALID_PARAMS, message);
+		return extendedError(request, RpcError.INVALID_PARAMS.code(), message);
 	}
 
 	public static JSONObject requestTooLongError(int length) {
@@ -132,15 +132,15 @@ public final class JsonRpcUtil {
 	}
 
 	public static JSONObject serverError(JSONObject request, Exception e) {
-		return extendedError(request, RpcError.SERVER_ERROR, e.getMessage());
+		return extendedError(request, RpcError.SERVER_ERROR.code(), e.getMessage());
 	}
 
 	public static JSONObject protocolError(RpcError code, String message) {
 		return errorResponse(JSONObject.NULL, code, message);
 	}
 
-	private static JSONObject extendedError(JSONObject request, RpcError error, String message) {
-		var response = jsonObject().put("code", error.code()).put("message", message);
+	public static JSONObject extendedError(JSONObject request, int code, String message) {
+		var response = jsonObject().put("code", code).put("message", message);
 
 		ofNullable(request.opt("params")).ifPresent(params -> response.put("data", params));
 
@@ -192,7 +192,10 @@ public final class JsonRpcUtil {
 		return params(request)
 			.flatMap(params -> sanitizeParams(params, required, optional))
 			.flatMap(fn)
-			.fold(failure -> invalidParamsError(request, failure.message()), response -> response(request, response));
+			.fold(
+				failure -> extendedError(request, failure.code(), failure.message()),
+				response -> response(request, response)
+			);
 	}
 
 	private static Result<JSONObject> sanitizeParams(Object params, List<String> required, List<String> optional) {

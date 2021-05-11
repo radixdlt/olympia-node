@@ -47,6 +47,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.radixdlt.atom.actions.ActionErrors.DIFFERENT_SOURCE_ADDRESSES;
+import static com.radixdlt.atom.actions.ActionErrors.EMPTY_TRANSACTIONS_NOT_SUPPORTED;
 import static com.radixdlt.atom.actions.ActionErrors.SUBMISSION_FAILURE;
 import static com.radixdlt.atom.actions.ActionErrors.TRANSACTION_ADDRESS_DOES_NOT_MATCH;
 import static com.radixdlt.client.api.ApiErrors.UNABLE_TO_PREPARE_TX;
@@ -71,7 +72,9 @@ public final class SubmissionService {
 			.collect(Collectors.toSet());
 
 		if (addresses.size() != 1) {
-			return DIFFERENT_SOURCE_ADDRESSES.result();
+			return addresses.size() == 0
+				   ? EMPTY_TRANSACTIONS_NOT_SUPPORTED.result()
+				   : DIFFERENT_SOURCE_ADDRESSES.result();
 		}
 
 		var addr = addresses.iterator().next();
@@ -113,7 +116,7 @@ public final class SubmissionService {
 			var success = completableFuture.get();
 			return Result.ok(success.getTxn().getId());
 		} catch (ExecutionException e) {
-			logger.warn("Unable to fulfill submission request: {}", txId);
+			logger.warn("Unable to fulfill submission request: " + txId.toJson() + ": ", e);
 			return SUBMISSION_FAILURE.with(e.getMessage()).result();
 		} catch (InterruptedException e) {
 			// unrecoverable error, propagate
