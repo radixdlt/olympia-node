@@ -32,7 +32,7 @@ import com.radixdlt.identifiers.REAddr;
 import java.util.Objects;
 
 public final class StakingConstraintScryptV2 implements ConstraintScrypt {
-	public static final int EPOCHS_LOCKED = 1;
+	public static final int EPOCHS_LOCKED = 2; // Must go through one full epoch before being unlocked
 
 	@Override
 	public void main(SysCalls os) {
