@@ -17,6 +17,9 @@
 
 package com.radixdlt.client.lib.impl;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -81,6 +84,7 @@ import static com.radixdlt.utils.functional.Result.fromOptional;
 import static java.util.Optional.ofNullable;
 
 public class SynchronousRadixApiClient implements RadixApi {
+	private static final Logger log = LogManager.getLogger();
 	private static final MediaType MEDIA_TYPE = MediaType.parse("application/json");
 	private static final ObjectMapper objectMapper;
 
@@ -92,6 +96,7 @@ public class SynchronousRadixApiClient implements RadixApi {
 
 	private final String baseUrl;
 	private final OkHttpClient client;
+	private boolean doTrace = false;
 
 	private SynchronousRadixApiClient(String baseUrl, OkHttpClient client) {
 		this.baseUrl = sanitize(baseUrl);
@@ -112,6 +117,11 @@ public class SynchronousRadixApiClient implements RadixApi {
 		return ofNullable(url)
 			.map(baseUrl -> Result.ok(new SynchronousRadixApiClient(baseUrl, client)))
 			.orElseGet(() -> Result.fail(BASE_URL_IS_MANDATORY));
+	}
+
+	public SynchronousRadixApiClient withTrace() {
+		doTrace = true;
+		return this;
 	}
 
 	@Override
@@ -215,12 +225,18 @@ public class SynchronousRadixApiClient implements RadixApi {
 
 	private <T> Result<T> call(JsonRpcRequest request, TypeReference<JsonRpcResponse<T>> typeReference) {
 		return serialize(request)
+			.onSuccess(this::trace)
 			.map(value -> RequestBody.create(MEDIA_TYPE, value))
 			.flatMap(this::doCall)
+			.onSuccess(this::trace)
 			.flatMap(body -> deserialize(body, typeReference))
 			.flatMap(response -> response.rawError() == null
 								 ? Result.ok(response.rawResult())
 								 : Result.fail(response.rawError().toFailure()));
+	}
+
+	private void trace(Object value) {
+		log.debug(value.toString());
 	}
 
 	private Result<String> serialize(JsonRpcRequest request) {

@@ -17,6 +17,7 @@
 package com.radixdlt.client.lib.impl;
 
 import org.bouncycastle.util.encoders.Hex;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.radixdlt.client.lib.api.AccountAddress;
@@ -223,6 +224,38 @@ public class SynchronousRadixApiClientTest {
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(dto -> assertEquals(UInt256.from(100000000000000000L), dto.getFee()))
 				.onSuccess(dto -> assertArrayEquals(hash, dto.getTransaction().getHashToSign()))
+			);
+	}
+
+	@Test
+	@Ignore //Useful testbed for experiments testing
+	public void testBuildTransactionWithMessage() {
+		var keyPairOf1 = keyPairOf(1);
+		var keyPairOf2 = keyPairOf(2);
+
+		var request = TransactionRequest.createBuilder()
+			.transfer(
+				AccountAddress.create(keyPairOf1.getPublicKey()),
+				AccountAddress.create(keyPairOf2.getPublicKey()),
+				UInt256.NINE,
+				"xrd_rb1qya85pwq"
+			)
+			.message("Test message")
+			.build();
+
+		SynchronousRadixApiClient.connect(BASE_URL)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> client.buildTransaction(request)
+				.onFailure(failure -> fail(failure.toString()))
+				.onSuccess(builtTransactionDTO -> assertEquals(UInt256.from(100000000000000000L), builtTransactionDTO.getFee()))
+				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(keyPairOf1))
+				.onSuccess(finalizedTransaction -> client.finalizeTransaction(finalizedTransaction)
+					.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
+					.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
+					.onSuccess(submittableTransaction -> client.submitTransaction(submittableTransaction)
+						.onFailure(failure -> fail(failure.toString()))
+						.onSuccess(txDTO -> submittableTransaction.rawTxId()
+							.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))))
 			);
 	}
 

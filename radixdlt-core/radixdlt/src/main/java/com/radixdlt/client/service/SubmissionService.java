@@ -23,6 +23,7 @@ import org.apache.logging.log4j.Logger;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.BurnToken;
@@ -37,16 +38,19 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
+import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.radixdlt.atom.actions.ActionErrors.DIFFERENT_SOURCE_ADDRESSES;
+import static com.radixdlt.atom.actions.ActionErrors.EMPTY_TRANSACTIONS_NOT_SUPPORTED;
 import static com.radixdlt.atom.actions.ActionErrors.SUBMISSION_FAILURE;
 import static com.radixdlt.atom.actions.ActionErrors.TRANSACTION_ADDRESS_DOES_NOT_MATCH;
 import static com.radixdlt.client.api.ApiErrors.UNABLE_TO_PREPARE_TX;
@@ -65,23 +69,30 @@ public final class SubmissionService {
 		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
 	}
 
-	public Result<PreparedTransaction> prepareTransaction(List<TransactionAction> steps) {
+	public Result<PreparedTransaction> prepareTransaction(List<TransactionAction> steps, Optional<String> message) {
 		var addresses = steps.stream().map(TransactionAction::getFrom)
 			.filter(Objects::nonNull)
 			.collect(Collectors.toSet());
 
 		if (addresses.size() != 1) {
-			return DIFFERENT_SOURCE_ADDRESSES.result();
+			return addresses.size() == 0
+				   ? EMPTY_TRANSACTIONS_NOT_SUPPORTED.result()
+				   : DIFFERENT_SOURCE_ADDRESSES.result();
 		}
 
 		var addr = addresses.iterator().next();
 
 		return Result.wrap(
 			UNABLE_TO_PREPARE_TX,
-			() -> radixEngine
-				.construct(toActionsAndFee(addr, steps))
-				.buildForExternalSign()
-				.map(this::toPreparedTx)
+			() -> {
+				var txBuilder = radixEngine.construct(toActionsAndFee(addr, steps));
+
+				message.ifPresent(text -> txBuilder.message(text.getBytes(RadixConstants.STANDARD_CHARSET)));
+
+				return txBuilder
+					.buildForExternalSign()
+					.map(this::toPreparedTx);
+			}
 		);
 	}
 
@@ -113,7 +124,7 @@ public final class SubmissionService {
 			var success = completableFuture.get();
 			return Result.ok(success.getTxn().getId());
 		} catch (ExecutionException e) {
-			logger.warn("Unable to fulfill submission request: {}", txId);
+			logger.warn("Unable to fulfill submission request: " + txId.toJson() + ": ", e);
 			return SUBMISSION_FAILURE.with(e.getMessage()).result();
 		} catch (InterruptedException e) {
 			// unrecoverable error, propagate

@@ -108,6 +108,10 @@ public class FinalizedTransaction {
 		}
 	}
 
+	public Optional<Object> rawTxId() {
+		return Optional.ofNullable(txId);
+	}
+
 	private static class Blob {
 		private final byte[] blob;
 
