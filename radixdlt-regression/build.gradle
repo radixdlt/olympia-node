@@ -79,6 +79,7 @@ dependencies {
     implementation 'com.google.guava:guava'
 
     implementation 'com.squareup.okhttp3:okhttp'
+    implementation 'com.mashape.unirest:unirest-java:1.4.9'
     implementation 'com.squareup.okhttp3:logging-interceptor'
 
     testImplementation 'junit:junit'
