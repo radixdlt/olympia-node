@@ -22,11 +22,11 @@ apply plugin: 'application'
 apply plugin: 'com.adarshr.test-logger'
 
 configurations {
-    regressionTestImplementation.extendsFrom testImplementation
+    acceptanceTestImplementation.extendsFrom testImplementation
 }
 
 sourceSets {
-    regressionTest {
+    acceptanceTest {
         java {
             compileClasspath += main.output + test.output
             runtimeClasspath += main.output + test.output
@@ -36,9 +36,9 @@ sourceSets {
     }
 }
 
-task regressionTest(type: Test) {
-    testClassesDirs = sourceSets.regressionTest.output.classesDirs
-    classpath = sourceSets.regressionTest.runtimeClasspath
+task acceptanceTest(type: Test) {
+    testClassesDirs = sourceSets.acceptanceTest.output.classesDirs
+    classpath = sourceSets.acceptanceTest.runtimeClasspath
 }
 
 test {
@@ -49,7 +49,7 @@ test {
     }
 }
 
-regressionTest {
+acceptanceTest {
     testLogging {
         events "passed", "skipped", "failed"
         exceptionFormat "full"
@@ -68,7 +68,7 @@ regressionTest {
     }
 }
 
-checkstyleRegressionTest {
+checkstyleAcceptanceTest {
     configFile rootProject.file('config/checkstyle/checkstyle_test.xml')
 }
 
@@ -83,6 +83,6 @@ dependencies {
 
     testImplementation 'junit:junit'
     testImplementation 'org.assertj:assertj-core'
-    testImplementation 'io.cucumber:cucumber-java:6.8.1'
-    testImplementation 'io.cucumber:cucumber-junit:6.8.1'
+    testImplementation 'io.cucumber:cucumber-java:6.10.3'
+    testImplementation 'io.cucumber:cucumber-junit:6.10.3'
 }

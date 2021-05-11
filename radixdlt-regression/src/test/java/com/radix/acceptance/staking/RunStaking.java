@@ -15,15 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radix.acceptance.atomic_transactions_with_dependence;
+package com.radix.acceptance.staking;
 
+import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
 import io.cucumber.junit.CucumberOptions.SnippetType;
-import io.cucumber.junit.Cucumber;
 import org.junit.runner.RunWith;
 
 @RunWith(Cucumber.class)
-@CucumberOptions(snippets = SnippetType.UNDERSCORE, monochrome = true, plugin = { "pretty" })
-public class RunAtomicTransactionsWithDependence {
+@CucumberOptions(snippets = SnippetType.UNDERSCORE, monochrome = false)
+public class RunStaking {
 	// Stub for running cucumber tests
 }

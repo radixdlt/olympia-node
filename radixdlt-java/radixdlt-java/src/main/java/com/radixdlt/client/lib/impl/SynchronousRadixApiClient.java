@@ -115,11 +115,6 @@ public class SynchronousRadixApiClient implements RadixApi {
 	}
 
 	@Override
-	public Result<NetworkIdDTO> networkId() {
-		return call(request(NETWORK_ID), new TypeReference<JsonRpcResponse<NetworkIdDTO>>() { });
-	}
-
-	@Override
 	public Result<TokenInfoDTO> nativeToken() {
 		return call(request(NATIVE_TOKEN), new TypeReference<JsonRpcResponse<TokenInfoDTO>>() { });
 	}
@@ -180,6 +175,7 @@ public class SynchronousRadixApiClient implements RadixApi {
 		return call(request, new TypeReference<JsonRpcResponse<ValidatorsResponseDTO>>() { });
 	}
 
+
 	@Override
 	public Result<ValidatorDTO> lookupValidator(String validatorAddress) {
 		return call(request(LOOKUP_VALIDATOR, validatorAddress), new TypeReference<JsonRpcResponse<ValidatorDTO>>() { });
@@ -191,6 +187,12 @@ public class SynchronousRadixApiClient implements RadixApi {
 			request(BUILD_TRANSACTION, request.getActions(), request.getMessage()),
 			new TypeReference<JsonRpcResponse<BuiltTransactionDTO>>() { }
 		);
+	}
+
+
+	@Override
+	public Result<NetworkIdDTO> networkId() {
+		return call(request(NETWORK_ID), new TypeReference<JsonRpcResponse<NetworkIdDTO>>() { });
 	}
 
 	@Override
