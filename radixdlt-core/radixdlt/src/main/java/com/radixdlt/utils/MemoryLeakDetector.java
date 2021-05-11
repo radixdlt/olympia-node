@@ -100,13 +100,10 @@ public class MemoryLeakDetector {
 
                 if (consecutivelyIncreasing && memTrail.remainingCapacity() == 0) {
                     final String memTrailStr = memTrail.stream()
-                            .map(n -> Long.toString(toMiB(n)))
-                            .collect(Collectors.joining(", "));
-                    log.warn("Potential memory leak detected! After {} latest GC runs the old gen heap steadily increases.",
-                            CONSECUTIVE_INCREASE_ALERT_THRESHOLD);
-                    log.warn("Memory (old gen) after current GC: {}MiB. Previous values (MiB): [{}]",
-                            toMiB(oldGenMemUsageAfterGc), memTrailStr);
-
+                        .map(n -> Long.toString(toMiB(n)))
+                        .collect(Collectors.joining(", "));
+                    log.info("Memory (old gen) after current GC: {}MiB (steady increase since {} runs). Previous values (MiB): [{}]",
+                        toMiB(oldGenMemUsageAfterGc), CONSECUTIVE_INCREASE_ALERT_THRESHOLD, memTrailStr);
                     memTrail.clear(); // reset the state
                 }
             }
