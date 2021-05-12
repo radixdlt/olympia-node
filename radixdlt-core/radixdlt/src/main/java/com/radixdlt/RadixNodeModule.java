@@ -90,8 +90,8 @@ public final class RadixNodeModule extends AbstractModule {
 		// Default values mean that pacemakers will sync if they are within 5 views of each other.
 		// 5 consecutive failing views will take 1*(2^6)-1 seconds = 63 seconds.
 		bindConstant().annotatedWith(PacemakerTimeout.class).to(3000L);
-		bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
-		bindConstant().annotatedWith(PacemakerMaxExponent.class).to(6);
+		bindConstant().annotatedWith(PacemakerRate.class).to(1.1);
+		bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
 
 		// Mempool configuration
 		var mempoolMaxSize = properties.get("mempool.maxSize", 10000);

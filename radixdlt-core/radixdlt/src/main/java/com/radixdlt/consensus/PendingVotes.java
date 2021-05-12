@@ -54,18 +54,20 @@ public final class PendingVotes {
 	// Make sure equals tester can access.
 	static final class PreviousVote {
 		private final View view;
+		private final long epoch;
 		private final HashCode hash;
 		private final boolean isTimeout;
 
-		PreviousVote(View view, HashCode hash, boolean isTimeout) {
+		PreviousVote(View view, long epoch, HashCode hash, boolean isTimeout) {
 			this.view = view;
+			this.epoch = epoch;
 			this.hash = hash;
 			this.isTimeout = isTimeout;
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(this.view, this.hash, this.isTimeout);
+			return Objects.hash(this.view, this.epoch, this.hash, this.isTimeout);
 		}
 
 		@Override
@@ -74,6 +76,7 @@ public final class PendingVotes {
 				PreviousVote that = (PreviousVote) obj;
 				return Objects.equals(this.view, that.view)
 					&& Objects.equals(this.hash, that.hash)
+					&& this.epoch == that.epoch
 					&& this.isTimeout == that.isTimeout;
 			}
 			return false;
@@ -102,13 +105,12 @@ public final class PendingVotes {
 		final BFTNode node = vote.getAuthor();
 		final VoteData voteData = vote.getVoteData();
 		final HashCode voteDataHash = this.hasher.hash(voteData);
-		final View voteView = voteData.getProposed().getView();
 
 		if (!validatorSet.containsNode(node)) {
 			return VoteProcessingResult.rejected(VoteRejectedReason.INVALID_AUTHOR);
 		}
 
-		if (!replacePreviousVote(node, voteView, vote, voteDataHash)) {
+		if (!replacePreviousVote(node, vote, voteDataHash)) {
 			return VoteProcessingResult.rejected(VoteRejectedReason.DUPLICATE_VOTE);
 		}
 
@@ -160,8 +162,10 @@ public final class PendingVotes {
 		}
 	}
 
-	private boolean replacePreviousVote(BFTNode author, View voteView, Vote vote, HashCode voteHash) {
-		final PreviousVote thisVote = new PreviousVote(voteView, voteHash, vote.isTimeout());
+	// TODO: Need to rethink whether we should be removing previous signature
+	// TODO: Could be causing quorum formation to slow down
+	private boolean replacePreviousVote(BFTNode author, Vote vote, HashCode voteHash) {
+		final PreviousVote thisVote = new PreviousVote(vote.getView(), vote.getEpoch(), voteHash, vote.isTimeout());
 		final PreviousVote previousVote = this.previousVotes.put(author, thisVote);
 		if (previousVote == null) {
 			// No previous vote for this author, all good here
@@ -176,7 +180,7 @@ public final class PendingVotes {
 
 		// Prune last pending vote from the pending votes.
 		// This limits the number of pending vertices that are in the pipeline.
-		ValidationState validationState = this.voteState.get(previousVote.hash);
+		var validationState = this.voteState.get(previousVote.hash);
 		if (validationState != null) {
 			validationState.removeSignature(author);
 			if (validationState.isEmpty()) {
@@ -184,10 +188,23 @@ public final class PendingVotes {
 			}
 		}
 
-		if (voteView.equals(previousVote.view)) {
+		if (previousVote.isTimeout) {
+			final var voteTimeout = new VoteTimeout(previousVote.view, previousVote.epoch);
+			final var voteTimeoutHash = this.hasher.hash(voteTimeout);
+
+			var timeoutValidationState = this.timeoutVoteState.get(voteTimeoutHash);
+			if (timeoutValidationState != null) {
+				timeoutValidationState.removeSignature(author);
+				if (timeoutValidationState.isEmpty()) {
+					this.timeoutVoteState.remove(voteTimeoutHash);
+				}
+			}
+		}
+
+		if (vote.getView().equals(previousVote.view)) {
 			// If the validator already voted in this view for something else,
 			// then the only valid possibility is a non-timeout vote being replaced by a timeout vote
-			// on the same vote data.
+			// on the same vote data, or a byzantine node
 			return vote.isTimeout()
 				&& !previousVote.isTimeout
 				&& thisVote.hash.equals(previousVote.hash);
@@ -201,6 +218,12 @@ public final class PendingVotes {
 	// Greybox stuff for testing
 	int voteStateSize() {
 		return this.voteState.size();
+	}
+
+	@VisibleForTesting
+	// Greybox stuff for testing
+	int timeoutVoteStateSize() {
+		return this.timeoutVoteState.size();
 	}
 
 	@VisibleForTesting
