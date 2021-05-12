@@ -31,7 +31,6 @@ import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.api.node.NodeController;
 import com.radixdlt.api.system.SystemController;
