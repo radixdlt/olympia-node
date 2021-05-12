@@ -52,11 +52,11 @@ public final class BetanetForksModule extends AbstractModule {
 			.setParticleTransitionProcedures(v1.buildTransitionProcedures())
 			.setParticleStaticCheck(v1.buildParticleStaticCheck())
 			.build();
-		return new ForkConfig(betanet1, View.of(10000L));
+		return new ForkConfig(betanet1, View.of(100000L));
 	}
 
 	@ProvidesIntoMap
-	@EpochMapKey(epoch = 2L)
+	@EpochMapKey(epoch = 42L)
 	ForkConfig betanetV2() {
 		// V2 Betanet ConstraintMachine
 		final CMAtomOS v2 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
@@ -70,6 +70,6 @@ public final class BetanetForksModule extends AbstractModule {
 			.setParticleTransitionProcedures(v2.buildTransitionProcedures())
 			.setParticleStaticCheck(v2.buildParticleStaticCheck())
 			.build();
-		return new ForkConfig(betanet2, View.of(1000L));
+		return new ForkConfig(betanet2, View.of(10000L));
 	}
 }
