@@ -483,10 +483,13 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				//TODO: Implement recovery, basically should be the same as fresh DB handling
 			}
 
+			// FIXME: removing the following for now as it is double counting genesis transactions
+			/*
 			if (addressBalances.count() == 0) {
 				//Fresh DB, rebuild from log
 				rebuildDatabase();
 			}
+			 */
 
 			scheduledFlushEventDispatcher.dispatch(ScheduledQueueFlush.create(), DEFAULT_FLUSH_INTERVAL);
 
@@ -734,7 +737,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		);
 
 		if (status != OperationStatus.SUCCESS) {
-			log.error("Error while storing token definition {}", tokenDefinition.asJson());
+			log.error("Error {} while storing token definition {}", status, tokenDefinition.asJson());
 		}
 	}
 
