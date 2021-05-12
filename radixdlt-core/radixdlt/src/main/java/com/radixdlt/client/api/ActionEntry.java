@@ -15,18 +15,24 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.client.store;
+package com.radixdlt.client.api;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.ValidatorAddress;
+
 import org.json.JSONObject;
 
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.client.api.ActionType;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.UInt256;
 
 import java.util.function.Function;
@@ -35,14 +41,32 @@ import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 import static java.util.Objects.requireNonNull;
 
+@SerializerId2("radix.api.action")
 public class ActionEntry {
 	private static final JSONObject JSON_TYPE_OTHER = jsonObject().put("type", "Other");
 
+	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
+	@DsonOutput(DsonOutput.Output.ALL)
+	private SerializerDummy serializer = SerializerDummy.DUMMY;
+
+	@JsonProperty("type")
+	@DsonOutput(DsonOutput.Output.ALL)
 	private final ActionType type;
 
+	@JsonProperty("from")
+	@DsonOutput(DsonOutput.Output.ALL)
 	private final String from;
+
+	@JsonProperty("to")
+	@DsonOutput(DsonOutput.Output.ALL)
 	private final String to;
+
+	@JsonProperty("amount")
+	@DsonOutput(DsonOutput.Output.ALL)
 	private final UInt256 amount;
+
+	@JsonProperty("rri")
+	@DsonOutput(DsonOutput.Output.ALL)
 	private final String rri;
 
 	private ActionEntry(ActionType type, String from, String to, UInt256 amount, String rri) {
@@ -53,8 +77,16 @@ public class ActionEntry {
 		this.rri = rri;
 	}
 
-	private static ActionEntry create(ActionType type, String from, String to, UInt256 amount, String rri) {
+	@JsonCreator
+	public static ActionEntry create(
+		@JsonProperty("type") ActionType type,
+		@JsonProperty("from") String from,
+		@JsonProperty("to") String to,
+		@JsonProperty("amount") UInt256 amount,
+		@JsonProperty("rri") String rri
+	) {
 		requireNonNull(type);
+
 		return new ActionEntry(type, from, to, amount, rri);
 	}
 

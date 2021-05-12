@@ -18,19 +18,26 @@
 package com.radixdlt.properties;
 
 import org.apache.commons.cli.ParseException;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.function.Function;
+
+import static com.radixdlt.utils.RadixConstants.STANDARD_CHARSET;
 
 /**
  * Persisted properties are property sets that are committed to storage
@@ -49,14 +56,15 @@ public class PersistedProperties {
 	 * Loads properties from specified file.
 	 *
 	 * @param filename the file to load the properties from
+	 *
 	 * @throws ParseException if the properties cannot be loaded
 	 */
 	public void load(String filename) throws ParseException {
-		boolean loaded = false;
-		File file = new File(filename);
+		var loaded = false;
+		var file = new File(filename);
 
-		try (FileInputStream propertiesInput = new FileInputStream(file)) {
-			this.properties.load(propertiesInput);
+		try (var propertiesInput = new FileInputStream(file)) {
+			loadProperties(propertiesInput);
 			// No need to immediately save, we just loaded them
 			log.info("Loaded properties from {}", file);
 			loaded = true;
@@ -68,11 +76,11 @@ public class PersistedProperties {
 
 		// Try in resource if not loaded
 		if (!loaded) {
-			try (InputStream propertiesInput = this.getClass().getResourceAsStream("/" + filename)) {
+			try (var propertiesInput = this.getClass().getResourceAsStream("/" + filename)) {
 				if (propertiesInput == null) {
 					throw new FileNotFoundException("Default properties for " + file + " not found");
 				}
-				this.properties.load(propertiesInput);
+				loadProperties(propertiesInput);
 				log.info("Loaded default properties for {}", file);
 				// Save to file, so they can be edited later
 				save(filename);
@@ -87,14 +95,31 @@ public class PersistedProperties {
 		}
 	}
 
+	private void loadProperties(InputStream is) throws IOException {
+		var out = new ByteArrayOutputStream();
+
+		//Strip redundant whitespace characters
+		try (var writer = new BufferedWriter(new OutputStreamWriter(out))) {
+			try (var reader = new BufferedReader(new InputStreamReader(is, STANDARD_CHARSET))) {
+				for (var line = reader.readLine(); line != null; line = reader.readLine()) {
+					writer.write(line.trim());
+					writer.newLine();
+				}
+			}
+		}
+
+		this.properties.load(new ByteArrayInputStream(out.toByteArray()));
+	}
+
 	/**
 	 * Saves properties to the specified file.
 	 *
 	 * @param filename The file to save the properties to
+	 *
 	 * @throws IOException if the properties cannot be saved
 	 */
 	public void save(String filename) throws IOException {
-		try (OutputStream propertiesOutput = new FileOutputStream(new File(filename))) {
+		try (var propertiesOutput = new FileOutputStream(filename)) {
 			this.properties.store(propertiesOutput, "");
 		}
 	}
@@ -103,6 +128,7 @@ public class PersistedProperties {
 	 * Returns the property if there is a property matching the key, otherwise {@code null}.
 	 *
 	 * @param key the property key
+	 *
 	 * @return the property if there is a property matching the key, otherwise {@code null}
 	 */
 	public String get(String key) {
@@ -114,16 +140,11 @@ public class PersistedProperties {
 	 *
 	 * @param key the property key
 	 * @param defaultValue the default value returned if no value is set
+	 *
 	 * @return either the property value, or {@code defaultValue} if no value set
 	 */
 	public int get(String key, int defaultValue) {
-		String value = get(key);
-		try {
-			return value == null ? defaultValue : Integer.parseInt(value);
-		} catch (NumberFormatException ex) {
-			String msg = String.format("Exception while retrieving integer value for %s: '%s'", key, value);
-			throw new IllegalArgumentException(msg, ex);
-		}
+		return get(key, defaultValue, Integer::parseInt);
 	}
 
 	/**
@@ -131,16 +152,11 @@ public class PersistedProperties {
 	 *
 	 * @param key the property key
 	 * @param defaultValue the default value returned if no value is set
+	 *
 	 * @return either the property value, or {@code defaultValue} if no value set
 	 */
 	public long get(String key, long defaultValue) {
-		String value = get(key);
-		try {
-			return value == null ? defaultValue : Long.parseLong(value);
-		} catch (NumberFormatException ex) {
-			String msg = String.format("Exception while retrieving long value for %s: '%s'", key, value);
-			throw new IllegalArgumentException(msg, ex);
-		}
+		return get(key, defaultValue, Long::parseLong);
 	}
 
 	/**
@@ -148,16 +164,11 @@ public class PersistedProperties {
 	 *
 	 * @param key the property key
 	 * @param defaultValue the default value returned if no value is set
+	 *
 	 * @return either the property value, or {@code defaultValue} if no value set
 	 */
 	public double get(String key, double defaultValue) {
-		String value = get(key);
-		try {
-			return value == null ? defaultValue : Double.parseDouble(value);
-		} catch (NumberFormatException ex) {
-			String msg = String.format("Exception while retrieving double value for %s: '%s'", key, value);
-			throw new IllegalArgumentException(msg, ex);
-		}
+		return get(key, defaultValue, Double::parseDouble);
 	}
 
 	/**
@@ -167,10 +178,11 @@ public class PersistedProperties {
 	 *
 	 * @param key the property key
 	 * @param defaultValue the default value returned if no value is set
+	 *
 	 * @return either the property value, or {@code defaultValue} if no value set
 	 */
 	public boolean get(String key, boolean defaultValue) {
-		String value = get(key);
+		var value = get(key);
 		return value == null ? defaultValue : parseBoolean(value);
 	}
 
@@ -179,10 +191,11 @@ public class PersistedProperties {
 	 *
 	 * @param key the property key
 	 * @param defaultValue the default value returned if no value is set
+	 *
 	 * @return either the property value, or {@code defaultValue} if no value set
 	 */
 	public String get(String key, String defaultValue) {
-		String value = get(key);
+		var value = get(key);
 		return value == null ? defaultValue : value;
 	}
 
@@ -206,16 +219,28 @@ public class PersistedProperties {
 		if (this == obj) {
 			return true;
 		}
+
 		if (obj == null || !this.getClass().equals(obj.getClass())) {
 			return false;
 		}
-		PersistedProperties other = (PersistedProperties) obj;
+
+		var other = (PersistedProperties) obj;
 		return Objects.equals(this.properties, other.properties);
 	}
 
 	@Override
 	public String toString() {
 		return this.properties.keySet().toString();
+	}
+
+	private <T> T get(String key, T defaultValue, Function<String, T> parser) {
+		var value = get(key);
+		try {
+			return value == null ? defaultValue : parser.apply(value);
+		} catch (NumberFormatException ex) {
+			var msg = String.format("Exception while retrieving double value for %s: '%s'", key, value);
+			throw new IllegalArgumentException(msg, ex);
+		}
 	}
 
 	private boolean parseBoolean(String value) {

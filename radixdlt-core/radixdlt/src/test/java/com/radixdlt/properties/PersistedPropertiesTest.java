@@ -26,8 +26,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -54,9 +52,12 @@ public class PersistedPropertiesTest {
 		assertFalse(Files.exists(Paths.get(testProperties)));
 
 		this.properties.load(testProperties); // Should load from resources
-		assertThat(this.properties.get("a")).isEqualTo("a");
-		assertThat(this.properties.get("b")).isEqualTo("b");
-		assertThat(this.properties.get("c")).isNull();
+
+		assertEquals("a", this.properties.get("a"));
+		assertEquals("b", this.properties.get("b"));
+		assertTrue(this.properties.get("c") == null);
+		assertEquals("abc", this.properties.get("aaa"));
+		assertEquals("\"       \"", this.properties.get("bbb"));
 	}
 
 	@Test
@@ -72,47 +73,46 @@ public class PersistedPropertiesTest {
 
 		PersistedProperties newCut = new PersistedProperties();
 		newCut.load(testProperties); // Should load from file
-		assertThat(this.properties.get("a")).isEqualTo("a");
-		assertThat(this.properties.get("b")).isEqualTo("b");
-		assertThat(this.properties.get("c")).isEqualTo("c");
+
+		assertEquals("a", this.properties.get("a"));
+		assertEquals("b", this.properties.get("b"));
+		assertEquals("c", this.properties.get("c"));
 	}
 
-	@Test
-	public void testLoadNoDefaultThrowsException() throws IOException {
+	@Test(expected = ParseException.class)
+	public void testLoadNoDefaultThrowsException() throws IOException, ParseException {
 		final String testProperties = "notexist.properties";
 		Files.deleteIfExists(Paths.get(testProperties));
 		assertFalse(Files.exists(Paths.get(testProperties)));
 
-		assertThatThrownBy(() -> this.properties.load(testProperties))
-			.isInstanceOf(ParseException.class)
-			.hasMessageStartingWith("Can not find properties file");
+		this.properties.load(testProperties);
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void testGetInt() {
 		populateData();
 		assertEquals(12, this.properties.get("int.exist", -1));
 		assertEquals(-1, this.properties.get("int.notexist", -1));
-		assertThatThrownBy(() -> this.properties.get("string.exist", -1))
-			.isInstanceOf(IllegalArgumentException.class);
+
+		this.properties.get("string.exist", -1);
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void testGetLong() {
 		populateData();
 		assertEquals(12L, this.properties.get("long.exist", -1L));
 		assertEquals(-1L, this.properties.get("int.notexist", -1L));
-		assertThatThrownBy(() -> this.properties.get("string.exist", -1L))
-			.isInstanceOf(IllegalArgumentException.class);
+
+		this.properties.get("string.exist", -1L);
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void testGetDouble() {
 		populateData();
 		assertEquals(1.2, this.properties.get("double.exist", -1.0), Math.ulp(1.2));
 		assertEquals(-1.0, this.properties.get("double.notexist", -1.0), Math.ulp(1.0));
-		assertThatThrownBy(() -> this.properties.get("string.exist", -1.0))
-			.isInstanceOf(IllegalArgumentException.class);
+
+		this.properties.get("string.exist", -1.0);
 	}
 
 	@Test
@@ -136,12 +136,12 @@ public class PersistedPropertiesTest {
 	@Test
 	public void testToString() {
 		populateData();
-		String result = this.properties.toString();
-		assertThat(result)
-			.contains("int.exist")
-			.contains("long.exist")
-			.contains("bool.true")
-			.contains("bool.true1");
+
+		var result = this.properties.toString();
+		assertTrue(result.contains("int.exist"));
+		assertTrue(result.contains("long.exist"));
+		assertTrue(result.contains("bool.true"));
+		assertTrue(result.contains("bool.true1"));
 	}
 
 	private void populateData() {

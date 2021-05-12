@@ -127,6 +127,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private static final int KEY_BUFFER_INITIAL_CAPACITY = 1024;
 	private static final int TIMESTAMP_SIZE = Long.BYTES + Integer.BYTES;
 	private static final Instant NOW = Instant.ofEpochMilli(Instant.now().toEpochMilli());
+	private static final Failure IGNORED = Failure.failure(0, "Ignored");
 
 	private final DatabaseEnvironment dbEnv;
 	private final BerkeleyLedgerEntryStore store;
@@ -307,10 +308,11 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			}
 
 			do {
-				if (AID.fromBytes(data.getData()).fold(__ -> false, aid -> aid.equals(txn.getId()))) {
-					return Result.ok(txn)
-						.flatMap(txnParser::parseTxn)
-						.flatMap(t -> transactionParser.parse(t, instantFromKey(key), this::getRriOrFail));
+				var result = restore(serialization, data.getData(), TxHistoryEntry.class)
+					.filter(txHistoryEntry -> sameTxId(txn, txHistoryEntry), IGNORED);
+
+				if (result.isSuccess()) {
+					return result;
 				}
 
 				status = readTxHistory(() -> cursor.getNext(key, data, null), data);
@@ -355,14 +357,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			do {
 				addrFromKey(key)
 					.filter(addr::equals, Failure.failure(0, "Ignored"))
-					.onSuccessDo(() -> {
-						AID.fromBytes(data.getData())
-							.flatMap(this::retrieveTx)
-							.onFailure(this::reportError)
-							.flatMap(txnParser::parseTxn)
-							.flatMap(txn -> transactionParser.parse(txn, instantFromKey(key), this::getRriOrFail))
-							.onSuccess(list::add);
-					});
+					.flatMap(__ -> restore(serialization, data.getData(), TxHistoryEntry.class))
+					.onSuccess(list::add);
 
 				status = readTxHistory(() -> cursor.getPrev(key, data, null), data);
 			}
@@ -388,6 +384,10 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		safeClose(tokenDefinitions);
 		safeClose(addressBalances);
 		safeClose(supplyBalances);
+	}
+
+	private boolean sameTxId(Txn txn, TxHistoryEntry txHistoryEntry) {
+		return txHistoryEntry.getTxId().equals(txn.getId());
 	}
 
 	private Instant instantFromKey(DatabaseEntry key) {
@@ -563,7 +563,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			reTxn.getSignedBy().stream().map(REAddr::ofPubKeyAccount)
 		).collect(Collectors.toSet());
 
-		addresses.forEach(accountAddr -> storeSingleTransaction(reTxn.getTxn().getId(), accountAddr));
+		transactionParser.parse(reTxn, currentTimestamp.get(), this::getRriOrFail)
+			.onSuccess(parsed -> addresses.forEach(address -> storeSingleTransaction(parsed, address)));
 	}
 
 	private void storeAction(ECPublicKey user, REParsedAction action) {
@@ -702,17 +703,15 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private Optional<ECPublicKey> extractCreator(Txn tx) {
 		try {
-			var result = constraintMachine.statelessVerify(tx);
-			return result.getSignedBy();
+			return constraintMachine.statelessVerify(tx).getSignedBy();
 		} catch (RadixEngineException e) {
 			throw new IllegalStateException();
 		}
 	}
 
-	private void storeSingleTransaction(AID id, REAddr accountAddr) {
-		//Note: since Java 9 the Clock.systemUTC() produces values with real nanosecond resolution.
-		var key = asKey(accountAddr, currentTimestamp.get());
-		var data = entry(id.getBytes());
+	private void storeSingleTransaction(TxHistoryEntry txn, REAddr address) {
+		var key = asKey(address, txn.timestamp());
+		var data = serializeTo(entry(), txn);
 
 		var status = withTime(
 			() -> transactionHistory.put(null, key, data),
@@ -721,10 +720,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		);
 
 		if (status != OperationStatus.SUCCESS) {
-			log.error("Error while storing transaction {} for {}", id, accountAddr);
+			log.error("Error while storing transaction {} for {}", txn.getTxId(), address);
 		}
 	}
-
 
 	private void storeTokenDefinition(TokenDefinitionRecord tokenDefinition) {
 		var key = asKey(tokenDefinition.addr());

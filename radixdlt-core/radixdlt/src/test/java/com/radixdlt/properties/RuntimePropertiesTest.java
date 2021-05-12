@@ -97,9 +97,10 @@ public class RuntimePropertiesTest {
 
 	@Test
 	public void testToString() {
-		String result = this.properties.toString();
-		assertThat(result)
-			.contains("[a, b]")
-			.contains("args=[]");
+		var result = this.properties.toString();
+		System.out.println(result);
+
+		assertTrue(result.contains("[aaa, a, b, bbb]"));
+		assertTrue(result.contains("args=[]"));
 	}
 }
