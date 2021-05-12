@@ -255,7 +255,7 @@ public class SynchronousRadixApiClientTest {
 					.onSuccess(submittableTransaction -> client.submitTransaction(submittableTransaction)
 						.onFailure(failure -> fail(failure.toString()))
 						.onSuccess(txDTO -> submittableTransaction.rawTxId()
-							.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))))
+						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))))
 			);
 	}
 

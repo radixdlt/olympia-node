@@ -19,10 +19,8 @@ package com.radixdlt.client.handler;
 
 import org.json.JSONObject;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.client.api.PreparedTransaction;
-import com.radixdlt.client.api.TransactionAction;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.api.ValidatorInfoDetails;
 import com.radixdlt.client.service.HighLevelApiService;
