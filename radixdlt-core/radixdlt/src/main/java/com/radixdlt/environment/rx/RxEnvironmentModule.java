@@ -71,9 +71,6 @@ public final class RxEnvironmentModule extends AbstractModule {
 		bind(Environment.class).to(RxEnvironment.class);
 		bind(ScheduledExecutorService.class).toInstance(ses);
 
-		// TODO: Remove, still required by BerkeleyClientAPIStore.java
-		bind(new TypeLiteral<Observable<AtomsCommittedToLedger>>() { }).toProvider(new ObservableProvider<>(AtomsCommittedToLedger.class));
-
 		// TODO: Remove, still required by TransactionStatusService.java
 		bind(new TypeLiteral<Observable<MempoolAddSuccess>>() { }).toProvider(new ObservableProvider<>(MempoolAddSuccess.class));
 		bind(new TypeLiteral<Observable<MempoolAddFailure>>() { }).toProvider(new ObservableProvider<>(MempoolAddFailure.class));

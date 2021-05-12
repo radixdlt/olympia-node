@@ -158,7 +158,18 @@ public class ArchiveApiModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> clientApiStore(ClientApiStore clientApiStore) {
+	private EventProcessorOnRunner<?> newBatch(
+			BerkeleyClientApiStore berkeleyClientApiStore
+	) {
+		return new EventProcessorOnRunner<>(
+				Runners.APPLICATION,
+				AtomsCommittedToLedger.class,
+				berkeleyClientApiStore.newBatchEventProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> queueFlushProcessor(ClientApiStore clientApiStore) {
 		return new EventProcessorOnRunner<>(
 			Runners.APPLICATION,
 			ScheduledQueueFlush.class,
