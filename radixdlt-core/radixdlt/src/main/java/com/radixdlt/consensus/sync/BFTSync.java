@@ -329,7 +329,8 @@ public final class BFTSync implements BFTSyncer {
 			SyncState syncState = syncing.remove(syncId);
 			if (syncState == null) {
 				// TODO: remove once we figure this out
-				log.error("Got a null value from \"syncing\" map on thread " + Thread.currentThread().getName() + " other run threads:");
+				log.error("Got a null value from \"syncing\" map on thread "
+					+ Thread.currentThread().getName() + " other run threads:");
 				this.runOnThreads.stream().forEach(name -> log.error("Thread: " + name));
 			} else {
 				syncToQC(syncState.highQC, randomFrom(authors));
