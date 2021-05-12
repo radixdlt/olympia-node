@@ -18,11 +18,14 @@ package com.radixdlt.client.service;
 
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
+import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
 import com.radixdlt.sync.CommittedReader;
 import org.junit.Assert;
 import org.junit.Before;
@@ -134,7 +137,9 @@ public class SubmissionServiceTest {
 
 			@Override
 			public void configure() {
-				install(RadixEngineConfig.asModule(1, 100, 10, 50));
+				install(new BetanetForksModule());
+				install(new RadixEngineOnlyLatestForkModule(View.of(10)));
+				install(RadixEngineConfig.asModule(1, 100, 50));
 				install(MempoolConfig.asModule(10, 10));
 
 				bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)

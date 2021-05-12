@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -15,44 +15,41 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_epochs_radixengine;
+package com.radixdlt.integration.distributed.simulation.tests.full_function_forks;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.integration.distributed.MockedRadixEngineForksModule;
+import com.radixdlt.integration.distributed.simulation.monitors.application.ApplicationMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import java.util.concurrent.TimeUnit;
-
-import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRandomRegistrator;
+import com.radixdlt.integration.distributed.simulation.application.RadixEngineUniqueGenerator;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
-import com.radixdlt.statecomputer.RadixEngineConfig;
+import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
+import com.radixdlt.sync.SyncConfig;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-/**
- * Randomly registers and unregisters nodes as validators
- */
-public class RandomValidatorsTest {
+import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+
+public class SanityTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(10, 2)
+		.numNodes(4)
 		.networkModules(
 			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed()
 		)
-		.addNodeModule(RadixEngineConfig.asModule(2, 50, 5))
+		.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
 		.addNodeModule(new BetanetForksModule())
-		.addNodeModule(new RadixEngineOnlyLatestForkModule(View.of(10)))
-		.addGenesisModule(RadixEngineConfig.asModule(2, 50, 5))
+		.addNodeModule(new MockedRadixEngineForksModule())
 		.addGenesisModule(new BetanetForksModule())
-		.addGenesisModule(new RadixEngineOnlyLatestForkModule(View.of(10)))
-		.ledgerAndRadixEngineWithEpochHighView()
+		.addGenesisModule(new MockedRadixEngineForksModule())
+		.addNodeModule(MempoolConfig.asModule(1000, 10))
 		.addTestModules(
 			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
@@ -60,17 +57,17 @@ public class RandomValidatorsTest {
 			ConsensusMonitors.directParents(),
 			LedgerMonitors.consensusToLedger(),
 			LedgerMonitors.ordered(),
-			RadixEngineMonitors.noInvalidProposedCommands()
+			RadixEngineMonitors.noInvalidProposedCommands(),
+			ApplicationMonitors.mempoolCommitted()
 		)
-		.addActor(NodeValidatorRandomRegistrator.class);
+		.addMempoolSubmissionsSteadyState(new RadixEngineUniqueGenerator());
 
 	@Test
-	public void when_random_validators__then_sanity_checks_should_pass() {
+	public void sanity_tests_should_pass() {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
 
-		final var checkResults = simulationTest.run().awaitCompletion();
-		assertThat(checkResults).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		final var results = simulationTest.run().awaitCompletion();
+		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
-
 }

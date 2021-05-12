@@ -20,22 +20,20 @@ package com.radixdlt.statecomputer;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
-import com.radixdlt.consensus.bft.View;
 
-// TODO: Move this info into genesis
+// TODO: Move this info into fork config
 public final class RadixEngineConfig {
 
 	private RadixEngineConfig() {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
 
-	public static Module asModule(int minValidators, int maxValidators, long ceilingView, int maxTxnsPerProposal) {
+	public static Module asModule(int minValidators, int maxValidators, int maxTxnsPerProposal) {
 		return new AbstractModule() {
 			@Override
 			protected void configure() {
 				bindConstant().annotatedWith(MinValidators.class).to(minValidators);
 				bindConstant().annotatedWith(MaxValidators.class).to(maxValidators);
-				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(ceilingView));
 				bindConstant().annotatedWith(MaxTxnsPerProposal.class).to(maxTxnsPerProposal);
 			}
 		};

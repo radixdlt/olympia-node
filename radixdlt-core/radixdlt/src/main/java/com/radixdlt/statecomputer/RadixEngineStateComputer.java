@@ -28,7 +28,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.counters.SystemCounters;
@@ -46,6 +45,7 @@ import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.statecomputer.forks.ForkConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -63,7 +63,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	private final RadixEngineMempool mempool;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final View epochCeilingView;
 	private final int maxTxnsPerProposal;
 	private final ValidatorSetBuilder validatorSetBuilder;
 
@@ -72,13 +71,15 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher;
 	private final EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher;
 	private final EventDispatcher<AtomsCommittedToLedger> committedDispatcher;
-	private final TreeMap<Long, ConstraintMachine> epochToConstraintMachine;
+	private final TreeMap<Long, ForkConfig> epochToForkConfig;
 	private final SystemCounters systemCounters;
+
+	private View epochCeilingView;
 
 	@Inject
 	public RadixEngineStateComputer(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		TreeMap<Long, ConstraintMachine> epochToConstraintMachine,
+		TreeMap<Long, ForkConfig> epochToForkConfig,
 		RadixEngineMempool mempool, // TODO: Move this into radixEngine
 		@EpochCeilingView View epochCeilingView, // TODO: Move this into radixEngine
 		@MaxTxnsPerProposal int maxTxnsPerProposal, // TODO: Move this into radixEngine
@@ -95,7 +96,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		this.radixEngine = Objects.requireNonNull(radixEngine);
-		this.epochToConstraintMachine = epochToConstraintMachine;
+		this.epochToForkConfig = epochToForkConfig;
 		this.epochCeilingView = epochCeilingView;
 		this.maxTxnsPerProposal = maxTxnsPerProposal;
 		this.validatorSetBuilder = Objects.requireNonNull(validatorSetBuilder);
@@ -277,10 +278,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		// Next epoch
 		if (proof.getNextValidatorSet().isPresent()) {
-			var nextCM = epochToConstraintMachine.get(proof.getEpoch() + 1);
-			if (nextCM != null) {
+			var forkConfig = epochToForkConfig.get(proof.getEpoch() + 1);
+			if (forkConfig != null) {
 				log.info("Epoch {} Forking constraint machine", proof.getEpoch() + 1);
-				this.radixEngine.replaceConstraintMachine(nextCM);
+				this.radixEngine.replaceConstraintMachine(forkConfig.getConstraintMachine());
+				this.epochCeilingView = forkConfig.getEpochCeilingView();
 			}
 		}
 

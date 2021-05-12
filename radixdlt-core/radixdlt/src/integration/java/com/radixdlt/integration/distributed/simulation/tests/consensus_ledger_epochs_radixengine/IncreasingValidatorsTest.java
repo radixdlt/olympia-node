@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.monitors.application.ApplicationMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
@@ -31,6 +32,8 @@ import java.util.concurrent.TimeUnit;
 import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRegistrator;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.statecomputer.RadixEngineConfig;
+import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
 import org.junit.Test;
 
 /**
@@ -43,8 +46,12 @@ public class IncreasingValidatorsTest {
 			NetworkLatencies.fixed()
 		)
 		.numNodes(50, 2) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware pacemaker
-		.addNodeModule(RadixEngineConfig.asModule(2, 40, 10, 5))
-		.addGenesisModule(RadixEngineConfig.asModule(2, 40, 10, 5))
+		.addNodeModule(RadixEngineConfig.asModule(2, 40, 5))
+		.addNodeModule(new BetanetForksModule())
+		.addNodeModule(new RadixEngineOnlyLatestForkModule(View.of(10)))
+		.addGenesisModule(RadixEngineConfig.asModule(2, 40, 5))
+		.addGenesisModule(new BetanetForksModule())
+		.addGenesisModule(new RadixEngineOnlyLatestForkModule(View.of(10)))
 		.ledgerAndRadixEngineWithEpochHighView()
 		.addTestModules(
 			ConsensusMonitors.safety(),
