@@ -33,7 +33,7 @@ import com.radixdlt.client.service.NetworkInfoService;
 import com.radixdlt.client.service.SubmissionService;
 import com.radixdlt.client.service.TransactionStatusService;
 import com.radixdlt.client.service.ValidatorInfoService;
-import com.radixdlt.client.store.ActionEntry;
+import com.radixdlt.client.api.ActionEntry;
 import com.radixdlt.client.store.MessageEntry;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;

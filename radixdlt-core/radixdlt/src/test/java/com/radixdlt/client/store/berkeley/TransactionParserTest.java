@@ -33,7 +33,7 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.client.store.ActionEntry;
+import com.radixdlt.client.api.ActionEntry;
 import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.constraintmachine.ConstraintMachine;
