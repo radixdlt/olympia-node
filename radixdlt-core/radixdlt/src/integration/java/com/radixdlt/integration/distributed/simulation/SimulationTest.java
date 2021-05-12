@@ -53,8 +53,6 @@ import com.radixdlt.MockedPersistenceStoreModule;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.integration.distributed.MockedAddressBookModule;
 import com.radixdlt.statecomputer.checkpoint.RadixNativeTokenModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
@@ -346,16 +344,11 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder fullFunctionNodes(
-			long epochHighView,
-			SyncConfig syncConfig
-		) {
+		public Builder fullFunctionNodes(SyncConfig syncConfig) {
 			this.ledgerType = LedgerType.FULL_FUNCTION;
 			modules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
-					install(new BetanetForksModule());
-					install(new RadixEngineOnlyLatestForkModule(View.of(epochHighView)));
 					install(RadixEngineConfig.asModule(minValidators, maxValidators, 50));
 					bind(SyncConfig.class).toInstance(syncConfig);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
@@ -366,8 +359,6 @@ public class SimulationTest {
 				@Override
 				protected void configure() {
 					install(new MockedCryptoModule());
-					install(new BetanetForksModule());
-					install(new RadixEngineOnlyLatestForkModule(View.of(epochHighView)));
 					install(new RadixEngineModule());
 					install(RadixEngineConfig.asModule(minValidators, maxValidators, 50));
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);

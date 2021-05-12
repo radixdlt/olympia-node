@@ -15,9 +15,9 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.tests.full_function;
+package com.radixdlt.integration.distributed.simulation.tests.full_function_forks;
 
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.integration.distributed.MockedRadixEngineForksModule;
 import com.radixdlt.integration.distributed.simulation.monitors.application.ApplicationMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
@@ -29,7 +29,6 @@ import com.radixdlt.integration.distributed.simulation.application.RadixEngineUn
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
 import com.radixdlt.sync.SyncConfig;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -47,9 +46,9 @@ public class SanityTest {
 		)
 		.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
 		.addNodeModule(new BetanetForksModule())
-		.addNodeModule(new RadixEngineOnlyLatestForkModule(View.of(10L)))
+		.addNodeModule(new MockedRadixEngineForksModule())
 		.addGenesisModule(new BetanetForksModule())
-		.addGenesisModule(new RadixEngineOnlyLatestForkModule(View.of(10L)))
+		.addGenesisModule(new MockedRadixEngineForksModule())
 		.addNodeModule(MempoolConfig.asModule(1000, 10))
 		.addTestModules(
 			ConsensusMonitors.safety(),
