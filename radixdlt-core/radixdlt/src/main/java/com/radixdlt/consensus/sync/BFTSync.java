@@ -329,10 +329,16 @@ public final class BFTSync implements BFTSyncer {
 			SyncState syncState = syncing.remove(syncId);
 			if (syncState == null) {
 				// TODO: remove once we figure this out
-				log.error("Got a null value from \"syncing\" map on thread "
-					+ Thread.currentThread().getName() + " other run threads:");
-				this.runOnThreads.stream().forEach(name -> log.error("Thread: " + name));
-				throw new IllegalStateException("Inconsistent sync state, please contact Radix team member on Discord");
+				final var msg = new StringBuilder();
+				msg
+					.append("Got a null value from \"syncing\" map on thread")
+					.append(Thread.currentThread().getName())
+					.append(". Other threads run: [");
+				this.runOnThreads.stream().forEach(name -> msg.append(name + ", "));
+				msg.append("]");
+				log.error(msg.toString());
+				throw new IllegalStateException("Inconsistent sync state, please contact Radix team member on Discord. ("
+					+ msg + ")");
 			} else {
 				syncToQC(syncState.highQC, randomFrom(authors));
 			}
