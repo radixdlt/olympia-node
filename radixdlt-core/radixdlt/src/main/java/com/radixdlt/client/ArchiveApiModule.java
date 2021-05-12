@@ -38,6 +38,8 @@ import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
+import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 
 public class ArchiveApiModule extends AbstractModule {
@@ -158,7 +160,18 @@ public class ArchiveApiModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> clientApiStore(ClientApiStore clientApiStore) {
+	private EventProcessorOnRunner<?> atomsCommittedToLedgerEventProcessorBerkeleyClientApi(
+			BerkeleyClientApiStore berkeleyClientApiStore
+	) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			AtomsCommittedToLedger.class,
+			berkeleyClientApiStore.atomsCommittedToLedgerEventProcessorBerkeleyClientApi()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> queueFlushProcessor(ClientApiStore clientApiStore) {
 		return new EventProcessorOnRunner<>(
 			Runners.APPLICATION,
 			ScheduledQueueFlush.class,
@@ -167,11 +180,11 @@ public class ArchiveApiModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> transactionStatusService(TransactionStatusService transactionStatusService) {
+	public EventProcessorOnRunner<?> cacheCleanupEventProcessor(TransactionStatusService transactionStatusService) {
 		return new EventProcessorOnRunner<>(
 			Runners.APPLICATION,
 			ScheduledCacheCleanup.class,
-			transactionStatusService.cacheCleanupProcessor()
+			transactionStatusService.cacheCleanupEventProcessor()
 		);
 	}
 
@@ -181,6 +194,33 @@ public class ArchiveApiModule extends AbstractModule {
 			Runners.APPLICATION,
 			ScheduledStatsCollecting.class,
 			networkInfoService.updateStats()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> atomsCommittedToLedgerTransactionStatus(TransactionStatusService transactionStatusService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			AtomsCommittedToLedger.class,
+			transactionStatusService.atomsCommittedToLedgerEventProcessorTransactionStatus()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> mempoolAddFailureEventProcessor(TransactionStatusService transactionStatusService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			MempoolAddFailure.class,
+			transactionStatusService.mempoolAddFailureEventProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> mempoolAddSuccessEventProcessor(TransactionStatusService transactionStatusService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			MempoolAddSuccess.class,
+			transactionStatusService.mempoolAddSuccessEventProcessor()
 		);
 	}
 }
