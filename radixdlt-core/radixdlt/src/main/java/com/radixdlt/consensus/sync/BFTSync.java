@@ -51,6 +51,7 @@ import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.Pair;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -60,7 +61,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -145,6 +148,9 @@ public final class BFTSync implements BFTSyncer {
 	private final SystemCounters systemCounters;
 	private LedgerProof currentLedgerHeader;
 
+	// TODO: remove once we figure that out
+	private final Set<String> runOnThreads = Collections.newSetFromMap(new ConcurrentHashMap<>(2));
+
 	// FIXME: Remove this once sync is fixed
 	private final RateLimiter syncRequestRateLimiter;
 
@@ -180,6 +186,8 @@ public final class BFTSync implements BFTSyncer {
 
 	public EventProcessor<ViewQuorumReached> viewQuorumReachedEventProcessor() {
 		return viewQuorumReached -> {
+			this.runOnThreads.add(Thread.currentThread().getName());
+
 			final HighQC highQC;
 			if (viewQuorumReached.votingResult() instanceof FormedQC) {
 				highQC = HighQC.from(
@@ -201,6 +209,7 @@ public final class BFTSync implements BFTSyncer {
 
 	@Override
 	public SyncResult syncToQC(HighQC highQC, @Nullable BFTNode author) {
+		this.runOnThreads.add(Thread.currentThread().getName());
 		final QuorumCertificate qc = highQC.highestQC();
 		final HashCode vertexId = qc.getProposed().getVertexId();
 
@@ -295,6 +304,8 @@ public final class BFTSync implements BFTSyncer {
 	}
 
 	private void processGetVerticesLocalTimeout(VertexRequestTimeout timeout) {
+		this.runOnThreads.add(Thread.currentThread().getName());
+
 		final GetVerticesRequest request = highestQCRequest(this.bftSyncing.entrySet());
 
 		SyncRequestState syncRequestState = bftSyncing.remove(request);
@@ -316,7 +327,13 @@ public final class BFTSync implements BFTSyncer {
 		for (var syncId : syncIds) {
 			systemCounters.increment(CounterType.BFT_SYNC_REQUEST_TIMEOUTS);
 			SyncState syncState = syncing.remove(syncId);
-			syncToQC(syncState.highQC, randomFrom(authors));
+			if (syncState == null) {
+				// TODO: remove once we figure this out
+				log.error("Got a null value from \"syncing\" map on thread " + Thread.currentThread().getName() + " other run threads:");
+				this.runOnThreads.stream().forEach(name -> log.error("Thread: " + name));
+			} else {
+				syncToQC(syncState.highQC, randomFrom(authors));
+			}
 		}
 	}
 
@@ -436,6 +453,8 @@ public final class BFTSync implements BFTSyncer {
 	}
 
 	private void processGetVerticesErrorResponse(BFTNode sender, GetVerticesErrorResponse response) {
+		this.runOnThreads.add(Thread.currentThread().getName());
+
 		// TODO: check response
 		final var request = response.request();
 		final var syncRequestState = bftSyncing.get(request);
@@ -457,6 +476,8 @@ public final class BFTSync implements BFTSyncer {
 	}
 
 	private void processGetVerticesResponse(BFTNode sender, GetVerticesResponse response) {
+		this.runOnThreads.add(Thread.currentThread().getName());
+
 		// TODO: check response
 
 		log.debug("SYNC_VERTICES: Received GetVerticesResponse {}", response);
@@ -493,6 +514,8 @@ public final class BFTSync implements BFTSyncer {
 
 	// TODO: Verify headers match
 	private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
+		this.runOnThreads.add(Thread.currentThread().getName());
+
 		log.trace("SYNC_STATE: update {}", ledgerUpdate.getTail());
 
 		this.currentLedgerHeader = ledgerUpdate.getTail();
