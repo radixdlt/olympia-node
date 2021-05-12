@@ -132,7 +132,8 @@ public final class ConstraintMachine {
 		}
 
 		public ReadableAddrs immutableIndex() {
-			return (txn, addr) -> {
+			// TODO: Fix ReadableAddrs interface (remove txn)
+			return (ignoredTxn, addr) -> {
 				if (addr.isSystem()) {
 					return localUpParticles.values().stream()
 						.filter(SystemParticle.class::isInstance)
