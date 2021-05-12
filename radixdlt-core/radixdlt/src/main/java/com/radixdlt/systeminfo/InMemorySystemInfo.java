@@ -29,8 +29,6 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.atomic.AtomicReference;
 
