@@ -55,7 +55,6 @@ public final class NodeApiModule extends AbstractModule {
 
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 			.permitDuplicates();
-		eventBinder.addBinding().toInstance(AtomsCommittedToLedger.class);
 		eventBinder.addBinding().toInstance(MempoolAddFailure.class);
 		eventBinder.addBinding().toInstance(AtomsRemovedFromMempool.class);
 		eventBinder.addBinding().toInstance(ScheduledQueueFlush.class);

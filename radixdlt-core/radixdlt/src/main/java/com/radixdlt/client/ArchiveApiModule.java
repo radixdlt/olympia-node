@@ -39,6 +39,7 @@ import com.radixdlt.environment.Runners;
 
 import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.client.handler.HighLevelApiHandler;
+import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 
 public class ArchiveApiModule extends AbstractModule {
 	@Override
@@ -58,6 +59,7 @@ public class ArchiveApiModule extends AbstractModule {
 			.permitDuplicates();
 		bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
 		bind(TransactionStatusService.class).in(Scopes.SINGLETON);
+		eventBinder.addBinding().toInstance(AtomsCommittedToLedger.class);
 		eventBinder.addBinding().toInstance(ScheduledQueueFlush.class);
 		eventBinder.addBinding().toInstance(ScheduledCacheCleanup.class);
 	}
