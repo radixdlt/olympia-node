@@ -23,7 +23,6 @@ import org.apache.logging.log4j.Logger;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.BurnToken;
