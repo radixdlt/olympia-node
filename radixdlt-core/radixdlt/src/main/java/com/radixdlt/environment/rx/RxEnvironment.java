@@ -51,9 +51,9 @@ public final class RxEnvironment implements Environment {
 		Set<RxRemoteDispatcher<?>> remoteDispatchers
 	) {
 		this.typeLiteralSubjects = localEventTypeLiterals.stream()
-				.collect(Collectors.toMap(c -> c, c -> ReplaySubject.create(5).toSerialized()));
+			.collect(Collectors.toMap(c -> c, c -> ReplaySubject.createWithSize(5).toSerialized()));
 		this.subjects = localEventClasses.stream()
-			.collect(Collectors.toMap(c -> c, c -> ReplaySubject.create(5).toSerialized()));
+			.collect(Collectors.toMap(c -> c, c -> ReplaySubject.createWithSize(5).toSerialized()));
 		this.executorService = Objects.requireNonNull(executorService);
 		this.remoteDispatchers = remoteDispatchers.stream()
 			.collect(Collectors.toMap(RxRemoteDispatcher::eventClass, d -> d));

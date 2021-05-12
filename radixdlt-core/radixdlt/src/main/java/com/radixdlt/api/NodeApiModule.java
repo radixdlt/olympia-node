@@ -31,7 +31,6 @@ import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.api.node.NodeController;
 import com.radixdlt.api.system.SystemController;
@@ -55,7 +54,6 @@ public final class NodeApiModule extends AbstractModule {
 
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 			.permitDuplicates();
-		eventBinder.addBinding().toInstance(AtomsCommittedToLedger.class);
 		eventBinder.addBinding().toInstance(MempoolAddFailure.class);
 		eventBinder.addBinding().toInstance(AtomsRemovedFromMempool.class);
 		eventBinder.addBinding().toInstance(ScheduledQueueFlush.class);
