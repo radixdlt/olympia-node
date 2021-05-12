@@ -128,7 +128,7 @@ public class DispatcherModule extends AbstractModule {
 					}
 					return CounterType.MEMPOOL_ERRORS_OTHER;
 				},
-				true
+				false
 			))
 			.in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() { })
