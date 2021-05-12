@@ -47,23 +47,11 @@ Method | Description
 ## Proposed configuration
 
 #### REST API's
-Path | Method | Description | Example 
+Path | Method | Description | Example response 
  | --- | --- | --- | --- |
 /health | GET | Returns node health status - `UP` or `SYNCYNG` | `{"status" : "UP" }`
 /version | GET | Returns node software version and build info | `{ "version" : "1.0.33-e137738baa2d306efa4e1bdc637c62f16dc7a3fe" }` 
 /faucet/request | POST | faucet API - betanet and local deployment only| 
-/node/parse | POST | |
-/node/txn | POST | |
-/node/submit | POST | |
-/node/execute | POST | |
-/node | GET | |
-/node/validator | POST | |
-/system/config | GET | |
-/system/info | GET | |
-/system/checkpoints | GET | |
-/system/proof | GET | |
-/system/epochproof | GET | |
-/system/peers | GET | |
 
 #### JSON-RPC API's
 
@@ -96,21 +84,14 @@ Old Method Name | New Method Name
    
 Method | Description
 | --- | --- |
-| system.config | |
-| system.info | |
-| system.checkpoints | |
-| system.proof | |
-| system.epochproof | |
-| system.peers | |
-| system.universe | |
-| node.balance | |
-| node.validator | |
-| node.universe | |
+| node.info | Complete information about node - public address, balance, validator registration status. If node is a validator, remaining details can be obtained from __validator.lookup__ |
+| system.info | Complete information about system - consensus, mempool and RE configuration, public key, agent, protocols, genesis info, current and epoch proof |
+| system.peers | Information about known peer nodes |
 
 3. New methods:
-   Method | Description
-   | --- | --- |
-   | token.issue | Issue new tokens |
-   | validator.register | Register validator |
-   | validator.unregister | Unregister validator |
-   
+
+Method | Description
+| --- | --- |
+| token.issue | Issue new tokens |
+| validator.register | Register validator |
+| validator.unregister | Unregister validator |
