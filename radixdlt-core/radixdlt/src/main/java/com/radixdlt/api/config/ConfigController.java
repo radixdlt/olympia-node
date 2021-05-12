@@ -29,9 +29,13 @@ import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.MaxTxnsPerProposal;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
+import com.radixdlt.statecomputer.forks.ForkConfig;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
+import org.json.JSONArray;
 import org.json.JSONObject;
+
+import java.util.TreeMap;
 
 import static com.radixdlt.api.RestUtils.respond;
 
@@ -42,8 +46,8 @@ public class ConfigController implements Controller {
 	private final long mempoolThrottleMs;
 	private final int minValidators;
 	private final int maxValidators;
-	private final View ceilingView;
 	private final int maxTxnsPerProposal;
+	private final TreeMap<Long, ForkConfig> forkConfigTreeMap;
 
 	@Inject
 	public ConfigController(
@@ -53,8 +57,8 @@ public class ConfigController implements Controller {
 		@MempoolThrottleMs long mempoolThrottleMs,
 		@MinValidators int minValidators,
 		@MaxValidators int maxValidators,
-		@EpochCeilingView View ceilingView,
-		@MaxTxnsPerProposal int maxTxnsPerProposal
+		@MaxTxnsPerProposal int maxTxnsPerProposal,
+		TreeMap<Long, ForkConfig> forkConfigTreeMap
 	) {
 		this.pacemakerTimeout = pacemakerTimeout;
 		this.bftSyncPatienceMillis = bftSyncPatienceMillis;
@@ -62,8 +66,8 @@ public class ConfigController implements Controller {
 		this.mempoolThrottleMs = mempoolThrottleMs;
 		this.minValidators = minValidators;
 		this.maxValidators = maxValidators;
-		this.ceilingView = ceilingView;
 		this.maxTxnsPerProposal = maxTxnsPerProposal;
+		this.forkConfigTreeMap = forkConfigTreeMap;
 	}
 
 	@Override
@@ -72,6 +76,13 @@ public class ConfigController implements Controller {
 	}
 
 	void handleConfig(HttpServerExchange exchange) {
+		var forks = new JSONArray();
+		forkConfigTreeMap.forEach((e, config) -> forks.put(
+			new JSONObject()
+				.put("ceiling_view", config.getEpochCeilingView().number())
+				.put("epoch", e)
+		));
+
 		respond(exchange, new JSONObject()
 			.put("consensus", new JSONObject()
 				.put("pacemaker_timeout", pacemakerTimeout)
@@ -84,8 +95,8 @@ public class ConfigController implements Controller {
 			.put("radix_engine", new JSONObject()
 				.put("min_validators", minValidators)
 				.put("max_validators", maxValidators)
-				.put("ceiling_view", ceilingView.number())
 				.put("max_txns_per_proposal", maxTxnsPerProposal)
+				.put("forks", forks)
 			)
 		);
 	}
