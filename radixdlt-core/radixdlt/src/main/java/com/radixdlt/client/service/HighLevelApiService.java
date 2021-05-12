@@ -31,8 +31,6 @@ import com.radixdlt.client.store.berkeley.BalanceEntry;
 import com.radixdlt.client.store.berkeley.UnstakeEntry;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.client.api.TxHistoryEntry;
-
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Tuple.Tuple2;
