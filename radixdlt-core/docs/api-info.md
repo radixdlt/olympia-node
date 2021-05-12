@@ -4,24 +4,24 @@
 
 #### REST API's
 
- Path | Method | Description 
- | --- | --- | --- |
- /chaos/message-flooder | PUT | message flooder - testnets |
- /chaos/mempool-filler | PUT | mempool flooder - testnets |
- /faucet/request | POST | faucet API - betanet |
- /node/parse | POST | |
- /node/txn | POST | |
- /node/submit | POST | |
- /node/execute | POST | |
- /node | GET | |
- /node/validator | POST | |
- /system/config | GET | |
- /system/info | GET | |
- /system/checkpoints | GET | |
- /system/proof | GET | |
- /system/epochproof | GET | |
- /system/peers | GET | |
- /universe.json | GET | |
+ Path | Method | Description | Comments 
+ | --- | --- | --- | --- |
+ /chaos/message-flooder | PUT | message flooder | Necessary for testnets only 
+ /chaos/mempool-filler | PUT | mempool flooder |  Necessary for testnets only
+ /faucet/request | POST | faucet API |  Necessary for testnets and betanet only 
+ /node/parse | POST | Transaction blob parsing |  No sensitive information
+ /node/txn | POST | Retrieve transaction blob |  No sensitive information
+ /node/submit | POST | Submit transaction blob |  No sensitive information
+ /node/execute | POST | Submit transaction using node private key to for signature | __Security sensitive__
+ /node | GET | Get information about node - public address and balance | No sensitive information
+ /node/validator | POST | Get information about node as a validator - stakes, registration status, etc.| No sensitive information
+ /system/config | GET | Get active configuration parameters for consensus, mempool and RE | No sensitive information 
+ /system/info | GET | Get system information - public key, agent, supported protocols | No sensitive information
+ /system/checkpoints | GET | Get genesis txn and proof | No sensitive information
+ /system/proof | GET | Get current proof | No sensitive information
+ /system/epochproof | GET | Get epoch proof | No sensitive information
+ /system/peers | GET | Get information about peer nodes | No sensitive information
+ /universe.json | GET | Get Radix Universe | No sensitive information and most likely unused
 
 #### JSON-RPC API's
 
