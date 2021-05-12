@@ -28,6 +28,8 @@ import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
+import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import org.assertj.core.api.Condition;
@@ -74,7 +76,6 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.network.addressbook.PeersView;
-import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
@@ -131,6 +132,8 @@ public class RecoveryTest {
 		Guice.createInjector(
 			new MockedGenesisModule(),
 			new CryptoModule(),
+			new BetanetForksModule(),
+			new RadixEngineOnlyLatestForkModule(View.of(100L)),
 			new RadixEngineModule(),
 			new AbstractModule() {
 				@Override
@@ -144,7 +147,6 @@ public class RecoveryTest {
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bindConstant().annotatedWith(MaxValidators.class).to(100);
 					bindConstant().annotatedWith(MinValidators.class).to(1);
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100L));
 				}
 			}
 		).injectMembers(this);
@@ -169,6 +171,10 @@ public class RecoveryTest {
 		final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
 
 		return Guice.createInjector(
+			new BetanetForksModule(),
+			new RadixEngineOnlyLatestForkModule(View.of(epochCeilingView)),
+			MempoolConfig.asModule(10, 10),
+			RadixEngineConfig.asModule(1, Integer.MAX_VALUE, 50),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
@@ -178,8 +184,6 @@ public class RecoveryTest {
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(ImmutableList.of(self));
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
-					install(MempoolConfig.asModule(10, 10));
-					install(RadixEngineConfig.asModule(1, Integer.MAX_VALUE, epochCeilingView, 50));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
 					bind(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { }).in(Scopes.SINGLETON);

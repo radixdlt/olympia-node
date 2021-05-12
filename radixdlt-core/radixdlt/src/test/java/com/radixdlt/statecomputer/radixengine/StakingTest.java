@@ -32,6 +32,7 @@ import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -41,6 +42,8 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.Stakes;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
+import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LastStoredProof;
@@ -79,7 +82,9 @@ public class StakingTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
-			RadixEngineConfig.asModule(1, 100, 100, 50),
+			new BetanetForksModule(),
+			new RadixEngineOnlyLatestForkModule(View.of(100)),
+			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
 			new AbstractModule() {

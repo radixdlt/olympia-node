@@ -53,6 +53,8 @@ import com.radixdlt.MockedPersistenceStoreModule;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.integration.distributed.MockedAddressBookModule;
 import com.radixdlt.statecomputer.checkpoint.RadixNativeTokenModule;
+import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
@@ -352,7 +354,9 @@ public class SimulationTest {
 			modules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
-					install(RadixEngineConfig.asModule(minValidators, maxValidators, epochHighView, 50));
+					install(new BetanetForksModule());
+					install(new RadixEngineOnlyLatestForkModule(View.of(epochHighView)));
+					install(RadixEngineConfig.asModule(minValidators, maxValidators, 50));
 					bind(SyncConfig.class).toInstance(syncConfig);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
 				}
@@ -362,8 +366,10 @@ public class SimulationTest {
 				@Override
 				protected void configure() {
 					install(new MockedCryptoModule());
+					install(new BetanetForksModule());
+					install(new RadixEngineOnlyLatestForkModule(View.of(epochHighView)));
 					install(new RadixEngineModule());
-					install(RadixEngineConfig.asModule(minValidators, maxValidators, epochHighView, 50));
+					install(RadixEngineConfig.asModule(minValidators, maxValidators, 50));
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
 						.toInstance(nodes);

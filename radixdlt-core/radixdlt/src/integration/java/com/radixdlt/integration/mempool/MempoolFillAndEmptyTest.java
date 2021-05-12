@@ -29,6 +29,7 @@ import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.mempoolfiller.ScheduledMempoolFill;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
@@ -39,6 +40,8 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
+import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
 import com.radixdlt.store.DatabaseLocation;
 import org.junit.Rule;
 import org.junit.Test;
@@ -64,7 +67,9 @@ public final class MempoolFillAndEmptyTest {
     private Injector createInjector() {
         return Guice.createInjector(
             MempoolConfig.asModule(1000, 10),
-            RadixEngineConfig.asModule(1, 10, 100, 10),
+            new BetanetForksModule(),
+            new RadixEngineOnlyLatestForkModule(View.of(100)),
+            RadixEngineConfig.asModule(1, 10, 10),
             new SingleNodeAndPeersDeterministicNetworkModule(),
             new MockedGenesisModule(),
             new MempoolFillerModule(),

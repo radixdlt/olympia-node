@@ -22,6 +22,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
@@ -32,6 +33,8 @@ import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
+import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.sync.CommittedReader;
@@ -155,7 +158,9 @@ public class MempoolRelayTest {
 			new MockedGenesisModule(),
 			new CryptoModule(),
 			new RadixEngineModule(),
-			RadixEngineConfig.asModule(1, 100, 100, 50),
+			new BetanetForksModule(),
+			new RadixEngineOnlyLatestForkModule(View.of(100)),
+			RadixEngineConfig.asModule(1, 100, 50),
 			new AbstractModule() {
 				@Override
 				public void configure() {
@@ -180,7 +185,9 @@ public class MempoolRelayTest {
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
 			MempoolConfig.asModule(500, 100, 10, 10, 10),
-			RadixEngineConfig.asModule(1, 100, 100, 50),
+			new BetanetForksModule(),
+			new RadixEngineOnlyLatestForkModule(View.of(100)),
+			RadixEngineConfig.asModule(1, 100, 50),
 			new PersistedNodeForTestingModule(),
 			new MempoolFillerModule(),
 			new AbstractModule() {
