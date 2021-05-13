@@ -38,6 +38,8 @@ import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
+import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 
 public class ArchiveApiModule extends AbstractModule {
@@ -178,7 +180,7 @@ public class ArchiveApiModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> transactionStatusService(TransactionStatusService transactionStatusService) {
+	public EventProcessorOnRunner<?> cacheCleanupProcessor(TransactionStatusService transactionStatusService) {
 		return new EventProcessorOnRunner<>(
 			Runners.APPLICATION,
 			ScheduledCacheCleanup.class,
@@ -189,9 +191,36 @@ public class ArchiveApiModule extends AbstractModule {
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> networkInfoService(NetworkInfoService networkInfoService) {
 		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			ScheduledStatsCollecting.class,
-			networkInfoService.updateStats()
+				Runners.APPLICATION,
+				ScheduledStatsCollecting.class,
+				networkInfoService.updateStats()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> onCommitProcessor(TransactionStatusService transactionStatusService) {
+		return new EventProcessorOnRunner<>(
+				Runners.APPLICATION,
+				AtomsCommittedToLedger.class,
+				transactionStatusService.onCommitProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> onRejectProcessor(TransactionStatusService transactionStatusService) {
+		return new EventProcessorOnRunner<>(
+				Runners.APPLICATION,
+				MempoolAddFailure.class,
+				transactionStatusService.onRejectProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> onSuccessProcessor(TransactionStatusService transactionStatusService) {
+		return new EventProcessorOnRunner<>(
+				Runners.APPLICATION,
+				MempoolAddSuccess.class,
+				transactionStatusService.onSuccessProcessor()
 		);
 	}
 }

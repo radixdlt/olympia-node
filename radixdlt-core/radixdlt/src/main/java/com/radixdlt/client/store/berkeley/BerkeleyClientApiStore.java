@@ -17,7 +17,6 @@
 
 package com.radixdlt.client.store.berkeley;
 
-import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -79,7 +78,6 @@ import java.util.stream.Stream;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;

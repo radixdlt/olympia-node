@@ -37,7 +37,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 
 import static com.radixdlt.client.api.TransactionStatus.CONFIRMED;
@@ -57,17 +56,11 @@ public class TransactionStatusService {
 	@Inject
 	public TransactionStatusService(
 		BerkeleyLedgerEntryStore store,
-		Observable<AtomsCommittedToLedger> committed,
-		Observable<MempoolAddFailure> rejected,
-		Observable<MempoolAddSuccess> succeeded,
 		ScheduledEventDispatcher<ScheduledCacheCleanup> scheduledCacheCleanup
 	) {
 		this.store = store;
 		this.scheduledCacheCleanup = scheduledCacheCleanup;
 
-		disposable.add(committed.subscribe(this::onCommit));
-		disposable.add(rejected.subscribe(this::onReject));
-		disposable.add(succeeded.subscribe(this::onSuccess));
 		scheduledCacheCleanup.dispatch(ScheduledCacheCleanup.create(), DEFAULT_CLEANUP_INTERVAL);
 	}
 
@@ -81,6 +74,18 @@ public class TransactionStatusService {
 
 	private void onSuccess(MempoolAddSuccess mempoolAddSuccess) {
 		updateStatus(mempoolAddSuccess.getTxn().getId(), PENDING);
+	}
+
+	public EventProcessor<AtomsCommittedToLedger> onCommitProcessor() {
+		return this::onCommit;
+	}
+
+	public EventProcessor<MempoolAddFailure> onRejectProcessor() {
+		return this::onReject;
+	}
+
+	public EventProcessor<MempoolAddSuccess> onSuccessProcessor() {
+		return this::onSuccess;
 	}
 
 	public void close() {
