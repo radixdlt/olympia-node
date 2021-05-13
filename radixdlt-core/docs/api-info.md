@@ -119,18 +119,19 @@ Method | Description | Access
 | system.info | Complete information about system - consensus, mempool and RE configuration, public key, agent, protocols, genesis info, current and epoch proof | R/O |
 | system.peers | Information about known peer nodes | R/O |
 
-#### New Methods 
-These methods add missing functionality and make JSON RPC API complete.
+#### New Actions 
+In order to make JSON RPC API complete, we need to support following actions while building transactions: 
 
-Method | Description | Access
-| --- | --- | --- |
-| token.issue | Issue new tokens | __R/W__ |
-| token.mint | Mint tokens | __R/W__ |
-| token.burn | Burn tokens | __R/W__ |
-| address.stake | Stake tokens | __R/W__ |
-| address.unstake | Unstake tokens | __R/W__ |
-| validator.register | Register validator | __R/W__ |
-| validator.unregister | Unregister validator | __R/W__ |
+Action | Description 
+| --- | --- |
+| StakeTokens | Stake tokens to validator |
+| UnstakeTokens | Trigger unstacking from the validator |
+| BurnTokens | Burn tokens |
+| MintTokens | Mint tokens |
+| RegisterValidator | Register node as validator |
+| UnregisterValidator | Unregister node as validator |
+| CreateFixedSupplyToken | Create fixed supply token |
+| CreateMutableSupplyToken | Create mutable supply token |
 
 ### Proposed Configuration Options
 
