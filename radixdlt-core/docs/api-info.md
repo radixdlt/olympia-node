@@ -56,20 +56,25 @@ Configuration Option | Description
 ## New Organization of APIs
 
  The general approach to the API organization is based on the following considerations:
-- Reduce number of endpoints to minimum
-- All JSON RPC methods are grouped into two sets - Read-Only (R/O) methods and Read/Write (R/W) methods
-- Two main JSON-RPC endpoints: `/archive` (former `/api`) and `/system`
-- The `/system` endpoint is expected to be protected by firewall and/or require authentication/etc. 
+- All existing JSON RPC methods are grouped into two sets - Read-Only (R/O) methods and Read/Write (R/W) methods
+- All methods are spread across three endpoints:
+  - `/archive` (former `/rpc`) - client API, which can be configured to provide all or only R/O methods (see below).
+  - `/system` supports new methods (see below) which provide same information as available today via all `/system/*` 
+    and most `/node/*` endpoints
+  - `/node` supports R/W methods from existing JSON RPC methods and one new method to sign transactions using 
+    validator own private key (see below)
+- The `/system` and `/node` endpoint is expected to be protected by firewall and/or require authentication/etc. 
   (same requirements/setup as we have today) 
-- The `/system` endpoint is always enabled
+- The `/system` endpoint is enabled by default but can be disabled with configuration options
+- The `/node` endpoint is disabled by default but can be enabled with configuration options
 - The `/archive` endpoint can be configured into one of the following states:
   - Disabled (default) - no methods are exposed and attempt to access `/archive` may return 404
-  - Read-Only archive - `/archive` endpoint is enabled, but only subset of APIs are available (see below)
-  - Full - `/archive` endpoint provides the same set of APIs as `/system`  
+  - R/O archive - `/archive` endpoint is enabled, but only R/O methods are supported
+  - R/W archive - `/archive` endpoint is enabled and both, R/O and R/W methods are supported  
 
 ### REST APIs
 
-Majority of the REST APIs are removed or replaced with JSON-RPC counterparts. Remaining and new REST endpoints: 
+Majority of the REST APIs are replaced with JSON-RPC counterparts. Remaining and new REST endpoints: 
 
 Path | Method | Description
  | --- | --- | --- |
@@ -112,12 +117,23 @@ Old Method Name | New Method Name | Access
 | radix.networkTransactionDemand |network.stat.demand| R/O |
 
 #### Replacement methods for some old REST endpoints:
+
+Methods below are accessible via `/ssystem` endpoint (if enabled)
    
 Method | Description | Access
 | --- | --- | --- |
 | node.info | Complete information about node - public address, balance, validator registration status. If node is a validator, remaining details can be obtained from __validator.lookup__ | R/O |
 | system.info | Complete information about system - consensus, mempool and RE configuration, public key, agent, protocols, genesis info, current and epoch proof | R/O |
 | system.peers | Information about known peer nodes | R/O |
+
+Methods below are accessible via `/node` endpoint (if enabled)
+
+Method | Description | Access
+| --- | --- | --- |
+| transaction.build| The same as client API `transaction.build` method | __R/W__ |
+| transaction.finalize| The same as client API `transaction.finalize` method |__R/W__ |
+| transaction.submit| The same as client API `transaction.submit` method | __R/W__ |
+| transaction.submitSigned| Equivalent to `transaction.build + transaction.finalize + transaction.submit` methods except does not require keys and signs transaction with node private key| __R/W__ |
 
 #### New Actions 
 In order to make JSON RPC API complete, we need to support following actions while building transactions: 
@@ -137,8 +153,10 @@ Following configuration options control which APIs are enabled at the node:
 
 Configuration Option | Description
 | --- | --- |
-|client_api.enable | Enables JSON-RPC. Which methods are available depends on the next option |
+|client_api.enable | Enables `/archive` endpoint. Which methods are available depends on the next option |
 |client_api.rw | If `true` then both, R/O and R/W methods are available. If `false` then only R/O methods are enabled|
+|system_api.enable | Enables `/system` endpoint. Enabled by default, to disable should be set to `false`|
+|node_api.enable | Enables `/node` endpoint. Enabled by default, to disable should be set to `false`|
 |universe_api.enable | Enables `/universe.json` endpoint|
 |faucet.enable | Enables `/faucet/request` endpoint for non-mainnet networks. On mainnet endpoint is always disabled | 
 |chaos.enable | Enables `/chaos/message-flooder` and `/chaos/mempool-filler ` endpoints for non-mainnet networks. On mainnet endpoints are always disabled |
