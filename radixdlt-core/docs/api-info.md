@@ -107,7 +107,7 @@ Majority of the REST APIs are replaced with JSON-RPC counterparts. Remaining and
 | Method Name | Old Method Name | Notes |
 | --- | --- | --- |
 | transaction.build | radix.buildTransaction | Same as before |
-| transaction.finalize | radix.finalizeTransaction | Now returns a fully ready-to-submit blob plus a transaction ID |
+| transaction.finalize | radix.finalizeTransaction | Now returns a fully ready-to-submit blob and a transaction ID |
 | transaction.submit | radix.submitTransaction | Now accepts a single parameter, a ready-to-submit blob |
 
 #### /system
@@ -122,10 +122,10 @@ Majority of the REST APIs are replaced with JSON-RPC counterparts. Remaining and
 
 | Method | Description |
 | --- | --- |
-| account.info | Your account's address and balance (not node ID) |
+| account.info | Your account's address and balances (not node ID) |
 | transaction.submitSigned | Equivalent to `transaction.build + transaction.finalize + transaction.submit` methods except does not require keys and signs transaction with node private key. Input parameters are same as for `transaction.build`, output is formatted as for `transaction.submit` method |
 
-#### New Actions
+### New Actions
 In order to make JSON RPC API complete, we need to support following actions while building transactions:
 
 | Action | Description |
@@ -137,9 +137,12 @@ In order to make JSON RPC API complete, we need to support following actions whi
 | CreateFixedSupplyToken | Create fixed supply token |
 | CreateMutableSupplyToken | Create mutable supply token |
 
-### Proposed Configuration Options
+### Removal of `/node` REST endpoints
+Note that all of the wallet-style actions which were previously done via REST under `/node` are now supported via Actions under the normal transaction building flow.  Node runners can use the `transaction.submitSigned` method under `/account` in order to build, sign, and submit these transactions in a single step.  This also includes validator registration.
 
-Following configuration options control which APIs are enabled at the node:
+### New Configuration Options
+
+The following configuration options control which APIs are enabled at the node:
 
 | Configuration Option | Description |
 | --- | --- |
