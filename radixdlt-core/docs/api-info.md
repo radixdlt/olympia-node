@@ -124,8 +124,6 @@ In order to make JSON RPC API complete, we need to support following actions whi
 
 Action | Description 
 | --- | --- |
-| StakeTokens | Stake tokens to validator |
-| UnstakeTokens | Trigger unstacking from the validator |
 | BurnTokens | Burn tokens |
 | MintTokens | Mint tokens |
 | RegisterValidator | Register node as validator |
