@@ -68,10 +68,10 @@ Following configuration options control which APIs are enabled at the node:
     and most `/node/*` endpoints
   - `/account` supports methods to fetch your associated account info, and a one-step method to build, sign, and submit a transaction
 - The `/system` and `/account` endpoint are expected to be protected by firewall and/or require authentication/etc. (same requirements/setup as we have today)
-- The `/system` endpoint is enabled by default but can be disabled with configuration option
-- The `/account` endpoint is disabled by default but can be enabled with configuration option
-- The `/archive` endpoint is disabled by default but can be enabled with a configuration option
-- The `/construct` endpoint is disabled by default but can be enabled with a configuration option
+- The `/system` endpoint is *enabled* by default
+- The `/account` endpoint is disabled by default
+- The `/archive` endpoint is disabled by default
+- The `/construct` endpoint is disabled by default
 
 ### REST APIs
 
@@ -148,7 +148,7 @@ The following configuration options control which APIs are enabled at the node:
 | --- | --- |
 | archive_api.enable | Enables `/archive` endpoint, disabled by default |
 | construct_api.enable | Enables `/construct` endpoint, disabled by default |
-| system_api.enable | Enables `/system` endpoint, enabled by default |
+| system_api.enable | Enables `/system` endpoint, *enabled* by default |
 | account_api.enable | Enables `/account` endpoint, disabled by default |
 | universe_api.enable | Enables `/universe.json` endpoint, disabled by default |
 | faucet.enable | Enables `/faucet/request` endpoint for non-mainnet networks, disabled by default. On mainnet endpoint is always disabled |
