@@ -1,8 +1,8 @@
-### General information about API's available at node
+### General information about APIs available at node
 
 ## Current state as of May 10, 2021
 
-#### REST API's
+#### REST APIs
 
  Path | Method | Description | Comments 
  | --- | --- | --- | --- |
@@ -21,9 +21,9 @@
  /system/proof | GET | Get current proof | No sensitive information
  /system/epochproof | GET | Get epoch proof | No sensitive information
  /system/peers | GET | Get information about peer nodes | No sensitive information
- /universe.json | GET | Get Radix Universe | No sensitive information and most likely unused
+ /universe.json | GET | Get Radix Universe | No sensitive information
 
-#### JSON-RPC API's
+#### JSON-RPC APIs
 
 Method | Description
 | --- | --- |
@@ -44,54 +44,78 @@ Method | Description
 |radix.networkTransactionThroughput | Get number of transactions per second |
 |radix.networkTransactionDemand | Get average number of transactions waiting for processing in mempool |
 
-## Proposed configuration
+## Proposed APIs
 
-#### REST API's
-Path | Method | Description | Example response 
- | --- | --- | --- | --- |
-/health | GET | Returns node health status - `UP` or `SYNCYNG` | `{"status" : "UP" }`
-/version | GET | Returns node software version and build info | `{ "version" : "1.0.33-e137738baa2d306efa4e1bdc637c62f16dc7a3fe" }` 
-/faucet/request | POST | faucet API - betanet and local deployment only| 
+ The general approach to the reworked API is based on the following considerations:
+- Reduce number of REST endpoints to absolute minimum
+- All JSON RPC methods are grouped into two collections - Read-Only (R/O) methods and Read/Write (R/W) methods
+- Two JSON-RPC endpoints: `/archive` (former `/api`) and `/system`
+- The `/system` endpoint is expected to be protected by firewall/require authentication/etc. 
+  (same requirements/setup as we have today) 
+- The `/system` endpoint is always enabled
+- The `/archive` endpoint can be configured into one of the following states:
+  - Disabled (default) - no methods are exposed and attempt to access `/archive` may return 404
+  - Read-Only archive - `/archive` endpoint is enabled, but only subset of APIs are available (see below)
+  - Full - `/archive` endpoint provides the same set of APIs as `/system`  
 
-#### JSON-RPC API's
+#### REST APIs
+Majority of the REST APIs are removed or replaced with JSON-RPC counterparts. 
 
-Method names are restructured into groups of related API methods. Since this is a breaking change,
-it is planned to support both method names until Beta 4.
+Remaining REST endpoints: 
+
+Path | Method | Description
+ | --- | --- | --- |
+/health | GET | Returns node health status - `UP` or `SYNCYNG`. Standard endpoint for use by operations. Typical response: `{"status" : "UP" }`
+/version | GET | Returns detailed information about software version and build info 
+/faucet/request | POST | faucet API - betanet and local deployment only, disabled on mainnet
+/universe.json | GET | Get Radix Universe. Used during setup and configuration of the node 
+
+#### JSON-RPC APIs
+
+Method names are restructured into groups of related API methods. 
+Since this is a breaking change, it is planned to support both method names until Beta 4.
+As mentioned above, all three groups of methods listed below are available via `/system` JSON RPC endpoint.
+If client API is enabled, methods marked as R/O are available via `/archive` JSON RPC endpoint.
+If client API is enabled and R/W methods are enabled, then `/archive` has same methods as `/system`.
+If client API is disabled, then `/archive` endpoint is deactivated and may return HTTP status code 404.
 
 1. Renamed methods:
 
-Old Method Name | New Method Name
-| --- | --- | 
-| radix.nativeToken |token.native|
-| radix.tokenInfo |token.info|
-| radix.tokenBalances |address.balances|
-| radix.stakePositions |address.stakes|
-| radix.unstakePositions |address.unstakes|
-| radix.transactionHistory |transaction.history|
-| radix.lookupTransaction |transaction.lookup|
-| radix.statusOfTransaction |transaction.status|
-| radix.buildTransaction |transaction.build|
-| radix.finalizeTransaction |transaction.finalize|
-| radix.submitTransaction |transaction.submit|
-| radix.validators |validator.list|
-| radix.lookupValidator |validator.lookup|
-| radix.networkId | network.id|
-| radix.networkTransactionThroughput |network.stat.throughput|
-| radix.networkTransactionDemand |network.stat.demand|
+Old Method Name | New Method Name | Access
+| --- | --- | --- | 
+| radix.nativeToken |token.native| R/O |
+| radix.tokenInfo |token.info| R/O |
+| radix.tokenBalances |address.balances| R/O |
+| radix.stakePositions |address.stake.list| R/O |
+| radix.unstakePositions |address.unstake.list| R/O |
+| radix.transactionHistory |transaction.history| R/O |
+| radix.lookupTransaction |transaction.lookup| R/O |
+| radix.statusOfTransaction |transaction.status| R/O |
+| radix.buildTransaction |transaction.build| R/W |
+| radix.finalizeTransaction |transaction.finalize| R/W |
+| radix.submitTransaction |transaction.submit| R/W |
+| radix.validators |validator.list| R/O |
+| radix.lookupValidator |validator.lookup| R/O |
+| radix.networkId | network.id| R/O |
+| radix.networkTransactionThroughput |network.stat.throughput| R/O |
+| radix.networkTransactionDemand |network.stat.demand| R/O |
 
-2. Method added as a replacement for some API's which 
-   were implemented as REST API's:
+2. Method added as a replacement for some APIs which 
+   were implemented as REST APIs:
    
-Method | Description
-| --- | --- |
-| node.info | Complete information about node - public address, balance, validator registration status. If node is a validator, remaining details can be obtained from __validator.lookup__ |
-| system.info | Complete information about system - consensus, mempool and RE configuration, public key, agent, protocols, genesis info, current and epoch proof |
-| system.peers | Information about known peer nodes |
+Method | Description | Access
+| --- | --- | --- |
+| node.info | Complete information about node - public address, balance, validator registration status. If node is a validator, remaining details can be obtained from __validator.lookup__ | R/O |
+| system.info | Complete information about system - consensus, mempool and RE configuration, public key, agent, protocols, genesis info, current and epoch proof | R/O |
+| system.peers | Information about known peer nodes | R/O |
 
 3. New methods:
 
 Method | Description
 | --- | --- |
-| token.issue | Issue new tokens |
-| validator.register | Register validator |
-| validator.unregister | Unregister validator |
+| token.issue | Issue new tokens | R/W |
+| token.mint | Mint tokens | R/W |
+| address.stake | Stake tokens | R/W |
+| address.unstake | Unstake tokens | R/W |
+| validator.register | Register validator | R/W |
+| validator.unregister | Unregister validator | R/W |
