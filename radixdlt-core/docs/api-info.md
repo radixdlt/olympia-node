@@ -61,8 +61,8 @@ Configuration Option | Description
   - `/archive` (former `/rpc`) - client API, which can be configured to provide all or only R/O methods (see below).
   - `/system` supports new methods (see below) which provide same information as available today via all `/system/*` 
     and most `/node/*` endpoints
-  - `/node` supports R/W methods from existing JSON RPC methods and one new method to sign transactions using 
-    validator own private key (see below)
+  - `/node` supports R/W methods from existing JSON RPC methods and one new method for one-step submission of 
+    transactions signed with validator own private key (see below)
 - The `/system` and `/node` endpoint is expected to be protected by firewall and/or require authentication/etc. 
   (same requirements/setup as we have today) 
 - The `/system` endpoint is enabled by default but can be disabled with configuration options
@@ -133,7 +133,7 @@ Method | Description | Access
 | transaction.build| The same as client API `transaction.build` method | __R/W__ |
 | transaction.finalize| The same as client API `transaction.finalize` method |__R/W__ |
 | transaction.submit| The same as client API `transaction.submit` method | __R/W__ |
-| transaction.submitSigned| Equivalent to `transaction.build + transaction.finalize + transaction.submit` methods except does not require keys and signs transaction with node private key| __R/W__ |
+| transaction.submitSigned| Equivalent to `transaction.build + transaction.finalize + transaction.submit` methods except does not require keys and signs transaction with node private key. Input parameters are same as for `transaction.build`, output is formatted as for `transaction.submit` method| __R/W__ |
 
 #### New Actions 
 In order to make JSON RPC API complete, we need to support following actions while building transactions: 
