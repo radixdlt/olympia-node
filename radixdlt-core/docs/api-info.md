@@ -123,7 +123,7 @@ Majority of the REST APIs are replaced with JSON-RPC counterparts. Remaining and
 | Method | Description |
 | --- | --- |
 | account.info | Your account's address and balances (not node ID) |
-| transaction.submitSigned | Equivalent to `transaction.build + transaction.finalize + transaction.submit` methods except does not require keys and signs transaction with node private key. Input parameters are same as for `transaction.build`, output is formatted as for `transaction.submit` method |
+| transaction.buildSignSubmit | Equivalent to `transaction.build + transaction.finalize + transaction.submit` methods except does not require keys and signs transaction with node private key. Input parameters are same as for `transaction.build`, output is formatted as for `transaction.submit` method |
 
 ### New Actions
 In order to make JSON RPC API complete, we need to support following actions while building transactions:
@@ -138,7 +138,7 @@ In order to make JSON RPC API complete, we need to support following actions whi
 | CreateMutableSupplyToken | Create mutable supply token |
 
 ### Removal of `/node` REST endpoints
-Note that all of the wallet-style actions which were previously done via REST under `/node` are now supported via Actions under the normal transaction building flow.  Node runners can use the `transaction.submitSigned` method under `/account` in order to build, sign, and submit these transactions in a single step.  This also includes validator registration.
+Note that all of the wallet-style actions which were previously done via REST under `/node` are now supported via Actions under the normal transaction building flow.  Node runners can use the `transaction.buildSignSubmit` method under `/account` in order to build, sign, and submit these transactions in a single step.  This also includes validator registration.
 
 ### New Configuration Options
 
