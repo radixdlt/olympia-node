@@ -63,10 +63,10 @@ Configuration Option | Description
     and most `/node/*` endpoints
   - `/node` supports R/W methods from existing JSON RPC methods and one new method for one-step submission of 
     transactions signed with validator own private key (see below)
-- The `/system` and `/node` endpoint is expected to be protected by firewall and/or require authentication/etc. 
+- The `/system` and `/node` endpoint are expected to be protected by firewall and/or require authentication/etc. 
   (same requirements/setup as we have today) 
-- The `/system` endpoint is enabled by default but can be disabled with configuration options
-- The `/node` endpoint is disabled by default but can be enabled with configuration options
+- The `/system` endpoint is enabled by default but can be disabled with configuration option
+- The `/node` endpoint is disabled by default but can be enabled with configuration option
 - The `/archive` endpoint can be configured into one of the following states:
   - Disabled (default) - no methods are exposed and attempt to access `/archive` may return 404
   - R/O archive - `/archive` endpoint is enabled, but only R/O methods are supported
