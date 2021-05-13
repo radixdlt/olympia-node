@@ -1,4 +1,7 @@
-### Current state of APIs as of May 10, 2021
+
+## Current state of APIs as of May 10, 2021
+<details>
+  <summary>Click to see detailed information about endpoints and configuration</summary>
 
 ### REST APIs
 
@@ -52,6 +55,7 @@ Configuration Option | Description
 |universe_api.enable | Enables `/universe.json` API |
 |faucet.enable | Enables `/faucet/request` API | 
 |chaos.enable | Enables `/chaos/message-flooder` and `/chaos/mempool-filler ` APIs |
+</details>
 
 ## New Organization of APIs
 
