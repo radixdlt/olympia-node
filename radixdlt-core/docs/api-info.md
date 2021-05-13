@@ -115,6 +115,7 @@ Method | Description | Access
 | --- | --- | --- |
 | token.issue | Issue new tokens | __R/W__ |
 | token.mint | Mint tokens | __R/W__ |
+| token.burn | Burn tokens | __R/W__ |
 | address.stake | Stake tokens | __R/W__ |
 | address.unstake | Unstake tokens | __R/W__ |
 | validator.register | Register validator | __R/W__ |
