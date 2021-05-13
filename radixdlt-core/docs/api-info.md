@@ -1,8 +1,6 @@
-### General information about APIs available at node
+### Current state of APIs as of May 10, 2021
 
-## Current state as of May 10, 2021
-
-#### REST APIs
+### REST APIs
 
  Path | Method | Description | Comments 
  | --- | --- | --- | --- |
@@ -23,7 +21,7 @@
  /system/peers | GET | Get information about peer nodes | No sensitive information
  /universe.json | GET | Get Radix Universe | No sensitive information
 
-#### JSON-RPC APIs
+### JSON-RPC APIs
 
 Method | Description
 | --- | --- |
@@ -44,13 +42,13 @@ Method | Description
 |radix.networkTransactionThroughput | Get number of transactions per second |
 |radix.networkTransactionDemand | Get average number of transactions waiting for processing in mempool |
 
-## Proposed APIs
+## New Organization of APIs
 
- The general approach to the reworked API is based on the following considerations:
-- Reduce number of REST endpoints to absolute minimum
-- All JSON RPC methods are grouped into two collections - Read-Only (R/O) methods and Read/Write (R/W) methods
-- Two JSON-RPC endpoints: `/archive` (former `/api`) and `/system`
-- The `/system` endpoint is expected to be protected by firewall/require authentication/etc. 
+ The general approach to the API organization is based on the following considerations:
+- Reduce number of endpoints to minimum
+- All JSON RPC methods are grouped into two sets - Read-Only (R/O) methods and Read/Write (R/W) methods
+- Two main JSON-RPC endpoints: `/archive` (former `/api`) and `/system`
+- The `/system` endpoint is expected to be protected by firewall and/or require authentication/etc. 
   (same requirements/setup as we have today) 
 - The `/system` endpoint is always enabled
 - The `/archive` endpoint can be configured into one of the following states:
@@ -58,10 +56,9 @@ Method | Description
   - Read-Only archive - `/archive` endpoint is enabled, but only subset of APIs are available (see below)
   - Full - `/archive` endpoint provides the same set of APIs as `/system`  
 
-#### REST APIs
-Majority of the REST APIs are removed or replaced with JSON-RPC counterparts. 
+### REST APIs
 
-Remaining REST endpoints: 
+Majority of the REST APIs are removed or replaced with JSON-RPC counterparts. Remaining and new REST endpoints: 
 
 Path | Method | Description
  | --- | --- | --- |
@@ -70,16 +67,19 @@ Path | Method | Description
 /faucet/request | POST | faucet API - betanet and local deployment only, disabled on mainnet
 /universe.json | GET | Get Radix Universe. Used during setup and configuration of the node 
 
-#### JSON-RPC APIs
+### JSON-RPC APIs
 
 Method names are restructured into groups of related API methods. 
 Since this is a breaking change, it is planned to support both method names until Beta 4.
-As mentioned above, all three groups of methods listed below are available via `/system` JSON RPC endpoint.
-If client API is enabled, methods marked as R/O are available via `/archive` JSON RPC endpoint.
-If client API is enabled and __R/W__ methods are enabled, then `/archive` has same methods as `/system`.
-If client API is disabled, then `/archive` endpoint is deactivated and may return HTTP status code 404.
 
-1. Renamed methods:
+As mentioned above, all three groups of methods listed below are available via `/system` JSON RPC endpoint.
+
+Availability of the methods available via `/archive` endpoint depends on the configuration:
+ - If client API is enabled, methods marked as R/O are available via `/archive` JSON RPC endpoint
+ - If client API is enabled and __R/W__ methods are enabled, then `/archive` has same methods as `/system`.
+ - If client API is disabled, then `/archive` endpoint is deactivated and may return HTTP status code 404.
+
+#### Renamed methods:
 
 Old Method Name | New Method Name | Access
 | --- | --- | --- | 
@@ -100,8 +100,7 @@ Old Method Name | New Method Name | Access
 | radix.networkTransactionThroughput |network.stat.throughput| R/O |
 | radix.networkTransactionDemand |network.stat.demand| R/O |
 
-2. Method added as a replacement for some APIs which 
-   were implemented as REST APIs:
+#### Replacement methods for sole old REST endpoints:
    
 Method | Description | Access
 | --- | --- | --- |
@@ -109,7 +108,8 @@ Method | Description | Access
 | system.info | Complete information about system - consensus, mempool and RE configuration, public key, agent, protocols, genesis info, current and epoch proof | R/O |
 | system.peers | Information about known peer nodes | R/O |
 
-3. New methods:
+#### New Methods 
+These methods add missing functionality and make JSON RPC API complete.
 
 Method | Description | Access
 | --- | --- | --- |
