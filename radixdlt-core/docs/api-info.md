@@ -111,7 +111,7 @@ Old Method Name | New Method Name | Access
 | radix.networkTransactionThroughput |network.stat.throughput| R/O |
 | radix.networkTransactionDemand |network.stat.demand| R/O |
 
-#### Replacement methods for sole old REST endpoints:
+#### Replacement methods for some old REST endpoints:
    
 Method | Description | Access
 | --- | --- | --- |
