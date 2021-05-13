@@ -7,10 +7,14 @@ import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.UInt256;
 import io.cucumber.java.en.Given;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import static org.junit.Assert.*;
 
 public class TokenTransfer extends AcceptanceTest {
+
+    private static final Logger logger = LogManager.getLogger();
 
     @Given("I have an account with funds at a suitable Radix network")
     public void i_have_an_account_with_funds_at_a_suitable_radix_network() {
@@ -20,13 +24,19 @@ public class TokenTransfer extends AcceptanceTest {
 
     @Given("I can transfer {int} XRD to another account")
     public void i_can_transfer_xrd_to_another_account(Integer int1) {
+        String message = "hello!";
         getTestAccount().onSuccess(account -> {
-            TransactionRequest request = TransactionRequest.createBuilder().transfer(
-                    account.getAddress(),
-                    AccountAddress.create(ECKeyPair.generateNew().getPublicKey()),
-                    UInt256.from(5),
-                    "rri").build();
-
+            TransactionRequest request = TransactionRequest.createBuilder()
+                    .transfer(
+                        account.getAddress(),
+                        AccountAddress.create(ECKeyPair.generateNew().getPublicKey()),
+                        UInt256.from(5),
+                        "rri")
+                    .message(message)
+                    .build();
+            account.buildTransaction(request).onSuccess(builtTransactionDTO -> {
+                logger.info(builtTransactionDTO.getTransaction());
+            });
 
 
 //            prepareClient(BUILT_TRANSACTION)
