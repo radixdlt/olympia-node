@@ -56,7 +56,7 @@ public final class BetanetForksModule extends AbstractModule {
 	}
 
 	@ProvidesIntoMap
-	@EpochMapKey(epoch = 42L)
+	@EpochMapKey(epoch = 45L)
 	ForkConfig betanetV2() {
 		// V2 Betanet ConstraintMachine
 		final CMAtomOS v2 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
