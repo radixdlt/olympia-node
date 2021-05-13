@@ -76,7 +76,7 @@ Method names are restructured into groups of related API methods.
 Since this is a breaking change, it is planned to support both method names until Beta 4.
 As mentioned above, all three groups of methods listed below are available via `/system` JSON RPC endpoint.
 If client API is enabled, methods marked as R/O are available via `/archive` JSON RPC endpoint.
-If client API is enabled and R/W methods are enabled, then `/archive` has same methods as `/system`.
+If client API is enabled and __R/W__ methods are enabled, then `/archive` has same methods as `/system`.
 If client API is disabled, then `/archive` endpoint is deactivated and may return HTTP status code 404.
 
 1. Renamed methods:
@@ -91,9 +91,9 @@ Old Method Name | New Method Name | Access
 | radix.transactionHistory |transaction.history| R/O |
 | radix.lookupTransaction |transaction.lookup| R/O |
 | radix.statusOfTransaction |transaction.status| R/O |
-| radix.buildTransaction |transaction.build| R/W |
-| radix.finalizeTransaction |transaction.finalize| R/W |
-| radix.submitTransaction |transaction.submit| R/W |
+| radix.buildTransaction |transaction.build| __R/W__ |
+| radix.finalizeTransaction |transaction.finalize| __R/W__ |
+| radix.submitTransaction |transaction.submit| __R/W__ |
 | radix.validators |validator.list| R/O |
 | radix.lookupValidator |validator.lookup| R/O |
 | radix.networkId | network.id| R/O |
@@ -111,11 +111,11 @@ Method | Description | Access
 
 3. New methods:
 
-Method | Description
-| --- | --- |
-| token.issue | Issue new tokens | R/W |
-| token.mint | Mint tokens | R/W |
-| address.stake | Stake tokens | R/W |
-| address.unstake | Unstake tokens | R/W |
-| validator.register | Register validator | R/W |
-| validator.unregister | Unregister validator | R/W |
+Method | Description | Access
+| --- | --- | --- |
+| token.issue | Issue new tokens | __R/W__ |
+| token.mint | Mint tokens | __R/W__ |
+| address.stake | Stake tokens | __R/W__ |
+| address.unstake | Unstake tokens | __R/W__ |
+| validator.register | Register validator | __R/W__ |
+| validator.unregister | Unregister validator | __R/W__ |
