@@ -42,6 +42,17 @@ Method | Description
 |radix.networkTransactionThroughput | Get number of transactions per second |
 |radix.networkTransactionDemand | Get average number of transactions waiting for processing in mempool |
 
+### Configuration Options
+
+Following configuration options control which APIs are enabled at the node:
+
+Configuration Option | Description
+| --- | --- |
+|client_api.enable | Enables JSON-RPC APIs|
+|universe_api.enable | Enables `/universe.json` API |
+|faucet.enable | Enables `/faucet/request` API | 
+|chaos.enable | Enables `/chaos/message-flooder` and `/chaos/mempool-filler ` APIs |
+
 ## New Organization of APIs
 
  The general approach to the API organization is based on the following considerations:
@@ -120,3 +131,15 @@ Method | Description | Access
 | address.unstake | Unstake tokens | __R/W__ |
 | validator.register | Register validator | __R/W__ |
 | validator.unregister | Unregister validator | __R/W__ |
+
+### Proposed Configuration Options
+
+Following configuration options control which APIs are enabled at the node:
+
+Configuration Option | Description
+| --- | --- |
+|client_api.enable | Enables JSON-RPC. Which methods are available depends on the next option |
+|client_api.rw | If `true` then both, R/O and R/W methods are available. If `false` then only R/O methods are enabled|
+|universe_api.enable | Enables `/universe.json` endpoint|
+|faucet.enable | Enables `/faucet/request` endpoint for non-mainnet networks. On mainnet endpoint is always disabled | 
+|chaos.enable | Enables `/chaos/message-flooder` and `/chaos/mempool-filler ` endpoints for non-mainnet networks. On mainnet endpoints are always disabled |
