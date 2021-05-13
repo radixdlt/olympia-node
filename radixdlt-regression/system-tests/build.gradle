@@ -38,7 +38,6 @@ dependencies {
 
     testImplementation 'org.codehaus.groovy:groovy-all:2.4.12'
     testCompile group: 'org.junit.vintage', name: 'junit-vintage-engine', version: '5.6.1'
-    testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.0.3'
     testCompile group: 'pl.pragmatists', name: 'JUnitParams', version: '1.1.1'
     testImplementation group: 'me.alexpanov', name: 'free-port-finder', version: '1.1.1'
     testImplementation 'junit:junit'

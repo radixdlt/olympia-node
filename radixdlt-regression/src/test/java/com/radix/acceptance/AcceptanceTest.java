@@ -6,6 +6,9 @@ import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.utils.functional.Result;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.JSONObject;
+
+import java.util.List;
 
 public abstract class AcceptanceTest {
 
@@ -23,8 +26,8 @@ public abstract class AcceptanceTest {
         return account;
     }
 
-    public void faucet(AccountAddress to, int amount) {
-        testNetwork.faucet(to, amount);
+    public void faucet(AccountAddress to) {
+        testNetwork.faucet(to);
     }
 
     public TestNetwork getNetwork() {

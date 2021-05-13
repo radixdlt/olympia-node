@@ -23,7 +23,7 @@ import io.cucumber.junit.CucumberOptions.SnippetType;
 import org.junit.runner.RunWith;
 
 @RunWith(Cucumber.class)
-@CucumberOptions(snippets = SnippetType.UNDERSCORE, monochrome = false)
+@CucumberOptions(snippets = SnippetType.UNDERSCORE, monochrome = true, plugin = { "pretty" })
 public class RunStaking {
 	// Stub for running cucumber tests
 }

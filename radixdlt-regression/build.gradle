@@ -86,4 +86,5 @@ dependencies {
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'io.cucumber:cucumber-java:6.10.3'
     testImplementation 'io.cucumber:cucumber-junit:6.10.3'
+    testImplementation 'org.awaitility:awaitility:4.0.3'
 }
