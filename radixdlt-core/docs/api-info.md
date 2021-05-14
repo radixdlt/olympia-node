@@ -110,7 +110,7 @@ Majority of the REST APIs are replaced with JSON-RPC counterparts. Remaining and
 
 | Method | Description |
 | --- | --- |
-| system.me | Node ID, validator registration status, (possible?) whether you are currently in the validator set |
+| system.me | Node ID, validator registration status |
 | system.info | Complete information about system - consensus, mempool and RE configuration, public key, agent, protocols, genesis info, current and epoch proof |
 | system.peers | Information about known peer nodes |
 
