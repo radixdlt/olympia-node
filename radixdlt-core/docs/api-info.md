@@ -68,10 +68,6 @@ Following configuration options control which APIs are enabled at the node:
     and most `/node/*` endpoints
   - `/account` supports methods to fetch your associated account info, and a one-step method to build, sign, and submit a transaction
 - The `/system` and `/account` endpoint are expected to be protected by firewall and/or require authentication/etc. (same requirements/setup as we have today)
-- The `/system` endpoint is **enabled** by default
-- The `/account` endpoint is disabled by default
-- The `/archive` endpoint is disabled by default
-- The `/construct` endpoint is disabled by default
 
 ### REST APIs
 
@@ -146,12 +142,12 @@ The following configuration options control which APIs are enabled at the node:
 
 | Configuration Option | Description |
 | --- | --- |
-| archive_api.enable | Enables `/archive` endpoint, disabled by default |
-| construct_api.enable | Enables `/construct` endpoint, disabled by default |
-| system_api.enable | Enables `/system` endpoint, **enabled** by default |
-| account_api.enable | Enables `/account` endpoint, disabled by default |
-| universe_api.enable | Enables `/universe.json` endpoint, disabled by default |
-| faucet.enable | Enables `/faucet/request` endpoint for non-mainnet networks, disabled by default. On mainnet endpoint is always disabled |
-| chaos.enable | Enables `/chaos/message-flooder` and `/chaos/mempool-filler ` endpoints for non-mainnet networks, disabled by default. On mainnet endpoints are always disabled |
+| archive_api.enable | Controls `/archive` endpoint |
+| construct_api.enable | Controls `/construct` endpoint |
+| system_api.enable | Controls `/system` endpoint |
+| account_api.enable | Controls `/account` endpoint |
+| universe_api.enable | Controls `/universe.json` endpoint |
+| faucet.enable | Controls `/faucet/request` endpoint for non-mainnet networks. On mainnet endpoint is always disabled |
+| chaos.enable | Controls `/chaos/message-flooder` and `/chaos/mempool-filler` endpoints for non-mainnet networks. On mainnet endpoints are always disabled |
 
 Note that `/health` and `/version` REST endpoints are always enabled.  If a node runner wishes to disable access to them, they'll have to do so at a level in front of the node.
