@@ -21,6 +21,10 @@ public class TestNetworkNodeLocator {
 
     private static final int MAX_EXPECTED_LOCALNET_NODES = 3;
 
+    private TestNetworkNodeLocator() {
+
+    }
+
     public static List<TestNode> findNodes(TestNetworkConfiguration configuration, NodeApiClient nodeApi) {
         switch (configuration.getType()) {
             case LOCALNET_WITHOUT_DOCKER:

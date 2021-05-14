@@ -9,6 +9,10 @@ import org.json.JSONObject;
  */
 public final class JsonUtils {
 
+    private JsonUtils() {
+
+    }
+
     public static JSONObject createTransferTokensBody(AccountAddress to, String tokenRri, long amount) {
         JSONObject body = createActionJsonBody("TransferTokens");
         JSONObject params = body.getJSONArray("actions").getJSONObject(0).getJSONObject("params");

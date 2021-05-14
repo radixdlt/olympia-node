@@ -18,13 +18,16 @@
 package com.radix.acceptance.staking;
 
 import com.radix.acceptance.AcceptanceTest;
+import com.radix.test.TransactionUtils;
 import com.radix.test.Utils;
 import com.radix.test.account.Account;
+import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponseDTO;
-import io.cucumber.java.en.And;
+import com.radixdlt.utils.UInt256;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.assertj.core.util.Lists;
@@ -46,14 +49,12 @@ public class Staking extends AcceptanceTest {
     public void i_have_an_account_with_funds_at_a_suitable_radix_network() {
         Account account = getTestAccount();
         faucet(account.getAddress());
-        Utils.waitForBalance(account, 10);
+        Utils.waitForBalance(account, FAUCET_AMOUNT);
     }
 
-    @And("I request validator information")
+    @When("I request validator information")
     public void i_request_validator_information() {
-        latestValidators.clear();
-        latestValidators = getTestAccount().validators(1000, Optional.empty())
-                .fold(failure -> new ArrayList<>(), ValidatorsResponseDTO::getValidators);
+        updateValidatorList();
         if (latestValidators.isEmpty()) {
             Assert.fail("No validators were found in the network, test cannot proceed.");
         }
@@ -70,5 +71,30 @@ public class Staking extends AcceptanceTest {
         assertTrue("No stake was found in any validator, something is probably wrong",
                 totalDelegatedStakeAcrossNetwork > 0);
     }
+
+    @When("I stake {int}XRD to a validator")
+    public void i_stake_5xrd_to_a_validator(Integer stake) {
+        updateValidatorList();
+        Account account = getTestAccount();
+        ValidatorAddress validatorAddress = Utils.createValidatorAddress(latestValidators.get(0));
+        TransactionUtils.createStakingRequest(account.getAddress(), validatorAddress, Utils.fromMajorToMinor(stake));
+    }
+
+    @Then("I observe that validator having {int}XRD more stake")
+    public void i_observe_that_validator_having_5xrd_more_stake(Integer stake) {
+        Account account = getTestAccount();
+        UInt256 oldStake = latestValidators.get(0).getTotalDelegatedStake();
+        UInt256 newStake = account.lookupValidator(latestValidators.get(0).getAddress()).fold(Utils::toRuntimeException,
+                validatorDTO -> validatorDTO).getTotalDelegatedStake();
+        System.out.println(stake);
+        System.out.println(oldStake.subtract(newStake));
+    }
+
+    private void updateValidatorList() {
+        latestValidators.clear();
+        latestValidators = getTestAccount().validators(1000, Optional.empty())
+                .fold(failure -> new ArrayList<>(), ValidatorsResponseDTO::getValidators);
+    }
+
 
 }

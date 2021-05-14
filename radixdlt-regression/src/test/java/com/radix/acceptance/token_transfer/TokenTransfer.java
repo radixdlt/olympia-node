@@ -4,10 +4,6 @@ import com.radix.acceptance.AcceptanceTest;
 import com.radix.test.TransactionUtils;
 import com.radix.test.Utils;
 import com.radix.test.account.Account;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.client.lib.dto.BalanceDTO;
-import com.radixdlt.client.lib.dto.FinalizedTransaction;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.UInt256;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
@@ -23,10 +19,11 @@ public class TokenTransfer extends AcceptanceTest {
     public void i_have_two_accounts_with_funds_at_a_suitable_radix_network() {
         Account account1 = getTestAccount(0);
         Account account2 = getTestAccount(1);
+
         faucet(account1.getAddress());
-        Utils.waitForBalance(account1, 10);
+        Utils.waitForBalance(account1, FAUCET_AMOUNT);
         faucet(account2.getAddress());
-        Utils.waitForBalance(account2, 10);
+        Utils.waitForBalance(account2, FAUCET_AMOUNT);
     }
 
     @And("I transfer {int} XRD from the first account to the second")
@@ -36,17 +33,25 @@ public class TokenTransfer extends AcceptanceTest {
 
         TransactionUtils.performNativeTokenTransfer(account1, account2, xrdToTransfer, "hello there!");
 
-        Utils.waitForBalance(account2, 15);
-        Utils.waitForBalance(account1, 5);
+        UInt256 expectedBalance1 = FAUCET_AMOUNT.subtract(Utils.fromMajorToMinor(xrdToTransfer)).subtract(FIXED_FEES);
+        Utils.waitForBalance(account1, expectedBalance1);
+        UInt256 expectedBalance2 = FAUCET_AMOUNT.add(Utils.fromMajorToMinor(xrdToTransfer));
+        Utils.waitForBalance(account2, expectedBalance2);
     }
 
     @Then("the second account can transfer {int} XRD back to the first")
     public void that_account_can_transfer_xrd_back_to_me(Integer xrdToTransfer) {
         Account account1 = getTestAccount(0);
+        UInt256 startingAmount1 = account1.getOwnNativeTokenBalance().getAmount();
         Account account2 = getTestAccount(1);
+        UInt256 startingAmount2 = account2.getOwnNativeTokenBalance().getAmount();
 
         TransactionUtils.performNativeTokenTransfer(account2, account1, xrdToTransfer, "hey");
-        Utils.waitForBalance(account2, 10);
+
+        UInt256 expectedBalance1 = startingAmount1.add(Utils.fromMajorToMinor(xrdToTransfer));
+        Utils.waitForBalance(account1, expectedBalance1);
+        UInt256 expectedBalance2 = startingAmount2.subtract(Utils.fromMajorToMinor(xrdToTransfer)).subtract(FIXED_FEES);
+        Utils.waitForBalance(account2, expectedBalance2);
     }
 
 }
