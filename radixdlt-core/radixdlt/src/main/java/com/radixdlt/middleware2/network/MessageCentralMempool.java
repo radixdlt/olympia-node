@@ -29,6 +29,7 @@ import io.reactivex.rxjava3.core.Flowable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
+import com.radixdlt.universe.Magic;
 
 import javax.inject.Inject;
 import java.util.Objects;
@@ -44,7 +45,7 @@ public final class MessageCentralMempool {
 
 	@Inject
 	public MessageCentralMempool(
-		@Named("magic") int magic,
+		@Magic int magic,
 		MessageCentral messageCentral
 	) {
 		this.magic = magic;

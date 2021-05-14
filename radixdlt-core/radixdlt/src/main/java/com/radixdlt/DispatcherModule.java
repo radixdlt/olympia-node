@@ -18,8 +18,8 @@
 package com.radixdlt;
 
 import com.radixdlt.application.NodeApplicationRequest;
-import com.radixdlt.client.service.ScheduledCacheCleanup;
-import com.radixdlt.client.service.ScheduledStatsCollecting;
+import com.radixdlt.api.archive.service.ScheduledCacheCleanup;
+import com.radixdlt.api.archive.service.ScheduledStatsCollecting;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
@@ -44,11 +44,11 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
-import com.radixdlt.chaos.mempoolfiller.ScheduledMempoolFill;
-import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
-import com.radixdlt.chaos.messageflooder.ScheduledMessageFlood;
-import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
+import com.radixdlt.api.chaos.chaos.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.api.chaos.chaos.mempoolfiller.ScheduledMempoolFill;
+import com.radixdlt.api.chaos.chaos.messageflooder.MessageFlooderUpdate;
+import com.radixdlt.api.chaos.chaos.messageflooder.ScheduledMessageFlood;
+import com.radixdlt.api.archive.store.berkeley.ScheduledQueueFlush;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;

@@ -23,7 +23,6 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.RadixNodeModule;
-import com.radixdlt.client.ArchiveServer;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
@@ -39,7 +38,6 @@ import org.apache.logging.log4j.Logger;
 import org.apache.commons.cli.ParseException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
-import com.radixdlt.api.NodeHttpServer;
 import org.radix.utils.IOUtils;
 
 import java.io.IOException;

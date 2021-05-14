@@ -34,6 +34,7 @@ import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.radix.network.messaging.Message;
+import com.radixdlt.universe.Magic;
 
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
@@ -53,7 +54,7 @@ public final class MessageCentralBFTNetwork {
 	@Inject
 	public MessageCentralBFTNetwork(
 		@Self BFTNode self,
-		@Named("magic") int magic,
+		@Magic int magic,
 		MessageCentral messageCentral
 	) {
 		this.magic = magic;

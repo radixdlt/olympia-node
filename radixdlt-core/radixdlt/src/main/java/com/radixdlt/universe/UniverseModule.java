@@ -18,18 +18,18 @@
 
 package com.radixdlt.universe;
 
+import org.apache.logging.log4j.util.Strings;
+import org.radix.utils.IOUtils;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.name.Named;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.utils.Bytes;
-import org.apache.logging.log4j.util.Strings;
-import org.radix.utils.IOUtils;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -39,7 +39,7 @@ import java.io.IOException;
  */
 public final class UniverseModule extends AbstractModule {
 	@Provides
-	@Named("magic")
+	@Magic
 	private int magic(Universe universe) {
 		return universe.getMagic();
 	}
