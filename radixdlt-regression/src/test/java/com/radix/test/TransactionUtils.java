@@ -30,6 +30,11 @@ public final class TransactionUtils {
                 .build();
     }
 
+    public static void performStaking(Account sender, ValidatorAddress to, UInt256 amount) {
+        var request = createStakingRequest(sender.getAddress(), to, amount);
+        performTransaction(sender, request);
+    }
+
     public static Result<TxDTO> performNativeTokenTransfer(Account sender, Account receiver, int amount) {
         var request = TransactionUtils.createTransferRequest(sender.getAddress(), receiver.getAddress(),
                 sender.getNativeToken().getRri(), Utils.fromMajorToMinor(amount), "");

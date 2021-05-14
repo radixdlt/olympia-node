@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class Staking extends AcceptanceTest {
@@ -73,21 +74,23 @@ public class Staking extends AcceptanceTest {
     }
 
     @When("I stake {int}XRD to a validator")
-    public void i_stake_5xrd_to_a_validator(Integer stake) {
+    public void i_stake_xrd_to_a_validator(Integer stake) {
         updateValidatorList();
         Account account = getTestAccount();
         ValidatorAddress validatorAddress = Utils.createValidatorAddress(latestValidators.get(0));
-        TransactionUtils.createStakingRequest(account.getAddress(), validatorAddress, Utils.fromMajorToMinor(stake));
+        TransactionUtils.performStaking(account, validatorAddress, Utils.fromMajorToMinor(stake));
     }
 
     @Then("I observe that validator having {int}XRD more stake")
-    public void i_observe_that_validator_having_5xrd_more_stake(Integer stake) {
-        Account account = getTestAccount();
+    public void i_observe_that_validator_having_xrd_more_stake(Integer stake) {
         UInt256 oldStake = latestValidators.get(0).getTotalDelegatedStake();
+        Account account = getTestAccount();
+        updateValidatorList();
+        Utils.sleep(1);
         UInt256 newStake = account.lookupValidator(latestValidators.get(0).getAddress()).fold(Utils::toRuntimeException,
                 validatorDTO -> validatorDTO).getTotalDelegatedStake();
-        System.out.println(stake);
-        System.out.println(oldStake.subtract(newStake));
+        UInt256 difference = newStake.subtract(oldStake);
+        assertEquals(difference, Utils.fromMajorToMinor(stake));
     }
 
     private void updateValidatorList() {
