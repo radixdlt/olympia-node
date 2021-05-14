@@ -1,63 +1,54 @@
 package com.radix.acceptance.token_transfer;
 
 import com.radix.acceptance.AcceptanceTest;
+import com.radix.test.TransactionUtils;
 import com.radix.test.Utils;
-import com.radixdlt.client.lib.api.AccountAddress;
-import com.radixdlt.client.lib.api.TransactionRequest;
+import com.radix.test.account.Account;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.client.lib.dto.BalanceDTO;
+import com.radixdlt.client.lib.dto.FinalizedTransaction;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.UInt256;
+import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import static org.junit.Assert.*;
 
 public class TokenTransfer extends AcceptanceTest {
 
     private static final Logger logger = LogManager.getLogger();
 
-    @Given("I have an account with funds at a suitable Radix network")
-    public void i_have_an_account_with_funds_at_a_suitable_radix_network() {
-        getTestAccount().onSuccess(account -> faucet(account.getAddress()));
-        Utils.waitForBalance(getTestAccount(), 10L);
+    @Given("I have two accounts with funds at a suitable Radix network")
+    public void i_have_two_accounts_with_funds_at_a_suitable_radix_network() {
+        Account account1 = getTestAccount(0);
+        Account account2 = getTestAccount(1);
+        faucet(account1.getAddress());
+        Utils.waitForBalance(account1, 10);
+        faucet(account2.getAddress());
+        Utils.waitForBalance(account2, 10);
     }
 
-    @Given("I can transfer {int} XRD to another account")
-    public void i_can_transfer_xrd_to_another_account(Integer int1) {
-        String message = "hello!";
-        getTestAccount().onSuccess(account -> {
-            TransactionRequest request = TransactionRequest.createBuilder()
-                    .transfer(
-                        account.getAddress(),
-                        AccountAddress.create(ECKeyPair.generateNew().getPublicKey()),
-                        UInt256.from(5),
-                        "rri")
-                    .message(message)
-                    .build();
-            account.buildTransaction(request).onSuccess(builtTransactionDTO -> {
-                logger.info(builtTransactionDTO.getTransaction());
-            });
+    @And("I transfer {int} XRD from the first account to the second")
+    public void i_transfer_xrd_from_the_first_account_to_the_second(Integer xrdToTransfer) {
+        Account account1 = getTestAccount(0);
+        Account account2 = getTestAccount(1);
 
+        TransactionUtils.performNativeTokenTransfer(account1, account2, xrdToTransfer, "hello there!");
 
-//            prepareClient(BUILT_TRANSACTION)
-//                    .onFailure(failure -> fail(failure.toString()))
-//                    .onSuccess(client -> client.buildTransaction(request)
-//                            .onFailure(failure -> fail(failure.toString()))
-//                            .onSuccess(dto -> assertEquals(UInt256.from(100000000000000000L), dto.getFee()))
-//                            .onSuccess(dto -> assertArrayEquals(hash, dto.getTransaction().getHashToSign()))
-//                    );
-
-//            account.buildTransaction(request).onSuccess(builtTransactionDTO ->
-//                    account.submitTransaction(builtTransactionDTO.toFinalized(account.getKeyPair()))
-//                            .onSuccess(txDTO -> builtTransactionDTO.toFinalized(account.getKeyPair())
-//                            );
-        });
+        Utils.waitForBalance(account2, 15);
+        Utils.waitForBalance(account1, 6);
     }
 
-    @Given("That account can transfer {int} XRD back to me")
-    public void i_that_account_can_transfer_xrd_back_to_me(Integer int1) {
-        // Write code here that turns the phrase above into concrete actions
-        throw new io.cucumber.java.PendingException();
+    @Then("the second account can transfer {int} XRD back to the first")
+    public void that_account_can_transfer_xrd_back_to_me(Integer xrdToTransfer) {
+        Account account1 = getTestAccount(0);
+        Account account2 = getTestAccount(1);
+
+        TransactionUtils.performNativeTokenTransfer(account2, account1, xrdToTransfer, "hey");
+        Utils.waitForBalance(account2, 10);
+        System.out.println(account1.getOwnNativeTokenBalance());
+        System.out.println(account2.getOwnNativeTokenBalance());
     }
 
 }

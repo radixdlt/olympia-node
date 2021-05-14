@@ -19,6 +19,7 @@ package com.radix.acceptance.staking;
 
 import com.radix.acceptance.AcceptanceTest;
 import com.radix.test.Utils;
+import com.radix.test.account.Account;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponseDTO;
 import io.cucumber.java.en.And;
@@ -43,15 +44,15 @@ public class Staking extends AcceptanceTest {
 
     @Given("I have an account with funds at a suitable Radix network")
     public void i_have_an_account_with_funds_at_a_suitable_radix_network() {
-        getTestAccount().onSuccess(account -> faucet(account.getAddress()));
-        Utils.waitForBalance(getTestAccount(), 10L);
+        Account account = getTestAccount();
+        faucet(account.getAddress());
+        Utils.waitForBalance(account, 10);
     }
 
     @And("I request validator information")
     public void i_request_validator_information() {
         latestValidators.clear();
-        latestValidators = getTestAccount()
-                .flatMap(account -> account.validators(1000, Optional.empty()))
+        latestValidators = getTestAccount().validators(1000, Optional.empty())
                 .fold(failure -> new ArrayList<>(), ValidatorsResponseDTO::getValidators);
         if (latestValidators.isEmpty()) {
             Assert.fail("No validators were found in the network, test cannot proceed.");

@@ -37,11 +37,12 @@ public class TestNetworkNodeLocator {
 
     private static List<Pair<String, String>> createLocalUrlList(URL nodeApiRootUrl, URL jsonRpcRootUrl) {
         return IntStream.range(0, MAX_EXPECTED_LOCALNET_NODES).mapToObj(counter -> {
-            var newPort = nodeApiRootUrl.getPort() + counter;
+            var newNodeApiPort = nodeApiRootUrl.getPort() + counter;
+            var newJsonRpcPort = jsonRpcRootUrl.getPort() + counter;
             var newNodeApiRootUrl = String.format("%s://%s%s:%s", nodeApiRootUrl.getProtocol(),
-                    nodeApiRootUrl.getHost(), nodeApiRootUrl.getPath(), newPort);
+                    nodeApiRootUrl.getHost(), nodeApiRootUrl.getPath(), newNodeApiPort);
             var newJsonRpcRootUrl = String.format("%s://%s%s:%s", jsonRpcRootUrl.getProtocol(),
-                    jsonRpcRootUrl.getHost(), jsonRpcRootUrl.getPath(), newPort);
+                    jsonRpcRootUrl.getHost(), jsonRpcRootUrl.getPath(), newJsonRpcPort);
             return Pair.of(newNodeApiRootUrl, newJsonRpcRootUrl);
         }).collect(Collectors.toList());
     }

@@ -1,5 +1,6 @@
 package com.radix.test.account;
 
+import com.radix.test.Utils;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.RadixApi;
@@ -9,12 +10,14 @@ import com.radixdlt.client.lib.impl.SynchronousRadixApiClient;
 import com.radixdlt.client.lib.network.HttpClients;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * A wrapper around an api client + a keypair
@@ -47,9 +50,9 @@ public final class Account implements RadixApi {
         return SynchronousRadixApiClient.connect(jsonRpcUrl, HttpClients.getSslAllTrustingClient())
                 .flatMap(api -> api.nativeToken().map(nativeToken -> {
                     var newAccount = new Account(api, ECKeyPair.generateNew(), nativeToken);
-                    logger.info("Generated new account with address: {}", newAccount.getAddress());
-                    logger.info("New account connected to {}", jsonRpcUrl);
-                    logger.debug("Network's native token is {}({})", nativeToken.getName(), nativeToken.getSymbol());
+                    logger.trace("Generated new account with address: {}", newAccount.getAddress());
+                    logger.trace("New account connected to {}", jsonRpcUrl);
+                    logger.trace("Network's native token is {}({})", nativeToken.getName(), nativeToken.getSymbol());
                     return newAccount;
                 }));
     }
@@ -61,6 +64,22 @@ public final class Account implements RadixApi {
         return nativeToken;
     }
 
+
+    public Result<BalanceDTO> ownNativeTokenBalance() {
+        BalanceDTO zeroNativeTokenBalance = BalanceDTO.create(nativeToken.getRri(), UInt256.ZERO);
+        return ownTokenBalances().map(tokenBalancesDTO -> {
+            if (tokenBalancesDTO.getTokenBalances().size() == 0) {
+                return zeroNativeTokenBalance;
+            }
+            var balances = tokenBalancesDTO.getTokenBalances().stream().filter(balanceDTO ->
+                    balanceDTO.getRri().equals(nativeToken.getRri())).collect(Collectors.toList());
+            return balances.isEmpty() ? zeroNativeTokenBalance : balances.get(0);
+        });
+    }
+
+    public BalanceDTO getOwnNativeTokenBalance() {
+        return ownNativeTokenBalance().fold(Utils::toRuntimeException, balanceDTO -> balanceDTO);
+    }
 
     public Result<TokenBalancesDTO> ownTokenBalances() {
         return client.tokenBalances(address);

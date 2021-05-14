@@ -19,9 +19,9 @@ public class TestNetwork {
 
     private static final Logger logger = LogManager.getLogger();
 
-    private TestNetworkConfiguration configuration;
-    private List<TestNode> testNodes;
-    private NodeApiClient nodeApi;
+    private final TestNetworkConfiguration configuration;
+    private final List<TestNode> testNodes;
+    private final NodeApiClient nodeApi;
 
     private TestNetwork(TestNetworkConfiguration configuration, List<TestNode> testNodes, NodeApiClient nodeApi) {
         this.configuration = configuration;
@@ -61,10 +61,6 @@ public class TestNetwork {
         return Account.initialize(configuration.getJsonRpcRootUrl().toExternalForm());
     }
 
-    public List<Object> getAllValidatorInfo() {
-        return null;
-    }
-
     /**
      * will call the faucet once for this address
      *
@@ -80,7 +76,7 @@ public class TestNetwork {
         String faucetRootUrl = nodeWithFaucet.getFaucetRootUrl();
         try {
             String txID = nodeApi.callFaucet(faucetRootUrl, address);
-            logger.info("Faucet at {} successfully called", faucetRootUrl);
+            logger.debug("Faucet at {} successfully called ({})", faucetRootUrl, txID);
             return txID;
         } catch (UnirestException e) {
             logger.error("Error calling faucet {}: {}", faucetRootUrl, e.getMessage());
