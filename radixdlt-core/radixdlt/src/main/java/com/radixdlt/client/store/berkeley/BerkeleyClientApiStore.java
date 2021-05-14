@@ -515,7 +515,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		log.info("Database rebuilding is finished successfully");
 	}
 
-	public EventProcessor<AtomsCommittedToLedger> newBatchEventProcessor() {
+	public EventProcessor<AtomsCommittedToLedger> atomsCommittedToLedgerEventProcessorBerkeleyClientApi() {
 		return this::newBatch;
 	}
 

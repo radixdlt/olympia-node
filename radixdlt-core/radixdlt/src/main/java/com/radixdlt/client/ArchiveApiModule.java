@@ -160,13 +160,13 @@ public class ArchiveApiModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> newBatch(
+	private EventProcessorOnRunner<?> atomsCommittedToLedgerEventProcessorBerkeleyClientApi(
 			BerkeleyClientApiStore berkeleyClientApiStore
 	) {
 		return new EventProcessorOnRunner<>(
-				Runners.APPLICATION,
-				AtomsCommittedToLedger.class,
-				berkeleyClientApiStore.newBatchEventProcessor()
+			Runners.APPLICATION,
+			AtomsCommittedToLedger.class,
+			berkeleyClientApiStore.atomsCommittedToLedgerEventProcessorBerkeleyClientApi()
 		);
 	}
 
@@ -180,47 +180,47 @@ public class ArchiveApiModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> cacheCleanupProcessor(TransactionStatusService transactionStatusService) {
+	public EventProcessorOnRunner<?> cacheCleanupEventProcessor(TransactionStatusService transactionStatusService) {
 		return new EventProcessorOnRunner<>(
 			Runners.APPLICATION,
 			ScheduledCacheCleanup.class,
-			transactionStatusService.cacheCleanupProcessor()
+			transactionStatusService.cacheCleanupEventProcessor()
 		);
 	}
 
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> networkInfoService(NetworkInfoService networkInfoService) {
 		return new EventProcessorOnRunner<>(
-				Runners.APPLICATION,
-				ScheduledStatsCollecting.class,
-				networkInfoService.updateStats()
+			Runners.APPLICATION,
+			ScheduledStatsCollecting.class,
+			networkInfoService.updateStats()
 		);
 	}
 
 	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> onCommitProcessor(TransactionStatusService transactionStatusService) {
+	public EventProcessorOnRunner<?> atomsCommittedToLedgerTransactionStatus(TransactionStatusService transactionStatusService) {
 		return new EventProcessorOnRunner<>(
-				Runners.APPLICATION,
-				AtomsCommittedToLedger.class,
-				transactionStatusService.onCommitProcessor()
+			Runners.APPLICATION,
+			AtomsCommittedToLedger.class,
+			transactionStatusService.atomsCommittedToLedgerEventProcessorTransactionStatus()
 		);
 	}
 
 	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> onRejectProcessor(TransactionStatusService transactionStatusService) {
+	public EventProcessorOnRunner<?> mempoolAddFailureEventProcessor(TransactionStatusService transactionStatusService) {
 		return new EventProcessorOnRunner<>(
-				Runners.APPLICATION,
-				MempoolAddFailure.class,
-				transactionStatusService.onRejectProcessor()
+			Runners.APPLICATION,
+			MempoolAddFailure.class,
+			transactionStatusService.mempoolAddFailureEventProcessor()
 		);
 	}
 
 	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> onSuccessProcessor(TransactionStatusService transactionStatusService) {
+	public EventProcessorOnRunner<?> mempoolAddSuccessEventProcessor(TransactionStatusService transactionStatusService) {
 		return new EventProcessorOnRunner<>(
-				Runners.APPLICATION,
-				MempoolAddSuccess.class,
-				transactionStatusService.onSuccessProcessor()
+			Runners.APPLICATION,
+			MempoolAddSuccess.class,
+			transactionStatusService.mempoolAddSuccessEventProcessor()
 		);
 	}
 }

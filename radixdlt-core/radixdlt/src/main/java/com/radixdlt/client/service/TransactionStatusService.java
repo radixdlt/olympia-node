@@ -76,15 +76,15 @@ public class TransactionStatusService {
 		updateStatus(mempoolAddSuccess.getTxn().getId(), PENDING);
 	}
 
-	public EventProcessor<AtomsCommittedToLedger> onCommitProcessor() {
+	public EventProcessor<AtomsCommittedToLedger> atomsCommittedToLedgerEventProcessorTransactionStatus() {
 		return this::onCommit;
 	}
 
-	public EventProcessor<MempoolAddFailure> onRejectProcessor() {
+	public EventProcessor<MempoolAddFailure> mempoolAddFailureEventProcessor() {
 		return this::onReject;
 	}
 
-	public EventProcessor<MempoolAddSuccess> onSuccessProcessor() {
+	public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {
 		return this::onSuccess;
 	}
 
@@ -98,7 +98,7 @@ public class TransactionStatusService {
 			.orElseGet(() -> store.contains(txId) ? CONFIRMED : TRANSACTION_NOT_FOUND);
 	}
 
-	public EventProcessor<ScheduledCacheCleanup> cacheCleanupProcessor() {
+	public EventProcessor<ScheduledCacheCleanup> cacheCleanupEventProcessor() {
 		return flush -> {
 			cleanupCache();
 			scheduledCacheCleanup.dispatch(ScheduledCacheCleanup.create(), DEFAULT_CLEANUP_INTERVAL);

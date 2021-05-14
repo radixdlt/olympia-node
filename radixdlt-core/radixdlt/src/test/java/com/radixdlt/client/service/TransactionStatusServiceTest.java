@@ -52,7 +52,7 @@ public class TransactionStatusServiceTest {
 
 		var txn = randomTxn();
 		var one = AtomsCommittedToLedger.create(List.of(txn), List.of());
-		transactionStatusService.onCommitProcessor().process(one);
+		transactionStatusService.atomsCommittedToLedgerEventProcessorTransactionStatus().process(one);
 
 		assertEquals(CONFIRMED, transactionStatusService.getTransactionStatus(txn.getId()));
 	}
@@ -68,7 +68,7 @@ public class TransactionStatusServiceTest {
 
 		var txn = randomTxn();
 		var one = MempoolAddFailure.create(txn, null, null);
-		transactionStatusService.onRejectProcessor().process(one);
+		transactionStatusService.mempoolAddFailureEventProcessor().process(one);
 
 		assertEquals(FAILED, transactionStatusService.getTransactionStatus(txn.getId()));
 	}
@@ -86,7 +86,7 @@ public class TransactionStatusServiceTest {
 			store, scheduledCacheCleanup
 		);
 
-		transactionStatusService.onSuccessProcessor().process(one);
+		transactionStatusService.mempoolAddSuccessEventProcessor().process(one);
 
 		assertEquals(PENDING, transactionStatusService.getTransactionStatus(txn.getId()));
 	}
@@ -113,19 +113,19 @@ public class TransactionStatusServiceTest {
 
 		var txnSucceeded = randomTxn();
 		var succeeded = MempoolAddSuccess.create(txnSucceeded, null);
-		transactionStatusService.onSuccessProcessor().process(succeeded);
+		transactionStatusService.mempoolAddSuccessEventProcessor().process(succeeded);
 		var txnCommitted = randomTxn();
 		var committed = AtomsCommittedToLedger.create(List.of(txnCommitted), List.of());
-		transactionStatusService.onCommitProcessor().process(committed);
+		transactionStatusService.atomsCommittedToLedgerEventProcessorTransactionStatus().process(committed);
 		var txnRejected = randomTxn();
 		var rejected = MempoolAddFailure.create(txnRejected, null, null);
-		transactionStatusService.onRejectProcessor().process(rejected);
+		transactionStatusService.mempoolAddFailureEventProcessor().process(rejected);
 
 		assertEquals(PENDING, transactionStatusService.getTransactionStatus(txnSucceeded.getId()));
 		assertEquals(CONFIRMED, transactionStatusService.getTransactionStatus(txnCommitted.getId()));
 		assertEquals(FAILED, transactionStatusService.getTransactionStatus(txnRejected.getId()));
 
-		transactionStatusService.cacheCleanupProcessor().process(ScheduledCacheCleanup.create());
+		transactionStatusService.cacheCleanupEventProcessor().process(ScheduledCacheCleanup.create());
 
 		assertEquals(PENDING, transactionStatusService.getTransactionStatus(txnSucceeded.getId()));
 		assertEquals(TRANSACTION_NOT_FOUND, transactionStatusService.getTransactionStatus(txnCommitted.getId()));
