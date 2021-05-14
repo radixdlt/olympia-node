@@ -39,5 +39,7 @@ public class ArchiveControllerTest {
 
 		verify(handler).post(eq("/rpc"), any());
 		verify(handler).post(eq("/rpc/"), any());
+		verify(handler).post(eq("/archive"), any());
+		verify(handler).post(eq("/archive/"), any());
 	}
 }
