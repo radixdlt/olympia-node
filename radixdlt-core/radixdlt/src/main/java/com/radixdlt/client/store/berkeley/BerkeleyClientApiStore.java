@@ -152,6 +152,31 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		.maximumSize(1024)
 		.build();
 
+	public BerkeleyClientApiStore(
+		DatabaseEnvironment dbEnv,
+		ConstraintMachine constraintMachine,
+		TxnParser txnParser,
+		BerkeleyLedgerEntryStore store,
+		Serialization serialization,
+		SystemCounters systemCounters,
+		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
+		Observable<AtomsCommittedToLedger> ledgerCommitted,
+		TransactionParser transactionParser,
+		boolean isTest
+	) {
+		this.dbEnv = dbEnv;
+		this.constraintMachine = constraintMachine;
+		this.txnParser = txnParser;
+		this.store = store;
+		this.serialization = serialization;
+		this.systemCounters = systemCounters;
+		this.scheduledFlushEventDispatcher = scheduledFlushEventDispatcher;
+		this.ledgerCommitted = ledgerCommitted;
+		this.transactionParser = transactionParser;
+
+		open(isTest);
+	}
+
 	@Inject
 	public BerkeleyClientApiStore(
 		DatabaseEnvironment dbEnv,
@@ -174,7 +199,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		this.ledgerCommitted = ledgerCommitted;
 		this.transactionParser = transactionParser;
 
-		open();
+		open(false);
 	}
 
 	@Override
@@ -466,7 +491,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		}
 	}
 
-	private void open() {
+	private void open(boolean isTest) {
 		try {
 			// This SuppressWarnings here is valid, as ownership of the underlying
 			// resource is not changed here, the resource is just accessed.
@@ -483,13 +508,14 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				//TODO: Implement recovery, basically should be the same as fresh DB handling
 			}
 
-			// FIXME: removing the following for now as it is double counting genesis transactions
-			/*
-			if (addressBalances.count() == 0) {
-				//Fresh DB, rebuild from log
-				rebuildDatabase();
+			// FIXME: removing the following for now in production
+			// as it is double counting genesis transactions
+			if (isTest) {
+				if (addressBalances.count() == 0) {
+					//Fresh DB, rebuild from log
+					rebuildDatabase();
+				}
 			}
-			 */
 
 			scheduledFlushEventDispatcher.dispatch(ScheduledQueueFlush.create(), DEFAULT_FLUSH_INTERVAL);
 

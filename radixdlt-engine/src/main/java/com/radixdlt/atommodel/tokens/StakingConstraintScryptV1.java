@@ -22,7 +22,6 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atom.actions.DeprecatedUnstakeTokens;
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
-import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
