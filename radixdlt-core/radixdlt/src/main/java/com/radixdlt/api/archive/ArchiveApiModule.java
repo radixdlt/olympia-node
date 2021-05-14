@@ -18,6 +18,7 @@
 package com.radixdlt.api.archive;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
@@ -27,14 +28,13 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.archive.handler.ConstructionHandler;
 import com.radixdlt.api.archive.handler.ArchiveHandler;
+import com.radixdlt.api.archive.qualifier.Archive;
 import com.radixdlt.api.archive.service.NetworkInfoService;
 import com.radixdlt.api.archive.service.ScheduledCacheCleanup;
 import com.radixdlt.api.archive.service.ScheduledStatsCollecting;
 import com.radixdlt.api.archive.service.TransactionStatusService;
 import com.radixdlt.api.archive.store.ClientApiStore;
-import com.radixdlt.api.archive.store.berkeley.BerkeleyClientApiStore;
 import com.radixdlt.api.archive.store.berkeley.ScheduledQueueFlush;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
@@ -42,6 +42,8 @@ import com.radixdlt.environment.Runners;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.TxnsCommittedToLedger;
+
+import java.util.Map;
 
 public class ArchiveApiModule extends AbstractModule {
 	@Override
@@ -54,7 +56,6 @@ public class ArchiveApiModule extends AbstractModule {
 		var eventBinder = Multibinder
 			.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 			.permitDuplicates();
-		bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
 		bind(TransactionStatusService.class).in(Scopes.SINGLETON);
 		bind(NetworkInfoService.class).in(Scopes.SINGLETON);
 
@@ -64,99 +65,100 @@ public class ArchiveApiModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(ScheduledStatsCollecting.class);
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey("radix.networkId")
-	public JsonRpcHandler universeMagicHandler(ArchiveHandler archiveHandler) {
-		return archiveHandler::handleUniverseMagic;
+	@Archive
+	@Provides
+	public JsonRpcServer archiveRpcHandler(@Archive Map<String, JsonRpcHandler> additionalHandlers) {
+		return new JsonRpcServer(additionalHandlers);
 	}
 
+	@Archive
 	@ProvidesIntoMap
-	@StringMapKey("radix.nativeToken")
-	public JsonRpcHandler nativeTokenHandler(ArchiveHandler archiveHandler) {
+	@StringMapKey("token.native")
+	public JsonRpcHandler tokenNative(ArchiveHandler archiveHandler) {
 		return archiveHandler::handleNativeToken;
 	}
 
+	@Archive
 	@ProvidesIntoMap
-	@StringMapKey("radix.tokenBalances")
-	public JsonRpcHandler tokenBalancesHandler(ArchiveHandler archiveHandler) {
-		return archiveHandler::handleTokenBalances;
-	}
-
-	@ProvidesIntoMap
-	@StringMapKey("radix.transactionHistory")
-	public JsonRpcHandler transactionHistory(ArchiveHandler archiveHandler) {
-		return archiveHandler::handleTransactionHistory;
-	}
-
-	@ProvidesIntoMap
-	@StringMapKey("radix.lookupTransaction")
-	public JsonRpcHandler lookupTransaction(ArchiveHandler archiveHandler) {
-		return archiveHandler::handleLookupTransaction;
-	}
-
-	@ProvidesIntoMap
-	@StringMapKey("radix.statusOfTransaction")
-	public JsonRpcHandler transactionStatus(ArchiveHandler archiveHandler) {
-		return archiveHandler::handleTransactionStatus;
-	}
-
-	@ProvidesIntoMap
-	@StringMapKey("radix.tokenInfo")
+	@StringMapKey("token.info")
 	public JsonRpcHandler tokenInfo(ArchiveHandler archiveHandler) {
 		return archiveHandler::handleTokenInfo;
 	}
 
+	@Archive
 	@ProvidesIntoMap
-	@StringMapKey("radix.buildTransaction")
-	public JsonRpcHandler buildTransaction(ConstructionHandler constructionHandler) {
-		return constructionHandler::handleBuildTransaction;
+	@StringMapKey("address.balances")
+	public JsonRpcHandler addressBalances(ArchiveHandler archiveHandler) {
+		return archiveHandler::handleTokenBalances;
 	}
 
+	@Archive
 	@ProvidesIntoMap
-	@StringMapKey("radix.finalizeTransaction")
-	public JsonRpcHandler finalizeTransaction(ConstructionHandler constructionHandler) {
-		return constructionHandler::handleFinalizeTransaction;
-	}
-
-	@ProvidesIntoMap
-	@StringMapKey("radix.submitTransaction")
-	public JsonRpcHandler submitTransaction(ConstructionHandler constructionHandler) {
-		return constructionHandler::handleSubmitTransaction;
-	}
-
-	@ProvidesIntoMap
-	@StringMapKey("radix.validators")
-	public JsonRpcHandler validators(ArchiveHandler archiveHandler) {
-		return archiveHandler::handleValidators;
-	}
-
-	@ProvidesIntoMap
-	@StringMapKey("radix.stakePositions")
-	public JsonRpcHandler stakePositions(ArchiveHandler archiveHandler) {
+	@StringMapKey("address.stakes")
+	public JsonRpcHandler addressStakes(ArchiveHandler archiveHandler) {
 		return archiveHandler::handleStakePositions;
 	}
 
+	@Archive
 	@ProvidesIntoMap
-	@StringMapKey("radix.unstakePositions")
-	public JsonRpcHandler unstakePositions(ArchiveHandler archiveHandler) {
+	@StringMapKey("address.unstakes")
+	public JsonRpcHandler addressUnstakes(ArchiveHandler archiveHandler) {
 		return archiveHandler::handleUnstakePositions;
 	}
 
+	@Archive
 	@ProvidesIntoMap
-	@StringMapKey("radix.lookupValidator")
-	public JsonRpcHandler lookupValidator(ArchiveHandler archiveHandler) {
+	@StringMapKey("address.transactions")
+	public JsonRpcHandler addressTransactions(ArchiveHandler archiveHandler) {
+		return archiveHandler::handleTransactionHistory;
+	}
+
+	@Archive
+	@ProvidesIntoMap
+	@StringMapKey("transaction.info")
+	public JsonRpcHandler transactionInfo(ArchiveHandler archiveHandler) {
+		return archiveHandler::handleLookupTransaction;
+	}
+
+	@Archive
+	@ProvidesIntoMap
+	@StringMapKey("transaction.status")
+	public JsonRpcHandler transactionStatus(ArchiveHandler archiveHandler) {
+		return archiveHandler::handleTransactionStatus;
+	}
+
+	@Archive
+	@ProvidesIntoMap
+	@StringMapKey("validator.list")
+	public JsonRpcHandler validatorList(ArchiveHandler archiveHandler) {
+		return archiveHandler::handleValidators;
+	}
+
+	@Archive
+	@ProvidesIntoMap
+	@StringMapKey("validator.info")
+	public JsonRpcHandler validatorInfo(ArchiveHandler archiveHandler) {
 		return archiveHandler::handleLookupValidator;
 	}
 
+	@Archive
 	@ProvidesIntoMap
-	@StringMapKey("radix.networkTransactionThroughput")
-	public JsonRpcHandler networkTransactionThroughput(ArchiveHandler archiveHandler) {
+	@StringMapKey("network.id")
+	public JsonRpcHandler networkId(ArchiveHandler archiveHandler) {
+		return archiveHandler::handleUniverseMagic;
+	}
+
+	@Archive
+	@ProvidesIntoMap
+	@StringMapKey("network.throughput")
+	public JsonRpcHandler networkThroughput(ArchiveHandler archiveHandler) {
 		return archiveHandler::handleNetworkTransactionThroughput;
 	}
 
+	@Archive
 	@ProvidesIntoMap
-	@StringMapKey("radix.networkTransactionDemand")
-	public JsonRpcHandler networkTransactionDemand(ArchiveHandler archiveHandler) {
+	@StringMapKey("network.demand")
+	public JsonRpcHandler networkDemand(ArchiveHandler archiveHandler) {
 		return archiveHandler::handleNetworkTransactionDemand;
 	}
 

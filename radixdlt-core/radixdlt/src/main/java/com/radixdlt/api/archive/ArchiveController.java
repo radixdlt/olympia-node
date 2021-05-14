@@ -21,6 +21,8 @@ package com.radixdlt.api.archive;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.radixdlt.api.Controller;
+import com.radixdlt.api.Controller;
+import com.radixdlt.api.archive.qualifier.Archive;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
@@ -32,7 +34,7 @@ public final class ArchiveController implements Controller {
 	private final JsonRpcServer jsonRpcServer;
 
 	@Inject
-	public ArchiveController(JsonRpcServer jsonRpcServer) {
+	public ArchiveController(@Archive JsonRpcServer jsonRpcServer) {
 		this.jsonRpcServer = jsonRpcServer;
 	}
 
@@ -40,9 +42,6 @@ public final class ArchiveController implements Controller {
 	public void configureRoutes(RoutingHandler handler) {
 		handler.post("/archive", this::handleRpc);
 		handler.post("/archive/", this::handleRpc);
-		//TODO: remove
-		handler.post("/rpc", this::handleRpc);
-		handler.post("/rpc/", this::handleRpc);
 	}
 
 	@VisibleForTesting

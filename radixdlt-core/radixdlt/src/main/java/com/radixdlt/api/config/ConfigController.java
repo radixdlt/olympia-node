@@ -37,6 +37,7 @@ import java.util.TreeMap;
 
 import static com.radixdlt.api.RestUtils.respond;
 
+//TODO: merge functionality into SystemService
 public class ConfigController implements Controller {
 	private final long pacemakerTimeout;
 	private final int bftSyncPatienceMillis;
