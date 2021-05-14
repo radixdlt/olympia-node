@@ -28,6 +28,8 @@ import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
+import com.radixdlt.universe.Magic;
+
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import java.util.Objects;
@@ -42,7 +44,7 @@ public final class MessageCentralLedgerSync {
 
 	@Inject
 	public MessageCentralLedgerSync(
-		@Named("magic") int magic,
+		@Magic int magic,
 		MessageCentral messageCentral
 	) {
 		this.magic = magic;

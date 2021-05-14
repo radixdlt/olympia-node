@@ -35,6 +35,7 @@ import io.reactivex.rxjava3.core.Flowable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
+import com.radixdlt.universe.Magic;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -52,7 +53,7 @@ public class MessageCentralValidatorSync {
 
 	@Inject
 	public MessageCentralValidatorSync(
-		@Named("magic") int magic,
+		@Magic int magic,
 		MessageCentral messageCentral,
 		Hasher hasher
 	) {

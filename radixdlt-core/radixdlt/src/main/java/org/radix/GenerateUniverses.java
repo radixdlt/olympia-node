@@ -40,12 +40,13 @@ import com.google.inject.Guice;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.google.inject.name.Named;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.api.archive.Rri;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.client.Rri;
 import com.radixdlt.counters.SystemCounters;
@@ -72,6 +73,7 @@ import com.radixdlt.statecomputer.forks.BetanetForksModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.universe.Magic;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.universe.Universe.UniverseType;
 import com.radixdlt.utils.AWSSecretManager;
@@ -89,6 +91,13 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.Security;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -299,22 +308,22 @@ public final class GenerateUniverses {
 					// Mocked just to get epoch
 					bind(CommittedReader.class).toInstance(CommittedReader.mocked());
 
-					bind(new TypeLiteral<List<TxAction>>() {}).annotatedWith(Genesis.class).toInstance(additionalActions);
-					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() {}).toInstance(new InMemoryEngineStore<>());
+					bind(new TypeLiteral<List<TxAction>>() { }).annotatedWith(Genesis.class).toInstance(additionalActions);
+					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(new TypeLiteral<VerifiedTxnsAndProof>() {}).toProvider(GenesisProvider.class).in(Scopes.SINGLETON);
+					bind(new TypeLiteral<VerifiedTxnsAndProof>() { }).toProvider(GenesisProvider.class).in(Scopes.SINGLETON);
 					bindConstant().annotatedWith(Genesis.class).to(timestamp);
-					bind(new TypeLiteral<ImmutableList<TokenIssuance>>() {}).annotatedWith(Genesis.class)
+					bind(new TypeLiteral<ImmutableList<TokenIssuance>>() { }).annotatedWith(Genesis.class)
 						.toInstance(tokenIssuancesBuilder.build());
-					bind(new TypeLiteral<ImmutableList<StakeDelegation>>() {}).annotatedWith(Genesis.class)
+					bind(new TypeLiteral<ImmutableList<StakeDelegation>>() { }).annotatedWith(Genesis.class)
 						.toInstance(stakeDelegations);
-					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() {}).annotatedWith(Genesis.class)
+					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
 						.toInstance(validatorKeys);
 				}
 
 				@Provides
-				@Named("magic")
+				@Magic
 				int magic(UniverseType universeType) {
 					return Universe.computeMagic(universeType);
 				}
@@ -562,31 +571,15 @@ public final class GenerateUniverses {
 		}
 	}
 
-	public static void writeBinaryAWSSecret(
-		Map<String, Object> awsSecret,
-		String secretName,
-		AWSSecretsOutputOptions awsSecretsOutputOptions,
-		boolean compress
-	) {
+	public static void writeBinaryAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsOutputOptions awsSecretsOutputOptions, boolean compress) {
 		writeAWSSecret(awsSecret, secretName, awsSecretsOutputOptions, compress, true);
 	}
 
-	public static void writeTextAWSSecret(
-		Map<String, Object> awsSecret,
-		String secretName,
-		AWSSecretsOutputOptions awsSecretsOutputOptions,
-		boolean compress
-	) {
+	public static void writeTextAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsOutputOptions awsSecretsOutputOptions, boolean compress) {
 		writeAWSSecret(awsSecret, secretName, awsSecretsOutputOptions, compress, false);
 	}
 
-	public static void writeAWSSecret(
-		Map<String, Object> awsSecret,
-		String secretName,
-		AWSSecretsOutputOptions awsSecretsOutputOptions,
-		boolean compress,
-		boolean binarySecret
-	) {
+	public static void writeAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsOutputOptions awsSecretsOutputOptions, boolean compress, boolean binarySecret) {
 		if (AWSSecretManager.awsSecretExists(secretName)) {
 			AWSSecretManager.updateAWSSecret(awsSecret, secretName, awsSecretsOutputOptions, compress, binarySecret);
 		} else {
