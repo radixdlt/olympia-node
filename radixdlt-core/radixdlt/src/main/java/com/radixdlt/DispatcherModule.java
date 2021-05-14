@@ -187,18 +187,6 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<RemoteEventDispatcher<MempoolAdd>>() { })
 			.toProvider(Dispatchers.remoteDispatcherProvider(MempoolAdd.class)).in(Scopes.SINGLETON);
 
-		// Sync
-		bind(new TypeLiteral<RemoteEventDispatcher<StatusRequest>>() { })
-			.toProvider(Dispatchers.remoteDispatcherProvider(StatusRequest.class)).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<RemoteEventDispatcher<StatusResponse>>() { })
-			.toProvider(Dispatchers.remoteDispatcherProvider(StatusResponse.class)).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<RemoteEventDispatcher<SyncRequest>>() { })
-			.toProvider(Dispatchers.remoteDispatcherProvider(SyncRequest.class)).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<RemoteEventDispatcher<SyncResponse>>() { })
-			.toProvider(Dispatchers.remoteDispatcherProvider(SyncResponse.class)).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<RemoteEventDispatcher<LedgerStatusUpdate>>() { })
-			.toProvider(Dispatchers.remoteDispatcherProvider(LedgerStatusUpdate.class)).in(Scopes.SINGLETON);
-
 		final var scheduledTimeoutKey = new TypeLiteral<EventProcessor<ScheduledLocalTimeout>>() { };
 		Multibinder.newSetBinder(binder(), scheduledTimeoutKey, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), scheduledTimeoutKey);
@@ -247,6 +235,7 @@ public class DispatcherModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() { });
 
 		configureP2p();
+		configureSync();
 	}
 
 	private void configureP2p() {
@@ -268,6 +257,19 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.remoteDispatcherProvider(PeersResponse.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<DiscoverPeers>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(DiscoverPeers.class)).in(Scopes.SINGLETON);
+	}
+
+	private void configureSync() {
+		bind(new TypeLiteral<RemoteEventDispatcher<StatusRequest>>() { })
+				.toProvider(Dispatchers.remoteDispatcherProvider(StatusRequest.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<RemoteEventDispatcher<StatusResponse>>() { })
+				.toProvider(Dispatchers.remoteDispatcherProvider(StatusResponse.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<RemoteEventDispatcher<SyncRequest>>() { })
+				.toProvider(Dispatchers.remoteDispatcherProvider(SyncRequest.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<RemoteEventDispatcher<SyncResponse>>() { })
+				.toProvider(Dispatchers.remoteDispatcherProvider(SyncResponse.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<RemoteEventDispatcher<LedgerStatusUpdate>>() { })
+				.toProvider(Dispatchers.remoteDispatcherProvider(LedgerStatusUpdate.class)).in(Scopes.SINGLETON);
 	}
 
 	@Provides

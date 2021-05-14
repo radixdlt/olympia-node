@@ -323,7 +323,7 @@ public class LocalSyncServiceTest {
 
 		final var peer1 = mock(BFTNode.class);
 		final var peer2 = mock(BFTNode.class);
-		when(peersView.peers()).thenReturn(List.of(peer1, peer2));
+		when(peersView.peers()).thenAnswer(i -> Stream.of(peer1, peer2));
 
 		final var originalCandidates = ImmutableList.of(peer1, peer2);
 		final var syncState = SyncState.SyncingState.init(
@@ -491,7 +491,7 @@ public class LocalSyncServiceTest {
 
 		final var peer1 = mock(BFTNode.class);
 		final var peer2 = mock(BFTNode.class);
-		when(peersView.peers()).thenReturn(List.of(peer1, peer2));
+		when(peersView.peers()).thenAnswer(i -> Stream.of(peer1, peer2));
 
 		final var syncState = SyncState.SyncingState.init(
 			currentHeader, ImmutableList.of(peer1), targetHeader).withPendingRequest(peer1, 1L);

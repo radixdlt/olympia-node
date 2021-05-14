@@ -21,7 +21,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.environment.deterministic.DeterministicMessageProcessor;
+import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.properties.RuntimeProperties;
@@ -59,8 +59,8 @@ public class DeterministicP2PNetworkTest {
 		final var nodeIndex = msg.value().channelId().receiverIndex();
 		final var injector = testNetworkRunner.getNode(nodeIndex).injector;
 		withThreadCtx(injector, () ->
-			injector.getInstance(DeterministicMessageProcessor.class)
-				.handleMessage(msg.value().origin(), msg.value().message())
+			injector.getInstance(DeterministicProcessor.class)
+				.handleMessage(msg.value().origin(), msg.value().message(), msg.value().typeLiteral())
 		);
 		return msg;
 	}

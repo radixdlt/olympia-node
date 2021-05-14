@@ -22,6 +22,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.DispatcherModule;
@@ -30,9 +31,9 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.DeterministicEnvironmentModule;
-import com.radixdlt.environment.deterministic.DeterministicMessageProcessor;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -145,7 +146,8 @@ public final class P2PTestNetworkRunner {
 						bind(ControlledSenderFactory.class).toInstance(network::createSender);
 						bind(RuntimeProperties.class).toInstance(properties);
 						bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
-						bind(DeterministicMessageProcessor.class).to(DeterministicProcessor.class);
+						bind(DeterministicProcessor.class);
+						Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);
 					}
 				}
 		);

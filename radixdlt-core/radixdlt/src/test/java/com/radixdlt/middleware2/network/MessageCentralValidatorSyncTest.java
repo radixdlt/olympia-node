@@ -17,7 +17,6 @@
 
 package com.radixdlt.middleware2.network;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -66,13 +65,7 @@ public class MessageCentralValidatorSyncTest {
 		when(self.getKey()).thenReturn(pubKey);
 		this.messageCentral = MessageCentralMockProvider.get();
 		this.hasher = new RandomHasher();
-		this.sync = new MessageCentralValidatorSync(self, 0, messageCentral, hasher);
-	}
-
-	@Test
-	public void when_send_rpc_to_self__then_illegal_state_exception_should_be_thrown() {
-		assertThatThrownBy(() -> sync.sendGetVerticesRequest(self, mock(GetVerticesRequest.class)))
-			.isInstanceOf(IllegalStateException.class);
+		this.sync = new MessageCentralValidatorSync(0, messageCentral, hasher);
 	}
 
 	@Test
@@ -86,7 +79,7 @@ public class MessageCentralValidatorSyncTest {
 		when(ecPublicKey.euid()).thenReturn(mock(EUID.class));
 		when(node.getKey()).thenReturn(ecPublicKey);
 
-		sync.sendGetVerticesResponse(node, vertices);
+		sync.verticesResponseDispatcher().dispatch(node, new GetVerticesResponse(vertices));
 		verify(messageCentral, times(1)).send(any(), any(GetVerticesResponseMessage.class));
 	}
 
@@ -102,7 +95,7 @@ public class MessageCentralValidatorSyncTest {
 		when(node.getKey()).thenReturn(ecPublicKey);
 		final var request = new GetVerticesRequest(HashUtils.random256(), 3);
 
-		sync.sendGetVerticesErrorResponse(node, highQC, request);
+		sync.verticesErrorResponseDispatcher().dispatch(node, new GetVerticesErrorResponse(highQC, request));
 
 		verify(messageCentral, times(1)).send(eq(NodeId.fromPublicKey(ecPublicKey)), any(GetVerticesErrorResponseMessage.class));
 	}

@@ -186,9 +186,6 @@ public final class RadixNodeModule extends AbstractModule {
 		// Network
 		install(new MessagingModule());
 		install(new MessageCentralModule(properties));
-		install(new UDPTransportModule(properties));
-		install(new TCPTransportModule(properties));
-		install(new AddressBookModule());
 		install(new HostIpModule(properties));
 		install(new P2PModule(properties));
 		install(new PeerDiscoveryModule());

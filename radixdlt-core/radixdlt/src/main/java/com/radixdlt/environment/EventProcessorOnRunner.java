@@ -72,7 +72,15 @@ public final class EventProcessorOnRunner<T> {
 	}
 
 	public <U> Optional<EventProcessor<U>> getProcessor(Class<U> c) {
-		if (eventClass.isAssignableFrom(c)) {
+		if (eventClass != null && eventClass.isAssignableFrom(c)) {
+			return Optional.of((EventProcessor<U>) processor);
+		}
+
+		return Optional.empty();
+	}
+
+	public <U> Optional<EventProcessor<U>> getProcessor(TypeLiteral<U> c) {
+		if (c.equals(typeLiteral)) {
 			return Optional.of((EventProcessor<U>) processor);
 		}
 

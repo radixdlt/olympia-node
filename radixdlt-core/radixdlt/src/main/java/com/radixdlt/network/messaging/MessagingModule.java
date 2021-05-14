@@ -155,7 +155,6 @@ public final class MessagingModule extends AbstractModule {
 	RxRemoteEnvironment rxRemoteEnvironment(
 		MessageCentralMempool messageCentralMempool,
 		MessageCentralLedgerSync messageCentralLedgerSync,
-		MessageCentralPeerLiveness messageCentralPeerLiveness,
 		MessageCentralBFTNetwork messageCentralBFT,
 		MessageCentralValidatorSync messageCentralBFTSync,
 		MessageCentralPeerLiveness messageCentralPeerLiveness,

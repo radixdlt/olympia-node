@@ -21,8 +21,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -30,10 +28,7 @@ import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.network.messaging.MessageCentralMockProvider;
 
-import java.util.Collections;
-
 import com.radixdlt.network.p2p.NodeId;
-import io.reactivex.rxjava3.subscribers.TestSubscriber;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -50,26 +45,6 @@ public class MessageCentralBFTNetworkTest {
 	}
 
 	@Test
-	public void when_send_vote_to_self__then_should_receive_vote_message() {
-		TestSubscriber<ConsensusEvent> testObserver = TestSubscriber.create();
-		network.localBftEvents().subscribe(testObserver);
-		Vote vote = mock(Vote.class);
-		network.voteDispatcher().dispatch(self, vote);
-		testObserver.awaitCount(1);
-		testObserver.assertValue(vote);
-	}
-
-	@Test
-	public void when_broadcast_proposal__then_should_receive_proposal() {
-		TestSubscriber<ConsensusEvent> testObserver = TestSubscriber.create();
-		network.localBftEvents().subscribe(testObserver);
-		Proposal proposal = mock(Proposal.class);
-		network.broadcastProposal(proposal, Collections.singleton(this.self));
-		testObserver.awaitCount(1);
-		testObserver.assertValue(proposal);
-	}
-
-	@Test
 	public void when_send_vote__then_message_central_should_be_sent_vote_message() {
 		Vote vote = mock(Vote.class);
 		ECPublicKey leaderPk = ECKeyPair.generateNew().getPublicKey();
@@ -77,6 +52,6 @@ public class MessageCentralBFTNetworkTest {
 		when(leader.getKey()).thenReturn(leaderPk);
 
 		network.voteDispatcher().dispatch(leader, vote);
-		verify(messageCentral, times(1)).send(eq(NodeId.fromPublicKey(leader.getKey())), any(ConsensusEventMessage.class));
+		verify(messageCentral, times(1)).send(eq(NodeId.fromPublicKey(leaderPk)), any(ConsensusEventMessage.class));
 	}
 }
