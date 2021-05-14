@@ -17,7 +17,6 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.google.inject.name.Named;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
@@ -28,9 +27,12 @@ import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
+import com.radixdlt.universe.Magic;
+
+import java.util.Objects;
+
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
-import java.util.Objects;
 import javax.inject.Inject;
 
 /**
@@ -43,7 +45,7 @@ public final class MessageCentralLedgerSync {
 
 	@Inject
 	public MessageCentralLedgerSync(
-		@Named("magic") int magic,
+		@Magic int magic,
 		AddressBook addressBook,
 		MessageCentral messageCentral
 	) {

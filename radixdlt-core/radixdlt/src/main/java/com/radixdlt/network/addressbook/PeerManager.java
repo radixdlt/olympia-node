@@ -17,23 +17,6 @@
 
 package com.radixdlt.network.addressbook;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.inject.Inject;
-import com.google.inject.name.Named;
-import com.radixdlt.identifiers.EUID;
-import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageFromPeer;
-import com.radixdlt.network.transport.TransportException;
-import com.radixdlt.network.transport.TransportInfo;
-import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.utils.ThreadFactories;
-
-import io.reactivex.rxjava3.core.Scheduler;
-import io.reactivex.rxjava3.disposables.CompositeDisposable;
-import io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.functions.Consumer;
-import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.discovery.BootstrapDiscovery;
@@ -48,6 +31,18 @@ import org.radix.time.Timestamps;
 import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.SystemMessage;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.inject.Inject;
+import com.radixdlt.identifiers.EUID;
+import com.radixdlt.network.messaging.MessageCentral;
+import com.radixdlt.network.messaging.MessageFromPeer;
+import com.radixdlt.network.transport.TransportException;
+import com.radixdlt.network.transport.TransportInfo;
+import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.universe.Magic;
+import com.radixdlt.utils.ThreadFactories;
+
 import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -59,6 +54,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import io.reactivex.rxjava3.core.Scheduler;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.functions.Consumer;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class PeerManager {
 	private static final Logger log = LogManager.getLogger();
@@ -140,7 +141,7 @@ public class PeerManager {
 		SecureRandom rng,
 		LocalSystem localSystem,
 		RuntimeProperties properties,
-		@Named("magic") int magic
+		@Magic int magic
 	) {
 		super();
 

@@ -17,33 +17,31 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.google.inject.Inject;
-import com.google.inject.name.Named;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
-
-import com.radixdlt.environment.RemoteEventDispatcher;
-
-import java.util.Objects;
-
-import java.util.Optional;
-
-import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.network.messaging.MessageFromPeer;
-import io.reactivex.rxjava3.core.BackpressureStrategy;
-import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
 
+import com.google.inject.Inject;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
+import com.radixdlt.network.messaging.MessageFromPeer;
+import com.radixdlt.universe.Magic;
+
+import java.util.Objects;
+import java.util.Optional;
+
+import io.reactivex.rxjava3.core.BackpressureStrategy;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 
 /**
  * BFT Network sending and receiving layer used on top of the MessageCentral
@@ -61,7 +59,7 @@ public final class MessageCentralBFTNetwork {
 	@Inject
 	public MessageCentralBFTNetwork(
 		@Self BFTNode self,
-		@Named("magic") int magic,
+		@Magic int magic,
 		AddressBook addressBook,
 		MessageCentral messageCentral
 	) {

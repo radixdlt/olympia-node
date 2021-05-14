@@ -18,11 +18,11 @@
 
 package com.radixdlt.api;
 
+import com.radixdlt.api.archive.ThrowingConsumer;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.google.common.io.CharStreams;
-import com.radixdlt.client.ThrowingConsumer;
 import com.radixdlt.crypto.exception.PublicKeyException;
 
 import java.io.InputStreamReader;
