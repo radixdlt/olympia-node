@@ -28,11 +28,11 @@ import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.Environment;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
@@ -41,12 +41,6 @@ import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.utils.ThreadFactories;
-import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
-import io.reactivex.rxjava3.core.BackpressureStrategy;
-import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.core.Observable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -55,13 +49,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
+import io.reactivex.rxjava3.core.BackpressureStrategy;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Observable;
+
 /**
  * Environment utilizing RxJava
  */
 public final class RxEnvironmentModule extends AbstractModule {
-
-	private static final Logger logger = LogManager.getLogger();
-
 	@Override
 	public void configure() {
 		ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("TimeoutSender"));

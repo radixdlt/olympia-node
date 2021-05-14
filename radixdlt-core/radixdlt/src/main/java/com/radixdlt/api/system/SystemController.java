@@ -18,42 +18,50 @@
 
 package com.radixdlt.api.system;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.radix.universe.system.LocalSystem;
+
+import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.identifiers.NodeAddress;
+import com.radixdlt.api.Controller;
+import com.radixdlt.api.archive.JsonRpcServer;
+import com.radixdlt.api.archive.qualifier.System;
+import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.utils.Bytes;
-import org.json.JSONArray;
-import org.json.JSONObject;
-import com.radixdlt.api.Controller;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Inject;
+import java.util.stream.Stream;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 import org.radix.universe.system.LocalSystem;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonArray;
+
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.RestUtils.respond;
 
 public final class SystemController implements Controller {
+	private final JsonRpcServer jsonRpcServer;
 	private final LocalSystem localSystem;
 	private final VerifiedTxnsAndProof genesis;
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final PeersView peersView;
 
-	@Inject
 	public SystemController(
+		@System JsonRpcServer jsonRpcServer,
 		InMemorySystemInfo inMemorySystemInfo,
 		LocalSystem localSystem,
 		PeersView peersView,
 		@Genesis VerifiedTxnsAndProof genesis
 	) {
+		this.jsonRpcServer = jsonRpcServer;
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.peersView = peersView;
 		this.genesis = genesis;
@@ -62,6 +70,11 @@ public final class SystemController implements Controller {
 
 	@Override
 	public void configureRoutes(final RoutingHandler handler) {
+		handler.post("/system", jsonRpcServer::handleHttpRequest);
+		handler.post("/system/", jsonRpcServer::handleHttpRequest);
+
+		//TODO: remove code below
+		//TODO: merge functionality into SystemService
 		handler.get("/system/info", this::respondWithLocalSystem);
 		handler.get("/system/checkpoints", this::respondWithGenesis);
 		handler.get("/system/proof", this::respondWithCurrentProof);

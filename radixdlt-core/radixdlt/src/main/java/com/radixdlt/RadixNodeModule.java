@@ -23,10 +23,12 @@ import com.radixdlt.api.Controller;
 import com.radixdlt.api.NodeApiModule;
 
 import com.radixdlt.api.UniverseController;
+import com.radixdlt.api.construction.ConstructApiModule;
 import com.radixdlt.api.faucet.FaucetModule;
 import com.radixdlt.network.p2p.PeerDiscoveryModule;
 import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
 import com.radixdlt.network.p2p.P2PModule;
+import com.radixdlt.api.system.SystemApiModule;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
@@ -118,20 +120,43 @@ public final class RadixNodeModule extends AbstractModule {
 
 		// API
 		install(new NodeApiModule());
-		if (properties.get("client_api.enable", false)) {
-			log.info("Enabling high level API");
+
+		if (properties.get("archive_api.enable", false)) {
+			log.info("Enabling Archive API");
 			install(new ArchiveApiModule());
 		}
+
+		if (properties.get("construct_api.enable", false)) {
+			log.info("Enabling Construct API");
+			install(new ConstructApiModule());
+		}
+
+		if (properties.get("system_api.enable", false)) {
+			log.info("Enabling System API");
+			//TODO: finish it
+			install(new SystemApiModule());
+		}
+
+		if (properties.get("account_api.enable", false)) {
+			log.info("Enabling Account API");
+			//TODO: finish it
+			//install(new AccountApiModule());
+		}
+
 		if (properties.get("universe_api.enable", false)) {
 			log.info("Enabling Universe API");
 			var controllers = Multibinder.newSetBinder(binder(), Controller.class);
 			controllers.addBinding().to(UniverseController.class).in(Scopes.SINGLETON);
 		}
+
 		if (properties.get("faucet.enable", false)) {
+			//TODO: disable on mainnet
 			log.info("Enabling faucet API");
 			install(new FaucetModule());
 		}
+
 		if (properties.get("chaos.enable", false)) {
+			//TODO: disable on mainnet
 			log.info("Enabling chaos API");
 			install(new ChaosModule());
 		}
