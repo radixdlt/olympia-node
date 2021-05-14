@@ -19,7 +19,7 @@ git clone https://github.com/radixdlt/radixdlt.git
 
 Checkout the required branch:
 ```
-cd radixdlt && git checkout release/1.0-beta.33
+cd radixdlt && git checkout release/1.0-beta.34
 ```
 RADIXDLT_ENABLE_FAUCET=True
 Run tests (note that integration tests take several minutes to run):
