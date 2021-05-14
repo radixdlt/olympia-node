@@ -6,6 +6,8 @@ import com.radixdlt.client.lib.dto.TokenBalancesDTO;
 import com.radixdlt.client.lib.dto.TokenInfoDTO;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Failure;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.awaitility.Durations;
 import org.awaitility.core.ConditionTimeoutException;
 
@@ -14,6 +16,8 @@ import java.util.stream.Collectors;
 import static org.awaitility.Awaitility.await;
 
 public final class Utils {
+
+    private static final Logger logger = LogManager.getLogger();
 
     public static boolean isNullOrEmpty(String string) {
         return string == null || string.isEmpty();
@@ -25,11 +29,14 @@ public final class Utils {
 
     public static void waitForBalance(Account account, UInt256 amount) {
         try {
-            await().atMost(Durations.ONE_MINUTE).until(() -> account.ownTokenBalances().map(tokenBalancesDTO -> {
+            await().atMost(Durations.ONE_MINUTE).until(() -> account.getOwnNativeTokenBalance().getAmount()ownTokenBalances().map(tokenBalancesDTO -> {
                 if (tokenBalancesDTO.getTokenBalances().size() == 0) {
                     return false;
                 }
+                
                 UInt256 balanceForToken = Utils.getBalanceForToken(tokenBalancesDTO, account.getNativeToken());
+
+
                 return (balanceForToken != null) && (balanceForToken.compareTo(amount) >= 0);
             }).fold(failure -> false, mapper -> mapper));
         } catch (ConditionTimeoutException e) {

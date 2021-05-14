@@ -37,7 +37,7 @@ public class TokenTransfer extends AcceptanceTest {
         TransactionUtils.performNativeTokenTransfer(account1, account2, xrdToTransfer, "hello there!");
 
         Utils.waitForBalance(account2, 15);
-        Utils.waitForBalance(account1, 6);
+        Utils.waitForBalance(account1, 5);
     }
 
     @Then("the second account can transfer {int} XRD back to the first")
@@ -47,8 +47,6 @@ public class TokenTransfer extends AcceptanceTest {
 
         TransactionUtils.performNativeTokenTransfer(account2, account1, xrdToTransfer, "hey");
         Utils.waitForBalance(account2, 10);
-        System.out.println(account1.getOwnNativeTokenBalance());
-        System.out.println(account2.getOwnNativeTokenBalance());
     }
 
 }

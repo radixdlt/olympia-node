@@ -23,7 +23,7 @@ public final class TransactionUtils {
 
     public static Result<TxDTO> performNativeTokenTransfer(Account sender, Account receiver, int amount, String message) {
         var request = TransactionUtils.createTransferRequest(sender.getAddress(), receiver.getAddress(),
-                sender.getNativeToken().getRri(), Utils.toMajor(amount), message);
+                sender.getNativeToken().getRri(), UInt256.from(amount), message);
         return performTransaction(sender, request);
     }
 
