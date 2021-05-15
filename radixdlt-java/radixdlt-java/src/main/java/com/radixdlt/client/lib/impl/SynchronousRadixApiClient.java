@@ -17,6 +17,9 @@
 
 package com.radixdlt.client.lib.impl;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -81,6 +84,7 @@ import static com.radixdlt.utils.functional.Result.fromOptional;
 import static java.util.Optional.ofNullable;
 
 public class SynchronousRadixApiClient implements RadixApi {
+	private static final Logger log = LogManager.getLogger();
 	private static final MediaType MEDIA_TYPE = MediaType.parse("application/json");
 	private static final ObjectMapper objectMapper;
 
@@ -92,6 +96,7 @@ public class SynchronousRadixApiClient implements RadixApi {
 
 	private final String baseUrl;
 	private final OkHttpClient client;
+	private boolean doTrace = false;
 
 	private SynchronousRadixApiClient(String baseUrl, OkHttpClient client) {
 		this.baseUrl = sanitize(baseUrl);
@@ -100,8 +105,8 @@ public class SynchronousRadixApiClient implements RadixApi {
 
 	private static String sanitize(String baseUrl) {
 		return !baseUrl.endsWith("/")
-			   ? baseUrl
-			   : baseUrl.substring(0, baseUrl.length() - 1);
+				? baseUrl
+				: baseUrl.substring(0, baseUrl.length() - 1);
 	}
 
 	public static Result<SynchronousRadixApiClient> connect(String url) {
@@ -110,8 +115,18 @@ public class SynchronousRadixApiClient implements RadixApi {
 
 	public static Result<SynchronousRadixApiClient> connect(String url, OkHttpClient client) {
 		return ofNullable(url)
-			.map(baseUrl -> Result.ok(new SynchronousRadixApiClient(baseUrl, client)))
-			.orElseGet(() -> Result.fail(BASE_URL_IS_MANDATORY));
+				.map(baseUrl -> Result.ok(new SynchronousRadixApiClient(baseUrl, client)))
+				.orElseGet(() -> Result.fail(BASE_URL_IS_MANDATORY));
+	}
+
+	public SynchronousRadixApiClient withTrace() {
+		doTrace = true;
+		return this;
+	}
+
+	@Override
+	public Result<NetworkIdDTO> networkId() {
+		return call(request(NETWORK_ID), new TypeReference<JsonRpcResponse<NetworkIdDTO>>() { });
 	}
 
 	@Override
@@ -175,7 +190,6 @@ public class SynchronousRadixApiClient implements RadixApi {
 		return call(request, new TypeReference<JsonRpcResponse<ValidatorsResponseDTO>>() { });
 	}
 
-
 	@Override
 	public Result<ValidatorDTO> lookupValidator(String validatorAddress) {
 		return call(request(LOOKUP_VALIDATOR, validatorAddress), new TypeReference<JsonRpcResponse<ValidatorDTO>>() { });
@@ -184,30 +198,24 @@ public class SynchronousRadixApiClient implements RadixApi {
 	@Override
 	public Result<BuiltTransactionDTO> buildTransaction(TransactionRequest request) {
 		return call(
-			request(BUILD_TRANSACTION, request.getActions(), request.getMessage()),
-			new TypeReference<JsonRpcResponse<BuiltTransactionDTO>>() { }
+				request(BUILD_TRANSACTION, request.getActions(), request.getMessage()),
+				new TypeReference<JsonRpcResponse<BuiltTransactionDTO>>() { }
 		);
-	}
-
-
-	@Override
-	public Result<NetworkIdDTO> networkId() {
-		return call(request(NETWORK_ID), new TypeReference<JsonRpcResponse<NetworkIdDTO>>() { });
 	}
 
 	@Override
 	public Result<TxDTO> finalizeTransaction(FinalizedTransaction request) {
 		return call(
-			request(FINALIZE_TRANSACTION, request.getBlob(), request.getSignature(), request.getPublicKey()),
-			new TypeReference<JsonRpcResponse<TxDTO>>() { }
+				request(FINALIZE_TRANSACTION, request.getBlob(), request.getSignature(), request.getPublicKey()),
+				new TypeReference<JsonRpcResponse<TxDTO>>() { }
 		);
 	}
 
 	@Override
 	public Result<TxDTO> submitTransaction(FinalizedTransaction request) {
 		return call(
-			request(SUBMIT_TRANSACTION, request.getBlob(), request.getSignature(), request.getPublicKey(), request.getTxId()),
-			new TypeReference<JsonRpcResponse<TxDTO>>() { }
+				request(SUBMIT_TRANSACTION, request.getBlob(), request.getSignature(), request.getPublicKey(), request.getTxId()),
+				new TypeReference<JsonRpcResponse<TxDTO>>() { }
 		);
 	}
 
@@ -217,12 +225,18 @@ public class SynchronousRadixApiClient implements RadixApi {
 
 	private <T> Result<T> call(JsonRpcRequest request, TypeReference<JsonRpcResponse<T>> typeReference) {
 		return serialize(request)
-			.map(value -> RequestBody.create(MEDIA_TYPE, value))
-			.flatMap(this::doCall)
-			.flatMap(body -> deserialize(body, typeReference))
-			.flatMap(response -> response.rawError() == null
-								 ? Result.ok(response.rawResult())
-								 : Result.fail(response.rawError().toFailure()));
+				.onSuccess(this::trace)
+				.map(value -> RequestBody.create(MEDIA_TYPE, value))
+				.flatMap(this::doCall)
+				.onSuccess(this::trace)
+				.flatMap(body -> deserialize(body, typeReference))
+				.flatMap(response -> response.rawError() == null
+						? Result.ok(response.rawResult())
+						: Result.fail(response.rawError().toFailure()));
+	}
+
+	private void trace(Object value) {
+		log.debug(value.toString());
 	}
 
 	private Result<String> serialize(JsonRpcRequest request) {
@@ -238,7 +252,7 @@ public class SynchronousRadixApiClient implements RadixApi {
 
 		try (var response = client.newCall(request).execute(); var responseBody = response.body()) {
 			return fromOptional(NO_CONTENT, ofNullable(responseBody))
-				.flatMap(responseBody1 -> Result.wrap(UNABLE_TO_READ_RESPONSE_BODY, responseBody1::string));
+					.flatMap(responseBody1 -> Result.wrap(UNABLE_TO_READ_RESPONSE_BODY, responseBody1::string));
 		} catch (IOException e) {
 			return UNABLE_TO_READ_RESPONSE_BODY.with(e.getMessage()).result();
 		}
@@ -250,11 +264,11 @@ public class SynchronousRadixApiClient implements RadixApi {
 
 	private static OkHttpClient createClient() {
 		return new OkHttpClient.Builder()
-			.connectionSpecs(List.of(ConnectionSpec.CLEARTEXT))
-			.connectTimeout(30, TimeUnit.SECONDS)
-			.writeTimeout(30, TimeUnit.SECONDS)
-			.readTimeout(30, TimeUnit.SECONDS)
-			.pingInterval(30, TimeUnit.SECONDS)
-			.build();
+				.connectionSpecs(List.of(ConnectionSpec.CLEARTEXT))
+				.connectTimeout(30, TimeUnit.SECONDS)
+				.writeTimeout(30, TimeUnit.SECONDS)
+				.readTimeout(30, TimeUnit.SECONDS)
+				.pingInterval(30, TimeUnit.SECONDS)
+				.build();
 	}
 }
