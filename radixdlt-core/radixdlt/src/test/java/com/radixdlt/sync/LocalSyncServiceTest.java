@@ -481,6 +481,36 @@ public class LocalSyncServiceTest {
 		assertEquals(syncState, this.localSyncService.getSyncState());
 	}
 
+
+	@Test
+	public void when_ledger_status_update_then_should_not_add_duplicate_candidate() {
+		final var currentHeader = createHeaderAtStateVersion(19L);
+		final var targetHeader = createHeaderAtStateVersion(21L);
+		final var newTargetHeader = createHeaderAtStateVersion(22L);
+		final var evenNewerTargetHeader = createHeaderAtStateVersion(23L);
+
+		final var peer1 = mock(BFTNode.class);
+		final var peer2 = mock(BFTNode.class);
+		when(peersView.peers()).thenReturn(List.of(peer1, peer2));
+
+		final var syncState = SyncState.SyncingState.init(
+			currentHeader, ImmutableList.of(peer1), targetHeader).withPendingRequest(peer1, 1L);
+		this.setupSyncServiceWithState(syncState);
+
+		this.localSyncService.ledgerStatusUpdateEventProcessor().process(
+			peer2,
+			LedgerStatusUpdate.create(newTargetHeader)
+		);
+
+		// another, newer, ledger update from the same peer
+		this.localSyncService.ledgerStatusUpdateEventProcessor().process(
+			peer2,
+			LedgerStatusUpdate.create(evenNewerTargetHeader)
+		);
+
+		assertEquals(2, ((SyncState.SyncingState) this.localSyncService.getSyncState()).candidatePeers().size());
+	}
+
 	private LedgerProof createHeaderAtStateVersion(long version) {
 		final LedgerProof header = mock(LedgerProof.class);
 		final AccumulatorState accumulatorState = mock(AccumulatorState.class);

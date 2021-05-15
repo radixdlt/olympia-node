@@ -19,9 +19,14 @@ package com.radixdlt.client.api;
 
 import org.json.JSONObject;
 
-import com.radixdlt.client.store.ActionEntry;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.store.MessageEntry;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.UInt256;
 
 import java.time.Instant;
@@ -35,11 +40,30 @@ import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 import static java.util.Objects.requireNonNull;
 
+@SerializerId2("radix.api.history")
 public class TxHistoryEntry {
+	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
+	@DsonOutput(DsonOutput.Output.ALL)
+	private SerializerDummy serializer = SerializerDummy.DUMMY;
+
+	@JsonProperty("txId")
+	@DsonOutput(DsonOutput.Output.ALL)
 	private final AID txId;
+
+	@JsonProperty("ts")
+	@DsonOutput(DsonOutput.Output.ALL)
 	private final Instant timestamp;
+
+	@JsonProperty("fee")
+	@DsonOutput(DsonOutput.Output.ALL)
 	private final UInt256 fee;
+
+	@JsonProperty("msg")
+	@DsonOutput(DsonOutput.Output.ALL)
 	private final MessageEntry message;
+
+	@JsonProperty("actions")
+	@DsonOutput(DsonOutput.Output.ALL)
 	private final List<ActionEntry> actions;
 
 	private TxHistoryEntry(AID txId, Instant timestamp, UInt256 fee, MessageEntry message, List<ActionEntry> actions) {
@@ -50,7 +74,14 @@ public class TxHistoryEntry {
 		this.actions = actions;
 	}
 
-	public static TxHistoryEntry create(AID txId, Instant date, UInt256 fee, MessageEntry message, List<ActionEntry> actions) {
+	@JsonCreator
+	public static TxHistoryEntry create(
+		@JsonProperty("txId") AID txId,
+		@JsonProperty("ts") Instant date,
+		@JsonProperty("fee") UInt256 fee,
+		@JsonProperty("msg") MessageEntry message,
+		@JsonProperty("actions") List<ActionEntry> actions
+	) {
 		requireNonNull(txId);
 		requireNonNull(date);
 		requireNonNull(fee);

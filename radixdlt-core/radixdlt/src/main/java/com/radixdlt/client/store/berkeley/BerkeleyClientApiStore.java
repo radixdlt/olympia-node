@@ -127,6 +127,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private static final int KEY_BUFFER_INITIAL_CAPACITY = 1024;
 	private static final int TIMESTAMP_SIZE = Long.BYTES + Integer.BYTES;
 	private static final Instant NOW = Instant.ofEpochMilli(Instant.now().toEpochMilli());
+	private static final Failure IGNORED = Failure.failure(0, "Ignored");
 
 	private final DatabaseEnvironment dbEnv;
 	private final BerkeleyLedgerEntryStore store;
@@ -151,6 +152,31 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		.maximumSize(1024)
 		.build();
 
+	public BerkeleyClientApiStore(
+		DatabaseEnvironment dbEnv,
+		ConstraintMachine constraintMachine,
+		TxnParser txnParser,
+		BerkeleyLedgerEntryStore store,
+		Serialization serialization,
+		SystemCounters systemCounters,
+		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
+		Observable<AtomsCommittedToLedger> ledgerCommitted,
+		TransactionParser transactionParser,
+		boolean isTest
+	) {
+		this.dbEnv = dbEnv;
+		this.constraintMachine = constraintMachine;
+		this.txnParser = txnParser;
+		this.store = store;
+		this.serialization = serialization;
+		this.systemCounters = systemCounters;
+		this.scheduledFlushEventDispatcher = scheduledFlushEventDispatcher;
+		this.ledgerCommitted = ledgerCommitted;
+		this.transactionParser = transactionParser;
+
+		open(isTest);
+	}
+
 	@Inject
 	public BerkeleyClientApiStore(
 		DatabaseEnvironment dbEnv,
@@ -173,7 +199,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		this.ledgerCommitted = ledgerCommitted;
 		this.transactionParser = transactionParser;
 
-		open();
+		open(false);
 	}
 
 	@Override
@@ -307,10 +333,11 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			}
 
 			do {
-				if (AID.fromBytes(data.getData()).fold(__ -> false, aid -> aid.equals(txn.getId()))) {
-					return Result.ok(txn)
-						.flatMap(txnParser::parseTxn)
-						.flatMap(t -> transactionParser.parse(t, instantFromKey(key), this::getRriOrFail));
+				var result = restore(serialization, data.getData(), TxHistoryEntry.class)
+					.filter(txHistoryEntry -> sameTxId(txn, txHistoryEntry), IGNORED);
+
+				if (result.isSuccess()) {
+					return result;
 				}
 
 				status = readTxHistory(() -> cursor.getNext(key, data, null), data);
@@ -355,14 +382,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			do {
 				addrFromKey(key)
 					.filter(addr::equals, Failure.failure(0, "Ignored"))
-					.onSuccessDo(() -> {
-						AID.fromBytes(data.getData())
-							.flatMap(this::retrieveTx)
-							.onFailure(this::reportError)
-							.flatMap(txnParser::parseTxn)
-							.flatMap(txn -> transactionParser.parse(txn, instantFromKey(key), this::getRriOrFail))
-							.onSuccess(list::add);
-					});
+					.flatMap(__ -> restore(serialization, data.getData(), TxHistoryEntry.class))
+					.onSuccess(list::add);
 
 				status = readTxHistory(() -> cursor.getPrev(key, data, null), data);
 			}
@@ -388,6 +409,10 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		safeClose(tokenDefinitions);
 		safeClose(addressBalances);
 		safeClose(supplyBalances);
+	}
+
+	private boolean sameTxId(Txn txn, TxHistoryEntry txHistoryEntry) {
+		return txHistoryEntry.getTxId().equals(txn.getId());
 	}
 
 	private Instant instantFromKey(DatabaseEntry key) {
@@ -466,7 +491,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		}
 	}
 
-	private void open() {
+	private void open(boolean isTest) {
 		try {
 			// This SuppressWarnings here is valid, as ownership of the underlying
 			// resource is not changed here, the resource is just accessed.
@@ -483,9 +508,13 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				//TODO: Implement recovery, basically should be the same as fresh DB handling
 			}
 
-			if (addressBalances.count() == 0) {
-				//Fresh DB, rebuild from log
-				rebuildDatabase();
+			// FIXME: removing the following for now in production
+			// as it is double counting genesis transactions
+			if (isTest) {
+				if (addressBalances.count() == 0) {
+					//Fresh DB, rebuild from log
+					rebuildDatabase();
+				}
 			}
 
 			scheduledFlushEventDispatcher.dispatch(ScheduledQueueFlush.create(), DEFAULT_FLUSH_INTERVAL);
@@ -563,7 +592,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			reTxn.getSignedBy().stream().map(REAddr::ofPubKeyAccount)
 		).collect(Collectors.toSet());
 
-		addresses.forEach(accountAddr -> storeSingleTransaction(reTxn.getTxn().getId(), accountAddr));
+		transactionParser.parse(reTxn, currentTimestamp.get(), this::getRriOrFail)
+			.onSuccess(parsed -> addresses.forEach(address -> storeSingleTransaction(parsed, address)));
 	}
 
 	private void storeAction(ECPublicKey user, REParsedAction action) {
@@ -702,17 +732,15 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private Optional<ECPublicKey> extractCreator(Txn tx) {
 		try {
-			var result = constraintMachine.statelessVerify(tx);
-			return result.getSignedBy();
+			return constraintMachine.statelessVerify(tx).getSignedBy();
 		} catch (RadixEngineException e) {
 			throw new IllegalStateException();
 		}
 	}
 
-	private void storeSingleTransaction(AID id, REAddr accountAddr) {
-		//Note: since Java 9 the Clock.systemUTC() produces values with real nanosecond resolution.
-		var key = asKey(accountAddr, currentTimestamp.get());
-		var data = entry(id.getBytes());
+	private void storeSingleTransaction(TxHistoryEntry txn, REAddr address) {
+		var key = asKey(address, txn.timestamp());
+		var data = serializeTo(entry(), txn);
 
 		var status = withTime(
 			() -> transactionHistory.put(null, key, data),
@@ -721,10 +749,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		);
 
 		if (status != OperationStatus.SUCCESS) {
-			log.error("Error while storing transaction {} for {}", id, accountAddr);
+			log.error("Error while storing transaction {} for {}", txn.getTxId(), address);
 		}
 	}
-
 
 	private void storeTokenDefinition(TokenDefinitionRecord tokenDefinition) {
 		var key = asKey(tokenDefinition.addr());
@@ -736,7 +763,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		);
 
 		if (status != OperationStatus.SUCCESS) {
-			log.error("Error while storing token definition {}", tokenDefinition.asJson());
+			log.error("Error {} while storing token definition {}", status, tokenDefinition.asJson());
 		}
 	}
 

@@ -28,7 +28,7 @@ public final class RadixEngineMempoolException extends MempoolRejectedException 
     private final RadixEngineException exception;
 
     public RadixEngineMempoolException(RadixEngineException exception) {
-        super(exception.getMessage());
+        super(exception.getMessage(), exception);
         this.exception = exception;
     }
 

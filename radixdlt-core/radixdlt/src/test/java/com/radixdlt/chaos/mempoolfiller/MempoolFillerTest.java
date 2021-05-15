@@ -28,6 +28,7 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
@@ -39,6 +40,8 @@ import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
+import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
 import com.radixdlt.store.DatabaseLocation;
 import org.assertj.core.api.Condition;
 import org.junit.Rule;
@@ -65,7 +68,9 @@ public class MempoolFillerTest {
 	private Injector getInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
-			RadixEngineConfig.asModule(1, 100, 100, 50),
+			new BetanetForksModule(),
+			new RadixEngineOnlyLatestForkModule(View.of(100)),
+			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
 			new AbstractModule() {

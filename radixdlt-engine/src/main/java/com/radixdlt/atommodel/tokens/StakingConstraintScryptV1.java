@@ -64,11 +64,18 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
 			StakedTokensParticle.class,
 			TokensParticle.class,
-			checkEquals(
-				StakedTokensParticle::getOwner,
-				TokensParticle::getHoldingAddr,
-				"Can only unstake back to self"
-			),
+			(i, o, r) -> {
+				if (!Objects.equals(i.getOwner(), o.getHoldingAddr())) {
+					return Result.error("Must unstake to self");
+				}
+
+				var epochUnlocked = o.getEpochUnlocked();
+				if (epochUnlocked.isPresent()) {
+					return Result.error("Cannot be locked for BetanetV1.");
+				}
+
+				return Result.success();
+			},
 			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
 			// FIXME: this isn't 100% correct
 			(i, o, index) -> new DeprecatedUnstakeTokens(i.getOwner(), i.getDelegateKey(), o.getAmount())

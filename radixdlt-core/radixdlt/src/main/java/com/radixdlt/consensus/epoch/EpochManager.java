@@ -285,7 +285,7 @@ public final class EpochManager {
 			}
 		}
 
-		log.trace("{}: EPOCH_CHANGE: {}", this.self, epochChange);
+		log.trace("EPOCH_CHANGE: {}", epochChange);
 
 		this.currentEpoch = epochChange;
 		this.updateEpochState();

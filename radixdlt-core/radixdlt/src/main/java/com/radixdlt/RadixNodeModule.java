@@ -26,6 +26,8 @@ import com.radixdlt.api.UniverseController;
 import com.radixdlt.api.faucet.FaucetModule;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
+import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.radixdlt.statecomputer.transaction.EmptyTransactionCheckModule;
@@ -90,8 +92,8 @@ public final class RadixNodeModule extends AbstractModule {
 		// Default values mean that pacemakers will sync if they are within 5 views of each other.
 		// 5 consecutive failing views will take 1*(2^6)-1 seconds = 63 seconds.
 		bindConstant().annotatedWith(PacemakerTimeout.class).to(3000L);
-		bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
-		bindConstant().annotatedWith(PacemakerMaxExponent.class).to(6);
+		bindConstant().annotatedWith(PacemakerRate.class).to(1.1);
+		bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
 
 		// Mempool configuration
 		var mempoolMaxSize = properties.get("mempool.maxSize", 10000);
@@ -105,7 +107,7 @@ public final class RadixNodeModule extends AbstractModule {
 		// These cannot be changed without introducing possible forks with
 		// the network.
 		// TODO: Move these deeper into radix engine.
-		install(RadixEngineConfig.asModule(1, 100, 100000, 50));
+		install(RadixEngineConfig.asModule(1, 100, 50));
 
 		// System (e.g. time, random)
 		install(new SystemModule());
@@ -161,6 +163,8 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new EpochsSyncModule());
 
 		// State Computer
+		install(new BetanetForksModule());
+		install(new RadixEngineForksModule());
 		install(new RadixEngineStateComputerModule());
 		install(new RadixEngineModule());
 		install(new RadixEngineValidatorComputersModule());

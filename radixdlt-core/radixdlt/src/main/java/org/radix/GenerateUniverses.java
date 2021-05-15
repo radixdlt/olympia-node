@@ -29,6 +29,7 @@ import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.client.Rri;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -42,10 +43,13 @@ import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.RadixNativeTokenModule;
+import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
@@ -290,7 +294,9 @@ public final class GenerateUniverses {
 					bind(UniverseType.class).toInstance(universeType);
 					install(new CryptoModule());
 					install(new RadixNativeTokenModule());
-					install(RadixEngineConfig.asModule(1, 100, 100000L, 50));
+					install(new BetanetForksModule());
+					install(new RadixEngineOnlyLatestForkModule(View.of(100)));
+					install(RadixEngineConfig.asModule(1, 100, 50));
 					install(new RadixEngineModule());
 
 					// TODO: This is a hack

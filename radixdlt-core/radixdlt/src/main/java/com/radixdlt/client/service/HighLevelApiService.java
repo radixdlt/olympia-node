@@ -17,9 +17,12 @@
 
 package com.radixdlt.client.service;
 
+import org.json.JSONArray;
+
 import com.google.inject.Inject;
 import com.radixdlt.client.Rri;
 import com.radixdlt.client.api.TransactionAction;
+import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.handler.ActionParser;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.TokenBalance;
@@ -28,12 +31,9 @@ import com.radixdlt.client.store.berkeley.BalanceEntry;
 import com.radixdlt.client.store.berkeley.UnstakeEntry;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.client.api.TxHistoryEntry;
-
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Tuple.Tuple2;
-import org.json.JSONArray;
 
 import java.time.Instant;
 import java.util.List;
@@ -43,7 +43,6 @@ import java.util.stream.Collectors;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class HighLevelApiService {
-
 	private final Universe universe;
 	private final ClientApiStore clientApiStore;
 

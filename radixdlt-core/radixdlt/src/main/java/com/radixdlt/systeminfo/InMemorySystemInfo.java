@@ -17,6 +17,7 @@
 
 package com.radixdlt.systeminfo;
 
+import com.google.inject.Inject;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
@@ -26,8 +27,8 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.store.LastProof;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -35,14 +36,19 @@ import java.util.concurrent.atomic.AtomicReference;
  * Manages system information to be consumed by clients such as the api.
  */
 public final class InMemorySystemInfo {
-	private static final Logger logger = LogManager.getLogger();
 	private final AtomicReference<EpochLocalTimeoutOccurrence> lastTimeout = new AtomicReference<>();
 	private final AtomicReference<EpochView> currentView = new AtomicReference<>(EpochView.of(0L, View.genesis()));
 	private final AtomicReference<QuorumCertificate> highQC = new AtomicReference<>();
-	private final AtomicReference<LedgerProof> ledgerProof = new AtomicReference<>();
-	private final AtomicReference<LedgerProof> epochsLedgerProof = new AtomicReference<>();
+	private final AtomicReference<LedgerProof> ledgerProof;
+	private final AtomicReference<LedgerProof> epochsLedgerProof;
 
-	public InMemorySystemInfo() {
+	@Inject
+	public InMemorySystemInfo(
+		@LastProof LedgerProof lastProof,
+		@LastEpochProof LedgerProof lastEpochProof
+	) {
+		this.ledgerProof = new AtomicReference<>(lastProof);
+		this.epochsLedgerProof = new AtomicReference<>(lastEpochProof);
 	}
 
 	public void processTimeout(EpochLocalTimeoutOccurrence timeout) {

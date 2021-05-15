@@ -19,10 +19,12 @@ package com.radixdlt;
 
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.client.service.ScheduledCacheCleanup;
+import com.radixdlt.client.service.ScheduledStatsCollecting;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.mempool.MempoolRelayTrigger;
+
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -116,7 +118,7 @@ public class DispatcherModule extends AbstractModule {
 				MempoolAddFailure.class,
 				m -> {
 					if (m.getException() instanceof RadixEngineMempoolException) {
-						RadixEngineMempoolException e = (RadixEngineMempoolException) m.getException();
+						var e = (RadixEngineMempoolException) m.getException();
 						if (e.getException().getErrorCode().equals(RadixEngineErrorCode.HOOK_ERROR)) {
 							return CounterType.MEMPOOL_ERRORS_HOOK;
 						} else if (e.getException().getErrorCode().equals(RadixEngineErrorCode.CM_ERROR)) {
@@ -128,7 +130,7 @@ public class DispatcherModule extends AbstractModule {
 					}
 					return CounterType.MEMPOOL_ERRORS_OTHER;
 				},
-				true
+				false
 			))
 			.in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() { })
@@ -142,7 +144,7 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<EventDispatcher<MempoolFillerUpdate>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MempoolFillerUpdate.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<ScheduledMempoolFill>>() { })
-				.toProvider(Dispatchers.dispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.dispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<NoVote>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(NoVote.class, v -> CounterType.BFT_REJECTED, true))
 			.in(Scopes.SINGLETON);
@@ -152,7 +154,6 @@ public class DispatcherModule extends AbstractModule {
 				v -> CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS,
 				true
 			)).in(Scopes.SINGLETON);
-
 		bind(new TypeLiteral<ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(new TypeLiteral<Epoched<ScheduledLocalTimeout>>() { }))
 			.in(Scopes.SINGLETON);
@@ -165,7 +166,8 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<ScheduledEventDispatcher<SyncLedgerUpdateTimeout>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(SyncLedgerUpdateTimeout.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout>>() { })
-			.toProvider(Dispatchers.scheduledDispatcherProvider(SyncCheckReceiveStatusTimeout.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.scheduledDispatcherProvider(SyncCheckReceiveStatusTimeout.class))
+			.in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<SyncCheckTrigger>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(SyncCheckTrigger.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMempoolFill>>() { })
@@ -174,11 +176,12 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledQueueFlush.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledCacheCleanup>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledCacheCleanup.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledStatsCollecting>>() { })
+			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledStatsCollecting.class)).in(Scopes.SINGLETON);
 
 		// BFT
 		bind(new TypeLiteral<RemoteEventDispatcher<Proposal>>() { })
 			.toProvider(Dispatchers.remoteDispatcherProvider(Proposal.class)).in(Scopes.SINGLETON);
-
 		bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() { })
 			.toProvider(Dispatchers.remoteDispatcherProvider(Vote.class)).in(Scopes.SINGLETON);
 
@@ -187,7 +190,6 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.remoteDispatcherProvider(GetVerticesResponse.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesErrorResponse>>() { })
 			.toProvider(Dispatchers.remoteDispatcherProvider(GetVerticesErrorResponse.class)).in(Scopes.SINGLETON);
-
 		bind(new TypeLiteral<RemoteEventDispatcher<MempoolAdd>>() { })
 			.toProvider(Dispatchers.remoteDispatcherProvider(MempoolAdd.class)).in(Scopes.SINGLETON);
 
@@ -258,10 +260,10 @@ public class DispatcherModule extends AbstractModule {
 		Environment environment,
 		SystemCounters systemCounters
 	) {
-		EventDispatcher<LocalSyncRequest> envDispatcher = environment.getDispatcher(LocalSyncRequest.class);
+		var envDispatcher = environment.getDispatcher(LocalSyncRequest.class);
 		return req -> {
 			if (logger.isTraceEnabled()) {
-				Class<?> callingClass = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+				var callingClass = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 				logger.trace("LOCAL_SYNC_REQUEST dispatched by {}", callingClass);
 			}
 
@@ -284,7 +286,7 @@ public class DispatcherModule extends AbstractModule {
 		@ProcessOnDispatch Set<EventProcessor<ScheduledLocalTimeout>> processors,
 		Environment environment
 	) {
-		ScheduledEventDispatcher<ScheduledLocalTimeout> dispatcher = environment.getScheduledDispatcher(ScheduledLocalTimeout.class);
+		var dispatcher = environment.getScheduledDispatcher(ScheduledLocalTimeout.class);
 		return (timeout, ms) -> {
 			dispatcher.dispatch(timeout, ms);
 			processors.forEach(e -> e.process(timeout));
@@ -316,7 +318,7 @@ public class DispatcherModule extends AbstractModule {
 		Environment environment,
 		SystemCounters systemCounters
 	) {
-		EventDispatcher<BFTInsertUpdate> dispatcher = environment.getDispatcher(BFTInsertUpdate.class);
+		var dispatcher = environment.getDispatcher(BFTInsertUpdate.class);
 		return update -> {
 			if (update.getSiblingsCount() > 1) {
 				systemCounters.increment(CounterType.BFT_VERTEX_STORE_FORKS);
@@ -335,7 +337,7 @@ public class DispatcherModule extends AbstractModule {
 		Environment environment,
 		SystemCounters systemCounters
 	) {
-		EventDispatcher<BFTRebuildUpdate> dispatcher = environment.getDispatcher(BFTRebuildUpdate.class);
+		var dispatcher = environment.getDispatcher(BFTRebuildUpdate.class);
 		return update -> {
 			long stateVersion = update.getVertexStoreState().getRootHeader().getStateVersion();
 			systemCounters.set(CounterType.BFT_STATE_VERSION, stateVersion);
@@ -350,7 +352,7 @@ public class DispatcherModule extends AbstractModule {
 		@ProcessOnDispatch Set<EventProcessor<BFTHighQCUpdate>> processors,
 		Environment environment
 	) {
-		EventDispatcher<BFTHighQCUpdate> dispatcher = environment.getDispatcher(BFTHighQCUpdate.class);
+		var dispatcher = environment.getDispatcher(BFTHighQCUpdate.class);
 		return update -> {
 			dispatcher.dispatch(update);
 			processors.forEach(p -> p.process(update));
@@ -384,7 +386,7 @@ public class DispatcherModule extends AbstractModule {
 				processors.forEach(e -> e.process(commit));
 			};
 		} else {
-			EventDispatcher<BFTCommittedUpdate> dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
+			var dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
 			return commit -> {
 				long stateVersion = commit.getVertexStoreState().getRootHeader().getStateVersion();
 				systemCounters.set(CounterType.BFT_STATE_VERSION, stateVersion);
@@ -406,7 +408,7 @@ public class DispatcherModule extends AbstractModule {
 		if (asyncProcessors.isEmpty()) {
 			return viewTimeout -> syncProcessors.forEach(e -> e.process(viewTimeout));
 		} else {
-			EventDispatcher<LocalTimeoutOccurrence> dispatcher = environment.getDispatcher(LocalTimeoutOccurrence.class);
+			var dispatcher = environment.getDispatcher(LocalTimeoutOccurrence.class);
 			return timeout -> {
 				syncProcessors.forEach(e -> e.process(timeout));
 				dispatcher.dispatch(timeout);
@@ -426,7 +428,7 @@ public class DispatcherModule extends AbstractModule {
 				processors.forEach(e -> e.process(timeout));
 			};
 		} else {
-			EventDispatcher<EpochLocalTimeoutOccurrence> dispatcher = environment.getDispatcher(EpochLocalTimeoutOccurrence.class);
+			var dispatcher = environment.getDispatcher(EpochLocalTimeoutOccurrence.class);
 			return timeout -> {
 				logger.info("LOCAL_TIMEOUT_OCCURRENCE: {}", timeout);
 				dispatcher.dispatch(timeout);
@@ -441,7 +443,7 @@ public class DispatcherModule extends AbstractModule {
 		Environment environment,
 		SystemCounters counters
 	) {
-		RemoteEventDispatcher<GetVerticesRequest> dispatcher = environment.getRemoteDispatcher(GetVerticesRequest.class);
+		var dispatcher = environment.getRemoteDispatcher(GetVerticesRequest.class);
 		return (node, request) -> {
 			counters.increment(CounterType.BFT_SYNC_REQUESTS_SENT);
 			dispatcher.dispatch(node, request);
@@ -449,15 +451,14 @@ public class DispatcherModule extends AbstractModule {
 		};
 	}
 
-
 	@Provides
 	@Singleton
 	private EventDispatcher<ViewUpdate> viewUpdateEventDispatcher(
 		@ProcessOnDispatch Set<EventProcessor<ViewUpdate>> processors,
 		Environment environment
 	) {
-		EventDispatcher<ViewUpdate> dispatcher = environment.getDispatcher(ViewUpdate.class);
-		final RateLimiter logLimiter = RateLimiter.create(1.0);
+		var dispatcher = environment.getDispatcher(ViewUpdate.class);
+		var logLimiter = RateLimiter.create(1.0);
 		return viewUpdate -> {
 			Level logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
 			logger.log(logLevel, "NextSyncView: {}", viewUpdate);
@@ -472,8 +473,8 @@ public class DispatcherModule extends AbstractModule {
 		@ProcessOnDispatch Set<EventProcessor<EpochViewUpdate>> processors,
 		Environment environment
 	) {
-		final RateLimiter logLimiter = RateLimiter.create(1.0);
-		EventDispatcher<EpochViewUpdate> dispatcher = environment.getDispatcher(EpochViewUpdate.class);
+		var logLimiter = RateLimiter.create(1.0);
+		var dispatcher = environment.getDispatcher(EpochViewUpdate.class);
 		return epochViewUpdate -> {
 			Level logLevel = logLimiter.tryAcquire() ? Level.DEBUG : Level.TRACE;
 			logger.log(logLevel, "NextSyncView: {}", epochViewUpdate);
@@ -488,7 +489,7 @@ public class DispatcherModule extends AbstractModule {
 		@ProcessOnDispatch Set<EventProcessor<LedgerUpdate>> processors,
 		Environment environment
 	) {
-		EventDispatcher<LedgerUpdate> dispatcher = environment.getDispatcher(LedgerUpdate.class);
+		var dispatcher = environment.getDispatcher(LedgerUpdate.class);
 		return u -> {
 			dispatcher.dispatch(u);
 			processors.forEach(e -> e.process(u));
@@ -501,7 +502,7 @@ public class DispatcherModule extends AbstractModule {
 		@ProcessOnDispatch Set<EventProcessor<EpochsLedgerUpdate>> processors,
 		Environment environment
 	) {
-		EventDispatcher<EpochsLedgerUpdate> dispatcher = environment.getDispatcher(EpochsLedgerUpdate.class);
+		var dispatcher = environment.getDispatcher(EpochsLedgerUpdate.class);
 		return u -> {
 			dispatcher.dispatch(u);
 			processors.forEach(e -> e.process(u));

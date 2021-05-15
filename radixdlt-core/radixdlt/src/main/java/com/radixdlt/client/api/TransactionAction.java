@@ -30,13 +30,15 @@ import com.radixdlt.utils.functional.Functions;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
+import static java.util.Optional.ofNullable;
+
 public class TransactionAction {
 	private final ActionType actionType;
 	private final REAddr from;
 	private final REAddr to;
 	private final ECPublicKey delegate;
 	private final UInt256 amount;
-	private final Optional<REAddr> rri;
+	private final REAddr rri;
 	private final byte[] data;
 
 	private TransactionAction(
@@ -45,7 +47,7 @@ public class TransactionAction {
 		REAddr to,
 		ECPublicKey delegate,
 		UInt256 amount,
-		Optional<REAddr> rri,
+		REAddr rri,
 		byte[] data
 	) {
 		this.actionType = actionType;
@@ -58,7 +60,7 @@ public class TransactionAction {
 	}
 
 	public static TransactionAction msg(String msg) {
-		return new TransactionAction(ActionType.MSG, null, null, null, null, null, msg.getBytes(StandardCharsets.UTF_8));
+		return create(ActionType.MSG, null, null, null, null, null, msg.getBytes(StandardCharsets.UTF_8));
 	}
 
 	public static TransactionAction create(
@@ -68,7 +70,7 @@ public class TransactionAction {
 		UInt256 amount,
 		Optional<REAddr> rri
 	) {
-		return new TransactionAction(actionType, from, to, null, amount, rri, null);
+		return create(actionType, from, to, null, amount, rri.orElse(null), null);
 	}
 
 	public static TransactionAction create(
@@ -78,7 +80,19 @@ public class TransactionAction {
 		UInt256 amount,
 		Optional<REAddr> rri
 	) {
-		return new TransactionAction(actionType, from, null, delegate, amount, rri, null);
+		return create(actionType, from, null, delegate, amount, rri.orElse(null), null);
+	}
+
+	public static TransactionAction create(
+		ActionType actionType,
+		REAddr from,
+		REAddr to,
+		ECPublicKey delegate,
+		UInt256 amount,
+		REAddr rri,
+		byte[] data
+	) {
+		return new TransactionAction(actionType, from, to, delegate, amount, rri, data);
 	}
 
 	public REAddr getFrom() {
@@ -86,7 +100,7 @@ public class TransactionAction {
 	}
 
 	public <T> T map(Functions.FN6<T, ActionType, REAddr, REAddr, ECPublicKey, UInt256, Optional<REAddr>> mapper) {
-		return mapper.apply(actionType, from, to, delegate, amount, rri);
+		return mapper.apply(actionType, from, to, delegate, amount, ofNullable(rri));
 	}
 
 	public TxAction toAction() {
@@ -104,6 +118,6 @@ public class TransactionAction {
 	}
 
 	private REAddr rriValue() {
-		return rri.orElseThrow(() -> new IllegalStateException("Attempt to transfer with missing RRI"));
+		return ofNullable(rri).orElseThrow(() -> new IllegalStateException("Attempt to transfer with missing RRI"));
 	}
 }

@@ -20,11 +20,14 @@ import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.client.Rri;
 import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.statecomputer.RadixEngineConfig;
+import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
 import com.radixdlt.utils.UInt384;
 import org.junit.Assert;
 import org.junit.Before;
@@ -110,7 +113,9 @@ public class BerkeleyClientApiStoreTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 0),
-			RadixEngineConfig.asModule(1, 100, 100, 50),
+			new BetanetForksModule(),
+			new RadixEngineOnlyLatestForkModule(View.of(100)),
+			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
 			new AbstractModule() {
@@ -345,7 +350,8 @@ public class BerkeleyClientApiStoreTest {
 			mock(SystemCounters.class),
 			mock(ScheduledEventDispatcher.class),
 			ledgerCommitted,
-			new TransactionParser()
+			new TransactionParser(),
+			true
 		);
 	}
 

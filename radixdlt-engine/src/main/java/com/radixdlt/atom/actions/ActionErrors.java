@@ -43,7 +43,8 @@ public enum ActionErrors implements Failure {
 	INVALID_ADDRESS(1317, "Invalid address"),
 	INVALID_VALIDATOR_ADDRESS(1318, "Invalid validator address"),
 	INVALID_AMOUNT(1319, "Invalid amount"),
-	TRANSACTION_ADDRESS_DOES_NOT_MATCH(1320, "Provided txID does not match provided transaction");
+	TRANSACTION_ADDRESS_DOES_NOT_MATCH(1320, "Provided txID does not match provided transaction"),
+	EMPTY_TRANSACTIONS_NOT_SUPPORTED(1321, "Empty transactions are not supported");
 
 	private final int code;
 	private final String message;

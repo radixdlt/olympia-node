@@ -36,84 +36,84 @@ import java.util.stream.Collectors;
 
 public class MemoryLeakDetector {
 
-    private static final Logger log = LogManager.getLogger();
+	private static final Logger log = LogManager.getLogger();
 
-    private static final String OLD_GEN_GC_NAME = "G1 Old Gen";
+	private static final String OLD_GEN_GC_NAME = "G1 Old Gen";
 
-    private static final int CONSECUTIVE_INCREASE_ALERT_THRESHOLD = 3;
+	private static final int CONSECUTIVE_INCREASE_ALERT_THRESHOLD = 3;
 
-    private final EvictingQueue<Long> memTrail = EvictingQueue.create(CONSECUTIVE_INCREASE_ALERT_THRESHOLD + 1);
+	private final EvictingQueue<Long> memTrail = EvictingQueue.create(CONSECUTIVE_INCREASE_ALERT_THRESHOLD + 1);
 
-    private final Map<String, NotificationListener> registeredListeners = new HashMap<>();
+	private final Map<String, NotificationListener> registeredListeners = new HashMap<>();
 
-    public static MemoryLeakDetector start() {
-    	return new MemoryLeakDetector();
-    }
+	public static MemoryLeakDetector start() {
+		return new MemoryLeakDetector();
+	}
 
-    private MemoryLeakDetector() {
-        log.info("Starting memory leak detector...");
-        ManagementFactory.getGarbageCollectorMXBeans()
-                .forEach(this::registerGCListener);
-    }
+	private MemoryLeakDetector() {
+		log.info("Starting memory leak detector...");
+		ManagementFactory.getGarbageCollectorMXBeans()
+				.forEach(this::registerGCListener);
+	}
 
-    public void stop() {
-        ManagementFactory.getGarbageCollectorMXBeans()
-                .forEach(this::unregisterGCListener);
-        memTrail.clear();
-        registeredListeners.clear();
-    }
+	public void stop() {
+		ManagementFactory.getGarbageCollectorMXBeans()
+				.forEach(this::unregisterGCListener);
+		memTrail.clear();
+		registeredListeners.clear();
+	}
 
-    private void unregisterGCListener(GarbageCollectorMXBean garbageCollectorMXBean) {
-        final NotificationEmitter notificationEmitter = (NotificationEmitter) garbageCollectorMXBean;
-        final NotificationListener listener = registeredListeners.get(garbageCollectorMXBean.getName());
-        if (listener != null) {
-            try {
-                notificationEmitter.removeNotificationListener(listener);
-            } catch (ListenerNotFoundException e) {
-                // nothing
-            }
-        }
-    }
+	private void unregisterGCListener(GarbageCollectorMXBean garbageCollectorMXBean) {
+		final NotificationEmitter notificationEmitter = (NotificationEmitter) garbageCollectorMXBean;
+		final NotificationListener listener = registeredListeners.get(garbageCollectorMXBean.getName());
+		if (listener != null) {
+			try {
+				notificationEmitter.removeNotificationListener(listener);
+			} catch (ListenerNotFoundException e) {
+				// nothing
+			}
+		}
+	}
 
-    private void registerGCListener(GarbageCollectorMXBean garbageCollectorMXBean) {
-        final NotificationEmitter notificationEmitter = (NotificationEmitter) garbageCollectorMXBean;
-        final NotificationListener listener = this::handleNotification;
-        registeredListeners.put(garbageCollectorMXBean.getName(), listener);
-        notificationEmitter.addNotificationListener(listener, null, null);
-    }
+	private void registerGCListener(GarbageCollectorMXBean garbageCollectorMXBean) {
+		final NotificationEmitter notificationEmitter = (NotificationEmitter) garbageCollectorMXBean;
+		final NotificationListener listener = this::handleNotification;
+		registeredListeners.put(garbageCollectorMXBean.getName(), listener);
+		notificationEmitter.addNotificationListener(listener, null, null);
+	}
 
-    private void handleNotification(Notification notification, Object handback) {
-        if (notification.getType().equals(GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION)) {
-            final GarbageCollectionNotificationInfo info =
-                    GarbageCollectionNotificationInfo.from((CompositeData) notification.getUserData());
+	private void handleNotification(Notification notification, Object handback) {
+		if (notification.getType().equals(GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION)) {
+			final GarbageCollectionNotificationInfo info =
+					GarbageCollectionNotificationInfo.from((CompositeData) notification.getUserData());
 
-            final long oldGenMemUsageBeforeGc = info.getGcInfo()
-                    .getMemoryUsageBeforeGc().get(OLD_GEN_GC_NAME).getUsed();
+			final long oldGenMemUsageBeforeGc = info.getGcInfo()
+					.getMemoryUsageBeforeGc().get(OLD_GEN_GC_NAME).getUsed();
 
-            final long oldGenMemUsageAfterGc = info.getGcInfo()
-                    .getMemoryUsageAfterGc().get(OLD_GEN_GC_NAME).getUsed();
+			final long oldGenMemUsageAfterGc = info.getGcInfo()
+					.getMemoryUsageAfterGc().get(OLD_GEN_GC_NAME).getUsed();
 
-            if (oldGenMemUsageAfterGc < oldGenMemUsageBeforeGc) { // we're only considering GC runs where old gen was cleaned
-                memTrail.offer(oldGenMemUsageAfterGc);
+			if (oldGenMemUsageAfterGc < oldGenMemUsageBeforeGc) { // we're only considering GC runs where old gen was cleaned
+				memTrail.offer(oldGenMemUsageAfterGc);
 
-                final boolean consecutivelyIncreasing = Comparators.isInStrictOrder(memTrail, Long::compare);
+				final boolean consecutivelyIncreasing = Comparators.isInStrictOrder(memTrail, Long::compare);
 
-                if (consecutivelyIncreasing && memTrail.remainingCapacity() == 0) {
-                    final String memTrailStr = memTrail.stream()
-                            .map(n -> Long.toString(toMiB(n)))
-                            .collect(Collectors.joining(", "));
-                    log.warn("Potential memory leak detected! After {} latest GC runs the old gen heap steadily increases.",
-                            CONSECUTIVE_INCREASE_ALERT_THRESHOLD);
-                    log.warn("Memory (old gen) after current GC: {}MiB. Previous values (MiB): [{}]",
-                            toMiB(oldGenMemUsageAfterGc), memTrailStr);
+				if (consecutivelyIncreasing && memTrail.remainingCapacity() == 0) {
+					final String memTrailStr = memTrail.stream()
+						.map(n -> Long.toString(toMiB(n)))
+						.collect(Collectors.joining(", "));
+					log.info(
+						"Memory (old gen) after current GC: {}MiB (steady increase since {} runs)."
+							+ " Previous values (MiB): [{}]",
+						toMiB(oldGenMemUsageAfterGc), CONSECUTIVE_INCREASE_ALERT_THRESHOLD, memTrailStr
+					);
+					memTrail.clear(); // reset the state
+				}
+			}
+		}
+	}
 
-                    memTrail.clear(); // reset the state
-                }
-            }
-        }
-    }
-
-    private long toMiB(long valueInBytes) {
-        return valueInBytes / (1024L * 1024L);
-    }
+	private long toMiB(long valueInBytes) {
+		return valueInBytes / (1024L * 1024L);
+	}
 }

@@ -33,11 +33,13 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerIds;
+import com.radixdlt.utils.Instants;
 import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -72,7 +74,7 @@ public class JacksonCborMapper extends ObjectMapper {
 							  Optional<BeanSerializerModifier> serializationModifier) {
 		super(new RadixCBORFactory());
 		RadixObjectMapperConfigurator.configure(this, idLookup, filterProvider, sortProperties);
-		SimpleModule cborModule = new SimpleModule();
+		var cborModule = new SimpleModule();
 
 		cborModule.addSerializer(SerializerDummy.class, new JacksonSerializerDummySerializer(idLookup));
 		cborModule.addSerializer(EUID.class, new JacksonCborObjectBytesSerializer<>(
@@ -114,6 +116,11 @@ public class JacksonCborMapper extends ObjectMapper {
 				long[].class,
 				JacksonCodecConstants.LONGS_VALUE,
 				Longs::toBytes
+		));
+		cborModule.addSerializer(Instant.class, new JacksonCborObjectBytesSerializer<>(
+			Instant.class,
+			JacksonCodecConstants.INSTANT_VALUE,
+			Instants::toBytes
 		));
 
 		cborModule.addKeySerializer(AID.class, new StdSerializer<AID>(AID.class) {
@@ -163,6 +170,11 @@ public class JacksonCborMapper extends ObjectMapper {
 				long[].class,
 				JacksonCodecConstants.LONGS_VALUE,
 				Longs::fromBytes
+		));
+		cborModule.addDeserializer(Instant.class, new JacksonCborObjectBytesDeserializer<>(
+			Instant.class,
+			JacksonCodecConstants.INSTANT_VALUE,
+			Instants::fromBytes
 		));
 		cborModule.addKeyDeserializer(AID.class, new KeyDeserializer() {
 			@Override
