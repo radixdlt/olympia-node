@@ -439,8 +439,7 @@ public final class LocalSyncService {
 
 		if (isNewerState) {
 			final var newState = currentState.withCurrentHeader(updatedHeader);
-			this.updateSyncTargetDiffCounter(newState);
-			return newState;
+			return this.updateSyncTargetDiffCounter(newState);
 		} else {
 			return currentState;
 		}
@@ -461,15 +460,14 @@ public final class LocalSyncService {
 			final var newState = currentState
 				.withTargetHeader(header)
 				.withCandidatePeers(peers);
-			this.updateSyncTargetDiffCounter(newState);
-			return newState;
+			return this.updateSyncTargetDiffCounter(newState);
 		} else {
 			log.trace("LocalSync: skipping as already targeted {}", currentState.getTargetHeader());
 			return currentState;
 		}
 	}
 
-	private void updateSyncTargetDiffCounter(SyncState syncState) {
+	private <T extends SyncState> T updateSyncTargetDiffCounter(T syncState) {
 		if (syncState instanceof SyncingState) {
 			final var syncingState = (SyncingState) syncState;
 			final var stateVersionDiff =
@@ -486,6 +484,8 @@ public final class LocalSyncService {
 			this.systemCounters.set(CounterType.SYNC_TARGET_CURRENT_DIFF, 0);
 			this.systemCounters.set(CounterType.SYNC_TARGET_STATE_VERSION, syncState.getCurrentHeader().getStateVersion());
 		}
+
+		return syncState;
 	}
 
 	public SyncState getSyncState() {
