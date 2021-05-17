@@ -161,7 +161,7 @@ public class ArchiveApiModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	private EventProcessorOnRunner<?> atomsCommittedToLedgerEventProcessorBerkeleyClientApi(
-			BerkeleyClientApiStore berkeleyClientApiStore
+		BerkeleyClientApiStore berkeleyClientApiStore
 	) {
 		return new EventProcessorOnRunner<>(
 			Runners.APPLICATION,
