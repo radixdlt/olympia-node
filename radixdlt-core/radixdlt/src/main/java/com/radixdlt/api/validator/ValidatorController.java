@@ -16,7 +16,7 @@
  *
  */
 
-package com.radixdlt.api.node;
+package com.radixdlt.api.validator;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
@@ -67,14 +67,14 @@ import java.util.concurrent.ExecutionException;
 import static com.radixdlt.api.RestUtils.*;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
-public final class NodeController implements Controller {
+public final class ValidatorController implements Controller {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher;
 	private final ECPublicKey bftKey;
 	private final REAddr account;
 
 	@Inject
-	public NodeController(
+	public ValidatorController(
 		@Self REAddr account,
 		@Self ECPublicKey bftKey,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
