@@ -64,10 +64,10 @@ Following configuration options control which APIs are enabled at the node:
 ## New Organization of APIs
 
  The general approach to the API organization is based on the following considerations:
-- All methods are spread across four top-level routes:
-  - `/archive` (former `/rpc`) - read-only methods, requiring an archive node
+- Most methods are spread across five endpoints:
+  - `/archive` (formerly `/rpc`) - read-only methods, requiring an archive node
   - `/construction` - methods which support building and submitting transactions, which can be enabled by either archive or full nodes
-  - `/accounts` supports methods to fetch your associated account info, and a one-step method to build, sign, and submit a transaction
+  - `/account` supports methods to fetch your associated account info, and a one-step method to build, sign, and submit a transaction
   - `/validation` - read-only methods which provide same information as available today via all `/node/*` endpoints
   - `/system` - read-only methods which provide same information as available today via all `/system/*` endpoints
     
@@ -96,10 +96,10 @@ Majority of the REST APIs are replaced with JSON-RPC counterparts. Remaining and
 | --- | --- |
 | tokens.get_native_token | radix.nativeToken |
 | tokens.get_info | radix.tokenInfo |
-| accounts.get_balances | radix.tokenBalances |
-| accounts.get_stake_positions | radix.stakePositions |
-| accounts.get_unstake_positions | radix.unstakePositions |
-| accounts.get_transaction_history | radix.transactionHistory |
+| account.get_balances | radix.tokenBalances |
+| account.get_stake_positions | radix.stakePositions |
+| account.get_unstake_positions | radix.unstakePositions |
+| account.get_transaction_history | radix.transactionHistory |
 | transactions.lookup_transaction | radix.lookupTransaction |
 | transactions.get_transaction_status | radix.statusOfTransaction |
 | validators.get_next_epoch_set | radix.validators |
@@ -119,8 +119,8 @@ Majority of the REST APIs are replaced with JSON-RPC counterparts. Remaining and
 
 | Method | Description |
 | --- | --- |
-| accounts.get_info | Your account's address and balances (not node ID) |
-| accounts.submit_transaction | Equivalent to `transaction.build + transaction.finalize + transaction.submit` methods except does not require keys and signs transaction with node private key. Input parameters are same as for `transaction.build`, output is formatted as for `transaction.submit` method |
+| account.get_info | Your account's address and balances (not node ID) |
+| account.submit_transaction_single_step | Equivalent to `transaction.build + transaction.finalize + transaction.submit` methods except does not require keys and signs transaction with node private key. Input parameters are same as for `transaction.build`, output is formatted as for `transaction.submit` method |
 
 #### /system
 
@@ -149,7 +149,7 @@ Majority of the REST APIs are replaced with JSON-RPC counterparts. Remaining and
 | --- | --- |
 | validation.get_node_info | Get information about node as a validator - stakes, registration status, etc.
 | validation.get_current_epoch_data | Get information about the current set of validators
-| validation.get_next_epoch_set | Get information about the next set of validators
+| validation.get_next_epoch_data | Get information about the next set of validators
 
 
 #### /faucet
