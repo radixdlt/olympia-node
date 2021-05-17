@@ -57,7 +57,7 @@ Following configuration options control which APIs are enabled at the node:
 | client_api.enable | Enables JSON-RPC APIs|
 | universe_api.enable | Enables `/universe.json` API |
 | faucet.enable | Enables `/faucet/request` API |
-| chaos.enable | Enables `/chaos/message-flooder` and `/chaos/mempool-filler ` APIs |
+| chaos.enable | Enables `/chaos/message-flooder` and `/chaos/mempool-filler` APIs |
 
 </details>
 
@@ -73,6 +73,11 @@ Following configuration options control which APIs are enabled at the node:
     
 - The `/system`, `/account` and `/validator` endpoints are expected to be protected by firewall and/or require authentication/etc. 
   (similar requirements/setup as we have today)
+  
+- The following endpoints are supported until mainnet release (necessary for testing/debugging):
+  - `/chaos/message-flooder` 
+  - `/chaos/mempool-filler`
+  - `/faucet/request` 
 
 ### REST APIs
 

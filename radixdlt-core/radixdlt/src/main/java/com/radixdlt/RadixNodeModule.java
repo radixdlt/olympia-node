@@ -20,7 +20,7 @@ package com.radixdlt;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.api.Controller;
-import com.radixdlt.api.NodeApiModule;
+import com.radixdlt.api.ValidatorApiModule;
 
 import com.radixdlt.api.UniverseController;
 import com.radixdlt.api.construction.ConstructApiModule;
@@ -119,7 +119,10 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new NodeApplicationModule());
 
 		// API
-		install(new NodeApiModule());
+		if (properties.get("validator_api.enable", false)) {
+			log.info("Enabling /validator API");
+			install(new ValidatorApiModule());
+		}
 
 		if (properties.get("archive_api.enable", false)) {
 			log.info("Enabling Archive API");

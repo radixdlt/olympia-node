@@ -29,7 +29,7 @@ import com.radixdlt.api.archive.store.ClientApiStore;
 import com.radixdlt.api.archive.store.berkeley.BerkeleyClientApiStore;
 import com.radixdlt.api.archive.store.berkeley.ScheduledQueueFlush;
 import com.radixdlt.api.config.ConfigController;
-import com.radixdlt.api.node.NodeController;
+import com.radixdlt.api.validator.ValidatorController;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.mempool.MempoolAddFailure;
@@ -38,7 +38,7 @@ import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 /**
  * Configures the api including http server setup
  */
-public final class NodeApiModule extends AbstractModule {
+public final class ValidatorApiModule extends AbstractModule {
 	@Override
 	public void configure() {
 		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
@@ -48,7 +48,7 @@ public final class NodeApiModule extends AbstractModule {
 
 		var controllers = Multibinder.newSetBinder(binder(), Controller.class);
 		//TODO: move each into appropriate modules with @ProvidesIntoSet annotation
-		controllers.addBinding().to(NodeController.class).in(Scopes.SINGLETON);
+		controllers.addBinding().to(ValidatorController.class).in(Scopes.SINGLETON);
 		controllers.addBinding().to(ConfigController.class).in(Scopes.SINGLETON);
 		//controllers.addBinding().to(SystemController.class).in(Scopes.SINGLETON);
 		//controllers.addBinding().to(ConstructController.class).in(Scopes.SINGLETON);
