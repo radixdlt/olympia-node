@@ -66,10 +66,10 @@ Following configuration options control which APIs are enabled at the node:
  The general approach to the API organization is based on the following considerations:
 - All methods are spread across four top-level routes:
   - `/archive` (former `/rpc`) - read-only methods, requiring an archive node
-  - `/construct` - methods which support building and submitting transactions, which can be enabled by either archive or full nodes
-  - `/account` supports methods to fetch your associated account info, and a one-step method to build, sign, and submit a transaction
+  - `/construction` - methods which support building and submitting transactions, which can be enabled by either archive or full nodes
+  - `/accounts` supports methods to fetch your associated account info, and a one-step method to build, sign, and submit a transaction
+  - `/validation` - read-only methods which provide same information as available today via all `/node/*` endpoints
   - `/system` - read-only methods which provide same information as available today via all `/system/*` endpoints
-  - `/validator` - read-only methods which provide same information as available today via all `/node/*` endpoints
     
 - The `/system`, `/account` and `/validator` endpoints are expected to be protected by firewall and/or require authentication/etc. 
   (similar requirements/setup as we have today)
@@ -77,7 +77,7 @@ Following configuration options control which APIs are enabled at the node:
 - The following endpoints are supported until mainnet release (necessary for testing/debugging):
   - `/chaos/message-flooder` 
   - `/chaos/mempool-filler`
-  - `/faucet/request` 
+  - `/faucet` 
 
 ### REST APIs
 
@@ -87,58 +87,76 @@ Majority of the REST APIs are replaced with JSON-RPC counterparts. Remaining and
 | --- | --- | --- |
 | /health | GET | Returns node health status - `UP` or `SYNCING`. Standard endpoint for use by operations. Typical response: `{"status" : "UP" }` |
 | /version | GET | Returns detailed information about software version and build info |
-| /faucet/request | POST | faucet API - betanet and local deployment only, disabled on mainnet |
-| /universe.json | GET | Get Radix Universe. Used during setup and configuration of the node |
+| /universe.json | GET | Get Radix Universe. Used during setup and configuration of the node but if possible looking to remove |
 
 ### JSON-RPC APIs
 
 #### /archive
 | Method Name | Old Method Name |
 | --- | --- |
-| token.native | radix.nativeToken |
-| token.info | radix.tokenInfo |
-| address.balances | radix.tokenBalances |
-| address.stakes | radix.stakePositions |
-| address.unstakes | radix.unstakePositions |
-| address.transactions | radix.transactionHistory |
-| transaction.info | radix.lookupTransaction |
-| transaction.status | radix.statusOfTransaction |
-| validator.list | radix.validators |
-| validator.info | radix.lookupValidator |
-| network.id | radix.networkId |
-| network.throughput | radix.networkTransactionThroughput |
-| network.demand | radix.networkTransactionDemand |
+| tokens.get_native_token | radix.nativeToken |
+| tokens.get_info | radix.tokenInfo |
+| accounts.get_balances | radix.tokenBalances |
+| accounts.get_stake_positions | radix.stakePositions |
+| accounts.get_unstake_positions | radix.unstakePositions |
+| accounts.get_transaction_history | radix.transactionHistory |
+| transactions.lookup_transaction | radix.lookupTransaction |
+| transactions.get_transaction_status | radix.statusOfTransaction |
+| validators.get_next_epoch_set | radix.validators |
+| validators.lookup_validator | radix.lookupValidator |
+| network.get_id | radix.networkId |
+| network.get_throughput | radix.networkTransactionThroughput |
+| network.get_demand | radix.networkTransactionDemand |
 
-#### /construct
+#### /construction
 | Method Name | Old Method Name | Notes |
 | --- | --- | --- |
-| transaction.build | radix.buildTransaction | Same as before |
-| transaction.finalize | radix.finalizeTransaction | Now returns a fully ready-to-submit blob and a transaction ID |
-| transaction.submit | radix.submitTransaction | Now accepts a single parameter, a ready-to-submit blob |
+| construction.build_transaction | radix.buildTransaction | Same as before |
+| construction.finalize_transaction | radix.finalizeTransaction | Now returns a fully ready-to-submit blob and a transaction ID |
+| construction.submit_transaction | radix.submitTransaction | Now accepts a single parameter, a ready-to-submit blob |
 
-#### /account
+#### /accounts
 
 | Method | Description |
 | --- | --- |
-| account.info | Your account's address and balances (not node ID) |
-| transaction.buildSignSubmit | Equivalent to `transaction.build + transaction.finalize + transaction.submit` methods except does not require keys and signs transaction with node private key. Input parameters are same as for `transaction.build`, output is formatted as for `transaction.submit` method |
+| accounts.get_info | Your account's address and balances (not node ID) |
+| accounts.submit_transaction | Equivalent to `transaction.build + transaction.finalize + transaction.submit` methods except does not require keys and signs transaction with node private key. Input parameters are same as for `transaction.build`, output is formatted as for `transaction.submit` method |
 
 #### /system
 
 | Method | Description |
 | --- | --- |
-| system.config | Get active configuration parameters for consensus, mempool and RE |
-| system.info | Get system information - public key, agent, supported protocols |
-| system.checkpoints | Get genesis txn and proof |
-| system.proof | Get current proof |
-| system.epochproof | Get epoch proof |
-| system.peers | Information about known peer nodes |
+| api.get_configuration | Get active configuration parameters for api |
+| api.get_data | Get data for api |
+| bft.get_configuration | Get active configuration parameters for consensus |
+| bft.get_data | Get data for consensus |
+| mempool.get_configuration | Get active configuration parameters for mempool |
+| mempool.get_data | Get data for mempool |
+| ledger.get_latest_proof | Get the latest known ledger proof |
+| ledger.get_latest_epoch_proof | Get the latest known ledger epoch proof |
+| radix_engine.get_configuration | Get active configuration parameters for radix engine |
+| radix_engine.get_data | Get data for radix engine |
+| sync.get_configuration | Get active configuration parameters for sync |
+| sync.get_data | Get data for sync |
+| networking.get_configuration | Get active configuration parameters for networking |
+| networking.get_peers | Get information about known peer nodes |
+| networking.get_data | Get data for networking |
+| checkpoints.get_checkpoints | Get genesis txn and proof |
 
-#### /validator
+#### /validation
 
 | Method | Description |
 | --- | --- |
-| validator.details | Get information about node as a validator - stakes, registration status, etc.
+| validation.get_node_info | Get information about node as a validator - stakes, registration status, etc.
+| validation.get_current_epoch_data | Get information about the current set of validators
+| validation.get_next_epoch_set | Get information about the next set of validators
+
+
+#### /faucet
+
+| Method | Description |
+| --- | --- |
+| faucet.request_tokens | Make a request for tokens for a particular account
 
 ### New Actions
 In order to make JSON RPC API complete, we need to support following actions while building transactions:
