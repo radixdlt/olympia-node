@@ -73,6 +73,19 @@ import com.radixdlt.universe.UniverseModule;
  * Module which manages everything in a single node
  */
 public final class RadixNodeModule extends AbstractModule {
+	private static final String API_PREFIX = "api.";
+	private static final String API_SUFFIX = ".enable";
+	private static final String API_ARCHIVE = API_PREFIX + "archive" + API_SUFFIX;
+	private static final String API_CONSTRUCT = API_PREFIX + "construct" + API_SUFFIX;
+	private static final String API_SYSTEM = API_PREFIX + "system" + API_SUFFIX;
+	private static final String API_ACCOUNT = API_PREFIX + "account" + API_SUFFIX;
+	private static final String API_VALIDATOR = API_PREFIX + "validator" + API_SUFFIX;
+	private static final String API_UNIVERSE = API_PREFIX + "universe" + API_SUFFIX;
+	private static final String API_FAUCET = API_PREFIX + "faucet" + API_SUFFIX;
+	private static final String API_CHAOS = API_PREFIX + "chaos" + API_SUFFIX;
+	private static final String API_HEALTH = API_PREFIX + "health" + API_SUFFIX;
+	private static final String API_VERSION = API_PREFIX + "version" + API_SUFFIX;
+
 	private static final Logger log = LogManager.getLogger();
 
 	private final RuntimeProperties properties;
@@ -121,6 +134,9 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new NodeApplicationModule());
 
 		// API
+//		if (properties.get())
+
+
 		if (properties.get("validator_api.enable", false)) {
 			log.info("Enabling /validator API");
 			install(new ValidatorApiModule());
