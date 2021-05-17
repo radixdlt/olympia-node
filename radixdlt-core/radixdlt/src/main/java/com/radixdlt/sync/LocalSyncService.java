@@ -76,7 +76,7 @@ public final class LocalSyncService {
 	}
 
 	public interface InvalidSyncResponseSender {
-		void sendInvalidSyncResponse(SyncResponse remoteSyncResponse);
+		void sendInvalidSyncResponse(BFTNode sender, SyncResponse remoteSyncResponse);
 	}
 
 	private static final Logger log = LogManager.getLogger();
@@ -367,8 +367,7 @@ public final class LocalSyncService {
 		} else if (!this.verifyResponse(syncResponse)) {
 			log.warn("LocalSync: Received invalid sync response {} from {}", syncResponse, sender);
 			// validation failed, remove from candidate peers and processSync
-			// TODO: also blacklist peer in PeerManager
-			invalidSyncedCommandsSender.sendInvalidSyncResponse(syncResponse);
+			invalidSyncedCommandsSender.sendInvalidSyncResponse(sender, syncResponse);
 			return this.processSync(
 				currentState
 					.clearPendingRequest()

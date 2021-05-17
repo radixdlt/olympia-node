@@ -19,6 +19,7 @@ package com.radixdlt.network.messaging;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import com.radixdlt.counters.SystemCounters;
@@ -60,11 +61,11 @@ class MessageDispatcher {
 		TimeSupplier timeSource,
 		PeerManager peerManager
 	) {
-		this.messageTtlMs = config.messagingTimeToLive(30_000L);
-		this.counters = counters;
-		this.serialization = serialization;
-		this.timeSource = timeSource;
-		this.peerManager = peerManager;
+		this.messageTtlMs = Objects.requireNonNull(config).messagingTimeToLive(30_000L);
+		this.counters = Objects.requireNonNull(counters);
+		this.serialization = Objects.requireNonNull(serialization);
+		this.timeSource = Objects.requireNonNull(timeSource);
+		this.peerManager = Objects.requireNonNull(peerManager);
 	}
 
 	CompletableFuture<Result<Object>> send(final OutboundMessageEvent outboundMessage) {

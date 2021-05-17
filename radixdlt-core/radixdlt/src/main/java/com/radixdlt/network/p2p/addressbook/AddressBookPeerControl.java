@@ -15,31 +15,27 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.network.messaging;
+package com.radixdlt.network.p2p.addressbook;
 
-import com.radixdlt.utils.functional.Failure;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.PeerControl;
 
-public enum MessagingErrors implements Failure {
-	MESSAGE_EXPIRED(1, "Message expired"),
-	IO_ERROR(2, "IO Error"),
-	SELF_CONNECTION_ATTEMPT(3, "Attempt to connect to self"),
-	PEER_BANNED(4, "Peer is banned");
+import java.time.Duration;
+import java.util.Objects;
 
-	private final int code;
-	private final String message;
+@Singleton
+public final class AddressBookPeerControl implements PeerControl {
 
-	MessagingErrors(int code, String message) {
-		this.code = code;
-		this.message = message;
+	private final AddressBook addressBook;
+
+	@Inject
+	public AddressBookPeerControl(AddressBook addressBook) {
+		this.addressBook = Objects.requireNonNull(addressBook);
 	}
 
-	@Override
-	public String message() {
-		return message;
-	}
-
-	@Override
-	public int code() {
-		return code;
+	public void banPeer(NodeId nodeId, Duration banDuration) {
+		this.addressBook.banPeer(nodeId, banDuration);
 	}
 }

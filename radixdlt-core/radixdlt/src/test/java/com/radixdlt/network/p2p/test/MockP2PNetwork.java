@@ -89,6 +89,18 @@ final class MockP2PNetwork {
 			return null;
 		});
 
+		when(clientSocketChannel.close()).thenAnswer(inv -> {
+			clientChannel.channelInactive(null);
+			serverChannel.channelInactive(null);
+			return null;
+		});
+
+		when(serverSocketChannel.close()).thenAnswer(inv -> {
+			serverChannel.channelInactive(null);
+			clientChannel.channelInactive(null);
+			return null;
+		});
+
 		try {
 			serverChannel.channelActive(null);
 			clientChannel.channelActive(null);

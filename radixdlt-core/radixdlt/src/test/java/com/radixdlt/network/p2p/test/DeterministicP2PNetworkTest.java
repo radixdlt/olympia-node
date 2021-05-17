@@ -54,6 +54,12 @@ public class DeterministicP2PNetworkTest {
 		}
 	}
 
+	protected void processAll() {
+		while (!testNetworkRunner.getDeterministicNetwork().allMessages().isEmpty()) {
+			processNext();
+		}
+	}
+
 	protected Timed<ControlledMessage> processNext() {
 		final var msg = testNetworkRunner.getDeterministicNetwork().nextMessage();
 		final var nodeIndex = msg.value().channelId().receiverIndex();

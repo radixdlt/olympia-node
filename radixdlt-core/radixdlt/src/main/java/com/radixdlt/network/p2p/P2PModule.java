@@ -29,6 +29,7 @@ import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.network.hostip.HostIp;
 import com.radixdlt.network.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
+import com.radixdlt.network.p2p.addressbook.AddressBookPeerControl;
 import com.radixdlt.network.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.network.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.network.p2p.transport.PeerOutboundBootstrapImpl;
@@ -51,6 +52,7 @@ public final class P2PModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(PeerOutboundConnectionTimeout.class);
 
 		bind(PeersView.class).to(PeerManagerPeersView.class);
+		bind(PeerControl.class).to(AddressBookPeerControl.class);
 		bind(PeerOutboundBootstrap.class).to(PeerOutboundBootstrapImpl.class);
 		bind(AddressBookPersistence.class).to(BerkeleyAddressBookPersistence.class);
 	}

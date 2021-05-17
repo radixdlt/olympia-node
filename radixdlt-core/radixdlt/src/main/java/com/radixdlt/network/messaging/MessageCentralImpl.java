@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerManager;
 import io.reactivex.rxjava3.core.Observable;
 import org.apache.logging.log4j.Level;
@@ -65,7 +66,8 @@ final class MessageCentralImpl implements MessageCentral {
 		PeerManager peerManager,
 		TimeSupplier timeSource,
 		EventQueueFactory<OutboundMessageEvent> outboundEventQueueFactory,
-		SystemCounters counters
+		SystemCounters counters,
+		PeerControl peerControl
 	) {
 		this.counters = Objects.requireNonNull(counters);
 		this.outboundQueue = outboundEventQueueFactory.createEventQueue(
@@ -88,7 +90,8 @@ final class MessageCentralImpl implements MessageCentral {
 			counters,
 			config,
 			timeSource,
-			serialization
+			serialization,
+			peerControl
 		);
 
 		// Start outbound processing thread

@@ -20,10 +20,14 @@ package com.radixdlt.network.p2p.addressbook;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.PeerEvent;
+import com.radixdlt.network.p2p.PeerEvent.PeerBanned;
 import com.radixdlt.network.p2p.RadixNodeUri;
 
 import javax.inject.Singleton;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -47,6 +51,7 @@ public final class AddressBook {
 	};
 
 	private final NodeId selfNodeId;
+	private final EventDispatcher<PeerEvent> peerEventDispatcher;
 	private final AddressBookPersistence persistence;
 	private final Object lock = new Object();
 	private final Map<NodeId, AddressBookEntry> knownPeers = new HashMap<>();
@@ -54,9 +59,11 @@ public final class AddressBook {
 	@Inject
 	public AddressBook(
 		@Self BFTNode selfNodeId,
+		EventDispatcher<PeerEvent> peerEventDispatcher,
 		AddressBookPersistence persistence
 	) {
 		this.selfNodeId = NodeId.fromPublicKey(Objects.requireNonNull(selfNodeId).getKey());
+		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
 		this.persistence = Objects.requireNonNull(persistence);
 		persistence.getAllEntries().forEach(e -> knownPeers.put(e.getNodeId(), e));
 	}
@@ -126,5 +133,25 @@ public final class AddressBook {
 	private void persistEntry(AddressBookEntry entry) {
 		this.persistence.removeEntry(entry.getNodeId());
 		this.persistence.saveEntry(entry);
+	}
+
+	void banPeer(NodeId nodeId, Duration banDuration) {
+		synchronized (lock) {
+			final var banUntil = Instant.now().plus(banDuration);
+			final var maybeExistingEntry = findById(nodeId);
+			if (maybeExistingEntry.isPresent()) {
+				final var existingEntry = maybeExistingEntry.get();
+				final var alreadyBanned = existingEntry.bannedUntil()
+					.filter(bu -> bu.isAfter(banUntil)).isPresent();
+				if (!alreadyBanned) {
+					this.persistEntry(existingEntry.withBanUntil(banUntil));
+					this.peerEventDispatcher.dispatch(PeerBanned.create(nodeId));
+				}
+			} else {
+				this.persistEntry(AddressBookEntry.createBanned(nodeId, banUntil));
+				this.peerEventDispatcher.dispatch(PeerBanned.create(nodeId));
+			}
+
+		}
 	}
 }

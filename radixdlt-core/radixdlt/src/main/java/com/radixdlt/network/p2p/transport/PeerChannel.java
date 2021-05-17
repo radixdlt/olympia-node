@@ -33,6 +33,7 @@ import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
 import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.utils.RateCalculator;
 import com.radixdlt.utils.functional.Result;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -50,6 +51,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -73,7 +75,6 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 	private final PublishProcessor<InboundMessage> inboundMessageSink = PublishProcessor.create();
 	private final Flowable<InboundMessage> inboundMessages;
 
-	private final P2PConfig config;
 	private final SystemCounters counters;
 	private final EventDispatcher<PeerEvent> peerEventDispatcher;
 	private final Optional<RadixNodeUri> uri;
@@ -84,6 +85,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 	private ChannelState state = ChannelState.INACTIVE;
 	private NodeId remoteNodeId;
 	private FrameCodec frameCodec;
+
+	private final RateCalculator outMessagesStats = new RateCalculator(Duration.ofSeconds(10), 128);
 
 	public PeerChannel(
 		P2PConfig config,
@@ -96,7 +99,6 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		Optional<RadixNodeUri> uri,
 		SocketChannel nettyChannel
 	) {
-		this.config = Objects.requireNonNull(config);
 		this.counters = Objects.requireNonNull(counters);
 		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
 		this.uri = Objects.requireNonNull(uri);
@@ -207,12 +209,17 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 					final var baos = new ByteArrayOutputStream();
 					this.frameCodec.writeFrame(data, baos);
 					this.write(baos.toByteArray());
+					this.outMessagesStats.tick();
 					return Result.ok(new Object());
 				} catch (IOException e) {
 					return IO_ERROR.result();
 				}
 			}
 		}
+	}
+
+	public long sentMessagesRate() {
+		return this.outMessagesStats.currentRate();
 	}
 
 	public void disconnect() {
@@ -227,6 +234,10 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 
 	public boolean isInbound() {
 		return !this.isInitiator;
+	}
+
+	public boolean isOutbound() {
+		return this.isInitiator;
 	}
 
 	public Optional<RadixNodeUri> getUri() {

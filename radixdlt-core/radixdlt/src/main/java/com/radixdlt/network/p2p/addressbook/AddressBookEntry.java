@@ -44,9 +44,7 @@ public final class AddressBookEntry {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final NodeId nodeId;
 
-	@JsonProperty("isBanned")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final boolean isBanned;
+	private final Optional<Instant> bannedUntil;
 
 	@JsonProperty("knownAddresses")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -55,14 +53,21 @@ public final class AddressBookEntry {
 	@JsonCreator
 	private static AddressBookEntry deserialize(
 		@JsonProperty("nodeId") NodeId nodeId,
-		@JsonProperty("isBanned") boolean isBanned,
+		@JsonProperty("bannedUntil") long rawBannedUntil,
 		@JsonProperty("knownAddresses") ImmutableSet<PeerAddressEntry> knownAddresses
 	) {
-		return new AddressBookEntry(nodeId, isBanned, knownAddresses);
+		final var bannedUntil = rawBannedUntil > 0
+			? Optional.of(Instant.ofEpochMilli(rawBannedUntil))
+			: Optional.<Instant>empty();
+		return new AddressBookEntry(nodeId, bannedUntil, knownAddresses);
 	}
 
 	public static AddressBookEntry create(RadixNodeUri uri) {
 		return create(uri, Optional.empty());
+	}
+
+	public static AddressBookEntry createBanned(NodeId nodeId, Instant bannedUntil) {
+		return new AddressBookEntry(nodeId, Optional.of(bannedUntil), ImmutableSet.of());
 	}
 
 	public static AddressBookEntry create(RadixNodeUri uri, Instant lastSuccessfulConnection) {
@@ -72,15 +77,21 @@ public final class AddressBookEntry {
 	public static AddressBookEntry create(RadixNodeUri uri, Optional<Instant> lastSuccessfulConnection) {
 		return new AddressBookEntry(
 			uri.getNodeId(),
-			false,
+			Optional.empty(),
 			ImmutableSet.of(new AddressBookEntry.PeerAddressEntry(uri, lastSuccessfulConnection))
 		);
 	}
 
-	AddressBookEntry(NodeId nodeId, boolean isBanned, ImmutableSet<PeerAddressEntry> knownAddresses) {
+	AddressBookEntry(NodeId nodeId, Optional<Instant> bannedUntil, ImmutableSet<PeerAddressEntry> knownAddresses) {
 		this.nodeId = Objects.requireNonNull(nodeId);
-		this.isBanned = isBanned;
+		this.bannedUntil = bannedUntil;
 		this.knownAddresses = Objects.requireNonNull(knownAddresses);
+	}
+
+	@JsonProperty("bannedUntil")
+	@DsonOutput(DsonOutput.Output.ALL)
+	public long rawBennedUntilForSerializer() {
+		return this.bannedUntil.map(Instant::toEpochMilli).orElse(0L);
 	}
 
 	public NodeId getNodeId() {
@@ -88,11 +99,19 @@ public final class AddressBookEntry {
 	}
 
 	public boolean isBanned() {
-		return isBanned;
+		return bannedUntil.filter(v -> v.isBefore(Instant.now())).isPresent();
+	}
+
+	public Optional<Instant> bannedUntil() {
+		return this.bannedUntil;
 	}
 
 	public ImmutableSet<PeerAddressEntry> getKnownAddresses() {
 		return knownAddresses;
+	}
+
+	public AddressBookEntry withBanUntil(Instant banUntil) {
+		return new AddressBookEntry(nodeId, Optional.of(banUntil), knownAddresses);
 	}
 
 	public AddressBookEntry addUriIfNotExists(RadixNodeUri uri) {
@@ -104,7 +123,7 @@ public final class AddressBookEntry {
 				.addAll(this.knownAddresses)
 				.add(newAddressEntry)
 				.build();
-			return new AddressBookEntry(nodeId, isBanned, newKnownAddresses);
+			return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
 		}
 	}
 
@@ -130,22 +149,22 @@ public final class AddressBookEntry {
 				.addAll(knownAddressesWithoutTheOldOne)
 				.add(updatedAddressEntry)
 				.build();
-			return new AddressBookEntry(nodeId, isBanned, newKnownAddresses);
+			return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
 		} else {
 			final var newAddressEntry = new PeerAddressEntry(uri, Optional.of(lastSuccessfulConnectionFor));
 			final var newKnownAddresses = ImmutableSet.<PeerAddressEntry>builder()
 				.addAll(this.knownAddresses)
 				.add(newAddressEntry)
 				.build();
-			return new AddressBookEntry(nodeId, isBanned, newKnownAddresses);
+			return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
 		}
 	}
 
 	@Override
 	public String toString() {
 		return String.format(
-			"%s[nodeId=%s, isBanned=%s, knownAddresses=%s]", getClass().getSimpleName(),
-			nodeId, isBanned, knownAddresses
+			"%s[nodeId=%s, bannedUntil=%s, knownAddresses=%s]", getClass().getSimpleName(),
+			nodeId, bannedUntil, knownAddresses
 		);
 	}
 
@@ -158,14 +177,14 @@ public final class AddressBookEntry {
 			return false;
 		}
 		AddressBookEntry that = (AddressBookEntry) o;
-		return isBanned == that.isBanned
+		return Objects.equals(bannedUntil, that.bannedUntil)
 			&& Objects.equals(nodeId, that.nodeId)
 			&& Objects.equals(knownAddresses, that.knownAddresses);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(nodeId, isBanned, knownAddresses);
+		return Objects.hash(nodeId, bannedUntil, knownAddresses);
 	}
 
 	@SerializerId2("network.p2p.addressbook.peer_address_entry")

@@ -15,31 +15,30 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.network.messaging;
+package com.radixdlt.utils;
 
-import com.radixdlt.utils.functional.Failure;
+import com.google.common.collect.EvictingQueue;
 
-public enum MessagingErrors implements Failure {
-	MESSAGE_EXPIRED(1, "Message expired"),
-	IO_ERROR(2, "IO Error"),
-	SELF_CONNECTION_ATTEMPT(3, "Attempt to connect to self"),
-	PEER_BANNED(4, "Peer is banned");
+import java.time.Duration;
 
-	private final int code;
-	private final String message;
+public final class RateCalculator {
+	private final Duration interval;
+	private final EvictingQueue<Long> ticks;
 
-	MessagingErrors(int code, String message) {
-		this.code = code;
-		this.message = message;
+	public RateCalculator(Duration interval, int maxEntries) {
+		this.interval = interval;
+		this.ticks = EvictingQueue.create(maxEntries);
 	}
 
-	@Override
-	public String message() {
-		return message;
+	public void tick() {
+		ticks.offer(System.currentTimeMillis());
 	}
 
-	@Override
-	public int code() {
-		return code;
+	public long currentRate() {
+		final var minTime = System.currentTimeMillis() - interval.toMillis();
+		return ticks.stream()
+			.filter(v -> v >= minTime)
+			.count();
 	}
+
 }

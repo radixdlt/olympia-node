@@ -125,4 +125,37 @@ public interface PeerEvent {
 		}
 	}
 
+	final class PeerBanned implements PeerEvent {
+
+		private final NodeId nodeId;
+
+		public static PeerBanned create(NodeId nodeId) {
+			return new PeerBanned(nodeId);
+		}
+
+		private PeerBanned(NodeId nodeId) {
+			this.nodeId = nodeId;
+		}
+
+		public NodeId getNodeId() {
+			return this.nodeId;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+			final var that = (PeerBanned) o;
+			return Objects.equals(nodeId, that.nodeId);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(nodeId);
+		}
+	}
 }

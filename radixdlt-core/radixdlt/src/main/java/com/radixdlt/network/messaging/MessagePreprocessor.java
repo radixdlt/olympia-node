@@ -18,6 +18,7 @@
 package com.radixdlt.network.messaging;
 
 import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.utils.functional.Result;
 import org.radix.network.messaging.Message;
 
@@ -28,8 +29,10 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.time.Duration;
+import java.util.Objects;
 
+import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
 import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_EXPIRED;
 
 /**
@@ -40,31 +43,32 @@ final class MessagePreprocessor {
 	private final SystemCounters counters;
 	private final TimeSupplier timeSource;
 	private final Serialization serialization;
+	private final PeerControl peerControl;
 
 	MessagePreprocessor(
 		SystemCounters counters,
 		MessageCentralConfiguration config,
 		TimeSupplier timeSource,
-		Serialization serialization
+		Serialization serialization,
+		PeerControl peerControl
 	) {
-		this.messageTtlMs = config.messagingTimeToLive(30_000L);
-		this.counters = counters;
-		this.timeSource = timeSource;
-		this.serialization = serialization;
+		this.messageTtlMs = Objects.requireNonNull(config).messagingTimeToLive(30_000L);
+		this.counters = Objects.requireNonNull(counters);
+		this.timeSource = Objects.requireNonNull(timeSource);
+		this.serialization = Objects.requireNonNull(serialization);
+		this.peerControl = Objects.requireNonNull(peerControl);
 	}
 
 	Result<MessageFromPeer<Message>> process(InboundMessage inboundMessage) {
 		final byte[] messageBytes = inboundMessage.message();
 		this.counters.add(CounterType.NETWORKING_RECEIVED_BYTES, messageBytes.length);
-		final Message message = deserialize(messageBytes);
-		final var result = processMessage(inboundMessage.source(), message);
-
+		final var result = deserialize(inboundMessage, messageBytes)
+			.flatMap(message -> processMessage(inboundMessage.source(), message));
 		this.counters.increment(CounterType.MESSAGES_INBOUND_RECEIVED);
 		result.fold(
 			unused -> this.counters.increment(CounterType.MESSAGES_INBOUND_DISCARDED),
 			unused -> this.counters.increment(CounterType.MESSAGES_INBOUND_PROCESSED)
 		);
-
 		return result;
 	}
 
@@ -78,12 +82,13 @@ final class MessagePreprocessor {
 		}
 	}
 
-	private Message deserialize(byte[] in) {
+	private Result<Message> deserialize(InboundMessage inboundMessage, byte[] in) {
 		try {
 			byte[] uncompressed = Compress.uncompress(in);
-			return serialization.fromDson(uncompressed, Message.class);
+			return Result.ok(serialization.fromDson(uncompressed, Message.class));
 		} catch (IOException e) {
-			throw new UncheckedIOException("While deserializing message", e);
+			peerControl.banPeer(inboundMessage.source(), Duration.ofMinutes(5));
+			return IO_ERROR.result();
 		}
 	}
 }

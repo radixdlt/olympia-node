@@ -49,7 +49,7 @@ import java.util.Objects;
  * Persistence for address book entries.
  */
 @Singleton
-public final class BerkeleyAddressBookPersistence implements AddressBookPersistence  {
+public final class BerkeleyAddressBookPersistence implements AddressBookPersistence {
 	private static final Logger log = LogManager.getLogger();
 
 	private final Serialization serialization;
@@ -113,7 +113,6 @@ public final class BerkeleyAddressBookPersistence implements AddressBookPersiste
 
 	@Override
 	public boolean saveEntry(AddressBookEntry entry) {
-		log.info("Berkeley saveEntry: " + entry);
 		final var start = System.nanoTime();
 		try {
 			final var key = new DatabaseEntry(entry.getNodeId().getPublicKey().getBytes());

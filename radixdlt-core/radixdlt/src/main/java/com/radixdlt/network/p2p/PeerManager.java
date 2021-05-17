@@ -30,6 +30,7 @@ import com.radixdlt.network.p2p.addressbook.AddressBookEntry;
 import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
 import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
 import com.radixdlt.network.p2p.PeerEvent.PeerLostLiveness;
+import com.radixdlt.network.p2p.PeerEvent.PeerBanned;
 import com.radixdlt.network.p2p.transport.PeerChannel;
 import com.radixdlt.utils.functional.Result;
 import io.reactivex.rxjava3.core.Observable;
@@ -38,6 +39,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -46,7 +48,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
-import static com.radixdlt.network.messaging.MessagingErrors.OUTBOUND_CHANNELS_LIMIT_REACHED;
+import static com.radixdlt.network.messaging.MessagingErrors.PEER_BANNED;
 import static com.radixdlt.network.messaging.MessagingErrors.SELF_CONNECTION_ATTEMPT;
 import static java.util.function.Predicate.not;
 
@@ -132,8 +134,8 @@ public final class PeerManager {
 			return SELF_CONNECTION_ATTEMPT.result();
 		}
 
-		if (this.getRemainingOutboundSlots() <= 0) {
-			return OUTBOUND_CHANNELS_LIMIT_REACHED.result();
+		if (this.addressBook.findById(nodeId).filter(AddressBookEntry::isBanned).isPresent()) {
+			return PEER_BANNED.result();
 		}
 
 		return Result.ok(new Object());
@@ -162,6 +164,8 @@ public final class PeerManager {
 				this.handlePeerDisconnected((PeerDisconnected) peerEvent);
 			} else if (peerEvent instanceof PeerLostLiveness) {
 				this.handlePeerLostLiveness((PeerLostLiveness) peerEvent);
+			} else if (peerEvent instanceof PeerBanned) {
+				this.handlePeerBanned((PeerBanned) peerEvent);
 			}
 		};
 	}
@@ -180,7 +184,31 @@ public final class PeerManager {
 			if (channel.isInbound() && !this.shouldAcceptInboundPeer(channel.getRemoteNodeId())) {
 				channel.disconnect();
 			}
+
+			if (channel.isOutbound() && this.getRemainingOutboundSlots() < 0) {
+				// we're over the limit, need to disconnect one of the peers
+				this.disconnectOutboundPeersOverLimit(peerConnected.getChannel().getRemoteNodeId());
+			}
 		}
+	}
+
+	private void disconnectOutboundPeersOverLimit(NodeId justConnectedPeer) {
+		if (this.getRemainingOutboundSlots() >= 0) {
+			return; // we're good
+		}
+
+		final var peersOverLimit = -this.getRemainingOutboundSlots();
+
+		// TODO(luk): double check if this is correct
+		final Comparator<PeerChannel> comparator =
+			(p1, p2) -> (int) (p1.sentMessagesRate() - p2.sentMessagesRate());
+
+		this.activePeers().stream()
+			// not disconnecting peer that has just connected
+			.filter(not(p -> p.getRemoteNodeId().equals(justConnectedPeer)))
+			.sorted(comparator)
+			.limit(peersOverLimit)
+			.forEach(PeerChannel::disconnect);
 	}
 
 	private boolean shouldAcceptInboundPeer(NodeId nodeId) {
@@ -231,6 +259,12 @@ public final class PeerManager {
 			.filter(not(PeerChannel::isInbound))
 			.count();
 
-		return (int) Math.max(0, config.maxOutboundChannels() - numChannels);
+		return (int) (config.maxOutboundChannels() - numChannels);
+	}
+
+	private void handlePeerBanned(PeerBanned event) {
+		this.activePeers().stream()
+			.filter(p -> p.getRemoteNodeId().equals(event.getNodeId()))
+			.forEach(PeerChannel::disconnect);
 	}
 }
