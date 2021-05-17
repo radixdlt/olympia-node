@@ -166,7 +166,7 @@ public class ArchiveApiModule extends AbstractModule {
 		return new EventProcessorOnRunner<>(
 			Runners.APPLICATION,
 			AtomsCommittedToLedger.class,
-			berkeleyClientApiStore.atomsCommittedToLedgerEventProcessorBerkeleyClientApi()
+			berkeleyClientApiStore.atomsCommittedToLedgerEventProcessor()
 		);
 	}
 
@@ -202,7 +202,7 @@ public class ArchiveApiModule extends AbstractModule {
 		return new EventProcessorOnRunner<>(
 			Runners.APPLICATION,
 			AtomsCommittedToLedger.class,
-			transactionStatusService.atomsCommittedToLedgerEventProcessorTransactionStatus()
+			transactionStatusService.atomsCommittedToLedgerEventProcessor()
 		);
 	}
 
