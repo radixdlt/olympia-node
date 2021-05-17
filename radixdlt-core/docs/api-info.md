@@ -187,7 +187,7 @@ The following configuration options control which APIs are enabled at the node:
 | api.construct.enable | `/construct` | Disabled
 | api.system.enable | `/system` | Disabled
 | api.account.enable | `/account` | Disabled
-| api.validator.enable | `/validator` endpoint | Disabled
+| api.validation.enable | `/validation` endpoint | Disabled
 | api.universe.enable | `/universe.json` | Disabled
 | api.faucet.enable | `/faucet/request` | Disabled; __Can't be enabled on mainnet__
 | api.chaos.enable | `/chaos/message-flooder` and `/chaos/mempool-filler`| Disabled; __Can't be enabled on mainnet__
