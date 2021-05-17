@@ -16,6 +16,7 @@
  */
 package com.radixdlt.api.archive.service;
 
+import com.radixdlt.api.service.ValidatorInfoService;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import org.junit.Assert;

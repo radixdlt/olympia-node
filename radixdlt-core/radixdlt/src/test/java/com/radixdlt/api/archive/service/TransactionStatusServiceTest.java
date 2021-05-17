@@ -16,6 +16,8 @@
  */
 package com.radixdlt.client.service;
 
+import com.radixdlt.api.service.ScheduledCacheCleanup;
+import com.radixdlt.api.service.TransactionStatusService;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.HashUtils;

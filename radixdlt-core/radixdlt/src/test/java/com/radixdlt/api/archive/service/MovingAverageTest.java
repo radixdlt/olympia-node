@@ -18,6 +18,8 @@ package com.radixdlt.api.archive.service;
 
 import org.junit.Test;
 
+import com.radixdlt.api.service.MovingAverage;
+
 import static org.junit.Assert.assertEquals;
 
 public class MovingAverageTest {

@@ -170,8 +170,8 @@ public final class Radix {
 		}
 
 		// start API services
-		final var httpServer = moduleRunners.get(Runners.NODE_API);
-		httpServer.start();
+		final var nodeServer = moduleRunners.get(Runners.NODE_API);
+		nodeServer.start();
 
 		final var archiveServer = moduleRunners.get(Runners.ARCHIVE_API);
 		if (archiveServer != null) {

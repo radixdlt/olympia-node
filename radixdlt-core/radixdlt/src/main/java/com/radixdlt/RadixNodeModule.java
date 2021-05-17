@@ -42,9 +42,9 @@ import org.radix.universe.system.LocalSystem;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.api.module.NodeApiModule;
+import com.radixdlt.api.module.ArchiveApiModule;
 import com.radixdlt.application.NodeApplicationModule;
-import com.radixdlt.api.chaos.chaos.ChaosModule;
-import com.radixdlt.api.archive.ArchiveApiModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -53,6 +53,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
+import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.middleware2.InfoSupplier;
@@ -60,32 +61,27 @@ import com.radixdlt.network.messaging.MessagingModule;
 import com.radixdlt.network.hostip.HostIpModule;
 import com.radixdlt.network.messaging.MessageCentralModule;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
+import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
+import com.radixdlt.statecomputer.RadixEngineValidatorComputersModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
+import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksModule;
+import com.radixdlt.statecomputer.transaction.EmptyTransactionCheckModule;
+import com.radixdlt.statecomputer.transaction.TokenFeeModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.universe.UniverseModule;
 
+import static com.radixdlt.EndpointConfig.enabledArchiveEndpoints;
+import static com.radixdlt.EndpointConfig.enabledNodeEndpoints;
+
 /**
  * Module which manages everything in a single node
  */
 public final class RadixNodeModule extends AbstractModule {
-	private static final String API_PREFIX = "api.";
-	private static final String API_SUFFIX = ".enable";
-	private static final String API_ARCHIVE = API_PREFIX + "archive" + API_SUFFIX;
-	private static final String API_CONSTRUCT = API_PREFIX + "construct" + API_SUFFIX;
-	private static final String API_SYSTEM = API_PREFIX + "system" + API_SUFFIX;
-	private static final String API_ACCOUNT = API_PREFIX + "account" + API_SUFFIX;
-	private static final String API_VALIDATOR = API_PREFIX + "validator" + API_SUFFIX;
-	private static final String API_UNIVERSE = API_PREFIX + "universe" + API_SUFFIX;
-	private static final String API_FAUCET = API_PREFIX + "faucet" + API_SUFFIX;
-	private static final String API_CHAOS = API_PREFIX + "chaos" + API_SUFFIX;
-	private static final String API_HEALTH = API_PREFIX + "health" + API_SUFFIX;
-	private static final String API_VERSION = API_PREFIX + "version" + API_SUFFIX;
-
-	private static final Logger log = LogManager.getLogger();
-
 	private final RuntimeProperties properties;
 
 	public RadixNodeModule(RuntimeProperties properties) {
@@ -127,58 +123,8 @@ public final class RadixNodeModule extends AbstractModule {
 
 		install(new DispatcherModule());
 
-
 		// Application
 		install(new NodeApplicationModule());
-
-		// API
-//		if (properties.get())
-
-
-		if (properties.get("validator_api.enable", false)) {
-			log.info("Enabling /validator API");
-			install(new ValidatorApiModule());
-		}
-
-		if (properties.get("archive_api.enable", false)) {
-			log.info("Enabling Archive API");
-			install(new ArchiveApiModule());
-		}
-
-		if (properties.get("construct_api.enable", false)) {
-			log.info("Enabling Construct API");
-			install(new ConstructApiModule());
-		}
-
-		if (properties.get("system_api.enable", false)) {
-			log.info("Enabling System API");
-			//TODO: finish it
-			install(new SystemApiModule());
-		}
-
-		if (properties.get("account_api.enable", false)) {
-			log.info("Enabling Account API");
-			//TODO: finish it
-			//install(new AccountApiModule());
-		}
-
-		if (properties.get("universe_api.enable", false)) {
-			log.info("Enabling Universe API");
-			var controllers = Multibinder.newSetBinder(binder(), Controller.class);
-			controllers.addBinding().to(UniverseController.class).in(Scopes.SINGLETON);
-		}
-
-		if (properties.get("faucet.enable", false)) {
-			//TODO: disable on mainnet
-			log.info("Enabling faucet API");
-			install(new FaucetModule());
-		}
-
-		if (properties.get("chaos.enable", false)) {
-			//TODO: disable on mainnet
-			log.info("Enabling chaos API");
-			install(new ChaosModule());
-		}
 
 		// Consensus
 		install(new PersistedBFTKeyModule());
@@ -234,6 +180,10 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new P2PModule(properties));
 		install(new PeerDiscoveryModule());
 		install(new PeerLivenessMonitorModule());
+
+		// API
+		install(new ArchiveApiModule(enabledArchiveEndpoints(properties)));
+		install(new NodeApiModule(enabledNodeEndpoints(properties)));
 	}
 
 	@Provides

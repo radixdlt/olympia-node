@@ -23,7 +23,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.NodeApplicationModule;
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.api.chaos.chaos.mempoolfiller.MempoolFillerModule;
+import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
