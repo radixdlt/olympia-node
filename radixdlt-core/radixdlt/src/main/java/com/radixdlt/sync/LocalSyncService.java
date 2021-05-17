@@ -438,7 +438,8 @@ public final class LocalSyncService {
 		) > 0;
 
 		if (isNewerState) {
-			return currentState.withCurrentHeader(updatedHeader);
+			final var newState = currentState.withCurrentHeader(updatedHeader);
+			return this.updateSyncTargetDiffCounter(newState);
 		} else {
 			return currentState;
 		}
@@ -456,23 +457,35 @@ public final class LocalSyncService {
 			) > 0;
 
 		if (isNewerState) {
-			return currentState
+			final var newState = currentState
 				.withTargetHeader(header)
 				.withCandidatePeers(peers);
+			return this.updateSyncTargetDiffCounter(newState);
 		} else {
 			log.trace("LocalSync: skipping as already targeted {}", currentState.getTargetHeader());
 			return currentState;
 		}
 	}
 
-	private void updateSyncTargetDiffCounter(SyncState.SyncingState syncingState) {
-		final var stateVersionDiff =
-			syncingState.getTargetHeader().getStateVersion() - syncingState.getCurrentHeader().getStateVersion();
-		this.systemCounters.set(CounterType.SYNC_TARGET_CURRENT_DIFF, stateVersionDiff);
-		this.systemCounters.set(
-			CounterType.SYNC_TARGET_STATE_VERSION,
-			syncingState.getTargetHeader().getAccumulatorState().getStateVersion()
-		);
+	private <T extends SyncState> T updateSyncTargetDiffCounter(T syncState) {
+		if (syncState instanceof SyncingState) {
+			final var syncingState = (SyncingState) syncState;
+			final var stateVersionDiff =
+				syncingState.getTargetHeader().getStateVersion() - syncingState.getCurrentHeader().getStateVersion();
+			this.systemCounters.set(CounterType.SYNC_TARGET_CURRENT_DIFF, Math.max(0, stateVersionDiff));
+			this.systemCounters.set(
+				CounterType.SYNC_TARGET_STATE_VERSION,
+				Math.max(
+					syncingState.getTargetHeader().getStateVersion(),
+					syncingState.getTargetHeader().getAccumulatorState().getStateVersion()
+				)
+			);
+		} else {
+			this.systemCounters.set(CounterType.SYNC_TARGET_CURRENT_DIFF, 0);
+			this.systemCounters.set(CounterType.SYNC_TARGET_STATE_VERSION, syncState.getCurrentHeader().getStateVersion());
+		}
+
+		return syncState;
 	}
 
 	public SyncState getSyncState() {
