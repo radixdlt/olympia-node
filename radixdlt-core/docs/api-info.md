@@ -115,7 +115,7 @@ Majority of the REST APIs are replaced with JSON-RPC counterparts. Remaining and
 | construction.finalize_transaction | radix.finalizeTransaction | Now returns a fully ready-to-submit blob and a transaction ID |
 | construction.submit_transaction | radix.submitTransaction | Now accepts a single parameter, a ready-to-submit blob |
 
-#### /accounts
+#### /account
 
 | Method | Description |
 | --- | --- |
