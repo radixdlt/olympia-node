@@ -17,6 +17,7 @@
 package com.radixdlt.api.archive.service;
 
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.api.service.SubmissionService;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.api.archive.store.ClientApiStore;
 import com.radixdlt.consensus.bft.View;

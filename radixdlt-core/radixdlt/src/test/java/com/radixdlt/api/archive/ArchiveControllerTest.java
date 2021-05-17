@@ -19,6 +19,9 @@ package com.radixdlt.api.archive;
 
 import org.junit.Test;
 
+import com.radixdlt.api.controller.ArchiveController;
+import com.radixdlt.api.server.JsonRpcServer;
+
 import java.util.Map;
 import io.undertow.server.RoutingHandler;
 

@@ -25,6 +25,11 @@ import com.radixdlt.properties.RuntimeProperties;
  * Manages conversion of runtime properties to guice type properties
  */
 public final class DatabasePropertiesModule extends AbstractModule {
+    private final long maxMemory = Runtime.getRuntime().maxMemory();
+    private final long minCacheSizeLimit = Math.max(50_000_000L, (long) (maxMemory * 0.1));
+    private final long maxCacheSizeLimit = (long) (maxMemory * 0.25);
+    private final long defaultCacheSize = (long) (maxMemory * 0.125);
+
     @Provides
     @DatabaseLocation
     String databaseLocation(RuntimeProperties properties) {
@@ -34,11 +39,10 @@ public final class DatabasePropertiesModule extends AbstractModule {
     @Provides
     @DatabaseCacheSize
     long databaseCacheSize(RuntimeProperties properties) {
-        long minCacheSize = properties.get("db.cache_size.min", Math.max(50000000, (long) (Runtime.getRuntime().maxMemory() * 0.1)));
-        long maxCacheSize = properties.get("db.cache_size.max", (long) (Runtime.getRuntime().maxMemory() * 0.25));
-        long cacheSize = properties.get("db.cache_size", (long) (Runtime.getRuntime().maxMemory() * 0.125));
-        cacheSize = Math.max(cacheSize, minCacheSize);
-        cacheSize = Math.min(cacheSize, maxCacheSize);
-        return cacheSize;
+        var minCacheSize = properties.get("db.cache_size.min", minCacheSizeLimit);
+        var maxCacheSize = properties.get("db.cache_size.max", maxCacheSizeLimit);
+        var cacheSize = properties.get("db.cache_size", defaultCacheSize);
+
+        return Math.min(Math.max(cacheSize, minCacheSize), maxCacheSize);
     }
 }

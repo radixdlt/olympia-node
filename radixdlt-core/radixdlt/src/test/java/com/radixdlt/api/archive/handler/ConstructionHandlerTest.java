@@ -24,7 +24,8 @@ import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONObject;
 import org.junit.Test;
 
-import com.radixdlt.api.archive.service.SubmissionService;
+import com.radixdlt.api.handler.ConstructionHandler;
+import com.radixdlt.api.service.SubmissionService;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;

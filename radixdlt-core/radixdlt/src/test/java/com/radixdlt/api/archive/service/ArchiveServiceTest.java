@@ -20,6 +20,7 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import com.radixdlt.api.service.ArchiveService;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.api.archive.Rri;
 import com.radixdlt.api.archive.api.ActionEntry;
