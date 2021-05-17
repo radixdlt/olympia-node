@@ -76,7 +76,7 @@ public class TransactionStatusService {
 		updateStatus(mempoolAddSuccess.getTxn().getId(), PENDING);
 	}
 
-	public EventProcessor<AtomsCommittedToLedger> atomsCommittedToLedgerEventProcessorTransactionStatus() {
+	public EventProcessor<AtomsCommittedToLedger> atomsCommittedToLedgerEventProcessor() {
 		return this::onCommit;
 	}
 
