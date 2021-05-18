@@ -57,7 +57,7 @@ public final class Keys {
 	 *
 	 * @param keyStore Key store path.
 	 */
-	public static ECKeyPair readStackerKey(String keyStore) throws IOException, CryptoException {
+	public static ECKeyPair readStakerKey(String keyStore) throws IOException, CryptoException {
 		return readKey(keyStore, "wallet", "RADIX_STAKER_KEYSTORE_PASSWORD", "RADIX_STAKER_KEY_PASSWORD", true);
 	}
 

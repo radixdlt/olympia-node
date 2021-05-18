@@ -396,7 +396,7 @@ public final class GenerateUniverses {
 
 	private static KeyDetails getStakeDelegation(Iterator<UInt256> stakesCycle, String keyStore, KeyDetails validator) {
 		try {
-			var stakerKey = Keys.readStackerKey(keyStore);
+			var stakerKey = Keys.readStakerKey(keyStore);
 			var stakeDelegation = StakeDelegation.of(
 				stakerKey.getPublicKey(),
 				validator.getKeyPair().getPublicKey(),
