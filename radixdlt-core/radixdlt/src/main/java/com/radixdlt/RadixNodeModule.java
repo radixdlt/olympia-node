@@ -42,8 +42,8 @@ import org.radix.universe.system.LocalSystem;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.api.module.NodeApiModule;
 import com.radixdlt.api.module.ArchiveApiModule;
+import com.radixdlt.api.module.NodeApiModule;
 import com.radixdlt.application.NodeApplicationModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
@@ -182,8 +182,15 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new PeerLivenessMonitorModule());
 
 		// API
-		install(new ArchiveApiModule(enabledArchiveEndpoints(properties)));
-		install(new NodeApiModule(enabledNodeEndpoints(properties)));
+		var archiveEndpoints = enabledArchiveEndpoints(properties);
+		if (archiveEndpoints.size() > 0) {
+			install(new ArchiveApiModule(archiveEndpoints));
+		}
+
+		var nodeEndpoints = enabledNodeEndpoints(properties);
+		if (nodeEndpoints.size() > 0) {
+			install(new NodeApiModule(nodeEndpoints));
+		}
 	}
 
 	@Provides

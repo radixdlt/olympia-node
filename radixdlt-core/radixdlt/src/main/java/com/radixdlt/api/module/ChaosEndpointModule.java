@@ -18,19 +18,29 @@
 package com.radixdlt.api.module;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
+import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.api.chaos.messageflooder.MessageFlooderModule;
+import com.radixdlt.api.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.api.controller.ChaosController;
+import com.radixdlt.api.qualifier.AtNode;
+import com.radixdlt.environment.EventDispatcher;
 
 public class ChaosEndpointModule extends AbstractModule {
 	@Override
 	public void configure() {
-		var controllers = Multibinder.newSetBinder(binder(), Controller.class);
-		controllers.addBinding().to(ChaosController.class).in(Scopes.SINGLETON);
 		install(new MessageFlooderModule());
 		install(new MempoolFillerModule());
+	}
+
+	@AtNode
+	@ProvidesIntoSet
+	public Controller chaosController(
+		EventDispatcher<MempoolFillerUpdate> mempoolDispatcher,
+		EventDispatcher<MessageFlooderUpdate> messageDispatcher
+	) {
+		return new ChaosController(mempoolDispatcher, messageDispatcher);
 	}
 }

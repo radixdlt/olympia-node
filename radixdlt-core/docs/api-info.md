@@ -173,7 +173,7 @@ In order to make JSON RPC API complete, we need to support following actions whi
 ### Removal of `/node` REST endpoints
 Note that all the wallet-style actions which were previously done via REST 
 under `/node` are now supported via Actions under the normal transaction 
-building flow.  Node runners can use the `transaction.buildSignSubmit` method 
+building flow.  Node runners can use the `account.submit_transaction_single_step` method 
 under `/account` in order to build, sign, and submit these transactions in a 
 single step.  This also includes validator registration.
 

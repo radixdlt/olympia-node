@@ -19,7 +19,7 @@ package com.radixdlt.api.service;
 
 import com.google.inject.Inject;
 import com.radixdlt.identifiers.ValidatorAddress;
-import com.radixdlt.api.archive.api.ValidatorInfoDetails;
+import com.radixdlt.api.data.ValidatorInfoDetails;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static com.radixdlt.api.archive.api.ApiErrors.UNKNOWN_VALIDATOR;
+import static com.radixdlt.api.data.ApiErrors.UNKNOWN_VALIDATOR;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class ValidatorInfoService {
