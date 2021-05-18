@@ -19,6 +19,7 @@ package com.radixdlt.engine;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateStore;
@@ -148,21 +149,25 @@ public final class RadixEngine<M> {
 	private final List<RadixEngineBranch<M>> branches = new ArrayList<>();
 	private final BatchVerifier<M> batchVerifier;
 
+	private ActionConstructors actionConstructors;
 	private ConstraintMachine constraintMachine;
 
 	public RadixEngine(
+		ActionConstructors actionConstructors,
 		ConstraintMachine constraintMachine,
 		EngineStore<M> engineStore
 	) {
-		this(constraintMachine, engineStore, null, BatchVerifier.empty());
+		this(actionConstructors, constraintMachine, engineStore, null, BatchVerifier.empty());
 	}
 
 	public RadixEngine(
+		ActionConstructors actionConstructors,
 		ConstraintMachine constraintMachine,
 		EngineStore<M> engineStore,
 		PostParsedChecker checker,
 		BatchVerifier<M> batchVerifier
 	) {
+		this.actionConstructors = Objects.requireNonNull(actionConstructors);
 		this.constraintMachine = Objects.requireNonNull(constraintMachine);
 		this.engineStore = Objects.requireNonNull(engineStore);
 		this.checker = checker;
@@ -240,9 +245,13 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	public void replaceConstraintMachine(ConstraintMachine constraintMachine) {
+	public void replaceConstraintMachine(
+		ConstraintMachine constraintMachine,
+		ActionConstructors actionToConstructorMap
+	) {
 		synchronized (stateUpdateEngineLock) {
 			this.constraintMachine = constraintMachine;
+			this.actionConstructors = actionToConstructorMap;
 		}
 	}
 
@@ -254,6 +263,7 @@ public final class RadixEngine<M> {
 		private final RadixEngine<M> engine;
 
 		private RadixEngineBranch(
+			ActionConstructors actionToConstructorMap,
 			ConstraintMachine constraintMachine,
 			EngineStore<M> parentStore,
 			PostParsedChecker checker,
@@ -263,6 +273,7 @@ public final class RadixEngine<M> {
 			var transientEngineStore = new TransientEngineStore<>(parentStore);
 
 			this.engine = new RadixEngine<>(
+				actionToConstructorMap,
 				constraintMachine,
 				transientEngineStore,
 				checker,
@@ -315,6 +326,7 @@ public final class RadixEngine<M> {
 				}
 			});
 			RadixEngineBranch<M> branch = new RadixEngineBranch<>(
+				this.actionConstructors,
 				this.constraintMachine,
 				this.engineStore,
 				this.checker,
@@ -443,23 +455,15 @@ public final class RadixEngine<M> {
 		return parsedTransactions;
 	}
 
-	public TxBuilder construct(TxAction action) throws TxBuilderException {
-		return construct(null, List.of(action));
+	public interface TxBuilderExecutable {
+		void execute(TxBuilder txBuilder) throws TxBuilderException;
 	}
 
-	public TxBuilder construct(List<TxAction> actions) throws TxBuilderException {
-		return construct(null, actions);
+	public TxBuilder construct(TxBuilderExecutable executable) throws TxBuilderException {
+		return construct(null, executable, Set.of());
 	}
 
-	public TxBuilder construct(ECPublicKey user, TxAction action) throws TxBuilderException {
-		return construct(user, List.of(action));
-	}
-
-	public TxBuilder construct(ECPublicKey user, List<TxAction> actions) throws TxBuilderException {
-		return construct(user, actions, Set.of());
-	}
-
-	public TxBuilder construct(ECPublicKey user, List<TxAction> actions, Set<SubstateId> avoid) throws TxBuilderException {
+	public TxBuilder construct(ECPublicKey user, TxBuilderExecutable executable, Set<SubstateId> avoid) throws TxBuilderException {
 		synchronized (stateUpdateEngineLock) {
 			SubstateStore substateStore = c -> {
 				var cache = substateCache.get(c);
@@ -486,12 +490,40 @@ public final class RadixEngine<M> {
 			var txBuilder = user != null
 				? TxBuilder.newBuilder(user, filteredStore)
 				: TxBuilder.newBuilder(filteredStore);
-			for (var action : actions) {
-				action.execute(txBuilder);
-				txBuilder.particleGroup();
-			}
+
+			executable.execute(txBuilder);
+
 
 			return txBuilder;
 		}
+	}
+
+	public TxBuilder construct(TxAction action) throws TxBuilderException {
+		return construct(null, List.of(action));
+	}
+
+	public TxBuilder construct(List<TxAction> actions) throws TxBuilderException {
+		return construct(null, actions);
+	}
+
+	public TxBuilder construct(ECPublicKey user, TxAction action) throws TxBuilderException {
+		return construct(user, List.of(action));
+	}
+
+	public TxBuilder construct(ECPublicKey user, List<TxAction> actions) throws TxBuilderException {
+		return construct(user, actions, Set.of());
+	}
+
+	public TxBuilder construct(ECPublicKey user, List<TxAction> actions, Set<SubstateId> avoid) throws TxBuilderException {
+		return construct(
+			user,
+			txBuilder -> {
+				for (var action : actions) {
+					this.actionConstructors.construct(action, txBuilder);
+					txBuilder.particleGroup();
+				}
+			},
+			avoid
+		);
 	}
 }

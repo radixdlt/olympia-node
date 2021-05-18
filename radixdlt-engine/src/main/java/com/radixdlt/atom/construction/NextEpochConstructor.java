@@ -16,21 +16,25 @@
  *
  */
 
-package com.radixdlt.atom.actions;
+package com.radixdlt.atom.construction;
 
-import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.actions.SystemNextEpoch;
+import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.constraintmachine.SubstateWithArg;
 
-public final class IncludeMessage implements TxAction {
-	private final byte[] data;
+import java.util.Optional;
 
-	public IncludeMessage(byte[] data) {
-		this.data = data;
-	}
-
+public class NextEpochConstructor implements ActionConstructor<SystemNextEpoch> {
 	@Override
-	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.message(data);
+	public void construct(SystemNextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
+		txBuilder.swap(
+			SystemParticle.class,
+			p -> true,
+			Optional.of(SubstateWithArg.noArg(new SystemParticle(0, 0, 0, null))),
+			"No System particle available"
+		).with(substateDown -> new SystemParticle(substateDown.getEpoch() + 1, 0, action.timestamp(), null));
 	}
 }

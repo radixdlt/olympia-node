@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.ledger.MockPrepared;
@@ -62,11 +63,12 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 	@Override
 	public StateComputerResult prepare(
 		List<PreparedTxn> previous,
-		List<Txn> next,
-		long epoch,
-		View view,
+		VerifiedVertex vertex,
 		long timestamp
 	) {
+		var view = vertex.getView();
+		var epoch = vertex.getParentHeader().getLedgerHeader().getEpoch();
+		var next = vertex.getTxns();
 		if (view.compareTo(epochHighView) >= 0) {
 			return new StateComputerResult(
 				next.stream().map(MockPrepared::new).collect(Collectors.toList()),
@@ -74,7 +76,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 				validatorSetMapping.apply(epoch + 1)
 			);
 		} else {
-			return stateComputer.prepare(previous, next, epoch, view, timestamp);
+			return stateComputer.prepare(previous, vertex, timestamp);
 		}
 	}
 

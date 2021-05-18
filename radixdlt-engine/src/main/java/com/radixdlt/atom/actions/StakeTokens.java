@@ -18,12 +18,7 @@
 
 package com.radixdlt.atom.actions;
 
-import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -49,19 +44,5 @@ public final class StakeTokens implements TxAction {
 
 	public UInt256 amount() {
 		return amount;
-	}
-
-	@Override
-	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.swapFungible(
-			TokensParticle.class,
-			p -> p.getResourceAddr().isNativeToken()
-				&& p.getHoldingAddr().equals(fromAcct)
-				&& (amount.compareTo(TokenUnitConversions.SUB_UNITS) < 0
-				|| p.getAmount().compareTo(TokenUnitConversions.unitsToSubunits(1)) >= 0),
-			amt -> new TokensParticle(fromAcct, amt, REAddr.ofNativeToken()),
-			amount,
-			"Not enough balance for staking."
-		).with(amt -> new StakedTokensParticle(amt, fromAcct, delegateKey));
 	}
 }

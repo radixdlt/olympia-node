@@ -17,6 +17,7 @@
 
 package com.radixdlt.engine;
 
+import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
@@ -48,6 +49,7 @@ public class RadixEngineTest {
 		this.constraintMachine = mock(ConstraintMachine.class);
 		this.engineStore = TypedMocks.rmock(EngineStore.class);
 		this.radixEngine = new RadixEngine<>(
+			ActionConstructors.newBuilder().build(),
 			constraintMachine,
 			engineStore
 		);
@@ -63,7 +65,8 @@ public class RadixEngineTest {
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
 			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
 			.build();
-		RadixEngine<Void> engine = new RadixEngine<>(cm, new InMemoryEngineStore<>());
+		var actionConstructors = ActionConstructors.newBuilder().build();
+		RadixEngine<Void> engine = new RadixEngine<>(actionConstructors, cm, new InMemoryEngineStore<>());
 
 		// Act
 		// Assert

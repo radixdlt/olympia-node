@@ -16,39 +16,25 @@
  *
  */
 
-package com.radixdlt.atom.actions;
+package com.radixdlt.atom.construction;
 
-import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.actions.DeprecatedUnstakeTokens;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.UInt256;
 
-import java.util.Objects;
-
-public final class MoveStake implements TxAction {
-	private final ECPublicKey from;
-	private final ECPublicKey to;
-	private final UInt256 amount;
-	private final REAddr accountAddr;
-
-	public MoveStake(REAddr accountAddr, ECPublicKey from, ECPublicKey to, UInt256 amount) {
-		this.accountAddr = Objects.requireNonNull(accountAddr);
-		this.from = from;
-		this.to = to;
-		this.amount = amount;
-	}
-
+public class DeprecatedUnstakeTokensConstructor implements ActionConstructor<DeprecatedUnstakeTokens> {
 	@Override
-	public void execute(TxBuilder txBuilder) throws TxBuilderException {
+	public void construct(DeprecatedUnstakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.swapFungible(
 			StakedTokensParticle.class,
-			p -> p.getOwner().equals(accountAddr) && p.getDelegateKey().equals(from),
-			amt -> new StakedTokensParticle(amt, accountAddr, from),
-			amount,
+			p -> p.getOwner().equals(action.accountAddr()) && p.getDelegateKey().equals(action.from()),
+			amt -> new StakedTokensParticle(amt, action.accountAddr(), action.from()),
+			action.amount(),
 			"Not enough staked."
-		).with(amt -> new StakedTokensParticle(amt, accountAddr, to));
+		).with(amt -> new TokensParticle(action.accountAddr(), amt, REAddr.ofNativeToken()));
 	}
 }

@@ -19,8 +19,6 @@
 package com.radixdlt.atom.actions;
 
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
 
 // TODO: Remove once all actions accounted for
 public final class Unknown implements TxAction {
@@ -29,10 +27,5 @@ public final class Unknown implements TxAction {
 
 	public static Unknown create() {
 		return new Unknown();
-	}
-
-	@Override
-	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		throw new IllegalStateException();
 	}
 }

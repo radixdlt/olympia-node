@@ -26,6 +26,7 @@ import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -168,11 +169,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	private BFTValidatorSet executeSystemUpdate(
 		RadixEngineBranch<LedgerAndBFTProof> branch,
-		long epoch,
-		View view,
+		VerifiedVertex vertex,
 		long timestamp,
 		ImmutableList.Builder<PreparedTxn> successBuilder
 	) {
+		var view = vertex.getView();
 		final BFTValidatorSet validatorSet;
 		if (view.compareTo(epochCeilingView) >= 0) {
 			validatorSet = this.validatorSetBuilder.buildValidatorSet(
@@ -184,8 +185,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		var systemAction = validatorSet == null
-			? new SystemNextView(view.number(), timestamp, epoch)
-			: new SystemNextEpoch(timestamp, epoch);
+			? new SystemNextView(view.number(), timestamp, vertex.getProposer().getKey())
+			: new SystemNextEpoch(timestamp);
 
 		final Txn systemUpdate;
 		final List<REParsedTxn> txs;
@@ -230,11 +231,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	@Override
-	public StateComputerResult prepare(List<PreparedTxn> previous, List<Txn> next, long epoch, View view, long timestamp) {
+	public StateComputerResult prepare(List<PreparedTxn> previous, VerifiedVertex vertex, long timestamp) {
+		var next = vertex.getTxns();
 		var transientBranch = this.radixEngine.transientBranch();
 		for (PreparedTxn command : previous) {
 			// TODO: fix this cast with generics. Currently the fix would become a bit too messy
-			final RadixEngineTxn radixEngineCommand = (RadixEngineTxn) command;
+			final var radixEngineCommand = (RadixEngineTxn) command;
 			try {
 				transientBranch.execute(
 					List.of(radixEngineCommand.txn),
@@ -248,7 +250,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		final ImmutableList.Builder<PreparedTxn> successBuilder = ImmutableList.builder();
 		final ImmutableMap.Builder<Txn, Exception> exceptionBuilder = ImmutableMap.builder();
-		final BFTValidatorSet validatorSet = this.executeSystemUpdate(transientBranch, epoch, view, timestamp, successBuilder);
+		final BFTValidatorSet validatorSet = this.executeSystemUpdate(transientBranch, vertex, timestamp, successBuilder);
 		// Don't execute command if changing epochs
 		if (validatorSet == null) {
 			this.executeUserCommands(transientBranch, next, successBuilder, exceptionBuilder);
@@ -261,19 +263,20 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private List<REParsedTxn> commitInternal(
 		VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState
 	) {
-		final var atomsToCommit = verifiedTxnsAndProof.getTxns();
 		var proof = verifiedTxnsAndProof.getProof();
 		var ledgerAndBFTProof = LedgerAndBFTProof.create(proof, vertexStoreState);
 
 		final List<REParsedTxn> radixEngineTxns;
 		try {
 			radixEngineTxns = this.radixEngine.execute(
-				atomsToCommit,
+				verifiedTxnsAndProof.getTxns(),
 				ledgerAndBFTProof,
 				PermissionLevel.SUPER_USER
 			);
 		} catch (RadixEngineException e) {
-			throw new ByzantineQuorumException(String.format("Trying to commit bad atoms:\n%s", atomsToCommit), e);
+			throw new ByzantineQuorumException(
+				String.format("Trying to commit bad atoms:\n%s", verifiedTxnsAndProof.getTxns()), e
+			);
 		}
 
 		// Next epoch
@@ -281,7 +284,10 @@ public final class RadixEngineStateComputer implements StateComputer {
 			var forkConfig = epochToForkConfig.get(proof.getEpoch() + 1);
 			if (forkConfig != null) {
 				log.info("Epoch {} Forking constraint machine", proof.getEpoch() + 1);
-				this.radixEngine.replaceConstraintMachine(forkConfig.getConstraintMachine());
+				this.radixEngine.replaceConstraintMachine(
+					forkConfig.getConstraintMachine(),
+					forkConfig.getActionConstructors()
+				);
 				this.epochCeilingView = forkConfig.getEpochCeilingView();
 			}
 		}

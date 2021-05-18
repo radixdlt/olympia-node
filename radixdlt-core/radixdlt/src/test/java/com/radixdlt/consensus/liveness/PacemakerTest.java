@@ -19,7 +19,6 @@ package com.radixdlt.consensus.liveness;
 
 import com.google.common.collect.ImmutableSet;
 
-import java.util.List;
 import java.util.Optional;
 
 import com.google.common.hash.HashCode;
@@ -157,7 +156,8 @@ public class PacemakerTest {
 		when(vertexStoreState.getHighQC()).thenReturn(highQC);
 		when(bftInsertUpdate.getInserted()).thenReturn(preparedVertex);
 		when(bftInsertUpdate.getVertexStoreState()).thenReturn(vertexStoreState);
-		when(preparedVertex.getId()).thenReturn(hasher.hash(UnverifiedVertex.createVertex(highestQc, view, List.of())));
+		var node = BFTNode.random();
+		when(preparedVertex.getId()).thenReturn(hasher.hash(UnverifiedVertex.createTimeout(highestQc, view, node)));
 
 		when(this.safetyRules.getLastVote(view)).thenReturn(Optional.empty());
 		when(this.safetyRules.createVote(any(), any(), anyLong(), any())).thenReturn(emptyVote);
@@ -167,7 +167,7 @@ public class PacemakerTest {
 		when(this.vertexStore.getPreparedVertex(any())).thenReturn(Optional.empty());
 
 		this.pacemaker.processLocalTimeout(ScheduledLocalTimeout.create(
-			ViewUpdate.create(View.of(1), mock(HighQC.class), mock(BFTNode.class), mock(BFTNode.class)), 0L));
+			ViewUpdate.create(View.of(1), mock(HighQC.class), node, BFTNode.random()), 0L));
 
 		this.pacemaker.processBFTUpdate(bftInsertUpdate);
 

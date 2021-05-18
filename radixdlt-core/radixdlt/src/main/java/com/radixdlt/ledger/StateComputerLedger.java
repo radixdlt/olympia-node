@@ -91,7 +91,7 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 	public interface StateComputer {
 		void addToMempool(MempoolAdd mempoolAdd, BFTNode origin);
 		List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared);
-		StateComputerResult prepare(List<PreparedTxn> previous, List<Txn> next, long epoch, View view, long timestamp);
+		StateComputerResult prepare(List<PreparedTxn> previous, VerifiedVertex vertex, long timestamp);
 		void commit(VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState);
 	}
 
@@ -203,11 +203,7 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 			final var concatenatedCommands = maybeCommands.get();
 
 			final StateComputerResult result = stateComputer.prepare(
-				concatenatedCommands,
-				vertex.getTxns(),
-				vertex.getParentHeader().getLedgerHeader().getEpoch(),
-				vertex.getView(),
-				quorumTimestamp
+				concatenatedCommands, vertex, quorumTimestamp
 			);
 
 			AccumulatorState accumulatorState = parentHeader.getAccumulatorState();

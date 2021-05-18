@@ -20,7 +20,9 @@ package com.radixdlt.consensus;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -37,7 +39,7 @@ import javax.annotation.concurrent.Immutable;
  * Vertex in a Vertex graph
  */
 @Immutable
-@SerializerId2("consensus.vertex")
+@SerializerId2("vtx")
 public final class UnverifiedVertex {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
@@ -53,36 +55,78 @@ public final class UnverifiedVertex {
 	@DsonOutput(Output.ALL)
 	private final List<byte[]> txns;
 
+	@JsonProperty("tout")
+	@DsonOutput(Output.ALL)
+	private final boolean proposerTimedOut;
+
+	private final BFTNode proposer;
+
 	@JsonCreator
 	UnverifiedVertex(
 		@JsonProperty("qc") QuorumCertificate qc,
 		@JsonProperty("view") Long viewId,
-		@JsonProperty("txns") List<byte[]> txns
-	) {
-		this(qc, viewId != null ? View.of(viewId) : null, txns);
+		@JsonProperty("txns") List<byte[]> txns,
+		@JsonProperty("p") byte[] proposer,
+		@JsonProperty("tout") boolean proposerTimedOut
+	) throws PublicKeyException {
+		this(
+			qc,
+			viewId != null ? View.of(viewId) : null,
+			txns == null ? List.of() : txns,
+			proposer != null ? BFTNode.fromPublicKeyBytes(proposer) : null,
+			proposerTimedOut
+		);
 	}
 
-	public UnverifiedVertex(QuorumCertificate qc, View view, List<byte[]> txns) {
+	public UnverifiedVertex(QuorumCertificate qc, View view, List<byte[]> txns, BFTNode proposer, boolean proposerTimedOut) {
 		this.qc = Objects.requireNonNull(qc);
 		this.view = Objects.requireNonNull(view);
+
+		if (proposerTimedOut && !txns.isEmpty()) {
+			throw new IllegalArgumentException("Txns must be empty if timeout");
+		}
+
 		this.txns = txns;
+		this.proposer = proposer;
+		this.proposerTimedOut = proposerTimedOut;
 	}
 
 	public static UnverifiedVertex createGenesis(LedgerHeader ledgerHeader) {
 		BFTHeader header = BFTHeader.ofGenesisAncestor(ledgerHeader);
 		final VoteData voteData = new VoteData(header, header, header);
 		final QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		return new UnverifiedVertex(qc, View.genesis(), null);
+		return new UnverifiedVertex(qc, View.genesis(), null, null, false);
 	}
 
-	public static UnverifiedVertex createVertex(QuorumCertificate qc, View view, List<Txn> txns) {
+	public static UnverifiedVertex createTimeout(QuorumCertificate qc, View view, BFTNode proposer) {
+		return new UnverifiedVertex(qc, view, List.of(), proposer, true);
+	}
+
+	public static UnverifiedVertex create(
+		QuorumCertificate qc,
+		View view,
+		List<Txn> txns,
+		BFTNode proposer
+	) {
 		Objects.requireNonNull(qc);
 
 		if (view.number() == 0) {
 			throw new IllegalArgumentException("Only genesis can have view 0.");
 		}
 
-		return new UnverifiedVertex(qc, view, txns.stream().map(Txn::getPayload).collect(Collectors.toList()));
+		var txnBytes = txns.stream().map(Txn::getPayload).collect(Collectors.toList());
+
+		return new UnverifiedVertex(qc, view, txnBytes, proposer, false);
+	}
+
+	@JsonProperty("p")
+	@DsonOutput(Output.ALL)
+	private byte[] getProposerJson() {
+		return proposer == null ? null : proposer.getKey().getCompressedBytes();
+	}
+
+	public BFTNode getProposer() {
+		return proposer;
 	}
 
 	public QuorumCertificate getQC() {
@@ -110,7 +154,7 @@ public final class UnverifiedVertex {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(qc, view, txns);
+		return Objects.hash(qc, proposer, view, txns, proposerTimedOut);
 	}
 
 	@Override
@@ -121,6 +165,8 @@ public final class UnverifiedVertex {
 
 		UnverifiedVertex v = (UnverifiedVertex) o;
 		return Objects.equals(v.view, this.view)
+			&& v.proposerTimedOut ==  this.proposerTimedOut
+			&& Objects.equals(v.proposer, this.proposer)
 			&& Objects.equals(v.getTxns(), this.getTxns())
 			&& Objects.equals(v.qc, this.qc);
 	}

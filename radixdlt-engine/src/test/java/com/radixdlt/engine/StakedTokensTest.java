@@ -17,10 +17,23 @@
 
 package com.radixdlt.engine;
 
+import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxActionListBuilder;
+import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.construction.BurnTokenConstructor;
+import com.radixdlt.atom.construction.CreateMutableTokenConstructor;
+import com.radixdlt.atom.construction.MintTokenConstructor;
+import com.radixdlt.atom.construction.RegisterValidatorConstructor;
+import com.radixdlt.atom.construction.StakeTokensConstructor;
+import com.radixdlt.atom.construction.TransferTokensConstructor;
+import com.radixdlt.atom.construction.UnstakeTokensConstructor;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atommodel.tokens.StakingConstraintScryptV2;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -61,8 +74,17 @@ public class StakedTokensTest {
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
 			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
 			.build();
+		var actionConstructors = ActionConstructors.newBuilder()
+			.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
+			.put(RegisterValidator.class, new RegisterValidatorConstructor())
+			.put(MintToken.class, new MintTokenConstructor())
+			.put(TransferToken.class, new TransferTokensConstructor())
+			.put(BurnToken.class, new BurnTokenConstructor())
+			.put(StakeTokens.class, new StakeTokensConstructor())
+			.put(UnstakeTokens.class, new UnstakeTokensConstructor())
+			.build();
 		this.store = new InMemoryEngineStore<>();
-		this.engine = new RadixEngine<>(cm, this.store);
+		this.engine = new RadixEngine<>(actionConstructors, cm, this.store);
 
 		var tokDef = new MutableTokenDefinition(
 			"xrd",

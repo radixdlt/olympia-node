@@ -19,6 +19,7 @@ package com.radixdlt.atommodel.system;
 
 import com.google.common.base.Objects;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.crypto.ECPublicKey;
 
 import java.time.Instant;
 
@@ -26,11 +27,17 @@ public final class SystemParticle implements Particle {
 	private final long epoch;
 	private final long view;
 	private final long timestamp;
+	private final ECPublicKey leader;
 
-	public SystemParticle(long epoch, long view, long timestamp) {
+	public SystemParticle(long epoch, long view, long timestamp, ECPublicKey leader) {
 		this.epoch = epoch;
 		this.view = view;
+		this.leader = leader;
 		this.timestamp = timestamp;
+	}
+
+	public ECPublicKey getLeader() {
+		return leader;
 	}
 
 	public long getEpoch() {
@@ -51,7 +58,7 @@ public final class SystemParticle implements Particle {
 
 	@Override
 	public int hashCode() {
-		return Objects.hashCode(epoch, view, timestamp);
+		return Objects.hashCode(epoch, view, leader, timestamp);
 	}
 
 	@Override
@@ -64,11 +71,14 @@ public final class SystemParticle implements Particle {
 
 		return this.epoch == other.epoch
 			&& this.view == other.view
+			&& Objects.equal(this.leader, other.leader)
 			&& this.timestamp == other.timestamp;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{epoch=%s view=%s timestamp=%s}", this.getClass().getSimpleName(), epoch, view, timestamp);
+		return String.format("%s{epoch=%s view=%s timestamp=%s leader=%s}",
+			this.getClass().getSimpleName(), epoch, view, timestamp, leader
+		);
 	}
 }

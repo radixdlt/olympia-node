@@ -21,12 +21,12 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.ledger.AccumulatorState;
 
 import java.util.List;
 
@@ -46,6 +46,6 @@ public class UnverifiedVertexSerializeTest extends SerializeObject<UnverifiedVer
 
 		var txn = Txn.create(new byte[]{0, 1, 2, 3});
 
-		return UnverifiedVertex.createVertex(qc, view, List.of(txn));
+		return UnverifiedVertex.create(qc, view, List.of(txn), BFTNode.random());
 	}
 }

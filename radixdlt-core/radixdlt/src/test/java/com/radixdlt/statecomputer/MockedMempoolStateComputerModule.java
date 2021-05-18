@@ -24,8 +24,8 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.ledger.MockPrepared;
 import com.radixdlt.ledger.StateComputerLedger;
@@ -89,13 +89,11 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 			@Override
 			public StateComputerLedger.StateComputerResult prepare(
 				List<StateComputerLedger.PreparedTxn> previous,
-				List<Txn> next,
-				long epoch,
-				View view,
+				VerifiedVertex vertex,
 				long timestamp
 			) {
 				return new StateComputerLedger.StateComputerResult(
-					next.stream().map(MockPrepared::new).collect(Collectors.toList()),
+					vertex.getTxns().stream().map(MockPrepared::new).collect(Collectors.toList()),
 					Map.of()
 				);
 			}

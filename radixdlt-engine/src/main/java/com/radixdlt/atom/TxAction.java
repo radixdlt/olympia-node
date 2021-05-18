@@ -18,6 +18,8 @@
 
 package com.radixdlt.atom;
 
+/**
+ * Marker interface for RadixEngine actions.
+ */
 public interface TxAction {
-	void execute(TxBuilder txBuilder) throws TxBuilderException;
 }

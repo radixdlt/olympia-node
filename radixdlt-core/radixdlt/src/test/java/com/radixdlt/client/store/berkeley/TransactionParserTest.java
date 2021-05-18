@@ -16,10 +16,21 @@
  */
 package com.radixdlt.client.store.berkeley;
 
+import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.RegisterValidator;
+import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.construction.BurnTokenConstructor;
+import com.radixdlt.atom.construction.CreateMutableTokenConstructor;
+import com.radixdlt.atom.construction.MintTokenConstructor;
+import com.radixdlt.atom.construction.RegisterValidatorConstructor;
+import com.radixdlt.atom.construction.StakeTokensConstructor;
+import com.radixdlt.atom.construction.TransferTokensConstructor;
+import com.radixdlt.atom.construction.UnstakeTokensConstructor;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atommodel.tokens.StakingConstraintScryptV2;
 import org.junit.Assert;
@@ -85,7 +96,17 @@ public class TransactionParserTest {
 			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
 			.build();
 
-		engine = new RadixEngine<>(cm, store);
+		var actionConstructors = ActionConstructors.newBuilder()
+			.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
+			.put(RegisterValidator.class, new RegisterValidatorConstructor())
+			.put(MintToken.class, new MintTokenConstructor())
+			.put(TransferToken.class, new TransferTokensConstructor())
+			.put(BurnToken.class, new BurnTokenConstructor())
+			.put(StakeTokens.class, new StakeTokensConstructor())
+			.put(UnstakeTokens.class, new UnstakeTokensConstructor())
+			.build();
+
+		engine = new RadixEngine<>(actionConstructors, cm, store);
 
 		var txn0 = engine.construct(
 			TxActionListBuilder.create()

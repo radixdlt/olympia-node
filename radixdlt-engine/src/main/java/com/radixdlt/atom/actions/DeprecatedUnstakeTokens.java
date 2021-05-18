@@ -19,10 +19,6 @@
 package com.radixdlt.atom.actions;
 
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -48,16 +44,5 @@ public final class DeprecatedUnstakeTokens implements TxAction {
 
 	public UInt256 amount() {
 		return amount;
-	}
-
-	@Override
-	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.swapFungible(
-			StakedTokensParticle.class,
-			p -> p.getOwner().equals(accountAddr) && p.getDelegateKey().equals(delegateAddress),
-			amt -> new StakedTokensParticle(amt, accountAddr, delegateAddress),
-			amount,
-			"Not enough staked."
-		).with(amt -> new TokensParticle(accountAddr, amt, REAddr.ofNativeToken()));
 	}
 }

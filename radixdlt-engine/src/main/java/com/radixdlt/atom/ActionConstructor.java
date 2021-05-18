@@ -16,26 +16,14 @@
  *
  */
 
-package com.radixdlt.atom.actions;
+package com.radixdlt.atom;
 
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.UInt256;
-
-public final class SplitToken implements TxAction {
-	private final REAddr rri;
-	private final UInt256 minSize;
-
-	public SplitToken(REAddr rri, UInt256 minSize) {
-		this.rri = rri;
-		this.minSize = minSize;
-	}
-
-	public REAddr rri() {
-		return rri;
-	}
-
-	public UInt256 minSize() {
-		return minSize;
-	}
+/**
+ * Given a TxBuilder builds the high level action as radix engine
+ * transaction.
+ *
+ * @param <T> the action type
+ */
+public interface ActionConstructor<T extends TxAction> {
+	void construct(T action, TxBuilder builder) throws TxBuilderException;
 }

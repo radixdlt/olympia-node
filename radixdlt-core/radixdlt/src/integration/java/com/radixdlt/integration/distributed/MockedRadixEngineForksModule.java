@@ -21,6 +21,7 @@ package com.radixdlt.integration.distributed;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.statecomputer.EpochCeilingView;
@@ -46,8 +47,11 @@ public class MockedRadixEngineForksModule extends AbstractModule {
 				.collect(
 					Collectors.toMap(
 						e -> epoch.getAndAdd(5),
-						e -> new ForkConfig(e.getValue().getConstraintMachine(), View.of(viewCeiling.getAndAdd(-5))
-		 			)
+						e -> new ForkConfig(
+							e.getValue().getConstraintMachine(),
+							e.getValue().getActionConstructors(),
+							View.of(viewCeiling.getAndAdd(-5))
+						)
 				))
 		);
 	}
@@ -65,5 +69,13 @@ public class MockedRadixEngineForksModule extends AbstractModule {
 		TreeMap<Long, ForkConfig> epochToForkConfig
 	) {
 		return epochToForkConfig.get(0L).getConstraintMachine();
+	}
+
+	@Provides
+	@Singleton
+	private ActionConstructors actionConstructors(
+		TreeMap<Long, ForkConfig> epochToForkConfig
+	) {
+		return epochToForkConfig.get(0L).getActionConstructors();
 	}
 }
