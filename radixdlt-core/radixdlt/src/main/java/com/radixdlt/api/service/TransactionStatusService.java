@@ -19,7 +19,7 @@ package com.radixdlt.api.service;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
-import com.radixdlt.api.archive.api.TransactionStatus;
+import com.radixdlt.api.data.TransactionStatus;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
@@ -39,10 +39,10 @@ import java.util.function.Supplier;
 
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 
-import static com.radixdlt.api.archive.api.TransactionStatus.CONFIRMED;
-import static com.radixdlt.api.archive.api.TransactionStatus.FAILED;
-import static com.radixdlt.api.archive.api.TransactionStatus.PENDING;
-import static com.radixdlt.api.archive.api.TransactionStatus.TRANSACTION_NOT_FOUND;
+import static com.radixdlt.api.data.TransactionStatus.CONFIRMED;
+import static com.radixdlt.api.data.TransactionStatus.FAILED;
+import static com.radixdlt.api.data.TransactionStatus.PENDING;
+import static com.radixdlt.api.data.TransactionStatus.TRANSACTION_NOT_FOUND;
 
 public class TransactionStatusService {
 	private static final long DEFAULT_CLEANUP_INTERVAL = 1000L;                        //every second

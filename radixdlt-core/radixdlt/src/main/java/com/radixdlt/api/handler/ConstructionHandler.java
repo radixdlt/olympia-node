@@ -20,7 +20,8 @@ package com.radixdlt.api.handler;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.archive.api.PreparedTransaction;
+import com.radixdlt.api.data.PreparedTransaction;
+import com.radixdlt.api.service.ActionParserService;
 import com.radixdlt.api.service.SubmissionService;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyUtils;
@@ -38,17 +39,19 @@ import static com.radixdlt.api.JsonRpcUtil.safeBlob;
 import static com.radixdlt.api.JsonRpcUtil.safeObject;
 import static com.radixdlt.api.JsonRpcUtil.safeString;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
-import static com.radixdlt.api.archive.api.ApiErrors.INVALID_PUBLIC_KEY;
-import static com.radixdlt.api.archive.api.ApiErrors.INVALID_SIGNATURE_DER;
+import static com.radixdlt.api.data.ApiErrors.INVALID_PUBLIC_KEY;
+import static com.radixdlt.api.data.ApiErrors.INVALID_SIGNATURE_DER;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.wrap;
 
 public class ConstructionHandler {
 	private final SubmissionService submissionService;
+	private final ActionParserService actionParserService;
 
 	@Inject
-	public ConstructionHandler(SubmissionService submissionService) {
+	public ConstructionHandler(SubmissionService submissionService, ActionParserService actionParserService) {
 		this.submissionService = submissionService;
+		this.actionParserService = actionParserService;
 	}
 
 	public JSONObject handleBuildTransaction(JSONObject request) {
@@ -58,7 +61,7 @@ public class ConstructionHandler {
 			List.of("message"),
 			params ->
 				safeArray(params, "actions")
-					.flatMap(actions -> submissionService.parse(actions)
+					.flatMap(actions -> actionParserService.parse(actions)
 						.flatMap(steps -> submissionService.prepareTransaction(steps, optString(params, "message")))
 						.map(PreparedTransaction::asJson)
 					)

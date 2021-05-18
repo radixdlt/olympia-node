@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 public class FaucetEndpointModule extends AbstractModule {
 	@Override
 	public void configure() {
+		//TODO: move into @ProvidesIntoSet method
 		var controllers = Multibinder.newSetBinder(binder(), Controller.class);
 		controllers.addBinding().to(FaucetController.class).in(Scopes.SINGLETON);
 	}

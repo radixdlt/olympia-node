@@ -29,9 +29,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static com.radixdlt.api.archive.api.ApiErrors.INVALID_HEX_STRING;
-import static com.radixdlt.api.archive.api.ApiErrors.MISSING_PARAMETER;
-import static com.radixdlt.api.archive.api.ApiErrors.MISSING_PARAMS;
+import static com.radixdlt.api.data.ApiErrors.INVALID_HEX_STRING;
+import static com.radixdlt.api.data.ApiErrors.MISSING_PARAMETER;
+import static com.radixdlt.api.data.ApiErrors.MISSING_PARAMS;
 import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DECODE;
 import static com.radixdlt.utils.functional.Result.fail;
 import static com.radixdlt.utils.functional.Result.fromOptional;

@@ -20,10 +20,15 @@ package com.radixdlt.api.server;
 
 import com.google.inject.Inject;
 import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.controller.ArchiveController;
+import com.radixdlt.api.Controller;
+import com.radixdlt.api.qualifier.AtArchive;
 import com.radixdlt.properties.RuntimeProperties;
 import com.stijndewitt.undertow.cors.AllowAll;
 import com.stijndewitt.undertow.cors.Filter;
+
+import java.util.Set;
+import java.util.logging.Level;
+
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
@@ -31,24 +36,23 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 import io.undertow.util.StatusCodes;
 
-import java.util.logging.Level;
-
 import static java.util.logging.Logger.getLogger;
 
 public class ArchiveServer implements ModuleRunner {
 	private static final int DEFAULT_PORT = 8080;
+
+	private final Set<Controller> controllers;
 	private final int port;
-	private final ArchiveController archiveController;
 
 	private Undertow server;
 
 	@Inject
 	public ArchiveServer(
-		ArchiveController archiveController,
+		@AtArchive Set<Controller> controllers,
 		RuntimeProperties properties
 	) {
+		this.controllers = controllers;
 		this.port = properties.get("client_api.port", DEFAULT_PORT);
-		this.archiveController = archiveController;
 	}
 
 	private static void fallbackHandler(HttpServerExchange exchange) {
@@ -81,7 +85,9 @@ public class ArchiveServer implements ModuleRunner {
 
 	private HttpHandler configureRoutes() {
 		var handler = Handlers.routing(true); // add path params to query params with this flag
-		archiveController.configureRoutes(handler);
+
+		controllers.forEach(controller -> controller.configureRoutes(handler));
+
 		handler.setFallbackHandler(ArchiveServer::fallbackHandler);
 		handler.setInvalidMethodHandler(ArchiveServer::invalidMethodHandler);
 

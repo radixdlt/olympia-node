@@ -41,6 +41,7 @@ public class SystemEndpointModule extends AbstractModule {
 		return new JsonRpcServer(additionalHandlers);
 	}
 
+	//TODO: remove/rework/replace
 	@ProvidesIntoSet
 	public Controller constructController(
 		@System JsonRpcServer jsonRpcServer,
