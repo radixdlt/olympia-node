@@ -17,24 +17,32 @@
 
 package com.radixdlt;
 
-import java.io.File;
-
-import com.google.inject.Guice;
-import com.radixdlt.network.transport.tcp.TCPConstants;
 import org.assertj.core.util.Files;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.radix.serialization.TestSetupUtils;
-
-import com.radixdlt.properties.RuntimeProperties;
 import org.radix.universe.system.LocalSystem;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import com.google.inject.Guice;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.RadixKeyStore;
+import com.radixdlt.network.transport.tcp.TCPConstants;
+import com.radixdlt.properties.RuntimeProperties;
+
+import java.io.File;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyDouble;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class RadixNodeModuleTest {
-
 	private RadixNodeModule radixNodeModule;
 
 	@BeforeClass
@@ -69,8 +77,20 @@ public class RadixNodeModuleTest {
 	private RuntimeProperties createDefaultProperties() {
 		final var properties = mock(RuntimeProperties.class);
 		doReturn("127.0.0.1").when(properties).get(eq("host.ip"), any());
-		Files.delete(new File("nonesuch.ks"));
+		var keyStore = new File("nonesuch.ks");
+		Files.delete(keyStore);
+		generateKeystore(keyStore);
+
 		when(properties.get(eq("node.key.path"), any(String.class))).thenReturn("nonesuch.ks");
 		return properties;
+	}
+
+	private void generateKeystore(File keyStore) {
+		try {
+			RadixKeyStore.fromFile(keyStore, null, true)
+				.writeKeyPair("node", ECKeyPair.generateNew());
+		} catch (Exception e) {
+			throw new IllegalStateException("Unable to create keystore");
+		}
 	}
 }

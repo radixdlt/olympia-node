@@ -41,7 +41,8 @@ public final class PersistedBFTKeyModule extends AbstractModule {
 	@Provides
 	@Singleton
 	PersistedBFTKeyManager bftKeyManager(RuntimeProperties properties) {
-		String nodeKeyPath = properties.get("node.key.path", "node.ks");
+		var nodeKeyPath = properties.get("node.key.path", "node.ks");
+
 		return new PersistedBFTKeyManager(nodeKeyPath);
 	}
 
@@ -59,10 +60,7 @@ public final class PersistedBFTKeyModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	HashSigner hashSigner(
-		PersistedBFTKeyManager bftKeyManager,
-		SystemCounters counters
-	) {
+	HashSigner hashSigner(PersistedBFTKeyManager bftKeyManager, SystemCounters counters) {
 		return hash -> {
 			counters.increment(CounterType.SIGNATURES_SIGNED);
 			return bftKeyManager.sign(hash);
