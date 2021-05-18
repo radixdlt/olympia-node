@@ -6,7 +6,6 @@ import kong.unirest.HttpResponse;
 import kong.unirest.JsonNode;
 import kong.unirest.Unirest;
 import kong.unirest.UnirestException;
-import kong.unirest.json.JSONArray;
 import kong.unirest.json.JSONObject;
 import org.apache.commons.compress.utils.Lists;
 import org.apache.logging.log4j.LogManager;

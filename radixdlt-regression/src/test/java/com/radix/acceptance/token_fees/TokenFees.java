@@ -3,7 +3,6 @@ package com.radix.acceptance.token_fees;
 import com.radix.acceptance.AcceptanceTest;
 import com.radix.test.TransactionUtils;
 import com.radix.test.Utils;
-import com.radix.test.account.Account;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;

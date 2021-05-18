@@ -4,9 +4,7 @@ import com.radix.test.account.Account;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.ValidatorAddress;
-import com.radixdlt.client.lib.dto.FinalizedTransaction;
 import com.radixdlt.client.lib.dto.TxDTO;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 

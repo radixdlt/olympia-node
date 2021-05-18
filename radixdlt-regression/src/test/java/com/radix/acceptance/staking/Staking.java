@@ -20,7 +20,6 @@ package com.radix.acceptance.staking;
 import com.radix.acceptance.AcceptanceTest;
 import com.radix.test.TransactionUtils;
 import com.radix.test.Utils;
-import com.radix.test.account.Account;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponseDTO;
 import com.radixdlt.utils.UInt256;
