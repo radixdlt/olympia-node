@@ -230,13 +230,12 @@ public final class Pacemaker {
 		}
 
 		final var highQC = this.latestViewUpdate.getHighQC();
-		final var proposedVertex = UnverifiedVertex.create(
+		final var proposedVertex = UnverifiedVertex.createTimeout(
 			highQC.highestQC(),
 			viewUpdate.getCurrentView(),
-			List.of(),
 			viewUpdate.getLeader()
 		);
-		final VerifiedVertex verifiedVertex = new VerifiedVertex(proposedVertex, hasher.hash(proposedVertex));
+		final var verifiedVertex = new VerifiedVertex(proposedVertex, hasher.hash(proposedVertex));
 		this.timeoutVoteVertexId = Optional.of(verifiedVertex.getId());
 
 		// TODO: reimplement in async way

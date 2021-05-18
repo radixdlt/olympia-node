@@ -34,16 +34,14 @@ public class NextViewConstructor implements ActionConstructor<SystemNextView> {
 
 		txBuilder.swap(
 			SystemParticle.class,
-			p -> p.getEpoch() == action.currentEpoch(),
-			action.currentEpoch() == 0
-				? Optional.of(SubstateWithArg.noArg(new SystemParticle(0, 0, 0)))
-				: Optional.empty(),
+			p -> true,
+			Optional.of(SubstateWithArg.noArg(new SystemParticle(0, 0, 0, null))),
 			"No System particle available"
 		).with(substateDown -> {
 			if (action.view() <= substateDown.getView()) {
 				throw new TxBuilderException("Next view isn't higher than current view.");
 			}
-			return new SystemParticle(substateDown.getEpoch(), action.view(), action.timestamp());
+			return new SystemParticle(substateDown.getEpoch(), action.view(), action.timestamp(), action.leader());
 		});
 	}
 }

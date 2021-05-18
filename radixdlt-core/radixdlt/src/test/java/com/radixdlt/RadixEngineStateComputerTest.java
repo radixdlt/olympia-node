@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -38,13 +39,16 @@ import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -201,9 +205,11 @@ public class RadixEngineStateComputerTest {
 	private Txn systemUpdateTxn(long nextView, long nextEpoch) throws TxBuilderException {
 		TxBuilder builder;
 		if (nextEpoch >= 2) {
-			builder = radixEngine.construct(new SystemNextEpoch(0, nextEpoch - 1));
+			builder = radixEngine.construct(new SystemNextEpoch(0));
 		} else {
-			builder = radixEngine.construct(new SystemNextView(nextView, 0, nextEpoch));
+			builder = radixEngine.construct(new SystemNextView(nextView, 0,
+				registeredNodes.get(0).getPublicKey()
+			));
 		}
 
 		return builder.buildWithoutSignature();
@@ -220,8 +226,12 @@ public class RadixEngineStateComputerTest {
 
 	@Test
 	public void executing_non_epoch_high_view_should_return_no_validator_set() {
+		// Arrange
+		var v = UnverifiedVertex.create(mock(QuorumCertificate.class), View.of(9), List.of(), BFTNode.random());
+		var vertex = new VerifiedVertex(v, mock(HashCode.class));
+
 		// Action
-		StateComputerResult result = sut.prepare(ImmutableList.of(), List.of(), 1, View.of(9), 0);
+		var result = sut.prepare(List.of(), vertex, 0);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1);
@@ -231,8 +241,12 @@ public class RadixEngineStateComputerTest {
 
 	@Test
 	public void executing_epoch_high_view_should_return_next_validator_set() {
+		// Arrange
+		var unverified = UnverifiedVertex.create(mock(QuorumCertificate.class), View.of(10), List.of(), BFTNode.random());
+		var vertex = new VerifiedVertex(unverified, mock(HashCode.class));
+
 		// Act
-		StateComputerResult result = sut.prepare(ImmutableList.of(), List.of(), 1, View.of(10), 0);
+		StateComputerResult result = sut.prepare(List.of(), vertex, 0);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1);
@@ -251,9 +265,11 @@ public class RadixEngineStateComputerTest {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		var txn = registerCommand(keyPair);
 		BFTNode node = BFTNode.create(keyPair.getPublicKey());
+		var v = UnverifiedVertex.create(mock(QuorumCertificate.class), View.of(10), List.of(txn), BFTNode.random());
+		var vertex = new VerifiedVertex(v, mock(HashCode.class));
 
 		// Act
-		StateComputerResult result = sut.prepare(ImmutableList.of(), List.of(txn), 1, View.of(10), 0);
+		StateComputerResult result = sut.prepare(List.of(), vertex, 0);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1); // since high view, command is not executed
@@ -266,15 +282,23 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void preparing_system_update_from_vertex_should_fail() throws TxBuilderException {
 		// Arrange
-		var txn = systemUpdateTxn(1, 1);
+		var txn = radixEngine.construct(new SystemNextView(1, 0, registeredNodes.get(0).getPublicKey()))
+			.buildWithoutSignature();
 		var illegalTxn = TxLowLevelBuilder.newBuilder()
 			.down(SubstateId.ofSubstate(txn.getId(), 1))
-			.up(new SystemParticle(1, 2, 0))
+			.up(new SystemParticle(1, 3, 0, ECKeyPair.generateNew().getPublicKey()))
 			.particleGroup()
 			.build();
+		var v = UnverifiedVertex.create(
+			mock(QuorumCertificate.class),
+			View.of(1),
+			List.of(illegalTxn),
+			BFTNode.create(registeredNodes.get(0).getPublicKey())
+		);
+		var vertex = new VerifiedVertex(v, mock(HashCode.class));
 
 		// Act
-		StateComputerResult result = sut.prepare(ImmutableList.of(), List.of(illegalTxn), 1, View.of(1), 0);
+		var result = sut.prepare(ImmutableList.of(), vertex, 0);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1);
@@ -286,6 +310,7 @@ public class RadixEngineStateComputerTest {
 				},
 				"Is invalid_execution_permission error"
 			)
+
 		);
 	}
 

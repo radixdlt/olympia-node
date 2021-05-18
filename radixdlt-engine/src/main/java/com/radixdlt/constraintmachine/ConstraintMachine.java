@@ -139,7 +139,7 @@ public final class ConstraintMachine {
 						.filter(SystemParticle.class::isInstance)
 						.findFirst()
 						.or(() -> store.loadAddr(txn, addr))
-						.or(() -> Optional.of(new SystemParticle(0, 0, 0))); // A bit of a hack
+						.or(() -> Optional.of(new SystemParticle(0, 0, 0, null))); // A bit of a hack
 				} else {
 					return localUpParticles.values().stream()
 						.filter(TokenDefinitionParticle.class::isInstance)

@@ -19,7 +19,6 @@ package com.radixdlt.consensus.liveness;
 
 import com.google.common.collect.ImmutableSet;
 
-import java.util.List;
 import java.util.Optional;
 
 import com.google.common.hash.HashCode;
@@ -158,7 +157,7 @@ public class PacemakerTest {
 		when(bftInsertUpdate.getInserted()).thenReturn(preparedVertex);
 		when(bftInsertUpdate.getVertexStoreState()).thenReturn(vertexStoreState);
 		var node = BFTNode.random();
-		when(preparedVertex.getId()).thenReturn(hasher.hash(UnverifiedVertex.create(highestQc, view, List.of(), node)));
+		when(preparedVertex.getId()).thenReturn(hasher.hash(UnverifiedVertex.createTimeout(highestQc, view, node)));
 
 		when(this.safetyRules.getLastVote(view)).thenReturn(Optional.empty());
 		when(this.safetyRules.createVote(any(), any(), anyLong(), any())).thenReturn(emptyVote);

@@ -55,6 +55,10 @@ public final class UnverifiedVertex {
 	@DsonOutput(Output.ALL)
 	private final List<byte[]> txns;
 
+	@JsonProperty("tout")
+	@DsonOutput(Output.ALL)
+	private final boolean proposerTimedOut;
+
 	private final BFTNode proposer;
 
 	@JsonCreator
@@ -62,33 +66,57 @@ public final class UnverifiedVertex {
 		@JsonProperty("qc") QuorumCertificate qc,
 		@JsonProperty("view") Long viewId,
 		@JsonProperty("txns") List<byte[]> txns,
-		@JsonProperty("p") byte[] proposer
+		@JsonProperty("p") byte[] proposer,
+		@JsonProperty("tout") boolean proposerTimedOut
 	) throws PublicKeyException {
-		this(qc, viewId != null ? View.of(viewId) : null, txns, proposer != null ? BFTNode.fromPublicKeyBytes(proposer) : null);
+		this(
+			qc,
+			viewId != null ? View.of(viewId) : null,
+			txns == null ? List.of() : txns,
+			proposer != null ? BFTNode.fromPublicKeyBytes(proposer) : null,
+			proposerTimedOut
+		);
 	}
 
-	public UnverifiedVertex(QuorumCertificate qc, View view, List<byte[]> txns, BFTNode proposer) {
+	public UnverifiedVertex(QuorumCertificate qc, View view, List<byte[]> txns, BFTNode proposer, boolean proposerTimedOut) {
 		this.qc = Objects.requireNonNull(qc);
 		this.view = Objects.requireNonNull(view);
+
+		if (proposerTimedOut && !txns.isEmpty()) {
+			throw new IllegalArgumentException("Txns must be empty if timeout");
+		}
+
 		this.txns = txns;
 		this.proposer = proposer;
+		this.proposerTimedOut = proposerTimedOut;
 	}
 
 	public static UnverifiedVertex createGenesis(LedgerHeader ledgerHeader) {
 		BFTHeader header = BFTHeader.ofGenesisAncestor(ledgerHeader);
 		final VoteData voteData = new VoteData(header, header, header);
 		final QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		return new UnverifiedVertex(qc, View.genesis(), null, null);
+		return new UnverifiedVertex(qc, View.genesis(), null, null, false);
 	}
 
-	public static UnverifiedVertex create(QuorumCertificate qc, View view, List<Txn> txns, BFTNode proposer) {
+	public static UnverifiedVertex createTimeout(QuorumCertificate qc, View view, BFTNode proposer) {
+		return new UnverifiedVertex(qc, view, List.of(), proposer, true);
+	}
+
+	public static UnverifiedVertex create(
+		QuorumCertificate qc,
+		View view,
+		List<Txn> txns,
+		BFTNode proposer
+	) {
 		Objects.requireNonNull(qc);
 
 		if (view.number() == 0) {
 			throw new IllegalArgumentException("Only genesis can have view 0.");
 		}
 
-		return new UnverifiedVertex(qc, view, txns.stream().map(Txn::getPayload).collect(Collectors.toList()), proposer);
+		var txnBytes = txns.stream().map(Txn::getPayload).collect(Collectors.toList());
+
+		return new UnverifiedVertex(qc, view, txnBytes, proposer, false);
 	}
 
 	@JsonProperty("p")
@@ -126,7 +154,7 @@ public final class UnverifiedVertex {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(qc, proposer, view, txns);
+		return Objects.hash(qc, proposer, view, txns, proposerTimedOut);
 	}
 
 	@Override
@@ -137,6 +165,7 @@ public final class UnverifiedVertex {
 
 		UnverifiedVertex v = (UnverifiedVertex) o;
 		return Objects.equals(v.view, this.view)
+			&& v.proposerTimedOut ==  this.proposerTimedOut
 			&& Objects.equals(v.proposer, this.proposer)
 			&& Objects.equals(v.getTxns(), this.getTxns())
 			&& Objects.equals(v.qc, this.qc);

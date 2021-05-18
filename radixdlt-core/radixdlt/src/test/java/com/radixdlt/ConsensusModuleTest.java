@@ -207,7 +207,7 @@ public class ConsensusModuleTest {
 	}
 
 	private Pair<QuorumCertificate, VerifiedVertex> createNextVertex(QuorumCertificate parent, BFTNode bftNode, Txn txn) {
-		var unverifiedVertex = new UnverifiedVertex(parent, View.of(1), List.of(txn.getPayload()), bftNode);
+		var unverifiedVertex = new UnverifiedVertex(parent, View.of(1), List.of(txn.getPayload()), bftNode, false);
 		var hash = hasher.hash(unverifiedVertex);
 		var verifiedVertex = new VerifiedVertex(unverifiedVertex, hash);
 		var next = new BFTHeader(

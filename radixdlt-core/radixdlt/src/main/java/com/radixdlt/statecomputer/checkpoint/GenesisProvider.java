@@ -128,8 +128,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 				additionalActions.forEach(genesisBuilder::action);
 			}
 
-			genesisBuilder.action(new SystemNextEpoch(timestamp, 0));
-
+			genesisBuilder.action(new SystemNextEpoch(timestamp));
 			var txn = branch.construct(genesisBuilder.build()).buildWithoutSignature();
 			branch.execute(List.of(txn), PermissionLevel.SYSTEM);
 

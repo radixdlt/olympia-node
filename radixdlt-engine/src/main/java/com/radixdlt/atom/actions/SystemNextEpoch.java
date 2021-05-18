@@ -22,18 +22,12 @@ import com.radixdlt.atom.TxAction;
 
 public final class SystemNextEpoch implements TxAction {
 	private final long timestamp;
-	private final long currentEpoch;
 
-	public SystemNextEpoch(long timestamp, long currentEpoch) {
+	public SystemNextEpoch(long timestamp) {
 		this.timestamp = timestamp;
-		this.currentEpoch = currentEpoch;
 	}
 
 	public long timestamp() {
 		return timestamp;
-	}
-
-	public long currentEpoch() {
-		return currentEpoch;
 	}
 }

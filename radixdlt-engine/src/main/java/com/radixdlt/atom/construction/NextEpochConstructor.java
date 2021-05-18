@@ -30,15 +30,11 @@ import java.util.Optional;
 public class NextEpochConstructor implements ActionConstructor<SystemNextEpoch> {
 	@Override
 	public void construct(SystemNextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.assertIsSystem("Not permitted as user to execute system next epoch");
-
 		txBuilder.swap(
 			SystemParticle.class,
-			p -> p.getEpoch() == action.currentEpoch(),
-			action.currentEpoch() == 0
-				? Optional.of(SubstateWithArg.noArg(new SystemParticle(0, 0, 0)))
-				: Optional.empty(),
+			p -> true,
+			Optional.of(SubstateWithArg.noArg(new SystemParticle(0, 0, 0, null))),
 			"No System particle available"
-		).with(substateDown -> new SystemParticle(substateDown.getEpoch() + 1, 0, action.timestamp()));
+		).with(substateDown -> new SystemParticle(substateDown.getEpoch() + 1, 0, action.timestamp(), null));
 	}
 }

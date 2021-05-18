@@ -152,9 +152,9 @@ public class StateComputerLedgerTest {
 	public void should_not_change_accumulator_when_there_is_no_command() {
 		// Arrange
 		genesisIsEndOfEpoch(false);
-		when(stateComputer.prepare(any(), any(), anyLong(), any(), anyLong()))
+		when(stateComputer.prepare(any(), any(), anyLong()))
 			.thenReturn(new StateComputerResult(ImmutableList.of(), ImmutableMap.of()));
-		var unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), null, BFTNode.random());
+		var unverifiedVertex = UnverifiedVertex.create(genesisQC, View.of(1), List.of(), BFTNode.random());
 		var proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 
 		// Act
@@ -171,9 +171,9 @@ public class StateComputerLedgerTest {
 	public void should_not_change_header_when_past_end_of_epoch_even_with_command() {
 		// Arrange
 		genesisIsEndOfEpoch(true);
-		when(stateComputer.prepare(any(), any(), anyLong(), any(), anyLong()))
+		when(stateComputer.prepare(any(), any(), anyLong()))
 			.thenReturn(new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
-		var unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), List.of(nextTxn.getPayload()), BFTNode.random());
+		var unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), List.of(nextTxn.getPayload()), BFTNode.random(), false);
 		var proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 
 		// Act
@@ -190,11 +190,11 @@ public class StateComputerLedgerTest {
 	public void should_accumulate_when_next_command_valid() {
 		// Arrange
 		genesisIsEndOfEpoch(false);
-		when(stateComputer.prepare(any(), any(), anyLong(), any(), anyLong()))
+		when(stateComputer.prepare(any(), any(), anyLong()))
 			.thenReturn(new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
 
 		// Act
-		var unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), List.of(nextTxn.getPayload()), BFTNode.random());
+		var unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), List.of(nextTxn.getPayload()), BFTNode.random(), false);
 		var proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 		Optional<PreparedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
 
@@ -214,7 +214,7 @@ public class StateComputerLedgerTest {
 	public void should_do_nothing_if_committing_lower_state_version() {
 		// Arrange
 		genesisIsEndOfEpoch(false);
-		when(stateComputer.prepare(any(), any(), anyLong(), any(), anyLong()))
+		when(stateComputer.prepare(any(), any(), anyLong()))
 			.thenReturn(new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
 		final AccumulatorState accumulatorState = new AccumulatorState(genesisStateVersion - 1, HashUtils.zero256());
 		final LedgerHeader ledgerHeader = LedgerHeader.create(

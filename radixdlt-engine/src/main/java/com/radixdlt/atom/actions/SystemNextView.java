@@ -19,16 +19,18 @@
 package com.radixdlt.atom.actions;
 
 import com.radixdlt.atom.TxAction;
+import com.radixdlt.crypto.ECPublicKey;
+
 
 public final class SystemNextView implements TxAction {
 	private final long view;
 	private final long timestamp;
-	private final long currentEpoch;
+	private final ECPublicKey leader;
 
-	public SystemNextView(long view, long timestamp, long currentEpoch) {
+	public SystemNextView(long view, long timestamp, ECPublicKey leader) {
 		this.view = view;
 		this.timestamp = timestamp;
-		this.currentEpoch = currentEpoch;
+		this.leader = leader;
 	}
 
 	public long view() {
@@ -39,7 +41,7 @@ public final class SystemNextView implements TxAction {
 		return timestamp;
 	}
 
-	public long currentEpoch() {
-		return currentEpoch;
+	public ECPublicKey leader() {
+		return leader;
 	}
 }

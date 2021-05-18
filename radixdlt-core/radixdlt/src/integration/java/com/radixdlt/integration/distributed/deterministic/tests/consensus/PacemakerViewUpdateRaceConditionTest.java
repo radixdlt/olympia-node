@@ -106,7 +106,7 @@ public class PacemakerViewUpdateRaceConditionTest {
 			.runUntil(nodeUnderTestReachesView(View.of(3)));
 
 		final var counters = test.getSystemCounters(nodeUnderTestIndex);
-		assertThat(counters.get(SystemCounters.CounterType.BFT_VOTE_QUORUMS)).isEqualTo(1); // ensure that quorum was formed
+		assertThat(counters.get(SystemCounters.CounterType.BFT_VOTE_QUORUMS)).isEqualTo(2); // ensure that quorum was formed
 		assertThat(counters.get(SystemCounters.CounterType.BFT_TIMEOUT)).isEqualTo(2); // ensure that timeouts were processed
 	}
 
