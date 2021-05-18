@@ -68,6 +68,7 @@ public final class EpochProofVerifier implements BatchVerifier<LedgerAndBFTProof
 				if (metadata == null) {
 					throw new IllegalStateException();
 				}
+
 				final var reNextValidatorSet = validatorSetBuilder.buildValidatorSet(
 					computedState.get(RegisteredValidators.class),
 					computedState.get(Stakes.class)

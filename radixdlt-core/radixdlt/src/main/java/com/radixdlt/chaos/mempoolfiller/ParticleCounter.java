@@ -4,18 +4,20 @@ import com.google.inject.Inject;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 /**
  * Counts the number of UP substate which pass a predicate
  */
-public final class ParticleCounter implements StateReducer<Integer, TokensParticle> {
+public final class ParticleCounter implements StateReducer<Integer> {
 	private final REAddr addr;
 	private final UInt256 fee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
 
@@ -32,8 +34,8 @@ public final class ParticleCounter implements StateReducer<Integer, TokensPartic
 	}
 
 	@Override
-	public Class<TokensParticle> particleClass() {
-		return TokensParticle.class;
+	public Set<Class<? extends Particle>> particleClasses() {
+		return Set.of(TokensParticle.class);
 	}
 
 	@Override
@@ -42,11 +44,12 @@ public final class ParticleCounter implements StateReducer<Integer, TokensPartic
 	}
 
 	@Override
-	public BiFunction<Integer, TokensParticle, Integer> outputReducer() {
+	public BiFunction<Integer, Particle, Integer> outputReducer() {
 		return (count, p) -> {
-			if (p.getHoldingAddr().equals(addr)
-				&& p.getResourceAddr().isNativeToken()
-				&& p.getAmount().compareTo(fee.multiply(UInt256.TWO)) > 0) {
+			var t = (TokensParticle) p;
+			if (t.getHoldingAddr().equals(addr)
+				&& t.getResourceAddr().isNativeToken()
+				&& t.getAmount().compareTo(fee.multiply(UInt256.TWO)) > 0) {
 				return count + 1;
 			}
 			return count;
@@ -54,11 +57,12 @@ public final class ParticleCounter implements StateReducer<Integer, TokensPartic
 	}
 
 	@Override
-	public BiFunction<Integer, TokensParticle, Integer> inputReducer() {
+	public BiFunction<Integer, Particle, Integer> inputReducer() {
 		return (count, p) -> {
-			if (p.getHoldingAddr().equals(addr)
-				&& p.getResourceAddr().isNativeToken()
-				&& p.getAmount().compareTo(fee.multiply(UInt256.TWO)) > 0) {
+			var t = (TokensParticle) p;
+			if (t.getHoldingAddr().equals(addr)
+				&& t.getResourceAddr().isNativeToken()
+				&& t.getAmount().compareTo(fee.multiply(UInt256.TWO)) > 0) {
 				return count - 1;
 			}
 			return count;

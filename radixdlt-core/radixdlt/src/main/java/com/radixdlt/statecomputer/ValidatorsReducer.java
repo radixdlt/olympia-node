@@ -18,15 +18,17 @@
 package com.radixdlt.statecomputer;
 
 import com.radixdlt.atommodel.validators.ValidatorParticle;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
 
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 /**
  * Reduces particles to Registered Validators
  */
-public final class ValidatorsReducer implements StateReducer<RegisteredValidators, ValidatorParticle> {
+public final class ValidatorsReducer implements StateReducer<RegisteredValidators> {
 
     public ValidatorsReducer() {
     }
@@ -37,8 +39,8 @@ public final class ValidatorsReducer implements StateReducer<RegisteredValidator
     }
 
     @Override
-    public Class<ValidatorParticle> particleClass() {
-        return ValidatorParticle.class;
+    public Set<Class<? extends Particle>> particleClasses() {
+        return Set.of(ValidatorParticle.class);
     }
 
     @Override
@@ -47,20 +49,22 @@ public final class ValidatorsReducer implements StateReducer<RegisteredValidator
     }
 
     @Override
-    public BiFunction<RegisteredValidators, ValidatorParticle, RegisteredValidators> outputReducer() {
+    public BiFunction<RegisteredValidators, Particle, RegisteredValidators> outputReducer() {
         return (prev, p) -> {
-            if (p.isRegisteredForNextEpoch()) {
-                return prev.add(p);
+            var v = (ValidatorParticle) p;
+            if (v.isRegisteredForNextEpoch()) {
+                return prev.add(v);
             }
             return prev;
         };
     }
 
     @Override
-    public BiFunction<RegisteredValidators, ValidatorParticle, RegisteredValidators> inputReducer() {
+    public BiFunction<RegisteredValidators, Particle, RegisteredValidators> inputReducer() {
         return (prev, p) -> {
-            if (p.isRegisteredForNextEpoch()) {
-                return prev.remove(p);
+            var v = (ValidatorParticle) p;
+            if (v.isRegisteredForNextEpoch()) {
+                return prev.remove(v);
             }
             return prev;
         };

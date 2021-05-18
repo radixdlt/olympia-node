@@ -21,15 +21,17 @@ package com.radixdlt.statecomputer;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
 
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 /**
  * Reduces system level information
  */
-class SystemReducer implements StateReducer<EpochView, SystemParticle> {
+class SystemReducer implements StateReducer<EpochView> {
 
 	@Override
 	public Class<EpochView> stateClass() {
@@ -37,8 +39,8 @@ class SystemReducer implements StateReducer<EpochView, SystemParticle> {
 	}
 
 	@Override
-	public Class<SystemParticle> particleClass() {
-		return SystemParticle.class;
+	public Set<Class<? extends Particle>> particleClasses() {
+		return Set.of(SystemParticle.class);
 	}
 
 	@Override
@@ -47,12 +49,15 @@ class SystemReducer implements StateReducer<EpochView, SystemParticle> {
 	}
 
 	@Override
-	public BiFunction<EpochView, SystemParticle, EpochView> outputReducer() {
-		return (cur, p) -> new EpochView(p.getEpoch(), View.of(p.getView()));
+	public BiFunction<EpochView, Particle, EpochView> outputReducer() {
+		return (cur, p) -> {
+			var s = (SystemParticle) p;
+			return new EpochView(s.getEpoch(), View.of(s.getView()));
+		};
 	}
 
 	@Override
-	public BiFunction<EpochView, SystemParticle, EpochView> inputReducer() {
+	public BiFunction<EpochView, Particle, EpochView> inputReducer() {
 		return (cur, p) -> cur;
 	}
 }

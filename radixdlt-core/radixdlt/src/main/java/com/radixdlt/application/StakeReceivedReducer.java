@@ -21,17 +21,19 @@ package com.radixdlt.application;
 import com.google.inject.Inject;
 import com.radixdlt.atommodel.tokens.DelegatedStake;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.StateReducer;
 
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 /**
  * Reduces radix engine to stake received
  */
-public final class StakeReceivedReducer implements StateReducer<StakeReceived, DelegatedStake> {
+public final class StakeReceivedReducer implements StateReducer<StakeReceived> {
 	private final ECPublicKey key;
 
 	@Inject
@@ -45,8 +47,8 @@ public final class StakeReceivedReducer implements StateReducer<StakeReceived, D
 	}
 
 	@Override
-	public Class<DelegatedStake> particleClass() {
-		return DelegatedStake.class;
+	public Set<Class<? extends Particle>> particleClasses() {
+		return Set.of(DelegatedStake.class);
 	}
 
 	@Override
@@ -55,20 +57,22 @@ public final class StakeReceivedReducer implements StateReducer<StakeReceived, D
 	}
 
 	@Override
-	public BiFunction<StakeReceived, DelegatedStake, StakeReceived> outputReducer() {
+	public BiFunction<StakeReceived, Particle, StakeReceived> outputReducer() {
 		return (stakes, p) -> {
-			if (p.getDelegateKey().equals(key)) {
-				stakes.addStake(p.getOwner(), p.getAmount());
+			var d = (DelegatedStake) p;
+			if (d.getDelegateKey().equals(key)) {
+				stakes.addStake(d.getOwner(), d.getAmount());
 			}
 			return stakes;
 		};
 	}
 
 	@Override
-	public BiFunction<StakeReceived, DelegatedStake, StakeReceived> inputReducer() {
+	public BiFunction<StakeReceived, Particle, StakeReceived> inputReducer() {
 		return (stakes, p) -> {
-			if (p.getDelegateKey().equals(key)) {
-				stakes.removeStake(p.getOwner(), p.getAmount());
+			var d = (DelegatedStake) p;
+			if (d.getDelegateKey().equals(key)) {
+				stakes.removeStake(d.getOwner(), d.getAmount());
 			}
 			return stakes;
 		};

@@ -21,14 +21,16 @@ package com.radixdlt.application;
 import com.google.inject.Inject;
 import com.radixdlt.atommodel.tokens.DelegatedStake;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-public final class StakedBalanceReducer implements StateReducer<StakedBalance, DelegatedStake> {
+public final class StakedBalanceReducer implements StateReducer<StakedBalance> {
 	private final REAddr accountAddr;
 
 	@Inject
@@ -42,8 +44,8 @@ public final class StakedBalanceReducer implements StateReducer<StakedBalance, D
 	}
 
 	@Override
-	public Class<DelegatedStake> particleClass() {
-		return DelegatedStake.class;
+	public Set<Class<? extends Particle>> particleClasses() {
+		return Set.of(DelegatedStake.class);
 	}
 
 	@Override
@@ -52,20 +54,22 @@ public final class StakedBalanceReducer implements StateReducer<StakedBalance, D
 	}
 
 	@Override
-	public BiFunction<StakedBalance, DelegatedStake, StakedBalance> outputReducer() {
+	public BiFunction<StakedBalance, Particle, StakedBalance> outputReducer() {
 		return (stakes, p) -> {
-			if (p.getOwner().equals(accountAddr)) {
-				stakes.addStake(p.getDelegateKey(), p.getAmount());
+			var d = (DelegatedStake) p;
+			if (d.getOwner().equals(accountAddr)) {
+				stakes.addStake(d.getDelegateKey(), d.getAmount());
 			}
 			return stakes;
 		};
 	}
 
 	@Override
-	public BiFunction<StakedBalance, DelegatedStake, StakedBalance> inputReducer() {
+	public BiFunction<StakedBalance, Particle, StakedBalance> inputReducer() {
 		return (balance, p) -> {
-			if (p.getOwner().equals(accountAddr)) {
-				balance.removeStake(p.getDelegateKey(), p.getAmount());
+			var d = (DelegatedStake) p;
+			if (d.getOwner().equals(accountAddr)) {
+				balance.removeStake(d.getDelegateKey(), d.getAmount());
 			}
 			return balance;
 		};

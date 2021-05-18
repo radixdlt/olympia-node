@@ -49,8 +49,8 @@ public class RadixEngineModule extends AbstractModule {
 	protected void configure() {
 		bind(new TypeLiteral<BatchVerifier<LedgerAndBFTProof>>() { }).to(EpochProofVerifier.class).in(Scopes.SINGLETON);
 
-		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { });
-		Multibinder.newSetBinder(binder(), new TypeLiteral<Pair<String, StateReducer<?, ?>>>() { });
+		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?>>() { });
+		Multibinder.newSetBinder(binder(), new TypeLiteral<Pair<String, StateReducer<?>>>() { });
 		Multibinder.newSetBinder(binder(), PostParsedChecker.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<SubstateCacheRegister<?>>() { });
 	}
@@ -85,8 +85,8 @@ public class RadixEngineModule extends AbstractModule {
 		EngineStore<LedgerAndBFTProof> engineStore,
 		PostParsedChecker checker,
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
-		Set<StateReducer<?, ?>> stateReducers,
-		Set<Pair<String, StateReducer<?, ?>>> namedStateReducers,
+		Set<StateReducer<?>> stateReducers,
+		Set<Pair<String, StateReducer<?>>> namedStateReducers,
 		Set<SubstateCacheRegister<?>> substateCacheRegisters
 	) {
 		var radixEngine = new RadixEngine<>(

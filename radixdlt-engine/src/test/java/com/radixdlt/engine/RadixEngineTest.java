@@ -28,6 +28,7 @@ import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.test.utils.TypedMocks;
 
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import org.junit.Before;
@@ -88,8 +89,8 @@ public class RadixEngineTest {
 				}
 
 				@Override
-				public Class<Particle> particleClass() {
-					return Particle.class;
+				public Set<Class<? extends Particle>> particleClasses() {
+					return Set.of(Particle.class);
 				}
 
 				@Override

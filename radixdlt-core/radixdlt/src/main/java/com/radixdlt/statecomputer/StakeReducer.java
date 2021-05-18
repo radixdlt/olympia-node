@@ -19,20 +19,22 @@
 package com.radixdlt.statecomputer;
 
 import com.radixdlt.atommodel.system.Stake;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
 
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-public final class StakeReducer implements StateReducer<Stakes, Stake> {
+public final class StakeReducer implements StateReducer<Stakes> {
 	@Override
 	public Class<Stakes> stateClass() {
 		return Stakes.class;
 	}
 
 	@Override
-	public Class<Stake> particleClass() {
-		return Stake.class;
+	public Set<Class<? extends Particle>> particleClasses() {
+		return Set.of(Stake.class);
 	}
 
 	@Override
@@ -41,12 +43,18 @@ public final class StakeReducer implements StateReducer<Stakes, Stake> {
 	}
 
 	@Override
-	public BiFunction<Stakes, Stake, Stakes> outputReducer() {
-		return (prev, p) -> prev.add(p.getValidatorKey(), p.getAmount());
+	public BiFunction<Stakes, Particle, Stakes> outputReducer() {
+		return (prev, p) -> {
+			var s = (Stake) p;
+			return prev.add(s.getValidatorKey(), s.getAmount());
+		};
 	}
 
 	@Override
-	public BiFunction<Stakes, Stake, Stakes> inputReducer() {
-		return (prev, p) -> prev.remove(p.getValidatorKey(), p.getAmount());
+	public BiFunction<Stakes, Particle, Stakes> inputReducer() {
+		return (prev, p) -> {
+			var s = (Stake) p;
+			return prev.remove(s.getValidatorKey(), s.getAmount());
+		};
 	}
 }

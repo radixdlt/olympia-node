@@ -18,15 +18,17 @@
 package com.radixdlt.statecomputer;
 
 import com.radixdlt.atommodel.tokens.DelegatedStake;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
 
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 /**
  * Reduces staked tokens particles to total amount staked per node
  */
-public final class DeprecatedStakesReducer implements StateReducer<Stakes, DelegatedStake> {
+public final class DeprecatedStakesReducer implements StateReducer<Stakes> {
     public DeprecatedStakesReducer() {
     }
 
@@ -36,8 +38,8 @@ public final class DeprecatedStakesReducer implements StateReducer<Stakes, Deleg
     }
 
     @Override
-    public Class<DelegatedStake> particleClass() {
-        return DelegatedStake.class;
+    public Set<Class<? extends Particle>> particleClasses() {
+        return Set.of(DelegatedStake.class);
     }
 
     @Override
@@ -46,12 +48,18 @@ public final class DeprecatedStakesReducer implements StateReducer<Stakes, Deleg
     }
 
     @Override
-    public BiFunction<Stakes, DelegatedStake, Stakes> outputReducer() {
-        return (prev, p) -> prev.add(p.getDelegateKey(), p.getAmount());
+    public BiFunction<Stakes, Particle, Stakes> outputReducer() {
+        return (prev, p) -> {
+            var d = (DelegatedStake) p;
+            return prev.add(d.getDelegateKey(), d.getAmount());
+        };
     }
 
     @Override
-    public BiFunction<Stakes, DelegatedStake, Stakes> inputReducer() {
-        return (prev, p) -> prev.remove(p.getDelegateKey(), p.getAmount());
+    public BiFunction<Stakes, Particle, Stakes> inputReducer() {
+        return (prev, p) -> {
+            var d = (DelegatedStake) p;
+            return prev.remove(d.getDelegateKey(), d.getAmount());
+        };
     }
 }
