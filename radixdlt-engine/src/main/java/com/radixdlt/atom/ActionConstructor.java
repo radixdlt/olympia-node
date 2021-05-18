@@ -16,21 +16,14 @@
  *
  */
 
-package com.radixdlt.atom.actions;
+package com.radixdlt.atom;
 
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-
-public final class IncludeMessage implements TxAction {
-	private final byte[] data;
-
-	public IncludeMessage(byte[] data) {
-		this.data = data;
-	}
-
-	@Override
-	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.message(data);
-	}
+/**
+ * Given a TxBuilder builds the high level action as radix engine
+ * transaction.
+ *
+ * @param <T> the action type
+ */
+public interface ActionConstructor<T extends TxAction> {
+	void construct(T action, TxBuilder builder) throws TxBuilderException;
 }

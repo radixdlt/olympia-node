@@ -46,8 +46,11 @@ public class MockedRadixEngineForksModule extends AbstractModule {
 				.collect(
 					Collectors.toMap(
 						e -> epoch.getAndAdd(5),
-						e -> new ForkConfig(e.getValue().getConstraintMachine(), View.of(viewCeiling.getAndAdd(-5))
-		 			)
+						e -> new ForkConfig(
+							e.getValue().getConstraintMachine(),
+							e.getValue().getActionConstructors(),
+							View.of(viewCeiling.getAndAdd(-5))
+						)
 				))
 		);
 	}

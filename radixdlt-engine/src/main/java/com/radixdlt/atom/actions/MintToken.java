@@ -19,9 +19,6 @@
 package com.radixdlt.atom.actions;
 
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
@@ -46,10 +43,5 @@ public final class MintToken implements TxAction {
 
 	public UInt256 amount() {
 		return amount;
-	}
-
-	@Override
-	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.up(new TokensParticle(to, amount, resourceAddr));
 	}
 }

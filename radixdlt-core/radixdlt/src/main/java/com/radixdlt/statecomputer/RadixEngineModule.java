@@ -23,6 +23,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -80,6 +81,7 @@ public class RadixEngineModule extends AbstractModule {
 	@Singleton
 	private RadixEngine<LedgerAndBFTProof> getRadixEngine(
 		ConstraintMachine constraintMachine,
+		ActionConstructors actionConstructors,
 		EngineStore<LedgerAndBFTProof> engineStore,
 		PostParsedChecker checker,
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
@@ -88,6 +90,7 @@ public class RadixEngineModule extends AbstractModule {
 		Set<SubstateCacheRegister<?>> substateCacheRegisters
 	) {
 		var radixEngine = new RadixEngine<>(
+			actionConstructors,
 			constraintMachine,
 			engineStore,
 			checker,

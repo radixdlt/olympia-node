@@ -19,6 +19,7 @@ package com.radixdlt.engine;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atommodel.system.SystemParticle;
@@ -51,7 +52,7 @@ public class SystemTest {
 			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
 			.build();
 		this.store = new InMemoryEngineStore<>();
-		this.engine = new RadixEngine<>(cm, store);
+		this.engine = new RadixEngine<>(ActionConstructors.newBuilder().build(), cm, store);
 	}
 
 	@Test

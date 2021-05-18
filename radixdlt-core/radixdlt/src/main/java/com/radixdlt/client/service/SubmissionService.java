@@ -48,10 +48,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.radixdlt.atom.actions.ActionErrors.DIFFERENT_SOURCE_ADDRESSES;
-import static com.radixdlt.atom.actions.ActionErrors.EMPTY_TRANSACTIONS_NOT_SUPPORTED;
-import static com.radixdlt.atom.actions.ActionErrors.SUBMISSION_FAILURE;
-import static com.radixdlt.atom.actions.ActionErrors.TRANSACTION_ADDRESS_DOES_NOT_MATCH;
+import static com.radixdlt.atom.construction.ActionErrors.DIFFERENT_SOURCE_ADDRESSES;
+import static com.radixdlt.atom.construction.ActionErrors.EMPTY_TRANSACTIONS_NOT_SUPPORTED;
+import static com.radixdlt.atom.construction.ActionErrors.SUBMISSION_FAILURE;
+import static com.radixdlt.atom.construction.ActionErrors.TRANSACTION_ADDRESS_DOES_NOT_MATCH;
 import static com.radixdlt.client.api.ApiErrors.UNABLE_TO_PREPARE_TX;
 
 public final class SubmissionService {
@@ -97,7 +97,7 @@ public final class SubmissionService {
 
 	private List<TxAction> toActionsAndFee(REAddr addr, List<TransactionAction> steps) {
 		return Stream.concat(
-			steps.stream().map(TransactionAction::toAction),
+			steps.stream().flatMap(TransactionAction::toAction),
 			Stream.of(new BurnToken(REAddr.ofNativeToken(), addr, TokenFeeChecker.FIXED_FEE))
 		).collect(Collectors.toList());
 	}

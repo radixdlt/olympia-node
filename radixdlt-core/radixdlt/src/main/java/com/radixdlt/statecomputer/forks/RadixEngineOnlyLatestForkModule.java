@@ -21,6 +21,7 @@ package com.radixdlt.statecomputer.forks;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.statecomputer.EpochCeilingView;
@@ -45,7 +46,7 @@ public class RadixEngineOnlyLatestForkModule extends AbstractModule {
 		return forkConfigs.entrySet().stream()
 			.max(Comparator.comparing(e -> e.getKey().epoch()))
 			.map(Map.Entry::getValue)
-			.map(f -> new ForkConfig(f.getConstraintMachine(), epochHighViewOverwrite))
+			.map(f -> new ForkConfig(f.getConstraintMachine(), f.getActionConstructors(), epochHighViewOverwrite))
 			.orElseThrow();
 	}
 
@@ -60,6 +61,12 @@ public class RadixEngineOnlyLatestForkModule extends AbstractModule {
 	@EpochCeilingView
 	private View epochCeilingHighView(ForkConfig forkConfig) {
 		return forkConfig.getEpochCeilingView();
+	}
+
+	@Provides
+	@Singleton
+	private ActionConstructors initialActionConstructors(ForkConfig forkConfig) {
+		return forkConfig.getActionConstructors();
 	}
 
 	@Provides

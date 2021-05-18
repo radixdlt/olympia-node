@@ -18,6 +18,7 @@
 
 package com.radixdlt.statecomputer.forks;
 
+import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 
@@ -26,15 +27,25 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
  */
 public final class ForkConfig {
 	private final ConstraintMachine constraintMachine;
+	private final ActionConstructors actionConstructors;
 	private final View epochCeilingView;
 
-	public ForkConfig(ConstraintMachine constraintMachine, View epochCeilingView) {
+	public ForkConfig(
+		ConstraintMachine constraintMachine,
+		ActionConstructors actionConstructors,
+		View epochCeilingView
+	) {
 		this.constraintMachine = constraintMachine;
+		this.actionConstructors = actionConstructors;
 		this.epochCeilingView = epochCeilingView;
 	}
 
 	public ConstraintMachine getConstraintMachine() {
 		return constraintMachine;
+	}
+
+	public ActionConstructors getActionConstructors() {
+		return actionConstructors;
 	}
 
 	public View getEpochCeilingView() {

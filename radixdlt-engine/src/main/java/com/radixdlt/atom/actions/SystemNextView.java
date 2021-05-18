@@ -19,12 +19,6 @@
 package com.radixdlt.atom.actions;
 
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.constraintmachine.SubstateWithArg;
-
-import java.util.Optional;
 
 public final class SystemNextView implements TxAction {
 	private final long view;
@@ -37,22 +31,15 @@ public final class SystemNextView implements TxAction {
 		this.currentEpoch = currentEpoch;
 	}
 
-	@Override
-	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.assertIsSystem("Not permitted as user to execute system next view");
+	public long view() {
+		return view;
+	}
 
-		txBuilder.swap(
-			SystemParticle.class,
-			p -> p.getEpoch() == currentEpoch,
-			currentEpoch == 0
-				? Optional.of(SubstateWithArg.noArg(new SystemParticle(0, 0, 0)))
-				: Optional.empty(),
-			"No System particle available"
-		).with(substateDown -> {
-			if (view <= substateDown.getView()) {
-				throw new TxBuilderException("Next view isn't higher than current view.");
-			}
-			return new SystemParticle(substateDown.getEpoch(), view, timestamp);
-		});
+	public long timestamp() {
+		return timestamp;
+	}
+
+	public long currentEpoch() {
+		return currentEpoch;
 	}
 }

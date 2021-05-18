@@ -1,5 +1,6 @@
 package com.radixdlt.engine;
 
+import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
@@ -35,6 +36,7 @@ public class TokensTest {
 			.build();
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
+			ActionConstructors.newBuilder().build(),
 			cm,
 			store
 		);

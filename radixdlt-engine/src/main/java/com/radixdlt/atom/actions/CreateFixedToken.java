@@ -19,18 +19,10 @@
 package com.radixdlt.atom.actions;
 
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TokensParticle;
-import com.radixdlt.atomos.REAddrParticle;
-import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Objects;
-import java.util.Optional;
 
 public class CreateFixedToken implements TxAction {
 	private final REAddr resourceAddr;
@@ -92,27 +84,5 @@ public class CreateFixedToken implements TxAction {
 
 	public String getTokenUrl() {
 		return tokenUrl;
-	}
-
-	@Override
-	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		//final var user = txBuilder.getUserOrFail("Required address for fixed token.");
-		//final var tokenAddress = REAddr.ofHashedKey(user, symbol.toLowerCase());
-		//final var userAccount = REAddr.ofPubKeyAccount(user);
-		txBuilder.down(
-			REAddrParticle.class,
-			p -> p.getAddr().equals(resourceAddr),
-			Optional.of(SubstateWithArg.withArg(new REAddrParticle(resourceAddr), symbol.getBytes(StandardCharsets.UTF_8))),
-			"RRI not available"
-		);
-		txBuilder.up(new TokenDefinitionParticle(
-			resourceAddr,
-			name,
-			getDescription(),
-			getIconUrl(),
-			getTokenUrl(),
-			supply
-		));
-		txBuilder.up(new TokensParticle(accountAddr, supply, resourceAddr));
 	}
 }

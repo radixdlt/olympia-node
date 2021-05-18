@@ -31,7 +31,6 @@ import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.MoveStake;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
@@ -222,14 +221,6 @@ public final class NodeController implements Controller {
 				var delegate = ValidatorAddress.parse(addressString);
 				var amt = parseAmount(paramsObject, "amount");
 				return new UnstakeTokens(account, delegate, amt);
-			}
-			case "MoveStake": {
-				var fromString = paramsObject.getString("from");
-				var fromDelegate = ValidatorAddress.parse(fromString);
-				var toString = paramsObject.getString("to");
-				var toDelegate = ValidatorAddress.parse(toString);
-				var amt = parseAmount(paramsObject, "amount");
-				return new MoveStake(account, fromDelegate, toDelegate, amt);
 			}
 			case "RegisterValidator": {
 				var name = paramsObject.has("name") ? paramsObject.getString("name") : null;

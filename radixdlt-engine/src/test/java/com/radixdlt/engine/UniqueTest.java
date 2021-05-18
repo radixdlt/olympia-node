@@ -18,6 +18,7 @@
 
 package com.radixdlt.engine;
 
+import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
@@ -51,7 +52,7 @@ public class UniqueTest {
 			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
 			.build();
 		this.store = new InMemoryEngineStore<>();
-		this.engine = new RadixEngine<>(cm, store);
+		this.engine = new RadixEngine<>(ActionConstructors.newBuilder().build(), cm, store);
 	}
 
 	@Test

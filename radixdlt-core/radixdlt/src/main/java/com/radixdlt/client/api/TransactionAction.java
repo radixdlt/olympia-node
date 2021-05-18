@@ -18,7 +18,6 @@
 package com.radixdlt.client.api;
 
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.IncludeMessage;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
@@ -27,8 +26,8 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Functions;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static java.util.Optional.ofNullable;
 
@@ -57,10 +56,6 @@ public class TransactionAction {
 		this.delegate = delegate;
 		this.rri = rri;
 		this.data = data;
-	}
-
-	public static TransactionAction msg(String msg) {
-		return create(ActionType.MSG, null, null, null, null, null, msg.getBytes(StandardCharsets.UTF_8));
 	}
 
 	public static TransactionAction create(
@@ -103,16 +98,16 @@ public class TransactionAction {
 		return mapper.apply(actionType, from, to, delegate, amount, ofNullable(rri));
 	}
 
-	public TxAction toAction() {
+	public Stream<TxAction> toAction() {
 		switch (actionType) {
 			case MSG:
-				return new IncludeMessage(data);
+				return Stream.empty();
 			case TRANSFER:
-				return new TransferToken(rriValue(), from, to, amount);
+				return Stream.of(new TransferToken(rriValue(), from, to, amount));
 			case STAKE:
-				return new StakeTokens(from, delegate, amount);
+				return Stream.of(new StakeTokens(from, delegate, amount));
 			case UNSTAKE:
-				return new UnstakeTokens(from, delegate, amount);
+				return Stream.of(new UnstakeTokens(from, delegate, amount));
 		}
 		throw new IllegalStateException("Unsupported action type " + actionType);
 	}
