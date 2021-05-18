@@ -27,9 +27,11 @@ import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 
 import java.io.File;
+import java.text.StringCharacterIterator;
 import java.util.concurrent.TimeUnit;
 
 import static com.sleepycat.je.Durability.COMMIT_NO_SYNC;
+import static com.sleepycat.je.EnvironmentConfig.CHECKPOINTER_BYTES_INTERVAL;
 import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_CHECKPOINTER;
 import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_CLEANER;
 import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_EVICTOR;
@@ -58,9 +60,10 @@ public final class DatabaseEnvironment {
 		environmentConfig.setAllowCreate(true);
 		environmentConfig.setLockTimeout(30, TimeUnit.SECONDS);
 		environmentConfig.setDurability(COMMIT_NO_SYNC);
-		environmentConfig.setConfigParam(LOG_FILE_MAX, "100000000");
+		environmentConfig.setConfigParam(LOG_FILE_MAX, "1073741824");
 		environmentConfig.setConfigParam(LOG_FILE_CACHE_SIZE, "256");
 		environmentConfig.setConfigParam(ENV_RUN_CHECKPOINTER, "true");
+		environmentConfig.setConfigParam(CHECKPOINTER_BYTES_INTERVAL, "250000000");
 		environmentConfig.setConfigParam(ENV_RUN_CLEANER, "true");
 		environmentConfig.setConfigParam(ENV_RUN_EVICTOR, "true");
 		environmentConfig.setConfigParam(ENV_RUN_VERIFIER, "false");
@@ -69,6 +72,8 @@ public final class DatabaseEnvironment {
 		environmentConfig.setCacheMode(CacheMode.EVICT_LN);
 
 		this.environment = new Environment(dbHome, environmentConfig);
+
+		log.info("DB cache size set to {} ({} bytes)", toHumanReadable(cacheSize), cacheSize);
 	}
 
 	public void stop() {
@@ -86,5 +91,26 @@ public final class DatabaseEnvironment {
 		}
 
 		return this.environment;
+	}
+
+	private static String toHumanReadable(long bytes) {
+		var absB = bytes == Long.MIN_VALUE
+					? Long.MAX_VALUE
+					: Math.abs(bytes);
+
+		if (absB < 1024) {
+			return bytes + " B";
+		}
+
+		var value = absB;
+		var ci = new StringCharacterIterator("KMGTPE");
+
+		for (int i = 40; i >= 0 && absB > 0xfffccccccccccccL >> i; i -= 10) {
+			value >>= 10;
+			ci.next();
+		}
+
+		value *= Long.signum(bytes);
+		return String.format("%.1f %ciB", value / 1024.0, ci.current());
 	}
 }
