@@ -40,7 +40,7 @@ import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.api.chaos.mempoolfiller.ScheduledMempoolFill;
 import com.radixdlt.api.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.api.chaos.messageflooder.ScheduledMessageFlood;
-import com.radixdlt.api.archive.store.berkeley.ScheduledQueueFlush;
+import com.radixdlt.api.data.ScheduledQueueFlush;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;

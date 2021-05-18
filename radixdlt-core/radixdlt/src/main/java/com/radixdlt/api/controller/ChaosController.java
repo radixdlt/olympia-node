@@ -20,23 +20,24 @@ package com.radixdlt.api.controller;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
+import com.radixdlt.api.Controller;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.api.chaos.messageflooder.MessageFlooderUpdate;
-import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventDispatcher;
-
+import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.serialization.DeserializeException;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.RoutingHandler;
-import com.radixdlt.api.Controller;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import static com.radixdlt.api.RestUtils.*;
-import static com.radixdlt.api.RestUtils.respond;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.RoutingHandler;
+
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.RestUtils.respond;
+import static com.radixdlt.api.RestUtils.withBody;
+import static com.radixdlt.api.RestUtils.withBodyAsyncAndDefaultResponse;
 
 public final class ChaosController implements Controller {
 	private final EventDispatcher<MempoolFillerUpdate> mempoolDispatcher;
@@ -44,8 +45,8 @@ public final class ChaosController implements Controller {
 
 	@Inject
 	public ChaosController(
-		final EventDispatcher<MempoolFillerUpdate> mempoolDispatcher,
-		final EventDispatcher<MessageFlooderUpdate> messageDispatcher
+		EventDispatcher<MempoolFillerUpdate> mempoolDispatcher,
+		EventDispatcher<MessageFlooderUpdate> messageDispatcher
 	) {
 		this.mempoolDispatcher = mempoolDispatcher;
 		this.messageDispatcher = messageDispatcher;

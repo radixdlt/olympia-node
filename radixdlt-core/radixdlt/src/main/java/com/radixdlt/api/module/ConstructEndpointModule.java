@@ -24,6 +24,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.JsonRpcHandler;
+import com.radixdlt.api.qualifier.AtArchive;
 import com.radixdlt.api.server.JsonRpcServer;
 import com.radixdlt.api.handler.ConstructionHandler;
 import com.radixdlt.api.qualifier.Construct;
@@ -42,6 +43,7 @@ public class ConstructEndpointModule extends AbstractModule {
 		return new JsonRpcServer(additionalHandlers);
 	}
 
+	@AtArchive
 	@ProvidesIntoSet
 	public Controller constructController(
 		TxnIndex txnIndex, TxnParser txnParser,

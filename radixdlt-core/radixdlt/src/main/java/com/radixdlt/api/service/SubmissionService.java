@@ -21,10 +21,12 @@ import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.PayFee;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.json.JSONArray;
 
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
+import com.radixdlt.api.data.PreparedTransaction;
+import com.radixdlt.api.data.TransactionAction;
+import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.client.api.PreparedTransaction;
@@ -53,11 +55,11 @@ import static com.radixdlt.atom.actions.ActionErrors.EMPTY_TRANSACTIONS_NOT_SUPP
 import static com.radixdlt.atom.actions.ActionErrors.SUBMISSION_FAILURE;
 import static com.radixdlt.atom.actions.ActionErrors.TRANSACTION_ADDRESS_DOES_NOT_MATCH;
 import static com.radixdlt.client.api.ApiErrors.UNABLE_TO_PREPARE_TX;
+import static com.radixdlt.api.data.ApiErrors.UNABLE_TO_PREPARE_TX;
 import static com.radixdlt.atom.actions.ActionErrors.DIFFERENT_SOURCE_ADDRESSES;
 import static com.radixdlt.atom.actions.ActionErrors.EMPTY_TRANSACTIONS_NOT_SUPPORTED;
 import static com.radixdlt.atom.actions.ActionErrors.SUBMISSION_FAILURE;
 import static com.radixdlt.atom.actions.ActionErrors.TRANSACTION_ADDRESS_DOES_NOT_MATCH;
-import static com.radixdlt.api.archive.api.ApiErrors.UNABLE_TO_PREPARE_TX;
 
 public final class SubmissionService {
 	private final Logger logger = LogManager.getLogger();
@@ -74,7 +76,8 @@ public final class SubmissionService {
 	}
 
 	public Result<PreparedTransaction> prepareTransaction(List<TransactionAction> steps, Optional<String> message) {
-		var addresses = steps.stream().map(TransactionAction::getFrom)
+		var addresses = steps.stream()
+			.map(TransactionAction::getFrom)
 			.filter(Objects::nonNull)
 			.collect(Collectors.toSet());
 

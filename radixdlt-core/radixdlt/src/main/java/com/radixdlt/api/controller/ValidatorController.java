@@ -40,7 +40,7 @@ import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateValidator;
 import com.radixdlt.identifiers.AccountAddress;
-import com.radixdlt.api.archive.Rri;
+import com.radixdlt.api.Rri;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;

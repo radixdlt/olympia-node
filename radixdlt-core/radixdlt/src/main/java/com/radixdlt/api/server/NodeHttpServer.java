@@ -21,6 +21,7 @@ package com.radixdlt.api.server;
 import com.google.inject.Inject;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.Controller;
+import com.radixdlt.api.qualifier.AtNode;
 import com.radixdlt.properties.RuntimeProperties;
 import com.stijndewitt.undertow.cors.AllowAll;
 import com.stijndewitt.undertow.cors.Filter;
@@ -49,7 +50,7 @@ public final class NodeHttpServer implements ModuleRunner {
 
 	@Inject
 	public NodeHttpServer(
-		Set<Controller> controllers,
+		@AtNode Set<Controller> controllers,
 		RuntimeProperties properties
 	) {
 		//TODO: perhaps rename properties to match other namings?

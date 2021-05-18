@@ -21,12 +21,16 @@ import com.radixdlt.atommodel.system.state.ValidatorStake;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.archive.api.TxHistoryEntry;
-import com.radixdlt.api.archive.api.ValidatorInfoDetails;
+import com.radixdlt.api.data.TxHistoryEntry;
+import com.radixdlt.api.data.ValidatorInfoDetails;
 import com.radixdlt.api.service.ArchiveService;
 import com.radixdlt.api.service.NetworkInfoService;
 import com.radixdlt.api.service.TransactionStatusService;
 import com.radixdlt.api.service.ValidatorInfoService;
+import com.radixdlt.api.store.TokenBalance;
+import com.radixdlt.api.store.TokenDefinitionRecord;
+import com.radixdlt.api.data.BalanceEntry;
+import com.radixdlt.api.data.UnstakeEntry;
 import com.radixdlt.api.archive.store.TokenBalance;
 import com.radixdlt.api.archive.store.TokenDefinitionRecord;
 import com.radixdlt.api.archive.store.berkeley.BalanceEntry;
@@ -74,6 +78,7 @@ import static com.radixdlt.client.api.ApiErrors.INVALID_PAGE_SIZE;
 import static com.radixdlt.client.api.ApiErrors.INVALID_PUBLIC_KEY;
 import static com.radixdlt.client.api.ApiErrors.INVALID_SIGNATURE_DER;
 import static com.radixdlt.api.archive.api.ApiErrors.INVALID_PAGE_SIZE;
+import static com.radixdlt.api.data.ApiErrors.INVALID_PAGE_SIZE;
 import static com.radixdlt.utils.functional.Optionals.allOf;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.ok;
@@ -199,8 +204,6 @@ public class ArchiveHandler {
 			request,
 			"address",
 			(address) -> AccountAddress.parseFunctional(address)
-//				.flatMap(archiveService::getUnstakePositions)
-//				.map(ArchiveHandler::formatUnstakePositions)
 				.flatMap(archiveService::getUnstakePositions)
 				.map(positions -> {
 					var curEpoch = archiveService.getEpoch();
@@ -242,6 +245,7 @@ public class ArchiveHandler {
 				.put("epochsUntil", unstake.getEpochUnlocked().equals(0L)
 					? ValidatorStake.EPOCHS_LOCKED
 					: unstake.getEpochUnlocked() - curEpoch)
+				.put("withdrawTxID", unstake.getWithdrawTxId())
 		);
 		return jsonObject().put(ARRAY, array);
 	}
