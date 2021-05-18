@@ -179,7 +179,7 @@ public final class Pacemaker {
 			nextTxns = nextTxnsGenerator.generateNextTxns(view, preparedVertices);
 		}
 
-		final UnverifiedVertex proposedVertex = UnverifiedVertex.createVertex(highestQC, view, nextTxns);
+		final UnverifiedVertex proposedVertex = UnverifiedVertex.create(highestQC, view, nextTxns, self);
 		final VerifiedVertex verifiedVertex = new VerifiedVertex(proposedVertex, hasher.hash(proposedVertex));
 		return safetyRules.signProposal(
 			verifiedVertex,
@@ -197,7 +197,7 @@ public final class Pacemaker {
 	 * which can later be used to form a timeout certificate.
 	 */
 	public void processLocalTimeout(ScheduledLocalTimeout scheduledTimeout) {
-		final View view = scheduledTimeout.view();
+		final var view = scheduledTimeout.view();
 
 		if (!view.equals(this.latestViewUpdate.getCurrentView())) {
 			log.trace("LocalTimeout: Ignoring timeout {}, current is {}", scheduledTimeout, this.latestViewUpdate.getCurrentView());
@@ -218,19 +218,24 @@ public final class Pacemaker {
 				vote -> this.voteDispatcher.dispatch(this.validatorSet.nodes(), vote),
 				/* otherwise, we asynchronously insert an empty vertex and, when done,
 					we send a timeout vote on it (see processBFTUpdate) */
-				() -> createTimeoutVertexAndSendVote(view)
+				() -> createTimeoutVertexAndSendVote(scheduledTimeout.viewUpdate())
 			);
 
 		rescheduleTimeout(scheduledTimeout);
 	}
 
-	private void createTimeoutVertexAndSendVote(View view) {
+	private void createTimeoutVertexAndSendVote(ViewUpdate viewUpdate) {
 		if (this.timeoutVoteVertexId.isPresent()) {
 			return; // vertex for a timeout vote for this view is already inserted
 		}
 
-		final HighQC highQC = this.latestViewUpdate.getHighQC();
-		final UnverifiedVertex proposedVertex = UnverifiedVertex.createVertex(highQC.highestQC(), view, List.of());
+		final var highQC = this.latestViewUpdate.getHighQC();
+		final var proposedVertex = UnverifiedVertex.create(
+			highQC.highestQC(),
+			viewUpdate.getCurrentView(),
+			List.of(),
+			viewUpdate.getLeader()
+		);
 		final VerifiedVertex verifiedVertex = new VerifiedVertex(proposedVertex, hasher.hash(proposedVertex));
 		this.timeoutVoteVertexId = Optional.of(verifiedVertex.getId());
 

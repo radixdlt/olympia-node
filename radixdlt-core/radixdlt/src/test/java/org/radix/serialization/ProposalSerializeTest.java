@@ -54,8 +54,8 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
 		var txn = Txn.create(new byte[]{0, 1, 2, 3});
 
 		// add a particle to ensure atom is valid and has at least one shard
-		UnverifiedVertex vertex = UnverifiedVertex.createVertex(qc, view, List.of(txn));
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-		return new Proposal(vertex, qc, author, ECDSASignature.zeroSignature(), Optional.empty());
+		UnverifiedVertex vertex = UnverifiedVertex.create(qc, view, List.of(txn), author);
+		return new Proposal(vertex, qc, ECDSASignature.zeroSignature(), Optional.empty());
 	}
 }

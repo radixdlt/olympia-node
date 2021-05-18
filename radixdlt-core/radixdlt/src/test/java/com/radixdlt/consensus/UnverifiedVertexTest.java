@@ -18,6 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -44,7 +45,7 @@ public class UnverifiedVertexTest {
 		VoteData voteData = new VoteData(header, parent, parent);
 
 		this.qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		this.testObject = UnverifiedVertex.createVertex(this.qc, baseView.next().next(), List.of());
+		this.testObject = UnverifiedVertex.create(this.qc, baseView.next().next(), List.of(), BFTNode.random());
 	}
 
 	@Test

@@ -154,8 +154,8 @@ public class StateComputerLedgerTest {
 		genesisIsEndOfEpoch(false);
 		when(stateComputer.prepare(any(), any(), anyLong(), any(), anyLong()))
 			.thenReturn(new StateComputerResult(ImmutableList.of(), ImmutableMap.of()));
-		final UnverifiedVertex unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), null);
-		final VerifiedVertex proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
+		var unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), null, BFTNode.random());
+		var proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 
 		// Act
 		Optional<PreparedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
@@ -173,8 +173,8 @@ public class StateComputerLedgerTest {
 		genesisIsEndOfEpoch(true);
 		when(stateComputer.prepare(any(), any(), anyLong(), any(), anyLong()))
 			.thenReturn(new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
-		final UnverifiedVertex unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), List.of(nextTxn.getPayload()));
-		final VerifiedVertex proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
+		var unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), List.of(nextTxn.getPayload()), BFTNode.random());
+		var proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 
 		// Act
 		Optional<PreparedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
@@ -194,8 +194,8 @@ public class StateComputerLedgerTest {
 			.thenReturn(new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
 
 		// Act
-		final UnverifiedVertex unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), List.of(nextTxn.getPayload()));
-		final VerifiedVertex proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
+		var unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), List.of(nextTxn.getPayload()), BFTNode.random());
+		var proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 		Optional<PreparedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
 
 		// Assert

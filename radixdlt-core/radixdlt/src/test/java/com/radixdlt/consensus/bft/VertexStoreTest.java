@@ -126,7 +126,7 @@ public class VertexStoreTest {
 				view = view.next();
 			}
 
-			UnverifiedVertex rawVertex = UnverifiedVertex.createVertex(qc, view, List.of(Txn.create(new byte[0])));
+			var rawVertex = UnverifiedVertex.create(qc, view, List.of(Txn.create(new byte[0])), BFTNode.random());
 			HashCode hash = hasher.hash(rawVertex);
 			VerifiedVertex vertex = new VerifiedVertex(rawVertex, hash);
 			lastParentHeader.set(new BFTHeader(view, hash, MOCKED_HEADER));

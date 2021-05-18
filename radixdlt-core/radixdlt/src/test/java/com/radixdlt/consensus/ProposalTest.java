@@ -18,7 +18,6 @@
 package com.radixdlt.consensus;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.HashUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,7 +34,6 @@ import java.util.Optional;
 public class ProposalTest {
 	private Proposal proposal;
 	private UnverifiedVertex vertex;
-	private BFTNode node;
 	private ECDSASignature signature;
 	private QuorumCertificate qc;
 	private QuorumCertificate commitQc;
@@ -43,14 +41,13 @@ public class ProposalTest {
 	@Before
 	public void setUp() {
 		this.vertex = mock(UnverifiedVertex.class);
-		this.node = mock(BFTNode.class);
 		this.signature = mock(ECDSASignature.class);
 		this.commitQc = mock(QuorumCertificate.class);
 		this.qc = mock(QuorumCertificate.class);
 
 		when(this.vertex.getQC()).thenReturn(qc);
 
-		this.proposal = new Proposal(vertex, commitQc, node, signature, Optional.empty());
+		this.proposal = new Proposal(vertex, commitQc, signature, Optional.empty());
 	}
 
 	@Test

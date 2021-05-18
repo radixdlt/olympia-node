@@ -165,19 +165,21 @@ public class DifferentTimestampsCauseTimeoutTest {
 
 	private Proposal mutateProposal(Proposal p, int destination) {
 		QuorumCertificate committedQC = p.highQC().highestCommittedQC();
-		BFTNode author = p.getAuthor();
 		UnverifiedVertex vertex = p.getVertex();
 		ECDSASignature signature = p.getSignature();
 
-		return new Proposal(mutateVertex(vertex, destination), committedQC, author, signature, Optional.empty());
+		return new Proposal(mutateVertex(vertex, destination), committedQC, signature, Optional.empty());
 	}
 
 	private UnverifiedVertex mutateVertex(UnverifiedVertex v, int destination) {
 		var qc = v.getQC();
 		var view = v.getView();
 		var txns = v.getTxns();
+		var proposer = v.getProposer();
 
-		return new UnverifiedVertex(mutateQC(qc,  destination), view, txns.stream().map(Txn::getPayload).collect(Collectors.toList()));
+		return new UnverifiedVertex(
+			mutateQC(qc,  destination), view, txns.stream().map(Txn::getPayload).collect(Collectors.toList()), proposer
+		);
 	}
 
 	private QuorumCertificate mutateQC(QuorumCertificate qc, int destination) {

@@ -71,15 +71,17 @@ public final class MessageFlooder {
 	}
 
 	private Proposal createProposal() {
-		AccumulatorState accumulatorState = new AccumulatorState(9, HashUtils.random256());
-		LedgerHeader ledgerHeader = LedgerHeader.create(1, View.of(12345), accumulatorState, 300);
-		BFTHeader header = new BFTHeader(View.of(1), HashUtils.random256(), ledgerHeader);
-		VoteData voteData = new VoteData(header, header, header);
-		TimestampedECDSASignatures signatures = new TimestampedECDSASignatures();
-		QuorumCertificate qc = new QuorumCertificate(voteData, signatures);
-		UnverifiedVertex vertex = UnverifiedVertex.createVertex(qc, View.of(3), List.of(Txn.create(new byte[commandSize])));
+		var accumulatorState = new AccumulatorState(9, HashUtils.random256());
+		var ledgerHeader = LedgerHeader.create(1, View.of(12345), accumulatorState, 300);
+		var header = new BFTHeader(View.of(1), HashUtils.random256(), ledgerHeader);
+		var voteData = new VoteData(header, header, header);
+		var signatures = new TimestampedECDSASignatures();
+		var qc = new QuorumCertificate(voteData, signatures);
+		var vertex = UnverifiedVertex.create(
+			qc, View.of(3), List.of(Txn.create(new byte[commandSize])), BFTNode.random()
+		);
 
-		return new Proposal(vertex, qc, self, ECDSASignature.zeroSignature(), Optional.empty());
+		return new Proposal(vertex, qc, ECDSASignature.zeroSignature(), Optional.empty());
 	}
 
 	public EventProcessor<MessageFlooderUpdate> messageFloodUpdateProcessor() {

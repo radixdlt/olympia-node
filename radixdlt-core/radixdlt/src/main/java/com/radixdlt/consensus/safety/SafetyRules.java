@@ -121,7 +121,6 @@ public final class SafetyRules {
 		return Optional.of(new Proposal(
 			proposedVertex.toSerializable(),
 			highestCommittedQC,
-			this.self,
 			signature,
 			highestTC
 		));

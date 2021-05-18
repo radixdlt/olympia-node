@@ -41,6 +41,10 @@ public final class VerifiedVertex {
 		this.id = Objects.requireNonNull(id);
 	}
 
+	public BFTNode getProposer() {
+		return vertex.getProposer();
+	}
+
 	public UnverifiedVertex toSerializable() {
 		return vertex;
 	}

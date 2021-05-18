@@ -27,7 +27,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -208,20 +207,20 @@ public class ConsensusModuleTest {
 	}
 
 	private Pair<QuorumCertificate, VerifiedVertex> createNextVertex(QuorumCertificate parent, BFTNode bftNode, Txn txn) {
-		UnverifiedVertex unverifiedVertex = new UnverifiedVertex(parent, View.of(1), List.of(txn.getPayload()));
-		HashCode hash = hasher.hash(unverifiedVertex);
-		VerifiedVertex verifiedVertex = new VerifiedVertex(unverifiedVertex, hash);
-		BFTHeader next = new BFTHeader(
+		var unverifiedVertex = new UnverifiedVertex(parent, View.of(1), List.of(txn.getPayload()), bftNode);
+		var hash = hasher.hash(unverifiedVertex);
+		var verifiedVertex = new VerifiedVertex(unverifiedVertex, hash);
+		var next = new BFTHeader(
 			View.of(1),
 			verifiedVertex.getId(),
 			LedgerHeader.create(1, View.of(1), new AccumulatorState(1, HashUtils.zero256()), 1)
 		);
-		VoteData voteData = new VoteData(
+		var voteData = new VoteData(
 			next,
 			parent.getProposed(),
 			parent.getParent()
 		);
-		QuorumCertificate unsyncedQC = new QuorumCertificate(
+		var unsyncedQC = new QuorumCertificate(
 			voteData,
 			new TimestampedECDSASignatures(Map.of(bftNode, TimestampedECDSASignature.from(0, UInt256.ONE, zeroSignature())))
 		);

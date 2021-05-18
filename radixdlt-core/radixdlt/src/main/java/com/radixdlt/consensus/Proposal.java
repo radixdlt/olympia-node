@@ -23,7 +23,6 @@ import com.google.errorprone.annotations.Immutable;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -46,8 +45,6 @@ public final class Proposal implements ConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private final UnverifiedVertex vertex;
 
-	private final BFTNode author;
-
 	@JsonProperty("signature")
 	@DsonOutput(Output.ALL)
 	private final ECDSASignature signature;
@@ -64,23 +61,20 @@ public final class Proposal implements ConsensusEvent {
 	Proposal(
 		@JsonProperty("vertex") UnverifiedVertex vertex,
 		@JsonProperty("committedQC") QuorumCertificate committedQC,
-		@JsonProperty("author") byte[] author,
 		@JsonProperty("signature") ECDSASignature signature,
 		@JsonProperty("highestTC") TimeoutCertificate highestTC
-	) throws PublicKeyException {
-		this(vertex, committedQC, BFTNode.fromPublicKeyBytes(author), signature, Optional.ofNullable(highestTC));
+	) {
+		this(vertex, committedQC, signature, Optional.ofNullable(highestTC));
 	}
 
 	public Proposal(
 		UnverifiedVertex vertex,
 		QuorumCertificate committedQC,
-		BFTNode author,
 		ECDSASignature signature,
 		Optional<TimeoutCertificate> highestTC
 	) {
 		this.vertex = Objects.requireNonNull(vertex);
 		this.committedQC = committedQC;
-		this.author = Objects.requireNonNull(author);
 		this.signature = Objects.requireNonNull(signature);
 
 		this.highestTC = // only relevant if it's for a higher view than QC
@@ -104,7 +98,7 @@ public final class Proposal implements ConsensusEvent {
 
 	@Override
 	public BFTNode getAuthor() {
-		return author;
+		return vertex.getProposer();
 	}
 
 	public UnverifiedVertex getVertex() {
@@ -115,21 +109,14 @@ public final class Proposal implements ConsensusEvent {
 		return signature;
 	}
 
-	@JsonProperty("author")
-	@DsonOutput(Output.ALL)
-	private byte[] getSerializerAuthor() {
-		return this.author == null ? null : this.author.getKey().getBytes();
-	}
-
 	@Override
 	public String toString() {
-		String who = author == null ? null : author.getSimpleName();
-		return String.format("%s{vertex=%s author=%s tc=%s}", getClass().getSimpleName(), vertex, who, highestTC);
+		return String.format("%s{vertex=%s author=%s tc=%s}", getClass().getSimpleName(), vertex, getAuthor(), highestTC);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.author, this.vertex, this.signature, this.committedQC, this.highestTC);
+		return Objects.hash(this.vertex, this.signature, this.committedQC, this.highestTC);
 	}
 
 	@Override
@@ -139,8 +126,7 @@ public final class Proposal implements ConsensusEvent {
 		}
 		if (o instanceof Proposal) {
 			Proposal other = (Proposal) o;
-			return Objects.equals(this.author, other.author)
-				&& Objects.equals(this.vertex, other.vertex)
+			return Objects.equals(this.vertex, other.vertex)
 				&& Objects.equals(this.signature, other.signature)
 				&& Objects.equals(this.committedQC, other.committedQC)
 				&& Objects.equals(this.highestTC, other.highestTC);
