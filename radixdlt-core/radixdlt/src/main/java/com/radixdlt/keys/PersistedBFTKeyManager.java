@@ -42,7 +42,7 @@ public final class PersistedBFTKeyManager {
 
 	private static ECKeyPair loadNodeKeyFromFile(String nodeKeyPath) {
 		try {
-			return Keys.readKey(nodeKeyPath, "node", "RADIX_NODE_KEYSTORE_PASSWORD", "RADIX_NODE_KEY_PASSWORD");
+			return Keys.readNodeKey(nodeKeyPath);
 		} catch (IOException | CryptoException ex) {
 			throw new IllegalStateException("While loading node key from " + nodeKeyPath, ex);
 		}

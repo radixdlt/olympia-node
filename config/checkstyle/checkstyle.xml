@@ -75,6 +75,7 @@
     <module name="LineLength">
         <property name="max" value="150"/>
         <property name="ignorePattern" value="^*BQAA.*$"/>
+        <property name="tabWidth" value="4" />
     </module>
 
     <!-- Checks for Headers                                -->
