@@ -40,9 +40,9 @@ import com.radixdlt.store.ReadableAddrs;
  * existence.
  * TODO: use a non-radix-address path to store this system info
  */
-public final class SystemConstraintScrypt implements ConstraintScrypt {
+public final class SystemConstraintScryptV1 implements ConstraintScrypt {
 
-	public SystemConstraintScrypt() {
+	public SystemConstraintScryptV1() {
 		// Nothing here right now
 	}
 

@@ -24,14 +24,14 @@ import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.atom.construction.BurnTokenConstructor;
-import com.radixdlt.atom.construction.CreateMutableTokenConstructor;
-import com.radixdlt.atom.construction.MintTokenConstructor;
-import com.radixdlt.atom.construction.RegisterValidatorConstructor;
-import com.radixdlt.atom.construction.StakeTokensConstructor;
-import com.radixdlt.atom.construction.TransferTokensConstructor;
-import com.radixdlt.atom.construction.UnstakeTokensConstructor;
-import com.radixdlt.atommodel.system.SystemConstraintScrypt;
+import com.radixdlt.atommodel.tokens.BurnTokenConstructor;
+import com.radixdlt.atommodel.tokens.CreateMutableTokenConstructor;
+import com.radixdlt.atommodel.tokens.MintTokenConstructor;
+import com.radixdlt.atommodel.validators.RegisterValidatorConstructor;
+import com.radixdlt.atommodel.tokens.StakeTokensConstructor;
+import com.radixdlt.atommodel.tokens.TransferTokensConstructor;
+import com.radixdlt.atommodel.validators.UnstakeTokensConstructor;
+import com.radixdlt.atommodel.system.SystemConstraintScryptV1;
 import com.radixdlt.atommodel.tokens.StakingConstraintScryptV2;
 import org.junit.Assert;
 import org.junit.Before;
@@ -85,7 +85,7 @@ public class TransactionParserTest {
 	@Before
 	public void setup() throws Exception {
 		final var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new SystemConstraintScrypt());
+		cmAtomOS.load(new SystemConstraintScryptV1());
 		cmAtomOS.load(new ValidatorConstraintScrypt());
 		cmAtomOS.load(new TokensConstraintScrypt());
 		cmAtomOS.load(new StakingConstraintScryptV2());

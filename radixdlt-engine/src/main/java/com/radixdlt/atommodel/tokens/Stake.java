@@ -1,64 +1,52 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
 package com.radixdlt.atommodel.tokens;
 
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 
-/**
- *  A particle which represents an amount of staked fungible tokens
- *  owned by some key owner, stored in an account and staked to a delegate address.
- */
-public final class StakedTokensParticle implements Fungible {
+public final class Stake implements Fungible {
 	private final UInt256 amount;
 
 	// Bucket keys
-	private final REAddr owner;
-	private final ECPublicKey delegateKey;
+	private final ECPublicKey validatorKey;
 
-	public StakedTokensParticle(
+	public Stake(
 		UInt256 amount,
-		REAddr owner,
-		ECPublicKey delegateKey
+		ECPublicKey validatorKey
 	) {
-		this.delegateKey = Objects.requireNonNull(delegateKey);
-		this.owner = Objects.requireNonNull(owner);
+		this.validatorKey = Objects.requireNonNull(validatorKey);
 		this.amount = Objects.requireNonNull(amount);
 	}
 
-	public ECPublicKey getDelegateKey() {
-		return delegateKey;
-	}
-
-	public REAddr getOwner() {
-		return this.owner;
+	public ECPublicKey getValidatorKey() {
+		return validatorKey;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s:%s]",
+		return String.format("%s[%s:%s]",
 			getClass().getSimpleName(),
 			amount,
-			owner,
-			delegateKey
+			validatorKey
 		);
 	}
 
@@ -72,20 +60,18 @@ public final class StakedTokensParticle implements Fungible {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof StakedTokensParticle)) {
+		if (!(o instanceof Stake)) {
 			return false;
 		}
-		StakedTokensParticle that = (StakedTokensParticle) o;
-		return Objects.equals(delegateKey, that.delegateKey)
-			&& Objects.equals(owner, that.owner)
+		var that = (Stake) o;
+		return Objects.equals(validatorKey, that.validatorKey)
 			&& Objects.equals(amount, that.amount);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(
-			delegateKey,
-			owner,
+			validatorKey,
 			amount
 		);
 	}

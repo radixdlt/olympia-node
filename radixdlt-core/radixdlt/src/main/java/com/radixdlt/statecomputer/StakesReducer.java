@@ -17,7 +17,7 @@
 
 package com.radixdlt.statecomputer;
 
-import com.radixdlt.atommodel.tokens.StakedTokensParticle;
+import com.radixdlt.atommodel.tokens.DelegatedStake;
 import com.radixdlt.engine.StateReducer;
 
 import java.util.function.BiFunction;
@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 /**
  * Reduces staked tokens particles to total amount staked per node
  */
-public final class StakesReducer implements StateReducer<Stakes, StakedTokensParticle> {
+public final class StakesReducer implements StateReducer<Stakes, DelegatedStake> {
     public StakesReducer() {
     }
 
@@ -36,8 +36,8 @@ public final class StakesReducer implements StateReducer<Stakes, StakedTokensPar
     }
 
     @Override
-    public Class<StakedTokensParticle> particleClass() {
-        return StakedTokensParticle.class;
+    public Class<DelegatedStake> particleClass() {
+        return DelegatedStake.class;
     }
 
     @Override
@@ -46,12 +46,12 @@ public final class StakesReducer implements StateReducer<Stakes, StakedTokensPar
     }
 
     @Override
-    public BiFunction<Stakes, StakedTokensParticle, Stakes> outputReducer() {
+    public BiFunction<Stakes, DelegatedStake, Stakes> outputReducer() {
         return (prev, p) -> prev.add(p.getDelegateKey(), p.getAmount());
     }
 
     @Override
-    public BiFunction<Stakes, StakedTokensParticle, Stakes> inputReducer() {
+    public BiFunction<Stakes, DelegatedStake, Stakes> inputReducer() {
         return (prev, p) -> prev.remove(p.getDelegateKey(), p.getAmount());
     }
 }

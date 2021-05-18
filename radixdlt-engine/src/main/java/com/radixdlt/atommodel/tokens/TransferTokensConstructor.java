@@ -16,25 +16,28 @@
  *
  */
 
-package com.radixdlt.atom.construction;
+package com.radixdlt.atommodel.tokens;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.SystemNextEpoch;
+import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.constraintmachine.SubstateWithArg;
 
-import java.util.Optional;
-
-public class NextEpochConstructor implements ActionConstructor<SystemNextEpoch> {
+public class TransferTokensConstructor implements ActionConstructor<TransferToken> {
 	@Override
-	public void construct(SystemNextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.swap(
-			SystemParticle.class,
-			p -> true,
-			Optional.of(SubstateWithArg.noArg(new SystemParticle(0, 0, 0, null))),
-			"No System particle available"
-		).with(substateDown -> new SystemParticle(substateDown.getEpoch() + 1, 0, action.timestamp(), null));
+	public void construct(TransferToken action, TxBuilder txBuilder) throws TxBuilderException {
+		var epoch = txBuilder.find(SystemParticle.class, p -> true)
+			.map(SystemParticle::getEpoch).orElse(0L);
+
+		txBuilder.swapFungible(
+			TokensParticle.class,
+			p -> p.getResourceAddr().equals(action.resourceAddr())
+				&& p.getHoldingAddr().equals(action.from())
+				&& p.getEpochUnlocked().map(e -> e <= epoch).orElse(true),
+			amt -> new TokensParticle(action.from(), amt, action.resourceAddr()),
+			action.amount(),
+			"Not enough balance for transfer."
+		).with(amt -> new TokensParticle(action.to(), action.amount(), action.resourceAddr()));
 	}
 }

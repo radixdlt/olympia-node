@@ -16,16 +16,15 @@
  *
  */
 
-package com.radixdlt.atom.construction;
+package com.radixdlt.atommodel.tokens;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.tokens.TokensParticle;
 
-public class BurnTokenConstructor implements ActionConstructor<BurnToken> {
+public final class BurnTokenConstructor implements ActionConstructor<BurnToken> {
 
 	@Override
 	public void construct(BurnToken burnToken, TxBuilder txBuilder) throws TxBuilderException {

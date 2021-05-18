@@ -16,39 +16,36 @@
  *
  */
 
-package com.radixdlt.atom.construction;
+package com.radixdlt.atommodel.tokens;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.SubstateWithArg;
-import com.radixdlt.identifiers.REAddr;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
-public class CreateMutableTokenConstructor implements ActionConstructor<CreateMutableToken> {
+public final class CreateFixedTokenConstructor implements ActionConstructor<CreateFixedToken> {
 	@Override
-	public void construct(CreateMutableToken action, TxBuilder txBuilder) throws TxBuilderException {
-		final var reAddress = txBuilder.getUser().map(a -> REAddr.ofHashedKey(a, action.getSymbol()))
-			.orElse(REAddr.ofNativeToken());
-
+	public void construct(CreateFixedToken action, TxBuilder txBuilder) throws TxBuilderException {
+		var addrParticle = new REAddrParticle(action.getResourceAddr());
 		txBuilder.down(
 			REAddrParticle.class,
-			p -> p.getAddr().equals(reAddress),
-			Optional.of(SubstateWithArg.withArg(new REAddrParticle(reAddress), action.getSymbol().getBytes(StandardCharsets.UTF_8))),
+			p -> p.getAddr().equals(action.getResourceAddr()),
+			Optional.of(SubstateWithArg.withArg(addrParticle, action.getSymbol().getBytes(StandardCharsets.UTF_8))),
 			"RRI not available"
 		);
 		txBuilder.up(new TokenDefinitionParticle(
-			reAddress,
+			action.getResourceAddr(),
 			action.getName(),
 			action.getDescription(),
 			action.getIconUrl(),
 			action.getTokenUrl(),
-			txBuilder.getUser().orElse(null)
+			action.getSupply()
 		));
+		txBuilder.up(new TokensParticle(action.getAccountAddr(), action.getSupply(), action.getResourceAddr()));
 	}
 }

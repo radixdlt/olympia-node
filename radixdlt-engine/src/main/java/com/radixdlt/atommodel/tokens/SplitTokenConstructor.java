@@ -16,17 +16,16 @@
  *
  */
 
-package com.radixdlt.atom.construction;
+package com.radixdlt.atommodel.tokens;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.SplitToken;
-import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
-public class SplitTokenConstructor implements ActionConstructor<SplitToken> {
+public final class SplitTokenConstructor implements ActionConstructor<SplitToken> {
 	@Override
 	public void construct(SplitToken action, TxBuilder txBuilder) throws TxBuilderException {
 		var key = txBuilder.getUserOrFail("Must have address");

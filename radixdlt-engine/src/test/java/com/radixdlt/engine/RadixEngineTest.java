@@ -19,7 +19,7 @@ package com.radixdlt.engine;
 
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atommodel.system.SystemConstraintScrypt;
+import com.radixdlt.atommodel.system.SystemConstraintScryptV1;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
@@ -59,7 +59,7 @@ public class RadixEngineTest {
 	public void empty_particle_group_should_throw_error() {
 		// Arrange
 		CMAtomOS cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new SystemConstraintScrypt());
+		cmAtomOS.load(new SystemConstraintScryptV1());
 		ConstraintMachine cm = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())

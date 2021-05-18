@@ -16,29 +16,23 @@
  *
  */
 
-package com.radixdlt.atom.construction;
+package com.radixdlt.atommodel.tokens;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.atommodel.tokens.StakingConstraintScryptV2;
-import com.radixdlt.atommodel.tokens.TokensParticle;
+import com.radixdlt.atom.actions.DeprecatedUnstakeTokens;
 import com.radixdlt.identifiers.REAddr;
 
-public class UnstakeTokensConstructor implements ActionConstructor<UnstakeTokens> {
+public final class DeprecatedUnstakeTokensConstructor implements ActionConstructor<DeprecatedUnstakeTokens> {
 	@Override
-	public void construct(UnstakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
-		var epochUnlocked = txBuilder.find(SystemParticle.class, p -> true)
-			.map(SystemParticle::getEpoch).orElse(0L) + StakingConstraintScryptV2.EPOCHS_LOCKED;
+	public void construct(DeprecatedUnstakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.swapFungible(
-			StakedTokensParticle.class,
+			DelegatedStake.class,
 			p -> p.getOwner().equals(action.accountAddr()) && p.getDelegateKey().equals(action.from()),
-			amt -> new StakedTokensParticle(amt, action.accountAddr(), action.from()),
+			amt -> new DelegatedStake(amt, action.accountAddr(), action.from()),
 			action.amount(),
 			"Not enough staked."
-		).with(amt -> new TokensParticle(action.accountAddr(), amt, REAddr.ofNativeToken(), epochUnlocked));
+		).with(amt -> new TokensParticle(action.accountAddr(), amt, REAddr.ofNativeToken()));
 	}
 }

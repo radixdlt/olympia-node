@@ -16,27 +16,26 @@
  *
  */
 
-package com.radixdlt.atom.construction;
+package com.radixdlt.atommodel.validators;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.UnregisterValidator;
-import com.radixdlt.atommodel.validators.ValidatorParticle;
+import com.radixdlt.atom.actions.UpdateValidator;
 
-public class UnregisterValidatorConstructor implements ActionConstructor<UnregisterValidator> {
+public final class UpdateValidatorConstructor implements ActionConstructor<UpdateValidator> {
 	@Override
-	public void construct(UnregisterValidator action, TxBuilder txBuilder) throws TxBuilderException {
+	public void construct(UpdateValidator action, TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.swap(
 			ValidatorParticle.class,
-			p -> p.getKey().equals(action.validatorKey()) && p.isRegisteredForNextEpoch(),
-			"Already unregistered."
+			p -> p.getKey().equals(action.validatorKey()),
+			"Invalid state."
 		).with(
 			substateDown -> new ValidatorParticle(
 				action.validatorKey(),
-				false,
+				substateDown.isRegisteredForNextEpoch(),
 				action.name() == null ? substateDown.getName() : action.name(),
-				action.url() == null ? substateDown.getUrl() : action.url()
+				action.name() == null ? substateDown.getUrl() : action.url()
 			)
 		);
 	}

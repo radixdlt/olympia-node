@@ -35,8 +35,8 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 	@Override
 	public void main(SysCalls os) {
 		os.registerParticle(
-			StakedTokensParticle.class,
-			ParticleDefinition.<StakedTokensParticle>builder()
+			DelegatedStake.class,
+			ParticleDefinition.<DelegatedStake>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.rriMapper(p -> REAddr.ofNativeToken())
 				.build()
@@ -50,10 +50,10 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 		// Staking
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
 			TokensParticle.class,
-			StakedTokensParticle.class,
+			DelegatedStake.class,
 			checkEquals(
 				TokensParticle::getHoldingAddr,
-				StakedTokensParticle::getOwner,
+				DelegatedStake::getOwner,
 				"Can only stake with self as owner"
 			),
 			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getHoldingAddr()::allowToWithdrawFrom).orElse(false),
@@ -62,7 +62,7 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 
 		// Unstaking
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
-			StakedTokensParticle.class,
+			DelegatedStake.class,
 			TokensParticle.class,
 			(i, o, r) -> {
 				if (!Objects.equals(i.getOwner(), o.getHoldingAddr())) {
@@ -83,11 +83,11 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 
 		// Stake movement
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
-			StakedTokensParticle.class,
-			StakedTokensParticle.class,
+			DelegatedStake.class,
+			DelegatedStake.class,
 			checkEquals(
-				StakedTokensParticle::getOwner,
-				StakedTokensParticle::getOwner,
+				DelegatedStake::getOwner,
+				DelegatedStake::getOwner,
 				"Can't send staked tokens to another address."
 			),
 			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
