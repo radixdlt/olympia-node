@@ -53,7 +53,7 @@ public final class Keys {
 
 	/**
 	 * Read an {@link ECKeyPair} from the specified {@link RadixKeyStore}, using key pair name and environment variables
-	 * specific to stacker. If keystore or key pair don't exists, they are created.
+	 * specific to staker. If keystore or key pair don't exists, they are created.
 	 *
 	 * @param keyStore Key store path.
 	 */
