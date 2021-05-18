@@ -96,7 +96,7 @@ public final class Keys {
 		var keyPassword = readPassword(keyPasswordEnv);
 		var keyStorePassword = readPassword(keyStorePasswordEnv);
 
-		try (RadixKeyStore ks = RadixKeyStore.fromFile(new File(keyStorePath), keyStorePassword, create)) {
+		try (var ks = RadixKeyStore.fromFile(new File(keyStorePath), keyStorePassword, create)) {
 			return ks.readKeyPair(keyName, create);
 		} finally {
 			reset(keyPassword, keyStorePassword);
