@@ -26,7 +26,7 @@ public abstract class AcceptanceTest {
         testNetwork = TestNetwork.initializeFromEnv();
         accounts = Lists.newArrayList();
         IntStream.range(0, 5).forEach(i -> {
-            Account account = testNetwork.generateNewAccount().fold(Utils::toRuntimeException, newAccount -> newAccount);
+            var account = testNetwork.generateNewAccount().fold(Utils::toRuntimeException, newAccount -> newAccount);
             accounts.add(account);
         });
     }

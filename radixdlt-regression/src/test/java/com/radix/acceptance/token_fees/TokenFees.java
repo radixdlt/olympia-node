@@ -18,14 +18,14 @@ public class TokenFees extends AcceptanceTest {
 
     @Given("I have an account with funds at a suitable Radix network")
     public void i_have_an_account_with_funds_at_a_suitable_radix_network() {
-        Account account = getTestAccount();
+        var account = getTestAccount();
         faucet(account.getAddress());
         Utils.waitForBalanceToReach(account, FAUCET_AMOUNT);
     }
 
     @When("I submit {int} transactions")
     public void i_submit_ten_transactions(Integer numberOfTransactions) {
-        Account account = getTestAccount();
+        var account = getTestAccount();
         IntStream.range(0, numberOfTransactions).forEach(count -> {
             TransactionUtils.performNativeTokenTransfer(account, account, 1);
             Utils.waitForBalanceToDecrease(account);

@@ -74,7 +74,7 @@ public class NodeApiClient {
     }
 
     public List<URL> getPeers(URL nodeApiRootUrl) {
-        JSONArray peers = doGet(nodeApiRootUrl.toExternalForm(), PEERS_PATH).getBody().getArray();
+        var peers = doGet(nodeApiRootUrl.toExternalForm(), PEERS_PATH).getBody().getArray();
         List<URL> peerUrls = Lists.newArrayList();
         for (int i = 0; i < peers.length(); i++) {
             String endpoint = peers.getJSONObject(i).getString("endpoint");

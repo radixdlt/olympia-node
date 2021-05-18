@@ -68,7 +68,7 @@ public final class Utils {
             await().atMost(Durations.ONE_MINUTE).until(() ->
                 account.getOwnNativeTokenBalance().getAmount().compareTo(initialAmount) < 0);
         } catch (ConditionTimeoutException e) {
-            throw new RuntimeException("Account's balance did not decreaase");
+            throw new RuntimeException("Account's balance did not decrease");
         }
     }
 
@@ -96,7 +96,7 @@ public final class Utils {
         try {
             return ValidatorAddress.create(validatorDTO.getAddress());
         } catch (DeserializeException e) {
-            throw new RuntimeException("Failed to parse validator address: " + validatorDTO.getAddress());
+            throw new IllegalStateException("Failed to parse validator address: " + validatorDTO.getAddress());
         }
     }
 }

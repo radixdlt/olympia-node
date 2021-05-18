@@ -54,9 +54,9 @@ public final class TransactionUtils {
     }
 
     public static Result<TxDTO> performTransaction(Account account, TransactionRequest request) {
-        ECKeyPair keyPair = account.getKeyPair();
+        var keyPair = account.getKeyPair();
         return account.buildTransaction(request).flatMap(builtTransactionDTO -> {
-            FinalizedTransaction finalizedTransaction = builtTransactionDTO.toFinalized(keyPair);
+            var finalizedTransaction = builtTransactionDTO.toFinalized(keyPair);
             return account.finalizeTransaction(finalizedTransaction)
                     .flatMap(finalTxTdo -> account.submitTransaction(finalizedTransaction.withTxId(finalTxTdo.getTxId())));
         }).onFailure(Utils::toRuntimeException);
