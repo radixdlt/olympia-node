@@ -22,7 +22,6 @@ import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.SystemNextView;
-import com.radixdlt.atommodel.tokens.Stake;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 
 import java.util.Optional;

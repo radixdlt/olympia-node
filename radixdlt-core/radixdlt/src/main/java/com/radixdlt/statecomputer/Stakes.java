@@ -95,6 +95,11 @@ public final class Stakes {
 	}
 
 	@Override
+	public String toString() {
+		return this.stakedAmounts.toString();
+	}
+
+	@Override
 	public int hashCode() {
 		return Objects.hash(stakedAmounts);
 	}

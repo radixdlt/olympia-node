@@ -21,7 +21,6 @@ package com.radixdlt.atommodel.system;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atom.actions.Unknown;
-import com.radixdlt.atommodel.tokens.Stake;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;

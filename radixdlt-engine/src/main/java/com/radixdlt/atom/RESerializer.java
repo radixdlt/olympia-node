@@ -20,7 +20,7 @@ package com.radixdlt.atom;
 
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.DelegatedStake;
-import com.radixdlt.atommodel.tokens.Stake;
+import com.radixdlt.atommodel.system.Stake;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;

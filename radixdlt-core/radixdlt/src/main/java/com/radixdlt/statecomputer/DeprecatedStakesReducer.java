@@ -26,8 +26,8 @@ import java.util.function.Supplier;
 /**
  * Reduces staked tokens particles to total amount staked per node
  */
-public final class StakesReducer implements StateReducer<Stakes, DelegatedStake> {
-    public StakesReducer() {
+public final class DeprecatedStakesReducer implements StateReducer<Stakes, DelegatedStake> {
+    public DeprecatedStakesReducer() {
     }
 
     @Override

@@ -16,8 +16,9 @@
  *
  */
 
-package com.radixdlt.atommodel.tokens;
+package com.radixdlt.atommodel.system;
 
+import com.radixdlt.atommodel.tokens.Fungible;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
 
