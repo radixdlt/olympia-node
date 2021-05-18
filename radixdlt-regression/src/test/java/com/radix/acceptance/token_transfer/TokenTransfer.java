@@ -21,9 +21,9 @@ public class TokenTransfer extends AcceptanceTest {
         Account account2 = getTestAccount(1);
 
         faucet(account1.getAddress());
-        Utils.waitForBalance(account1, FAUCET_AMOUNT);
+        Utils.waitForBalanceToReach(account1, FAUCET_AMOUNT);
         faucet(account2.getAddress());
-        Utils.waitForBalance(account2, FAUCET_AMOUNT);
+        Utils.waitForBalanceToReach(account2, FAUCET_AMOUNT);
     }
 
     @And("I transfer {int} XRD from the first account to the second")
@@ -34,9 +34,9 @@ public class TokenTransfer extends AcceptanceTest {
         TransactionUtils.performNativeTokenTransfer(account1, account2, xrdToTransfer, "hello there!");
 
         UInt256 expectedBalance1 = FAUCET_AMOUNT.subtract(Utils.fromMajorToMinor(xrdToTransfer)).subtract(FIXED_FEES);
-        Utils.waitForBalance(account1, expectedBalance1);
+        Utils.waitForBalanceToReach(account1, expectedBalance1);
         UInt256 expectedBalance2 = FAUCET_AMOUNT.add(Utils.fromMajorToMinor(xrdToTransfer));
-        Utils.waitForBalance(account2, expectedBalance2);
+        Utils.waitForBalanceToReach(account2, expectedBalance2);
     }
 
     @Then("the second account can transfer {int} XRD back to the first")
@@ -49,9 +49,9 @@ public class TokenTransfer extends AcceptanceTest {
         TransactionUtils.performNativeTokenTransfer(account2, account1, xrdToTransfer, "hey");
 
         UInt256 expectedBalance1 = startingAmount1.add(Utils.fromMajorToMinor(xrdToTransfer));
-        Utils.waitForBalance(account1, expectedBalance1);
+        Utils.waitForBalanceToReach(account1, expectedBalance1);
         UInt256 expectedBalance2 = startingAmount2.subtract(Utils.fromMajorToMinor(xrdToTransfer)).subtract(FIXED_FEES);
-        Utils.waitForBalance(account2, expectedBalance2);
+        Utils.waitForBalanceToReach(account2, expectedBalance2);
     }
 
 }

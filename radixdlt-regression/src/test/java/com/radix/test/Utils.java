@@ -34,13 +34,41 @@ public final class Utils {
         }
     }
 
+    /**
+     * Will wait until the native token balance increased by the given amount
+     */
+    public static void waitForBalanceToIncreaseBy(Account account, UInt256 amount) {
+        UInt256 initialAmount = account.getOwnNativeTokenBalance().getAmount();
+        UInt256 targetAmount = initialAmount.add(amount);
+        try {
+            await().atMost(Durations.ONE_MINUTE).until(() -> initialAmount.compareTo(targetAmount) >= 0);
+        } catch (ConditionTimeoutException e) {
+            throw new RuntimeException("Account's balance did not increase");
+        }
+    }
 
-    public static void waitForBalance(Account account, UInt256 amount) {
+    /**
+     * Will wait until the native token balance reaches the given amount
+     */
+    public static void waitForBalanceToReach(Account account, UInt256 amount) {
         try {
             await().atMost(Durations.ONE_MINUTE).until(() ->
                     account.getOwnNativeTokenBalance().getAmount().compareTo(amount) >= 0);
         } catch (ConditionTimeoutException e) {
-            throw new RuntimeException("Account's balance did not increase");
+            throw new RuntimeException("Account's balance did not reach " + amount);
+        }
+    }
+
+    /**
+     * Waits until the account's native balance decreases by any amount
+     */
+    public static void waitForBalanceToDecrease(Account account) {
+        UInt256 initialAmount = account.getOwnNativeTokenBalance().getAmount();
+        try {
+            await().atMost(Durations.ONE_MINUTE).until(() ->
+                account.getOwnNativeTokenBalance().getAmount().compareTo(initialAmount) < 0);
+        } catch (ConditionTimeoutException e) {
+            throw new RuntimeException("Account's balance did not decreaase");
         }
     }
 

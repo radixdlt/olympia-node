@@ -20,7 +20,7 @@ public class TokenFees extends AcceptanceTest {
     public void i_have_an_account_with_funds_at_a_suitable_radix_network() {
         Account account = getTestAccount();
         faucet(account.getAddress());
-        Utils.waitForBalance(account, FAUCET_AMOUNT);
+        Utils.waitForBalanceToReach(account, FAUCET_AMOUNT);
     }
 
     @When("I submit {int} transactions")
@@ -28,13 +28,13 @@ public class TokenFees extends AcceptanceTest {
         Account account = getTestAccount();
         IntStream.range(0, numberOfTransactions).forEach(count -> {
             TransactionUtils.performNativeTokenTransfer(account, account, 1);
-            Utils.sleep(1);
+            Utils.waitForBalanceToDecrease(account);
         });
     }
 
     @Then("I can observe that I have paid {int}XRD in fees")
     public void i_can_observe_that_i_have_paid_1xrd_in_fees(int parameter) {
-        Utils.waitForBalance(getTestAccount(), FAUCET_AMOUNT.subtract(Utils.fromMajorToMinor(parameter)));
+        Utils.waitForBalanceToReach(getTestAccount(), FAUCET_AMOUNT.subtract(Utils.fromMajorToMinor(parameter)));
     }
 
 }

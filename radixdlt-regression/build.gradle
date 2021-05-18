@@ -79,7 +79,6 @@ dependencies {
     implementation 'com.google.guava:guava'
 
     implementation 'com.squareup.okhttp3:okhttp'
-    implementation 'com.mashape.unirest:unirest-java:1.4.9'
     implementation 'com.squareup.okhttp3:logging-interceptor'
 
     testImplementation 'junit:junit'
@@ -87,4 +86,8 @@ dependencies {
     testImplementation 'io.cucumber:cucumber-java:6.10.3'
     testImplementation 'io.cucumber:cucumber-junit:6.10.3'
     testImplementation 'org.awaitility:awaitility:4.0.3'
+    testImplementation 'com.github.docker-java:docker-java:3.2.8'
+    testImplementation 'com.github.docker-java:docker-java-transport-httpclient5:3.2.8'
+    testImplementation 'com.konghq:unirest-java:3.11.09:standalone'
+
 }

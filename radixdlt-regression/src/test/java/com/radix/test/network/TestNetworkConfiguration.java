@@ -4,41 +4,46 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 /**
- * TODO
+ * Information needed for the location the nodes of a {@link TestNetwork}
  */
 public final class TestNetworkConfiguration {
 
     enum Type {
-        LOCALNET_WITHOUT_DOCKER,
-        LOCALNET_DOCKER,
-        TESTNET;
+        LOCALNET,
+        TESTNET
     }
 
     private final URL jsonRpcRootUrl;
-    private final URL nodeApiUrl;
+    private final URL nodeApiRootUrl;
     private final String basicAuth;
     private final Type type;
 
-    private TestNetworkConfiguration(URL jsonRpcRootUrl, URL nodeApiUrl, String basicAuth, Type type) {
+    private TestNetworkConfiguration(URL jsonRpcRootUrl, URL nodeApiRootUrl, String basicAuth, Type type) {
         this.jsonRpcRootUrl = jsonRpcRootUrl;
-        this.nodeApiUrl = nodeApiUrl;
+        this.nodeApiRootUrl = nodeApiRootUrl;
         this.basicAuth = basicAuth;
         this.type = type;
     }
 
-
     public static TestNetworkConfiguration fromEnv() {
         try {
-            var jsonRpcUrlString = getEnvWithDefault("RADIX_JSON_RPC_ROOT_URL", "http://localhost:8080");
-            var jsonRpcUrl = new URL(jsonRpcUrlString);
-            var nodeApiUrlString = getEnvWithDefault("RADIX_NODE_API_URL", "http://localhost:3333");
-            var nodeApiUrl = new URL(nodeApiUrlString);
+            var jsonRpcRootUrlString = getEnvWithDefault("RADIX_JSON_RPC_ROOT_URL", "http://localhost:8080");
+            var jsonRpcRootUrl = new URL(jsonRpcRootUrlString);
+            var nodeApiPort = (jsonRpcRootUrl.getProtocol().equalsIgnoreCase("https")) ? 443
+                : Integer.parseInt(getEnvWithDefault("RADIX_NODE_API_PORT", "3333"));
+            var nodeApiRootUrl = new URL(String.format("%s://%s%s:%s", jsonRpcRootUrl.getProtocol(),
+                jsonRpcRootUrl.getHost(), jsonRpcRootUrl.getPath(), nodeApiPort));
             var basicAuth = System.getenv("RADIX_BASIC_AUTH");
-            var type = Type.LOCALNET_WITHOUT_DOCKER;
-            return new TestNetworkConfiguration(jsonRpcUrl, nodeApiUrl, basicAuth, type);
+            var type = determineType(jsonRpcRootUrlString);
+            return new TestNetworkConfiguration(jsonRpcRootUrl, nodeApiRootUrl, basicAuth, type);
         } catch (MalformedURLException e) {
             throw new IllegalArgumentException(e);
         }
+    }
+
+    private static Type determineType(String jsonRpcUrlString) {
+        return jsonRpcUrlString.toLowerCase().contains("localhost") || jsonRpcUrlString.contains("127.0.0.1")
+            ? Type.LOCALNET : Type.TESTNET;
     }
 
     public String getBasicAuth() {
@@ -50,7 +55,7 @@ public final class TestNetworkConfiguration {
     }
 
     public URL getNodeApiRootUrl() {
-        return nodeApiUrl;
+        return nodeApiRootUrl;
     }
 
     public Type getType() {

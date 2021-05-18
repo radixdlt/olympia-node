@@ -1,13 +1,15 @@
 package com.radix.test.network;
 
-import com.mashape.unirest.http.exceptions.UnirestException;
+import com.radix.test.network.client.HttpException;
 import com.radix.test.network.client.NodeApiClient;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.impl.SynchronousRadixApiClient;
+import com.radixdlt.client.lib.network.HttpClients;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.assertj.core.util.Lists;
 
 import java.net.URL;
 import java.util.List;
@@ -15,11 +17,14 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+/**
+ * TODO
+ */
 public class TestNetworkNodeLocator {
 
     private static final Logger logger = LogManager.getLogger();
 
-    private static final int MAX_EXPECTED_LOCALNET_NODES = 3;
+    private static final int MAX_EXPECTED_LOCALNET_NODES = 4;
 
     private TestNetworkNodeLocator() {
 
@@ -27,16 +32,29 @@ public class TestNetworkNodeLocator {
 
     public static List<TestNode> findNodes(TestNetworkConfiguration configuration, NodeApiClient nodeApi) {
         switch (configuration.getType()) {
-            case LOCALNET_WITHOUT_DOCKER:
+            case LOCALNET:
                 logger.debug("Locating nodes from local network...");
                 var nodeUrls = createLocalUrlList(configuration.getNodeApiRootUrl(),
-                        configuration.getJsonRpcRootUrl());
+                    configuration.getJsonRpcRootUrl());
                 return locateNodes(nodeApi, nodeUrls);
-            case LOCALNET_DOCKER:
             case TESTNET:
-                throw new RuntimeException("Unimplemented network type " + configuration.getType());
+                logger.debug("Locating nodes from testnet via " + configuration.getJsonRpcRootUrl());
+                nodeUrls = createRemoteUrlList(configuration.getNodeApiRootUrl(), nodeApi).stream()
+                    .map(url -> getUrlPairFromUrl(url, configuration.getNodeApiRootUrl().getPort()))
+                    .collect(Collectors.toList());
+                return locateNodes(nodeApi, nodeUrls);
         }
-        return null;
+        return Lists.newArrayList();
+    }
+
+    private static Pair<String, String> getUrlPairFromUrl(URL url, int port) {
+        var nodeApiRootUrl = String.format("%s://%s%s:%s", url.getProtocol(),
+            url.getHost(), url.getPath(), port);
+        return Pair.of(url.toExternalForm(), nodeApiRootUrl);
+    }
+
+    private static List<URL> createRemoteUrlList(URL nodeApiRootUrl, NodeApiClient nodeApi) {
+        return nodeApi.getPeers(nodeApiRootUrl);
     }
 
     private static List<Pair<String, String>> createLocalUrlList(URL nodeApiRootUrl, URL jsonRpcRootUrl) {
@@ -44,9 +62,9 @@ public class TestNetworkNodeLocator {
             var newNodeApiPort = nodeApiRootUrl.getPort() + counter;
             var newJsonRpcPort = jsonRpcRootUrl.getPort() + counter;
             var newNodeApiRootUrl = String.format("%s://%s%s:%s", nodeApiRootUrl.getProtocol(),
-                    nodeApiRootUrl.getHost(), nodeApiRootUrl.getPath(), newNodeApiPort);
+                nodeApiRootUrl.getHost(), nodeApiRootUrl.getPath(), newNodeApiPort);
             var newJsonRpcRootUrl = String.format("%s://%s%s:%s", jsonRpcRootUrl.getProtocol(),
-                    jsonRpcRootUrl.getHost(), jsonRpcRootUrl.getPath(), newJsonRpcPort);
+                jsonRpcRootUrl.getHost(), jsonRpcRootUrl.getPath(), newJsonRpcPort);
             return Pair.of(newNodeApiRootUrl, newJsonRpcRootUrl);
         }).collect(Collectors.toList());
     }
@@ -60,7 +78,7 @@ public class TestNetworkNodeLocator {
             // check for node api accessibility
             try {
                 nodeApi.getNodeInfo(nodeApiRootUrl);
-            } catch (UnirestException e) {
+            } catch (HttpException e) {
                 // this node doesn't have a node api accessible
                 nodeApiRootUrl = null;
             }
@@ -68,7 +86,7 @@ public class TestNetworkNodeLocator {
             // get json-rpc api availability
             try {
                 pingJsonRpcEndpoint(jsonRpcRootUrl);
-            } catch (RuntimeException e) {
+            } catch (HttpException e) {
                 // this node doesn't have a json rpc api accessible
                 jsonRpcRootUrl = null;
             }
@@ -81,7 +99,8 @@ public class TestNetworkNodeLocator {
                 nodeApi.callFaucet(originalNodeApiRootUrl, address);
                 faucetRootUrl = originalNodeApiRootUrl;
                 logger.debug("Found a faucet at {}", originalNodeApiRootUrl);
-            } catch (UnirestException e) {
+            } catch (HttpException e) {
+                logger.error(e.getMessage());
                 // this node doesn't have a faucet
             }
 
@@ -96,10 +115,10 @@ public class TestNetworkNodeLocator {
      * Connects and calls the "networkId" method, making sure that there is a responsive json-rpc api
      */
     public static void pingJsonRpcEndpoint(String jsonRpcRootUrl) {
-        var networkIdDTOResult = SynchronousRadixApiClient.connect(jsonRpcRootUrl)
-                .flatMap(SynchronousRadixApiClient::networkId);
+        var networkIdDTOResult = SynchronousRadixApiClient.connect(jsonRpcRootUrl,
+            HttpClients.getSslAllTrustingClient()).flatMap(SynchronousRadixApiClient::networkId);
         if (!networkIdDTOResult.isSuccess()) {
-            throw new RuntimeException("Could not connect to JSON-RPC API");
+            throw new HttpException("Could not connect to JSON-RPC API at " + jsonRpcRootUrl + "");
         }
     }
 

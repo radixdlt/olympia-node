@@ -1,6 +1,5 @@
 package com.radix.test.network;
 
-import com.mashape.unirest.http.exceptions.UnirestException;
 import com.radix.test.account.Account;
 import com.radix.test.network.client.NodeApiClient;
 import com.radixdlt.client.lib.api.AccountAddress;
@@ -12,7 +11,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * TODO
+ * Represents an actual radix network with several running nodes. Keeps a list of the nodes, along with their addresses.
+ * Used when running tests against real networks (acceptance or system tests).
  */
 public class TestNetwork {
 
@@ -50,10 +50,10 @@ public class TestNetwork {
     }
 
     private static void prettyPrintConfiguration(TestNetworkConfiguration configuration) {
-        logger.info("Will locate test nodes from properties:");
-        logger.info("JSON-RPC URL: {}", configuration.getJsonRpcRootUrl());
-        logger.info("Node API URL: {}", configuration.getNodeApiRootUrl());
-        logger.info("Network type: {}", configuration.getType());
+        logger.debug("Will locate test nodes from properties:");
+        logger.debug("JSON-RPC URL: {}", configuration.getJsonRpcRootUrl());
+        logger.debug("Node API URL: {}", configuration.getNodeApiRootUrl());
+        logger.debug("Network type: {}", configuration.getType());
     }
 
     public Result<Account> generateNewAccount() {
@@ -61,7 +61,7 @@ public class TestNetwork {
     }
 
     /**
-     * will call the faucet once for this address
+     * will call the faucet for this address
      *
      * @return txID if successful - null if unsuccessful
      */
@@ -73,14 +73,9 @@ public class TestNetwork {
         }
         TestNode nodeWithFaucet = faucets.get(0);
         String faucetRootUrl = nodeWithFaucet.getFaucetRootUrl();
-        try {
-            String txID = nodeApi.callFaucet(faucetRootUrl, address);
-            logger.debug("Faucet at {} successfully called ({})", faucetRootUrl, txID);
-            return txID;
-        } catch (UnirestException e) {
-            logger.error("Error calling faucet {}: {}", faucetRootUrl, e.getMessage());
-            throw new RuntimeException("Test fail!");
-        }
+        String txID = nodeApi.callFaucet(faucetRootUrl, address);
+        logger.debug("Faucet at {} successfully called ({})", faucetRootUrl, txID);
+        return txID;
     }
 
 }

@@ -1,8 +1,8 @@
 package com.radix.test.network.client;
 
 import com.radixdlt.client.lib.api.AccountAddress;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import kong.unirest.json.JSONArray;
+import kong.unirest.json.JSONObject;
 
 /**
  * Helps construct requests to /node
