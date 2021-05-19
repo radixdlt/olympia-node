@@ -90,7 +90,7 @@ public final class AddressBookEntry {
 
 	@JsonProperty("bannedUntil")
 	@DsonOutput(DsonOutput.Output.ALL)
-	public long rawBennedUntilForSerializer() {
+	public long rawBannedUntilForSerializer() {
 		return this.bannedUntil.map(Instant::toEpochMilli).orElse(0L);
 	}
 
@@ -99,7 +99,7 @@ public final class AddressBookEntry {
 	}
 
 	public boolean isBanned() {
-		return bannedUntil.filter(v -> v.isBefore(Instant.now())).isPresent();
+		return bannedUntil.filter(v -> v.isAfter(Instant.now())).isPresent();
 	}
 
 	public Optional<Instant> bannedUntil() {

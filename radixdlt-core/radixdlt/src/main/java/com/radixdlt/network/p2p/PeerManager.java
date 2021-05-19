@@ -199,7 +199,6 @@ public final class PeerManager {
 
 		final var peersOverLimit = -this.getRemainingOutboundSlots();
 
-		// TODO(luk): double check if this is correct
 		final Comparator<PeerChannel> comparator =
 			(p1, p2) -> (int) (p1.sentMessagesRate() - p2.sentMessagesRate());
 
@@ -216,7 +215,14 @@ public final class PeerManager {
 			.map(AddressBookEntry::isBanned)
 			.orElse(false);
 
+		if (isBanned) {
+			log.info("Dropping inbound connection from peer {}: peer is banned", nodeId);
+		}
+
 		final var limitReached = this.activeChannels.size() > config.maxInboundChannels();
+		if (limitReached) {
+			log.info("Dropping inbound connection from peer {}: no more inbound channels allowed", nodeId);
+		}
 
 		return !isBanned && !limitReached;
 	}
@@ -265,6 +271,9 @@ public final class PeerManager {
 	private void handlePeerBanned(PeerBanned event) {
 		this.activePeers().stream()
 			.filter(p -> p.getRemoteNodeId().equals(event.getNodeId()))
-			.forEach(PeerChannel::disconnect);
+			.forEach(pc -> {
+				log.info("Closing channel to peer {} because peer has been banned", pc.getRemoteNodeId());
+				pc.disconnect();
+			});
 	}
 }

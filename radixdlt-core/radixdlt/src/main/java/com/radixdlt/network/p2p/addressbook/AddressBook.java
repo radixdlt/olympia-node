@@ -144,11 +144,15 @@ public final class AddressBook {
 				final var alreadyBanned = existingEntry.bannedUntil()
 					.filter(bu -> bu.isAfter(banUntil)).isPresent();
 				if (!alreadyBanned) {
-					this.persistEntry(existingEntry.withBanUntil(banUntil));
+					final var updatedEntry = existingEntry.withBanUntil(banUntil);
+					this.knownPeers.put(nodeId, updatedEntry);
+					this.persistEntry(updatedEntry);
 					this.peerEventDispatcher.dispatch(PeerBanned.create(nodeId));
 				}
 			} else {
-				this.persistEntry(AddressBookEntry.createBanned(nodeId, banUntil));
+				final var newEntry = AddressBookEntry.createBanned(nodeId, banUntil);
+				this.knownPeers.put(nodeId, newEntry);
+				this.persistEntry(newEntry);
 				this.peerEventDispatcher.dispatch(PeerBanned.create(nodeId));
 			}
 

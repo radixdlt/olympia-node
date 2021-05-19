@@ -20,9 +20,11 @@ package com.radixdlt.network.p2p;
 import com.radixdlt.network.p2p.test.DeterministicP2PNetworkTest;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public final class PeerManagerTest extends DeterministicP2PNetworkTest {
 
@@ -30,15 +32,13 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
 	public void when_findOrCreateChannel_then_should_create_if_not_exists() throws Exception {
 		setupTestRunner(3, defaultProperties());
 
-		final var node1Uri = testNetworkRunner.getUri(1);
-
-		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(node1Uri));
+		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(uriOfNode(1)));
 		final var channelFuture = testNetworkRunner.peerManager(0)
-			.findOrCreateChannel(node1Uri.getNodeId());
+			.findOrCreateChannel(uriOfNode(1).getNodeId());
 
 		processForCount(3);
 
-		assertEquals(node1Uri, channelFuture.get().getUri().get());
+		assertEquals(uriOfNode(1), channelFuture.get().getUri().get());
 
 		assertEquals(1L, testNetworkRunner.peerManager(0).activePeers().size());
 		assertEquals(1L, testNetworkRunner.peerManager(1).activePeers().size());
@@ -50,20 +50,15 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
 		props.set("network.p2p.max_outbound_channels", 3); // 3 outbound channels allowed
 		setupTestRunner(5, props);
 
-		final var node1Uri = testNetworkRunner.getUri(1);
-		final var node2Uri = testNetworkRunner.getUri(2);
-		final var node3Uri = testNetworkRunner.getUri(3);
-		final var node4Uri = testNetworkRunner.getUri(4);
-
-		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(node1Uri, node2Uri, node3Uri, node4Uri));
+		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(uriOfNode(1), uriOfNode(2), uriOfNode(3), uriOfNode(4)));
 		final var channel1Future = testNetworkRunner.peerManager(0)
-			.findOrCreateChannel(node1Uri.getNodeId());
+			.findOrCreateChannel(uriOfNode(1).getNodeId());
 
 		final var channel2Future = testNetworkRunner.peerManager(0)
-			.findOrCreateChannel(node2Uri.getNodeId());
+			.findOrCreateChannel(uriOfNode(2).getNodeId());
 
 		final var channel3Future = testNetworkRunner.peerManager(0)
-			.findOrCreateChannel(node3Uri.getNodeId());
+			.findOrCreateChannel(uriOfNode(3).getNodeId());
 
 		processAll();
 
@@ -80,7 +75,7 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
 		channel3Future.get().send(new byte[] {0x01});
 
 		final var channel4Future = testNetworkRunner.peerManager(0)
-			.findOrCreateChannel(node4Uri.getNodeId());
+			.findOrCreateChannel(uriOfNode(4).getNodeId());
 
 		processAll();
 
@@ -89,6 +84,66 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
 		assertEquals(0L, testNetworkRunner.peerManager(2).activePeers().size()); // node2 should be disconnected
 		assertEquals(1L, testNetworkRunner.peerManager(3).activePeers().size());
 		assertEquals(1L, testNetworkRunner.peerManager(4).activePeers().size());
+	}
+
+	@Test
+	public void should_not_connect_to_banned_peers() throws Exception {
+		final var props = defaultProperties();
+		setupTestRunner(5, props);
+
+		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(uriOfNode(1), uriOfNode(2), uriOfNode(3), uriOfNode(4)));
+		testNetworkRunner.addressBook(1).addUncheckedPeers(Set.of(uriOfNode(0)));
+
+		// ban node1 and node3 on node0
+		testNetworkRunner.getInstance(0, PeerControl.class).banPeer(uriOfNode(1).getNodeId(), Duration.ofHours(1));
+		testNetworkRunner.getInstance(0, PeerControl.class).banPeer(uriOfNode(3).getNodeId(), Duration.ofHours(1));
+
+		// try outbound connection (to node3)
+		final var channel1Future = testNetworkRunner.peerManager(0)
+			.findOrCreateChannel(uriOfNode(3).getNodeId());
+
+		processAll();
+
+		assertTrue(channel1Future.isCompletedExceptionally());
+		assertEquals(0L, testNetworkRunner.peerManager(0).activePeers().size());
+		assertEquals(0L, testNetworkRunner.peerManager(3).activePeers().size());
+
+		// try inbound connection (from node1)
+
+		final var channel2Future = testNetworkRunner.peerManager(1)
+			.findOrCreateChannel(uriOfNode(0).getNodeId());
+
+		processAll();
+
+		assertEquals(0L, testNetworkRunner.peerManager(0).activePeers().size());
+		assertEquals(0L, testNetworkRunner.peerManager(1).activePeers().size());
+	}
+
+	@Test
+	public void should_disconnect_just_banned_peer() throws Exception {
+		final var props = defaultProperties();
+		setupTestRunner(2, props);
+
+		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(uriOfNode(1)));
+
+		final var channel1Future = testNetworkRunner.peerManager(0)
+		.findOrCreateChannel(uriOfNode(1).getNodeId());
+
+		processAll();
+
+		// assert the connections is successful
+		assertTrue(channel1Future.isDone());
+		assertEquals(1L, testNetworkRunner.peerManager(0).activePeers().size());
+		assertEquals(1L, testNetworkRunner.peerManager(1).activePeers().size());
+
+		// ban node0 on node1
+		testNetworkRunner.getInstance(1, PeerControl.class).banPeer(uriOfNode(0).getNodeId(), Duration.ofHours(1));
+
+		processAll();
+
+		// assert connection closed
+		assertEquals(0L, testNetworkRunner.peerManager(0).activePeers().size());
+		assertEquals(0L, testNetworkRunner.peerManager(1).activePeers().size());
 	}
 
 }

@@ -24,6 +24,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.properties.RuntimeProperties;
 import io.reactivex.rxjava3.schedulers.Timed;
 import org.apache.commons.cli.ParseException;
@@ -78,5 +79,9 @@ public class DeterministicP2PNetworkTest {
 		} finally {
 			ThreadContext.remove("bftNode");
 		}
+	}
+
+	protected RadixNodeUri uriOfNode(int nodeIndex) {
+		return testNetworkRunner.getUri(nodeIndex);
 	}
 }
