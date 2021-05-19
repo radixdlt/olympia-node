@@ -71,8 +71,7 @@ public final class TransactionParser {
 		var txnId = parsedTxn.getTxn().getId();
 		var fee = computeFeePaid(parsedTxn);
 		var message = parsedTxn.getMsg()
-			.map(bytes -> new String(bytes, RadixConstants.STANDARD_CHARSET))
-			.map(MessageEntry::fromPlainString);
+			.map(bytes -> new String(bytes, RadixConstants.STANDARD_CHARSET));
 
 		var actions = parsedTxn.getActions().stream()
 			.map(REParsedAction::getTxAction)

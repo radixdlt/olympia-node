@@ -284,18 +284,28 @@ public class SynchronousRadixApiClientTest {
 	}
 
 	@Test
-	public void addManyTransactions() throws InterruptedException {
-		for (int i = 0; i < 20; i++) {
-			addTransaction(UInt256.from(i + 10));
-			Thread.sleep(500);
-		}
+	@Ignore //Useful testbed for experiments
+	public void addManyTransactions() {
+		SynchronousRadixApiClient.connect(BASE_URL)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> {
+				for (int i = 0; i < 20; i++) {
+					addTransaction(client, UInt256.from(i + 10));
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			});
 	}
 
 	private List<String> formatTxns(List<TransactionDTO> t) {
 		return t.stream()
 			.map(v -> String.format(
-				"%s - %s (%d:%d)%n",
+				"%s (%s) - %s (%d:%d)%n",
 				v.getTxID(),
+				v.getMessage().orElse("<none>"),
 				v.getSentAt().getInstant(),
 				v.getSentAt().getInstant().getEpochSecond(),
 				v.getSentAt().getInstant().getNano()
@@ -303,7 +313,7 @@ public class SynchronousRadixApiClientTest {
 			.collect(Collectors.toList());
 	}
 
-	private void addTransaction(UInt256 amount) {
+	private void addTransaction(SynchronousRadixApiClient client, UInt256 amount) {
 		var request = TransactionRequest.createBuilder()
 			.transfer(
 				ACCOUNT_ADDRESS1,
@@ -314,20 +324,17 @@ public class SynchronousRadixApiClientTest {
 			.message("Test message")
 			.build();
 
-		SynchronousRadixApiClient.connect(BASE_URL)
+		client.buildTransaction(request)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.buildTransaction(request)
-				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(builtTransactionDTO -> assertEquals(UInt256.from(100000000000000000L), builtTransactionDTO.getFee()))
-				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
-				.onSuccess(finalizedTransaction -> client.finalizeTransaction(finalizedTransaction)
-					.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
-					.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
-					.onSuccess(submittableTransaction -> client.submitTransaction(submittableTransaction)
-						.onFailure(failure -> fail(failure.toString()))
-						.onSuccess(txDTO -> submittableTransaction.rawTxId()
-							.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))))
-			);
+			.onSuccess(builtTransactionDTO -> assertEquals(UInt256.from(100000000000000000L), builtTransactionDTO.getFee()))
+			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
+			.onSuccess(finalizedTransaction -> client.finalizeTransaction(finalizedTransaction)
+				.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
+				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
+				.onSuccess(submittableTransaction -> client.submitTransaction(submittableTransaction)
+					.onFailure(failure -> fail(failure.toString()))
+					.onSuccess(txDTO -> submittableTransaction.rawTxId()
+						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))));
 	}
 
 	@Test
