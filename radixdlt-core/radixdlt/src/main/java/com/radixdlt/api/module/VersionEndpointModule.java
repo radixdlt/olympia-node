@@ -17,7 +17,18 @@
 
 package com.radixdlt.api.module;
 
+import org.radix.universe.system.LocalSystem;
+
 import com.google.inject.AbstractModule;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.api.Controller;
+import com.radixdlt.api.controller.VersionController;
+import com.radixdlt.api.qualifier.AtNode;
 
 public class VersionEndpointModule extends AbstractModule {
+	@AtNode
+	@ProvidesIntoSet
+	public Controller versionController(LocalSystem localSystem) {
+		return new VersionController(localSystem);
+	}
 }

@@ -23,9 +23,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.radixdlt.api.Controller;
-import com.radixdlt.api.server.JsonRpcServer;
-import com.radixdlt.api.qualifier.Construct;
 import com.radixdlt.api.construction.TxnParser;
+import com.radixdlt.api.qualifier.Construct;
+import com.radixdlt.api.server.JsonRpcServer;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.constraintmachine.REInstruction;

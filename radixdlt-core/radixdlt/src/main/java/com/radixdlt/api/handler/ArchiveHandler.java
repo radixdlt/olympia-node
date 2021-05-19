@@ -21,6 +21,7 @@ import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.data.ValidatorInfoDetails;
 import com.radixdlt.api.service.ArchiveService;

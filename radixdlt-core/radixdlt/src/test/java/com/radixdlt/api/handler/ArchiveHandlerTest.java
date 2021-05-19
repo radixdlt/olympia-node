@@ -33,7 +33,6 @@ import com.radixdlt.api.service.ArchiveService;
 import com.radixdlt.api.service.NetworkInfoService;
 import com.radixdlt.api.service.TransactionStatusService;
 import com.radixdlt.api.service.ValidatorInfoService;
-import com.radixdlt.api.store.MessageEntry;
 import com.radixdlt.api.store.TokenBalance;
 import com.radixdlt.api.store.TokenDefinitionRecord;
 import com.radixdlt.crypto.ECDSASignature;
@@ -67,11 +66,11 @@ import static org.mockito.Mockito.when;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.data.BalanceEntry.createBalance;
 import static com.radixdlt.api.data.TransactionStatus.CONFIRMED;
 import static com.radixdlt.api.data.TransactionStatus.FAILED;
 import static com.radixdlt.api.data.TransactionStatus.PENDING;
 import static com.radixdlt.api.data.TransactionStatus.TRANSACTION_NOT_FOUND;
-import static com.radixdlt.api.data.BalanceEntry.createBalance;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class ArchiveHandlerTest {
