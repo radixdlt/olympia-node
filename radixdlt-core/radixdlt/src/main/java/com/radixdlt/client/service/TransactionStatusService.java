@@ -37,6 +37,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 
 import static com.radixdlt.client.api.TransactionStatus.CONFIRMED;
@@ -56,11 +57,17 @@ public class TransactionStatusService {
 	@Inject
 	public TransactionStatusService(
 		BerkeleyLedgerEntryStore store,
+		Observable<AtomsCommittedToLedger> committed,
+		Observable<MempoolAddFailure> rejected,
+		Observable<MempoolAddSuccess> succeeded,
 		ScheduledEventDispatcher<ScheduledCacheCleanup> scheduledCacheCleanup
 	) {
 		this.store = store;
 		this.scheduledCacheCleanup = scheduledCacheCleanup;
 
+		disposable.add(committed.subscribe(this::onCommit));
+		disposable.add(rejected.subscribe(this::onReject));
+		disposable.add(succeeded.subscribe(this::onSuccess));
 		scheduledCacheCleanup.dispatch(ScheduledCacheCleanup.create(), DEFAULT_CLEANUP_INTERVAL);
 	}
 
@@ -76,18 +83,6 @@ public class TransactionStatusService {
 		updateStatus(mempoolAddSuccess.getTxn().getId(), PENDING);
 	}
 
-	public EventProcessor<AtomsCommittedToLedger> atomsCommittedToLedgerEventProcessor() {
-		return this::onCommit;
-	}
-
-	public EventProcessor<MempoolAddFailure> mempoolAddFailureEventProcessor() {
-		return this::onReject;
-	}
-
-	public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {
-		return this::onSuccess;
-	}
-
 	public void close() {
 		disposable.dispose();
 	}
@@ -98,7 +93,7 @@ public class TransactionStatusService {
 			.orElseGet(() -> store.contains(txId) ? CONFIRMED : TRANSACTION_NOT_FOUND);
 	}
 
-	public EventProcessor<ScheduledCacheCleanup> cacheCleanupEventProcessor() {
+	public EventProcessor<ScheduledCacheCleanup> cacheCleanupProcessor() {
 		return flush -> {
 			cleanupCache();
 			scheduledCacheCleanup.dispatch(ScheduledCacheCleanup.create(), DEFAULT_CLEANUP_INTERVAL);
