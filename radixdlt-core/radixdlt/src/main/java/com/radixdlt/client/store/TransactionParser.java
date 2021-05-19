@@ -17,9 +17,6 @@
 
 package com.radixdlt.client.store;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.StakeTokens;
@@ -39,8 +36,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class TransactionParser {
-	private static final Logger log = LogManager.getLogger();
-
 	private UInt256 computeFeePaid(REParsedTxn radixEngineTxn) {
 		return radixEngineTxn.getActions()
 			.stream()
