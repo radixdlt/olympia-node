@@ -358,14 +358,17 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		var data = entry();
 
 		try (var cursor = transactionHistory.openCursor(null, null)) {
-			var status = readTxHistory(() -> cursor.getSearchKeyRange(key, data, null), data);
-			if (status != OperationStatus.SUCCESS) {
-				return Result.ok(List.of());
-			}
+			var status = readTxHistory(() -> cursor.getSearchKey(key, data, null), data);
 
-			status = readTxHistory(() -> cursor.getLast(key, data, null), data);
+			//When searching with no cursor, exact navigation (cursor.getSearchKey) may fail,
+			//because there is no exact match. Nevertheless, cursor is positioned to correct location,
+			//so we just need get previous record.
 			if (status != OperationStatus.SUCCESS) {
-				return Result.ok(List.of());
+				status = readTxHistory(() -> cursor.getPrev(key, data, null), data);
+
+				if (status != OperationStatus.SUCCESS) {
+					return Result.ok(List.of());
+				}
 			}
 
 			// skip first entry if it's the same as the cursor

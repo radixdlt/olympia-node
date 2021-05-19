@@ -21,9 +21,11 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import com.radixdlt.client.lib.api.AccountAddress;
+import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.dto.FinalizedTransaction;
 import com.radixdlt.client.lib.dto.TokenBalancesDTO;
+import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistoryDTO;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
@@ -36,7 +38,10 @@ import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import okhttp3.Call;
 import okhttp3.OkHttpClient;
@@ -53,7 +58,10 @@ import static org.mockito.Mockito.when;
 
 public class SynchronousRadixApiClientTest {
 	private static final String BASE_URL = "http://localhost:8080/";
-	private static final AccountAddress ACCOUNT_ADDRESS = AccountAddress.create(keyPairOf(1).getPublicKey());
+	public static final ECKeyPair KEY_PAIR1 = keyPairOf(1);
+	public static final ECKeyPair KEY_PAIR2 = keyPairOf(2);
+	private static final AccountAddress ACCOUNT_ADDRESS1 = AccountAddress.create(KEY_PAIR1.getPublicKey());
+	private static final AccountAddress ACCOUNT_ADDRESS2 = AccountAddress.create(KEY_PAIR2.getPublicKey());
 
 	private static final String NETWORK_ID = "{\"result\":{\"networkId\":2},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
 	private static final String NATIVE_TOKEN = "{\"result\":{\"tokenInfoURL\":\"https://tokens.radixdlt.com/\","
@@ -154,7 +162,7 @@ public class SynchronousRadixApiClientTest {
 		prepareClient(TX_HISTORY)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(
-				client -> client.transactionHistory(ACCOUNT_ADDRESS, 10, Optional.empty())
+				client -> client.transactionHistory(ACCOUNT_ADDRESS1, 5, Optional.empty())
 					.onFailure(failure -> fail(failure.toString()))
 					.onSuccess(transactionHistoryDTO -> assertNotNull(transactionHistoryDTO.getCursor()))
 					.onSuccess(transactionHistoryDTO -> assertNotNull(transactionHistoryDTO.getTransactions()))
@@ -169,9 +177,9 @@ public class SynchronousRadixApiClientTest {
 	public void testTokenBalances() throws IOException {
 		prepareClient(TOKEN_BALANCES)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.tokenBalances(ACCOUNT_ADDRESS)
+			.onSuccess(client -> client.tokenBalances(ACCOUNT_ADDRESS1)
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(tokenBalancesDTO -> assertEquals(ACCOUNT_ADDRESS, tokenBalancesDTO.getOwner()))
+				.onSuccess(tokenBalancesDTO -> assertEquals(ACCOUNT_ADDRESS1, tokenBalancesDTO.getOwner()))
 				.map(TokenBalancesDTO::getTokenBalances)
 				.onSuccess(balances -> assertEquals(1, balances.size())));
 	}
@@ -206,13 +214,11 @@ public class SynchronousRadixApiClientTest {
 	@Test
 	public void testBuildTransaction() throws IOException {
 		var hash = Hex.decode("5dc6006f467be27975d0f8f33ad94506e0df53956aae642341b12e2a094e39a2");
-		var keyPairOf1 = keyPairOf(1);
-		var keyPairOf2 = keyPairOf(2);
 
 		var request = TransactionRequest.createBuilder()
 			.transfer(
-				AccountAddress.create(keyPairOf1.getPublicKey()),
-				AccountAddress.create(keyPairOf2.getPublicKey()),
+				ACCOUNT_ADDRESS1,
+				ACCOUNT_ADDRESS2,
 				UInt256.NINE,
 				"xrd_rb1qya85pwq"
 			)
@@ -228,15 +234,12 @@ public class SynchronousRadixApiClientTest {
 	}
 
 	@Test
-	@Ignore //Useful testbed for experiments testing
+	@Ignore //Useful testbed for experiments
 	public void testBuildTransactionWithMessage() {
-		var keyPairOf1 = keyPairOf(1);
-		var keyPairOf2 = keyPairOf(2);
-
 		var request = TransactionRequest.createBuilder()
 			.transfer(
-				AccountAddress.create(keyPairOf1.getPublicKey()),
-				AccountAddress.create(keyPairOf2.getPublicKey()),
+				ACCOUNT_ADDRESS1,
+				ACCOUNT_ADDRESS2,
 				UInt256.NINE,
 				"xrd_rb1qya85pwq"
 			)
@@ -248,15 +251,90 @@ public class SynchronousRadixApiClientTest {
 			.onSuccess(client -> client.buildTransaction(request)
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(builtTransactionDTO -> assertEquals(UInt256.from(100000000000000000L), builtTransactionDTO.getFee()))
-				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(keyPairOf1))
+				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
 				.onSuccess(finalizedTransaction -> client.finalizeTransaction(finalizedTransaction)
 					.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
 					.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
 					.onSuccess(submittableTransaction -> client.submitTransaction(submittableTransaction)
 						.onFailure(failure -> fail(failure.toString()))
 						.onSuccess(txDTO -> submittableTransaction.rawTxId()
-						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))))
+							.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))))
 			);
+	}
+
+	@Test
+	@Ignore	//Useful testbed for experiments
+	public void testTransactionHistoryInPages() {
+		SynchronousRadixApiClient.connect(BASE_URL)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(
+				client -> {
+					var cursorHolder = new AtomicReference<NavigationCursor>();
+					do {
+						client.transactionHistory(ACCOUNT_ADDRESS1, 5, Optional.ofNullable(cursorHolder.get()))
+							.onFailure(failure -> fail(failure.toString()))
+							.onSuccess(v -> v.getCursor().ifPresent(System.out::println))
+							.onSuccess(v -> v.getCursor().ifPresentOrElse(cursorHolder::set, () -> cursorHolder.set(null)))
+							.map(TransactionHistoryDTO::getTransactions)
+							.map(this::formatTxns)
+							.onSuccess(System.out::println);
+					} while (cursorHolder.get() != null && !cursorHolder.get().value().isEmpty());
+				}
+			);
+	}
+
+	@Test
+	@Ignore //Useful testbed for experiments
+	public void addManyTransactions() {
+		SynchronousRadixApiClient.connect(BASE_URL)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> {
+				for (int i = 0; i < 20; i++) {
+					addTransaction(client, UInt256.from(i + 10));
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			});
+	}
+
+	private List<String> formatTxns(List<TransactionDTO> t) {
+		return t.stream()
+			.map(v -> String.format(
+				"%s (%s) - %s (%d:%d)%n",
+				v.getTxID(),
+				v.getMessage().orElse("<none>"),
+				v.getSentAt().getInstant(),
+				v.getSentAt().getInstant().getEpochSecond(),
+				v.getSentAt().getInstant().getNano()
+			))
+			.collect(Collectors.toList());
+	}
+
+	private void addTransaction(SynchronousRadixApiClient client, UInt256 amount) {
+		var request = TransactionRequest.createBuilder()
+			.transfer(
+				ACCOUNT_ADDRESS1,
+				ACCOUNT_ADDRESS2,
+				amount,
+				"xrd_rb1qya85pwq"
+			)
+			.message("Test message")
+			.build();
+
+		client.buildTransaction(request)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(builtTransactionDTO -> assertEquals(UInt256.from(100000000000000000L), builtTransactionDTO.getFee()))
+			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
+			.onSuccess(finalizedTransaction -> client.finalizeTransaction(finalizedTransaction)
+				.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
+				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
+				.onSuccess(submittableTransaction -> client.submitTransaction(submittableTransaction)
+					.onFailure(failure -> fail(failure.toString()))
+					.onSuccess(txDTO -> submittableTransaction.rawTxId()
+						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))));
 	}
 
 	@Test
