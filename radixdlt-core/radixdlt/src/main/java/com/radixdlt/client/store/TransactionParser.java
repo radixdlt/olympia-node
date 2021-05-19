@@ -76,11 +76,8 @@ public final class TransactionParser {
 	public Result<TxHistoryEntry> parse(REParsedTxn parsedTxn, Instant txDate, Function<REAddr, String> addrToRri) {
 		var txnId = parsedTxn.getTxn().getId();
 		var fee = computeFeePaid(parsedTxn);
-		var message = parsedTxn.getActions().stream()
-			.flatMap(v -> v.getInstructions().stream())
-			.filter(i -> i.getInstruction().getMicroOp() == REInstruction.REOp.MSG)
-			.findFirst()
-			.map(i -> new String(i.getInstruction().getData(), RadixConstants.STANDARD_CHARSET))
+		var message = parsedTxn.getMsg()
+			.map(bytes -> new String(bytes, RadixConstants.STANDARD_CHARSET))
 			.map(MessageEntry::fromPlainString);
 
 		if (message.isPresent()) {
@@ -93,6 +90,6 @@ public final class TransactionParser {
 			.map(a -> mapToEntry(a, addrToRri))
 			.collect(Collectors.toList());
 
-		return Result.ok(TxHistoryEntry.create(txnId, txDate, fee, null, actions));
+		return Result.ok(TxHistoryEntry.create(txnId, txDate, fee, message.orElse(null), actions));
 	}
 }
