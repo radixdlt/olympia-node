@@ -17,6 +17,9 @@
 
 package com.radixdlt.client.store;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.StakeTokens;
@@ -24,9 +27,11 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.client.api.ActionEntry;
 import com.radixdlt.client.api.TxHistoryEntry;
+import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
@@ -35,6 +40,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class TransactionParser {
+	private static final Logger log = LogManager.getLogger();
+
 	private UInt256 computeFeePaid(REParsedTxn radixEngineTxn) {
 		return radixEngineTxn.getActions()
 			.stream()
@@ -69,6 +76,16 @@ public final class TransactionParser {
 	public Result<TxHistoryEntry> parse(REParsedTxn parsedTxn, Instant txDate, Function<REAddr, String> addrToRri) {
 		var txnId = parsedTxn.getTxn().getId();
 		var fee = computeFeePaid(parsedTxn);
+		var message = parsedTxn.getActions().stream()
+			.flatMap(v -> v.getInstructions().stream())
+			.filter(i -> i.getInstruction().getMicroOp() == REInstruction.REOp.MSG)
+			.findFirst()
+			.map(i -> new String(i.getInstruction().getData(), RadixConstants.STANDARD_CHARSET))
+			.map(MessageEntry::fromPlainString);
+
+		if (message.isPresent()) {
+			log.debug("DB: message: {}", message);
+		}
 
 		var actions = parsedTxn.getActions().stream()
 			.map(REParsedAction::getTxAction)

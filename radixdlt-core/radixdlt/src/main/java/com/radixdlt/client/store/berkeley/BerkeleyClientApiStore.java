@@ -354,6 +354,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		}
 
 		var instant = ptr.orElse(Instant.EPOCH);
+
+		log.info("DB: starting from {}", instant);
+
 		var key = asKey(addr, instant);
 		var data = entry();
 
@@ -368,10 +371,13 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				return Result.ok(List.of());
 			}
 
+			log.info("DB: ts from key {}", instantFromKey(key));
+
 			// skip first entry if it's the same as the cursor
-			if (instantFromKey(key).equals(instant)) {
+			while (instantFromKey(key).equals(instant)) {
 				status = readTxHistory(() -> cursor.getPrev(key, data, null), data);
 
+				log.info("DB: skipping, status: " + status);
 				if (status != OperationStatus.SUCCESS) {
 					return Result.ok(List.of());
 				}
@@ -386,6 +392,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					.onSuccess(list::add);
 
 				status = readTxHistory(() -> cursor.getPrev(key, data, null), data);
+				log.info("DB: ts from key {}", instantFromKey(key));
 			}
 			while (status == OperationStatus.SUCCESS && list.size() < size);
 
