@@ -27,7 +27,6 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.client.api.ActionEntry;
 import com.radixdlt.client.api.TxHistoryEntry;
-import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.identifiers.REAddr;

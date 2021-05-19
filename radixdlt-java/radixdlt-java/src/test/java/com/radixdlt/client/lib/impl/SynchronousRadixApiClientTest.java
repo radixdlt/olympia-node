@@ -278,7 +278,7 @@ public class SynchronousRadixApiClientTest {
 							.map(TransactionHistoryDTO::getTransactions)
 							.map(this::formatTxns)
 							.onSuccess(System.out::println);
-					} while(cursorHolder.get() != null && !cursorHolder.get().value().isEmpty());
+					} while (cursorHolder.get() != null && !cursorHolder.get().value().isEmpty());
 				}
 			);
 	}
