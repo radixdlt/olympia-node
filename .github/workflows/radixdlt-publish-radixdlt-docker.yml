@@ -1,9 +1,12 @@
-name: radixdlt-publish-docker-on-merge
+name: radixdlt-publish-radixdlt-docker
 
 on:
+  release:
+    types: [ published ]
   push:
     branches:
       - rc\/*
+      - release\/*
 jobs:
   cancel_running_workflows:
     name: Cancel running workflows
@@ -17,8 +20,27 @@ jobs:
     name: Build deb package needed for Docker image
     runs-on: ubuntu-latest
     steps:
+      - name: Set environment variables
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: |
+          echo "$GITHUB_CONTEXT"
+          echo "GITHUB_REF $GITHUB_REF"
+          echo "GH event ${{ github.event_name }}"
+          GH_EVENT_NAME="${{ github.event_name }}"
+          if [[ ! -z $GH_EVENT_NAME ]] && [[ "$GH_EVENT_NAME" == "release" ]] ;then
+            echo "Workflow triggered by a release event"
+            RELEASE_VERSION="${{ github.event.release.tag_name }}"
+            echo "RELEASE_VERSION=$RELEASE_VERSION"
+            echo "REF=$RELEASE_VERSION" >> $GITHUB_ENV
+          else
+            echo "Workflow triggered by push to a branch"
+            echo "REF=$GITHUB_REF" >> $GITHUB_ENV
+          fi
+          echo "REF ${{ env.REF }}"
       - uses: actions/checkout@v2
         with:
+          ref: ${{ env.REF }}
           fetch-depth: 0
       - name: Cache Gradle packages
         uses: actions/cache@v2
@@ -52,11 +74,30 @@ jobs:
           rm -f ~/.gradle/caches/modules-2/gc.properties
   publish-docker:
     needs: build-docker
-    name: Build and push Docker image to eu.gcr.io/dev-container-repo
+    name: Build and push radixdlt Docker image
+    environment: publish-artifacts
     runs-on: ubuntu-latest
     steps:
+      - name: Set environment variables
+        run: |
+          echo "GH event ${{ github.event_name }}"
+          GH_EVENT_NAME="${{ github.event_name }}"
+          if [[ ! -z $GH_EVENT_NAME ]] && [[ "$GH_EVENT_NAME" == "release" ]] ;then
+            echo "Workflow triggered by a release event"
+            echo "IS_RELEASE=true" >> $GITHUB_ENV
+            RELEASE_VERSION="${{ github.event.release.tag_name }}"
+            echo "RELEASE_VERSION=$RELEASE_VERSION"
+            echo "REF=$RELEASE_VERSION" >> $GITHUB_ENV
+            echo "IMAGE=radixdlt/radixdlt" >> $GITHUB_ENV
+          else
+            echo "Workflow triggered by push to a branch"
+            echo "REF=$GITHUB_REF" >> $GITHUB_ENV
+            echo "IS_RELEASE=false" >> $GITHUB_ENV
+            echo "IMAGE=eu.gcr.io/dev-container-repo/radixdlt-core" >> $GITHUB_ENV
+          fi
       - uses: actions/checkout@v2
         with:
+          ref: ${{ env.REF }}
           fetch-depth: 0
       - name: Download distribution artifact
         uses: actions/download-artifact@v2
@@ -75,12 +116,13 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-      - name: Set Environment Variables
+      #todo: dev image even for release commits, only radixdlt on release creation
+      - name: Set version
         run: |
-          if [[ "$GITHUB_REF" == *"refs/heads/release"* ]]; then
-              echo "Workflow triggered by on a release branch"
-          else
-            echo "Workflow triggered by on a rc branch"
+          echo "REF ${{ env.REF }}"
+          echo "IS_RELEASE ${{ env.IS_RELEASE }}"
+          if [[ "${{ env.IS_RELEASE }}" == "false"  ]];then
+            echo "Workflow triggered by a push to a branch"
             export CI_VERSION=true
           fi
           version=$(./gradlew radixCiVersion | grep radixdlt-version | cut -d: -f2)
@@ -88,9 +130,15 @@ jobs:
           TAG=$(echo $version | sed 's/~/-/g')
           echo "TAG $TAG"
           echo "RADIXDLT_CORE_VERSION=$TAG" >> $GITHUB_ENV
-          echo "IMAGE=eu.gcr.io/dev-container-repo/radixdlt-core" >> $GITHUB_ENV
           echo "PUBLISH=true" >> $GITHUB_ENV
+      - name: Login to Dockerhub (release)
+        uses: docker/login-action@v1
+        if: "${{ env.IS_RELEASE == 'true' }}"
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
       - name: Login to GCR
+        if: "${{ env.IS_RELEASE == 'false' }}"
         uses: docker/login-action@v1
         with:
           registry: eu.gcr.io
