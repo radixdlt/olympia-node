@@ -33,7 +33,8 @@ public class VersionController implements Controller {
 	private final JSONObject versionData;
 
 	public VersionController(LocalSystem localSystem) {
-		versionData = new JSONObject(localSystem.getInfo().get(SYSTEM_VERSION_KEY));
+		var versionData = new JSONObject(localSystem.getInfo().get(SYSTEM_VERSION_KEY));
+		var versionString = versionData.getString()
 	}
 
 	@Override
