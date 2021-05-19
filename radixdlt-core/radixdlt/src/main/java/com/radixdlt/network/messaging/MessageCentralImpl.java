@@ -20,6 +20,7 @@ package com.radixdlt.network.messaging;
 import java.util.Objects;
 import java.util.Optional;
 
+import com.google.inject.Provider;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerManager;
@@ -67,7 +68,7 @@ final class MessageCentralImpl implements MessageCentral {
 		TimeSupplier timeSource,
 		EventQueueFactory<OutboundMessageEvent> outboundEventQueueFactory,
 		SystemCounters counters,
-		PeerControl peerControl
+		Provider<PeerControl> peerControl
 	) {
 		this.counters = Objects.requireNonNull(counters);
 		this.outboundQueue = outboundEventQueueFactory.createEventQueue(

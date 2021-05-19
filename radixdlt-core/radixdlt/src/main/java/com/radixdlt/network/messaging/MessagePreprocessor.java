@@ -17,6 +17,7 @@
 
 package com.radixdlt.network.messaging;
 
+import com.google.inject.Provider;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.utils.functional.Result;
@@ -43,14 +44,14 @@ final class MessagePreprocessor {
 	private final SystemCounters counters;
 	private final TimeSupplier timeSource;
 	private final Serialization serialization;
-	private final PeerControl peerControl;
+	private final Provider<PeerControl> peerControl;
 
 	MessagePreprocessor(
 		SystemCounters counters,
 		MessageCentralConfiguration config,
 		TimeSupplier timeSource,
 		Serialization serialization,
-		PeerControl peerControl
+		Provider<PeerControl> peerControl
 	) {
 		this.messageTtlMs = Objects.requireNonNull(config).messagingTimeToLive(30_000L);
 		this.counters = Objects.requireNonNull(counters);
@@ -87,7 +88,7 @@ final class MessagePreprocessor {
 			byte[] uncompressed = Compress.uncompress(in);
 			return Result.ok(serialization.fromDson(uncompressed, Message.class));
 		} catch (IOException e) {
-			peerControl.banPeer(inboundMessage.source(), Duration.ofMinutes(5));
+			peerControl.get().banPeer(inboundMessage.source(), Duration.ofMinutes(5));
 			return IO_ERROR.result();
 		}
 	}

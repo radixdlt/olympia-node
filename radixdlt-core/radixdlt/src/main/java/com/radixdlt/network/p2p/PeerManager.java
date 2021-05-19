@@ -61,7 +61,7 @@ public final class PeerManager {
 
 	private final NodeId self;
 	private final P2PConfig config;
-	private final AddressBook addressBook;
+	private final Provider<AddressBook> addressBook;
 	private final Provider<PendingOutboundChannelsManager> pendingOutboundChannelsManager;
 
 	private final Object lock = new Object();
@@ -72,7 +72,7 @@ public final class PeerManager {
 	public PeerManager(
 		@Self BFTNode self,
 		P2PConfig config,
-		AddressBook addressBook,
+		Provider<AddressBook> addressBook,
 		Provider<PendingOutboundChannelsManager> pendingOutboundChannelsManager
 	) {
 		this.self = Objects.requireNonNull(NodeId.fromPublicKey(self.getKey()));
@@ -100,7 +100,7 @@ public final class PeerManager {
 		if (maybeActiveChannel.isPresent()) {
 			return CompletableFuture.completedFuture(maybeActiveChannel.get());
 		} else {
-			final var maybeAddress = this.addressBook.findBestKnownAddressById(nodeId);
+			final var maybeAddress = this.addressBook.get().findBestKnownAddressById(nodeId);
 			if (maybeAddress.isPresent()) {
 				return connect(maybeAddress.get());
 			} else {
@@ -134,7 +134,7 @@ public final class PeerManager {
 			return SELF_CONNECTION_ATTEMPT.result();
 		}
 
-		if (this.addressBook.findById(nodeId).filter(AddressBookEntry::isBanned).isPresent()) {
+		if (this.addressBook.get().findById(nodeId).filter(AddressBookEntry::isBanned).isPresent()) {
 			return PEER_BANNED.result();
 		}
 
@@ -178,7 +178,7 @@ public final class PeerManager {
 				unused -> new HashSet<>()
 			);
 			channels.add(channel);
-			channel.getUri().ifPresent(this.addressBook::addOrUpdateSuccessfullyConnectedPeer);
+			channel.getUri().ifPresent(u -> this.addressBook.get().addOrUpdateSuccessfullyConnectedPeer(u));
 			inboundMessagesFromChannels.onNext(channel.inboundMessages().toObservable());
 
 			if (channel.isInbound() && !this.shouldAcceptInboundPeer(channel.getRemoteNodeId())) {
@@ -211,7 +211,7 @@ public final class PeerManager {
 	}
 
 	private boolean shouldAcceptInboundPeer(NodeId nodeId) {
-		final var isBanned = this.addressBook.findById(nodeId)
+		final var isBanned = this.addressBook.get().findById(nodeId)
 			.map(AddressBookEntry::isBanned)
 			.orElse(false);
 
