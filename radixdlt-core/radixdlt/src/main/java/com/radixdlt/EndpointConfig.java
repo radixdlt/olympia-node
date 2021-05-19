@@ -26,7 +26,7 @@ import com.radixdlt.api.module.FaucetEndpointModule;
 import com.radixdlt.api.module.HealthEndpointModule;
 import com.radixdlt.api.module.SystemEndpointModule;
 import com.radixdlt.api.module.UniverseEndpointModule;
-import com.radixdlt.api.module.ValidatorEndpointModule;
+import com.radixdlt.api.module.ValidationEndpointModule;
 import com.radixdlt.api.module.VersionEndpointModule;
 import com.radixdlt.properties.RuntimeProperties;
 
@@ -58,7 +58,7 @@ public final class EndpointConfig {
 		new EndpointConfig(API_CONSTRUCT, false, Type.ARCHIVE, ConstructEndpointModule::new),
 		new EndpointConfig(API_SYSTEM, false, Type.NODE, SystemEndpointModule::new),
 		new EndpointConfig(API_ACCOUNT, false, Type.NODE, AccountEndpointModule::new),
-		new EndpointConfig(API_VALIDATOR, false, Type.NODE, ValidatorEndpointModule::new),
+		new EndpointConfig(API_VALIDATOR, false, Type.NODE, ValidationEndpointModule::new),
 		new EndpointConfig(API_UNIVERSE, false, Type.NODE, UniverseEndpointModule::new),
 		new EndpointConfig(API_FAUCET, false, Type.NODE, FaucetEndpointModule::new),
 		new EndpointConfig(API_CHAOS, false, Type.NODE, ChaosEndpointModule::new),

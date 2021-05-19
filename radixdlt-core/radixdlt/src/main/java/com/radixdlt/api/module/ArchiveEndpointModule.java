@@ -31,7 +31,7 @@ import java.util.Map;
 public class ArchiveEndpointModule extends AbstractModule {
 	@Archive
 	@Provides
-	public JsonRpcServer archiveRpcHandler(@Archive Map<String, JsonRpcHandler> additionalHandlers) {
+	public JsonRpcServer rpcServer(@Archive Map<String, JsonRpcHandler> additionalHandlers) {
 		return new JsonRpcServer(additionalHandlers);
 	}
 

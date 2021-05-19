@@ -18,6 +18,16 @@
 package com.radixdlt.api.module;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.api.Controller;
+import com.radixdlt.api.controller.HealthController;
+import com.radixdlt.api.qualifier.AtNode;
+import com.radixdlt.counters.SystemCounters;
 
 public class HealthEndpointModule extends AbstractModule {
+	@AtNode
+	@ProvidesIntoSet
+	public Controller healthController(SystemCounters counters) {
+		return new HealthController(counters);
+	}
 }

@@ -22,9 +22,7 @@ import org.apache.logging.log4j.Logger;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.EndpointConfig;
 import com.radixdlt.ModuleRunner;
@@ -35,9 +33,7 @@ import com.radixdlt.api.service.ScheduledCacheCleanup;
 import com.radixdlt.api.service.ScheduledStatsCollecting;
 import com.radixdlt.api.service.TransactionStatusService;
 import com.radixdlt.api.store.ClientApiStore;
-import com.radixdlt.api.store.berkeley.BerkeleyClientApiStore;
 import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
@@ -61,6 +57,7 @@ public class ArchiveApiModule extends AbstractModule {
 			install(ep.module().get());
 		});
 
+		//TODO: move to upper level as some services are used not only for /archive
 		var eventBinder = Multibinder
 			.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 			.permitDuplicates();
