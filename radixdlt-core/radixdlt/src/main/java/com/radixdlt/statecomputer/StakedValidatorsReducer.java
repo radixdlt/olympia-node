@@ -33,68 +33,68 @@ import java.util.function.Supplier;
  */
 public final class StakedValidatorsReducer implements StateReducer<StakedValidators> {
 
-    private final int minValidators;
-    private final int maxValidators;
+	private final int minValidators;
+	private final int maxValidators;
 
-    @Inject
-    public StakedValidatorsReducer(
-        @MinValidators int minValidators,
-        @MaxValidators int maxValidators
-    ) {
-        this.minValidators = minValidators;
-        this.maxValidators = maxValidators;
-    }
+	@Inject
+	public StakedValidatorsReducer(
+		@MinValidators int minValidators,
+		@MaxValidators int maxValidators
+	) {
+		this.minValidators = minValidators;
+		this.maxValidators = maxValidators;
+	}
 
-    @Override
-    public Class<StakedValidators> stateClass() {
-        return StakedValidators.class;
-    }
+	@Override
+	public Class<StakedValidators> stateClass() {
+		return StakedValidators.class;
+	}
 
-    @Override
-    public Set<Class<? extends Particle>> particleClasses() {
-        return Set.of(ValidatorParticle.class, DeprecatedStake.class, Stake.class);
-    }
+	@Override
+	public Set<Class<? extends Particle>> particleClasses() {
+		return Set.of(ValidatorParticle.class, DeprecatedStake.class, Stake.class);
+	}
 
-    @Override
-    public Supplier<StakedValidators> initial() {
-        return () -> StakedValidators.create(minValidators, maxValidators);
-    }
+	@Override
+	public Supplier<StakedValidators> initial() {
+		return () -> StakedValidators.create(minValidators, maxValidators);
+	}
 
-    @Override
-    public BiFunction<StakedValidators, Particle, StakedValidators> outputReducer() {
-        return (prev, p) -> {
-            if (p instanceof ValidatorParticle) {
-                var v = (ValidatorParticle) p;
-                if (v.isRegisteredForNextEpoch()) {
-                    return prev.add(v);
-                }
-                return prev;
-            } else if (p instanceof DeprecatedStake) {
-                var d = (DeprecatedStake) p;
-                return prev.add(d.getDelegateKey(), d.getAmount());
-            } else {
-                var s = (Stake) p;
-                return prev.add(s.getValidatorKey(), s.getAmount());
-            }
-        };
-    }
+	@Override
+	public BiFunction<StakedValidators, Particle, StakedValidators> outputReducer() {
+		return (prev, p) -> {
+			if (p instanceof ValidatorParticle) {
+				var v = (ValidatorParticle) p;
+				if (v.isRegisteredForNextEpoch()) {
+					return prev.add(v);
+				}
+				return prev;
+			} else if (p instanceof DeprecatedStake) {
+				var d = (DeprecatedStake) p;
+				return prev.add(d.getDelegateKey(), d.getAmount());
+			} else {
+				var s = (Stake) p;
+				return prev.add(s.getValidatorKey(), s.getAmount());
+			}
+		};
+	}
 
-    @Override
-    public BiFunction<StakedValidators, Particle, StakedValidators> inputReducer() {
-        return (prev, p) -> {
-            if (p instanceof ValidatorParticle) {
-                var v = (ValidatorParticle) p;
-                if (v.isRegisteredForNextEpoch()) {
-                    return prev.remove(v);
-                }
-                return prev;
-            } else if (p instanceof DeprecatedStake) {
-                var d = (DeprecatedStake) p;
-                return prev.remove(d.getDelegateKey(), d.getAmount());
-            } else {
-                var s = (Stake) p;
-                return prev.remove(s.getValidatorKey(), s.getAmount());
-            }
-        };
-    }
+	@Override
+	public BiFunction<StakedValidators, Particle, StakedValidators> inputReducer() {
+		return (prev, p) -> {
+			if (p instanceof ValidatorParticle) {
+				var v = (ValidatorParticle) p;
+				if (v.isRegisteredForNextEpoch()) {
+					return prev.remove(v);
+				}
+				return prev;
+			} else if (p instanceof DeprecatedStake) {
+				var d = (DeprecatedStake) p;
+				return prev.remove(d.getDelegateKey(), d.getAmount());
+			} else {
+				var s = (Stake) p;
+				return prev.remove(s.getValidatorKey(), s.getAmount());
+			}
+		};
+	}
 }
