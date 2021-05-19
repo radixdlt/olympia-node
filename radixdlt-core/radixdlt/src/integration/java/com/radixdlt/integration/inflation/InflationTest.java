@@ -54,7 +54,7 @@ import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
-import com.radixdlt.statecomputer.Stakes;
+import com.radixdlt.statecomputer.Rewards;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
@@ -229,7 +229,7 @@ public class InflationTest {
 
 		var radixEngine = nodes.get(0)
 			.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() { }));
-		var stakes = radixEngine.getComputedState(Stakes.class, "inflation");
+		var stakes = radixEngine.getComputedState(Rewards.class, "inflation");
 		var systemInfo = nodes.get(0)
 			.getInstance(Key.get(new TypeLiteral<InMemorySystemInfo>() { }));
 		var epochView = systemInfo.getCurrentView();

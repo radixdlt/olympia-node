@@ -56,14 +56,6 @@ public class RadixEngineModule extends AbstractModule {
 	}
 
 	@Provides
-	private ValidatorSetBuilder validatorSetBuilder(
-		@MinValidators int minValidators,
-		@MaxValidators int maxValidators
-	) {
-		return ValidatorSetBuilder.create(minValidators, maxValidators);
-	}
-
-	@Provides
 	PostParsedChecker checker(Set<PostParsedChecker> checkers) {
 		return (permissionLevel, reTxn) -> {
 			for (var checker : checkers) {
@@ -87,7 +79,8 @@ public class RadixEngineModule extends AbstractModule {
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
 		Set<StateReducer<?>> stateReducers,
 		Set<Pair<String, StateReducer<?>>> namedStateReducers,
-		Set<SubstateCacheRegister<?>> substateCacheRegisters
+		Set<SubstateCacheRegister<?>> substateCacheRegisters,
+		StakedValidatorsReducer stakedValidatorsReducer
 	) {
 		var radixEngine = new RadixEngine<>(
 			actionConstructors,
@@ -104,9 +97,9 @@ public class RadixEngineModule extends AbstractModule {
 		//   .toWindowedSet(initialValidatorSet, RegisteredValidatorParticle.class, p -> p.getAddress(), 2)
 		//   .build();
 
-		radixEngine.addStateReducer(new ValidatorsReducer(), true);
-		radixEngine.addStateReducer(new DeprecatedStakesReducer(), true);
-		radixEngine.addStateReducer(new StakeReducer(), "inflation", true);
+		radixEngine.addStateReducer(stakedValidatorsReducer, true);
+		//radixEngine.addStateReducer(new DeprecatedStakesReducer(), true);
+		radixEngine.addStateReducer(new InflationReducer(), "inflation", true);
 
 		var systemCache = new SubstateCacheRegister<>(SystemParticle.class, p -> true);
 		radixEngine.addSubstateCache(systemCache, true);

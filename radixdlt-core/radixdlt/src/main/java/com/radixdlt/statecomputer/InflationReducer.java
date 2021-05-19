@@ -26,10 +26,10 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-public final class StakeReducer implements StateReducer<Stakes> {
+public final class InflationReducer implements StateReducer<Rewards> {
 	@Override
-	public Class<Stakes> stateClass() {
-		return Stakes.class;
+	public Class<Rewards> stateClass() {
+		return Rewards.class;
 	}
 
 	@Override
@@ -38,12 +38,12 @@ public final class StakeReducer implements StateReducer<Stakes> {
 	}
 
 	@Override
-	public Supplier<Stakes> initial() {
-		return Stakes::create;
+	public Supplier<Rewards> initial() {
+		return Rewards::create;
 	}
 
 	@Override
-	public BiFunction<Stakes, Particle, Stakes> outputReducer() {
+	public BiFunction<Rewards, Particle, Rewards> outputReducer() {
 		return (prev, p) -> {
 			var s = (Stake) p;
 			return prev.add(s.getValidatorKey(), s.getAmount());
@@ -51,7 +51,7 @@ public final class StakeReducer implements StateReducer<Stakes> {
 	}
 
 	@Override
-	public BiFunction<Stakes, Particle, Stakes> inputReducer() {
+	public BiFunction<Rewards, Particle, Rewards> inputReducer() {
 		return (prev, p) -> {
 			var s = (Stake) p;
 			return prev.remove(s.getValidatorKey(), s.getAmount());

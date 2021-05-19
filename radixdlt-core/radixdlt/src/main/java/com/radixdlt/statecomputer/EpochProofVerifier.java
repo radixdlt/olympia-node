@@ -18,7 +18,6 @@
 
 package com.radixdlt.statecomputer;
 
-import com.google.inject.Inject;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.ledger.ByzantineQuorumException;
@@ -27,13 +26,6 @@ import com.radixdlt.ledger.ByzantineQuorumException;
  * Validates that the LedgerProof matches the computed state output
  */
 public final class EpochProofVerifier implements BatchVerifier<LedgerAndBFTProof> {
-	private final ValidatorSetBuilder validatorSetBuilder;
-
-	@Inject
-	public EpochProofVerifier(ValidatorSetBuilder validatorSetBuilder) {
-		this.validatorSetBuilder = validatorSetBuilder;
-	}
-
 	@Override
 	public PerStateChangeVerifier<LedgerAndBFTProof> newVerifier(ComputedState computedState) {
 		return new PerEpochVerifier(computedState);
@@ -69,10 +61,7 @@ public final class EpochProofVerifier implements BatchVerifier<LedgerAndBFTProof
 					throw new IllegalStateException();
 				}
 
-				final var reNextValidatorSet = validatorSetBuilder.buildValidatorSet(
-					computedState.get(RegisteredValidators.class),
-					computedState.get(Stakes.class)
-				);
+				final var reNextValidatorSet = computedState.get(StakedValidators.class).toValidatorSet();
 				final var signedValidatorSet = metadata.getProof().getNextValidatorSet()
 					.orElseThrow(() -> new ByzantineQuorumException("RE has changed epochs but proofs don't show."));
 				if (!signedValidatorSet.equals(reNextValidatorSet)) {

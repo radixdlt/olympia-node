@@ -65,7 +65,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final RadixEngineMempool mempool;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final int maxTxnsPerProposal;
-	private final ValidatorSetBuilder validatorSetBuilder;
 
 	private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
 	private final EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher;
@@ -84,7 +83,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 		RadixEngineMempool mempool, // TODO: Move this into radixEngine
 		@EpochCeilingView View epochCeilingView, // TODO: Move this into radixEngine
 		@MaxTxnsPerProposal int maxTxnsPerProposal, // TODO: Move this into radixEngine
-		ValidatorSetBuilder validatorSetBuilder, // TODO: Move this into radixEngine
 		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
 		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher,
 		EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher,
@@ -100,7 +98,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.epochToForkConfig = epochToForkConfig;
 		this.epochCeilingView = epochCeilingView;
 		this.maxTxnsPerProposal = maxTxnsPerProposal;
-		this.validatorSetBuilder = Objects.requireNonNull(validatorSetBuilder);
 		this.mempool = Objects.requireNonNull(mempool);
 		this.mempoolAddSuccessEventDispatcher = Objects.requireNonNull(mempoolAddedCommandEventDispatcher);
 		this.mempoolAddFailureEventDispatcher = Objects.requireNonNull(mempoolAddFailureEventDispatcher);
@@ -176,10 +173,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		var view = vertex.getView();
 		final BFTValidatorSet validatorSet;
 		if (view.compareTo(epochCeilingView) >= 0) {
-			validatorSet = this.validatorSetBuilder.buildValidatorSet(
-				branch.getComputedState(RegisteredValidators.class),
-				branch.getComputedState(Stakes.class)
-			);
+			validatorSet = branch.getComputedState(StakedValidators.class).toValidatorSet();
 		} else {
 			validatorSet = null;
 		}

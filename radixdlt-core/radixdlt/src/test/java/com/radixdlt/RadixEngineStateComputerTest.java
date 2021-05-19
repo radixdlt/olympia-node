@@ -80,9 +80,7 @@ import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
-import com.radixdlt.statecomputer.RegisteredValidators;
-import com.radixdlt.statecomputer.Stakes;
-import com.radixdlt.statecomputer.ValidatorSetBuilder;
+import com.radixdlt.statecomputer.StakedValidators;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
@@ -112,10 +110,6 @@ public class RadixEngineStateComputerTest {
 
 	@Inject
 	private RadixEngineStateComputer sut;
-
-	@Inject
-	private ValidatorSetBuilder validatorSetBuilder;
-
 
 	private Serialization serialization = DefaultSerialization.getInstance();
 	private InMemoryEngineStore<LedgerAndBFTProof> engineStore;
@@ -170,10 +164,7 @@ public class RadixEngineStateComputerTest {
 	private void setupGenesis() throws RadixEngineException {
 		var branch = radixEngine.transientBranch();
 		branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
-		final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
-			branch.getComputedState(RegisteredValidators.class),
-			branch.getComputedState(Stakes.class)
-		);
+		final var genesisValidatorSet = branch.getComputedState(StakedValidators.class).toValidatorSet();
 		radixEngine.deleteBranches();
 
 		var genesisLedgerHeader = LedgerProof.genesis(

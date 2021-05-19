@@ -82,7 +82,6 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.statecomputer.EpochCeilingView;
-import com.radixdlt.statecomputer.ValidatorSetBuilder;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
@@ -251,16 +250,8 @@ public class SimulationTest {
 			final var initialStakesMap = nodes.stream()
 				.collect(ImmutableMap.toImmutableMap(ECKeyPair::getPublicKey, k -> stakesIterator.next()));
 
-			final var vsetBuilder = ValidatorSetBuilder.create(this.minValidators, numInitialValidators);
-			final var initialVset = vsetBuilder.buildValidatorSet(initialStakesMap);
-			if (initialVset == null) {
-				throw new IllegalStateException(
-					String.format(
-						"Can't build a validator set between %s and %s validators from %s",
-						this.minValidators, numInitialValidators, initialStakesMap
-					)
-				);
-			}
+			var initialVset = BFTValidatorSet.from(initialStakesMap.entrySet().stream()
+				.map(e -> BFTValidator.from(BFTNode.create(e.getKey()), e.getValue())));
 
 			final var bftNodes = initialStakesMap.keySet().stream()
 				.map(BFTNode::create)
