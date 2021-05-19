@@ -37,6 +37,6 @@ public final class StakeTokensConstructor implements ActionConstructor<StakeToke
 			amt -> new TokensParticle(action.from(), amt, REAddr.ofNativeToken()),
 			action.amount(),
 			"Not enough balance for staking."
-		).with(amt -> new DelegatedStake(amt, action.from(), action.to()));
+		).with(amt -> new DeprecatedStake(amt, action.from(), action.to()));
 	}
 }

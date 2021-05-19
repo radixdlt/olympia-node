@@ -35,8 +35,8 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 	@Override
 	public void main(SysCalls os) {
 		os.registerParticle(
-			DelegatedStake.class,
-			ParticleDefinition.<DelegatedStake>builder()
+			DeprecatedStake.class,
+			ParticleDefinition.<DeprecatedStake>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.rriMapper(p -> REAddr.ofNativeToken())
 				.build()
@@ -50,10 +50,10 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 		// Staking
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
 			TokensParticle.class,
-			DelegatedStake.class,
+			DeprecatedStake.class,
 			checkEquals(
 				TokensParticle::getHoldingAddr,
-				DelegatedStake::getOwner,
+				DeprecatedStake::getOwner,
 				"Can only stake with self as owner"
 			),
 			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getHoldingAddr()::allowToWithdrawFrom).orElse(false),
@@ -62,7 +62,7 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 
 		// Unstaking
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
-			DelegatedStake.class,
+			DeprecatedStake.class,
 			TokensParticle.class,
 			(i, o, r) -> {
 				if (!Objects.equals(i.getOwner(), o.getHoldingAddr())) {
@@ -83,11 +83,11 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 
 		// Stake movement
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
-			DelegatedStake.class,
-			DelegatedStake.class,
+			DeprecatedStake.class,
+			DeprecatedStake.class,
 			checkEquals(
-				DelegatedStake::getOwner,
-				DelegatedStake::getOwner,
+				DeprecatedStake::getOwner,
+				DeprecatedStake::getOwner,
 				"Can't send staked tokens to another address."
 			),
 			(i, o, index, pubKey) -> pubKey.map(i.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),

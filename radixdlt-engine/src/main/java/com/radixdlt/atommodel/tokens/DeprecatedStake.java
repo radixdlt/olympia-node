@@ -27,14 +27,14 @@ import java.util.Objects;
  *  A particle which represents an amount of staked fungible tokens
  *  owned by some key owner, stored in an account and staked to a delegate address.
  */
-public final class DelegatedStake implements Fungible {
+public final class DeprecatedStake implements Fungible {
 	private final UInt256 amount;
 
 	// Bucket keys
 	private final REAddr owner;
 	private final ECPublicKey delegateKey;
 
-	public DelegatedStake(
+	public DeprecatedStake(
 		UInt256 amount,
 		REAddr owner,
 		ECPublicKey delegateKey
@@ -72,10 +72,10 @@ public final class DelegatedStake implements Fungible {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof DelegatedStake)) {
+		if (!(o instanceof DeprecatedStake)) {
 			return false;
 		}
-		DelegatedStake that = (DelegatedStake) o;
+		DeprecatedStake that = (DeprecatedStake) o;
 		return Objects.equals(delegateKey, that.delegateKey)
 			&& Objects.equals(owner, that.owner)
 			&& Objects.equals(amount, that.amount);

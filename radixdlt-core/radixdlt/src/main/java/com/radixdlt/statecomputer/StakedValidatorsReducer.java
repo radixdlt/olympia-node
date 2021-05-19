@@ -18,7 +18,8 @@
 package com.radixdlt.statecomputer;
 
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.tokens.DelegatedStake;
+import com.radixdlt.atommodel.system.Stake;
+import com.radixdlt.atommodel.tokens.DeprecatedStake;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
@@ -51,7 +52,7 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 
     @Override
     public Set<Class<? extends Particle>> particleClasses() {
-        return Set.of(ValidatorParticle.class, DelegatedStake.class);
+        return Set.of(ValidatorParticle.class, DeprecatedStake.class, Stake.class);
     }
 
     @Override
@@ -68,9 +69,12 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
                     return prev.add(v);
                 }
                 return prev;
-            } else {
-                var d = (DelegatedStake) p;
+            } else if (p instanceof DeprecatedStake) {
+                var d = (DeprecatedStake) p;
                 return prev.add(d.getDelegateKey(), d.getAmount());
+            } else {
+                var s = (Stake) p;
+                return prev.add(s.getValidatorKey(), s.getAmount());
             }
         };
     }
@@ -84,9 +88,12 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
                     return prev.remove(v);
                 }
                 return prev;
-            } else {
-                var d = (DelegatedStake) p;
+            } else if (p instanceof DeprecatedStake) {
+                var d = (DeprecatedStake) p;
                 return prev.remove(d.getDelegateKey(), d.getAmount());
+            } else {
+                var s = (Stake) p;
+                return prev.remove(s.getValidatorKey(), s.getAmount());
             }
         };
     }

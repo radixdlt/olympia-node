@@ -28,9 +28,9 @@ public final class DeprecatedUnstakeTokensConstructor implements ActionConstruct
 	@Override
 	public void construct(DeprecatedUnstakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.swapFungible(
-			DelegatedStake.class,
+			DeprecatedStake.class,
 			p -> p.getOwner().equals(action.accountAddr()) && p.getDelegateKey().equals(action.from()),
-			amt -> new DelegatedStake(amt, action.accountAddr(), action.from()),
+			amt -> new DeprecatedStake(amt, action.accountAddr(), action.from()),
 			action.amount(),
 			"Not enough staked."
 		).with(amt -> new TokensParticle(action.accountAddr(), amt, REAddr.ofNativeToken()));

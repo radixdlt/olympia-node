@@ -23,7 +23,7 @@
 package com.radixdlt.client.serialization;
 
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.tokens.DelegatedStake;
+import com.radixdlt.atommodel.tokens.DeprecatedStake;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
@@ -55,7 +55,7 @@ public final class Serialize {
                     Particle.class,
                     TokenDefinitionParticle.class,
                     TokensParticle.class,
-                    DelegatedStake.class,
+                    DeprecatedStake.class,
                     UniqueParticle.class,
                     ValidatorParticle.class,
                     SystemParticle.class,
