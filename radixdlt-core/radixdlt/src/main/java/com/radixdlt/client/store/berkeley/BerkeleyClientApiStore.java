@@ -63,10 +63,12 @@ import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.OperationStatus;
 
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -354,30 +356,27 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		}
 
 		var instant = ptr.orElse(Instant.EPOCH);
-
-		log.info("DB: starting from {}", instant);
-
 		var key = asKey(addr, instant);
 		var data = entry();
 
 		try (var cursor = transactionHistory.openCursor(null, null)) {
-			var status = readTxHistory(() -> cursor.getSearchKeyRange(key, data, null), data);
+			var status = readTxHistory(() -> cursor.getSearchKey(key, data, null), data);
+
+			//When searching with no cursor, exact navigation (cursor.getSearchKey) may fail,
+			//because there is no exact match. Nevertheless, cursor is positioned to correct location,
+			//so we just need get previous record.
 			if (status != OperationStatus.SUCCESS) {
-				return Result.ok(List.of());
-			}
-
-			status = readTxHistory(() -> cursor.getLast(key, data, null), data);
-			if (status != OperationStatus.SUCCESS) {
-				return Result.ok(List.of());
-			}
-
-			log.info("DB: ts from key {}", instantFromKey(key));
-
-			// skip first entry if it's the same as the cursor
-			while (instantFromKey(key).equals(instant)) {
 				status = readTxHistory(() -> cursor.getPrev(key, data, null), data);
 
-				log.info("DB: skipping, status: " + status);
+				if (status != OperationStatus.SUCCESS) {
+					return Result.ok(List.of());
+				}
+			}
+
+			// skip first entry if it's the same as the cursor
+			if (instantFromKey(key).equals(instant)) {
+				status = readTxHistory(() -> cursor.getPrev(key, data, null), data);
+
 				if (status != OperationStatus.SUCCESS) {
 					return Result.ok(List.of());
 				}
@@ -392,7 +391,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					.onSuccess(list::add);
 
 				status = readTxHistory(() -> cursor.getPrev(key, data, null), data);
-				log.info("DB: ts from key {}", instantFromKey(key));
 			}
 			while (status == OperationStatus.SUCCESS && list.size() < size);
 

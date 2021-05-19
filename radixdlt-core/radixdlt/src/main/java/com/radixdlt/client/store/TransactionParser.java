@@ -80,10 +80,6 @@ public final class TransactionParser {
 			.map(bytes -> new String(bytes, RadixConstants.STANDARD_CHARSET))
 			.map(MessageEntry::fromPlainString);
 
-		if (message.isPresent()) {
-			log.debug("DB: message: {}", message);
-		}
-
 		var actions = parsedTxn.getActions().stream()
 			.map(REParsedAction::getTxAction)
 			.filter(a -> !isFeeAction(a))

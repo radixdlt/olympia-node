@@ -25,6 +25,7 @@ import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.dto.FinalizedTransaction;
 import com.radixdlt.client.lib.dto.TokenBalancesDTO;
+import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistoryDTO;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
@@ -37,6 +38,7 @@ import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -172,53 +174,6 @@ public class SynchronousRadixApiClientTest {
 	}
 
 	@Test
-	public void testTransactionHistory2() throws IOException {
-		SynchronousRadixApiClient.connect(BASE_URL)
-			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(
-				client -> {
-					var cursorHolder = new AtomicReference<NavigationCursor>();
-
-					client.transactionHistory(ACCOUNT_ADDRESS1, 3, Optional.empty())
-						.onFailure(failure -> fail(failure.toString()))
-						.onSuccess(v -> v.getCursor().ifPresent(System.out::println))
-						.onSuccess(v -> v.getCursor().ifPresent(cursorHolder::set))
-						.map(TransactionHistoryDTO::getTransactions)
-						.map(t -> t.stream().map(v -> String.format(
-							"%s - %s%n",
-							v.getTxID(),
-							v.getSentAt().getInstant()
-						)).collect(Collectors.toList()))
-						.onSuccess(System.out::println);
-
-					client.transactionHistory(ACCOUNT_ADDRESS1, 3, Optional.ofNullable(cursorHolder.get()))
-						.onFailure(failure -> fail(failure.toString()))
-						.onSuccess(v -> v.getCursor().ifPresent(System.out::println))
-						.onSuccess(v -> v.getCursor().ifPresent(cursorHolder::set))
-						.map(TransactionHistoryDTO::getTransactions)
-						.map(t -> t.stream().map(v -> String.format(
-							"%s - %s%n",
-							v.getTxID(),
-							v.getSentAt().getInstant()
-						)).collect(Collectors.toList()))
-						.onSuccess(System.out::println);
-
-					client.transactionHistory(ACCOUNT_ADDRESS1, 3, Optional.ofNullable(cursorHolder.get()))
-						.onFailure(failure -> fail(failure.toString()))
-						.onSuccess(v -> v.getCursor().ifPresent(System.out::println))
-						.onSuccess(v -> v.getCursor().ifPresent(cursorHolder::set))
-						.map(TransactionHistoryDTO::getTransactions)
-						.map(t -> t.stream().map(v -> String.format(
-							"%s - %s%n",
-							v.getTxID(),
-							v.getSentAt().getInstant()
-						)).collect(Collectors.toList()))
-						.onSuccess(System.out::println);
-				}
-			);
-	}
-
-	@Test
 	public void testTokenBalances() throws IOException {
 		prepareClient(TOKEN_BALANCES)
 			.onFailure(failure -> fail(failure.toString()))
@@ -279,7 +234,7 @@ public class SynchronousRadixApiClientTest {
 	}
 
 	@Test
-	@Ignore //Useful testbed for experiments testing
+	@Ignore //Useful testbed for experiments
 	public void testBuildTransactionWithMessage() {
 		var request = TransactionRequest.createBuilder()
 			.transfer(
@@ -308,11 +263,44 @@ public class SynchronousRadixApiClientTest {
 	}
 
 	@Test
+	@Ignore	//Useful testbed for experiments
+	public void testTransactionHistoryInPages() {
+		SynchronousRadixApiClient.connect(BASE_URL)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(
+				client -> {
+					var cursorHolder = new AtomicReference<NavigationCursor>();
+					do {
+						client.transactionHistory(ACCOUNT_ADDRESS1, 5, Optional.ofNullable(cursorHolder.get()))
+							.onFailure(failure -> fail(failure.toString()))
+							.onSuccess(v -> v.getCursor().ifPresent(System.out::println))
+							.onSuccess(v -> v.getCursor().ifPresentOrElse(cursorHolder::set, () -> cursorHolder.set(null)))
+							.map(TransactionHistoryDTO::getTransactions)
+							.map(this::formatTxns)
+							.onSuccess(System.out::println);
+					} while(cursorHolder.get() != null && !cursorHolder.get().value().isEmpty());
+				}
+			);
+	}
+
+	@Test
 	public void addManyTransactions() throws InterruptedException {
 		for (int i = 0; i < 20; i++) {
 			addTransaction(UInt256.from(i + 10));
-			Thread.sleep(1000);
+			Thread.sleep(500);
 		}
+	}
+
+	private List<String> formatTxns(List<TransactionDTO> t) {
+		return t.stream()
+			.map(v -> String.format(
+				"%s - %s (%d:%d)%n",
+				v.getTxID(),
+				v.getSentAt().getInstant(),
+				v.getSentAt().getInstant().getEpochSecond(),
+				v.getSentAt().getInstant().getNano()
+			))
+			.collect(Collectors.toList());
 	}
 
 	private void addTransaction(UInt256 amount) {
