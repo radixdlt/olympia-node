@@ -100,6 +100,8 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 			socketChannel.pipeline().addLast(new LoggingHandler(LogSink.using(log), false));
 		}
 
+		uri.ifPresent(u -> log.trace("Initializing peer channel to {}", u));
+
 		// TODO(luk): why is remoteAddress() null in docker network?
 //		final var isChannelValid = socketChannel.remoteAddress() != null
 //			&& !socketChannel.remoteAddress().getAddress().isLoopbackAddress();
