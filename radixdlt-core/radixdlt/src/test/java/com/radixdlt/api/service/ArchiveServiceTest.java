@@ -24,7 +24,6 @@ import com.radixdlt.api.Rri;
 import com.radixdlt.api.data.ActionEntry;
 import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.store.ClientApiStore;
-import com.radixdlt.api.store.MessageEntry;
 import com.radixdlt.api.store.TokenDefinitionRecord;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.crypto.ECKeyPair;

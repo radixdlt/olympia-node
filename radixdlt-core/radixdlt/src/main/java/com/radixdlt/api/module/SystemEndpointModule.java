@@ -24,9 +24,10 @@ import com.google.inject.Provides;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.server.JsonRpcServer;
-import com.radixdlt.api.qualifier.System;
 import com.radixdlt.api.controller.SystemController;
+import com.radixdlt.api.qualifier.AtNode;
+import com.radixdlt.api.qualifier.System;
+import com.radixdlt.api.server.JsonRpcServer;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
@@ -37,13 +38,14 @@ import java.util.Map;
 public class SystemEndpointModule extends AbstractModule {
 	@System
 	@Provides
-	public JsonRpcServer systemRpcHandler(@System Map<String, JsonRpcHandler> additionalHandlers) {
+	public JsonRpcServer rpcServer(@System Map<String, JsonRpcHandler> additionalHandlers) {
 		return new JsonRpcServer(additionalHandlers);
 	}
 
 	//TODO: remove/rework/replace
+	@AtNode
 	@ProvidesIntoSet
-	public Controller constructController(
+	public Controller systemController(
 		@System JsonRpcServer jsonRpcServer,
 		InMemorySystemInfo inMemorySystemInfo,
 		LocalSystem localSystem,

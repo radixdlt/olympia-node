@@ -28,5 +28,5 @@ public interface InfoSupplier {
 	  * Returns current values for debug information arranged in JSON
 	  * like tree format
 	  */
-	Map<String, Object> getInfo();
+	Map<String, Map<String, Object>> getInfo();
 }

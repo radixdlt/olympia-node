@@ -6,45 +6,43 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
- *
  */
 
 package com.radixdlt.api.controller;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Inject;
+import org.json.JSONObject;
+import org.radix.universe.system.LocalSystem;
+
 import com.radixdlt.api.Controller;
-import com.radixdlt.api.archive.qualifier.Archive;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 
+import static org.radix.Radix.SYSTEM_VERSION_KEY;
+
 import static com.radixdlt.api.RestUtils.respond;
-import static com.radixdlt.api.RestUtils.withBodyAsync;
 
-public final class ArchiveController implements Controller {
-	private final JsonRpcServer jsonRpcServer;
+public class VersionController implements Controller {
+	private final JSONObject versionData;
 
-	@Inject
-	public ArchiveController(@Archive JsonRpcServer jsonRpcServer) {
-		this.jsonRpcServer = jsonRpcServer;
+	public VersionController(LocalSystem localSystem) {
+		versionData = new JSONObject(localSystem.getInfo().get(SYSTEM_VERSION_KEY));
 	}
 
 	@Override
-	public void configureRoutes(RoutingHandler handler) {
-		handler.post("/archive", this::handleRpc);
-		handler.post("/archive/", this::handleRpc);
+	public void configureRoutes(final RoutingHandler handler) {
+		handler.get("/version", this::handleVersionRequest);
+		handler.get("/version/", this::handleVersionRequest);
 	}
 
-	@VisibleForTesting
-	void handleRpc(HttpServerExchange exchange) {
-		withBodyAsync(exchange, request -> respond(exchange, jsonRpcServer.handle(request)));
+	private void handleVersionRequest(HttpServerExchange exchange) {
+		respond(exchange, versionData);
 	}
 }

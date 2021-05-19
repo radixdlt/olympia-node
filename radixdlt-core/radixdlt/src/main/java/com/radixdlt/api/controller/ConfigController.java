@@ -18,6 +18,9 @@
 
 package com.radixdlt.api.controller;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.Controller;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
@@ -28,12 +31,11 @@ import com.radixdlt.statecomputer.MaxTxnsPerProposal;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.forks.ForkConfig;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.RoutingHandler;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.util.TreeMap;
+
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.RoutingHandler;
 
 import static com.radixdlt.api.RestUtils.respond;
 

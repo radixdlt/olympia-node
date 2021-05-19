@@ -38,9 +38,19 @@ import org.radix.universe.system.LocalSystem;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.api.data.ScheduledQueueFlush;
 import com.radixdlt.api.module.ArchiveApiModule;
 import com.radixdlt.api.module.NodeApiModule;
+import com.radixdlt.api.service.NetworkInfoService;
+import com.radixdlt.api.service.ScheduledCacheCleanup;
+import com.radixdlt.api.service.ScheduledStatsCollecting;
+import com.radixdlt.api.service.TransactionStatusService;
+import com.radixdlt.api.store.ClientApiStore;
+import com.radixdlt.api.store.berkeley.BerkeleyClientApiStore;
 import com.radixdlt.application.NodeApplicationModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
@@ -48,8 +58,10 @@ import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
+import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
@@ -63,6 +75,8 @@ import com.radixdlt.network.transport.tcp.TCPConfiguration;
 import com.radixdlt.network.transport.tcp.TCPTransportModule;
 import com.radixdlt.network.transport.udp.UDPTransportModule;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.statecomputer.AtomsCommittedToLedger;
+import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
@@ -184,12 +198,33 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new HostIpModule(properties));
 
 		// API
+		configureApi();
+	}
+
+	private void configureApi() {
 		var archiveEndpoints = enabledArchiveEndpoints(properties);
+		var nodeEndpoints = enabledNodeEndpoints(properties);
+
+		if (archiveEndpoints.size() > 0 || nodeEndpoints.size() > 0) {
+			var eventBinder = Multibinder
+				.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
+				.permitDuplicates();
+			eventBinder.addBinding().toInstance(AtomsRemovedFromMempool.class);
+			eventBinder.addBinding().toInstance(AtomsCommittedToLedger.class);
+			eventBinder.addBinding().toInstance(MempoolAddFailure.class);
+			eventBinder.addBinding().toInstance(ScheduledCacheCleanup.class);
+			eventBinder.addBinding().toInstance(ScheduledQueueFlush.class);
+			eventBinder.addBinding().toInstance(ScheduledStatsCollecting.class);
+
+			bind(TransactionStatusService.class).in(Scopes.SINGLETON);
+			bind(NetworkInfoService.class).in(Scopes.SINGLETON);
+			bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
+		}
+
 		if (archiveEndpoints.size() > 0) {
 			install(new ArchiveApiModule(archiveEndpoints));
 		}
 
-		var nodeEndpoints = enabledNodeEndpoints(properties);
 		if (nodeEndpoints.size() > 0) {
 			install(new NodeApiModule(nodeEndpoints));
 		}

@@ -18,8 +18,16 @@
 
 package com.radixdlt.api.controller;
 
+import org.bouncycastle.util.encoders.Hex;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
+import com.radixdlt.api.Controller;
+import com.radixdlt.api.Rri;
+import com.radixdlt.api.qualifier.Validation;
+import com.radixdlt.api.server.JsonRpcServer;
 import com.radixdlt.application.Balances;
 import com.radixdlt.application.MyValidator;
 import com.radixdlt.application.NodeApplicationRequest;
@@ -39,43 +47,40 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateValidator;
-import com.radixdlt.identifiers.AccountAddress;
-import com.radixdlt.api.Rri;
-import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
-
+import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
 import com.radixdlt.utils.UInt256;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.RoutingHandler;
-import org.bouncycastle.util.encoders.Hex;
-import org.json.JSONArray;
-import org.json.JSONObject;
-import com.radixdlt.api.Controller;
 
 import java.math.BigDecimal;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import static com.radixdlt.api.RestUtils.*;
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.RoutingHandler;
 
-public final class ValidatorController implements Controller {
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.RestUtils.respond;
+import static com.radixdlt.api.RestUtils.withBody;
+
+public final class ValidationController implements Controller {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher;
+	private final JsonRpcServer jsonRpcServer;
 	private final ECPublicKey bftKey;
 	private final REAddr account;
 
 	@Inject
-	public ValidatorController(
-		@Self REAddr account,
+	public ValidationController(
+		@Validation JsonRpcServer jsonRpcServer, @Self REAddr account,
 		@Self ECPublicKey bftKey,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher
@@ -84,10 +89,15 @@ public final class ValidatorController implements Controller {
 		this.bftKey = bftKey;
 		this.radixEngine = radixEngine;
 		this.nodeApplicationRequestEventDispatcher = nodeApplicationRequestEventDispatcher;
+		this.jsonRpcServer = jsonRpcServer;
 	}
 
 	@Override
 	public void configureRoutes(final RoutingHandler handler) {
+		handler.post("/archive", jsonRpcServer::handleHttpRequest);
+		handler.post("/archive/", jsonRpcServer::handleHttpRequest);
+
+		//TODO: remove
 		handler.post("/node/execute", this::handleExecute);
 		handler.get("/node", this::respondWithNode);
 		handler.post("/node/validator", this::respondWithValidator);

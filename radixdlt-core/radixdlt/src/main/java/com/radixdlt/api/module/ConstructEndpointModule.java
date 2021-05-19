@@ -24,12 +24,12 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.qualifier.AtArchive;
-import com.radixdlt.api.server.JsonRpcServer;
-import com.radixdlt.api.handler.ConstructionHandler;
-import com.radixdlt.api.qualifier.Construct;
 import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.api.controller.ConstructController;
+import com.radixdlt.api.handler.ConstructionHandler;
+import com.radixdlt.api.qualifier.AtArchive;
+import com.radixdlt.api.qualifier.Construct;
+import com.radixdlt.api.server.JsonRpcServer;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.store.TxnIndex;
@@ -39,7 +39,7 @@ import java.util.Map;
 public class ConstructEndpointModule extends AbstractModule {
 	@Construct
 	@Provides
-	public JsonRpcServer archiveRpcHandler(@Construct Map<String, JsonRpcHandler> additionalHandlers) {
+	public JsonRpcServer rpcServer(@Construct Map<String, JsonRpcHandler> additionalHandlers) {
 		return new JsonRpcServer(additionalHandlers);
 	}
 
