@@ -16,18 +16,18 @@
  *
  */
 
-package com.radixdlt.atommodel.routines;
+package com.radixdlt.atommodel.tokens.scrypt;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.BurnToken;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.atomos.ConstraintRoutine;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.RoutineCalls;
 import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.ReducerResult;
-import com.radixdlt.constraintmachine.SignatureValidator;
+import com.radixdlt.constraintmachine.InputAuthorization;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
@@ -76,8 +76,8 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 				}
 
 				@Override
-				public SignatureValidator<TokensParticle, VoidParticle> signatureValidator() {
-					return (i, o, r, pubKey) -> i.getSubstate().allowedToWithdraw(pubKey, r);
+				public InputAuthorization<TokensParticle> inputAuthorization() {
+					return (i, r, pubKey) -> i.getSubstate().allowedToWithdraw(pubKey, r);
 				}
 			}
 		);
@@ -125,8 +125,8 @@ public final class DeallocateTokensRoutine implements ConstraintRoutine {
 				}
 
 				@Override
-				public SignatureValidator<TokensParticle, VoidParticle> signatureValidator() {
-					return (i, o, r, pubKey) -> i.getSubstate().allowedToWithdraw(pubKey, r);
+				public InputAuthorization<TokensParticle> inputAuthorization() {
+					return (i, r, pubKey) -> i.getSubstate().allowedToWithdraw(pubKey, r);
 				}
 			}
 		);

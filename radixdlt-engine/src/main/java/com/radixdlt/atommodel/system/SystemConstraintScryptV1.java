@@ -31,7 +31,7 @@ import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.constraintmachine.SignatureValidator;
+import com.radixdlt.constraintmachine.InputAuthorization;
 import com.radixdlt.store.ReadableAddrs;
 
 /**
@@ -132,8 +132,8 @@ public final class SystemConstraintScryptV1 implements ConstraintScrypt {
 				}
 
 				@Override
-				public SignatureValidator<SystemParticle, SystemParticle> signatureValidator() {
-					return (i, o, index, pubKey) -> pubKey.isEmpty(); // Must not be signed
+				public InputAuthorization<SystemParticle> inputAuthorization() {
+					return (i, index, pubKey) -> pubKey.isEmpty(); // Must not be signed
 				}
 			}
 		);

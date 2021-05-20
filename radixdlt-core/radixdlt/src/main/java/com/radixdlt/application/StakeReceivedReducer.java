@@ -19,7 +19,7 @@
 package com.radixdlt.application;
 
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.tokens.DeprecatedStake;
+import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;

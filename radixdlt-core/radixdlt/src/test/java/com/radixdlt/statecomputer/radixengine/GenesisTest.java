@@ -25,7 +25,7 @@ import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.MutableTokenDefinition;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.fees.NativeToken;

@@ -24,7 +24,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.atom.Substate;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.engine.RadixEngineException;

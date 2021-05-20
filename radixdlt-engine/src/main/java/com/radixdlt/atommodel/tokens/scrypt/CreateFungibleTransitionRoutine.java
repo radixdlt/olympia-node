@@ -1,21 +1,22 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt.atommodel.routines;
+package com.radixdlt.atommodel.tokens.scrypt;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.TxAction;
@@ -30,7 +31,7 @@ import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.constraintmachine.SignatureValidator;
+import com.radixdlt.constraintmachine.InputAuthorization;
 import com.radixdlt.store.ReadableAddrs;
 import com.radixdlt.utils.UInt256;
 
@@ -95,7 +96,7 @@ public class CreateFungibleTransitionRoutine<I extends Fungible, O extends Fungi
 	private final Class<I> inputClass;
 	private final Class<O> outputClass;
 	private final Verifier<I, O> transitionVerifier;
-	private final SignatureValidator<I, O> signatureValidator;
+	private final InputAuthorization<I> signatureValidator;
 	private final ActionMapper<I, O> actionMapper;
 
 	public interface Verifier<I extends Fungible, O extends Fungible> {
@@ -106,7 +107,7 @@ public class CreateFungibleTransitionRoutine<I extends Fungible, O extends Fungi
 		Class<I> inputClass,
 		Class<O> outputClass,
 		Verifier<I, O> transitionVerifier,
-		SignatureValidator<I, O> signatureValidator,
+		InputAuthorization<I> signatureValidator,
 		ActionMapper<I, O> actionMapper
 	) {
 		Objects.requireNonNull(transitionVerifier);
@@ -160,7 +161,7 @@ public class CreateFungibleTransitionRoutine<I extends Fungible, O extends Fungi
 			}
 
 			@Override
-			public SignatureValidator<I, O> signatureValidator() {
+			public InputAuthorization<I> inputAuthorization() {
 				return signatureValidator;
 			}
 		};
@@ -202,7 +203,7 @@ public class CreateFungibleTransitionRoutine<I extends Fungible, O extends Fungi
 			}
 
 			@Override
-			public SignatureValidator<I, O> signatureValidator() {
+			public InputAuthorization<I> inputAuthorization() {
 				return signatureValidator;
 			}
 		};

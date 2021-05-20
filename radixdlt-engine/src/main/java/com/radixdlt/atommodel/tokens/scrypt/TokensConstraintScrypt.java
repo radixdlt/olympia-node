@@ -1,31 +1,32 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt.atommodel.tokens;
+package com.radixdlt.atommodel.tokens.scrypt;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atommodel.routines.AllocateTokensRoutine;
-import com.radixdlt.atommodel.routines.DeallocateTokensRoutine;
+import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
 
 import java.util.Objects;
 
@@ -78,7 +79,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			TokensParticle.class,
 			TokensParticle.class,
 			(i, o, r) -> Result.success(),
-			(i, o, r, pubKey) -> i.getSubstate().allowedToWithdraw(pubKey, r),
+			(i, r, pubKey) -> i.getSubstate().allowedToWithdraw(pubKey, r),
 			(i, o, r) -> {
 				var p = (TokenDefinitionParticle) r.loadAddr(null, i.getResourceAddr()).orElseThrow();
 				// FIXME: This isn't 100% correct

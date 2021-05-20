@@ -30,7 +30,7 @@ import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.constraintmachine.SignatureValidator;
+import com.radixdlt.constraintmachine.InputAuthorization;
 import com.radixdlt.store.ReadableAddrs;
 
 import java.util.Objects;
@@ -101,9 +101,9 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		}
 
 		@Override
-		public SignatureValidator<ValidatorParticle, ValidatorParticle> signatureValidator() {
+		public InputAuthorization<ValidatorParticle> inputAuthorization() {
 			// verify that the transition was authenticated by the validator address in question
-			return (i, o, index, pubKey) -> pubKey.map(i.getSubstate().getKey()::equals).orElse(false);
+			return (i, index, pubKey) -> pubKey.map(i.getSubstate().getKey()::equals).orElse(false);
 		}
 	}
 }

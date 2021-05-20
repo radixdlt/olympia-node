@@ -30,7 +30,7 @@ import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.SignatureValidator;
+import com.radixdlt.constraintmachine.InputAuthorization;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
@@ -138,8 +138,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				}
 
 				@Override
-				public SignatureValidator<SystemParticle, SystemParticle> signatureValidator() {
-					return (i, o, index, pubKey) -> pubKey.isEmpty(); // Must not be signed
+				public InputAuthorization<SystemParticle> inputAuthorization() {
+					return (i, index, pubKey) -> pubKey.isEmpty(); // Must not be signed
 				}
 			}
 		);
@@ -179,8 +179,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				}
 
 				@Override
-				public SignatureValidator<SystemParticle, Stake> signatureValidator() {
-					return (i, o, index, publicKey) -> publicKey.isEmpty(); // Must not be signed
+				public InputAuthorization<SystemParticle> inputAuthorization() {
+					return (i, index, publicKey) -> publicKey.isEmpty(); // Must not be signed
 				}
 			});
 	}

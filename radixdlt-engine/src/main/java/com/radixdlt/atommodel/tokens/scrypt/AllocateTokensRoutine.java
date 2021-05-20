@@ -16,19 +16,19 @@
  *
  */
 
-package com.radixdlt.atommodel.routines;
+package com.radixdlt.atommodel.tokens.scrypt;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.atomos.ConstraintRoutine;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.RoutineCalls;
 import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
-import com.radixdlt.constraintmachine.SignatureValidator;
+import com.radixdlt.constraintmachine.InputAuthorization;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
@@ -86,9 +86,14 @@ public final class AllocateTokensRoutine implements ConstraintRoutine {
 				}
 
 				@Override
-				public SignatureValidator<VoidParticle, TokensParticle> signatureValidator() {
-					return (i, o, index, publicKey) -> {
-						var tokenDef = (TokenDefinitionParticle) index.loadAddr(null, o.getResourceAddr()).orElseThrow();
+				public InputAuthorization<VoidParticle> inputAuthorization() {
+					return (i, index, publicKey) -> true;
+				}
+
+				@Override
+				public OutputAuthorization<TokensParticle> outputAuthorization() {
+					return (o, r, publicKey) -> {
+						var tokenDef = (TokenDefinitionParticle) r.loadAddr(null, o.getResourceAddr()).orElseThrow();
 						return publicKey.flatMap(p -> tokenDef.getMinter().map(p::equals)).orElse(false);
 					};
 				}

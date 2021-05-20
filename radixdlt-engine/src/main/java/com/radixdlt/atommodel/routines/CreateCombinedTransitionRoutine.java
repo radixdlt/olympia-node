@@ -21,8 +21,8 @@ import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.atomos.ConstraintRoutine;
 import com.radixdlt.atomos.ConstraintScryptEnv;
 import com.radixdlt.atomos.Result;
@@ -36,7 +36,7 @@ import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.constraintmachine.SignatureValidator;
+import com.radixdlt.constraintmachine.InputAuthorization;
 import com.radixdlt.store.ReadableAddrs;
 
 import java.util.function.BiFunction;
@@ -66,7 +66,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	private final Class<V> outputClass1;
 	private final BiFunction<O, V, Result> combinedCheck;
 	private final TypeToken<UsedParticle<O>> typeToken0;
-	private final SignatureValidator<I, O> signatureValidator;
+	private final InputAuthorization<I> signatureValidator;
 	private final Predicate<O> includeSecondClass;
 
 	public CreateCombinedTransitionRoutine(
@@ -76,7 +76,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 		Class<V> outputClass1,
 		Predicate<O> includeSecondClass,
 		BiFunction<O, V, Result> combinedCheck,
-		SignatureValidator<I, O> signatureValidator
+		InputAuthorization<I> signatureValidator
 	) {
 		this.inputClass = inputClass;
 		this.outputClass0 = outputClass0;
@@ -146,7 +146,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 			}
 
 			@Override
-			public SignatureValidator<I, O> signatureValidator() {
+			public InputAuthorization<I> inputAuthorization() {
 				return signatureValidator;
 			}
 		};
@@ -186,8 +186,8 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 			}
 
 			@Override
-			public SignatureValidator<I, V> signatureValidator() {
-				return (i, o, index, pubKey) -> true;
+			public InputAuthorization<I> inputAuthorization() {
+				return (i, index, pubKey) -> true;
 			}
 		};
 	}

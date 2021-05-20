@@ -16,13 +16,15 @@
  *
  */
 
-package com.radixdlt.atommodel.tokens;
+package com.radixdlt.atommodel.tokens.scrypt;
 
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
 import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
@@ -59,7 +61,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 				}
 				return Result.success();
 			},
-			(i, o, r, pubKey) -> pubKey.map(i.getSubstate().getHoldingAddr()::allowToWithdrawFrom).orElse(false),
+			(i, r, pubKey) -> pubKey.map(i.getSubstate().getHoldingAddr()::allowToWithdrawFrom).orElse(false),
 			(i, o, r) -> new StakeTokens(o.getOwner(), o.getDelegateKey(), o.getAmount()) // FIXME: this isn't 100% correct
 		));
 
@@ -77,7 +79,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 
 				return Result.success();
 			},
-			(i, o, r, pubKey) -> pubKey.map(i.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
+			(i, r, pubKey) -> pubKey.map(i.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
 			(i, o, r) -> Unknown.create()
 		));
 
@@ -103,7 +105,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 
 				return Result.success();
 			},
-			(i, o, r, pubKey) -> pubKey.map(i.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
+			(i, r, pubKey) -> pubKey.map(i.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
 			(i, o, r) -> new UnstakeTokens(i.getOwner(), i.getDelegateKey(), o.getAmount()) // FIXME: this isn't 100% correct
 		));
 	}

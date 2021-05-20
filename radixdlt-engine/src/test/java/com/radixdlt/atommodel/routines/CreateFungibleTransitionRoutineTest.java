@@ -19,6 +19,7 @@ package com.radixdlt.atommodel.routines;
 
 import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atommodel.tokens.Fungible;
+import com.radixdlt.atommodel.tokens.scrypt.CreateFungibleTransitionRoutine;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.store.ReadableAddrs;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -27,11 +28,11 @@ import java.util.Objects;
 
 import org.junit.Test;
 
-import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine.UsedAmount;
+import com.radixdlt.atommodel.tokens.scrypt.CreateFungibleTransitionRoutine.UsedAmount;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.constraintmachine.SignatureValidator;
+import com.radixdlt.constraintmachine.InputAuthorization;
 import com.radixdlt.utils.UInt256;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -69,7 +70,7 @@ public class CreateFungibleTransitionRoutineTest {
 		}
 	}
 
-	interface SignatureValidatorFungible extends SignatureValidator<FungibleSubstate, FungibleSubstate> {
+	interface SignatureValidatorFungible extends InputAuthorization<FungibleSubstate> {
 		// Empty
 	}
 

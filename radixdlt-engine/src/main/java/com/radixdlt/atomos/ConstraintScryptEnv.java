@@ -30,7 +30,7 @@ import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.TransitionProcedure;
-import com.radixdlt.constraintmachine.SignatureValidator;
+import com.radixdlt.constraintmachine.InputAuthorization;
 import com.radixdlt.store.ReadableAddrs;
 
 import java.util.HashMap;
@@ -168,8 +168,8 @@ public final class ConstraintScryptEnv implements SysCalls {
 				}
 
 				@Override
-				public SignatureValidator<REAddrParticle, O> signatureValidator() {
-					return (in, o, index, pubKey) -> pubKey.map(k -> in.getSubstate().allow(k, in.getArg())).orElse(false);
+				public InputAuthorization<REAddrParticle> inputAuthorization() {
+					return (in, index, pubKey) -> pubKey.map(k -> in.getSubstate().allow(k, in.getArg())).orElse(false);
 				}
 			}
 		);
@@ -199,7 +199,7 @@ public final class ConstraintScryptEnv implements SysCalls {
 			particleClass1,
 			includeSecondClass,
 			combinedCheck,
-			(in, o, index, pubKey) -> pubKey.map(k -> in.getSubstate().allow(k, in.getArg())).orElse(false)
+			(in, index, pubKey) -> pubKey.map(k -> in.getSubstate().allow(k, in.getArg())).orElse(false)
 		);
 
 		this.executeRoutine(createCombinedTransitionRoutine);
@@ -262,13 +262,18 @@ public final class ConstraintScryptEnv implements SysCalls {
 				}
 
 				@Override
-				public SignatureValidator<Particle, Particle> signatureValidator() {
-					return (i, o, index, pubKey) -> {
+				public InputAuthorization<Particle> inputAuthorization() {
+					return (i, index, pubKey) -> {
 						var in = i.getArg()
 							.map(arg -> SubstateWithArg.withArg((I) i.getSubstate(), arg))
 							.orElseGet(() -> SubstateWithArg.noArg((I) i.getSubstate()));
-						return procedure.signatureValidator().verify(in, (O) o, index, pubKey);
+						return procedure.inputAuthorization().verify(in, index, pubKey);
 					};
+				}
+
+				@Override
+				public OutputAuthorization<Particle> outputAuthorization() {
+					return (o, index, pubKey) -> procedure.outputAuthorization().verify((O) o, index, pubKey);
 				}
 			};
 

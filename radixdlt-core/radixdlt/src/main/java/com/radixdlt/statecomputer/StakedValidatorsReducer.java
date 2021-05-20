@@ -19,7 +19,7 @@ package com.radixdlt.statecomputer;
 
 import com.google.inject.Inject;
 import com.radixdlt.atommodel.system.Stake;
-import com.radixdlt.atommodel.tokens.DeprecatedStake;
+import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;

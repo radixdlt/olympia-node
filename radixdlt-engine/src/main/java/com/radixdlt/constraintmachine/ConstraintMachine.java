@@ -25,7 +25,7 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
@@ -333,8 +333,14 @@ public final class ConstraintMachine {
 			return Optional.empty();
 		}
 
-		var signatureVerified = transitionProcedure.signatureValidator()
-			.verify(input, outputParticle, validationState.immutableIndex(), validationState.signedBy);
+		var signatureVerified = transitionProcedure.inputAuthorization()
+			.verify(input, validationState.immutableIndex(), validationState.signedBy);
+		if (!signatureVerified) {
+			return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
+		}
+
+		signatureVerified = transitionProcedure.outputAuthorization()
+			.verify(outputParticle, validationState.immutableIndex(), validationState.signedBy);
 		if (!signatureVerified) {
 			return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
 		}

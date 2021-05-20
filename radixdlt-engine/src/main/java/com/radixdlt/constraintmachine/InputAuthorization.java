@@ -26,6 +26,6 @@ import java.util.Optional;
  * Validates whether a specific transition procedure is permissible
  * @param <I> particle class
  */
-public interface SignatureValidator<I extends Particle, O extends Particle> {
-	boolean verify(SubstateWithArg<I> input, O output, ReadableAddrs readableAddrs, Optional<ECPublicKey> signedBy);
+public interface InputAuthorization<I extends Particle> {
+	boolean verify(SubstateWithArg<I> input, ReadableAddrs readableAddrs, Optional<ECPublicKey> signedBy);
 }

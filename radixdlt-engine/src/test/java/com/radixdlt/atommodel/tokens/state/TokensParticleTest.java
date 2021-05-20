@@ -16,16 +16,20 @@
  *
  */
 
-package com.radixdlt.atommodel.tokens;
+package com.radixdlt.atommodel.tokens.state;
 
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.MintToken;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
+import org.junit.Test;
 
-public final class MintTokenConstructor implements ActionConstructor<MintToken> {
-	@Override
-	public void construct(MintToken action, TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.up(new TokensParticle(action.to(), action.amount(), action.resourceAddr()));
-	}
+public class TokensParticleTest {
+    @Test
+    public void equalsContract() {
+        EqualsVerifier.forClass(TokensParticle.class)
+                .suppress(Warning.NONFINAL_FIELDS)
+                .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+                .verify();
+    }
 }

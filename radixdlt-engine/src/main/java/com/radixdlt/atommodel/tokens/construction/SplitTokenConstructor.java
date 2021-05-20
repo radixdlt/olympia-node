@@ -16,12 +16,13 @@
  *
  */
 
-package com.radixdlt.atommodel.tokens;
+package com.radixdlt.atommodel.tokens.construction;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.SplitToken;
+import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 

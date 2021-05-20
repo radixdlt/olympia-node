@@ -18,7 +18,10 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atomos.Result;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.store.ReadableAddrs;
+
+import java.util.Optional;
 
 /**
  * Application level "Bytecode" to be run per particle in the Constraint machine
@@ -34,5 +37,13 @@ public interface TransitionProcedure<I extends Particle, O extends Particle, U e
 		return PermissionLevel.USER;
 	}
 
-	SignatureValidator<I, O> signatureValidator();
+	InputAuthorization<I> inputAuthorization();
+
+	interface OutputAuthorization<O extends Particle> {
+		boolean verify(O output, ReadableAddrs readableAddrs, Optional<ECPublicKey> signedBy);
+	}
+
+	default OutputAuthorization<O> outputAuthorization() {
+		return (o, r, k) -> true;
+	}
 }
