@@ -308,8 +308,15 @@ public final class ConstraintMachine {
 			return Optional.of(Pair.of(CMErrorCode.TRANSITION_PRECONDITION_FAILURE, preconditionCheckResult.getErrorMessage()));
 		}
 
-		final var requiredPermissionLevel = transitionProcedure.requiredPermissionLevel(
-			input, outputParticle, validationState.immutableIndex()
+		var requiredPermissionLevel = transitionProcedure.inputPermissionLevel(
+			input, validationState.immutableIndex()
+		);
+		if (validationState.permissionLevel.compareTo(requiredPermissionLevel) < 0) {
+			return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
+		}
+
+		requiredPermissionLevel = transitionProcedure.outputPermissionLevel(
+			outputParticle, validationState.immutableIndex()
 		);
 		if (validationState.permissionLevel.compareTo(requiredPermissionLevel) < 0) {
 			return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));

@@ -73,9 +73,7 @@ public final class AllocateTokensRoutine implements ConstraintRoutine {
 				}
 
 				@Override
-				public PermissionLevel requiredPermissionLevel(
-					SubstateWithArg<VoidParticle> i, TokensParticle o, ReadableAddrs index
-				) {
+				public PermissionLevel outputPermissionLevel(TokensParticle o, ReadableAddrs index) {
 					return o.getResourceAddr().isNativeToken() ? PermissionLevel.SYSTEM : PermissionLevel.USER;
 				}
 

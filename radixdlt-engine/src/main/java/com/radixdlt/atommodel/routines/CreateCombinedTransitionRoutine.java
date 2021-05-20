@@ -40,6 +40,7 @@ import com.radixdlt.constraintmachine.InputAuthorization;
 import com.radixdlt.store.ReadableAddrs;
 
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
@@ -62,7 +63,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	}
 	private final Class<I> inputClass;
 	private final Class<O> outputClass0;
-	private final BiFunction<SubstateWithArg<I>, O, PermissionLevel> permissionLevel;
+	private final Function<SubstateWithArg<I>, PermissionLevel> permissionLevel;
 	private final Class<V> outputClass1;
 	private final BiFunction<O, V, Result> combinedCheck;
 	private final TypeToken<UsedParticle<O>> typeToken0;
@@ -72,7 +73,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	public CreateCombinedTransitionRoutine(
 		Class<I> inputClass,
 		Class<O> outputClass0,
-		BiFunction<SubstateWithArg<I>, O, PermissionLevel> permissionLevel,
+		Function<SubstateWithArg<I>, PermissionLevel> permissionLevel,
 		Class<V> outputClass1,
 		Predicate<O> includeSecondClass,
 		BiFunction<O, V, Result> combinedCheck,
@@ -105,8 +106,8 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	public TransitionProcedure<I, O, VoidReducerState> getProcedure0() {
 		return new TransitionProcedure<I, O, VoidReducerState>() {
 			@Override
-			public PermissionLevel requiredPermissionLevel(SubstateWithArg<I> in, O outputParticle, ReadableAddrs index) {
-				return permissionLevel.apply(in, outputParticle);
+			public PermissionLevel inputPermissionLevel(SubstateWithArg<I> in, ReadableAddrs index) {
+				return permissionLevel.apply(in);
 			}
 
 			@Override

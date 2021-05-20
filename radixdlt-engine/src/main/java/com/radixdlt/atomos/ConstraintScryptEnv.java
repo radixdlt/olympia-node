@@ -157,9 +157,8 @@ public final class ConstraintScryptEnv implements SysCalls {
 				}
 
 				@Override
-				public PermissionLevel requiredPermissionLevel(
+				public PermissionLevel inputPermissionLevel(
 					SubstateWithArg<REAddrParticle> in,
-					O outputParticle,
 					ReadableAddrs index
 				) {
 					var name = new String(in.getArg().orElseThrow());
@@ -194,7 +193,7 @@ public final class ConstraintScryptEnv implements SysCalls {
 		var createCombinedTransitionRoutine = new CreateCombinedTransitionRoutine<>(
 			REAddrParticle.class,
 			particleClass0,
-			(rri, p) -> systemNames.contains(new String(rri.getArg().orElseThrow())) || rri.getSubstate().getAddr().isNativeToken()
+			rri -> systemNames.contains(new String(rri.getArg().orElseThrow())) || rri.getSubstate().getAddr().isNativeToken()
 				? PermissionLevel.SYSTEM : PermissionLevel.USER,
 			particleClass1,
 			includeSecondClass,
@@ -220,11 +219,11 @@ public final class ConstraintScryptEnv implements SysCalls {
 		final TransitionProcedure<Particle, Particle, ReducerState> transformedProcedure
 			= new TransitionProcedure<Particle, Particle, ReducerState>() {
 				@Override
-				public PermissionLevel requiredPermissionLevel(SubstateWithArg<Particle> i, Particle o, ReadableAddrs index) {
+				public PermissionLevel inputPermissionLevel(SubstateWithArg<Particle> i, ReadableAddrs index) {
 					var in = i.getArg()
 						.map(arg -> SubstateWithArg.withArg((I) i.getSubstate(), arg))
 						.orElseGet(() -> SubstateWithArg.noArg((I) i.getSubstate()));
-					return procedure.requiredPermissionLevel(in, (O) o, index);
+					return procedure.inputPermissionLevel(in, index);
 				}
 
 				@Override

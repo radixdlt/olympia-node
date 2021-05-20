@@ -27,13 +27,17 @@ import java.util.Optional;
  * Application level "Bytecode" to be run per particle in the Constraint machine
  */
 public interface TransitionProcedure<I extends Particle, O extends Particle, U extends ReducerState> {
-	// TODO: move permission level to the "OS" level of paths rather than transitions
 
 	Result precondition(SubstateWithArg<I> in, O outputParticle, U outputUsed, ReadableAddrs readableAddrs);
 
 	InputOutputReducer<I, O, U> inputOutputReducer();
 
-	default PermissionLevel requiredPermissionLevel(SubstateWithArg<I> in, O outputParticle, ReadableAddrs index) {
+	// TODO: move permission level to the "OS" level of addresses rather than transitions
+	default PermissionLevel inputPermissionLevel(SubstateWithArg<I> in, ReadableAddrs index) {
+		return PermissionLevel.USER;
+	}
+
+	default PermissionLevel outputPermissionLevel(O out, ReadableAddrs index) {
 		return PermissionLevel.USER;
 	}
 

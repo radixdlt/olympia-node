@@ -97,8 +97,15 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 			new TransitionProcedure<>() {
 				@Override
-				public PermissionLevel requiredPermissionLevel(
+				public PermissionLevel inputPermissionLevel(
 					SubstateWithArg<SystemParticle> i,
+					ReadableAddrs index
+				) {
+					return PermissionLevel.SUPER_USER;
+				}
+
+				@Override
+				public PermissionLevel outputPermissionLevel(
 					SystemParticle o,
 					ReadableAddrs index
 				) {
@@ -165,9 +172,12 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				}
 
 				@Override
-				public PermissionLevel requiredPermissionLevel(
-					SubstateWithArg<SystemParticle> i, Stake o, ReadableAddrs index
-				) {
+				public PermissionLevel inputPermissionLevel(SubstateWithArg<SystemParticle> i, ReadableAddrs index) {
+					return PermissionLevel.SUPER_USER;
+				}
+
+				@Override
+				public PermissionLevel outputPermissionLevel(Stake o, ReadableAddrs index) {
 					return PermissionLevel.SUPER_USER;
 				}
 
