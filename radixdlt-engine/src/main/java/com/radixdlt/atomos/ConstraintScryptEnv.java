@@ -18,21 +18,16 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.atom.actions.Unknown;
-import com.radixdlt.atommodel.routines.CreateCombinedTransitionRoutine;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.OutputAuthorization;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Procedures;
-import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
-import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.InputAuthorization;
 import com.radixdlt.store.ReadableAddrs;
@@ -41,10 +36,6 @@ import com.radixdlt.utils.Pair;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.function.BiFunction;
-import java.util.function.Predicate;
-import java.util.regex.Pattern;
 
 /**
  * SysCall environment for CMAtomOS Constraint Scrypts.
@@ -52,23 +43,17 @@ import java.util.regex.Pattern;
 // FIXME: unchecked, rawtypes
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class ConstraintScryptEnv implements SysCalls {
-	public static final String NAME_REGEX = "[a-z0-9]+";
-	public static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
 	private final ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions;
 
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> scryptParticleDefinitions;
 	private final Map<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>> scryptTransitionProcedures;
-	private final Set<String> systemNames;
 	private final Map<Pair<Class<? extends Particle>, Class<? extends ReducerState>>, DownProcedure<Particle, ReducerState>> downProcedures;
 	private final Map<Pair<Class<? extends ReducerState>, Class<? extends Particle>>, UpProcedure<ReducerState, Particle>> upProcedures;
 
 	ConstraintScryptEnv(
-		ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions,
-		Set<String> systemNames
+		ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions
 	) {
 		this.particleDefinitions = particleDefinitions;
-		this.systemNames = systemNames;
-
 		this.scryptParticleDefinitions = new HashMap<>();
 		this.scryptTransitionProcedures = new HashMap<>();
 		this.downProcedures = new HashMap<>();
@@ -131,86 +116,6 @@ public final class ConstraintScryptEnv implements SysCalls {
 			particleRedefinition.allowTransitionsFromOutsideScrypts();
 		}
 		scryptParticleDefinitions.put(particleClass, particleRedefinition.build());
-	}
-
-	@Override
-	public <O extends Particle> void createTransitionFromRRI(Class<O> particleClass) {
-		ParticleDefinition<Particle> particleDefinition = getParticleDefinition(particleClass);
-		if (particleDefinition.getRriMapper() == null) {
-			throw new IllegalStateException(particleClass + " must be registered with an RRI mapper.");
-		}
-
-		createTransition(
-			new TransitionToken<>(REAddrParticle.class, particleClass, TypeToken.of(VoidReducerState.class)),
-			new TransitionProcedure<>() {
-				@Override
-				public Result precondition(
-					SubstateWithArg<REAddrParticle> in,
-					O outputParticle,
-					VoidReducerState outputUsed,
-					ReadableAddrs index
-				) {
-					if (in.getArg().isEmpty()) {
-						return Result.error("Rri must be created with a name");
-					}
-					var arg = in.getArg().get();
-					if (!NAME_PATTERN.matcher(new String(arg)).matches()) {
-						return Result.error("invalid rri name");
-					}
-					return Result.success();
-				}
-
-				@Override
-				public InputOutputReducer<REAddrParticle, O, VoidReducerState> inputOutputReducer() {
-					return (input, output, index, outputUsed) -> ReducerResult.complete(Unknown.create());
-				}
-
-				@Override
-				public PermissionLevel inputPermissionLevel(
-					SubstateWithArg<REAddrParticle> in,
-					ReadableAddrs index
-				) {
-					var name = new String(in.getArg().orElseThrow());
-					return systemNames.contains(name) || in.getSubstate().getAddr().isNativeToken()
-						? PermissionLevel.SYSTEM : PermissionLevel.USER;
-				}
-
-				@Override
-				public InputAuthorization<REAddrParticle> inputAuthorization() {
-					return (in, index, pubKey) -> pubKey.map(k -> in.getSubstate().allow(k, in.getArg())).orElse(false);
-				}
-			}
-		);
-	}
-
-	@Override
-	public <O extends Particle, U extends Particle> void createTransitionFromRRICombined(
-		Class<O> particleClass0,
-		Class<U> particleClass1,
-		Predicate<O> includeSecondClass,
-		BiFunction<O, U, Result> combinedCheck
-	) {
-		final ParticleDefinition<Particle> particleDefinition0 = getParticleDefinition(particleClass0);
-		if (particleDefinition0.getRriMapper() == null) {
-			throw new IllegalStateException(particleClass0 + " must be registered with an RRI mapper.");
-		}
-		final ParticleDefinition<Particle> particleDefinition1 = getParticleDefinition(particleClass1);
-		if (particleDefinition1.getRriMapper() == null) {
-			throw new IllegalStateException(particleClass1 + " must be registered with an RRI mapper.");
-		}
-
-		var createCombinedTransitionRoutine = new CreateCombinedTransitionRoutine<>(
-			REAddrParticle.class,
-			particleClass0,
-			rri -> systemNames.contains(new String(rri.getArg().orElseThrow())) || rri.getSubstate().getAddr().isNativeToken()
-				? PermissionLevel.SYSTEM : PermissionLevel.USER,
-			particleClass1,
-			includeSecondClass,
-			combinedCheck,
-			(in, index, pubKey) -> pubKey.map(k -> in.getSubstate().allow(k, in.getArg())).orElse(false)
-		);
-
-		this.executeRoutine(createCombinedTransitionRoutine);
 	}
 
 	@Override

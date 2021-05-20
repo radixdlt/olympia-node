@@ -23,19 +23,19 @@ import com.radixdlt.identifiers.REAddr;
 import java.util.Objects;
 
 public final class UniqueParticle implements Particle {
-	private final REAddr rri;
+	private final REAddr reAddr;
 
-	public UniqueParticle(REAddr rri) {
-		this.rri = Objects.requireNonNull(rri);
+	public UniqueParticle(REAddr reAddr) {
+		this.reAddr = Objects.requireNonNull(reAddr);
 	}
 
-	public REAddr getRri() {
-		return rri;
+	public REAddr getREAddr() {
+		return reAddr;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.rri);
+		return Objects.hash(this.reAddr);
 	}
 
 	@Override
@@ -44,11 +44,11 @@ public final class UniqueParticle implements Particle {
 			return false;
 		}
 		final var that = (UniqueParticle) obj;
-		return Objects.equals(this.rri, that.rri);
+		return Objects.equals(this.reAddr, that.reAddr);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), rri);
+		return String.format("%s[%s]", getClass().getSimpleName(), reAddr);
 	}
 }

@@ -279,7 +279,7 @@ public final class RESerializer {
 	private static void serializeData(UniqueParticle uniqueParticle, ByteBuffer buf) {
 		buf.put(SubstateType.UNIQUE.id);
 
-		serializeREAddr(buf, uniqueParticle.getRri());
+		serializeREAddr(buf, uniqueParticle.getREAddr());
 	}
 
 	private static UniqueParticle deserializeUniqueParticle(ByteBuffer buf) throws DeserializeException {

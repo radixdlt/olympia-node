@@ -18,17 +18,22 @@
 
 package com.radixdlt.atommodel.tokens.scrypt;
 
-import com.google.common.annotations.VisibleForTesting;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.atom.actions.CreateFixedToken;
+import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Result;
-
-import java.util.Objects;
+import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ReducerResult2;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.UpProcedure;
 
 /**
  * Scrypt which defines how tokens are managed.
@@ -58,16 +63,74 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				.rriMapper(TokensParticle::getResourceAddr)
 				.build()
 		);
+	}
 
+	private static class NeedFixedTokenSupply implements ReducerState {
+		private final byte[] arg;
+		private final TokenDefinitionParticle tokenDefinitionParticle;
+		private NeedFixedTokenSupply(byte[] arg, TokenDefinitionParticle tokenDefinitionParticle) {
+			this.arg = arg;
+			this.tokenDefinitionParticle = tokenDefinitionParticle;
+		}
+
+		@Override
+		public TypeToken<? extends ReducerState> getTypeToken() {
+			return TypeToken.of(NeedFixedTokenSupply.class);
+		}
 	}
 
 	private void defineTokenCreation(SysCalls os) {
-		os.createTransitionFromRRICombined(
-			TokenDefinitionParticle.class,
-			TokensParticle.class,
-			t -> !t.isMutable(),
-			TokensConstraintScrypt::checkCreateTransferrable
-		);
+		os.createUpProcedure(new UpProcedure<>(
+			CMAtomOS.REAddrClaim.class, TokenDefinitionParticle.class,
+			(s, u, r) -> {
+				if (!u.getAddr().equals(s.getAddr())) {
+					return ReducerResult2.error("Addresses don't match");
+				}
+
+				if (u.isMutable()) {
+					var action = new CreateMutableToken(
+						new String(s.getArg()),
+						u.getName(),
+						u.getDescription(),
+						u.getIconUrl(),
+						u.getUrl()
+					);
+					return ReducerResult2.complete(action);
+				}
+
+				return ReducerResult2.incomplete(new NeedFixedTokenSupply(s.getArg(), u));
+			},
+			(u, r) -> PermissionLevel.USER,
+			(u, r, k) -> true
+		));
+
+		os.createUpProcedure(new UpProcedure<>(
+			NeedFixedTokenSupply.class, TokensParticle.class,
+			(s, u, r) -> {
+				if (!u.getResourceAddr().equals(s.tokenDefinitionParticle.getAddr())) {
+					return ReducerResult2.error("Addresses don't match.");
+				}
+
+				if (!u.getAmount().equals(s.tokenDefinitionParticle.getSupply().orElseThrow())) {
+					return ReducerResult2.error("Initial supply doesn't match.");
+				}
+
+				var action = new CreateFixedToken(
+					u.getResourceAddr(),
+					u.getHoldingAddr(),
+					new String(s.arg),
+					s.tokenDefinitionParticle.getName(),
+					s.tokenDefinitionParticle.getDescription(),
+					s.tokenDefinitionParticle.getIconUrl(),
+					s.tokenDefinitionParticle.getUrl(),
+					s.tokenDefinitionParticle.getSupply().orElseThrow()
+				);
+
+				return ReducerResult2.complete(action);
+			},
+			(u, r) -> PermissionLevel.USER,
+			(u, r, k) -> true
+		));
 	}
 
 	private void defineMintTransferBurn(SysCalls os) {
@@ -89,14 +152,5 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 		// Burns
 		os.executeRoutine(new DeallocateTokensRoutine());
-	}
-
-	@VisibleForTesting
-	static Result checkCreateTransferrable(TokenDefinitionParticle tokDef, TokensParticle transferrable) {
-		if (!Objects.equals(tokDef.getSupply().orElseThrow(), transferrable.getAmount())) {
-			return Result.error("Supply and amount are not equal.");
-		}
-
-		return Result.success();
 	}
 }

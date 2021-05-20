@@ -43,7 +43,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 	private static class ValidatorUpdate implements ReducerState {
 		private final ValidatorParticle prevState;
 
-		public ValidatorUpdate(ValidatorParticle prevState) {
+		private ValidatorUpdate(ValidatorParticle prevState) {
 			this.prevState = prevState;
 		}
 

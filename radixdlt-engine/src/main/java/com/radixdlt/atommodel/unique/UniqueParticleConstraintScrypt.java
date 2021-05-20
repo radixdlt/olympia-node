@@ -17,9 +17,14 @@
 
 package com.radixdlt.atommodel.unique;
 
+import com.radixdlt.atom.actions.Unknown;
+import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
+import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ReducerResult2;
+import com.radixdlt.constraintmachine.UpProcedure;
 
 public class UniqueParticleConstraintScrypt implements ConstraintScrypt {
 	@Override
@@ -27,9 +32,19 @@ public class UniqueParticleConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(
 			UniqueParticle.class,
 			ParticleDefinition.<UniqueParticle>builder()
-				.rriMapper(UniqueParticle::getRri)
+				.rriMapper(UniqueParticle::getREAddr)
 				.build()
 		);
-		os.createTransitionFromRRI(UniqueParticle.class);
+		os.createUpProcedure(new UpProcedure<>(
+			CMAtomOS.REAddrClaim.class, UniqueParticle.class,
+			(s, u, r) -> {
+				if (!u.getREAddr().equals(s.getAddr())) {
+					return ReducerResult2.error("Addresses don't match");
+				}
+				return ReducerResult2.complete(Unknown.create());
+			},
+			(u, r) -> PermissionLevel.USER,
+			(u, r, k) -> true
+		));
 	}
 }

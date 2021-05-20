@@ -92,22 +92,4 @@ public class TokensConstraintScryptTest {
 		assertThat(staticCheck.apply(staked).getErrorMessage())
 			.contains("delegateAddress");
 	}
-
-	@Test
-	public void when_validating_create_transferrable_with_mismatching_supply__result_has_error() {
-		TokenDefinitionParticle tokDef = mock(TokenDefinitionParticle.class);
-		TokensParticle transferrable = mock(TokensParticle.class);
-		when(tokDef.getSupply()).thenReturn(Optional.of(UInt256.FIVE));
-		when(transferrable.getAmount()).thenReturn(UInt256.FOUR);
-		assertThat(TokensConstraintScrypt.checkCreateTransferrable(tokDef, transferrable).isError()).isTrue();
-	}
-
-	@Test
-	public void when_validating_create_transferrable__result_has_no_error() {
-		TokenDefinitionParticle tokDef = mock(TokenDefinitionParticle.class);
-		TokensParticle transferrable = mock(TokensParticle.class);
-		when(tokDef.getSupply()).thenReturn(Optional.of(UInt256.FIVE));
-		when(transferrable.getAmount()).thenReturn(UInt256.FIVE);
-		assertThat(TokensConstraintScrypt.checkCreateTransferrable(tokDef, transferrable).isSuccess()).isTrue();
-	}
 }
