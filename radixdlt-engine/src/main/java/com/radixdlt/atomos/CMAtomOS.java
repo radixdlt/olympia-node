@@ -18,10 +18,8 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.constraintmachine.TransitionToken;
-import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.Procedures;
 import com.radixdlt.constraintmachine.VoidParticle;
-import com.radixdlt.constraintmachine.TransitionProcedure;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -58,9 +56,8 @@ public final class CMAtomOS {
 		.build();
 
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions = new HashMap<>();
-	private final ImmutableMap.Builder<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>>
-		proceduresBuilder = new ImmutableMap.Builder<>();
 	private final Set<String> systemNames;
+	private Procedures procedures = Procedures.empty();
 
 	public CMAtomOS(Set<String> systemNames) {
 		// RRI particle is a low level particle managed by the OS used for the management of all other resources
@@ -80,12 +77,11 @@ public final class CMAtomOS {
 		);
 		constraintScrypt.main(constraintScryptEnv);
 		this.particleDefinitions.putAll(constraintScryptEnv.getScryptParticleDefinitions());
-		this.proceduresBuilder.putAll(constraintScryptEnv.getScryptTransitionProcedures());
+		this.procedures = this.procedures.combine(constraintScryptEnv.getProcedures());
 	}
 
-	public Function<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>> buildTransitionProcedures() {
-		final var procedures = proceduresBuilder.build();
-		return procedures::get;
+	public Procedures getProcedures() {
+		return procedures;
 	}
 
 	public Function<Particle, Result> buildParticleStaticCheck() {

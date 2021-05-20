@@ -18,9 +18,11 @@
 package com.radixdlt.atomos;
 
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.UpProcedure;
 
 public interface RoutineCalls {
 	/**
@@ -33,5 +35,13 @@ public interface RoutineCalls {
 	<I extends Particle, O extends Particle, U extends ReducerState> void createTransition(
 		TransitionToken<I, O, U> transitionToken,
 		TransitionProcedure<I, O, U> transitionProcedure
+	);
+
+	<I extends Particle, S extends ReducerState> void createDownProcedure(
+		DownProcedure<I, S> downProcedure
+	);
+
+	<O extends Particle, S extends ReducerState> void createUpProcedure(
+		UpProcedure<S, O> upProcedure
 	);
 }

@@ -21,17 +21,22 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atommodel.routines.CreateCombinedTransitionRoutine;
+import com.radixdlt.constraintmachine.DownProcedure;
+import com.radixdlt.constraintmachine.OutputAuthorization;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.Procedures;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.InputAuthorization;
 import com.radixdlt.store.ReadableAddrs;
+import com.radixdlt.utils.Pair;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -54,6 +59,8 @@ public final class ConstraintScryptEnv implements SysCalls {
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> scryptParticleDefinitions;
 	private final Map<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>> scryptTransitionProcedures;
 	private final Set<String> systemNames;
+	private final Map<Pair<Class<? extends Particle>, Class<? extends ReducerState>>, DownProcedure<Particle, ReducerState>> downProcedures;
+	private final Map<Pair<Class<? extends ReducerState>, Class<? extends Particle>>, UpProcedure<ReducerState, Particle>> upProcedures;
 
 	ConstraintScryptEnv(
 		ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions,
@@ -64,14 +71,16 @@ public final class ConstraintScryptEnv implements SysCalls {
 
 		this.scryptParticleDefinitions = new HashMap<>();
 		this.scryptTransitionProcedures = new HashMap<>();
+		this.downProcedures = new HashMap<>();
+		this.upProcedures = new HashMap<>();
 	}
 
 	public Map<Class<? extends Particle>, ParticleDefinition<Particle>> getScryptParticleDefinitions() {
 		return scryptParticleDefinitions;
 	}
 
-	public Map<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>> getScryptTransitionProcedures() {
-		return scryptTransitionProcedures;
+	public Procedures getProcedures() {
+		return new Procedures(scryptTransitionProcedures, upProcedures, downProcedures);
 	}
 
 	private <T extends Particle> boolean particleDefinitionExists(Class<T> particleClass) {
@@ -277,6 +286,24 @@ public final class ConstraintScryptEnv implements SysCalls {
 			};
 
 		scryptTransitionProcedures.put(transitionToken, transformedProcedure);
+	}
+
+	@Override
+	public <D extends Particle, S extends ReducerState> void createDownProcedure(DownProcedure<D, S> downProcedure) {
+		var key = downProcedure.getDownProcedureKey();
+		if (downProcedures.containsKey(key)) {
+			throw new IllegalStateException(key + " already created");
+		}
+		downProcedures.put(key, (DownProcedure<Particle, ReducerState>) downProcedure);
+	}
+
+	@Override
+	public <U extends Particle, S extends ReducerState> void createUpProcedure(UpProcedure<S, U> upProcedure) {
+		var key = upProcedure.getUpProcedureKey();
+		if (upProcedures.containsKey(key)) {
+			throw new IllegalStateException(key + " already created");
+		}
+		upProcedures.put(key, (UpProcedure<ReducerState, Particle>) upProcedure);
 	}
 
 	@Override

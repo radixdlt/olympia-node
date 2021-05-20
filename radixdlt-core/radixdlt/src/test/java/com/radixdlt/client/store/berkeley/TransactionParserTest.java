@@ -31,7 +31,7 @@ import com.radixdlt.atommodel.validators.RegisterValidatorConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructor;
 import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructor;
 import com.radixdlt.atommodel.validators.UnstakeTokensConstructor;
-import com.radixdlt.atommodel.system.SystemConstraintScryptV1;
+import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV1;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV2;
 import org.junit.Assert;
 import org.junit.Before;
@@ -93,7 +93,7 @@ public class TransactionParserTest {
 		final var cm = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
-			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
+			.setParticleTransitionProcedures(cmAtomOS.getProcedures())
 			.build();
 
 		var actionConstructors = ActionConstructors.newBuilder()

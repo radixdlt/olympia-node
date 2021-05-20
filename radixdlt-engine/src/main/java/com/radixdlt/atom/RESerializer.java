@@ -18,9 +18,9 @@
 
 package com.radixdlt.atom;
 
-import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
-import com.radixdlt.atommodel.system.Stake;
+import com.radixdlt.atommodel.system.state.Stake;
 import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;

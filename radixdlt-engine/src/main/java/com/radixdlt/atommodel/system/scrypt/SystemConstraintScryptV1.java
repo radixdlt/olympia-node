@@ -16,42 +16,35 @@
  *
  */
 
-package com.radixdlt.atommodel.system;
+package com.radixdlt.atommodel.system.scrypt;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.SystemNextEpoch;
-import com.radixdlt.atom.actions.Unknown;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atom.actions.SystemNextView;
+import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
-import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
-import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.InputAuthorization;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
+import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.constraintmachine.InputAuthorization;
 import com.radixdlt.store.ReadableAddrs;
-import com.radixdlt.utils.UInt256;
 
-public class SystemConstraintScryptV2 implements ConstraintScrypt {
+/**
+ * Allows for the update of the epoch, timestamp and view state.
+ * Currently there is only a single system particle that should be in
+ * existence.
+ * TODO: use a non-radix-address path to store this system info
+ */
+public final class SystemConstraintScryptV1 implements ConstraintScrypt {
 
-	public static final UInt256 REWARDS_PER_PROPOSAL = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
-
-	private static class Inflation implements ReducerState {
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(Inflation.class);
-		}
-	}
-
-
-	public SystemConstraintScryptV2() {
+	public SystemConstraintScryptV1() {
 		// Nothing here right now
 	}
 
@@ -68,6 +61,10 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			return Result.error("View is less than 0");
 		}
 
+		if (systemParticle.getView() > 0 && systemParticle.getLeader() == null) {
+			return Result.error("Must have leader when view > 0");
+		}
+
 		// FIXME: Need to validate view, but need additional state to do that successfully
 
 		return Result.success();
@@ -77,15 +74,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 	public void main(SysCalls os) {
 		os.registerParticle(SystemParticle.class, ParticleDefinition.<SystemParticle>builder()
 			.staticValidation(this::staticCheck)
-			.virtualizeUp(p -> p.getView() == 0 && p.getEpoch() == 0 && p.getTimestamp() == 0)
+			.virtualizeUp(p -> p.getView() == 0 && p.getEpoch() == 0 && p.getTimestamp() == 0 && p.getLeader() == null)
 			.build()
-		);
-
-		os.registerParticle(
-			Stake.class,
-			ParticleDefinition.<Stake>builder()
-				.rriMapper(p -> REAddr.ofNativeToken())
-				.build()
 		);
 
 		os.createTransition(
@@ -99,14 +89,6 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				@Override
 				public PermissionLevel inputPermissionLevel(
 					SubstateWithArg<SystemParticle> i,
-					ReadableAddrs index
-				) {
-					return PermissionLevel.SUPER_USER;
-				}
-
-				@Override
-				public PermissionLevel outputPermissionLevel(
-					SystemParticle o,
 					ReadableAddrs index
 				) {
 					return PermissionLevel.SUPER_USER;
@@ -139,9 +121,15 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 				@Override
 				public InputOutputReducer<SystemParticle, SystemParticle, VoidReducerState> inputOutputReducer() {
-					return (input, output, index, outputUsed) -> input.getSubstate().getEpoch() != output.getEpoch()
-						? ReducerResult.complete(new SystemNextEpoch(output.getTimestamp()))
-						: ReducerResult.incomplete(new Inflation(), true);
+					return (input, output, index, outputUsed) -> ReducerResult.complete(
+						input.getSubstate().getEpoch() == output.getEpoch()
+							? new SystemNextView(
+								output.getView(),
+								output.getTimestamp(),
+								output.getLeader()
+							)
+							: new SystemNextEpoch(output.getTimestamp())
+					);
 				}
 
 				@Override
@@ -150,48 +138,5 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				}
 			}
 		);
-
-		os.createTransition(
-			new TransitionToken<>(
-				SystemParticle.class,
-				Stake.class,
-				TypeToken.of(Inflation.class)
-			),
-			new TransitionProcedure<>() {
-				@Override
-				public Result precondition(
-					SubstateWithArg<SystemParticle> in,
-					Stake output,
-					Inflation inputUsed,
-					ReadableAddrs readableAddrs
-				) {
-					if (!output.getAmount().equals(REWARDS_PER_PROPOSAL)) {
-						return Result.error("Rewards must be " + REWARDS_PER_PROPOSAL);
-					}
-					return Result.success();
-				}
-
-				@Override
-				public PermissionLevel inputPermissionLevel(SubstateWithArg<SystemParticle> i, ReadableAddrs index) {
-					return PermissionLevel.SUPER_USER;
-				}
-
-				@Override
-				public PermissionLevel outputPermissionLevel(Stake o, ReadableAddrs index) {
-					return PermissionLevel.SUPER_USER;
-				}
-
-				@Override
-				public InputOutputReducer<SystemParticle, Stake, Inflation> inputOutputReducer() {
-					return (i, o, index, outputUsed) -> ReducerResult.complete(
-						Unknown.create()
-					);
-				}
-
-				@Override
-				public InputAuthorization<SystemParticle> inputAuthorization() {
-					return (i, index, publicKey) -> publicKey.isEmpty(); // Must not be signed
-				}
-			});
 	}
 }

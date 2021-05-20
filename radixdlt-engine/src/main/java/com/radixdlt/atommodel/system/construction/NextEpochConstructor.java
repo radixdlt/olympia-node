@@ -16,12 +16,13 @@
  *
  */
 
-package com.radixdlt.atommodel.system;
+package com.radixdlt.atommodel.system.construction;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.SystemNextEpoch;
+import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 
 import java.util.Optional;

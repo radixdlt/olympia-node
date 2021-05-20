@@ -40,8 +40,8 @@ import com.radixdlt.atommodel.tokens.construction.CreateFixedTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.DeprecatedUnstakeTokensConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
-import com.radixdlt.atommodel.system.NextEpochConstructor;
-import com.radixdlt.atommodel.system.NextViewConstructorV1;
+import com.radixdlt.atommodel.system.construction.NextEpochConstructor;
+import com.radixdlt.atommodel.system.construction.NextViewConstructorV1;
 import com.radixdlt.atommodel.validators.RegisterValidatorConstructor;
 import com.radixdlt.atommodel.tokens.construction.SplitTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructor;
@@ -49,9 +49,9 @@ import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructor;
 import com.radixdlt.atommodel.validators.UnregisterValidatorConstructor;
 import com.radixdlt.atommodel.validators.UnstakeTokensConstructor;
 import com.radixdlt.atommodel.validators.UpdateValidatorConstructor;
-import com.radixdlt.atommodel.system.NextViewConstructorV2;
-import com.radixdlt.atommodel.system.SystemConstraintScryptV1;
-import com.radixdlt.atommodel.system.SystemConstraintScryptV2;
+import com.radixdlt.atommodel.system.construction.NextViewConstructorV2;
+import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV1;
+import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV1;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV2;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
@@ -80,7 +80,7 @@ public final class BetanetForksModule extends AbstractModule {
 		v1.load(new SystemConstraintScryptV1());
 		var betanet1 = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(v1.virtualizedUpParticles())
-			.setParticleTransitionProcedures(v1.buildTransitionProcedures())
+			.setParticleTransitionProcedures(v1.getProcedures())
 			.setParticleStaticCheck(v1.buildParticleStaticCheck())
 			.build();
 
@@ -116,7 +116,7 @@ public final class BetanetForksModule extends AbstractModule {
 		v2.load(new SystemConstraintScryptV1());
 		var betanet2 = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(v2.virtualizedUpParticles())
-			.setParticleTransitionProcedures(v2.buildTransitionProcedures())
+			.setParticleTransitionProcedures(v2.getProcedures())
 			.setParticleStaticCheck(v2.buildParticleStaticCheck())
 			.build();
 
@@ -151,7 +151,7 @@ public final class BetanetForksModule extends AbstractModule {
 		v3.load(new SystemConstraintScryptV2());
 		var betanet3 = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(v3.virtualizedUpParticles())
-			.setParticleTransitionProcedures(v3.buildTransitionProcedures())
+			.setParticleTransitionProcedures(v3.getProcedures())
 			.setParticleStaticCheck(v3.buildParticleStaticCheck())
 			.build();
 
