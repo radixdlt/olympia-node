@@ -1,6 +1,7 @@
 name: radixdlt-publish-radixdlt-docker
 
 on:
+  pull_request:
   release:
     types: [ published ]
   push:
@@ -33,6 +34,9 @@ jobs:
             RELEASE_VERSION="${{ github.event.release.tag_name }}"
             echo "RELEASE_VERSION=$RELEASE_VERSION"
             echo "REF=$RELEASE_VERSION" >> $GITHUB_ENV
+          elif [[ ! -z $GH_EVENT_NAME ]] && [[ "$GH_EVENT_NAME" == "pull_request" ]] ;then
+            echo "Workflow triggered by push to a PR"
+            echo "REF=${{ github.head_ref }}" >> $GITHUB_ENV
           else
             echo "Workflow triggered by push to a branch"
             echo "REF=$GITHUB_REF" >> $GITHUB_ENV
@@ -90,8 +94,13 @@ jobs:
             echo "REF=$RELEASE_VERSION" >> $GITHUB_ENV
             echo "IMAGE=radixdlt/radixdlt" >> $GITHUB_ENV
           else
-            echo "Workflow triggered by push to a branch"
-            echo "REF=$GITHUB_REF" >> $GITHUB_ENV
+            if [[ ! -z $GH_EVENT_NAME ]] && [[ "$GH_EVENT_NAME" == "pull_request" ]] ;then
+              echo "Workflow triggered by push to a PR"
+              echo "REF=${{ github.head_ref }}" >> $GITHUB_ENV
+            else
+              echo "Workflow triggered by push to a PR"
+              echo "REF=$GITHUB_REF" >> $GITHUB_ENV
+            fi
             echo "IS_RELEASE=false" >> $GITHUB_ENV
             echo "IMAGE=eu.gcr.io/dev-container-repo/radixdlt-core" >> $GITHUB_ENV
           fi
