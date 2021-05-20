@@ -16,7 +16,7 @@
  *
  */
 
-package com.radixdlt.atommodel.validators;
+package com.radixdlt.atommodel.validators.construction;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;

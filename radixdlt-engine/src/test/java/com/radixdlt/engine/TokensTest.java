@@ -9,7 +9,7 @@ import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScrypt;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
-import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.ConstraintMachine;

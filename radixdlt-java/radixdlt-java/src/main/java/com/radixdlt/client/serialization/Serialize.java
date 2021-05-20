@@ -27,7 +27,7 @@ import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
 import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.atommodel.validators.ValidatorParticle;
+import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.serialization.Serialization;

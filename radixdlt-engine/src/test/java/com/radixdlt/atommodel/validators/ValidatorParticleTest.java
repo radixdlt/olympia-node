@@ -17,6 +17,7 @@
 
 package com.radixdlt.atommodel.validators;
 
+import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;

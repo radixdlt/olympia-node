@@ -25,7 +25,7 @@ import static org.powermock.api.mockito.PowerMockito.when;
 import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
 import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
-import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.atomos.Result;

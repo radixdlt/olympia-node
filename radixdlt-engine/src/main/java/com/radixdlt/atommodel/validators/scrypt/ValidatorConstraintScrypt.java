@@ -1,37 +1,36 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt.atommodel.validators;
+package com.radixdlt.atommodel.validators.scrypt;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.Unknown;
+import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
-import com.radixdlt.constraintmachine.ReducerResult;
-import com.radixdlt.constraintmachine.SubstateWithArg;
-import com.radixdlt.constraintmachine.TransitionProcedure;
-import com.radixdlt.constraintmachine.TransitionToken;
-import com.radixdlt.constraintmachine.InputOutputReducer;
+import com.radixdlt.constraintmachine.DownProcedure;
+import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ReducerResult2;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.constraintmachine.InputAuthorization;
-import com.radixdlt.store.ReadableAddrs;
 
 import java.util.Objects;
 import java.util.function.Function;
@@ -41,6 +40,19 @@ import java.util.regex.Pattern;
  * Constraint Scrypt defining the Validator FSM.
  */
 public class ValidatorConstraintScrypt implements ConstraintScrypt {
+	private static class ValidatorUpdate implements ReducerState {
+		private final ValidatorParticle prevState;
+
+		public ValidatorUpdate(ValidatorParticle prevState) {
+			this.prevState = prevState;
+		}
+
+		@Override
+		public TypeToken<? extends ReducerState> getTypeToken() {
+			return TypeToken.of(ValidatorUpdate.class);
+		}
+	}
+
 	@Override
 	public void main(SysCalls os) {
 		os.registerParticle(ValidatorParticle.class, ParticleDefinition.<ValidatorParticle>builder()
@@ -50,10 +62,32 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 			.build()
 		);
 
-		os.createTransition(
-			new TransitionToken<>(ValidatorParticle.class, ValidatorParticle.class, TypeToken.of(VoidReducerState.class)),
-			new ValidatorTransitionProcedure()
-		);
+		os.createDownProcedure(new DownProcedure<>(
+			ValidatorParticle.class, VoidReducerState.class,
+			(d, s, r) -> {
+				if (d.getArg().isPresent()) {
+					return ReducerResult2.error("Args not allowed");
+				}
+				return ReducerResult2.incomplete(new ValidatorUpdate(d.getSubstate()));
+			},
+			(d, r) -> PermissionLevel.USER,
+			(d, r, k) -> k.map(d.getSubstate().getKey()::equals).orElse(false)
+		));
+
+		os.createUpProcedure(new UpProcedure<>(
+			ValidatorUpdate.class, ValidatorParticle.class,
+			(s, u, r) -> {
+				if (!Objects.equals(s.prevState.getKey(), u.getKey())) {
+					return ReducerResult2.error(String.format(
+						"validator addresses do not match: %s != %s",
+						s.prevState.getKey(), u.getKey()
+					));
+				}
+				return ReducerResult2.complete(Unknown.create());
+			},
+			(u, r) -> PermissionLevel.USER,
+			(u, r, k) -> k.map(u.getKey()::equals).orElse(false)
+		));
 	}
 
 	// From the OWASP validation repository: https://www.owasp.org/index.php/OWASP_Validation_Regex_Repository
@@ -71,39 +105,5 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 
 			return Result.success();
 		};
-	}
-
-	@VisibleForTesting
-	static class ValidatorTransitionProcedure
-		implements TransitionProcedure<ValidatorParticle, ValidatorParticle, VoidReducerState> {
-
-		@Override
-		public Result precondition(
-			SubstateWithArg<ValidatorParticle> in,
-			ValidatorParticle out,
-			VoidReducerState outputUsed,
-			ReadableAddrs index
-		) {
-			// ensure transition is between validator particles concerning the same validator address
-			if (!Objects.equals(in.getSubstate().getKey(), out.getKey())) {
-				return Result.error(String.format(
-					"validator addresses do not match: %s != %s",
-					in.getSubstate().getKey(), out.getKey()
-				));
-			}
-
-			return Result.success();
-		}
-
-		@Override
-		public InputOutputReducer<ValidatorParticle, ValidatorParticle, VoidReducerState> inputOutputReducer() {
-			return (input, output, index, outputUsed) -> ReducerResult.complete(Unknown.create());
-		}
-
-		@Override
-		public InputAuthorization<ValidatorParticle> inputAuthorization() {
-			// verify that the transition was authenticated by the validator address in question
-			return (i, index, pubKey) -> pubKey.map(i.getSubstate().getKey()::equals).orElse(false);
-		}
 	}
 }
