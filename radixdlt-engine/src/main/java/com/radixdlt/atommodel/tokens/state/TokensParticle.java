@@ -32,8 +32,9 @@ import java.util.Optional;
  *  owned by some key owner and stored in an account.
  */
 public final class TokensParticle implements Fungible {
-	private final REAddr resourceAddr;
 	private final UInt256 amount;
+
+	private final REAddr resourceAddr;
 
 	// Bucket
 	private final REAddr holdingAddress;
@@ -74,6 +75,10 @@ public final class TokensParticle implements Fungible {
 
 		var system = (SystemParticle) readable.loadAddr(null, REAddr.ofSystem()).orElseThrow();
 		return system.getEpoch() >= epochUnlocked;
+	}
+
+	public ResourceInBucket resourceInBucket() {
+		return new ResourceInBucket(resourceAddr, holdingAddress, epochUnlocked);
 	}
 
 	public Optional<Long> getEpochUnlocked() {

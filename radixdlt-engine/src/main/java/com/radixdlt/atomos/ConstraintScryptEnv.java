@@ -19,6 +19,7 @@ package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.constraintmachine.DownProcedure;
+import com.radixdlt.constraintmachine.EndProcedure;
 import com.radixdlt.constraintmachine.OutputAuthorization;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -49,6 +50,7 @@ public final class ConstraintScryptEnv implements SysCalls {
 	private final Map<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>> scryptTransitionProcedures;
 	private final Map<Pair<Class<? extends Particle>, Class<? extends ReducerState>>, DownProcedure<Particle, ReducerState>> downProcedures;
 	private final Map<Pair<Class<? extends ReducerState>, Class<? extends Particle>>, UpProcedure<ReducerState, Particle>> upProcedures;
+	private final Map<Class, EndProcedure<ReducerState>> endProcedures;
 
 	ConstraintScryptEnv(
 		ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions
@@ -58,6 +60,7 @@ public final class ConstraintScryptEnv implements SysCalls {
 		this.scryptTransitionProcedures = new HashMap<>();
 		this.downProcedures = new HashMap<>();
 		this.upProcedures = new HashMap<>();
+		this.endProcedures = new HashMap<>();
 	}
 
 	public Map<Class<? extends Particle>, ParticleDefinition<Particle>> getScryptParticleDefinitions() {
@@ -65,7 +68,7 @@ public final class ConstraintScryptEnv implements SysCalls {
 	}
 
 	public Procedures getProcedures() {
-		return new Procedures(scryptTransitionProcedures, upProcedures, downProcedures);
+		return new Procedures(scryptTransitionProcedures, upProcedures, downProcedures, endProcedures);
 	}
 
 	private <T extends Particle> boolean particleDefinitionExists(Class<T> particleClass) {
@@ -210,6 +213,16 @@ public final class ConstraintScryptEnv implements SysCalls {
 		}
 		upProcedures.put(key, (UpProcedure<ReducerState, Particle>) upProcedure);
 	}
+
+	@Override
+	public <S extends ReducerState> void createEndProcedure(EndProcedure<S> endProcedure) {
+		var key = endProcedure.getEndProcedureKey();
+		if (endProcedures.containsKey(key)) {
+			throw new IllegalStateException(key + " already created");
+		}
+		endProcedures.put(key, (EndProcedure<ReducerState>) endProcedure);
+	}
+
 
 	@Override
 	public void executeRoutine(ConstraintRoutine routine) {

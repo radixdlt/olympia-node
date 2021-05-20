@@ -28,19 +28,22 @@ public final class Procedures {
 	private final Map<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>> oldProcedures;
 	private final Map<Pair<Class<? extends ReducerState>, Class<? extends Particle>>, UpProcedure<ReducerState, Particle>> upProcedures;
 	private final Map<Pair<Class<? extends Particle>, Class<? extends ReducerState>>, DownProcedure<Particle, ReducerState>> downProcedures;
+	private final Map<Class, EndProcedure<ReducerState>> endProcedures;
 
 	public Procedures(
 		Map<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>> oldProcedures,
 		Map<Pair<Class<? extends ReducerState>, Class<? extends Particle>>, UpProcedure<ReducerState, Particle>> upProcedures,
-		Map<Pair<Class<? extends Particle>, Class<? extends ReducerState>>, DownProcedure<Particle, ReducerState>> downProcedures
+		Map<Pair<Class<? extends Particle>, Class<? extends ReducerState>>, DownProcedure<Particle, ReducerState>> downProcedures,
+		Map<Class, EndProcedure<ReducerState>> endProcedures
 	) {
 		this.oldProcedures = oldProcedures;
 		this.upProcedures = upProcedures;
 		this.downProcedures = downProcedures;
+		this.endProcedures = endProcedures;
 	}
 
 	public static Procedures empty() {
-		return new Procedures(Map.of(), Map.of(), Map.of());
+		return new Procedures(Map.of(), Map.of(), Map.of(), Map.of());
 	}
 
 	public Procedures combine(Procedures other) {
@@ -62,7 +65,13 @@ public final class Procedures {
 				other.downProcedures.entrySet().stream()
 			).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-		return new Procedures(combinedOldProcedures, combinedUpProcedures, combinedDownProcedures);
+		var combinedEndProcedures =
+			Stream.concat(
+				this.endProcedures.entrySet().stream(),
+				other.endProcedures.entrySet().stream()
+			).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+		return new Procedures(combinedOldProcedures, combinedUpProcedures, combinedDownProcedures, combinedEndProcedures);
 	}
 
 	public TransitionProcedure<Particle, Particle, ReducerState> getFromOldProcedures(TransitionToken<?, ?, ?> transitionToken) {
@@ -79,5 +88,9 @@ public final class Procedures {
 		Class<? extends Particle> downClass, Class<? extends ReducerState> reducerStateClass
 	) {
 		return downProcedures.get(Pair.of(downClass, reducerStateClass));
+	}
+
+	public EndProcedure<ReducerState> getEndProcedure(Class<? extends ReducerState> reducerStateClass) {
+		return endProcedures.get(reducerStateClass);
 	}
 }

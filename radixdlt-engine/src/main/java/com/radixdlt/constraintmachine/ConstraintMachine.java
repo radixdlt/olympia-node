@@ -273,22 +273,44 @@ public final class ConstraintMachine {
 		SubstateWithArg<Particle> nextParticle,
 		boolean isInput
 	) {
-		final SubstateWithArg<Particle> curParticle = validationState.getCurParticle();
+		if (nextParticle == null) {
+			var endProcedure = this.procedures.getEndProcedure(
+				validationState.getReducerStateClass()
+			);
 
-		if (validationState.spinClashes(isInput)) {
-			return Optional.of(Pair.of(CMErrorCode.PARTICLE_REGISTER_SPIN_CLASH, null));
+			if (endProcedure != null) {
+				var readable = validationState.immutableIndex();
+				final var reducerState = validationState.reducerState2;
+
+				// System permissions don't require additional authorization
+				if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
+					var requiredLevel = endProcedure.permissionLevel(reducerState, readable);
+					if (validationState.permissionLevel.compareTo(requiredLevel) < 0) {
+						return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
+					}
+					var signatureVerified = endProcedure.authorized(reducerState, readable, validationState.signedBy);
+					if (!signatureVerified) {
+						return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
+					}
+				}
+
+				var result = endProcedure.reduce(reducerState, readable);
+				if (result.isError()) {
+					return Optional.of(Pair.of(CMErrorCode.TRANSITION_PRECONDITION_FAILURE, result.getError()));
+				}
+				result.ifCompleteElse(
+					txAction -> {
+						validationState.reducerState2 = null;
+						validationState.txAction = txAction;
+					},
+					nextState -> validationState.reducerState2 = nextState
+				);
+				return Optional.empty();
+			}
 		}
 
-		final SubstateWithArg<Particle> input = isInput ? nextParticle : curParticle;
-		final Particle outputParticle = isInput ? (curParticle == null ? null : curParticle.getSubstate())
-			: nextParticle.getSubstate();
-		final TransitionToken transitionToken = new TransitionToken(
-			input != null ? input.getSubstate().getClass() : VoidParticle.class,
-			outputParticle != null ? outputParticle.getClass() : VoidParticle.class,
-			validationState.getReducerType()
-		);
-
-		if (input == null && outputParticle != null) {
+		if (!isInput && nextParticle != null) {
+			var outputParticle = nextParticle.getSubstate();
 			var upProcedure = this.procedures.getUpProcedure(
 				validationState.getReducerStateClass(),
 				outputParticle.getClass()
@@ -325,7 +347,8 @@ public final class ConstraintMachine {
 			}
 		}
 
-		if (input != null && outputParticle == null) {
+		if (isInput && nextParticle != null) {
+			var input = nextParticle;
 			var downProcedure = this.procedures.getDownProcedure(
 				input.getSubstate().getClass(),
 				validationState.getReducerStateClass()
@@ -362,6 +385,21 @@ public final class ConstraintMachine {
 			}
 		}
 
+
+		final SubstateWithArg<Particle> curParticle = validationState.getCurParticle();
+		final SubstateWithArg<Particle> input = isInput ? nextParticle : curParticle;
+		final Particle outputParticle = isInput ? (curParticle == null ? null : curParticle.getSubstate())
+			: nextParticle.getSubstate();
+
+		if (validationState.spinClashes(isInput)) {
+			return Optional.of(Pair.of(CMErrorCode.PARTICLE_REGISTER_SPIN_CLASH, null));
+		}
+
+		final TransitionToken transitionToken = new TransitionToken(
+			input != null ? input.getSubstate().getClass() : VoidParticle.class,
+			outputParticle != null ? outputParticle.getClass() : VoidParticle.class,
+			validationState.getReducerType()
+		);
 
 		if (input == null || outputParticle == null) {
 			validationState.popAndReplace(nextParticle, isInput, null);
@@ -641,7 +679,7 @@ public final class ConstraintMachine {
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.END) {
 				if (validationState.txAction == null) {
 					var errMaybe = validateParticle(validationState,
-						SubstateWithArg.noArg(VoidParticle.create()), !validationState.particleRemainingIsInput);
+						null, !validationState.particleRemainingIsInput);
 					if (errMaybe.isPresent()) {
 						return Optional.of(new CMError(instIndex,
 							errMaybe.get().getFirst(), validationState, errMaybe.get().getSecond()));

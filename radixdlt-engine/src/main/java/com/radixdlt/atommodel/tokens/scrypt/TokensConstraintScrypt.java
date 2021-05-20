@@ -19,9 +19,12 @@
 package com.radixdlt.atommodel.tokens.scrypt;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.atommodel.tokens.state.ResourceInBucket;
 import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
@@ -29,11 +32,17 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.Result;
+import com.radixdlt.constraintmachine.DownProcedure;
+import com.radixdlt.constraintmachine.EndProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult2;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
+import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.UInt384;
+
+import java.util.Optional;
 
 /**
  * Scrypt which defines how tokens are managed.
@@ -133,24 +142,190 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		));
 	}
 
+	// TODO: Remove so that up particles cannot be created first
+	private static class UnaccountedTokens implements ReducerState {
+		private final TokensParticle initialParticle;
+		private final ResourceInBucket resourceInBucket;
+		private final UInt384 amount;
+
+		public UnaccountedTokens(TokensParticle initialParticle, ResourceInBucket resourceInBucket, UInt384 amount) {
+			this.initialParticle = initialParticle;
+			this.resourceInBucket = resourceInBucket;
+			this.amount = amount;
+		}
+
+		private Optional<ReducerState> subtract(UInt384 amountAccounted) {
+			var compare = amountAccounted.compareTo(amount);
+			if (compare > 0) {
+				return Optional.of(new RemainderTokens(initialParticle, resourceInBucket.resourceAddr(), amountAccounted.subtract(amount)));
+			} else if (compare < 0) {
+				return Optional.of(new UnaccountedTokens(initialParticle, resourceInBucket, amount.subtract(amountAccounted)));
+			} else {
+				return Optional.empty();
+			}
+		}
+
+		@Override
+		public TypeToken<? extends ReducerState> getTypeToken() {
+			return TypeToken.of(UnaccountedTokens.class);
+		}
+	}
+
+	private static class RemainderTokens implements ReducerState {
+		private final REAddr tokenAddr;
+		private final UInt384 amount;
+		private final TokensParticle initialParticle;
+
+		private RemainderTokens(
+			TokensParticle initialParticle, // TODO: Remove, Hack for now
+			REAddr tokenAddr,
+			UInt384 amount
+		) {
+			this.initialParticle = initialParticle;
+			this.tokenAddr = tokenAddr;
+			this.amount = amount;
+		}
+
+		private Optional<ReducerState> subtract(ResourceInBucket resourceInBucket, UInt384 amountToSubtract) {
+			var compare = amountToSubtract.compareTo(amount);
+			if (compare > 0) {
+				return Optional.of(new UnaccountedTokens(initialParticle, resourceInBucket, amountToSubtract.subtract(amount)));
+			} else if (compare < 0){
+				return Optional.of(new RemainderTokens(initialParticle, tokenAddr, amount.subtract(amountToSubtract)));
+			} else {
+				return Optional.empty();
+			}
+		}
+
+		@Override
+		public TypeToken<? extends ReducerState> getTypeToken() {
+			return TypeToken.of(RemainderTokens.class);
+		}
+	}
+
 	private void defineMintTransferBurn(SysCalls os) {
 		// Mint
-		os.executeRoutine(new AllocateTokensRoutine());
+		os.createEndProcedure(new EndProcedure<>(
+			UnaccountedTokens.class,
+			(s, r) -> s.resourceInBucket.resourceAddr().isNativeToken() ? PermissionLevel.SYSTEM : PermissionLevel.USER,
+			(s, r, k) -> {
+				var tokenDef = (TokenDefinitionParticle) r.loadAddr(null, s.resourceInBucket.resourceAddr()).orElseThrow();
+				return k.flatMap(p -> tokenDef.getMinter().map(p::equals)).orElse(false);
+			},
+			(s, r) -> {
+				if (s.resourceInBucket.epochUnlocked().isPresent()) {
+					return ReducerResult2.error("Cannot mint locked tokens.");
+				}
 
-		// Transfers
-		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
-			TokensParticle.class,
-			TokensParticle.class,
-			(i, o, r) -> Result.success(),
-			(i, r, pubKey) -> i.getSubstate().allowedToWithdraw(pubKey, r),
-			(i, o, r) -> {
-				var p = (TokenDefinitionParticle) r.loadAddr(null, i.getResourceAddr()).orElseThrow();
-				// FIXME: This isn't 100% correct
-				return new TransferToken(p.getAddr(), i.getHoldingAddr(), o.getHoldingAddr(), o.getAmount());
+				var p = r.loadAddr(null, s.resourceInBucket.resourceAddr());
+				if (p.isEmpty()) {
+					return ReducerResult2.error("Token does not exist.");
+				}
+				var particle = p.get();
+				if (!(particle instanceof TokenDefinitionParticle)) {
+					return ReducerResult2.error("Rri is not a token");
+				}
+				var tokenDef = (TokenDefinitionParticle) particle;
+				if (!tokenDef.isMutable()) {
+					return ReducerResult2.error("Can only mint mutable tokens.");
+				}
+				var action = new MintToken(s.resourceInBucket.resourceAddr(), s.initialParticle.getHoldingAddr(), s.amount.getLow());
+				return ReducerResult2.complete(action);
 			}
 		));
 
-		// Burns
-		os.executeRoutine(new DeallocateTokensRoutine());
+		// Burn
+		os.createEndProcedure(new EndProcedure<>(
+			RemainderTokens.class,
+			(s, r) -> PermissionLevel.USER,
+			(s, r, k) -> true,
+			(s, r) -> {
+				var p = r.loadAddr(null, s.tokenAddr);
+				if (p.isEmpty()) {
+					return ReducerResult2.error("Token does not exist.");
+				}
+				var particle = p.get();
+				if (!(particle instanceof TokenDefinitionParticle)) {
+					return ReducerResult2.error("Rri is not a token");
+				}
+				var tokenDef = (TokenDefinitionParticle) particle;
+				if (!tokenDef.isMutable()) {
+					return ReducerResult2.error("Can only burn mutable tokens.");
+				}
+
+				// FIXME: These aren't 100% correct
+				var action = new BurnToken(s.tokenAddr, s.initialParticle.getHoldingAddr(), s.amount.getLow());
+				return ReducerResult2.complete(action);
+			}
+		));
+
+		os.createUpProcedure(new UpProcedure<>(
+			VoidReducerState.class, TokensParticle.class,
+			(u, r) -> PermissionLevel.USER,
+			(u, r, k) -> true,
+			(s, u, r) -> {
+				var state = new UnaccountedTokens(
+					u,
+					u.resourceInBucket(),
+					UInt384.from(u.getAmount())
+				);
+				return ReducerResult2.incomplete(state);
+			}
+		));
+
+		os.createDownProcedure(new DownProcedure<>(
+			TokensParticle.class, VoidReducerState.class,
+			(d, r) -> PermissionLevel.USER,
+			(d, r, k) -> d.getSubstate().allowedToWithdraw(k, r),
+			(d, s, r) -> {
+				var state = new RemainderTokens(
+					d.getSubstate(),
+					d.getSubstate().getResourceAddr(),
+					UInt384.from(d.getSubstate().getAmount())
+				);
+				return ReducerResult2.incomplete(state);
+			}
+		));
+
+		os.createUpProcedure(new UpProcedure<>(
+			RemainderTokens.class, TokensParticle.class,
+			(u, r) -> PermissionLevel.USER,
+			(u, r, k) -> true,
+			(s, u, r) -> {
+				if (!s.tokenAddr.equals(u.getResourceAddr())) {
+					return ReducerResult2.error("Not the same address.");
+				}
+				var amt = UInt384.from(u.getAmount());
+				var nextRemainder = s.subtract(u.resourceInBucket(), amt);
+				if (nextRemainder.isEmpty()) {
+					// FIXME: This isn't 100% correct
+					var p = s.initialParticle;
+					var action = new TransferToken(p.getResourceAddr(), u.getHoldingAddr(), p.getHoldingAddr(), p.getAmount());
+					return ReducerResult2.complete(action);
+				}
+				return ReducerResult2.incomplete(nextRemainder.get());
+			}
+		));
+
+		os.createDownProcedure(new DownProcedure<>(
+			TokensParticle.class, UnaccountedTokens.class,
+			(d, r) -> PermissionLevel.USER,
+			(d, r, k) -> d.getSubstate().allowedToWithdraw(k, r),
+			(d, s, r) -> {
+				if (!s.resourceInBucket.resourceAddr().equals(d.getSubstate().getResourceAddr())) {
+					return ReducerResult2.error("Not the same address.");
+				}
+				var amt = UInt384.from(d.getSubstate().getAmount());
+				var nextRemainder = s.subtract(amt);
+				if (nextRemainder.isEmpty()) {
+					// FIXME: This isn't 100% correct
+					var p = s.initialParticle;
+					var action = new TransferToken(p.getResourceAddr(), d.getSubstate().getHoldingAddr(), p.getHoldingAddr(), p.getAmount());
+					return ReducerResult2.complete(action);
+				}
+
+				return ReducerResult2.incomplete(nextRemainder.get());
+			}
+		));
 	}
 }
