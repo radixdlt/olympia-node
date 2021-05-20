@@ -34,9 +34,9 @@ public class DownProcedure<D extends Particle, S extends ReducerState> {
 
 	public DownProcedure(
 		Class<D> downClass, Class<S> reducerStateClass,
-		DownReducer<D, S> downReducer,
 		BiFunction<SubstateWithArg<D>, ReadableAddrs, PermissionLevel> permissionLevel,
-		InputAuthorization<D> inputAuthorization
+		InputAuthorization<D> inputAuthorization,
+		DownReducer<D, S> downReducer
 	) {
 		this.downClass = downClass;
 		this.reducerStateClass = reducerStateClass;

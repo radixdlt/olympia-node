@@ -101,13 +101,15 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 		os.createDownProcedure(new DownProcedure<>(
 			SystemParticle.class, VoidReducerState.class,
-			(d, s, r) -> ReducerResult2.incomplete(new UpdatingSystem(d.getSubstate())),
 			(d, r) -> PermissionLevel.SUPER_USER,
-			(d, r, pubKey) -> pubKey.isEmpty()
+			(d, r, pubKey) -> pubKey.isEmpty(),
+			(d, s, r) -> ReducerResult2.incomplete(new UpdatingSystem(d.getSubstate()))
 		));
 
 		os.createUpProcedure(new UpProcedure<>(
 			UpdatingSystem.class, SystemParticle.class,
+			(u, r) -> PermissionLevel.SUPER_USER,
+			(u, r, pubKey) -> pubKey.isEmpty(),
 			(s, u, r) -> {
 				var curState = s.sys;
 				if (curState.getEpoch() == u.getEpoch()) {
@@ -123,21 +125,19 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				return s.sys.getEpoch() != u.getEpoch()
 					? ReducerResult2.complete(new SystemNextEpoch(u.getTimestamp()))
 					: ReducerResult2.incomplete(new Inflation());
-			},
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> pubKey.isEmpty()
+			}
 		));
 
 		os.createUpProcedure(new UpProcedure<>(
 			Inflation.class, Stake.class,
+			(u, r) -> PermissionLevel.SUPER_USER,
+			(u, r, pubKey) -> pubKey.isEmpty(),
 			(s, u, r) -> {
 				if (!u.getAmount().equals(REWARDS_PER_PROPOSAL)) {
 					return ReducerResult2.error("Rewards must be " + REWARDS_PER_PROPOSAL);
 				}
 				return ReducerResult2.complete(Unknown.create());
-			},
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> pubKey.isEmpty()
+			}
 		));
 	}
 }

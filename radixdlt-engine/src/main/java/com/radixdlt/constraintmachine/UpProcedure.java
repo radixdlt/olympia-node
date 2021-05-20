@@ -35,9 +35,9 @@ public final class UpProcedure<S extends ReducerState, U extends Particle> {
 	public UpProcedure(
 		Class<S> reducerStateClass,
 		Class<U> upClass,
-		UpReducer<S, U> upReducer,
 		BiFunction<U, ReadableAddrs, PermissionLevel> permissionLevel,
-		OutputAuthorization<U> outputAuthorization
+		OutputAuthorization<U> outputAuthorization,
+		UpReducer<S, U> upReducer
 	) {
 		this.reducerStateClass = reducerStateClass;
 		this.upClass = upClass;

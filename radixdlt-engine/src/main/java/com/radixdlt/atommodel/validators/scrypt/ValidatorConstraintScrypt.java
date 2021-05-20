@@ -64,18 +64,20 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 
 		os.createDownProcedure(new DownProcedure<>(
 			ValidatorParticle.class, VoidReducerState.class,
+			(d, r) -> PermissionLevel.USER,
+			(d, r, k) -> k.map(d.getSubstate().getKey()::equals).orElse(false),
 			(d, s, r) -> {
 				if (d.getArg().isPresent()) {
 					return ReducerResult2.error("Args not allowed");
 				}
 				return ReducerResult2.incomplete(new ValidatorUpdate(d.getSubstate()));
-			},
-			(d, r) -> PermissionLevel.USER,
-			(d, r, k) -> k.map(d.getSubstate().getKey()::equals).orElse(false)
+			}
 		));
 
 		os.createUpProcedure(new UpProcedure<>(
 			ValidatorUpdate.class, ValidatorParticle.class,
+			(u, r) -> PermissionLevel.USER,
+			(u, r, k) -> k.map(u.getKey()::equals).orElse(false),
 			(s, u, r) -> {
 				if (!Objects.equals(s.prevState.getKey(), u.getKey())) {
 					return ReducerResult2.error(String.format(
@@ -84,9 +86,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 					));
 				}
 				return ReducerResult2.complete(Unknown.create());
-			},
-			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> k.map(u.getKey()::equals).orElse(false)
+			}
 		));
 	}
 

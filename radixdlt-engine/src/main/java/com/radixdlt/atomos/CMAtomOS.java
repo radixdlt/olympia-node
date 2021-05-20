@@ -100,6 +100,12 @@ public final class CMAtomOS {
 			os.registerParticle(REAddrParticle.class, RRI_PARTICLE_DEF);
 			os.createDownProcedure(new DownProcedure<>(
 				REAddrParticle.class, VoidReducerState.class,
+				(d, r) -> {
+					var name = new String(d.getArg().orElseThrow());
+					return systemNames.contains(name) || d.getSubstate().getAddr().isNativeToken()
+						? PermissionLevel.SYSTEM : PermissionLevel.USER;
+				},
+				(d, r, pubKey) -> pubKey.map(k -> d.getSubstate().allow(k, d.getArg())).orElse(false),
 				(d, s, r) -> {
 					if (d.getArg().isEmpty()) {
 						return ReducerResult2.error("REAddr must be claimed with a name");
@@ -109,13 +115,7 @@ public final class CMAtomOS {
 						return ReducerResult2.error("invalid rri name");
 					}
 					return ReducerResult2.incomplete(new REAddrClaim(d.getSubstate(), d.getArg().get()));
-				},
-				(d, r) -> {
-					var name = new String(d.getArg().orElseThrow());
-					return systemNames.contains(name) || d.getSubstate().getAddr().isNativeToken()
-						? PermissionLevel.SYSTEM : PermissionLevel.USER;
-				},
-				(d, r, pubKey) -> pubKey.map(k -> d.getSubstate().allow(k, d.getArg())).orElse(false)
+				}
 			));
 		});
 	}

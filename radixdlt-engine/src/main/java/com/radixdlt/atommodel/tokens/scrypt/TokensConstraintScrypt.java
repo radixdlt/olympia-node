@@ -82,6 +82,8 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 	private void defineTokenCreation(SysCalls os) {
 		os.createUpProcedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, TokenDefinitionParticle.class,
+			(u, r) -> PermissionLevel.USER,
+			(u, r, k) -> true,
 			(s, u, r) -> {
 				if (!u.getAddr().equals(s.getAddr())) {
 					return ReducerResult2.error("Addresses don't match");
@@ -99,13 +101,13 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				}
 
 				return ReducerResult2.incomplete(new NeedFixedTokenSupply(s.getArg(), u));
-			},
-			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> true
+			}
 		));
 
 		os.createUpProcedure(new UpProcedure<>(
 			NeedFixedTokenSupply.class, TokensParticle.class,
+			(u, r) -> PermissionLevel.USER,
+			(u, r, k) -> true,
 			(s, u, r) -> {
 				if (!u.getResourceAddr().equals(s.tokenDefinitionParticle.getAddr())) {
 					return ReducerResult2.error("Addresses don't match.");
@@ -127,9 +129,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				);
 
 				return ReducerResult2.complete(action);
-			},
-			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> true
+			}
 		));
 	}
 
