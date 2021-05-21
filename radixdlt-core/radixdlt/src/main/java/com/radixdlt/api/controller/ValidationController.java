@@ -18,256 +18,39 @@
 
 package com.radixdlt.api.controller;
 
-import org.bouncycastle.util.encoders.Hex;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Inject;
-import com.radixdlt.application.MyBalances;
 import com.radixdlt.api.Controller;
-import com.radixdlt.api.Rri;
-import com.radixdlt.api.qualifier.Validation;
 import com.radixdlt.api.server.JsonRpcServer;
-import com.radixdlt.application.Balances;
-import com.radixdlt.application.MyValidator;
-import com.radixdlt.application.NodeApplicationRequest;
-import com.radixdlt.application.MyStakedBalance;
-import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.application.MyValidatorInfo;
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.BurnToken;
-import com.radixdlt.atom.actions.CreateFixedToken;
-import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.PayFee;
-import com.radixdlt.atom.actions.RegisterValidator;
-import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnregisterValidator;
-import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.atom.actions.UpdateValidator;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.identifiers.AccountAddress;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddress;
-import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
-import com.radixdlt.utils.UInt256;
 
-import java.math.BigDecimal;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-
-import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.RestUtils.respond;
-import static com.radixdlt.api.RestUtils.withBody;
-
 public final class ValidationController implements Controller {
-	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher;
 	private final JsonRpcServer jsonRpcServer;
-	private final ECPublicKey bftKey;
-	private final REAddr account;
 
-	@Inject
-	public ValidationController(
-		@Validation JsonRpcServer jsonRpcServer, @Self REAddr account,
-		@Self ECPublicKey bftKey,
-		RadixEngine<LedgerAndBFTProof> radixEngine,
-		EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher
-	) {
-		this.account = account;
-		this.bftKey = bftKey;
-		this.radixEngine = radixEngine;
-		this.nodeApplicationRequestEventDispatcher = nodeApplicationRequestEventDispatcher;
+	public ValidationController(JsonRpcServer jsonRpcServer) {
 		this.jsonRpcServer = jsonRpcServer;
 	}
 
 	@Override
 	public void configureRoutes(final RoutingHandler handler) {
-		handler.post("/archive", jsonRpcServer::handleHttpRequest);
-		handler.post("/archive/", jsonRpcServer::handleHttpRequest);
-
-		//TODO: remove
-		handler.post("/node/execute", this::handleExecute);
-		handler.get("/node", this::respondWithNode);
-		handler.post("/node/validator", this::respondWithValidator);
+		handler.post("/validation", jsonRpcServer::handleHttpRequest);
+		handler.post("/validation/", jsonRpcServer::handleHttpRequest);
 	}
-
-	private JSONObject getValidator() {
-		var myStakes = radixEngine.getComputedState(MyValidator.class);
-		var validatorInfo = radixEngine.getComputedState(MyValidatorInfo.class);
-		var stakeFrom = new JSONArray();
-		myStakes.forEach((addr, amt) -> {
-			stakeFrom.put(
-				new JSONObject()
-					.put("delegator", AccountAddress.of(addr))
-					.put("amount", TokenUnitConversions.subunitsToUnits(amt))
-			);
-		});
-		return new JSONObject()
-			.put("address", ValidatorAddress.of(bftKey))
-			.put("name", validatorInfo.getName())
-			.put("url", validatorInfo.getUrl())
-			.put("registered", validatorInfo.isRegistered())
-			.put("totalStake", TokenUnitConversions.subunitsToUnits(myStakes.getTotalStake()))
-			.put("stakes", stakeFrom);
-	}
-
-	private JSONObject getBalance() {
-		var balances = radixEngine.getComputedState(MyBalances.class);
-		var stakedBalance = radixEngine.getComputedState(MyStakedBalance.class);
-		var stakeTo = new JSONArray();
-		stakedBalance.forEach((addr, amt) ->
-			stakeTo.put(
-				new JSONObject()
-					.put("delegate", ValidatorAddress.of(addr))
-					.put("amount", TokenUnitConversions.subunitsToUnits(amt))
-			)
-		);
-		var balancesJson = new JSONObject();
-		balances.forEach((rri, balance) -> {
-			balancesJson.put(rri.toString(), TokenUnitConversions.subunitsToUnits(balance));
-		});
-
-		return new JSONObject()
-			.put("balances", balancesJson)
-			.put("staked", stakeTo);
-	}
-
-	@VisibleForTesting
-	void respondWithNode(HttpServerExchange exchange) {
-		respond(exchange, jsonObject()
-			.put("address", AccountAddress.of(REAddr.ofPubKeyAccount(bftKey)))
-			.put("balance", getBalance()));
-	}
-
-	@VisibleForTesting
-	void respondWithValidator(HttpServerExchange exchange) {
-		respond(exchange, jsonObject()
-			.put("validator", getValidator()));
-	}
-
-	private UInt256 parseAmount(JSONObject o, String paramName) {
-		final UInt256 subunits;
-		var amt = o.get(paramName);
-		if (amt instanceof Number) {
-			var amountBigInt = o.getBigInteger(paramName);
-			subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
-		} else {
-			var amtString = o.getString(paramName);
-			subunits = UInt256.from(amtString);
-		}
-		return subunits;
-	}
-
-	private TxAction parseAction(JSONObject actionObject) throws IllegalArgumentException, DeserializeException {
-		var actionString = actionObject.getString("action");
-		var paramsObject = actionObject.getJSONObject("params");
-		switch (actionString) {
-			case "CreateMutableToken": {
-				var symbol = paramsObject.getString("symbol");
-				var name = paramsObject.getString("name");
-				var description = paramsObject.getString("description");
-				var iconUrl = paramsObject.getString("iconUrl");
-				var url = paramsObject.getString("url");
-				return new CreateMutableToken(bftKey, symbol, name, description, iconUrl, url);
-			}
-			case "CreateFixedToken": {
-				var symbol = paramsObject.getString("symbol");
-				var name = paramsObject.getString("name");
-				var description = paramsObject.getString("description");
-				var iconUrl = paramsObject.getString("iconUrl");
-				var url = paramsObject.getString("url");
-				var supplyInteger = paramsObject.getBigInteger("supply");
-				var supply = TokenUnitConversions.unitsToSubunits(new BigDecimal(supplyInteger));
-				var reAddr = REAddr.ofHashedKey(bftKey, symbol);
-				return new CreateFixedToken(
-					reAddr,
-					account,
-					symbol,
-					name,
-					description,
-					iconUrl,
-					url,
-					supply
-				);
-			}
-			case "TransferTokens": {
-				var rri = Rri.parse(paramsObject.getString("rri"));
-				var addressString = paramsObject.getString("to");
-				var to = AccountAddress.parse(addressString);
-				var amt = parseAmount(paramsObject, "amount");
-				return new TransferToken(rri.getSecond(), account, to, amt);
-			}
-			case "MintTokens": {
-				var rri = Rri.parse(paramsObject.getString("rri"));
-				var addressString = paramsObject.getString("to");
-				var to = AccountAddress.parse(addressString);
-				var amt = parseAmount(paramsObject, "amount");
-				return new MintToken(rri.getSecond(), to, amt);
-			}
-			case "BurnTokens": {
-				var rri = Rri.parse(paramsObject.getString("rri"));
-				var amt = parseAmount(paramsObject, "amount");
-				return new BurnToken(rri.getSecond(), account, amt);
-			}
-			case "StakeTokens": {
-				var validatorString = paramsObject.getString("to");
-				var key = ValidatorAddress.parse(validatorString);
-				var amt = parseAmount(paramsObject, "amount");
-				return new StakeTokens(account, key, amt);
-			}
-			case "UnstakeTokens": {
-				var addressString = paramsObject.getString("from");
-				var delegate = ValidatorAddress.parse(addressString);
-				var amt = parseAmount(paramsObject, "amount");
-				return new UnstakeTokens(account, delegate, amt);
-			}
-			case "RegisterValidator": {
-				var name = paramsObject.has("name") ? paramsObject.getString("name") : null;
-				var url = paramsObject.has("url") ? paramsObject.getString("url") : null;
-				return new RegisterValidator(bftKey, name, url);
-			}
-			case "UnregisterValidator": {
-				var name = paramsObject.has("name") ? paramsObject.getString("name") : null;
-				var url = paramsObject.has("url") ? paramsObject.getString("url") : null;
-				return new UnregisterValidator(bftKey, name, url);
-			}
-			case "UpdateValidator": {
-				var name = paramsObject.has("name") ? paramsObject.getString("name") : null;
-				var url = paramsObject.has("url") ? paramsObject.getString("url") : null;
-				return new UpdateValidator(bftKey, name, url);
-			}
-			default:
-				throw new IllegalArgumentException("Bad action object: " + actionObject);
-		}
-	}
-
+	//TODO: check adding fee in other places
+	/*
 	void handleExecute(HttpServerExchange exchange) {
 		// TODO: implement JSON-RPC 2.0 specification
 		withBody(exchange, values -> {
 			try {
 				var actionsArray = values.getJSONArray("actions");
-				var txnConstructionRequest = TxnConstructionRequest.create();
-				txnConstructionRequest.action(new PayFee(account, TokenFeeChecker.FIXED_FEE));
+				var actions = new ArrayList<TxAction>();
+				actions.add(new PayFee(account, TokenFeeChecker.FIXED_FEE));
 				for (int i = 0; i < actionsArray.length(); i++) {
 					var actionObject = actionsArray.getJSONObject(i);
 					var txAction = parseAction(actionObject);
-					txnConstructionRequest.action(txAction);
+					actions.add(txAction);
 				}
 				var completableFuture = new CompletableFuture<MempoolAddSuccess>();
-				var request = NodeApplicationRequest.create(txnConstructionRequest, completableFuture);
+				var request = NodeApplicationRequest.create(actions, completableFuture);
 				nodeApplicationRequestEventDispatcher.dispatch(request);
 
 				var success = completableFuture.get();
@@ -285,4 +68,5 @@ public final class ValidationController implements Controller {
 			}
 		});
 	}
+	 */
 }

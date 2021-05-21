@@ -23,16 +23,16 @@ import com.radixdlt.api.server.JsonRpcServer;
 
 import io.undertow.server.RoutingHandler;
 
-public final class FaucetController implements Controller {
+public final class AccountController implements Controller {
 	private final JsonRpcServer jsonRpcServer;
 
-	public FaucetController(JsonRpcServer jsonRpcServer) {
+	public AccountController(JsonRpcServer jsonRpcServer) {
 		this.jsonRpcServer = jsonRpcServer;
 	}
 
 	@Override
-	public void configureRoutes(final RoutingHandler handler) {
-		handler.post("/faucet", jsonRpcServer::handleHttpRequest);
-		handler.post("/faucet/", jsonRpcServer::handleHttpRequest);
+	public void configureRoutes(RoutingHandler handler) {
+		handler.post("/account", jsonRpcServer::handleHttpRequest);
+		handler.post("/account/", jsonRpcServer::handleHttpRequest);
 	}
 }

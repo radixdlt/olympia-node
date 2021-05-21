@@ -24,6 +24,7 @@ import org.radix.universe.system.LocalSystem;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.api.service.SystemConfigService;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -45,6 +46,7 @@ public class SystemHandler {
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final AddressBook addressBook;
 	private final PeerWithSystem localPeer;
+	private final SystemConfigService systemConfigService;
 
 	@Inject
 	public SystemHandler(
@@ -52,13 +54,15 @@ public class SystemHandler {
 		VerifiedTxnsAndProof genesis,
 		InMemorySystemInfo inMemorySystemInfo,
 		AddressBook addressBook,
-		PeerWithSystem localPeer
+		PeerWithSystem localPeer,
+		SystemConfigService systemConfigService
 	) {
 		this.localSystem = localSystem;
 		this.genesis = genesis;
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.addressBook = addressBook;
 		this.localPeer = localPeer;
+		this.systemConfigService = systemConfigService;
 	}
 
 	public JSONObject apiGetConfiguration(JSONObject request) {

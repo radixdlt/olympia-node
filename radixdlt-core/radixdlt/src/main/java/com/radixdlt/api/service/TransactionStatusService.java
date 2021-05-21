@@ -20,6 +20,8 @@ package com.radixdlt.api.service;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.radixdlt.api.data.TransactionStatus;
+import com.radixdlt.api.data.TxHistoryEntry;
+import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
@@ -27,6 +29,7 @@ import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.utils.functional.Result;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -44,6 +47,7 @@ import static com.radixdlt.api.data.TransactionStatus.FAILED;
 import static com.radixdlt.api.data.TransactionStatus.PENDING;
 import static com.radixdlt.api.data.TransactionStatus.TRANSACTION_NOT_FOUND;
 
+//TODO: finish refactoring, move lookup transaction method here
 public class TransactionStatusService {
 	private static final long DEFAULT_CLEANUP_INTERVAL = 1000L;                        //every second
 	private static final Duration DEFAULT_TX_LIFE_TIME = Duration.ofMinutes(10);    //at most 10 minutes
@@ -52,6 +56,7 @@ public class TransactionStatusService {
 	private final ConcurrentMap<AID, TxStatusEntry> txCache = new ConcurrentHashMap<>();
 	private final BerkeleyLedgerEntryStore store;
 	private final ScheduledEventDispatcher<ScheduledCacheCleanup> scheduledCacheCleanup;
+	private final ClientApiStore clientApiStore;
 
 	@Inject
 	public TransactionStatusService(
@@ -60,6 +65,7 @@ public class TransactionStatusService {
 	) {
 		this.store = store;
 		this.scheduledCacheCleanup = scheduledCacheCleanup;
+		this.clientApiStore = clientApiStore;
 
 		scheduledCacheCleanup.dispatch(ScheduledCacheCleanup.create(), DEFAULT_CLEANUP_INTERVAL);
 	}
@@ -90,6 +96,10 @@ public class TransactionStatusService {
 
 	public void close() {
 		disposable.dispose();
+	}
+
+	public Result<TxHistoryEntry> getTransaction(AID txId) {
+		return clientApiStore.getTransaction(txId);
 	}
 
 	public TransactionStatus getTransactionStatus(AID txId) {

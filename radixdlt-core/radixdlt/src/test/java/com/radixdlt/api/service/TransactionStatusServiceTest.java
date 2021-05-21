@@ -16,8 +16,12 @@
  */
 package com.radixdlt.api.service;
 
+import org.junit.Assert;
 import org.junit.Test;
 
+import com.radixdlt.api.data.ActionEntry;
+import com.radixdlt.api.data.TxHistoryEntry;
+import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.api.service.ScheduledCacheCleanup;
 import com.radixdlt.api.service.TransactionStatusService;
 import com.radixdlt.atom.Txn;
@@ -25,10 +29,13 @@ import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.parser.ParsedTxn;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.UInt256;
 import org.junit.Test;
 
@@ -47,6 +54,8 @@ import static com.radixdlt.api.data.TransactionStatus.PENDING;
 import static com.radixdlt.api.data.TransactionStatus.TRANSACTION_NOT_FOUND;
 
 public class TransactionStatusServiceTest {
+	private final ClientApiStore clientApiStore = mock(ClientApiStore.class);
+
 	@Test
 	public void transactionStatusIsStoredOnCommit() {
 		var store = mock(BerkeleyLedgerEntryStore.class);
@@ -141,6 +150,36 @@ public class TransactionStatusServiceTest {
 		assertEquals(PENDING, transactionStatusService.getTransactionStatus(txnSucceeded.getId()));
 		assertEquals(TRANSACTION_NOT_FOUND, transactionStatusService.getTransactionStatus(txnCommitted.getId()));
 		assertEquals(TRANSACTION_NOT_FOUND, transactionStatusService.getTransactionStatus(txnRejected.getId()));
+	}
+
+	@Test
+	public void testGetTransaction() {
+		var entry = createTxHistoryEntry(AID.ZERO);
+		var store = mock(BerkeleyLedgerEntryStore.class);
+
+		var rejected = mockObservable(MempoolAddFailure.class);
+		var succeeded = mockObservable(MempoolAddSuccess.class);
+
+		var scheduledCacheCleanup = mockEventDispatcher();
+
+		var committed = Observable.<AtomsCommittedToLedger>empty();
+
+		var transactionStatusService = new TransactionStatusService(
+			store, committed, rejected, succeeded, scheduledCacheCleanup, clientApiStore
+		);
+
+		when(clientApiStore.getTransaction(AID.ZERO))
+			.thenReturn(Result.ok(entry));
+
+		transactionStatusService.getTransaction(entry.getTxId())
+			.onSuccess(result -> assertEquals(entry, result))
+			.onFailureDo(Assert::fail);
+	}
+
+	private TxHistoryEntry createTxHistoryEntry(AID txId) {
+		var now = Instant.ofEpochMilli(Instant.now().toEpochMilli());
+		var action = ActionEntry.unknown();
+		return TxHistoryEntry.create(txId, now, UInt256.ONE, "text", List.of(action));
 	}
 
 	@SuppressWarnings("unchecked")
