@@ -72,23 +72,7 @@ public final class ConstraintScryptEnv implements SysCalls {
 		}
 		Objects.requireNonNull(particleDefinition, "particleDefinition");
 
-		// TODO Cleanup: This redefinition illustrates that there's some abstraction issues here, but
-		// TODO Cleanup: will leave for now since it's not critical and we anticipate a bigger refactor.
-		ParticleDefinition.Builder<T> particleRedefinition = ParticleDefinition.<T>builder()
-			.rriMapper(particleDefinition.getRriMapper())
-			.virtualizeUp(particleDefinition.getVirtualizeSpin())
-			.staticValidation(p -> {
-				if (particleDefinition.getRriMapper() != null) {
-					final var rriId = particleDefinition.getRriMapper().apply(p);
-					if (rriId == null) {
-						return Result.error("rri cannot be null");
-					}
-				}
-
-				return particleDefinition.getStaticValidation().apply(p);
-			});
-
-		scryptParticleDefinitions.put(particleClass, particleRedefinition.build());
+		scryptParticleDefinitions.put(particleClass, (ParticleDefinition<Particle>) particleDefinition);
 	}
 
 	@Override

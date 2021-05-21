@@ -44,7 +44,6 @@ import java.util.stream.Collectors;
 public final class CMAtomOS {
 	private static final ParticleDefinition<REAddrParticle> RRI_PARTICLE_DEF = ParticleDefinition.<REAddrParticle>builder()
 		.staticValidation(rri -> Result.success())
-		.rriMapper(REAddrParticle::getAddr)
 		.virtualizeUp(v ->
 			v.getAddr().getType() == REAddr.REAddrType.NATIVE_TOKEN
 			|| v.getAddr().getType() == REAddr.REAddrType.HASHED_KEY

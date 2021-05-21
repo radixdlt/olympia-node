@@ -31,7 +31,6 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt384;
 
 import java.util.Objects;
@@ -43,7 +42,6 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 			DeprecatedStake.class,
 			ParticleDefinition.<DeprecatedStake>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.rriMapper(p -> REAddr.ofNativeToken())
 				.build()
 		);
 

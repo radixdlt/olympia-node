@@ -52,7 +52,6 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 			DeprecatedStake.class,
 			ParticleDefinition.<DeprecatedStake>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.rriMapper(p -> REAddr.ofNativeToken())
 				.build()
 		);
 

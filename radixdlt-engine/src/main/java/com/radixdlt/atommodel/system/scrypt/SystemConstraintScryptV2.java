@@ -34,7 +34,6 @@ import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 public class SystemConstraintScryptV2 implements ConstraintScrypt {
@@ -94,9 +93,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 		os.registerParticle(
 			Stake.class,
-			ParticleDefinition.<Stake>builder()
-				.rriMapper(p -> REAddr.ofNativeToken())
-				.build()
+			ParticleDefinition.<Stake>builder() .build()
 		);
 
 		os.createDownProcedure(new DownProcedure<>(

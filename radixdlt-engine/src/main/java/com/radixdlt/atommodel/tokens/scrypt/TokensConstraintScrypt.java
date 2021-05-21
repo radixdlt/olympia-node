@@ -63,7 +63,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			TokenDefinitionParticle.class,
 			ParticleDefinition.<TokenDefinitionParticle>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.rriMapper(TokenDefinitionParticle::getAddr)
 				.build()
 		);
 
@@ -71,7 +70,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			TokensParticle.class,
 			ParticleDefinition.<TokensParticle>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.rriMapper(TokensParticle::getResourceAddr)
 				.build()
 		);
 	}

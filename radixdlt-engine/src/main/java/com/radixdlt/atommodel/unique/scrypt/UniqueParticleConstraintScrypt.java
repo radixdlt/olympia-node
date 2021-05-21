@@ -33,9 +33,7 @@ public class UniqueParticleConstraintScrypt implements ConstraintScrypt {
 	public void main(SysCalls os) {
 		os.registerParticle(
 			UniqueParticle.class,
-			ParticleDefinition.<UniqueParticle>builder()
-				.rriMapper(UniqueParticle::getREAddr)
-				.build()
+			ParticleDefinition.<UniqueParticle>builder().build()
 		);
 		os.createUpProcedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, UniqueParticle.class,
