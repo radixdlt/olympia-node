@@ -27,6 +27,7 @@ import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
@@ -67,7 +68,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 			(d, r, k) -> k.map(d.getSubstate().getKey()::equals).orElse(false),
 			(d, s, r) -> {
 				if (d.getArg().isPresent()) {
-					return ReducerResult.error("Args not allowed");
+					throw new ProcedureException("Args not allowed");
 				}
 				return ReducerResult.incomplete(new ValidatorUpdate(d.getSubstate()));
 			}
@@ -79,7 +80,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 			(u, r, k) -> k.map(u.getKey()::equals).orElse(false),
 			(s, u, r) -> {
 				if (!Objects.equals(s.prevState.getKey(), u.getKey())) {
-					return ReducerResult.error(String.format(
+					throw new ProcedureException(String.format(
 						"validator addresses do not match: %s != %s",
 						s.prevState.getKey(), u.getKey()
 					));

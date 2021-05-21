@@ -29,6 +29,7 @@ import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.DownProcedure;
@@ -111,12 +112,12 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				var curState = s.sys;
 				if (curState.getEpoch() == u.getEpoch()) {
 					if (curState.getView() >= u.getView()) {
-						return ReducerResult.error("Next view must be greater than previous.");
+						throw new ProcedureException("Next view must be greater than previous.");
 					}
 				} else if (curState.getEpoch() + 1 != u.getEpoch()) {
-					return ReducerResult.error("Bad next epoch");
+					throw new ProcedureException("Bad next epoch");
 				} else if (u.getView() != 0) {
-					return ReducerResult.error("Change of epochs must start with view 0.");
+					throw new ProcedureException("Change of epochs must start with view 0.");
 				}
 
 				return s.sys.getEpoch() != u.getEpoch()
@@ -131,7 +132,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			(u, r, pubKey) -> pubKey.isEmpty(),
 			(s, u, r) -> {
 				if (!u.getAmount().equals(REWARDS_PER_PROPOSAL)) {
-					return ReducerResult.error("Rewards must be " + REWARDS_PER_PROPOSAL);
+					throw new ProcedureException("Rewards must be " + REWARDS_PER_PROPOSAL);
 				}
 				return ReducerResult.complete(Unknown.create());
 			}

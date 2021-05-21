@@ -25,24 +25,18 @@ import java.util.function.Consumer;
 public class ReducerResult {
 	private final ReducerState reducerState;
 	private final TxAction txAction;
-	private final String error;
 
-	private ReducerResult(ReducerState reducerState, TxAction txAction, String error) {
+	private ReducerResult(ReducerState reducerState, TxAction txAction) {
 		this.reducerState = reducerState;
 		this.txAction = txAction;
-		this.error = error;
-	}
-
-	public static ReducerResult error(String error) {
-		return new ReducerResult(null, null, error);
 	}
 
 	public static ReducerResult incomplete(ReducerState reducerState) {
-		return new ReducerResult(reducerState, null, null);
+		return new ReducerResult(reducerState, null);
 	}
 
 	public static ReducerResult complete(TxAction txAction) {
-		return new ReducerResult(null, txAction, null);
+		return new ReducerResult(null, txAction);
 	}
 
 	public void ifCompleteElse(Consumer<TxAction> completeConsumer, Consumer<ReducerState> incompleteConsumer) {
@@ -53,16 +47,5 @@ public class ReducerResult {
 		} else {
 			throw new IllegalStateException();
 		}
-	}
-
-	public boolean isError() {
-		return error != null;
-	}
-
-	public String getError() {
-		if (error == null) {
-			throw new IllegalStateException();
-		}
-		return error;
 	}
 }

@@ -18,8 +18,8 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.store.ReadableAddrs;
-
-public interface EndReducer<S extends ReducerState> {
-	ReducerResult reduce(S reducerState, ReadableAddrs readableAddrs) throws ProcedureException;
+public class ProcedureException extends Exception {
+	public ProcedureException(String msg) {
+		super(msg);
+	}
 }

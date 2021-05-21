@@ -24,7 +24,7 @@ import com.radixdlt.store.ReadableAddrs;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
-public class EndProcedure<S extends ReducerState> {
+public class EndProcedure<S extends ReducerState> implements MethodProcedure {
 	private final Class<S> reducerStateClass;
 	private final BiFunction<S, ReadableAddrs, PermissionLevel> permissionLevel;
 	private final EndAuthorization<S> endAuthorization;
@@ -54,7 +54,8 @@ public class EndProcedure<S extends ReducerState> {
 		return endAuthorization.verify(reducerState, readableAddrs, signedBy);
 	}
 
-	public ReducerResult reduce(S reducerState, ReadableAddrs readableAddrs) {
-		return endReducer.reduce(reducerState, readableAddrs);
+	@Override
+	public ReducerResult call(Object o, ReducerState reducerState, ReadableAddrs readableAddrs) throws ProcedureException {
+		return endReducer.reduce((S) reducerState, readableAddrs);
 	}
 }

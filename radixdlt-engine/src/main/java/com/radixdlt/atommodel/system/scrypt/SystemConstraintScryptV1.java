@@ -28,6 +28,7 @@ import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
@@ -100,12 +101,12 @@ public final class SystemConstraintScryptV1 implements ConstraintScrypt {
 				var curState = s.sys;
 				if (curState.getEpoch() == u.getEpoch()) {
 					if (curState.getView() >= u.getView()) {
-						return ReducerResult.error("Next view must be greater than previous.");
+						throw new ProcedureException("Next view must be greater than previous.");
 					}
 				} else if (curState.getEpoch() + 1 != u.getEpoch()) {
-					return ReducerResult.error("Bad next epoch");
+					throw new ProcedureException("Bad next epoch");
 				} else if (u.getView() != 0) {
-					return ReducerResult.error("Change of epochs must start with view 0.");
+					throw new ProcedureException("Change of epochs must start with view 0.");
 				}
 
 				return s.sys.getEpoch() != u.getEpoch()

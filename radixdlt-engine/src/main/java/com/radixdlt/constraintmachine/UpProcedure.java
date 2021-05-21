@@ -25,7 +25,7 @@ import com.radixdlt.utils.Pair;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
-public final class UpProcedure<S extends ReducerState, U extends Particle> {
+public final class UpProcedure<S extends ReducerState, U extends Particle> implements MethodProcedure {
 	private final Class<S> reducerStateClass;
 	private final Class<U> upClass;
 	private final UpReducer<S, U> upReducer;
@@ -58,7 +58,8 @@ public final class UpProcedure<S extends ReducerState, U extends Particle> {
 		return outputAuthorization.verify(upSubstate, readableAddrs, signedBy);
 	}
 
-	public ReducerResult reduce(S reducerState, U upSubstate, ReadableAddrs readableAddrs) {
-		return upReducer.reduce(reducerState, upSubstate, readableAddrs);
+	@Override
+	public ReducerResult call(Object o, ReducerState reducerState, ReadableAddrs readableAddrs) throws ProcedureException {
+		return upReducer.reduce((S) reducerState, (U) o, readableAddrs);
 	}
 }

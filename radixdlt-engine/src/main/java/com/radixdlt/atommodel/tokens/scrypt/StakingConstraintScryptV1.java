@@ -28,6 +28,7 @@ import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
@@ -69,7 +70,7 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 			(d, r, k) -> d.getSubstate().allowedToWithdraw(k, r),
 			(d, s, r) -> {
 				if (!d.getSubstate().getResourceAddr().isNativeToken()) {
-					return ReducerResult.error("Not the same address.");
+					throw new ProcedureException("Not the same address.");
 				}
 				var amt = UInt384.from(d.getSubstate().getAmount());
 				var nextRemainder = s.subtract(amt);
@@ -92,16 +93,16 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 			(d, r, k) -> k.map(d.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
 			(d, s, r) -> {
 				if (!s.resourceInBucket().isNativeToken()) {
-					return ReducerResult.error("Can only destake to the native token.");
+					throw new ProcedureException("Can only destake to the native token.");
 				}
 
 				if (!Objects.equals(d.getSubstate().getOwner(), s.resourceInBucket().holdingAddress())) {
-					return ReducerResult.error("Must unstake to self");
+					throw new ProcedureException("Must unstake to self");
 				}
 
 				var epochUnlocked = s.resourceInBucket().epochUnlocked();
 				if (epochUnlocked.isPresent()) {
-					return ReducerResult.error("Cannot be locked for betanetV1");
+					throw new ProcedureException("Cannot be locked for betanetV1");
 				}
 
 				var nextRemainder = s.subtract(UInt384.from(d.getSubstate().getAmount()));
@@ -134,15 +135,15 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 			(u, r, k) -> true,
 			(s, u, r) -> {
 				if (!u.getAmount().equals(s.amount())) {
-					return ReducerResult.error("Remainder must be filled exactly.");
+					throw new ProcedureException("Remainder must be filled exactly.");
 				}
 
 				if (!u.getDelegateKey().equals(s.delegate())) {
-					return ReducerResult.error("Delegate key does not match.");
+					throw new ProcedureException("Delegate key does not match.");
 				}
 
 				if (!u.getOwner().equals(s.owner())) {
-					return ReducerResult.error("Owners don't match.");
+					throw new ProcedureException("Owners don't match.");
 				}
 
 				// FIXME: This isn't 100% correct

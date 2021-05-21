@@ -218,7 +218,8 @@ public final class ConstraintMachine {
 		SubstateWithArg<Particle> nextParticle,
 		boolean isInput
 	) {
-		final ReducerResult reducerResult;
+		final MethodProcedure methodProcedure;
+		final Object procedureParam;
 
 		// TODO: Reduce the 3 following procedures to 1
 		if (nextParticle == null) {
@@ -247,7 +248,8 @@ public final class ConstraintMachine {
 				}
 			}
 
-			reducerResult = endProcedure.reduce(reducerState, readable);
+			methodProcedure = endProcedure;
+			procedureParam = null;
 		} else if (!isInput) {
 			var outputParticle = nextParticle.getSubstate();
 			var upProcedure = this.procedures.getUpProcedure(
@@ -276,8 +278,8 @@ public final class ConstraintMachine {
 				}
 			}
 
-			final var reducerState = validationState.reducerState2;
-			reducerResult = upProcedure.reduce(reducerState, outputParticle, readable);
+			methodProcedure = upProcedure;
+			procedureParam = outputParticle;
 		} else {
 			var input = nextParticle;
 			var downProcedure = this.procedures.getDownProcedure(
@@ -305,14 +307,19 @@ public final class ConstraintMachine {
 					return Optional.of(Pair.of(CMErrorCode.AUTHORIZATION_ERROR, null));
 				}
 			}
-
-			final var reducerState = validationState.reducerState2;
-			reducerResult = downProcedure.reduce(input, reducerState, readable);
+			methodProcedure = downProcedure;
+			procedureParam = nextParticle;
 		}
 
-		if (reducerResult.isError()) {
-			return Optional.of(Pair.of(CMErrorCode.TRANSITION_PRECONDITION_FAILURE, reducerResult.getError()));
+		var readable = validationState.immutableIndex();
+		var reducerState = validationState.reducerState2;
+		final ReducerResult reducerResult;
+		try {
+			reducerResult = methodProcedure.call(procedureParam, reducerState, readable);
+		} catch (ProcedureException e) {
+			return Optional.of(Pair.of(CMErrorCode.TRANSITION_PRECONDITION_FAILURE, e.getMessage()));
 		}
+
 		reducerResult.ifCompleteElse(
 			txAction -> {
 				validationState.reducerState2 = null;

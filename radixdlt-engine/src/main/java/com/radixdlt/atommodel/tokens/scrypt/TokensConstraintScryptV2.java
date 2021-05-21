@@ -37,8 +37,11 @@ import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
+import com.radixdlt.constraintmachine.InvalidResourceException;
+import com.radixdlt.constraintmachine.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
@@ -94,7 +97,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 			(u, r, k) -> true,
 			(s, u, r) -> {
 				if (!u.getAddr().equals(s.getAddr())) {
-					return ReducerResult.error("Addresses don't match");
+					throw new ProcedureException("Addresses don't match");
 				}
 
 				if (u.isMutable()) {
@@ -118,11 +121,11 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 			(u, r, k) -> true,
 			(s, u, r) -> {
 				if (!u.getResourceAddr().equals(s.tokenDefinitionParticle.getAddr())) {
-					return ReducerResult.error("Addresses don't match.");
+					throw new ProcedureException("Addresses don't match.");
 				}
 
 				if (!u.getAmount().equals(s.tokenDefinitionParticle.getSupply().orElseThrow())) {
-					return ReducerResult.error("Initial supply doesn't match.");
+					throw new ProcedureException("Initial supply doesn't match.");
 				}
 
 				var action = new CreateFixedToken(
@@ -161,16 +164,25 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 			return amount;
 		}
 
-		public TemporaryBucket deposit(UInt256 amountToAdd) {
+		public TemporaryBucket deposit(REAddr resourceAddr, UInt256 amountToAdd) throws ProcedureException {
+			if (!tokenAddr.equals(resourceAddr)) {
+				throw new InvalidResourceException(resourceAddr, tokenAddr);
+			}
+
 			return new TemporaryBucket(tokenAddr, UInt384.from(amountToAdd).add(amount));
 		}
 
-		public Optional<TemporaryBucket> withdraw(UInt256 amountToWithdraw) {
+		public TemporaryBucket withdraw(REAddr resourceAddr, UInt256 amountToWithdraw) throws ProcedureException {
+			if (!tokenAddr.equals(resourceAddr)) {
+				throw new InvalidResourceException(resourceAddr, tokenAddr);
+			}
+
 			var withdraw384 = UInt384.from(amountToWithdraw);
 			if (amount.compareTo(withdraw384) < 0) {
-				return Optional.empty();
+				throw new NotEnoughResourcesException(amountToWithdraw, amount.getLow());
 			}
-			return Optional.of(new TemporaryBucket(tokenAddr, amount.subtract(withdraw384)));
+
+			return new TemporaryBucket(tokenAddr, amount.subtract(withdraw384));
 		}
 
 		@Override
@@ -200,15 +212,15 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 				if (!s.amount.isZero()) {
 					var p = r.loadAddr(null, s.tokenAddr);
 					if (p.isEmpty()) {
-						return ReducerResult.error("Token does not exist.");
+						throw new ProcedureException("Token does not exist.");
 					}
 					var particle = p.get();
 					if (!(particle instanceof TokenDefinitionParticle)) {
-						return ReducerResult.error("Rri is not a token");
+						throw new ProcedureException("Rri is not a token");
 					}
 					var tokenDef = (TokenDefinitionParticle) particle;
 					if (!tokenDef.isMutable()) {
-						return ReducerResult.error("Can only burn mutable tokens.");
+						throw new ProcedureException("Can only burn mutable tokens.");
 					}
 				}
 
@@ -236,10 +248,8 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 			(d, r) -> PermissionLevel.USER,
 			(d, r, k) -> d.getSubstate().allowedToWithdraw(k, r),
 			(d, s, r) -> {
-				if (!s.tokenAddr.equals(d.getSubstate().getResourceAddr())) {
-					return ReducerResult.error("Not the same token");
-				}
-				var nextState = s.deposit(d.getSubstate().getAmount());
+				var tokens = d.getSubstate();
+				var nextState = s.deposit(tokens.getResourceAddr(), tokens.getAmount());
 				return ReducerResult.incomplete(nextState);
 			}
 		));
@@ -250,11 +260,8 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> true,
 			(s, u, r) -> {
-				var nextState = s.withdraw(u.getAmount());
-				if (nextState.isEmpty()) {
-					return ReducerResult.error("Not enough funds for depositing");
-				}
-				return ReducerResult.incomplete(nextState.get());
+				var nextState = s.withdraw(u.getResourceAddr(), u.getAmount());
+				return ReducerResult.incomplete(nextState);
 			}
 		));
 	}

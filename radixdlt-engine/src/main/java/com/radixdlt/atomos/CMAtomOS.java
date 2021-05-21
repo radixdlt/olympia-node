@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.Procedures;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
@@ -96,11 +97,11 @@ public final class CMAtomOS {
 				(d, r, pubKey) -> pubKey.map(k -> d.getSubstate().allow(k, d.getArg())).orElse(false),
 				(d, s, r) -> {
 					if (d.getArg().isEmpty()) {
-						return ReducerResult.error("REAddr must be claimed with a name");
+						throw new ProcedureException("REAddr must be claimed with a name");
 					}
 					var arg = d.getArg().get();
 					if (!NAME_PATTERN.matcher(new String(arg)).matches()) {
-						return ReducerResult.error("invalid rri name");
+						throw new ProcedureException("invalid rri name");
 					}
 					return ReducerResult.incomplete(new REAddrClaim(d.getSubstate(), d.getArg().get()));
 				}

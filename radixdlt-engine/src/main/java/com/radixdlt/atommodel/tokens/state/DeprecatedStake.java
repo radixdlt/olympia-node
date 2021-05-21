@@ -46,6 +46,10 @@ public final class DeprecatedStake implements Fungible {
 		this.amount = Objects.requireNonNull(amount);
 	}
 
+	public REAddr getResourceAddr() {
+		return REAddr.ofNativeToken();
+	}
+
 	public ECPublicKey getDelegateKey() {
 		return delegateKey;
 	}

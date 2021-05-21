@@ -38,6 +38,7 @@ import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
@@ -95,7 +96,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			(u, r, k) -> true,
 			(s, u, r) -> {
 				if (!u.getAddr().equals(s.getAddr())) {
-					return ReducerResult.error("Addresses don't match");
+					throw new ProcedureException("Addresses don't match");
 				}
 
 				if (u.isMutable()) {
@@ -119,11 +120,11 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			(u, r, k) -> true,
 			(s, u, r) -> {
 				if (!u.getResourceAddr().equals(s.tokenDefinitionParticle.getAddr())) {
-					return ReducerResult.error("Addresses don't match.");
+					throw new ProcedureException("Addresses don't match.");
 				}
 
 				if (!u.getAmount().equals(s.tokenDefinitionParticle.getSupply().orElseThrow())) {
-					return ReducerResult.error("Initial supply doesn't match.");
+					throw new ProcedureException("Initial supply doesn't match.");
 				}
 
 				var action = new CreateFixedToken(
@@ -230,20 +231,20 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			},
 			(s, r) -> {
 				if (s.resourceInBucket.epochUnlocked().isPresent()) {
-					return ReducerResult.error("Cannot mint locked tokens.");
+					throw new ProcedureException("Cannot mint locked tokens.");
 				}
 
 				var p = r.loadAddr(null, s.resourceInBucket.resourceAddr());
 				if (p.isEmpty()) {
-					return ReducerResult.error("Token does not exist.");
+					throw new ProcedureException("Token does not exist.");
 				}
 				var particle = p.get();
 				if (!(particle instanceof TokenDefinitionParticle)) {
-					return ReducerResult.error("Rri is not a token");
+					throw new ProcedureException("Rri is not a token");
 				}
 				var tokenDef = (TokenDefinitionParticle) particle;
 				if (!tokenDef.isMutable()) {
-					return ReducerResult.error("Can only mint mutable tokens.");
+					throw new ProcedureException("Can only mint mutable tokens.");
 				}
 
 				var t = (TokensParticle) s.initialParticle;
@@ -260,15 +261,15 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			(s, r) -> {
 				var p = r.loadAddr(null, s.tokenAddr);
 				if (p.isEmpty()) {
-					return ReducerResult.error("Token does not exist.");
+					throw new ProcedureException("Token does not exist.");
 				}
 				var particle = p.get();
 				if (!(particle instanceof TokenDefinitionParticle)) {
-					return ReducerResult.error("Rri is not a token");
+					throw new ProcedureException("Rri is not a token");
 				}
 				var tokenDef = (TokenDefinitionParticle) particle;
 				if (!tokenDef.isMutable()) {
-					return ReducerResult.error("Can only burn mutable tokens.");
+					throw new ProcedureException("Can only burn mutable tokens.");
 				}
 
 				// FIXME: These aren't 100% correct
@@ -312,7 +313,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			(u, r, k) -> true,
 			(s, u, r) -> {
 				if (!s.tokenAddr.equals(u.getResourceAddr())) {
-					return ReducerResult.error("Not the same address.");
+					throw new ProcedureException("Not the same address.");
 				}
 				var amt = UInt384.from(u.getAmount());
 				var nextRemainder = s.subtract(u.resourceInBucket(), amt);
@@ -341,7 +342,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			(d, r, k) -> d.getSubstate().allowedToWithdraw(k, r),
 			(d, s, r) -> {
 				if (!s.resourceInBucket.resourceAddr().equals(d.getSubstate().getResourceAddr())) {
-					return ReducerResult.error("Not the same address.");
+					throw new ProcedureException("Not the same address.");
 				}
 				var amt = UInt384.from(d.getSubstate().getAmount());
 				var nextRemainder = s.subtract(amt);

@@ -345,17 +345,20 @@ public final class TxBuilder {
 		String errorMessage
 	) {
 		return mapper -> {
+			// Take
 			var remainder = downFungible(
 				particleClass,
 				particlePredicate,
 				amount,
 				errorMessage
 			);
-			var substateUp = mapper.map(amount);
-			up(substateUp);
 			if (!remainder.isZero()) {
 				up(remainderMapper.map(remainder));
 			}
+
+			// Put
+			var substateUp = mapper.map(amount);
+			up(substateUp);
 		};
 	}
 

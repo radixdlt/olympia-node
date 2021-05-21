@@ -25,7 +25,7 @@ import com.radixdlt.utils.Pair;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
-public class DownProcedure<D extends Particle, S extends ReducerState> {
+public class DownProcedure<D extends Particle, S extends ReducerState> implements MethodProcedure {
 	private final Class<D> downClass;
 	private final Class<S> reducerStateClass;
 	private final DownReducer<D, S> downReducer;
@@ -57,7 +57,8 @@ public class DownProcedure<D extends Particle, S extends ReducerState> {
 		return inputAuthorization.verify(downSubstate, readableAddrs, signedBy);
 	}
 
-	public ReducerResult reduce(SubstateWithArg<D> downSubstate, S reducerState, ReadableAddrs readableAddrs) {
-		return downReducer.reduce(downSubstate, reducerState, readableAddrs);
+	@Override
+	public ReducerResult call(Object o, ReducerState reducerState, ReadableAddrs readableAddrs) throws ProcedureException {
+		return downReducer.reduce((SubstateWithArg<D>) o, (S) reducerState, readableAddrs);
 	}
 }

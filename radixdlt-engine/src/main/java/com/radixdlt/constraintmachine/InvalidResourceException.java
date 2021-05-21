@@ -18,8 +18,15 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.store.ReadableAddrs;
+import com.radixdlt.identifiers.REAddr;
 
-public interface EndReducer<S extends ReducerState> {
-	ReducerResult reduce(S reducerState, ReadableAddrs readableAddrs) throws ProcedureException;
+public final class InvalidResourceException extends ProcedureException {
+	private final REAddr expected;
+	private final REAddr actual;
+
+	public InvalidResourceException(REAddr expected, REAddr actual) {
+		super("Expected resource " + expected + " but was " + actual);
+		this.expected = expected;
+		this.actual = actual;
+	}
 }

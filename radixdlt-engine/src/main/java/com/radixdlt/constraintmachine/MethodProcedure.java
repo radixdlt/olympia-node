@@ -20,6 +20,6 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.store.ReadableAddrs;
 
-public interface EndReducer<S extends ReducerState> {
-	ReducerResult reduce(S reducerState, ReadableAddrs readableAddrs) throws ProcedureException;
+public interface MethodProcedure {
+	ReducerResult call(Object o, ReducerState reducerState, ReadableAddrs readableAddrs) throws ProcedureException;
 }
