@@ -69,7 +69,7 @@ public final class REParsedTxn {
 
 	public boolean isSystemOnly() {
 		return actions.stream().flatMap(a -> a.getInstructions().stream())
-			.allMatch(i -> i.getSubstate().getParticle() instanceof SystemParticle);
+			.anyMatch(i -> i.getSubstate().getParticle() instanceof SystemParticle);
 	}
 
 	public List<REParsedInstruction> stateUpdates() {

@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atommodel.system.SystemConstraintScrypt;
+import com.radixdlt.atommodel.system.SystemConstraintScryptV1;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.CMErrorCode;
@@ -48,7 +48,7 @@ public class SystemTest {
 	@Before
 	public void setup() {
 		CMAtomOS cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new SystemConstraintScrypt());
+		cmAtomOS.load(new SystemConstraintScryptV1());
 		ConstraintMachine cm = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())

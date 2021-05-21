@@ -57,7 +57,7 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_staked_token_with_null_amount__result_has_error() {
-		StakedTokensParticle staked = mock(StakedTokensParticle.class);
+		DeprecatedStake staked = mock(DeprecatedStake.class);
 		when(staked.getAmount()).thenReturn(null);
 		assertThat(staticCheck.apply(staked).getErrorMessage())
 			.contains("null");
@@ -74,16 +74,16 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_staked_token_with_zero_amount__result_has_error() {
-		StakedTokensParticle stakedTokensParticle = mock(StakedTokensParticle.class);
-		when(stakedTokensParticle.getDelegateKey()).thenReturn(mock(ECPublicKey.class));
-		when(stakedTokensParticle.getAmount()).thenReturn(UInt256.ZERO);
-		assertThat(staticCheck.apply(stakedTokensParticle).getErrorMessage())
+		DeprecatedStake delegatedStake = mock(DeprecatedStake.class);
+		when(delegatedStake.getDelegateKey()).thenReturn(mock(ECPublicKey.class));
+		when(delegatedStake.getAmount()).thenReturn(UInt256.ZERO);
+		assertThat(staticCheck.apply(delegatedStake).getErrorMessage())
 			.contains("zero");
 	}
 
 	@Test
 	public void when_validating_staked_token_with_null_delegate_address__result_has_error() {
-		StakedTokensParticle staked = mock(StakedTokensParticle.class);
+		DeprecatedStake staked = mock(DeprecatedStake.class);
 		when(staked.getDelegateKey()).thenReturn(null);
 		assertThat(staticCheck.apply(staked).getErrorMessage())
 			.contains("delegateAddress");

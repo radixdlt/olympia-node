@@ -24,8 +24,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RegisteredValidators;
-import com.radixdlt.statecomputer.Stakes;
+import com.radixdlt.statecomputer.StakedValidators;
 import com.radixdlt.statecomputer.ValidatorDetails;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.FunctionalUtils;
@@ -51,10 +50,9 @@ public class ValidatorInfoService {
 	public Result<Tuple2<Optional<ECPublicKey>, List<ValidatorInfoDetails>>> getValidators(
 		int size, Optional<ECPublicKey> cursor
 	) {
-		var validators = radixEngine.getComputedState(RegisteredValidators.class);
-		var stakes = radixEngine.getComputedState(Stakes.class);
+		var validators = radixEngine.getComputedState(StakedValidators.class);
 
-		var result = validators.map((address, details) -> fillDetails(address, details, stakes));
+		var result = validators.map(this::fillDetails);
 		result.sort(Comparator.comparing(ValidatorInfoDetails::getTotalStake).reversed());
 
 		var paged = cursor
@@ -68,22 +66,21 @@ public class ValidatorInfoService {
 	}
 
 	public Result<ValidatorInfoDetails> getValidator(ECPublicKey validatorPublicKey) {
-		var validators = radixEngine.getComputedState(RegisteredValidators.class);
-		var stakes = radixEngine.getComputedState(Stakes.class);
+		var validators = radixEngine.getComputedState(StakedValidators.class);
 
 		return Result.fromOptional(
 			UNKNOWN_VALIDATOR.with(ValidatorAddress.of(validatorPublicKey)),
-			validators.mapSingle(validatorPublicKey, details -> fillDetails(validatorPublicKey, details, stakes))
+			validators.mapSingle(validatorPublicKey, details -> fillDetails(validatorPublicKey, details))
 		);
 	}
 
-	private ValidatorInfoDetails fillDetails(ECPublicKey validatorKey, ValidatorDetails details, Stakes stakes) {
+	private ValidatorInfoDetails fillDetails(ECPublicKey validatorKey, ValidatorDetails details) {
 		return ValidatorInfoDetails.create(
 			validatorKey,
 			REAddr.ofPubKeyAccount(validatorKey),
 			details.getName(),
 			details.getUrl(),
-			stakes.getStake(validatorKey).orElse(UInt256.ZERO),
+			details.getStake(),
 			UInt256.ZERO,
 			true
 		);

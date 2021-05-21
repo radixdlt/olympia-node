@@ -62,7 +62,6 @@ import com.radixdlt.network.transport.tcp.TCPTransportModule;
 import com.radixdlt.network.transport.udp.UDPTransportModule;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.RadixEngineModule;
-import com.radixdlt.statecomputer.RadixEngineValidatorComputersModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
@@ -167,7 +166,6 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new RadixEngineForksModule());
 		install(new RadixEngineStateComputerModule());
 		install(new RadixEngineModule());
-		install(new RadixEngineValidatorComputersModule());
 		install(new RadixEngineStoreModule());
 
 		// Post constraint checkers - Fees, emptiness

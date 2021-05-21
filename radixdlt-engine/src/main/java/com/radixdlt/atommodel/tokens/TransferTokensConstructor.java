@@ -16,29 +16,28 @@
  *
  */
 
-package com.radixdlt.atom.construction;
+package com.radixdlt.atommodel.tokens;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.tokens.TokensParticle;
 
-public class BurnTokenConstructor implements ActionConstructor<BurnToken> {
-
+public class TransferTokensConstructor implements ActionConstructor<TransferToken> {
 	@Override
-	public void construct(BurnToken burnToken, TxBuilder txBuilder) throws TxBuilderException {
+	public void construct(TransferToken action, TxBuilder txBuilder) throws TxBuilderException {
 		var epoch = txBuilder.find(SystemParticle.class, p -> true)
 			.map(SystemParticle::getEpoch).orElse(0L);
-		txBuilder.deallocateFungible(
+
+		txBuilder.swapFungible(
 			TokensParticle.class,
-			p -> p.getResourceAddr().equals(burnToken.resourceAddr())
-				&& p.getHoldingAddr().equals(burnToken.from())
+			p -> p.getResourceAddr().equals(action.resourceAddr())
+				&& p.getHoldingAddr().equals(action.from())
 				&& p.getEpochUnlocked().map(e -> e <= epoch).orElse(true),
-			amt -> new TokensParticle(burnToken.from(), amt, burnToken.resourceAddr()),
-			burnToken.amount(),
-			"Not enough balance to for fee burn."
-		);
+			amt -> new TokensParticle(action.from(), amt, action.resourceAddr()),
+			action.amount(),
+			"Not enough balance for transfer."
+		).with(amt -> new TokensParticle(action.to(), action.amount(), action.resourceAddr()));
 	}
 }

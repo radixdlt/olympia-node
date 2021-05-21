@@ -19,20 +19,23 @@ package com.radixdlt.statecomputer;
 
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.utils.UInt256;
 
 public final class ValidatorDetails {
 	private final ECPublicKey key;
 	private final String name;
 	private final String url;
+	private final UInt256 stake;
 
-	private ValidatorDetails(ECPublicKey key, String name, String url) {
+	private ValidatorDetails(ECPublicKey key, String name, String url, UInt256 stake) {
 		this.key = key;
 		this.name = name;
 		this.url = url;
+		this.stake = stake;
 	}
 
-	public static ValidatorDetails fromParticle(ValidatorParticle particle) {
-		return new ValidatorDetails(particle.getKey(), particle.getName(), particle.getUrl());
+	public static ValidatorDetails fromParticle(ValidatorParticle particle, UInt256 stake) {
+		return new ValidatorDetails(particle.getKey(), particle.getName(), particle.getUrl(), stake);
 	}
 
 	public ECPublicKey getKey() {
@@ -45,5 +48,9 @@ public final class ValidatorDetails {
 
 	public String getUrl() {
 		return url;
+	}
+
+	public UInt256 getStake() {
+		return stake;
 	}
 }

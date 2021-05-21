@@ -49,18 +49,10 @@ public class RadixEngineModule extends AbstractModule {
 	protected void configure() {
 		bind(new TypeLiteral<BatchVerifier<LedgerAndBFTProof>>() { }).to(EpochProofVerifier.class).in(Scopes.SINGLETON);
 
-		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { });
-		Multibinder.newSetBinder(binder(), new TypeLiteral<Pair<String, StateReducer<?, ?>>>() { });
+		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?>>() { });
+		Multibinder.newSetBinder(binder(), new TypeLiteral<Pair<String, StateReducer<?>>>() { });
 		Multibinder.newSetBinder(binder(), PostParsedChecker.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<SubstateCacheRegister<?>>() { });
-	}
-
-	@Provides
-	private ValidatorSetBuilder validatorSetBuilder(
-		@MinValidators int minValidators,
-		@MaxValidators int maxValidators
-	) {
-		return ValidatorSetBuilder.create(minValidators, maxValidators);
 	}
 
 	@Provides
@@ -85,9 +77,10 @@ public class RadixEngineModule extends AbstractModule {
 		EngineStore<LedgerAndBFTProof> engineStore,
 		PostParsedChecker checker,
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
-		Set<StateReducer<?, ?>> stateReducers,
-		Set<Pair<String, StateReducer<?, ?>>> namedStateReducers,
-		Set<SubstateCacheRegister<?>> substateCacheRegisters
+		Set<StateReducer<?>> stateReducers,
+		Set<Pair<String, StateReducer<?>>> namedStateReducers,
+		Set<SubstateCacheRegister<?>> substateCacheRegisters,
+		StakedValidatorsReducer stakedValidatorsReducer
 	) {
 		var radixEngine = new RadixEngine<>(
 			actionConstructors,
@@ -104,8 +97,9 @@ public class RadixEngineModule extends AbstractModule {
 		//   .toWindowedSet(initialValidatorSet, RegisteredValidatorParticle.class, p -> p.getAddress(), 2)
 		//   .build();
 
-		radixEngine.addStateReducer(new ValidatorsReducer(), true);
-		radixEngine.addStateReducer(new StakesReducer(), true);
+		radixEngine.addStateReducer(stakedValidatorsReducer, true);
+		//radixEngine.addStateReducer(new DeprecatedStakesReducer(), true);
+		radixEngine.addStateReducer(new InflationReducer(), "inflation", true);
 
 		var systemCache = new SubstateCacheRegister<>(SystemParticle.class, p -> true);
 		radixEngine.addSubstateCache(systemCache, true);

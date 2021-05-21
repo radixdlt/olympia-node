@@ -87,7 +87,7 @@ public final class TokenDefinitionUtils {
 		return Result.success();
 	}
 
-	public static Result staticCheck(StakedTokensParticle stakedParticle) {
+	public static Result staticCheck(DeprecatedStake stakedParticle) {
 		if (stakedParticle.getDelegateKey() == null) {
 			return Result.error("delegateAddress must not be null");
 		}

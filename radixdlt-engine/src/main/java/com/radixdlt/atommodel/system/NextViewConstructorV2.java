@@ -16,25 +16,31 @@
  *
  */
 
-package com.radixdlt.atom.construction;
+package com.radixdlt.atommodel.system;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.SystemNextEpoch;
-import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 
 import java.util.Optional;
 
-public class NextEpochConstructor implements ActionConstructor<SystemNextEpoch> {
+public class NextViewConstructorV2 implements ActionConstructor<SystemNextView> {
 	@Override
-	public void construct(SystemNextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
+	public void construct(SystemNextView action, TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.swap(
 			SystemParticle.class,
 			p -> true,
 			Optional.of(SubstateWithArg.noArg(new SystemParticle(0, 0, 0))),
 			"No System particle available"
-		).with(substateDown -> new SystemParticle(substateDown.getEpoch() + 1, 0, action.timestamp()));
+		).with(substateDown -> {
+			if (action.view() <= substateDown.getView()) {
+				throw new TxBuilderException("Next view isn't higher than current view.");
+			}
+			return new SystemParticle(substateDown.getEpoch(), action.view(), action.timestamp());
+		});
+
+		txBuilder.up(new Stake(SystemConstraintScryptV2.REWARDS_PER_PROPOSAL, action.leader()));
 	}
 }

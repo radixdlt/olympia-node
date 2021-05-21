@@ -71,9 +71,7 @@ import com.radixdlt.statecomputer.InvalidProposedTxn;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.statecomputer.RegisteredValidators;
-import com.radixdlt.statecomputer.Stakes;
-import com.radixdlt.statecomputer.ValidatorSetBuilder;
+import com.radixdlt.statecomputer.StakedValidators;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.statecomputer.transaction.EmptyTransactionCheckModule;
@@ -103,9 +101,6 @@ public class SubmissionServiceTest {
 
 	@Inject
 	private RadixEngineStateComputer sut;
-
-	@Inject
-	private ValidatorSetBuilder validatorSetBuilder;
 
 	@Inject
 	private SubmissionService submissionService;
@@ -181,10 +176,7 @@ public class SubmissionServiceTest {
 	private void setupGenesis() throws RadixEngineException, TxBuilderException {
 		var branch = radixEngine.transientBranch();
 		branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
-		final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
-			branch.getComputedState(RegisteredValidators.class),
-			branch.getComputedState(Stakes.class)
-		);
+		final var genesisValidatorSet = branch.getComputedState(StakedValidators.class).toValidatorSet();
 		radixEngine.deleteBranches();
 
 		var genesisLedgerHeader = LedgerProof.genesis(

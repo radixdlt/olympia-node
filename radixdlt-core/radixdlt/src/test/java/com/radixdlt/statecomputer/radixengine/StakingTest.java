@@ -40,7 +40,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
-import com.radixdlt.statecomputer.Stakes;
+import com.radixdlt.statecomputer.StakedValidators;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
 import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
@@ -106,8 +106,7 @@ public class StakingTest {
 	public void staking_increases_stake_to_validator() throws Exception {
 		// Arrange
 		createInjector().injectMembers(this);
-		var stakes = sut.getComputedState(Stakes.class);
-		var staked = stakes.toMap().get(self.getPublicKey());
+		var staked = sut.getComputedState(StakedValidators.class).getStake(self.getPublicKey());
 
 		// Act
 		var acct = REAddr.ofPubKeyAccount(staker.getPublicKey());
@@ -116,17 +115,15 @@ public class StakingTest {
 		sut.execute(List.of(atom));
 
 		// Assert
-		var nextStaked = sut.getComputedState(Stakes.class);
-		assertThat(nextStaked.toMap().get(self.getPublicKey()))
-			.isEqualTo(UInt256.FIVE.add(staked));
+		var nextStaked = sut.getComputedState(StakedValidators.class).getStake(self.getPublicKey());
+		assertThat(nextStaked).isEqualTo(UInt256.FIVE.add(staked));
 	}
 
 	@Test
 	public void unstaking_decreases_stake_to_validator() throws Exception {
 		// Arrange
 		createInjector().injectMembers(this);
-		var stakes = sut.getComputedState(Stakes.class);
-		var staked = stakes.toMap().get(self.getPublicKey());
+		var staked = sut.getComputedState(StakedValidators.class).getStake(self.getPublicKey());
 		var acct = REAddr.ofPubKeyAccount(staker.getPublicKey());
 		var txn = sut.construct(new StakeTokens(acct, self.getPublicKey(), UInt256.FIVE))
 			.signAndBuild(staker::sign);
@@ -138,9 +135,8 @@ public class StakingTest {
 		sut.execute(List.of(nextTxn));
 
 		// Assert
-		var nextStaked = sut.getComputedState(Stakes.class);
-		assertThat(nextStaked.toMap().get(self.getPublicKey()))
-			.isEqualTo(UInt256.FIVE.add(staked).subtract(UInt256.THREE));
+		var nextStaked = sut.getComputedState(StakedValidators.class).getStake(self.getPublicKey());
+		assertThat(nextStaked).isEqualTo(UInt256.FIVE.add(staked).subtract(UInt256.THREE));
 	}
 
 	@Test

@@ -16,17 +16,27 @@
  *
  */
 
-package com.radixdlt.atom.construction;
+package com.radixdlt.atommodel.validators;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atommodel.tokens.TokensParticle;
+import com.radixdlt.atom.actions.UnregisterValidator;
 
-public class MintTokenConstructor implements ActionConstructor<MintToken> {
+public final class UnregisterValidatorConstructor implements ActionConstructor<UnregisterValidator> {
 	@Override
-	public void construct(MintToken action, TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.up(new TokensParticle(action.to(), action.amount(), action.resourceAddr()));
+	public void construct(UnregisterValidator action, TxBuilder txBuilder) throws TxBuilderException {
+		txBuilder.swap(
+			ValidatorParticle.class,
+			p -> p.getKey().equals(action.validatorKey()) && p.isRegisteredForNextEpoch(),
+			"Already unregistered."
+		).with(
+			substateDown -> new ValidatorParticle(
+				action.validatorKey(),
+				false,
+				action.name() == null ? substateDown.getName() : action.name(),
+				action.url() == null ? substateDown.getUrl() : action.url()
+			)
+		);
 	}
 }

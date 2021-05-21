@@ -48,10 +48,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.radixdlt.atom.construction.ActionErrors.DIFFERENT_SOURCE_ADDRESSES;
-import static com.radixdlt.atom.construction.ActionErrors.EMPTY_TRANSACTIONS_NOT_SUPPORTED;
-import static com.radixdlt.atom.construction.ActionErrors.SUBMISSION_FAILURE;
-import static com.radixdlt.atom.construction.ActionErrors.TRANSACTION_ADDRESS_DOES_NOT_MATCH;
+import static com.radixdlt.atom.actions.ActionErrors.DIFFERENT_SOURCE_ADDRESSES;
+import static com.radixdlt.atom.actions.ActionErrors.EMPTY_TRANSACTIONS_NOT_SUPPORTED;
+import static com.radixdlt.atom.actions.ActionErrors.SUBMISSION_FAILURE;
+import static com.radixdlt.atom.actions.ActionErrors.TRANSACTION_ADDRESS_DOES_NOT_MATCH;
 import static com.radixdlt.client.api.ApiErrors.UNABLE_TO_PREPARE_TX;
 
 public final class SubmissionService {

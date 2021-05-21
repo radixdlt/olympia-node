@@ -16,18 +16,17 @@
  *
  */
 
-package com.radixdlt.atom.construction;
+package com.radixdlt.atommodel.system;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.SystemNextView;
-import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 
 import java.util.Optional;
 
-public class NextViewConstructor implements ActionConstructor<SystemNextView> {
+public class NextViewConstructorV1 implements ActionConstructor<SystemNextView> {
 	@Override
 	public void construct(SystemNextView action, TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.assertIsSystem("Not permitted as user to execute system next view");

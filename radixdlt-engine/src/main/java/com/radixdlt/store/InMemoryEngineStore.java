@@ -67,10 +67,10 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	}
 
 	@Override
-	public <U extends Particle, V> V reduceUpParticles(
-		Class<U> particleClass,
+	public <V> V reduceUpParticles(
+		Class<? extends Particle> particleClass,
 		V initial,
-		BiFunction<V, U, V> outputReducer
+		BiFunction<V, Particle, V> outputReducer
 	) {
 		V v = initial;
 		synchronized (lock) {

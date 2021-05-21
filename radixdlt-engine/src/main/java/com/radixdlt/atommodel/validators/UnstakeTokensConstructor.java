@@ -16,29 +16,29 @@
  *
  */
 
-package com.radixdlt.atom.construction;
+package com.radixdlt.atommodel.validators;
 
-import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atommodel.tokens.StakedTokensParticle;
+import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.atommodel.tokens.DeprecatedStake;
+import com.radixdlt.atommodel.tokens.StakingConstraintScryptV2;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.identifiers.REAddr;
 
-public class StakeTokensConstructor implements ActionConstructor<StakeTokens> {
+public class UnstakeTokensConstructor implements ActionConstructor<UnstakeTokens> {
 	@Override
-	public void construct(StakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
+	public void construct(UnstakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
+		var epochUnlocked = txBuilder.find(SystemParticle.class, p -> true)
+			.map(SystemParticle::getEpoch).orElse(0L) + StakingConstraintScryptV2.EPOCHS_LOCKED;
 		txBuilder.swapFungible(
-			TokensParticle.class,
-			p -> p.getResourceAddr().isNativeToken()
-				&& p.getHoldingAddr().equals(action.from())
-				&& (action.amount().compareTo(TokenUnitConversions.SUB_UNITS) < 0
-				|| p.getAmount().compareTo(TokenUnitConversions.unitsToSubunits(1)) >= 0),
-			amt -> new TokensParticle(action.from(), amt, REAddr.ofNativeToken()),
+			DeprecatedStake.class,
+			p -> p.getOwner().equals(action.accountAddr()) && p.getDelegateKey().equals(action.from()),
+			amt -> new DeprecatedStake(amt, action.accountAddr(), action.from()),
 			action.amount(),
-			"Not enough balance for staking."
-		).with(amt -> new StakedTokensParticle(amt, action.from(), action.to()));
+			"Not enough staked."
+		).with(amt -> new TokensParticle(action.accountAddr(), amt, REAddr.ofNativeToken(), epochUnlocked));
 	}
 }

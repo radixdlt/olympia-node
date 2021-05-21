@@ -24,32 +24,27 @@ import com.radixdlt.utils.UInt256;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
  * Wrapper class for amount staked per node
  */
-public final class Stakes {
+public final class Rewards {
 	private final ImmutableMap<ECPublicKey, UInt256> stakedAmounts;
 
-	private Stakes(ImmutableMap<ECPublicKey, UInt256> stakedAmounts) {
+	private Rewards(ImmutableMap<ECPublicKey, UInt256> stakedAmounts) {
 		this.stakedAmounts = stakedAmounts;
 	}
 
-	public static Stakes create() {
-		return new Stakes(ImmutableMap.of());
+	public static Rewards create() {
+		return new Rewards(ImmutableMap.of());
 	}
 
 	public ImmutableMap<ECPublicKey, UInt256> toMap() {
 		return stakedAmounts;
 	}
 
-	public Optional<UInt256> getStake(ECPublicKey key) {
-		return Optional.ofNullable(stakedAmounts.get(key));
-	}
-
-	public Stakes add(ECPublicKey delegatedKey, UInt256 amount) {
+	public Rewards add(ECPublicKey delegatedKey, UInt256 amount) {
 		if (amount.isZero()) {
 			return this;
 		}
@@ -60,10 +55,10 @@ public final class Stakes {
 			this.stakedAmounts.entrySet().stream().filter(e -> !delegatedKey.equals(e.getKey()))
 		).collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
-		return new Stakes(nextStakedAmounts);
+		return new Rewards(nextStakedAmounts);
 	}
 
-	public Stakes remove(ECPublicKey delegatedKey, UInt256 amount) {
+	public Rewards remove(ECPublicKey delegatedKey, UInt256 amount) {
 		if (!this.stakedAmounts.containsKey(delegatedKey)) {
 			throw new IllegalStateException("Removing stake which doesn't exist.");
 		}
@@ -80,7 +75,7 @@ public final class Stakes {
 			final var nextStakedAmounts = this.stakedAmounts.entrySet().stream()
 				.filter(e -> !delegatedKey.equals(e.getKey()))
 				.collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-			return new Stakes(nextStakedAmounts);
+			return new Rewards(nextStakedAmounts);
 		} else if (comparison < 0) {
 			// reduce stake
 			final var nextAmount = oldAmount.subtract(amount);
@@ -88,10 +83,15 @@ public final class Stakes {
 				Stream.of(Maps.immutableEntry(delegatedKey, nextAmount)),
 				this.stakedAmounts.entrySet().stream().filter(e -> !delegatedKey.equals(e.getKey()))
 			).collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-			return new Stakes(nextStakedAmounts);
+			return new Rewards(nextStakedAmounts);
 		} else {
 			throw new IllegalStateException("Removing stake which doesn't exist.");
 		}
+	}
+
+	@Override
+	public String toString() {
+		return this.stakedAmounts.toString();
 	}
 
 	@Override
@@ -101,11 +101,11 @@ public final class Stakes {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof Stakes)) {
+		if (!(o instanceof Rewards)) {
 			return false;
 		}
 
-		var other = (Stakes) o;
+		var other = (Rewards) o;
 		return Objects.equals(this.stakedAmounts, other.stakedAmounts);
 	}
 }

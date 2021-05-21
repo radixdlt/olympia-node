@@ -37,8 +37,8 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 	@Override
 	public void main(SysCalls os) {
 		os.registerParticle(
-			StakedTokensParticle.class,
-			ParticleDefinition.<StakedTokensParticle>builder()
+			DeprecatedStake.class,
+			ParticleDefinition.<DeprecatedStake>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.rriMapper(p -> REAddr.ofNativeToken())
 				.build()
@@ -52,7 +52,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		// Staking
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
 			TokensParticle.class,
-			StakedTokensParticle.class,
+			DeprecatedStake.class,
 			(i, o, r) -> {
 				if (!Objects.equals(i.getHoldingAddr(), o.getOwner())) {
 					return Result.error("Owner must remain the same");
@@ -65,8 +65,8 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 
 		// For change
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
-			StakedTokensParticle.class,
-			StakedTokensParticle.class,
+			DeprecatedStake.class,
+			DeprecatedStake.class,
 			(i, o, r) -> {
 				if (!Objects.equals(i.getOwner(), o.getOwner())) {
 					return Result.error("Owners must be same");
@@ -83,7 +83,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 
 		// Exiting
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
-			StakedTokensParticle.class,
+			DeprecatedStake.class,
 			TokensParticle.class,
 			(i, o, r) -> {
 				if (!Objects.equals(i.getOwner(), o.getHoldingAddr())) {

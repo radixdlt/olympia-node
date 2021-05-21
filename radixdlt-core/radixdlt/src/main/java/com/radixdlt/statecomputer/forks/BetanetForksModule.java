@@ -35,21 +35,23 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateValidator;
-import com.radixdlt.atom.construction.BurnTokenConstructor;
-import com.radixdlt.atom.construction.CreateFixedTokenConstructor;
-import com.radixdlt.atom.construction.CreateMutableTokenConstructor;
-import com.radixdlt.atom.construction.DeprecatedUnstakeTokensConstructor;
-import com.radixdlt.atom.construction.MintTokenConstructor;
-import com.radixdlt.atom.construction.NextEpochConstructor;
-import com.radixdlt.atom.construction.NextViewConstructor;
-import com.radixdlt.atom.construction.RegisterValidatorConstructor;
-import com.radixdlt.atom.construction.SplitTokenConstructor;
-import com.radixdlt.atom.construction.StakeTokensConstructor;
-import com.radixdlt.atom.construction.TransferTokensConstructor;
-import com.radixdlt.atom.construction.UnregisterValidatorConstructor;
-import com.radixdlt.atom.construction.UnstakeTokensConstructor;
-import com.radixdlt.atom.construction.UpdateValidatorConstructor;
-import com.radixdlt.atommodel.system.SystemConstraintScrypt;
+import com.radixdlt.atommodel.tokens.BurnTokenConstructor;
+import com.radixdlt.atommodel.tokens.CreateFixedTokenConstructor;
+import com.radixdlt.atommodel.tokens.CreateMutableTokenConstructor;
+import com.radixdlt.atommodel.tokens.DeprecatedUnstakeTokensConstructor;
+import com.radixdlt.atommodel.tokens.MintTokenConstructor;
+import com.radixdlt.atommodel.system.NextEpochConstructor;
+import com.radixdlt.atommodel.system.NextViewConstructorV1;
+import com.radixdlt.atommodel.validators.RegisterValidatorConstructor;
+import com.radixdlt.atommodel.tokens.SplitTokenConstructor;
+import com.radixdlt.atommodel.tokens.StakeTokensConstructor;
+import com.radixdlt.atommodel.tokens.TransferTokensConstructor;
+import com.radixdlt.atommodel.validators.UnregisterValidatorConstructor;
+import com.radixdlt.atommodel.validators.UnstakeTokensConstructor;
+import com.radixdlt.atommodel.validators.UpdateValidatorConstructor;
+import com.radixdlt.atommodel.system.NextViewConstructorV2;
+import com.radixdlt.atommodel.system.SystemConstraintScryptV1;
+import com.radixdlt.atommodel.system.SystemConstraintScryptV2;
 import com.radixdlt.atommodel.tokens.StakingConstraintScryptV1;
 import com.radixdlt.atommodel.tokens.StakingConstraintScryptV2;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
@@ -75,7 +77,7 @@ public final class BetanetForksModule extends AbstractModule {
 		v1.load(new TokensConstraintScrypt());
 		v1.load(new StakingConstraintScryptV1());
 		v1.load(new UniqueParticleConstraintScrypt());
-		v1.load(new SystemConstraintScrypt());
+		v1.load(new SystemConstraintScryptV1());
 		var betanet1 = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(v1.virtualizedUpParticles())
 			.setParticleTransitionProcedures(v1.buildTransitionProcedures())
@@ -89,7 +91,7 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(DeprecatedUnstakeTokens.class, new DeprecatedUnstakeTokensConstructor())
 			.put(MintToken.class, new MintTokenConstructor())
 			.put(SystemNextEpoch.class, new NextEpochConstructor())
-			.put(SystemNextView.class, new NextViewConstructor())
+			.put(SystemNextView.class, new NextViewConstructorV1())
 			.put(RegisterValidator.class, new RegisterValidatorConstructor())
 			.put(SplitToken.class, new SplitTokenConstructor())
 			.put(StakeTokens.class, new StakeTokensConstructor())
@@ -111,7 +113,7 @@ public final class BetanetForksModule extends AbstractModule {
 		v2.load(new TokensConstraintScrypt());
 		v2.load(new StakingConstraintScryptV2());
 		v2.load(new UniqueParticleConstraintScrypt());
-		v2.load(new SystemConstraintScrypt());
+		v2.load(new SystemConstraintScryptV1());
 		var betanet2 = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(v2.virtualizedUpParticles())
 			.setParticleTransitionProcedures(v2.buildTransitionProcedures())
@@ -125,7 +127,7 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(DeprecatedUnstakeTokens.class, new DeprecatedUnstakeTokensConstructor())
 			.put(MintToken.class, new MintTokenConstructor())
 			.put(SystemNextEpoch.class, new NextEpochConstructor())
-			.put(SystemNextView.class, new NextViewConstructor())
+			.put(SystemNextView.class, new NextViewConstructorV1())
 			.put(RegisterValidator.class, new RegisterValidatorConstructor())
 			.put(SplitToken.class, new SplitTokenConstructor())
 			.put(StakeTokens.class, new StakeTokensConstructor())
@@ -136,5 +138,40 @@ public final class BetanetForksModule extends AbstractModule {
 			.build();
 
 		return new ForkConfig(betanet2, actionConstructors, View.of(10000L));
+	}
+
+	@ProvidesIntoMap
+	@EpochMapKey(epoch = 500L)
+	ForkConfig betanetV3() {
+		final CMAtomOS v3 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
+		v3.load(new ValidatorConstraintScrypt()); // load before TokensConstraintScrypt due to dependency
+		v3.load(new TokensConstraintScrypt());
+		v3.load(new StakingConstraintScryptV2());
+		v3.load(new UniqueParticleConstraintScrypt());
+		v3.load(new SystemConstraintScryptV2());
+		var betanet3 = new ConstraintMachine.Builder()
+			.setVirtualStoreLayer(v3.virtualizedUpParticles())
+			.setParticleTransitionProcedures(v3.buildTransitionProcedures())
+			.setParticleStaticCheck(v3.buildParticleStaticCheck())
+			.build();
+
+		var actionConstructors = ActionConstructors.newBuilder()
+			.put(BurnToken.class, new BurnTokenConstructor())
+			.put(CreateFixedToken.class, new CreateFixedTokenConstructor())
+			.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
+			.put(DeprecatedUnstakeTokens.class, new DeprecatedUnstakeTokensConstructor())
+			.put(MintToken.class, new MintTokenConstructor())
+			.put(SystemNextEpoch.class, new NextEpochConstructor())
+			.put(SystemNextView.class, new NextViewConstructorV2())
+			.put(RegisterValidator.class, new RegisterValidatorConstructor())
+			.put(SplitToken.class, new SplitTokenConstructor())
+			.put(StakeTokens.class, new StakeTokensConstructor())
+			.put(TransferToken.class, new TransferTokensConstructor())
+			.put(UnregisterValidator.class, new UnregisterValidatorConstructor())
+			.put(UnstakeTokens.class, new UnstakeTokensConstructor())
+			.put(UpdateValidator.class, new UpdateValidatorConstructor())
+			.build();
+
+		return new ForkConfig(betanet3, actionConstructors, View.of(10000L));
 	}
 }

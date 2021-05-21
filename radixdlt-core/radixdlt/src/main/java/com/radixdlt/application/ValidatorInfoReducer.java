@@ -21,17 +21,19 @@ package com.radixdlt.application;
 import com.google.inject.Inject;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.StateReducer;
 
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 /**
  * Reduces radix engine state to validator info
  */
-public final class ValidatorInfoReducer implements StateReducer<ValidatorInfo, ValidatorParticle> {
+public final class ValidatorInfoReducer implements StateReducer<ValidatorInfo> {
 	private final ECPublicKey self;
 
 	@Inject
@@ -45,8 +47,8 @@ public final class ValidatorInfoReducer implements StateReducer<ValidatorInfo, V
 	}
 
 	@Override
-	public Class<ValidatorParticle> particleClass() {
-		return ValidatorParticle.class;
+	public Set<Class<? extends Particle>> particleClasses() {
+		return Set.of(ValidatorParticle.class);
 	}
 
 	@Override
@@ -55,8 +57,9 @@ public final class ValidatorInfoReducer implements StateReducer<ValidatorInfo, V
 	}
 
 	@Override
-	public BiFunction<ValidatorInfo, ValidatorParticle, ValidatorInfo> outputReducer() {
-		return (i, r) -> {
+	public BiFunction<ValidatorInfo, Particle, ValidatorInfo> outputReducer() {
+		return (i, p) -> {
+			var r = (ValidatorParticle) p;
 			if (r.getKey().equals(self)) {
 				return new ValidatorInfo(
 					r.getName(),
@@ -69,7 +72,7 @@ public final class ValidatorInfoReducer implements StateReducer<ValidatorInfo, V
 	}
 
 	@Override
-	public BiFunction<ValidatorInfo, ValidatorParticle, ValidatorInfo> inputReducer() {
+	public BiFunction<ValidatorInfo, Particle, ValidatorInfo> inputReducer() {
 		return (i, r) -> i;
 	}
 }

@@ -22,7 +22,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
-import com.radixdlt.statecomputer.RadixEngineValidatorComputersModule;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
@@ -62,7 +61,6 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
 		install(new DeterministicEnvironmentModule());
 		install(new FunctionalNodeModule());
 		install(new RadixEngineStoreModule());
-		install(new RadixEngineValidatorComputersModule());
 		install(new PersistenceModule());
 		install(new ConsensusRecoveryModule());
 		install(new LedgerRecoveryModule());

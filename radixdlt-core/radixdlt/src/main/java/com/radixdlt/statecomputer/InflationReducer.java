@@ -18,9 +18,7 @@
 
 package com.radixdlt.statecomputer;
 
-import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.atommodel.system.Stake;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
 
@@ -28,36 +26,35 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-/**
- * Reduces system level information
- */
-class SystemReducer implements StateReducer<EpochView> {
-
+public final class InflationReducer implements StateReducer<Rewards> {
 	@Override
-	public Class<EpochView> stateClass() {
-		return EpochView.class;
+	public Class<Rewards> stateClass() {
+		return Rewards.class;
 	}
 
 	@Override
 	public Set<Class<? extends Particle>> particleClasses() {
-		return Set.of(SystemParticle.class);
+		return Set.of(Stake.class);
 	}
 
 	@Override
-	public Supplier<EpochView> initial() {
-		return () -> new EpochView(0, View.of(0));
+	public Supplier<Rewards> initial() {
+		return Rewards::create;
 	}
 
 	@Override
-	public BiFunction<EpochView, Particle, EpochView> outputReducer() {
-		return (cur, p) -> {
-			var s = (SystemParticle) p;
-			return new EpochView(s.getEpoch(), View.of(s.getView()));
+	public BiFunction<Rewards, Particle, Rewards> outputReducer() {
+		return (prev, p) -> {
+			var s = (Stake) p;
+			return prev.add(s.getValidatorKey(), s.getAmount());
 		};
 	}
 
 	@Override
-	public BiFunction<EpochView, Particle, EpochView> inputReducer() {
-		return (cur, p) -> cur;
+	public BiFunction<Rewards, Particle, Rewards> inputReducer() {
+		return (prev, p) -> {
+			var s = (Stake) p;
+			return prev.remove(s.getValidatorKey(), s.getAmount());
+		};
 	}
 }

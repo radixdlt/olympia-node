@@ -41,7 +41,7 @@ public final class MempoolFillerModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(MempoolFillerUpdate.class);
 		eventBinder.addBinding().toInstance(ScheduledMempoolFill.class);
 
-		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { })
+		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?>>() { })
 			.addBinding().to(ParticleCounter.class).in(Scopes.SINGLETON);
 	}
 
@@ -56,7 +56,7 @@ public final class MempoolFillerModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	private StateReducer<?, ?> particleCounter(@Self REAddr self) {
+	private StateReducer<?> particleCounter(@Self REAddr self) {
 		return new ParticleCounter(self);
 	}
 }

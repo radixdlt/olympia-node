@@ -39,9 +39,7 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RegisteredValidators;
-import com.radixdlt.statecomputer.Stakes;
-import com.radixdlt.statecomputer.ValidatorSetBuilder;
+import com.radixdlt.statecomputer.StakedValidators;
 import com.radixdlt.utils.UInt256;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
@@ -57,7 +55,6 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 	private final ImmutableList<StakeDelegation> stakeDelegations;
 	private final MutableTokenDefinition tokenDefinition;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final ValidatorSetBuilder validatorSetBuilder;
 	private final LedgerAccumulator ledgerAccumulator;
 	private final long timestamp;
 	private final List<TxAction> additionalActions;
@@ -66,7 +63,6 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 	public GenesisProvider(
 		@Genesis long timestamp,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		ValidatorSetBuilder validatorSetBuilder,
 		LedgerAccumulator ledgerAccumulator,
 		@NativeToken MutableTokenDefinition tokenDefinition,
 		@Genesis ImmutableList<TokenIssuance> tokenIssuances,
@@ -76,7 +72,6 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 	) {
 		this.timestamp = timestamp;
 		this.radixEngine = radixEngine;
-		this.validatorSetBuilder = validatorSetBuilder;
 		this.ledgerAccumulator = ledgerAccumulator;
 		this.tokenDefinition = tokenDefinition;
 		this.tokenIssuances = tokenIssuances;
@@ -132,10 +127,8 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 			var txn = branch.construct(genesisBuilder.build()).buildWithoutSignature();
 			branch.execute(List.of(txn), PermissionLevel.SYSTEM);
 
-			final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
-				branch.getComputedState(RegisteredValidators.class),
-				branch.getComputedState(Stakes.class)
-			);
+			final var genesisValidatorSet = branch.getComputedState(StakedValidators.class)
+				.toValidatorSet();
 			radixEngine.deleteBranches();
 
 			var accumulatorState = new AccumulatorState(0, txn.getId().asHashCode());

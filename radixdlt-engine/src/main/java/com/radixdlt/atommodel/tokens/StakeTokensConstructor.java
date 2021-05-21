@@ -16,25 +16,27 @@
  *
  */
 
-package com.radixdlt.atom.construction;
+package com.radixdlt.atommodel.tokens;
 
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.DeprecatedUnstakeTokens;
-import com.radixdlt.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.atommodel.tokens.TokensParticle;
+import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.identifiers.REAddr;
 
-public class DeprecatedUnstakeTokensConstructor implements ActionConstructor<DeprecatedUnstakeTokens> {
+public final class StakeTokensConstructor implements ActionConstructor<StakeTokens> {
 	@Override
-	public void construct(DeprecatedUnstakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
+	public void construct(StakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.swapFungible(
-			StakedTokensParticle.class,
-			p -> p.getOwner().equals(action.accountAddr()) && p.getDelegateKey().equals(action.from()),
-			amt -> new StakedTokensParticle(amt, action.accountAddr(), action.from()),
+			TokensParticle.class,
+			p -> p.getResourceAddr().isNativeToken()
+				&& p.getHoldingAddr().equals(action.from())
+				&& (action.amount().compareTo(TokenUnitConversions.SUB_UNITS) < 0
+				|| p.getAmount().compareTo(TokenUnitConversions.unitsToSubunits(1)) >= 0),
+			amt -> new TokensParticle(action.from(), amt, REAddr.ofNativeToken()),
 			action.amount(),
-			"Not enough staked."
-		).with(amt -> new TokensParticle(action.accountAddr(), amt, REAddr.ofNativeToken()));
+			"Not enough balance for staking."
+		).with(amt -> new DeprecatedStake(amt, action.from(), action.to()));
 	}
 }

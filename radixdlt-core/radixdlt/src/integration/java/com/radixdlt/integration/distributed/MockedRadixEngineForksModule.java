@@ -50,7 +50,7 @@ public class MockedRadixEngineForksModule extends AbstractModule {
 						e -> new ForkConfig(
 							e.getValue().getConstraintMachine(),
 							e.getValue().getActionConstructors(),
-							View.of(viewCeiling.getAndAdd(-5))
+							View.of(viewCeiling.get() % 2 == 0 ? viewCeiling.getAndIncrement() : viewCeiling.getAndDecrement())
 						)
 				))
 		);

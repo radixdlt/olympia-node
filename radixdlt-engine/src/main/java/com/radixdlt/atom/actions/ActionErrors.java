@@ -16,7 +16,7 @@
  *
  */
 
-package com.radixdlt.atom.construction;
+package com.radixdlt.atom.actions;
 
 import com.radixdlt.utils.functional.Failure;
 
