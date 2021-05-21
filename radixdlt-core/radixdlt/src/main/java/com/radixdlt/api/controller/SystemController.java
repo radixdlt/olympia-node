@@ -18,99 +18,27 @@
 
 package com.radixdlt.api.controller;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.radix.universe.system.LocalSystem;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.identifiers.NodeAddress;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.qualifier.System;
 import com.radixdlt.api.server.JsonRpcServer;
-import com.radixdlt.identifiers.ValidatorAddress;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.systeminfo.InMemorySystemInfo;
-import com.radixdlt.utils.Bytes;
 
-import java.util.stream.Stream;
-
-import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
-import org.radix.universe.system.LocalSystem;
-
-import static com.radixdlt.api.JsonRpcUtil.jsonArray;
-
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.RestUtils.respond;
 
 public final class SystemController implements Controller {
 	private final JsonRpcServer jsonRpcServer;
-	private final LocalSystem localSystem;
-	private final VerifiedTxnsAndProof genesis;
-	private final InMemorySystemInfo inMemorySystemInfo;
-	private final PeersView peersView;
 
-	public SystemController(
-		@System JsonRpcServer jsonRpcServer,
-		InMemorySystemInfo inMemorySystemInfo,
-		LocalSystem localSystem,
-		PeersView peersView,
-		@Genesis VerifiedTxnsAndProof genesis
-	) {
+	public SystemController(@System JsonRpcServer jsonRpcServer) {
 		this.jsonRpcServer = jsonRpcServer;
-		this.inMemorySystemInfo = inMemorySystemInfo;
-		this.peersView = peersView;
-		this.genesis = genesis;
-		this.localSystem = localSystem;
 	}
 
 	@Override
 	public void configureRoutes(final RoutingHandler handler) {
 		handler.post("/system", jsonRpcServer::handleHttpRequest);
 		handler.post("/system/", jsonRpcServer::handleHttpRequest);
-
-		//TODO: remove code below
-		//TODO: merge functionality into SystemService
-		handler.get("/system/info", this::respondWithLocalSystem);
-		handler.get("/system/checkpoints", this::respondWithGenesis);
-		handler.get("/system/proof", this::respondWithCurrentProof);
-		handler.get("/system/epochproof", this::respondWithEpochProof);
-		handler.get("/system/peers", this::respondWithLivePeers);
 	}
-
-	void respondWithCurrentProof(final HttpServerExchange exchange) {
-		var proof = inMemorySystemInfo.getCurrentProof();
-		respond(exchange, proof == null ? new JSONObject() : proof.asJSON());
-	}
-
-	void respondWithEpochProof(final HttpServerExchange exchange) {
-		var proof = inMemorySystemInfo.getEpochProof();
-		respond(exchange, proof == null ? new JSONObject() : proof.asJSON());
-	}
-
-	@VisibleForTesting
-	void respondWithLocalSystem(final HttpServerExchange exchange) {
-		var json = DefaultSerialization.getInstance().toJsonObject(localSystem, DsonOutput.Output.API);
-		respond(exchange, json);
-	}
-
-	@VisibleForTesting
-	void respondWithGenesis(final HttpServerExchange exchange) {
-		var jsonObject = new JSONObject();
-		var txns = new JSONArray();
-		genesis.getTxns().forEach(txn -> txns.put(Bytes.toHexString(txn.getPayload())));
-		jsonObject.put("txn", txns.get(0));
-		jsonObject.put("proof", genesis.getProof().asJSON());
-
-		respond(exchange, jsonObject);
-	}
-
-
-	private void respondWithLivePeers(final HttpServerExchange exchange) {
+}
+/*
+private void respondWithLivePeers(final HttpServerExchange exchange) {
 		var peerArray = new JSONArray();
 		this.peersView.peers()
 			.map(peer -> {
@@ -130,4 +58,4 @@ public final class SystemController implements Controller {
 
 		respond(exchange, peerArray);
 	}
-}
+ */

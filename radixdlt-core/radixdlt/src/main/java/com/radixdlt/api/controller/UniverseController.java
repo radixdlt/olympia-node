@@ -16,32 +16,23 @@
  *
  */
 
-package com.radixdlt.api;
+package com.radixdlt.api.controller;
 
-import com.google.inject.Inject;
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.universe.Universe;
-import io.undertow.server.HttpServerExchange;
+import com.radixdlt.api.Controller;
+
 import io.undertow.server.RoutingHandler;
-import org.json.JSONObject;
 
 import static com.radixdlt.api.RestUtils.respond;
 
 public final class UniverseController implements Controller {
-	private final JSONObject universeJson;
+	private String universeJson;
 
-	@Inject
-	public UniverseController(Universe universe) {
-		this.universeJson = DefaultSerialization.getInstance().toJsonObject(universe, DsonOutput.Output.API);
+	public UniverseController(String universeJson) {
+		this.universeJson = universeJson;
 	}
 
 	@Override
 	public void configureRoutes(RoutingHandler handler) {
-		handler.get("/universe.json", this::respondWithUniverse);
-	}
-
-	void respondWithUniverse(final HttpServerExchange exchange) {
-		respond(exchange, universeJson);
+		handler.get("/universe.json", exchange -> respond(exchange, universeJson));
 	}
 }

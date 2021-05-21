@@ -17,21 +17,18 @@
 
 package com.radixdlt.api.module;
 
-import org.radix.universe.system.LocalSystem;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.api.controller.SystemController;
+import com.radixdlt.api.handler.SystemHandler;
 import com.radixdlt.api.qualifier.AtNode;
 import com.radixdlt.api.qualifier.System;
 import com.radixdlt.api.server.JsonRpcServer;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.systeminfo.InMemorySystemInfo;
 
 import java.util.Map;
 
@@ -42,38 +39,121 @@ public class SystemEndpointModule extends AbstractModule {
 		return new JsonRpcServer(additionalHandlers);
 	}
 
-	//TODO: remove/rework/replace
 	@AtNode
 	@ProvidesIntoSet
-	public Controller systemController(
-		@System JsonRpcServer jsonRpcServer,
-		InMemorySystemInfo inMemorySystemInfo,
-		LocalSystem localSystem,
-		AddressBook addressBook,
-		@Genesis VerifiedTxnsAndProof genesis
-	) {
-		return new SystemController(jsonRpcServer, inMemorySystemInfo, localSystem, addressBook, genesis);
+	public Controller systemController(@System JsonRpcServer jsonRpcServer) {
+		return new SystemController(jsonRpcServer);
 	}
 
-	//TODO: replace with system endpoints
-//	@Construct
-//	@ProvidesIntoMap
-//	@StringMapKey("transaction.build")
-//	public JsonRpcHandler transactionBuild(ConstructionHandler constructionHandler) {
-//		return constructionHandler::handleBuildTransaction;
-//	}
-//
-//	@Construct
-//	@ProvidesIntoMap
-//	@StringMapKey("transaction.finalize")
-//	public JsonRpcHandler finalizeTransaction(ConstructionHandler constructionHandler) {
-//		return constructionHandler::handleFinalizeTransaction;
-//	}
-//
-//	@Construct
-//	@ProvidesIntoMap
-//	@StringMapKey("transaction.submit")
-//	public JsonRpcHandler transactionSubmit(ConstructionHandler constructionHandler) {
-//		return constructionHandler::handleSubmitTransaction;
-//	}
+	@System
+	@ProvidesIntoMap
+	@StringMapKey("api.get_configuration")
+	public JsonRpcHandler apiGetConfiguration(SystemHandler systemHandler) {
+		return systemHandler::apiGetConfiguration;
+	}
+
+	@System
+	@ProvidesIntoMap
+	@StringMapKey("api.get_data")
+	public JsonRpcHandler apiGetData(SystemHandler systemHandler) {
+		return systemHandler::apiGetData;
+	}
+
+	@System
+	@ProvidesIntoMap
+	@StringMapKey("bft.get_configuration")
+	public JsonRpcHandler bftGetConfiguration(SystemHandler systemHandler) {
+		return systemHandler::bftGetConfiguration;
+	}
+
+	@System
+	@ProvidesIntoMap
+	@StringMapKey("bft.get_data")
+	public JsonRpcHandler bftGetData(SystemHandler systemHandler) {
+		return systemHandler::bftGetData;
+	}
+
+	@System
+	@ProvidesIntoMap
+	@StringMapKey("mempool.get_configuration")
+	public JsonRpcHandler mempoolGetConfiguration(SystemHandler systemHandler) {
+		return systemHandler::mempoolGetConfiguration;
+	}
+
+	@System
+	@ProvidesIntoMap
+	@StringMapKey("mempool.get_data")
+	public JsonRpcHandler mempoolGetData(SystemHandler systemHandler) {
+		return systemHandler::mempoolGetData;
+	}
+
+	@System
+	@ProvidesIntoMap
+	@StringMapKey("ledger.get_latest_proof")
+	public JsonRpcHandler ledgerGetLatestProof(SystemHandler systemHandler) {
+		return systemHandler::ledgerGetLatestProof;
+	}
+
+	@System
+	@ProvidesIntoMap
+	@StringMapKey("ledger.get_latest_epoch_proof")
+	public JsonRpcHandler ledgerGetLatestEpochProof(SystemHandler systemHandler) {
+		return systemHandler::ledgerGetLatestEpochProof;
+	}
+
+	@System
+	@ProvidesIntoMap
+	@StringMapKey("radix_engine.get_configuration")
+	public JsonRpcHandler radixEngineGetConfiguration(SystemHandler systemHandler) {
+		return systemHandler::radixEngineGetConfiguration;
+	}
+
+	@System
+	@ProvidesIntoMap
+	@StringMapKey("radix_engine.get_data")
+	public JsonRpcHandler radixEngineGetData(SystemHandler systemHandler) {
+		return systemHandler::radixEngineGetData;
+	}
+
+	@System
+	@ProvidesIntoMap
+	@StringMapKey("sync.get_configuration")
+	public JsonRpcHandler syncGetConfiguration(SystemHandler systemHandler) {
+		return systemHandler::syncGetConfiguration;
+	}
+
+	@System
+	@ProvidesIntoMap
+	@StringMapKey("sync.get_data")
+	public JsonRpcHandler syncGetData(SystemHandler systemHandler) {
+		return systemHandler::syncGetData;
+	}
+
+	@System
+	@ProvidesIntoMap
+	@StringMapKey("networking.get_configuration")
+	public JsonRpcHandler networkingGetConfiguration(SystemHandler systemHandler) {
+		return systemHandler::networkingGetConfiguration;
+	}
+
+	@System
+	@ProvidesIntoMap
+	@StringMapKey("networking.get_peers")
+	public JsonRpcHandler networkingGetPeers(SystemHandler systemHandler) {
+		return systemHandler::networkingGetPeers;
+	}
+
+	@System
+	@ProvidesIntoMap
+	@StringMapKey("networking.get_data")
+	public JsonRpcHandler networkingGetData(SystemHandler systemHandler) {
+		return systemHandler::networkingGetData;
+	}
+
+	@System
+	@ProvidesIntoMap
+	@StringMapKey("checkpoints.get_checkpoints")
+	public JsonRpcHandler checkpointsGetCheckpoints(SystemHandler systemHandler) {
+		return systemHandler::checkpointsGetCheckpoints;
+	}
 }

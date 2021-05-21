@@ -29,15 +29,26 @@ import com.radixdlt.api.module.UniverseEndpointModule;
 import com.radixdlt.api.module.ValidationEndpointModule;
 import com.radixdlt.api.module.VersionEndpointModule;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.universe.Universe.UniverseType;
 
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static com.radixdlt.EndpointConfig.Environment.ALL;
+import static com.radixdlt.EndpointConfig.Environment.DEV_ONLY;
+import static com.radixdlt.EndpointConfig.Type.ARCHIVE;
+import static com.radixdlt.EndpointConfig.Type.NODE;
+
 public final class EndpointConfig {
 	public enum Type {
 		ARCHIVE,
 		NODE;
+	}
+
+	public enum Environment {
+		ALL,
+		DEV_ONLY
 	}
 
 	private static final String API_PREFIX = "api.";
@@ -54,47 +65,56 @@ public final class EndpointConfig {
 	private static final String API_HEALTH = "health";
 	private static final String API_VERSION = "version";
 	private static final List<EndpointConfig> ENDPOINTS = List.of(
-		new EndpointConfig(API_ARCHIVE, false, Type.ARCHIVE, ArchiveEndpointModule::new),
-		new EndpointConfig(API_CONSTRUCT, false, Type.ARCHIVE, ConstructEndpointModule::new),
-		new EndpointConfig(API_SYSTEM, false, Type.NODE, SystemEndpointModule::new),
-		new EndpointConfig(API_ACCOUNT, false, Type.NODE, AccountEndpointModule::new),
-		new EndpointConfig(API_VALIDATOR, false, Type.NODE, ValidationEndpointModule::new),
-		new EndpointConfig(API_UNIVERSE, false, Type.NODE, UniverseEndpointModule::new),
-		new EndpointConfig(API_FAUCET, false, Type.NODE, FaucetEndpointModule::new),
-		new EndpointConfig(API_CHAOS, false, Type.NODE, ChaosEndpointModule::new),
-		new EndpointConfig(API_HEALTH, true, Type.NODE, HealthEndpointModule::new),
-		new EndpointConfig(API_VERSION, true, Type.NODE, VersionEndpointModule::new)
+		new EndpointConfig(API_ARCHIVE, false, ARCHIVE, ALL, ArchiveEndpointModule::new),
+		new EndpointConfig(API_CONSTRUCT, false, ARCHIVE, ALL, ConstructEndpointModule::new),
+		new EndpointConfig(API_SYSTEM, false, NODE, ALL, SystemEndpointModule::new),
+		new EndpointConfig(API_ACCOUNT, false, NODE, ALL, AccountEndpointModule::new),
+		new EndpointConfig(API_VALIDATOR, false, NODE, ALL, ValidationEndpointModule::new),
+		new EndpointConfig(API_UNIVERSE, false, NODE, ALL, UniverseEndpointModule::new),
+		new EndpointConfig(API_FAUCET, false, NODE, DEV_ONLY, FaucetEndpointModule::new),
+		new EndpointConfig(API_CHAOS, false, NODE, DEV_ONLY, ChaosEndpointModule::new),
+		new EndpointConfig(API_HEALTH, true, NODE, ALL, HealthEndpointModule::new),
+		new EndpointConfig(API_VERSION, true, NODE, ALL, VersionEndpointModule::new)
 	);
 
 	private static final List<EndpointConfig> ARCHIVE_ENDPOINTS = ENDPOINTS.stream()
-		.filter(e -> e.type == Type.ARCHIVE)
+		.filter(e -> e.type == ARCHIVE)
 		.collect(Collectors.toList());
 
 	private static final List<EndpointConfig> NODE_ENDPOINTS = ENDPOINTS.stream()
-		.filter(e -> e.type == Type.NODE)
+		.filter(e -> e.type == NODE)
 		.collect(Collectors.toList());
 
 	private final String name;
-
 	private final boolean defaultValue;
 	private final Type type;
+	private final Environment environment;
 	private final Supplier<Module> moduleSupplier;
-	private EndpointConfig(String name, boolean defaultValue, Type type, Supplier<Module> moduleSupplier) {
+	private EndpointConfig(
+		String name,
+		boolean defaultValue,
+		Type type,
+		Environment environment,
+		Supplier<Module> moduleSupplier
+	) {
 		this.name = name;
 		this.defaultValue = defaultValue;
 		this.type = type;
+		this.environment = environment;
 		this.moduleSupplier = moduleSupplier;
 	}
 
-	public static List<EndpointConfig> enabledArchiveEndpoints(RuntimeProperties properties) {
+	public static List<EndpointConfig> enabledArchiveEndpoints(RuntimeProperties properties, UniverseType env) {
 		return ARCHIVE_ENDPOINTS.stream()
 			.filter(e -> e.isEnabled(properties))
+			.filter(e -> env != UniverseType.PRODUCTION || e.environment == ALL)
 			.collect(Collectors.toList());
 	}
 
-	public static List<EndpointConfig> enabledNodeEndpoints(RuntimeProperties properties) {
+	public static List<EndpointConfig> enabledNodeEndpoints(RuntimeProperties properties, UniverseType env) {
 		return NODE_ENDPOINTS.stream()
 			.filter(e -> e.isEnabled(properties))
+			.filter(e -> env != UniverseType.PRODUCTION || e.environment == ALL)
 			.collect(Collectors.toList());
 	}
 

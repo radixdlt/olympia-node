@@ -16,13 +16,23 @@
  *
  */
 
-package com.radixdlt.api;
+package com.radixdlt.api.qualifier;
 
-import org.json.JSONObject;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+import javax.inject.Qualifier;
+
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Handles Json RPC requests
+ * Marks elements related to /universe.json endpoint
  */
-public interface JsonRpcHandler {
-	JSONObject execute(JSONObject request);
+@Qualifier
+@Target({ FIELD, PARAMETER, METHOD })
+@Retention(RUNTIME)
+public @interface UniverseJson {
 }
