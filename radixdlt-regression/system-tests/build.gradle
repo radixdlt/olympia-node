@@ -35,16 +35,14 @@ dependencies {
 
     testImplementation 'com.github.mwiede:jsch:0.1.61'
     testImplementation 'commons-io:commons-io:2.8.0'
-
+    testImplementation 'org.junit.vintage:junit-vintage-engine:5.6.1'
     testImplementation 'org.codehaus.groovy:groovy-all:2.4.12'
-    testCompile group: 'org.junit.vintage', name: 'junit-vintage-engine', version: '5.6.1'
-    testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.0.3'
-    testCompile group: 'pl.pragmatists', name: 'JUnitParams', version: '1.1.1'
-    testImplementation group: 'me.alexpanov', name: 'free-port-finder', version: '1.1.1'
+    testImplementation 'me.alexpanov:free-port-finder:1.1.1'
     testImplementation 'junit:junit'
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'io.cucumber:cucumber-java:6.8.1'
     testImplementation 'io.cucumber:cucumber-junit:6.8.1'
+    testImplementation 'org.awaitility:awaitility:4.0.3'
 }
 
 test {

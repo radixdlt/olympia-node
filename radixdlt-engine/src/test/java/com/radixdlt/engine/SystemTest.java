@@ -61,8 +61,8 @@ public class SystemTest {
 	@Test
 	public void executing_system_update_without_permissions_should_fail() {
 		// Arrange
-		var systemParticle = new SystemParticle(0, 0, 0, null);
-		var nextSystemParticle = new SystemParticle(0, 1, 1, key);
+		var systemParticle = new SystemParticle(0, 0, 0);
+		var nextSystemParticle = new SystemParticle(0, 1, 1);
 		var atom = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
@@ -80,8 +80,8 @@ public class SystemTest {
 	@Test
 	public void executing_system_update_with_correct_permissions_should_succeed() throws RadixEngineException {
 		// Arrange
-		var systemParticle = new SystemParticle(0, 0, 0, null);
-		var nextSystemParticle = new SystemParticle(0, 1, 1, key);
+		var systemParticle = new SystemParticle(0, 0, 0);
+		var nextSystemParticle = new SystemParticle(0, 1, 1);
 		var atom = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
@@ -95,8 +95,8 @@ public class SystemTest {
 
 	@Test
 	public void executing_system_update_with_bad_epoch_should_fail() {
-		var systemParticle = new SystemParticle(0, 0, 0, null);
-		var nextSystemParticle = new SystemParticle(-1, 1, 1, key);
+		var systemParticle = new SystemParticle(0, 0, 0);
+		var nextSystemParticle = new SystemParticle(-1, 1, 1);
 		var atom = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
@@ -109,8 +109,8 @@ public class SystemTest {
 
 	@Test
 	public void executing_system_update_with_bad_view_should_fail() {
-		var systemParticle = new SystemParticle(0, 0, 0, null);
-		var nextSystemParticle = new SystemParticle(0, -1, 1, key);
+		var systemParticle = new SystemParticle(0, 0, 0);
+		var nextSystemParticle = new SystemParticle(0, -1, 1);
 		var atom = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
@@ -123,8 +123,8 @@ public class SystemTest {
 
 	@Test
 	public void executing_system_update_with_bad_timestamp_should_fail() {
-		var systemParticle = new SystemParticle(0, 0, 0, null);
-		var nextSystemParticle = new SystemParticle(0, 1, -1, key);
+		var systemParticle = new SystemParticle(0, 0, 0);
+		var nextSystemParticle = new SystemParticle(0, 1, -1);
 		var txn = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
@@ -154,8 +154,8 @@ public class SystemTest {
 	@Ignore("FIXME: Possibly reinstate view ceiling at some point")
 	public void executing_system_update_with_view_ceiling_should_fail() {
 		// Arrange
-		var systemParticle = new SystemParticle(0, 0, 0, null);
-		var nextSystemParticle = new SystemParticle(0, 10, 1, key);
+		var systemParticle = new SystemParticle(0, 0, 0);
+		var nextSystemParticle = new SystemParticle(0, 10, 1);
 		var txn = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
@@ -171,8 +171,8 @@ public class SystemTest {
 	}
 
 	private void preconditionFailure(long epoch, long view) {
-		var systemParticle = new SystemParticle(0, 0, 0, null);
-		var nextSystemParticle = new SystemParticle(epoch, view, 1, key);
+		var systemParticle = new SystemParticle(0, 0, 0);
+		var nextSystemParticle = new SystemParticle(epoch, view, 1);
 		var txn = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)

@@ -189,17 +189,13 @@ public final class RESerializer {
 		buf.putLong(systemParticle.getEpoch());
 		buf.putLong(systemParticle.getView());
 		buf.putLong(systemParticle.getTimestamp());
-		if (systemParticle.getView() > 0) {
-			serializeKey(buf, systemParticle.getLeader());
-		}
 	}
 
 	private static SystemParticle deserializeSystemParticle(ByteBuffer buf) throws DeserializeException {
 		var epoch = buf.getLong();
 		var view = buf.getLong();
 		var timestamp = buf.getLong();
-		var leader = view > 0 ? deserializeKey(buf) : null;
-		return new SystemParticle(epoch, view, timestamp, leader);
+		return new SystemParticle(epoch, view, timestamp);
 	}
 
 	private static void serializeData(TokensParticle tokensParticle, ByteBuffer buf) {
