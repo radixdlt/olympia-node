@@ -20,15 +20,29 @@ package com.radixdlt.api.module;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.api.Controller;
 import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.handler.ArchiveHandler;
+import com.radixdlt.api.controller.ArchiveController;
+import com.radixdlt.api.handler.ArchiveAccountHandler;
+import com.radixdlt.api.handler.ArchiveTransactionsHandler;
+import com.radixdlt.api.handler.ArchiveNetworkHandler;
+import com.radixdlt.api.handler.ArchiveTokenHandler;
+import com.radixdlt.api.handler.ArchiveValidatorsHandler;
 import com.radixdlt.api.qualifier.Archive;
+import com.radixdlt.api.qualifier.AtArchive;
 import com.radixdlt.api.server.JsonRpcServer;
 
 import java.util.Map;
 
 public class ArchiveEndpointModule extends AbstractModule {
+	@AtArchive
+	@ProvidesIntoSet
+	public Controller archiveController(@Archive JsonRpcServer jsonRpcServer) {
+		return new ArchiveController(jsonRpcServer);
+	}
+
 	@Archive
 	@Provides
 	public JsonRpcServer rpcServer(@Archive Map<String, JsonRpcHandler> additionalHandlers) {
@@ -37,92 +51,92 @@ public class ArchiveEndpointModule extends AbstractModule {
 
 	@Archive
 	@ProvidesIntoMap
-	@StringMapKey("token.native")
-	public JsonRpcHandler tokenNative(ArchiveHandler archiveHandler) {
-		return archiveHandler::handleNativeToken;
+	@StringMapKey("account.get_balances")
+	public JsonRpcHandler accountGetBalances(ArchiveAccountHandler archiveAccountHandler) {
+		return archiveAccountHandler::handleAccountGetBalances;
 	}
 
 	@Archive
 	@ProvidesIntoMap
-	@StringMapKey("token.info")
-	public JsonRpcHandler tokenInfo(ArchiveHandler archiveHandler) {
-		return archiveHandler::handleTokenInfo;
+	@StringMapKey("account.get_stake_positions")
+	public JsonRpcHandler accountGetStakePositions(ArchiveAccountHandler archiveAccountHandler) {
+		return archiveAccountHandler::handleAccountGetStakePositions;
 	}
 
 	@Archive
 	@ProvidesIntoMap
-	@StringMapKey("address.balances")
-	public JsonRpcHandler addressBalances(ArchiveHandler archiveHandler) {
-		return archiveHandler::handleTokenBalances;
+	@StringMapKey("account.get_unstake_positions")
+	public JsonRpcHandler accountGetUnstakePositions(ArchiveAccountHandler archiveAccountHandler) {
+		return archiveAccountHandler::handleAccountGetUnstakePositions;
 	}
 
 	@Archive
 	@ProvidesIntoMap
-	@StringMapKey("address.stakes")
-	public JsonRpcHandler addressStakes(ArchiveHandler archiveHandler) {
-		return archiveHandler::handleStakePositions;
+	@StringMapKey("account.get_transaction_history")
+	public JsonRpcHandler accountGetTransactionHistory(ArchiveAccountHandler archiveAccountHandler) {
+		return archiveAccountHandler::handleAccountGetTransactionHistory;
 	}
 
 	@Archive
 	@ProvidesIntoMap
-	@StringMapKey("address.unstakes")
-	public JsonRpcHandler addressUnstakes(ArchiveHandler archiveHandler) {
-		return archiveHandler::handleUnstakePositions;
+	@StringMapKey("transactions.lookup_transaction")
+	public JsonRpcHandler transactionsLookupTransaction(ArchiveTransactionsHandler archiveTransactionsHandler) {
+		return archiveTransactionsHandler::handleTransactionsLookupTransaction;
 	}
 
 	@Archive
 	@ProvidesIntoMap
-	@StringMapKey("address.transactions")
-	public JsonRpcHandler addressTransactions(ArchiveHandler archiveHandler) {
-		return archiveHandler::handleTransactionHistory;
+	@StringMapKey("transactions.get_transaction_status")
+	public JsonRpcHandler transactionsGetTransactionStatus(ArchiveTransactionsHandler archiveTransactionsHandler) {
+		return archiveTransactionsHandler::handleTransactionsGetTransactionStatus;
 	}
 
 	@Archive
 	@ProvidesIntoMap
-	@StringMapKey("transaction.info")
-	public JsonRpcHandler transactionInfo(ArchiveHandler archiveHandler) {
-		return archiveHandler::handleLookupTransaction;
+	@StringMapKey("tokens.get_native_token")
+	public JsonRpcHandler tokensGetNativeToken(ArchiveTokenHandler archiveTokenHandler) {
+		return archiveTokenHandler::handleTokensGetNativeToken;
 	}
 
 	@Archive
 	@ProvidesIntoMap
-	@StringMapKey("transaction.status")
-	public JsonRpcHandler transactionStatus(ArchiveHandler archiveHandler) {
-		return archiveHandler::handleTransactionStatus;
+	@StringMapKey("tokens.get_info")
+	public JsonRpcHandler tokensGetInfo(ArchiveTokenHandler archiveTokenHandler) {
+		return archiveTokenHandler::handleTokensGetInfo;
 	}
 
 	@Archive
 	@ProvidesIntoMap
-	@StringMapKey("validator.list")
-	public JsonRpcHandler validatorList(ArchiveHandler archiveHandler) {
-		return archiveHandler::handleValidators;
+	@StringMapKey("validators.get_next_epoch_set")
+	public JsonRpcHandler validatorsGetNextEpochSet(ArchiveValidatorsHandler archiveValidatorsHandler) {
+		return archiveValidatorsHandler::handleValidatorsGetNextEpochSet;
 	}
 
 	@Archive
 	@ProvidesIntoMap
-	@StringMapKey("validator.info")
-	public JsonRpcHandler validatorInfo(ArchiveHandler archiveHandler) {
-		return archiveHandler::handleLookupValidator;
+	@StringMapKey("validators.lookup_validator")
+	public JsonRpcHandler validatorsLookupValidator(ArchiveValidatorsHandler archiveValidatorsHandler) {
+		return archiveValidatorsHandler::handleValidatorsLookupValidator;
 	}
 
 	@Archive
 	@ProvidesIntoMap
-	@StringMapKey("network.id")
-	public JsonRpcHandler networkId(ArchiveHandler archiveHandler) {
-		return archiveHandler::handleUniverseMagic;
+	@StringMapKey("network.get_id")
+	public JsonRpcHandler networkGetId(ArchiveNetworkHandler archiveNetworkHandler) {
+		return archiveNetworkHandler::handleNetworkGetId;
 	}
 
 	@Archive
 	@ProvidesIntoMap
-	@StringMapKey("network.throughput")
-	public JsonRpcHandler networkThroughput(ArchiveHandler archiveHandler) {
-		return archiveHandler::handleNetworkTransactionThroughput;
+	@StringMapKey("network.get_throughput")
+	public JsonRpcHandler networkGetThroughput(ArchiveNetworkHandler archiveNetworkHandler) {
+		return archiveNetworkHandler::handleNetworkGetThroughput;
 	}
 
 	@Archive
 	@ProvidesIntoMap
-	@StringMapKey("network.demand")
-	public JsonRpcHandler networkDemand(ArchiveHandler archiveHandler) {
-		return archiveHandler::handleNetworkTransactionDemand;
+	@StringMapKey("network.get_demand")
+	public JsonRpcHandler networkGetDemand(ArchiveNetworkHandler archiveNetworkHandler) {
+		return archiveNetworkHandler::handleNetworkGetDemand;
 	}
 }

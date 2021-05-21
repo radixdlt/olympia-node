@@ -83,7 +83,7 @@ public class ConstructionHandlerTest {
 			.put(encodeToDer(signature))
 			.put(keyPair.getPublicKey().toHex());
 
-		var response = handler.handleFinalizeTransaction(requestWith(params));
+		var response = handler.handleConstructionFinalizeTransaction(requestWith(params));
 
 		assertNotNull(response);
 		assertTrue(response.has("result"));
@@ -117,7 +117,7 @@ public class ConstructionHandlerTest {
 			.put("signatureDER", encodeToDer(signature))
 			.put("publicKeyOfSigner", keyPair.getPublicKey().toHex());
 
-		var response = handler.handleFinalizeTransaction(requestWith(params));
+		var response = handler.handleConstructionFinalizeTransaction(requestWith(params));
 
 		assertNotNull(response);
 		assertTrue(response.has("result"));
@@ -152,7 +152,7 @@ public class ConstructionHandlerTest {
 			.put(keyPair.getPublicKey().toHex())
 			.put(aid.toString());
 
-		var response = handler.handleSubmitTransaction(requestWith(params));
+		var response = handler.handleConstructionSubmitTransaction(requestWith(params));
 
 		assertNotNull(response);
 		assertTrue(response.has("result"));
@@ -187,7 +187,7 @@ public class ConstructionHandlerTest {
 			.put("publicKeyOfSigner", keyPair.getPublicKey().toHex())
 			.put("txID", aid.toString());
 
-		var response = handler.handleSubmitTransaction(requestWith(params));
+		var response = handler.handleConstructionSubmitTransaction(requestWith(params));
 
 		assertNotNull(response);
 		assertTrue(response.has("result"));

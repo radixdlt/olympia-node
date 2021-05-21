@@ -54,7 +54,7 @@ public class ConstructionHandler {
 		this.actionParserService = actionParserService;
 	}
 
-	public JSONObject handleBuildTransaction(JSONObject request) {
+	public JSONObject handleConstructionBuildTransaction(JSONObject request) {
 		return withRequiredParameters(
 			request,
 			List.of("actions"),
@@ -68,7 +68,7 @@ public class ConstructionHandler {
 		);
 	}
 
-	public JSONObject handleFinalizeTransaction(JSONObject request) {
+	public JSONObject handleConstructionFinalizeTransaction(JSONObject request) {
 		return withRequiredParameters(
 			request,
 			List.of("transaction", "signatureDER", "publicKeyOfSigner"),
@@ -81,7 +81,7 @@ public class ConstructionHandler {
 		);
 	}
 
-	public JSONObject handleSubmitTransaction(JSONObject request) {
+	public JSONObject handleConstructionSubmitTransaction(JSONObject request) {
 		return withRequiredParameters(
 			request,
 			List.of("transaction", "signatureDER", "publicKeyOfSigner", "txID"),

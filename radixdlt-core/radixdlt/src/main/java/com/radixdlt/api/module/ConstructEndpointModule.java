@@ -24,53 +24,45 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.api.controller.ConstructController;
 import com.radixdlt.api.handler.ConstructionHandler;
 import com.radixdlt.api.qualifier.AtArchive;
 import com.radixdlt.api.qualifier.Construct;
 import com.radixdlt.api.server.JsonRpcServer;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.store.TxnIndex;
 
 import java.util.Map;
 
 public class ConstructEndpointModule extends AbstractModule {
+	@AtArchive
+	@ProvidesIntoSet
+	public Controller constructController(@Construct JsonRpcServer jsonRpcServer) {
+		return new ConstructController(jsonRpcServer);
+	}
+
 	@Construct
 	@Provides
 	public JsonRpcServer rpcServer(@Construct Map<String, JsonRpcHandler> additionalHandlers) {
 		return new JsonRpcServer(additionalHandlers);
 	}
 
-	@AtArchive
-	@ProvidesIntoSet
-	public Controller constructController(
-		TxnIndex txnIndex, TxnParser txnParser,
-		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
-		@Construct JsonRpcServer jsonRpcServer
-	) {
-		return new ConstructController(txnIndex, txnParser, mempoolAddEventDispatcher, jsonRpcServer);
+	@Construct
+	@ProvidesIntoMap
+	@StringMapKey("construction.build_transaction")
+	public JsonRpcHandler constructionBuildTransaction(ConstructionHandler constructionHandler) {
+		return constructionHandler::handleConstructionBuildTransaction;
 	}
 
 	@Construct
 	@ProvidesIntoMap
-	@StringMapKey("transaction.build")
-	public JsonRpcHandler transactionBuild(ConstructionHandler constructionHandler) {
-		return constructionHandler::handleBuildTransaction;
+	@StringMapKey("construction.finalize_transaction")
+	public JsonRpcHandler constructionFinalizeTransaction(ConstructionHandler constructionHandler) {
+		return constructionHandler::handleConstructionFinalizeTransaction;
 	}
 
 	@Construct
 	@ProvidesIntoMap
-	@StringMapKey("transaction.finalize")
-	public JsonRpcHandler finalizeTransaction(ConstructionHandler constructionHandler) {
-		return constructionHandler::handleFinalizeTransaction;
-	}
-
-	@Construct
-	@ProvidesIntoMap
-	@StringMapKey("transaction.submit")
-	public JsonRpcHandler transactionSubmit(ConstructionHandler constructionHandler) {
-		return constructionHandler::handleSubmitTransaction;
+	@StringMapKey("construction.submit_transaction")
+	public JsonRpcHandler constructionSubmitTransaction(ConstructionHandler constructionHandler) {
+		return constructionHandler::handleConstructionSubmitTransaction;
 	}
 }

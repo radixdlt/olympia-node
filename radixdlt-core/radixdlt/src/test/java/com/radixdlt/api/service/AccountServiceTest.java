@@ -44,7 +44,7 @@ import static org.mockito.Mockito.when;
 
 import static com.radixdlt.api.data.BalanceEntry.createBalance;
 
-public class ArchiveServiceTest {
+public class AccountServiceTest {
 	private static final ECPublicKey OWNER_KEY = ECKeyPair.generateNew().getPublicKey();
 	private static final REAddr OWNER_ACCOUNT = REAddr.ofPubKeyAccount(OWNER_KEY);
 	private static final ECPublicKey TOKEN_KEY = ECKeyPair.generateNew().getPublicKey();
@@ -63,7 +63,7 @@ public class ArchiveServiceTest {
 		var balance2 = createBalance(OWNER_ACCOUNT, null, rri2, UInt384.NINE);
 		var balances = Result.ok(List.of(balance1, balance2));
 
-		when(clientApiStore.getTokenBalances(OWNER_ACCOUNT, ClientApiStore.BalanceType.SPENDABLE))
+		when(clientApiStore.getTokenBalances(OWNER_ACCOUNT, false))
 			.thenReturn(balances);
 
 		archiveService.getTokenBalances(OWNER_ACCOUNT)
@@ -90,7 +90,7 @@ public class ArchiveServiceTest {
 		);
 		var balances = Result.ok(List.of(balance1, balance2, balance3));
 
-		when(clientApiStore.getTokenBalances(OWNER_ACCOUNT, ClientApiStore.BalanceType.STAKES))
+		when(clientApiStore.getTokenBalances(OWNER_ACCOUNT, true))
 			.thenReturn(balances);
 
 		archiveService.getStakePositions(OWNER_ACCOUNT)

@@ -23,7 +23,6 @@ import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.data.UnstakeEntry;
 import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.api.store.TokenBalance;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Tuple.Tuple2;
@@ -35,20 +34,16 @@ import java.util.stream.Collectors;
 
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
-public class ArchiveService {
+public class AccountService {
 	private final ClientApiStore clientApiStore;
 
 	@Inject
-	public ArchiveService(ClientApiStore clientApiStore) {
+	public AccountService(ClientApiStore clientApiStore) {
 		this.clientApiStore = clientApiStore;
 	}
 
-	public long getEpoch() {
-		return clientApiStore.getEpoch();
-	}
-
 	public Result<List<TokenBalance>> getTokenBalances(REAddr addr) {
-		return clientApiStore.getTokenBalances(addr, ClientApiStore.BalanceType.SPENDABLE)
+		return clientApiStore.getTokenBalances(addr, false)
 			.map(list -> list.stream().map(TokenBalance::from).collect(Collectors.toList()));
 	}
 
@@ -59,22 +54,18 @@ public class ArchiveService {
 			.map(response -> tuple(calculateNewCursor(response), response));
 	}
 
-	public Result<TxHistoryEntry> getTransaction(AID txId) {
-		return clientApiStore.getTransaction(txId);
-	}
-
 	public Result<List<BalanceEntry>> getStakePositions(REAddr addr) {
-		return clientApiStore.getTokenBalances(addr, ClientApiStore.BalanceType.STAKES);
+		return clientApiStore.getTokenBalances(addr, true);
 	}
 
-	// Everything is immediately spendable in betanet
-	public Result<List<BalanceEntry>> getUnstakePositions(REAddr addr) {
-		return clientApiStore.getTokenBalances(addr, ClientApiStore.BalanceType.UNSTAKES);
+	//TODO: restore functionality, not everything is spendable anymore
+	public Result<List<UnstakeEntry>> getUnstakePositions(REAddr addr) {
+		return Result.ok(List.of());
 	}
 
 	private static Optional<Instant> calculateNewCursor(List<TxHistoryEntry> response) {
 		return response.stream()
-			.reduce(ArchiveService::findLast)
+			.reduce(AccountService::findLast)
 			.map(TxHistoryEntry::timestamp);
 	}
 

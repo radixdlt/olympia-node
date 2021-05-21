@@ -18,18 +18,18 @@
 package com.radixdlt.api.service;
 
 import com.google.inject.Inject;
-import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.api.data.ValidatorInfoDetails;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.StakedValidators;
 import com.radixdlt.statecomputer.ValidatorDetails;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.FunctionalUtils;
 import com.radixdlt.utils.functional.Result;
-import com.radixdlt.utils.functional.Tuple.Tuple2;
+import com.radixdlt.utils.functional.Result.Mapper2;
 
 import java.util.Comparator;
 import java.util.List;
@@ -47,7 +47,7 @@ public class ValidatorInfoService {
 		this.radixEngine = radixEngine;
 	}
 
-	public Result<Tuple2<Optional<ECPublicKey>, List<ValidatorInfoDetails>>> getValidators(
+	public Mapper2<Optional<ECPublicKey>, List<ValidatorInfoDetails>> getValidators(
 		int size, Optional<ECPublicKey> cursor
 	) {
 		var validators = radixEngine.getComputedState(StakedValidators.class);
@@ -62,7 +62,7 @@ public class ValidatorInfoService {
 		var list = paged.stream().limit(size).collect(Collectors.toList());
 		var newCursor = list.stream().reduce(FunctionalUtils::findLast).map(ValidatorInfoDetails::getValidatorKey);
 
-		return Result.ok(tuple(newCursor, list));
+		return () -> Result.ok(tuple(newCursor, list));
 	}
 
 	public Result<ValidatorInfoDetails> getValidator(ECPublicKey validatorPublicKey) {
