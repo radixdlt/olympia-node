@@ -60,7 +60,7 @@ jobs:
         with:
           file: radixdlt-core/docker/Dockerfile.keygen
           tags: |
-            ${{ steps.set_environment.outputs.radixdlt_image }}:${{ steps.get_version.outputs.docker_tag }}
+            ${{ steps.set_environment.outputs.keygen_image }}:${{ steps.get_version.outputs.docker_tag }}
           push: true
           context: ./radixdlt-${{ steps.get_version.outputs.radixdlt_version }}/
 
