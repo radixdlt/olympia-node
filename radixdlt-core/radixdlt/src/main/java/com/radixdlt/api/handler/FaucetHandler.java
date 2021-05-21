@@ -85,7 +85,7 @@ public class FaucetHandler {
 	}
 
 	private TransactionAction transfer(REAddr destination, REAddr rri) {
-		return TransactionAction.create(ActionType.TRANSFER, account, destination, AMOUNT, Optional.of(rri));
+		return TransactionAction.transfer(account, destination, AMOUNT, rri);
 	}
 
 	private Result<REAddr> parseAddress(JSONObject params) {
