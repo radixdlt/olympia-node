@@ -216,12 +216,11 @@ public class SubmissionServiceTest {
 		radixEngine.execute(List.of(tx));
 
 		var steps = List.of(
-			TransactionAction.create(
-				ActionType.TRANSFER,
+			TransactionAction.transfer(
 				ALICE_ACCT,
 				BOB_ACCT,
 				UInt256.FOUR,
-				Optional.of(nativeToken)
+				nativeToken
 			)
 		);
 
@@ -282,9 +281,7 @@ public class SubmissionServiceTest {
 		radixEngine.execute(List.of(tx));
 
 		var steps = List.of(
-			TransactionAction.create(
-				ActionType.TRANSFER, ALICE_ACCT, BOB_ACCT, UInt256.FOUR, Optional.of(nativeToken)
-			)
+			TransactionAction.transfer(ALICE_ACCT, BOB_ACCT, UInt256.FOUR, nativeToken)
 		);
 
 		return submissionService.prepareTransaction(steps, Optional.of("message"));

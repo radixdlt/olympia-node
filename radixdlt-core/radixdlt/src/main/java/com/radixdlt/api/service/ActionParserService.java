@@ -43,8 +43,6 @@ import static com.radixdlt.utils.functional.Result.allOf;
 import static java.util.Optional.ofNullable;
 
 public final class ActionParserService {
-	private static final Result<Optional<REAddr>> EMPTY_RESULT = Result.ok(Optional.empty());
-
 	private final ClientApiStore clientApiStore;
 
 	@Inject
@@ -64,7 +62,7 @@ public final class ActionParserService {
 
 			var result = safeString(element, "type")
 				.flatMap(ActionType::fromString)
-				.flatMap(type -> parseByType(type, element, clientApiStore))
+				.flatMap(type -> parseByType(type, element))
 				.onSuccess(list::add);
 
 			if (!result.isSuccess()) {
@@ -74,31 +72,93 @@ public final class ActionParserService {
 		return Result.ok(list);
 	}
 
-	private static Result<TransactionAction> parseByType(ActionType type, JSONObject element, ClientApiStore clientApiStore) {
-		var typeResult = Result.ok(type);
-
+	private Result<TransactionAction> parseByType(ActionType type, JSONObject element) {
 		switch (type) {
+			case MSG:
+				break;
 			case TRANSFER:
 				return allOf(
-					typeResult,
 					from(element),
 					to(element),
 					amount(element),
-					rri(element, clientApiStore)
-				).map(TransactionAction::create);
+					rri(element)
+				).map(TransactionAction::transfer);
 
 			case UNSTAKE:
-			case STAKE:
 				return allOf(
-					typeResult,
 					from(element),
 					validator(element),
-					amount(element),
-					EMPTY_RESULT
-				).map(TransactionAction::create);
+					amount(element)
+				).map(TransactionAction::unstake);
+
+			case STAKE:
+				return allOf(
+					from(element),
+					validator(element),
+					amount(element)
+				).map(TransactionAction::stake);
+
+			case BURN:
+				return allOf(
+					from(element),
+					rri(element),
+					amount(element)
+				).map(TransactionAction::burn);
+
+			case MINT:
+				return allOf(
+					to(element),
+					rri(element),
+					amount(element)
+				).map(TransactionAction::mint);
+
+			case REGISTER_VALIDATOR:
+				return allOf(
+					validator(element),
+					optionalName(element),
+					optionalUrl(element)
+				).map(TransactionAction::register);
+
+			case UNREGISTER_VALIDATOR:
+				return allOf(
+					validator(element),
+					optionalName(element),
+					optionalUrl(element)
+				).map(TransactionAction::unregister);
+
+			case CREATE_FIXED:
+				return allOf(
+					from(element),
+					rri(element),
+					symbol(element),
+					name(element),
+					optionalDescription(element),
+					optionalIconUrl(element),
+					optionalTokenUrl(element),
+					amount(element)
+				).map(TransactionAction::createFixed);
+
+			case CREATE_MUTABLE:
+				return allOf(
+					symbol(element),
+					name(element),
+					optionalDescription(element),
+					optionalIconUrl(element),
+					optionalTokenUrl(element)
+				).map(TransactionAction::createMutable);
 		}
 
 		return UNSUPPORTED_ACTION.with(type).result();
+	}
+
+	private Result<REAddr> rri(JSONObject element) {
+		return safeString(element, "rri")
+			.flatMap(clientApiStore::parseRri);
+	}
+
+	private Result<Optional<REAddr>> optionalRri(JSONObject element) {
+		return optionalParam(element, "rri")
+			.map(opt -> opt.flatMap(rri -> clientApiStore.parseRri(rri).toOptional()));
 	}
 
 	private static Result<REAddr> from(JSONObject element) {
@@ -118,11 +178,40 @@ public final class ActionParserService {
 			.flatMap(UInt256::fromString);
 	}
 
-	private static Result<Optional<REAddr>> rri(JSONObject element, ClientApiStore clientApiStore) {
-		//TODO: remove support for "tokenIdentifier"
-		return safeString(element, "rri").or(() -> safeString(element, "tokenIdentifier"))
-			.flatMap(clientApiStore::parseRri)
-			.map(Optional::of);
+	private static Result<String> name(JSONObject element) {
+		return safeString(element, "name");
+	}
+
+	private static Result<Optional<String>> optionalName(JSONObject element) {
+		return optionalParam(element, "name");
+	}
+
+	private static Result<String> symbol(JSONObject element) {
+		return safeString(element, "symbol");
+	}
+
+	private static Result<String> optionalSymbol(JSONObject element) {
+		return safeString(element, "symbol");
+	}
+
+	private static Result<Optional<String>> optionalUrl(JSONObject element) {
+		return optionalParam(element, "url");
+	}
+
+	private static Result<Optional<String>> optionalIconUrl(JSONObject element) {
+		return optionalParam(element, "iconUrl");
+	}
+
+	private static Result<Optional<String>> optionalTokenUrl(JSONObject element) {
+		return optionalParam(element, "tokenUrl");
+	}
+
+	private static Result<Optional<String>> optionalDescription(JSONObject element) {
+		return optionalParam(element, "description");
+	}
+
+	private static Result<Optional<String>> optionalParam(JSONObject element, String name) {
+		return Result.ok(ofNullable(element.opt(name)).map(String.class::isInstance).map(String.class::cast));
 	}
 
 	private static Result<ECPublicKey> validator(JSONObject element, String name) {
