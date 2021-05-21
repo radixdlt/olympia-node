@@ -106,7 +106,7 @@ public final class GenerateUniverses {
 	private static final BigDecimal SUB_UNITS_BIG_DECIMAL
 		= new BigDecimal(UInt256s.toBigInteger(TokenDefinitionUtils.SUB_UNITS));
 	private static final String DEFAULT_UNIVERSE = UniverseType.DEVELOPMENT.toString().toLowerCase();
-	private static final String DEFAULT_TIMESTAMP = String.valueOf(Instant.parse("2020-01-01T00:00:00.00Z").toEpochMilli());
+	private static final String DEFAULT_TIMESTAMP = String.valueOf(Instant.parse("2020-01-01T00:00:00.00Z").getEpochSecond());
 	private static final String VALIDATOR_TEMPLATE = "validator%s.ks";
 	private static final String STAKER_TEMPLATE = "staker%s.ks";
 	private static final String DEFAULT_HELM_VALUES_OUTPUT_DIRECTORY = ".";

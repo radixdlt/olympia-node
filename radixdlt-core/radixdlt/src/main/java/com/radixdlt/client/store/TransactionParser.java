@@ -27,6 +27,7 @@ import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
@@ -69,6 +70,8 @@ public final class TransactionParser {
 	public Result<TxHistoryEntry> parse(REParsedTxn parsedTxn, Instant txDate, Function<REAddr, String> addrToRri) {
 		var txnId = parsedTxn.getTxn().getId();
 		var fee = computeFeePaid(parsedTxn);
+		var message = parsedTxn.getMsg()
+			.map(bytes -> new String(bytes, RadixConstants.STANDARD_CHARSET));
 
 		var actions = parsedTxn.getActions().stream()
 			.map(REParsedAction::getTxAction)
@@ -76,6 +79,6 @@ public final class TransactionParser {
 			.map(a -> mapToEntry(a, addrToRri))
 			.collect(Collectors.toList());
 
-		return Result.ok(TxHistoryEntry.create(txnId, txDate, fee, null, actions));
+		return Result.ok(TxHistoryEntry.create(txnId, txDate, fee, message.orElse(null), actions));
 	}
 }

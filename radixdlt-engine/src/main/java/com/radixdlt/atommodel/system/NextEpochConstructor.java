@@ -32,8 +32,8 @@ public class NextEpochConstructor implements ActionConstructor<SystemNextEpoch> 
 		txBuilder.swap(
 			SystemParticle.class,
 			p -> true,
-			Optional.of(SubstateWithArg.noArg(new SystemParticle(0, 0, 0, null))),
+			Optional.of(SubstateWithArg.noArg(new SystemParticle(0, 0, 0))),
 			"No System particle available"
-		).with(substateDown -> new SystemParticle(substateDown.getEpoch() + 1, 0, action.timestamp(), null));
+		).with(substateDown -> new SystemParticle(substateDown.getEpoch() + 1, 0, action.timestamp()));
 	}
 }

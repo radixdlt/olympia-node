@@ -47,6 +47,10 @@ public final class REParsedTxn {
 		this.statelessResult = statelessResult;
 	}
 
+	public Optional<byte[]> getMsg() {
+		return statelessResult.getMsg();
+	}
+
 	public ConstraintMachine.StatelessVerificationResult getStatelessResult() {
 		return statelessResult;
 	}
