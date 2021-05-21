@@ -175,7 +175,7 @@ public class StakingTest {
 		// Assert
 		var txn2 = sut.construct(
 			txBuilder ->
-			txBuilder.swapFungible(
+			txBuilder.deprecatedSwapFungible(
 				TokensParticle.class,
 				p -> p.getResourceAddr().equals(REAddr.ofNativeToken())
 						&& p.getHoldingAddr().equals(acct),

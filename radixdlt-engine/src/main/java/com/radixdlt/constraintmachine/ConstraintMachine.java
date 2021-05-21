@@ -101,6 +101,7 @@ public final class ConstraintMachine {
 
 	public static final class CMValidationState {
 		private PermissionLevel permissionLevel;
+		private REInstruction curInstruction;
 
 		private ReducerState reducerState2 = null;
 
@@ -202,7 +203,7 @@ public final class ConstraintMachine {
 
 		@Override
 		public String toString() {
-			return "CMState:[" + this.reducerState2 + "]";
+			return String.format("CMState{state=%s inst=%s}", this.reducerState2, this.curInstruction);
 		}
 	}
 
@@ -235,11 +236,14 @@ public final class ConstraintMachine {
 			if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
 				var requiredLevel = endProcedure.permissionLevel(reducerState, readable);
 				if (validationState.permissionLevel.compareTo(requiredLevel) < 0) {
-					return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
+					return Optional.of(Pair.of(
+						CMErrorCode.PERMISSION_LEVEL_ERROR,
+						"Required: " + requiredLevel + " Current: " + validationState.permissionLevel
+					));
 				}
 				var signatureVerified = endProcedure.authorized(reducerState, readable, validationState.signedBy);
 				if (!signatureVerified) {
-					return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
+					return Optional.of(Pair.of(CMErrorCode.AUTHORIZATION_ERROR, null));
 				}
 			}
 
@@ -261,11 +265,14 @@ public final class ConstraintMachine {
 			if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
 				var requiredLevel = upProcedure.permissionLevel(outputParticle, readable);
 				if (validationState.permissionLevel.compareTo(requiredLevel) < 0) {
-					return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
+					return Optional.of(Pair.of(
+						CMErrorCode.PERMISSION_LEVEL_ERROR,
+						"Required: " + requiredLevel + " Current: " + validationState.permissionLevel
+					));
 				}
 				var signatureVerified = upProcedure.authorized(outputParticle, readable, validationState.signedBy);
 				if (!signatureVerified) {
-					return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
+					return Optional.of(Pair.of(CMErrorCode.AUTHORIZATION_ERROR, null));
 				}
 			}
 
@@ -288,11 +295,14 @@ public final class ConstraintMachine {
 			if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
 				var requiredLevel = downProcedure.permissionLevel(input, readable);
 				if (validationState.permissionLevel.compareTo(requiredLevel) < 0) {
-					return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
+					return Optional.of(Pair.of(
+						CMErrorCode.PERMISSION_LEVEL_ERROR,
+						"Required: " + requiredLevel + " Current: " + validationState.permissionLevel
+					));
 				}
-				var signatureVerified = downProcedure.authorized(input, readable, validationState.signedBy);
-				if (!signatureVerified) {
-					return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
+				var verified = downProcedure.authorized(input, readable, validationState.signedBy);
+				if (!verified) {
+					return Optional.of(Pair.of(CMErrorCode.AUTHORIZATION_ERROR, null));
 				}
 			}
 
@@ -465,6 +475,8 @@ public final class ConstraintMachine {
 		var expectEnd = false;
 
 		for (REInstruction inst : instructions) {
+			validationState.curInstruction = inst;
+
 			if (expectEnd && inst.getMicroOp() != REInstruction.REOp.END) {
 				return Optional.of(new CMError(instIndex, CMErrorCode.MISSING_PARTICLE_GROUP, validationState));
 			}

@@ -1,0 +1,204 @@
+/*
+ * (C) Copyright 2021 Radix DLT Ltd
+ *
+ * Radix DLT Ltd licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License.  You may obtain a copy of the
+ * License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ *
+ */
+
+package com.radixdlt.atommodel.tokens.scrypt;
+
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.atom.actions.Unknown;
+import com.radixdlt.atommodel.system.state.SystemParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
+import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atomos.ConstraintScrypt;
+import com.radixdlt.atomos.ParticleDefinition;
+import com.radixdlt.atomos.SysCalls;
+import com.radixdlt.constraintmachine.DownProcedure;
+import com.radixdlt.constraintmachine.EndProcedure;
+import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ReducerResult;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.UpProcedure;
+import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt384;
+
+import java.util.Objects;
+import java.util.Optional;
+
+public class StakingConstraintScryptV3 implements ConstraintScrypt {
+	public static final int EPOCHS_LOCKED = 2; // Must go through one full epoch before being unlocked
+
+	@Override
+	public void main(SysCalls os) {
+		os.registerParticle(
+			DeprecatedStake.class,
+			ParticleDefinition.<DeprecatedStake>builder()
+				.staticValidation(TokenDefinitionUtils::staticCheck)
+				.build()
+		);
+
+		defineStaking(os);
+	}
+
+	public static class StakeHoldingBucket implements ReducerState {
+		private final UInt384 amount;
+		private final REAddr accountAddr;
+		private final ECPublicKey delegate;
+
+		public StakeHoldingBucket(
+			ECPublicKey delegate,
+			REAddr accountAddr,
+			UInt384 amount
+		) {
+			this.delegate = delegate;
+			this.accountAddr = accountAddr;
+			this.amount = amount;
+		}
+
+		public StakeHoldingBucket deposit(UInt256 amountToAdd) {
+			return new StakeHoldingBucket(delegate, accountAddr, UInt384.from(amountToAdd).add(amount));
+		}
+
+		public Optional<StakeHoldingBucket> withdraw(UInt256 amountToWithdraw) {
+			var withdraw384 = UInt384.from(amountToWithdraw);
+			if (amount.compareTo(withdraw384) < 0) {
+				return Optional.empty();
+			}
+			return Optional.of(new StakeHoldingBucket(delegate, accountAddr, amount.subtract(withdraw384)));
+		}
+
+		@Override
+		public TypeToken<? extends ReducerState> getTypeToken() {
+			return TypeToken.of(TokensConstraintScryptV2.TemporaryBucket.class);
+		}
+	}
+
+	private void defineStaking(SysCalls os) {
+		// Stake
+		os.createUpProcedure(new UpProcedure<>(
+			TokensConstraintScryptV2.TemporaryBucket.class, DeprecatedStake.class,
+			(u, r) -> PermissionLevel.USER,
+			(u, r, k) -> true,
+			(s, u, r) -> {
+				if (!s.resourceAddr().isNativeToken()) {
+					return ReducerResult.error("Must stake native token.");
+				}
+				var nextState = s.withdraw(u.getAmount());
+				if (nextState.isEmpty()) {
+					return ReducerResult.error("Not enough funds in bucket");
+				}
+				return ReducerResult.incomplete(nextState.get());
+			}
+		));
+
+		// Unstake
+		os.createDownProcedure(new DownProcedure<>(
+			DeprecatedStake.class, VoidReducerState.class,
+			(d, r) -> PermissionLevel.USER,
+			(d, r, k) -> k.map(d.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
+			(d, s, r) -> {
+				var substate = d.getSubstate();
+				var nextState = new StakeHoldingBucket(substate.getDelegateKey(), substate.getOwner(), UInt384.from(substate.getAmount()));
+				return ReducerResult.incomplete(nextState);
+			}
+		));
+		os.createDownProcedure(new DownProcedure<>(
+			DeprecatedStake.class, StakeHoldingBucket.class,
+			(d, r) -> PermissionLevel.USER,
+			(d, r, k) -> k.map(d.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
+			(d, s, r) -> {
+				var substate = d.getSubstate();
+				if (!s.delegate.equals(substate.getDelegateKey())) {
+					return ReducerResult.error("Delegate keys not equivalent.");
+				}
+				if (!s.accountAddr.equals(substate.getOwner())) {
+					return ReducerResult.error("Account addresses not equivalent.");
+				}
+				return ReducerResult.incomplete(s.deposit(d.getSubstate().getAmount()));
+			}
+		));
+		os.createUpProcedure(new UpProcedure<>(
+			StakeHoldingBucket.class, DeprecatedStake.class,
+			(d, r) -> PermissionLevel.USER,
+			(d, r, k) -> true,
+			(s, u, r) -> {
+				if (!u.getDelegateKey().equals(s.delegate)) {
+					return ReducerResult.error("Delegate key does not match.");
+				}
+
+				if (!u.getOwner().equals(s.accountAddr)) {
+					return ReducerResult.error("Owners don't match.");
+				}
+
+				var nextState = s.withdraw(u.getAmount());
+				if (nextState.isEmpty()) {
+					return ReducerResult.error("Not enough staked.");
+				}
+
+				return ReducerResult.incomplete(nextState.get());
+			}
+		));
+		os.createUpProcedure(new UpProcedure<>(
+			StakeHoldingBucket.class, TokensParticle.class,
+			(u, r) -> PermissionLevel.USER,
+			(u, r, k) -> true,
+			(s, u, r) -> {
+				if (!u.getResourceAddr().isNativeToken()) {
+					return ReducerResult.error("Can only destake to the native token.");
+				}
+
+				if (!Objects.equals(s.accountAddr, u.getHoldingAddr())) {
+					return ReducerResult.error("Must unstake to self");
+				}
+
+				if (u.getEpochUnlocked().isEmpty()) {
+					return ReducerResult.error("Exiting from stake must be locked.");
+				}
+
+				var system = (SystemParticle) r.loadAddr(null, REAddr.ofSystem()).orElseThrow();
+				if (system.getEpoch() + EPOCHS_LOCKED != u.getEpochUnlocked().get()) {
+					return ReducerResult.error("Incorrect epoch unlock: " + u.getEpochUnlocked().get()
+						+ " should be: " + (system.getEpoch() + EPOCHS_LOCKED));
+				}
+
+				var nextState = s.withdraw(u.getAmount());
+				if (nextState.isEmpty()) {
+					return ReducerResult.error("Not enough staked to withdraw.");
+				}
+
+				return ReducerResult.incomplete(nextState.get());
+			}
+		));
+
+		// Clean Stake Holding Bucket
+		os.createEndProcedure(new EndProcedure<>(
+			StakeHoldingBucket.class,
+			(s, r) -> PermissionLevel.USER,
+			(s, r, k) -> true,
+			(s, r) -> {
+				if (!s.amount.isZero()) {
+					return ReducerResult.error("Stake cannot be burnt.");
+				}
+
+				return ReducerResult.complete(Unknown.create());
+			}
+		));
+	}
+}

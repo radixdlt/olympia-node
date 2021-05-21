@@ -315,7 +315,7 @@ public final class TxBuilder {
 		}
 	}
 
-	public <T extends Fungible, U extends Fungible> FungibleReplacer<U> swapFungible(
+	public <T extends Fungible, U extends Fungible> FungibleReplacer<U> deprecatedSwapFungible(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		FungibleMapper<T> remainderMapper,
@@ -337,6 +337,27 @@ public final class TxBuilder {
 		};
 	}
 
+	public <T extends Fungible, U extends Fungible> FungibleReplacer<U> swapFungible(
+		Class<T> particleClass,
+		Predicate<T> particlePredicate,
+		FungibleMapper<T> remainderMapper,
+		UInt256 amount,
+		String errorMessage
+	) {
+		return mapper -> {
+			var remainder = downFungible(
+				particleClass,
+				particlePredicate,
+				amount,
+				errorMessage
+			);
+			var substateUp = mapper.map(amount);
+			up(substateUp);
+			if (!remainder.isZero()) {
+				up(remainderMapper.map(remainder));
+			}
+		};
+	}
 
 	public Optional<ECPublicKey> getUser() {
 		return Optional.ofNullable(user);

@@ -113,7 +113,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		public Optional<ReducerState> subtract(UInt384 amountAccounted) {
 			var compare = amountAccounted.compareTo(amount);
 			if (compare > 0) {
-				return Optional.of(new TokensConstraintScrypt.RemainderTokens(
+				return Optional.of(new TokensConstraintScryptV1.RemainderTokens(
 					initialParticle, REAddr.ofNativeToken(), amountAccounted.subtract(amount))
 				);
 			} else if (compare < 0) {
@@ -166,7 +166,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 
 		// Unstake
 		os.createDownProcedure(new DownProcedure<>(
-			DeprecatedStake.class, TokensConstraintScrypt.UnaccountedTokens.class,
+			DeprecatedStake.class, TokensConstraintScryptV1.UnaccountedTokens.class,
 			(d, r) -> PermissionLevel.USER,
 			(d, r, k) -> k.map(d.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
 			(d, s, r) -> {
@@ -197,8 +197,8 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 					return ReducerResult.complete(action);
 				}
 
-				if (nextRemainder.get() instanceof TokensConstraintScrypt.RemainderTokens) {
-					TokensConstraintScrypt.RemainderTokens remainderTokens = (TokensConstraintScrypt.RemainderTokens) nextRemainder.get();
+				if (nextRemainder.get() instanceof TokensConstraintScryptV1.RemainderTokens) {
+					TokensConstraintScryptV1.RemainderTokens remainderTokens = (TokensConstraintScryptV1.RemainderTokens) nextRemainder.get();
 					var stakeRemainder = new RemainderStake(
 						remainderTokens.initialParticle(),
 						remainderTokens.amount().getLow(),

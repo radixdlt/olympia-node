@@ -48,7 +48,7 @@ public final class RadixEngineException extends Exception {
 		StatelessVerificationResult result,
 		CMError cmError
 	) {
-		super(message + " " + (cmError == null ? "" : "\n" + cmError) + "\n" + txn);
+		super(message + " " + (cmError == null ? "" : cmError) + " Txn=" + txn.getId());
 		this.errorCode = Objects.requireNonNull(errorCode);
 		this.result = result;
 		this.cmError = cmError;

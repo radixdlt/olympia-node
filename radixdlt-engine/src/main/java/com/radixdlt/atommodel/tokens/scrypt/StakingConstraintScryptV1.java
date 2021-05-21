@@ -87,7 +87,7 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 
 		// Unstake
 		os.createDownProcedure(new DownProcedure<>(
-			DeprecatedStake.class, TokensConstraintScrypt.UnaccountedTokens.class,
+			DeprecatedStake.class, TokensConstraintScryptV1.UnaccountedTokens.class,
 			(d, r) -> PermissionLevel.USER,
 			(d, r, k) -> k.map(d.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
 			(d, s, r) -> {
@@ -112,8 +112,8 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 					return ReducerResult.complete(action);
 				}
 
-				if (nextRemainder.get() instanceof TokensConstraintScrypt.RemainderTokens) {
-					TokensConstraintScrypt.RemainderTokens remainderTokens = (TokensConstraintScrypt.RemainderTokens) nextRemainder.get();
+				if (nextRemainder.get() instanceof TokensConstraintScryptV1.RemainderTokens) {
+					TokensConstraintScryptV1.RemainderTokens remainderTokens = (TokensConstraintScryptV1.RemainderTokens) nextRemainder.get();
 					var stakeRemainder = new StakingConstraintScryptV2.RemainderStake(
 						remainderTokens.initialParticle(),
 						remainderTokens.amount().getLow(),

@@ -40,7 +40,8 @@ public enum CMErrorCode {
 	TRANSITION_PRECONDITION_FAILURE("Transition Precondition failure"),
 	TRANSITION_ERROR("Transition error"),
 	ARITHMETIC_ERROR("Arithmetic error"),
-	INVALID_EXECUTION_PERMISSION("Invalid execution permission"),
+	PERMISSION_LEVEL_ERROR("Invalid execution permission"),
+	AUTHORIZATION_ERROR("Authorization error"),
 	INVALID_INSTRUCTION_SEQUENCE("Invalid instruction sequence");
 
 	private final String description;

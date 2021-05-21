@@ -50,7 +50,7 @@ import java.util.Optional;
 /**
  * Scrypt which defines how tokens are managed.
  */
-public class TokensConstraintScrypt implements ConstraintScrypt {
+public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 	@Override
 	public void main(SysCalls os) {
 		registerParticles(os);

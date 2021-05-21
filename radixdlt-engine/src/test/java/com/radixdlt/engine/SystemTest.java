@@ -74,7 +74,7 @@ public class SystemTest {
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom)))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
-			.isEqualTo(CMErrorCode.INVALID_EXECUTION_PERMISSION);
+			.isEqualTo(CMErrorCode.PERMISSION_LEVEL_ERROR);
 	}
 
 	@Test

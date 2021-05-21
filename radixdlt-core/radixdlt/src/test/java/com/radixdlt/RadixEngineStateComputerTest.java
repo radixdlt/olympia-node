@@ -297,7 +297,7 @@ public class RadixEngineStateComputerTest {
 			new Condition<>(
 				e -> {
 					RadixEngineException ex = (RadixEngineException) e;
-					return ex.getCmError().getErrorCode().equals(CMErrorCode.INVALID_EXECUTION_PERMISSION);
+					return ex.getCmError().getErrorCode().equals(CMErrorCode.PERMISSION_LEVEL_ERROR);
 				},
 				"Is invalid_execution_permission error"
 			)

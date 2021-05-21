@@ -24,8 +24,8 @@ import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructor;
-import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScrypt;
+import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV1;
+import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -52,7 +52,7 @@ public class MintTokensTest {
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new ValidatorConstraintScrypt());
-		cmAtomOS.load(new TokensConstraintScrypt());
+		cmAtomOS.load(new TokensConstraintScryptV1());
 		var cm = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
@@ -61,7 +61,7 @@ public class MintTokensTest {
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
 			ActionConstructors.newBuilder()
-				.put(TransferToken.class, new TransferTokensConstructor())
+				.put(TransferToken.class, new TransferTokensConstructorV1())
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
 				.build(),
