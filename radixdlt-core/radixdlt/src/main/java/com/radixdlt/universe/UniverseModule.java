@@ -40,13 +40,13 @@ import java.io.IOException;
 public final class UniverseModule extends AbstractModule {
 	@Provides
 	@Magic
-	private int magic(Universe universe) {
+	public int magic(Universe universe) {
 		return universe.getMagic();
 	}
 
 	@Provides
 	@Singleton
-	private Universe universe(RuntimeProperties properties, Serialization serialization) throws IOException {
+	public Universe universe(RuntimeProperties properties, Serialization serialization) throws IOException {
 		var universeString = properties.get("universe");
 		return Strings.isNotBlank(universeString)
 			? loadFromString(universeString, serialization)
@@ -67,7 +67,7 @@ public final class UniverseModule extends AbstractModule {
 
 	@Provides
 	@Genesis
-	VerifiedTxnsAndProof genesis(Universe universe) {
+	public VerifiedTxnsAndProof genesis(Universe universe) {
 		return universe.getGenesis();
 	}
 }

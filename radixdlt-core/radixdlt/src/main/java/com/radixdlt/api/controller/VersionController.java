@@ -27,14 +27,15 @@ import io.undertow.server.RoutingHandler;
 
 import static org.radix.Radix.SYSTEM_VERSION_KEY;
 
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.RestUtils.respond;
 
 public class VersionController implements Controller {
 	private final JSONObject versionData;
 
 	public VersionController(LocalSystem localSystem) {
-		var versionData = new JSONObject(localSystem.getInfo().get(SYSTEM_VERSION_KEY));
-		var versionString = versionData.getString()
+		var versionString = localSystem.getInfo().get(SYSTEM_VERSION_KEY).get("display").toString();
+		versionData = jsonObject().put("version", versionString);
 	}
 
 	@Override

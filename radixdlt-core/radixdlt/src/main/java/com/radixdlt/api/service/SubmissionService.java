@@ -17,8 +17,6 @@
 
 package com.radixdlt.api.service;
 
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.PayFee;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -26,12 +24,10 @@ import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.api.data.PreparedTransaction;
 import com.radixdlt.api.data.TransactionAction;
-import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.client.api.PreparedTransaction;
-import com.radixdlt.client.api.TransactionAction;
-import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
