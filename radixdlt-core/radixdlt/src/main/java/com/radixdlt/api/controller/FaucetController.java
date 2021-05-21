@@ -18,100 +18,22 @@
 
 package com.radixdlt.api.controller;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.bouncycastle.util.encoders.Hex;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Inject;
 import com.radixdlt.api.Controller;
-import com.radixdlt.api.faucet.FaucetToken;
-import com.radixdlt.application.NodeApplicationRequest;
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.PayFee;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.identifiers.AccountAddress;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.api.qualifier.Faucet;
+import com.radixdlt.api.server.JsonRpcServer;
 
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-
-import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.RestUtils.respond;
-import static com.radixdlt.api.RestUtils.withBody;
-
 public final class FaucetController implements Controller {
-	private static final Logger logger = LogManager.getLogger();
-	private static final UInt256 AMOUNT = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
+	private final JsonRpcServer jsonRpcServer;
 
-	private final EventDispatcher<NodeApplicationRequest> faucetRequestDispatcher;
-	private final REAddr account;
-	private final Set<REAddr> tokensToSend;
-
-	@Inject
-	public FaucetController(
-		@Self REAddr account,
-		@FaucetToken Set<REAddr> tokensToSend,
-		final EventDispatcher<NodeApplicationRequest> faucetRequestDispatcher
-	) {
-		this.account = account;
-		this.tokensToSend = tokensToSend;
-		this.faucetRequestDispatcher = faucetRequestDispatcher;
+	public FaucetController(@Faucet JsonRpcServer jsonRpcServer) {
+		this.jsonRpcServer = jsonRpcServer;
 	}
 
 	@Override
 	public void configureRoutes(final RoutingHandler handler) {
-		handler.post("/faucet/request", this::handleFaucetRequest);
-	}
-
-	@VisibleForTesting
-	void handleFaucetRequest(HttpServerExchange exchange) {
-		// TODO: implement JSON-RPC 2.0 specification
-		withBody(exchange, values -> {
-			var params = values.getJSONObject("params");
-			var addressString = params.getString("address");
-			final REAddr address;
-			try {
-				address = AccountAddress.parse(addressString);
-			} catch (DeserializeException e) {
-				respond(exchange, jsonObject().put("error", jsonObject().put("message", "Bad address.")));
-				return;
-			}
-
-			var txnConstructionRequest = TxnConstructionRequest.create();
-			txnConstructionRequest.action(new PayFee(account, TokenFeeChecker.FIXED_FEE));
-			for (var tokenAddr : tokensToSend) {
-				txnConstructionRequest.transfer(tokenAddr, account, address, AMOUNT);
-			}
-			var completableFuture = new CompletableFuture<MempoolAddSuccess>();
-			var request = NodeApplicationRequest.create(txnConstructionRequest, completableFuture);
-			faucetRequestDispatcher.dispatch(request);
-
-			try {
-				var success = completableFuture.get();
-				respond(exchange, jsonObject()
-					.put("result", jsonObject()
-						.put("transaction", Hex.toHexString(success.getTxn().getPayload()))
-						.put("transaction_identifier", success.getTxn().getId().toString())
-					)
-				);
-			} catch (ExecutionException | RuntimeException e) {
-				logger.warn("Unable to fulfill faucet request {}", e.getMessage());
-				respond(exchange, jsonObject()
-					.put("error", jsonObject()
-						.put("message", e.getCause().getMessage()))
-				);
-			}
-		});
+		handler.post("/faucet", jsonRpcServer::handleHttpRequest);
+		handler.post("/faucet/", jsonRpcServer::handleHttpRequest);
 	}
 }

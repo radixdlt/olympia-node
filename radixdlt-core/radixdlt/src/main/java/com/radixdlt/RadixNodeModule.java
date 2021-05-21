@@ -89,7 +89,10 @@ import com.radixdlt.statecomputer.transaction.TokenFeeModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.universe.Universe.UniverseType;
 import com.radixdlt.universe.UniverseModule;
+
+import java.io.IOException;
 
 import static com.radixdlt.EndpointConfig.enabledArchiveEndpoints;
 import static com.radixdlt.EndpointConfig.enabledNodeEndpoints;
@@ -178,7 +181,9 @@ public final class RadixNodeModule extends AbstractModule {
 
 		// Checkpoints
 		install(new RadixEngineCheckpointModule());
-		install(new UniverseModule());
+
+		var universeModule = new UniverseModule();
+		install(universeModule);
 
 		// Storage
 		install(new DatabasePropertiesModule());
@@ -198,12 +203,22 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new HostIpModule(properties));
 
 		// API
-		configureApi();
+		configureApi(universeType(universeModule));
 	}
 
-	private void configureApi() {
-		var archiveEndpoints = enabledArchiveEndpoints(properties);
-		var nodeEndpoints = enabledNodeEndpoints(properties);
+	private UniverseType universeType(UniverseModule universeModule) {
+		try {
+			return universeModule.universe(properties, DefaultSerialization.getInstance()).type();
+		} catch (NullPointerException e) {
+			return UniverseType.PRODUCTION;	//Assume production environment with relevant restrictions
+		} catch (IOException e) {
+			throw new IllegalStateException("Unable to load universe", e);
+		}
+	}
+
+	private void configureApi(UniverseType universeType) {
+		var archiveEndpoints = enabledArchiveEndpoints(properties, universeType);
+		var nodeEndpoints = enabledNodeEndpoints(properties, universeType);
 
 		if (archiveEndpoints.size() > 0 || nodeEndpoints.size() > 0) {
 			var eventBinder = Multibinder

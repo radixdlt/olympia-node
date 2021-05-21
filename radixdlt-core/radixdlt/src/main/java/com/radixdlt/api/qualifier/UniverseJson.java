@@ -16,24 +16,23 @@
  *
  */
 
-package com.radixdlt.api.controller;
+package com.radixdlt.api.qualifier;
 
-import com.radixdlt.api.Controller;
-import com.radixdlt.api.qualifier.System;
-import com.radixdlt.api.server.JsonRpcServer;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-import io.undertow.server.RoutingHandler;
+import javax.inject.Qualifier;
 
-public final class SystemController implements Controller {
-	private final JsonRpcServer jsonRpcServer;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-	public SystemController(@System JsonRpcServer jsonRpcServer) {
-		this.jsonRpcServer = jsonRpcServer;
-	}
-
-	@Override
-	public void configureRoutes(final RoutingHandler handler) {
-		handler.post("/system", jsonRpcServer::handleHttpRequest);
-		handler.post("/system/", jsonRpcServer::handleHttpRequest);
-	}
+/**
+ * Marks elements related to /universe.json endpoint
+ */
+@Qualifier
+@Target({ FIELD, PARAMETER, METHOD })
+@Retention(RUNTIME)
+public @interface UniverseJson {
 }

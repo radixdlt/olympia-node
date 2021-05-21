@@ -161,6 +161,13 @@ public class Universe {
 		return VerifiedTxnsAndProof.create(txns, proof);
 	}
 
+	/**
+	 * Get universe's type.
+	 */
+	public UniverseType type() {
+		return type;
+	}
+
 	// Type - 1 getter, 1 setter
 	@JsonProperty("type")
 	@DsonOutput(Output.ALL)

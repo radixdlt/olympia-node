@@ -19,13 +19,21 @@ package com.radixdlt.api.module;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import com.google.inject.Singleton;
-import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.Controller;
+import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.api.controller.FaucetController;
 import com.radixdlt.api.faucet.FaucetToken;
+import com.radixdlt.api.handler.FaucetHandler;
+import com.radixdlt.api.qualifier.AtNode;
+import com.radixdlt.api.qualifier.Faucet;
+import com.radixdlt.api.server.JsonRpcServer;
 import com.radixdlt.atom.Substate;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.TxnParseException;
@@ -34,15 +42,29 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class FaucetEndpointModule extends AbstractModule {
-	@Override
-	public void configure() {
-		//TODO: move into @ProvidesIntoSet method
-		var controllers = Multibinder.newSetBinder(binder(), Controller.class);
-		controllers.addBinding().to(FaucetController.class).in(Scopes.SINGLETON);
+	@AtNode
+	@ProvidesIntoSet
+	public Controller faucetController(@Faucet JsonRpcServer jsonRpcServer) {
+		return new FaucetController(jsonRpcServer);
+	}
+
+	@Faucet
+	@Provides
+	public JsonRpcServer jsonRpcServer(@Faucet Map<String, JsonRpcHandler> handlers) {
+		return new JsonRpcServer(handlers);
+	}
+
+	@Faucet
+	@ProvidesIntoMap
+	@StringMapKey("faucet.request_tokens")
+	public JsonRpcHandler faucetRequestTokens(FaucetHandler faucetHandler) {
+		return faucetHandler::requestTokens;
 	}
 
 	@Provides

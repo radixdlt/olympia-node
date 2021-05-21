@@ -48,6 +48,8 @@ import java.util.Map;
 import java.util.Properties;
 
 public final class Radix {
+	private static final Logger log = LogManager.getLogger();
+
 	private Radix() { }
 
 	private static final String SYSTEM_VERSION_DISPLAY;
@@ -69,12 +71,6 @@ public final class Radix {
 		var branch = "unknown-branch";
 		var commit = "unknown-commit";
 		var display = "unknown-version";
-
-		var keys = new String[]{"VERSION_BUILD", "VERSION_BRANCH", "VERSION_BASE", "VERSION_BRANCHID",
-			"VERSION_BRANCHTYPE", "VERSION_COMMIT", "VERSION_GRADLE", "VERSION_DISPLAY", "VERSION_FULL",
-			"VERSION_SCM", "VERSION_TAG", "VERSION_LAST_TAG", "VERSION_DIRTY", "VERSION_VERSIONCODE",
-			"VERSION_MAJOR", "VERSION_MINOR", "VERSION_PATCH", "VERSION_QUALIFIER"};
-
 		var map = new HashMap<String, Object>();
 
 		try (var is = Radix.class.getResourceAsStream("/version.properties")) {
@@ -85,7 +81,7 @@ public final class Radix {
 				commit = p.getProperty("VERSION_COMMIT", commit);
 				display = p.getProperty("VERSION_DISPLAY", display);
 
-				for (var key : keys) {
+				for (var key : p.stringPropertyNames()) {
 					var mapKey = key.split("_", 2)[1].toLowerCase(Locale.US);
 					var defaultValue = "unknown-" + mapKey;
 
@@ -104,8 +100,6 @@ public final class Radix {
 		SYSTEM_VERSION_COMMIT = commit;
 		SYSTEM_VERSION_INFO = Map.of(SYSTEM_VERSION_KEY, Map.copyOf(map));
 	}
-
-	private static final Logger log = LogManager.getLogger();
 
 	private static final Object BC_LOCK = new Object();
 	private static boolean bcInitialised;
@@ -141,7 +135,7 @@ public final class Radix {
 	}
 
 	private static void logVersion() {
-		log.always().log(
+		log.info(
 			"Radix distributed ledger '{}' from branch '{}' commit '{}'",
 			SYSTEM_VERSION_DISPLAY, SYSTEM_VERSION_BRANCH, SYSTEM_VERSION_COMMIT
 		);
