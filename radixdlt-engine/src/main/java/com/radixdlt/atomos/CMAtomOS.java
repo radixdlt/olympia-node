@@ -50,7 +50,6 @@ public final class CMAtomOS {
 			|| v.getAddr().getType() == REAddr.REAddrType.HASHED_KEY
 			// PUB_KEY type is already an account so cannot down
 		)
-		.allowTransitionsFromOutsideScrypts()
 		.build();
 
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions = new HashMap<>();

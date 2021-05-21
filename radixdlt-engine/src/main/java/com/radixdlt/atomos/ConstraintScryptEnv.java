@@ -87,9 +87,7 @@ public final class ConstraintScryptEnv implements SysCalls {
 
 				return particleDefinition.getStaticValidation().apply(p);
 			});
-		if (particleDefinition.allowsTransitionsFromOutsideScrypts()) {
-			particleRedefinition.allowTransitionsFromOutsideScrypts();
-		}
+
 		scryptParticleDefinitions.put(particleClass, particleRedefinition.build());
 	}
 

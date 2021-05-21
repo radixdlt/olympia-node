@@ -70,7 +70,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(
 			TokensParticle.class,
 			ParticleDefinition.<TokensParticle>builder()
-				.allowTransitionsFromOutsideScrypts()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.rriMapper(TokensParticle::getResourceAddr)
 				.build()

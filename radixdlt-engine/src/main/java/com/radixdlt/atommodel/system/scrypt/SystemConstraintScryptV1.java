@@ -89,7 +89,6 @@ public final class SystemConstraintScryptV1 implements ConstraintScrypt {
 			.build()
 		);
 
-
 		os.createDownProcedure(new DownProcedure<>(
 			SystemParticle.class, VoidReducerState.class,
 			(d, r) -> PermissionLevel.SUPER_USER,

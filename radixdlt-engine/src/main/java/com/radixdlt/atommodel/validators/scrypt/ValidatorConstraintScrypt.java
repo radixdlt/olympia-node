@@ -58,7 +58,6 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(ValidatorParticle.class, ParticleDefinition.<ValidatorParticle>builder()
 			.staticValidation(checkAddressAndUrl(ValidatorParticle::getUrl))
 			.virtualizeUp(p -> !p.isRegisteredForNextEpoch() && p.getUrl().isEmpty() && p.getName().isEmpty())
-			.allowTransitionsFromOutsideScrypts() // to enable staking in TokensConstraintScrypt
 			.build()
 		);
 
