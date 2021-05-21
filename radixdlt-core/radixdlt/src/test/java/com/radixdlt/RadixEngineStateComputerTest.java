@@ -207,9 +207,7 @@ public class RadixEngineStateComputerTest {
 		if (nextEpoch >= 2) {
 			builder = radixEngine.construct(new SystemNextEpoch(0));
 		} else {
-			builder = radixEngine.construct(new SystemNextView(nextView, 0,
-				registeredNodes.get(0).getPublicKey()
-			));
+			builder = radixEngine.construct(new SystemNextView(nextView, 0));
 		}
 
 		return builder.buildWithoutSignature();
@@ -282,11 +280,11 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void preparing_system_update_from_vertex_should_fail() throws TxBuilderException {
 		// Arrange
-		var txn = radixEngine.construct(new SystemNextView(1, 0, registeredNodes.get(0).getPublicKey()))
+		var txn = radixEngine.construct(new SystemNextView(1, 0))
 			.buildWithoutSignature();
 		var illegalTxn = TxLowLevelBuilder.newBuilder()
 			.down(SubstateId.ofSubstate(txn.getId(), 1))
-			.up(new SystemParticle(1, 3, 0, ECKeyPair.generateNew().getPublicKey()))
+			.up(new SystemParticle(1, 3, 0))
 			.particleGroup()
 			.build();
 		var v = UnverifiedVertex.create(

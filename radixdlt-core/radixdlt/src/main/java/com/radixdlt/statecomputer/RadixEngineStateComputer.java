@@ -185,7 +185,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		var systemAction = validatorSet == null
-			? new SystemNextView(view.number(), timestamp, vertex.getProposer().getKey())
+			? new SystemNextView(view.number(), timestamp)
 			: new SystemNextEpoch(timestamp);
 
 		final Txn systemUpdate;

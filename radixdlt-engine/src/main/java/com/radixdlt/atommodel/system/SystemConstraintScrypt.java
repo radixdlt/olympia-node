@@ -59,10 +59,6 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 			return Result.error("View is less than 0");
 		}
 
-		if (systemParticle.getView() > 0 && systemParticle.getLeader() == null) {
-			return Result.error("Must have leader when view > 0");
-		}
-
 		// FIXME: Need to validate view, but need additional state to do that successfully
 
 		return Result.success();
@@ -72,7 +68,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 	public void main(SysCalls os) {
 		os.registerParticle(SystemParticle.class, ParticleDefinition.<SystemParticle>builder()
 			.staticValidation(this::staticCheck)
-			.virtualizeUp(p -> p.getView() == 0 && p.getEpoch() == 0 && p.getTimestamp() == 0 && p.getLeader() == null)
+			.virtualizeUp(p -> p.getView() == 0 && p.getEpoch() == 0 && p.getTimestamp() == 0)
 			.build()
 		);
 
@@ -124,8 +120,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 						input.getSubstate().getEpoch() == output.getEpoch()
 							? new SystemNextView(
 								output.getView(),
-								output.getTimestamp(),
-								output.getLeader()
+								output.getTimestamp()
 							)
 							: new SystemNextEpoch(output.getTimestamp())
 					);
