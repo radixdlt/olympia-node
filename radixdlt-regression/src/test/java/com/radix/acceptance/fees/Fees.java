@@ -1,4 +1,4 @@
-package com.radix.acceptance.token_fees;
+package com.radix.acceptance.fees;
 
 import com.radix.acceptance.AcceptanceTest;
 import com.radix.test.TransactionUtils;
@@ -11,7 +11,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.stream.IntStream;
 
-public class TokenFees extends AcceptanceTest {
+public class Fees extends AcceptanceTest {
 
     private static final Logger logger = LogManager.getLogger();
 

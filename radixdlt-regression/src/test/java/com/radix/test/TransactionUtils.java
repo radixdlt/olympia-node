@@ -16,10 +16,21 @@ public final class TransactionUtils {
 
     public static TransactionRequest createTransferRequest(AccountAddress from, AccountAddress to, String tokenRri, UInt256 amount,
                                                            String message) {
-        return TransactionRequest.createBuilder()
+        return Utils.isNullOrEmpty(message) ?
+            TransactionRequest.createBuilder()
+                .transfer(from, to, amount, tokenRri)
+                .build() :
+            TransactionRequest.createBuilder()
                 .transfer(from, to, amount, tokenRri)
                 .message(message)
                 .build();
+    }
+
+    public static TransactionRequest createUnstakingRequest(AccountAddress from, ValidatorAddress unstakeFrom,
+                                                            UInt256 stake) {
+        return TransactionRequest.createBuilder()
+            .unstake(from, unstakeFrom, stake)
+            .build();
     }
 
     public static TransactionRequest createStakingRequest(AccountAddress from, ValidatorAddress to, UInt256 stake) {

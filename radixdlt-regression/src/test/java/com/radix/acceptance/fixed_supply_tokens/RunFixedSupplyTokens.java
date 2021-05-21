@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radix.acceptance.create_multi_issuance_token_class;
+package com.radix.acceptance.fixed_supply_tokens;
 
 import org.junit.runner.RunWith;
 
@@ -25,6 +25,6 @@ import io.cucumber.junit.Cucumber;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(snippets = SnippetType.UNDERSCORE, monochrome = true, plugin = { "pretty" })
-public class RunCreateMultiIssuanceTokenClass {
+public class RunFixedSupplyTokens {
 	// Stub for running cucumber tests
 }

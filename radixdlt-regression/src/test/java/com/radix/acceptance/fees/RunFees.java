@@ -15,8 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radix.acceptance.create_single_issuance_token_class;
-
+package com.radix.acceptance.fees;
 import org.junit.runner.RunWith;
 
 import io.cucumber.junit.CucumberOptions;
@@ -25,6 +24,6 @@ import io.cucumber.junit.Cucumber;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(snippets = SnippetType.UNDERSCORE, monochrome = true, plugin = { "pretty" })
-public class RunCreateSingleIssuanceTokenClass {
+public class RunFees {
 	// Stub for running cucumber tests
 }

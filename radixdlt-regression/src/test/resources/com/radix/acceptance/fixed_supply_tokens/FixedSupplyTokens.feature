@@ -1,6 +1,4 @@
-# See: https://radixdlt.atlassian.net/browse/RLAU-40
-@rlau-40
-Feature: Create Single Issuance Token Class
+Feature: Fixed Supply Tokens
   As an account owner
   I want to create a fixed supply token with some key properties of an ERC-20 token,
   So that I can easily create a token coming from an ethereum background without applying too much extra learning
