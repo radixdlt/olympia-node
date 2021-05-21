@@ -18,20 +18,34 @@
 
 package com.radixdlt.atommodel.tokens.scrypt;
 
+import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atommodel.tokens.state.ResourceInBucket;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
+import com.radixdlt.constraintmachine.DownProcedure;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ReducerResult2;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.UpProcedure;
+import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt384;
 
 import java.util.Objects;
+import java.util.Optional;
 
 public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 	public static final int EPOCHS_LOCKED = 2; // Must go through one full epoch before being unlocked
@@ -49,64 +63,183 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		defineStaking(os);
 	}
 
+	public static class RemainderStake implements ReducerState {
+		private final Particle initialParticle;
+		private final UInt256 amount;
+		private final REAddr owner;
+		private final ECPublicKey delegate;
+
+		RemainderStake(Particle initialParticle, UInt256 amount, REAddr owner, ECPublicKey delegate) {
+			this.initialParticle = initialParticle;
+			this.amount = amount;
+			this.owner = owner;
+			this.delegate = delegate;
+		}
+
+		public Particle initialParticle() {
+			return initialParticle;
+		}
+
+		public UInt256 amount() {
+			return amount;
+		}
+
+		public REAddr owner() {
+			return owner;
+		}
+
+		public ECPublicKey delegate() {
+			return delegate;
+		}
+
+		@Override
+		public TypeToken<? extends ReducerState> getTypeToken() {
+			return TypeToken.of(RemainderStake.class);
+		}
+	}
+
+	public static class UnaccountedStake implements ReducerState {
+		private final DeprecatedStake initialParticle;
+		private final UInt384 amount;
+
+		public UnaccountedStake(DeprecatedStake initialParticle, UInt384 amount) {
+			this.initialParticle = initialParticle;
+			this.amount = amount;
+		}
+
+		public UInt384 amount() {
+			return amount;
+		}
+
+		public DeprecatedStake initialParticle() {
+			return initialParticle;
+		}
+
+		public Optional<ReducerState> subtract(UInt384 amountAccounted) {
+			var compare = amountAccounted.compareTo(amount);
+			if (compare > 0) {
+				return Optional.of(new TokensConstraintScrypt.RemainderTokens(
+					initialParticle, REAddr.ofNativeToken(), amountAccounted.subtract(amount))
+				);
+			} else if (compare < 0) {
+				return Optional.of(new UnaccountedStake(initialParticle, amount.subtract(amountAccounted)));
+			} else {
+				return Optional.empty();
+			}
+		}
+
+		@Override
+		public TypeToken<? extends ReducerState> getTypeToken() {
+			return TypeToken.of(UnaccountedStake.class);
+		}
+	}
 
 	private void defineStaking(SysCalls os) {
-		// Staking
-		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
-			TokensParticle.class,
-			DeprecatedStake.class,
-			(i, o, r) -> {
-				if (!Objects.equals(i.getHoldingAddr(), o.getOwner())) {
-					return Result.error("Owner must remain the same");
+		// Stake
+		os.createUpProcedure(new UpProcedure<>(
+			VoidReducerState.class, DeprecatedStake.class,
+			(u, r) -> PermissionLevel.USER,
+			(u, r, k) -> true,
+			(s, u, r) -> {
+				var state = new UnaccountedStake(
+					u,
+					UInt384.from(u.getAmount())
+				);
+				return ReducerResult2.incomplete(state);
+			}
+		));
+		os.createDownProcedure(new DownProcedure<>(
+			TokensParticle.class, UnaccountedStake.class,
+			(d, r) -> PermissionLevel.USER,
+			(d, r, k) -> d.getSubstate().allowedToWithdraw(k, r),
+			(d, s, r) -> {
+				if (!d.getSubstate().getResourceAddr().isNativeToken()) {
+					return ReducerResult2.error("Not the same address.");
 				}
-				return Result.success();
-			},
-			(i, r, pubKey) -> pubKey.map(i.getSubstate().getHoldingAddr()::allowToWithdrawFrom).orElse(false),
-			(i, o, r) -> new StakeTokens(o.getOwner(), o.getDelegateKey(), o.getAmount()) // FIXME: this isn't 100% correct
+				var amt = UInt384.from(d.getSubstate().getAmount());
+				var nextRemainder = s.subtract(amt);
+				if (nextRemainder.isEmpty()) {
+					// FIXME: This isn't 100% correct
+					var p = s.initialParticle;
+					var action = new StakeTokens(d.getSubstate().getHoldingAddr(), p.getDelegateKey(), p.getAmount());
+					return ReducerResult2.complete(action);
+				}
+
+				return ReducerResult2.incomplete(nextRemainder.get());
+			}
 		));
 
-		// For change
-		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
-			DeprecatedStake.class,
-			DeprecatedStake.class,
-			(i, o, r) -> {
-				if (!Objects.equals(i.getOwner(), o.getOwner())) {
-					return Result.error("Owners must be same");
-				}
-				if (!Objects.equals(i.getDelegateKey(), o.getDelegateKey())) {
-					return Result.error("Delegate must be same");
+		// Unstake
+		os.createDownProcedure(new DownProcedure<>(
+			DeprecatedStake.class, TokensConstraintScrypt.UnaccountedTokens.class,
+			(d, r) -> PermissionLevel.USER,
+			(d, r, k) -> k.map(d.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
+			(d, s, r) -> {
+				if (!s.resourceInBucket().isNativeToken()) {
+					return ReducerResult2.error("Can only destake to the native token.");
 				}
 
-				return Result.success();
-			},
-			(i, r, pubKey) -> pubKey.map(i.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
-			(i, o, r) -> Unknown.create()
-		));
-
-		// Exiting
-		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
-			DeprecatedStake.class,
-			TokensParticle.class,
-			(i, o, r) -> {
-				if (!Objects.equals(i.getOwner(), o.getHoldingAddr())) {
-					return Result.error("Must unstake to self");
+				if (!Objects.equals(d.getSubstate().getOwner(), s.resourceInBucket().holdingAddress())) {
+					return ReducerResult2.error("Must unstake to self");
 				}
 
-				var epochUnlocked = o.getEpochUnlocked();
+				var epochUnlocked = s.resourceInBucket().epochUnlocked();
 				if (epochUnlocked.isEmpty()) {
-					return Result.error("Exiting from stake must be locked.");
+					return ReducerResult2.error("Exiting from stake must be locked.");
 				}
 
 				var system = (SystemParticle) r.loadAddr(null, REAddr.ofSystem()).orElseThrow();
 				if (system.getEpoch() + EPOCHS_LOCKED != epochUnlocked.get()) {
-					return Result.error("Incorrect epoch unlock: " + epochUnlocked.get()
+					return ReducerResult2.error("Incorrect epoch unlock: " + epochUnlocked.get()
 						+ " should be: " + (system.getEpoch() + EPOCHS_LOCKED));
 				}
 
-				return Result.success();
-			},
-			(i, r, pubKey) -> pubKey.map(i.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
-			(i, o, r) -> new UnstakeTokens(i.getOwner(), i.getDelegateKey(), o.getAmount()) // FIXME: this isn't 100% correct
+				var nextRemainder = s.subtract(UInt384.from(d.getSubstate().getAmount()));
+				if (nextRemainder.isEmpty()) {
+					// FIXME: This isn't 100% correct
+					var p = (TokensParticle) s.initialParticle();
+					var action = new UnstakeTokens(p.getHoldingAddr(), d.getSubstate().getDelegateKey(), p.getAmount());
+					return ReducerResult2.complete(action);
+				}
+
+				if (nextRemainder.get() instanceof TokensConstraintScrypt.RemainderTokens) {
+					TokensConstraintScrypt.RemainderTokens remainderTokens = (TokensConstraintScrypt.RemainderTokens) nextRemainder.get();
+					var stakeRemainder = new RemainderStake(
+						remainderTokens.initialParticle(),
+						remainderTokens.amount().getLow(),
+						d.getSubstate().getOwner(),
+						d.getSubstate().getDelegateKey()
+					);
+					return ReducerResult2.incomplete(stakeRemainder);
+				} else {
+					return ReducerResult2.incomplete(nextRemainder.get());
+				}
+			}
+		));
+
+		// For change
+		os.createUpProcedure(new UpProcedure<>(
+			RemainderStake.class, DeprecatedStake.class,
+			(u, r) -> PermissionLevel.USER,
+			(u, r, k) -> true,
+			(s, u, r) -> {
+				if (!u.getAmount().equals(s.amount)) {
+					return ReducerResult2.error("Remainder must be filled exactly.");
+				}
+
+				if (!u.getDelegateKey().equals(s.delegate)) {
+					return ReducerResult2.error("Delegate key does not match.");
+				}
+
+				if (!u.getOwner().equals(s.owner)) {
+					return ReducerResult2.error("Owners don't match.");
+				}
+
+				// FIXME: This isn't 100% correct
+				var t = (TokensParticle) s.initialParticle;
+				var action = new UnstakeTokens(t.getHoldingAddr(), u.getDelegateKey(), t.getAmount());
+				return ReducerResult2.complete(action);
+			}
 		));
 	}
 }

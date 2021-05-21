@@ -23,7 +23,9 @@ import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
 import com.radixdlt.atommodel.tokens.state.ResourceInBucket;
 import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
@@ -34,6 +36,7 @@ import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult2;
 import com.radixdlt.constraintmachine.ReducerState;
@@ -143,18 +146,26 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 	}
 
 	// TODO: Remove so that up particles cannot be created first
-	private static class UnaccountedTokens implements ReducerState {
-		private final TokensParticle initialParticle;
+	public static class UnaccountedTokens implements ReducerState {
+		private final Particle initialParticle;
 		private final ResourceInBucket resourceInBucket;
 		private final UInt384 amount;
 
-		public UnaccountedTokens(TokensParticle initialParticle, ResourceInBucket resourceInBucket, UInt384 amount) {
+		public UnaccountedTokens(Particle initialParticle, ResourceInBucket resourceInBucket, UInt384 amount) {
 			this.initialParticle = initialParticle;
 			this.resourceInBucket = resourceInBucket;
 			this.amount = amount;
 		}
 
-		private Optional<ReducerState> subtract(UInt384 amountAccounted) {
+		public Particle initialParticle() {
+			return initialParticle;
+		}
+
+		public ResourceInBucket resourceInBucket() {
+			return resourceInBucket;
+		}
+
+		public Optional<ReducerState> subtract(UInt384 amountAccounted) {
 			var compare = amountAccounted.compareTo(amount);
 			if (compare > 0) {
 				return Optional.of(new RemainderTokens(initialParticle, resourceInBucket.resourceAddr(), amountAccounted.subtract(amount)));
@@ -171,19 +182,27 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		}
 	}
 
-	private static class RemainderTokens implements ReducerState {
+	public static class RemainderTokens implements ReducerState {
 		private final REAddr tokenAddr;
 		private final UInt384 amount;
-		private final TokensParticle initialParticle;
+		private final Particle initialParticle;
 
-		private RemainderTokens(
-			TokensParticle initialParticle, // TODO: Remove, Hack for now
+		public RemainderTokens(
+			Particle initialParticle, // TODO: Remove, Hack for now
 			REAddr tokenAddr,
 			UInt384 amount
 		) {
 			this.initialParticle = initialParticle;
 			this.tokenAddr = tokenAddr;
 			this.amount = amount;
+		}
+
+		public UInt384 amount() {
+			return amount;
+		}
+
+		public Particle initialParticle() {
+			return initialParticle;
 		}
 
 		private Optional<ReducerState> subtract(ResourceInBucket resourceInBucket, UInt384 amountToSubtract) {
@@ -229,7 +248,9 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				if (!tokenDef.isMutable()) {
 					return ReducerResult2.error("Can only mint mutable tokens.");
 				}
-				var action = new MintToken(s.resourceInBucket.resourceAddr(), s.initialParticle.getHoldingAddr(), s.amount.getLow());
+
+				var t = (TokensParticle) s.initialParticle;
+				var action = new MintToken(s.resourceInBucket.resourceAddr(), t.getHoldingAddr(), s.amount.getLow());
 				return ReducerResult2.complete(action);
 			}
 		));
@@ -254,7 +275,8 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				}
 
 				// FIXME: These aren't 100% correct
-				var action = new BurnToken(s.tokenAddr, s.initialParticle.getHoldingAddr(), s.amount.getLow());
+				var t = (TokensParticle) s.initialParticle;
+				var action = new BurnToken(s.tokenAddr, t.getHoldingAddr(), s.amount.getLow());
 				return ReducerResult2.complete(action);
 			}
 		));
@@ -300,8 +322,17 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				if (nextRemainder.isEmpty()) {
 					// FIXME: This isn't 100% correct
 					var p = s.initialParticle;
-					var action = new TransferToken(p.getResourceAddr(), u.getHoldingAddr(), p.getHoldingAddr(), p.getAmount());
-					return ReducerResult2.complete(action);
+					if (p instanceof TokensParticle) {
+						var t = (TokensParticle) p;
+						var action = new TransferToken(t.getResourceAddr(), u.getHoldingAddr(), t.getHoldingAddr(), t.getAmount());
+						return ReducerResult2.complete(action);
+					} else if (p instanceof DeprecatedStake) {
+						var t = (DeprecatedStake) p;
+						var action = new StakeTokens(t.getOwner(), t.getDelegateKey(), t.getAmount());
+						return ReducerResult2.complete(action);
+					} else {
+						throw new IllegalStateException();
+					}
 				}
 				return ReducerResult2.incomplete(nextRemainder.get());
 			}
@@ -320,8 +351,17 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				if (nextRemainder.isEmpty()) {
 					// FIXME: This isn't 100% correct
 					var p = s.initialParticle;
-					var action = new TransferToken(p.getResourceAddr(), d.getSubstate().getHoldingAddr(), p.getHoldingAddr(), p.getAmount());
-					return ReducerResult2.complete(action);
+					if (p instanceof TokensParticle) {
+						var t = (TokensParticle) p;
+						var action = new TransferToken(t.getResourceAddr(), d.getSubstate().getHoldingAddr(), t.getHoldingAddr(), t.getAmount());
+						return ReducerResult2.complete(action);
+					} else if (p instanceof DeprecatedStake) {
+						var t = (DeprecatedStake) p;
+						var action = new StakeTokens(t.getOwner(), t.getDelegateKey(), t.getAmount());
+						return ReducerResult2.complete(action);
+					} else {
+						throw new IllegalStateException();
+					}
 				}
 
 				return ReducerResult2.incomplete(nextRemainder.get());

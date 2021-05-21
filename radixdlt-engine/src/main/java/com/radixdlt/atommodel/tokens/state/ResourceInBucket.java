@@ -35,8 +35,16 @@ public class ResourceInBucket {
 		this.epochUnlocked = epochUnlocked;
 	}
 
+	public boolean isNativeToken() {
+		return resourceAddr.isNativeToken();
+	}
+
 	public REAddr resourceAddr() {
 		return resourceAddr;
+	}
+
+	public REAddr holdingAddress() {
+		return holdingAddress;
 	}
 
 	public Optional<Long> epochUnlocked() {

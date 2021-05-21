@@ -26,12 +26,16 @@ import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
+import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
+import com.radixdlt.constraintmachine.ReducerResult2;
+import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
+import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.InputAuthorization;
 import com.radixdlt.store.ReadableAddrs;
@@ -70,6 +74,20 @@ public final class SystemConstraintScryptV1 implements ConstraintScrypt {
 		return Result.success();
 	}
 
+
+	private static final class UpdatingSystem implements ReducerState {
+		private final SystemParticle sys;
+
+		private UpdatingSystem(SystemParticle sys) {
+			this.sys = sys;
+		}
+
+		@Override
+		public TypeToken<? extends ReducerState> getTypeToken() {
+			return TypeToken.of(UpdatingSystem.class);
+		}
+	}
+
 	@Override
 	public void main(SysCalls os) {
 		os.registerParticle(SystemParticle.class, ParticleDefinition.<SystemParticle>builder()
@@ -78,65 +96,38 @@ public final class SystemConstraintScryptV1 implements ConstraintScrypt {
 			.build()
 		);
 
-		os.createTransition(
-			new TransitionToken<>(
-				SystemParticle.class,
-				SystemParticle.class,
-				TypeToken.of(VoidReducerState.class)
-			),
 
-			new TransitionProcedure<>() {
-				@Override
-				public PermissionLevel inputPermissionLevel(
-					SubstateWithArg<SystemParticle> i,
-					ReadableAddrs index
-				) {
-					return PermissionLevel.SUPER_USER;
-				}
+		os.createDownProcedure(new DownProcedure<>(
+			SystemParticle.class, VoidReducerState.class,
+			(d, r) -> PermissionLevel.SUPER_USER,
+			(d, r, pubKey) -> pubKey.isEmpty(),
+			(d, s, r) -> ReducerResult2.incomplete(new UpdatingSystem(d.getSubstate()))
+		));
 
-				@Override
-				public Result precondition(
-					SubstateWithArg<SystemParticle> in,
-					SystemParticle outputParticle,
-					VoidReducerState outputUsed,
-					ReadableAddrs readableAddrs
-				) {
-					if (in.getArg().isPresent()) {
-						return Result.error("No arguments allowed");
+		os.createUpProcedure(new UpProcedure<>(
+			UpdatingSystem.class, SystemParticle.class,
+			(u, r) -> PermissionLevel.SUPER_USER,
+			(u, r, pubKey) -> pubKey.isEmpty(),
+			(s, u, r) -> {
+				var curState = s.sys;
+				if (curState.getEpoch() == u.getEpoch()) {
+					if (curState.getView() >= u.getView()) {
+						return ReducerResult2.error("Next view must be greater than previous.");
 					}
-
-					var inputParticle = in.getSubstate();
-					if (inputParticle.getEpoch() == outputParticle.getEpoch()) {
-						if (inputParticle.getView() >= outputParticle.getView()) {
-							return Result.error("Next view must be greater than previous.");
-						}
-					} else if (inputParticle.getEpoch() + 1 != outputParticle.getEpoch()) {
-						return Result.error("Bad next epoch");
-					} else if (outputParticle.getView() != 0) {
-						return Result.error("Change of epochs must start with view 0.");
-					}
-
-					return Result.success();
+				} else if (curState.getEpoch() + 1 != u.getEpoch()) {
+					return ReducerResult2.error("Bad next epoch");
+				} else if (u.getView() != 0) {
+					return ReducerResult2.error("Change of epochs must start with view 0.");
 				}
 
-				@Override
-				public InputOutputReducer<SystemParticle, SystemParticle, VoidReducerState> inputOutputReducer() {
-					return (input, output, index, outputUsed) -> ReducerResult.complete(
-						input.getSubstate().getEpoch() == output.getEpoch()
-							? new SystemNextView(
-								output.getView(),
-								output.getTimestamp(),
-								output.getLeader()
-							)
-							: new SystemNextEpoch(output.getTimestamp())
-					);
-				}
-
-				@Override
-				public InputAuthorization<SystemParticle> inputAuthorization() {
-					return (i, index, pubKey) -> pubKey.isEmpty(); // Must not be signed
-				}
+				return s.sys.getEpoch() != u.getEpoch()
+					? ReducerResult2.complete(new SystemNextEpoch(u.getTimestamp()))
+					: ReducerResult2.complete(new SystemNextView(
+						u.getView(),
+						u.getTimestamp(),
+						u.getLeader()
+					));
 			}
-		);
+		));
 	}
 }

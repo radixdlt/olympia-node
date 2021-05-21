@@ -21,7 +21,7 @@ package com.radixdlt.atom;
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.tokens.Fungible;
-import com.radixdlt.atommodel.unique.UniqueParticle;
+import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateWithArg;

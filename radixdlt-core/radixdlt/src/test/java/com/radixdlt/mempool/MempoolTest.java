@@ -25,7 +25,7 @@ import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.unique.UniqueParticle;
+import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;

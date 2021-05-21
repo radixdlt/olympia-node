@@ -122,81 +122,6 @@ public final class ConstraintScryptEnv implements SysCalls {
 	}
 
 	@Override
-	public <I extends Particle, O extends Particle, U extends ReducerState> void createTransition(
-		TransitionToken<I, O, U> transitionToken,
-		TransitionProcedure<I, O, U> procedure
-	) {
-		if (scryptTransitionProcedures.containsKey(transitionToken)) {
-			throw new IllegalStateException(transitionToken + " already created");
-		}
-
-		final ParticleDefinition<Particle> inputDefinition = getParticleDefinition(transitionToken.getInputClass());
-		final ParticleDefinition<Particle> outputDefinition = getParticleDefinition(transitionToken.getOutputClass());
-
-		final TransitionProcedure<Particle, Particle, ReducerState> transformedProcedure
-			= new TransitionProcedure<Particle, Particle, ReducerState>() {
-				@Override
-				public PermissionLevel inputPermissionLevel(SubstateWithArg<Particle> i, ReadableAddrs index) {
-					var in = i.getArg()
-						.map(arg -> SubstateWithArg.withArg((I) i.getSubstate(), arg))
-						.orElseGet(() -> SubstateWithArg.noArg((I) i.getSubstate()));
-					return procedure.inputPermissionLevel(in, index);
-				}
-
-				@Override
-				public Result precondition(
-					SubstateWithArg<Particle> in,
-					Particle outputParticle,
-					ReducerState outputUsed,
-					ReadableAddrs index
-				) {
-					// RRIs must be the same across RRI particle transitions
-					if (inputDefinition.getRriMapper() != null && outputDefinition.getRriMapper() != null) {
-						final var inputRriId = inputDefinition.getRriMapper().apply(in.getSubstate());
-						final var outputRriId = outputDefinition.getRriMapper().apply(outputParticle);
-						if (!inputRriId.equals(outputRriId)) {
-							return Result.error("Input/Output RRIs not equal");
-						}
-					}
-
-					var inConvert = in.getArg()
-						.map(arg -> SubstateWithArg.withArg((I) in.getSubstate(), arg))
-						.orElseGet(() -> SubstateWithArg.noArg((I) in.getSubstate()));
-
-					return procedure.precondition(inConvert, (O) outputParticle, (U) outputUsed, index);
-				}
-
-				@Override
-				public InputOutputReducer<Particle, Particle, ReducerState> inputOutputReducer() {
-					return (input, output, index, outputUsed) -> {
-						var in = input.getArg()
-							.map(arg -> SubstateWithArg.withArg((I) input.getSubstate(), arg))
-							.orElseGet(() -> SubstateWithArg.noArg((I) input.getSubstate()));
-						return procedure.inputOutputReducer()
-							.reduce(in, (O) output, index, (U) outputUsed);
-					};
-				}
-
-				@Override
-				public InputAuthorization<Particle> inputAuthorization() {
-					return (i, index, pubKey) -> {
-						var in = i.getArg()
-							.map(arg -> SubstateWithArg.withArg((I) i.getSubstate(), arg))
-							.orElseGet(() -> SubstateWithArg.noArg((I) i.getSubstate()));
-						return procedure.inputAuthorization().verify(in, index, pubKey);
-					};
-				}
-
-				@Override
-				public OutputAuthorization<Particle> outputAuthorization() {
-					return (o, index, pubKey) -> procedure.outputAuthorization().verify((O) o, index, pubKey);
-				}
-			};
-
-		scryptTransitionProcedures.put(transitionToken, transformedProcedure);
-	}
-
-	@Override
 	public <D extends Particle, S extends ReducerState> void createDownProcedure(DownProcedure<D, S> downProcedure) {
 		var key = downProcedure.getDownProcedureKey();
 		if (downProcedures.containsKey(key)) {
@@ -221,11 +146,5 @@ public final class ConstraintScryptEnv implements SysCalls {
 			throw new IllegalStateException(key + " already created");
 		}
 		endProcedures.put(key, (EndProcedure<ReducerState>) endProcedure);
-	}
-
-
-	@Override
-	public void executeRoutine(ConstraintRoutine routine) {
-		routine.main(this);
 	}
 }

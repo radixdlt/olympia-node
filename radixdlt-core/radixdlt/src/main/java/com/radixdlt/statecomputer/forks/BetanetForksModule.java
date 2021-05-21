@@ -56,7 +56,7 @@ import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV1;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV2;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScrypt;
-import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
+import com.radixdlt.atommodel.unique.scrypt.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.consensus.bft.View;
