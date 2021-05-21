@@ -1,12 +1,6 @@
-name: radixdlt-publish-radixdlt-docker
-
+name: pr-publish-keygen-radixdlt-images-workflow
 on:
-  release:
-    types: [ published ]
-  push:
-    branches:
-      - rc\/*
-      - release\/*
+  pull_request:
 jobs:
   cancel_running_workflows:
     name: Cancel running workflows
@@ -16,6 +10,66 @@ jobs:
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
+  publish-keygen-docker:
+    runs-on: ubuntu-latest
+    name: Build and publish keygen
+    steps:
+      - uses: actions/checkout@v1
+      - id: set_environment
+        name: Set variables
+        uses: ./.github/actions/set-variables
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ steps.set_environment.outputs.git_ref }}
+          fetch-depth: 0
+      - name: Set up JDK 1.11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.11
+      - name: Cache Gradle packages
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      - id: get_version
+        name: Get radixdlt version
+        uses: ./.github/actions/get-version
+        with:
+          is_release: ${{ steps.set_environment.outputs.is_release }}
+      - name: Build radixdlt
+        uses: ./.github/actions/gradle-task
+        with:
+          is_release: ${{ steps.set_environment.outputs.is_release }}
+          gradle_command: clean build -x test
+      - name: Prepare Dockerfile context
+        run: |
+          unzip radixdlt-core/radixdlt/build/distributions/radixdlt-${{ steps.get_version.outputs.radixdlt_version }}.zip
+      - name: Login to GCR (rc)
+        uses: docker/login-action@v1
+        if:  "${{ steps.set_environment.outputs.is_release == 'false' }}"
+        with:
+          registry: eu.gcr.io
+          username: _json_key
+          password: ${{ secrets.GCR_EU_DEV_JSON_KEY }}
+      - name: Docker build and push
+        uses: docker/build-push-action@v2
+        with:
+          file: radixdlt-core/docker/Dockerfile.keygen
+          tags: |
+            ${{ steps.set_environment.outputs.radixdlt_image }}:${{ steps.get_version.outputs.docker_tag }}
+          push: true
+          context: ./radixdlt-${{ steps.get_version.outputs.radixdlt_version }}/
+
+      - name: Cleanup Gradle Cache
+        # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
+        # Restoring these files from a GitHub Actions cache might cause problems for future builds.
+        run: |
+          rm -f ~/.gradle/caches/modules-2/modules-2.lock
+          rm -f ~/.gradle/caches/modules-2/gc.properties
   build-docker:
     name: Build deb package needed for Docker image
     runs-on: ubuntu-latest
@@ -59,7 +113,6 @@ jobs:
   publish-docker:
     needs: build-docker
     name: Build and push radixdlt Docker image
-    environment: publish-artifacts
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -92,12 +145,6 @@ jobs:
         uses: ./.github/actions/get-version
         with:
           is_release: ${{ steps.set_environment.outputs.is_release }}
-      - name: Login to Dockerhub (release)
-        uses: docker/login-action@v1
-        if: "${{ steps.set_environment.outputs.is_release == 'true' }}"
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
       - name: Login to GCR
         if: "${{ steps.set_environment.outputs.is_release == 'false' }}"
         uses: docker/login-action@v1

@@ -1,0 +1,57 @@
+name: 'Set variables'
+description: 'Set variables. Uses github context'
+outputs:
+  is_release:
+    description: "Is release?"
+    value: ${{ steps.set_variables.outputs.is_release }}
+  release_version:
+    description: "Release version"
+    value: ${{ steps.set_variables.outputs.release_version }}
+  git_ref:
+    description: "Git ref"
+    value: ${{ steps.set_variables.outputs.ref }}
+  radixdlt_image:
+    description: "radixdlt image"
+    value: ${{ steps.set_variables.outputs.radixdlt_image }}
+  keygen_image:
+    description: "keygen image"
+    value: ${{ steps.set_variables.outputs.keygen_image }}
+runs:
+  using: "composite"
+  steps:
+    - id: set_variables
+      run: |
+        echo "GITHUB_REF $GITHUB_REF"
+        GH_EVENT_NAME="${{ github.event_name }}"
+        if [[ ! -z $GH_EVENT_NAME ]] && [[ "$GH_EVENT_NAME" == "release" ]] ;then
+          echo "Workflow triggered by a release event"
+          echo "Release version ${{ github.event.release.tag_name }}"
+          echo "::set-output name=is_release::true"
+          echo "::set-output name=release_version::${{ github.event.release.tag_name }}"
+          echo "::set-output name=ref::${{ github.event.release.tag_name }}"
+          echo "::set-output name=radixdlt_image::radixdlt/radixdlt"
+          echo "::set-output name=keygen_image::radixdlt/keygen"
+
+          echo "is_release: true"
+          echo "release_version: ${{ github.event.release.tag_name }}"
+          echo "ref: ${{ github.event.release.tag_name }}"
+          echo "radixdlt_image: radixdlt/radixdlt"
+          echo "keygen_image: radixdlt/keygen"
+        else
+          if [[ ! -z $GH_EVENT_NAME ]] && [[ "$GH_EVENT_NAME" == "pull_request" ]] ;then
+            echo "Workflow triggered by push to a PR"
+            echo "::set-output name=ref::${{ github.head_ref  }}"
+          else
+            echo "Workflow triggered by push to a branch"
+            echo "::set-output name=ref::$(echo $GITHUB_REF)"
+          fi
+          echo "::set-output name=is_release::false"
+          echo "::set-output name=radixdlt_image::eu.gcr.io/dev-container-repo/radixdlt-core"
+          echo "::set-output name=keygen_image::eu.gcr.io/dev-container-repo/keygen"
+
+          echo "is_release: false"
+          echo "ref: $GITHUB_REF"
+          echo "radixdlt_image: eu.gcr.io/dev-container-repo/radixdlt-core"
+          echo "keygen_image: eu.gcr.io/dev-container-repo/keygen"
+        fi
+      shell: bash
