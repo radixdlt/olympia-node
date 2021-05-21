@@ -18,14 +18,11 @@
 package com.radixdlt.api.controller;
 
 import org.json.JSONObject;
-import org.radix.universe.system.LocalSystem;
 
 import com.radixdlt.api.Controller;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
-
-import static org.radix.Radix.SYSTEM_VERSION_KEY;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.RestUtils.respond;
@@ -33,8 +30,7 @@ import static com.radixdlt.api.RestUtils.respond;
 public class VersionController implements Controller {
 	private final JSONObject versionData;
 
-	public VersionController(LocalSystem localSystem) {
-		var versionString = localSystem.getInfo().get(SYSTEM_VERSION_KEY).get("display").toString();
+	public VersionController(String versionString) {
 		versionData = jsonObject().put("version", versionString);
 	}
 

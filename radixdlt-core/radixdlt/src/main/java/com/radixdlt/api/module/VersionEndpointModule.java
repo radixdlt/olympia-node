@@ -25,10 +25,13 @@ import com.radixdlt.api.Controller;
 import com.radixdlt.api.controller.VersionController;
 import com.radixdlt.api.qualifier.AtNode;
 
+import static org.radix.Radix.SYSTEM_VERSION_KEY;
+
 public class VersionEndpointModule extends AbstractModule {
 	@AtNode
 	@ProvidesIntoSet
 	public Controller versionController(LocalSystem localSystem) {
-		return new VersionController(localSystem);
+		var versionString = localSystem.getInfo().get(SYSTEM_VERSION_KEY).get("display").toString();
+		return new VersionController(versionString);
 	}
 }
