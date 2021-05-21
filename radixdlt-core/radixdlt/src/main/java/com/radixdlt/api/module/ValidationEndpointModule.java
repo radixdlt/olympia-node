@@ -19,47 +19,51 @@ package com.radixdlt.api.module;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.api.controller.ValidationController;
+import com.radixdlt.api.handler.ValidationHandler;
+import com.radixdlt.api.qualifier.AtNode;
 import com.radixdlt.api.qualifier.Validation;
 import com.radixdlt.api.server.JsonRpcServer;
-import com.radixdlt.application.NodeApplicationRequest;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
 import java.util.Map;
 
 public class ValidationEndpointModule extends AbstractModule {
+	@AtNode
+	@Validation
+	@ProvidesIntoSet
+	public Controller validationController(@Validation JsonRpcServer jsonRpcServer) {
+		return new ValidationController(jsonRpcServer);
+	}
+
 	@Validation
 	@Provides
 	public JsonRpcServer rpcServer(@Validation Map<String, JsonRpcHandler> additionalHandlers) {
 		return new JsonRpcServer(additionalHandlers);
 	}
 
-	//TODO: remove/rework/replace
 	@Validation
-	@ProvidesIntoSet
-	public Controller validationController(
-		@Validation JsonRpcServer jsonRpcServer,
-		@Self REAddr account,
-		@Self ECPublicKey bftKey,
-		RadixEngine<LedgerAndBFTProof> radixEngine,
-		EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher
-	) {
-		return new ValidationController(jsonRpcServer, account, bftKey, radixEngine, nodeApplicationRequestEventDispatcher);
+	@ProvidesIntoMap
+	@StringMapKey("validation.get_node_info")
+	public JsonRpcHandler getNodeInfo(ValidationHandler validationHandler) {
+		return validationHandler::handleGetNodeInfo;
 	}
 
-	//TODO: replace with validation endpoints
-//	@Validation
-//	@ProvidesIntoMap
-//	@StringMapKey("transaction.build")
-//	public JsonRpcHandler transactionBuild(ConstructionHandler constructionHandler) {
-//		return constructionHandler::handleBuildTransaction;
-//	}
+	@Validation
+	@ProvidesIntoMap
+	@StringMapKey("validation.get_current_epoch_data")
+	public JsonRpcHandler getCurrentEpochData(ValidationHandler validationHandler) {
+		return validationHandler::handleGetCurrentEpochData;
+	}
+
+	@Validation
+	@ProvidesIntoMap
+	@StringMapKey("validation.get_next_epoch_data")
+	public JsonRpcHandler getNextEpochData(ValidationHandler validationHandler) {
+		return validationHandler::handleGetNextEpochData;
+	}
 }

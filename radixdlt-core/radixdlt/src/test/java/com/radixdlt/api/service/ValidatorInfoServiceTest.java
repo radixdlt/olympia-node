@@ -16,7 +16,6 @@
  */
 package com.radixdlt.api.service;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -58,20 +57,18 @@ public class ValidatorInfoServiceTest {
 		var validatorInfoService = setUpService();
 		var result = validatorInfoService.getValidators(2, Optional.empty());
 
-		result
-			.onFailureDo(Assert::fail)
-			.onSuccess(tuple -> tuple.map((cursor, list) -> {
-				cursor.ifPresentOrElse(
-					pos -> assertEquals(validator2, pos),
-					() -> fail("Cursor must not be empty")
-				);
+		result.map((cursor, list) -> {
+			cursor.ifPresentOrElse(
+				pos -> assertEquals(validator2, pos),
+				() -> fail("Cursor must not be empty")
+			);
 
-				assertEquals(2, list.size());
-				assertEquals(validator3, list.get(0).getValidatorKey());
-				assertEquals(validator2, list.get(1).getValidatorKey());
+			assertEquals(2, list.size());
+			assertEquals(validator3, list.get(0).getValidatorKey());
+			assertEquals(validator2, list.get(1).getValidatorKey());
 
-				return null;
-			}));
+			return null;
+		});
 	}
 
 	@Test
@@ -80,19 +77,17 @@ public class ValidatorInfoServiceTest {
 		var result
 			= validatorInfoService.getValidators(1, Optional.of(validator2));
 
-		result
-			.onFailureDo(Assert::fail)
-			.onSuccess(tuple -> tuple.map((cursor, list) -> {
-				cursor.ifPresentOrElse(
-					pos -> assertEquals(validator1, pos),
-					() -> fail("Cursor must not be empty")
-				);
+		result.map((cursor, list) -> {
+			cursor.ifPresentOrElse(
+				pos -> assertEquals(validator1, pos),
+				() -> fail("Cursor must not be empty")
+			);
 
-				assertEquals(1, list.size());
-				assertEquals(validator1, list.get(0).getValidatorKey());
+			assertEquals(1, list.size());
+			assertEquals(validator1, list.get(0).getValidatorKey());
 
-				return null;
-			}));
+			return null;
+		});
 	}
 
 	@Test
@@ -101,13 +96,11 @@ public class ValidatorInfoServiceTest {
 		var result
 			= validatorInfoService.getValidators(3, Optional.of(validator1));
 
-		result
-			.onFailureDo(Assert::fail)
-			.onSuccess(tuple -> tuple.map((cursor, list) -> {
-				cursor.ifPresent(pos -> fail("Cursor must be empty"));
-				assertEquals(0, list.size());
-				return null;
-			}));
+		result.map((cursor, list) -> {
+			cursor.ifPresent(pos -> fail("Cursor must be empty"));
+			assertEquals(0, list.size());
+			return null;
+		});
 	}
 
 	@SuppressWarnings("unchecked")

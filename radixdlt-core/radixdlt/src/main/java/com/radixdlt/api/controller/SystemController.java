@@ -19,7 +19,6 @@
 package com.radixdlt.api.controller;
 
 import com.radixdlt.api.Controller;
-import com.radixdlt.api.qualifier.System;
 import com.radixdlt.api.server.JsonRpcServer;
 
 import io.undertow.server.RoutingHandler;
@@ -27,7 +26,7 @@ import io.undertow.server.RoutingHandler;
 public final class SystemController implements Controller {
 	private final JsonRpcServer jsonRpcServer;
 
-	public SystemController(@System JsonRpcServer jsonRpcServer) {
+	public SystemController(JsonRpcServer jsonRpcServer) {
 		this.jsonRpcServer = jsonRpcServer;
 	}
 

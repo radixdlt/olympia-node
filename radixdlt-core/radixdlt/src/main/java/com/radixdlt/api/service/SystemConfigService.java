@@ -16,13 +16,12 @@
  *
  */
 
-package com.radixdlt.api.controller;
+package com.radixdlt.api.service;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.Controller;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.mempool.MempoolMaxSize;
@@ -35,12 +34,10 @@ import com.radixdlt.statecomputer.forks.ForkConfig;
 import java.util.TreeMap;
 
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.RoutingHandler;
 
 import static com.radixdlt.api.RestUtils.respond;
 
-//TODO: merge functionality into SystemService
-public class ConfigController implements Controller {
+public class SystemConfigService {
 	private final long pacemakerTimeout;
 	private final int bftSyncPatienceMillis;
 	private final long mempoolMaxSize;
@@ -51,7 +48,7 @@ public class ConfigController implements Controller {
 	private final TreeMap<Long, ForkConfig> forkConfigTreeMap;
 
 	@Inject
-	public ConfigController(
+	public SystemConfigService(
 		@PacemakerTimeout long pacemakerTimeout,
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
 		@MempoolMaxSize int mempoolMaxSize,
@@ -71,11 +68,7 @@ public class ConfigController implements Controller {
 		this.forkConfigTreeMap = forkConfigTreeMap;
 	}
 
-	@Override
-	public void configureRoutes(RoutingHandler handler) {
-		handler.get("/system/config", this::handleConfig);
-	}
-
+	//TODO: refactor into pieces of /system methods
 	void handleConfig(HttpServerExchange exchange) {
 		var forks = new JSONArray();
 		forkConfigTreeMap.forEach((e, config) -> forks.put(

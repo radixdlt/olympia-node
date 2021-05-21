@@ -19,7 +19,6 @@
 package com.radixdlt.api.controller;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Inject;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.api.chaos.messageflooder.MessageFlooderUpdate;
@@ -43,7 +42,6 @@ public final class ChaosController implements Controller {
 	private final EventDispatcher<MempoolFillerUpdate> mempoolDispatcher;
 	private final EventDispatcher<MessageFlooderUpdate> messageDispatcher;
 
-	@Inject
 	public ChaosController(
 		EventDispatcher<MempoolFillerUpdate> mempoolDispatcher,
 		EventDispatcher<MessageFlooderUpdate> messageDispatcher
@@ -85,7 +83,6 @@ public final class ChaosController implements Controller {
 
 	@VisibleForTesting
 	void handleMempoolFill(HttpServerExchange exchange) {
-		// TODO: implement JSON-RPC 2.0 specification
 		withBody(exchange, values -> {
 			MempoolFillerUpdate update;
 			var completableFuture = new CompletableFuture<Void>();
