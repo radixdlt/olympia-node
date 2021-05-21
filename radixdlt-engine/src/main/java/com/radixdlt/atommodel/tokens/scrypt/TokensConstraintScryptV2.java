@@ -148,28 +148,28 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		private final REAddr tokenAddr;
 		private final UInt384 amount;
 
-		public TemporaryBucket(
+		// This is to keep track of where resource is coming from
+		// If resource is coming from more than one account then this is just null
+		// FIXME: This is a little bit of a hack
+		private final REAddr from;
+
+		private TemporaryBucket(
 			REAddr tokenAddr,
-			UInt384 amount
+			UInt384 amount,
+			REAddr from
 		) {
 			this.tokenAddr = tokenAddr;
 			this.amount = amount;
+			this.from = from;
 		}
 
-		public REAddr resourceAddr() {
-			return tokenAddr;
-		}
-
-		public UInt384 amount() {
-			return amount;
-		}
-
-		public TemporaryBucket deposit(REAddr resourceAddr, UInt256 amountToAdd) throws ProcedureException {
-			if (!tokenAddr.equals(resourceAddr)) {
+		private TemporaryBucket deposit(REAddr resourceAddr, UInt256 amountToAdd, REAddr from) throws ProcedureException {
+			if (!this.tokenAddr.equals(resourceAddr)) {
 				throw new InvalidResourceException(resourceAddr, tokenAddr);
 			}
 
-			return new TemporaryBucket(tokenAddr, UInt384.from(amountToAdd).add(amount));
+			var nextFrom = this.from.equals(from) ? from : null;
+			return new TemporaryBucket(tokenAddr, UInt384.from(amountToAdd).add(amount), nextFrom);
 		}
 
 		public TemporaryBucket withdraw(REAddr resourceAddr, UInt256 amountToWithdraw) throws ProcedureException {
@@ -182,7 +182,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 				throw new NotEnoughResourcesException(amountToWithdraw, amount.getLow());
 			}
 
-			return new TemporaryBucket(tokenAddr, amount.subtract(withdraw384));
+			return new TemporaryBucket(tokenAddr, amount.subtract(withdraw384), from);
 		}
 
 		@Override
@@ -222,9 +222,10 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 					if (!tokenDef.isMutable()) {
 						throw new ProcedureException("Can only burn mutable tokens.");
 					}
+					return ReducerResult.complete(new BurnToken(s.tokenAddr, s.from, s.amount.getLow()));
+				} else {
+					return ReducerResult.complete(Unknown.create());
 				}
-
-				return ReducerResult.complete(Unknown.create());
 			}
 		));
 
@@ -234,9 +235,11 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 			(d, r) -> PermissionLevel.USER,
 			(d, r, k) -> d.getSubstate().allowedToWithdraw(k, r),
 			(d, s, r) -> {
+				var tokens = d.getSubstate();
 				var state = new TemporaryBucket(
-					d.getSubstate().getResourceAddr(),
-					UInt384.from(d.getSubstate().getAmount())
+					tokens.getResourceAddr(),
+					UInt384.from(tokens.getAmount()),
+					tokens.getHoldingAddr()
 				);
 				return ReducerResult.incomplete(state);
 			}
@@ -249,7 +252,11 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 			(d, r, k) -> d.getSubstate().allowedToWithdraw(k, r),
 			(d, s, r) -> {
 				var tokens = d.getSubstate();
-				var nextState = s.deposit(tokens.getResourceAddr(), tokens.getAmount());
+				var nextState = s.deposit(
+					tokens.getResourceAddr(),
+					tokens.getAmount(),
+					tokens.getHoldingAddr()
+				);
 				return ReducerResult.incomplete(nextState);
 			}
 		));
