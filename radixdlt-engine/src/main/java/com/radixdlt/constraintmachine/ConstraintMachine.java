@@ -217,6 +217,9 @@ public final class ConstraintMachine {
 		SubstateWithArg<Particle> nextParticle,
 		boolean isInput
 	) {
+		final ReducerResult reducerResult;
+
+		// TODO: Reduce the 3 following procedures to 1
 		if (nextParticle == null) {
 			var endProcedure = this.procedures.getEndProcedure(
 				validationState.getReducerStateClass()
@@ -240,21 +243,8 @@ public final class ConstraintMachine {
 				}
 			}
 
-			var result = endProcedure.reduce(reducerState, readable);
-			if (result.isError()) {
-				return Optional.of(Pair.of(CMErrorCode.TRANSITION_PRECONDITION_FAILURE, result.getError()));
-			}
-			result.ifCompleteElse(
-				txAction -> {
-					validationState.reducerState2 = null;
-					validationState.txAction = txAction;
-				},
-				nextState -> validationState.reducerState2 = nextState
-			);
-			return Optional.empty();
-		}
-
-		if (!isInput) {
+			reducerResult = endProcedure.reduce(reducerState, readable);
+		} else if (!isInput) {
 			var outputParticle = nextParticle.getSubstate();
 			var upProcedure = this.procedures.getUpProcedure(
 				validationState.getReducerStateClass(),
@@ -280,18 +270,7 @@ public final class ConstraintMachine {
 			}
 
 			final var reducerState = validationState.reducerState2;
-			var result = upProcedure.reduce(reducerState, outputParticle, readable);
-			if (result.isError()) {
-				return Optional.of(Pair.of(CMErrorCode.TRANSITION_PRECONDITION_FAILURE, result.getError()));
-			}
-			result.ifCompleteElse(
-				txAction -> {
-					validationState.reducerState2 = null;
-					validationState.txAction = txAction;
-				},
-				nextState -> validationState.reducerState2 = nextState
-			);
-			return Optional.empty();
+			reducerResult = upProcedure.reduce(reducerState, outputParticle, readable);
 		} else {
 			var input = nextParticle;
 			var downProcedure = this.procedures.getDownProcedure(
@@ -318,19 +297,20 @@ public final class ConstraintMachine {
 			}
 
 			final var reducerState = validationState.reducerState2;
-			var result = downProcedure.reduce(input, reducerState, readable);
-			if (result.isError()) {
-				return Optional.of(Pair.of(CMErrorCode.TRANSITION_PRECONDITION_FAILURE, result.getError()));
-			}
-			result.ifCompleteElse(
-				txAction -> {
-					validationState.reducerState2 = null;
-					validationState.txAction = txAction;
-				},
-				nextState -> validationState.reducerState2 = nextState
-			);
-			return Optional.empty();
+			reducerResult = downProcedure.reduce(input, reducerState, readable);
 		}
+
+		if (reducerResult.isError()) {
+			return Optional.of(Pair.of(CMErrorCode.TRANSITION_PRECONDITION_FAILURE, reducerResult.getError()));
+		}
+		reducerResult.ifCompleteElse(
+			txAction -> {
+				validationState.reducerState2 = null;
+				validationState.txAction = txAction;
+			},
+			nextState -> validationState.reducerState2 = nextState
+		);
+		return Optional.empty();
 	}
 
 	public static class StatelessVerificationResult {
