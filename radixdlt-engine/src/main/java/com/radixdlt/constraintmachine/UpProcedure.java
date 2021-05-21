@@ -58,7 +58,7 @@ public final class UpProcedure<S extends ReducerState, U extends Particle> {
 		return outputAuthorization.verify(upSubstate, readableAddrs, signedBy);
 	}
 
-	public ReducerResult2 reduce(S reducerState, U upSubstate, ReadableAddrs readableAddrs) {
+	public ReducerResult reduce(S reducerState, U upSubstate, ReadableAddrs readableAddrs) {
 		return upReducer.reduce(reducerState, upSubstate, readableAddrs);
 	}
 }

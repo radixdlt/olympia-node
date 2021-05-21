@@ -22,9 +22,8 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Procedures;
-import com.radixdlt.constraintmachine.ReducerResult2;
+import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.VoidParticle;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -43,14 +42,6 @@ import java.util.stream.Collectors;
 // FIXME: rawtypes
 @SuppressWarnings("rawtypes")
 public final class CMAtomOS {
-
-	private static final ParticleDefinition<Particle> VOID_PARTICLE_DEF = ParticleDefinition.builder()
-		.staticValidation(v -> {
-			throw new UnsupportedOperationException("Should not ever call here");
-		})
-		.allowTransitionsFromOutsideScrypts()
-		.build();
-
 	private static final ParticleDefinition<REAddrParticle> RRI_PARTICLE_DEF = ParticleDefinition.<REAddrParticle>builder()
 		.staticValidation(rri -> Result.success())
 		.rriMapper(REAddrParticle::getAddr)
@@ -93,7 +84,6 @@ public final class CMAtomOS {
 
 	public CMAtomOS(Set<String> systemNames) {
 		// RRI particle is a low level particle managed by the OS used for the management of all other resources
-		this.particleDefinitions.put(VoidParticle.class, VOID_PARTICLE_DEF);
 		this.systemNames = systemNames;
 
 		this.load(os -> {
@@ -108,13 +98,13 @@ public final class CMAtomOS {
 				(d, r, pubKey) -> pubKey.map(k -> d.getSubstate().allow(k, d.getArg())).orElse(false),
 				(d, s, r) -> {
 					if (d.getArg().isEmpty()) {
-						return ReducerResult2.error("REAddr must be claimed with a name");
+						return ReducerResult.error("REAddr must be claimed with a name");
 					}
 					var arg = d.getArg().get();
 					if (!NAME_PATTERN.matcher(new String(arg)).matches()) {
-						return ReducerResult2.error("invalid rri name");
+						return ReducerResult.error("invalid rri name");
 					}
-					return ReducerResult2.incomplete(new REAddrClaim(d.getSubstate(), d.getArg().get()));
+					return ReducerResult.incomplete(new REAddrClaim(d.getSubstate(), d.getArg().get()));
 				}
 			));
 		});

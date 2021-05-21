@@ -21,5 +21,5 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.store.ReadableAddrs;
 
 public interface EndReducer<S extends ReducerState> {
-	ReducerResult2 reduce(S reducerState, ReadableAddrs readableAddrs);
+	ReducerResult reduce(S reducerState, ReadableAddrs readableAddrs);
 }

@@ -29,7 +29,7 @@ import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ReducerResult2;
+import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.UpProcedure;
@@ -103,7 +103,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			SystemParticle.class, VoidReducerState.class,
 			(d, r) -> PermissionLevel.SUPER_USER,
 			(d, r, pubKey) -> pubKey.isEmpty(),
-			(d, s, r) -> ReducerResult2.incomplete(new UpdatingSystem(d.getSubstate()))
+			(d, s, r) -> ReducerResult.incomplete(new UpdatingSystem(d.getSubstate()))
 		));
 
 		os.createUpProcedure(new UpProcedure<>(
@@ -114,17 +114,17 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				var curState = s.sys;
 				if (curState.getEpoch() == u.getEpoch()) {
 					if (curState.getView() >= u.getView()) {
-						return ReducerResult2.error("Next view must be greater than previous.");
+						return ReducerResult.error("Next view must be greater than previous.");
 					}
 				} else if (curState.getEpoch() + 1 != u.getEpoch()) {
-					return ReducerResult2.error("Bad next epoch");
+					return ReducerResult.error("Bad next epoch");
 				} else if (u.getView() != 0) {
-					return ReducerResult2.error("Change of epochs must start with view 0.");
+					return ReducerResult.error("Change of epochs must start with view 0.");
 				}
 
 				return s.sys.getEpoch() != u.getEpoch()
-					? ReducerResult2.complete(new SystemNextEpoch(u.getTimestamp()))
-					: ReducerResult2.incomplete(new Inflation());
+					? ReducerResult.complete(new SystemNextEpoch(u.getTimestamp()))
+					: ReducerResult.incomplete(new Inflation());
 			}
 		));
 
@@ -134,9 +134,9 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			(u, r, pubKey) -> pubKey.isEmpty(),
 			(s, u, r) -> {
 				if (!u.getAmount().equals(REWARDS_PER_PROPOSAL)) {
-					return ReducerResult2.error("Rewards must be " + REWARDS_PER_PROPOSAL);
+					return ReducerResult.error("Rewards must be " + REWARDS_PER_PROPOSAL);
 				}
-				return ReducerResult2.complete(Unknown.create());
+				return ReducerResult.complete(Unknown.create());
 			}
 		));
 	}

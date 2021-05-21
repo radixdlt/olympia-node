@@ -20,18 +20,10 @@ package com.radixdlt.atomos;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
-import com.radixdlt.constraintmachine.OutputAuthorization;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Procedures;
-import com.radixdlt.constraintmachine.SubstateWithArg;
-import com.radixdlt.constraintmachine.TransitionToken;
-import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
-import com.radixdlt.constraintmachine.TransitionProcedure;
-import com.radixdlt.constraintmachine.InputAuthorization;
-import com.radixdlt.store.ReadableAddrs;
 import com.radixdlt.utils.Pair;
 
 import java.util.HashMap;
@@ -47,7 +39,6 @@ public final class ConstraintScryptEnv implements SysCalls {
 	private final ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions;
 
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> scryptParticleDefinitions;
-	private final Map<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>> scryptTransitionProcedures;
 	private final Map<Pair<Class<? extends Particle>, Class<? extends ReducerState>>, DownProcedure<Particle, ReducerState>> downProcedures;
 	private final Map<Pair<Class<? extends ReducerState>, Class<? extends Particle>>, UpProcedure<ReducerState, Particle>> upProcedures;
 	private final Map<Class, EndProcedure<ReducerState>> endProcedures;
@@ -57,7 +48,6 @@ public final class ConstraintScryptEnv implements SysCalls {
 	) {
 		this.particleDefinitions = particleDefinitions;
 		this.scryptParticleDefinitions = new HashMap<>();
-		this.scryptTransitionProcedures = new HashMap<>();
 		this.downProcedures = new HashMap<>();
 		this.upProcedures = new HashMap<>();
 		this.endProcedures = new HashMap<>();
@@ -68,30 +58,12 @@ public final class ConstraintScryptEnv implements SysCalls {
 	}
 
 	public Procedures getProcedures() {
-		return new Procedures(scryptTransitionProcedures, upProcedures, downProcedures, endProcedures);
+		return new Procedures(upProcedures, downProcedures, endProcedures);
 	}
 
 	private <T extends Particle> boolean particleDefinitionExists(Class<T> particleClass) {
 		return particleDefinitions.containsKey(particleClass) || scryptParticleDefinitions.containsKey(particleClass);
 	}
-
-	private <T extends Particle> ParticleDefinition<Particle> getParticleDefinition(Class<T> particleClass) {
-		ParticleDefinition<Particle> particleDefinition = particleDefinitions.get(particleClass);
-		if (particleDefinition != null) {
-			if (!particleDefinition.allowsTransitionsFromOutsideScrypts()) {
-				throw new IllegalStateException(particleClass + " can only be used in registering scrypt.");
-			}
-			return particleDefinition;
-		}
-
-		particleDefinition = scryptParticleDefinitions.get(particleClass);
-		if (particleDefinition == null) {
-			throw new IllegalStateException(particleClass + " is not registered.");
-		}
-
-		return particleDefinition;
-	}
-
 
 	@Override
 	public <T extends Particle> void registerParticle(Class<T> particleClass, ParticleDefinition<T> particleDefinition) {

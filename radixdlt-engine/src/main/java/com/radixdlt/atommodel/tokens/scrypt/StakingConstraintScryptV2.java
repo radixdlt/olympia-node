@@ -20,22 +20,18 @@ package com.radixdlt.atommodel.tokens.scrypt;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.atommodel.tokens.state.ResourceInBucket;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
-import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ReducerResult2;
+import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
@@ -145,7 +141,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 					u,
 					UInt384.from(u.getAmount())
 				);
-				return ReducerResult2.incomplete(state);
+				return ReducerResult.incomplete(state);
 			}
 		));
 		os.createDownProcedure(new DownProcedure<>(
@@ -154,7 +150,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 			(d, r, k) -> d.getSubstate().allowedToWithdraw(k, r),
 			(d, s, r) -> {
 				if (!d.getSubstate().getResourceAddr().isNativeToken()) {
-					return ReducerResult2.error("Not the same address.");
+					return ReducerResult.error("Not the same address.");
 				}
 				var amt = UInt384.from(d.getSubstate().getAmount());
 				var nextRemainder = s.subtract(amt);
@@ -162,10 +158,10 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 					// FIXME: This isn't 100% correct
 					var p = s.initialParticle;
 					var action = new StakeTokens(d.getSubstate().getHoldingAddr(), p.getDelegateKey(), p.getAmount());
-					return ReducerResult2.complete(action);
+					return ReducerResult.complete(action);
 				}
 
-				return ReducerResult2.incomplete(nextRemainder.get());
+				return ReducerResult.incomplete(nextRemainder.get());
 			}
 		));
 
@@ -176,21 +172,21 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 			(d, r, k) -> k.map(d.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
 			(d, s, r) -> {
 				if (!s.resourceInBucket().isNativeToken()) {
-					return ReducerResult2.error("Can only destake to the native token.");
+					return ReducerResult.error("Can only destake to the native token.");
 				}
 
 				if (!Objects.equals(d.getSubstate().getOwner(), s.resourceInBucket().holdingAddress())) {
-					return ReducerResult2.error("Must unstake to self");
+					return ReducerResult.error("Must unstake to self");
 				}
 
 				var epochUnlocked = s.resourceInBucket().epochUnlocked();
 				if (epochUnlocked.isEmpty()) {
-					return ReducerResult2.error("Exiting from stake must be locked.");
+					return ReducerResult.error("Exiting from stake must be locked.");
 				}
 
 				var system = (SystemParticle) r.loadAddr(null, REAddr.ofSystem()).orElseThrow();
 				if (system.getEpoch() + EPOCHS_LOCKED != epochUnlocked.get()) {
-					return ReducerResult2.error("Incorrect epoch unlock: " + epochUnlocked.get()
+					return ReducerResult.error("Incorrect epoch unlock: " + epochUnlocked.get()
 						+ " should be: " + (system.getEpoch() + EPOCHS_LOCKED));
 				}
 
@@ -199,7 +195,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 					// FIXME: This isn't 100% correct
 					var p = (TokensParticle) s.initialParticle();
 					var action = new UnstakeTokens(p.getHoldingAddr(), d.getSubstate().getDelegateKey(), p.getAmount());
-					return ReducerResult2.complete(action);
+					return ReducerResult.complete(action);
 				}
 
 				if (nextRemainder.get() instanceof TokensConstraintScrypt.RemainderTokens) {
@@ -210,9 +206,9 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 						d.getSubstate().getOwner(),
 						d.getSubstate().getDelegateKey()
 					);
-					return ReducerResult2.incomplete(stakeRemainder);
+					return ReducerResult.incomplete(stakeRemainder);
 				} else {
-					return ReducerResult2.incomplete(nextRemainder.get());
+					return ReducerResult.incomplete(nextRemainder.get());
 				}
 			}
 		));
@@ -224,21 +220,21 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 			(u, r, k) -> true,
 			(s, u, r) -> {
 				if (!u.getAmount().equals(s.amount)) {
-					return ReducerResult2.error("Remainder must be filled exactly.");
+					return ReducerResult.error("Remainder must be filled exactly.");
 				}
 
 				if (!u.getDelegateKey().equals(s.delegate)) {
-					return ReducerResult2.error("Delegate key does not match.");
+					return ReducerResult.error("Delegate key does not match.");
 				}
 
 				if (!u.getOwner().equals(s.owner)) {
-					return ReducerResult2.error("Owners don't match.");
+					return ReducerResult.error("Owners don't match.");
 				}
 
 				// FIXME: This isn't 100% correct
 				var t = (TokensParticle) s.initialParticle;
 				var action = new UnstakeTokens(t.getHoldingAddr(), u.getDelegateKey(), t.getAmount());
-				return ReducerResult2.complete(action);
+				return ReducerResult.complete(action);
 			}
 		));
 	}

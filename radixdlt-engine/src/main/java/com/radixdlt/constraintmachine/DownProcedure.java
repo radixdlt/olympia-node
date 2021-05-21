@@ -57,7 +57,7 @@ public class DownProcedure<D extends Particle, S extends ReducerState> {
 		return inputAuthorization.verify(downSubstate, readableAddrs, signedBy);
 	}
 
-	public ReducerResult2 reduce(SubstateWithArg<D> downSubstate, S reducerState, ReadableAddrs readableAddrs) {
+	public ReducerResult reduce(SubstateWithArg<D> downSubstate, S reducerState, ReadableAddrs readableAddrs) {
 		return downReducer.reduce(downSubstate, reducerState, readableAddrs);
 	}
 }

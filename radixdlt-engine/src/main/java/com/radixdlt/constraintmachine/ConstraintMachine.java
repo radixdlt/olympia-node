@@ -18,7 +18,6 @@
 package com.radixdlt.constraintmachine;
 
 import com.google.common.hash.HashCode;
-import com.google.common.reflect.TypeToken;
 
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
@@ -103,9 +102,6 @@ public final class ConstraintMachine {
 	public static final class CMValidationState {
 		private PermissionLevel permissionLevel;
 
-		private SubstateWithArg<Particle> particleRemaining = null;
-		private boolean particleRemainingIsInput;
-		private ReducerState reducerState = null;
 		private ReducerState reducerState2 = null;
 
 		private final Map<Integer, Particle> localUpParticles = new HashMap<>();
@@ -200,65 +196,13 @@ public final class ConstraintMachine {
 			return maybeParticle;
 		}
 
-		private boolean verifySignedWith(ECPublicKey publicKey) {
-			return signedBy.map(publicKey::equals).orElse(false);
-		}
-
-		SubstateWithArg<Particle> getCurParticle() {
-			return particleRemaining;
-		}
-
-		boolean spinClashes(boolean nextIsInput) {
-			return particleRemaining != null && nextIsInput == particleRemainingIsInput;
-		}
-
 		Class<? extends ReducerState> getReducerStateClass() {
 			return reducerState2 != null ? reducerState2.getClass() : VoidReducerState.class;
 		}
 
-		TypeToken<? extends ReducerState> getReducerType() {
-			return particleRemaining != null && reducerState != null
-				? reducerState.getTypeToken() : TypeToken.of(VoidReducerState.class);
-		}
-
-		ReducerState getReducerState() {
-			return particleRemaining != null ? reducerState : null;
-		}
-
-		void popAndComplete(TxAction txAction) {
-			this.particleRemaining = null;
-			this.reducerState = null;
-			this.txAction = txAction;
-		}
-
-		void popAndReplace(SubstateWithArg<Particle> particle, boolean isInput, ReducerState reducerState) {
-			this.particleRemaining = particle;
-			this.particleRemainingIsInput = isInput;
-			this.reducerState = reducerState;
-		}
-
-		void updateState(ReducerState reducerState) {
-			this.reducerState = reducerState;
-		}
-
 		@Override
 		public String toString() {
-			StringBuilder builder = new StringBuilder();
-			builder.append("CMTrace:[");
-			if (particleRemaining != null) {
-				builder
-					.append(" Remaining (")
-					.append(this.particleRemainingIsInput ? "input" : "output")
-					.append("): ")
-					.append(this.particleRemaining)
-					.append(" Used: ")
-					.append(this.reducerState);
-			} else {
-				builder.append(" Remaining: [empty] ");
-			}
-			builder.append(" ]");
-
-			return builder.toString();
+			return "CMState:[" + this.reducerState2 + "]";
 		}
 	}
 
@@ -277,198 +221,116 @@ public final class ConstraintMachine {
 			var endProcedure = this.procedures.getEndProcedure(
 				validationState.getReducerStateClass()
 			);
-
-			if (endProcedure != null) {
-				var readable = validationState.immutableIndex();
-				final var reducerState = validationState.reducerState2;
-
-				// System permissions don't require additional authorization
-				if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
-					var requiredLevel = endProcedure.permissionLevel(reducerState, readable);
-					if (validationState.permissionLevel.compareTo(requiredLevel) < 0) {
-						return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
-					}
-					var signatureVerified = endProcedure.authorized(reducerState, readable, validationState.signedBy);
-					if (!signatureVerified) {
-						return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
-					}
-				}
-
-				var result = endProcedure.reduce(reducerState, readable);
-				if (result.isError()) {
-					return Optional.of(Pair.of(CMErrorCode.TRANSITION_PRECONDITION_FAILURE, result.getError()));
-				}
-				result.ifCompleteElse(
-					txAction -> {
-						validationState.reducerState2 = null;
-						validationState.txAction = txAction;
-					},
-					nextState -> validationState.reducerState2 = nextState
-				);
-				return Optional.empty();
+			if (endProcedure == null) {
+				return Optional.of(Pair.of(CMErrorCode.MISSING_TRANSITION_PROCEDURE, null));
 			}
+
+			var readable = validationState.immutableIndex();
+			final var reducerState = validationState.reducerState2;
+
+			// System permissions don't require additional authorization
+			if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
+				var requiredLevel = endProcedure.permissionLevel(reducerState, readable);
+				if (validationState.permissionLevel.compareTo(requiredLevel) < 0) {
+					return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
+				}
+				var signatureVerified = endProcedure.authorized(reducerState, readable, validationState.signedBy);
+				if (!signatureVerified) {
+					return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
+				}
+			}
+
+			var result = endProcedure.reduce(reducerState, readable);
+			if (result.isError()) {
+				return Optional.of(Pair.of(CMErrorCode.TRANSITION_PRECONDITION_FAILURE, result.getError()));
+			}
+			result.ifCompleteElse(
+				txAction -> {
+					validationState.reducerState2 = null;
+					validationState.txAction = txAction;
+				},
+				nextState -> validationState.reducerState2 = nextState
+			);
+			return Optional.empty();
 		}
 
-		if (!isInput && nextParticle != null) {
+		if (!isInput) {
 			var outputParticle = nextParticle.getSubstate();
 			var upProcedure = this.procedures.getUpProcedure(
 				validationState.getReducerStateClass(),
 				outputParticle.getClass()
 			);
 
-			if (upProcedure != null) {
-				var readable = validationState.immutableIndex();
-
-				// System permissions don't require additional authorization
-				if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
-					var requiredLevel = upProcedure.permissionLevel(outputParticle, readable);
-					if (validationState.permissionLevel.compareTo(requiredLevel) < 0) {
-						return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
-					}
-					var signatureVerified = upProcedure.authorized(outputParticle, readable, validationState.signedBy);
-					if (!signatureVerified) {
-						return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
-					}
-				}
-
-				final var reducerState = validationState.reducerState2;
-				var result = upProcedure.reduce(reducerState, outputParticle, readable);
-				if (result.isError()) {
-					return Optional.of(Pair.of(CMErrorCode.TRANSITION_PRECONDITION_FAILURE, result.getError()));
-				}
-				result.ifCompleteElse(
-					txAction -> {
-						validationState.reducerState2 = null;
-						validationState.txAction = txAction;
-					},
-					nextState -> validationState.reducerState2 = nextState
-				);
-				return Optional.empty();
+			if (upProcedure == null) {
+				return Optional.of(Pair.of(CMErrorCode.MISSING_TRANSITION_PROCEDURE, null));
 			}
-		}
 
-		if (isInput && nextParticle != null) {
+			var readable = validationState.immutableIndex();
+
+			// System permissions don't require additional authorization
+			if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
+				var requiredLevel = upProcedure.permissionLevel(outputParticle, readable);
+				if (validationState.permissionLevel.compareTo(requiredLevel) < 0) {
+					return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
+				}
+				var signatureVerified = upProcedure.authorized(outputParticle, readable, validationState.signedBy);
+				if (!signatureVerified) {
+					return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
+				}
+			}
+
+			final var reducerState = validationState.reducerState2;
+			var result = upProcedure.reduce(reducerState, outputParticle, readable);
+			if (result.isError()) {
+				return Optional.of(Pair.of(CMErrorCode.TRANSITION_PRECONDITION_FAILURE, result.getError()));
+			}
+			result.ifCompleteElse(
+				txAction -> {
+					validationState.reducerState2 = null;
+					validationState.txAction = txAction;
+				},
+				nextState -> validationState.reducerState2 = nextState
+			);
+			return Optional.empty();
+		} else {
 			var input = nextParticle;
 			var downProcedure = this.procedures.getDownProcedure(
 				input.getSubstate().getClass(),
 				validationState.getReducerStateClass()
 			);
 
-			if (downProcedure != null) {
-				var readable = validationState.immutableIndex();
-
-				// System permissions don't require additional authorization
-				if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
-					var requiredLevel = downProcedure.permissionLevel(input, readable);
-					if (validationState.permissionLevel.compareTo(requiredLevel) < 0) {
-						return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
-					}
-					var signatureVerified = downProcedure.authorized(input, readable, validationState.signedBy);
-					if (!signatureVerified) {
-						return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
-					}
-				}
-
-				final var reducerState = validationState.reducerState2;
-				var result = downProcedure.reduce(input, reducerState, readable);
-				if (result.isError()) {
-					return Optional.of(Pair.of(CMErrorCode.TRANSITION_PRECONDITION_FAILURE, result.getError()));
-				}
-				result.ifCompleteElse(
-					txAction -> {
-						validationState.reducerState2 = null;
-						validationState.txAction = txAction;
-					},
-					nextState -> validationState.reducerState2 = nextState
-				);
-				return Optional.empty();
+			if (downProcedure == null) {
+				return Optional.of(Pair.of(CMErrorCode.MISSING_TRANSITION_PROCEDURE, null));
 			}
-		}
 
+			var readable = validationState.immutableIndex();
 
-		final SubstateWithArg<Particle> curParticle = validationState.getCurParticle();
-		final SubstateWithArg<Particle> input = isInput ? nextParticle : curParticle;
-		final Particle outputParticle = isInput ? (curParticle == null ? null : curParticle.getSubstate())
-			: nextParticle.getSubstate();
-
-		if (validationState.spinClashes(isInput)) {
-			return Optional.of(Pair.of(CMErrorCode.PARTICLE_REGISTER_SPIN_CLASH, null));
-		}
-
-		final TransitionToken transitionToken = new TransitionToken(
-			input != null ? input.getSubstate().getClass() : VoidParticle.class,
-			outputParticle != null ? outputParticle.getClass() : VoidParticle.class,
-			validationState.getReducerType()
-		);
-
-		if (input == null || outputParticle == null) {
-			validationState.popAndReplace(nextParticle, isInput, null);
-			return Optional.empty();
-		}
-
-		final var transitionProcedure = this.procedures.getFromOldProcedures(transitionToken);
-		if (transitionProcedure == null) {
-			return Optional.of(Pair.of(CMErrorCode.MISSING_TRANSITION_PROCEDURE, "TransitionToken{" + transitionToken + "}"));
-		}
-
-		final var used = validationState.getReducerState();
-
-		// Precondition check
-		final Result preconditionCheckResult = transitionProcedure.precondition(
-			input,
-			outputParticle,
-			used,
-			validationState.immutableIndex()
-		);
-		if (preconditionCheckResult.isError()) {
-			return Optional.of(Pair.of(CMErrorCode.TRANSITION_PRECONDITION_FAILURE, preconditionCheckResult.getErrorMessage()));
-		}
-
-		var requiredPermissionLevel = transitionProcedure.inputPermissionLevel(
-			input, validationState.immutableIndex()
-		);
-		if (validationState.permissionLevel.compareTo(requiredPermissionLevel) < 0) {
-			return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
-		}
-
-		requiredPermissionLevel = transitionProcedure.outputPermissionLevel(
-			outputParticle, validationState.immutableIndex()
-		);
-		if (validationState.permissionLevel.compareTo(requiredPermissionLevel) < 0) {
-			return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
-		}
-
-		var reducer = transitionProcedure.inputOutputReducer();
-		var result = reducer.reduce(input, outputParticle, validationState.immutableIndex(), used);
-		result.ifIncompleteElse(
-			(keepInput, state) -> {
-				if (isInput == keepInput) {
-					validationState.popAndReplace(nextParticle, isInput, state);
-				} else {
-					validationState.updateState(state);
+			// System permissions don't require additional authorization
+			if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
+				var requiredLevel = downProcedure.permissionLevel(input, readable);
+				if (validationState.permissionLevel.compareTo(requiredLevel) < 0) {
+					return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
 				}
-			},
-			validationState::popAndComplete
-		);
+				var signatureVerified = downProcedure.authorized(input, readable, validationState.signedBy);
+				if (!signatureVerified) {
+					return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
+				}
+			}
 
-		// System permissions don't require signatures
-		if (validationState.permissionLevel == PermissionLevel.SYSTEM) {
+			final var reducerState = validationState.reducerState2;
+			var result = downProcedure.reduce(input, reducerState, readable);
+			if (result.isError()) {
+				return Optional.of(Pair.of(CMErrorCode.TRANSITION_PRECONDITION_FAILURE, result.getError()));
+			}
+			result.ifCompleteElse(
+				txAction -> {
+					validationState.reducerState2 = null;
+					validationState.txAction = txAction;
+				},
+				nextState -> validationState.reducerState2 = nextState
+			);
 			return Optional.empty();
 		}
-
-		var signatureVerified = transitionProcedure.inputAuthorization()
-			.verify(input, validationState.immutableIndex(), validationState.signedBy);
-		if (!signatureVerified) {
-			return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
-		}
-
-		signatureVerified = transitionProcedure.outputAuthorization()
-			.verify(outputParticle, validationState.immutableIndex(), validationState.signedBy);
-		if (!signatureVerified) {
-			return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
-		}
-
-		return Optional.empty();
 	}
 
 	public static class StatelessVerificationResult {
@@ -678,8 +540,7 @@ public final class ConstraintMachine {
 				parsedInstructions.add(REParsedInstruction.of(inst, substate));
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.END) {
 				if (validationState.txAction == null) {
-					var errMaybe = validateParticle(validationState,
-						null, !validationState.particleRemainingIsInput);
+					var errMaybe = validateParticle(validationState, null, false);
 					if (errMaybe.isPresent()) {
 						return Optional.of(new CMError(instIndex,
 							errMaybe.get().getFirst(), validationState, errMaybe.get().getSecond()));

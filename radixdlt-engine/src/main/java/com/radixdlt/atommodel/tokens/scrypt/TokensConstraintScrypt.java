@@ -38,7 +38,7 @@ import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ReducerResult2;
+import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
@@ -98,7 +98,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			(u, r, k) -> true,
 			(s, u, r) -> {
 				if (!u.getAddr().equals(s.getAddr())) {
-					return ReducerResult2.error("Addresses don't match");
+					return ReducerResult.error("Addresses don't match");
 				}
 
 				if (u.isMutable()) {
@@ -109,10 +109,10 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 						u.getIconUrl(),
 						u.getUrl()
 					);
-					return ReducerResult2.complete(action);
+					return ReducerResult.complete(action);
 				}
 
-				return ReducerResult2.incomplete(new NeedFixedTokenSupply(s.getArg(), u));
+				return ReducerResult.incomplete(new NeedFixedTokenSupply(s.getArg(), u));
 			}
 		));
 
@@ -122,11 +122,11 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			(u, r, k) -> true,
 			(s, u, r) -> {
 				if (!u.getResourceAddr().equals(s.tokenDefinitionParticle.getAddr())) {
-					return ReducerResult2.error("Addresses don't match.");
+					return ReducerResult.error("Addresses don't match.");
 				}
 
 				if (!u.getAmount().equals(s.tokenDefinitionParticle.getSupply().orElseThrow())) {
-					return ReducerResult2.error("Initial supply doesn't match.");
+					return ReducerResult.error("Initial supply doesn't match.");
 				}
 
 				var action = new CreateFixedToken(
@@ -140,7 +140,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					s.tokenDefinitionParticle.getSupply().orElseThrow()
 				);
 
-				return ReducerResult2.complete(action);
+				return ReducerResult.complete(action);
 			}
 		));
 	}
@@ -209,7 +209,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			var compare = amountToSubtract.compareTo(amount);
 			if (compare > 0) {
 				return Optional.of(new UnaccountedTokens(initialParticle, resourceInBucket, amountToSubtract.subtract(amount)));
-			} else if (compare < 0){
+			} else if (compare < 0) {
 				return Optional.of(new RemainderTokens(initialParticle, tokenAddr, amount.subtract(amountToSubtract)));
 			} else {
 				return Optional.empty();
@@ -233,25 +233,25 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			},
 			(s, r) -> {
 				if (s.resourceInBucket.epochUnlocked().isPresent()) {
-					return ReducerResult2.error("Cannot mint locked tokens.");
+					return ReducerResult.error("Cannot mint locked tokens.");
 				}
 
 				var p = r.loadAddr(null, s.resourceInBucket.resourceAddr());
 				if (p.isEmpty()) {
-					return ReducerResult2.error("Token does not exist.");
+					return ReducerResult.error("Token does not exist.");
 				}
 				var particle = p.get();
 				if (!(particle instanceof TokenDefinitionParticle)) {
-					return ReducerResult2.error("Rri is not a token");
+					return ReducerResult.error("Rri is not a token");
 				}
 				var tokenDef = (TokenDefinitionParticle) particle;
 				if (!tokenDef.isMutable()) {
-					return ReducerResult2.error("Can only mint mutable tokens.");
+					return ReducerResult.error("Can only mint mutable tokens.");
 				}
 
 				var t = (TokensParticle) s.initialParticle;
 				var action = new MintToken(s.resourceInBucket.resourceAddr(), t.getHoldingAddr(), s.amount.getLow());
-				return ReducerResult2.complete(action);
+				return ReducerResult.complete(action);
 			}
 		));
 
@@ -263,21 +263,21 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			(s, r) -> {
 				var p = r.loadAddr(null, s.tokenAddr);
 				if (p.isEmpty()) {
-					return ReducerResult2.error("Token does not exist.");
+					return ReducerResult.error("Token does not exist.");
 				}
 				var particle = p.get();
 				if (!(particle instanceof TokenDefinitionParticle)) {
-					return ReducerResult2.error("Rri is not a token");
+					return ReducerResult.error("Rri is not a token");
 				}
 				var tokenDef = (TokenDefinitionParticle) particle;
 				if (!tokenDef.isMutable()) {
-					return ReducerResult2.error("Can only burn mutable tokens.");
+					return ReducerResult.error("Can only burn mutable tokens.");
 				}
 
 				// FIXME: These aren't 100% correct
 				var t = (TokensParticle) s.initialParticle;
 				var action = new BurnToken(s.tokenAddr, t.getHoldingAddr(), s.amount.getLow());
-				return ReducerResult2.complete(action);
+				return ReducerResult.complete(action);
 			}
 		));
 
@@ -291,7 +291,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					u.resourceInBucket(),
 					UInt384.from(u.getAmount())
 				);
-				return ReducerResult2.incomplete(state);
+				return ReducerResult.incomplete(state);
 			}
 		));
 
@@ -305,7 +305,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					d.getSubstate().getResourceAddr(),
 					UInt384.from(d.getSubstate().getAmount())
 				);
-				return ReducerResult2.incomplete(state);
+				return ReducerResult.incomplete(state);
 			}
 		));
 
@@ -315,7 +315,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			(u, r, k) -> true,
 			(s, u, r) -> {
 				if (!s.tokenAddr.equals(u.getResourceAddr())) {
-					return ReducerResult2.error("Not the same address.");
+					return ReducerResult.error("Not the same address.");
 				}
 				var amt = UInt384.from(u.getAmount());
 				var nextRemainder = s.subtract(u.resourceInBucket(), amt);
@@ -325,16 +325,16 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					if (p instanceof TokensParticle) {
 						var t = (TokensParticle) p;
 						var action = new TransferToken(t.getResourceAddr(), u.getHoldingAddr(), t.getHoldingAddr(), t.getAmount());
-						return ReducerResult2.complete(action);
+						return ReducerResult.complete(action);
 					} else if (p instanceof DeprecatedStake) {
 						var t = (DeprecatedStake) p;
 						var action = new StakeTokens(t.getOwner(), t.getDelegateKey(), t.getAmount());
-						return ReducerResult2.complete(action);
+						return ReducerResult.complete(action);
 					} else {
 						throw new IllegalStateException();
 					}
 				}
-				return ReducerResult2.incomplete(nextRemainder.get());
+				return ReducerResult.incomplete(nextRemainder.get());
 			}
 		));
 
@@ -344,7 +344,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			(d, r, k) -> d.getSubstate().allowedToWithdraw(k, r),
 			(d, s, r) -> {
 				if (!s.resourceInBucket.resourceAddr().equals(d.getSubstate().getResourceAddr())) {
-					return ReducerResult2.error("Not the same address.");
+					return ReducerResult.error("Not the same address.");
 				}
 				var amt = UInt384.from(d.getSubstate().getAmount());
 				var nextRemainder = s.subtract(amt);
@@ -354,17 +354,17 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					if (p instanceof TokensParticle) {
 						var t = (TokensParticle) p;
 						var action = new TransferToken(t.getResourceAddr(), d.getSubstate().getHoldingAddr(), t.getHoldingAddr(), t.getAmount());
-						return ReducerResult2.complete(action);
+						return ReducerResult.complete(action);
 					} else if (p instanceof DeprecatedStake) {
 						var t = (DeprecatedStake) p;
 						var action = new StakeTokens(t.getOwner(), t.getDelegateKey(), t.getAmount());
-						return ReducerResult2.complete(action);
+						return ReducerResult.complete(action);
 					} else {
 						throw new IllegalStateException();
 					}
 				}
 
-				return ReducerResult2.incomplete(nextRemainder.get());
+				return ReducerResult.incomplete(nextRemainder.get());
 			}
 		));
 	}

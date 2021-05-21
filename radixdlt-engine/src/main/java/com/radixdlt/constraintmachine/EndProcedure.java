@@ -54,7 +54,7 @@ public class EndProcedure<S extends ReducerState> {
 		return endAuthorization.verify(reducerState, readableAddrs, signedBy);
 	}
 
-	public ReducerResult2 reduce(S reducerState, ReadableAddrs readableAddrs) {
+	public ReducerResult reduce(S reducerState, ReadableAddrs readableAddrs) {
 		return endReducer.reduce(reducerState, readableAddrs);
 	}
 }
