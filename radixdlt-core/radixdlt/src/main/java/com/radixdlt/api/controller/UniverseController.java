@@ -34,5 +34,6 @@ public final class UniverseController implements Controller {
 	@Override
 	public void configureRoutes(RoutingHandler handler) {
 		handler.get("/universe.json", exchange -> respond(exchange, universeJson));
+		handler.get("/universe.json/", exchange -> respond(exchange, universeJson));
 	}
 }
