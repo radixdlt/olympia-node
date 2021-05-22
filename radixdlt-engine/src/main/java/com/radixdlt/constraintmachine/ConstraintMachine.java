@@ -286,7 +286,7 @@ public final class ConstraintMachine {
 		reducerResult.ifCompleteElse(
 			txAction -> {
 				validationState.reducerState = null;
-				validationState.txAction = txAction;
+				validationState.txAction = txAction.orElse(null);
 			},
 			nextState -> {
 				validationState.reducerState = nextState;

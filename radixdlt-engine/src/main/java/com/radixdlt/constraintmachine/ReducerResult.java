@@ -20,6 +20,7 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atom.TxAction;
 
+import java.util.Optional;
 import java.util.function.Consumer;
 
 public class ReducerResult {
@@ -39,13 +40,15 @@ public class ReducerResult {
 		return new ReducerResult(null, txAction);
 	}
 
-	public void ifCompleteElse(Consumer<TxAction> completeConsumer, Consumer<ReducerState> incompleteConsumer) {
-		if (txAction != null) {
-			completeConsumer.accept(txAction);
-		} else if (reducerState != null) {
+	public static ReducerResult complete() {
+		return new ReducerResult(null, null);
+	}
+
+	public void ifCompleteElse(Consumer<Optional<TxAction>> completeConsumer, Consumer<ReducerState> incompleteConsumer) {
+		if (reducerState != null) {
 			incompleteConsumer.accept(reducerState);
 		} else {
-			throw new IllegalStateException();
+			completeConsumer.accept(Optional.ofNullable(txAction));
 		}
 	}
 }

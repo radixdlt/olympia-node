@@ -210,7 +210,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 					throw new ProcedureException("Stake cannot be burnt.");
 				}
 
-				return Unknown.create();
+				return Optional.empty();
 			}
 		));
 	}

@@ -224,9 +224,9 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 					if (!tokenDef.isMutable()) {
 						throw new ProcedureException("Can only burn mutable tokens.");
 					}
-					return new BurnToken(s.tokenAddr, s.from, s.amount.getLow());
+					return Optional.of(new BurnToken(s.tokenAddr, s.from, s.amount.getLow()));
 				} else {
-					return Unknown.create();
+					return Optional.empty();
 				}
 			}
 		));
