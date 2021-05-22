@@ -20,7 +20,6 @@ package com.radixdlt.atommodel.tokens;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.ActionConstructors;
-import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.StakeTokens;
@@ -36,7 +35,6 @@ import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
 import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
-import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.CMErrorCode;
@@ -58,6 +56,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @RunWith(Parameterized.class)
@@ -156,7 +155,11 @@ public class UnstakeTokensTest {
 		// Act
 		var unstake = this.engine.construct(new UnstakeTokens(accountAddr, key.getPublicKey(), unstakeAmt))
 			.signAndBuild(key::sign);
-		this.engine.execute(List.of(unstake));
+		var parsed = this.engine.execute(List.of(unstake));
+		var action = (UnstakeTokens) parsed.get(0).getActions().get(0).getTxAction();
+		assertThat(action.amount()).isEqualTo(unstakeAmt);
+		assertThat(action.from()).isEqualTo(key.getPublicKey());
+		assertThat(action.accountAddr()).isEqualTo(accountAddr);
 	}
 
 	@Test

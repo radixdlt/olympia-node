@@ -182,11 +182,6 @@ public final class ConstraintMachine {
 			return Optional.ofNullable(maybeParticle);
 		}
 
-		public Optional<Particle> localRead(int index) {
-			var maybeParticle = localUpParticles.get(index);
-			return Optional.ofNullable(maybeParticle);
-		}
-
 		public Optional<Particle> read(SubstateId substateId) {
 			return loadUpParticle(substateId);
 		}
@@ -288,10 +283,12 @@ public final class ConstraintMachine {
 				validationState.reducerState = null;
 				validationState.txAction = txAction.orElse(null);
 			},
-			nextState -> {
+			(nextState, txAction) -> {
 				validationState.reducerState = nextState;
+				validationState.txAction = txAction.orElse(null);
 			}
 		);
+
 		return Optional.empty();
 	}
 
@@ -523,13 +520,13 @@ public final class ConstraintMachine {
 					}
 				}
 
-				if (validationState.txAction != null) {
-					var parsedAction = REParsedAction.create(validationState.txAction);
-					parsedActions.add(parsedAction);
-					validationState.txAction = null;
-				}
-
 				expectEnd = false;
+			}
+
+			if (validationState.txAction != null) {
+				var parsedAction = REParsedAction.create(validationState.txAction);
+				parsedActions.add(parsedAction);
+				validationState.txAction = null;
 			}
 
 			instIndex++;

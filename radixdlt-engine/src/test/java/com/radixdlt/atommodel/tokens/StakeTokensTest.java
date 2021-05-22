@@ -51,6 +51,7 @@ import org.junit.runners.Parameterized;
 import java.util.Collection;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @RunWith(Parameterized.class)
@@ -139,7 +140,11 @@ public class StakeTokensTest {
 		// Act
 		var transfer = this.engine.construct(new StakeTokens(accountAddr, key.getPublicKey(), stakeAmt))
 			.signAndBuild(key::sign);
-		this.engine.execute(List.of(transfer));
+		var parsed = this.engine.execute(List.of(transfer));
+		var action = (StakeTokens) parsed.get(0).getActions().get(0).getTxAction();
+		assertThat(action.amount()).isEqualTo(stakeAmt);
+		assertThat(action.from()).isEqualTo(accountAddr);
+		assertThat(action.to()).isEqualTo(key.getPublicKey());
 	}
 
 	@Test

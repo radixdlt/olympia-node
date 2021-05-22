@@ -21,6 +21,7 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.atom.TxAction;
 
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class ReducerResult {
@@ -36,19 +37,26 @@ public class ReducerResult {
 		return new ReducerResult(reducerState, null);
 	}
 
-	public static ReducerResult complete(TxAction txAction) {
-		return new ReducerResult(null, txAction);
+	public static ReducerResult incomplete(ReducerState reducerState, TxAction txAction) {
+		return new ReducerResult(reducerState, txAction);
 	}
 
 	public static ReducerResult complete() {
 		return new ReducerResult(null, null);
 	}
 
-	public void ifCompleteElse(Consumer<Optional<TxAction>> completeConsumer, Consumer<ReducerState> incompleteConsumer) {
-		if (reducerState != null) {
-			incompleteConsumer.accept(reducerState);
-		} else {
+	public static ReducerResult complete(TxAction txAction) {
+		return new ReducerResult(null, txAction);
+	}
+
+	public void ifCompleteElse(
+		Consumer<Optional<TxAction>> completeConsumer,
+		BiConsumer<ReducerState, Optional<TxAction>> incompleteConsumer
+	) {
+		if (reducerState == null) {
 			completeConsumer.accept(Optional.ofNullable(txAction));
+		} else {
+			incompleteConsumer.accept(reducerState, Optional.ofNullable(txAction));
 		}
 	}
 }

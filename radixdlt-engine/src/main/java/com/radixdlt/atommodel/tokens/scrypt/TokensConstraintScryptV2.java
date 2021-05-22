@@ -23,12 +23,9 @@ import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
-import com.radixdlt.atommodel.tokens.state.ResourceInBucket;
 import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.atomos.CMAtomOS;
@@ -40,7 +37,6 @@ import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
 import com.radixdlt.constraintmachine.InvalidResourceException;
 import com.radixdlt.constraintmachine.NotEnoughResourcesException;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
@@ -164,6 +160,10 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 			this.from = from;
 		}
 
+		public REAddr from() {
+			return from;
+		}
+
 		private TemporaryBucket deposit(REAddr resourceAddr, UInt256 amountToAdd, REAddr from) throws ProcedureException {
 			if (!this.tokenAddr.equals(resourceAddr)) {
 				throw new InvalidResourceException(resourceAddr, tokenAddr);
@@ -270,7 +270,17 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 			(u, r, k) -> { },
 			(s, u, r) -> {
 				var nextState = s.withdraw(u.getResourceAddr(), u.getAmount());
-				return ReducerResult.incomplete(nextState);
+
+				if (s.from != null) {
+					if (!u.getHoldingAddr().equals(s.from)) {
+						var actionGuess = new TransferToken(u.getResourceAddr(), s.from, u.getHoldingAddr(), u.getAmount());
+						return ReducerResult.incomplete(nextState, actionGuess);
+					} else {
+						return ReducerResult.incomplete(nextState);
+					}
+				}
+
+				return ReducerResult.incomplete(nextState, Unknown.create());
 			}
 		));
 	}

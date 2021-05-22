@@ -29,7 +29,6 @@ import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV1;
 import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV2;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
-import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.CMErrorCode;
@@ -152,13 +151,10 @@ public class TransferTokensTest {
 		var parsed = this.engine.execute(List.of(transfer));
 
 		// Assert
-		// TODO: Add the following asserts back in once V2 parsing fixed
-		/*
 		var action = (TransferToken) parsed.get(0).getActions().get(0).getTxAction();
 		assertThat(action.amount()).isEqualTo(transferAmt);
 		assertThat(action.from()).isEqualTo(accountAddr);
 		assertThat(action.to()).isEqualTo(to);
 		assertThat(action.resourceAddr()).isEqualTo(tokenAddr);
-		 */
 	}
 }

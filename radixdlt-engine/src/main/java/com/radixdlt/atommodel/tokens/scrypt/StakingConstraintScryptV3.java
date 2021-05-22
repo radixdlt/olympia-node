@@ -19,7 +19,9 @@
 package com.radixdlt.atommodel.tokens.scrypt;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.Unknown;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
@@ -111,7 +113,13 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 			(u, r, k) -> { },
 			(s, u, r) -> {
 				var nextState = s.withdraw(REAddr.ofNativeToken(), u.getAmount());
-				return ReducerResult.incomplete(nextState);
+
+				if (s.from() != null) {
+					var actionGuess = new StakeTokens(s.from(), u.getDelegateKey(), u.getAmount());
+					return ReducerResult.incomplete(nextState, actionGuess);
+				}
+
+				return ReducerResult.incomplete(nextState, Unknown.create());
 			}
 		));
 
@@ -196,7 +204,8 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 				}
 
 				var nextState = s.withdraw(u.getResourceAddr(), u.getAmount());
-				return ReducerResult.incomplete(nextState);
+				var actionGuess = new UnstakeTokens(s.accountAddr, s.delegate, u.getAmount());
+				return ReducerResult.incomplete(nextState, actionGuess);
 			}
 		));
 

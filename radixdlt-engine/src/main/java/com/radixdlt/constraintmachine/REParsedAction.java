@@ -20,7 +20,6 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atom.TxAction;
 
-import java.util.List;
 import java.util.Objects;
 
 /**

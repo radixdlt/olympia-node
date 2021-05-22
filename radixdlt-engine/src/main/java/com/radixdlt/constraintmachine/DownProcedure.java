@@ -55,7 +55,7 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 	}
 
 	@Override
-	public void verifyAuthorization(Object o, ReadableAddrs readableAddrs, Optional<ECPublicKey> key) throws AuthorizationException{
+	public void verifyAuthorization(Object o, ReadableAddrs readableAddrs, Optional<ECPublicKey> key) throws AuthorizationException {
 		downAuthorization.verify((SubstateWithArg<D>) o, readableAddrs, key);
 	}
 
