@@ -182,6 +182,6 @@ public class SystemTest {
 		assertThatThrownBy(() -> this.engine.execute(List.of(txn), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
-			.isEqualTo(CMErrorCode.PROCEDURE_CALL_ERROR);
+			.isEqualTo(CMErrorCode.PROCEDURE_ERROR);
 	}
 }

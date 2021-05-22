@@ -102,6 +102,6 @@ public class RegisterValidatorTest {
 		assertThatThrownBy(() -> this.engine.execute(List.of(txn)))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting("cmError.errorCode")
-			.containsExactly(CMErrorCode.PROCEDURE_CALL_ERROR);
+			.containsExactly(CMErrorCode.PROCEDURE_ERROR);
 	}
 }

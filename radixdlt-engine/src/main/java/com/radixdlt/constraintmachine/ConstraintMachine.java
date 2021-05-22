@@ -223,7 +223,7 @@ public final class ConstraintMachine {
 				validationState.getReducerStateClass()
 			);
 			if (endProcedure == null) {
-				return Optional.of(Pair.of(CMErrorCode.MISSING_TRANSITION_PROCEDURE, null));
+				return Optional.of(Pair.of(CMErrorCode.MISSING_PROCEDURE, null));
 			}
 			methodProcedure = endProcedure;
 			authorizationParam = validationState.reducerState;
@@ -235,7 +235,7 @@ public final class ConstraintMachine {
 				outputParticle.getClass()
 			);
 			if (upProcedure == null) {
-				return Optional.of(Pair.of(CMErrorCode.MISSING_TRANSITION_PROCEDURE, null));
+				return Optional.of(Pair.of(CMErrorCode.MISSING_PROCEDURE, null));
 			}
 			methodProcedure = upProcedure;
 			authorizationParam = outputParticle;
@@ -246,7 +246,7 @@ public final class ConstraintMachine {
 				validationState.getReducerStateClass()
 			);
 			if (downProcedure == null) {
-				return Optional.of(Pair.of(CMErrorCode.MISSING_TRANSITION_PROCEDURE, null));
+				return Optional.of(Pair.of(CMErrorCode.MISSING_PROCEDURE, null));
 			}
 			methodProcedure = downProcedure;
 			authorizationParam = nextParticle;
@@ -273,7 +273,7 @@ public final class ConstraintMachine {
 		} catch (AuthorizationException e) {
 			return Optional.of(Pair.of(CMErrorCode.AUTHORIZATION_ERROR, null));
 		} catch (ProcedureException e) {
-			return Optional.of(Pair.of(CMErrorCode.PROCEDURE_CALL_ERROR, e.getMessage()));
+			return Optional.of(Pair.of(CMErrorCode.PROCEDURE_ERROR, e.getMessage()));
 		} catch (Exception e) {
 			return Optional.of(Pair.of(CMErrorCode.UNKNOWN_ERROR, e.getMessage()));
 		}
