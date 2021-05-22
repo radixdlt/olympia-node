@@ -20,6 +20,7 @@ package com.radixdlt.atommodel.tokens;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.StakeTokens;
@@ -34,6 +35,8 @@ import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV2;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
+import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
+import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.CMErrorCode;
@@ -53,6 +56,7 @@ import org.junit.runners.Parameterized;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -156,7 +160,39 @@ public class UnstakeTokensTest {
 	}
 
 	@Test
-	public void cannot_stake_others_tokens() throws Exception {
+	public void cannot_burn_stake() throws Exception {
+		// Arrange
+		var key = ECKeyPair.generateNew();
+		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
+		var txn = this.engine.construct(
+			List.of(
+				new CreateMutableToken("xrd", "Name", "", "", ""),
+				new MintToken(REAddr.ofNativeToken(), accountAddr, startAmt)
+			)
+		).buildWithoutSignature();
+		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
+		var stake = this.engine.construct(new StakeTokens(accountAddr, key.getPublicKey(), unstakeAmt))
+			.signAndBuild(key::sign);
+		this.engine.execute(List.of(stake));
+
+		// Arrange
+		var burnStake = this.engine.construct(txBuilder -> {
+			txBuilder.down(
+				DeprecatedStake.class,
+				d -> d.getOwner().equals(accountAddr),
+				Optional.empty(),
+				""
+			);
+			txBuilder.end();
+		}).signAndBuild(key::sign);
+
+		// Act and Assert
+		assertThatThrownBy(() -> this.engine.execute(List.of(burnStake)))
+			.isInstanceOf(RadixEngineException.class);
+	}
+
+	@Test
+	public void cannot_unstake_others_tokens() throws Exception {
 		// Arrange
 		var key = ECKeyPair.generateNew();
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());

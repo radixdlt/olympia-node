@@ -522,7 +522,7 @@ public final class RadixEngine<M> {
 			txBuilder -> {
 				for (var action : actions) {
 					this.actionConstructors.construct(action, txBuilder);
-					txBuilder.particleGroup();
+					txBuilder.end();
 				}
 			},
 			avoid

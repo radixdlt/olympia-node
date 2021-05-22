@@ -109,7 +109,7 @@ public class MempoolTest {
 			atomBuilder
 				.virtualDown(rriParticle, symbol.getBytes(StandardCharsets.UTF_8))
 				.up(uniqueParticle)
-				.particleGroup();
+				.end();
 		}
 		var signature = keyPair.sign(atomBuilder.hashToSign());
 		return atomBuilder.sig(signature).build();

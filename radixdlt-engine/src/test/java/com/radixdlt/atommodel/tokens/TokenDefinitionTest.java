@@ -28,8 +28,6 @@ import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
 import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
-import com.radixdlt.atommodel.unique.state.UniqueParticle;
-import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.CMErrorCode;
@@ -98,7 +96,7 @@ public class TokenDefinitionTest {
 			.virtualDown(addrParticle, "test".getBytes(StandardCharsets.UTF_8))
 			.up(tokenDefinitionParticle)
 			.up(tokensParticle)
-			.particleGroup();
+			.end();
 		var sig = keyPair.sign(builder.hashToSign().asBytes());
 		var txn = builder.sig(sig).build();
 
@@ -124,7 +122,7 @@ public class TokenDefinitionTest {
 		var builder = TxLowLevelBuilder.newBuilder()
 			.virtualDown(addrParticle, "test".getBytes(StandardCharsets.UTF_8))
 			.up(tokenDefinitionParticle)
-			.particleGroup();
+			.end();
 		var sig = keyPair.sign(builder.hashToSign().asBytes());
 		var txn = builder.sig(sig).build();
 
@@ -150,7 +148,7 @@ public class TokenDefinitionTest {
 			.toLowLevelBuilder()
 			.virtualDown(new REAddrParticle(addr), "smthng".getBytes(StandardCharsets.UTF_8))
 			.up(tokenDefinitionParticle)
-			.particleGroup();
+			.end();
 		var sig = keyPair.sign(builder.hashToSign());
 		var txn = builder.sig(sig).build();
 

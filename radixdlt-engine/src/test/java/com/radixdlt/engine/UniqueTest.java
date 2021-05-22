@@ -70,7 +70,7 @@ public class UniqueTest {
 			.toLowLevelBuilder()
 			.virtualDown(new REAddrParticle(addr), "smthng".getBytes(StandardCharsets.UTF_8))
 			.up(new UniqueParticle(addr))
-			.particleGroup();
+			.end();
 		var sig = keyPair.sign(builder.hashToSign());
 		var txn = builder.sig(sig).build();
 		assertThatThrownBy(() -> this.engine.execute(List.of(txn)))

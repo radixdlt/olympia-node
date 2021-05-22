@@ -251,8 +251,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 				}
 
 				var t = (TokensParticle) s.initialParticle;
-				var action = new MintToken(s.resourceInBucket.resourceAddr(), t.getHoldingAddr(), s.amount.getLow());
-				return ReducerResult.complete(action);
+				return new MintToken(s.resourceInBucket.resourceAddr(), t.getHoldingAddr(), s.amount.getLow());
 			}
 		));
 
@@ -277,8 +276,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 
 				// FIXME: These aren't 100% correct
 				var t = (TokensParticle) s.initialParticle;
-				var action = new BurnToken(s.tokenAddr, t.getHoldingAddr(), s.amount.getLow());
-				return ReducerResult.complete(action);
+				return new BurnToken(s.tokenAddr, t.getHoldingAddr(), s.amount.getLow());
 			}
 		));
 

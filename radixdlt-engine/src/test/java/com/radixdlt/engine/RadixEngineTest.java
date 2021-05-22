@@ -72,7 +72,7 @@ public class RadixEngineTest {
 		// Act
 		// Assert
 		var atom = TxLowLevelBuilder.newBuilder()
-			.particleGroup()
+			.end()
 			.build();
 		assertThatThrownBy(() -> engine.execute(List.of(atom)))
 			.isInstanceOf(RadixEngineException.class);

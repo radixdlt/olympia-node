@@ -94,7 +94,7 @@ public class RegisterValidatorTest {
 		var builder = TxLowLevelBuilder.newBuilder()
 			.virtualDown(new ValidatorParticle(key.getPublicKey(), false))
 			.up(new ValidatorParticle(ECKeyPair.generateNew().getPublicKey(), true))
-			.particleGroup();
+			.end();
 		var sig = key.sign(builder.hashToSign().asBytes());
 		var txn = builder.sig(sig).build();
 

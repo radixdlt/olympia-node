@@ -78,8 +78,8 @@ public final class TxBuilder {
 		return lowLevelBuilder;
 	}
 
-	public void particleGroup() {
-		lowLevelBuilder.particleGroup();
+	public void end() {
+		lowLevelBuilder.end();
 	}
 
 	public void up(Particle particle) {
@@ -297,7 +297,7 @@ public final class TxBuilder {
 			// FIXME: This is a hack due to the constraint machine not being able to
 			// FIXME: handle spins of the same type one after the other yet.
 			if (!spent.isZero()) {
-				particleGroup();
+				end();
 			}
 
 			var substateDown = down(
@@ -397,7 +397,7 @@ public final class TxBuilder {
 			"RRI not available"
 		).with(r -> new UniqueParticle(addr));
 
-		particleGroup();
+		end();
 
 		return this;
 	}

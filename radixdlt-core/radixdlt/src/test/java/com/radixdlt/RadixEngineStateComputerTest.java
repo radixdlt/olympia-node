@@ -278,7 +278,7 @@ public class RadixEngineStateComputerTest {
 		var illegalTxn = TxLowLevelBuilder.newBuilder()
 			.down(SubstateId.ofSubstate(txn.getId(), 1))
 			.up(new SystemParticle(1, 3, 0))
-			.particleGroup()
+			.end()
 			.build();
 		var v = UnverifiedVertex.create(
 			mock(QuorumCertificate.class),

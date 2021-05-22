@@ -81,7 +81,7 @@ public final class UniqueTest {
 		var atomBuilder = TxLowLevelBuilder.newBuilder()
 			.virtualDown(rriParticle, "test".getBytes(StandardCharsets.UTF_8))
 			.up(uniqueParticle)
-			.particleGroup();
+			.end();
 		var sig = keyPair.sign(atomBuilder.hashToSign());
 		return atomBuilder.sig(sig).build();
 	}
