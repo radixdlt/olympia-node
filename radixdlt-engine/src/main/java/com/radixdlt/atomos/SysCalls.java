@@ -17,15 +17,16 @@
 
 package com.radixdlt.atomos;
 
+import com.radixdlt.constraintmachine.DownProcedure;
+import com.radixdlt.constraintmachine.EndProcedure;
 import com.radixdlt.constraintmachine.Particle;
-
-import java.util.function.BiFunction;
-import java.util.function.Predicate;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.UpProcedure;
 
 /**
  * The interface in which a constraint scrypt can be programmed against.
  */
-public interface SysCalls extends RoutineCalls {
+public interface SysCalls {
 	/**
 	 * Registers a Particle.
 	 * This is required for all other system calls using the particle.
@@ -34,25 +35,7 @@ public interface SysCalls extends RoutineCalls {
 	 * @param <T> The type of the particle
 	 */
 	<T extends Particle> void registerParticle(Class<T> particleClass, ParticleDefinition<T> particleDefinition);
-
-
-	/**
-	 * Creates a new resource globally identifiable by an RRI.
-	 * @param outputClass particle to be creating from RRI must be a particle registered as rri capable
-	 */
-	<T extends Particle> void createTransitionFromRRI(Class<T> outputClass);
-
-	/**
-	 * Creates a new resource globally identifiable by an RRI.
-	 * @param outputClass0 primary particle to be created from RRI, must be a particle registered as rri capable
-	 * @param outputClass1 secondary particle to be created from RRI, must be a particle registered as rri capable
-	 */
-	<T extends Particle, U extends Particle> void createTransitionFromRRICombined(
-		Class<T> outputClass0,
-		Class<U> outputClass1,
-		Predicate<T> includeSecondClass,
-		BiFunction<T, U, Result> combinedCheck
-	);
-
-	void executeRoutine(ConstraintRoutine routine);
+	<I extends Particle, S extends ReducerState> void createDownProcedure(DownProcedure<I, S> downProcedure);
+	<O extends Particle, S extends ReducerState> void createUpProcedure(UpProcedure<S, O> upProcedure);
+	<S extends ReducerState> void createEndProcedure(EndProcedure<S> endProcedure);
 }

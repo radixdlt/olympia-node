@@ -24,15 +24,15 @@ import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.atommodel.tokens.BurnTokenConstructor;
-import com.radixdlt.atommodel.tokens.CreateMutableTokenConstructor;
-import com.radixdlt.atommodel.tokens.MintTokenConstructor;
-import com.radixdlt.atommodel.validators.RegisterValidatorConstructor;
-import com.radixdlt.atommodel.tokens.StakeTokensConstructor;
-import com.radixdlt.atommodel.tokens.TransferTokensConstructor;
-import com.radixdlt.atommodel.validators.UnstakeTokensConstructor;
-import com.radixdlt.atommodel.system.SystemConstraintScryptV1;
-import com.radixdlt.atommodel.tokens.StakingConstraintScryptV2;
+import com.radixdlt.atommodel.tokens.construction.BurnTokenConstructor;
+import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
+import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
+import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
+import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructor;
+import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructor;
+import com.radixdlt.atommodel.validators.construction.UnstakeTokensConstructor;
+import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV1;
+import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV2;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,8 +41,8 @@ import com.radixdlt.client.api.ActionType;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
-import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
+import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScrypt;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.client.api.ActionEntry;
 import com.radixdlt.client.store.TransactionParser;
@@ -93,7 +93,7 @@ public class TransactionParserTest {
 		final var cm = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
-			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
+			.setParticleTransitionProcedures(cmAtomOS.getProcedures())
 			.build();
 
 		var actionConstructors = ActionConstructors.newBuilder()

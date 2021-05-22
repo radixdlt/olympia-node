@@ -18,7 +18,6 @@
 package com.radixdlt.atomos;
 
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.identifiers.REAddr;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -31,36 +30,22 @@ import java.util.function.Predicate;
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class ParticleDefinition<T extends Particle> {
 	private final Function<T, Result> staticValidation; // may be null
-	private final Function<T, REAddr> rriMapper; // may be null
 	private final Predicate<T> virtualizeSpin; // may be null
-	private final boolean allowsTransitionsFromOutsideScrypts;
 
 	private ParticleDefinition(
 		Function<T, Result> staticValidation,
-		Function<T, REAddr> rriMapper,
-		Predicate<T> virtualizeSpin,
-		boolean allowsTransitionsFromOutsideScrypts
+		Predicate<T> virtualizeSpin
 	) {
 		this.staticValidation = staticValidation;
-		this.rriMapper = rriMapper;
 		this.virtualizeSpin = virtualizeSpin;
-		this.allowsTransitionsFromOutsideScrypts = allowsTransitionsFromOutsideScrypts;
 	}
 
 	Function<T, Result> getStaticValidation() {
 		return staticValidation;
 	}
 
-	Function<T, REAddr> getRriMapper() {
-		return rriMapper;
-	}
-
 	Predicate<T> getVirtualizeSpin() {
 		return virtualizeSpin;
-	}
-
-	public boolean allowsTransitionsFromOutsideScrypts() {
-		return allowsTransitionsFromOutsideScrypts;
 	}
 
 	/**
@@ -78,9 +63,7 @@ public class ParticleDefinition<T extends Particle> {
 	 */
 	public static class Builder<T extends Particle> {
 		private Function<T, Result> staticValidation = x -> Result.success();
-		private Function<T, REAddr> rriMapper;
 		private Predicate<T> virtualizedParticles = x -> false;
-		private boolean allowsTransitionsFromOutsideScrypts = false;
 
 		private Builder() {
 		}
@@ -90,18 +73,8 @@ public class ParticleDefinition<T extends Particle> {
 			return this;
 		}
 
-		public Builder<T> rriMapper(Function<T, REAddr> rriMapper) {
-			this.rriMapper = rriMapper;
-			return this;
-		}
-
 		public Builder<T> virtualizeUp(Predicate<T> virtualizeParticles) {
 			this.virtualizedParticles = virtualizeParticles;
-			return this;
-		}
-
-		public Builder<T> allowTransitionsFromOutsideScrypts() {
-			this.allowsTransitionsFromOutsideScrypts = true;
 			return this;
 		}
 
@@ -117,9 +90,7 @@ public class ParticleDefinition<T extends Particle> {
 			// cast as necessary
 			return new ParticleDefinition<>(
 				staticValidation == null ? null : p -> staticValidation.apply((T) p),
-				rriMapper == null ? null : p -> rriMapper.apply((T) p),
-				p -> virtualizedParticles.test((T) p),
-				allowsTransitionsFromOutsideScrypts
+				p -> virtualizedParticles.test((T) p)
 			);
 		}
 	}

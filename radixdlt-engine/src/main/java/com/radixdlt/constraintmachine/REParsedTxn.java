@@ -20,7 +20,7 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.List;

@@ -30,7 +30,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.SystemInfoModule;
-import com.radixdlt.atommodel.system.SystemConstraintScryptV2;
+import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;

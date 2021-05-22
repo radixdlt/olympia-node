@@ -20,7 +20,6 @@ package com.radixdlt.atommodel;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.VoidParticle;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 
@@ -43,7 +42,6 @@ public class ParticlesEqualsHashCode {
 
 		subTypes.stream()
 			.filter(cls -> !Modifier.isAbstract(cls.getModifiers()))
-			.filter(cls -> !cls.equals(VoidParticle.class)) // Non-constructible
 			.forEachOrdered(this::testEquals);
 	}
 

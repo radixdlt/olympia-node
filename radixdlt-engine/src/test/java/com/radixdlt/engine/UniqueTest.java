@@ -20,8 +20,8 @@ package com.radixdlt.engine;
 
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
+import com.radixdlt.atommodel.unique.state.UniqueParticle;
+import com.radixdlt.atommodel.unique.scrypt.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -49,7 +49,7 @@ public class UniqueTest {
 		var cm = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
-			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
+			.setParticleTransitionProcedures(cmAtomOS.getProcedures())
 			.build();
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(ActionConstructors.newBuilder().build(), cm, store);

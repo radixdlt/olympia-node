@@ -19,54 +19,50 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.utils.Pair;
 
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-/**
- * Result of an instruction reduction
- */
-public final class ReducerResult {
+public class ReducerResult {
 	private final ReducerState reducerState;
-	private final boolean keepInput;
 	private final TxAction txAction;
+	private final String error;
 
-	private ReducerResult(ReducerState reducerState, boolean keepInput, TxAction txAction) {
+	private ReducerResult(ReducerState reducerState, TxAction txAction, String error) {
 		this.reducerState = reducerState;
-		this.keepInput = keepInput;
 		this.txAction = txAction;
+		this.error = error;
 	}
 
-	public static ReducerResult incomplete(ReducerState reducerState, boolean keepInput) {
-		Objects.requireNonNull(reducerState);
-		return new ReducerResult(reducerState, keepInput, null);
+	public static ReducerResult error(String error) {
+		return new ReducerResult(null, null, error);
+	}
+
+	public static ReducerResult incomplete(ReducerState reducerState) {
+		return new ReducerResult(reducerState, null, null);
 	}
 
 	public static ReducerResult complete(TxAction txAction) {
-		Objects.requireNonNull(txAction);
-		return new ReducerResult(null, false, txAction);
+		return new ReducerResult(null, txAction, null);
 	}
 
-	public boolean isComplete() {
-		return reducerState == null;
-	}
-
-	public void ifIncompleteElse(BiConsumer<Boolean, ReducerState> onIncomplete, Consumer<TxAction> onComplete) {
-		if (reducerState != null) {
-			onIncomplete.accept(keepInput, reducerState);
+	public void ifCompleteElse(Consumer<TxAction> completeConsumer, Consumer<ReducerState> incompleteConsumer) {
+		if (txAction != null) {
+			completeConsumer.accept(txAction);
+		} else if (reducerState != null) {
+			incompleteConsumer.accept(reducerState);
 		} else {
-			onComplete.accept(txAction);
+			throw new IllegalStateException();
 		}
 	}
 
-	public Optional<Pair<Boolean, ReducerState>> getIncomplete() {
-		if (reducerState == null) {
-			return Optional.empty();
-		} else {
-			return Optional.of(Pair.of(keepInput, reducerState));
+	public boolean isError() {
+		return error != null;
+	}
+
+	public String getError() {
+		if (error == null) {
+			throw new IllegalStateException();
 		}
+		return error;
 	}
 }
