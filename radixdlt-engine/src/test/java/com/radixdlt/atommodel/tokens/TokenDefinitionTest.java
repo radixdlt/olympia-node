@@ -19,6 +19,7 @@
 package com.radixdlt.atommodel.tokens;
 
 import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
@@ -27,9 +28,11 @@ import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
 import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.REAddrParticle;
+import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -53,7 +56,6 @@ public class TokenDefinitionTest {
 	@Before
 	public void setup() {
 		CMAtomOS cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new ValidatorConstraintScrypt());
 		cmAtomOS.load(new TokensConstraintScryptV1());
 		ConstraintMachine cm = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
@@ -129,5 +131,33 @@ public class TokenDefinitionTest {
 		// Act
 		// Assert
 		assertThatThrownBy(() -> this.engine.execute(List.of(txn))).isInstanceOf(RadixEngineException.class);
+	}
+
+	@Test
+	public void using_someone_elses_address_should_fail() throws Exception {
+		var keyPair = ECKeyPair.generateNew();
+		// Arrange
+		var addr = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "smthng");
+		var tokenDefinitionParticle = new TokenDefinitionParticle(
+			addr,
+			"TEST",
+			"description",
+			"",
+			"",
+			keyPair.getPublicKey()
+		);
+		var builder = TxBuilder.newBuilder(keyPair.getPublicKey())
+			.toLowLevelBuilder()
+			.virtualDown(new REAddrParticle(addr), "smthng".getBytes(StandardCharsets.UTF_8))
+			.up(tokenDefinitionParticle)
+			.particleGroup();
+		var sig = keyPair.sign(builder.hashToSign());
+		var txn = builder.sig(sig).build();
+
+		// Act and Assert
+		assertThatThrownBy(() -> this.engine.execute(List.of(txn)))
+			.isInstanceOf(RadixEngineException.class)
+			.extracting("cmError.errorCode")
+			.containsExactly(CMErrorCode.AUTHORIZATION_ERROR);
 	}
 }

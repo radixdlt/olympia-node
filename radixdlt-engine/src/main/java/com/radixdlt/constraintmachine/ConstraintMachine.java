@@ -219,6 +219,7 @@ public final class ConstraintMachine {
 		boolean isInput
 	) {
 		final MethodProcedure methodProcedure;
+		final Object authorizationParam;
 		final Object procedureParam;
 
 		// TODO: Reduce the 3 following procedures to 1
@@ -229,26 +230,8 @@ public final class ConstraintMachine {
 			if (endProcedure == null) {
 				return Optional.of(Pair.of(CMErrorCode.MISSING_TRANSITION_PROCEDURE, null));
 			}
-
-			var readable = validationState.immutableIndex();
-			final var reducerState = validationState.reducerState2;
-
-			// System permissions don't require additional authorization
-			if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
-				var requiredLevel = endProcedure.permissionLevel(reducerState, readable);
-				if (validationState.permissionLevel.compareTo(requiredLevel) < 0) {
-					return Optional.of(Pair.of(
-						CMErrorCode.PERMISSION_LEVEL_ERROR,
-						"Required: " + requiredLevel + " Current: " + validationState.permissionLevel
-					));
-				}
-				var signatureVerified = endProcedure.authorized(reducerState, readable, validationState.signedBy);
-				if (!signatureVerified) {
-					return Optional.of(Pair.of(CMErrorCode.AUTHORIZATION_ERROR, null));
-				}
-			}
-
 			methodProcedure = endProcedure;
+			authorizationParam = validationState.reducerState2;
 			procedureParam = null;
 		} else if (!isInput) {
 			var outputParticle = nextParticle.getSubstate();
@@ -256,58 +239,22 @@ public final class ConstraintMachine {
 				validationState.getReducerStateClass(),
 				outputParticle.getClass()
 			);
-
 			if (upProcedure == null) {
 				return Optional.of(Pair.of(CMErrorCode.MISSING_TRANSITION_PROCEDURE, null));
 			}
-
-			var readable = validationState.immutableIndex();
-
-			// System permissions don't require additional authorization
-			if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
-				var requiredLevel = upProcedure.permissionLevel(outputParticle, readable);
-				if (validationState.permissionLevel.compareTo(requiredLevel) < 0) {
-					return Optional.of(Pair.of(
-						CMErrorCode.PERMISSION_LEVEL_ERROR,
-						"Required: " + requiredLevel + " Current: " + validationState.permissionLevel
-					));
-				}
-				var signatureVerified = upProcedure.authorized(outputParticle, readable, validationState.signedBy);
-				if (!signatureVerified) {
-					return Optional.of(Pair.of(CMErrorCode.AUTHORIZATION_ERROR, null));
-				}
-			}
-
 			methodProcedure = upProcedure;
+			authorizationParam = outputParticle;
 			procedureParam = outputParticle;
 		} else {
-			var input = nextParticle;
 			var downProcedure = this.procedures.getDownProcedure(
-				input.getSubstate().getClass(),
+				nextParticle.getSubstate().getClass(),
 				validationState.getReducerStateClass()
 			);
-
 			if (downProcedure == null) {
 				return Optional.of(Pair.of(CMErrorCode.MISSING_TRANSITION_PROCEDURE, null));
 			}
-
-			var readable = validationState.immutableIndex();
-
-			// System permissions don't require additional authorization
-			if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
-				var requiredLevel = downProcedure.permissionLevel(input, readable);
-				if (validationState.permissionLevel.compareTo(requiredLevel) < 0) {
-					return Optional.of(Pair.of(
-						CMErrorCode.PERMISSION_LEVEL_ERROR,
-						"Required: " + requiredLevel + " Current: " + validationState.permissionLevel
-					));
-				}
-				var verified = downProcedure.authorized(input, readable, validationState.signedBy);
-				if (!verified) {
-					return Optional.of(Pair.of(CMErrorCode.AUTHORIZATION_ERROR, null));
-				}
-			}
 			methodProcedure = downProcedure;
+			authorizationParam = nextParticle;
 			procedureParam = nextParticle;
 		}
 
@@ -315,9 +262,25 @@ public final class ConstraintMachine {
 		var reducerState = validationState.reducerState2;
 		final ReducerResult reducerResult;
 		try {
+			// System permissions don't require additional authorization
+			if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
+				var requiredLevel = methodProcedure.permissionLevel(authorizationParam, readable);
+				if (validationState.permissionLevel.compareTo(requiredLevel) < 0) {
+					return Optional.of(Pair.of(
+						CMErrorCode.PERMISSION_LEVEL_ERROR,
+						"Required: " + requiredLevel + " Current: " + validationState.permissionLevel
+					));
+				}
+				methodProcedure.verifyAuthorization(authorizationParam, readable, validationState.signedBy);
+			}
+
 			reducerResult = methodProcedure.call(procedureParam, reducerState, readable);
+		} catch (AuthorizationException e) {
+			return Optional.of(Pair.of(CMErrorCode.AUTHORIZATION_ERROR, null));
 		} catch (ProcedureException e) {
-			return Optional.of(Pair.of(CMErrorCode.TRANSITION_PRECONDITION_FAILURE, e.getMessage()));
+			return Optional.of(Pair.of(CMErrorCode.PROCEDURE_CALL_ERROR, e.getMessage()));
+		} catch (Exception e) {
+			return Optional.of(Pair.of(CMErrorCode.UNKNOWN_ERROR, e.getMessage()));
 		}
 
 		reducerResult.ifCompleteElse(

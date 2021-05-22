@@ -18,6 +18,7 @@
 
 package com.radixdlt.atommodel.tokens.state;
 
+import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -81,6 +82,12 @@ public final class TokenDefinitionParticle implements Particle {
 		ECPublicKey minter
 	) {
 		this(addr, name, description, iconUrl, url, null, minter);
+	}
+
+	public void verifyMintAuthorization(Optional<ECPublicKey> key) throws AuthorizationException {
+		if (!key.flatMap(p -> getMinter().map(p::equals)).orElse(false)) {
+			throw new AuthorizationException("Key not authorized: " + key);
+		}
 	}
 
 	public Optional<ECPublicKey> getMinter() {

@@ -36,13 +36,12 @@ public enum CMErrorCode {
 	PARTICLE_REGISTER_SPIN_CLASH("Particle spin clashes with current particle in register"),
 	MISSING_TRANSITION_PROCEDURE("Transition procedure missing"),
 	UNEQUAL_INPUT_OUTPUT("Inputs and outputs do not match"),
-	NO_FULL_POP_ERROR("Neither input nor output are fully popped"),
-	TRANSITION_PRECONDITION_FAILURE("Transition Precondition failure"),
-	TRANSITION_ERROR("Transition error"),
+	PROCEDURE_CALL_ERROR("Procedure call error"),
 	ARITHMETIC_ERROR("Arithmetic error"),
 	PERMISSION_LEVEL_ERROR("Invalid execution permission"),
 	AUTHORIZATION_ERROR("Authorization error"),
-	INVALID_INSTRUCTION_SEQUENCE("Invalid instruction sequence");
+	INVALID_INSTRUCTION_SEQUENCE("Invalid instruction sequence"),
+	UNKNOWN_ERROR("Unknown error");
 
 	private final String description;
 

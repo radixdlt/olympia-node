@@ -46,12 +46,14 @@ public class EndProcedure<S extends ReducerState> implements MethodProcedure {
 		return reducerStateClass;
 	}
 
-	public PermissionLevel permissionLevel(S reducerState, ReadableAddrs readableAddrs) {
-		return permissionLevel.apply(reducerState, readableAddrs);
+	@Override
+	public PermissionLevel permissionLevel(Object o, ReadableAddrs readableAddrs) {
+		return permissionLevel.apply((S) o, readableAddrs);
 	}
 
-	public boolean authorized(S reducerState, ReadableAddrs readableAddrs, Optional<ECPublicKey> signedBy) {
-		return endAuthorization.verify(reducerState, readableAddrs, signedBy);
+	@Override
+	public void verifyAuthorization(Object o, ReadableAddrs readableAddrs, Optional<ECPublicKey> key) throws AuthorizationException {
+		endAuthorization.verify((S) o, readableAddrs, key);
 	}
 
 	@Override

@@ -24,5 +24,5 @@ import com.radixdlt.store.ReadableAddrs;
 import java.util.Optional;
 
 public interface EndAuthorization<S extends ReducerState> {
-	boolean verify(S state, ReadableAddrs readableAddrs, Optional<ECPublicKey> signedBy);
+	void verify(S state, ReadableAddrs readableAddrs, Optional<ECPublicKey> signedBy) throws AuthorizationException;
 }

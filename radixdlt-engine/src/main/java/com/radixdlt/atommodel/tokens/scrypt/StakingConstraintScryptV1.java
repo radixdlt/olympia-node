@@ -26,12 +26,14 @@ import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
+import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt384;
 
 import java.util.Objects;
@@ -55,7 +57,7 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 		os.createUpProcedure(new UpProcedure<>(
 			VoidReducerState.class, DeprecatedStake.class,
 			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> true,
+			(u, r, k) -> { },
 			(s, u, r) -> {
 				var state = new StakingConstraintScryptV2.UnaccountedStake(
 					u,
@@ -67,7 +69,7 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 		os.createDownProcedure(new DownProcedure<>(
 			TokensParticle.class, StakingConstraintScryptV2.UnaccountedStake.class,
 			(d, r) -> PermissionLevel.USER,
-			(d, r, k) -> d.getSubstate().allowedToWithdraw(k, r),
+			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
 			(d, s, r) -> {
 				if (!d.getSubstate().getResourceAddr().isNativeToken()) {
 					throw new ProcedureException("Not the same address.");
@@ -90,7 +92,13 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 		os.createDownProcedure(new DownProcedure<>(
 			DeprecatedStake.class, TokensConstraintScryptV1.UnaccountedTokens.class,
 			(d, r) -> PermissionLevel.USER,
-			(d, r, k) -> k.map(d.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
+			(d, r, k) -> {
+				try {
+					d.getSubstate().getOwner().verifyWithdrawAuthorization(k);
+				} catch (REAddr.BucketWithdrawAuthorizationException e) {
+					throw new AuthorizationException(e.getMessage());
+				}
+			},
 			(d, s, r) -> {
 				if (!s.resourceInBucket().isNativeToken()) {
 					throw new ProcedureException("Can only destake to the native token.");
@@ -132,7 +140,7 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 		os.createUpProcedure(new UpProcedure<>(
 			StakingConstraintScryptV2.RemainderStake.class, DeprecatedStake.class,
 			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> true,
+			(u, r, k) -> { },
 			(s, u, r) -> {
 				if (!u.getAmount().equals(s.amount())) {
 					throw new ProcedureException("Remainder must be filled exactly.");

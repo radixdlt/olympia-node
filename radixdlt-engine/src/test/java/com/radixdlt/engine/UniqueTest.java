@@ -65,11 +65,11 @@ public class UniqueTest {
 
 	@Test
 	public void using_someone_elses_mutex_should_fail() {
-		var rri = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "smthng");
+		var addr = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "smthng");
 		var builder = TxBuilder.newBuilder(keyPair.getPublicKey())
 			.toLowLevelBuilder()
-			.virtualDown(new REAddrParticle(rri), "smthng".getBytes(StandardCharsets.UTF_8))
-			.up(new UniqueParticle(rri))
+			.virtualDown(new REAddrParticle(addr), "smthng".getBytes(StandardCharsets.UTF_8))
+			.up(new UniqueParticle(addr))
 			.particleGroup();
 		var sig = keyPair.sign(builder.hashToSign());
 		var txn = builder.sig(sig).build();

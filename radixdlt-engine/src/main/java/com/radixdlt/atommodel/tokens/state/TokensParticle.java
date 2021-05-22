@@ -20,6 +20,7 @@ package com.radixdlt.atommodel.tokens.state;
 
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.Fungible;
+import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.ReadableAddrs;
@@ -64,17 +65,19 @@ public final class TokensParticle implements Fungible {
 		this.epochUnlocked = epochUnlocked;
 	}
 
-	public boolean allowedToWithdraw(Optional<ECPublicKey> key, ReadableAddrs readable) {
-		if (!key.map(holdingAddress::allowToWithdrawFrom).orElse(false)) {
-			return false;
+	public void verifyWithdrawAuthorization(Optional<ECPublicKey> key, ReadableAddrs readable) throws AuthorizationException {
+		try {
+			holdingAddress.verifyWithdrawAuthorization(key);
+		} catch (REAddr.BucketWithdrawAuthorizationException e) {
+			throw new AuthorizationException(e.getMessage());
 		}
 
-		if (epochUnlocked == null) {
-			return true;
+		if (epochUnlocked != null) {
+			var system = (SystemParticle) readable.loadAddr(null, REAddr.ofSystem()).orElseThrow();
+			if (epochUnlocked > system.getEpoch()) {
+				throw new AuthorizationException("Tokens are locked until epoch " + epochUnlocked + " current " + system.getEpoch());
+			}
 		}
-
-		var system = (SystemParticle) readable.loadAddr(null, REAddr.ofSystem()).orElseThrow();
-		return system.getEpoch() >= epochUnlocked;
 	}
 
 	public ResourceInBucket resourceInBucket() {

@@ -27,6 +27,7 @@ import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
+import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
 import com.radixdlt.constraintmachine.InvalidResourceException;
@@ -107,7 +108,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		os.createUpProcedure(new UpProcedure<>(
 			TokensConstraintScryptV2.TemporaryBucket.class, DeprecatedStake.class,
 			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> true,
+			(u, r, k) -> { },
 			(s, u, r) -> {
 				var nextState = s.withdraw(REAddr.ofNativeToken(), u.getAmount());
 				return ReducerResult.incomplete(nextState);
@@ -118,7 +119,13 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		os.createDownProcedure(new DownProcedure<>(
 			DeprecatedStake.class, VoidReducerState.class,
 			(d, r) -> PermissionLevel.USER,
-			(d, r, k) -> k.map(d.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
+			(d, r, k) -> {
+				try {
+					d.getSubstate().getOwner().verifyWithdrawAuthorization(k);
+				} catch (REAddr.BucketWithdrawAuthorizationException e) {
+					throw new AuthorizationException(e.getMessage());
+				}
+			},
 			(d, s, r) -> {
 				var substate = d.getSubstate();
 				var nextState = new StakeHoldingBucket(substate.getDelegateKey(), substate.getOwner(), UInt384.from(substate.getAmount()));
@@ -129,7 +136,13 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		os.createDownProcedure(new DownProcedure<>(
 			DeprecatedStake.class, StakeHoldingBucket.class,
 			(d, r) -> PermissionLevel.USER,
-			(d, r, k) -> k.map(d.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
+			(d, r, k) -> {
+				try {
+					d.getSubstate().getOwner().verifyWithdrawAuthorization(k);
+				} catch (REAddr.BucketWithdrawAuthorizationException e) {
+					throw new AuthorizationException(e.getMessage());
+				}
+			},
 			(d, s, r) -> {
 				var stake = d.getSubstate();
 				if (!s.delegate.equals(stake.getDelegateKey())) {
@@ -145,7 +158,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		os.createUpProcedure(new UpProcedure<>(
 			StakeHoldingBucket.class, DeprecatedStake.class,
 			(d, r) -> PermissionLevel.USER,
-			(d, r, k) -> true,
+			(d, r, k) -> { },
 			(s, u, r) -> {
 				if (!u.getDelegateKey().equals(s.delegate)) {
 					throw new ProcedureException("Delegate key does not match.");
@@ -162,7 +175,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		os.createUpProcedure(new UpProcedure<>(
 			StakeHoldingBucket.class, TokensParticle.class,
 			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> true,
+			(u, r, k) -> { },
 			(s, u, r) -> {
 				if (!u.getResourceAddr().isNativeToken()) {
 					throw new ProcedureException("Can only destake to the native token.");
@@ -191,7 +204,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		os.createEndProcedure(new EndProcedure<>(
 			StakeHoldingBucket.class,
 			(s, r) -> PermissionLevel.USER,
-			(s, r, k) -> true,
+			(s, r, k) -> { },
 			(s, r) -> {
 				if (!s.amount.isZero()) {
 					throw new ProcedureException("Stake cannot be burnt.");

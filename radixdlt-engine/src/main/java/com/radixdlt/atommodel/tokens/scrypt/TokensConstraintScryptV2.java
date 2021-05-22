@@ -35,6 +35,7 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
+import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
 import com.radixdlt.constraintmachine.InvalidResourceException;
@@ -94,7 +95,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		os.createUpProcedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, TokenDefinitionParticle.class,
 			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> true,
+			(u, r, k) -> { },
 			(s, u, r) -> {
 				if (!u.getAddr().equals(s.getAddr())) {
 					throw new ProcedureException("Addresses don't match");
@@ -118,7 +119,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		os.createUpProcedure(new UpProcedure<>(
 			TokensConstraintScryptV2.NeedFixedTokenSupply.class, TokensParticle.class,
 			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> true,
+			(u, r, k) -> { },
 			(s, u, r) -> {
 				if (!u.getResourceAddr().equals(s.tokenDefinitionParticle.getAddr())) {
 					throw new ProcedureException("Addresses don't match.");
@@ -197,8 +198,9 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 			VoidReducerState.class, TokensParticle.class,
 			(u, r) -> u.getResourceAddr().isNativeToken() ? PermissionLevel.SYSTEM : PermissionLevel.USER,
 			(u, r, k) -> {
-				var tokenDef = (TokenDefinitionParticle) r.loadAddr(null, u.getResourceAddr()).orElseThrow();
-				return k.flatMap(p -> tokenDef.getMinter().map(p::equals)).orElse(false);
+				var tokenDef = (TokenDefinitionParticle) r.loadAddr(null, u.getResourceAddr())
+					.orElseThrow(() -> new AuthorizationException("Invalid token address: " + u.getResourceAddr()));
+				tokenDef.verifyMintAuthorization(k);
 			},
 			(s, u, r) -> ReducerResult.complete(new MintToken(u.getResourceAddr(), u.getHoldingAddr(), u.getAmount()))
 		));
@@ -207,7 +209,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		os.createEndProcedure(new EndProcedure<>(
 			TemporaryBucket.class,
 			(s, r) -> PermissionLevel.USER,
-			(s, r, k) -> true,
+			(s, r, k) -> { },
 			(s, r) -> {
 				if (!s.amount.isZero()) {
 					var p = r.loadAddr(null, s.tokenAddr);
@@ -233,7 +235,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		os.createDownProcedure(new DownProcedure<>(
 			TokensParticle.class, VoidReducerState.class,
 			(d, r) -> PermissionLevel.USER,
-			(d, r, k) -> d.getSubstate().allowedToWithdraw(k, r),
+			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
 			(d, s, r) -> {
 				var tokens = d.getSubstate();
 				var state = new TemporaryBucket(
@@ -249,7 +251,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		os.createDownProcedure(new DownProcedure<>(
 			TokensParticle.class, TemporaryBucket.class,
 			(d, r) -> PermissionLevel.USER,
-			(d, r, k) -> d.getSubstate().allowedToWithdraw(k, r),
+			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
 			(d, s, r) -> {
 				var tokens = d.getSubstate();
 				var nextState = s.deposit(
@@ -265,7 +267,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		os.createUpProcedure(new UpProcedure<>(
 			TemporaryBucket.class, TokensParticle.class,
 			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> true,
+			(u, r, k) -> { },
 			(s, u, r) -> {
 				var nextState = s.withdraw(u.getResourceAddr(), u.getAmount());
 				return ReducerResult.incomplete(nextState);

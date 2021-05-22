@@ -22,18 +22,20 @@ import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV1;
-import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV2;
+import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV1;
+import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV2;
+import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV2;
+import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
-import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -49,44 +51,60 @@ import org.junit.runners.Parameterized;
 import java.util.Collection;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @RunWith(Parameterized.class)
-public class TransferTokensTest {
+public class StakeTokensTest {
+
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
 		return List.of(new Object[][] {
-			{UInt256.TEN, UInt256.TEN, new TokensConstraintScryptV1(), new TransferTokensConstructorV1()},
-			{UInt256.TEN, UInt256.SIX, new TokensConstraintScryptV1(), new TransferTokensConstructorV1()},
-			{UInt256.TEN, UInt256.TEN, new TokensConstraintScryptV2(), new TransferTokensConstructorV2()},
-			{UInt256.TEN, UInt256.SIX, new TokensConstraintScryptV2(), new TransferTokensConstructorV2()},
+			{
+				UInt256.TEN, UInt256.TEN,
+				List.of(new TokensConstraintScryptV1(), new StakingConstraintScryptV2()),
+				new StakeTokensConstructorV1()
+			},
+			{
+				UInt256.TEN, UInt256.SIX,
+				List.of(new TokensConstraintScryptV1(), new StakingConstraintScryptV2()),
+				new StakeTokensConstructorV1()
+			},
+			{
+				UInt256.TEN, UInt256.TEN,
+				List.of(new TokensConstraintScryptV2(), new StakingConstraintScryptV3()),
+				new StakeTokensConstructorV2()
+			},
+			{
+				UInt256.TEN, UInt256.SIX,
+				List.of(new TokensConstraintScryptV2(), new StakingConstraintScryptV3()),
+				new StakeTokensConstructorV2()
+			},
 		});
 	}
 
 	private RadixEngine<Void> engine;
 	private EngineStore<Void> store;
 	private final UInt256 startAmt;
-	private final UInt256 transferAmt;
-	private final ConstraintScrypt scrypt;
-	private final ActionConstructor<TransferToken> transferTokensConstructor;
+	private final UInt256 stakeAmt;
+	private final List<ConstraintScrypt> scrypts;
+	private final ActionConstructor<StakeTokens> stakeTokensConstructor;
 
-	public TransferTokensTest(
+	public StakeTokensTest(
 		UInt256 startAmt,
-		UInt256 transferAmount,
-		ConstraintScrypt scrypt,
-		ActionConstructor<TransferToken> transferTokensConstructor
+		UInt256 stakeAmt,
+		List<ConstraintScrypt> scrypts,
+		ActionConstructor<StakeTokens> stakeTokensConstructor
 	) {
 		this.startAmt = startAmt;
-		this.transferAmt = transferAmount;
-		this.scrypt = scrypt;
-		this.transferTokensConstructor = transferTokensConstructor;
+		this.stakeAmt = stakeAmt;
+		this.scrypts = scrypts;
+		this.stakeTokensConstructor = stakeTokensConstructor;
 	}
 
 	@Before
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(scrypt);
+		scrypts.forEach(cmAtomOS::load);
 		var cm = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
@@ -95,7 +113,7 @@ public class TransferTokensTest {
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
 			ActionConstructors.newBuilder()
-				.put(TransferToken.class, transferTokensConstructor)
+				.put(StakeTokens.class, stakeTokensConstructor)
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
 				.build(),
@@ -105,60 +123,47 @@ public class TransferTokensTest {
 	}
 
 	@Test
-	public void cannot_transfer_others_tokens() throws Exception {
+	public void stake_tokens() throws Exception {
 		// Arrange
 		var key = ECKeyPair.generateNew();
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
 		var txn = this.engine.construct(
-			key.getPublicKey(),
 			List.of(
-				new CreateMutableToken("test", "Name", "", "", ""),
-				new MintToken(tokenAddr, accountAddr, startAmt)
+				new CreateMutableToken("xrd", "Name", "", "", ""),
+				new MintToken(REAddr.ofNativeToken(), accountAddr, startAmt)
 			)
-		).signAndBuild(key::sign);
-		this.engine.execute(List.of(txn));
+		).buildWithoutSignature();
+		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
+
+		// Act
+		var transfer = this.engine.construct(new StakeTokens(accountAddr, key.getPublicKey(), stakeAmt))
+			.signAndBuild(key::sign);
+		this.engine.execute(List.of(transfer));
+	}
+
+	@Test
+	public void cannot_stake_others_tokens() throws Exception {
+		// Arrange
+		var key = ECKeyPair.generateNew();
+		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
+		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
+		var txn = this.engine.construct(
+			List.of(
+				new CreateMutableToken("xrd", "Name", "", "", ""),
+				new MintToken(REAddr.ofNativeToken(), accountAddr, startAmt)
+			)
+		).buildWithoutSignature();
+		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
 
 		// Act
 		var nextKey = ECKeyPair.generateNew();
 		var to = REAddr.ofPubKeyAccount(nextKey.getPublicKey());
-		var transfer = this.engine.construct(new TransferToken(tokenAddr, accountAddr, to, transferAmt))
+		var transfer = this.engine.construct(new StakeTokens(accountAddr, key.getPublicKey(), stakeAmt))
 			.signAndBuild(nextKey::sign);
 		assertThatThrownBy(() -> this.engine.execute(List.of(transfer)))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting("cmError.errorCode")
 			.containsExactly(CMErrorCode.AUTHORIZATION_ERROR);
-	}
-
-	@Test
-	public void transfer_tokens() throws Exception {
-		// Arrange
-		var key = ECKeyPair.generateNew();
-		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
-		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
-		var txn = this.engine.construct(
-			key.getPublicKey(),
-			List.of(
-				new CreateMutableToken("test", "Name", "", "", ""),
-				new MintToken(tokenAddr, accountAddr, startAmt)
-			)
-		).signAndBuild(key::sign);
-		this.engine.execute(List.of(txn));
-
-		// Act
-		var to = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
-		var transfer = this.engine.construct(new TransferToken(tokenAddr, accountAddr, to, transferAmt))
-			.signAndBuild(key::sign);
-		var parsed = this.engine.execute(List.of(transfer));
-
-		// Assert
-		// TODO: Add the following asserts back in once V2 parsing fixed
-		/*
-		var action = (TransferToken) parsed.get(0).getActions().get(0).getTxAction();
-		assertThat(action.amount()).isEqualTo(transferAmt);
-		assertThat(action.from()).isEqualTo(accountAddr);
-		assertThat(action.to()).isEqualTo(to);
-		assertThat(action.resourceAddr()).isEqualTo(tokenAddr);
-		 */
 	}
 }
