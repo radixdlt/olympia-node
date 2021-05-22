@@ -440,9 +440,9 @@ public final class ConstraintMachine {
 	Optional<CMError> statefulVerify(
 		CMValidationState validationState,
 		List<REInstruction> instructions,
+		List<REParsedInstruction> parsedInstructions,
 		List<REParsedAction> parsedActions
 	) {
-		var parsedInstructions = new ArrayList<REParsedInstruction>();
 		int instIndex = 0;
 		var expectEnd = false;
 
@@ -501,6 +501,8 @@ public final class ConstraintMachine {
 					return Optional.of(new CMError(instIndex, CMErrorCode.UNKNOWN_OP, validationState));
 				}
 
+				parsedInstructions.add(REParsedInstruction.of(inst, substate));
+
 				var error = validateParticle(
 					validationState,
 					argument == null ? SubstateWithArg.noArg(nextParticle)
@@ -511,7 +513,6 @@ public final class ConstraintMachine {
 					return Optional.of(new CMError(instIndex, error.get().getFirst(), validationState, error.get().getSecond()));
 				}
 
-				parsedInstructions.add(REParsedInstruction.of(inst, substate));
 				expectEnd = validationState.reducerState == null;
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.END) {
 				if (validationState.reducerState != null) {
@@ -523,13 +524,12 @@ public final class ConstraintMachine {
 				}
 
 				if (validationState.txAction != null) {
-					var parsedAction = REParsedAction.create(validationState.txAction, parsedInstructions);
+					var parsedAction = REParsedAction.create(validationState.txAction);
 					parsedActions.add(parsedAction);
+					validationState.txAction = null;
 				}
 
 				expectEnd = false;
-				parsedInstructions = new ArrayList<>();
-				validationState.txAction = null;
 			}
 
 			instIndex++;
@@ -560,7 +560,8 @@ public final class ConstraintMachine {
 		);
 
 		var parsedActions = new ArrayList<REParsedAction>();
-		var error = this.statefulVerify(validationState, result.instructions, parsedActions);
+		var parsedInstructions = new ArrayList<REParsedInstruction>();
+		var error = this.statefulVerify(validationState, result.instructions, parsedInstructions, parsedActions);
 		if (error.isPresent()) {
 			throw new RadixEngineException(
 				txn,
@@ -571,6 +572,6 @@ public final class ConstraintMachine {
 			);
 		}
 
-		return new REParsedTxn(txn, result, parsedActions);
+		return new REParsedTxn(txn, result, parsedInstructions,  parsedActions);
 	}
 }

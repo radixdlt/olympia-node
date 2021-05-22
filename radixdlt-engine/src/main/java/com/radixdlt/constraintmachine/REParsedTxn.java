@@ -34,15 +34,18 @@ import java.util.stream.Stream;
  */
 public final class REParsedTxn {
 	private final Txn txn;
+	private final List<REParsedInstruction> parsedInstructions;
 	private final List<REParsedAction> actions;
 	private final ConstraintMachine.StatelessVerificationResult statelessResult;
 
 	public REParsedTxn(
 		Txn txn,
 		ConstraintMachine.StatelessVerificationResult statelessResult,
+		List<REParsedInstruction> parsedInstructions,
 		List<REParsedAction> actions
 	) {
 		this.txn = txn;
+		this.parsedInstructions = parsedInstructions;
 		this.actions = actions;
 		this.statelessResult = statelessResult;
 	}
@@ -68,8 +71,7 @@ public final class REParsedTxn {
 	}
 
 	public boolean isSystemOnly() {
-		return actions.stream().flatMap(a -> a.getInstructions().stream())
-			.anyMatch(i -> i.getSubstate().getParticle() instanceof SystemParticle);
+		return instructions().anyMatch(i -> i.getSubstate().getParticle() instanceof SystemParticle);
 	}
 
 	public List<REParsedInstruction> stateUpdates() {
@@ -79,7 +81,7 @@ public final class REParsedTxn {
 	}
 
 	public Stream<REParsedInstruction> instructions() {
-		return actions.stream().flatMap(a -> a.getInstructions().stream());
+		return parsedInstructions.stream();
 	}
 
 	public Stream<Particle> upSubstates() {

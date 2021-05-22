@@ -28,30 +28,19 @@ import java.util.Objects;
  */
 public final class REParsedAction {
 	private final TxAction txAction;
-	private final List<REParsedInstruction> instructions;
 
-	private REParsedAction(
-		TxAction txAction,
-		List<REParsedInstruction> instructions
-	) {
+	private REParsedAction(TxAction txAction) {
 		this.txAction = txAction;
-		this.instructions = instructions;
 	}
 
 	public static REParsedAction create(
-		TxAction txAction,
-		List<REParsedInstruction> instructions
+		TxAction txAction
 	) {
 		Objects.requireNonNull(txAction);
-		Objects.requireNonNull(instructions);
-		return new REParsedAction(txAction, instructions);
+		return new REParsedAction(txAction);
 	}
 
 	public TxAction getTxAction() {
 		return txAction;
-	}
-
-	public List<REParsedInstruction> getInstructions() {
-		return instructions;
 	}
 }
