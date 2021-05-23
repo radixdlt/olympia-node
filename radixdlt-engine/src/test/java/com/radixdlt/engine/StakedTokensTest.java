@@ -31,16 +31,16 @@ import com.radixdlt.atommodel.tokens.construction.BurnTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
-import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructor;
-import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructor;
-import com.radixdlt.atommodel.validators.construction.UnstakeTokensConstructor;
+import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV1;
+import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV1;
+import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV1;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV1;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV2;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScrypt;
+import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -67,7 +67,7 @@ public class StakedTokensTest {
 		final var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new SystemConstraintScryptV1());
 		cmAtomOS.load(new ValidatorConstraintScrypt());
-		cmAtomOS.load(new TokensConstraintScrypt());
+		cmAtomOS.load(new TokensConstraintScryptV1());
 		cmAtomOS.load(new StakingConstraintScryptV2());
 		final var cm = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
@@ -78,10 +78,10 @@ public class StakedTokensTest {
 			.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 			.put(RegisterValidator.class, new RegisterValidatorConstructor())
 			.put(MintToken.class, new MintTokenConstructor())
-			.put(TransferToken.class, new TransferTokensConstructor())
+			.put(TransferToken.class, new TransferTokensConstructorV1())
 			.put(BurnToken.class, new BurnTokenConstructor())
-			.put(StakeTokens.class, new StakeTokensConstructor())
-			.put(UnstakeTokens.class, new UnstakeTokensConstructor())
+			.put(StakeTokens.class, new StakeTokensConstructorV1())
+			.put(UnstakeTokens.class, new UnstakeTokensConstructorV1())
 			.build();
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(actionConstructors, cm, this.store);

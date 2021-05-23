@@ -24,7 +24,7 @@ import com.radixdlt.store.ReadableAddrs;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
-public class EndProcedure<S extends ReducerState> {
+public class EndProcedure<S extends ReducerState> implements MethodProcedure {
 	private final Class<S> reducerStateClass;
 	private final BiFunction<S, ReadableAddrs, PermissionLevel> permissionLevel;
 	private final EndAuthorization<S> endAuthorization;
@@ -46,15 +46,18 @@ public class EndProcedure<S extends ReducerState> {
 		return reducerStateClass;
 	}
 
-	public PermissionLevel permissionLevel(S reducerState, ReadableAddrs readableAddrs) {
-		return permissionLevel.apply(reducerState, readableAddrs);
+	@Override
+	public PermissionLevel permissionLevel(Object o, ReadableAddrs readableAddrs) {
+		return permissionLevel.apply((S) o, readableAddrs);
 	}
 
-	public boolean authorized(S reducerState, ReadableAddrs readableAddrs, Optional<ECPublicKey> signedBy) {
-		return endAuthorization.verify(reducerState, readableAddrs, signedBy);
+	@Override
+	public void verifyAuthorization(Object o, ReadableAddrs readableAddrs, Optional<ECPublicKey> key) throws AuthorizationException {
+		endAuthorization.verify((S) o, readableAddrs, key);
 	}
 
-	public ReducerResult reduce(S reducerState, ReadableAddrs readableAddrs) {
-		return endReducer.reduce(reducerState, readableAddrs);
+	@Override
+	public ReducerResult call(Object o, ReducerState reducerState, ReadableAddrs readableAddrs) throws ProcedureException {
+		return endReducer.reduce((S) reducerState, readableAddrs).map(ReducerResult::complete).orElse(ReducerResult.complete());
 	}
 }

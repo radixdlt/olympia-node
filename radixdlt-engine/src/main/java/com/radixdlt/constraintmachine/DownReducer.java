@@ -21,5 +21,5 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.store.ReadableAddrs;
 
 public interface DownReducer<I extends Particle, S extends ReducerState> {
-	ReducerResult reduce(SubstateWithArg<I> inputParticle, S reducerState, ReadableAddrs readableAddrs);
+	ReducerResult reduce(SubstateWithArg<I> inputParticle, S reducerState, ReadableAddrs readableAddrs) throws ProcedureException;
 }

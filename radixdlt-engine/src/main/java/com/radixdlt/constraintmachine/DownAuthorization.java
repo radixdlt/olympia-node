@@ -15,18 +15,17 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.atommodel.validators;
+package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atommodel.validators.state.ValidatorParticle;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import nl.jqno.equalsverifier.Warning;
-import org.junit.Test;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.store.ReadableAddrs;
 
-public class ValidatorParticleTest {
-    @Test
-    public void equalsContract() {
-        EqualsVerifier.forClass(ValidatorParticle.class)
-            .suppress(Warning.NONFINAL_FIELDS)
-            .verify();
-    }
+import java.util.Optional;
+
+/**
+ * Validates whether a specific transition procedure is permissible
+ * @param <I> particle class
+ */
+public interface DownAuthorization<I extends Particle> {
+	void verify(SubstateWithArg<I> input, ReadableAddrs readableAddrs, Optional<ECPublicKey> signedBy) throws AuthorizationException;
 }

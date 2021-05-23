@@ -16,20 +16,17 @@
  *
  */
 
-package com.radixdlt.atommodel.tokens.state;
+package com.radixdlt.constraintmachine;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import nl.jqno.equalsverifier.Warning;
-import org.junit.Test;
+import com.radixdlt.identifiers.REAddr;
 
-public class TokenDefinitionParticleTest {
-    @Test
-    public void equalsContract() {
-        EqualsVerifier.forClass(TokenDefinitionParticle.class)
-                .suppress(Warning.NONFINAL_FIELDS)
-                .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-                .verify();
-    }
+public final class InvalidResourceException extends ProcedureException {
+	private final REAddr expected;
+	private final REAddr actual;
+
+	public InvalidResourceException(REAddr expected, REAddr actual) {
+		super("Expected resource " + expected + " but was " + actual);
+		this.expected = expected;
+		this.actual = actual;
+	}
 }

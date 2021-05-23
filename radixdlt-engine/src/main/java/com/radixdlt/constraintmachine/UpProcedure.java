@@ -25,24 +25,24 @@ import com.radixdlt.utils.Pair;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
-public final class UpProcedure<S extends ReducerState, U extends Particle> {
+public final class UpProcedure<S extends ReducerState, U extends Particle> implements MethodProcedure {
 	private final Class<S> reducerStateClass;
 	private final Class<U> upClass;
 	private final UpReducer<S, U> upReducer;
-	private final OutputAuthorization<U> outputAuthorization;
+	private final UpAuthorization<U> upAuthorization;
 	private final BiFunction<U, ReadableAddrs, PermissionLevel> permissionLevel;
 
 	public UpProcedure(
 		Class<S> reducerStateClass,
 		Class<U> upClass,
 		BiFunction<U, ReadableAddrs, PermissionLevel> permissionLevel,
-		OutputAuthorization<U> outputAuthorization,
+		UpAuthorization<U> upAuthorization,
 		UpReducer<S, U> upReducer
 	) {
 		this.reducerStateClass = reducerStateClass;
 		this.upClass = upClass;
 		this.upReducer = upReducer;
-		this.outputAuthorization = outputAuthorization;
+		this.upAuthorization = upAuthorization;
 		this.permissionLevel = permissionLevel;
 	}
 
@@ -50,15 +50,18 @@ public final class UpProcedure<S extends ReducerState, U extends Particle> {
 		return Pair.of(reducerStateClass, upClass);
 	}
 
-	public PermissionLevel permissionLevel(U upSubstate, ReadableAddrs readableAddrs) {
-		return permissionLevel.apply(upSubstate, readableAddrs);
+	@Override
+	public PermissionLevel permissionLevel(Object o, ReadableAddrs readableAddrs) {
+		return permissionLevel.apply((U) o, readableAddrs);
 	}
 
-	public boolean authorized(U upSubstate, ReadableAddrs readableAddrs, Optional<ECPublicKey> signedBy) {
-		return outputAuthorization.verify(upSubstate, readableAddrs, signedBy);
+	@Override
+	public void verifyAuthorization(Object o, ReadableAddrs readableAddrs, Optional<ECPublicKey> key) throws AuthorizationException {
+		upAuthorization.verify((U) o, readableAddrs, key);
 	}
 
-	public ReducerResult reduce(S reducerState, U upSubstate, ReadableAddrs readableAddrs) {
-		return upReducer.reduce(reducerState, upSubstate, readableAddrs);
+	@Override
+	public ReducerResult call(Object o, ReducerState reducerState, ReadableAddrs readableAddrs) throws ProcedureException {
+		return upReducer.reduce((S) reducerState, (U) o, readableAddrs);
 	}
 }

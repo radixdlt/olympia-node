@@ -145,7 +145,7 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
-	public TxLowLevelBuilder particleGroup() {
+	public TxLowLevelBuilder end() {
 		instruction(REInstruction.REOp.END, new byte[0]);
 		return this;
 	}

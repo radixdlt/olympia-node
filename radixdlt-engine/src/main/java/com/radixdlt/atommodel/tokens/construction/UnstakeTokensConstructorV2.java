@@ -16,19 +16,19 @@
  *
  */
 
-package com.radixdlt.atommodel.validators.construction;
+package com.radixdlt.atommodel.tokens.construction;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.state.SystemParticle;
-import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV2;
+import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.identifiers.REAddr;
 
-public class UnstakeTokensConstructor implements ActionConstructor<UnstakeTokens> {
+public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeTokens> {
 	@Override
 	public void construct(UnstakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
 		var epochUnlocked = txBuilder.find(SystemParticle.class, p -> true)

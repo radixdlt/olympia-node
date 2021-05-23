@@ -28,9 +28,11 @@ import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
+import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
@@ -113,7 +115,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		public Optional<ReducerState> subtract(UInt384 amountAccounted) {
 			var compare = amountAccounted.compareTo(amount);
 			if (compare > 0) {
-				return Optional.of(new TokensConstraintScrypt.RemainderTokens(
+				return Optional.of(new TokensConstraintScryptV1.RemainderTokens(
 					initialParticle, REAddr.ofNativeToken(), amountAccounted.subtract(amount))
 				);
 			} else if (compare < 0) {
@@ -134,7 +136,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		os.createUpProcedure(new UpProcedure<>(
 			VoidReducerState.class, DeprecatedStake.class,
 			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> true,
+			(u, r, k) -> { },
 			(s, u, r) -> {
 				var state = new UnaccountedStake(
 					u,
@@ -146,10 +148,10 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		os.createDownProcedure(new DownProcedure<>(
 			TokensParticle.class, UnaccountedStake.class,
 			(d, r) -> PermissionLevel.USER,
-			(d, r, k) -> d.getSubstate().allowedToWithdraw(k, r),
+			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
 			(d, s, r) -> {
 				if (!d.getSubstate().getResourceAddr().isNativeToken()) {
-					return ReducerResult.error("Not the same address.");
+					throw new ProcedureException("Not the same address.");
 				}
 				var amt = UInt384.from(d.getSubstate().getAmount());
 				var nextRemainder = s.subtract(amt);
@@ -166,26 +168,32 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 
 		// Unstake
 		os.createDownProcedure(new DownProcedure<>(
-			DeprecatedStake.class, TokensConstraintScrypt.UnaccountedTokens.class,
+			DeprecatedStake.class, TokensConstraintScryptV1.UnaccountedTokens.class,
 			(d, r) -> PermissionLevel.USER,
-			(d, r, k) -> k.map(d.getSubstate().getOwner()::allowToWithdrawFrom).orElse(false),
+			(d, r, k) -> {
+				try {
+					d.getSubstate().getOwner().verifyWithdrawAuthorization(k);
+				} catch (REAddr.BucketWithdrawAuthorizationException e) {
+					throw new AuthorizationException(e.getMessage());
+				}
+			},
 			(d, s, r) -> {
 				if (!s.resourceInBucket().isNativeToken()) {
-					return ReducerResult.error("Can only destake to the native token.");
+					throw new ProcedureException("Can only destake to the native token.");
 				}
 
 				if (!Objects.equals(d.getSubstate().getOwner(), s.resourceInBucket().holdingAddress())) {
-					return ReducerResult.error("Must unstake to self");
+					throw new ProcedureException("Must unstake to self");
 				}
 
 				var epochUnlocked = s.resourceInBucket().epochUnlocked();
 				if (epochUnlocked.isEmpty()) {
-					return ReducerResult.error("Exiting from stake must be locked.");
+					throw new ProcedureException("Exiting from stake must be locked.");
 				}
 
 				var system = (SystemParticle) r.loadAddr(null, REAddr.ofSystem()).orElseThrow();
 				if (system.getEpoch() + EPOCHS_LOCKED != epochUnlocked.get()) {
-					return ReducerResult.error("Incorrect epoch unlock: " + epochUnlocked.get()
+					throw new ProcedureException("Incorrect epoch unlock: " + epochUnlocked.get()
 						+ " should be: " + (system.getEpoch() + EPOCHS_LOCKED));
 				}
 
@@ -197,8 +205,8 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 					return ReducerResult.complete(action);
 				}
 
-				if (nextRemainder.get() instanceof TokensConstraintScrypt.RemainderTokens) {
-					TokensConstraintScrypt.RemainderTokens remainderTokens = (TokensConstraintScrypt.RemainderTokens) nextRemainder.get();
+				if (nextRemainder.get() instanceof TokensConstraintScryptV1.RemainderTokens) {
+					TokensConstraintScryptV1.RemainderTokens remainderTokens = (TokensConstraintScryptV1.RemainderTokens) nextRemainder.get();
 					var stakeRemainder = new RemainderStake(
 						remainderTokens.initialParticle(),
 						remainderTokens.amount().getLow(),
@@ -216,18 +224,18 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		os.createUpProcedure(new UpProcedure<>(
 			RemainderStake.class, DeprecatedStake.class,
 			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> true,
+			(u, r, k) -> { },
 			(s, u, r) -> {
 				if (!u.getAmount().equals(s.amount)) {
-					return ReducerResult.error("Remainder must be filled exactly.");
+					throw new ProcedureException("Remainder must be filled exactly.");
 				}
 
 				if (!u.getDelegateKey().equals(s.delegate)) {
-					return ReducerResult.error("Delegate key does not match.");
+					throw new ProcedureException("Delegate key does not match.");
 				}
 
 				if (!u.getOwner().equals(s.owner)) {
-					return ReducerResult.error("Owners don't match.");
+					throw new ProcedureException("Owners don't match.");
 				}
 
 				// FIXME: This isn't 100% correct

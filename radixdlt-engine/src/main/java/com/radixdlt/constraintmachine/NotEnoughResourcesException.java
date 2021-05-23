@@ -18,11 +18,10 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.store.ReadableAddrs;
+import com.radixdlt.utils.UInt256;
 
-import java.util.Optional;
-
-public interface OutputAuthorization<O extends Particle> {
-	boolean verify(O output, ReadableAddrs readableAddrs, Optional<ECPublicKey> signedBy);
+public class NotEnoughResourcesException extends ProcedureException {
+	public NotEnoughResourcesException(UInt256 request, UInt256 actual) {
+		super("WithdrawAmt: " + request + " ActualAmt: " + actual);
+	}
 }

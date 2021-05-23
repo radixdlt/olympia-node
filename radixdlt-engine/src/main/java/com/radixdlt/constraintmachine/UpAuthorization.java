@@ -18,11 +18,11 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atom.TxAction;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.store.ReadableAddrs;
 
 import java.util.Optional;
 
-public interface EndReducer<S extends ReducerState> {
-	Optional<TxAction> reduce(S reducerState, ReadableAddrs readableAddrs) throws ProcedureException;
+public interface UpAuthorization<O extends Particle> {
+	void verify(O output, ReadableAddrs readableAddrs, Optional<ECPublicKey> signedBy) throws AuthorizationException;
 }

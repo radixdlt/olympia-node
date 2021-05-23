@@ -278,7 +278,7 @@ public class RadixEngineStateComputerTest {
 		var illegalTxn = TxLowLevelBuilder.newBuilder()
 			.down(SubstateId.ofSubstate(txn.getId(), 1))
 			.up(new SystemParticle(1, 3, 0))
-			.particleGroup()
+			.end()
 			.build();
 		var v = UnverifiedVertex.create(
 			mock(QuorumCertificate.class),
@@ -297,7 +297,7 @@ public class RadixEngineStateComputerTest {
 			new Condition<>(
 				e -> {
 					RadixEngineException ex = (RadixEngineException) e;
-					return ex.getCmError().getErrorCode().equals(CMErrorCode.INVALID_EXECUTION_PERMISSION);
+					return ex.getCmError().getErrorCode().equals(CMErrorCode.PERMISSION_LEVEL_ERROR);
 				},
 				"Is invalid_execution_permission error"
 			)

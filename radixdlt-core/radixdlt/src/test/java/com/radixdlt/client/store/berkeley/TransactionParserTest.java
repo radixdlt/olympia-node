@@ -28,9 +28,9 @@ import com.radixdlt.atommodel.tokens.construction.BurnTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
-import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructor;
-import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructor;
-import com.radixdlt.atommodel.validators.construction.UnstakeTokensConstructor;
+import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV1;
+import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV1;
+import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV1;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV1;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV2;
 import org.junit.Assert;
@@ -41,7 +41,7 @@ import com.radixdlt.client.api.ActionType;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScrypt;
+import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.client.api.ActionEntry;
@@ -87,7 +87,7 @@ public class TransactionParserTest {
 		final var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new SystemConstraintScryptV1());
 		cmAtomOS.load(new ValidatorConstraintScrypt());
-		cmAtomOS.load(new TokensConstraintScrypt());
+		cmAtomOS.load(new TokensConstraintScryptV1());
 		cmAtomOS.load(new StakingConstraintScryptV2());
 
 		final var cm = new ConstraintMachine.Builder()
@@ -100,10 +100,10 @@ public class TransactionParserTest {
 			.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 			.put(RegisterValidator.class, new RegisterValidatorConstructor())
 			.put(MintToken.class, new MintTokenConstructor())
-			.put(TransferToken.class, new TransferTokensConstructor())
+			.put(TransferToken.class, new TransferTokensConstructorV1())
 			.put(BurnToken.class, new BurnTokenConstructor())
-			.put(StakeTokens.class, new StakeTokensConstructor())
-			.put(UnstakeTokens.class, new UnstakeTokensConstructor())
+			.put(StakeTokens.class, new StakeTokensConstructorV1())
+			.put(UnstakeTokens.class, new UnstakeTokensConstructorV1())
 			.build();
 
 		engine = new RadixEngine<>(actionConstructors, cm, store);

@@ -34,10 +34,12 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
+import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
@@ -50,7 +52,7 @@ import java.util.Optional;
 /**
  * Scrypt which defines how tokens are managed.
  */
-public class TokensConstraintScrypt implements ConstraintScrypt {
+public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 	@Override
 	public void main(SysCalls os) {
 		registerParticles(os);
@@ -92,10 +94,10 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.createUpProcedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, TokenDefinitionParticle.class,
 			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> true,
+			(u, r, k) -> { },
 			(s, u, r) -> {
 				if (!u.getAddr().equals(s.getAddr())) {
-					return ReducerResult.error("Addresses don't match");
+					throw new ProcedureException("Addresses don't match");
 				}
 
 				if (u.isMutable()) {
@@ -116,14 +118,14 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.createUpProcedure(new UpProcedure<>(
 			NeedFixedTokenSupply.class, TokensParticle.class,
 			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> true,
+			(u, r, k) -> { },
 			(s, u, r) -> {
 				if (!u.getResourceAddr().equals(s.tokenDefinitionParticle.getAddr())) {
-					return ReducerResult.error("Addresses don't match.");
+					throw new ProcedureException("Addresses don't match.");
 				}
 
 				if (!u.getAmount().equals(s.tokenDefinitionParticle.getSupply().orElseThrow())) {
-					return ReducerResult.error("Initial supply doesn't match.");
+					throw new ProcedureException("Initial supply doesn't match.");
 				}
 
 				var action = new CreateFixedToken(
@@ -225,30 +227,31 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			UnaccountedTokens.class,
 			(s, r) -> s.resourceInBucket.resourceAddr().isNativeToken() ? PermissionLevel.SYSTEM : PermissionLevel.USER,
 			(s, r, k) -> {
-				var tokenDef = (TokenDefinitionParticle) r.loadAddr(null, s.resourceInBucket.resourceAddr()).orElseThrow();
-				return k.flatMap(p -> tokenDef.getMinter().map(p::equals)).orElse(false);
+				var tokenDef = (TokenDefinitionParticle) r.loadAddr(null, s.resourceInBucket.resourceAddr())
+					.orElseThrow(() -> new AuthorizationException("Invalid token address: " + s.resourceInBucket.resourceAddr()));
+
+				tokenDef.verifyMintAuthorization(k);
 			},
 			(s, r) -> {
 				if (s.resourceInBucket.epochUnlocked().isPresent()) {
-					return ReducerResult.error("Cannot mint locked tokens.");
+					throw new ProcedureException("Cannot mint locked tokens.");
 				}
 
 				var p = r.loadAddr(null, s.resourceInBucket.resourceAddr());
 				if (p.isEmpty()) {
-					return ReducerResult.error("Token does not exist.");
+					throw new ProcedureException("Token does not exist.");
 				}
 				var particle = p.get();
 				if (!(particle instanceof TokenDefinitionParticle)) {
-					return ReducerResult.error("Rri is not a token");
+					throw new ProcedureException("Rri is not a token");
 				}
 				var tokenDef = (TokenDefinitionParticle) particle;
 				if (!tokenDef.isMutable()) {
-					return ReducerResult.error("Can only mint mutable tokens.");
+					throw new ProcedureException("Can only mint mutable tokens.");
 				}
 
 				var t = (TokensParticle) s.initialParticle;
-				var action = new MintToken(s.resourceInBucket.resourceAddr(), t.getHoldingAddr(), s.amount.getLow());
-				return ReducerResult.complete(action);
+				return Optional.of(new MintToken(s.resourceInBucket.resourceAddr(), t.getHoldingAddr(), s.amount.getLow()));
 			}
 		));
 
@@ -256,32 +259,31 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.createEndProcedure(new EndProcedure<>(
 			RemainderTokens.class,
 			(s, r) -> PermissionLevel.USER,
-			(s, r, k) -> true,
+			(s, r, k) -> { },
 			(s, r) -> {
 				var p = r.loadAddr(null, s.tokenAddr);
 				if (p.isEmpty()) {
-					return ReducerResult.error("Token does not exist.");
+					throw new ProcedureException("Token does not exist.");
 				}
 				var particle = p.get();
 				if (!(particle instanceof TokenDefinitionParticle)) {
-					return ReducerResult.error("Rri is not a token");
+					throw new ProcedureException("Rri is not a token");
 				}
 				var tokenDef = (TokenDefinitionParticle) particle;
 				if (!tokenDef.isMutable()) {
-					return ReducerResult.error("Can only burn mutable tokens.");
+					throw new ProcedureException("Can only burn mutable tokens.");
 				}
 
 				// FIXME: These aren't 100% correct
 				var t = (TokensParticle) s.initialParticle;
-				var action = new BurnToken(s.tokenAddr, t.getHoldingAddr(), s.amount.getLow());
-				return ReducerResult.complete(action);
+				return Optional.of(new BurnToken(s.tokenAddr, t.getHoldingAddr(), s.amount.getLow()));
 			}
 		));
 
 		os.createUpProcedure(new UpProcedure<>(
 			VoidReducerState.class, TokensParticle.class,
 			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> true,
+			(u, r, k) -> { },
 			(s, u, r) -> {
 				var state = new UnaccountedTokens(
 					u,
@@ -295,7 +297,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.createDownProcedure(new DownProcedure<>(
 			TokensParticle.class, VoidReducerState.class,
 			(d, r) -> PermissionLevel.USER,
-			(d, r, k) -> d.getSubstate().allowedToWithdraw(k, r),
+			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
 			(d, s, r) -> {
 				var state = new RemainderTokens(
 					d.getSubstate(),
@@ -309,10 +311,10 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.createUpProcedure(new UpProcedure<>(
 			RemainderTokens.class, TokensParticle.class,
 			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> true,
+			(u, r, k) -> { },
 			(s, u, r) -> {
 				if (!s.tokenAddr.equals(u.getResourceAddr())) {
-					return ReducerResult.error("Not the same address.");
+					throw new ProcedureException("Not the same address.");
 				}
 				var amt = UInt384.from(u.getAmount());
 				var nextRemainder = s.subtract(u.resourceInBucket(), amt);
@@ -338,10 +340,10 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.createDownProcedure(new DownProcedure<>(
 			TokensParticle.class, UnaccountedTokens.class,
 			(d, r) -> PermissionLevel.USER,
-			(d, r, k) -> d.getSubstate().allowedToWithdraw(k, r),
+			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
 			(d, s, r) -> {
 				if (!s.resourceInBucket.resourceAddr().equals(d.getSubstate().getResourceAddr())) {
-					return ReducerResult.error("Not the same address.");
+					throw new ProcedureException("Not the same address.");
 				}
 				var amt = UInt384.from(d.getSubstate().getAmount());
 				var nextRemainder = s.subtract(amt);

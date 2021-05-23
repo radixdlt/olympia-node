@@ -78,8 +78,8 @@ public final class TxBuilder {
 		return lowLevelBuilder;
 	}
 
-	public void particleGroup() {
-		lowLevelBuilder.particleGroup();
+	public void end() {
+		lowLevelBuilder.end();
 	}
 
 	public void up(Particle particle) {
@@ -297,7 +297,7 @@ public final class TxBuilder {
 			// FIXME: This is a hack due to the constraint machine not being able to
 			// FIXME: handle spins of the same type one after the other yet.
 			if (!spent.isZero()) {
-				particleGroup();
+				end();
 			}
 
 			var substateDown = down(
@@ -315,7 +315,7 @@ public final class TxBuilder {
 		}
 	}
 
-	public <T extends Fungible, U extends Fungible> FungibleReplacer<U> swapFungible(
+	public <T extends Fungible, U extends Fungible> FungibleReplacer<U> deprecatedSwapFungible(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		FungibleMapper<T> remainderMapper,
@@ -337,6 +337,30 @@ public final class TxBuilder {
 		};
 	}
 
+	public <T extends Fungible, U extends Fungible> FungibleReplacer<U> swapFungible(
+		Class<T> particleClass,
+		Predicate<T> particlePredicate,
+		FungibleMapper<T> remainderMapper,
+		UInt256 amount,
+		String errorMessage
+	) {
+		return mapper -> {
+			// Take
+			var remainder = downFungible(
+				particleClass,
+				particlePredicate,
+				amount,
+				errorMessage
+			);
+			if (!remainder.isZero()) {
+				up(remainderMapper.map(remainder));
+			}
+
+			// Put
+			var substateUp = mapper.map(amount);
+			up(substateUp);
+		};
+	}
 
 	public Optional<ECPublicKey> getUser() {
 		return Optional.ofNullable(user);
@@ -373,7 +397,7 @@ public final class TxBuilder {
 			"RRI not available"
 		).with(r -> new UniqueParticle(addr));
 
-		particleGroup();
+		end();
 
 		return this;
 	}

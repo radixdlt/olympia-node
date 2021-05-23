@@ -42,12 +42,17 @@ import com.radixdlt.atommodel.tokens.construction.DeprecatedUnstakeTokensConstru
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.system.construction.NextEpochConstructor;
 import com.radixdlt.atommodel.system.construction.NextViewConstructorV1;
+import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV2;
+import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV2;
+import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV1;
+import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV2;
+import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
+import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
 import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
 import com.radixdlt.atommodel.tokens.construction.SplitTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructor;
-import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructor;
+import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV1;
+import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV1;
 import com.radixdlt.atommodel.validators.construction.UnregisterValidatorConstructor;
-import com.radixdlt.atommodel.validators.construction.UnstakeTokensConstructor;
 import com.radixdlt.atommodel.validators.construction.UpdateValidatorConstructor;
 import com.radixdlt.atommodel.system.construction.NextViewConstructorV2;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV1;
@@ -55,7 +60,7 @@ import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV1;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV2;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScrypt;
+import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
 import com.radixdlt.atommodel.unique.scrypt.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
@@ -74,7 +79,7 @@ public final class BetanetForksModule extends AbstractModule {
 		// V1 Betanet ConstraintMachine
 		final CMAtomOS v1 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
 		v1.load(new ValidatorConstraintScrypt()); // load before TokensConstraintScrypt due to dependency
-		v1.load(new TokensConstraintScrypt());
+		v1.load(new TokensConstraintScryptV1());
 		v1.load(new StakingConstraintScryptV1());
 		v1.load(new UniqueParticleConstraintScrypt());
 		v1.load(new SystemConstraintScryptV1());
@@ -94,10 +99,10 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(SystemNextView.class, new NextViewConstructorV1())
 			.put(RegisterValidator.class, new RegisterValidatorConstructor())
 			.put(SplitToken.class, new SplitTokenConstructor())
-			.put(StakeTokens.class, new StakeTokensConstructor())
-			.put(TransferToken.class, new TransferTokensConstructor())
+			.put(StakeTokens.class, new StakeTokensConstructorV1())
+			.put(TransferToken.class, new TransferTokensConstructorV1())
 			.put(UnregisterValidator.class, new UnregisterValidatorConstructor())
-			.put(UnstakeTokens.class, new UnstakeTokensConstructor())
+			.put(UnstakeTokens.class, new UnstakeTokensConstructorV1())
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
 			.build();
 
@@ -110,7 +115,7 @@ public final class BetanetForksModule extends AbstractModule {
 		// V2 Betanet ConstraintMachine
 		final CMAtomOS v2 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
 		v2.load(new ValidatorConstraintScrypt()); // load before TokensConstraintScrypt due to dependency
-		v2.load(new TokensConstraintScrypt());
+		v2.load(new TokensConstraintScryptV1());
 		v2.load(new StakingConstraintScryptV2());
 		v2.load(new UniqueParticleConstraintScrypt());
 		v2.load(new SystemConstraintScryptV1());
@@ -130,10 +135,10 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(SystemNextView.class, new NextViewConstructorV1())
 			.put(RegisterValidator.class, new RegisterValidatorConstructor())
 			.put(SplitToken.class, new SplitTokenConstructor())
-			.put(StakeTokens.class, new StakeTokensConstructor())
-			.put(TransferToken.class, new TransferTokensConstructor())
+			.put(StakeTokens.class, new StakeTokensConstructorV1())
+			.put(TransferToken.class, new TransferTokensConstructorV1())
 			.put(UnregisterValidator.class, new UnregisterValidatorConstructor())
-			.put(UnstakeTokens.class, new UnstakeTokensConstructor())
+			.put(UnstakeTokens.class, new UnstakeTokensConstructorV1())
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
 			.build();
 
@@ -145,8 +150,8 @@ public final class BetanetForksModule extends AbstractModule {
 	ForkConfig betanetV3() {
 		final CMAtomOS v3 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
 		v3.load(new ValidatorConstraintScrypt()); // load before TokensConstraintScrypt due to dependency
-		v3.load(new TokensConstraintScrypt());
-		v3.load(new StakingConstraintScryptV2());
+		v3.load(new TokensConstraintScryptV2());
+		v3.load(new StakingConstraintScryptV3());
 		v3.load(new UniqueParticleConstraintScrypt());
 		v3.load(new SystemConstraintScryptV2());
 		var betanet3 = new ConstraintMachine.Builder()
@@ -165,10 +170,10 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(SystemNextView.class, new NextViewConstructorV2())
 			.put(RegisterValidator.class, new RegisterValidatorConstructor())
 			.put(SplitToken.class, new SplitTokenConstructor())
-			.put(StakeTokens.class, new StakeTokensConstructor())
-			.put(TransferToken.class, new TransferTokensConstructor())
+			.put(StakeTokens.class, new StakeTokensConstructorV2())
+			.put(TransferToken.class, new TransferTokensConstructorV2())
 			.put(UnregisterValidator.class, new UnregisterValidatorConstructor())
-			.put(UnstakeTokens.class, new UnstakeTokensConstructor())
+			.put(UnstakeTokens.class, new UnstakeTokensConstructorV2())
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
 			.build();
 

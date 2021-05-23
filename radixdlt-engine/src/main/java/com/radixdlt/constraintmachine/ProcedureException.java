@@ -18,11 +18,8 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.store.ReadableAddrs;
-
-import java.util.Optional;
-
-public interface EndReducer<S extends ReducerState> {
-	Optional<TxAction> reduce(S reducerState, ReadableAddrs readableAddrs) throws ProcedureException;
+public class ProcedureException extends Exception {
+	public ProcedureException(String msg) {
+		super(msg);
+	}
 }

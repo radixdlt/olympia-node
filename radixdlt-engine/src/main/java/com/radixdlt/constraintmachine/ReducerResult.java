@@ -20,49 +20,43 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atom.TxAction;
 
+import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class ReducerResult {
 	private final ReducerState reducerState;
 	private final TxAction txAction;
-	private final String error;
 
-	private ReducerResult(ReducerState reducerState, TxAction txAction, String error) {
+	private ReducerResult(ReducerState reducerState, TxAction txAction) {
 		this.reducerState = reducerState;
 		this.txAction = txAction;
-		this.error = error;
-	}
-
-	public static ReducerResult error(String error) {
-		return new ReducerResult(null, null, error);
 	}
 
 	public static ReducerResult incomplete(ReducerState reducerState) {
-		return new ReducerResult(reducerState, null, null);
+		return new ReducerResult(reducerState, null);
+	}
+
+	public static ReducerResult incomplete(ReducerState reducerState, TxAction txAction) {
+		return new ReducerResult(reducerState, txAction);
+	}
+
+	public static ReducerResult complete() {
+		return new ReducerResult(null, null);
 	}
 
 	public static ReducerResult complete(TxAction txAction) {
-		return new ReducerResult(null, txAction, null);
+		return new ReducerResult(null, txAction);
 	}
 
-	public void ifCompleteElse(Consumer<TxAction> completeConsumer, Consumer<ReducerState> incompleteConsumer) {
-		if (txAction != null) {
-			completeConsumer.accept(txAction);
-		} else if (reducerState != null) {
-			incompleteConsumer.accept(reducerState);
+	public void ifCompleteElse(
+		Consumer<Optional<TxAction>> completeConsumer,
+		BiConsumer<ReducerState, Optional<TxAction>> incompleteConsumer
+	) {
+		if (reducerState == null) {
+			completeConsumer.accept(Optional.ofNullable(txAction));
 		} else {
-			throw new IllegalStateException();
+			incompleteConsumer.accept(reducerState, Optional.ofNullable(txAction));
 		}
-	}
-
-	public boolean isError() {
-		return error != null;
-	}
-
-	public String getError() {
-		if (error == null) {
-			throw new IllegalStateException();
-		}
-		return error;
 	}
 }

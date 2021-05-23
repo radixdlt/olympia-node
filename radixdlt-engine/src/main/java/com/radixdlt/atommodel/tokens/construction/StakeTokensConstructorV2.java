@@ -18,27 +18,27 @@
 
 package com.radixdlt.atommodel.tokens.construction;
 
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atommodel.system.state.SystemParticle;
+import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.identifiers.REAddr;
 
-public class TransferTokensConstructor implements ActionConstructor<TransferToken> {
+public class StakeTokensConstructorV2 implements ActionConstructor<StakeTokens> {
 	@Override
-	public void construct(TransferToken action, TxBuilder txBuilder) throws TxBuilderException {
-		var epoch = txBuilder.find(SystemParticle.class, p -> true)
-			.map(SystemParticle::getEpoch).orElse(0L);
-
-		txBuilder.swapFungible(
+	public void construct(StakeTokens action, TxBuilder builder) throws TxBuilderException {
+		builder.swapFungible(
 			TokensParticle.class,
-			p -> p.getResourceAddr().equals(action.resourceAddr())
+			p -> p.getResourceAddr().isNativeToken()
 				&& p.getHoldingAddr().equals(action.from())
-				&& p.getEpochUnlocked().map(e -> e <= epoch).orElse(true),
-			amt -> new TokensParticle(action.from(), amt, action.resourceAddr()),
+				&& (action.amount().compareTo(TokenUnitConversions.SUB_UNITS) < 0
+				|| p.getAmount().compareTo(TokenUnitConversions.unitsToSubunits(1)) >= 0),
+			amt -> new TokensParticle(action.from(), amt, REAddr.ofNativeToken()),
 			action.amount(),
-			"Not enough balance for transfer."
-		).with(amt -> new TokensParticle(action.to(), action.amount(), action.resourceAddr()));
+			"Not enough balance for staking."
+		).with(amt -> new DeprecatedStake(amt, action.from(), action.to()));
 	}
 }

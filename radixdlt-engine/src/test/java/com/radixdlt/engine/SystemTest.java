@@ -66,7 +66,7 @@ public class SystemTest {
 		var atom = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
-			.particleGroup()
+			.end()
 			.build();
 
 		// Act
@@ -74,7 +74,7 @@ public class SystemTest {
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom)))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
-			.isEqualTo(CMErrorCode.INVALID_EXECUTION_PERMISSION);
+			.isEqualTo(CMErrorCode.PERMISSION_LEVEL_ERROR);
 	}
 
 	@Test
@@ -85,7 +85,7 @@ public class SystemTest {
 		var atom = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
-			.particleGroup()
+			.end()
 			.build();
 
 		// Act
@@ -100,7 +100,7 @@ public class SystemTest {
 		var atom = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
-			.particleGroup()
+			.end()
 			.build();
 
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
@@ -114,7 +114,7 @@ public class SystemTest {
 		var atom = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
-			.particleGroup()
+			.end()
 			.build();
 
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
@@ -128,7 +128,7 @@ public class SystemTest {
 		var txn = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
-			.particleGroup()
+			.end()
 			.build();
 
 		assertThatThrownBy(() -> this.engine.execute(List.of(txn), null, PermissionLevel.SUPER_USER))
@@ -159,7 +159,7 @@ public class SystemTest {
 		var txn = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
-			.particleGroup()
+			.end()
 			.build();
 
 		// Act
@@ -176,12 +176,12 @@ public class SystemTest {
 		var txn = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
-			.particleGroup()
+			.end()
 			.build();
 
 		assertThatThrownBy(() -> this.engine.execute(List.of(txn), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
-			.isEqualTo(CMErrorCode.TRANSITION_PRECONDITION_FAILURE);
+			.isEqualTo(CMErrorCode.PROCEDURE_ERROR);
 	}
 }
