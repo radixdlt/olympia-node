@@ -24,7 +24,7 @@ import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
+import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
@@ -54,8 +54,8 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 	@Override
 	public void main(SysCalls os) {
 		os.registerParticle(
-			DeprecatedStake.class,
-			ParticleDefinition.<DeprecatedStake>builder()
+			PreparedStake.class,
+			ParticleDefinition.<PreparedStake>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.build()
 		);
@@ -108,7 +108,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 	private void defineStaking(SysCalls os) {
 		// Stake
 		os.createUpProcedure(new UpProcedure<>(
-			TokensConstraintScryptV2.TokenHoldingBucket.class, DeprecatedStake.class,
+			TokensConstraintScryptV2.TokenHoldingBucket.class, PreparedStake.class,
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
@@ -125,7 +125,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 
 		// Unstake
 		os.createDownProcedure(new DownProcedure<>(
-			DeprecatedStake.class, VoidReducerState.class,
+			PreparedStake.class, VoidReducerState.class,
 			(d, r) -> PermissionLevel.USER,
 			(d, r, k) -> {
 				try {
@@ -142,7 +142,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		));
 		// Additional Unstake
 		os.createDownProcedure(new DownProcedure<>(
-			DeprecatedStake.class, StakeHoldingBucket.class,
+			PreparedStake.class, StakeHoldingBucket.class,
 			(d, r) -> PermissionLevel.USER,
 			(d, r, k) -> {
 				try {
@@ -164,7 +164,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		));
 		// Change
 		os.createUpProcedure(new UpProcedure<>(
-			StakeHoldingBucket.class, DeprecatedStake.class,
+			StakeHoldingBucket.class, PreparedStake.class,
 			(d, r) -> PermissionLevel.USER,
 			(d, r, k) -> { },
 			(s, u, r) -> {

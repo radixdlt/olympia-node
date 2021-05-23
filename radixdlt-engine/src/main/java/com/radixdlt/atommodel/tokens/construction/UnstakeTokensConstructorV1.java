@@ -23,7 +23,7 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.state.SystemParticle;
-import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
+import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV2;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.identifiers.REAddr;
@@ -34,9 +34,9 @@ public class UnstakeTokensConstructorV1 implements ActionConstructor<UnstakeToke
 		var epochUnlocked = txBuilder.find(SystemParticle.class, p -> true)
 			.map(SystemParticle::getEpoch).orElse(0L) + StakingConstraintScryptV2.EPOCHS_LOCKED;
 		txBuilder.deprecatedSwapFungible(
-			DeprecatedStake.class,
+			PreparedStake.class,
 			p -> p.getOwner().equals(action.accountAddr()) && p.getDelegateKey().equals(action.from()),
-			amt -> new DeprecatedStake(amt, action.accountAddr(), action.from()),
+			amt -> new PreparedStake(amt, action.accountAddr(), action.from()),
 			action.amount(),
 			"Not enough staked."
 		).with(amt -> new TokensParticle(action.accountAddr(), amt, REAddr.ofNativeToken(), epochUnlocked));

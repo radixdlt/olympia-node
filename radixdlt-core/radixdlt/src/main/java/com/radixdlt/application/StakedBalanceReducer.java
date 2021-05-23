@@ -19,7 +19,7 @@
 package com.radixdlt.application;
 
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
+import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
@@ -45,7 +45,7 @@ public final class StakedBalanceReducer implements StateReducer<StakedBalance> {
 
 	@Override
 	public Set<Class<? extends Particle>> particleClasses() {
-		return Set.of(DeprecatedStake.class);
+		return Set.of(PreparedStake.class);
 	}
 
 	@Override
@@ -56,7 +56,7 @@ public final class StakedBalanceReducer implements StateReducer<StakedBalance> {
 	@Override
 	public BiFunction<StakedBalance, Particle, StakedBalance> outputReducer() {
 		return (stakes, p) -> {
-			var d = (DeprecatedStake) p;
+			var d = (PreparedStake) p;
 			if (d.getOwner().equals(accountAddr)) {
 				stakes.addStake(d.getDelegateKey(), d.getAmount());
 			}
@@ -67,7 +67,7 @@ public final class StakedBalanceReducer implements StateReducer<StakedBalance> {
 	@Override
 	public BiFunction<StakedBalance, Particle, StakedBalance> inputReducer() {
 		return (balance, p) -> {
-			var d = (DeprecatedStake) p;
+			var d = (PreparedStake) p;
 			if (d.getOwner().equals(accountAddr)) {
 				balance.removeStake(d.getDelegateKey(), d.getAmount());
 			}

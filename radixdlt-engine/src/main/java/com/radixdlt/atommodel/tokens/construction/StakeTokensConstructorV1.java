@@ -23,7 +23,7 @@ import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
+import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.identifiers.REAddr;
 
@@ -39,6 +39,6 @@ public final class StakeTokensConstructorV1 implements ActionConstructor<StakeTo
 			amt -> new TokensParticle(action.from(), amt, REAddr.ofNativeToken()),
 			action.amount(),
 			"Not enough balance for staking."
-		).with(amt -> new DeprecatedStake(amt, action.from(), action.to()));
+		).with(amt -> new PreparedStake(amt, action.from(), action.to()));
 	}
 }
