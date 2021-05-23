@@ -101,14 +101,14 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 
 		@Override
 		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(TokensConstraintScryptV2.TemporaryBucket.class);
+			return TypeToken.of(TokensConstraintScryptV2.TokenHoldingBucket.class);
 		}
 	}
 
 	private void defineStaking(SysCalls os) {
 		// Stake
 		os.createUpProcedure(new UpProcedure<>(
-			TokensConstraintScryptV2.TemporaryBucket.class, DeprecatedStake.class,
+			TokensConstraintScryptV2.TokenHoldingBucket.class, DeprecatedStake.class,
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {

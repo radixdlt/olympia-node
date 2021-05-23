@@ -141,7 +141,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		));
 	}
 
-	public static class TemporaryBucket implements ReducerState {
+	public static class TokenHoldingBucket implements ReducerState {
 		private final REAddr tokenAddr;
 		private final UInt384 amount;
 
@@ -150,7 +150,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		// FIXME: This is a little bit of a hack
 		private final REAddr from;
 
-		private TemporaryBucket(
+		private TokenHoldingBucket(
 			REAddr tokenAddr,
 			UInt384 amount,
 			REAddr from
@@ -164,16 +164,16 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 			return from;
 		}
 
-		private TemporaryBucket deposit(REAddr resourceAddr, UInt256 amountToAdd, REAddr from) throws ProcedureException {
+		private TokenHoldingBucket deposit(REAddr resourceAddr, UInt256 amountToAdd, REAddr from) throws ProcedureException {
 			if (!this.tokenAddr.equals(resourceAddr)) {
 				throw new InvalidResourceException(resourceAddr, tokenAddr);
 			}
 
 			var nextFrom = this.from.equals(from) ? from : null;
-			return new TemporaryBucket(tokenAddr, UInt384.from(amountToAdd).add(amount), nextFrom);
+			return new TokenHoldingBucket(tokenAddr, UInt384.from(amountToAdd).add(amount), nextFrom);
 		}
 
-		public TemporaryBucket withdraw(REAddr resourceAddr, UInt256 amountToWithdraw) throws ProcedureException {
+		public TokenHoldingBucket withdraw(REAddr resourceAddr, UInt256 amountToWithdraw) throws ProcedureException {
 			if (!tokenAddr.equals(resourceAddr)) {
 				throw new InvalidResourceException(resourceAddr, tokenAddr);
 			}
@@ -183,12 +183,12 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 				throw new NotEnoughResourcesException(amountToWithdraw, amount.getLow());
 			}
 
-			return new TemporaryBucket(tokenAddr, amount.subtract(withdraw384), from);
+			return new TokenHoldingBucket(tokenAddr, amount.subtract(withdraw384), from);
 		}
 
 		@Override
 		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(TemporaryBucket.class);
+			return TypeToken.of(TokenHoldingBucket.class);
 		}
 	}
 
@@ -207,7 +207,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 
 		// Burn
 		os.createEndProcedure(new EndProcedure<>(
-			TemporaryBucket.class,
+			TokenHoldingBucket.class,
 			(s, r) -> PermissionLevel.USER,
 			(s, r, k) -> { },
 			(s, r) -> {
@@ -238,7 +238,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
 			(d, s, r) -> {
 				var tokens = d.getSubstate();
-				var state = new TemporaryBucket(
+				var state = new TokenHoldingBucket(
 					tokens.getResourceAddr(),
 					UInt384.from(tokens.getAmount()),
 					tokens.getHoldingAddr()
@@ -249,7 +249,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 
 		// More Withdraws
 		os.createDownProcedure(new DownProcedure<>(
-			TokensParticle.class, TemporaryBucket.class,
+			TokensParticle.class, TokenHoldingBucket.class,
 			(d, r) -> PermissionLevel.USER,
 			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
 			(d, s, r) -> {
@@ -265,7 +265,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 
 		// Deposit
 		os.createUpProcedure(new UpProcedure<>(
-			TemporaryBucket.class, TokensParticle.class,
+			TokenHoldingBucket.class, TokensParticle.class,
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
