@@ -33,6 +33,7 @@ import com.radixdlt.api.service.ScheduledCacheCleanup;
 import com.radixdlt.api.service.ScheduledStatsCollecting;
 import com.radixdlt.api.service.TransactionStatusService;
 import com.radixdlt.api.store.ClientApiStore;
+import com.radixdlt.api.store.berkeley.BerkeleyClientApiStore;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.mempool.MempoolAddFailure;

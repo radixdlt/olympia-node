@@ -61,7 +61,8 @@ public class TransactionStatusService {
 	@Inject
 	public TransactionStatusService(
 		BerkeleyLedgerEntryStore store,
-		ScheduledEventDispatcher<ScheduledCacheCleanup> scheduledCacheCleanup
+		ScheduledEventDispatcher<ScheduledCacheCleanup> scheduledCacheCleanup,
+		ClientApiStore clientApiStore
 	) {
 		this.store = store;
 		this.scheduledCacheCleanup = scheduledCacheCleanup;

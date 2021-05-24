@@ -22,8 +22,6 @@ import org.junit.Test;
 import com.radixdlt.api.data.ActionEntry;
 import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.store.ClientApiStore;
-import com.radixdlt.api.service.ScheduledCacheCleanup;
-import com.radixdlt.api.service.TransactionStatusService;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.HashUtils;
@@ -44,7 +42,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.radixdlt.client.api.TransactionStatus.*;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
@@ -63,7 +60,7 @@ public class TransactionStatusServiceTest {
 		var scheduledCacheCleanup = mockEventDispatcher();
 
 		var transactionStatusService = new TransactionStatusService(
-			store, scheduledCacheCleanup
+			store, scheduledCacheCleanup, clientApiStore
 		);
 
 		var txn = randomTxn();
@@ -82,7 +79,7 @@ public class TransactionStatusServiceTest {
 		var scheduledCacheCleanup = mockEventDispatcher();
 
 		var transactionStatusService = new TransactionStatusService(
-			store, scheduledCacheCleanup);
+			store, scheduledCacheCleanup, clientApiStore);
 
 		var txn = randomTxn();
 		var one = MempoolAddFailure.create(txn, null, null);
@@ -101,7 +98,7 @@ public class TransactionStatusServiceTest {
 		var one = MempoolAddSuccess.create(txn, null);
 
 		var transactionStatusService = new TransactionStatusService(
-			store, scheduledCacheCleanup
+			store, scheduledCacheCleanup, clientApiStore
 		);
 
 		transactionStatusService.mempoolAddSuccessEventProcessor().process(one);
@@ -120,7 +117,7 @@ public class TransactionStatusServiceTest {
 		var counter = new AtomicInteger();
 
 		var transactionStatusService = new TransactionStatusService(
-			store, scheduledCacheCleanup
+			store, scheduledCacheCleanup, clientApiStore
 		) {
 			@Override
 			Instant clock() {
@@ -157,15 +154,10 @@ public class TransactionStatusServiceTest {
 		var entry = createTxHistoryEntry(AID.ZERO);
 		var store = mock(BerkeleyLedgerEntryStore.class);
 
-		var rejected = mockObservable(MempoolAddFailure.class);
-		var succeeded = mockObservable(MempoolAddSuccess.class);
-
 		var scheduledCacheCleanup = mockEventDispatcher();
 
-		var committed = Observable.<AtomsCommittedToLedger>empty();
-
 		var transactionStatusService = new TransactionStatusService(
-			store, committed, rejected, succeeded, scheduledCacheCleanup, clientApiStore
+			store, scheduledCacheCleanup, clientApiStore
 		);
 
 		when(clientApiStore.getTransaction(AID.ZERO))

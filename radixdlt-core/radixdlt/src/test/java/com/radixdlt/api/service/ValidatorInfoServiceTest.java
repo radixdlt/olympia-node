@@ -19,7 +19,7 @@ package com.radixdlt.api.service;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.radixdlt.atommodel.validators.ValidatorParticle;
+import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.engine.RadixEngine;
