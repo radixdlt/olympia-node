@@ -42,7 +42,7 @@ import java.util.concurrent.TimeUnit;
 public final class ConsensusMonitors {
 
     public static Module timestampChecker() {
-        return timestampChecker(Duration.ofSeconds(1));
+        return timestampChecker(Duration.ofSeconds(2));
     }
 
     public static Module timestampChecker(Duration maxDelay) {
