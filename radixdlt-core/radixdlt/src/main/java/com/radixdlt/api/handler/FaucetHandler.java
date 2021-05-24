@@ -23,7 +23,6 @@ import org.json.JSONObject;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.api.data.ActionType;
 import com.radixdlt.api.data.TransactionAction;
 import com.radixdlt.api.service.SubmissionService;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
@@ -36,7 +35,6 @@ import com.radixdlt.utils.functional.Result;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
