@@ -17,33 +17,34 @@
 
 package com.radixdlt.api.service;
 
-import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.identifiers.AccountAddress;
-import com.radixdlt.identifiers.ValidatorAddress;
-import com.radixdlt.api.store.ClientApiStore;
-import com.radixdlt.utils.functional.Result;
-
 import org.json.JSONArray;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.radixdlt.api.store.ClientApiStore;
+import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atom.actions.CreateFixedToken;
+import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.RegisterValidator;
+import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.atom.actions.UnregisterValidator;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Failure;
-
-import java.util.Optional;
+import com.radixdlt.utils.functional.Result;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import static com.radixdlt.api.data.ActionType.STAKE;
-import static com.radixdlt.api.data.ActionType.TRANSFER;
-import static com.radixdlt.api.data.ActionType.UNSTAKE;
 
 public class ActionParserServiceTest {
 	private final REAddr from = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
@@ -57,28 +58,30 @@ public class ActionParserServiceTest {
 		when(clientApiStore.parseRri(any())).thenReturn(Result.ok(rri));
 	}
 
-	//TODO: tests for remaining types
 	@Test
 	public void transferActionIsParsedCorrectly() {
 		var fromAddr = AccountAddress.of(from);
 		var toAddr = AccountAddress.of(to);
 		var source = "[{\"type\":\"TokenTransfer\", \"from\":\"%s\", \"to\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, fromAddr, toAddr, UInt256.NINE, rri));
+		var actions = jsonArray(String.format(source, fromAddr, toAddr, UInt256.SIX, rri));
 
 		actionParserService.parse(actions)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
 
-//				parsed.get(0)
-//					.map((type, fromAddress, toAddress, validator, amount, rriOptional) -> {
-//						assertEquals(TRANSFER, type);
-//						assertEquals(from, fromAddress);
-//						assertEquals(to, toAddress);
-//						assertEquals(amount, UInt256.NINE);
-//						assertEquals(rriOptional, Optional.of(rri));
-//						return null;
-//					});
+				parsed.get(0).toAction().findAny()
+					.filter(TransferToken.class::isInstance)
+					.map(TransferToken.class::cast)
+					.ifPresentOrElse(
+						transfer -> {
+							assertEquals(UInt256.SIX, transfer.amount());
+							assertEquals(rri, transfer.resourceAddr());
+							assertEquals(from, transfer.from());
+							assertEquals(to, transfer.to());
+						},
+						Assert::fail
+					);
 			});
 	}
 
@@ -94,15 +97,18 @@ public class ActionParserServiceTest {
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
-				//TODO: finish fixing tests
-//				parsed.get(0)
-//					.map((type, fromAddress, to, validator, amount, rriOptional) -> {
-//						assertEquals(STAKE, type);
-//						assertEquals(from, fromAddress);
-//						assertEquals(key, validator);
-//						assertEquals(amount, UInt256.NINE);
-//						return null;
-//					});
+
+				parsed.get(0).toAction().findAny()
+					.filter(StakeTokens.class::isInstance)
+					.map(StakeTokens.class::cast)
+					.ifPresentOrElse(
+						stake -> {
+							assertEquals(UInt256.NINE, stake.amount());
+							assertEquals(from, stake.from());
+							assertEquals(key, stake.to());
+						},
+						Assert::fail
+					);
 			});
 	}
 
@@ -153,6 +159,277 @@ public class ActionParserServiceTest {
 							assertEquals(UInt256.NINE, mint.amount());
 							assertEquals(to, mint.to());
 							assertEquals(rri, mint.resourceAddr());
+						},
+						Assert::fail
+					);
+			});
+	}
+
+	@Test
+	public void burnTokensIsParsedCorrectly() {
+		var fromAddr = AccountAddress.of(from);
+
+		var source = "[{\"type\":\"BurnTokens\", \"from\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
+		var actions = jsonArray(String.format(source, fromAddr, UInt256.FIVE, rri));
+
+		actionParserService.parse(actions)
+			.onFailure(this::fail)
+			.onSuccess(parsed -> {
+				assertEquals(1, parsed.size());
+
+				parsed.get(0).toAction().findAny()
+					.filter(BurnToken.class::isInstance)
+					.map(BurnToken.class::cast)
+					.ifPresentOrElse(
+						mint -> {
+							assertEquals(UInt256.FIVE, mint.amount());
+							assertEquals(from, mint.from());
+							assertEquals(rri, mint.resourceAddr());
+						},
+						Assert::fail
+					);
+			});
+	}
+
+	@Test
+	public void registerValidatorIsParsedCorrectlyWithUrlAndName() {
+		var key = ECKeyPair.generateNew().getPublicKey();
+		var validatorAddr = ValidatorAddress.of(key);
+
+		var source = "[{\"type\":\"RegisterValidator\", \"validator\":\"%s\", \"name\":\"%s\", \"url\":\"%s\"}]";
+		var actions = jsonArray(String.format(source, validatorAddr, "validator 1", "http://localhost/"));
+
+		actionParserService.parse(actions)
+			.onFailure(this::fail)
+			.onSuccess(parsed -> {
+				assertEquals(1, parsed.size());
+
+				parsed.get(0).toAction().findAny()
+					.filter(RegisterValidator.class::isInstance)
+					.map(RegisterValidator.class::cast)
+					.ifPresentOrElse(
+						register -> {
+							assertEquals("validator 1", register.name());
+							assertEquals("http://localhost/", register.url());
+							assertEquals(key, register.validatorKey());
+						},
+						Assert::fail
+					);
+			});
+	}
+
+	@Test
+	public void registerValidatorIsParsedCorrectlyWithUrl() {
+		var key = ECKeyPair.generateNew().getPublicKey();
+		var validatorAddr = ValidatorAddress.of(key);
+
+		var source = "[{\"type\":\"RegisterValidator\", \"validator\":\"%s\", \"url\":\"%s\"}]";
+		var actions = jsonArray(String.format(source, validatorAddr, "http://localhost/"));
+
+		actionParserService.parse(actions)
+			.onFailure(this::fail)
+			.onSuccess(parsed -> {
+				assertEquals(1, parsed.size());
+
+				parsed.get(0).toAction().findAny()
+					.filter(RegisterValidator.class::isInstance)
+					.map(RegisterValidator.class::cast)
+					.ifPresentOrElse(
+						register -> {
+							assertNull(register.name());
+							assertEquals("http://localhost/", register.url());
+							assertEquals(key, register.validatorKey());
+						},
+						Assert::fail
+					);
+			});
+	}
+
+	@Test
+	public void registerValidatorIsParsedCorrectly() {
+		var key = ECKeyPair.generateNew().getPublicKey();
+		var validatorAddr = ValidatorAddress.of(key);
+
+		var source = "[{\"type\":\"RegisterValidator\", \"validator\":\"%s\"}]";
+		var actions = jsonArray(String.format(source, validatorAddr));
+
+		actionParserService.parse(actions)
+			.onFailure(this::fail)
+			.onSuccess(parsed -> {
+				assertEquals(1, parsed.size());
+
+				parsed.get(0).toAction().findAny()
+					.filter(RegisterValidator.class::isInstance)
+					.map(RegisterValidator.class::cast)
+					.ifPresentOrElse(
+						register -> {
+							assertNull(register.name());
+							assertNull(register.url());
+							assertEquals(key, register.validatorKey());
+						},
+						Assert::fail
+					);
+			});
+	}
+
+	@Test
+	public void unregisterValidatorIsParsedCorrectlyWithUrlAndName() {
+		var key = ECKeyPair.generateNew().getPublicKey();
+		var validatorAddr = ValidatorAddress.of(key);
+
+		var source = "[{\"type\":\"UnregisterValidator\", \"validator\":\"%s\", \"name\":\"%s\", \"url\":\"%s\"}]";
+		var actions = jsonArray(String.format(source, validatorAddr, "validator 1", "http://localhost/"));
+
+		actionParserService.parse(actions)
+			.onFailure(this::fail)
+			.onSuccess(parsed -> {
+				assertEquals(1, parsed.size());
+
+				parsed.get(0).toAction().findAny()
+					.filter(UnregisterValidator.class::isInstance)
+					.map(UnregisterValidator.class::cast)
+					.ifPresentOrElse(
+						register -> {
+							assertEquals("validator 1", register.name());
+							assertEquals("http://localhost/", register.url());
+							assertEquals(key, register.validatorKey());
+						},
+						Assert::fail
+					);
+			});
+	}
+
+	@Test
+	public void unregisterValidatorIsParsedCorrectlyWithUrl() {
+		var key = ECKeyPair.generateNew().getPublicKey();
+		var validatorAddr = ValidatorAddress.of(key);
+
+		var source = "[{\"type\":\"UnregisterValidator\", \"validator\":\"%s\", \"url\":\"%s\"}]";
+		var actions = jsonArray(String.format(source, validatorAddr, "http://localhost/"));
+
+		actionParserService.parse(actions)
+			.onFailure(this::fail)
+			.onSuccess(parsed -> {
+				assertEquals(1, parsed.size());
+
+				parsed.get(0).toAction().findAny()
+					.filter(UnregisterValidator.class::isInstance)
+					.map(UnregisterValidator.class::cast)
+					.ifPresentOrElse(
+						register -> {
+							assertNull(register.name());
+							assertEquals("http://localhost/", register.url());
+							assertEquals(key, register.validatorKey());
+						},
+						Assert::fail
+					);
+			});
+	}
+
+	@Test
+	public void unregisterValidatorIsParsedCorrectly() {
+		var key = ECKeyPair.generateNew().getPublicKey();
+		var validatorAddr = ValidatorAddress.of(key);
+
+		var source = "[{\"type\":\"UnregisterValidator\", \"validator\":\"%s\"}]";
+		var actions = jsonArray(String.format(source, validatorAddr));
+
+		actionParserService.parse(actions)
+			.onFailure(this::fail)
+			.onSuccess(parsed -> {
+				assertEquals(1, parsed.size());
+
+				parsed.get(0).toAction().findAny()
+					.filter(UnregisterValidator.class::isInstance)
+					.map(UnregisterValidator.class::cast)
+					.ifPresentOrElse(
+						register -> {
+							assertNull(register.name());
+							assertNull(register.url());
+							assertEquals(key, register.validatorKey());
+						},
+						Assert::fail
+					);
+			});
+	}
+
+	@Test
+	public void createFixedTokenIsParsedCorrectly() {
+		var fromAddr = AccountAddress.of(from);
+
+		var source = "[{\"type\":\"CreateFixedSupplyToken\", \"from\":\"%s\", \"rri\":\"%s\", \"symbol\":\"%s\", \"name\":\"%s\", \"description\":\"%s\", \"iconUrl\":\"%s\", \"tokenUrl\":\"%s\", \"supply\":\"%s\"}]";
+		var actions = jsonArray(String.format(source, fromAddr, rri, "symbol", "name", "description", "http://icon.url/", "http://token.url/", UInt256.TEN));
+
+		actionParserService.parse(actions)
+			.onFailure(this::fail)
+			.onSuccess(parsed -> {
+				assertEquals(1, parsed.size());
+
+				parsed.get(0).toAction().findAny()
+					.filter(CreateFixedToken.class::isInstance)
+					.map(CreateFixedToken.class::cast)
+					.ifPresentOrElse(
+						create -> {
+							assertEquals(from, create.getAccountAddr());
+							assertEquals(rri, create.getResourceAddr());
+							assertEquals("symbol", create.getSymbol());
+							assertEquals("name", create.getName());
+							assertEquals("description", create.getDescription());
+							assertEquals("http://icon.url/", create.getIconUrl());
+							assertEquals("http://token.url/", create.getTokenUrl());
+							assertEquals(UInt256.TEN, create.getSupply());
+						},
+						Assert::fail
+					);
+			});
+	}
+
+	@Test
+	public void createMutableTokenIsParsedCorrectlyWithOptionalElements() {
+		var source = "[{\"type\":\"CreateMutableSupplyToken\", \"symbol\":\"%s\", \"name\":\"%s\", \"description\":\"%s\", \"iconUrl\":\"%s\", \"tokenUrl\":\"%s\"}]";
+		var actions = jsonArray(String.format(source, "symbol", "name", "description", "http://icon.url/", "http://token.url/"));
+
+		actionParserService.parse(actions)
+			.onFailure(this::fail)
+			.onSuccess(parsed -> {
+				assertEquals(1, parsed.size());
+
+				parsed.get(0).toAction().findAny()
+					.filter(CreateMutableToken.class::isInstance)
+					.map(CreateMutableToken.class::cast)
+					.ifPresentOrElse(
+						create -> {
+							assertEquals("symbol", create.getSymbol());
+							assertEquals("name", create.getName());
+							assertEquals("description", create.getDescription());
+							assertEquals("http://icon.url/", create.getIconUrl());
+							assertEquals("http://token.url/", create.getTokenUrl());
+						},
+						Assert::fail
+					);
+			});
+	}
+
+	@Test
+	public void createMutableTokenIsParsedCorrectlyWithoutOptionalElements() {
+		var source = "[{\"type\":\"CreateMutableSupplyToken\", \"symbol\":\"%s\", \"name\":\"%s\"}]";
+		var actions = jsonArray(String.format(source, "symbol", "name"));
+
+		actionParserService.parse(actions)
+			.onFailure(this::fail)
+			.onSuccess(parsed -> {
+				assertEquals(1, parsed.size());
+
+				parsed.get(0).toAction().findAny()
+					.filter(CreateMutableToken.class::isInstance)
+					.map(CreateMutableToken.class::cast)
+					.ifPresentOrElse(
+						create -> {
+							assertEquals("symbol", create.getSymbol());
+							assertEquals("name", create.getName());
+							assertEquals("", create.getDescription());
+							assertEquals("", create.getIconUrl());
+							assertEquals("", create.getTokenUrl());
 						},
 						Assert::fail
 					);
