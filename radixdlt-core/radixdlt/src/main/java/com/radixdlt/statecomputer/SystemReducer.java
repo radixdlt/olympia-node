@@ -18,6 +18,8 @@
 
 package com.radixdlt.statecomputer;
 
+import com.radixdlt.atommodel.system.state.EpochData;
+import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
@@ -40,7 +42,7 @@ class SystemReducer implements StateReducer<EpochView> {
 
 	@Override
 	public Set<Class<? extends Particle>> particleClasses() {
-		return Set.of(SystemParticle.class);
+		return Set.of(SystemParticle.class, EpochData.class, RoundData.class);
 	}
 
 	@Override
@@ -51,8 +53,18 @@ class SystemReducer implements StateReducer<EpochView> {
 	@Override
 	public BiFunction<EpochView, Particle, EpochView> outputReducer() {
 		return (cur, p) -> {
-			var s = (SystemParticle) p;
-			return new EpochView(s.getEpoch(), View.of(s.getView()));
+			if (p instanceof SystemParticle) {
+				var s = (SystemParticle) p;
+				return new EpochView(s.getEpoch(), View.of(s.getView()));
+			} else if (p instanceof EpochData) {
+				var s = (EpochData) p;
+				return new EpochView(s.getEpoch(), cur.getView());
+			} else if (p instanceof RoundData) {
+				var s = (RoundData) p;
+				return new EpochView(cur.getEpoch(), View.of(s.getView()));
+			} else {
+				throw new IllegalStateException();
+			}
 		};
 	}
 

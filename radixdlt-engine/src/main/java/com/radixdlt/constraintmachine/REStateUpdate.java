@@ -25,11 +25,11 @@ import java.util.Objects;
 /**
  * Instruction which has been parsed and state checked by Radix Engine
  */
-public final class REParsedInstruction {
+public final class REStateUpdate {
 	private final REInstruction instruction;
 	private final Substate substate;
 
-	private REParsedInstruction(REInstruction instruction, Substate substate) {
+	private REStateUpdate(REInstruction instruction, Substate substate) {
 		Objects.requireNonNull(instruction);
 		Objects.requireNonNull(substate);
 
@@ -37,8 +37,8 @@ public final class REParsedInstruction {
 		this.substate = substate;
 	}
 
-	public static REParsedInstruction of(REInstruction instruction, Substate substate) {
-		return new REParsedInstruction(instruction, substate);
+	public static REStateUpdate of(REInstruction instruction, Substate substate) {
+		return new REStateUpdate(instruction, substate);
 	}
 
 	public REInstruction getInstruction() {
@@ -65,10 +65,6 @@ public final class REParsedInstruction {
 		return cls.cast(substate.getParticle());
 	}
 
-	public boolean isStateUpdate() {
-		return this.instruction.isPush();
-	}
-
 	public boolean isBootUp() {
 		return this.instruction.isPush() && this.instruction.getNextSpin() == Spin.UP;
 	}
@@ -79,11 +75,11 @@ public final class REParsedInstruction {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (!(obj instanceof REParsedInstruction)) {
+		if (!(obj instanceof REStateUpdate)) {
 			return false;
 		}
 
-		REParsedInstruction parsedInstruction = (REParsedInstruction) obj;
+		REStateUpdate parsedInstruction = (REStateUpdate) obj;
 
 		return Objects.equals(this.instruction, parsedInstruction.instruction)
 			&& Objects.equals(this.substate, parsedInstruction.substate);

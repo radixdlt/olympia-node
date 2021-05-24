@@ -24,6 +24,7 @@ import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.DeprecatedUnstakeTokens;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.RegisterValidator;
@@ -35,12 +36,15 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateValidator;
+import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV1;
+import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
+import com.radixdlt.atommodel.system.construction.NextEpochConstructorV2;
 import com.radixdlt.atommodel.tokens.construction.BurnTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.CreateFixedTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.DeprecatedUnstakeTokensConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
-import com.radixdlt.atommodel.system.construction.NextEpochConstructor;
+import com.radixdlt.atommodel.system.construction.NextEpochConstructorV1;
 import com.radixdlt.atommodel.system.construction.NextViewConstructorV1;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV2;
 import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV2;
@@ -90,12 +94,13 @@ public final class BetanetForksModule extends AbstractModule {
 			.build();
 
 		var actionConstructors = ActionConstructors.newBuilder()
+			.put(CreateSystem.class, new CreateSystemConstructorV1())
 			.put(BurnToken.class, new BurnTokenConstructor())
 			.put(CreateFixedToken.class, new CreateFixedTokenConstructor())
 			.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 			.put(DeprecatedUnstakeTokens.class, new DeprecatedUnstakeTokensConstructor())
 			.put(MintToken.class, new MintTokenConstructor())
-			.put(SystemNextEpoch.class, new NextEpochConstructor())
+			.put(SystemNextEpoch.class, new NextEpochConstructorV1())
 			.put(SystemNextView.class, new NextViewConstructorV1())
 			.put(RegisterValidator.class, new RegisterValidatorConstructor())
 			.put(SplitToken.class, new SplitTokenConstructor())
@@ -126,12 +131,13 @@ public final class BetanetForksModule extends AbstractModule {
 			.build();
 
 		var actionConstructors = ActionConstructors.newBuilder()
+			.put(CreateSystem.class, new CreateSystemConstructorV1())
 			.put(BurnToken.class, new BurnTokenConstructor())
 			.put(CreateFixedToken.class, new CreateFixedTokenConstructor())
 			.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 			.put(DeprecatedUnstakeTokens.class, new DeprecatedUnstakeTokensConstructor())
 			.put(MintToken.class, new MintTokenConstructor())
-			.put(SystemNextEpoch.class, new NextEpochConstructor())
+			.put(SystemNextEpoch.class, new NextEpochConstructorV1())
 			.put(SystemNextView.class, new NextViewConstructorV1())
 			.put(RegisterValidator.class, new RegisterValidatorConstructor())
 			.put(SplitToken.class, new SplitTokenConstructor())
@@ -161,12 +167,13 @@ public final class BetanetForksModule extends AbstractModule {
 			.build();
 
 		var actionConstructors = ActionConstructors.newBuilder()
+			.put(CreateSystem.class, new CreateSystemConstructorV2())
 			.put(BurnToken.class, new BurnTokenConstructor())
 			.put(CreateFixedToken.class, new CreateFixedTokenConstructor())
 			.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 			.put(DeprecatedUnstakeTokens.class, new DeprecatedUnstakeTokensConstructor())
 			.put(MintToken.class, new MintTokenConstructor())
-			.put(SystemNextEpoch.class, new NextEpochConstructor())
+			.put(SystemNextEpoch.class, new NextEpochConstructorV2())
 			.put(SystemNextView.class, new NextViewConstructorV2())
 			.put(RegisterValidator.class, new RegisterValidatorConstructor())
 			.put(SplitToken.class, new SplitTokenConstructor())

@@ -20,6 +20,7 @@ package com.radixdlt.statecomputer;
 
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.engine.BatchVerifier;
+import com.radixdlt.engine.MetadataException;
 import com.radixdlt.ledger.ByzantineQuorumException;
 
 /**
@@ -52,7 +53,7 @@ public final class EpochProofVerifier implements BatchVerifier<LedgerAndBFTProof
 		}
 
 		@Override
-		public void testMetadata(LedgerAndBFTProof metadata, ComputedState computedState) {
+		public void testMetadata(LedgerAndBFTProof metadata, ComputedState computedState) throws MetadataException {
 			// Verify that output of radix engine and signed output match
 			// TODO: Always follow radix engine as its a deeper source of truth and just mark validator
 			// TODO: set as malicious (RPNV1-633)
@@ -63,18 +64,19 @@ public final class EpochProofVerifier implements BatchVerifier<LedgerAndBFTProof
 
 				final var reNextValidatorSet = computedState.get(StakedValidators.class).toValidatorSet();
 				final var signedValidatorSet = metadata.getProof().getNextValidatorSet()
-					.orElseThrow(() -> new ByzantineQuorumException("RE has changed epochs but proofs don't show."));
+					.orElseThrow(() -> new MetadataException("RE has changed epochs but proofs don't show."));
 				if (!signedValidatorSet.equals(reNextValidatorSet)) {
-					throw new ByzantineQuorumException(String.format(
-						"RE validator set %s does not agree with signed validator set %s",
-						reNextValidatorSet, signedValidatorSet
-					));
+					throw new MetadataException(
+						String.format(
+							"RE validator set %s does not agree with signed validator set %s",
+							reNextValidatorSet, signedValidatorSet
+						));
 				}
 			} else {
 				if (metadata != null) {
-					metadata.getProof().getNextValidatorSet().ifPresent(vset -> {
-						throw new ByzantineQuorumException("RE validator set should not be present.");
-					});
+					if (metadata.getProof().getNextValidatorSet().isPresent()) {
+						throw new MetadataException("RE validator set should not be present.");
+					}
 				}
 			}
 		}

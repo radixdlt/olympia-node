@@ -437,11 +437,13 @@ public final class ConstraintMachine {
 	Optional<CMError> statefulVerify(
 		CMValidationState validationState,
 		List<REInstruction> instructions,
-		List<REParsedInstruction> parsedInstructions,
+		List<List<REStateUpdate>> parsedInstructions,
 		List<REParsedAction> parsedActions
 	) {
 		int instIndex = 0;
 		var expectEnd = false;
+
+		var parsed = new ArrayList<REStateUpdate>();
 
 		for (REInstruction inst : instructions) {
 			validationState.curInstruction = inst;
@@ -498,7 +500,7 @@ public final class ConstraintMachine {
 					return Optional.of(new CMError(instIndex, CMErrorCode.UNKNOWN_OP, validationState));
 				}
 
-				parsedInstructions.add(REParsedInstruction.of(inst, substate));
+				parsed.add(REStateUpdate.of(inst, substate));
 
 				var error = validateParticle(
 					validationState,
@@ -512,6 +514,9 @@ public final class ConstraintMachine {
 
 				expectEnd = validationState.reducerState == null;
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.END) {
+				parsedInstructions.add(parsed);
+				parsed = new ArrayList<>();
+
 				if (validationState.reducerState != null) {
 					var errMaybe = validateParticle(validationState, null, false);
 					if (errMaybe.isPresent()) {
@@ -557,7 +562,7 @@ public final class ConstraintMachine {
 		);
 
 		var parsedActions = new ArrayList<REParsedAction>();
-		var parsedInstructions = new ArrayList<REParsedInstruction>();
+		var parsedInstructions = new ArrayList<List<REStateUpdate>>();
 		var error = this.statefulVerify(validationState, result.instructions, parsedInstructions, parsedActions);
 		if (error.isPresent()) {
 			throw new RadixEngineException(

@@ -34,14 +34,14 @@ import java.util.stream.Stream;
  */
 public final class REParsedTxn {
 	private final Txn txn;
-	private final List<REParsedInstruction> parsedInstructions;
+	private final List<List<REStateUpdate>> parsedInstructions;
 	private final List<REParsedAction> actions;
 	private final ConstraintMachine.StatelessVerificationResult statelessResult;
 
 	public REParsedTxn(
 		Txn txn,
 		ConstraintMachine.StatelessVerificationResult statelessResult,
-		List<REParsedInstruction> parsedInstructions,
+		List<List<REStateUpdate>> parsedInstructions,
 		List<REParsedAction> actions
 	) {
 		this.txn = txn;
@@ -74,20 +74,22 @@ public final class REParsedTxn {
 		return instructions().anyMatch(i -> i.getSubstate().getParticle() instanceof SystemParticle);
 	}
 
-	public List<REParsedInstruction> stateUpdates() {
-		return instructions()
-			.filter(REParsedInstruction::isStateUpdate)
-			.collect(Collectors.toList());
+	public List<List<REStateUpdate>> getGroupedStateUpdates() {
+		return parsedInstructions;
 	}
 
-	public Stream<REParsedInstruction> instructions() {
-		return parsedInstructions.stream();
+	public List<REStateUpdate> stateUpdates() {
+		return instructions().collect(Collectors.toList());
+	}
+
+	public Stream<REStateUpdate> instructions() {
+		return parsedInstructions.stream().flatMap(List::stream);
 	}
 
 	public Stream<Particle> upSubstates() {
 		return instructions()
-			.filter(REParsedInstruction::isBootUp)
-			.map(REParsedInstruction::getSubstate)
+			.filter(REStateUpdate::isBootUp)
+			.map(REStateUpdate::getSubstate)
 			.map(Substate::getParticle);
 	}
 

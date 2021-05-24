@@ -16,30 +16,26 @@
  *
  */
 
-package com.radixdlt.atommodel.validators.construction;
+package com.radixdlt.atommodel.system.construction;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.UpdateValidator;
-import com.radixdlt.atommodel.validators.state.ValidatorParticle;
+import com.radixdlt.atom.actions.SystemNextEpoch;
+import com.radixdlt.atommodel.system.state.SystemParticle;
+import com.radixdlt.constraintmachine.SubstateWithArg;
 
 import java.util.List;
+import java.util.Optional;
 
-public final class UpdateValidatorConstructor implements ActionConstructor<UpdateValidator> {
+public class NextEpochConstructorV1 implements ActionConstructor<SystemNextEpoch> {
 	@Override
-	public void construct(UpdateValidator action, TxBuilder txBuilder) throws TxBuilderException {
+	public void construct(SystemNextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.swap(
-			ValidatorParticle.class,
-			p -> p.getKey().equals(action.validatorKey()),
-			"Invalid state."
-		).with(
-			substateDown -> List.of(new ValidatorParticle(
-				action.validatorKey(),
-				substateDown.isRegisteredForNextEpoch(),
-				action.name() == null ? substateDown.getName() : action.name(),
-				action.name() == null ? substateDown.getUrl() : action.url()
-			))
-		);
+			SystemParticle.class,
+			p -> true,
+			Optional.of(SubstateWithArg.noArg(new SystemParticle(0, 0, 0))),
+			"No System particle available"
+		).with(substateDown -> List.of(new SystemParticle(substateDown.getEpoch() + 1, 0, action.timestamp())));
 	}
 }

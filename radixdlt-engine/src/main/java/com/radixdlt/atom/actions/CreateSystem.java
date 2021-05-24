@@ -19,33 +19,6 @@
 package com.radixdlt.atom.actions;
 
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.crypto.ECPublicKey;
 
-public final class SystemNextView implements TxAction {
-	private final long view;
-	private final long timestamp;
-	private final ECPublicKey leader;
-
-	public SystemNextView(long view, long timestamp, ECPublicKey leader) {
-		this.view = view;
-		this.timestamp = timestamp;
-		this.leader = leader;
-	}
-
-	public long view() {
-		return view;
-	}
-
-	public long timestamp() {
-		return timestamp;
-	}
-
-	public ECPublicKey leader() {
-		return leader;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s{view=%s}", this.getClass().getSimpleName(), view);
-	}
+public final class CreateSystem implements TxAction {
 }

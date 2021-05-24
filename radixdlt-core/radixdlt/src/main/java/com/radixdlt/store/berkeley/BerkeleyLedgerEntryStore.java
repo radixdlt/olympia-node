@@ -34,7 +34,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.REParsedInstruction;
+import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -189,7 +189,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public void storeTxn(Transaction dbTxn, Txn txn, List<REParsedInstruction> stateUpdates) {
+	public void storeTxn(Transaction dbTxn, Txn txn, List<REStateUpdate> stateUpdates) {
 		withTime(() -> doStore(unwrap(dbTxn), txn, stateUpdates), CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
 	}
 
@@ -590,7 +590,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 	}
 
-	private void updateParticle(com.sleepycat.je.Transaction txn, REParsedInstruction inst) {
+	private void updateParticle(com.sleepycat.je.Transaction txn, REStateUpdate inst) {
 		if (inst.isBootUp()) {
 			var buf = inst.getInstruction().getDataByteBuffer();
 			upParticle(txn, buf, inst.getSubstate().getId());
@@ -620,7 +620,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	private void doStore(
 		com.sleepycat.je.Transaction transaction,
 		Txn txn,
-		List<REParsedInstruction> stateUpdates
+		List<REStateUpdate> stateUpdates
 	) {
 		final long stateVersion;
 		try (var cursor = atomDatabase.openCursor(transaction, null)) {

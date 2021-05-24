@@ -28,7 +28,6 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Particle;
@@ -427,28 +426,34 @@ public final class RadixEngine<M> {
 
 			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
 			// Non-persisted computed state
-			parsedTxn.instructions().filter(REParsedInstruction::isStateUpdate).forEach(parsedInstruction -> {
-				final var particle = parsedInstruction.getSubstate().getParticle();
-				final var checkSpin = parsedInstruction.getCheckSpin();
-				stateComputers.forEach((a, computer) -> computer.processCheckSpin(particle, checkSpin));
+			for (var group : parsedTxn.getGroupedStateUpdates()) {
+				group.forEach(update -> {
+					final var particle = update.getSubstate().getParticle();
+					final var checkSpin = update.getCheckSpin();
+					stateComputers.forEach((a, computer) -> computer.processCheckSpin(particle, checkSpin));
 
-				var cache = substateCache.get(particle.getClass());
-				if (cache != null && cache.test(particle)) {
-					if (parsedInstruction.isBootUp()) {
-						cache.bringUp(parsedInstruction.getSubstate());
-					} else {
-						cache.shutDown(parsedInstruction.getSubstate().getId());
+					var cache = substateCache.get(particle.getClass());
+					if (cache != null && cache.test(particle)) {
+						if (update.isBootUp()) {
+							cache.bringUp(update.getSubstate());
+						} else {
+							cache.shutDown(update.getSubstate().getId());
+						}
 					}
-				}
+				});
 
-				if (parsedInstruction.isBootUp()) {
-					checker.test(this::getComputedState);
-				}
-			});
+				checker.test(this::getComputedState);
+			}
+
 			parsedTransactions.add(parsedTxn);
 		}
 
-		checker.testMetadata(meta, this::getComputedState);
+		try {
+			checker.testMetadata(meta, this::getComputedState);
+		} catch (MetadataException e) {
+			logger.error("Invalid metadata: " + parsedTransactions);
+			throw e;
+		}
 
 		if (meta != null) {
 			this.engineStore.storeMetadata(dbTransaction, meta);

@@ -22,7 +22,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.constraintmachine.REParsedInstruction;
+import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -98,7 +98,7 @@ public final class RadixEngineMempool implements Mempool<REParsedTxn> {
 		var mempoolTxn = MempoolMetadata.create(System.currentTimeMillis());
 		var data = Pair.of(radixEngineTxns.get(0), mempoolTxn);
 		this.data.put(txn.getId(), data);
-		radixEngineTxns.get(0).instructions().filter(REParsedInstruction::isShutDown).forEach(instruction -> {
+		radixEngineTxns.get(0).instructions().filter(REStateUpdate::isShutDown).forEach(instruction -> {
 			var substateId = instruction.getSubstate().getId();
 			substateIndex.merge(substateId, Set.of(txn.getId()), Sets::union);
 		});
@@ -113,7 +113,7 @@ public final class RadixEngineMempool implements Mempool<REParsedTxn> {
 
 		transactions.stream()
 			.flatMap(REParsedTxn::instructions)
-			.filter(REParsedInstruction::isShutDown)
+			.filter(REStateUpdate::isShutDown)
 			.forEach(instruction -> {
 				var substateId = instruction.getSubstate().getId();
 				Set<AID> txnIds = substateIndex.remove(substateId);
@@ -143,7 +143,7 @@ public final class RadixEngineMempool implements Mempool<REParsedTxn> {
 		var copy = new TreeSet<>(data.keySet());
 		prepared.stream()
 			.flatMap(REParsedTxn::instructions)
-			.filter(REParsedInstruction::isShutDown)
+			.filter(REStateUpdate::isShutDown)
 			.flatMap(i -> substateIndex.getOrDefault(i.getSubstate().getId(), Set.of()).stream())
 			.distinct()
 			.forEach(copy::remove);
@@ -155,7 +155,7 @@ public final class RadixEngineMempool implements Mempool<REParsedTxn> {
 			copy.remove(txId);
 			var txnData = data.get(txId);
 			txnData.getFirst().instructions()
-				.filter(REParsedInstruction::isShutDown)
+				.filter(REStateUpdate::isShutDown)
 				.flatMap(inst -> substateIndex.getOrDefault(inst.getSubstate().getId(), Set.of()).stream())
 				.distinct()
 				.forEach(copy::remove);

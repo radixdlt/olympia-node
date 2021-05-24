@@ -22,19 +22,39 @@ import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.SystemNextEpoch;
+import com.radixdlt.atommodel.system.state.EpochData;
+import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 
+import java.util.List;
 import java.util.Optional;
 
-public class NextEpochConstructor implements ActionConstructor<SystemNextEpoch> {
+public final class NextEpochConstructorV2 implements ActionConstructor<SystemNextEpoch> {
 	@Override
 	public void construct(SystemNextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
+		var epochData = txBuilder.find(EpochData.class, p -> true);
+
+		if (epochData.isPresent()) {
+			txBuilder.swap(
+				EpochData.class,
+				p -> true,
+				Optional.of(SubstateWithArg.noArg(new EpochData(0))),
+				"No epoch data available"
+			).with(substateDown -> List.of(new EpochData(substateDown.getEpoch() + 1)));
+		} else {
+			txBuilder.swap(
+				SystemParticle.class,
+				p -> true,
+				"No epoch data available"
+			).with(substateDown -> List.of(new EpochData(substateDown.getEpoch() + 1)));
+		}
+
 		txBuilder.swap(
-			SystemParticle.class,
+			RoundData.class,
 			p -> true,
-			Optional.of(SubstateWithArg.noArg(new SystemParticle(0, 0, 0))),
-			"No System particle available"
-		).with(substateDown -> new SystemParticle(substateDown.getEpoch() + 1, 0, action.timestamp()));
+			Optional.of(SubstateWithArg.noArg(new RoundData(0, 0))),
+			"No round data available"
+		).with(substateDown -> List.of(new RoundData(0, 0)));
 	}
 }

@@ -49,6 +49,7 @@ public final class CMAtomOS {
 		.virtualizeUp(v ->
 			v.getAddr().getType() == REAddr.REAddrType.NATIVE_TOKEN
 			|| v.getAddr().getType() == REAddr.REAddrType.HASHED_KEY
+			|| v.getAddr().isSystem()
 			// PUB_KEY type is already an account so cannot down
 		)
 		.build();
@@ -92,7 +93,9 @@ public final class CMAtomOS {
 				REAddrParticle.class, VoidReducerState.class,
 				(d, r) -> {
 					var name = new String(d.getArg().orElseThrow());
-					return systemNames.contains(name) || d.getSubstate().getAddr().isNativeToken()
+					return systemNames.contains(name)
+						|| d.getSubstate().getAddr().isNativeToken()
+						|| d.getSubstate().getAddr().isSystem()
 						? PermissionLevel.SYSTEM : PermissionLevel.USER;
 				},
 				(d, r, pubKey) -> {
@@ -101,6 +104,10 @@ public final class CMAtomOS {
 					}
 				},
 				(d, s, r) -> {
+					if (d.getSubstate().getAddr().isSystem()) {
+						return ReducerResult.incomplete(new REAddrClaim(d.getSubstate(), null));
+					}
+
 					if (d.getArg().isEmpty()) {
 						throw new ProcedureException("REAddr must be claimed with a name");
 					}

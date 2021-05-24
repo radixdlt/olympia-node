@@ -57,6 +57,7 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.engine.MetadataException;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
@@ -374,7 +375,7 @@ public class RadixEngineStateComputerTest {
 		// Act
 		// Assert
 		assertThatThrownBy(() -> sut.commit(commandsAndProof, null))
-			.isInstanceOf(ByzantineQuorumException.class);
+			.isInstanceOf(MetadataException.class);
 	}
 
 	// TODO: should catch this and log it somewhere as proof of byzantine quorum
@@ -397,6 +398,6 @@ public class RadixEngineStateComputerTest {
 		// Act
 		// Assert
 		assertThatThrownBy(() -> sut.commit(commandsAndProof, null))
-			.isInstanceOf(ByzantineQuorumException.class);
+			.isInstanceOf(MetadataException.class);
 	}
 }

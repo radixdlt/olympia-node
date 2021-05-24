@@ -16,22 +16,11 @@
  *
  */
 
-package com.radixdlt.statecomputer.transaction;
+package com.radixdlt.engine;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.atomos.Result;
-import com.radixdlt.engine.PostParsedChecker;
-
-/**
- * Module which provides an atom checker that does not require fees.
- */
-public class EmptyTransactionCheckModule extends AbstractModule {
-	@ProvidesIntoSet
-	private PostParsedChecker emptyTxChecker() {
-		return (permissionLevel, reTxn) ->
-			reTxn.getGroupedStateUpdates().isEmpty()
-				? Result.error("atom has no state updates")
-				: Result.success();
+// TODO: Change to Exception
+public class MetadataException extends RuntimeException {
+	public MetadataException(String msg) {
+		super(msg);
 	}
 }

@@ -25,6 +25,7 @@ import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 
+import java.util.List;
 import java.util.Optional;
 
 public class RegisterValidatorConstructor implements ActionConstructor<RegisterValidator> {
@@ -36,12 +37,12 @@ public class RegisterValidatorConstructor implements ActionConstructor<RegisterV
 			Optional.of(SubstateWithArg.noArg(new ValidatorParticle(action.validatorKey(), false))),
 			"Already a validator"
 		).with(
-			substateDown -> new ValidatorParticle(
+			substateDown -> List.of(new ValidatorParticle(
 				action.validatorKey(),
 				true,
 				action.name() == null ? substateDown.getName() : action.name(),
 				action.url() == null ? substateDown.getUrl() : action.url()
-			)
+			))
 		);
 	}
 }

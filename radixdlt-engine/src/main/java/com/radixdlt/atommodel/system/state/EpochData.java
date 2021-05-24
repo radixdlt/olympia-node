@@ -16,36 +16,40 @@
  *
  */
 
-package com.radixdlt.atom.actions;
+package com.radixdlt.atommodel.system.state;
 
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.crypto.ECPublicKey;
+import com.google.common.base.Objects;
+import com.radixdlt.constraintmachine.Particle;
 
-public final class SystemNextView implements TxAction {
-	private final long view;
-	private final long timestamp;
-	private final ECPublicKey leader;
+public final class EpochData implements Particle {
+	private final long epoch;
 
-	public SystemNextView(long view, long timestamp, ECPublicKey leader) {
-		this.view = view;
-		this.timestamp = timestamp;
-		this.leader = leader;
+	public EpochData(long epoch) {
+		this.epoch = epoch;
 	}
 
-	public long view() {
-		return view;
+	public long getEpoch() {
+		return epoch;
 	}
 
-	public long timestamp() {
-		return timestamp;
+	@Override
+	public int hashCode() {
+		return Objects.hashCode(epoch);
 	}
 
-	public ECPublicKey leader() {
-		return leader;
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof EpochData)) {
+			return false;
+		}
+
+		var other = (EpochData) o;
+
+		return this.epoch == other.epoch;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{view=%s}", this.getClass().getSimpleName(), view);
+		return String.format("%s{epoch=%s}", this.getClass().getSimpleName(), epoch);
 	}
 }
