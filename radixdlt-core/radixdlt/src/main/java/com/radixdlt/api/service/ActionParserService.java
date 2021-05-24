@@ -60,7 +60,7 @@ public final class ActionParserService {
 
 			var element = (JSONObject) o;
 
-			var result = safeString(element, "type")
+			var result = param(element, "type")
 				.flatMap(ActionType::fromString)
 				.flatMap(type -> parseByType(type, element))
 				.onSuccess(list::add);
@@ -132,10 +132,10 @@ public final class ActionParserService {
 					rri(element),
 					symbol(element),
 					name(element),
-					optionalDescription(element),
-					optionalIconUrl(element),
-					optionalTokenUrl(element),
-					amount(element)
+					description(element),
+					iconUrl(element),
+					tokenUrl(element),
+					supply(element)
 				).map(TransactionAction::createFixed);
 
 			case CREATE_MUTABLE:
@@ -152,13 +152,8 @@ public final class ActionParserService {
 	}
 
 	private Result<REAddr> rri(JSONObject element) {
-		return safeString(element, "rri")
+		return param(element, "rri")
 			.flatMap(clientApiStore::parseRri);
-	}
-
-	private Result<Optional<REAddr>> optionalRri(JSONObject element) {
-		return optionalParam(element, "rri")
-			.map(opt -> opt.flatMap(rri -> clientApiStore.parseRri(rri).toOptional()));
 	}
 
 	private static Result<REAddr> from(JSONObject element) {
@@ -174,12 +169,17 @@ public final class ActionParserService {
 	}
 
 	private static Result<UInt256> amount(JSONObject element) {
-		return safeString(element, "amount")
+		return param(element, "amount")
+			.flatMap(UInt256::fromString);
+	}
+
+	private static Result<UInt256> supply(JSONObject element) {
+		return param(element, "supply")
 			.flatMap(UInt256::fromString);
 	}
 
 	private static Result<String> name(JSONObject element) {
-		return safeString(element, "name");
+		return param(element, "name");
 	}
 
 	private static Result<Optional<String>> optionalName(JSONObject element) {
@@ -187,23 +187,31 @@ public final class ActionParserService {
 	}
 
 	private static Result<String> symbol(JSONObject element) {
-		return safeString(element, "symbol");
-	}
-
-	private static Result<String> optionalSymbol(JSONObject element) {
-		return safeString(element, "symbol");
+		return param(element, "symbol");
 	}
 
 	private static Result<Optional<String>> optionalUrl(JSONObject element) {
 		return optionalParam(element, "url");
 	}
 
+	private static Result<String> iconUrl(JSONObject element) {
+		return param(element, "iconUrl");
+	}
+
 	private static Result<Optional<String>> optionalIconUrl(JSONObject element) {
 		return optionalParam(element, "iconUrl");
 	}
 
+	private static Result<String> tokenUrl(JSONObject element) {
+		return param(element, "tokenUrl");
+	}
+
 	private static Result<Optional<String>> optionalTokenUrl(JSONObject element) {
 		return optionalParam(element, "tokenUrl");
+	}
+
+	private static Result<String> description(JSONObject element) {
+		return param(element, "description");
 	}
 
 	private static Result<Optional<String>> optionalDescription(JSONObject element) {
@@ -211,20 +219,24 @@ public final class ActionParserService {
 	}
 
 	private static Result<Optional<String>> optionalParam(JSONObject element, String name) {
-		return Result.ok(ofNullable(element.opt(name)).map(String.class::isInstance).map(String.class::cast));
+		return Result.ok(
+			ofNullable(element.opt(name))
+				.filter(String.class::isInstance)
+				.map(String.class::cast)
+		);
 	}
 
 	private static Result<ECPublicKey> validator(JSONObject element, String name) {
-		return safeString(element, name)
+		return param(element, name)
 			.flatMap(ValidatorAddress::fromString);
 	}
 
 	private static Result<REAddr> address(JSONObject element, String name) {
-		return safeString(element, name)
+		return param(element, name)
 			.flatMap(AccountAddress::parseFunctional);
 	}
 
-	private static Result<String> safeString(JSONObject params, String name) {
+	private static Result<String> param(JSONObject params, String name) {
 		return ofNullable(params.opt(name))
 			.map(Object::toString)
 			.map(Result::ok)
