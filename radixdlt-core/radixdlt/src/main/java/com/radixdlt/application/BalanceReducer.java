@@ -19,19 +19,21 @@
 package com.radixdlt.application;
 
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.tokens.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 /**
  * Balance reducer for local node
  */
-public final class BalanceReducer implements StateReducer<Balances, TokensParticle> {
+public final class BalanceReducer implements StateReducer<Balances> {
 	private final REAddr addr;
 
 	@Inject
@@ -45,8 +47,8 @@ public final class BalanceReducer implements StateReducer<Balances, TokensPartic
 	}
 
 	@Override
-	public Class<TokensParticle> particleClass() {
-		return TokensParticle.class;
+	public Set<Class<? extends Particle>> particleClasses() {
+		return Set.of(TokensParticle.class);
 	}
 
 	@Override
@@ -55,20 +57,22 @@ public final class BalanceReducer implements StateReducer<Balances, TokensPartic
 	}
 
 	@Override
-	public BiFunction<Balances, TokensParticle, Balances> outputReducer() {
+	public BiFunction<Balances, Particle, Balances> outputReducer() {
 		return (balance, p) -> {
-			if (p.getHoldingAddr().equals(addr)) {
-				return balance.add(p.getResourceAddr(), p.getAmount());
+			var tokens = (TokensParticle) p;
+			if (tokens.getHoldingAddr().equals(addr)) {
+				return balance.add(tokens.getResourceAddr(), tokens.getAmount());
 			}
 			return balance;
 		};
 	}
 
 	@Override
-	public BiFunction<Balances, TokensParticle, Balances> inputReducer() {
+	public BiFunction<Balances, Particle, Balances> inputReducer() {
 		return (balance, p) -> {
-			if (p.getHoldingAddr().equals(addr)) {
-				return balance.remove(p.getResourceAddr(), p.getAmount());
+			var tokens = (TokensParticle) p;
+			if (tokens.getHoldingAddr().equals(addr)) {
+				return balance.remove(tokens.getResourceAddr(), tokens.getAmount());
 			}
 			return balance;
 		};

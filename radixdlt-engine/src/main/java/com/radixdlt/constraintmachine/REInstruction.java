@@ -23,7 +23,6 @@ import com.radixdlt.atom.RESerializer;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Pair;
-import org.bouncycastle.util.encoders.Hex;
 
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
@@ -70,7 +69,7 @@ public final class REInstruction {
 			var length = Byte.toUnsignedInt(b.get());
 			var bytes = new byte[length];
 			b.get(bytes);
-			return Hex.toHexString(bytes);
+			return bytes;
 		}, null, null),
 		SIG((byte) 7, (txn, i, b) -> {
 			return RESerializer.deserializeSignature(b);

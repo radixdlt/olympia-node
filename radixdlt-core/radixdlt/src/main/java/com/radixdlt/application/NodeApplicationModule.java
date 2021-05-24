@@ -25,8 +25,8 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.atommodel.tokens.TokensParticle;
-import com.radixdlt.atommodel.validators.ValidatorParticle;
+import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.chaos.mempoolfiller.MempoolFiller;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
@@ -46,13 +46,13 @@ public final class NodeApplicationModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(MempoolFiller.class).in(Scopes.SINGLETON);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { })
+		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?>>() { })
 			.addBinding().to(BalanceReducer.class).in(Scopes.SINGLETON);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { })
+		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?>>() { })
 			.addBinding().to(StakedBalanceReducer.class).in(Scopes.SINGLETON);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { })
+		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?>>() { })
 			.addBinding().to(StakeReceivedReducer.class).in(Scopes.SINGLETON);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { })
+		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?>>() { })
 			.addBinding().to(ValidatorInfoReducer.class).in(Scopes.SINGLETON);
 
 		bind(NodeApplication.class).in(Scopes.SINGLETON);

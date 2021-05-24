@@ -58,30 +58,30 @@ import java.util.function.Predicate;
 public final class RadixEngine<M> {
 	private static final Logger logger = LogManager.getLogger();
 
-	private static class ApplicationStateComputer<U, V extends Particle, M> {
-		private final Class<V> particleClass;
-		private final BiFunction<U, V, U> outputReducer;
-		private final BiFunction<U, V, U> inputReducer;
+	private static class ApplicationStateReducer<U, M> {
+		private final Set<Class<? extends Particle>> particleClasses;
+		private final BiFunction<U, Particle, U> outputReducer;
+		private final BiFunction<U, Particle, U> inputReducer;
 		private final boolean includeInBranches;
 		private U curValue;
 
-		ApplicationStateComputer(
-			Class<V> particleClass,
+		ApplicationStateReducer(
+			Set<Class<? extends Particle>> particleClasses,
 			U initialValue,
-			BiFunction<U, V, U> outputReducer,
-			BiFunction<U, V, U> inputReducer,
+			BiFunction<U, Particle, U> outputReducer,
+			BiFunction<U, Particle, U> inputReducer,
 			boolean includeInBranches
 		) {
-			this.particleClass = particleClass;
+			this.particleClasses = particleClasses;
 			this.curValue = initialValue;
 			this.outputReducer = outputReducer;
 			this.inputReducer = inputReducer;
 			this.includeInBranches = includeInBranches;
 		}
 
-		ApplicationStateComputer<U, V, M> copy() {
-			return new ApplicationStateComputer<>(
-				particleClass,
+		ApplicationStateReducer<U, M> copy() {
+			return new ApplicationStateReducer<>(
+				particleClasses,
 				curValue,
 				outputReducer,
 				inputReducer,
@@ -90,16 +90,19 @@ public final class RadixEngine<M> {
 		}
 
 		void initialize(EngineStore<M> engineStore) {
-			curValue = engineStore.reduceUpParticles(particleClass, curValue, outputReducer);
+			for (var particleClass : particleClasses) {
+				curValue = engineStore.reduceUpParticles(particleClass, curValue, outputReducer);
+			}
 		}
 
 		void processCheckSpin(Particle p, Spin checkSpin) {
-			if (particleClass.isInstance(p)) {
-				V particle = particleClass.cast(p);
-				if (checkSpin == Spin.NEUTRAL) {
-					curValue = outputReducer.apply(curValue, particle);
-				} else {
-					curValue = inputReducer.apply(curValue, particle);
+			for (var particleClass : particleClasses) {
+				if (particleClass.isInstance(p)) {
+					if (checkSpin == Spin.NEUTRAL) {
+						curValue = outputReducer.apply(curValue, p);
+					} else {
+						curValue = inputReducer.apply(curValue, p);
+					}
 				}
 			}
 		}
@@ -144,7 +147,7 @@ public final class RadixEngine<M> {
 	private final EngineStore<M> engineStore;
 	private final PostParsedChecker checker;
 	private final Object stateUpdateEngineLock = new Object();
-	private final Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, M>> stateComputers = new HashMap<>();
+	private final Map<Pair<Class<?>, String>, ApplicationStateReducer<?, M>> stateComputers = new HashMap<>();
 	private final Map<Class<?>, SubstateCache<?>> substateCache = new HashMap<>();
 	private final List<RadixEngineBranch<M>> branches = new ArrayList<>();
 	private final BatchVerifier<M> batchVerifier;
@@ -202,11 +205,10 @@ public final class RadixEngine<M> {
 	 *
 	 * @param stateReducer the reducer
 	 * @param <U> the class of the state
-	 * @param <V> the class of the particles to map
 	 */
-	public <U, V extends Particle> void addStateReducer(StateReducer<U, V> stateReducer, String name, boolean includeInBranches) {
-		ApplicationStateComputer<U, V, M> applicationStateComputer = new ApplicationStateComputer<>(
-			stateReducer.particleClass(),
+	public <U> void addStateReducer(StateReducer<U> stateReducer, String name, boolean includeInBranches) {
+		ApplicationStateReducer<U, M> applicationStateComputer = new ApplicationStateReducer<>(
+			stateReducer.particleClasses(),
 			stateReducer.initial().get(),
 			stateReducer.outputReducer(),
 			stateReducer.inputReducer(),
@@ -219,7 +221,7 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	public <U, V extends Particle> void addStateReducer(StateReducer<U, V> stateReducer, boolean includeInBranches) {
+	public <U> void addStateReducer(StateReducer<U> stateReducer, boolean includeInBranches) {
 		addStateReducer(stateReducer, null, includeInBranches);
 	}
 
@@ -267,7 +269,7 @@ public final class RadixEngine<M> {
 			ConstraintMachine constraintMachine,
 			EngineStore<M> parentStore,
 			PostParsedChecker checker,
-			Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, M>> stateComputers,
+			Map<Pair<Class<?>, String>, ApplicationStateReducer<?, M>> stateComputers,
 			Map<Class<?>, SubstateCache<?>> substateCache
 		) {
 			var transientEngineStore = new TransientEngineStore<>(parentStore);
@@ -313,7 +315,7 @@ public final class RadixEngine<M> {
 
 	public RadixEngineBranch<M> transientBranch() {
 		synchronized (stateUpdateEngineLock) {
-			Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, M>> branchedStateComputers = new HashMap<>();
+			Map<Pair<Class<?>, String>, ApplicationStateReducer<?, M>> branchedStateComputers = new HashMap<>();
 			this.stateComputers.forEach((c, computer) -> {
 				if (computer.includeInBranches) {
 					branchedStateComputers.put(c, computer.copy());
@@ -520,7 +522,7 @@ public final class RadixEngine<M> {
 			txBuilder -> {
 				for (var action : actions) {
 					this.actionConstructors.construct(action, txBuilder);
-					txBuilder.particleGroup();
+					txBuilder.end();
 				}
 			},
 			avoid

@@ -26,7 +26,6 @@ import com.radixdlt.client.Rri;
 import com.radixdlt.client.api.ActionEntry;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.store.ClientApiStore;
-import com.radixdlt.client.store.MessageEntry;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -179,9 +178,7 @@ public class HighLevelApiServiceTest {
 	private TxHistoryEntry createTxHistoryEntry(AID txId) {
 		var now = Instant.ofEpochMilli(Instant.now().toEpochMilli());
 		var action = ActionEntry.unknown();
-		return TxHistoryEntry.create(
-			txId, now, UInt256.ONE, MessageEntry.fromPlainString("text"), List.of(action)
-		);
+		return TxHistoryEntry.create(txId, now, UInt256.ONE, "text", List.of(action));
 	}
 
 	private CreateMutableToken mutableTokenDef(String symbol) {

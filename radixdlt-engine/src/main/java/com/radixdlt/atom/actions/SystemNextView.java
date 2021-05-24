@@ -21,7 +21,6 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.crypto.ECPublicKey;
 
-
 public final class SystemNextView implements TxAction {
 	private final long view;
 	private final long timestamp;

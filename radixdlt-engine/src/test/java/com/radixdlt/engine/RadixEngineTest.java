@@ -19,7 +19,7 @@ package com.radixdlt.engine;
 
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atommodel.system.SystemConstraintScrypt;
+import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV1;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
@@ -28,6 +28,7 @@ import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.test.utils.TypedMocks;
 
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import org.junit.Before;
@@ -59,11 +60,11 @@ public class RadixEngineTest {
 	public void empty_particle_group_should_throw_error() {
 		// Arrange
 		CMAtomOS cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new SystemConstraintScrypt());
+		cmAtomOS.load(new SystemConstraintScryptV1());
 		ConstraintMachine cm = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
-			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
+			.setParticleTransitionProcedures(cmAtomOS.getProcedures())
 			.build();
 		var actionConstructors = ActionConstructors.newBuilder().build();
 		RadixEngine<Void> engine = new RadixEngine<>(actionConstructors, cm, new InMemoryEngineStore<>());
@@ -71,7 +72,7 @@ public class RadixEngineTest {
 		// Act
 		// Assert
 		var atom = TxLowLevelBuilder.newBuilder()
-			.particleGroup()
+			.end()
 			.build();
 		assertThatThrownBy(() -> engine.execute(List.of(atom)))
 			.isInstanceOf(RadixEngineException.class);
@@ -88,8 +89,8 @@ public class RadixEngineTest {
 				}
 
 				@Override
-				public Class<Particle> particleClass() {
-					return Particle.class;
+				public Set<Class<? extends Particle>> particleClasses() {
+					return Set.of(Particle.class);
 				}
 
 				@Override

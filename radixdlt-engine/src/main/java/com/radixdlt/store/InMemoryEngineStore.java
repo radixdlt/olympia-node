@@ -22,8 +22,8 @@ import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.atommodel.system.state.SystemParticle;
+import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
 import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -67,10 +67,10 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	}
 
 	@Override
-	public <U extends Particle, V> V reduceUpParticles(
-		Class<U> particleClass,
+	public <V> V reduceUpParticles(
+		Class<? extends Particle> particleClass,
 		V initial,
-		BiFunction<V, U, V> outputReducer
+		BiFunction<V, Particle, V> outputReducer
 	) {
 		V v = initial;
 		synchronized (lock) {

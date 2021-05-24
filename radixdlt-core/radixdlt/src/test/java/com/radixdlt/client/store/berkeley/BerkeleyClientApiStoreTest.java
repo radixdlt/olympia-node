@@ -75,9 +75,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.disposables.Disposable;
-
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -335,12 +332,6 @@ public class BerkeleyClientApiStoreTest {
 			return null;
 		}).when(ledgerStore).forEach(any(Consumer.class));
 
-		var ledgerCommitted = mock(Observable.class);
-		when(ledgerCommitted.observeOn(any())).thenReturn(ledgerCommitted);
-
-		var disposable = mock(Disposable.class);
-		when(ledgerCommitted.subscribe((io.reactivex.rxjava3.functions.Consumer<?>) any())).thenReturn(disposable);
-
 		return new BerkeleyClientApiStore(
 			environment,
 			constraintMachine,
@@ -349,7 +340,6 @@ public class BerkeleyClientApiStoreTest {
 			serialization,
 			mock(SystemCounters.class),
 			mock(ScheduledEventDispatcher.class),
-			ledgerCommitted,
 			new TransactionParser(),
 			true
 		);

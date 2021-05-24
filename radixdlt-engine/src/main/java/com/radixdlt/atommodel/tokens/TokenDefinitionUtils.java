@@ -18,6 +18,9 @@
 package com.radixdlt.atommodel.tokens;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
+import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.utils.UInt256;
 
@@ -87,7 +90,7 @@ public final class TokenDefinitionUtils {
 		return Result.success();
 	}
 
-	public static Result staticCheck(StakedTokensParticle stakedParticle) {
+	public static Result staticCheck(DeprecatedStake stakedParticle) {
 		if (stakedParticle.getDelegateKey() == null) {
 			return Result.error("delegateAddress must not be null");
 		}

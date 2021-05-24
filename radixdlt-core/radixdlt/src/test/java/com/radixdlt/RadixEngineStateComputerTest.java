@@ -37,7 +37,7 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atom.actions.SystemNextView;
-import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -80,9 +80,7 @@ import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
-import com.radixdlt.statecomputer.RegisteredValidators;
-import com.radixdlt.statecomputer.Stakes;
-import com.radixdlt.statecomputer.ValidatorSetBuilder;
+import com.radixdlt.statecomputer.StakedValidators;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
@@ -112,10 +110,6 @@ public class RadixEngineStateComputerTest {
 
 	@Inject
 	private RadixEngineStateComputer sut;
-
-	@Inject
-	private ValidatorSetBuilder validatorSetBuilder;
-
 
 	private Serialization serialization = DefaultSerialization.getInstance();
 	private InMemoryEngineStore<LedgerAndBFTProof> engineStore;
@@ -170,10 +164,7 @@ public class RadixEngineStateComputerTest {
 	private void setupGenesis() throws RadixEngineException {
 		var branch = radixEngine.transientBranch();
 		branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
-		final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
-			branch.getComputedState(RegisteredValidators.class),
-			branch.getComputedState(Stakes.class)
-		);
+		final var genesisValidatorSet = branch.getComputedState(StakedValidators.class).toValidatorSet();
 		radixEngine.deleteBranches();
 
 		var genesisLedgerHeader = LedgerProof.genesis(
@@ -286,8 +277,8 @@ public class RadixEngineStateComputerTest {
 			.buildWithoutSignature();
 		var illegalTxn = TxLowLevelBuilder.newBuilder()
 			.down(SubstateId.ofSubstate(txn.getId(), 1))
-			.up(new SystemParticle(1, 3, 0, ECKeyPair.generateNew().getPublicKey()))
-			.particleGroup()
+			.up(new SystemParticle(1, 3, 0))
+			.end()
 			.build();
 		var v = UnverifiedVertex.create(
 			mock(QuorumCertificate.class),
@@ -306,7 +297,7 @@ public class RadixEngineStateComputerTest {
 			new Condition<>(
 				e -> {
 					RadixEngineException ex = (RadixEngineException) e;
-					return ex.getCmError().getErrorCode().equals(CMErrorCode.INVALID_EXECUTION_PERMISSION);
+					return ex.getCmError().getErrorCode().equals(CMErrorCode.PERMISSION_LEVEL_ERROR);
 				},
 				"Is invalid_execution_permission error"
 			)

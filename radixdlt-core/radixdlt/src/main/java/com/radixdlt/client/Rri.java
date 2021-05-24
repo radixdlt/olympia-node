@@ -18,9 +18,9 @@
 
 package com.radixdlt.client;
 
+import com.radixdlt.atomos.CMAtomOS;
 import org.bitcoinj.core.Bech32;
 
-import com.radixdlt.atomos.ConstraintScryptEnv;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Bits;
 import com.radixdlt.utils.Pair;
@@ -60,7 +60,7 @@ public final class Rri {
 			throw new IllegalArgumentException("Address hrp suffix must be " + RRI_HRP_SUFFIX + "(" + rri + ")");
 		}
 		var symbol = data.hrp.substring(0, data.hrp.length() - RRI_HRP_SUFFIX.length());
-		if (!ConstraintScryptEnv.NAME_PATTERN.matcher(symbol).matches()) {
+		if (!CMAtomOS.NAME_PATTERN.matcher(symbol).matches()) {
 			throw new IllegalArgumentException("Invalid symbol in address (" + rri + ")");
 		}
 		var addrBytes = fromBech32Data(data.data);

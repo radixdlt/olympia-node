@@ -46,7 +46,7 @@ import static org.awaitility.Awaitility.await;
 public class ChaosExperimentUtils {
 
     private ChaosExperimentUtils() {
-        // for checkstyle
+
     }
 
     private static final Logger logger = LogManager.getLogger();

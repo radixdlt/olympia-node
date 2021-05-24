@@ -21,7 +21,6 @@ import org.json.JSONObject;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.store.MessageEntry;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
@@ -33,7 +32,6 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 import static com.radixdlt.api.JsonRpcUtil.fromList;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
@@ -60,13 +58,13 @@ public class TxHistoryEntry {
 
 	@JsonProperty("msg")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final MessageEntry message;
+	private final String message;
 
 	@JsonProperty("actions")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final List<ActionEntry> actions;
 
-	private TxHistoryEntry(AID txId, Instant timestamp, UInt256 fee, MessageEntry message, List<ActionEntry> actions) {
+	private TxHistoryEntry(AID txId, Instant timestamp, UInt256 fee, String message, List<ActionEntry> actions) {
 		this.txId = txId;
 		this.timestamp = timestamp;
 		this.fee = fee;
@@ -79,7 +77,7 @@ public class TxHistoryEntry {
 		@JsonProperty("txId") AID txId,
 		@JsonProperty("ts") Instant date,
 		@JsonProperty("fee") UInt256 fee,
-		@JsonProperty("msg") MessageEntry message,
+		@JsonProperty("msg") String message,
 		@JsonProperty("actions") List<ActionEntry> actions
 	) {
 		requireNonNull(txId);
@@ -101,7 +99,7 @@ public class TxHistoryEntry {
 		return fee;
 	}
 
-	public MessageEntry getMessage() {
+	public String getMessage() {
 		return message;
 	}
 
@@ -138,7 +136,7 @@ public class TxHistoryEntry {
 			.put("sentAt", DateTimeFormatter.ISO_INSTANT.format(timestamp))
 			.put("fee", fee)
 			.put("actions", fromList(actions, ActionEntry::asJson))
-			.putOpt("message", Optional.ofNullable(message).map(MessageEntry::asJson).orElse(null));
+			.putOpt("message", message);
 	}
 
 	@Override

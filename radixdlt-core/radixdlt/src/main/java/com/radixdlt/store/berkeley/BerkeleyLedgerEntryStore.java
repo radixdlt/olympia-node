@@ -17,7 +17,7 @@
 
 package com.radixdlt.store.berkeley;
 
-import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.atommodel.system.state.SystemParticle;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -29,7 +29,7 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -512,10 +512,10 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 	}
 
-	public <U extends Particle, V> V reduceUpParticles(
-		Class<U> particleClass,
+	public <V> V reduceUpParticles(
+		Class<? extends Particle> particleClass,
 		V initial,
-		BiFunction<V, U, V> outputReducer
+		BiFunction<V, Particle, V> outputReducer
 	) {
 		var typeBytes = RESerializer.classToBytes(particleClass);
 		V v = initial;
@@ -525,9 +525,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				var value = entry();
 				var status = particleCursor.getSearchKey(index, null, value, null);
 				while (status == SUCCESS) {
-					U particle;
+					Particle particle;
 					try {
-						particle = (U) RESerializer.deserialize(value.getData());
+						particle = RESerializer.deserialize(value.getData());
 					} catch (DeserializeException e) {
 						throw new IllegalStateException();
 					}

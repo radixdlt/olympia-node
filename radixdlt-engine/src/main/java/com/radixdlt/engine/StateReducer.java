@@ -19,16 +19,17 @@ package com.radixdlt.engine;
 
 import com.radixdlt.constraintmachine.Particle;
 
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 /**
  * Reduces particles to state
  */
-public interface StateReducer<U, V extends Particle> {
+public interface StateReducer<U> {
     Class<U> stateClass();
-    Class<V> particleClass();
+    Set<Class<? extends Particle>> particleClasses();
     Supplier<U> initial();
-    BiFunction<U, V, U> outputReducer();
-    BiFunction<U, V, U> inputReducer();
+    BiFunction<U, Particle, U> outputReducer();
+    BiFunction<U, Particle, U> inputReducer();
 }

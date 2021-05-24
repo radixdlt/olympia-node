@@ -22,11 +22,10 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.radixdlt.atommodel.validators.ValidatorParticle;
+import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RegisteredValidators;
-import com.radixdlt.statecomputer.Stakes;
+import com.radixdlt.statecomputer.StakedValidators;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Optional;
@@ -119,19 +118,15 @@ public class ValidatorInfoServiceTest {
 		var particle1 = new ValidatorParticle(validator1, false, "V1", "http://v1.com");
 		var particle2 = new ValidatorParticle(validator2, false, "V2", "http://v2.com");
 		var particle3 = new ValidatorParticle(validator3, false, "V3", "http://v3.com");
-		var validators = RegisteredValidators.create()
+		var validators = StakedValidators.create(3, 3)
 			.add(particle1)
 			.add(particle2)
-			.add(particle3);
-
-		when(radixEngine.getComputedState(eq(RegisteredValidators.class))).thenReturn(validators);
-
-		var stakes = Stakes.create()
+			.add(particle3)
 			.add(validator1, UInt256.FIVE)
 			.add(validator2, UInt256.EIGHT)
 			.add(validator3, UInt256.TEN);
 
-		when(radixEngine.getComputedState(eq(Stakes.class))).thenReturn(stakes);
+		when(radixEngine.getComputedState(eq(StakedValidators.class))).thenReturn(validators);
 		return validatorInfoService;
 	}
 }

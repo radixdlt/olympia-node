@@ -17,11 +17,6 @@
 
 package com.radixdlt.atomos;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.constraintmachine.TransitionProcedure;
-import com.radixdlt.constraintmachine.TransitionToken;
-import com.radixdlt.constraintmachine.VoidReducerState;
-
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -29,9 +24,7 @@ import org.junit.Test;
 
 import com.radixdlt.constraintmachine.Particle;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.Mockito.mock;
 
 public class CMAtomOSTest {
 	private static final class TestParticle implements Particle {
@@ -61,50 +54,6 @@ public class CMAtomOSTest {
 	private abstract static class TestParticle1 implements Particle {
 		// Empty
 	}
-
-	interface TransitionProcedureTestParticle00 extends TransitionProcedure<TestParticle0, TestParticle0, VoidReducerState> {
-		// Empty
-	}
-
-	interface TransitionProcedureTestParticle10 extends TransitionProcedure<TestParticle1, TestParticle0, VoidReducerState> {
-		// Empty
-	}
-
-	@Test
-	public void when_adding_procedure_on_particle_registered_in_another_scrypt__exception_is_thrown() {
-		CMAtomOS os = new CMAtomOS();
-		TransitionProcedure<TestParticle0, TestParticle0, VoidReducerState> procedure =
-			mock(TransitionProcedureTestParticle00.class);
-		os.load(syscalls -> {
-			syscalls.registerParticle(TestParticle0.class, ParticleDefinition.<TestParticle>builder()
-				.build());
-			syscalls.createTransition(
-				new TransitionToken<>(
-					TestParticle0.class,
-					TestParticle0.class,
-					TypeToken.of(VoidReducerState.class)
-				),
-				procedure
-			);
-		});
-		TransitionProcedure<TestParticle1, TestParticle0, VoidReducerState> procedure0 =
-			mock(TransitionProcedureTestParticle10.class);
-		assertThatThrownBy(() ->
-			os.load(syscalls -> {
-				syscalls.registerParticle(TestParticle1.class, ParticleDefinition.<TestParticle>builder()
-					.build());
-				syscalls.createTransition(
-					new TransitionToken<>(
-						TestParticle1.class,
-						TestParticle0.class,
-						TypeToken.of(VoidReducerState.class)
-					),
-					procedure0
-				);
-			})
-		).isInstanceOf(IllegalStateException.class);
-	}
-
 
 	@Test
 	public void when_a_particle_which_is_not_registered_via_os_is_validated__it_should_cause_errors() {

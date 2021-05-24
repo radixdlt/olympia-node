@@ -46,9 +46,9 @@ public interface EngineStore<M> extends SubstateStore, CMStore {
 	 * @param <V> the class of the state to reduce to
 	 * @return the computed, reduced state
 	 */
-	<U extends Particle, V> V reduceUpParticles(
-		Class<U> particleClass,
+	<V> V reduceUpParticles(
+		Class<? extends Particle> particleClass,
 		V initial,
-		BiFunction<V, U, V> outputReducer
+		BiFunction<V, Particle, V> outputReducer
 	);
 }

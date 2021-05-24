@@ -32,7 +32,7 @@ import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.client.Rri;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.store.ClientApiStore;
@@ -78,7 +78,6 @@ import java.util.stream.Stream;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
@@ -135,7 +134,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final SystemCounters systemCounters;
 	private final ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher;
 	private final StackingCollector<AtomsCommittedToLedger> txCollector = StackingCollector.create();
-	private final Observable<AtomsCommittedToLedger> ledgerCommitted;
 	private final AtomicLong inputCounter = new AtomicLong();
 	private final CompositeDisposable disposable = new CompositeDisposable();
 	private final AtomicReference<Instant> currentTimestamp = new AtomicReference<>(NOW);
@@ -160,7 +158,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		Serialization serialization,
 		SystemCounters systemCounters,
 		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
-		Observable<AtomsCommittedToLedger> ledgerCommitted,
 		TransactionParser transactionParser,
 		boolean isTest
 	) {
@@ -171,7 +168,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		this.serialization = serialization;
 		this.systemCounters = systemCounters;
 		this.scheduledFlushEventDispatcher = scheduledFlushEventDispatcher;
-		this.ledgerCommitted = ledgerCommitted;
 		this.transactionParser = transactionParser;
 
 		open(isTest);
@@ -186,7 +182,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		Serialization serialization,
 		SystemCounters systemCounters,
 		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
-		Observable<AtomsCommittedToLedger> ledgerCommitted,
 		TransactionParser transactionParser
 	) {
 		this.dbEnv = dbEnv;
@@ -196,7 +191,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		this.serialization = serialization;
 		this.systemCounters = systemCounters;
 		this.scheduledFlushEventDispatcher = scheduledFlushEventDispatcher;
-		this.ledgerCommitted = ledgerCommitted;
 		this.transactionParser = transactionParser;
 
 		open(false);
@@ -358,14 +352,17 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		var data = entry();
 
 		try (var cursor = transactionHistory.openCursor(null, null)) {
-			var status = readTxHistory(() -> cursor.getSearchKeyRange(key, data, null), data);
-			if (status != OperationStatus.SUCCESS) {
-				return Result.ok(List.of());
-			}
+			var status = readTxHistory(() -> cursor.getSearchKey(key, data, null), data);
 
-			status = readTxHistory(() -> cursor.getLast(key, data, null), data);
+			//When searching with no cursor, exact navigation (cursor.getSearchKey) may fail,
+			//because there is no exact match. Nevertheless, cursor is positioned to correct location,
+			//so we just need get previous record.
 			if (status != OperationStatus.SUCCESS) {
-				return Result.ok(List.of());
+				status = readTxHistory(() -> cursor.getPrev(key, data, null), data);
+
+				if (status != OperationStatus.SUCCESS) {
+					return Result.ok(List.of());
+				}
 			}
 
 			// skip first entry if it's the same as the cursor
@@ -519,8 +516,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 			scheduledFlushEventDispatcher.dispatch(ScheduledQueueFlush.create(), DEFAULT_FLUSH_INTERVAL);
 
-			disposable.add(ledgerCommitted.subscribe(this::newBatch));
-
 		} catch (Exception e) {
 			throw new ClientApiStoreException("Error while opening databases", e);
 		}
@@ -548,6 +543,10 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		log.info("Database rebuilding is started");
 		store.forEach(txn -> txnParser.parseTxn(txn).onSuccess(this::processRETransaction));
 		log.info("Database rebuilding is finished successfully");
+	}
+
+	public EventProcessor<AtomsCommittedToLedger> atomsCommittedToLedgerEventProcessor() {
+		return this::newBatch;
 	}
 
 	private void newBatch(AtomsCommittedToLedger transactions) {
