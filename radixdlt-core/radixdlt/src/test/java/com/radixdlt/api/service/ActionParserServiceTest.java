@@ -357,8 +357,11 @@ public class ActionParserServiceTest {
 	public void createFixedTokenIsParsedCorrectly() {
 		var fromAddr = AccountAddress.of(from);
 
-		var source = "[{\"type\":\"CreateFixedSupplyToken\", \"from\":\"%s\", \"rri\":\"%s\", \"symbol\":\"%s\", \"name\":\"%s\", \"description\":\"%s\", \"iconUrl\":\"%s\", \"tokenUrl\":\"%s\", \"supply\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, fromAddr, rri, "symbol", "name", "description", "http://icon.url/", "http://token.url/", UInt256.TEN));
+		var source = "[{\"type\":\"CreateFixedSupplyToken\", \"from\":\"%s\", \"rri\":\"%s\", \"symbol\":\"%s\", "
+			+ "\"name\":\"%s\", \"description\":\"%s\", \"iconUrl\":\"%s\", \"tokenUrl\":\"%s\", \"supply\":\"%s\"}]";
+		var actions = jsonArray(String.format(source, fromAddr, rri, "symbol",
+											  "name", "description", "http://icon.url/", "http://token.url/", UInt256.TEN
+		));
 
 		actionParserService.parse(actions)
 			.onFailure(this::fail)
@@ -386,8 +389,11 @@ public class ActionParserServiceTest {
 
 	@Test
 	public void createMutableTokenIsParsedCorrectlyWithOptionalElements() {
-		var source = "[{\"type\":\"CreateMutableSupplyToken\", \"symbol\":\"%s\", \"name\":\"%s\", \"description\":\"%s\", \"iconUrl\":\"%s\", \"tokenUrl\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, "symbol", "name", "description", "http://icon.url/", "http://token.url/"));
+		var source = "[{\"type\":\"CreateMutableSupplyToken\", \"symbol\":\"%s\", \"name\":\"%s\", "
+			+ "\"description\":\"%s\", \"iconUrl\":\"%s\", \"tokenUrl\":\"%s\"}]";
+		var actions = jsonArray(String.format(source, "symbol", "name",
+											  "description", "http://icon.url/", "http://token.url/"
+		));
 
 		actionParserService.parse(actions)
 			.onFailure(this::fail)
