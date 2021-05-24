@@ -28,11 +28,13 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
@@ -342,7 +344,7 @@ public final class RadixEngine<M> {
 	}
 
 	private REParsedTxn verify(CMStore.Transaction dbTransaction, Txn txn, PermissionLevel permissionLevel)
-		throws RadixEngineException {
+		throws TxnParseException, ConstraintMachineException {
 
 		var parsedTxn = constraintMachine.verify(
 			dbTransaction,
@@ -352,15 +354,7 @@ public final class RadixEngine<M> {
 		);
 
 		if (checker != null) {
-			var hookResult = checker.check(permissionLevel, parsedTxn);
-			if (hookResult.isError()) {
-				throw new RadixEngineException(
-					txn,
-					RadixEngineErrorCode.HOOK_ERROR,
-					"Checker failed: " + hookResult.getErrorMessage(),
-					parsedTxn.getStatelessResult()
-				);
-			}
+			checker.check(permissionLevel, parsedTxn);
 		}
 
 		return parsedTxn;
@@ -415,8 +409,14 @@ public final class RadixEngine<M> {
 		var checker = batchVerifier.newVerifier(this::getComputedState);
 		var parsedTransactions = new ArrayList<REParsedTxn>();
 		for (var txn : txns) {
+			final REParsedTxn parsedTxn;
 			// TODO: combine verification and storage
-			var parsedTxn = this.verify(dbTransaction, txn, permissionLevel);
+			try {
+				parsedTxn = this.verify(dbTransaction, txn, permissionLevel);
+			} catch (TxnParseException | ConstraintMachineException e) {
+				throw new RadixEngineException(txn, e);
+			}
+
 			try {
 				this.engineStore.storeTxn(dbTransaction, txn, parsedTxn.stateUpdates());
 			} catch (Exception e) {

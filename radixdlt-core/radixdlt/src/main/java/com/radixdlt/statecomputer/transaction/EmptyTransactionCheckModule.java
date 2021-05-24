@@ -20,7 +20,9 @@ package com.radixdlt.statecomputer.transaction;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.atomos.Result;
+import com.radixdlt.constraintmachine.CMError;
+import com.radixdlt.constraintmachine.CMErrorCode;
+import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.engine.PostParsedChecker;
 
 /**
@@ -29,9 +31,10 @@ import com.radixdlt.engine.PostParsedChecker;
 public class EmptyTransactionCheckModule extends AbstractModule {
 	@ProvidesIntoSet
 	private PostParsedChecker emptyTxChecker() {
-		return (permissionLevel, reTxn) ->
-			reTxn.getGroupedStateUpdates().isEmpty()
-				? Result.error("atom has no state updates")
-				: Result.success();
+		return (permissionLevel, reTxn) -> {
+			if (reTxn.getGroupedStateUpdates().isEmpty()) {
+				throw new ConstraintMachineException(new CMError(CMErrorCode.NO_STATE_UPDATES, null));
+			}
+		};
 	}
 }

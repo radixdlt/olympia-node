@@ -155,7 +155,7 @@ public class TokenDefinitionTest {
 		// Act and Assert
 		assertThatThrownBy(() -> this.engine.execute(List.of(txn)))
 			.isInstanceOf(RadixEngineException.class)
-			.extracting("cmError.errorCode")
+			.extracting("cause.error.errorCode")
 			.containsExactly(CMErrorCode.AUTHORIZATION_ERROR);
 	}
 }

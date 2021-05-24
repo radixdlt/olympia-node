@@ -36,11 +36,11 @@ public final class REParsedTxn {
 	private final Txn txn;
 	private final List<List<REStateUpdate>> parsedInstructions;
 	private final List<REParsedAction> actions;
-	private final ConstraintMachine.StatelessVerificationResult statelessResult;
+	private final ConstraintMachine.ParseResult statelessResult;
 
 	public REParsedTxn(
 		Txn txn,
-		ConstraintMachine.StatelessVerificationResult statelessResult,
+		ConstraintMachine.ParseResult statelessResult,
 		List<List<REStateUpdate>> parsedInstructions,
 		List<REParsedAction> actions
 	) {
@@ -54,7 +54,7 @@ public final class REParsedTxn {
 		return statelessResult.getMsg();
 	}
 
-	public ConstraintMachine.StatelessVerificationResult getStatelessResult() {
+	public ConstraintMachine.ParseResult getStatelessResult() {
 		return statelessResult;
 	}
 

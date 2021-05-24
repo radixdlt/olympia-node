@@ -51,6 +51,7 @@ import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMErrorCode;
+import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -298,7 +299,8 @@ public class RadixEngineStateComputerTest {
 			new Condition<>(
 				e -> {
 					RadixEngineException ex = (RadixEngineException) e;
-					return ex.getCmError().getErrorCode().equals(CMErrorCode.PERMISSION_LEVEL_ERROR);
+					ConstraintMachineException cmException = (ConstraintMachineException) ex.getCause();
+					return cmException.getError().getErrorCode().equals(CMErrorCode.PERMISSION_LEVEL_ERROR);
 				},
 				"Is invalid_execution_permission error"
 			)

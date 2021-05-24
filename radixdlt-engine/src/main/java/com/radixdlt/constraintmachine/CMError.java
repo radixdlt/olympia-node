@@ -25,27 +25,23 @@ import javax.annotation.Nullable;
  * An error with a pointer to the issue
  */
 public final class CMError {
-	private final int instructionIndex;
 	private final CMErrorCode errorCode;
 	private final String errMsg;
 	private final CMValidationState cmValidationState;
 
 	public CMError(
-		int instructionIndex,
 		CMErrorCode errorCode,
 		CMValidationState cmValidationState
 	) {
-		this(instructionIndex, errorCode, cmValidationState, null);
+		this(errorCode, cmValidationState, null);
 	}
 
 	public CMError(
-		int instructionIndex,
 		CMErrorCode errorCode,
 		CMValidationState cmValidationState,
 		String errMsg
 	) {
 		this.errorCode = Objects.requireNonNull(errorCode);
-		this.instructionIndex = instructionIndex;
 		this.errMsg = errMsg;
 		this.cmValidationState = cmValidationState;
 	}
@@ -59,17 +55,10 @@ public final class CMError {
 		return errorCode;
 	}
 
-	public String getErrorDescription() {
-		return errorCode.getDescription() + (errMsg == null ? "" : ": " + errMsg);
-	}
-
-	public CMValidationState getCmValidationState() {
-		return cmValidationState;
-	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(errMsg, instructionIndex, errorCode, cmValidationState);
+		return Objects.hash(errMsg, errorCode, cmValidationState);
 	}
 
 	@Override
@@ -80,13 +69,12 @@ public final class CMError {
 
 		CMError e = (CMError) o;
 		return Objects.equals(e.errMsg, this.errMsg)
-			&& e.instructionIndex == this.instructionIndex
 			&& Objects.equals(e.errorCode, this.errorCode)
 			&& Objects.equals(e.cmValidationState, this.cmValidationState);
 	}
 
 	@Override
 	public String toString() {
-		return "Error=" + errorCode + " Msg=" + getErrMsg() + " State=" + cmValidationState + " Index=" + instructionIndex;
+		return "Error=" + errorCode + " Msg=" + getErrMsg() + " State=" + cmValidationState;
 	}
 }

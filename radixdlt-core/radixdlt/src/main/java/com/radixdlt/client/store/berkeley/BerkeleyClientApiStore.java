@@ -17,6 +17,7 @@
 
 package com.radixdlt.client.store.berkeley;
 
+import com.radixdlt.constraintmachine.TxnParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,7 +47,6 @@ import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
@@ -731,8 +731,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private Optional<ECPublicKey> extractCreator(Txn tx) {
 		try {
-			return constraintMachine.statelessVerify(tx).getSignedBy();
-		} catch (RadixEngineException e) {
+			return constraintMachine.parse(tx).getSignedBy();
+		} catch (TxnParseException e) {
 			throw new IllegalStateException();
 		}
 	}

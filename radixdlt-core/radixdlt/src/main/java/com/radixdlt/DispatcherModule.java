@@ -59,10 +59,8 @@ import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
-import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.environment.Dispatchers;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
@@ -80,7 +78,6 @@ import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
-import com.radixdlt.statecomputer.RadixEngineMempoolException;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
@@ -117,17 +114,6 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.dispatcherProvider(
 				MempoolAddFailure.class,
 				m -> {
-					if (m.getException() instanceof RadixEngineMempoolException) {
-						var e = (RadixEngineMempoolException) m.getException();
-						if (e.getException().getErrorCode().equals(RadixEngineErrorCode.HOOK_ERROR)) {
-							return CounterType.MEMPOOL_ERRORS_HOOK;
-						} else if (e.getException().getErrorCode().equals(RadixEngineErrorCode.CM_ERROR)) {
-							var errorCode = e.getException().getCmError().getErrorCode();
-							if (errorCode == CMErrorCode.SUBSTATE_NOT_FOUND) {
-								return CounterType.MEMPOOL_ERRORS_CONFLICT;
-							}
-						}
-					}
 					return CounterType.MEMPOOL_ERRORS_OTHER;
 				},
 				false
