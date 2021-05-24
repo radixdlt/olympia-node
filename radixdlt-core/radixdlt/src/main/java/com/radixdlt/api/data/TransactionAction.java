@@ -129,11 +129,11 @@ public class TransactionAction {
 
 	public static TransactionAction createFixed(
 		REAddr from, REAddr rri, String symbol, String name,
-		Optional<String> description, Optional<String> iconUrl, Optional<String> tokenUrl, UInt256 amount
+		String description, String iconUrl, String tokenUrl, UInt256 amount
 	) {
 		return create(
 			ActionType.CREATE_FIXED, from, null, null, amount, rri,
-			name, null, symbol, iconUrl.orElse(null), tokenUrl.orElse(null), description.orElse(null)
+			name, null, symbol, iconUrl, tokenUrl, description
 		);
 	}
 
