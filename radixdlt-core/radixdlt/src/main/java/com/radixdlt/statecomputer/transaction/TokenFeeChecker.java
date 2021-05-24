@@ -21,7 +21,6 @@ package com.radixdlt.statecomputer.transaction;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.constraintmachine.REParsedAction;
@@ -54,7 +53,8 @@ public class TokenFeeChecker implements PostParsedChecker {
 		var feePaid = computeFeePaid(radixEngineTxn);
 		if (feePaid.compareTo(FIXED_FEE) < 0) {
 			throw new ConstraintMachineException(
-				new CMError(CMErrorCode.FEE_NOT_FOUND, null),
+				CMErrorCode.FEE_NOT_FOUND,
+				null,
 				String.format("atom fee invalid: '%s' is less than fixed fee of '%s'",
 					TokenUnitConversions.subunitsToUnits(feePaid),
 					TokenUnitConversions.subunitsToUnits(FIXED_FEE)

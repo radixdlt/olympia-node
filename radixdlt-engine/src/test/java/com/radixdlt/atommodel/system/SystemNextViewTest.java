@@ -104,7 +104,7 @@ public final class SystemNextViewTest {
 		// Act and Assert
 		assertThatThrownBy(() -> this.sut.execute(List.of(txn), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
-			.extracting("cause.error.errorCode")
+			.extracting("cause.errorCode")
 			.containsExactly(CMErrorCode.AUTHORIZATION_ERROR);
 	}
 }

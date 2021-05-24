@@ -217,7 +217,7 @@ public class UnstakeTokensTest {
 
 		assertThatThrownBy(() -> this.engine.execute(List.of(unstake)))
 			.isInstanceOf(RadixEngineException.class)
-			.extracting("cause.error.errorCode")
+			.extracting("cause.errorCode")
 			.containsExactly(CMErrorCode.AUTHORIZATION_ERROR);
 	}
 }

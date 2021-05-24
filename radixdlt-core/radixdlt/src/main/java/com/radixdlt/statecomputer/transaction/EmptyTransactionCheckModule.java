@@ -20,7 +20,6 @@ package com.radixdlt.statecomputer.transaction;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.engine.PostParsedChecker;
@@ -33,7 +32,7 @@ public class EmptyTransactionCheckModule extends AbstractModule {
 	private PostParsedChecker emptyTxChecker() {
 		return (permissionLevel, reTxn) -> {
 			if (reTxn.getGroupedStateUpdates().isEmpty()) {
-				throw new ConstraintMachineException(new CMError(CMErrorCode.NO_STATE_UPDATES, null));
+				throw new ConstraintMachineException(CMErrorCode.NO_STATE_UPDATES, null);
 			}
 		};
 	}

@@ -104,7 +104,7 @@ public final class MintTokensTest {
 			.signAndBuild(key::sign);
 		assertThatThrownBy(() -> this.engine.execute(List.of(mintTxn)))
 			.isInstanceOf(RadixEngineException.class)
-			.extracting("cause.error.errorCode")
+			.extracting("cause.errorCode")
 			.containsExactly(CMErrorCode.AUTHORIZATION_ERROR);
 	}
 
@@ -147,7 +147,7 @@ public final class MintTokensTest {
 		).signAndBuild(nextKey::sign);
 		assertThatThrownBy(() -> this.engine.execute(List.of(mintTxn)))
 			.isInstanceOf(RadixEngineException.class)
-			.extracting("cause.error.errorCode")
+			.extracting("cause.errorCode")
 			.containsExactly(CMErrorCode.AUTHORIZATION_ERROR);
 	}
 }

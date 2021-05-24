@@ -75,7 +75,7 @@ public class SystemTest {
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom)))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(Throwable::getCause)
-			.extracting(e -> ((ConstraintMachineException) e).getError().getErrorCode())
+			.extracting(e -> ((ConstraintMachineException) e).getErrorCode())
 			.isEqualTo(CMErrorCode.PERMISSION_LEVEL_ERROR);
 	}
 
@@ -169,7 +169,7 @@ public class SystemTest {
 		assertThatThrownBy(() -> this.engine.execute(List.of(txn), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(Throwable::getCause)
-			.extracting(e -> ((ConstraintMachineException) e).getError().getErrorCode())
+			.extracting(e -> ((ConstraintMachineException) e).getErrorCode())
 			.isEqualTo(CMErrorCode.INVALID_PARTICLE);
 	}
 
@@ -185,7 +185,7 @@ public class SystemTest {
 		assertThatThrownBy(() -> this.engine.execute(List.of(txn), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(Throwable::getCause)
-			.extracting(e -> ((ConstraintMachineException) e).getError().getErrorCode())
+			.extracting(e -> ((ConstraintMachineException) e).getErrorCode())
 			.isEqualTo(CMErrorCode.PROCEDURE_ERROR);
 	}
 }

@@ -125,7 +125,7 @@ public class TransferTokensTest {
 			.signAndBuild(nextKey::sign);
 		assertThatThrownBy(() -> this.engine.execute(List.of(transfer)))
 			.isInstanceOf(RadixEngineException.class)
-			.extracting("cause.error.errorCode")
+			.extracting("cause.errorCode")
 			.containsExactly(CMErrorCode.AUTHORIZATION_ERROR);
 	}
 

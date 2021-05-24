@@ -222,7 +222,7 @@ public final class ConstraintMachine {
 				validationState.getReducerStateClass()
 			);
 			if (endProcedure == null) {
-				throw new ConstraintMachineException(new CMError(CMErrorCode.MISSING_PROCEDURE, validationState));
+				throw new ConstraintMachineException(CMErrorCode.MISSING_PROCEDURE, validationState);
 			}
 			methodProcedure = endProcedure;
 			authorizationParam = validationState.reducerState;
@@ -234,7 +234,7 @@ public final class ConstraintMachine {
 				outputParticle.getClass()
 			);
 			if (upProcedure == null) {
-				throw new ConstraintMachineException(new CMError(CMErrorCode.MISSING_PROCEDURE, validationState));
+				throw new ConstraintMachineException(CMErrorCode.MISSING_PROCEDURE, validationState);
 			}
 			methodProcedure = upProcedure;
 			authorizationParam = outputParticle;
@@ -245,7 +245,7 @@ public final class ConstraintMachine {
 				validationState.getReducerStateClass()
 			);
 			if (downProcedure == null) {
-				throw new ConstraintMachineException(new CMError(CMErrorCode.MISSING_PROCEDURE, validationState));
+				throw new ConstraintMachineException(CMErrorCode.MISSING_PROCEDURE, validationState);
 			}
 			methodProcedure = downProcedure;
 			authorizationParam = nextParticle;
@@ -260,11 +260,9 @@ public final class ConstraintMachine {
 			var requiredLevel = methodProcedure.permissionLevel(authorizationParam, readable);
 			if (validationState.permissionLevel.compareTo(requiredLevel) < 0) {
 				throw new ConstraintMachineException(
-					new CMError(
-						CMErrorCode.PERMISSION_LEVEL_ERROR,
-						validationState,
-						"Required: " + requiredLevel + " Current: " + validationState.permissionLevel
-					)
+					CMErrorCode.PERMISSION_LEVEL_ERROR,
+					validationState,
+					"Required: " + requiredLevel + " Current: " + validationState.permissionLevel
 				);
 			}
 		}
@@ -275,11 +273,11 @@ public final class ConstraintMachine {
 			}
 			reducerResult = methodProcedure.call(procedureParam, reducerState, readable);
 		} catch (AuthorizationException e) {
-			throw new ConstraintMachineException(new CMError(CMErrorCode.AUTHORIZATION_ERROR, validationState));
+			throw new ConstraintMachineException(CMErrorCode.AUTHORIZATION_ERROR, validationState);
 		} catch (ProcedureException e) {
-			throw new ConstraintMachineException(new CMError(CMErrorCode.PROCEDURE_ERROR, validationState, e.getMessage()));
+			throw new ConstraintMachineException(CMErrorCode.PROCEDURE_ERROR, validationState, e.getMessage());
 		} catch (Exception e) {
-			throw new ConstraintMachineException(new CMError(CMErrorCode.UNKNOWN_ERROR, validationState, e.getMessage()));
+			throw new ConstraintMachineException(CMErrorCode.UNKNOWN_ERROR, validationState, e.getMessage());
 		}
 
 		reducerResult.ifCompleteElse(
@@ -450,7 +448,7 @@ public final class ConstraintMachine {
 			validationState.curInstruction = inst;
 
 			if (expectEnd && inst.getMicroOp() != REInstruction.REOp.END) {
-				throw new ConstraintMachineException(new CMError(CMErrorCode.MISSING_PARTICLE_GROUP, validationState));
+				throw new ConstraintMachineException(CMErrorCode.MISSING_PARTICLE_GROUP, validationState);
 			}
 
 			if (inst.hasSubstate()) {
@@ -469,7 +467,7 @@ public final class ConstraintMachine {
 					nextParticle = substate.getParticle();
 					var stateError = validationState.virtualShutdown(substate);
 					if (stateError.isPresent()) {
-						throw new ConstraintMachineException(new CMError(stateError.get(), validationState));
+						throw new ConstraintMachineException(stateError.get(), validationState);
 					}
 				} else if (inst.getMicroOp() == REInstruction.REOp.VDOWNARG) {
 					substate = (Substate) ((Pair) inst.getData()).getFirst();
@@ -477,13 +475,13 @@ public final class ConstraintMachine {
 					nextParticle = substate.getParticle();
 					var stateError = validationState.virtualShutdown(substate);
 					if (stateError.isPresent()) {
-						throw new ConstraintMachineException(new CMError(stateError.get(), validationState));
+						throw new ConstraintMachineException(stateError.get(), validationState);
 					}
 				} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.DOWN) {
 					SubstateId substateId = inst.getData();
 					var maybeParticle = validationState.shutdown(substateId);
 					if (maybeParticle.isEmpty()) {
-						throw new ConstraintMachineException(new CMError(CMErrorCode.SUBSTATE_NOT_FOUND, validationState));
+						throw new ConstraintMachineException(CMErrorCode.SUBSTATE_NOT_FOUND, validationState);
 					}
 					nextParticle = maybeParticle.get();
 					substate = Substate.create(nextParticle, substateId);
@@ -492,13 +490,13 @@ public final class ConstraintMachine {
 					SubstateId substateId = inst.getData();
 					var maybeParticle = validationState.localShutdown(substateId.getIndex().orElseThrow());
 					if (maybeParticle.isEmpty()) {
-						throw new ConstraintMachineException(new CMError(CMErrorCode.LOCAL_NONEXISTENT, validationState));
+						throw new ConstraintMachineException(CMErrorCode.LOCAL_NONEXISTENT, validationState);
 					}
 					nextParticle = maybeParticle.get();
 					substate = Substate.create(nextParticle, substateId);
 					argument = null;
 				} else {
-					throw new ConstraintMachineException(new CMError(CMErrorCode.UNKNOWN_OP, validationState));
+					throw new ConstraintMachineException(CMErrorCode.UNKNOWN_OP, validationState);
 				}
 
 				parsed.add(REStateUpdate.of(inst, substate));

@@ -300,7 +300,7 @@ public class RadixEngineStateComputerTest {
 				e -> {
 					RadixEngineException ex = (RadixEngineException) e;
 					ConstraintMachineException cmException = (ConstraintMachineException) ex.getCause();
-					return cmException.getError().getErrorCode().equals(CMErrorCode.PERMISSION_LEVEL_ERROR);
+					return cmException.getErrorCode().equals(CMErrorCode.PERMISSION_LEVEL_ERROR);
 				},
 				"Is invalid_execution_permission error"
 			)
