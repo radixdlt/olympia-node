@@ -23,7 +23,6 @@ import com.radixdlt.api.service.TokenService;
 import com.radixdlt.api.store.TokenDefinitionRecord;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
@@ -39,11 +38,6 @@ import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 public class ArchiveTokenHandlerTest {
 	private static final ECPublicKey PUB_KEY = ECKeyPair.generateNew().getPublicKey();
-	private static final REAddr ACCOUNT_ADDRESS = REAddr.ofPubKeyAccount(PUB_KEY);
-	private static final String ADDRESS = AccountAddress.of(ACCOUNT_ADDRESS);
-	private static final ECPublicKey V1 = ECKeyPair.generateNew().getPublicKey();
-	private static final ECPublicKey V2 = ECKeyPair.generateNew().getPublicKey();
-	private static final ECPublicKey V3 = ECKeyPair.generateNew().getPublicKey();
 
 	private final TokenService tokenService = mock(TokenService.class);
 	private final ArchiveTokenHandler handler = new ArchiveTokenHandler(tokenService);

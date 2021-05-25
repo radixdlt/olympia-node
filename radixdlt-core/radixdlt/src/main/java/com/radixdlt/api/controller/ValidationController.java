@@ -31,6 +31,11 @@ public final class ValidationController implements Controller {
 	}
 
 	@Override
+	public String root() {
+		return "/validation";
+	}
+
+	@Override
 	public void configureRoutes(final RoutingHandler handler) {
 		handler.post("/validation", jsonRpcServer::handleHttpRequest);
 		handler.post("/validation/", jsonRpcServer::handleHttpRequest);

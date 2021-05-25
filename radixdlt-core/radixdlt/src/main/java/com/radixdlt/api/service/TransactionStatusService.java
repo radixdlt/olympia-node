@@ -47,7 +47,6 @@ import static com.radixdlt.api.data.TransactionStatus.FAILED;
 import static com.radixdlt.api.data.TransactionStatus.PENDING;
 import static com.radixdlt.api.data.TransactionStatus.TRANSACTION_NOT_FOUND;
 
-//TODO: finish refactoring, move lookup transaction method here
 public class TransactionStatusService {
 	private static final long DEFAULT_CLEANUP_INTERVAL = 1000L;                        //every second
 	private static final Duration DEFAULT_TX_LIFE_TIME = Duration.ofMinutes(10);    //at most 10 minutes

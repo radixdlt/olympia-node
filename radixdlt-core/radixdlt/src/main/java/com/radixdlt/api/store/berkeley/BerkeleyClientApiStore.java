@@ -552,8 +552,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				//TODO: Implement recovery, basically should be the same as fresh DB handling
 			}
 
-			// FIXME: removing the following for now in production
-			// as it is double counting genesis transactions
+			// FIXME: removing the following for now in production as it is double counting genesis transactions
 			if (isTest) {
 				if (addressBalances.count() == 0) {
 					//Fresh DB, rebuild from log

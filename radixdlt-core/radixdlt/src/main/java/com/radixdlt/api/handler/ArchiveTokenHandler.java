@@ -45,7 +45,7 @@ public class ArchiveTokenHandler {
 		return withRequiredStringParameter(
 			request,
 			"rri",
-			(tokenId) -> tokenService.getTokenDescription(tokenId)
+			tokenId -> tokenService.getTokenDescription(tokenId)
 				.map(TokenDefinitionRecord::asJson)
 		);
 	}

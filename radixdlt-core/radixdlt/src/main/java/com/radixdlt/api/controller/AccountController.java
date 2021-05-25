@@ -31,6 +31,11 @@ public final class AccountController implements Controller {
 	}
 
 	@Override
+	public String root() {
+		return "/archive";
+	}
+
+	@Override
 	public void configureRoutes(RoutingHandler handler) {
 		handler.post("/account", jsonRpcServer::handleHttpRequest);
 		handler.post("/account/", jsonRpcServer::handleHttpRequest);

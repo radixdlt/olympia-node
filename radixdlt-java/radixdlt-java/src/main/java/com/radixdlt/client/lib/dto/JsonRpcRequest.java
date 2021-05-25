@@ -27,24 +27,27 @@ import java.util.stream.Stream;
 
 public class JsonRpcRequest {
 	private static final String VERSION = "2.0";
-	private static final String METHOD_PREFIX = "radix.";
 
 	private final String version;
 	private final String id;
 	private final String method;
+	private final String path;
 	private final List<Object> parameters = new ArrayList<>();
 
-	private JsonRpcRequest(String version, String id, String method, List<Object> parameters) {
+	private JsonRpcRequest(String version, String id, String method, String path, List<Object> parameters) {
 		this.version = version;
 		this.id = id;
-		this.method = METHOD_PREFIX + method;
+		this.method = method;
+		this.path = path;
 		this.parameters.addAll(parameters);
 	}
 
-	public static JsonRpcRequest create(String method, Long id, Object... parameters) {
-		var list = Stream.of(parameters).filter(obj -> isNotEmpty(obj)).collect(Collectors.toList());
+	public static JsonRpcRequest create(String method, String path, Long id, Object... parameters) {
+		var list = Stream.of(parameters)
+			.filter(JsonRpcRequest::isNotEmpty)
+			.collect(Collectors.toList());
 
-		return new JsonRpcRequest(VERSION, id.toString(), method, list);
+		return new JsonRpcRequest(VERSION, id.toString(), method, path, list);
 	}
 
 	private static boolean isNotEmpty(Object obj) {
@@ -53,7 +56,7 @@ public class JsonRpcRequest {
 		}
 
 		if (obj instanceof Optional) {
-			return ((Optional) obj).isPresent();
+			return ((Optional<?>) obj).isPresent();
 		}
 
 		return true;
@@ -82,5 +85,9 @@ public class JsonRpcRequest {
 	public JsonRpcRequest addParameters(Object... params) {
 		parameters.addAll(List.of(params));
 		return this;
+	}
+
+	public String path() {
+		return path;
 	}
 }

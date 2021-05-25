@@ -31,6 +31,11 @@ public final class ConstructController implements Controller {
 	}
 
 	@Override
+	public String root() {
+		return "/construct";
+	}
+
+	@Override
 	public void configureRoutes(RoutingHandler handler) {
 		handler.post("/construct", jsonRpcServer::handleHttpRequest);
 		handler.post("/construct/", jsonRpcServer::handleHttpRequest);

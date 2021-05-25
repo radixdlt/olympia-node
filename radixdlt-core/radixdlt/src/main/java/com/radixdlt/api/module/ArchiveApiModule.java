@@ -27,7 +27,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.EndpointConfig;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.data.ScheduledQueueFlush;
-import com.radixdlt.api.server.ArchiveServer;
+import com.radixdlt.api.server.ArchiveHttpServer;
 import com.radixdlt.api.service.NetworkInfoService;
 import com.radixdlt.api.service.ScheduledCacheCleanup;
 import com.radixdlt.api.service.ScheduledStatsCollecting;
@@ -74,9 +74,9 @@ public class ArchiveApiModule extends AbstractModule {
 
 		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
 			.addBinding(Runners.ARCHIVE_API)
-			.to(ArchiveServer.class);
+			.to(ArchiveHttpServer.class);
 
-		bind(ArchiveServer.class).in(Scopes.SINGLETON);
+		bind(ArchiveHttpServer.class).in(Scopes.SINGLETON);
 	}
 
 	@ProvidesIntoSet

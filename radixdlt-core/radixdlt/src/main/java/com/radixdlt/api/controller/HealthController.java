@@ -17,6 +17,7 @@
 
 package com.radixdlt.api.controller;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.api.Controller;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -35,12 +36,18 @@ public class HealthController implements Controller {
 	}
 
 	@Override
+	public String root() {
+		return "/health";
+	}
+
+	@Override
 	public void configureRoutes(final RoutingHandler handler) {
 		handler.get("/health", this::handleHealthRequest);
 		handler.get("/health/", this::handleHealthRequest);
 	}
 
-	private void handleHealthRequest(HttpServerExchange exchange) {
+	@VisibleForTesting
+	void handleHealthRequest(HttpServerExchange exchange) {
 		respond(exchange, jsonObject().put("status", isSynced() ? "UP" : "SYNCING"));
 	}
 

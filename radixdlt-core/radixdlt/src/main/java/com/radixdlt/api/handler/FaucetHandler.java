@@ -24,9 +24,11 @@ import org.json.JSONObject;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.api.data.TransactionAction;
+import com.radixdlt.api.faucet.FaucetToken;
 import com.radixdlt.api.service.SubmissionService;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
@@ -54,7 +56,8 @@ public class FaucetHandler {
 	@Inject
 	public FaucetHandler(
 		SubmissionService submissionService,
-		REAddr account, Set<REAddr> tokensToSend,
+		@Self REAddr account,
+		@FaucetToken Set<REAddr> tokensToSend,
 		@Named("RadixEngine") HashSigner hashSigner
 	) {
 		this.submissionService = submissionService;

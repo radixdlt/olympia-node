@@ -175,6 +175,7 @@ public class PersistedProperties {
 	 * Returns a property value as a {@code boolean}.
 	 * Note that the strings "true", ignoring case, and correctly formatted non-zero
 	 * integers are {@code true} values, all others are {@code false}.
+	 * Empty value handled as if value was missing.
 	 *
 	 * @param key the property key
 	 * @param defaultValue the default value returned if no value is set
@@ -183,7 +184,7 @@ public class PersistedProperties {
 	 */
 	public boolean get(String key, boolean defaultValue) {
 		var value = get(key);
-		return value == null ? defaultValue : parseBoolean(value);
+		return (value == null || value.trim().isEmpty()) ? defaultValue : parseBoolean(value);
 	}
 
 	/**

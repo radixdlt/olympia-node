@@ -18,6 +18,9 @@
 
 package com.radixdlt.api.server;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.inject.Inject;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.Controller;
@@ -38,21 +41,22 @@ import io.undertow.util.StatusCodes;
 
 import static java.util.logging.Logger.getLogger;
 
-public class ArchiveServer implements ModuleRunner {
-	private static final int DEFAULT_PORT = 8080;
+public class ArchiveHttpServer implements ModuleRunner {
+	private static final Logger log = LogManager.getLogger();
 
+	private static final int DEFAULT_PORT = 8080;
 	private final Set<Controller> controllers;
 	private final int port;
 
 	private Undertow server;
 
 	@Inject
-	public ArchiveServer(
+	public ArchiveHttpServer(
 		@AtArchive Set<Controller> controllers,
 		RuntimeProperties properties
 	) {
 		this.controllers = controllers;
-		this.port = properties.get("client_api.port", DEFAULT_PORT);
+		this.port = properties.get("api.archive.port", DEFAULT_PORT);
 	}
 
 	private static void fallbackHandler(HttpServerExchange exchange) {
@@ -76,6 +80,7 @@ public class ArchiveServer implements ModuleRunner {
 			.setHandler(configureRoutes())
 			.build();
 		server.start();
+		log.info("Starting ARCHIVE HTTP Server at {}", port);
 	}
 
 	@Override
@@ -88,8 +93,8 @@ public class ArchiveServer implements ModuleRunner {
 
 		controllers.forEach(controller -> controller.configureRoutes(handler));
 
-		handler.setFallbackHandler(ArchiveServer::fallbackHandler);
-		handler.setInvalidMethodHandler(ArchiveServer::invalidMethodHandler);
+		handler.setFallbackHandler(ArchiveHttpServer::fallbackHandler);
+		handler.setInvalidMethodHandler(ArchiveHttpServer::invalidMethodHandler);
 
 		return wrapWithCorsFilter(handler);
 	}

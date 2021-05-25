@@ -113,7 +113,7 @@ public class SynchronousRadixApiClientTest {
 		+ "\"brx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs27s5vq5h24sh5s4yh\",\"to\":"
 		+ "\"brx1qspa0q22j6kwjdmmax5yvc046t575xfve6lgarl2ja5hhlwprmcvlcg8k98kp\",\"type\":\"TokenTransfer\"},"
 		+ "{\"type\":\"Other\"}]}]},\"id\":\"7\",\"jsonrpc\":\"2.0\"}";
-	private static final String ERROR_RESPONSE = "{\"id\":\"8\",\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32602,\"data"
+	private static final String ERROR_RESPONSE = "{\"id\":\"8\",\"jsonrpc\":\"2.0\",\"error\":{\"code\":2523,\"data"
 		+ "\":[\"7cc3526729b27e4bdfedbb140f3a566ffc2ab582de8e1e94c2358c8466d842a3\"],"
 		+ "\"message\":"
 		+ "\"Unable to restore creator from transaction "
@@ -189,7 +189,7 @@ public class SynchronousRadixApiClientTest {
 		prepareClient(ERROR_RESPONSE)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.lookupTransaction(AID.ZERO)
-				.onFailure(failure -> assertEquals(-32602, failure.code()))
+				.onFailure(failure -> assertEquals(2523, failure.code()))
 				.onSuccess(__ -> fail()));
 	}
 
@@ -287,6 +287,7 @@ public class SynchronousRadixApiClientTest {
 	@Ignore //Useful testbed for experiments
 	public void addManyTransactions() {
 		SynchronousRadixApiClient.connect(BASE_URL)
+			.map(SynchronousRadixApiClient::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> {
 				for (int i = 0; i < 20; i++) {

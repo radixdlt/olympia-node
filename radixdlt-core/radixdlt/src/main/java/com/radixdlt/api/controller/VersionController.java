@@ -19,6 +19,7 @@ package com.radixdlt.api.controller;
 
 import org.json.JSONObject;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.api.Controller;
 
 import io.undertow.server.HttpServerExchange;
@@ -35,12 +36,18 @@ public class VersionController implements Controller {
 	}
 
 	@Override
+	public String root() {
+		return "/version";
+	}
+
+	@Override
 	public void configureRoutes(final RoutingHandler handler) {
 		handler.get("/version", this::handleVersionRequest);
 		handler.get("/version/", this::handleVersionRequest);
 	}
 
-	private void handleVersionRequest(HttpServerExchange exchange) {
+	@VisibleForTesting
+	void handleVersionRequest(HttpServerExchange exchange) {
 		respond(exchange, versionData);
 	}
 }

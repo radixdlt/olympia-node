@@ -22,7 +22,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.radixdlt.utils.Bytes;
-import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
@@ -33,6 +32,7 @@ import static com.radixdlt.api.data.ApiErrors.INVALID_HEX_STRING;
 import static com.radixdlt.api.data.ApiErrors.MISSING_PARAMETER;
 import static com.radixdlt.api.data.ApiErrors.MISSING_PARAMS;
 import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DECODE;
+import static com.radixdlt.utils.functional.Failure.failure;
 import static com.radixdlt.utils.functional.Result.fail;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 import static com.radixdlt.utils.functional.Result.ok;
@@ -121,8 +121,8 @@ public final class JsonRpcUtil {
 		return protocolError(RpcError.PARSE_ERROR, message);
 	}
 
-	public static JSONObject methodNotFound(JSONObject request) {
-		return extendedError(request, RpcError.METHOD_NOT_FOUND.code(), "Method not found");
+	public static JSONObject methodNotFound(JSONObject request, String method) {
+		return extendedError(request, RpcError.METHOD_NOT_FOUND.code(), "Method " + method + " not found");
 	}
 
 	public static JSONObject invalidParamsError(JSONObject request, String message) {
@@ -201,7 +201,7 @@ public final class JsonRpcUtil {
 			return ok(toNamed((JSONArray) params, required, optional));
 		}
 
-		return fail(Failure.failure(RpcError.INVALID_REQUEST.code(), "Unable to parse request 'params' field"));
+		return fail(failure(RpcError.INVALID_REQUEST.code(), "Unable to parse request 'params' field"));
 	}
 
 	private static JSONObject toNamed(JSONArray params, List<String> required, List<String> optional) {
