@@ -1,9 +1,12 @@
-name: radixdlt-publish-docker-on-merge
+name: radixdlt-publish-radixdlt-docker
 
 on:
+  release:
+    types: [ published ]
   push:
     branches:
       - rc\/*
+      - release\/*
 jobs:
   cancel_running_workflows:
     name: Cancel running workflows
@@ -17,8 +20,13 @@ jobs:
     name: Build deb package needed for Docker image
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v1
+      - id: set_environment
+        name: Set variables
+        uses: ./.github/actions/set-variables
       - uses: actions/checkout@v2
         with:
+          ref: ${{ steps.set_environment.outputs.git_ref }}
           fetch-depth: 0
       - name: Cache Gradle packages
         uses: actions/cache@v2
@@ -31,8 +39,6 @@ jobs:
             ${{ runner.os }}-gradle-
       - name: Build deb file
         run: |
-          version=$(./gradlew radixCiVersion | grep radixdlt-version | cut -d: -f2)
-          echo "Version: $version"
           cd radixdlt-core/radixdlt
           ../../gradlew deb4docker
           cd ../..
@@ -52,11 +58,17 @@ jobs:
           rm -f ~/.gradle/caches/modules-2/gc.properties
   publish-docker:
     needs: build-docker
-    name: Build and push Docker image to eu.gcr.io/dev-container-repo
+    name: Build and push radixdlt Docker image
+    environment: publish-artifacts
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v1
+      - id: set_environment
+        name: Set variables
+        uses: ./.github/actions/set-variables
       - uses: actions/checkout@v2
         with:
+          ref: ${{ steps.set_environment.outputs.git_ref }}
           fetch-depth: 0
       - name: Download distribution artifact
         uses: actions/download-artifact@v2
@@ -75,22 +87,19 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-      - name: Set Environment Variables
-        run: |
-          if [[ "$GITHUB_REF" == *"refs/heads/release"* ]]; then
-              echo "Workflow triggered by on a release branch"
-          else
-            echo "Workflow triggered by on a rc branch"
-            export CI_VERSION=true
-          fi
-          version=$(./gradlew radixCiVersion | grep radixdlt-version | cut -d: -f2)
-          echo "Version: $version"
-          TAG=$(echo $version | sed 's/~/-/g')
-          echo "TAG $TAG"
-          echo "RADIXDLT_CORE_VERSION=$TAG" >> $GITHUB_ENV
-          echo "IMAGE=eu.gcr.io/dev-container-repo/radixdlt-core" >> $GITHUB_ENV
-          echo "PUBLISH=true" >> $GITHUB_ENV
+      - id: get_version
+        name: Get radixdlt version
+        uses: ./.github/actions/get-version
+        with:
+          is_release: ${{ steps.set_environment.outputs.is_release }}
+      - name: Login to Dockerhub (release)
+        uses: docker/login-action@v1
+        if: "${{ steps.set_environment.outputs.is_release == 'true' }}"
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
       - name: Login to GCR
+        if: "${{ steps.set_environment.outputs.is_release == 'false' }}"
         uses: docker/login-action@v1
         with:
           registry: eu.gcr.io
@@ -101,8 +110,8 @@ jobs:
         with:
           file: ./radixdlt-core/docker/Dockerfile.core
           tags: |
-            ${{ env.IMAGE }}:${{ env.RADIXDLT_CORE_VERSION }}
-          push: ${{ env.PUBLISH }}
+            ${{ steps.set_environment.outputs.radixdlt_image }}:${{ steps.get_version.outputs.docker_tag }}
+          push: true
           context: ./radixdlt-core/docker
       - name: Cleanup Gradle Cache
         # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
