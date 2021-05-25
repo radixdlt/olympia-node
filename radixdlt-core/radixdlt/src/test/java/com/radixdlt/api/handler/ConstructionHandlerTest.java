@@ -24,8 +24,10 @@ import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONObject;
 import org.junit.Test;
 
+import com.radixdlt.api.data.PreparedTransaction;
 import com.radixdlt.api.service.ActionParserService;
 import com.radixdlt.api.service.SubmissionService;
+import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -33,6 +35,8 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.identifiers.ValidatorAddress;
+import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
 import java.io.ByteArrayOutputStream;
@@ -56,11 +60,67 @@ public class ConstructionHandlerTest {
 	private static final ECPublicKey V2 = ECKeyPair.generateNew().getPublicKey();
 	private static final ECPublicKey V3 = ECKeyPair.generateNew().getPublicKey();
 
+	private final ClientApiStore clientApiStore = mock(ClientApiStore.class);
 	private final SubmissionService submissionService = mock(SubmissionService.class);
-	private final ActionParserService actionParserService = mock(ActionParserService.class);
+	private final ActionParserService actionParserService = new ActionParserService(clientApiStore);
 	private final ConstructionHandler handler = new ConstructionHandler(submissionService, actionParserService);
 
-	//TODO: testBuildTransaction, possible issues with positional vs named parameters
+	@Test
+	public void testBuildTransactionPositional() {
+		var prepared = PreparedTransaction.create(randomBytes(), randomBytes(), UInt256.TEN);
+
+		when(submissionService.prepareTransaction(any(), any()))
+			.thenReturn(Result.ok(prepared));
+
+		var actions = jsonArray()
+			.put(
+				jsonObject()
+					.put("type", "RegisterValidator")
+					.put("validator", ValidatorAddress.of(PUB_KEY))
+			);
+		var params = jsonArray()
+			.put(actions)
+			.put("message");
+
+		var response = handler.handleConstructionBuildTransaction(requestWith(params));
+
+		assertNotNull(response);
+		assertTrue(response.has("result"));
+
+		var result = response.getJSONObject("result");
+
+		assertNotNull(result);
+		assertEquals("10", result.get("fee"));
+	}
+
+	@Test
+	public void testBuildTransactionNamed() {
+		var prepared = PreparedTransaction.create(randomBytes(), randomBytes(), UInt256.TEN);
+
+		when(submissionService.prepareTransaction(any(), any()))
+			.thenReturn(Result.ok(prepared));
+
+		var actions = jsonArray()
+			.put(
+				jsonObject()
+					.put("type", "RegisterValidator")
+					.put("validator", ValidatorAddress.of(PUB_KEY))
+			);
+		var params = jsonObject()
+			.put("actions", actions)
+			.put("message", "message");
+
+		var response = handler.handleConstructionBuildTransaction(requestWith(params));
+
+		assertNotNull(response);
+		assertTrue(response.has("result"));
+
+		var result = response.getJSONObject("result");
+
+		assertNotNull(result);
+		assertEquals("10", result.get("fee"));
+	}
+
 	@Test
 	public void testFinalizeTransactionPositional() {
 		var aid = AID.from(randomBytes());

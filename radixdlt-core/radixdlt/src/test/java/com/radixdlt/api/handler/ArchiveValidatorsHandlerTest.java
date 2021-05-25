@@ -20,12 +20,9 @@ import org.json.JSONObject;
 import org.junit.Test;
 
 import com.radixdlt.api.data.ValidatorInfoDetails;
-import com.radixdlt.api.service.ArchiveService;
-import com.radixdlt.api.service.TransactionStatusService;
 import com.radixdlt.api.service.ValidatorInfoService;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.utils.UInt256;
@@ -47,15 +44,10 @@ import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class ArchiveValidatorsHandlerTest {
-	private static final ECPublicKey PUB_KEY = ECKeyPair.generateNew().getPublicKey();
-	private static final REAddr ACCOUNT_ADDRESS = REAddr.ofPubKeyAccount(PUB_KEY);
-	private static final String ADDRESS = AccountAddress.of(ACCOUNT_ADDRESS);
 	private static final ECPublicKey V1 = ECKeyPair.generateNew().getPublicKey();
 	private static final ECPublicKey V2 = ECKeyPair.generateNew().getPublicKey();
 	private static final ECPublicKey V3 = ECKeyPair.generateNew().getPublicKey();
 
-	private final ArchiveService archiveService = mock(ArchiveService.class);
-	private final TransactionStatusService transactionStatusService = mock(TransactionStatusService.class);
 	private final ValidatorInfoService validatorInfoService = mock(ValidatorInfoService.class);
 	private final ArchiveValidatorsHandler handler = new ArchiveValidatorsHandler(validatorInfoService);
 

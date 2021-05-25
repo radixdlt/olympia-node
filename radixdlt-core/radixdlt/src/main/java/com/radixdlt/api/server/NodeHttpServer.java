@@ -18,6 +18,9 @@
 
 package com.radixdlt.api.server;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.inject.Inject;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.Controller;
@@ -42,6 +45,8 @@ import static java.util.logging.Logger.getLogger;
  * Radix Node API
  */
 public final class NodeHttpServer implements ModuleRunner {
+	private static final Logger log = LogManager.getLogger();
+
 	private static final int DEFAULT_PORT = 3333;
 	private final int port;
 	private final Set<Controller> controllers;
@@ -53,8 +58,7 @@ public final class NodeHttpServer implements ModuleRunner {
 		@AtNode Set<Controller> controllers,
 		RuntimeProperties properties
 	) {
-		//TODO: perhaps rename properties to match other namings?
-		this.port = properties.get("node_api.port", DEFAULT_PORT);
+		this.port = properties.get("api.node.port", DEFAULT_PORT);
 		this.controllers = controllers;
 	}
 
@@ -79,6 +83,8 @@ public final class NodeHttpServer implements ModuleRunner {
 			.setHandler(configureRoutes())
 			.build();
 		server.start();
+
+		log.info("Starting NODE HTTP Server at {}", port);
 	}
 
 	@Override
@@ -89,7 +95,11 @@ public final class NodeHttpServer implements ModuleRunner {
 	private HttpHandler configureRoutes() {
 		var handler = Handlers.routing(true); // add path params to query params with this flag
 
-		controllers.forEach(c -> c.configureRoutes(handler));
+		controllers.forEach(c -> {
+			log.info("Configuring routes under {}", c.root());
+			c.configureRoutes(handler);
+		});
+
 		handler.setFallbackHandler(NodeHttpServer::fallbackHandler);
 		handler.setInvalidMethodHandler(NodeHttpServer::invalidMethodHandler);
 

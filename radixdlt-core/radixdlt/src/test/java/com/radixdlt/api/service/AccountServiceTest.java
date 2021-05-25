@@ -50,7 +50,7 @@ public class AccountServiceTest {
 	private static final ECPublicKey TOKEN_KEY = ECKeyPair.generateNew().getPublicKey();
 
 	private final ClientApiStore clientApiStore = mock(ClientApiStore.class);
-	private final ArchiveService archiveService = new ArchiveService(clientApiStore);
+	private final AccountService archiveService = new AccountService(clientApiStore);
 
 	@Test
 	public void testGetTokenBalancesForFunds() {
@@ -120,18 +120,6 @@ public class AccountServiceTest {
 
 				return null;
 			}))
-			.onFailureDo(Assert::fail);
-	}
-
-	@Test
-	public void testGetTransaction() {
-		var entry = createTxHistoryEntry(AID.ZERO);
-
-		when(clientApiStore.getTransaction(AID.ZERO))
-			.thenReturn(Result.ok(entry));
-
-		archiveService.getTransaction(entry.getTxId())
-			.onSuccess(result -> assertEquals(entry, result))
 			.onFailureDo(Assert::fail);
 	}
 

@@ -20,7 +20,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-package com.radixdlt.api.archive.serialization;
+package com.radixdlt.client.serialization;
 
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
@@ -38,7 +38,6 @@ import java.util.Arrays;
 import java.util.Collection;
 
 public final class Serialize {
-
     private static class Holder {
         static final Serialization INSTANCE = Serialization.create(createIds(getClasses()), createPolicy(getClasses()));
 

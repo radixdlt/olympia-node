@@ -51,6 +51,11 @@ public final class ChaosController implements Controller {
 	}
 
 	@Override
+	public String root() {
+		return "/chaos";
+	}
+
+	@Override
 	public void configureRoutes(final RoutingHandler handler) {
 		handler.put("/chaos/message-flooder", this::handleMessageFlood);
 		handler.put("/chaos/mempool-filler", this::handleMempoolFill);

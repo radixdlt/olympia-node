@@ -18,8 +18,10 @@
 
 package com.radixdlt.api.controller;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.api.Controller;
 
+import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 
 import static com.radixdlt.api.RestUtils.respond;
@@ -32,8 +34,18 @@ public final class UniverseController implements Controller {
 	}
 
 	@Override
+	public String root() {
+		return "/universe.json";
+	}
+
+	@Override
 	public void configureRoutes(RoutingHandler handler) {
-		handler.get("/universe.json", exchange -> respond(exchange, universeJson));
-		handler.get("/universe.json/", exchange -> respond(exchange, universeJson));
+		handler.get("/universe.json", this::handleUniverseRequest);
+		handler.get("/universe.json/", this::handleUniverseRequest);
+	}
+
+	@VisibleForTesting
+	void handleUniverseRequest(HttpServerExchange exchange) {
+		respond(exchange, universeJson);
 	}
 }

@@ -19,15 +19,20 @@ package com.radixdlt.api.controller;
 
 import org.junit.Test;
 
+import io.undertow.io.Sender;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
+import io.undertow.util.HeaderMap;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class VersionControllerTest {
-	private final VersionController controller = new VersionController("1.0.0-test");
+	private static final String VERSION_STRING = "1.0.0-test";
+	private final VersionController controller = new VersionController(VERSION_STRING);
 
 	@Test
 	public void routesAreConfigured() {
@@ -39,5 +44,16 @@ public class VersionControllerTest {
 		verify(handler).get(eq("/version/"), any());
 	}
 
-	//TODO: add tests
+	@Test
+	public void versionIsReturned() {
+		var exchange = mock(HttpServerExchange.class);
+		var sender = mock(Sender.class);
+
+		when(exchange.getResponseHeaders()).thenReturn(new HeaderMap());
+		when(exchange.getResponseSender()).thenReturn(sender);
+
+		controller.handleVersionRequest(exchange);
+
+		verify(sender).send("{\"version\":\"" + VERSION_STRING + "\"}");
+	}
 }

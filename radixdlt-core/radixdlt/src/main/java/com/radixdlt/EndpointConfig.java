@@ -17,6 +17,9 @@
 
 package com.radixdlt;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.inject.Module;
 import com.radixdlt.api.module.AccountEndpointModule;
 import com.radixdlt.api.module.ArchiveEndpointModule;
@@ -41,6 +44,8 @@ import static com.radixdlt.EndpointConfig.Type.ARCHIVE;
 import static com.radixdlt.EndpointConfig.Type.NODE;
 
 public final class EndpointConfig {
+	private static final Logger log = LogManager.getLogger();
+
 	public enum Type {
 		ARCHIVE,
 		NODE;
@@ -127,6 +132,9 @@ public final class EndpointConfig {
 	}
 
 	public boolean isEnabled(RuntimeProperties properties) {
-		return properties.get(API_PREFIX + name + API_SUFFIX_ENABLE, defaultValue);
+		var value = properties.get(API_PREFIX + name + API_SUFFIX_ENABLE, defaultValue);
+		log.debug("Endpoint config {}, default = {}, properties = {}", name(), defaultValue, value);
+
+		return value;
 	}
 }

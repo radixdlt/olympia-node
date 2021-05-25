@@ -31,6 +31,11 @@ public final class SystemController implements Controller {
 	}
 
 	@Override
+	public String root() {
+		return "/system";
+	}
+
+	@Override
 	public void configureRoutes(final RoutingHandler handler) {
 		handler.post("/system", jsonRpcServer::handleHttpRequest);
 		handler.post("/system/", jsonRpcServer::handleHttpRequest);

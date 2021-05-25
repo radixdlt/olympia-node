@@ -25,4 +25,6 @@ import io.undertow.server.RoutingHandler;
  */
 public interface Controller {
 	void configureRoutes(RoutingHandler handler);
+
+	String root();
 }
