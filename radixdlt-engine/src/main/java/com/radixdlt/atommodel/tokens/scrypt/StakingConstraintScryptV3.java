@@ -22,7 +22,7 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.atommodel.system.state.SystemParticle;
+import com.radixdlt.atommodel.system.state.HasEpochData;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
@@ -197,10 +197,10 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 					throw new ProcedureException("Exiting from stake must be locked.");
 				}
 
-				var system = (SystemParticle) r.loadAddr(null, REAddr.ofSystem()).orElseThrow();
-				if (system.getEpoch() + EPOCHS_LOCKED != u.getEpochUnlocked().get()) {
+				var systemState = (HasEpochData) r.loadAddr(null, REAddr.ofSystem()).orElseThrow();
+				if (systemState.getEpoch() + EPOCHS_LOCKED != u.getEpochUnlocked().get()) {
 					throw new ProcedureException("Incorrect epoch unlock: " + u.getEpochUnlocked().get()
-						+ " should be: " + (system.getEpoch() + EPOCHS_LOCKED));
+						+ " should be: " + (systemState.getEpoch() + EPOCHS_LOCKED));
 				}
 
 				var nextState = s.withdraw(u.getResourceAddr(), u.getAmount());

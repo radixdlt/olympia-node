@@ -19,14 +19,13 @@
 package com.radixdlt.integration.staking;
 
 import com.google.inject.Inject;
-import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 
 import java.util.function.Predicate;
 
 public final class DeterministicRunner {
-	private static final int MAX_EVENTS_DEFAULT = 100;
+	private static final int MAX_EVENTS_DEFAULT = 10000;
 
 	private final DeterministicProcessor processor;
 	private final DeterministicNetwork network;

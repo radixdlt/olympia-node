@@ -18,39 +18,6 @@
 
 package com.radixdlt.atommodel.system.state;
 
-import com.google.common.base.Objects;
-import com.radixdlt.constraintmachine.Particle;
-
-public final class EpochData implements Particle, HasEpochData {
-	private final long epoch;
-
-	public EpochData(long epoch) {
-		this.epoch = epoch;
-	}
-
-	@Override
-	public long getEpoch() {
-		return epoch;
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hashCode(epoch);
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof EpochData)) {
-			return false;
-		}
-
-		var other = (EpochData) o;
-
-		return this.epoch == other.epoch;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s{epoch=%s}", this.getClass().getSimpleName(), epoch);
-	}
+public interface HasEpochData {
+	long getEpoch();
 }

@@ -17,6 +17,7 @@
 
 package com.radixdlt.store.berkeley;
 
+import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -595,6 +596,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			var buf = stateUpdate.getStateBuf();
 			upParticle(txn, buf, stateUpdate.getSubstate().getId());
 
+			// FIXME: Superhack
 			if (stateUpdate.getParticle() instanceof TokenDefinitionParticle) {
 				var p = (TokenDefinitionParticle) stateUpdate.getParticle();
 				var addr = p.getAddr();
@@ -602,6 +604,10 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
 				addrDatabase.putNoOverwrite(txn, new DatabaseEntry(addr.getBytes()), value);
 			} else if (stateUpdate.getParticle() instanceof SystemParticle) {
+				var buf2 = stateUpdate.getStateBuf();
+				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
+				addrDatabase.put(txn, new DatabaseEntry(REAddr.ofSystem().getBytes()), value);
+			} else if (stateUpdate.getParticle() instanceof EpochData) {
 				var buf2 = stateUpdate.getStateBuf();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
 				addrDatabase.put(txn, new DatabaseEntry(REAddr.ofSystem().getBytes()), value);

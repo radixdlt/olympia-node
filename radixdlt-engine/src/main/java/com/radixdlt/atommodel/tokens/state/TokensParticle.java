@@ -18,7 +18,7 @@
 
 package com.radixdlt.atommodel.tokens.state;
 
-import com.radixdlt.atommodel.system.state.SystemParticle;
+import com.radixdlt.atommodel.system.state.HasEpochData;
 import com.radixdlt.atommodel.tokens.Fungible;
 import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.crypto.ECPublicKey;
@@ -73,7 +73,7 @@ public final class TokensParticle implements Fungible {
 		}
 
 		if (epochUnlocked != null) {
-			var system = (SystemParticle) readable.loadAddr(null, REAddr.ofSystem()).orElseThrow();
+			var system = (HasEpochData) readable.loadAddr(null, REAddr.ofSystem()).orElseThrow();
 			if (epochUnlocked > system.getEpoch()) {
 				throw new AuthorizationException("Tokens are locked until epoch " + epochUnlocked + " current " + system.getEpoch());
 			}

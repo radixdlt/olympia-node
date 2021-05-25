@@ -22,6 +22,7 @@ import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
 import com.radixdlt.constraintmachine.REStateUpdate;
@@ -49,10 +50,13 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 				.filter(REStateUpdate::isBootUp)
 				.map(REStateUpdate::getParticle)
 				.forEach(p -> {
+					// FIXME: Superhack
 					if (p instanceof TokenDefinitionParticle) {
 						var tokenDef = (TokenDefinitionParticle) p;
 						addrParticles.put(tokenDef.getAddr(), p);
 					} else if (p instanceof SystemParticle) {
+						addrParticles.put(REAddr.ofSystem(), p);
+					} else if (p instanceof EpochData) {
 						addrParticles.put(REAddr.ofSystem(), p);
 					}
 				});
