@@ -34,18 +34,18 @@ import java.util.stream.Stream;
  */
 public final class REParsedTxn {
 	private final Txn txn;
-	private final List<List<REStateUpdate>> parsedInstructions;
+	private final List<List<REStateUpdate>> stateUpdates;
 	private final List<REParsedAction> actions;
 	private final ConstraintMachine.ParseResult statelessResult;
 
 	public REParsedTxn(
 		Txn txn,
 		ConstraintMachine.ParseResult statelessResult,
-		List<List<REStateUpdate>> parsedInstructions,
+		List<List<REStateUpdate>> stateUpdates,
 		List<REParsedAction> actions
 	) {
 		this.txn = txn;
-		this.parsedInstructions = parsedInstructions;
+		this.stateUpdates = stateUpdates;
 		this.actions = actions;
 		this.statelessResult = statelessResult;
 	}
@@ -75,7 +75,7 @@ public final class REParsedTxn {
 	}
 
 	public List<List<REStateUpdate>> getGroupedStateUpdates() {
-		return parsedInstructions;
+		return stateUpdates;
 	}
 
 	public List<REStateUpdate> stateUpdates() {
@@ -83,7 +83,7 @@ public final class REParsedTxn {
 	}
 
 	public Stream<REStateUpdate> instructions() {
-		return parsedInstructions.stream().flatMap(List::stream);
+		return stateUpdates.stream().flatMap(List::stream);
 	}
 
 	public Stream<Particle> upSubstates() {

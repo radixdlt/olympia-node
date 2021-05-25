@@ -279,11 +279,11 @@ public final class ConstraintMachine {
 			}
 			reducerResult = methodProcedure.call(procedureParam, reducerState, readable);
 		} catch (AuthorizationException e) {
-			throw new ConstraintMachineException(CMErrorCode.AUTHORIZATION_ERROR, validationState);
+			throw new ConstraintMachineException(CMErrorCode.AUTHORIZATION_ERROR, validationState, e);
 		} catch (ProcedureException e) {
-			throw new ConstraintMachineException(CMErrorCode.PROCEDURE_ERROR, validationState, e.getMessage());
+			throw new ConstraintMachineException(CMErrorCode.PROCEDURE_ERROR, validationState, e);
 		} catch (Exception e) {
-			throw new ConstraintMachineException(CMErrorCode.UNKNOWN_ERROR, validationState, e.getMessage());
+			throw new ConstraintMachineException(CMErrorCode.UNKNOWN_ERROR, validationState, e);
 		}
 
 		reducerResult.ifCompleteElse(

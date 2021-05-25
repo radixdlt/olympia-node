@@ -22,6 +22,12 @@ public class ConstraintMachineException extends Exception {
 	private final CMErrorCode errorCode;
 	private final ConstraintMachine.CMValidationState state;
 
+	public ConstraintMachineException(CMErrorCode errorCode, ConstraintMachine.CMValidationState state, Throwable cause) {
+		super(errorCode.toString(), cause);
+		this.errorCode = errorCode;
+		this.state = state;
+	}
+
 	public ConstraintMachineException(CMErrorCode errorCode, ConstraintMachine.CMValidationState state) {
 		super(errorCode.toString());
 		this.errorCode = errorCode;
