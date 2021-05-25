@@ -220,14 +220,14 @@ public class SynchronousRadixApiClient implements RadixApi {
 	}
 
 	private JsonRpcRequest request(RpcMethod method, Object... parameters) {
-		return JsonRpcRequest.create(method.method(), idCounter.incrementAndGet(), parameters);
+		return JsonRpcRequest.create(method.method(), method.path(), idCounter.incrementAndGet(), parameters);
 	}
 
 	private <T> Result<T> call(JsonRpcRequest request, TypeReference<JsonRpcResponse<T>> typeReference) {
 		return serialize(request)
 			.onSuccess(this::trace)
 			.map(value -> RequestBody.create(MEDIA_TYPE, value))
-			.flatMap(this::doCall)
+			.flatMap(requestBody -> doCall(request.path(), requestBody))
 			.onSuccess(this::trace)
 			.flatMap(body -> deserialize(body, typeReference))
 			.flatMap(response -> response.rawError() == null
@@ -236,7 +236,9 @@ public class SynchronousRadixApiClient implements RadixApi {
 	}
 
 	private void trace(Object value) {
-		log.debug(value.toString());
+		if (doTrace) {
+			log.debug(value.toString());
+		}
 	}
 
 	private Result<String> serialize(JsonRpcRequest request) {
@@ -247,8 +249,8 @@ public class SynchronousRadixApiClient implements RadixApi {
 		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper.readValue(body, typeReference));
 	}
 
-	private Result<String> doCall(RequestBody requestBody) {
-		var request = buildRequest(requestBody);
+	private Result<String> doCall(String path, RequestBody requestBody) {
+		var request = buildRequest(path, requestBody);
 
 		try (var response = client.newCall(request).execute(); var responseBody = response.body()) {
 			return fromOptional(NO_CONTENT, ofNullable(responseBody))
@@ -258,8 +260,8 @@ public class SynchronousRadixApiClient implements RadixApi {
 		}
 	}
 
-	private Request buildRequest(RequestBody requestBody) {
-		return new Request.Builder().url(baseUrl + "/rpc").post(requestBody).build();
+	private Request buildRequest(String path, RequestBody requestBody) {
+		return new Request.Builder().url(baseUrl + path).post(requestBody).build();
 	}
 
 	private static OkHttpClient createClient() {

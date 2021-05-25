@@ -76,6 +76,7 @@ public final class ActionParserService {
 		switch (type) {
 			case MSG:
 				break;
+
 			case TRANSFER:
 				return allOf(
 					from(element),

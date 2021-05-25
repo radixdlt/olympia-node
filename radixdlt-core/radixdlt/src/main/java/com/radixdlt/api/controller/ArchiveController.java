@@ -37,6 +37,11 @@ public final class ArchiveController implements Controller {
 	}
 
 	@Override
+	public String root() {
+		return "/archive";
+	}
+
+	@Override
 	public void configureRoutes(RoutingHandler handler) {
 		handler.post("/archive", this::handleRpc);
 		handler.post("/archive/", this::handleRpc);

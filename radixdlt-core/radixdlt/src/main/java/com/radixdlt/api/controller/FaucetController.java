@@ -31,6 +31,11 @@ public final class FaucetController implements Controller {
 	}
 
 	@Override
+	public String root() {
+		return "/faucet";
+	}
+
+	@Override
 	public void configureRoutes(final RoutingHandler handler) {
 		handler.post("/faucet", jsonRpcServer::handleHttpRequest);
 		handler.post("/faucet/", jsonRpcServer::handleHttpRequest);

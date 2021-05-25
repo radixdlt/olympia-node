@@ -13,7 +13,16 @@ faucet.enable=$RADIXDLT_ENABLE_FAUCET
 
 db.location=$RADIXDLT_DB_LOCATION
 
-node_api.port=$RADIXDLT_NODE_API_PORT
-client_api.enable=$RADIXDLT_ENABLE_CLIENT_API
-client_api.port=$RADIXDLT_CLIENT_API_PORT
-universe_api.enable=$RADIXDLT_UNIVERSE_ENABLE
+api.node.port=$RADIXDLT_NODE_API_PORT
+api.archive.port=$RADIXDLT_ARCHIVE_API_PORT
+
+api.archive.enable=$RADIXDLT_ARCHIVE_API_ENABLE
+api.account.enable=$RADIXDLT_ACCOUNT_API_ENABLE
+api.chaos.enable=$RADIXDLT_CHAOS_API_ENABLE
+api.construct.enable=$RADIXDLT_CONSTRUCT_API_ENABLE
+api.faucet.enable=$RADIXDLT_FAUCET_API_ENABLE
+api.health.enable=$RADIXDLT_HEALTH_API_ENABLE
+api.system.enable=$RADIXDLT_SYSTEM_API_ENABLE
+api.validation.enable=$RADIXDLT_VALIDATION_API_ENABLE
+api.version.enable=$RADIXDLT_VERSION_API_ENABLE
+api.universe.enable=$RADIXDLT_UNIVERSE_API_ENABLE

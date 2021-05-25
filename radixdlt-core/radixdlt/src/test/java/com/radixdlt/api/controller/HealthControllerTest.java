@@ -21,12 +21,19 @@ import org.junit.Test;
 
 import com.radixdlt.counters.SystemCounters;
 
+import io.undertow.io.Sender;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
+import io.undertow.util.HeaderMap;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import static com.radixdlt.counters.SystemCounters.CounterType.LEDGER_STATE_VERSION;
+import static com.radixdlt.counters.SystemCounters.CounterType.SYNC_TARGET_STATE_VERSION;
 
 public class HealthControllerTest {
 	private final SystemCounters counters = mock(SystemCounters.class);
@@ -41,5 +48,36 @@ public class HealthControllerTest {
 		verify(handler).get(eq("/health"), any());
 		verify(handler).get(eq("/health/"), any());
 	}
-	//TODO: add tests
+
+	@Test
+	public void syncingHealthStatusIsReturned() {
+		when(counters.get(LEDGER_STATE_VERSION)).thenReturn(1L);
+		when(counters.get(SYNC_TARGET_STATE_VERSION)).thenReturn(2L);
+
+		var exchange = mock(HttpServerExchange.class);
+		var sender = mock(Sender.class);
+
+		when(exchange.getResponseHeaders()).thenReturn(new HeaderMap());
+		when(exchange.getResponseSender()).thenReturn(sender);
+
+		controller.handleHealthRequest(exchange);
+
+		verify(sender).send("{\"status\":\"SYNCING\"}");
+	}
+
+	@Test
+	public void upHealthStatusIsReturned() {
+		when(counters.get(LEDGER_STATE_VERSION)).thenReturn(1L);
+		when(counters.get(SYNC_TARGET_STATE_VERSION)).thenReturn(1L);
+
+		var exchange = mock(HttpServerExchange.class);
+		var sender = mock(Sender.class);
+
+		when(exchange.getResponseHeaders()).thenReturn(new HeaderMap());
+		when(exchange.getResponseSender()).thenReturn(sender);
+
+		controller.handleHealthRequest(exchange);
+
+		verify(sender).send("{\"status\":\"UP\"}");
+	}
 }

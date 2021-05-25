@@ -33,8 +33,10 @@ public class TokenService {
 	}
 
 	public Result<TokenDefinitionRecord> getNativeTokenDescription() {
-		return clientApiStore.getTokenDefinition(REAddr.ofNativeToken())
-			.flatMap(r -> clientApiStore.getTokenSupply(Rri.of(r.getSymbol(), REAddr.ofNativeToken())).map(r::withSupply));
+		REAddr rri = REAddr.ofNativeToken();
+
+		return clientApiStore.getTokenDefinition(rri)
+			.flatMap(definition -> withSupply(Rri.of(definition.getSymbol(), rri), definition));
 	}
 
 	public Result<TokenDefinitionRecord> getTokenDescription(String rri) {

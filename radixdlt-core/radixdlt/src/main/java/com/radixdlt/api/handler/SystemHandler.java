@@ -30,6 +30,7 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.utils.Bytes;
 
@@ -51,7 +52,7 @@ public class SystemHandler {
 	@Inject
 	public SystemHandler(
 		LocalSystem localSystem,
-		VerifiedTxnsAndProof genesis,
+		@Genesis VerifiedTxnsAndProof genesis,
 		InMemorySystemInfo inMemorySystemInfo,
 		AddressBook addressBook,
 		PeerWithSystem localPeer,
@@ -196,5 +197,4 @@ public class SystemHandler {
 
 		respond(exchange, peerArray);
 	}
-
 }

@@ -139,7 +139,7 @@ public final class Radix {
 	}
 
 	private static void logVersion() {
-		log.info(
+		log.always().log(
 			"Radix distributed ledger '{}' from branch '{}' commit '{}'",
 			SYSTEM_VERSION_DISPLAY, SYSTEM_VERSION_BRANCH, SYSTEM_VERSION_COMMIT
 		);
@@ -184,7 +184,9 @@ public final class Radix {
 
 		// start API services
 		final var nodeServer = moduleRunners.get(Runners.NODE_API);
-		nodeServer.start();
+		if (nodeServer != null) {
+			nodeServer.start();
+		}
 
 		final var archiveServer = moduleRunners.get(Runners.ARCHIVE_API);
 		if (archiveServer != null) {

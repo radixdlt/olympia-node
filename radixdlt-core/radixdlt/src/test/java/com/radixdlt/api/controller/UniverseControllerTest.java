@@ -19,15 +19,20 @@ package com.radixdlt.api.controller;
 
 import org.junit.Test;
 
+import io.undertow.io.Sender;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
+import io.undertow.util.HeaderMap;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class UniverseControllerTest {
-	private final UniverseController controller = new UniverseController("{}");
+	private static final String UNIVERSE_JSON = "{}";
+	private final UniverseController controller = new UniverseController(UNIVERSE_JSON);
 
 	@Test
 	public void routesAreConfigured() {
@@ -39,5 +44,16 @@ public class UniverseControllerTest {
 		verify(handler).get(eq("/universe.json/"), any());
 	}
 
-	//TODO: add tests
+	@Test
+	public void universeIsReturned() {
+		var exchange = mock(HttpServerExchange.class);
+		var sender = mock(Sender.class);
+
+		when(exchange.getResponseHeaders()).thenReturn(new HeaderMap());
+		when(exchange.getResponseSender()).thenReturn(sender);
+
+		controller.handleUniverseRequest(exchange);
+
+		verify(sender).send(UNIVERSE_JSON);
+	}
 }

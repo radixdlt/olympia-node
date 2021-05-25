@@ -43,7 +43,22 @@ public class TokenServiceTest {
 	private final ClientApiStore clientApiStore = mock(ClientApiStore.class);
 	private final TokenService tokenService = new TokenService(clientApiStore);
 
-	//TODO: test getNativeTokenDescription
+	@Test
+	public void testGetNativeTokenDescription() {
+		var token = REAddr.ofHashedKey(TOKEN_KEY, "xrd");
+		var definition = TokenDefinitionRecord.from(TOKEN_KEY, mutableTokenDef("xrd"));
+
+		when(clientApiStore.getTokenDefinition(eq(REAddr.ofNativeToken())))
+			.thenReturn(Result.ok(definition));
+		when(clientApiStore.getTokenSupply(any()))
+			.thenReturn(Result.ok(UInt384.EIGHT));
+
+		tokenService.getNativeTokenDescription()
+			.onSuccess(description -> assertEquals(token, description.addr()))
+			.onSuccess(description -> assertEquals(UInt384.EIGHT, description.currentSupply()))
+			.onFailureDo(Assert::fail);
+	}
+
 	@Test
 	public void testGetTokenDescription() {
 		var token = REAddr.ofHashedKey(TOKEN_KEY, "fff");
