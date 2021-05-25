@@ -17,11 +17,12 @@
 package com.radixdlt.client.service;
 
 import com.radixdlt.atom.Txn;
+import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.statecomputer.AtomsCommittedToLedger;
+import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -51,7 +52,8 @@ public class TransactionStatusServiceTest {
 		);
 
 		var txn = randomTxn();
-		var one = AtomsCommittedToLedger.create(List.of(txn), List.of());
+		var parsedTxn = new REParsedTxn(txn, null, null, null);
+		var one = TxnsCommittedToLedger.create(List.of(parsedTxn));
 		transactionStatusService.atomsCommittedToLedgerEventProcessor().process(one);
 
 		assertEquals(CONFIRMED, transactionStatusService.getTransactionStatus(txn.getId()));
@@ -115,7 +117,8 @@ public class TransactionStatusServiceTest {
 		var succeeded = MempoolAddSuccess.create(txnSucceeded, null);
 		transactionStatusService.mempoolAddSuccessEventProcessor().process(succeeded);
 		var txnCommitted = randomTxn();
-		var committed = AtomsCommittedToLedger.create(List.of(txnCommitted), List.of());
+		var parsedTxn = new REParsedTxn(txnCommitted, null, null, null);
+		var committed = TxnsCommittedToLedger.create(List.of(parsedTxn));
 		transactionStatusService.atomsCommittedToLedgerEventProcessor().process(committed);
 		var txnRejected = randomTxn();
 		var rejected = MempoolAddFailure.create(txnRejected, null, null);

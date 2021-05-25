@@ -25,7 +25,7 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.statecomputer.AtomsCommittedToLedger;
+import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 
 import java.time.Duration;
@@ -64,8 +64,8 @@ public class TransactionStatusService {
 		scheduledCacheCleanup.dispatch(ScheduledCacheCleanup.create(), DEFAULT_CLEANUP_INTERVAL);
 	}
 
-	private void onCommit(AtomsCommittedToLedger atomsCommittedToLedger) {
-		atomsCommittedToLedger.getTxns().forEach(txn -> updateStatus(txn.getId(), CONFIRMED));
+	private void onCommit(TxnsCommittedToLedger txnsCommittedToLedger) {
+		txnsCommittedToLedger.getParsedTxs().forEach(txn -> updateStatus(txn.getTxn().getId(), CONFIRMED));
 	}
 
 	private void onReject(MempoolAddFailure mempoolAddFailure) {
@@ -76,7 +76,7 @@ public class TransactionStatusService {
 		updateStatus(mempoolAddSuccess.getTxn().getId(), PENDING);
 	}
 
-	public EventProcessor<AtomsCommittedToLedger> atomsCommittedToLedgerEventProcessor() {
+	public EventProcessor<TxnsCommittedToLedger> atomsCommittedToLedgerEventProcessor() {
 		return this::onCommit;
 	}
 

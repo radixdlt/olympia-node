@@ -17,7 +17,6 @@
 
 package com.radixdlt.statecomputer;
 
-import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REParsedTxn;
 
 import java.util.List;
@@ -26,42 +25,34 @@ import java.util.Objects;
 /**
  * Event signifying that an atom was committed to ledger successfully
  */
-public final class AtomsCommittedToLedger {
-    private final List<Txn> txns;
+public final class TxnsCommittedToLedger {
     private final List<REParsedTxn> parsedTxs;
 
-    private AtomsCommittedToLedger(List<Txn> txns, List<REParsedTxn> parsedTxs) {
-        this.txns = txns;
+    private TxnsCommittedToLedger(List<REParsedTxn> parsedTxs) {
         this.parsedTxs = parsedTxs;
-    }
-
-    public List<Txn> getTxns() {
-        return txns;
     }
 
     public List<REParsedTxn> getParsedTxs() {
         return parsedTxs;
     }
 
-    public static AtomsCommittedToLedger create(List<Txn> txns, List<REParsedTxn> parsedTxs) {
-        Objects.requireNonNull(txns);
+    public static TxnsCommittedToLedger create(List<REParsedTxn> parsedTxs) {
         Objects.requireNonNull(parsedTxs);
-        return new AtomsCommittedToLedger(txns, parsedTxs);
+        return new TxnsCommittedToLedger(parsedTxs);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(txns, parsedTxs);
+        return Objects.hash(parsedTxs);
     }
 
     @Override
 	public boolean equals(Object o) {
-        if (!(o instanceof AtomsCommittedToLedger)) {
+        if (!(o instanceof TxnsCommittedToLedger)) {
             return false;
         }
 
-        AtomsCommittedToLedger other = (AtomsCommittedToLedger) o;
-        return Objects.equals(this.txns, other.txns)
-            && Objects.equals(this.parsedTxs, other.parsedTxs);
+        TxnsCommittedToLedger other = (TxnsCommittedToLedger) o;
+        return Objects.equals(this.parsedTxs, other.parsedTxs);
     }
 }

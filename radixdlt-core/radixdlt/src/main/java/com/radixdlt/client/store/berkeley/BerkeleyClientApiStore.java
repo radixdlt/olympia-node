@@ -52,7 +52,7 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.AtomsCommittedToLedger;
+import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt384;
@@ -133,7 +133,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final Serialization serialization;
 	private final SystemCounters systemCounters;
 	private final ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher;
-	private final StackingCollector<AtomsCommittedToLedger> txCollector = StackingCollector.create();
+	private final StackingCollector<TxnsCommittedToLedger> txCollector = StackingCollector.create();
 	private final AtomicLong inputCounter = new AtomicLong();
 	private final CompositeDisposable disposable = new CompositeDisposable();
 	private final AtomicReference<Instant> currentTimestamp = new AtomicReference<>(NOW);
@@ -545,16 +545,16 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		log.info("Database rebuilding is finished successfully");
 	}
 
-	public EventProcessor<AtomsCommittedToLedger> atomsCommittedToLedgerEventProcessor() {
+	public EventProcessor<TxnsCommittedToLedger> atomsCommittedToLedgerEventProcessor() {
 		return this::newBatch;
 	}
 
-	private void newBatch(AtomsCommittedToLedger transactions) {
+	private void newBatch(TxnsCommittedToLedger transactions) {
 		txCollector.push(transactions);
-		systemCounters.set(COUNT_APIDB_QUEUE_SIZE, inputCounter.addAndGet(transactions.getTxns().size()));
+		systemCounters.set(COUNT_APIDB_QUEUE_SIZE, inputCounter.addAndGet(transactions.getParsedTxs().size()));
 	}
 
-	private void storeTransactionBatch(AtomsCommittedToLedger act) {
+	private void storeTransactionBatch(TxnsCommittedToLedger act) {
 		act.getParsedTxs().forEach(this::processRETransaction);
 	}
 

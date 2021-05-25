@@ -75,7 +75,7 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.statecomputer.AtomsCommittedToLedger;
+import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
@@ -123,8 +123,8 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.dispatcherProvider(AtomsRemovedFromMempool.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MempoolRelayTrigger.class)).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<EventDispatcher<AtomsCommittedToLedger>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(AtomsCommittedToLedger.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<TxnsCommittedToLedger>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(TxnsCommittedToLedger.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MessageFlooderUpdate>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MessageFlooderUpdate.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolFillerUpdate>>() { })
