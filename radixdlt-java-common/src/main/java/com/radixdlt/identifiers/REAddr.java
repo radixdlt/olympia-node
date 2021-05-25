@@ -173,15 +173,28 @@ public final class REAddr {
 		return getType() == REAddrType.PUB_KEY;
 	}
 
-	public boolean allowToWithdrawFrom(ECPublicKey publicKey) {
+	// FIXME: Should use AuthorizationException instead but packages a bit of a mess at the moment
+	public static class BucketWithdrawAuthorizationException extends Exception {
+		private BucketWithdrawAuthorizationException(String msg) {
+			super(msg);
+		}
+	}
+
+	public void verifyWithdrawAuthorization(Optional<ECPublicKey> publicKey) throws BucketWithdrawAuthorizationException {
 		if (getType() != REAddrType.PUB_KEY) {
-			return false;
+			throw new BucketWithdrawAuthorizationException(this + " is not an account address.");
 		}
 
-		return Arrays.equals(
+		if (publicKey.isEmpty()) {
+			throw new BucketWithdrawAuthorizationException("No key present.");
+		}
+
+		if (!Arrays.equals(
 			addr, 1, 1 + ECPublicKey.COMPRESSED_BYTES,
-			publicKey.getCompressedBytes(), 0, ECPublicKey.COMPRESSED_BYTES
-		);
+			publicKey.get().getCompressedBytes(), 0, ECPublicKey.COMPRESSED_BYTES
+		)) {
+			throw new BucketWithdrawAuthorizationException("Invalid key.");
+		}
 	}
 
 	public REAddrType getType() {

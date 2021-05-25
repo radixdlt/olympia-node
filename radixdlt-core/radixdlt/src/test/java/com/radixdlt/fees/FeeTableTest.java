@@ -23,7 +23,7 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atommodel.unique.UniqueParticle;
+import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.utils.UInt256;
 
 import static org.assertj.core.api.Assertions.assertThat;

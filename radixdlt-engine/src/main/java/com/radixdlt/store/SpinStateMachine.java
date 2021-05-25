@@ -18,14 +18,10 @@
 package com.radixdlt.store;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 
-import java.util.Collections;
 import java.util.EnumMap;
-import java.util.EnumSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import com.radixdlt.constraintmachine.Spin;
 
 import static com.radixdlt.constraintmachine.Spin.NEUTRAL;
@@ -98,28 +94,6 @@ public final class SpinStateMachine {
 			NEUTRAL, UP,
 			UP, DOWN
 		);
-
-		private static final ImmutableMap<Spin, Spin> PREV = ImmutableMap.of(
-			DOWN, UP,
-			UP, NEUTRAL
-		);
-
-		private static final ImmutableSet<Transition> VALID_TRANSITIONS = ImmutableSet.of(
-			Transition.of(NEUTRAL, UP),
-			Transition.of(UP, DOWN)
-		);
-
-		private static final Map<Spin, Set<Spin>> STATES_AFTER_INDEX = ImmutableMap.of(
-			NEUTRAL, EnumSet.of(UP, DOWN),
-			UP, EnumSet.of(DOWN),
-			DOWN, Collections.emptySet()
-		);
-
-		private static final Map<Spin, Set<Spin>> STATES_BEFORE_INDEX = ImmutableMap.of(
-			NEUTRAL, Collections.emptySet(),
-			UP, EnumSet.of(NEUTRAL),
-			DOWN, EnumSet.of(NEUTRAL, UP)
-		);
 	}
 
 	public static Spin next(Spin current) {
@@ -128,41 +102,5 @@ public final class SpinStateMachine {
 			throw new IllegalArgumentException("No spin after " + current);
 		}
 		return nextSpin;
-	}
-
-	public static Spin prev(Spin current) {
-		final Spin prevSpin = SpinStateIndexes.PREV.get(current);
-		if (prevSpin == null) {
-			throw new IllegalArgumentException("No spin before " + current);
-		}
-		return prevSpin;
-	}
-
-	/**
-	 * Checks if a spin state is after a given spin state non-inclusive in
-	 * the sequential spin state machine.
-	 *
-	 * @param check the spin to check if its after
-	 * @param base the baseline spin state to check against
-	 * @return true if check is after base, false otherwise
-	 */
-	public static boolean isAfter(Spin check, Spin base) {
-		return SpinStateIndexes.STATES_AFTER_INDEX.get(base).contains(check);
-	}
-
-	/**
-	 * Checks if a spin state is before a given spin state non-inclusive in
-	 * the sequential spin state machine.
-	 *
-	 * @param check the spin to check if its before
-	 * @param base the baseline spin state to check against
-	 * @return true if beforeCheck is before cur, false otherwise
-	 */
-	public static boolean isBefore(Spin check, Spin base) {
-		return SpinStateIndexes.STATES_BEFORE_INDEX.get(base).contains(check);
-	}
-
-	public static boolean canTransition(Spin from, Spin to) {
-		return SpinStateIndexes.VALID_TRANSITIONS.contains(Transition.of(from, to));
 	}
 }

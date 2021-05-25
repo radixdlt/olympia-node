@@ -29,7 +29,7 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.atommodel.tokens.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
@@ -175,7 +175,7 @@ public class StakingTest {
 		// Assert
 		var txn2 = sut.construct(
 			txBuilder ->
-			txBuilder.swapFungible(
+			txBuilder.deprecatedSwapFungible(
 				TokensParticle.class,
 				p -> p.getResourceAddr().equals(REAddr.ofNativeToken())
 						&& p.getHoldingAddr().equals(acct),

@@ -24,7 +24,7 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.atom.ActionConstructors;
-import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.PostParsedChecker;

@@ -19,54 +19,44 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.utils.Pair;
 
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-/**
- * Result of an instruction reduction
- */
-public final class ReducerResult {
+public class ReducerResult {
 	private final ReducerState reducerState;
-	private final boolean keepInput;
 	private final TxAction txAction;
 
-	private ReducerResult(ReducerState reducerState, boolean keepInput, TxAction txAction) {
+	private ReducerResult(ReducerState reducerState, TxAction txAction) {
 		this.reducerState = reducerState;
-		this.keepInput = keepInput;
 		this.txAction = txAction;
 	}
 
-	public static ReducerResult incomplete(ReducerState reducerState, boolean keepInput) {
-		Objects.requireNonNull(reducerState);
-		return new ReducerResult(reducerState, keepInput, null);
+	public static ReducerResult incomplete(ReducerState reducerState) {
+		return new ReducerResult(reducerState, null);
+	}
+
+	public static ReducerResult incomplete(ReducerState reducerState, TxAction txAction) {
+		return new ReducerResult(reducerState, txAction);
+	}
+
+	public static ReducerResult complete() {
+		return new ReducerResult(null, null);
 	}
 
 	public static ReducerResult complete(TxAction txAction) {
-		Objects.requireNonNull(txAction);
-		return new ReducerResult(null, false, txAction);
+		return new ReducerResult(null, txAction);
 	}
 
-	public boolean isComplete() {
-		return reducerState == null;
-	}
-
-	public void ifIncompleteElse(BiConsumer<Boolean, ReducerState> onIncomplete, Consumer<TxAction> onComplete) {
-		if (reducerState != null) {
-			onIncomplete.accept(keepInput, reducerState);
-		} else {
-			onComplete.accept(txAction);
-		}
-	}
-
-	public Optional<Pair<Boolean, ReducerState>> getIncomplete() {
+	public void ifCompleteElse(
+		Consumer<Optional<TxAction>> completeConsumer,
+		BiConsumer<ReducerState, Optional<TxAction>> incompleteConsumer
+	) {
 		if (reducerState == null) {
-			return Optional.empty();
+			completeConsumer.accept(Optional.ofNullable(txAction));
 		} else {
-			return Optional.of(Pair.of(keepInput, reducerState));
+			incompleteConsumer.accept(reducerState, Optional.ofNullable(txAction));
 		}
 	}
 }

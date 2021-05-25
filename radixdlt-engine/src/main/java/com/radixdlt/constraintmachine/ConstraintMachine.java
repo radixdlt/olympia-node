@@ -18,14 +18,13 @@
 package com.radixdlt.constraintmachine;
 
 import com.google.common.hash.HashCode;
-import com.google.common.reflect.TypeToken;
 
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.atommodel.system.state.SystemParticle;
+import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
@@ -60,17 +59,15 @@ public final class ConstraintMachine {
 	public static class Builder {
 		private Predicate<Particle> virtualStoreLayer;
 		private Function<Particle, Result> particleStaticCheck;
-		private Function<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>> particleProcedures;
+		private Procedures procedures;
 
 		public Builder setParticleStaticCheck(Function<Particle, Result> particleStaticCheck) {
 			this.particleStaticCheck = particleStaticCheck;
 			return this;
 		}
 
-		public Builder setParticleTransitionProcedures(
-			Function<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>> particleProcedures
-		) {
-			this.particleProcedures = particleProcedures;
+		public Builder setParticleTransitionProcedures(Procedures procedures) {
+			this.procedures = procedures;
 			return this;
 		}
 
@@ -83,30 +80,29 @@ public final class ConstraintMachine {
 			return new ConstraintMachine(
 				virtualStoreLayer,
 				particleStaticCheck,
-				particleProcedures
+				procedures
 			);
 		}
 	}
 
 	private final Predicate<Particle> virtualStoreLayer;
 	private final Function<Particle, Result> particleStaticCheck;
-	private final Function<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>> particleProcedures;
+	private final Procedures procedures;
 
 	ConstraintMachine(
 		Predicate<Particle> virtualStoreLayer,
 		Function<Particle, Result> particleStaticCheck,
-		Function<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>> particleProcedures
+		Procedures procedures
 	) {
 		this.virtualStoreLayer = virtualStoreLayer;
 		this.particleStaticCheck = particleStaticCheck;
-		this.particleProcedures = particleProcedures;
+		this.procedures = procedures;
 	}
 
 	public static final class CMValidationState {
 		private PermissionLevel permissionLevel;
+		private REInstruction curInstruction;
 
-		private SubstateWithArg<Particle> particleRemaining = null;
-		private boolean particleRemainingIsInput;
 		private ReducerState reducerState = null;
 
 		private final Map<Integer, Particle> localUpParticles = new HashMap<>();
@@ -186,11 +182,6 @@ public final class ConstraintMachine {
 			return Optional.ofNullable(maybeParticle);
 		}
 
-		public Optional<Particle> localRead(int index) {
-			var maybeParticle = localUpParticles.get(index);
-			return Optional.ofNullable(maybeParticle);
-		}
-
 		public Optional<Particle> read(SubstateId substateId) {
 			return loadUpParticle(substateId);
 		}
@@ -201,61 +192,13 @@ public final class ConstraintMachine {
 			return maybeParticle;
 		}
 
-		private boolean verifySignedWith(ECPublicKey publicKey) {
-			return signedBy.map(publicKey::equals).orElse(false);
-		}
-
-		SubstateWithArg<Particle> getCurParticle() {
-			return particleRemaining;
-		}
-
-		boolean spinClashes(boolean nextIsInput) {
-			return particleRemaining != null && nextIsInput == particleRemainingIsInput;
-		}
-
-		TypeToken<? extends ReducerState> getReducerType() {
-			return particleRemaining != null && reducerState != null
-				? reducerState.getTypeToken() : TypeToken.of(VoidReducerState.class);
-		}
-
-		ReducerState getReducerState() {
-			return particleRemaining != null ? reducerState : null;
-		}
-
-		void popAndComplete(TxAction txAction) {
-			this.particleRemaining = null;
-			this.reducerState = null;
-			this.txAction = txAction;
-		}
-
-		void popAndReplace(SubstateWithArg<Particle> particle, boolean isInput, ReducerState reducerState) {
-			this.particleRemaining = particle;
-			this.particleRemainingIsInput = isInput;
-			this.reducerState = reducerState;
-		}
-
-		void updateState(ReducerState reducerState) {
-			this.reducerState = reducerState;
+		Class<? extends ReducerState> getReducerStateClass() {
+			return reducerState != null ? reducerState.getClass() : VoidReducerState.class;
 		}
 
 		@Override
 		public String toString() {
-			StringBuilder builder = new StringBuilder();
-			builder.append("CMTrace:[");
-			if (particleRemaining != null) {
-				builder
-					.append(" Remaining (")
-					.append(this.particleRemainingIsInput ? "input" : "output")
-					.append("): ")
-					.append(this.particleRemaining)
-					.append(" Used: ")
-					.append(this.reducerState);
-			} else {
-				builder.append(" Remaining: [empty] ");
-			}
-			builder.append(" ]");
-
-			return builder.toString();
+			return String.format("CMState{state=%s inst=%s}", this.reducerState, this.curInstruction);
 		}
 	}
 
@@ -270,74 +213,81 @@ public final class ConstraintMachine {
 		SubstateWithArg<Particle> nextParticle,
 		boolean isInput
 	) {
-		final SubstateWithArg<Particle> curParticle = validationState.getCurParticle();
+		final MethodProcedure methodProcedure;
+		final Object authorizationParam;
+		final Object procedureParam;
 
-		if (validationState.spinClashes(isInput)) {
-			return Optional.of(Pair.of(CMErrorCode.PARTICLE_REGISTER_SPIN_CLASH, null));
+		// TODO: Reduce the 3 following procedures to 1
+		if (nextParticle == null) {
+			var endProcedure = this.procedures.getEndProcedure(
+				validationState.getReducerStateClass()
+			);
+			if (endProcedure == null) {
+				return Optional.of(Pair.of(CMErrorCode.MISSING_PROCEDURE, null));
+			}
+			methodProcedure = endProcedure;
+			authorizationParam = validationState.reducerState;
+			procedureParam = null;
+		} else if (!isInput) {
+			var outputParticle = nextParticle.getSubstate();
+			var upProcedure = this.procedures.getUpProcedure(
+				validationState.getReducerStateClass(),
+				outputParticle.getClass()
+			);
+			if (upProcedure == null) {
+				return Optional.of(Pair.of(CMErrorCode.MISSING_PROCEDURE, null));
+			}
+			methodProcedure = upProcedure;
+			authorizationParam = outputParticle;
+			procedureParam = outputParticle;
+		} else {
+			var downProcedure = this.procedures.getDownProcedure(
+				nextParticle.getSubstate().getClass(),
+				validationState.getReducerStateClass()
+			);
+			if (downProcedure == null) {
+				return Optional.of(Pair.of(CMErrorCode.MISSING_PROCEDURE, null));
+			}
+			methodProcedure = downProcedure;
+			authorizationParam = nextParticle;
+			procedureParam = nextParticle;
 		}
 
-		final SubstateWithArg<Particle> input = isInput ? nextParticle : curParticle;
-		final Particle outputParticle = isInput ? (curParticle == null ? null : curParticle.getSubstate())
-			: nextParticle.getSubstate();
-		final TransitionToken transitionToken = new TransitionToken(
-			input != null ? input.getSubstate().getClass() : VoidParticle.class,
-			outputParticle != null ? outputParticle.getClass() : VoidParticle.class,
-			validationState.getReducerType()
-		);
-
-		final var transitionProcedure = this.particleProcedures.apply(transitionToken);
-		if (input == null || outputParticle == null) {
-			validationState.popAndReplace(nextParticle, isInput, null);
-			return Optional.empty();
-		}
-
-		if (transitionProcedure == null) {
-			return Optional.of(Pair.of(CMErrorCode.MISSING_TRANSITION_PROCEDURE, "TransitionToken{" + transitionToken + "}"));
-		}
-
-		final var used = validationState.getReducerState();
-
-		// Precondition check
-		final Result preconditionCheckResult = transitionProcedure.precondition(
-			input,
-			outputParticle,
-			used,
-			validationState.immutableIndex()
-		);
-		if (preconditionCheckResult.isError()) {
-			return Optional.of(Pair.of(CMErrorCode.TRANSITION_PRECONDITION_FAILURE, preconditionCheckResult.getErrorMessage()));
-		}
-
-		final var requiredPermissionLevel = transitionProcedure.requiredPermissionLevel(
-			input, outputParticle, validationState.immutableIndex()
-		);
-		if (validationState.permissionLevel.compareTo(requiredPermissionLevel) < 0) {
-			return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
-		}
-
-		var reducer = transitionProcedure.inputOutputReducer();
-		var result = reducer.reduce(input, outputParticle, validationState.immutableIndex(), used);
-		result.ifIncompleteElse(
-			(keepInput, state) -> {
-				if (isInput == keepInput) {
-					validationState.popAndReplace(nextParticle, isInput, state);
-				} else {
-					validationState.updateState(state);
+		var readable = validationState.immutableIndex();
+		var reducerState = validationState.reducerState;
+		final ReducerResult reducerResult;
+		try {
+			// System permissions don't require additional authorization
+			if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
+				var requiredLevel = methodProcedure.permissionLevel(authorizationParam, readable);
+				if (validationState.permissionLevel.compareTo(requiredLevel) < 0) {
+					return Optional.of(Pair.of(
+						CMErrorCode.PERMISSION_LEVEL_ERROR,
+						"Required: " + requiredLevel + " Current: " + validationState.permissionLevel
+					));
 				}
+				methodProcedure.verifyAuthorization(authorizationParam, readable, validationState.signedBy);
+			}
+
+			reducerResult = methodProcedure.call(procedureParam, reducerState, readable);
+		} catch (AuthorizationException e) {
+			return Optional.of(Pair.of(CMErrorCode.AUTHORIZATION_ERROR, null));
+		} catch (ProcedureException e) {
+			return Optional.of(Pair.of(CMErrorCode.PROCEDURE_ERROR, e.getMessage()));
+		} catch (Exception e) {
+			return Optional.of(Pair.of(CMErrorCode.UNKNOWN_ERROR, e.getMessage()));
+		}
+
+		reducerResult.ifCompleteElse(
+			txAction -> {
+				validationState.reducerState = null;
+				validationState.txAction = txAction.orElse(null);
 			},
-			validationState::popAndComplete
+			(nextState, txAction) -> {
+				validationState.reducerState = nextState;
+				validationState.txAction = txAction.orElse(null);
+			}
 		);
-
-		// System permissions don't require signatures
-		if (validationState.permissionLevel == PermissionLevel.SYSTEM) {
-			return Optional.empty();
-		}
-
-		var signatureVerified = transitionProcedure.signatureValidator()
-			.verify(input, outputParticle, validationState.immutableIndex(), validationState.signedBy);
-		if (!signatureVerified) {
-			return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
-		}
 
 		return Optional.empty();
 	}
@@ -487,13 +437,15 @@ public final class ConstraintMachine {
 	Optional<CMError> statefulVerify(
 		CMValidationState validationState,
 		List<REInstruction> instructions,
+		List<REParsedInstruction> parsedInstructions,
 		List<REParsedAction> parsedActions
 	) {
-		var parsedInstructions = new ArrayList<REParsedInstruction>();
 		int instIndex = 0;
 		var expectEnd = false;
 
 		for (REInstruction inst : instructions) {
+			validationState.curInstruction = inst;
+
 			if (expectEnd && inst.getMicroOp() != REInstruction.REOp.END) {
 				return Optional.of(new CMError(instIndex, CMErrorCode.MISSING_PARTICLE_GROUP, validationState));
 			}
@@ -546,6 +498,8 @@ public final class ConstraintMachine {
 					return Optional.of(new CMError(instIndex, CMErrorCode.UNKNOWN_OP, validationState));
 				}
 
+				parsedInstructions.add(REParsedInstruction.of(inst, substate));
+
 				var error = validateParticle(
 					validationState,
 					argument == null ? SubstateWithArg.noArg(nextParticle)
@@ -556,28 +510,25 @@ public final class ConstraintMachine {
 					return Optional.of(new CMError(instIndex, error.get().getFirst(), validationState, error.get().getSecond()));
 				}
 
-				parsedInstructions.add(REParsedInstruction.of(inst, substate));
+				expectEnd = validationState.reducerState == null;
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.END) {
-				if (validationState.txAction == null) {
-					var errMaybe = validateParticle(validationState,
-						SubstateWithArg.noArg(VoidParticle.create()), !validationState.particleRemainingIsInput);
+				if (validationState.reducerState != null) {
+					var errMaybe = validateParticle(validationState, null, false);
 					if (errMaybe.isPresent()) {
 						return Optional.of(new CMError(instIndex,
 							errMaybe.get().getFirst(), validationState, errMaybe.get().getSecond()));
 					}
 				}
 
-				if (validationState.txAction == null) {
-					return Optional.of(new CMError(instIndex, CMErrorCode.UNEQUAL_INPUT_OUTPUT, validationState));
-				}
+				expectEnd = false;
+			}
 
-				var parsedAction = REParsedAction.create(validationState.txAction, parsedInstructions);
+			if (validationState.txAction != null) {
+				var parsedAction = REParsedAction.create(validationState.txAction);
 				parsedActions.add(parsedAction);
-				parsedInstructions = new ArrayList<>();
 				validationState.txAction = null;
 			}
 
-			expectEnd = validationState.txAction != null;
 			instIndex++;
 		}
 
@@ -606,7 +557,8 @@ public final class ConstraintMachine {
 		);
 
 		var parsedActions = new ArrayList<REParsedAction>();
-		var error = this.statefulVerify(validationState, result.instructions, parsedActions);
+		var parsedInstructions = new ArrayList<REParsedInstruction>();
+		var error = this.statefulVerify(validationState, result.instructions, parsedInstructions, parsedActions);
 		if (error.isPresent()) {
 			throw new RadixEngineException(
 				txn,
@@ -617,6 +569,6 @@ public final class ConstraintMachine {
 			);
 		}
 
-		return new REParsedTxn(txn, result, parsedActions);
+		return new REParsedTxn(txn, result, parsedInstructions,  parsedActions);
 	}
 }

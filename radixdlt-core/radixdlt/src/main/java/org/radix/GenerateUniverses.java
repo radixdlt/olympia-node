@@ -17,6 +17,7 @@
 
 package org.radix;
 
+import com.radixdlt.statecomputer.forks.RadixEngineForksModule;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -291,7 +292,7 @@ public final class GenerateUniverses {
 					install(new CryptoModule());
 					install(new RadixNativeTokenModule());
 					install(new BetanetForksModule());
-					install(new RadixEngineOnlyLatestForkModule(View.of(100)));
+					install(new RadixEngineForksModule());
 					install(RadixEngineConfig.asModule(1, 100, 50));
 					install(new RadixEngineModule());
 
