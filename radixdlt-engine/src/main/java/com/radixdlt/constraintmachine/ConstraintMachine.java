@@ -159,36 +159,42 @@ public final class ConstraintMachine {
 			localUpParticles.put(instructionIndex, substate.getParticle());
 		}
 
-		public Optional<CMErrorCode> virtualShutdown(Substate substate) {
+		public void virtualShutdown(Substate substate) throws ConstraintMachineException {
 			if (remoteDownParticles.contains(substate.getId())) {
-				return Optional.of(CMErrorCode.SUBSTATE_NOT_FOUND);
+				throw new ConstraintMachineException(CMErrorCode.SUBSTATE_NOT_FOUND, this);
 			}
 
 			if (!virtualStoreLayer.test(substate.getParticle())) {
-				return Optional.of(CMErrorCode.INVALID_PARTICLE);
+				throw new ConstraintMachineException(CMErrorCode.INVALID_PARTICLE, this);
 			}
 
 			if (store.isVirtualDown(txn, substate.getId())) {
-				return Optional.of(CMErrorCode.SUBSTATE_NOT_FOUND);
+				throw new ConstraintMachineException(CMErrorCode.SUBSTATE_NOT_FOUND, this);
 			}
 
 			remoteDownParticles.add(substate.getId());
-			return Optional.empty();
 		}
 
-		public Optional<Particle> localShutdown(int index) {
+		public Particle localShutdown(int index) throws ConstraintMachineException {
 			var maybeParticle = localUpParticles.remove(index);
-			return Optional.ofNullable(maybeParticle);
+			if (maybeParticle == null) {
+				throw new ConstraintMachineException(CMErrorCode.LOCAL_NONEXISTENT, this);
+			}
+
+			return maybeParticle;
 		}
 
 		public Optional<Particle> read(SubstateId substateId) {
 			return loadUpParticle(substateId);
 		}
 
-		public Optional<Particle> shutdown(SubstateId substateId) {
+		public Particle shutdown(SubstateId substateId) throws ConstraintMachineException {
 			var maybeParticle = loadUpParticle(substateId);
+			if (maybeParticle.isEmpty()) {
+				throw new ConstraintMachineException(CMErrorCode.SUBSTATE_NOT_FOUND, this);
+			}
 			remoteDownParticles.add(substateId);
-			return maybeParticle;
+			return maybeParticle.get();
 		}
 
 		Class<? extends ReducerState> getReducerStateClass() {
@@ -465,41 +471,27 @@ public final class ConstraintMachine {
 					substate = inst.getData();
 					argument = null;
 					nextParticle = substate.getParticle();
-					var stateError = validationState.virtualShutdown(substate);
-					if (stateError.isPresent()) {
-						throw new ConstraintMachineException(stateError.get(), validationState);
-					}
+					validationState.virtualShutdown(substate);
 				} else if (inst.getMicroOp() == REInstruction.REOp.VDOWNARG) {
 					substate = (Substate) ((Pair) inst.getData()).getFirst();
 					argument = (byte[]) ((Pair) inst.getData()).getSecond();
 					nextParticle = substate.getParticle();
-					var stateError = validationState.virtualShutdown(substate);
-					if (stateError.isPresent()) {
-						throw new ConstraintMachineException(stateError.get(), validationState);
-					}
+					validationState.virtualShutdown(substate);
 				} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.DOWN) {
 					SubstateId substateId = inst.getData();
-					var maybeParticle = validationState.shutdown(substateId);
-					if (maybeParticle.isEmpty()) {
-						throw new ConstraintMachineException(CMErrorCode.SUBSTATE_NOT_FOUND, validationState);
-					}
-					nextParticle = maybeParticle.get();
+					nextParticle = validationState.shutdown(substateId);
 					substate = Substate.create(nextParticle, substateId);
 					argument = null;
 				} else if (inst.getMicroOp() == REInstruction.REOp.LDOWN) {
 					SubstateId substateId = inst.getData();
-					var maybeParticle = validationState.localShutdown(substateId.getIndex().orElseThrow());
-					if (maybeParticle.isEmpty()) {
-						throw new ConstraintMachineException(CMErrorCode.LOCAL_NONEXISTENT, validationState);
-					}
-					nextParticle = maybeParticle.get();
+					nextParticle = validationState.localShutdown(substateId.getIndex().orElseThrow());
 					substate = Substate.create(nextParticle, substateId);
 					argument = null;
 				} else {
 					throw new ConstraintMachineException(CMErrorCode.UNKNOWN_OP, validationState);
 				}
 
-				parsed.add(REStateUpdate.of(inst, substate));
+				parsed.add(REStateUpdate.of(inst.getMicroOp(), substate, inst.getDataByteBuffer()));
 
 				validateParticle(
 					validationState,

@@ -590,27 +590,27 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 	}
 
-	private void updateParticle(com.sleepycat.je.Transaction txn, REStateUpdate inst) {
-		if (inst.isBootUp()) {
-			var buf = inst.getInstruction().getDataByteBuffer();
-			upParticle(txn, buf, inst.getSubstate().getId());
+	private void updateParticle(com.sleepycat.je.Transaction txn, REStateUpdate stateUpdate) {
+		if (stateUpdate.isBootUp()) {
+			var buf = stateUpdate.getStateBuf();
+			upParticle(txn, buf, stateUpdate.getSubstate().getId());
 
-			if (inst.getParticle() instanceof TokenDefinitionParticle) {
-				var p = (TokenDefinitionParticle) inst.getParticle();
+			if (stateUpdate.getParticle() instanceof TokenDefinitionParticle) {
+				var p = (TokenDefinitionParticle) stateUpdate.getParticle();
 				var addr = p.getAddr();
-				var buf2 = inst.getInstruction().getDataByteBuffer();
+				var buf2 = stateUpdate.getStateBuf();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
 				addrDatabase.putNoOverwrite(txn, new DatabaseEntry(addr.getBytes()), value);
-			} else if (inst.getParticle() instanceof SystemParticle) {
-				var buf2 = inst.getInstruction().getDataByteBuffer();
+			} else if (stateUpdate.getParticle() instanceof SystemParticle) {
+				var buf2 = stateUpdate.getStateBuf();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
 				addrDatabase.put(txn, new DatabaseEntry(REAddr.ofSystem().getBytes()), value);
 			}
-		} else if (inst.isShutDown()) {
-			if (inst.getSubstate().getId().isVirtual()) {
-				downVirtualSubstate(txn, inst.getSubstate().getId());
+		} else if (stateUpdate.isShutDown()) {
+			if (stateUpdate.getSubstate().getId().isVirtual()) {
+				downVirtualSubstate(txn, stateUpdate.getSubstate().getId());
 			} else {
-				downSubstate(txn, inst.getSubstate().getId());
+				downSubstate(txn, stateUpdate.getSubstate().getId());
 			}
 		} else {
 			throw new IllegalStateException("Must bootup or shutdown to update particle.");

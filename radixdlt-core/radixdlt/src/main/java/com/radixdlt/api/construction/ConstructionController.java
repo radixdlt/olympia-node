@@ -111,7 +111,7 @@ public final class ConstructionController implements Controller {
 				.put("operations", ops);
 			parsedTxn.instructions().forEach(i -> {
 				var jsonOp = jsonObject()
-					.put("type", i.getInstruction().getMicroOp())
+					.put("type", i.getOp())
 					.put("parsed", i.getParticle());
 
 				ops.put(jsonOp);
