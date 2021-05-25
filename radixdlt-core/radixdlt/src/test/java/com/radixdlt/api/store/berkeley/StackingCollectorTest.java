@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.client.store.berkeley;
+package com.radixdlt.api.store.berkeley;
 
 import org.junit.Test;
 
