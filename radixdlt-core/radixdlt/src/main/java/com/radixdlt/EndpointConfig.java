@@ -60,7 +60,7 @@ public final class EndpointConfig {
 	private static final String API_SUFFIX_ENABLE = ".enable";
 
 	private static final String API_ARCHIVE = "archive";
-	private static final String API_CONSTRUCT = "construct";
+	private static final String API_CONSTRUCTION = "construction";
 	private static final String API_SYSTEM = "system";
 	private static final String API_ACCOUNT = "account";
 	private static final String API_VALIDATOR = "validator";
@@ -71,7 +71,7 @@ public final class EndpointConfig {
 	private static final String API_VERSION = "version";
 	private static final List<EndpointConfig> ENDPOINTS = List.of(
 		new EndpointConfig(API_ARCHIVE, false, ARCHIVE, ALL, ArchiveEndpointModule::new),
-		new EndpointConfig(API_CONSTRUCT, false, ARCHIVE, ALL, ConstructEndpointModule::new),
+		new EndpointConfig(API_CONSTRUCTION, false, ARCHIVE, ALL, ConstructEndpointModule::new),
 		new EndpointConfig(API_SYSTEM, false, NODE, ALL, SystemEndpointModule::new),
 		new EndpointConfig(API_ACCOUNT, false, NODE, ALL, AccountEndpointModule::new),
 		new EndpointConfig(API_VALIDATOR, false, NODE, ALL, ValidationEndpointModule::new),
