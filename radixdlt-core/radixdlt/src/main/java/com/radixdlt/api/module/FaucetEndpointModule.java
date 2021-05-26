@@ -81,7 +81,8 @@ public class FaucetEndpointModule extends AbstractModule {
 					return parsed.instructions().stream()
 						.map(REInstruction::getData)
 						.filter(Substate.class::isInstance)
-						.map(s -> ((Substate) s).getParticle())
+						.map(Substate.class::cast)
+						.map(Substate::getParticle)
 						.filter(TokenResource.class::isInstance)
 						.map(TokenResource.class::cast)
 						.map(TokenResource::getAddr);
