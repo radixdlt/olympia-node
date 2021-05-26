@@ -98,11 +98,6 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 
 			return new StakeHoldingBucket(delegate, accountAddr, amount.subtract(withdraw384));
 		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(TokensConstraintScryptV2.TokenHoldingBucket.class);
-		}
 	}
 
 	private void defineStaking(SysCalls os) {

@@ -48,11 +48,6 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		private ValidatorUpdate(ValidatorParticle prevState) {
 			this.prevState = prevState;
 		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(ValidatorUpdate.class);
-		}
 	}
 
 	@Override

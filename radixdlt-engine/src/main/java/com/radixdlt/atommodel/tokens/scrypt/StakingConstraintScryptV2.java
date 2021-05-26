@@ -88,11 +88,6 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		public ECPublicKey delegate() {
 			return delegate;
 		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(RemainderStake.class);
-		}
 	}
 
 	public static class UnaccountedStake implements ReducerState {
@@ -123,11 +118,6 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 			} else {
 				return Optional.empty();
 			}
-		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(UnaccountedStake.class);
 		}
 	}
 

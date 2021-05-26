@@ -76,11 +76,6 @@ public final class CMAtomOS {
 		public REAddr getAddr() {
 			return this.addrParticle.getAddr();
 		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(REAddrClaim.class);
-		}
 	}
 
 	public CMAtomOS(Set<String> systemNames) {

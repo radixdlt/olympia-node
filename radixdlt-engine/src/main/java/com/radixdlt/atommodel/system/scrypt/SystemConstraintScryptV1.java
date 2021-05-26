@@ -72,11 +72,6 @@ public final class SystemConstraintScryptV1 implements ConstraintScrypt {
 		private UpdatingSystem(SystemParticle sys) {
 			this.sys = sys;
 		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(UpdatingSystem.class);
-		}
 	}
 
 	@Override

@@ -80,11 +80,6 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 			this.arg = arg;
 			this.tokenDefinitionParticle = tokenDefinitionParticle;
 		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(TokensConstraintScryptV2.NeedFixedTokenSupply.class);
-		}
 	}
 
 	private void defineTokenCreation(SysCalls os) {
@@ -184,11 +179,6 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 			}
 
 			return new TokenHoldingBucket(tokenAddr, amount.subtract(withdraw384), from);
-		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(TokenHoldingBucket.class);
 		}
 	}
 

@@ -17,8 +17,5 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.google.common.reflect.TypeToken;
-
 public interface ReducerState {
-	TypeToken<? extends ReducerState> getTypeToken();
 }

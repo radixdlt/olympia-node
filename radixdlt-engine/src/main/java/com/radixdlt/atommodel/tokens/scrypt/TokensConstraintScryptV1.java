@@ -83,11 +83,6 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			this.arg = arg;
 			this.tokenDefinitionParticle = tokenDefinitionParticle;
 		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(NeedFixedTokenSupply.class);
-		}
 	}
 
 	private void defineTokenCreation(SysCalls os) {
@@ -174,11 +169,6 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 				return Optional.empty();
 			}
 		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(UnaccountedTokens.class);
-		}
 	}
 
 	public static class RemainderTokens implements ReducerState {
@@ -213,11 +203,6 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			} else {
 				return Optional.empty();
 			}
-		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(RemainderTokens.class);
 		}
 	}
 

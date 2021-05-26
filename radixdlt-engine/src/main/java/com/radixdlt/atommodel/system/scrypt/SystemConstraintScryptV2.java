@@ -56,10 +56,6 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 	public static final UInt256 REWARDS_PER_PROPOSAL = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
 
 	private static class Inflation implements ReducerState {
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(Inflation.class);
-		}
 	}
 
 
@@ -91,18 +87,9 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		private TransitionToV2Epoch(SystemParticle sys) {
 			this.sys = sys;
 		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(TransitionToV2Epoch.class);
-		}
 	}
 
 	private static final class ReadyForEpochUpdate implements ReducerState {
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(ReadyForEpochUpdate.class);
-		}
 	}
 
 	private static final class UpdatingEpoch implements ReducerState {
@@ -110,36 +97,18 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		private UpdatingEpoch(EpochData prev) {
 			this.prev = prev;
 		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(UpdatingEpoch.class);
-		}
 	}
 
 	private static final class UpdatingEpochRound implements ReducerState {
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(UpdatingEpochRound.class);
-		}
 	}
 
 	private static final class UpdatingEpochRound2 implements ReducerState {
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(UpdatingEpochRound2.class);
-		}
 	}
 
 	private static final class UpdatingRound implements ReducerState {
 		private final RoundData prev;
 		private UpdatingRound(RoundData prev) {
 			this.prev = prev;
-		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(UpdatingRound.class);
 		}
 	}
 
@@ -195,11 +164,6 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			}
 			preparedStake = UInt256.ZERO;
 			return allPreparedStake.isEmpty();
-		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(AllPreparedStake.class);
 		}
 	}
 
