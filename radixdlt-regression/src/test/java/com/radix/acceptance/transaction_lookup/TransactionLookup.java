@@ -25,7 +25,7 @@ public class TransactionLookup extends AcceptanceTest {
 
     private static final Logger logger = LogManager.getLogger();
 
-    private final static int FIXED_TRANSFERAL_AMOUNT = 1;
+    private static final int FIXED_TRANSFERAL_AMOUNT = 1;
 
     private TxDTO transaction;
     private int expectAmountMajor;

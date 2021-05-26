@@ -4,7 +4,6 @@ import com.radix.test.account.Account;
 import com.radixdlt.client.lib.api.ActionType;
 import com.radixdlt.client.lib.dto.ActionDTO;
 import com.radixdlt.client.lib.dto.TransactionDTO;
-import io.cucumber.java.bs.A;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -14,7 +13,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class Assertions {
 
-    public Assertions() {
+    private Assertions() {
 
     }
 
