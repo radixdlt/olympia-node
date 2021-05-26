@@ -1,5 +1,5 @@
 Feature: Staking
-  As a radix user,
+  As an account owner,
   I would like to delegate stake to validators,
   And receive token emissions based on the amount staked
 
@@ -12,3 +12,9 @@ Feature: Staking
     Given I have an account with funds at a suitable Radix network
     When I stake 5XRD to a validator
     Then I observe that validator having 5XRD more stake
+
+  #Scenario: 3: Unstake tokens
+    #Given I have an account with funds at a suitable Radix network
+    #When I stake 5XRD to a validator
+    #And I unstake 5XRD from the same validator
+    #Then I observe that my stake is unstaked and I got my tokens back

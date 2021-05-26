@@ -37,6 +37,7 @@ sourceSets {
 }
 
 task acceptanceTest(type: Test) {
+    systemProperty "cucumber.options", System.getProperty("cucumber.options")
     testClassesDirs = sourceSets.acceptanceTest.output.classesDirs
     classpath = sourceSets.acceptanceTest.runtimeClasspath
 }
