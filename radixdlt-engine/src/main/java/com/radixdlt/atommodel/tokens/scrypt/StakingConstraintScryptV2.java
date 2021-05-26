@@ -18,7 +18,6 @@
 
 package com.radixdlt.atommodel.tokens.scrypt;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.state.SystemParticle;

@@ -17,8 +17,6 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.google.common.reflect.TypeToken;
-
 public final class VoidReducerState implements ReducerState {
 	private VoidReducerState() {
 		throw new IllegalStateException("Cannot instantiate.");

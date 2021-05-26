@@ -25,17 +25,12 @@ import com.google.inject.Injector;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -56,7 +51,6 @@ import org.radix.TokenIssuance;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class StakingTest {
 	@Rule
@@ -117,75 +111,5 @@ public class StakingTest {
 		// Assert
 		var nextStaked = sut.getComputedState(StakedValidators.class).getStake(self.getPublicKey());
 		assertThat(nextStaked).isEqualTo(UInt256.FIVE.add(staked));
-	}
-
-	@Test
-	public void unstaking_decreases_stake_to_validator() throws Exception {
-		// Arrange
-		createInjector().injectMembers(this);
-		var staked = sut.getComputedState(StakedValidators.class).getStake(self.getPublicKey());
-		var acct = REAddr.ofPubKeyAccount(staker.getPublicKey());
-		var txn = sut.construct(new StakeTokens(acct, self.getPublicKey(), UInt256.FIVE))
-			.signAndBuild(staker::sign);
-		sut.execute(List.of(txn));
-
-		// Act
-		var nextTxn = sut.construct(new UnstakeTokens(acct, self.getPublicKey(), UInt256.THREE))
-			.signAndBuild(staker::sign);
-		sut.execute(List.of(nextTxn));
-
-		// Assert
-		var nextStaked = sut.getComputedState(StakedValidators.class).getStake(self.getPublicKey());
-		assertThat(nextStaked).isEqualTo(UInt256.FIVE.add(staked).subtract(UInt256.THREE));
-	}
-
-	@Test
-	public void cant_construct_transfer_with_unstaked_tokens_immediately() throws Exception {
-		// Arrange
-		createInjector().injectMembers(this);
-		var acct = REAddr.ofPubKeyAccount(staker.getPublicKey());
-		var acct2 = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
-		var txn = sut.construct(new StakeTokens(acct, self.getPublicKey(), UInt256.FIVE))
-			.signAndBuild(staker::sign);
-		sut.execute(List.of(txn));
-		var nextTxn = sut.construct(new UnstakeTokens(acct, self.getPublicKey(), UInt256.FIVE))
-			.signAndBuild(staker::sign);
-		sut.execute(List.of(nextTxn));
-
-		// Act
-		// Assert
-		assertThatThrownBy(() -> sut.construct(new TransferToken(REAddr.ofNativeToken(), acct, acct2, UInt256.FIVE)))
-			.isInstanceOf(TxBuilderException.class);
-	}
-
-	@Test
-	public void cant_spend_unstaked_tokens_immediately() throws Exception {
-		// Arrange
-		createInjector().injectMembers(this);
-		var acct = REAddr.ofPubKeyAccount(staker.getPublicKey());
-		var acct2 = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
-		var txn = sut.construct(new StakeTokens(acct, self.getPublicKey(), UInt256.FIVE))
-			.signAndBuild(staker::sign);
-		sut.execute(List.of(txn));
-		var nextTxn = sut.construct(new UnstakeTokens(acct, self.getPublicKey(), UInt256.FIVE))
-			.signAndBuild(staker::sign);
-		sut.execute(List.of(nextTxn));
-
-		// Act
-		// Assert
-		var txn2 = sut.construct(
-			txBuilder ->
-			txBuilder.deprecatedSwapFungible(
-				TokensParticle.class,
-				p -> p.getResourceAddr().equals(REAddr.ofNativeToken())
-						&& p.getHoldingAddr().equals(acct),
-				amt -> new TokensParticle(acct, amt, REAddr.ofNativeToken()),
-				UInt256.FIVE,
-				"Not enough balance for transfer."
-			).with(amt -> new TokensParticle(acct2, amt, REAddr.ofNativeToken()))
-		).signAndBuild(staker::sign);
-
-		assertThatThrownBy(() -> sut.execute(List.of(txn2)))
-			.isInstanceOf(RadixEngineException.class);
 	}
 }

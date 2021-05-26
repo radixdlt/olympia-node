@@ -18,7 +18,6 @@
 
 package com.radixdlt.atommodel.tokens.scrypt;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;

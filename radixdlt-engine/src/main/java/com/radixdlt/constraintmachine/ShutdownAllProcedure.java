@@ -24,7 +24,6 @@ import com.radixdlt.utils.Pair;
 
 import java.util.Iterator;
 import java.util.Optional;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> implements MethodProcedure {

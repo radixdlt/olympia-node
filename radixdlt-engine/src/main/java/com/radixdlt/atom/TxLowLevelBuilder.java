@@ -151,7 +151,7 @@ public final class TxLowLevelBuilder {
 			throw new IllegalStateException("Cannot down all of particle with multiple ids");
 		}
 
-		instruction(REInstruction.REOp.DOWNALL, new byte[] { classIds.get(0) });
+		instruction(REInstruction.REOp.DOWNALL, new byte[] {classIds.get(0)});
 		return this;
 	}
 

@@ -25,10 +25,9 @@ import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.Stake;
-import com.radixdlt.atommodel.system.state.StakeShare;
+import com.radixdlt.atommodel.system.state.StakeShares;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -36,7 +35,6 @@ import com.radixdlt.utils.UInt256;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 
@@ -60,7 +58,7 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 		});
 
 		allPreparedStake.forEach((k, stakes) -> {
-			stakes.forEach((addr, amt) -> txBuilder.up(new StakeShare(k, addr, amt)));
+			stakes.forEach((addr, amt) -> txBuilder.up(new StakeShares(k, addr, amt)));
 
 			var totalPreparedStake = stakes.values().stream().reduce(UInt256::add).orElseThrow();
 			txBuilder.up(new Stake(totalPreparedStake, k));

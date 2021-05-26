@@ -76,19 +76,7 @@ public class UnstakeTokensTest {
 				List.of(new TokensConstraintScryptV1(), new StakingConstraintScryptV2()),
 				new StakeTokensConstructorV1(),
 				new UnstakeTokensConstructorV1()
-			},
-			{
-				UInt256.TEN, UInt256.TEN,
-				List.of(new TokensConstraintScryptV2(), new StakingConstraintScryptV3()),
-				new StakeTokensConstructorV2(),
-				new UnstakeTokensConstructorV2()
-			},
-			{
-				UInt256.TEN, UInt256.SIX,
-				List.of(new TokensConstraintScryptV2(), new StakingConstraintScryptV3()),
-				new StakeTokensConstructorV2(),
-				new UnstakeTokensConstructorV2()
-			},
+			}
 		});
 	}
 

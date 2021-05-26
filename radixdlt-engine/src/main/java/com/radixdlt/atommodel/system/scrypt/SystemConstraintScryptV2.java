@@ -18,13 +18,12 @@
 
 package com.radixdlt.atommodel.system.scrypt;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.Stake;
-import com.radixdlt.atommodel.system.state.StakeShare;
+import com.radixdlt.atommodel.system.state.StakeShares;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
@@ -129,20 +128,20 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			);
 		}
 
-		void accountFor(StakeShare stakeShare) throws ProcedureException {
+		void accountFor(StakeShares stakeShares) throws ProcedureException {
 			var e = allPreparedStake.firstEntry();
-			if (!Objects.equals(e.getKey(), stakeShare.getDelegateKey())) {
-				throw new ProcedureException(stakeShare.getDelegateKey() + " is not the first key (" + e.getKey() + ")");
+			if (!Objects.equals(e.getKey(), stakeShares.getDelegateKey())) {
+				throw new ProcedureException(stakeShares.getDelegateKey() + " is not the first key (" + e.getKey() + ")");
 			}
 			var stakes = e.getValue();
 			var accountAddr = stakes.firstKey();
-			if (!Objects.equals(stakeShare.getOwner(), accountAddr)) {
-				throw new ProcedureException(stakeShare.getOwner() + " is not the first addr (" + accountAddr + ")");
+			if (!Objects.equals(stakeShares.getOwner(), accountAddr)) {
+				throw new ProcedureException(stakeShares.getOwner() + " is not the first addr (" + accountAddr + ")");
 			}
 			var stakeAmt = stakes.remove(accountAddr);
-			if (!Objects.equals(stakeAmt, stakeShare.getAmount())) {
+			if (!Objects.equals(stakeAmt, stakeShares.getAmount())) {
 				throw new ProcedureException(
-					String.format("Amount (%s) does not match what is prepared (%s)", stakeShare.getAmount(), stakeAmt)
+					String.format("Amount (%s) does not match what is prepared (%s)", stakeShares.getAmount(), stakeAmt)
 				);
 			}
 			preparedStake = preparedStake.add(stakeAmt);
@@ -217,6 +216,48 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		));
 	}
 
+	public void roundUpdate(SysCalls os) {
+		// Round update
+		os.createDownProcedure(new DownProcedure<>(
+			RoundData.class, VoidReducerState.class,
+			(d, r) -> PermissionLevel.SUPER_USER,
+			(d, r, pubKey) -> {
+				if (pubKey.isPresent()) {
+					throw new AuthorizationException("System update should not be signed.");
+				}
+			},
+			(d, s, r) -> ReducerResult.incomplete(new UpdatingRound(d.getSubstate()))
+		));
+		os.createUpProcedure(new UpProcedure<>(
+			UpdatingRound.class, RoundData.class,
+			(u, r) -> PermissionLevel.SUPER_USER,
+			(u, r, pubKey) -> { },
+			(s, u, r) -> {
+				var curData = s.prev;
+				if (curData.getView() >= u.getView()) {
+					throw new ProcedureException("Next view must be greater than previous.");
+				}
+
+				return ReducerResult.incomplete(new Inflation(), Unknown.create());
+			}
+		));
+		os.createUpProcedure(new UpProcedure<>(
+			Inflation.class, Stake.class,
+			(u, r) -> PermissionLevel.SUPER_USER,
+			(u, r, pubKey) -> {
+				if (pubKey.isPresent()) {
+					throw new AuthorizationException("System update should not be signed.");
+				}
+			},
+			(s, u, r) -> {
+				if (!u.getAmount().equals(REWARDS_PER_PROPOSAL)) {
+					throw new ProcedureException("Rewards must be " + REWARDS_PER_PROPOSAL);
+				}
+				return ReducerResult.complete(Unknown.create());
+			}
+		));
+	}
+
 	@Override
 	public void main(SysCalls os) {
 		os.registerParticle(SystemParticle.class, ParticleDefinition.<SystemParticle>builder()
@@ -246,8 +287,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			ParticleDefinition.<Stake>builder().build()
 		);
 		os.registerParticle(
-			StakeShare.class,
-			ParticleDefinition.<StakeShare>builder()
+			StakeShares.class,
+			ParticleDefinition.<StakeShares>builder()
 				.staticValidation(s -> {
 					if (s.getAmount().isZero()) {
 						return Result.error("amount must not be zero");
@@ -279,7 +320,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			}
 		));
 		os.createUpProcedure(new UpProcedure<>(
-			AllPreparedStake.class, StakeShare.class,
+			AllPreparedStake.class, StakeShares.class,
 			(u, r) -> PermissionLevel.SUPER_USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
@@ -341,44 +382,6 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			}
 		));
 
-		// Round update
-		os.createDownProcedure(new DownProcedure<>(
-			RoundData.class, VoidReducerState.class,
-			(d, r) -> PermissionLevel.SUPER_USER,
-			(d, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
-			(d, s, r) -> ReducerResult.incomplete(new UpdatingRound(d.getSubstate()))
-		));
-		os.createUpProcedure(new UpProcedure<>(
-			UpdatingRound.class, RoundData.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> { },
-			(s, u, r) -> {
-				var curData = s.prev;
-				if (curData.getView() >= u.getView()) {
-					throw new ProcedureException("Next view must be greater than previous.");
-				}
-
-				return ReducerResult.incomplete(new Inflation(), Unknown.create());
-			}
-		));
-		os.createUpProcedure(new UpProcedure<>(
-			Inflation.class, Stake.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
-			(s, u, r) -> {
-				if (!u.getAmount().equals(REWARDS_PER_PROPOSAL)) {
-					throw new ProcedureException("Rewards must be " + REWARDS_PER_PROPOSAL);
-				}
-				return ReducerResult.complete(Unknown.create());
-			}
-		));
+		roundUpdate(os);
 	}
 }

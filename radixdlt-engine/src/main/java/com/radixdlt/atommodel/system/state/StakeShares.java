@@ -25,14 +25,14 @@ import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 
-public final class StakeShare implements Fungible {
+public final class StakeShares implements Fungible {
 	private final UInt256 amount;
 
 	// Bucket keys
 	private final REAddr owner;
 	private final ECPublicKey delegateKey;
 
-	public StakeShare(
+	public StakeShares(
 		ECPublicKey delegateKey,
 		REAddr owner,
 		UInt256 amount
@@ -40,10 +40,6 @@ public final class StakeShare implements Fungible {
 		this.delegateKey = Objects.requireNonNull(delegateKey);
 		this.owner = Objects.requireNonNull(owner);
 		this.amount = Objects.requireNonNull(amount);
-	}
-
-	public REAddr getResourceAddr() {
-		return REAddr.ofNativeToken();
 	}
 
 	public ECPublicKey getDelegateKey() {
@@ -74,10 +70,10 @@ public final class StakeShare implements Fungible {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof StakeShare)) {
+		if (!(o instanceof StakeShares)) {
 			return false;
 		}
-		StakeShare that = (StakeShare) o;
+		StakeShares that = (StakeShares) o;
 		return Objects.equals(delegateKey, that.delegateKey)
 			&& Objects.equals(owner, that.owner)
 			&& Objects.equals(amount, that.amount);

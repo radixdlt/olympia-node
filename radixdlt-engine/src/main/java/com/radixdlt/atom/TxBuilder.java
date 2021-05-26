@@ -334,6 +334,30 @@ public final class TxBuilder {
 		};
 	}
 
+	public <T extends Fungible> void downFungible(
+		Class<T> particleClass,
+		Predicate<T> particlePredicate,
+		UInt256 amount,
+		FungibleMapper<T> remainderMapper,
+		String errorMessage
+	) throws TxBuilderException {
+		UInt256 spent = UInt256.ZERO;
+		while (spent.compareTo(amount) < 0) {
+			var substateDown = down(
+				particleClass,
+				particlePredicate,
+				errorMessage
+			);
+
+			spent = spent.add(substateDown.getAmount());
+		}
+
+		var remainder = spent.subtract(amount);
+		if (!remainder.isZero()) {
+			up(remainderMapper.map(remainder));
+		}
+	}
+
 	public <T extends Fungible, U extends Fungible> FungibleReplacer<U> swapFungible(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,

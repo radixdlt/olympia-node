@@ -18,7 +18,6 @@
 
 package com.radixdlt.atommodel.system.scrypt;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.atommodel.system.state.SystemParticle;

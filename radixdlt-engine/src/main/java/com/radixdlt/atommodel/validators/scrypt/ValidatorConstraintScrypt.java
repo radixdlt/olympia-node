@@ -18,7 +18,6 @@
 
 package com.radixdlt.atommodel.validators.scrypt;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.atomos.ConstraintScrypt;

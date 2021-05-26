@@ -20,7 +20,7 @@ package com.radixdlt.atom;
 
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
-import com.radixdlt.atommodel.system.state.StakeShare;
+import com.radixdlt.atommodel.system.state.StakeShares;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.system.state.Stake;
@@ -76,7 +76,7 @@ public final class RESerializer {
 		Stake.class,
 		RoundData.class,
 		EpochData.class,
-		StakeShare.class
+		StakeShares.class
 	);
 
 	private static Map<Class<? extends Particle>, List<Byte>> classToByteTypes = Map.ofEntries(
@@ -90,7 +90,7 @@ public final class RESerializer {
 		Map.entry(Stake.class, List.of(SubstateType.STAKE.id)),
 		Map.entry(RoundData.class, List.of(SubstateType.ROUND_DATA.id)),
 		Map.entry(EpochData.class, List.of(SubstateType.EPOCH_DATA.id)),
-		Map.entry(StakeShare.class, List.of(SubstateType.STAKE_SHARE.id))
+		Map.entry(StakeShares.class, List.of(SubstateType.STAKE_SHARE.id))
 	);
 
 	private RESerializer() {
@@ -187,8 +187,8 @@ public final class RESerializer {
 			serializeData((RoundData) p, buf);
 		} else if (p instanceof EpochData) {
 			serializeData((EpochData) p, buf);
-		} else if (p instanceof StakeShare) {
-			serializeData((StakeShare) p, buf);
+		} else if (p instanceof StakeShares) {
+			serializeData((StakeShares) p, buf);
 		} else {
 			throw new IllegalStateException("Unknown particle: " + p);
 		}
@@ -304,7 +304,7 @@ public final class RESerializer {
 		return new Stake(amount, delegate);
 	}
 
-	private static void serializeData(StakeShare p, ByteBuffer buf) {
+	private static void serializeData(StakeShares p, ByteBuffer buf) {
 		buf.put(SubstateType.STAKE_SHARE.id);
 
 		serializeKey(buf, p.getDelegateKey());
@@ -312,11 +312,11 @@ public final class RESerializer {
 		buf.put(p.getAmount().toByteArray());
 	}
 
-	private static StakeShare deserializeStakeShare(ByteBuffer buf) throws DeserializeException {
+	private static StakeShares deserializeStakeShare(ByteBuffer buf) throws DeserializeException {
 		var delegate = deserializeKey(buf);
 		var owner = deserializeREAddr(buf);
 		var amount = deserializeUInt256(buf);
-		return new StakeShare(delegate, owner, amount);
+		return new StakeShares(delegate, owner, amount);
 	}
 
 
