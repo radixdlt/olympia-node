@@ -41,10 +41,10 @@ import org.radix.universe.system.LocalSystem;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.api.data.ScheduledQueueFlush;
 import com.radixdlt.api.module.ArchiveApiModule;
 import com.radixdlt.api.module.NodeApiModule;
@@ -61,10 +61,13 @@ import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
 import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
@@ -73,11 +76,11 @@ import com.radixdlt.network.messaging.MessagingModule;
 import com.radixdlt.network.hostip.HostIpModule;
 import com.radixdlt.network.messaging.MessageCentralModule;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
+import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksModule;
@@ -219,18 +222,14 @@ public final class RadixNodeModule extends AbstractModule {
 
 		if (archiveEndpoints.size() > 0 || nodeEndpoints.size() > 0) {
 			var eventBinder = Multibinder
-				.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
+				.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
 				.permitDuplicates();
 			eventBinder.addBinding().toInstance(AtomsRemovedFromMempool.class);
-			eventBinder.addBinding().toInstance(AtomsCommittedToLedger.class);
+			eventBinder.addBinding().toInstance(TxnsCommittedToLedger.class);
 			eventBinder.addBinding().toInstance(MempoolAddFailure.class);
 			eventBinder.addBinding().toInstance(ScheduledCacheCleanup.class);
 			eventBinder.addBinding().toInstance(ScheduledQueueFlush.class);
 			eventBinder.addBinding().toInstance(ScheduledStatsCollecting.class);
-
-			bind(TransactionStatusService.class).in(Scopes.SINGLETON);
-			bind(NetworkInfoService.class).in(Scopes.SINGLETON);
-			bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
 		}
 
 		if (archiveEndpoints.size() > 0) {
@@ -240,6 +239,71 @@ public final class RadixNodeModule extends AbstractModule {
 		if (nodeEndpoints.size() > 0) {
 			install(new NodeApiModule(nodeEndpoints));
 		}
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> networkInfoService(NetworkInfoService networkInfoService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			ScheduledStatsCollecting.class,
+			networkInfoService.updateStats()
+		);
+	}
+
+	@ProvidesIntoSet
+	private EventProcessorOnRunner<?> atomsCommittedToLedgerEventProcessorBerkeleyClientApi(
+		BerkeleyClientApiStore berkeleyClientApiStore
+	) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			TxnsCommittedToLedger.class,
+			berkeleyClientApiStore.atomsCommittedToLedgerEventProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> queueFlushProcessor(ClientApiStore clientApiStore) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			ScheduledQueueFlush.class,
+			clientApiStore.queueFlushProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> cacheCleanupEventProcessor(TransactionStatusService transactionStatusService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			ScheduledCacheCleanup.class,
+			transactionStatusService.cacheCleanupEventProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> atomsCommittedToLedgerTransactionStatus(TransactionStatusService transactionStatusService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			TxnsCommittedToLedger.class,
+			transactionStatusService.atomsCommittedToLedgerEventProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> mempoolAddFailureEventProcessor(TransactionStatusService transactionStatusService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			MempoolAddFailure.class,
+			transactionStatusService.mempoolAddFailureEventProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> mempoolAddSuccessEventProcessor(TransactionStatusService transactionStatusService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			MempoolAddSuccess.class,
+			transactionStatusService.mempoolAddSuccessEventProcessor()
+		);
 	}
 
 	@Provides
