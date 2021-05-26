@@ -65,6 +65,10 @@ public final class REInstruction {
 			}
 			return SubstateId.ofSubstate(txn.getId(), index);
 		}, Spin.UP, Spin.DOWN),
+		DOWNALL((byte) 8, (txn, i, b) -> {
+			var classId = b.get();
+			return RESerializer.byteToClass(classId); // Just to check to make sure classId exists
+		}, Spin.UP, Spin.DOWN),
 		MSG((byte) 6, (txn, i, b) -> {
 			var length = Byte.toUnsignedInt(b.get());
 			var bytes = new byte[length];
@@ -145,20 +149,12 @@ public final class REInstruction {
 		return (T) data;
 	}
 
-	public boolean hasSubstate() {
+	public boolean isStateUpdate() {
 		return operation.checkSpin != null;
-	}
-
-	public boolean isPush() {
-		return operation.nextSpin != null && !operation.nextSpin.equals(operation.checkSpin);
 	}
 
 	public Spin getCheckSpin() {
 		return operation.checkSpin;
-	}
-
-	public Spin getNextSpin() {
-		return operation.nextSpin;
 	}
 
 	public static REInstruction readFrom(Txn txn, int index, ByteBuffer buf) throws DeserializeException {

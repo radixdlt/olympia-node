@@ -20,6 +20,7 @@ package com.radixdlt.api.construction;
 
 import com.google.inject.Inject;
 import com.radixdlt.atom.Substate;
+import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
@@ -90,5 +91,10 @@ public final class LogCMStore implements CMStore {
 
 				return Optional.empty();
 			});
+	}
+
+	@Override
+	public SubstateCursor openIndexedCursor(Class<? extends Particle> particleClass) {
+		throw new UnsupportedOperationException();
 	}
 }

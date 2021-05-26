@@ -124,6 +124,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		));
 
 		// Unstake
+		/*
 		os.createDownProcedure(new DownProcedure<>(
 			PreparedStake.class, VoidReducerState.class,
 			(d, r) -> PermissionLevel.USER,
@@ -222,5 +223,6 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 				return Optional.empty();
 			}
 		));
+		 */
 	}
 }

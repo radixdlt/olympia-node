@@ -18,12 +18,11 @@
 
 package com.radixdlt.constraintmachine;
 
-public class MissingProcedureException extends Exception {
-	public MissingProcedureException(
-		REInstruction.REOp op,
-		Class<? extends Particle> particleClass,
-		Class<? extends ReducerState> reducerStateClass
-	) {
-		super("Missing: " + op + " " + particleClass.getSimpleName() + " " + reducerStateClass.getSimpleName());
-	}
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.store.ReadableAddrs;
+
+import java.util.Optional;
+
+public interface ShutdownAllAuthorization {
+	void verify(ReadableAddrs readableAddrs, Optional<ECPublicKey> signedBy) throws AuthorizationException;
 }

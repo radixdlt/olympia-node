@@ -62,6 +62,20 @@ public final class RESerializer {
 		}
 	}
 
+	private static List<Class<? extends Particle>> byteToClass = List.of(
+		REAddrParticle.class,
+		SystemParticle.class,
+		TokenDefinitionParticle.class,
+		TokensParticle.class,
+		PreparedStake.class,
+		ValidatorParticle.class,
+		UniqueParticle.class,
+		TokensParticle.class,
+		Stake.class,
+		RoundData.class,
+		EpochData.class
+	);
+
 	private static Map<Class<? extends Particle>, List<Byte>> classToByteTypes = Map.of(
 		REAddrParticle.class, List.of(SubstateType.RE_ADDR.id),
 		SystemParticle.class, List.of(SubstateType.SYSTEM.id),
@@ -99,6 +113,13 @@ public final class RESerializer {
 		var sArray = new byte[32];
 		buf.get(sArray);
 		return ECDSASignature.deserialize(rArray, sArray, v);
+	}
+
+	public static Class<? extends Particle> byteToClass(byte classId) throws DeserializeException {
+		if (classId < 0 || classId >= byteToClass.size()) {
+			throw new DeserializeException("Bad classId");
+		}
+		return byteToClass.get(classId);
 	}
 
 	public static List<Byte> classToBytes(Class<? extends Particle> particleClass) {

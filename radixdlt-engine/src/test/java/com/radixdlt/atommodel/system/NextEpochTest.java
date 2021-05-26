@@ -20,19 +20,20 @@ package com.radixdlt.atommodel.system;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.ActionConstructors;
-import com.radixdlt.atom.actions.SystemNextView;
-import com.radixdlt.atommodel.system.construction.NextViewConstructorV1;
-import com.radixdlt.atommodel.system.construction.NextViewConstructorV2;
+import com.radixdlt.atom.actions.CreateSystem;
+import com.radixdlt.atom.actions.SystemNextEpoch;
+import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV1;
+import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
+import com.radixdlt.atommodel.system.construction.NextEpochConstructorV1;
+import com.radixdlt.atommodel.system.construction.NextEpochConstructorV2;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV1;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
+import com.radixdlt.atommodel.unique.scrypt.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import org.junit.Before;
@@ -43,32 +44,37 @@ import org.junit.runners.Parameterized;
 import java.util.Collection;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 @RunWith(Parameterized.class)
-public final class SystemNextViewTest {
+public class NextEpochTest {
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
 		return List.of(new Object[][] {
-			{new SystemConstraintScryptV1(), new NextViewConstructorV1()},
-			{new SystemConstraintScryptV2(), new NextViewConstructorV2()}
+			{new SystemConstraintScryptV1(), new NextEpochConstructorV1(), new CreateSystemConstructorV1()},
+			{new SystemConstraintScryptV2(), new NextEpochConstructorV2(), new CreateSystemConstructorV2()}
 		});
 	}
 
 	private RadixEngine<Void> sut;
 	private EngineStore<Void> store;
 	private final ConstraintScrypt scrypt;
-	private final ActionConstructor<SystemNextView> nextViewConstructor;
+	private final ActionConstructor<SystemNextEpoch> nextEpochConstructor;
+	private final ActionConstructor<CreateSystem> createSystemConstructor;
 
-	public SystemNextViewTest(ConstraintScrypt scrypt, ActionConstructor<SystemNextView> nextViewConstructor) {
+	public NextEpochTest(
+		ConstraintScrypt scrypt,
+		ActionConstructor<SystemNextEpoch> nextEpochConstructor,
+		ActionConstructor<CreateSystem> createSystemConstructor
+	) {
 		this.scrypt = scrypt;
-		this.nextViewConstructor = nextViewConstructor;
+		this.nextEpochConstructor = nextEpochConstructor;
+		this.createSystemConstructor = createSystemConstructor;
 	}
 
 	@Before
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(scrypt);
+		cmAtomOS.load(new UniqueParticleConstraintScrypt()); // For v1 start
 		var cm = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
@@ -77,7 +83,8 @@ public final class SystemNextViewTest {
 		this.store = new InMemoryEngineStore<>();
 		this.sut = new RadixEngine<>(
 			ActionConstructors.newBuilder()
-				.put(SystemNextView.class, nextViewConstructor)
+				.put(SystemNextEpoch.class, nextEpochConstructor)
+				.put(CreateSystem.class, createSystemConstructor)
 				.build(),
 			cm,
 			store
@@ -85,26 +92,14 @@ public final class SystemNextViewTest {
 	}
 
 	@Test
-	public void system_update_should_succeed() throws Exception {
+	public void next_epoch_should_succeed() throws Exception {
 		// Arrange
-		var txn = sut.construct(new SystemNextView(1, 1, ECKeyPair.generateNew().getPublicKey()))
+		var start = sut.construct(new CreateSystem()).buildWithoutSignature();
+		sut.execute(List.of(start), null, PermissionLevel.SYSTEM);
+
+		// Act and Assert
+		var txn = sut.construct(new SystemNextEpoch(1))
 			.buildWithoutSignature();
-
-		// Act and Assert
 		this.sut.execute(List.of(txn), null, PermissionLevel.SUPER_USER);
-	}
-
-	@Test
-	public void including_sigs_in_system_update_should_fail() throws Exception {
-		// Arrange
-		var keyPair = ECKeyPair.generateNew();
-		var txn = sut.construct(new SystemNextView(1, 1, ECKeyPair.generateNew().getPublicKey()))
-			.signAndBuild(keyPair::sign);
-
-		// Act and Assert
-		assertThatThrownBy(() -> this.sut.execute(List.of(txn), null, PermissionLevel.SUPER_USER))
-			.isInstanceOf(RadixEngineException.class)
-			.extracting("cause.errorCode")
-			.containsExactly(CMErrorCode.AUTHORIZATION_ERROR);
 	}
 }

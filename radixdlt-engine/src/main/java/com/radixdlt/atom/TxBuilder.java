@@ -156,14 +156,6 @@ public final class TxBuilder {
 
 	private <T extends Particle> T down(
 		Class<T> particleClass,
-		Optional<SubstateWithArg<T>> virtualParticle,
-		String errorMessage
-	) throws TxBuilderException {
-		return down(particleClass, p -> true, virtualParticle, errorMessage);
-	}
-
-	private <T extends Particle> T down(
-		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		String errorMessage
 	) throws TxBuilderException {
@@ -210,6 +202,28 @@ public final class TxBuilder {
 			}
 
 			return substateDown.get();
+		}
+	}
+
+	public <T extends Particle, U> U downAll(
+		Class<T> particleClass,
+		Function<Iterator<T>, U> mapper
+	) {
+		try (var cursor = createRemoteSubstateCursor(particleClass)) {
+
+			var result = mapper.apply(new Iterator<T>() {
+				@Override
+				public boolean hasNext() {
+					return cursor.hasNext();
+				}
+
+				@Override
+				public T next() {
+					return (T) cursor.next().getParticle();
+				}
+			});
+			lowLevelBuilder.downAll(particleClass);
+			return result;
 		}
 	}
 

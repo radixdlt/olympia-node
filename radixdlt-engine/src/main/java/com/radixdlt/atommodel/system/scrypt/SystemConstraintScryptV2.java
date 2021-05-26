@@ -26,6 +26,7 @@ import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.Stake;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
@@ -37,9 +38,17 @@ import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.DownProcedure;
+import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
+
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Objects;
+import java.util.TreeMap;
 
 public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
@@ -88,6 +97,13 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		}
 	}
 
+	private static final class ReadyForEpochUpdate implements ReducerState {
+		@Override
+		public TypeToken<? extends ReducerState> getTypeToken() {
+			return TypeToken.of(ReadyForEpochUpdate.class);
+		}
+	}
+
 	private static final class UpdatingEpoch implements ReducerState {
 		private final EpochData prev;
 		private UpdatingEpoch(EpochData prev) {
@@ -123,6 +139,43 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		@Override
 		public TypeToken<? extends ReducerState> getTypeToken() {
 			return TypeToken.of(UpdatingRound.class);
+		}
+	}
+
+	private static final class AllPreparedStake implements ReducerState {
+		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> allPreparedStake = new TreeMap<>(
+			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
+		);
+
+		AllPreparedStake(Iterator<PreparedStake> preparedStakeIterator) {
+			preparedStakeIterator.forEachRemaining(preparedStake ->
+				allPreparedStake
+					.computeIfAbsent(
+						preparedStake.getDelegateKey(),
+						k -> new TreeMap<>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()))
+					)
+					.merge(preparedStake.getOwner(), preparedStake.getAmount(), UInt256::add)
+			);
+		}
+
+		boolean take(Stake stake) throws ProcedureException {
+			var firstKey = allPreparedStake.firstKey();
+			if (!Objects.equals(firstKey, stake.getValidatorKey())) {
+				throw new ProcedureException(stake.getValidatorKey() + " is not the first key (" + firstKey + ")");
+			}
+			var stakes = allPreparedStake.remove(firstKey);
+			var totalStake = stakes.values().stream().reduce(UInt256::add).orElseThrow();
+			if (Objects.equals(totalStake, stake.getAmount())) {
+				throw new ProcedureException(
+					String.format("Amount (%s) does not match what is prepared (%s)", stake.getAmount(), totalStake)
+				);
+			}
+			return allPreparedStake.isEmpty();
+		}
+
+		@Override
+		public TypeToken<? extends ReducerState> getTypeToken() {
+			return TypeToken.of(AllPreparedStake.class);
 		}
 	}
 
@@ -211,8 +264,30 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		registerBetanetV2ToV3Transitions(os);
 
 		// Epoch Update
+		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
+			PreparedStake.class, VoidReducerState.class,
+			r -> PermissionLevel.SUPER_USER,
+			(r, k) -> {
+				if (k.isPresent()) {
+					throw new AuthorizationException("System update should not be signed.");
+				}
+			},
+			(i, s, r) -> {
+				var prepared = new AllPreparedStake(i);
+				return prepared.allPreparedStake.isEmpty()
+					? ReducerResult.incomplete(new ReadyForEpochUpdate())
+					: ReducerResult.incomplete(new AllPreparedStake(i));
+			}
+		));
+		os.createUpProcedure(new UpProcedure<>(
+			AllPreparedStake.class, Stake.class,
+			(u, r) -> PermissionLevel.SUPER_USER,
+			(u, r, k) -> { },
+			(s, u, r) -> s.take(u) ? ReducerResult.incomplete(new ReadyForEpochUpdate()) : ReducerResult.incomplete(s)
+		));
+
 		os.createDownProcedure(new DownProcedure<>(
-			EpochData.class, VoidReducerState.class,
+			EpochData.class, ReadyForEpochUpdate.class,
 			(d, r) -> PermissionLevel.SUPER_USER,
 			(d, r, pubKey) -> {
 				if (pubKey.isPresent()) {

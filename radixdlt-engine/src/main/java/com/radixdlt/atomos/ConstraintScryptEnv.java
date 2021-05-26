@@ -23,6 +23,7 @@ import com.radixdlt.constraintmachine.EndProcedure;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Procedures;
 import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.utils.Pair;
 
@@ -40,6 +41,7 @@ public final class ConstraintScryptEnv implements SysCalls {
 
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> scryptParticleDefinitions;
 	private final Map<Pair<Class<? extends Particle>, Class<? extends ReducerState>>, DownProcedure<Particle, ReducerState>> downProcedures;
+	private final Map<Pair<Class<? extends Particle>, Class<? extends ReducerState>>, ShutdownAllProcedure<Particle, ReducerState>> shutdownAllProcedures;
 	private final Map<Pair<Class<? extends ReducerState>, Class<? extends Particle>>, UpProcedure<ReducerState, Particle>> upProcedures;
 	private final Map<Class, EndProcedure<ReducerState>> endProcedures;
 
@@ -49,6 +51,7 @@ public final class ConstraintScryptEnv implements SysCalls {
 		this.particleDefinitions = particleDefinitions;
 		this.scryptParticleDefinitions = new HashMap<>();
 		this.downProcedures = new HashMap<>();
+		this.shutdownAllProcedures = new HashMap<>();
 		this.upProcedures = new HashMap<>();
 		this.endProcedures = new HashMap<>();
 	}
@@ -58,7 +61,7 @@ public final class ConstraintScryptEnv implements SysCalls {
 	}
 
 	public Procedures getProcedures() {
-		return new Procedures(upProcedures, downProcedures, endProcedures);
+		return new Procedures(upProcedures, downProcedures, shutdownAllProcedures, endProcedures);
 	}
 
 	private <T extends Particle> boolean particleDefinitionExists(Class<T> particleClass) {
@@ -73,6 +76,17 @@ public final class ConstraintScryptEnv implements SysCalls {
 		Objects.requireNonNull(particleDefinition, "particleDefinition");
 
 		scryptParticleDefinitions.put(particleClass, (ParticleDefinition<Particle>) particleDefinition);
+	}
+
+	@Override
+	public <D extends Particle, S extends ReducerState> void createShutDownAllProcedure(
+		ShutdownAllProcedure<D, S> shutdownAllProcedure
+	) {
+		var key = shutdownAllProcedure.getKey();
+		if (shutdownAllProcedures.containsKey(key)) {
+			throw new IllegalStateException(key + " already created");
+		}
+		shutdownAllProcedures.put(key, (ShutdownAllProcedure<Particle, ReducerState>) shutdownAllProcedure);
 	}
 
 	@Override

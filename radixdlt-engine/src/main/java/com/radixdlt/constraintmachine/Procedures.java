@@ -27,20 +27,23 @@ import java.util.stream.Stream;
 public final class Procedures {
 	private final Map<Pair<Class<? extends ReducerState>, Class<? extends Particle>>, UpProcedure<ReducerState, Particle>> upProcedures;
 	private final Map<Pair<Class<? extends Particle>, Class<? extends ReducerState>>, DownProcedure<Particle, ReducerState>> downProcedures;
+	private final Map<Pair<Class<? extends Particle>, Class<? extends ReducerState>>, ShutdownAllProcedure<Particle, ReducerState>> shutdownAllProcedures;
 	private final Map<Class, EndProcedure<ReducerState>> endProcedures;
 
 	public Procedures(
 		Map<Pair<Class<? extends ReducerState>, Class<? extends Particle>>, UpProcedure<ReducerState, Particle>> upProcedures,
 		Map<Pair<Class<? extends Particle>, Class<? extends ReducerState>>, DownProcedure<Particle, ReducerState>> downProcedures,
+		Map<Pair<Class<? extends Particle>, Class<? extends ReducerState>>, ShutdownAllProcedure<Particle, ReducerState>> shutdownAllProcedures,
 		Map<Class, EndProcedure<ReducerState>> endProcedures
 	) {
 		this.upProcedures = upProcedures;
 		this.downProcedures = downProcedures;
+		this.shutdownAllProcedures = shutdownAllProcedures;
 		this.endProcedures = endProcedures;
 	}
 
 	public static Procedures empty() {
-		return new Procedures(Map.of(), Map.of(), Map.of());
+		return new Procedures(Map.of(), Map.of(), Map.of(), Map.of());
 	}
 
 	public Procedures combine(Procedures other) {
@@ -56,32 +59,38 @@ public final class Procedures {
 				other.downProcedures.entrySet().stream()
 			).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
+		var combinedShutdownAllProcedures =
+			Stream.concat(
+				this.shutdownAllProcedures.entrySet().stream(),
+				other.shutdownAllProcedures.entrySet().stream()
+			).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
 		var combinedEndProcedures =
 			Stream.concat(
 				this.endProcedures.entrySet().stream(),
 				other.endProcedures.entrySet().stream()
 			).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-		return new Procedures(combinedUpProcedures, combinedDownProcedures, combinedEndProcedures);
+		return new Procedures(combinedUpProcedures, combinedDownProcedures, combinedShutdownAllProcedures, combinedEndProcedures);
 	}
 
 	public MethodProcedure getProcedure(
 		REInstruction.REOp op,
-		Object procedureParam,
+		Class<? extends Particle> particleClass,
 		Class<? extends ReducerState> reducerStateClass
 	) throws MissingProcedureException {
 		MethodProcedure methodProcedure = null;
-		if (op == REInstruction.REOp.END) {
+		if (op == REInstruction.REOp.DOWNALL) {
+			methodProcedure = shutdownAllProcedures.get(Pair.of(particleClass, reducerStateClass));
+		} else if (op == REInstruction.REOp.END) {
 			methodProcedure = endProcedures.get(reducerStateClass);
 		} else if (op.getNextSpin() == Spin.UP) {
-			var outputParticle = (Particle) procedureParam;
-			methodProcedure = upProcedures.get(Pair.of(reducerStateClass, outputParticle.getClass()));
+			methodProcedure = upProcedures.get(Pair.of(reducerStateClass, particleClass));
 		} else if (op.getNextSpin() == Spin.DOWN) {
-			var substateWithArg = (SubstateWithArg<Particle>) procedureParam;
-			methodProcedure = downProcedures.get(Pair.of(substateWithArg.getSubstate().getClass(), reducerStateClass));
+			methodProcedure = downProcedures.get(Pair.of(particleClass, reducerStateClass));
 		}
 		if (methodProcedure == null) {
-			throw new MissingProcedureException();
+			throw new MissingProcedureException(op, particleClass, reducerStateClass);
 		}
 		return methodProcedure;
 	}
