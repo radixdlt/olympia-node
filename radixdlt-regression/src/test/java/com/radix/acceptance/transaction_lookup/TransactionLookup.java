@@ -4,8 +4,6 @@ import com.radix.acceptance.AcceptanceTest;
 import com.radix.test.Assertions;
 import com.radix.test.TransactionUtils;
 import com.radix.test.Utils;
-import com.radixdlt.client.lib.dto.TransactionDTO;
-import com.radixdlt.client.lib.dto.TransactionHistoryDTO;
 import com.radixdlt.client.lib.dto.TransactionStatus;
 import com.radixdlt.client.lib.dto.TxDTO;
 import io.cucumber.java.en.Given;
@@ -14,11 +12,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.awaitility.Durations;
 
-import java.util.*;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Collections;
 import java.util.stream.IntStream;
 
 import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TransactionLookup extends AcceptanceTest {
 

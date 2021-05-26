@@ -3,7 +3,6 @@ package com.radix.acceptance.fees;
 import com.radix.acceptance.AcceptanceTest;
 import com.radix.test.TransactionUtils;
 import com.radix.test.Utils;
-import com.radixdlt.utils.UInt256;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;

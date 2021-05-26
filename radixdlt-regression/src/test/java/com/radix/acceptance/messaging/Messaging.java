@@ -4,7 +4,6 @@ import com.radix.acceptance.AcceptanceTest;
 import com.radix.test.TestFailureException;
 import com.radix.test.TransactionUtils;
 import com.radix.test.Utils;
-import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TxDTO;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;

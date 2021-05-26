@@ -4,6 +4,7 @@ import com.radix.test.account.Account;
 import com.radixdlt.client.lib.api.ActionType;
 import com.radixdlt.client.lib.dto.ActionDTO;
 import com.radixdlt.client.lib.dto.TransactionDTO;
+import io.cucumber.java.bs.A;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -12,6 +13,10 @@ import static org.junit.Assert.assertTrue;
  * Custom assertions (and wrappers for assertions) for the cucumber/acceptance tests
  */
 public class Assertions {
+
+    public Assertions() {
+
+    }
 
     public static void assertNativeTokenTransferTransaction(Account account1, Account account2, int expectAmountMajor,
                                                             TransactionDTO transactionDto) {
