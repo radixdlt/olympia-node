@@ -20,7 +20,6 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.store.ReadableAddrs;
-import com.radixdlt.utils.Pair;
 
 import java.util.Iterator;
 import java.util.Optional;
@@ -46,8 +45,8 @@ public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> im
 		this.authorization = shutdownAllAuthorization;
 	}
 
-	public Pair<Class<? extends Particle>, Class<? extends ReducerState>> getKey() {
-		return Pair.of(downClass, reducerStateClass);
+	public ProcedureKey getKey() {
+		return ProcedureKey.of(downClass, reducerStateClass);
 	}
 
 	@Override

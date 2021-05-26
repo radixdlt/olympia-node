@@ -362,7 +362,8 @@ public final class ConstraintMachine {
 
 		final MethodProcedure methodProcedure;
 		try {
-			methodProcedure = this.procedures.getProcedure(op, particleClass, validationState.getReducerStateClass());
+			var key = ProcedureKey.of(particleClass, validationState.getReducerStateClass());
+			methodProcedure = this.procedures.getProcedure(op, key);
 		} catch (MissingProcedureException e) {
 			throw new ConstraintMachineException(CMErrorCode.MISSING_PROCEDURE, validationState, e);
 		}

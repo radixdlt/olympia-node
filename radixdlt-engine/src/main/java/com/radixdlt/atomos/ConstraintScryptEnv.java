@@ -21,11 +21,11 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.ProcedureKey;
 import com.radixdlt.constraintmachine.Procedures;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 import com.radixdlt.constraintmachine.UpProcedure;
-import com.radixdlt.utils.Pair;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,10 +40,10 @@ public final class ConstraintScryptEnv implements SysCalls {
 	private final ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions;
 
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> scryptParticleDefinitions;
-	private final Map<Pair<Class<? extends Particle>, Class<? extends ReducerState>>, DownProcedure<Particle, ReducerState>> downProcedures;
-	private final Map<Pair<Class<? extends Particle>, Class<? extends ReducerState>>, ShutdownAllProcedure<Particle, ReducerState>> shutdownAllProcedures;
-	private final Map<Pair<Class<? extends ReducerState>, Class<? extends Particle>>, UpProcedure<ReducerState, Particle>> upProcedures;
-	private final Map<Class, EndProcedure<ReducerState>> endProcedures;
+	private final Map<ProcedureKey, DownProcedure<Particle, ReducerState>> downProcedures;
+	private final Map<ProcedureKey, ShutdownAllProcedure<Particle, ReducerState>> shutdownAllProcedures;
+	private final Map<ProcedureKey, UpProcedure<ReducerState, Particle>> upProcedures;
+	private final Map<ProcedureKey, EndProcedure<ReducerState>> endProcedures;
 
 	ConstraintScryptEnv(
 		ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions

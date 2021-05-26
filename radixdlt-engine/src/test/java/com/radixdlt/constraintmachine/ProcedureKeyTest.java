@@ -18,11 +18,15 @@
 
 package com.radixdlt.constraintmachine;
 
-public class MissingProcedureException extends Exception {
-	public MissingProcedureException(
-		REInstruction.REOp op,
-		ProcedureKey key
-	) {
-		super("Missing: " + op + " " + key);
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
+import org.junit.Test;
+
+public class ProcedureKeyTest {
+	@Test
+	public void equalsVerifier() {
+		EqualsVerifier.forClass(ProcedureKey.class)
+			.suppress(Warning.NONFINAL_FIELDS)
+			.verify();
 	}
 }

@@ -18,23 +18,21 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.utils.Pair;
-
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class Procedures {
-	private final Map<Pair<Class<? extends ReducerState>, Class<? extends Particle>>, UpProcedure<ReducerState, Particle>> upProcedures;
-	private final Map<Pair<Class<? extends Particle>, Class<? extends ReducerState>>, DownProcedure<Particle, ReducerState>> downProcedures;
-	private final Map<Pair<Class<? extends Particle>, Class<? extends ReducerState>>, ShutdownAllProcedure<Particle, ReducerState>> shutdownAllProcedures;
-	private final Map<Class, EndProcedure<ReducerState>> endProcedures;
+	private final Map<ProcedureKey, UpProcedure<ReducerState, Particle>> upProcedures;
+	private final Map<ProcedureKey, DownProcedure<Particle, ReducerState>> downProcedures;
+	private final Map<ProcedureKey, ShutdownAllProcedure<Particle, ReducerState>> shutdownAllProcedures;
+	private final Map<ProcedureKey, EndProcedure<ReducerState>> endProcedures;
 
 	public Procedures(
-		Map<Pair<Class<? extends ReducerState>, Class<? extends Particle>>, UpProcedure<ReducerState, Particle>> upProcedures,
-		Map<Pair<Class<? extends Particle>, Class<? extends ReducerState>>, DownProcedure<Particle, ReducerState>> downProcedures,
-		Map<Pair<Class<? extends Particle>, Class<? extends ReducerState>>, ShutdownAllProcedure<Particle, ReducerState>> shutdownAllProcedures,
-		Map<Class, EndProcedure<ReducerState>> endProcedures
+		Map<ProcedureKey, UpProcedure<ReducerState, Particle>> upProcedures,
+		Map<ProcedureKey, DownProcedure<Particle, ReducerState>> downProcedures,
+		Map<ProcedureKey, ShutdownAllProcedure<Particle, ReducerState>> shutdownAllProcedures,
+		Map<ProcedureKey, EndProcedure<ReducerState>> endProcedures
 	) {
 		this.upProcedures = upProcedures;
 		this.downProcedures = downProcedures;
@@ -76,21 +74,20 @@ public final class Procedures {
 
 	public MethodProcedure getProcedure(
 		REInstruction.REOp op,
-		Class<? extends Particle> particleClass,
-		Class<? extends ReducerState> reducerStateClass
+		ProcedureKey key
 	) throws MissingProcedureException {
 		MethodProcedure methodProcedure = null;
 		if (op == REInstruction.REOp.DOWNALL) {
-			methodProcedure = shutdownAllProcedures.get(Pair.of(particleClass, reducerStateClass));
+			methodProcedure = shutdownAllProcedures.get(key);
 		} else if (op == REInstruction.REOp.END) {
-			methodProcedure = endProcedures.get(reducerStateClass);
+			methodProcedure = endProcedures.get(key);
 		} else if (op.getNextSpin() == Spin.UP) {
-			methodProcedure = upProcedures.get(Pair.of(reducerStateClass, particleClass));
+			methodProcedure = upProcedures.get(key);
 		} else if (op.getNextSpin() == Spin.DOWN) {
-			methodProcedure = downProcedures.get(Pair.of(particleClass, reducerStateClass));
+			methodProcedure = downProcedures.get(key);
 		}
 		if (methodProcedure == null) {
-			throw new MissingProcedureException(op, particleClass, reducerStateClass);
+			throw new MissingProcedureException(op, key);
 		}
 		return methodProcedure;
 	}
