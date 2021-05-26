@@ -184,7 +184,7 @@ The following configuration options control which APIs are enabled at the node:
 | Configuration Option | Path | Default if not configured
 | --- | --- | --- |
 | api.archive.enable | `/archive` | Disabled
-| api.construct.enable | `/construct` | Disabled
+| api.construction.enable | `/construction` | Disabled
 | api.system.enable | `/system` | Disabled
 | api.account.enable | `/account` | Disabled
 | api.validation.enable | `/validation` endpoint | Disabled

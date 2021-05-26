@@ -22,12 +22,12 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.controller.HealthController;
 import com.radixdlt.api.qualifier.AtNode;
-import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.api.service.NetworkInfoService;
 
 public class HealthEndpointModule extends AbstractModule {
 	@AtNode
 	@ProvidesIntoSet
-	public Controller healthController(SystemCounters counters) {
-		return new HealthController(counters);
+	public Controller healthController(NetworkInfoService networkInfoService) {
+		return new HealthController(networkInfoService);
 	}
 }

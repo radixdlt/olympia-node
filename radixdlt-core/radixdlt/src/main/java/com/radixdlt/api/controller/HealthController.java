@@ -19,8 +19,7 @@ package com.radixdlt.api.controller;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.api.Controller;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.api.service.NetworkInfoService;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
@@ -29,10 +28,10 @@ import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.RestUtils.respond;
 
 public class HealthController implements Controller {
-	private final SystemCounters counters;
+	private final NetworkInfoService networkInfoService;
 
-	public HealthController(SystemCounters counters) {
-		this.counters = counters;
+	public HealthController(NetworkInfoService networkInfoService) {
+		this.networkInfoService = networkInfoService;
 	}
 
 	@Override
@@ -48,10 +47,6 @@ public class HealthController implements Controller {
 
 	@VisibleForTesting
 	void handleHealthRequest(HttpServerExchange exchange) {
-		respond(exchange, jsonObject().put("status", isSynced() ? "UP" : "SYNCING"));
-	}
-
-	private boolean isSynced() {
-		return counters.get(CounterType.LEDGER_STATE_VERSION) == counters.get(CounterType.SYNC_TARGET_STATE_VERSION);
+		respond(exchange, jsonObject().put("status", networkInfoService.nodeStatus()));
 	}
 }

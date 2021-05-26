@@ -22,13 +22,17 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 
-import java.util.stream.IntStream;
-
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
-import static com.radixdlt.client.service.NetworkInfoService.DEMAND_KEY;
-import static com.radixdlt.client.service.NetworkInfoService.THROUGHPUT_KEY;
+import static com.radixdlt.api.data.NodeStatus.BOOTING;
+import static com.radixdlt.api.data.NodeStatus.STALL;
+import static com.radixdlt.api.data.NodeStatus.SYNCING;
+import static com.radixdlt.api.data.NodeStatus.UP;
+import static com.radixdlt.api.service.NetworkInfoService.DEMAND_KEY;
+import static com.radixdlt.api.service.NetworkInfoService.LEDGER_KEY;
+import static com.radixdlt.api.service.NetworkInfoService.TARGET_KEY;
+import static com.radixdlt.api.service.NetworkInfoService.THROUGHPUT_KEY;
 import static com.radixdlt.counters.SystemCounters.CounterType;
 
 public class NetworkInfoServiceTest {
@@ -41,11 +45,8 @@ public class NetworkInfoServiceTest {
 	public void testDemand() {
 		assertEquals(0, networkInfoService.demand());
 
-		systemCounters.set(DEMAND_KEY, 2L);
-		updateStats(5, DEMAND_KEY, false);
-
-		systemCounters.set(DEMAND_KEY, 0L);
-		updateStats(5, DEMAND_KEY, false);
+		systemCounters.add(CounterType.MEMPOOL_PROPOSED_TRANSACTION, 1L);
+		updateStats(10, CounterType.MEMPOOL_PROPOSED_TRANSACTION);
 
 		assertEquals(1, networkInfoService.demand());
 	}
@@ -54,10 +55,45 @@ public class NetworkInfoServiceTest {
 	public void testThroughput() {
 		assertEquals(0, networkInfoService.throughput());
 
-		systemCounters.add(THROUGHPUT_KEY, 1L);
-		updateStats(10, THROUGHPUT_KEY, true);
+		systemCounters.add(CounterType.ELAPSED_BDB_LEDGER_COMMIT, 1L);
+		updateStats(10, CounterType.ELAPSED_BDB_LEDGER_COMMIT);
 
 		assertEquals(1, networkInfoService.throughput());
+	}
+
+	@Test
+	public void testNodeStatus() {
+		assertEquals(BOOTING, networkInfoService.nodeStatus());
+
+		updateStatsSync(10, TARGET_KEY, 5, LEDGER_KEY);
+
+		assertEquals(SYNCING, networkInfoService.nodeStatus());
+
+		updateStatsSync(10, TARGET_KEY, 15, LEDGER_KEY);
+
+		assertEquals(UP, networkInfoService.nodeStatus());
+
+		updateStatsSync(10, TARGET_KEY, 0, LEDGER_KEY);
+
+		assertEquals(STALL, networkInfoService.nodeStatus());
+	}
+
+	private void updateStatsSync(int count1, CounterType key1, int count2, CounterType key2) {
+		var count = Math.min(count1, count2);
+
+		IntStream.range(0, count).forEach(__ -> {
+			systemCounters.increment(key1);
+			systemCounters.increment(key2);
+			networkInfoService.updateStats().process(ScheduledStatsCollecting.create());
+		});
+
+		var remaining = Math.max(count1, count2) - count;
+		var key = count1 > count2 ? key1 : key2;
+
+		IntStream.range(0, remaining).forEach(__ -> {
+			systemCounters.increment(key);
+			networkInfoService.updateStats().process(ScheduledStatsCollecting.create());
+		});
 	}
 
 	private void updateStats(int times, CounterType counterType, boolean increment) {
