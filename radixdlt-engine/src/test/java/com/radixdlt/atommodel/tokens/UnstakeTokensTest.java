@@ -34,7 +34,7 @@ import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV2;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
-import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
+import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.CMErrorCode;
@@ -181,7 +181,7 @@ public class UnstakeTokensTest {
 		// Arrange
 		var burnStake = this.engine.construct(txBuilder -> {
 			txBuilder.down(
-				DeprecatedStake.class,
+				PreparedStake.class,
 				d -> d.getOwner().equals(accountAddr),
 				Optional.empty(),
 				""
@@ -217,7 +217,7 @@ public class UnstakeTokensTest {
 
 		assertThatThrownBy(() -> this.engine.execute(List.of(unstake)))
 			.isInstanceOf(RadixEngineException.class)
-			.extracting("cmError.errorCode")
+			.extracting("cause.errorCode")
 			.containsExactly(CMErrorCode.AUTHORIZATION_ERROR);
 	}
 }

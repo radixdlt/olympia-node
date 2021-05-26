@@ -33,6 +33,7 @@ import com.radixdlt.utils.UInt256;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -212,49 +213,31 @@ public final class TxBuilder {
 		}
 	}
 
-	public interface Mapper<T extends Particle, U extends Particle> {
-		U map(T t) throws TxBuilderException;
+	public interface Mapper<T extends Particle> {
+		List<Particle> map(T t) throws TxBuilderException;
 	}
 
-	public interface Replacer<T extends Particle, U extends Particle> {
-		void with(Mapper<T, U> mapper) throws TxBuilderException;
+	public interface Replacer<T extends Particle> {
+		void with(Mapper<T> mapper) throws TxBuilderException;
 	}
 
-	public <T extends Particle, U extends Particle> Replacer<T, U> swap(
+	public <T extends Particle> Replacer<T> swap(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		String errorMessage
 	) throws TxBuilderException {
 		T t = down(particleClass, particlePredicate, errorMessage);
-		return replacer -> {
-			U u = replacer.map(t);
-			up(u);
-		};
+		return replacer -> replacer.map(t).forEach(this::up);
 	}
 
-	private <T extends Particle, U extends Particle> Replacer<T, U> swap(
-		Class<T> particleClass,
-		Optional<SubstateWithArg<T>> virtualParticle,
-		String errorMessage
-	) throws TxBuilderException {
-		T t = down(particleClass, virtualParticle, errorMessage);
-		return replacer -> {
-			U u = replacer.map(t);
-			up(u);
-		};
-	}
-
-	public <T extends Particle, U extends Particle> Replacer<T, U> swap(
+	public <T extends Particle> Replacer<T> swap(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		Optional<SubstateWithArg<T>> virtualParticle,
 		String errorMessage
 	) throws TxBuilderException {
 		T t = down(particleClass, particlePredicate, virtualParticle, errorMessage);
-		return replacer -> {
-			U u = replacer.map(t);
-			up(u);
-		};
+		return replacer -> replacer.map(t).forEach(this::up);
 	}
 
 	public interface FungibleMapper<U extends Particle> {
@@ -395,7 +378,7 @@ public final class TxBuilder {
 			p -> p.getAddr().equals(addr),
 			Optional.of(SubstateWithArg.withArg(new REAddrParticle(addr), id.getBytes(StandardCharsets.UTF_8))),
 			"RRI not available"
-		).with(r -> new UniqueParticle(addr));
+		).with(r -> List.of(new UniqueParticle(addr)));
 
 		end();
 

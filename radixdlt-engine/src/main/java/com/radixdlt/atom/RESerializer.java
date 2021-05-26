@@ -18,8 +18,10 @@
 
 package com.radixdlt.atom;
 
+import com.radixdlt.atommodel.system.state.EpochData;
+import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
-import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
+import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.system.state.Stake;
 import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
@@ -49,7 +51,9 @@ public final class RESerializer {
 		VALIDATOR((byte) 5),
 		UNIQUE((byte) 6),
 		TOKENS_LOCKED((byte) 7),
-		STAKE((byte) 8);
+		STAKE((byte) 8),
+		ROUND_STATE((byte) 9),
+		EPOCH_STATE((byte) 10);
 
 		private final byte id;
 
@@ -63,10 +67,12 @@ public final class RESerializer {
 		SystemParticle.class, List.of(SubstateType.SYSTEM.id),
 		TokenDefinitionParticle.class, List.of(SubstateType.TOKEN_DEF.id),
 		TokensParticle.class, List.of(SubstateType.TOKENS.id, SubstateType.TOKENS_LOCKED.id),
-		DeprecatedStake.class, List.of(SubstateType.DELEGATED_STAKE.id),
+		PreparedStake.class, List.of(SubstateType.DELEGATED_STAKE.id),
 		ValidatorParticle.class, List.of(SubstateType.VALIDATOR.id),
 		UniqueParticle.class, List.of(SubstateType.UNIQUE.id),
-		Stake.class, List.of(SubstateType.STAKE.id)
+		Stake.class, List.of(SubstateType.STAKE.id),
+		RoundData.class, List.of(SubstateType.ROUND_STATE.id),
+		EpochData.class, List.of(SubstateType.EPOCH_STATE.id)
 	);
 
 	private RESerializer() {
@@ -123,6 +129,10 @@ public final class RESerializer {
 			return deserializeTokenDefinitionParticle(buf);
 		} else if (type == SubstateType.STAKE.id) {
 			return deserializeStake(buf);
+		} else if (type == SubstateType.ROUND_STATE.id) {
+			return deserializeRoundState(buf);
+		} else if (type == SubstateType.EPOCH_STATE.id) {
+			return deserializeEpochState(buf);
 		} else {
 			throw new DeserializeException("Unsupported type: " + type);
 		}
@@ -136,8 +146,8 @@ public final class RESerializer {
 			serializeData((SystemParticle) p, buf);
 		} else if (p instanceof TokensParticle) {
 			serializeData((TokensParticle) p, buf);
-		} else if (p instanceof DeprecatedStake) {
-			serializeData((DeprecatedStake) p, buf);
+		} else if (p instanceof PreparedStake) {
+			serializeData((PreparedStake) p, buf);
 		} else if (p instanceof ValidatorParticle) {
 			serializeData((ValidatorParticle) p, buf);
 		} else if (p instanceof UniqueParticle) {
@@ -146,6 +156,10 @@ public final class RESerializer {
 			serializeData((TokenDefinitionParticle) p, buf);
 		} else if (p instanceof Stake) {
 			serializeData((Stake) p, buf);
+		} else if (p instanceof RoundData) {
+			serializeData((RoundData) p, buf);
+		} else if (p instanceof EpochData) {
+			serializeData((EpochData) p, buf);
 		} else {
 			throw new IllegalStateException("Unknown particle: " + p);
 		}
@@ -183,9 +197,30 @@ public final class RESerializer {
 		return new REAddrParticle(rri);
 	}
 
+	private static void serializeData(RoundData roundData, ByteBuffer buf) {
+		buf.put(SubstateType.ROUND_STATE.id);
+		buf.putLong(roundData.getView());
+		buf.putLong(roundData.getTimestamp());
+	}
+
+	private static RoundData deserializeRoundState(ByteBuffer buf) throws DeserializeException {
+		var view = buf.getLong();
+		var timestamp = buf.getLong();
+		return new RoundData(view, timestamp);
+	}
+
+	private static void serializeData(EpochData epochData, ByteBuffer buf) {
+		buf.put(SubstateType.EPOCH_STATE.id);
+		buf.putLong(epochData.getEpoch());
+	}
+
+	private static EpochData deserializeEpochState(ByteBuffer buf) throws DeserializeException {
+		var epoch = buf.getLong();
+		return new EpochData(epoch);
+	}
+
 	private static void serializeData(SystemParticle systemParticle, ByteBuffer buf) {
 		buf.put(SubstateType.SYSTEM.id);
-
 		buf.putLong(systemParticle.getEpoch());
 		buf.putLong(systemParticle.getView());
 		buf.putLong(systemParticle.getTimestamp());
@@ -240,7 +275,7 @@ public final class RESerializer {
 		return new Stake(amount, delegate);
 	}
 
-	private static void serializeData(DeprecatedStake p, ByteBuffer buf) {
+	private static void serializeData(PreparedStake p, ByteBuffer buf) {
 		buf.put(SubstateType.DELEGATED_STAKE.id);
 
 		serializeREAddr(buf, p.getOwner());
@@ -248,11 +283,11 @@ public final class RESerializer {
 		buf.put(p.getAmount().toByteArray());
 	}
 
-	private static DeprecatedStake deserializeStakedTokensParticle(ByteBuffer buf) throws DeserializeException {
+	private static PreparedStake deserializeStakedTokensParticle(ByteBuffer buf) throws DeserializeException {
 		var owner = deserializeREAddr(buf);
 		var delegate = deserializeKey(buf);
 		var amount = deserializeUInt256(buf);
-		return new DeprecatedStake(amount, owner, delegate);
+		return new PreparedStake(amount, owner, delegate);
 	}
 
 	private static void serializeData(ValidatorParticle p, ByteBuffer buf) {

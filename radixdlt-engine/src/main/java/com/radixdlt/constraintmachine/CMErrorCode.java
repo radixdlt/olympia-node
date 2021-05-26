@@ -37,6 +37,8 @@ public enum CMErrorCode {
 	PERMISSION_LEVEL_ERROR("Invalid execution permission"),
 	AUTHORIZATION_ERROR("Authorization error"),
 	INVALID_INSTRUCTION_SEQUENCE("Invalid instruction sequence"),
+	NO_STATE_UPDATES("No state updates"),
+	FEE_NOT_FOUND("Fee not found"),
 	UNKNOWN_ERROR("Unknown error");
 
 	private final String description;

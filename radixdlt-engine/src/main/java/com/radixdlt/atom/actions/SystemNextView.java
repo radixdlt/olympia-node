@@ -43,4 +43,9 @@ public final class SystemNextView implements TxAction {
 	public ECPublicKey leader() {
 		return leader;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{view=%s}", this.getClass().getSimpleName(), view);
+	}
 }

@@ -17,12 +17,14 @@
 
 package com.radixdlt.client.store.berkeley;
 
+import com.radixdlt.constraintmachine.TxnParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.BurnToken;
@@ -46,13 +48,12 @@ import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.AtomsCommittedToLedger;
+import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt384;
@@ -70,7 +71,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -115,6 +115,7 @@ import static com.radixdlt.identifiers.CommonErrors.INVALID_ACCOUNT_ADDRESS;
 import static com.radixdlt.serialization.DsonOutput.Output;
 import static com.radixdlt.serialization.SerializationUtils.restore;
 
+@Singleton
 public class BerkeleyClientApiStore implements ClientApiStore {
 	private static final Logger log = LogManager.getLogger();
 
@@ -122,7 +123,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private static final String ADDRESS_BALANCE_DB = "radix.address.balance_db";
 	private static final String SUPPLY_BALANCE_DB = "radix.supply.balance_db";
 	private static final String TOKEN_DEFINITION_DB = "radix.token_definition_db";
-	private static final long DEFAULT_FLUSH_INTERVAL = 100L;
+	private static final long DEFAULT_FLUSH_INTERVAL = 250L;
 	private static final int KEY_BUFFER_INITIAL_CAPACITY = 1024;
 	private static final int TIMESTAMP_SIZE = Long.BYTES + Integer.BYTES;
 	private static final Instant NOW = Instant.ofEpochMilli(Instant.now().toEpochMilli());
@@ -133,8 +134,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final Serialization serialization;
 	private final SystemCounters systemCounters;
 	private final ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher;
-	private final StackingCollector<AtomsCommittedToLedger> txCollector = StackingCollector.create();
-	private final AtomicLong inputCounter = new AtomicLong();
+	private final StackingCollector<TxnsCommittedToLedger> txCollector = StackingCollector.create();
 	private final CompositeDisposable disposable = new CompositeDisposable();
 	private final AtomicReference<Instant> currentTimestamp = new AtomicReference<>(NOW);
 	private final TxnParser txnParser;
@@ -300,19 +300,13 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private void storeCollected() {
-		synchronized (txCollector) {
-			log.trace("Storing collected transactions started");
+		var count = withTime(
+			() -> txCollector.consumeCollected(this::storeTransactionBatch),
+			() -> systemCounters.increment(COUNT_APIDB_FLUSH_COUNT),
+			ELAPSED_APIDB_FLUSH_TIME
+		);
 
-			var count = withTime(
-				() -> txCollector.consumeCollected(this::storeTransactionBatch),
-				() -> systemCounters.increment(COUNT_APIDB_FLUSH_COUNT),
-				ELAPSED_APIDB_FLUSH_TIME
-			);
-
-			inputCounter.addAndGet(-count);
-
-			log.trace("Storing collected transactions finished. {} transactions processed", count);
-		}
+		systemCounters.add(COUNT_APIDB_QUEUE_SIZE, -count);
 	}
 
 	private Result<TxHistoryEntry> lookupTransactionInHistory(REAddr addr, Txn txn) {
@@ -545,16 +539,16 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		log.info("Database rebuilding is finished successfully");
 	}
 
-	public EventProcessor<AtomsCommittedToLedger> atomsCommittedToLedgerEventProcessor() {
+	public EventProcessor<TxnsCommittedToLedger> atomsCommittedToLedgerEventProcessor() {
 		return this::newBatch;
 	}
 
-	private void newBatch(AtomsCommittedToLedger transactions) {
+	private void newBatch(TxnsCommittedToLedger transactions) {
 		txCollector.push(transactions);
-		systemCounters.set(COUNT_APIDB_QUEUE_SIZE, inputCounter.addAndGet(transactions.getTxns().size()));
+		systemCounters.increment(COUNT_APIDB_QUEUE_SIZE);
 	}
 
-	private void storeTransactionBatch(AtomsCommittedToLedger act) {
+	private void storeTransactionBatch(TxnsCommittedToLedger act) {
 		act.getParsedTxs().forEach(this::processRETransaction);
 	}
 
@@ -731,8 +725,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private Optional<ECPublicKey> extractCreator(Txn tx) {
 		try {
-			return constraintMachine.statelessVerify(tx).getSignedBy();
-		} catch (RadixEngineException e) {
+			return constraintMachine.parse(tx).getSignedBy();
+		} catch (TxnParseException e) {
 			throw new IllegalStateException();
 		}
 	}

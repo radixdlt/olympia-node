@@ -33,7 +33,7 @@ public interface BatchVerifier<M> {
 
 	interface PerStateChangeVerifier<M> {
 		void test(ComputedState computedState);
-		void testMetadata(M metadata, ComputedState computedState);
+		void testMetadata(M metadata, ComputedState computedState) throws MetadataException;
 	}
 
 	static <M> BatchVerifier<M> empty() {

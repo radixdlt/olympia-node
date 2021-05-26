@@ -20,37 +20,52 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atom.Substate;
 
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
  * Instruction which has been parsed and state checked by Radix Engine
  */
-public final class REParsedInstruction {
-	private final REInstruction instruction;
+public final class REStateUpdate {
+	private final REInstruction.REOp op;
 	private final Substate substate;
+	private final ByteBuffer stateBuf;
 
-	private REParsedInstruction(REInstruction instruction, Substate substate) {
-		Objects.requireNonNull(instruction);
+	private REStateUpdate(REInstruction.REOp op, Substate substate, ByteBuffer stateBuf) {
+		Objects.requireNonNull(op);
 		Objects.requireNonNull(substate);
 
-		this.instruction = instruction;
+		this.op = op;
 		this.substate = substate;
+		this.stateBuf = stateBuf;
 	}
 
-	public static REParsedInstruction of(REInstruction instruction, Substate substate) {
-		return new REParsedInstruction(instruction, substate);
+	public static REStateUpdate of(REInstruction.REOp op, Substate substate, ByteBuffer stateBuf) {
+		return new REStateUpdate(op, substate, stateBuf);
 	}
 
-	public REInstruction getInstruction() {
-		return instruction;
+	public ByteBuffer getStateBuf() {
+		return stateBuf;
+	}
+
+	public REInstruction.REOp getOp() {
+		return op;
 	}
 
 	public Spin getCheckSpin() {
-		return instruction.getCheckSpin();
+		return op.getCheckSpin();
 	}
 
 	public Spin getNextSpin() {
-		return instruction.getNextSpin();
+		return op.getNextSpin();
+	}
+
+	public boolean isBootUp() {
+		return this.op.getNextSpin() == Spin.UP;
+	}
+
+	public boolean isShutDown() {
+		return this.op.getNextSpin() == Spin.DOWN;
 	}
 
 	public Substate getSubstate() {
@@ -63,35 +78,6 @@ public final class REParsedInstruction {
 
 	public <T extends Particle> T getParticle(Class<T> cls) {
 		return cls.cast(substate.getParticle());
-	}
-
-	public boolean isStateUpdate() {
-		return this.instruction.isPush();
-	}
-
-	public boolean isBootUp() {
-		return this.instruction.isPush() && this.instruction.getNextSpin() == Spin.UP;
-	}
-
-	public boolean isShutDown() {
-		return this.instruction.isPush() && this.instruction.getNextSpin() == Spin.DOWN;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (!(obj instanceof REParsedInstruction)) {
-			return false;
-		}
-
-		REParsedInstruction parsedInstruction = (REParsedInstruction) obj;
-
-		return Objects.equals(this.instruction, parsedInstruction.instruction)
-			&& Objects.equals(this.substate, parsedInstruction.substate);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(instruction, substate);
 	}
 
 	@Override

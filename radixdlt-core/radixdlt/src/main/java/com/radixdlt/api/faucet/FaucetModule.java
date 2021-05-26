@@ -27,7 +27,7 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.REInstruction;
-import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
@@ -53,7 +53,7 @@ public class FaucetModule extends AbstractModule {
 		return genesis.getTxns().stream()
 			.flatMap(txn -> {
 				try {
-					var parsed = cm.statelessVerify(txn);
+					var parsed = cm.parse(txn);
 					return parsed.instructionsParsed().stream()
 						.map(REInstruction::getData)
 						.filter(Substate.class::isInstance)
@@ -61,7 +61,7 @@ public class FaucetModule extends AbstractModule {
 						.filter(TokenDefinitionParticle.class::isInstance)
 						.map(TokenDefinitionParticle.class::cast)
 						.map(TokenDefinitionParticle::getAddr);
-				} catch (RadixEngineException e) {
+				} catch (TxnParseException e) {
 					throw new IllegalStateException(e);
 				}
 			}).collect(Collectors.toSet());

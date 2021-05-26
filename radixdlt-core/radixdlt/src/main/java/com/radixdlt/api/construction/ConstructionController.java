@@ -20,9 +20,10 @@ package com.radixdlt.api.construction;
 
 import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.REParsedTxn;
-import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.MempoolAdd;
@@ -32,7 +33,6 @@ import com.radixdlt.utils.Bytes;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 import org.bouncycastle.util.encoders.Hex;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import com.radixdlt.api.Controller;
 
@@ -97,11 +97,8 @@ public final class ConstructionController implements Controller {
 			REParsedTxn parsedTxn;
 			try {
 				parsedTxn = txnParser.parse(Txn.create(transactionBytes));
-			} catch (RadixEngineException e) {
-				var statelessParsed = new JSONArray();
-				e.getResult().instructionsParsed().forEach(i -> statelessParsed.put(instructionToObject(i)));
+			} catch (TxnParseException | ConstraintMachineException e) {
 				respond(exchange, jsonObject()
-					.put("parsed", statelessParsed)
 					.put("error", e.getMessage())
 				);
 				return;
@@ -114,7 +111,7 @@ public final class ConstructionController implements Controller {
 				.put("operations", ops);
 			parsedTxn.instructions().forEach(i -> {
 				var jsonOp = jsonObject()
-					.put("type", i.getInstruction().getMicroOp())
+					.put("type", i.getOp())
 					.put("parsed", i.getParticle());
 
 				ops.put(jsonOp);

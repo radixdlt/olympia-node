@@ -17,6 +17,7 @@
 
 package com.radixdlt.store.berkeley;
 
+import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,7 +35,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.REParsedInstruction;
+import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -189,7 +190,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public void storeTxn(Transaction dbTxn, Txn txn, List<REParsedInstruction> stateUpdates) {
+	public void storeTxn(Transaction dbTxn, Txn txn, List<REStateUpdate> stateUpdates) {
 		withTime(() -> doStore(unwrap(dbTxn), txn, stateUpdates), CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
 	}
 
@@ -590,27 +591,32 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 	}
 
-	private void updateParticle(com.sleepycat.je.Transaction txn, REParsedInstruction inst) {
-		if (inst.isBootUp()) {
-			var buf = inst.getInstruction().getDataByteBuffer();
-			upParticle(txn, buf, inst.getSubstate().getId());
+	private void updateParticle(com.sleepycat.je.Transaction txn, REStateUpdate stateUpdate) {
+		if (stateUpdate.isBootUp()) {
+			var buf = stateUpdate.getStateBuf();
+			upParticle(txn, buf, stateUpdate.getSubstate().getId());
 
-			if (inst.getParticle() instanceof TokenDefinitionParticle) {
-				var p = (TokenDefinitionParticle) inst.getParticle();
+			// FIXME: Superhack
+			if (stateUpdate.getParticle() instanceof TokenDefinitionParticle) {
+				var p = (TokenDefinitionParticle) stateUpdate.getParticle();
 				var addr = p.getAddr();
-				var buf2 = inst.getInstruction().getDataByteBuffer();
+				var buf2 = stateUpdate.getStateBuf();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
 				addrDatabase.putNoOverwrite(txn, new DatabaseEntry(addr.getBytes()), value);
-			} else if (inst.getParticle() instanceof SystemParticle) {
-				var buf2 = inst.getInstruction().getDataByteBuffer();
+			} else if (stateUpdate.getParticle() instanceof SystemParticle) {
+				var buf2 = stateUpdate.getStateBuf();
+				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
+				addrDatabase.put(txn, new DatabaseEntry(REAddr.ofSystem().getBytes()), value);
+			} else if (stateUpdate.getParticle() instanceof EpochData) {
+				var buf2 = stateUpdate.getStateBuf();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
 				addrDatabase.put(txn, new DatabaseEntry(REAddr.ofSystem().getBytes()), value);
 			}
-		} else if (inst.isShutDown()) {
-			if (inst.getSubstate().getId().isVirtual()) {
-				downVirtualSubstate(txn, inst.getSubstate().getId());
+		} else if (stateUpdate.isShutDown()) {
+			if (stateUpdate.getSubstate().getId().isVirtual()) {
+				downVirtualSubstate(txn, stateUpdate.getSubstate().getId());
 			} else {
-				downSubstate(txn, inst.getSubstate().getId());
+				downSubstate(txn, stateUpdate.getSubstate().getId());
 			}
 		} else {
 			throw new IllegalStateException("Must bootup or shutdown to update particle.");
@@ -620,7 +626,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	private void doStore(
 		com.sleepycat.je.Transaction transaction,
 		Txn txn,
-		List<REParsedInstruction> stateUpdates
+		List<REStateUpdate> stateUpdates
 	) {
 		final long stateVersion;
 		try (var cursor = atomDatabase.openCursor(transaction, null)) {
