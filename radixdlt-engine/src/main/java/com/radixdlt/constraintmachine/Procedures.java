@@ -65,19 +65,24 @@ public final class Procedures {
 		return new Procedures(combinedUpProcedures, combinedDownProcedures, combinedEndProcedures);
 	}
 
-	public UpProcedure<ReducerState, Particle> getUpProcedure(
-		Class<? extends ReducerState> reducerStateClass, Class<? extends Particle> upClass
-	) {
-		return upProcedures.get(Pair.of(reducerStateClass, upClass));
-	}
-
-	public DownProcedure<Particle, ReducerState> getDownProcedure(
-		Class<? extends Particle> downClass, Class<? extends ReducerState> reducerStateClass
-	) {
-		return downProcedures.get(Pair.of(downClass, reducerStateClass));
-	}
-
-	public EndProcedure<ReducerState> getEndProcedure(Class<? extends ReducerState> reducerStateClass) {
-		return endProcedures.get(reducerStateClass);
+	public MethodProcedure getProcedure(
+		REInstruction.REOp op,
+		Object procedureParam,
+		Class<? extends ReducerState> reducerStateClass
+	) throws MissingProcedureException {
+		MethodProcedure methodProcedure = null;
+		if (op == REInstruction.REOp.END) {
+			methodProcedure = endProcedures.get(reducerStateClass);
+		} else if (op.getNextSpin() == Spin.UP) {
+			var outputParticle = (Particle) procedureParam;
+			methodProcedure = upProcedures.get(Pair.of(reducerStateClass, outputParticle.getClass()));
+		} else if (op.getNextSpin() == Spin.DOWN) {
+			var substateWithArg = (SubstateWithArg<Particle>) procedureParam;
+			methodProcedure = downProcedures.get(Pair.of(substateWithArg.getSubstate().getClass(), reducerStateClass));
+		}
+		if (methodProcedure == null) {
+			throw new MissingProcedureException();
+		}
+		return methodProcedure;
 	}
 }
