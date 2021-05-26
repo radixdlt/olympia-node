@@ -49,5 +49,5 @@ public interface CMStore extends ReadableAddrs {
 
 	Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId);
 
-	SubstateCursor openIndexedCursor(Class<? extends Particle> particleClass);
+	SubstateCursor openIndexedCursor(Transaction txn, Class<? extends Particle> particleClass);
 }

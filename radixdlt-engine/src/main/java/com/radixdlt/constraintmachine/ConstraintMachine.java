@@ -201,7 +201,7 @@ public final class ConstraintMachine {
 
 		public SubstateCursor shutdownAll(Class<? extends Particle> particleClass) throws ConstraintMachineException {
 			// TODO: add to remoteDownParticles?
-			return store.openIndexedCursor(particleClass);
+			return store.openIndexedCursor(txn, particleClass);
 		}
 
 		Class<? extends ReducerState> getReducerStateClass() {

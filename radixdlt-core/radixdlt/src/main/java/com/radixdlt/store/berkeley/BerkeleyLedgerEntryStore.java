@@ -19,6 +19,7 @@ package com.radixdlt.store.berkeley;
 
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
+import com.sleepycat.je.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -446,6 +447,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 	private static class BerkeleySubstateCursor implements SubstateCursor {
 		private final SecondaryDatabase db;
+		private final com.sleepycat.je.Transaction dbTxn;
 		private SecondaryCursor cursor;
 		private OperationStatus status;
 
@@ -453,13 +455,14 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		private DatabaseEntry value = entry();
 		private DatabaseEntry substateIdBytes = entry();
 
-		BerkeleySubstateCursor(SecondaryDatabase db, byte[] indexableBytes) {
+		BerkeleySubstateCursor(com.sleepycat.je.Transaction dbTxn, SecondaryDatabase db, byte[] indexableBytes) {
+			this.dbTxn = dbTxn;
 			this.db = db;
 			this.index = entry(indexableBytes);
 		}
 
 		private void open() {
-			this.cursor = db.openCursor(null, null);
+			this.cursor = db.openCursor(dbTxn, null);
 			this.status = cursor.getSearchKey(index, substateIdBytes, value, null);
 		}
 
@@ -491,26 +494,32 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public SubstateCursor openIndexedCursor(Class<? extends Particle> particleClass) {
+	public SubstateCursor openIndexedCursor(Transaction wrappedDbTxn, Class<? extends Particle> particleClass) {
+		var dbTxn = unwrap(wrappedDbTxn);
 		var typeBytes = RESerializer.classToBytes(particleClass);
 		if (typeBytes.size() == 1) {
 			final byte[] indexableBytes = new byte[] {typeBytes.get(0)};
-			var cursor = new BerkeleySubstateCursor(upParticleDatabase, indexableBytes);
+			var cursor = new BerkeleySubstateCursor(dbTxn, upParticleDatabase, indexableBytes);
 			cursor.open();
 			return cursor;
 		} else if (typeBytes.size() == 2) {
 			final byte[] indexableBytes = new byte[] {typeBytes.get(0)};
-			var cursor = new BerkeleySubstateCursor(upParticleDatabase, indexableBytes);
+			var cursor = new BerkeleySubstateCursor(dbTxn, upParticleDatabase, indexableBytes);
 			cursor.open();
 			return SubstateCursor.concat(cursor, () -> {
 				final byte[] type2 = new byte[] {typeBytes.get(1)};
-				var cursor2 = new BerkeleySubstateCursor(upParticleDatabase, type2);
+				var cursor2 = new BerkeleySubstateCursor(dbTxn, upParticleDatabase, type2);
 				cursor2.open();
 				return cursor2;
 			});
 		} else {
 			throw new IllegalStateException("Cannot handle more than 2 types per class");
 		}
+	}
+
+	@Override
+	public SubstateCursor openIndexedCursor(Class<? extends Particle> particleClass) {
+		return openIndexedCursor(null, particleClass);
 	}
 
 	public <V> V reduceUpParticles(

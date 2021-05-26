@@ -82,11 +82,13 @@ public class UnstakingLockedTokensTest {
 	public static Collection<Object[]> parameters() {
 		return List.of(new Object[][]{
 			{1, 1, false},
-			{1, 1 + StakingConstraintScryptV3.EPOCHS_LOCKED - 1, false},
-			{1, 1 + StakingConstraintScryptV3.EPOCHS_LOCKED, true},
+			{1, 2, false},
+			{1, 2 + StakingConstraintScryptV3.EPOCHS_LOCKED - 1, false},
+			{1, 2 + StakingConstraintScryptV3.EPOCHS_LOCKED, true},
 			{3, 3, false},
-			{3, 3 + StakingConstraintScryptV3.EPOCHS_LOCKED - 1, false},
-			{3, 3 + StakingConstraintScryptV3.EPOCHS_LOCKED, true},
+			{3, 4, false},
+			{3, 4 + StakingConstraintScryptV3.EPOCHS_LOCKED - 1, false},
+			{3, 4 + StakingConstraintScryptV3.EPOCHS_LOCKED, true},
 		});
 	}
 
@@ -182,9 +184,13 @@ public class UnstakingLockedTokensTest {
 
 		var accountAddr = REAddr.ofPubKeyAccount(self);
 		var stakeTxn = dispatchAndWaitForCommit(new StakeTokens(accountAddr, self, UInt256.from(100)));
+		runner.runNextEventsThrough(
+			EpochsLedgerUpdate.class,
+			e -> e.getEpochChange().map(c -> c.getEpoch() == stakingEpoch + 1).orElse(false)
+		);
 		var unstakeTxn = dispatchAndWaitForCommit(new UnstakeTokens(accountAddr, self, UInt256.from(100)));
 
-		if (transferEpoch > stakingEpoch) {
+		if (transferEpoch > stakingEpoch + 1) {
 			runner.runNextEventsThrough(
 				EpochsLedgerUpdate.class,
 				e -> e.getEpochChange().map(c -> c.getEpoch() == transferEpoch).orElse(false)

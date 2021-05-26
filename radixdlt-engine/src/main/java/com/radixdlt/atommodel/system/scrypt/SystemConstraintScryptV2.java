@@ -188,7 +188,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 	private void registerBetanetV2ToV3Transitions(SysCalls os) {
 		os.createDownProcedure(new DownProcedure<>(
-			SystemParticle.class, VoidReducerState.class,
+			SystemParticle.class, ReadyForEpochUpdate.class,
 			(d, r) -> PermissionLevel.SUPER_USER,
 			(d, r, pubKey) -> {
 				if (pubKey.isPresent()) {
