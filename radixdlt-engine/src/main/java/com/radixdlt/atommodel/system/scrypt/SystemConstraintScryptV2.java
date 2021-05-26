@@ -165,7 +165,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			}
 			var stakes = allPreparedStake.remove(firstKey);
 			var totalStake = stakes.values().stream().reduce(UInt256::add).orElseThrow();
-			if (Objects.equals(totalStake, stake.getAmount())) {
+			if (!Objects.equals(totalStake, stake.getAmount())) {
 				throw new ProcedureException(
 					String.format("Amount (%s) does not match what is prepared (%s)", stake.getAmount(), totalStake)
 				);
@@ -276,7 +276,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				var prepared = new AllPreparedStake(i);
 				return prepared.allPreparedStake.isEmpty()
 					? ReducerResult.incomplete(new ReadyForEpochUpdate())
-					: ReducerResult.incomplete(new AllPreparedStake(i));
+					: ReducerResult.incomplete(prepared);
 			}
 		));
 		os.createUpProcedure(new UpProcedure<>(
