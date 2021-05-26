@@ -443,6 +443,7 @@ public final class ConstraintMachine {
 			if (inst.getMicroOp() == REInstruction.REOp.DOWNALL) {
 				Class<? extends Particle> particleClass = inst.getData();
 				var substateCursor = validationState.shutdownAll(particleClass);
+				final var stateUpdates = parsed;
 				var iterator = new Iterator<Particle>() {
 					@Override
 					public boolean hasNext() {
@@ -451,7 +452,11 @@ public final class ConstraintMachine {
 
 					@Override
 					public Particle next() {
-						return substateCursor.next().getParticle();
+						// FIXME: this is a hack
+						// FIXME: do this via shutdownAll state update rather than individually
+						var substate = substateCursor.next();
+						stateUpdates.add(REStateUpdate.of(inst.getMicroOp(), substate, inst.getDataByteBuffer()));
+						return substate.getParticle();
 					}
 				};
 				callProcedure(validationState, inst.getMicroOp(), particleClass, iterator);
