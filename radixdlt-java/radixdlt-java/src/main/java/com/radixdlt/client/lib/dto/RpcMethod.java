@@ -1,7 +1,7 @@
 package com.radixdlt.client.lib.dto;
 
 import static com.radixdlt.client.lib.dto.EndPoint.ARCHIVE;
-import static com.radixdlt.client.lib.dto.EndPoint.CONSTRUCT;
+import static com.radixdlt.client.lib.dto.EndPoint.CONSTRUCTION;
 
 public enum RpcMethod {
 	NATIVE_TOKEN("tokens.get_native_token", ARCHIVE),
@@ -17,9 +17,9 @@ public enum RpcMethod {
 	NETWORK_TRANSACTION_DEMAND("network.get_demand", ARCHIVE),
 	VALIDATORS("validators.get_next_epoch_set", ARCHIVE),
 	LOOKUP_VALIDATOR("validators.lookup_validator", ARCHIVE),
-	BUILD_TRANSACTION("construction.build_transaction", CONSTRUCT),
-	FINALIZE_TRANSACTION("construction.finalize_transaction", CONSTRUCT),
-	SUBMIT_TRANSACTION("construction.submit_transaction", CONSTRUCT);
+	BUILD_TRANSACTION("construction.build_transaction", CONSTRUCTION),
+	FINALIZE_TRANSACTION("construction.finalize_transaction", CONSTRUCTION),
+	SUBMIT_TRANSACTION("construction.submit_transaction", CONSTRUCTION);
 
 	private final String method;
 	private final EndPoint endPoint;

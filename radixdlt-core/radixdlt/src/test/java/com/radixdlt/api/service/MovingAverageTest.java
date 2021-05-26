@@ -58,4 +58,82 @@ public class MovingAverageTest {
 		assertEquals(1, avg.update(0).asInteger());
 		assertEquals(0, avg.update(0).asInteger());
 	}
+
+	@Test
+	public void addingValuesUpdatesAverage1() {
+		var avg = MovingAverage.create(10);
+
+		assertEquals(0, avg.asInteger());
+		assertEquals(315, avg.update(315).asInteger());
+		assertEquals(315, avg.update(315).asInteger());
+		assertEquals(315, avg.update(315).asInteger());
+		assertEquals(315, avg.update(315).asInteger());
+		assertEquals(315, avg.update(315).asInteger());
+		assertEquals(315, avg.update(315).asInteger());
+		assertEquals(315, avg.update(315).asInteger());
+		assertEquals(315, avg.update(315).asInteger());
+		assertEquals(315, avg.update(315).asInteger());
+		assertEquals(315, avg.update(315).asInteger());
+		assertEquals(315, avg.update(315).asInteger());
+		assertEquals(315, avg.update(315).asInteger());
+		assertEquals(315, avg.update(315).asInteger());
+		assertEquals(315, avg.update(315).asInteger());
+		assertEquals(315, avg.update(315).asInteger());
+		assertEquals(315, avg.update(315).asInteger());
+		assertEquals(283, avg.update(0).asInteger());
+		assertEquals(255, avg.update(0).asInteger());
+		assertEquals(229, avg.update(0).asInteger());
+		assertEquals(206, avg.update(0).asInteger());
+		assertEquals(186, avg.update(0).asInteger());
+		assertEquals(167, avg.update(0).asInteger());
+		assertEquals(150, avg.update(0).asInteger());
+		assertEquals(135, avg.update(0).asInteger());
+		assertEquals(122, avg.update(0).asInteger());
+		assertEquals(109, avg.update(0).asInteger());
+		assertEquals(98, avg.update(0).asInteger());
+		assertEquals(88, avg.update(0).asInteger());
+		assertEquals(80, avg.update(0).asInteger());
+		assertEquals(72, avg.update(0).asInteger());
+		assertEquals(64, avg.update(0).asInteger());
+		assertEquals(58, avg.update(0).asInteger());
+		assertEquals(52, avg.update(0).asInteger());
+		assertEquals(47, avg.update(0).asInteger());
+		assertEquals(42, avg.update(0).asInteger());
+		assertEquals(38, avg.update(0).asInteger());
+		assertEquals(34, avg.update(0).asInteger());
+		assertEquals(31, avg.update(0).asInteger());
+		assertEquals(27, avg.update(0).asInteger());
+		assertEquals(25, avg.update(0).asInteger());
+		assertEquals(22, avg.update(0).asInteger());
+		assertEquals(20, avg.update(0).asInteger());
+		assertEquals(18, avg.update(0).asInteger());
+		assertEquals(16, avg.update(0).asInteger());
+		assertEquals(14, avg.update(0).asInteger());
+		assertEquals(13, avg.update(0).asInteger());
+		assertEquals(12, avg.update(0).asInteger());
+		assertEquals(10, avg.update(0).asInteger());
+		assertEquals(9, avg.update(0).asInteger());
+		assertEquals(8, avg.update(0).asInteger());
+		assertEquals(7, avg.update(0).asInteger());
+		assertEquals(7, avg.update(0).asInteger());
+		assertEquals(6, avg.update(0).asInteger());
+		assertEquals(5, avg.update(0).asInteger());
+		assertEquals(5, avg.update(0).asInteger());
+		assertEquals(4, avg.update(0).asInteger());
+		assertEquals(4, avg.update(0).asInteger());
+		assertEquals(3, avg.update(0).asInteger());
+		assertEquals(3, avg.update(0).asInteger());
+		assertEquals(3, avg.update(0).asInteger());
+		assertEquals(2, avg.update(0).asInteger());
+		assertEquals(2, avg.update(0).asInteger());
+		assertEquals(2, avg.update(0).asInteger());
+		assertEquals(2, avg.update(0).asInteger());
+		assertEquals(1, avg.update(0).asInteger());
+		assertEquals(1, avg.update(0).asInteger());
+		assertEquals(1, avg.update(0).asInteger());
+		assertEquals(1, avg.update(0).asInteger());
+		assertEquals(1, avg.update(0).asInteger());
+		assertEquals(1, avg.update(0).asInteger());
+		assertEquals(0, avg.update(0).asInteger());
+	}
 }
