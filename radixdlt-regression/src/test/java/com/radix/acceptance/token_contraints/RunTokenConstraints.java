@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radix.acceptance.token_character_set;
+package com.radix.acceptance.token_contraints;
 import org.junit.runner.RunWith;
 
 import io.cucumber.junit.CucumberOptions;
@@ -24,6 +24,6 @@ import io.cucumber.junit.Cucumber;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(snippets = SnippetType.UNDERSCORE, monochrome = true, plugin = { "pretty" })
-public class RunTokenSymbolCharacterSet {
+public class RunTokenConstraints {
 	// Stub for running cucumber tests
 }

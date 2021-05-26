@@ -35,7 +35,7 @@ public class TestNetwork {
         // make sure JSON-RPC is up and running
         var urlString = configuration.getJsonRpcRootUrl().toExternalForm();
         TestNetworkNodeLocator.pingJsonRpcEndpoint(urlString);
-        logger.info("Connected to {}", urlString);
+        logger.info("Connected to JSON RPC API at {}", urlString);
 
         // actually figure out what nodes this network has
         NodeApiClient nodeApi = NodeApiClient.fromTestNetworkConfiguration(configuration);
@@ -43,7 +43,7 @@ public class TestNetwork {
         if (testNodes == null || testNodes.size() == 0) {
             throw new RuntimeException("No nodes found, cannot test");
         }
-        logger.info("Found {} modes", testNodes.size());
+        logger.info("Located {} radix nodes", testNodes.size());
         testNodes.forEach(logger::debug);
 
         return new TestNetwork(configuration, testNodes, nodeApi);

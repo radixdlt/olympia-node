@@ -1,5 +1,5 @@
-Feature: Token fees required for submitted transactions
-  As a radix user,
+Feature: Fees required for submitted transactions
+  As a radix network,
   I would like valid transactions to require a radix token fee,
   So that the network is maintained
 

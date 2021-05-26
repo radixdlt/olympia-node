@@ -15,15 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radix.acceptance.token_fees;
-import org.junit.runner.RunWith;
+package com.radix.acceptance.transaction_lookup;
 
+import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
 import io.cucumber.junit.CucumberOptions.SnippetType;
-import io.cucumber.junit.Cucumber;
+import org.junit.runner.RunWith;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(snippets = SnippetType.UNDERSCORE, monochrome = true, plugin = { "pretty" })
-public class RunTokenFees {
+public class RunTransactionLookup {
 	// Stub for running cucumber tests
 }
