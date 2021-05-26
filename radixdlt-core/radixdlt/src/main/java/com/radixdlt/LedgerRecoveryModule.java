@@ -66,7 +66,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 				var parsed = radixEngine.execute(txns, proof, PermissionLevel.SYSTEM);
 				committedDispatcher.dispatch(TxnsCommittedToLedger.create(parsed));
 			} catch (RadixEngineException e) {
-				throw new IllegalStateException();
+				throw new IllegalStateException("Error during node initialization", e);
 			}
 
 			return genesis.getProof();

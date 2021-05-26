@@ -1,0 +1,30 @@
+name: 'Radixdlt version'
+description: 'Get radixdlt version'
+inputs:
+  is_release:
+    description: "Is release?"
+    required: true
+outputs:
+  radixdlt_version:
+    description: "Radixdlt version"
+    value: ${{ steps.get_release.outputs.radixdlt_version }}
+  docker_tag:
+    description: "Docker version"
+    value: ${{ steps.get_release.outputs.docker_tag }}
+runs:
+  using: "composite"
+  steps:
+    - id: get_release
+      run: |
+        IS_RELEASE="${{ inputs.is_release }}"
+        echo "IS_RELEASE $IS_RELEASE"
+        if [[ "$IS_RELEASE" == "false" ]] ;then
+          export CI_VERSION=true
+        fi
+        version=$(./gradlew radixCiVersion | grep radixdlt-version | cut -d: -f2)
+        echo "Version: $version"
+        echo "::set-output name=radixdlt_version::$(echo $version)"
+        docker_tag=$(echo $version | sed 's/~/-/g')
+        echo "Docker tag: $docker_tag"
+        echo "::set-output name=docker_tag::$(echo $docker_tag)"
+      shell: bash
