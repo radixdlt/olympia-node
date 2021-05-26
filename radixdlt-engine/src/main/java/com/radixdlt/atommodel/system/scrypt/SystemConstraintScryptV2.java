@@ -24,6 +24,7 @@ import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.Stake;
+import com.radixdlt.atommodel.system.state.StakeShare;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
@@ -143,6 +144,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 	}
 
 	private static final class AllPreparedStake implements ReducerState {
+		private UInt256 preparedStake = UInt256.ZERO;
 		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> allPreparedStake = new TreeMap<>(
 			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
 		);
@@ -158,18 +160,40 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			);
 		}
 
+		void accountFor(StakeShare stakeShare) throws ProcedureException {
+			var e = allPreparedStake.firstEntry();
+			if (!Objects.equals(e.getKey(), stakeShare.getDelegateKey())) {
+				throw new ProcedureException(stakeShare.getDelegateKey() + " is not the first key (" + e.getKey() + ")");
+			}
+			var stakes = e.getValue();
+			var accountAddr = stakes.firstKey();
+			if (!Objects.equals(stakeShare.getOwner(), accountAddr)) {
+				throw new ProcedureException(stakeShare.getOwner() + " is not the first addr (" + accountAddr + ")");
+			}
+			var stakeAmt = stakes.remove(accountAddr);
+			if (!Objects.equals(stakeAmt, stakeShare.getAmount())) {
+				throw new ProcedureException(
+					String.format("Amount (%s) does not match what is prepared (%s)", stakeShare.getAmount(), stakeAmt)
+				);
+			}
+			preparedStake = preparedStake.add(stakeAmt);
+		}
+
 		boolean take(Stake stake) throws ProcedureException {
 			var firstKey = allPreparedStake.firstKey();
 			if (!Objects.equals(firstKey, stake.getValidatorKey())) {
 				throw new ProcedureException(stake.getValidatorKey() + " is not the first key (" + firstKey + ")");
 			}
 			var stakes = allPreparedStake.remove(firstKey);
-			var totalStake = stakes.values().stream().reduce(UInt256::add).orElseThrow();
-			if (!Objects.equals(totalStake, stake.getAmount())) {
+			if (!stakes.isEmpty()) {
+				throw new ProcedureException("Stakes has not been emptied.");
+			}
+			if (!Objects.equals(preparedStake, stake.getAmount())) {
 				throw new ProcedureException(
-					String.format("Amount (%s) does not match what is prepared (%s)", stake.getAmount(), totalStake)
+					String.format("Amount (%s) does not match what is prepared (%s)", stake.getAmount(), preparedStake)
 				);
 			}
+			preparedStake = UInt256.ZERO;
 			return allPreparedStake.isEmpty();
 		}
 
@@ -255,7 +279,18 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		);
 		os.registerParticle(
 			Stake.class,
-			ParticleDefinition.<Stake>builder() .build()
+			ParticleDefinition.<Stake>builder().build()
+		);
+		os.registerParticle(
+			StakeShare.class,
+			ParticleDefinition.<StakeShare>builder()
+				.staticValidation(s -> {
+					if (s.getAmount().isZero()) {
+						return Result.error("amount must not be zero");
+					}
+					return Result.success();
+				})
+				.build()
 		);
 
 		registerGenesisTransitions(os);
@@ -277,6 +312,15 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				return prepared.allPreparedStake.isEmpty()
 					? ReducerResult.incomplete(new ReadyForEpochUpdate())
 					: ReducerResult.incomplete(prepared);
+			}
+		));
+		os.createUpProcedure(new UpProcedure<>(
+			AllPreparedStake.class, StakeShare.class,
+			(u, r) -> PermissionLevel.SUPER_USER,
+			(u, r, k) -> { },
+			(s, u, r) -> {
+				s.accountFor(u);
+				return ReducerResult.incomplete(s);
 			}
 		));
 		os.createUpProcedure(new UpProcedure<>(

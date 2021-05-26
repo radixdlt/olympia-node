@@ -25,6 +25,7 @@ import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.Stake;
+import com.radixdlt.atommodel.system.state.StakeShare;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.constraintmachine.ProcedureException;
@@ -59,6 +60,8 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 		});
 
 		allPreparedStake.forEach((k, stakes) -> {
+			stakes.forEach((addr, amt) -> txBuilder.up(new StakeShare(k, addr, amt)));
+
 			var totalPreparedStake = stakes.values().stream().reduce(UInt256::add).orElseThrow();
 			txBuilder.up(new Stake(totalPreparedStake, k));
 		});

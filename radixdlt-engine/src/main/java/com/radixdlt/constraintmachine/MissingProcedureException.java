@@ -24,6 +24,6 @@ public class MissingProcedureException extends Exception {
 		Class<? extends Particle> particleClass,
 		Class<? extends ReducerState> reducerStateClass
 	) {
-		super("Missing: " + op + " " + particleClass.getSimpleName() + " " + reducerStateClass.getSimpleName());
+		super("Missing: " + op + " " + particleClass + " " + reducerStateClass);
 	}
 }
