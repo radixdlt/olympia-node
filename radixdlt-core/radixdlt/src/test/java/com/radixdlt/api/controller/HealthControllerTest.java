@@ -19,7 +19,7 @@ package com.radixdlt.api.controller;
 
 import org.junit.Test;
 
-import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.api.service.NetworkInfoService;
 
 import io.undertow.io.Sender;
 import io.undertow.server.HttpServerExchange;
@@ -32,12 +32,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import static com.radixdlt.counters.SystemCounters.CounterType.LEDGER_STATE_VERSION;
-import static com.radixdlt.counters.SystemCounters.CounterType.SYNC_TARGET_STATE_VERSION;
+import static com.radixdlt.api.data.NodeStatus.BOOTING;
+import static com.radixdlt.api.data.NodeStatus.STALL;
+import static com.radixdlt.api.data.NodeStatus.SYNCING;
+import static com.radixdlt.api.data.NodeStatus.UP;
 
 public class HealthControllerTest {
-	private final SystemCounters counters = mock(SystemCounters.class);
-	private final HealthController controller = new HealthController(counters);
+	private final NetworkInfoService networkInfoService = mock(NetworkInfoService.class);
+	private final HealthController controller = new HealthController(networkInfoService);
 
 	@Test
 	public void routesAreConfigured() {
@@ -50,34 +52,24 @@ public class HealthControllerTest {
 	}
 
 	@Test
-	public void syncingHealthStatusIsReturned() {
-		when(counters.get(LEDGER_STATE_VERSION)).thenReturn(1L);
-		when(counters.get(SYNC_TARGET_STATE_VERSION)).thenReturn(2L);
-
+	public void healthStatusIsReturned() {
 		var exchange = mock(HttpServerExchange.class);
 		var sender = mock(Sender.class);
 
 		when(exchange.getResponseHeaders()).thenReturn(new HeaderMap());
 		when(exchange.getResponseSender()).thenReturn(sender);
+		when(networkInfoService.nodeStatus()).thenReturn(BOOTING, SYNCING, UP, STALL);
 
 		controller.handleHealthRequest(exchange);
+		verify(sender).send("{\"status\":\"BOOTING\"}");
 
+		controller.handleHealthRequest(exchange);
 		verify(sender).send("{\"status\":\"SYNCING\"}");
-	}
-
-	@Test
-	public void upHealthStatusIsReturned() {
-		when(counters.get(LEDGER_STATE_VERSION)).thenReturn(1L);
-		when(counters.get(SYNC_TARGET_STATE_VERSION)).thenReturn(1L);
-
-		var exchange = mock(HttpServerExchange.class);
-		var sender = mock(Sender.class);
-
-		when(exchange.getResponseHeaders()).thenReturn(new HeaderMap());
-		when(exchange.getResponseSender()).thenReturn(sender);
 
 		controller.handleHealthRequest(exchange);
-
 		verify(sender).send("{\"status\":\"UP\"}");
+
+		controller.handleHealthRequest(exchange);
+		verify(sender).send("{\"status\":\"STALL\"}");
 	}
 }

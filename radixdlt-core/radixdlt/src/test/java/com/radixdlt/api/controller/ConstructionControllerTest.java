@@ -30,9 +30,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class ConstructControllerTest {
+public class ConstructionControllerTest {
 	private final JsonRpcServer jsonRpcServer = new JsonRpcServer(Map.of());
-	private final ConstructController controller = new ConstructController(jsonRpcServer);
+	private final ConstructionController controller = new ConstructionController(jsonRpcServer);
 
 	@Test
 	public void routesAreConfigured() {
@@ -40,7 +40,7 @@ public class ConstructControllerTest {
 
 		controller.configureRoutes(handler);
 
-		verify(handler).post(eq("/construct"), any());
-		verify(handler).post(eq("/construct/"), any());
+		verify(handler).post(eq("/construction"), any());
+		verify(handler).post(eq("/construction/"), any());
 	}
 }

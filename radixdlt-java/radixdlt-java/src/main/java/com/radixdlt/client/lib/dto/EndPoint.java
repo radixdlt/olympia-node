@@ -2,7 +2,7 @@ package com.radixdlt.client.lib.dto;
 
 enum EndPoint {
 	ARCHIVE("/archive"),
-	CONSTRUCT("/construct"),
+	CONSTRUCTION("/construction"),
 	SYSTEM("/system"),
 	ACCOUNT("/account"),
 	VALIDATOR("/validator");
