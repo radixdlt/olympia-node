@@ -19,6 +19,7 @@ package com.radixdlt.api.service;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.radixdlt.api.data.TransactionStatus;
 import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.store.ClientApiStore;
@@ -47,6 +48,7 @@ import static com.radixdlt.api.data.TransactionStatus.FAILED;
 import static com.radixdlt.api.data.TransactionStatus.PENDING;
 import static com.radixdlt.api.data.TransactionStatus.TRANSACTION_NOT_FOUND;
 
+@Singleton
 public class TransactionStatusService {
 	private static final long DEFAULT_CLEANUP_INTERVAL = 1000L;                        //every second
 	private static final Duration DEFAULT_TX_LIFE_TIME = Duration.ofMinutes(10);    //at most 10 minutes

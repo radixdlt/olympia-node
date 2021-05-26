@@ -18,6 +18,7 @@
 package com.radixdlt.api.service;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.radixdlt.api.data.NodeStatus;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.EventProcessor;
@@ -35,9 +36,10 @@ import static com.radixdlt.api.service.NetworkInfoService.ValueHolder.Type.ABSOL
 import static com.radixdlt.api.service.NetworkInfoService.ValueHolder.Type.INCREMENTAL;
 import static com.radixdlt.counters.SystemCounters.CounterType;
 
+@Singleton
 public class NetworkInfoService {
 	private static final long THRESHOLD = 3;                      // Maximum difference between ledger and target
-	private static final long DEFAULT_COLLECTING_INTERVAL = 1000L;// 1 second
+	private static final long DEFAULT_COLLECTING_INTERVAL = 1000L; // 1 second
 	private static final long DEFAULT_AVERAGING_FACTOR = 10L;     // averaging time in multiples of collecting interval
 	private static final long STATUS_AVERAGING_FACTOR = 3L;       // averaging time in multiples of collecting interval
 
