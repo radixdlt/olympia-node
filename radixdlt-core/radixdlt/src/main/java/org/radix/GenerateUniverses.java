@@ -210,7 +210,7 @@ public final class GenerateUniverses {
 				.collect(ImmutableList.toImmutableList());
 
 			final ImmutableList.Builder<TokenIssuance> tokenIssuancesBuilder = ImmutableList.builder();
-			/*if (universeType == UniverseType.DEVELOPMENT && cmd.hasOption("i")) {
+			if (universeType == UniverseType.DEVELOPMENT && cmd.hasOption("i")) {
 				tokenIssuancesBuilder.add(
 					TokenIssuance.of(pubkeyOf(1), DEFAULT_ISSUANCE),
 					TokenIssuance.of(pubkeyOf(2), DEFAULT_ISSUANCE),
@@ -218,7 +218,7 @@ public final class GenerateUniverses {
 					TokenIssuance.of(pubkeyOf(4), DEFAULT_ISSUANCE),
 					TokenIssuance.of(pubkeyOf(5), DEFAULT_ISSUANCE)
 				);
-			}*/
+			}
 
 			var additionalActions = new ArrayList<TxAction>();
 
