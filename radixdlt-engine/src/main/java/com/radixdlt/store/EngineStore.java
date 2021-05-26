@@ -19,7 +19,7 @@ package com.radixdlt.store;
 
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.constraintmachine.REParsedInstruction;
+import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
 
 import java.util.List;
@@ -32,7 +32,7 @@ public interface EngineStore<M> extends SubstateStore, CMStore {
 	/**
 	 * Stores the atom into this CMStore
 	 */
-	void storeTxn(Transaction dbTxn, Txn txn, List<REParsedInstruction> instructions);
+	void storeTxn(Transaction dbTxn, Txn txn, List<REStateUpdate> instructions);
 
 	void storeMetadata(Transaction txn, M metadata);
 

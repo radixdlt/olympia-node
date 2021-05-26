@@ -23,7 +23,7 @@ import com.radixdlt.constraintmachine.Particle;
 
 import java.time.Instant;
 
-public final class SystemParticle implements Particle {
+public final class SystemParticle implements Particle, HasEpochData {
 	private final long epoch;
 	private final long view;
 	private final long timestamp;
@@ -34,6 +34,7 @@ public final class SystemParticle implements Particle {
 		this.timestamp = timestamp;
 	}
 
+	@Override
 	public long getEpoch() {
 		return epoch;
 	}

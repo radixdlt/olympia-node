@@ -25,7 +25,6 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atommodel.system.state.SystemParticle;
-import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.PostParsedChecker;
 import com.radixdlt.engine.BatchVerifier;
@@ -59,13 +58,8 @@ public class RadixEngineModule extends AbstractModule {
 	PostParsedChecker checker(Set<PostParsedChecker> checkers) {
 		return (permissionLevel, reTxn) -> {
 			for (var checker : checkers) {
-				var result = checker.check(permissionLevel, reTxn);
-				if (result.isError()) {
-					return result;
-				}
+				checker.check(permissionLevel, reTxn);
 			}
-
-			return Result.success();
 		};
 	}
 

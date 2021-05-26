@@ -26,6 +26,7 @@ import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -73,7 +74,8 @@ public class SystemTest {
 		// Assert
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom)))
 			.isInstanceOf(RadixEngineException.class)
-			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
+			.extracting(Throwable::getCause)
+			.extracting(e -> ((ConstraintMachineException) e).getErrorCode())
 			.isEqualTo(CMErrorCode.PERMISSION_LEVEL_ERROR);
 	}
 
@@ -166,7 +168,8 @@ public class SystemTest {
 		// Assert
 		assertThatThrownBy(() -> this.engine.execute(List.of(txn), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
-			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
+			.extracting(Throwable::getCause)
+			.extracting(e -> ((ConstraintMachineException) e).getErrorCode())
 			.isEqualTo(CMErrorCode.INVALID_PARTICLE);
 	}
 
@@ -181,7 +184,8 @@ public class SystemTest {
 
 		assertThatThrownBy(() -> this.engine.execute(List.of(txn), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
-			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
+			.extracting(Throwable::getCause)
+			.extracting(e -> ((ConstraintMachineException) e).getErrorCode())
 			.isEqualTo(CMErrorCode.PROCEDURE_ERROR);
 	}
 }

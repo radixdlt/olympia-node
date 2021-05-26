@@ -51,12 +51,14 @@ import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMErrorCode;
+import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.engine.MetadataException;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
@@ -71,7 +73,7 @@ import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.AtomsCommittedToLedger;
+import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -151,7 +153,7 @@ public class RadixEngineStateComputerTest {
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<AtomsCommittedToLedger>>() { })
+				bind(new TypeLiteral<EventDispatcher<TxnsCommittedToLedger>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
@@ -297,7 +299,8 @@ public class RadixEngineStateComputerTest {
 			new Condition<>(
 				e -> {
 					RadixEngineException ex = (RadixEngineException) e;
-					return ex.getCmError().getErrorCode().equals(CMErrorCode.PERMISSION_LEVEL_ERROR);
+					ConstraintMachineException cmException = (ConstraintMachineException) ex.getCause();
+					return cmException.getErrorCode().equals(CMErrorCode.PERMISSION_LEVEL_ERROR);
 				},
 				"Is invalid_execution_permission error"
 			)
@@ -374,7 +377,7 @@ public class RadixEngineStateComputerTest {
 		// Act
 		// Assert
 		assertThatThrownBy(() -> sut.commit(commandsAndProof, null))
-			.isInstanceOf(ByzantineQuorumException.class);
+			.isInstanceOf(MetadataException.class);
 	}
 
 	// TODO: should catch this and log it somewhere as proof of byzantine quorum
@@ -397,6 +400,6 @@ public class RadixEngineStateComputerTest {
 		// Act
 		// Assert
 		assertThatThrownBy(() -> sut.commit(commandsAndProof, null))
-			.isInstanceOf(ByzantineQuorumException.class);
+			.isInstanceOf(MetadataException.class);
 	}
 }

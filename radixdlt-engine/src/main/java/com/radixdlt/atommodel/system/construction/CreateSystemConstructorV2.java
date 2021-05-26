@@ -16,30 +16,29 @@
  *
  */
 
-package com.radixdlt.atommodel.validators.construction;
+package com.radixdlt.atommodel.system.construction;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.UpdateValidator;
-import com.radixdlt.atommodel.validators.state.ValidatorParticle;
+import com.radixdlt.atom.actions.CreateSystem;
+import com.radixdlt.atommodel.system.state.EpochData;
+import com.radixdlt.atomos.REAddrParticle;
+import com.radixdlt.constraintmachine.SubstateWithArg;
+import com.radixdlt.identifiers.REAddr;
 
 import java.util.List;
+import java.util.Optional;
 
-public final class UpdateValidatorConstructor implements ActionConstructor<UpdateValidator> {
+public class CreateSystemConstructorV2 implements ActionConstructor<CreateSystem> {
 	@Override
-	public void construct(UpdateValidator action, TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.swap(
-			ValidatorParticle.class,
-			p -> p.getKey().equals(action.validatorKey()),
-			"Invalid state."
-		).with(
-			substateDown -> List.of(new ValidatorParticle(
-				action.validatorKey(),
-				substateDown.isRegisteredForNextEpoch(),
-				action.name() == null ? substateDown.getName() : action.name(),
-				action.name() == null ? substateDown.getUrl() : action.url()
-			))
-		);
+	public void construct(CreateSystem action, TxBuilder builder) throws TxBuilderException {
+		var sysAddr = new REAddrParticle(REAddr.ofSystem());
+		builder.swap(
+			REAddrParticle.class,
+			addr -> addr.getAddr().isSystem(),
+			Optional.of(SubstateWithArg.noArg(sysAddr)),
+			"No system address"
+		).with(i -> List.of(new EpochData(0)));
 	}
 }

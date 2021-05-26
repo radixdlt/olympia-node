@@ -22,7 +22,7 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.state.SystemParticle;
-import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
+import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -51,8 +51,8 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 	@Override
 	public void main(SysCalls os) {
 		os.registerParticle(
-			DeprecatedStake.class,
-			ParticleDefinition.<DeprecatedStake>builder()
+			PreparedStake.class,
+			ParticleDefinition.<PreparedStake>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.build()
 		);
@@ -96,10 +96,10 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 	}
 
 	public static class UnaccountedStake implements ReducerState {
-		private final DeprecatedStake initialParticle;
+		private final PreparedStake initialParticle;
 		private final UInt384 amount;
 
-		public UnaccountedStake(DeprecatedStake initialParticle, UInt384 amount) {
+		public UnaccountedStake(PreparedStake initialParticle, UInt384 amount) {
 			this.initialParticle = initialParticle;
 			this.amount = amount;
 		}
@@ -108,7 +108,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 			return amount;
 		}
 
-		public DeprecatedStake initialParticle() {
+		public PreparedStake initialParticle() {
 			return initialParticle;
 		}
 
@@ -134,7 +134,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 	private void defineStaking(SysCalls os) {
 		// Stake
 		os.createUpProcedure(new UpProcedure<>(
-			VoidReducerState.class, DeprecatedStake.class,
+			VoidReducerState.class, PreparedStake.class,
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
@@ -168,7 +168,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 
 		// Unstake
 		os.createDownProcedure(new DownProcedure<>(
-			DeprecatedStake.class, TokensConstraintScryptV1.UnaccountedTokens.class,
+			PreparedStake.class, TokensConstraintScryptV1.UnaccountedTokens.class,
 			(d, r) -> PermissionLevel.USER,
 			(d, r, k) -> {
 				try {
@@ -222,7 +222,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 
 		// For change
 		os.createUpProcedure(new UpProcedure<>(
-			RemainderStake.class, DeprecatedStake.class,
+			RemainderStake.class, PreparedStake.class,
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {

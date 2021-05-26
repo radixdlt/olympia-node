@@ -22,9 +22,10 @@ import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
-import com.radixdlt.constraintmachine.REParsedInstruction;
+import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.REAddr;
@@ -38,23 +39,24 @@ import java.util.function.BiFunction;
 
 public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateStore {
 	private final Object lock = new Object();
-	private final Map<SubstateId, REParsedInstruction> storedParticles = new HashMap<>();
+	private final Map<SubstateId, REStateUpdate> storedParticles = new HashMap<>();
 	private final Map<REAddr, Particle> addrParticles = new HashMap<>();
 
 	@Override
-	public void storeTxn(Transaction dbTxn, Txn txn, List<REParsedInstruction> stateUpdates) {
+	public void storeTxn(Transaction dbTxn, Txn txn, List<REStateUpdate> stateUpdates) {
 		synchronized (lock) {
+			stateUpdates.forEach(i -> storedParticles.put(i.getSubstate().getId(), i));
 			stateUpdates.stream()
-				.filter(REParsedInstruction::isStateUpdate)
-				.forEach(i -> storedParticles.put(i.getSubstate().getId(), i));
-			stateUpdates.stream()
-				.filter(REParsedInstruction::isBootUp)
-				.map(REParsedInstruction::getParticle)
+				.filter(REStateUpdate::isBootUp)
+				.map(REStateUpdate::getParticle)
 				.forEach(p -> {
+					// FIXME: Superhack
 					if (p instanceof TokenDefinitionParticle) {
 						var tokenDef = (TokenDefinitionParticle) p;
 						addrParticles.put(tokenDef.getAddr(), p);
 					} else if (p instanceof SystemParticle) {
+						addrParticles.put(REAddr.ofSystem(), p);
+					} else if (p instanceof EpochData) {
 						addrParticles.put(REAddr.ofSystem(), p);
 					}
 				});

@@ -26,6 +26,7 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.MutableTokenDefinition;
+import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.consensus.LedgerProof;
@@ -100,6 +101,9 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 		var genesisBuilder = TxActionListBuilder.create();
 		var rri = REAddr.ofNativeToken();
 		try {
+			// Initialize system address
+			genesisBuilder.action(new CreateSystem());
+
 			// Network token
 			genesisBuilder.createMutableToken(tokenDefinition);
 			for (var e : issuances.entrySet()) {

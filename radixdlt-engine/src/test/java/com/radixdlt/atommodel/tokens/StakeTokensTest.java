@@ -168,7 +168,7 @@ public class StakeTokensTest {
 			.signAndBuild(nextKey::sign);
 		assertThatThrownBy(() -> this.engine.execute(List.of(transfer)))
 			.isInstanceOf(RadixEngineException.class)
-			.extracting("cmError.errorCode")
+			.extracting("cause.errorCode")
 			.containsExactly(CMErrorCode.AUTHORIZATION_ERROR);
 	}
 }

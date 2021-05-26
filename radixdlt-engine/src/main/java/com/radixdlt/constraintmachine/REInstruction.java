@@ -88,6 +88,14 @@ public final class REInstruction {
 			this.nextSpin = nextSpin;
 		}
 
+		public Spin getCheckSpin() {
+			return checkSpin;
+		}
+
+		public Spin getNextSpin() {
+			return nextSpin;
+		}
+
 		public Object readData(Txn txn, int index, ByteBuffer buf) throws DeserializeException {
 			try {
 				return readData.read(txn, index, buf);

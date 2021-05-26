@@ -25,7 +25,7 @@ import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
+import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.ResourceInBucket;
 import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
@@ -325,8 +325,8 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 						var t = (TokensParticle) p;
 						var action = new TransferToken(t.getResourceAddr(), u.getHoldingAddr(), t.getHoldingAddr(), t.getAmount());
 						return ReducerResult.complete(action);
-					} else if (p instanceof DeprecatedStake) {
-						var t = (DeprecatedStake) p;
+					} else if (p instanceof PreparedStake) {
+						var t = (PreparedStake) p;
 						var action = new StakeTokens(t.getOwner(), t.getDelegateKey(), t.getAmount());
 						return ReducerResult.complete(action);
 					} else {
@@ -354,8 +354,8 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 						var t = (TokensParticle) p;
 						var action = new TransferToken(t.getResourceAddr(), d.getSubstate().getHoldingAddr(), t.getHoldingAddr(), t.getAmount());
 						return ReducerResult.complete(action);
-					} else if (p instanceof DeprecatedStake) {
-						var t = (DeprecatedStake) p;
+					} else if (p instanceof PreparedStake) {
+						var t = (PreparedStake) p;
 						var action = new StakeTokens(t.getOwner(), t.getDelegateKey(), t.getAmount());
 						return ReducerResult.complete(action);
 					} else {

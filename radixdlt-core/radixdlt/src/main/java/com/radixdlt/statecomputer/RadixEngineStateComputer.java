@@ -70,7 +70,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher;
 	private final EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher;
 	private final EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher;
-	private final EventDispatcher<AtomsCommittedToLedger> committedDispatcher;
+	private final EventDispatcher<TxnsCommittedToLedger> committedDispatcher;
 	private final TreeMap<Long, ForkConfig> epochToForkConfig;
 	private final SystemCounters systemCounters;
 
@@ -87,7 +87,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher,
 		EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher,
 		EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher,
-		EventDispatcher<AtomsCommittedToLedger> committedDispatcher,
+		EventDispatcher<TxnsCommittedToLedger> committedDispatcher,
 		SystemCounters systemCounters
 	) {
 		if (epochCeilingView.isGenesis()) {
@@ -310,7 +310,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 			mempoolAtomsRemovedEventDispatcher.dispatch(atomsRemovedFromMempool);
 		}
 
-		var txns = verifiedTxnsAndProof.getTxns();
-		committedDispatcher.dispatch(AtomsCommittedToLedger.create(txns, txCommitted));
+		committedDispatcher.dispatch(TxnsCommittedToLedger.create(txCommitted));
 	}
 }
