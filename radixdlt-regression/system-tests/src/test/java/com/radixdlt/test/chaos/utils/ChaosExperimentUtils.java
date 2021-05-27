@@ -138,14 +138,9 @@ public class ChaosExperimentUtils {
     }
 
     public static void startMempoolFillers(AnsibleImageWrapper ansible, int numberOfFillersToStart) {
-        AtomicInteger count = new AtomicInteger(0);
-        ansible.getNodeAddressList().forEach(host -> {
-            if (count.intValue() == numberOfFillersToStart) {
-                return;
-            }
+        ansible.getNodeAddressList().stream().limit(numberOfFillersToStart).forEach(host -> {
             String response = toggleMempoolfillerInContainer(host, true);
             logger.info("Response from {}: {}", host, response);
-            count.incrementAndGet();
         });
     }
 
