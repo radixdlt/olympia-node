@@ -55,4 +55,11 @@ public final class ValidatorEpochData implements Particle {
 		return Objects.equals(this.validatorKey, other.validatorKey)
 			&& this.proposalsCompleted == other.proposalsCompleted;
 	}
+
+	@Override
+	public String toString() {
+		return String.format(
+			"%s{validatorKey=%s proposalsCompleted=%s}", this.getClass().getSimpleName(), validatorKey, proposalsCompleted
+		);
+	}
 }

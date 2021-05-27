@@ -82,6 +82,6 @@ public final class REStateUpdate {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), substate);
+		return String.format("%s{op=%s state=%s}", getClass().getSimpleName(), op, substate);
 	}
 }

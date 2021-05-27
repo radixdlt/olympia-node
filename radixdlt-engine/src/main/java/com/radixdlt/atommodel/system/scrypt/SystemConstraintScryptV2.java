@@ -275,7 +275,10 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 					throw new AuthorizationException("System update should not be signed.");
 				}
 			},
-			(i, s, r) -> ReducerResult.incomplete(new Validators())
+			(i, s, r) -> {
+				i.forEachRemaining(e -> { }); // FIXME: This is a hack and required for substates to be updated
+				return ReducerResult.incomplete(new Validators());
+			}
 		));
 
 		os.createUpProcedure(new UpProcedure<>(

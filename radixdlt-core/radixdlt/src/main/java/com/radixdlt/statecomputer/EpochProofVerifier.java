@@ -18,10 +18,14 @@
 
 package com.radixdlt.statecomputer;
 
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.MetadataException;
 import com.radixdlt.ledger.ByzantineQuorumException;
+
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Validates that the LedgerProof matches the computed state output
@@ -62,9 +66,23 @@ public final class EpochProofVerifier implements BatchVerifier<LedgerAndBFTProof
 					throw new IllegalStateException();
 				}
 
+				final var validatorKeys = computedState.get(CurrentValidators.class).validatorKeys();
 				final var reNextValidatorSet = computedState.get(StakedValidators.class).toValidatorSet();
+				if (reNextValidatorSet == null) {
+					throw new MetadataException("Computed state has no staked validators.");
+				}
 				final var signedValidatorSet = metadata.getProof().getNextValidatorSet()
 					.orElseThrow(() -> new MetadataException("RE has changed epochs but proofs don't show."));
+
+				var stakedKeys = reNextValidatorSet.nodes().stream().map(BFTNode::getKey).collect(Collectors.toSet());
+				if (!Objects.equals(stakedKeys, validatorKeys)) {
+					throw new MetadataException(
+						String.format(
+							"Current validators %s does not agree with staked validators %s",
+							validatorKeys, stakedKeys
+						));
+				}
+
 				if (!signedValidatorSet.equals(reNextValidatorSet)) {
 					throw new MetadataException(
 						String.format(
