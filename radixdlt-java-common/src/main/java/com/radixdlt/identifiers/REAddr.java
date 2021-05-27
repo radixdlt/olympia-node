@@ -124,7 +124,7 @@ public final class REAddr {
 		}
 	}
 
-	private static final int HASHED_KEY_BYTES = 26;
+	public static final int HASHED_KEY_BYTES = 26;
 	private final byte[] addr;
 
 	REAddr(byte[] addr) {
