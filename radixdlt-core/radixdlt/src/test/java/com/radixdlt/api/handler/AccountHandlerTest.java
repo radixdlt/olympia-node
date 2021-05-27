@@ -20,22 +20,18 @@ package com.radixdlt.api.handler;
 import org.json.JSONObject;
 import org.junit.Test;
 
+import com.radixdlt.api.service.AccountService;
 import com.radixdlt.api.service.ActionParserService;
 import com.radixdlt.api.service.SubmissionService;
 import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.api.store.TokenDefinitionRecord;
-import com.radixdlt.application.Balances;
-import com.radixdlt.application.StakedBalance;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.ValidatorAddress;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
 
@@ -52,8 +48,9 @@ import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 public class AccountHandlerTest {
 	private final ClientApiStore clientApiStore = mock(ClientApiStore.class);
 	private final SubmissionService submissionService = mock(SubmissionService.class);
+	private final AccountService accountService = mock(AccountService.class);
 	private final ActionParserService actionParserService = new ActionParserService(clientApiStore);
-	private final RadixEngine<LedgerAndBFTProof> radixEngine = mock(RadixEngine.class);
+
 	private final ECKeyPair keyPair = ECKeyPair.generateNew();
 	private final ECPublicKey bftKey = keyPair.getPublicKey();
 	private final ECPublicKey delegate = ECKeyPair.generateNew().getPublicKey();
@@ -61,24 +58,19 @@ public class AccountHandlerTest {
 	private final REAddr rriAddress = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "wsx");
 
 	private final AccountHandler handler = new AccountHandler(
-		submissionService, actionParserService, radixEngine, hashSigner, bftKey, clientApiStore
+		accountService, submissionService, actionParserService, hashSigner
 	);
 
 	@Test
 	public void testHandleAccountGetInfo() {
-		var balances = new Balances();
-		balances.add(rriAddress, UInt256.EIGHT);
-
-		when(radixEngine.getComputedState(Balances.class))
-			.thenReturn(balances);
-
-		var stakeBalances = new StakedBalance();
-		stakeBalances.addStake(delegate, UInt256.THREE);
-
-		when(radixEngine.getComputedState(StakedBalance.class))
-			.thenReturn(stakeBalances);
-
-		when(clientApiStore.getTokenDefinition(rriAddress)).thenReturn(buildToken("wsx"));
+		when(accountService.getAccountInfo())
+			.thenReturn(
+				jsonObject()
+					.put("address", "some address")
+					.put("balance", jsonObject()
+						.put("tokens", jsonArray())
+						.put("stakes", jsonArray()))
+			);
 
 		var response = handler.handleAccountGetInfo(requestWith(jsonObject()));
 		assertTrue(response.has("result"));
@@ -99,19 +91,8 @@ public class AccountHandlerTest {
 
 		assertNotNull(tokens);
 		assertNotNull(stakes);
-		assertEquals(1, tokens.length());
-		assertEquals(1, stakes.length());
-
-		var tokenBalance0 = tokens.getJSONObject(0);
-		var stakeBalance0 = stakes.getJSONObject(0);
-		assertNotNull(tokenBalance0);
-		assertNotNull(stakeBalance0);
-
-		assertTrue(tokenBalance0.has("amount"));
-		assertTrue(stakeBalance0.has("amount"));
-
-		assertEquals(UInt384.EIGHT, tokenBalance0.get("amount"));
-		assertEquals(UInt256.THREE, stakeBalance0.get("amount"));
+		assertEquals(0, tokens.length());
+		assertEquals(0, stakes.length());
 	}
 
 	@Test

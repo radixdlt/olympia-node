@@ -33,7 +33,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import static com.radixdlt.api.data.NodeStatus.BOOTING;
-import static com.radixdlt.api.data.NodeStatus.STALL;
+import static com.radixdlt.api.data.NodeStatus.STALLED;
 import static com.radixdlt.api.data.NodeStatus.SYNCING;
 import static com.radixdlt.api.data.NodeStatus.UP;
 
@@ -58,7 +58,7 @@ public class HealthControllerTest {
 
 		when(exchange.getResponseHeaders()).thenReturn(new HeaderMap());
 		when(exchange.getResponseSender()).thenReturn(sender);
-		when(networkInfoService.nodeStatus()).thenReturn(BOOTING, SYNCING, UP, STALL);
+		when(networkInfoService.nodeStatus()).thenReturn(BOOTING, SYNCING, UP, STALLED);
 
 		controller.handleHealthRequest(exchange);
 		verify(sender).send("{\"status\":\"BOOTING\"}");
@@ -70,6 +70,6 @@ public class HealthControllerTest {
 		verify(sender).send("{\"status\":\"UP\"}");
 
 		controller.handleHealthRequest(exchange);
-		verify(sender).send("{\"status\":\"STALL\"}");
+		verify(sender).send("{\"status\":\"STALLED\"}");
 	}
 }

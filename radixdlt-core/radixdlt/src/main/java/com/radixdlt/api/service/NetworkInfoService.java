@@ -28,8 +28,8 @@ import java.util.EnumMap;
 import java.util.List;
 
 import static com.radixdlt.api.data.NodeStatus.BOOTING;
-import static com.radixdlt.api.data.NodeStatus.NET_STALL;
-import static com.radixdlt.api.data.NodeStatus.STALL;
+import static com.radixdlt.api.data.NodeStatus.NETWORK_HALTED;
+import static com.radixdlt.api.data.NodeStatus.STALLED;
 import static com.radixdlt.api.data.NodeStatus.SYNCING;
 import static com.radixdlt.api.data.NodeStatus.UP;
 import static com.radixdlt.api.service.NetworkInfoService.ValueHolder.Type.ABSOLUTE;
@@ -88,7 +88,7 @@ public class NetworkInfoService {
 		}
 
 		// Ledger is not growing, either node stall or whole network is down or not reachable
-		return statistics.get(TARGET_KEY).isGrowing() ? STALL : NET_STALL;
+		return statistics.get(TARGET_KEY).isGrowing() ? STALLED : NETWORK_HALTED;
 	}
 
 	public EventProcessor<ScheduledStatsCollecting> updateStats() {

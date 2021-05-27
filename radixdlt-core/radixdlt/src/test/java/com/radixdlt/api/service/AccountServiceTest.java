@@ -26,8 +26,10 @@ import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
@@ -49,8 +51,9 @@ public class AccountServiceTest {
 	private static final REAddr OWNER_ACCOUNT = REAddr.ofPubKeyAccount(OWNER_KEY);
 	private static final ECPublicKey TOKEN_KEY = ECKeyPair.generateNew().getPublicKey();
 
+	private final RadixEngine<LedgerAndBFTProof> radixEngine = mock(RadixEngine.class);
 	private final ClientApiStore clientApiStore = mock(ClientApiStore.class);
-	private final AccountService archiveService = new AccountService(clientApiStore);
+	private final AccountService archiveService = new AccountService(radixEngine, OWNER_KEY, clientApiStore);
 
 	@Test
 	public void testGetTokenBalancesForFunds() {
