@@ -24,7 +24,9 @@ import com.google.inject.Singleton;
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
 import java.util.Comparator;
 import java.util.Map;
@@ -78,5 +80,11 @@ public class RadixEngineOnlyLatestForkModule extends AbstractModule {
 	@Singleton
 	private ConstraintMachine buildConstraintMachine(ForkConfig forkConfig) {
 		return forkConfig.getConstraintMachine();
+	}
+
+	@Provides
+	@Singleton
+	private BatchVerifier<LedgerAndBFTProof> batchVerifier(ForkConfig forkConfig) {
+		return forkConfig.getBatchVerifier();
 	}
 }
