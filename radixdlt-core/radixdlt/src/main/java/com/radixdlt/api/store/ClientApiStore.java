@@ -53,8 +53,6 @@ public interface ClientApiStore {
 
 	long getEpoch();
 
-	Result<REAddr> parseRri(String rri);
-
 	/**
 	 * Get current supply of the specified token.
 	 *
@@ -93,6 +91,8 @@ public interface ClientApiStore {
 	 * @return transaction history entry.
 	 */
 	Result<TxHistoryEntry> getTransaction(AID txId);
+
+	Result<REAddr> parseRri(String rri);
 
 	EventProcessor<ScheduledQueueFlush> queueFlushProcessor();
 }
