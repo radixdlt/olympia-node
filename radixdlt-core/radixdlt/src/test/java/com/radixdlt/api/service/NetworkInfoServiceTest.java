@@ -26,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
 import static com.radixdlt.api.data.NodeStatus.BOOTING;
-import static com.radixdlt.api.data.NodeStatus.STALL;
+import static com.radixdlt.api.data.NodeStatus.STALLED;
 import static com.radixdlt.api.data.NodeStatus.SYNCING;
 import static com.radixdlt.api.data.NodeStatus.UP;
 import static com.radixdlt.api.service.NetworkInfoService.DEMAND_KEY;
@@ -75,7 +75,7 @@ public class NetworkInfoServiceTest {
 
 		updateStatsSync(10, TARGET_KEY, 0, LEDGER_KEY);
 
-		assertEquals(STALL, networkInfoService.nodeStatus());
+		assertEquals(STALLED, networkInfoService.nodeStatus());
 	}
 
 	private void updateStatsSync(int count1, CounterType key1, int count2, CounterType key2) {

@@ -85,9 +85,16 @@ Majority of the REST APIs are replaced with JSON-RPC counterparts. Remaining and
 
 | Path | Method | Description |
 | --- | --- | --- |
-| /health | GET | Returns node health status - `UP` or `SYNCING`. Standard endpoint for use by operations. Typical response: `{"status" : "UP" }` |
+| /health | GET | Returns node status (see below) |
 | /version | GET | Returns detailed information about software version and build info |
 | /universe.json | GET | Get Radix Universe. Used during setup and configuration of the node but if possible looking to remove |
+
+Node health status has following format: `{"status" : "<status>" }`, where `<status>` is one of the following:                             
+ - BOOTING - node is booting and not ready to accept requests
+ - SYNCING - node is catching up the network
+ - UP - node is in sync with consensus
+ - STALLED - node is out of sync and not trying to sync with network, but network is still available.
+ - NETWORK_HALTED - node is out of sync and does not get updates from network (for example, connection to network is lost).
 
 ### JSON-RPC APIs
 
@@ -111,9 +118,9 @@ Majority of the REST APIs are replaced with JSON-RPC counterparts. Remaining and
 #### /construction
 | Method Name | Old Method Name | Notes |
 | --- | --- | --- |
-| construction.build_transaction | radix.buildTransaction | Same as before |
-| construction.finalize_transaction | radix.finalizeTransaction | Now returns a fully ready-to-submit blob and a transaction ID |
-| construction.submit_transaction | radix.submitTransaction | Now accepts a single parameter, a ready-to-submit blob |
+| construction.build_transaction | radix.buildTransaction | Constructs transaction blob for given actions and message |
+| construction.finalize_transaction | radix.finalizeTransaction | Calculates transaction ID for given transaction blob, signature and public key |
+| construction.submit_transaction | radix.submitTransaction | Submits finalized transaction |
 
 #### /account
 
