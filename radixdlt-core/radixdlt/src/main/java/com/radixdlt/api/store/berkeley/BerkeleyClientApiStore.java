@@ -487,7 +487,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		return withTime(supplier, () -> addTxHistoryReadBytes(data), ELAPSED_APIDB_TRANSACTION_READ);
 	}
 
-
 	private void addBalanceReadBytes(DatabaseEntry data) {
 		systemCounters.add(COUNT_APIDB_BALANCE_BYTES_READ, data.getSize());
 		systemCounters.increment(COUNT_APIDB_BALANCE_READ);

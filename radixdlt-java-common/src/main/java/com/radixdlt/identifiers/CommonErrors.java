@@ -27,7 +27,9 @@ public enum CommonErrors implements Failure {
 	UNABLE_TO_DECODE(1603, "Unable to decode: {0}"),
 	UNABLE_TO_DESERIALIZE(1604, "Unable to deserialize: {0}"),
 	CANT_MAKE_RECOVERABLE(1701, "Unable to convert signature to recoverable {0}"),
-	INVALID_RADIX_ADDRESS(1702, "Invalid RadixAddress {0}");
+	INVALID_RADIX_ADDRESS(1702, "Invalid RadixAddress {0}"),
+	INVALID_UINT_VALUE(1703, "Invalid UInt256/UInt384 value {0}"),
+	UNKNOWN_ADDRESS_TYPE(1710, "Unknown address type {0}");
 
 	private final int code;
 	private final String message;

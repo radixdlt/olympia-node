@@ -21,6 +21,7 @@ import com.google.inject.ImplementedBy;
 import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.api.data.ScheduledQueueFlush;
 import com.radixdlt.api.data.TxHistoryEntry;
+import com.radixdlt.api.data.UnstakeEntry;
 import com.radixdlt.api.store.berkeley.BerkeleyClientApiStore;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.AID;
@@ -91,6 +92,15 @@ public interface ClientApiStore {
 	 * @return transaction history entry.
 	 */
 	Result<TxHistoryEntry> getTransaction(AID txId);
+
+	/**
+	 * Retrieve list of pending unstakes.
+	 *
+	 * @param address client address
+	 *
+	 * @return list of pending unstakes.
+	 */
+	Result<List<UnstakeEntry>> getPendingUnstakes(REAddr address);
 
 	Result<REAddr> parseRri(String rri);
 

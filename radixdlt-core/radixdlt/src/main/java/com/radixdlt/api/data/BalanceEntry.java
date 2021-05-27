@@ -17,12 +17,15 @@
 
 package com.radixdlt.api.data;
 
+import org.json.JSONObject;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -31,6 +34,8 @@ import com.radixdlt.utils.UInt384;
 
 import java.util.Arrays;
 import java.util.Objects;
+
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 @SerializerId2("radix.api.balance")
 public class BalanceEntry {
@@ -247,5 +252,11 @@ public class BalanceEntry {
 
 	private BalanceEntry sum(BalanceEntry balanceEntry, boolean negative) {
 		return new BalanceEntry(owner, delegate, rri, amount.add(balanceEntry.amount), negative, epochUnlocked);
+	}
+
+	public JSONObject asJson() {
+		return jsonObject()
+			.put("validator", ValidatorAddress.of(getDelegate()))
+			.put("amount", amount);
 	}
 }

@@ -17,121 +17,84 @@
 
 package com.radixdlt.api.data;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.json.JSONObject;
+
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.utils.UInt256;
 
-import java.util.Arrays;
 import java.util.Objects;
 
-@SerializerId2("radix.api.unstake")
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+
 public class UnstakeEntry {
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(DsonOutput.Output.ALL)
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
-
-	@JsonProperty("amount")
-	@DsonOutput(DsonOutput.Output.ALL)
 	private final UInt256 amount;
-
-	@JsonProperty("validator")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final byte[] validator;
-
-	@JsonProperty("epochsUntil")
-	@DsonOutput(DsonOutput.Output.ALL)
+	private final REAddr address;
+	private final ECPublicKey validator;
 	private final int epochsUntil;
-
-	@JsonProperty("withdrawTxID")
-	@DsonOutput(DsonOutput.Output.ALL)
 	private final AID withdrawTxID;
 
 	private UnstakeEntry(
+		REAddr address,
+		ECPublicKey validator,
 		UInt256 amount,
-		byte[] validator,
 		int epochsUntil,
 		AID withdrawTxID
 	) {
+		this.address = address;
 		this.validator = validator;
 		this.epochsUntil = epochsUntil;
 		this.withdrawTxID = withdrawTxID;
 		this.amount = amount;
 	}
 
-	@JsonCreator
-	private static UnstakeEntry create(
-		@JsonProperty("amount") UInt256 amount,
-		@JsonProperty("validator") byte[] validator,
-		@JsonProperty("epochsUntil") int epochsUntil,
-		@JsonProperty("withdrawTxID") AID withdrawTxID
-	) {
-		Objects.requireNonNull(amount);
+	public static UnstakeEntry create(REAddr address, ECPublicKey validator, UInt256 amount, int epochsUntil, AID withdrawTxID) {
+		Objects.requireNonNull(address);
 		Objects.requireNonNull(validator);
+		Objects.requireNonNull(amount);
 		Objects.requireNonNull(withdrawTxID);
 
-		return new UnstakeEntry(amount, validator, epochsUntil, withdrawTxID);
-	}
-
-	public static UnstakeEntry create(
-		UInt256 amount,
-		ECPublicKey validator,
-		int epochsUntil,
-		AID withdrawTxID
-	) {
-		return create(amount, validator.getCompressedBytes(), epochsUntil, withdrawTxID);
-	}
-
-	public UInt256 getAmount() {
-		return amount;
-	}
-
-	public ECPublicKey getValidator() {
-		try {
-			return ECPublicKey.fromBytes(validator);
-		} catch (PublicKeyException e) {
-			throw new IllegalStateException();
-		}
-	}
-
-	public int getEpochsUntil() {
-		return epochsUntil;
-	}
-
-	public AID getWithdrawTxId() {
-		return withdrawTxID;
+		return new UnstakeEntry(address, validator, amount, epochsUntil, withdrawTxID);
 	}
 
 	@Override
-	public final boolean equals(Object o) {
+	public boolean equals(Object o) {
 		if (this == o) {
 			return true;
 		}
-
-		if (o instanceof UnstakeEntry) {
-			var entry = (UnstakeEntry) o;
-
-			return amount.equals(entry.amount)
-				&& Arrays.equals(validator, entry.validator)
-				&& epochsUntil == entry.epochsUntil
-				&& withdrawTxID.equals(entry.withdrawTxID);
+		if (!(o instanceof UnstakeEntry)) {
+			return false;
 		}
-		return false;
+
+		var that = (UnstakeEntry) o;
+
+		return epochsUntil == that.epochsUntil
+			&& amount.equals(that.amount)
+			&& address.equals(that.address)
+			&& validator.equals(that.validator)
+			&& withdrawTxID.equals(that.withdrawTxID);
 	}
 
 	@Override
-	public final int hashCode() {
-		return Objects.hash(amount, validator, epochsUntil, withdrawTxID);
+	public int hashCode() {
+		return Objects.hash(amount, address, validator, epochsUntil, withdrawTxID);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("UnstakeEntry(%s, %s, %s, %s)", amount, validator, epochsUntil, withdrawTxID);
+		return String.format(
+			"UnstakeEntry(%s, %s, %s, %s, %s)",
+			address, amount, validator, epochsUntil, withdrawTxID
+		);
+	}
+
+	public JSONObject asJson() {
+		return jsonObject()
+			.put("validator", ValidatorAddress.of(validator))
+			.put("amount", amount)
+			.put("epochsUntil", epochsUntil)
+			.put("withdrawTxID", withdrawTxID);
 	}
 }

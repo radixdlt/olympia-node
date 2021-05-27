@@ -81,13 +81,12 @@ public class AccountService {
 			.map(response -> tuple(calculateNewCursor(response), response));
 	}
 
-	public Result<List<BalanceEntry>> getStakePositions(REAddr addr) {
-		return clientApiStore.getTokenBalances(addr, true);
+	public Result<List<BalanceEntry>> getStakePositions(REAddr address) {
+		return clientApiStore.getTokenBalances(address, true);
 	}
 
-	//TODO: restore functionality, not everything is spendable anymore
-	public Result<List<UnstakeEntry>> getUnstakePositions(REAddr addr) {
-		//return Result.ok(List.of());
+	public Result<List<UnstakeEntry>> getUnstakePositions(REAddr address) {
+		return clientApiStore.getPendingUnstakes(address);
 	}
 
 	public JSONObject getAccountInfo() {
