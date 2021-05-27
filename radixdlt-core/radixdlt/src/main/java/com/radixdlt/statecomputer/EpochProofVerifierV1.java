@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 /**
  * Validates that the LedgerProof matches the computed state output
  */
-public final class EpochProofVerifier implements BatchVerifier<LedgerAndBFTProof> {
+public final class EpochProofVerifierV1 implements BatchVerifier<LedgerAndBFTProof> {
 	@Override
 	public PerStateChangeVerifier<LedgerAndBFTProof> newVerifier(ComputedState computedState) {
 		return new PerEpochVerifier(computedState);
@@ -67,23 +67,12 @@ public final class EpochProofVerifier implements BatchVerifier<LedgerAndBFTProof
 					throw new IllegalStateException();
 				}
 
-				final var validatorKeys = computedState.get(CurrentValidators.class).validatorKeys();
 				final var reNextValidatorSet = computedState.get(StakedValidators.class).toValidatorSet();
 				if (reNextValidatorSet == null) {
 					throw new MetadataException("Computed state has no staked validators.");
 				}
 				final var signedValidatorSet = metadata.getProof().getNextValidatorSet()
 					.orElseThrow(() -> new MetadataException("RE has changed epochs but proofs don't show."));
-
-				var stakedKeys = reNextValidatorSet.nodes().stream().map(BFTNode::getKey).collect(Collectors.toSet());
-				if (!Objects.equals(stakedKeys, validatorKeys)) {
-					throw new MetadataException(
-						String.format(
-							"Current validators does not agree with staked validators stakedDiff: %s currentDiff: %s",
-							Sets.difference(stakedKeys, validatorKeys),
-							Sets.difference(validatorKeys, stakedKeys)
-						));
-				}
 
 				if (!signedValidatorSet.equals(reNextValidatorSet)) {
 					throw new MetadataException(

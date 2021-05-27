@@ -292,7 +292,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 				log.info("Epoch {} Forking constraint machine", proof.getEpoch() + 1);
 				this.radixEngine.replaceConstraintMachine(
 					forkConfig.getConstraintMachine(),
-					forkConfig.getActionConstructors()
+					forkConfig.getActionConstructors(),
+					forkConfig.getBatchVerifier()
 				);
 				this.epochCeilingView = forkConfig.getEpochCeilingView();
 			}

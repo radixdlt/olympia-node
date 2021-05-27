@@ -151,8 +151,8 @@ public final class RadixEngine<M> {
 	private final Map<Pair<Class<?>, String>, ApplicationStateReducer<?, M>> stateComputers = new HashMap<>();
 	private final Map<Class<?>, SubstateCache<?>> substateCache = new HashMap<>();
 	private final List<RadixEngineBranch<M>> branches = new ArrayList<>();
-	private final BatchVerifier<M> batchVerifier;
 
+	private BatchVerifier<M> batchVerifier;
 	private ActionConstructors actionConstructors;
 	private ConstraintMachine constraintMachine;
 
@@ -250,11 +250,13 @@ public final class RadixEngine<M> {
 
 	public void replaceConstraintMachine(
 		ConstraintMachine constraintMachine,
-		ActionConstructors actionToConstructorMap
+		ActionConstructors actionToConstructorMap,
+		BatchVerifier<M> batchVerifier
 	) {
 		synchronized (stateUpdateEngineLock) {
 			this.constraintMachine = constraintMachine;
 			this.actionConstructors = actionToConstructorMap;
+			this.batchVerifier = batchVerifier;
 		}
 	}
 

@@ -46,7 +46,12 @@ public class RadixEngineOnlyLatestForkModule extends AbstractModule {
 		return forkConfigs.entrySet().stream()
 			.max(Comparator.comparing(e -> e.getKey().epoch()))
 			.map(Map.Entry::getValue)
-			.map(f -> new ForkConfig(f.getConstraintMachine(), f.getActionConstructors(), epochHighViewOverwrite))
+			.map(f -> new ForkConfig(
+				f.getConstraintMachine(),
+				f.getActionConstructors(),
+				f.getBatchVerifier(),
+				epochHighViewOverwrite
+			))
 			.orElseThrow();
 	}
 

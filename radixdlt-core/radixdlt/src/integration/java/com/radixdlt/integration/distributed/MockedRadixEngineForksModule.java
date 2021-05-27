@@ -24,7 +24,9 @@ import com.google.inject.Singleton;
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.EpochMapKey;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 
@@ -50,6 +52,7 @@ public class MockedRadixEngineForksModule extends AbstractModule {
 						e -> new ForkConfig(
 							e.getValue().getConstraintMachine(),
 							e.getValue().getActionConstructors(),
+							e.getValue().getBatchVerifier(),
 							View.of(viewCeiling.get() % 2 == 0 ? viewCeiling.getAndIncrement() : viewCeiling.getAndDecrement())
 						)
 				))
@@ -77,5 +80,14 @@ public class MockedRadixEngineForksModule extends AbstractModule {
 		TreeMap<Long, ForkConfig> epochToForkConfig
 	) {
 		return epochToForkConfig.get(0L).getActionConstructors();
+	}
+
+
+	@Provides
+	@Singleton
+	private BatchVerifier<LedgerAndBFTProof> batchVerifier(
+		TreeMap<Long, ForkConfig> epochToForkConfig
+	) {
+		return epochToForkConfig.get(0L).getBatchVerifier();
 	}
 }

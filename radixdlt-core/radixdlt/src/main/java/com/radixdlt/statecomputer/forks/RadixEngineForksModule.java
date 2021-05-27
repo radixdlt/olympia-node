@@ -25,7 +25,9 @@ import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.sync.CommittedReader;
 
 import java.util.Map;
@@ -80,5 +82,16 @@ public final class RadixEngineForksModule extends AbstractModule {
 		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
 		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
 		return epochToForkConfig.floorEntry(epoch).getValue().getActionConstructors();
+	}
+
+	@Provides
+	@Singleton
+	private BatchVerifier<LedgerAndBFTProof> batchVerifier(
+		CommittedReader committedReader, // TODO: This is a hack, remove
+		TreeMap<Long, ForkConfig> epochToForkConfig
+	) {
+		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
+		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
+		return epochToForkConfig.floorEntry(epoch).getValue().getBatchVerifier();
 	}
 }

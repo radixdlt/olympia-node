@@ -70,6 +70,8 @@ import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.statecomputer.EpochProofVerifierV1;
+import com.radixdlt.statecomputer.EpochProofVerifierV2;
 
 import java.util.Set;
 
@@ -111,7 +113,7 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
 			.build();
 
-		return new ForkConfig(betanet1, actionConstructors, View.of(100000L));
+		return new ForkConfig(betanet1, actionConstructors, new EpochProofVerifierV1(), View.of(100000L));
 	}
 
 	@ProvidesIntoMap
@@ -148,7 +150,7 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
 			.build();
 
-		return new ForkConfig(betanet2, actionConstructors, View.of(10000L));
+		return new ForkConfig(betanet2, actionConstructors, new EpochProofVerifierV1(), View.of(10000L));
 	}
 
 	@ProvidesIntoMap
@@ -184,6 +186,6 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
 			.build();
 
-		return new ForkConfig(betanet3, actionConstructors, View.of(10000L));
+		return new ForkConfig(betanet3, actionConstructors, new EpochProofVerifierV2(), View.of(10000L));
 	}
 }
