@@ -56,7 +56,23 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 	public static final UInt256 REWARDS_PER_PROPOSAL = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
 
-	private static class Inflation implements ReducerState {
+	private static class UpdateValidatorEpochData implements ReducerState {
+	}
+
+	private static class UpdatingValidatorEpochData implements ReducerState {
+		private final ValidatorEpochData current;
+		private UpdatingValidatorEpochData(ValidatorEpochData current) {
+			this.current = current;
+		}
+
+		public void update(ValidatorEpochData next) throws ProcedureException {
+			if (!next.validatorKey().equals(current.validatorKey())) {
+				throw new ProcedureException("Must update same validator key");
+			}
+			if (current.proposalsCompleted() + 1 != next.proposalsCompleted()) {
+				throw new ProcedureException("Must only increment proposals completed");
+			}
+		}
 	}
 
 
@@ -245,11 +261,21 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 					throw new ProcedureException("Next view must be greater than previous.");
 				}
 
-				return ReducerResult.incomplete(new Inflation(), Unknown.create());
+				return ReducerResult.incomplete(new UpdateValidatorEpochData());
 			}
 		));
+		os.createDownProcedure(new DownProcedure<>(
+			ValidatorEpochData.class, UpdateValidatorEpochData.class,
+			(d, r) -> PermissionLevel.SUPER_USER,
+			(d, r, pubKey) -> {
+				if (pubKey.isPresent()) {
+					throw new AuthorizationException("System update should not be signed.");
+				}
+			},
+			(d, s, r) -> ReducerResult.incomplete(new UpdatingValidatorEpochData(d.getSubstate()))
+		));
 		os.createUpProcedure(new UpProcedure<>(
-			Inflation.class, Stake.class,
+			UpdatingValidatorEpochData.class, ValidatorEpochData.class,
 			(u, r) -> PermissionLevel.SUPER_USER,
 			(u, r, pubKey) -> {
 				if (pubKey.isPresent()) {
@@ -257,9 +283,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				}
 			},
 			(s, u, r) -> {
-				if (!u.getAmount().equals(REWARDS_PER_PROPOSAL)) {
-					throw new ProcedureException("Rewards must be " + REWARDS_PER_PROPOSAL);
-				}
+				s.update(u);
 				return ReducerResult.complete(Unknown.create());
 			}
 		));
@@ -438,9 +462,12 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		// TODO: Remove for mainnet
 		registerBetanetV2ToV3Transitions(os);
 
+		// Epoch update
 		emissionsAndNextValidatorSet(os);
 		prepareStake(os);
 		epochUpdate(os);
+
+		// Round update
 		roundUpdate(os);
 	}
 }

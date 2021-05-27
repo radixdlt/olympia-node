@@ -18,15 +18,10 @@
 
 package com.radixdlt.statecomputer;
 
-import com.google.common.collect.Sets;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.MetadataException;
 import com.radixdlt.ledger.ByzantineQuorumException;
-
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * Validates that the LedgerProof matches the computed state output

@@ -25,6 +25,7 @@ import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.Stake;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
+import com.radixdlt.atommodel.system.state.ValidatorEpochData;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 
 import java.util.List;
@@ -42,10 +43,15 @@ public class NextViewConstructorV2 implements ActionConstructor<SystemNextView> 
 			if (action.view() <= substateDown.getView()) {
 				throw new TxBuilderException("Next view: " + action + " isn't higher than current view: " + substateDown);
 			}
-			return List.of(
-				new RoundData(action.view(), action.timestamp()),
-				new Stake(SystemConstraintScryptV2.REWARDS_PER_PROPOSAL, action.leader())
-			);
+			return List.of(new RoundData(action.view(), action.timestamp()));
 		});
+		txBuilder.swap(
+			ValidatorEpochData.class,
+			p -> p.validatorKey().equals(action.leader()),
+			Optional.empty(),
+			"No validator epoch data"
+		).with(down -> List.of(
+			new ValidatorEpochData(down.validatorKey(), down.proposalsCompleted() + 1)
+		));
 	}
 }
