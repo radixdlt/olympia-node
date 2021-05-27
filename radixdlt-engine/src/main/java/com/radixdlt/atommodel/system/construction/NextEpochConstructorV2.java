@@ -51,12 +51,12 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 	}
 
 	public void emissionsAndNextValidatorSet(List<ECPublicKey> validators, TxBuilder txBuilder) {
-		txBuilder.downAll(ValidatorEpochData.class, i -> null);
+		txBuilder.shutdownAll(ValidatorEpochData.class, i -> null);
 		validators.forEach(k -> txBuilder.up(new ValidatorEpochData(k, 0)));
 	}
 
-	private void updatePreparedStake(TxBuilder txBuilder) {
-		var allPreparedStake = txBuilder.downAll(PreparedStake.class, i -> {
+	private void updatePreparedStake(TxBuilder txBuilder) throws TxBuilderException {
+		var allPreparedStake = txBuilder.shutdownAll(PreparedStake.class, i -> {
 			var map = new TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>>(
 				(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
 			);
@@ -70,11 +70,18 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 			);
 			return map;
 		});
-		allPreparedStake.forEach((k, stakes) -> {
+		for (var e : allPreparedStake.entrySet()) {
+			var k = e.getKey();
+			var stakes = e.getValue();
 			stakes.forEach((addr, amt) -> txBuilder.up(new StakeShares(k, addr, amt)));
 			var totalPreparedStake = stakes.values().stream().reduce(UInt256::add).orElseThrow();
-			txBuilder.up(new Stake(totalPreparedStake, k));
-		});
+			txBuilder.swap(
+				Stake.class,
+				p -> p.getValidatorKey().equals(k),
+				Optional.of(SubstateWithArg.noArg(new Stake(UInt256.ZERO, k))),
+				"Validator not found"
+			).with(s -> List.of(new Stake(s.getAmount().add(totalPreparedStake), s.getValidatorKey())));
+		}
 	}
 
 	private void updateEpochData(TxBuilder txBuilder) throws TxBuilderException {

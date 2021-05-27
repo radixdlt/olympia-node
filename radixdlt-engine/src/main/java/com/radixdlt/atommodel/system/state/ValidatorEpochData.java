@@ -27,7 +27,10 @@ public final class ValidatorEpochData implements Particle {
 	private final ECPublicKey validatorKey;
 	private final long proposalsCompleted;
 
-	public ValidatorEpochData(ECPublicKey validatorKey, long proposalsCompleted) {
+	public ValidatorEpochData(
+		ECPublicKey validatorKey,
+		long proposalsCompleted
+	) {
 		this.validatorKey = validatorKey;
 		this.proposalsCompleted = proposalsCompleted;
 	}

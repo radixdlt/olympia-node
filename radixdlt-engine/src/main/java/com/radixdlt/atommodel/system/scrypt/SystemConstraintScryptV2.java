@@ -135,6 +135,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 	}
 
 	private static final class AllPreparedStake implements ReducerState {
+		private Stake stakeToUpdate;
 		private UInt256 preparedStake = UInt256.ZERO;
 		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> allPreparedStake = new TreeMap<>(
 			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
@@ -170,7 +171,31 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			preparedStake = preparedStake.add(stakeAmt);
 		}
 
-		boolean take(Stake stake) throws ProcedureException {
+		boolean stakeUpdate(Stake stake) throws ProcedureException {
+			if (stakeToUpdate == null) {
+				throw new ProcedureException("Invalid validator update.");
+			}
+
+			if (!Objects.equals(stake.getValidatorKey(), stakeToUpdate.getValidatorKey())) {
+				throw new ProcedureException("Invalid validator update.");
+			}
+
+			var expectedNewStake = preparedStake.add(stakeToUpdate.getAmount());
+			if (!Objects.equals(expectedNewStake, stake.getAmount())) {
+				throw new ProcedureException(
+					String.format("Amount (%s) does not match what is prepared (%s)", stake.getAmount(), preparedStake)
+				);
+			}
+			preparedStake = UInt256.ZERO;
+			stakeToUpdate = null;
+			return allPreparedStake.isEmpty();
+		}
+
+		ReducerState beginStakeUpdate(Stake stake) throws ProcedureException {
+			if (stakeToUpdate != null) {
+				throw new ProcedureException("Already updating another stake.");
+			}
+
 			var firstKey = allPreparedStake.firstKey();
 			if (!Objects.equals(firstKey, stake.getValidatorKey())) {
 				throw new ProcedureException(stake.getValidatorKey() + " is not the first key (" + firstKey + ")");
@@ -179,13 +204,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			if (!stakes.isEmpty()) {
 				throw new ProcedureException("Stakes has not been emptied.");
 			}
-			if (!Objects.equals(preparedStake, stake.getAmount())) {
-				throw new ProcedureException(
-					String.format("Amount (%s) does not match what is prepared (%s)", stake.getAmount(), preparedStake)
-				);
-			}
-			preparedStake = UInt256.ZERO;
-			return allPreparedStake.isEmpty();
+			stakeToUpdate = stake;
+			return this;
 		}
 	}
 
@@ -348,11 +368,17 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				return ReducerResult.incomplete(s);
 			}
 		));
+		os.createDownProcedure(new DownProcedure<>(
+			Stake.class, AllPreparedStake.class,
+			(d, r) -> PermissionLevel.SUPER_USER,
+			(d, r, k) -> { },
+			(d, s, r) -> ReducerResult.incomplete(s.beginStakeUpdate(d.getSubstate()))
+		));
 		os.createUpProcedure(new UpProcedure<>(
 			AllPreparedStake.class, Stake.class,
 			(u, r) -> PermissionLevel.SUPER_USER,
 			(u, r, k) -> { },
-			(s, u, r) -> s.take(u) ? ReducerResult.incomplete(new ReadyForEpochUpdate()) : ReducerResult.incomplete(s)
+			(s, u, r) -> s.stakeUpdate(u) ? ReducerResult.incomplete(new ReadyForEpochUpdate()) : ReducerResult.incomplete(s)
 		));
 	}
 
@@ -432,7 +458,9 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		);
 		os.registerParticle(
 			Stake.class,
-			ParticleDefinition.<Stake>builder().build()
+			ParticleDefinition.<Stake>builder()
+				.virtualizeUp(p -> p.getAmount().isZero())
+				.build()
 		);
 		os.registerParticle(
 			StakeShares.class,
