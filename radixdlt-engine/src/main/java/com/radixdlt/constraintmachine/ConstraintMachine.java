@@ -460,8 +460,11 @@ public final class ConstraintMachine {
 						return substate.getParticle();
 					}
 				};
-				callProcedure(validationState, inst.getMicroOp(), particleClass, iterator);
-				substateCursor.close();
+				try {
+					callProcedure(validationState, inst.getMicroOp(), particleClass, iterator);
+				} finally {
+					substateCursor.close();
+				}
 			} else if (inst.isStateUpdate()) {
 				final Particle nextParticle;
 				final Substate substate;
