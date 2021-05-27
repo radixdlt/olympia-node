@@ -24,7 +24,7 @@ import com.radixdlt.atommodel.system.state.StakeShares;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.system.state.ValidatorEpochData;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.system.state.Stake;
+import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwned;
 import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
@@ -77,7 +77,7 @@ public final class RESerializer {
 		ValidatorParticle.class,
 		UniqueParticle.class,
 		TokensParticle.class,
-		Stake.class,
+		ValidatorStake.class,
 		RoundData.class,
 		EpochData.class,
 		StakeShares.class,
@@ -93,7 +93,7 @@ public final class RESerializer {
 		Map.entry(PreparedStake.class, List.of(SubstateType.PREPARED_STAKE.id)),
 		Map.entry(ValidatorParticle.class, List.of(SubstateType.VALIDATOR.id)),
 		Map.entry(UniqueParticle.class, List.of(SubstateType.UNIQUE.id)),
-		Map.entry(Stake.class, List.of(SubstateType.STAKE.id)),
+		Map.entry(ValidatorStake.class, List.of(SubstateType.STAKE.id)),
 		Map.entry(RoundData.class, List.of(SubstateType.ROUND_DATA.id)),
 		Map.entry(EpochData.class, List.of(SubstateType.EPOCH_DATA.id)),
 		Map.entry(StakeShares.class, List.of(SubstateType.STAKE_SHARE.id)),
@@ -193,8 +193,8 @@ public final class RESerializer {
 			serializeData((UniqueParticle) p, buf);
 		} else if (p instanceof TokenDefinitionParticle) {
 			serializeData((TokenDefinitionParticle) p, buf);
-		} else if (p instanceof Stake) {
-			serializeData((Stake) p, buf);
+		} else if (p instanceof ValidatorStake) {
+			serializeData((ValidatorStake) p, buf);
 		} else if (p instanceof RoundData) {
 			serializeData((RoundData) p, buf);
 		} else if (p instanceof EpochData) {
@@ -308,16 +308,16 @@ public final class RESerializer {
 		return new TokensParticle(holdingAddr, amount, rri, epochUnlocked);
 	}
 
-	private static void serializeData(Stake stake, ByteBuffer buf) {
+	private static void serializeData(ValidatorStake stake, ByteBuffer buf) {
 		buf.put(SubstateType.STAKE.id);
 		serializeKey(buf, stake.getValidatorKey());
 		buf.put(stake.getAmount().toByteArray());
 	}
 
-	private static Stake deserializeStake(ByteBuffer buf) throws DeserializeException {
+	private static ValidatorStake deserializeStake(ByteBuffer buf) throws DeserializeException {
 		var delegate = deserializeKey(buf);
 		var amount = deserializeUInt256(buf);
-		return new Stake(amount, delegate);
+		return new ValidatorStake(amount, delegate);
 	}
 
 	private static void serializeData(StakeShares p, ByteBuffer buf) {

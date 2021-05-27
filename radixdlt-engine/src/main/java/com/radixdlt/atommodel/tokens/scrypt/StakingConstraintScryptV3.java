@@ -74,25 +74,22 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 	}
 
 	public static class StakeSharesHoldingBucket implements ReducerState {
-		//private final UInt384 stakeAmount;
 		private final UInt384 shareAmount;
 		private final REAddr accountAddr;
 		private final ECPublicKey delegate;
 
 		public StakeSharesHoldingBucket(StakeShares stakeShares) {
-			this(stakeShares.getDelegateKey(), stakeShares.getOwner(), UInt384.from(stakeShares.getAmount())/*, UInt384.ZERO*/);
+			this(stakeShares.getDelegateKey(), stakeShares.getOwner(), UInt384.from(stakeShares.getAmount()));
 		}
 
 		public StakeSharesHoldingBucket(
 			ECPublicKey delegate,
 			REAddr accountAddr,
 			UInt384 amount
-			//UInt384 stakeAmount
 		) {
 			this.delegate = delegate;
 			this.accountAddr = accountAddr;
 			this.shareAmount = amount;
-			//this.stakeAmount = stakeAmount;
 		}
 
 		public StakeSharesHoldingBucket withdrawShares(StakeShares stakeShares) throws ProcedureException {
@@ -120,27 +117,6 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 			return new StakeSharesHoldingBucket(delegate, accountAddr, UInt384.from(stakeShares.getAmount()).add(shareAmount));
 		}
 
-		/*
-		public StakeSharesHoldingBucket depositStake(Stake stake) throws ProcedureException {
-			if (!delegate.equals(stake.getValidatorKey())) {
-				throw new ProcedureException("Stake must be from delegate " + delegate);
-			}
-			return new StakeSharesHoldingBucket(delegate, accountAddr, shareAmount, stakeAmount.add(stake.getAmount()));
-		}
-
-		public StakeSharesHoldingBucket withdrawStake(Stake stake) throws ProcedureException {
-			if (!delegate.equals(stake.getValidatorKey())) {
-				throw new ProcedureException("Stake must be from delegate " + delegate);
-			}
-			var withdraw384 = UInt384.from(stake.getAmount());
-			if (stakeAmount.compareTo(withdraw384) < 0) {
-				throw new NotEnoughResourcesException(stake.getAmount(), stakeAmount.getLow());
-			}
-
-			return new StakeSharesHoldingBucket(delegate, accountAddr, shareAmount, stakeAmount.subtract(withdraw384));
-		}
-		 */
-
 		public StakeSharesHoldingBucket unstake(PreparedUnstakeOwned u) throws ProcedureException {
 			if (!Objects.equals(accountAddr, u.getOwner())) {
 				throw new ProcedureException("Must unstake to self");
@@ -163,43 +139,6 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 				throw new ProcedureException("Shares cannot be burnt.");
 			}
 		}
-
-		/*
-		public StakeSharesHoldingBucket unstake(TokensParticle u, ReadableAddrs r) throws ProcedureException {
-			if (!u.getResourceAddr().isNativeToken()) {
-				throw new ProcedureException("Can only destake to the native token.");
-			}
-
-			if (!Objects.equals(accountAddr, u.getHoldingAddr())) {
-				throw new ProcedureException("Must unstake to self");
-			}
-
-			if (u.getEpochUnlocked().isEmpty()) {
-				throw new ProcedureException("Exiting from stake must be locked.");
-			}
-
-			var unstakeAmount = UInt384.from(u.getAmount());
-			if (stakeAmount.compareTo(unstakeAmount) < 0) {
-				throw new NotEnoughResourcesException(u.getAmount(), stakeAmount.getLow());
-			}
-			if (stakeAmount.compareTo(shareAmount) < 0) {
-				throw new NotEnoughResourcesException(u.getAmount(), shareAmount.getLow());
-			}
-
-			var systemState = (HasEpochData) r.loadAddr(null, REAddr.ofSystem()).orElseThrow();
-			if (systemState.getEpoch() + EPOCHS_LOCKED != u.getEpochUnlocked().get()) {
-				throw new ProcedureException("Incorrect epoch unlock: " + u.getEpochUnlocked().get()
-					+ " should be: " + (systemState.getEpoch() + EPOCHS_LOCKED));
-			}
-
-			return new StakeSharesHoldingBucket(
-				delegate,
-				accountAddr,
-				shareAmount.subtract(unstakeAmount),
-				stakeAmount.subtract(unstakeAmount)
-			);
-		}
-		 */
 	}
 
 	private void defineStaking(SysCalls os) {
@@ -258,35 +197,6 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 			(u, r, k) -> { },
 			(s, u, r) -> ReducerResult.incomplete(s.unstake(u))
 		));
-
-		/*
-		// Unstake
-		os.createDownProcedure(new DownProcedure<>(
-			Stake.class, StakeSharesHoldingBucket.class,
-			(d, r) -> PermissionLevel.USER,
-			(d, r, k) -> { },
-			(d, s, r) -> ReducerResult.incomplete(s.depositStake(d.getSubstate()))
-		));
-		// Unstake change
-		os.createUpProcedure(new UpProcedure<>(
-			StakeSharesHoldingBucket.class, Stake.class,
-			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> { },
-			(s, u, r) -> ReducerResult.incomplete(s.withdrawStake(u))
-		));
-
-		// Unstake to locked tokens
-		os.createUpProcedure(new UpProcedure<>(
-			StakeSharesHoldingBucket.class, TokensParticle.class,
-			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> { },
-			(s, u, r) -> {
-				var nextState = s.unstake(u, r);
-				var actionGuess = new UnstakeTokens(s.accountAddr, s.delegate, u.getAmount());
-				return ReducerResult.incomplete(nextState, actionGuess);
-			}
-		));
-		 */
 
 		// Deallocate Stake Holding Bucket
 		os.createEndProcedure(new EndProcedure<>(

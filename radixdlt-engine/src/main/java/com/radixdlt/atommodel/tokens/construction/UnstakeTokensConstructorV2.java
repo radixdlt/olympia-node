@@ -28,18 +28,6 @@ import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwned;
 public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeTokens> {
 	@Override
 	public void construct(UnstakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
-		/*
-		// TODO: Replace with loadAddr()
-		var epochUnlockedMaybe = txBuilder.find(EpochData.class, p -> true).map(EpochData::getEpoch);
-		long epochUnlocked;
-		if (epochUnlockedMaybe.isPresent()) {
-			epochUnlocked = epochUnlockedMaybe.get() + StakingConstraintScryptV3.EPOCHS_LOCKED;
-		} else {
-			epochUnlocked = txBuilder.find(SystemParticle.class, p -> true)
-				.map(SystemParticle::getEpoch).orElse(0L) + StakingConstraintScryptV3.EPOCHS_LOCKED;
-		}
-		 */
-
 		txBuilder.swapFungible(
 			StakeShares.class,
 			p -> p.getOwner().equals(action.accountAddr()) && p.getDelegateKey().equals(action.from()),
@@ -47,24 +35,5 @@ public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeToke
 			action.amount(),
 			"Not enough staked"
 		).with(amt -> new PreparedUnstakeOwned(action.from(), action.accountAddr(), amt));
-
-		/*
-
-		txBuilder.downFungible(
-			StakeShares.class,
-			p -> p.getOwner().equals(action.accountAddr()) && p.getDelegateKey().equals(action.from()),
-			action.amount(),
-			amt -> new StakeShares(action.from(), action.accountAddr(), amt),
-			"Not enough staked."
-		);
-		txBuilder.downFungible(
-			Stake.class,
-			p -> p.getValidatorKey().equals(action.from()),
-			action.amount(),
-			amt -> new Stake(amt, action.from()),
-			"Not enough staked."
-		);
-		txBuilder.up(new TokensParticle(action.accountAddr(), action.amount(), REAddr.ofNativeToken(), epochUnlocked));
-		 */
 	}
 }

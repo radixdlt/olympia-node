@@ -91,7 +91,7 @@ public class RadixEngineModule extends AbstractModule {
 
 		radixEngine.addStateReducer(stakedValidatorsReducer, true);
 		//radixEngine.addStateReducer(new DeprecatedStakesReducer(), true);
-		radixEngine.addStateReducer(new InflationReducer(), "inflation", true);
+		//radixEngine.addStateReducer(new InflationReducer(), "inflation", true);
 
 		var systemCache = new SubstateCacheRegister<>(SystemParticle.class, p -> true);
 		radixEngine.addSubstateCache(systemCache, true);

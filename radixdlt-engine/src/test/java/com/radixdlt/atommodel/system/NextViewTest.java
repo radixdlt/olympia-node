@@ -18,13 +18,8 @@
 
 package com.radixdlt.atommodel.system;
 
-import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.ActionConstructors;
-import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
-import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.RegisterValidator;
-import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV1;
@@ -47,7 +42,6 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
-import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

@@ -23,8 +23,6 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.atommodel.system.state.RoundData;
-import com.radixdlt.atommodel.system.state.Stake;
-import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
 import com.radixdlt.atommodel.system.state.ValidatorEpochData;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 

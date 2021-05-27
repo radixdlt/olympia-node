@@ -18,8 +18,9 @@
 package com.radixdlt.statecomputer;
 
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.system.state.Stake;
+import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
+import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwned;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
@@ -52,7 +53,12 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 
 	@Override
 	public Set<Class<? extends Particle>> particleClasses() {
-		return Set.of(ValidatorParticle.class, PreparedStake.class, Stake.class);
+		return Set.of(
+			ValidatorParticle.class,
+			PreparedStake.class,
+			PreparedUnstakeOwned.class,
+			ValidatorStake.class
+		);
 	}
 
 	@Override
@@ -72,8 +78,11 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 			} else if (p instanceof PreparedStake) {
 				var d = (PreparedStake) p;
 				return prev.add(d.getDelegateKey(), d.getAmount());
+			} else if (p instanceof PreparedUnstakeOwned) {
+				var d = (PreparedUnstakeOwned) p;
+				return prev.remove(d.getDelegateKey(), d.getAmount());
 			} else {
-				var s = (Stake) p;
+				var s = (ValidatorStake) p;
 				return prev.add(s.getValidatorKey(), s.getAmount());
 			}
 		};
@@ -91,8 +100,14 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 			} else if (p instanceof PreparedStake) {
 				var d = (PreparedStake) p;
 				return prev.remove(d.getDelegateKey(), d.getAmount());
+			} else if (p instanceof PreparedUnstakeOwned) {
+				var d = (PreparedUnstakeOwned) p;
+				return prev.add(d.getDelegateKey(), d.getAmount());
 			} else {
-				var s = (Stake) p;
+				var s = (ValidatorStake) p;
+				if (s.getAmount().isZero()) {
+					return prev;
+				}
 				return prev.remove(s.getValidatorKey(), s.getAmount());
 			}
 		};

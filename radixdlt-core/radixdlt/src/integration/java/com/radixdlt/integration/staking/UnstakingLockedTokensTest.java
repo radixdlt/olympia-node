@@ -29,12 +29,10 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.consensus.HashSigner;
@@ -42,7 +40,6 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.REParsedTxn;
-import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
@@ -81,14 +78,10 @@ public class UnstakingLockedTokensTest {
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
 		return List.of(new Object[][]{
-			{1, 1, false},
-			{1, 2, false},
-			{1, 2 + StakingConstraintScryptV3.EPOCHS_LOCKED - 1, false},
-			{1, 2 + StakingConstraintScryptV3.EPOCHS_LOCKED, true},
-			{3, 3, false},
-			{3, 4, false},
-			{3, 4 + StakingConstraintScryptV3.EPOCHS_LOCKED - 1, false},
-			{3, 4 + StakingConstraintScryptV3.EPOCHS_LOCKED, true},
+			{1, 2, 3, false},
+			{1, 2, 4, true},
+			{3, 4, 5, false},
+			{3, 4, 6, true},
 		});
 	}
 
@@ -104,15 +97,17 @@ public class UnstakingLockedTokensTest {
 	@Inject private EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 	@Inject private RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final long stakingEpoch;
+	private final long unstakingEpoch;
 	private final long transferEpoch;
 	private final boolean shouldSucceed;
 
-	public UnstakingLockedTokensTest(long stakingEpoch, long transferEpoch, boolean shouldSucceed) {
+	public UnstakingLockedTokensTest(long stakingEpoch, long unstakingEpoch, long transferEpoch, boolean shouldSucceed) {
 		if (stakingEpoch < 1) {
 			throw new IllegalArgumentException();
 		}
 
 		this.stakingEpoch = stakingEpoch;
+		this.unstakingEpoch = unstakingEpoch;
 		this.transferEpoch = transferEpoch;
 		this.shouldSucceed = shouldSucceed;
 	}
@@ -186,11 +181,11 @@ public class UnstakingLockedTokensTest {
 		var stakeTxn = dispatchAndWaitForCommit(new StakeTokens(accountAddr, self, UInt256.from(100)));
 		runner.runNextEventsThrough(
 			EpochsLedgerUpdate.class,
-			e -> e.getEpochChange().map(c -> c.getEpoch() == stakingEpoch + 1).orElse(false)
+			e -> e.getEpochChange().map(c -> c.getEpoch() == unstakingEpoch).orElse(false)
 		);
 		var unstakeTxn = dispatchAndWaitForCommit(new UnstakeTokens(accountAddr, self, UInt256.from(100)));
 
-		if (transferEpoch > stakingEpoch + 1) {
+		if (transferEpoch > unstakingEpoch) {
 			runner.runNextEventsThrough(
 				EpochsLedgerUpdate.class,
 				e -> e.getEpochChange().map(c -> c.getEpoch() == transferEpoch).orElse(false)
@@ -208,16 +203,18 @@ public class UnstakingLockedTokensTest {
 		}
 
 		// Build transaction manually which spends locked transaction
-		var tokenResource = unstakeTxn.instructions()
-			.filter(REStateUpdate::isBootUp)
-			.filter(u -> u.getParticle() instanceof TokensParticle)
-			.findFirst().orElseThrow();
-		var builder = TxLowLevelBuilder.newBuilder()
-			.down(tokenResource.getSubstate().getId())
-			.up(new TokensParticle(otherAddr, UInt256.from(100), REAddr.ofNativeToken()))
-			.end();
-		var sig = hashSigner.sign(builder.hashToSign());
-		var txn = builder.sig(sig).build();
+		var txn = radixEngine.construct(txBuilder -> {
+			txBuilder.swapFungible(
+				TokensParticle.class,
+				p -> p.getResourceAddr().isNativeToken()
+					&& p.getHoldingAddr().equals(accountAddr)
+					&& p.getEpochUnlocked().isPresent(),
+				amt -> new TokensParticle(accountAddr, amt, REAddr.ofNativeToken()),
+				UInt256.from(100),
+				"Not enough balance for transfer."
+			).with(amt -> new TokensParticle(otherAddr, amt, REAddr.ofNativeToken()));
+			txBuilder.end();
+		}).signAndBuild(hashSigner::sign);
 		if (shouldSucceed) {
 			dispatchAndWaitForCommit(txn);
 		} else {

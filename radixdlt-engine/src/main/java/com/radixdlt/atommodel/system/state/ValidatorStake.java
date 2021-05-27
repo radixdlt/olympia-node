@@ -24,13 +24,13 @@ import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 
-public final class Stake implements Fungible {
+public final class ValidatorStake implements Fungible {
 	private final UInt256 amount;
 
 	// Bucket keys
 	private final ECPublicKey validatorKey;
 
-	public Stake(
+	public ValidatorStake(
 		UInt256 amount,
 		ECPublicKey validatorKey
 	) {
@@ -61,10 +61,10 @@ public final class Stake implements Fungible {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof Stake)) {
+		if (!(o instanceof ValidatorStake)) {
 			return false;
 		}
-		var that = (Stake) o;
+		var that = (ValidatorStake) o;
 		return Objects.equals(validatorKey, that.validatorKey)
 			&& Objects.equals(amount, that.amount);
 	}
