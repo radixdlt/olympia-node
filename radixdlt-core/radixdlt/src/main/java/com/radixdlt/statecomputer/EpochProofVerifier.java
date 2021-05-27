@@ -18,6 +18,7 @@
 
 package com.radixdlt.statecomputer;
 
+import com.google.common.collect.Sets;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.engine.BatchVerifier;
@@ -78,8 +79,9 @@ public final class EpochProofVerifier implements BatchVerifier<LedgerAndBFTProof
 				if (!Objects.equals(stakedKeys, validatorKeys)) {
 					throw new MetadataException(
 						String.format(
-							"Current validators %s does not agree with staked validators %s",
-							validatorKeys, stakedKeys
+							"Current validators does not agree with staked validators stakedDiff: %s currentDiff: %s",
+							Sets.difference(stakedKeys, validatorKeys),
+							Sets.difference(validatorKeys, stakedKeys)
 						));
 				}
 

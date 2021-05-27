@@ -264,6 +264,7 @@ public final class RadixEngine<M> {
 	 */
 	public static class RadixEngineBranch<M> {
 		private final RadixEngine<M> engine;
+		private boolean deleted = false;
 
 		private RadixEngineBranch(
 			ActionConstructors actionToConstructorMap,
@@ -287,29 +288,45 @@ public final class RadixEngine<M> {
 			engine.stateComputers.putAll(stateComputers);
 		}
 
+		private void delete() {
+			deleted = true;
+		}
+
+		private void assertNotDeleted() {
+			if (deleted) {
+				throw new IllegalStateException();
+			}
+		}
+
 		public List<REParsedTxn> execute(List<Txn> txns) throws RadixEngineException {
+			assertNotDeleted();
 			return engine.execute(txns);
 		}
 
 		public List<REParsedTxn> execute(List<Txn> txns, PermissionLevel permissionLevel) throws RadixEngineException {
+			assertNotDeleted();
 			return engine.execute(txns, null, permissionLevel);
 		}
 
 		public TxBuilder construct(TxAction action) throws TxBuilderException {
+			assertNotDeleted();
 			return engine.construct(action);
 		}
 
 		public TxBuilder construct(List<TxAction> actions) throws TxBuilderException {
+			assertNotDeleted();
 			return engine.construct(actions);
 		}
 
 		public <U> U getComputedState(Class<U> applicationStateClass) {
+			assertNotDeleted();
 			return engine.getComputedState(applicationStateClass);
 		}
 	}
 
 	public void deleteBranches() {
 		synchronized (stateUpdateEngineLock) {
+			branches.forEach(RadixEngineBranch::delete);
 			branches.clear();
 		}
 	}
