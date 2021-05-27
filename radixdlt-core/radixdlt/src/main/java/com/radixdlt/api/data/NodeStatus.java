@@ -21,6 +21,6 @@ public enum NodeStatus {
 	BOOTING,
 	SYNCING,
 	UP,
-	STALL,
-	NET_STALL
+	STALLED,
+	NETWORK_HALTED
 }
