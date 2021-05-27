@@ -22,6 +22,7 @@ import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.StakeShares;
 import com.radixdlt.atommodel.system.state.SystemParticle;
+import com.radixdlt.atommodel.system.state.ValidatorEpochData;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.system.state.Stake;
 import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
@@ -55,7 +56,8 @@ public final class RESerializer {
 		STAKE((byte) 8),
 		ROUND_DATA((byte) 9),
 		EPOCH_DATA((byte) 10),
-		STAKE_SHARE((byte) 11);
+		STAKE_SHARE((byte) 11),
+		VALIDATOR_EPOCH_DATA((byte) 12);
 
 		private final byte id;
 
@@ -76,7 +78,8 @@ public final class RESerializer {
 		Stake.class,
 		RoundData.class,
 		EpochData.class,
-		StakeShares.class
+		StakeShares.class,
+		ValidatorEpochData.class
 	);
 
 	private static Map<Class<? extends Particle>, List<Byte>> classToByteTypes = Map.ofEntries(
@@ -90,7 +93,8 @@ public final class RESerializer {
 		Map.entry(Stake.class, List.of(SubstateType.STAKE.id)),
 		Map.entry(RoundData.class, List.of(SubstateType.ROUND_DATA.id)),
 		Map.entry(EpochData.class, List.of(SubstateType.EPOCH_DATA.id)),
-		Map.entry(StakeShares.class, List.of(SubstateType.STAKE_SHARE.id))
+		Map.entry(StakeShares.class, List.of(SubstateType.STAKE_SHARE.id)),
+		Map.entry(ValidatorEpochData.class, List.of(SubstateType.VALIDATOR_EPOCH_DATA.id))
 	);
 
 	private RESerializer() {
@@ -160,6 +164,8 @@ public final class RESerializer {
 			return deserializeEpochState(buf);
 		} else if (type == SubstateType.STAKE_SHARE.id) {
 			return deserializeStakeShare(buf);
+		} else if (type == SubstateType.VALIDATOR_EPOCH_DATA.id) {
+			return deserializeValidatorEpochData(buf);
 		} else {
 			throw new DeserializeException("Unsupported type: " + type);
 		}
@@ -189,6 +195,8 @@ public final class RESerializer {
 			serializeData((EpochData) p, buf);
 		} else if (p instanceof StakeShares) {
 			serializeData((StakeShares) p, buf);
+		} else if (p instanceof ValidatorEpochData) {
+			serializeData((ValidatorEpochData) p, buf);
 		} else {
 			throw new IllegalStateException("Unknown particle: " + p);
 		}
@@ -319,6 +327,17 @@ public final class RESerializer {
 		return new StakeShares(delegate, owner, amount);
 	}
 
+	private static void serializeData(ValidatorEpochData p, ByteBuffer buf) {
+		buf.put(SubstateType.VALIDATOR_EPOCH_DATA.id);
+		serializeKey(buf, p.validatorKey());
+		buf.putLong(p.proposalsCompleted());
+	}
+
+	private static ValidatorEpochData deserializeValidatorEpochData(ByteBuffer buf) throws DeserializeException {
+		var key = deserializeKey(buf);
+		var proposalCsCompleted = buf.getLong();
+		return new ValidatorEpochData(key, proposalCsCompleted);
+	}
 
 	private static void serializeData(PreparedStake p, ByteBuffer buf) {
 		buf.put(SubstateType.PREPARED_STAKE.id);

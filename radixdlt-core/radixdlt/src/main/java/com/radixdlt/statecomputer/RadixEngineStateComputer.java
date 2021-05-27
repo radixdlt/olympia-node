@@ -20,6 +20,7 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
+import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.SystemNextEpoch;
@@ -32,6 +33,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
@@ -51,6 +53,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.TreeMap;
@@ -174,13 +178,21 @@ public final class RadixEngineStateComputer implements StateComputer {
 		final BFTValidatorSet validatorSet;
 		if (view.compareTo(epochCeilingView) >= 0) {
 			validatorSet = branch.getComputedState(StakedValidators.class).toValidatorSet();
+
 		} else {
 			validatorSet = null;
 		}
 
-		var systemAction = validatorSet == null
-			? new SystemNextView(view.number(), timestamp, vertex.getProposer().getKey())
-			: new SystemNextEpoch(timestamp);
+		final TxAction systemAction;
+		if (validatorSet == null) {
+			systemAction = new SystemNextView(view.number(), timestamp, vertex.getProposer().getKey());
+		} else {
+			var validatorKeys = validatorSet.nodes().stream()
+				.map(BFTNode::getKey)
+				.sorted(Comparator.comparing(ECPublicKey::getBytes, Arrays::compare))
+				.collect(Collectors.toList());
+			systemAction = new SystemNextEpoch(validatorKeys, timestamp);
+		}
 
 		final Txn systemUpdate;
 		final List<REParsedTxn> txs;

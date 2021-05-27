@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -13,9 +13,10 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt;
+package com.radixdlt.statecomputer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -29,6 +30,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.SubstateId;
@@ -73,16 +75,6 @@ import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.TxnsCommittedToLedger;
-import com.radixdlt.statecomputer.InvalidProposedTxn;
-import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RadixEngineConfig;
-import com.radixdlt.statecomputer.RadixEngineModule;
-import com.radixdlt.statecomputer.RadixEngineStateComputer;
-
-import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
-import com.radixdlt.statecomputer.StakedValidators;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
@@ -198,7 +190,7 @@ public class RadixEngineStateComputerTest {
 	private Txn systemUpdateTxn(long nextView, long nextEpoch) throws TxBuilderException {
 		TxBuilder builder;
 		if (nextEpoch >= 2) {
-			builder = radixEngine.construct(new SystemNextEpoch(0));
+			builder = radixEngine.construct(new SystemNextEpoch(List.of(registeredNodes.get(0).getPublicKey()), 0));
 		} else {
 			builder = radixEngine.construct(new SystemNextView(nextView, 0,
 				registeredNodes.get(0).getPublicKey()

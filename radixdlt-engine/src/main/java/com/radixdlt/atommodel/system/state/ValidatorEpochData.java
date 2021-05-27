@@ -18,51 +18,41 @@
 
 package com.radixdlt.atommodel.system.state;
 
-import com.google.common.base.Objects;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.crypto.ECPublicKey;
 
-import java.time.Instant;
+import java.util.Objects;
 
-public final class RoundData implements Particle {
-	private final long view;
-	private final long timestamp;
+public final class ValidatorEpochData implements Particle {
+	private final ECPublicKey validatorKey;
+	private final long proposalsCompleted;
 
-	public RoundData(long view, long timestamp) {
-		this.view = view;
-		this.timestamp = timestamp;
+	public ValidatorEpochData(ECPublicKey validatorKey, long proposalsCompleted) {
+		this.validatorKey = validatorKey;
+		this.proposalsCompleted = proposalsCompleted;
 	}
 
-	public long getView() {
-		return view;
+	public ECPublicKey validatorKey() {
+		return validatorKey;
 	}
 
-	public long getTimestamp() {
-		return timestamp;
-	}
-
-	public Instant asInstant() {
-		return Instant.ofEpochMilli(timestamp);
+	public long proposalsCompleted() {
+		return proposalsCompleted;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hashCode(view, timestamp);
+		return Objects.hash(validatorKey, proposalsCompleted);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof RoundData)) {
+		if (!(o instanceof ValidatorEpochData)) {
 			return false;
 		}
 
-		var other = (RoundData) o;
-
-		return this.view == other.view
-			&& this.timestamp == other.timestamp;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s{view=%s timestamp=%s}", this.getClass().getSimpleName(), view, timestamp);
+		var other = (ValidatorEpochData) o;
+		return Objects.equals(this.validatorKey, other.validatorKey)
+			&& this.proposalsCompleted == other.proposalsCompleted;
 	}
 }

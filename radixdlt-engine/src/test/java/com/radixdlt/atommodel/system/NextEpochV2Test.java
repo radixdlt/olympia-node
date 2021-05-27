@@ -117,7 +117,7 @@ public class NextEpochV2Test {
 		sut.execute(List.of(start), null, PermissionLevel.SYSTEM);
 
 		// Act
-		var txn = sut.construct(new SystemNextEpoch(1))
+		var txn = sut.construct(new SystemNextEpoch(List.of(key), 1))
 			.buildWithoutSignature();
 		this.sut.execute(List.of(txn), null, PermissionLevel.SUPER_USER);
 

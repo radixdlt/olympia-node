@@ -27,6 +27,7 @@ import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.Stake;
 import com.radixdlt.atommodel.system.state.StakeShares;
 import com.radixdlt.atommodel.system.state.SystemParticle;
+import com.radixdlt.atommodel.system.state.ValidatorEpochData;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECPublicKey;
@@ -39,9 +40,22 @@ import java.util.Optional;
 import java.util.TreeMap;
 
 public final class NextEpochConstructorV2 implements ActionConstructor<SystemNextEpoch> {
+
+
 	@Override
 	public void construct(SystemNextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
+		emissionsAndNextValidatorSet(action.validators(), txBuilder);
+		updatePreparedStake(txBuilder);
+		updateEpochData(txBuilder);
+		updateRoundData(txBuilder);
+	}
 
+	public void emissionsAndNextValidatorSet(List<ECPublicKey> validators, TxBuilder txBuilder) {
+		txBuilder.downAll(ValidatorEpochData.class, i -> null);
+		validators.forEach(k -> txBuilder.up(new ValidatorEpochData(k, 0)));
+	}
+
+	private void updatePreparedStake(TxBuilder txBuilder) {
 		var allPreparedStake = txBuilder.downAll(PreparedStake.class, i -> {
 			var map = new TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>>(
 				(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
@@ -56,14 +70,14 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 			);
 			return map;
 		});
-
 		allPreparedStake.forEach((k, stakes) -> {
 			stakes.forEach((addr, amt) -> txBuilder.up(new StakeShares(k, addr, amt)));
-
 			var totalPreparedStake = stakes.values().stream().reduce(UInt256::add).orElseThrow();
 			txBuilder.up(new Stake(totalPreparedStake, k));
 		});
+	}
 
+	private void updateEpochData(TxBuilder txBuilder) throws TxBuilderException {
 		var epochData = txBuilder.find(EpochData.class, p -> true);
 		if (epochData.isPresent()) {
 			txBuilder.swap(
@@ -79,7 +93,9 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 				"No epoch data available"
 			).with(substateDown -> List.of(new EpochData(substateDown.getEpoch() + 1)));
 		}
+	}
 
+	private void updateRoundData(TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.swap(
 			RoundData.class,
 			p -> true,
