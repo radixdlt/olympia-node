@@ -206,9 +206,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			if (!u.getResourceAddr().isNativeToken()) {
 				throw new ProcedureException("Can only destake to the native token.");
 			}
-			if (u.getEpochUnlocked().isEmpty()) {
-				throw new ProcedureException("Exiting from stake must be locked.");
-			}
+			var epochUnlocked = u.getEpochUnlocked()
+				.orElseThrow(() -> new ProcedureException("Exiting from stake must be locked."));
 
 			var firstAddr = unstaking.firstKey();
 			if (!Objects.equals(u.getHoldingAddr(), firstAddr)) {
@@ -224,7 +223,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 			var expectedEpochUnlock = updatingEpoch.prevEpoch.getEpoch() + 1 + EPOCHS_LOCKED;
 			if (expectedEpochUnlock != u.getEpochUnlocked().get()) {
-				throw new ProcedureException("Incorrect epoch unlock: " + u.getEpochUnlocked().get()
+				throw new ProcedureException("Incorrect epoch unlock: " + epochUnlocked
 					+ " should be: " + expectedEpochUnlock);
 			}
 
