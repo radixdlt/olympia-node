@@ -46,7 +46,6 @@ import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.store.ReadableAddrs;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Arrays;
@@ -57,9 +56,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Function;
 
-import static com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3.EPOCHS_LOCKED;
-
 public class SystemConstraintScryptV2 implements ConstraintScrypt {
+	public static final int EPOCHS_LOCKED = 1; // Must go through one full epoch before being unlocked
 
 	public static final UInt256 REWARDS_PER_PROPOSAL = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
 
@@ -112,6 +110,11 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		private final TreeMap<ECPublicKey, Long> proposalsCompleted = new TreeMap<>(
 			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
 		);
+		private final UpdatingEpoch updatingEpoch;
+
+		RewardingValidators(UpdatingEpoch updatingEpoch) {
+			this.updatingEpoch = updatingEpoch;
+		}
 
 		public ReducerState process(Iterator<ValidatorEpochData> i) throws ProcedureException {
 			while (i.hasNext()) {
@@ -127,7 +130,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 		ReducerState next() {
 			if (proposalsCompleted.isEmpty()) {
-				return new PreparingUnstake(curStake);
+				return new PreparingUnstake(updatingEpoch, curStake);
 			}
 
 			var k = proposalsCompleted.firstKey();
@@ -145,6 +148,11 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 	public static final class CreatingNextValidatorSet implements ReducerState {
 		private final Set<ECPublicKey> validators = new HashSet<>();
+		private final UpdatingEpoch updatingEpoch;
+
+		CreatingNextValidatorSet(UpdatingEpoch updatingEpoch) {
+			this.updatingEpoch = updatingEpoch;
+		}
 
 		ReducerState nextValidator(ValidatorEpochData u) throws ProcedureException {
 			if (validators.contains(u.validatorKey())) {
@@ -156,12 +164,25 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			validators.add(u.validatorKey());
 			return this;
 		}
+
+		ReducerState nextEpoch(EpochData epochData) throws ProcedureException {
+			return updatingEpoch.nextEpoch(epochData);
+		}
 	}
 
-	private static final class UpdatingEpoch implements ReducerState {
-		private final EpochData prev;
-		private UpdatingEpoch(EpochData prev) {
-			this.prev = prev;
+	public static final class UpdatingEpoch implements ReducerState {
+		private final HasEpochData prevEpoch;
+
+		UpdatingEpoch(HasEpochData prevEpoch) {
+			this.prevEpoch = prevEpoch;
+		}
+
+		ReducerState nextEpoch(EpochData u) throws ProcedureException {
+			if (u.getEpoch() != prevEpoch.getEpoch() + 1) {
+				throw new ProcedureException("Invalid next epoch: " + u.getEpoch()
+					+ " Expected: " + (prevEpoch.getEpoch() + 1));
+			}
+			return new UpdatingEpochRound();
 		}
 	}
 
@@ -179,17 +200,24 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 	}
 
 	private static final class Unstaking implements ReducerState {
+		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<REAddr, UInt256> unstaking;
 		private final Function<ValidatorStake, ReducerState> onDone;
 		private ValidatorStake current;
 
-		Unstaking(ValidatorStake current, TreeMap<REAddr, UInt256> unstaking, Function<ValidatorStake, ReducerState> onDone) {
+		Unstaking(
+			UpdatingEpoch updatingEpoch,
+			ValidatorStake current,
+			TreeMap<REAddr, UInt256> unstaking,
+			Function<ValidatorStake, ReducerState> onDone
+		) {
+			this.updatingEpoch = updatingEpoch;
 			this.current = current;
 			this.unstaking = unstaking;
 			this.onDone = onDone;
 		}
 
-		ReducerState unstake(TokensParticle u, ReadableAddrs r) throws ProcedureException {
+		ReducerState unstake(TokensParticle u) throws ProcedureException {
 			if (!u.getResourceAddr().isNativeToken()) {
 				throw new ProcedureException("Can only destake to the native token.");
 			}
@@ -209,25 +237,26 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				throw new ProcedureException("Invalid amount");
 			}
 
-			var systemState = (HasEpochData) r.loadAddr(null, REAddr.ofSystem()).orElseThrow();
-			if (systemState.getEpoch() + EPOCHS_LOCKED != u.getEpochUnlocked().get()) {
+			var expectedEpochUnlock = updatingEpoch.prevEpoch.getEpoch() + 1 + EPOCHS_LOCKED;
+			if (expectedEpochUnlock != u.getEpochUnlocked().get()) {
 				throw new ProcedureException("Incorrect epoch unlock: " + u.getEpochUnlocked().get()
-					+ " should be: " + (systemState.getEpoch() + EPOCHS_LOCKED));
+					+ " should be: " + expectedEpochUnlock);
 			}
-
 
 			return unstaking.isEmpty() ? onDone.apply(current) : this;
 		}
 	}
 
 	private static final class PreparingUnstake implements ReducerState {
+		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingUnstake = new TreeMap<>(
 			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
 		);
 
 		private final TreeMap<ECPublicKey, ValidatorStake> curStake;
 
-		PreparingUnstake(TreeMap<ECPublicKey, ValidatorStake> curStake) {
+		PreparingUnstake(UpdatingEpoch updatingEpoch, TreeMap<ECPublicKey, ValidatorStake> curStake) {
+			this.updatingEpoch = updatingEpoch;
 			this.curStake = curStake;
 		}
 
@@ -245,7 +274,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 		ReducerState next() {
 			if (preparingUnstake.isEmpty()) {
-				return new PreparingStake(curStake);
+				return new PreparingStake(updatingEpoch, curStake);
 			}
 
 			var k = preparingUnstake.firstKey();
@@ -253,14 +282,14 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 			if (!curStake.containsKey(k)) {
 				return new LoadingStake(k, validatorStake ->
-					new Unstaking(validatorStake, unstakes, s -> {
+					new Unstaking(updatingEpoch, validatorStake, unstakes, s -> {
 						curStake.put(k, s);
 						return next();
 					})
 				);
 			} else {
 				var validatorStake = curStake.get(k);
-				return new Unstaking(validatorStake, unstakes, s -> {
+				return new Unstaking(updatingEpoch, validatorStake, unstakes, s -> {
 					curStake.put(k, s);
 					return next();
 				});
@@ -318,12 +347,14 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 	}
 
 	private static final class PreparingStake implements ReducerState {
+		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, ValidatorStake> curStake;
 		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake = new TreeMap<>(
 			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
 		);
-		PreparingStake(TreeMap<ECPublicKey, ValidatorStake> curStake) {
+		PreparingStake(UpdatingEpoch updatingEpoch, TreeMap<ECPublicKey, ValidatorStake> curStake) {
 			this.curStake = curStake;
+			this.updatingEpoch = updatingEpoch;
 		}
 
 		ReducerState prepareStakes(Iterator<PreparedStake> preparedStakeIterator) {
@@ -340,7 +371,9 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 		ReducerState next() {
 			if (preparingStake.isEmpty()) {
-				return curStake.isEmpty() ? new CreatingNextValidatorSet() : new UpdatingValidatorStakes(curStake);
+				return curStake.isEmpty()
+					? new CreatingNextValidatorSet(updatingEpoch)
+					: new UpdatingValidatorStakes(updatingEpoch, curStake);
 			}
 
 			var k = preparingStake.firstKey();
@@ -362,8 +395,10 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 	}
 
 	private static final class UpdatingValidatorStakes implements ReducerState {
+		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, ValidatorStake> curStake;
-		UpdatingValidatorStakes(TreeMap<ECPublicKey, ValidatorStake> curStake) {
+		UpdatingValidatorStakes(UpdatingEpoch updatingEpoch, TreeMap<ECPublicKey, ValidatorStake> curStake) {
+			this.updatingEpoch = updatingEpoch;
 			this.curStake = curStake;
 		}
 
@@ -378,7 +413,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				throw new ProcedureException("Stake amount does not match.");
 			}
 
-			return curStake.isEmpty() ? new CreatingNextValidatorSet() : this;
+			return curStake.isEmpty() ? new CreatingNextValidatorSet(updatingEpoch) : this;
 		}
 	}
 
@@ -453,9 +488,21 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		));
 	}
 
-	private void updateStake(SysCalls os) {
+	private void epochUpdate(SysCalls os) {
+		// Epoch Update
+		os.createDownProcedure(new DownProcedure<>(
+			EpochData.class, VoidReducerState.class,
+			(d, r) -> PermissionLevel.SUPER_USER,
+			(d, r, pubKey) -> {
+				if (pubKey.isPresent()) {
+					throw new AuthorizationException("System update should not be signed.");
+				}
+			},
+			(d, s, r) -> ReducerResult.incomplete(new UpdatingEpoch(d.getSubstate()))
+		));
+
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
-			ValidatorEpochData.class, VoidReducerState.class,
+			ValidatorEpochData.class, UpdatingEpoch.class,
 			r -> PermissionLevel.SUPER_USER,
 			(r, k) -> {
 				if (k.isPresent()) {
@@ -463,7 +510,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				}
 			},
 			(i, s, r) -> {
-				var rewardingValidators = new RewardingValidators();
+				var rewardingValidators = new RewardingValidators(s);
 				return ReducerResult.incomplete(rewardingValidators.process(i));
 			}
 		));
@@ -488,7 +535,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			Unstaking.class, TokensParticle.class,
 			(u, r) -> PermissionLevel.SUPER_USER,
 			(u, r, k) -> { },
-			(s, u, r) -> ReducerResult.incomplete(s.unstake(u, r))
+			(s, u, r) -> ReducerResult.incomplete(s.unstake(u))
 		));
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
 			PreparedStake.class, PreparingStake.class,
@@ -519,34 +566,14 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			(u, r, pubKey) -> { },
 			(s, u, r) -> ReducerResult.incomplete(s.nextValidator(u))
 		));
-	}
 
-	private void epochUpdate(SysCalls os) {
-		// Epoch Update
-		os.createDownProcedure(new DownProcedure<>(
-			EpochData.class, CreatingNextValidatorSet.class,
-			(d, r) -> PermissionLevel.SUPER_USER,
-			(d, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
-			(d, s, r) -> ReducerResult.incomplete(new UpdatingEpoch(d.getSubstate()))
-		));
 		os.createUpProcedure(new UpProcedure<>(
-			UpdatingEpoch.class, EpochData.class,
+			CreatingNextValidatorSet.class, EpochData.class,
 			(u, r) -> PermissionLevel.SUPER_USER,
 			(u, r, pubKey) -> { },
-			(s, u, r) -> {
-				if (s.prev.getEpoch() == 0) {
-					return ReducerResult.incomplete(new UpdatingEpochRound());
-				}
-				if (u.getEpoch() != s.prev.getEpoch() + 1) {
-					throw new ProcedureException("Invalid next epoch: " + u.getEpoch() + " Expected: " + (s.prev.getEpoch() + 1));
-				}
-				return ReducerResult.incomplete(new UpdatingEpochRound());
-			}
+			(s, u, r) -> ReducerResult.incomplete(s.nextEpoch(u))
 		));
+
 		os.createDownProcedure(new DownProcedure<>(
 			RoundData.class, UpdatingEpochRound.class,
 			(d, r) -> PermissionLevel.SUPER_USER,
@@ -627,7 +654,6 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		registerGenesisTransitions(os);
 
 		// Epoch update
-		updateStake(os);
 		epochUpdate(os);
 
 		// Round update

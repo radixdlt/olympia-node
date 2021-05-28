@@ -46,7 +46,6 @@ import java.util.Objects;
 import java.util.Optional;
 
 public class StakingConstraintScryptV3 implements ConstraintScrypt {
-	public static final int EPOCHS_LOCKED = 2; // Must go through one full epoch before being unlocked
 
 	@Override
 	public void main(SysCalls os) {

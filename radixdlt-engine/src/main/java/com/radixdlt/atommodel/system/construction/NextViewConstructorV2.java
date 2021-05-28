@@ -64,8 +64,7 @@ public class NextViewConstructorV2 implements ActionConstructor<SystemNextView> 
 				Optional.empty(),
 				"No validator epoch data"
 			).with(down -> List.of(
-				new SystemParticle(down.getEpoch(), down.getView(), down.getTimestamp()),
-				new ValidatorEpochData(action.leader(), 0)
+				new SystemParticle(down.getEpoch(), down.getView(), down.getTimestamp())
 			));
 		}
 	}

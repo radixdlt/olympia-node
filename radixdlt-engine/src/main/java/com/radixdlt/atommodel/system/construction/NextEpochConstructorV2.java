@@ -24,11 +24,11 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
 import com.radixdlt.atommodel.system.state.EpochData;
+import com.radixdlt.atommodel.system.state.HasEpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.system.state.ValidatorEpochData;
-import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwned;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
@@ -42,24 +42,33 @@ import java.util.List;
 import java.util.Optional;
 import java.util.TreeMap;
 
+import static com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2.EPOCHS_LOCKED;
+
 public final class NextEpochConstructorV2 implements ActionConstructor<SystemNextEpoch> {
 	@Override
 	public void construct(SystemNextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
-		updatePreparedStake(action.validators(), txBuilder);
-		updateEpochData(txBuilder);
+		updateEpoch(action.validators(), txBuilder);
 		updateRoundData(txBuilder);
 	}
 
-	private void updatePreparedStake(List<ECPublicKey> validatorKeys, TxBuilder txBuilder) throws TxBuilderException {
-		// TODO: Replace with loadAddr()
-		var epochUnlockedMaybe = txBuilder.find(EpochData.class, p -> true).map(EpochData::getEpoch);
-		long epochUnlocked;
-		if (epochUnlockedMaybe.isPresent()) {
-			epochUnlocked = epochUnlockedMaybe.get() + StakingConstraintScryptV3.EPOCHS_LOCKED;
+	private void updateEpoch(List<ECPublicKey> validatorKeys, TxBuilder txBuilder) throws TxBuilderException {
+		var epochData = txBuilder.find(EpochData.class, p -> true);
+		final HasEpochData prevEpoch;
+		if (epochData.isPresent()) {
+			prevEpoch = txBuilder.down(
+				EpochData.class,
+				p -> true,
+				Optional.of(SubstateWithArg.noArg(new EpochData(0))),
+				"No epoch data available"
+			);
 		} else {
-			epochUnlocked = txBuilder.find(SystemParticle.class, p -> true)
-				.map(SystemParticle::getEpoch).orElse(0L) + StakingConstraintScryptV3.EPOCHS_LOCKED;
+			prevEpoch = txBuilder.down(
+				SystemParticle.class,
+				p -> true,
+				"No epoch data available"
+			);
 		}
+		long epochUnlocked = prevEpoch.getEpoch() + 1 + EPOCHS_LOCKED;
 
 		var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorStake>(
 			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
@@ -163,24 +172,8 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 
 		validatorsToUpdate.forEach((k, validator) -> txBuilder.up(validator));
 		validatorKeys.forEach(k -> txBuilder.up(new ValidatorEpochData(k, 0)));
-	}
 
-	private void updateEpochData(TxBuilder txBuilder) throws TxBuilderException {
-		var epochData = txBuilder.find(EpochData.class, p -> true);
-		if (epochData.isPresent()) {
-			txBuilder.swap(
-				EpochData.class,
-				p -> true,
-				Optional.of(SubstateWithArg.noArg(new EpochData(0))),
-				"No epoch data available"
-			).with(substateDown -> List.of(new EpochData(substateDown.getEpoch() + 1)));
-		} else {
-			txBuilder.swap(
-				SystemParticle.class,
-				p -> true,
-				"No epoch data available"
-			).with(substateDown -> List.of(new EpochData(substateDown.getEpoch() + 1)));
-		}
+		txBuilder.up(new EpochData(prevEpoch.getEpoch() + 1));
 	}
 
 	private void updateRoundData(TxBuilder txBuilder) throws TxBuilderException {
