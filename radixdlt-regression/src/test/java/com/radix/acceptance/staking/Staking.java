@@ -44,16 +44,12 @@ public class Staking extends AcceptanceTest {
 
     private static final Logger logger = LogManager.getLogger();
 
-    /**
-     * a buffer to store validator information
-     */
+    // a buffer to store validator information
     private List<ValidatorDTO> validators = Lists.newArrayList();
 
     @Given("I have an account with funds at a suitable Radix network")
     public void i_have_an_account_with_funds_at_a_suitable_radix_network() {
-        var account = getTestAccount();
-        faucet(account.getAddress());
-        Utils.waitForBalanceToReach(account, FAUCET_AMOUNT);
+        callFaucetAndWaitForTokens(account1);
     }
 
     @When("I request validator information")
@@ -73,14 +69,13 @@ public class Staking extends AcceptanceTest {
     @When("I stake {int}XRD to a validator")
     public void i_stake_xrd_to_a_validator(Integer stake) {
         updateValidatorInformation();
-        var account = getTestAccount();
         var validatorAddress = Utils.createValidatorAddress(validators.get(0));
-        TransactionUtils.performStaking(account, validatorAddress, Utils.fromMajorToMinor(stake));
+        TransactionUtils.performStaking(account1, validatorAddress, Utils.fromMajorToMinor(stake));
     }
 
     @Then("I observe that validator having {int}XRD more stake")
     public void i_observe_that_validator_having_xrd_more_stake(Integer stake) {
-        var oldStake = validators.get(0).getTotalDelegatedStake();
+        var oldStake = validators.get(0).getTotalDelegatedStake(); // we hardcode this test to the 1st validator
         await().atMost(Durations.ONE_MINUTE).until(() -> { // wait until the first validator's stake increases
             updateValidatorInformation();
             var newStake = validators.get(0).getTotalDelegatedStake();
@@ -88,6 +83,16 @@ public class Staking extends AcceptanceTest {
         });
         var difference = validators.get(0).getTotalDelegatedStake().subtract(oldStake);
         assertEquals(difference, Utils.fromMajorToMinor(stake));
+    }
+
+    @When("I unstake {int}XRD from the same validator")
+    public void i_unstake_5xrd_from_the_same_validator(Integer unstake) {
+        throw new io.cucumber.java.PendingException();
+    }
+
+    @Then("I observe that my stake is unstaked and I got my tokens back")
+    public void i_observe_that_my_stake_is_unstaked_and_i_got_my_tokens_back() {
+        throw new io.cucumber.java.PendingException();
     }
 
     /**

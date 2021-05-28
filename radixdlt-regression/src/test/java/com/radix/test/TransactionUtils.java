@@ -4,7 +4,9 @@ import com.radix.test.account.Account;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.ValidatorAddress;
+import com.radixdlt.client.lib.dto.TransactionStatusDTO;
 import com.radixdlt.client.lib.dto.TxDTO;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
@@ -16,10 +18,21 @@ public final class TransactionUtils {
 
     public static TransactionRequest createTransferRequest(AccountAddress from, AccountAddress to, String tokenRri, UInt256 amount,
                                                            String message) {
-        return TransactionRequest.createBuilder()
+        return Utils.isNullOrEmpty(message)
+            ? TransactionRequest.createBuilder()
+                .transfer(from, to, amount, tokenRri)
+                .build()
+            : TransactionRequest.createBuilder()
                 .transfer(from, to, amount, tokenRri)
                 .message(message)
                 .build();
+    }
+
+    public static TransactionRequest createUnstakingRequest(AccountAddress from, ValidatorAddress unstakeFrom,
+                                                            UInt256 stake) {
+        return TransactionRequest.createBuilder()
+            .unstake(from, unstakeFrom, stake)
+            .build();
     }
 
     public static TransactionRequest createStakingRequest(AccountAddress from, ValidatorAddress to, UInt256 stake) {
@@ -33,15 +46,26 @@ public final class TransactionUtils {
         performTransaction(sender, request);
     }
 
-    public static Result<TxDTO> performNativeTokenTransfer(Account sender, Account receiver, int amount) {
+    public static TransactionStatusDTO performTxStatusRequest(Account account, AID txId) {
+        return account.statusOfTransaction(txId).fold(Utils::toTestFailureException,
+            transactionStatusDTO -> transactionStatusDTO);
+    }
+
+    public static TxDTO performNativeTokenTransferAndFold(Account sender, Account receiver, int amount) {
         var request = TransactionUtils.createTransferRequest(sender.getAddress(), receiver.getAddress(),
-                sender.getNativeToken().getRri(), Utils.fromMajorToMinor(amount), "");
+                sender.getNativeToken().getRri(), Utils.fromMajorToMinor(amount), null);
+        return performTransaction(sender, request).fold(Utils::toTestFailureException, txDTO -> txDTO);
+    }
+
+    public static Result<TxDTO> performNativeTokenTransfer(Account sender, Account receiver, int majorAmount) {
+        var request = TransactionUtils.createTransferRequest(sender.getAddress(), receiver.getAddress(),
+            sender.getNativeToken().getRri(), Utils.fromMajorToMinor(majorAmount), null);
         return performTransaction(sender, request);
     }
 
-    public static Result<TxDTO> performNativeTokenTransfer(Account sender, Account receiver, int amount, String message) {
+    public static Result<TxDTO> performNativeTokenTransfer(Account sender, Account receiver, int majorAmount, String message) {
         var request = TransactionUtils.createTransferRequest(sender.getAddress(), receiver.getAddress(),
-                sender.getNativeToken().getRri(), Utils.fromMajorToMinor(amount), message);
+                sender.getNativeToken().getRri(), Utils.fromMajorToMinor(majorAmount), message);
         return performTransaction(sender, request);
     }
 
@@ -57,7 +81,7 @@ public final class TransactionUtils {
             var finalizedTransaction = builtTransactionDTO.toFinalized(keyPair);
             return account.finalizeTransaction(finalizedTransaction)
                     .flatMap(finalTxTdo -> account.submitTransaction(finalizedTransaction.withTxId(finalTxTdo.getTxId())));
-        }).onFailure(Utils::toRuntimeException);
+        }).onFailure(Utils::toTestFailureException);
     }
 
 }

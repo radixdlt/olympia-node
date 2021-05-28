@@ -92,7 +92,7 @@ public final class Account implements RadixApi {
     }
 
     public BalanceDTO getOwnNativeTokenBalance() {
-        return ownNativeTokenBalance().fold(Utils::toRuntimeException, balanceDTO -> balanceDTO);
+        return ownNativeTokenBalance().fold(Utils::toTestFailureException, balanceDTO -> balanceDTO);
     }
 
     public Result<TokenBalancesDTO> ownTokenBalances() {
