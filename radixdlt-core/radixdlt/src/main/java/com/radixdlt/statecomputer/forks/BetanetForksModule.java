@@ -39,6 +39,7 @@ import com.radixdlt.atom.actions.UpdateValidator;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV1;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.atommodel.system.construction.NextEpochConstructorV2;
+import com.radixdlt.atommodel.system.scrypt.SystemV1ToV2TransitionConstraintScrypt;
 import com.radixdlt.atommodel.tokens.construction.BurnTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.CreateFixedTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
@@ -162,6 +163,7 @@ public final class BetanetForksModule extends AbstractModule {
 		v3.load(new StakingConstraintScryptV3());
 		v3.load(new UniqueParticleConstraintScrypt());
 		v3.load(new SystemConstraintScryptV2());
+		v3.load(new SystemV1ToV2TransitionConstraintScrypt());
 		var betanet3 = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(v3.virtualizedUpParticles())
 			.setParticleTransitionProcedures(v3.getProcedures())

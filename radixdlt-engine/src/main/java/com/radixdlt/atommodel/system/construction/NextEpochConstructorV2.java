@@ -44,17 +44,11 @@ import java.util.Optional;
 import java.util.TreeMap;
 
 public final class NextEpochConstructorV2 implements ActionConstructor<SystemNextEpoch> {
-
-
 	@Override
 	public void construct(SystemNextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
-		emissionsAndNextValidatorSet(action.validators(), txBuilder);
 		updatePreparedStake(action.validators(), txBuilder);
 		updateEpochData(txBuilder);
 		updateRoundData(txBuilder);
-	}
-
-	public void emissionsAndNextValidatorSet(List<ECPublicKey> validators, TxBuilder txBuilder) {
 	}
 
 	private void updatePreparedStake(List<ECPublicKey> validators, TxBuilder txBuilder) throws TxBuilderException {
@@ -67,7 +61,6 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 			epochUnlocked = txBuilder.find(SystemParticle.class, p -> true)
 				.map(SystemParticle::getEpoch).orElse(0L) + StakingConstraintScryptV3.EPOCHS_LOCKED;
 		}
-
 
 		var stakesToUpdate = new TreeMap<ECPublicKey, UInt256>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
 
