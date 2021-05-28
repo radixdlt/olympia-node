@@ -63,7 +63,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 	public static final UInt256 REWARDS_PER_PROPOSAL = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
 
-	private static class UpdateValidatorEpochData implements ReducerState {
+	public static class UpdateValidatorEpochData implements ReducerState {
 	}
 
 	private static class UpdatingValidatorEpochData implements ReducerState {
@@ -105,14 +105,6 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		return Result.success();
 	}
 
-	private static final class TransitionToV2Epoch implements ReducerState {
-		private final SystemParticle sys;
-
-		private TransitionToV2Epoch(SystemParticle sys) {
-			this.sys = sys;
-		}
-	}
-
 	private static final class RewardingValidators implements ReducerState {
 		private final TreeMap<ECPublicKey, ValidatorStake> curStake = new TreeMap<>(
 			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
@@ -151,7 +143,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		}
 	}
 
-	private static final class CreatingNextValidatorSet implements ReducerState {
+	public static final class CreatingNextValidatorSet implements ReducerState {
 		private final Set<ECPublicKey> validators = new HashSet<>();
 
 		ReducerState nextValidator(ValidatorEpochData u) throws ProcedureException {
@@ -166,9 +158,6 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		}
 	}
 
-	private static final class ReadyForEpochUpdate implements ReducerState {
-	}
-
 	private static final class UpdatingEpoch implements ReducerState {
 		private final EpochData prev;
 		private UpdatingEpoch(EpochData prev) {
@@ -176,7 +165,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		}
 	}
 
-	private static final class UpdatingEpochRound implements ReducerState {
+	public static final class UpdatingEpochRound implements ReducerState {
 	}
 
 	private static final class UpdatingEpochRound2 implements ReducerState {
@@ -413,35 +402,6 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		));
 	}
 
-	private void registerBetanetV2ToV3Transitions(SysCalls os) {
-		os.createDownProcedure(new DownProcedure<>(
-			SystemParticle.class, ReadyForEpochUpdate.class,
-			(d, r) -> PermissionLevel.SUPER_USER,
-			(d, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
-			(d, s, r) -> ReducerResult.incomplete(new TransitionToV2Epoch(d.getSubstate()))
-		));
-		os.createUpProcedure(new UpProcedure<>(
-			TransitionToV2Epoch.class, EpochData.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
-			(s, u, r) -> {
-				var curState = s.sys;
-				if (curState.getEpoch() + 1 != u.getEpoch()) {
-					throw new ProcedureException("Must increment epoch");
-				}
-
-				return ReducerResult.incomplete(new UpdatingEpochRound());
-			}
-		));
-	}
 
 	private void roundUpdate(SysCalls os) {
 		// Round update
@@ -564,16 +524,6 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 	private void epochUpdate(SysCalls os) {
 		// Epoch Update
 		os.createDownProcedure(new DownProcedure<>(
-			EpochData.class, ReadyForEpochUpdate.class,
-			(d, r) -> PermissionLevel.SUPER_USER,
-			(d, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
-			(d, s, r) -> ReducerResult.incomplete(new UpdatingEpoch(d.getSubstate()))
-		));
-		os.createDownProcedure(new DownProcedure<>(
 			EpochData.class, CreatingNextValidatorSet.class,
 			(d, r) -> PermissionLevel.SUPER_USER,
 			(d, r, pubKey) -> {
@@ -675,9 +625,6 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		);
 
 		registerGenesisTransitions(os);
-		// Transition to V2 Epoch
-		// TODO: Remove for mainnet
-		registerBetanetV2ToV3Transitions(os);
 
 		// Epoch update
 		updateStake(os);

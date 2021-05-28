@@ -202,7 +202,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			txs = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException | TxBuilderException e) {
 			throw new IllegalStateException(
-				String.format("Failed to execute system update:%n%s", e.getMessage()), e
+				String.format("Failed to execute system update: %s", systemAction), e
 			);
 		}
 		RadixEngineTxn radixEngineCommand = new RadixEngineTxn(

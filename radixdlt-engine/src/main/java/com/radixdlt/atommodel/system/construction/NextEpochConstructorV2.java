@@ -43,8 +43,6 @@ import java.util.Optional;
 import java.util.TreeMap;
 
 public final class NextEpochConstructorV2 implements ActionConstructor<SystemNextEpoch> {
-
-
 	@Override
 	public void construct(SystemNextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
 		updatePreparedStake(action.validators(), txBuilder);
