@@ -18,7 +18,6 @@
 
 package com.radixdlt.atommodel.tokens.scrypt;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
@@ -82,11 +81,6 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		private NeedFixedTokenSupply(byte[] arg, TokenDefinitionParticle tokenDefinitionParticle) {
 			this.arg = arg;
 			this.tokenDefinitionParticle = tokenDefinitionParticle;
-		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(NeedFixedTokenSupply.class);
 		}
 	}
 
@@ -174,11 +168,6 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 				return Optional.empty();
 			}
 		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(UnaccountedTokens.class);
-		}
 	}
 
 	public static class RemainderTokens implements ReducerState {
@@ -213,11 +202,6 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			} else {
 				return Optional.empty();
 			}
-		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(RemainderTokens.class);
 		}
 	}
 

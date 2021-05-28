@@ -46,7 +46,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @RunWith(Parameterized.class)
-public final class SystemNextViewTest {
+public final class NextViewTest {
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
 		return List.of(new Object[][] {
@@ -60,7 +60,7 @@ public final class SystemNextViewTest {
 	private final ConstraintScrypt scrypt;
 	private final ActionConstructor<SystemNextView> nextViewConstructor;
 
-	public SystemNextViewTest(ConstraintScrypt scrypt, ActionConstructor<SystemNextView> nextViewConstructor) {
+	public NextViewTest(ConstraintScrypt scrypt, ActionConstructor<SystemNextView> nextViewConstructor) {
 		this.scrypt = scrypt;
 		this.nextViewConstructor = nextViewConstructor;
 	}

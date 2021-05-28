@@ -20,6 +20,7 @@ package com.radixdlt.constraintmachine;
 import com.google.common.hash.HashCode;
 
 import com.radixdlt.atom.Substate;
+import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.Txn;
@@ -38,6 +39,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -197,6 +199,11 @@ public final class ConstraintMachine {
 			return maybeParticle.get();
 		}
 
+		public SubstateCursor shutdownAll(Class<? extends Particle> particleClass) throws ConstraintMachineException {
+			// TODO: add to remoteDownParticles?
+			return store.openIndexedCursor(txn, particleClass);
+		}
+
 		Class<? extends ReducerState> getReducerStateClass() {
 			return reducerState != null ? reducerState.getClass() : VoidReducerState.class;
 		}
@@ -207,96 +214,6 @@ public final class ConstraintMachine {
 		}
 	}
 
-	/**
-	 * Executes a transition procedure given the next spun particle and a current validation state.
-	 *
-	 * @param validationState local state of validation
-	 * @return the first error found, otherwise an empty optional
-	 */
-	void validateParticle(
-		CMValidationState validationState,
-		SubstateWithArg<Particle> nextParticle,
-		boolean isInput
-	) throws ConstraintMachineException {
-		final MethodProcedure methodProcedure;
-		final Object authorizationParam;
-		final Object procedureParam;
-
-		// TODO: Reduce the 3 following procedures to 1
-		if (nextParticle == null) {
-			var endProcedure = this.procedures.getEndProcedure(
-				validationState.getReducerStateClass()
-			);
-			if (endProcedure == null) {
-				throw new ConstraintMachineException(CMErrorCode.MISSING_PROCEDURE, validationState);
-			}
-			methodProcedure = endProcedure;
-			authorizationParam = validationState.reducerState;
-			procedureParam = null;
-		} else if (!isInput) {
-			var outputParticle = nextParticle.getSubstate();
-			var upProcedure = this.procedures.getUpProcedure(
-				validationState.getReducerStateClass(),
-				outputParticle.getClass()
-			);
-			if (upProcedure == null) {
-				throw new ConstraintMachineException(CMErrorCode.MISSING_PROCEDURE, validationState);
-			}
-			methodProcedure = upProcedure;
-			authorizationParam = outputParticle;
-			procedureParam = outputParticle;
-		} else {
-			var downProcedure = this.procedures.getDownProcedure(
-				nextParticle.getSubstate().getClass(),
-				validationState.getReducerStateClass()
-			);
-			if (downProcedure == null) {
-				throw new ConstraintMachineException(CMErrorCode.MISSING_PROCEDURE, validationState);
-			}
-			methodProcedure = downProcedure;
-			authorizationParam = nextParticle;
-			procedureParam = nextParticle;
-		}
-
-		var readable = validationState.immutableIndex();
-		var reducerState = validationState.reducerState;
-		final ReducerResult reducerResult;
-		// System permissions don't require additional authorization
-		if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
-			var requiredLevel = methodProcedure.permissionLevel(authorizationParam, readable);
-			if (validationState.permissionLevel.compareTo(requiredLevel) < 0) {
-				throw new ConstraintMachineException(
-					CMErrorCode.PERMISSION_LEVEL_ERROR,
-					validationState,
-					"Required: " + requiredLevel + " Current: " + validationState.permissionLevel
-				);
-			}
-		}
-
-		try {
-			if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
-				methodProcedure.verifyAuthorization(authorizationParam, readable, validationState.signedBy);
-			}
-			reducerResult = methodProcedure.call(procedureParam, reducerState, readable);
-		} catch (AuthorizationException e) {
-			throw new ConstraintMachineException(CMErrorCode.AUTHORIZATION_ERROR, validationState, e);
-		} catch (ProcedureException e) {
-			throw new ConstraintMachineException(CMErrorCode.PROCEDURE_ERROR, validationState, e);
-		} catch (Exception e) {
-			throw new ConstraintMachineException(CMErrorCode.UNKNOWN_ERROR, validationState, e);
-		}
-
-		reducerResult.ifCompleteElse(
-			txAction -> {
-				validationState.reducerState = null;
-				validationState.txAction = txAction.orElse(null);
-			},
-			(nextState, txAction) -> {
-				validationState.reducerState = nextState;
-				validationState.txAction = txAction.orElse(null);
-			}
-		);
-	}
 
 	public static class ParseResult {
 		private final List<REInstruction> instructions;
@@ -376,7 +293,7 @@ public final class ConstraintMachine {
 			}
 			verifierState.addParsed(inst);
 
-			if (inst.hasSubstate()) {
+			if (inst.isStateUpdate()) {
 				var data = inst.getData();
 				if (data instanceof Substate) {
 					Substate substate = (Substate) data;
@@ -432,6 +349,73 @@ public final class ConstraintMachine {
 		return verifierState;
 	}
 
+
+	/**
+	 * Executes a transition procedure given the next spun particle and a current validation state.
+	 */
+	void callProcedure(
+		CMValidationState validationState,
+		REInstruction.REOp op,
+		Class<? extends Particle> particleClass,
+		Object procedureParam
+	) throws ConstraintMachineException {
+
+		final MethodProcedure methodProcedure;
+		try {
+			var key = ProcedureKey.of(particleClass, validationState.getReducerStateClass());
+			methodProcedure = this.procedures.getProcedure(op, key);
+		} catch (MissingProcedureException e) {
+			throw new ConstraintMachineException(CMErrorCode.MISSING_PROCEDURE, validationState, e);
+		}
+
+		// TODO: Reduce the 2 following procedures to 1
+		final Object authorizationParam;
+		if (op == REInstruction.REOp.END) {
+			authorizationParam = validationState.reducerState;
+		} else {
+			authorizationParam = procedureParam;
+		}
+
+		var readable = validationState.immutableIndex();
+		var reducerState = validationState.reducerState;
+		final ReducerResult reducerResult;
+		// System permissions don't require additional authorization
+		if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
+			var requiredLevel = methodProcedure.permissionLevel(authorizationParam, readable);
+			if (validationState.permissionLevel.compareTo(requiredLevel) < 0) {
+				throw new ConstraintMachineException(
+					CMErrorCode.PERMISSION_LEVEL_ERROR,
+					validationState,
+					"Required: " + requiredLevel + " Current: " + validationState.permissionLevel
+				);
+			}
+		}
+
+		try {
+			if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
+				methodProcedure.verifyAuthorization(authorizationParam, readable, validationState.signedBy);
+			}
+			reducerResult = methodProcedure.call(procedureParam, reducerState, readable);
+		} catch (AuthorizationException e) {
+			throw new ConstraintMachineException(CMErrorCode.AUTHORIZATION_ERROR, validationState, e);
+		} catch (ProcedureException e) {
+			throw new ConstraintMachineException(CMErrorCode.PROCEDURE_ERROR, validationState, e);
+		} catch (Exception e) {
+			throw new ConstraintMachineException(CMErrorCode.UNKNOWN_ERROR, validationState, e);
+		}
+
+		reducerResult.ifCompleteElse(
+			txAction -> {
+				validationState.reducerState = null;
+				validationState.txAction = txAction.orElse(null);
+			},
+			(nextState, txAction) -> {
+				validationState.reducerState = nextState;
+				validationState.txAction = txAction.orElse(null);
+			}
+		);
+	}
+
 	/**
 	 * Executes transition procedures and witness validators in a particle group and validates
 	 * that the particle group is well formed.
@@ -457,48 +441,68 @@ public final class ConstraintMachine {
 				throw new ConstraintMachineException(CMErrorCode.MISSING_PARTICLE_GROUP, validationState);
 			}
 
-			if (inst.hasSubstate()) {
+			if (inst.getMicroOp() == REInstruction.REOp.DOWNALL) {
+				Class<? extends Particle> particleClass = inst.getData();
+				var substateCursor = validationState.shutdownAll(particleClass);
+				final var stateUpdates = parsed;
+				var iterator = new Iterator<Particle>() {
+					@Override
+					public boolean hasNext() {
+						return substateCursor.hasNext();
+					}
+
+					@Override
+					public Particle next() {
+						// FIXME: this is a hack
+						// FIXME: do this via shutdownAll state update rather than individually
+						var substate = substateCursor.next();
+						stateUpdates.add(REStateUpdate.of(inst.getMicroOp(), substate, inst.getDataByteBuffer()));
+						return substate.getParticle();
+					}
+				};
+				try {
+					callProcedure(validationState, inst.getMicroOp(), particleClass, iterator);
+				} finally {
+					substateCursor.close();
+				}
+			} else if (inst.isStateUpdate()) {
 				final Particle nextParticle;
 				final Substate substate;
-				final byte[] argument;
+				final Object o;
 				if (inst.getMicroOp() == REInstruction.REOp.UP) {
 					// TODO: Cleanup indexing of substate class
 					substate = inst.getData();
 					nextParticle = substate.getParticle();
+					o = nextParticle;
 					validationState.bootUp(instIndex, substate);
-					argument = null;
 				} else if (inst.getMicroOp() == REInstruction.REOp.VDOWN) {
 					substate = inst.getData();
-					argument = null;
 					nextParticle = substate.getParticle();
+					o = SubstateWithArg.noArg(nextParticle);
 					validationState.virtualShutdown(substate);
 				} else if (inst.getMicroOp() == REInstruction.REOp.VDOWNARG) {
 					substate = (Substate) ((Pair) inst.getData()).getFirst();
-					argument = (byte[]) ((Pair) inst.getData()).getSecond();
+					var argument = (byte[]) ((Pair) inst.getData()).getSecond();
 					nextParticle = substate.getParticle();
+					o = SubstateWithArg.withArg(nextParticle, argument);
 					validationState.virtualShutdown(substate);
 				} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.DOWN) {
 					SubstateId substateId = inst.getData();
 					nextParticle = validationState.shutdown(substateId);
 					substate = Substate.create(nextParticle, substateId);
-					argument = null;
+					o = SubstateWithArg.noArg(nextParticle);
 				} else if (inst.getMicroOp() == REInstruction.REOp.LDOWN) {
 					SubstateId substateId = inst.getData();
 					nextParticle = validationState.localShutdown(substateId.getIndex().orElseThrow());
 					substate = Substate.create(nextParticle, substateId);
-					argument = null;
+					o = SubstateWithArg.noArg(nextParticle);
 				} else {
 					throw new ConstraintMachineException(CMErrorCode.UNKNOWN_OP, validationState);
 				}
 
 				parsed.add(REStateUpdate.of(inst.getMicroOp(), substate, inst.getDataByteBuffer()));
 
-				validateParticle(
-					validationState,
-					argument == null ? SubstateWithArg.noArg(nextParticle)
-						: SubstateWithArg.withArg(nextParticle, argument),
-					inst.getCheckSpin() == Spin.UP
-				);
+				callProcedure(validationState, inst.getMicroOp(), nextParticle.getClass(), o);
 
 				expectEnd = validationState.reducerState == null;
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.END) {
@@ -506,7 +510,7 @@ public final class ConstraintMachine {
 				parsed = new ArrayList<>();
 
 				if (validationState.reducerState != null) {
-					validateParticle(validationState, null, false);
+					callProcedure(validationState, inst.getMicroOp(), null, null);
 				}
 
 				expectEnd = false;

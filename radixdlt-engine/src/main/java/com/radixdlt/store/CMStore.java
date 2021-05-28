@@ -17,6 +17,7 @@
 
 package com.radixdlt.store;
 
+import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.Particle;
 
@@ -47,4 +48,6 @@ public interface CMStore extends ReadableAddrs {
 	boolean isVirtualDown(Transaction txn, SubstateId substateId);
 
 	Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId);
+
+	SubstateCursor openIndexedCursor(Transaction txn, Class<? extends Particle> particleClass);
 }

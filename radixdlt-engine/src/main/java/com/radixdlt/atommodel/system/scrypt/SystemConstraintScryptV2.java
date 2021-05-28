@@ -18,14 +18,15 @@
 
 package com.radixdlt.atommodel.system.scrypt;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.Stake;
+import com.radixdlt.atommodel.system.state.StakeShares;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
@@ -37,19 +38,23 @@ import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.DownProcedure;
+import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
+
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Objects;
+import java.util.TreeMap;
 
 public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 	public static final UInt256 REWARDS_PER_PROPOSAL = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
 
 	private static class Inflation implements ReducerState {
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(Inflation.class);
-		}
 	}
 
 
@@ -81,11 +86,9 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		private TransitionToV2Epoch(SystemParticle sys) {
 			this.sys = sys;
 		}
+	}
 
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(TransitionToV2Epoch.class);
-		}
+	private static final class ReadyForEpochUpdate implements ReducerState {
 	}
 
 	private static final class UpdatingEpoch implements ReducerState {
@@ -93,25 +96,12 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		private UpdatingEpoch(EpochData prev) {
 			this.prev = prev;
 		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(UpdatingEpoch.class);
-		}
 	}
 
 	private static final class UpdatingEpochRound implements ReducerState {
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(UpdatingEpochRound.class);
-		}
 	}
 
 	private static final class UpdatingEpochRound2 implements ReducerState {
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(UpdatingEpochRound2.class);
-		}
 	}
 
 	private static final class UpdatingRound implements ReducerState {
@@ -119,10 +109,60 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		private UpdatingRound(RoundData prev) {
 			this.prev = prev;
 		}
+	}
 
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(UpdatingRound.class);
+	private static final class AllPreparedStake implements ReducerState {
+		private UInt256 preparedStake = UInt256.ZERO;
+		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> allPreparedStake = new TreeMap<>(
+			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
+		);
+
+		AllPreparedStake(Iterator<PreparedStake> preparedStakeIterator) {
+			preparedStakeIterator.forEachRemaining(preparedStake ->
+				allPreparedStake
+					.computeIfAbsent(
+						preparedStake.getDelegateKey(),
+						k -> new TreeMap<>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()))
+					)
+					.merge(preparedStake.getOwner(), preparedStake.getAmount(), UInt256::add)
+			);
+		}
+
+		void accountFor(StakeShares stakeShares) throws ProcedureException {
+			var e = allPreparedStake.firstEntry();
+			if (!Objects.equals(e.getKey(), stakeShares.getDelegateKey())) {
+				throw new ProcedureException(stakeShares.getDelegateKey() + " is not the first key (" + e.getKey() + ")");
+			}
+			var stakes = e.getValue();
+			var accountAddr = stakes.firstKey();
+			if (!Objects.equals(stakeShares.getOwner(), accountAddr)) {
+				throw new ProcedureException(stakeShares.getOwner() + " is not the first addr (" + accountAddr + ")");
+			}
+			var stakeAmt = stakes.remove(accountAddr);
+			if (!Objects.equals(stakeAmt, stakeShares.getAmount())) {
+				throw new ProcedureException(
+					String.format("Amount (%s) does not match what is prepared (%s)", stakeShares.getAmount(), stakeAmt)
+				);
+			}
+			preparedStake = preparedStake.add(stakeAmt);
+		}
+
+		boolean take(Stake stake) throws ProcedureException {
+			var firstKey = allPreparedStake.firstKey();
+			if (!Objects.equals(firstKey, stake.getValidatorKey())) {
+				throw new ProcedureException(stake.getValidatorKey() + " is not the first key (" + firstKey + ")");
+			}
+			var stakes = allPreparedStake.remove(firstKey);
+			if (!stakes.isEmpty()) {
+				throw new ProcedureException("Stakes has not been emptied.");
+			}
+			if (!Objects.equals(preparedStake, stake.getAmount())) {
+				throw new ProcedureException(
+					String.format("Amount (%s) does not match what is prepared (%s)", stake.getAmount(), preparedStake)
+				);
+			}
+			preparedStake = UInt256.ZERO;
+			return allPreparedStake.isEmpty();
 		}
 	}
 
@@ -148,7 +188,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 	private void registerBetanetV2ToV3Transitions(SysCalls os) {
 		os.createDownProcedure(new DownProcedure<>(
-			SystemParticle.class, VoidReducerState.class,
+			SystemParticle.class, ReadyForEpochUpdate.class,
 			(d, r) -> PermissionLevel.SUPER_USER,
 			(d, r, pubKey) -> {
 				if (pubKey.isPresent()) {
@@ -172,6 +212,48 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				}
 
 				return ReducerResult.incomplete(new UpdatingEpochRound());
+			}
+		));
+	}
+
+	public void roundUpdate(SysCalls os) {
+		// Round update
+		os.createDownProcedure(new DownProcedure<>(
+			RoundData.class, VoidReducerState.class,
+			(d, r) -> PermissionLevel.SUPER_USER,
+			(d, r, pubKey) -> {
+				if (pubKey.isPresent()) {
+					throw new AuthorizationException("System update should not be signed.");
+				}
+			},
+			(d, s, r) -> ReducerResult.incomplete(new UpdatingRound(d.getSubstate()))
+		));
+		os.createUpProcedure(new UpProcedure<>(
+			UpdatingRound.class, RoundData.class,
+			(u, r) -> PermissionLevel.SUPER_USER,
+			(u, r, pubKey) -> { },
+			(s, u, r) -> {
+				var curData = s.prev;
+				if (curData.getView() >= u.getView()) {
+					throw new ProcedureException("Next view must be greater than previous.");
+				}
+
+				return ReducerResult.incomplete(new Inflation(), Unknown.create());
+			}
+		));
+		os.createUpProcedure(new UpProcedure<>(
+			Inflation.class, Stake.class,
+			(u, r) -> PermissionLevel.SUPER_USER,
+			(u, r, pubKey) -> {
+				if (pubKey.isPresent()) {
+					throw new AuthorizationException("System update should not be signed.");
+				}
+			},
+			(s, u, r) -> {
+				if (!u.getAmount().equals(REWARDS_PER_PROPOSAL)) {
+					throw new ProcedureException("Rewards must be " + REWARDS_PER_PROPOSAL);
+				}
+				return ReducerResult.complete(Unknown.create());
 			}
 		));
 	}
@@ -202,7 +284,18 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		);
 		os.registerParticle(
 			Stake.class,
-			ParticleDefinition.<Stake>builder() .build()
+			ParticleDefinition.<Stake>builder().build()
+		);
+		os.registerParticle(
+			StakeShares.class,
+			ParticleDefinition.<StakeShares>builder()
+				.staticValidation(s -> {
+					if (s.getAmount().isZero()) {
+						return Result.error("amount must not be zero");
+					}
+					return Result.success();
+				})
+				.build()
 		);
 
 		registerGenesisTransitions(os);
@@ -211,8 +304,39 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		registerBetanetV2ToV3Transitions(os);
 
 		// Epoch Update
+		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
+			PreparedStake.class, VoidReducerState.class,
+			r -> PermissionLevel.SUPER_USER,
+			(r, k) -> {
+				if (k.isPresent()) {
+					throw new AuthorizationException("System update should not be signed.");
+				}
+			},
+			(i, s, r) -> {
+				var prepared = new AllPreparedStake(i);
+				return prepared.allPreparedStake.isEmpty()
+					? ReducerResult.incomplete(new ReadyForEpochUpdate())
+					: ReducerResult.incomplete(prepared);
+			}
+		));
+		os.createUpProcedure(new UpProcedure<>(
+			AllPreparedStake.class, StakeShares.class,
+			(u, r) -> PermissionLevel.SUPER_USER,
+			(u, r, k) -> { },
+			(s, u, r) -> {
+				s.accountFor(u);
+				return ReducerResult.incomplete(s);
+			}
+		));
+		os.createUpProcedure(new UpProcedure<>(
+			AllPreparedStake.class, Stake.class,
+			(u, r) -> PermissionLevel.SUPER_USER,
+			(u, r, k) -> { },
+			(s, u, r) -> s.take(u) ? ReducerResult.incomplete(new ReadyForEpochUpdate()) : ReducerResult.incomplete(s)
+		));
+
 		os.createDownProcedure(new DownProcedure<>(
-			EpochData.class, VoidReducerState.class,
+			EpochData.class, ReadyForEpochUpdate.class,
 			(d, r) -> PermissionLevel.SUPER_USER,
 			(d, r, pubKey) -> {
 				if (pubKey.isPresent()) {
@@ -258,44 +382,6 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			}
 		));
 
-		// Round update
-		os.createDownProcedure(new DownProcedure<>(
-			RoundData.class, VoidReducerState.class,
-			(d, r) -> PermissionLevel.SUPER_USER,
-			(d, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
-			(d, s, r) -> ReducerResult.incomplete(new UpdatingRound(d.getSubstate()))
-		));
-		os.createUpProcedure(new UpProcedure<>(
-			UpdatingRound.class, RoundData.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> { },
-			(s, u, r) -> {
-				var curData = s.prev;
-				if (curData.getView() >= u.getView()) {
-					throw new ProcedureException("Next view must be greater than previous.");
-				}
-
-				return ReducerResult.incomplete(new Inflation(), Unknown.create());
-			}
-		));
-		os.createUpProcedure(new UpProcedure<>(
-			Inflation.class, Stake.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
-			(s, u, r) -> {
-				if (!u.getAmount().equals(REWARDS_PER_PROPOSAL)) {
-					throw new ProcedureException("Rewards must be " + REWARDS_PER_PROPOSAL);
-				}
-				return ReducerResult.complete(Unknown.create());
-			}
-		));
+		roundUpdate(os);
 	}
 }

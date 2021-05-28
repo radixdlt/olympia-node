@@ -21,43 +21,46 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.store.ReadableAddrs;
 
+import java.util.Iterator;
 import java.util.Optional;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
-public class EndProcedure<S extends ReducerState> implements MethodProcedure {
+public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> implements MethodProcedure {
+	private final Class<D> downClass;
 	private final Class<S> reducerStateClass;
-	private final BiFunction<S, ReadableAddrs, PermissionLevel> permissionLevel;
-	private final EndAuthorization<S> endAuthorization;
-	private final EndReducer<S> endReducer;
+	private final ShutdownAllReducer<D, S> downReducer;
+	private final Function<ReadableAddrs, PermissionLevel> permissionLevel;
+	private final ShutdownAllAuthorization authorization;
 
-	public EndProcedure(
-		Class<S> reducerStateClass,
-		BiFunction<S, ReadableAddrs, PermissionLevel> permissionLevel,
-		EndAuthorization<S> endAuthorization,
-		EndReducer<S> endReducer
+	public ShutdownAllProcedure(
+		Class<D> downClass, Class<S> reducerStateClass,
+		Function<ReadableAddrs, PermissionLevel> permissionLevel,
+		ShutdownAllAuthorization shutdownAllAuthorization,
+		ShutdownAllReducer<D, S> downReducer
 	) {
+		this.downClass = downClass;
 		this.reducerStateClass = reducerStateClass;
+		this.downReducer = downReducer;
 		this.permissionLevel = permissionLevel;
-		this.endAuthorization = endAuthorization;
-		this.endReducer = endReducer;
+		this.authorization = shutdownAllAuthorization;
 	}
 
-	public ProcedureKey getEndProcedureKey() {
-		return ProcedureKey.of(null, reducerStateClass);
+	public ProcedureKey getKey() {
+		return ProcedureKey.of(downClass, reducerStateClass);
 	}
 
 	@Override
 	public PermissionLevel permissionLevel(Object o, ReadableAddrs readableAddrs) {
-		return permissionLevel.apply((S) o, readableAddrs);
+		return permissionLevel.apply(readableAddrs);
 	}
 
 	@Override
 	public void verifyAuthorization(Object o, ReadableAddrs readableAddrs, Optional<ECPublicKey> key) throws AuthorizationException {
-		endAuthorization.verify((S) o, readableAddrs, key);
+		authorization.verify(readableAddrs, key);
 	}
 
 	@Override
 	public ReducerResult call(Object o, ReducerState reducerState, ReadableAddrs readableAddrs) throws ProcedureException {
-		return endReducer.reduce((S) reducerState, readableAddrs).map(ReducerResult::complete).orElse(ReducerResult.complete());
+		return downReducer.reduce((Iterator<D>) o, (S) reducerState, readableAddrs);
 	}
 }

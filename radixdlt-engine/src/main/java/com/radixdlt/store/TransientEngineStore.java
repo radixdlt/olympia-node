@@ -57,6 +57,17 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
+	public SubstateCursor openIndexedCursor(Transaction dbTxn, Class<? extends Particle> particleClass) {
+		return SubstateCursor.concat(
+			transientStore.openIndexedCursor(particleClass),
+			() -> SubstateCursor.filter(
+				base.openIndexedCursor(dbTxn, particleClass),
+				s -> transientStore.getSpin(s.getId()) != Spin.DOWN
+			)
+		);
+	}
+
+	@Override
 	public SubstateCursor openIndexedCursor(Class<? extends Particle> particleClass) {
 		return SubstateCursor.concat(
 			transientStore.openIndexedCursor(particleClass),

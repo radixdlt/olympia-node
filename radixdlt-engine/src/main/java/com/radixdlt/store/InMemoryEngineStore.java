@@ -87,6 +87,11 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	}
 
 	@Override
+	public SubstateCursor openIndexedCursor(Transaction dbTxn, Class<? extends Particle> substateClass) {
+		return openIndexedCursor(substateClass);
+	}
+
+	@Override
 	public SubstateCursor openIndexedCursor(Class<? extends Particle> substateClass) {
 		final List<Substate> substates = new ArrayList<>();
 		synchronized (lock) {

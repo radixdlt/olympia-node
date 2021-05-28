@@ -18,7 +18,6 @@
 
 package com.radixdlt.atommodel.tokens.scrypt;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.state.SystemParticle;
@@ -88,11 +87,6 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		public ECPublicKey delegate() {
 			return delegate;
 		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(RemainderStake.class);
-		}
 	}
 
 	public static class UnaccountedStake implements ReducerState {
@@ -123,11 +117,6 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 			} else {
 				return Optional.empty();
 			}
-		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(UnaccountedStake.class);
 		}
 	}
 

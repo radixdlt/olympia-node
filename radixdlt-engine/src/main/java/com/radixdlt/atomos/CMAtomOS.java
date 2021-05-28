@@ -18,7 +18,6 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -75,11 +74,6 @@ public final class CMAtomOS {
 
 		public REAddr getAddr() {
 			return this.addrParticle.getAddr();
-		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(REAddrClaim.class);
 		}
 	}
 
