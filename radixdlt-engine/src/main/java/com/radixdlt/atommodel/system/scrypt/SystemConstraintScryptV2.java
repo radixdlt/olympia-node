@@ -23,7 +23,7 @@ import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.HasEpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
-import com.radixdlt.atommodel.system.state.StakeShares;
+import com.radixdlt.atommodel.system.state.StakeOwnership;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.system.state.ValidatorEpochData;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
@@ -56,7 +56,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3.EPOCHS_LOCKED;
 
@@ -115,7 +114,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 	}
 
 	private static final class RewardingValidators implements ReducerState {
-		private final TreeMap<ECPublicKey, UInt256> curStake = new TreeMap<>(
+		private final TreeMap<ECPublicKey, ValidatorStake> curStake = new TreeMap<>(
 			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
 		);
 		private final TreeMap<ECPublicKey, Long> proposalsCompleted = new TreeMap<>(
@@ -146,7 +145,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			var numProposals = proposalsCompleted.remove(k);
 			var emission = SystemConstraintScryptV2.REWARDS_PER_PROPOSAL.multiply(UInt256.from(numProposals));
 			return new LoadingStake(k, amt -> {
-				curStake.put(k, amt.add(emission));
+				curStake.put(k, amt.addEmission(emission));
 				return next();
 			});
 		}
@@ -192,8 +191,11 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 	private static final class Unstaking implements ReducerState {
 		private final TreeMap<REAddr, UInt256> unstaking;
-		private final Supplier<ReducerState> onDone;
-		Unstaking(TreeMap<REAddr, UInt256> unstaking, Supplier<ReducerState> onDone) {
+		private final Function<ValidatorStake, ReducerState> onDone;
+		private ValidatorStake current;
+
+		Unstaking(ValidatorStake current, TreeMap<REAddr, UInt256> unstaking, Function<ValidatorStake, ReducerState> onDone) {
+			this.current = current;
 			this.unstaking = unstaking;
 			this.onDone = onDone;
 		}
@@ -210,7 +212,10 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			if (!Objects.equals(u.getHoldingAddr(), firstAddr)) {
 				throw new ProcedureException("Unstaking incorrect addr");
 			}
-			var expectedAmt = unstaking.remove(firstAddr);
+			var ownershipUnstake = unstaking.remove(firstAddr);
+			var nextValidatorAndAmt = current.unstakeOwnership(ownershipUnstake);
+			this.current = nextValidatorAndAmt.getFirst();
+			var expectedAmt = nextValidatorAndAmt.getSecond();
 			if (!expectedAmt.equals(u.getAmount())) {
 				throw new ProcedureException("Invalid amount");
 			}
@@ -221,7 +226,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 					+ " should be: " + (systemState.getEpoch() + EPOCHS_LOCKED));
 			}
 
-			return unstaking.isEmpty() ? onDone.get() : this;
+
+			return unstaking.isEmpty() ? onDone.apply(current) : this;
 		}
 	}
 
@@ -230,9 +236,9 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
 		);
 
-		private final TreeMap<ECPublicKey, UInt256> curStake;
+		private final TreeMap<ECPublicKey, ValidatorStake> curStake;
 
-		PreparingUnstake(TreeMap<ECPublicKey, UInt256> curStake) {
+		PreparingUnstake(TreeMap<ECPublicKey, ValidatorStake> curStake) {
 			this.curStake = curStake;
 		}
 
@@ -255,61 +261,61 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 			var k = preparingUnstake.firstKey();
 			var unstakes = preparingUnstake.remove(k);
-			var totalUnstakeAmt = unstakes.values().stream().reduce(UInt256::add).orElseThrow();
 
 			if (!curStake.containsKey(k)) {
-				return new LoadingStake(k, amt -> {
-					if (amt.compareTo(totalUnstakeAmt) < 0) {
-						throw new IllegalStateException();
-					}
-					curStake.put(k, amt.subtract(totalUnstakeAmt));
-					return new Unstaking(unstakes, this::next);
-				});
+				return new LoadingStake(k, validatorStake ->
+					new Unstaking(validatorStake, unstakes, s -> {
+						curStake.put(k, s);
+						return next();
+					})
+				);
 			} else {
-				var amt = curStake.get(k);
-				if (amt.compareTo(totalUnstakeAmt) < 0) {
-					throw new IllegalStateException();
-				}
-				curStake.put(k, amt.subtract(totalUnstakeAmt));
-				return new Unstaking(unstakes, this::next);
+				var validatorStake = curStake.get(k);
+				return new Unstaking(validatorStake, unstakes, s -> {
+					curStake.put(k, s);
+					return next();
+				});
 			}
 		}
 	}
 
 	private static final class Staking implements ReducerState {
-		private final ECPublicKey validatorKey;
+		private ValidatorStake validatorStake;
 		private final TreeMap<REAddr, UInt256> stakes;
-		private final Supplier<ReducerState> onDone;
+		private final Function<ValidatorStake, ReducerState> onDone;
 
-		Staking(ECPublicKey validatorKey, TreeMap<REAddr, UInt256> stakes, Supplier<ReducerState> onDone) {
-			this.validatorKey = validatorKey;
+		Staking(ValidatorStake validatorStake, TreeMap<REAddr, UInt256> stakes, Function<ValidatorStake, ReducerState> onDone) {
+			this.validatorStake = validatorStake;
 			this.stakes = stakes;
 			this.onDone = onDone;
 		}
 
-		ReducerState stake(StakeShares stakeShares) throws ProcedureException {
-			if (!Objects.equals(validatorKey, stakeShares.getDelegateKey())) {
+		ReducerState stake(StakeOwnership stakeOwnership) throws ProcedureException {
+			if (!Objects.equals(validatorStake.getValidatorKey(), stakeOwnership.getDelegateKey())) {
 				throw new ProcedureException("Invalid update");
 			}
 			var accountAddr = stakes.firstKey();
-			if (!Objects.equals(stakeShares.getOwner(), accountAddr)) {
-				throw new ProcedureException(stakeShares.getOwner() + " is not the first addr (" + accountAddr + ")");
+			if (!Objects.equals(stakeOwnership.getOwner(), accountAddr)) {
+				throw new ProcedureException(stakeOwnership.getOwner() + " is not the first addr (" + accountAddr + ")");
 			}
 			var stakeAmt = stakes.remove(accountAddr);
-			if (!Objects.equals(stakeAmt, stakeShares.getAmount())) {
+			var nextValidatorAndOwnership = validatorStake.stake(accountAddr, stakeAmt);
+			this.validatorStake = nextValidatorAndOwnership.getFirst();
+			var expectedOwnership = nextValidatorAndOwnership.getSecond();
+			if (!Objects.equals(stakeOwnership, expectedOwnership)) {
 				throw new ProcedureException(
-					String.format("Amount (%s) does not match what is prepared (%s)", stakeShares.getAmount(), stakeAmt)
+					String.format("Amount (%s) does not match what is prepared (%s)", stakeOwnership.getAmount(), stakeAmt)
 				);
 			}
-			return stakes.isEmpty() ? onDone.get() : this;
+			return stakes.isEmpty() ? onDone.apply(this.validatorStake) : this;
 		}
 	}
 
 	private static final class LoadingStake implements ReducerState {
 		private final ECPublicKey key;
-		private final Function<UInt256, ReducerState> onDone;
+		private final Function<ValidatorStake, ReducerState> onDone;
 
-		LoadingStake(ECPublicKey key, Function<UInt256, ReducerState> onDone) {
+		LoadingStake(ECPublicKey key, Function<ValidatorStake, ReducerState> onDone) {
 			this.key = key;
 			this.onDone = onDone;
 		}
@@ -318,16 +324,16 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			if (!stake.getValidatorKey().equals(key)) {
 				throw new ProcedureException("Invalid stake load");
 			}
-			return onDone.apply(stake.getAmount());
+			return onDone.apply(stake);
 		}
 	}
 
 	private static final class PreparingStake implements ReducerState {
-		private final TreeMap<ECPublicKey, UInt256> curStake;
+		private final TreeMap<ECPublicKey, ValidatorStake> curStake;
 		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake = new TreeMap<>(
 			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
 		);
-		PreparingStake(TreeMap<ECPublicKey, UInt256> curStake) {
+		PreparingStake(TreeMap<ECPublicKey, ValidatorStake> curStake) {
 			this.curStake = curStake;
 		}
 
@@ -350,22 +356,25 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 			var k = preparingStake.firstKey();
 			var stakes = preparingStake.remove(k);
-			var totalPrepared = stakes.values().stream().reduce(UInt256::add).orElseThrow();
 			if (!curStake.containsKey(k)) {
-				return new LoadingStake(k, amt -> {
-					curStake.put(k, amt.add(totalPrepared));
-					return new Staking(k, stakes, this::next);
-				});
+				return new LoadingStake(k, validatorStake ->
+					new Staking(validatorStake, stakes, updated -> {
+						curStake.put(k, updated);
+						return this.next();
+					})
+				);
 			} else {
-				curStake.merge(k, totalPrepared, UInt256::add);
-				return new Staking(k, stakes, this::next);
+				return new Staking(curStake.get(k), stakes, updated -> {
+					curStake.put(k, updated);
+					return this.next();
+				});
 			}
 		}
 	}
 
 	private static final class UpdatingValidatorStakes implements ReducerState {
-		private final TreeMap<ECPublicKey, UInt256> curStake;
-		UpdatingValidatorStakes(TreeMap<ECPublicKey, UInt256> curStake) {
+		private final TreeMap<ECPublicKey, ValidatorStake> curStake;
+		UpdatingValidatorStakes(TreeMap<ECPublicKey, ValidatorStake> curStake) {
 			this.curStake = curStake;
 		}
 
@@ -376,7 +385,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			}
 
 			var expectedUpdate = curStake.remove(k);
-			if (!stake.getAmount().equals(expectedUpdate)) {
+			if (!stake.equals(expectedUpdate)) {
 				throw new ProcedureException("Stake amount does not match.");
 			}
 
@@ -484,11 +493,6 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		));
 	}
 
-
-	private void emissionsAndNextValidatorSet(SysCalls os) {
-
-
-	}
 	private void updateStake(SysCalls os) {
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
 			ValidatorEpochData.class, VoidReducerState.class,
@@ -537,7 +541,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			(i, s, r) -> ReducerResult.incomplete(s.prepareStakes(i))
 		));
 		os.createUpProcedure(new UpProcedure<>(
-			Staking.class, StakeShares.class,
+			Staking.class, StakeOwnership.class,
 			(u, r) -> PermissionLevel.SUPER_USER,
 			(u, r, k) -> { },
 			(s, u, r) -> ReducerResult.incomplete(s.stake(u))
@@ -648,8 +652,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				.build()
 		);
 		os.registerParticle(
-			StakeShares.class,
-			ParticleDefinition.<StakeShares>builder()
+			StakeOwnership.class,
+			ParticleDefinition.<StakeOwnership>builder()
 				.staticValidation(s -> {
 					if (s.getAmount().isZero()) {
 						return Result.error("amount must not be zero");
@@ -676,7 +680,6 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		registerBetanetV2ToV3Transitions(os);
 
 		// Epoch update
-		emissionsAndNextValidatorSet(os);
 		updateStake(os);
 		epochUpdate(os);
 

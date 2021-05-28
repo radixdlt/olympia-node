@@ -26,7 +26,6 @@ import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
-import com.radixdlt.atommodel.system.state.StakeShares;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.system.state.ValidatorEpochData;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
@@ -48,16 +47,12 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 
 	@Override
 	public void construct(SystemNextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
-		emissionsAndNextValidatorSet(action.validators(), txBuilder);
 		updatePreparedStake(action.validators(), txBuilder);
 		updateEpochData(txBuilder);
 		updateRoundData(txBuilder);
 	}
 
-	public void emissionsAndNextValidatorSet(List<ECPublicKey> validators, TxBuilder txBuilder) {
-	}
-
-	private void updatePreparedStake(List<ECPublicKey> validators, TxBuilder txBuilder) throws TxBuilderException {
+	private void updatePreparedStake(List<ECPublicKey> validatorKeys, TxBuilder txBuilder) throws TxBuilderException {
 		// TODO: Replace with loadAddr()
 		var epochUnlockedMaybe = txBuilder.find(EpochData.class, p -> true).map(EpochData::getEpoch);
 		long epochUnlocked;
@@ -68,9 +63,9 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 				.map(SystemParticle::getEpoch).orElse(0L) + StakingConstraintScryptV3.EPOCHS_LOCKED;
 		}
 
-
-		var stakesToUpdate = new TreeMap<ECPublicKey, UInt256>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
-
+		var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorStake>(
+			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
+		);
 		var proposals = txBuilder.shutdownAll(ValidatorEpochData.class, i -> {
 			final TreeMap<ECPublicKey, Long> proposalsCompleted = new TreeMap<>(
 				(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
@@ -84,11 +79,10 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 			var currentStake = txBuilder.down(
 				ValidatorStake.class,
 				s -> s.getValidatorKey().equals(k),
-				Optional.of(SubstateWithArg.noArg(new ValidatorStake(UInt256.ZERO, k))),
 				"Validator not found"
 			);
 			var emission = SystemConstraintScryptV2.REWARDS_PER_PROPOSAL.multiply(UInt256.from(numProposals));
-			stakesToUpdate.put(k, currentStake.getAmount().add(emission));
+			validatorsToUpdate.put(k, currentStake.addEmission(emission));
 		}
 
 		var allPreparedUnstake = txBuilder.shutdownAll(PreparedUnstakeOwned.class, i -> {
@@ -107,26 +101,27 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 		});
 		for (var e : allPreparedUnstake.entrySet()) {
 			var k = e.getKey();
-			if (!stakesToUpdate.containsKey(k)) {
+			if (!validatorsToUpdate.containsKey(k)) {
 				var currentStake = txBuilder.down(
 					ValidatorStake.class,
 					p -> p.getValidatorKey().equals(k),
-					Optional.of(SubstateWithArg.noArg(new ValidatorStake(UInt256.ZERO, k))),
+					Optional.of(SubstateWithArg.noArg(new ValidatorStake(k, UInt256.ZERO, UInt256.ZERO))),
 					"Validator not found"
 				);
-				stakesToUpdate.put(k, currentStake.getAmount());
+				validatorsToUpdate.put(k, currentStake);
 			}
 
 			var unstakes = e.getValue();
-			unstakes.forEach((addr, amt) ->
-				txBuilder.up(new TokensParticle(addr, amt, REAddr.ofNativeToken(), epochUnlocked))
-			);
-			var unstakeAmount = unstakes.values().stream().reduce(UInt256::add).orElseThrow();
-			if (stakesToUpdate.get(k).compareTo(unstakeAmount) < 0) {
-				throw new IllegalStateException();
+			var curValidatorStake = validatorsToUpdate.get(k);
+			for (var entry : unstakes.entrySet()) {
+				var addr = entry.getKey();
+				var amt = entry.getValue();
+				var nextStakeAndAmt = curValidatorStake.unstakeOwnership(amt);
+				curValidatorStake = nextStakeAndAmt.getFirst();
+				var unstakedAmt = nextStakeAndAmt.getSecond();
+				txBuilder.up(new TokensParticle(addr, unstakedAmt, REAddr.ofNativeToken(), epochUnlocked));
 			}
-
-			stakesToUpdate.put(k, stakesToUpdate.get(k).subtract(unstakeAmount));
+			validatorsToUpdate.put(k, curValidatorStake);
 		}
 
 		var allPreparedStake = txBuilder.shutdownAll(PreparedStake.class, i -> {
@@ -146,22 +141,30 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 		for (var e : allPreparedStake.entrySet()) {
 			var k = e.getKey();
 			var stakes = e.getValue();
-			if (!stakesToUpdate.containsKey(k)) {
+			if (!validatorsToUpdate.containsKey(k)) {
 				var currentStake = txBuilder.down(
 					ValidatorStake.class,
 					p -> p.getValidatorKey().equals(k),
-					Optional.of(SubstateWithArg.noArg(new ValidatorStake(UInt256.ZERO, k))),
+					Optional.of(SubstateWithArg.noArg(new ValidatorStake(k, UInt256.ZERO, UInt256.ZERO))),
 					"Validator not found"
 				);
-				stakesToUpdate.put(k, currentStake.getAmount());
+				validatorsToUpdate.put(k, currentStake);
 			}
-			stakes.forEach((addr, amt) -> txBuilder.up(new StakeShares(k, addr, amt)));
-			var totalPreparedStake = stakes.values().stream().reduce(UInt256::add).orElseThrow();
-			stakesToUpdate.merge(k, totalPreparedStake, UInt256::add);
+			var curValidator = validatorsToUpdate.get(k);
+			for (var entry : stakes.entrySet()) {
+				var addr = entry.getKey();
+				var amt = entry.getValue();
+
+				var nextValidatorAndOwnership = curValidator.stake(addr, amt);
+				curValidator = nextValidatorAndOwnership.getFirst();
+				var stakeOwnership = nextValidatorAndOwnership.getSecond();
+				txBuilder.up(stakeOwnership);
+			}
+			validatorsToUpdate.put(k, curValidator);
 		}
 
-		stakesToUpdate.forEach((k, stakeAmt) -> txBuilder.up(new ValidatorStake(stakeAmt, k)));
-		validators.forEach(k -> txBuilder.up(new ValidatorEpochData(k, 0)));
+		validatorsToUpdate.forEach((k, validator) -> txBuilder.up(validator));
+		validatorKeys.forEach(k -> txBuilder.up(new ValidatorEpochData(k, 0)));
 	}
 
 	private void updateEpochData(TxBuilder txBuilder) throws TxBuilderException {

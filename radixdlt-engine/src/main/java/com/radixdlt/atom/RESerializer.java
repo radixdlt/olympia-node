@@ -20,7 +20,7 @@ package com.radixdlt.atom;
 
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
-import com.radixdlt.atommodel.system.state.StakeShares;
+import com.radixdlt.atommodel.system.state.StakeOwnership;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.system.state.ValidatorEpochData;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
@@ -80,7 +80,7 @@ public final class RESerializer {
 		ValidatorStake.class,
 		RoundData.class,
 		EpochData.class,
-		StakeShares.class,
+		StakeOwnership.class,
 		ValidatorEpochData.class,
 		PreparedUnstakeOwned.class
 	);
@@ -96,7 +96,7 @@ public final class RESerializer {
 		Map.entry(ValidatorStake.class, List.of(SubstateType.STAKE.id)),
 		Map.entry(RoundData.class, List.of(SubstateType.ROUND_DATA.id)),
 		Map.entry(EpochData.class, List.of(SubstateType.EPOCH_DATA.id)),
-		Map.entry(StakeShares.class, List.of(SubstateType.STAKE_SHARE.id)),
+		Map.entry(StakeOwnership.class, List.of(SubstateType.STAKE_SHARE.id)),
 		Map.entry(ValidatorEpochData.class, List.of(SubstateType.VALIDATOR_EPOCH_DATA.id)),
 		Map.entry(PreparedUnstakeOwned.class, List.of(SubstateType.PREPARED_UNSTAKE.id))
 	);
@@ -199,8 +199,8 @@ public final class RESerializer {
 			serializeData((RoundData) p, buf);
 		} else if (p instanceof EpochData) {
 			serializeData((EpochData) p, buf);
-		} else if (p instanceof StakeShares) {
-			serializeData((StakeShares) p, buf);
+		} else if (p instanceof StakeOwnership) {
+			serializeData((StakeOwnership) p, buf);
 		} else if (p instanceof ValidatorEpochData) {
 			serializeData((ValidatorEpochData) p, buf);
 		} else if (p instanceof PreparedUnstakeOwned) {
@@ -312,15 +312,17 @@ public final class RESerializer {
 		buf.put(SubstateType.STAKE.id);
 		serializeKey(buf, stake.getValidatorKey());
 		buf.put(stake.getAmount().toByteArray());
+		buf.put(stake.getTotalOwnership().toByteArray());
 	}
 
 	private static ValidatorStake deserializeStake(ByteBuffer buf) throws DeserializeException {
 		var delegate = deserializeKey(buf);
 		var amount = deserializeUInt256(buf);
-		return new ValidatorStake(amount, delegate);
+		var ownership = deserializeUInt256(buf);
+		return new ValidatorStake(delegate, amount, ownership);
 	}
 
-	private static void serializeData(StakeShares p, ByteBuffer buf) {
+	private static void serializeData(StakeOwnership p, ByteBuffer buf) {
 		buf.put(SubstateType.STAKE_SHARE.id);
 
 		serializeKey(buf, p.getDelegateKey());
@@ -328,11 +330,11 @@ public final class RESerializer {
 		buf.put(p.getAmount().toByteArray());
 	}
 
-	private static StakeShares deserializeStakeShare(ByteBuffer buf) throws DeserializeException {
+	private static StakeOwnership deserializeStakeShare(ByteBuffer buf) throws DeserializeException {
 		var delegate = deserializeKey(buf);
 		var owner = deserializeREAddr(buf);
 		var amount = deserializeUInt256(buf);
-		return new StakeShares(delegate, owner, amount);
+		return new StakeOwnership(delegate, owner, amount);
 	}
 
 	private static void serializeData(ValidatorEpochData p, ByteBuffer buf) {

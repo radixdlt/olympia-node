@@ -18,6 +18,7 @@
 
 package com.radixdlt.atom;
 
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.tokens.Fungible;
@@ -154,7 +155,7 @@ public final class TxBuilder {
 		}
 	}
 
-	private <T extends Particle> T down(
+	public <T extends Particle> T down(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		String errorMessage
@@ -210,18 +211,13 @@ public final class TxBuilder {
 		Function<Iterator<T>, U> mapper
 	) {
 		try (var cursor = createRemoteSubstateCursor(particleClass)) {
-
-			var result = mapper.apply(new Iterator<T>() {
-				@Override
-				public boolean hasNext() {
-					return cursor.hasNext();
-				}
-
-				@Override
-				public T next() {
-					return (T) cursor.next().getParticle();
-				}
-			});
+			var localIterator = lowLevelBuilder.localUpSubstate().stream()
+				.map(LocalSubstate::getParticle)
+				.filter(particleClass::isInstance)
+				.map(particleClass::cast)
+				.iterator();
+			var remoteIterator = Iterators.transform(cursor, s -> (T) s.getParticle());
+			var result = mapper.apply(Iterators.concat(localIterator, remoteIterator));
 			lowLevelBuilder.downAll(particleClass);
 			return result;
 		}
