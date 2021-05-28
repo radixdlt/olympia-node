@@ -40,7 +40,7 @@ public class UnstakePositionsDTO {
 	}
 
 	@JsonCreator
-	public UnstakePositionsDTO create(
+	public static UnstakePositionsDTO create(
 		@JsonProperty(value = "amount", required = true) UInt256 amount,
 		@JsonProperty(value = "validator", required = true) String validator,
 		@JsonProperty(value = "epochsUntil", required = true) int epochsUntil,

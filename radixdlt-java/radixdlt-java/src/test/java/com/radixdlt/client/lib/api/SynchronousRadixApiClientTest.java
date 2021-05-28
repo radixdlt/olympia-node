@@ -14,16 +14,12 @@
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
-package com.radixdlt.client.lib.impl;
+package com.radixdlt.client.lib.api;
 
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.radixdlt.client.lib.api.AccountAddress;
-import com.radixdlt.client.lib.api.NavigationCursor;
-import com.radixdlt.client.lib.api.TransactionRequest;
-import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.dto.FinalizedTransaction;
 import com.radixdlt.client.lib.dto.TokenBalancesDTO;
 import com.radixdlt.client.lib.dto.TransactionDTO;
@@ -315,6 +311,17 @@ public class SynchronousRadixApiClientTest {
 
 	@Test
 	@Ignore
+	public void listUnStakes() {
+		SynchronousRadixApiClient.connect(BASE_URL)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> client.unstakePositions(ACCOUNT_ADDRESS1)
+				.onFailure(failure -> fail(failure.toString()))
+				.onSuccess(unstakePositionsDTOS -> System.out.println("UnStake positions: " + unstakePositionsDTOS.toString()))
+			);
+	}
+
+	@Test
+	@Ignore
 	public void makeStake() {
 		SynchronousRadixApiClient.connect(BASE_URL)
 			.onFailure(failure -> fail(failure.toString()))
@@ -327,6 +334,36 @@ public class SynchronousRadixApiClientTest {
 		SynchronousRadixApiClient.connect(BASE_URL)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> makeUnStake(client, UInt256.NINE));
+	}
+
+	@Test
+	@Ignore
+	public void transferUnStake() {
+		SynchronousRadixApiClient.connect(BASE_URL)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> transferUnStake(client, UInt256.NINE));
+	}
+
+	private void transferUnStake(SynchronousRadixApiClient client, UInt256 amount) {
+		var request = TransactionRequest.createBuilder()
+			.transfer(
+				ACCOUNT_ADDRESS2,
+				ACCOUNT_ADDRESS1,
+				amount,
+				"xrd_rb1qya85pwq"
+			)
+			.message("Test message")
+			.build();
+
+		client.buildTransaction(request)
+			.onFailure(failure -> fail(failure.toString()))
+			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR2))
+			.onSuccess(finalizedTransaction -> client.finalizeTransaction(finalizedTransaction)
+				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
+				.onSuccess(submittableTransaction -> client.submitTransaction(submittableTransaction)
+					.onFailure(failure -> fail(failure.toString()))
+					.onSuccess(txDTO -> submittableTransaction.rawTxId()
+						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))));
 	}
 
 	private List<String> formatTxns(List<TransactionDTO> t) {

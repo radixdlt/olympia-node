@@ -20,7 +20,7 @@ import com.radixdlt.client.lib.dto.TransactionStatusDTO;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponseDTO;
 import com.radixdlt.client.lib.dto.TxDTO;
-import com.radixdlt.client.lib.impl.SynchronousRadixApiClient;
+import com.radixdlt.client.lib.api.SynchronousRadixApiClient;
 import com.radixdlt.client.lib.network.HttpClients;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.AID;
@@ -37,19 +37,24 @@ import java.util.stream.Collectors;
  * A wrapper around an api client + a keypair
  */
 public final class Account implements RadixApi {
-
     private static final Logger logger = LogManager.getLogger();
 
-    private final SynchronousRadixApiClient client;
+    private final RadixApi client;
     private final ECKeyPair keyPair;
     private final AccountAddress address;
     private final TokenInfoDTO nativeToken;
 
-    private Account(SynchronousRadixApiClient client, ECKeyPair keyPair, TokenInfoDTO nativeToken) {
+    private Account(RadixApi client, ECKeyPair keyPair, TokenInfoDTO nativeToken) {
         this.client = client;
         this.keyPair = keyPair;
         this.address = AccountAddress.create(keyPair.getPublicKey());
         this.nativeToken = nativeToken;
+    }
+
+    @Override
+    public RadixApi withTrace() {
+        client.withTrace();
+        return this;
     }
 
     public AccountAddress getAddress() {
@@ -77,7 +82,6 @@ public final class Account implements RadixApi {
     public TokenInfoDTO getNativeToken() {
         return nativeToken;
     }
-
 
     public Result<BalanceDTO> ownNativeTokenBalance() {
         BalanceDTO zeroNativeTokenBalance = BalanceDTO.create(nativeToken.getRri(), UInt256.ZERO);
