@@ -319,7 +319,7 @@ public final class RESerializer {
 		var delegate = deserializeKey(buf);
 		var amount = deserializeUInt256(buf);
 		var ownership = deserializeUInt256(buf);
-		return new ValidatorStake(delegate, amount, ownership);
+		return ValidatorStake.create(delegate, amount, ownership);
 	}
 
 	private static void serializeData(StakeOwnership p, ByteBuffer buf) {

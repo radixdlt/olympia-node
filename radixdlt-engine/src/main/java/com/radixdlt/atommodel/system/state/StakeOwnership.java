@@ -37,6 +37,9 @@ public final class StakeOwnership implements Fungible {
 		REAddr owner,
 		UInt256 amount
 	) {
+		if (amount.isZero()) {
+			throw new IllegalArgumentException("Stake ownership should not be zero");
+		}
 		this.delegateKey = Objects.requireNonNull(delegateKey);
 		this.owner = Objects.requireNonNull(owner);
 		this.amount = Objects.requireNonNull(amount);

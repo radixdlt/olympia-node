@@ -32,13 +32,13 @@ import com.radixdlt.atommodel.system.state.ValidatorEpochData;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwned;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 import java.util.TreeMap;
 
@@ -47,10 +47,7 @@ import static com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2.EPOC
 public final class NextEpochConstructorV2 implements ActionConstructor<SystemNextEpoch> {
 	@Override
 	public void construct(SystemNextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
-		updateEpoch(action.validators(), txBuilder);
-	}
-
-	private void updateEpoch(List<ECPublicKey> validatorKeys, TxBuilder txBuilder) throws TxBuilderException {
+		var validatorKeys = action.validators();
 		var epochData = txBuilder.find(EpochData.class, p -> true);
 		final HasEpochData prevEpoch;
 		if (epochData.isPresent()) {
@@ -117,7 +114,7 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 				var currentStake = txBuilder.down(
 					ValidatorStake.class,
 					p -> p.getValidatorKey().equals(k),
-					Optional.of(SubstateWithArg.noArg(new ValidatorStake(k, UInt256.ZERO, UInt256.ZERO))),
+					Optional.of(SubstateWithArg.noArg(ValidatorStake.create(k))),
 					"Validator not found"
 				);
 				validatorsToUpdate.put(k, currentStake);
@@ -157,7 +154,7 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 				var currentStake = txBuilder.down(
 					ValidatorStake.class,
 					p -> p.getValidatorKey().equals(k),
-					Optional.of(SubstateWithArg.noArg(new ValidatorStake(k, UInt256.ZERO, UInt256.ZERO))),
+					Optional.of(SubstateWithArg.noArg(ValidatorStake.create(k))),
 					"Validator not found"
 				);
 				validatorsToUpdate.put(k, currentStake);
@@ -167,10 +164,14 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 				var addr = entry.getKey();
 				var amt = entry.getValue();
 
-				var nextValidatorAndOwnership = curValidator.stake(addr, amt);
-				curValidator = nextValidatorAndOwnership.getFirst();
-				var stakeOwnership = nextValidatorAndOwnership.getSecond();
-				txBuilder.up(stakeOwnership);
+				try {
+					var nextValidatorAndOwnership = curValidator.stake(addr, amt);
+					curValidator = nextValidatorAndOwnership.getFirst();
+					var stakeOwnership = nextValidatorAndOwnership.getSecond();
+					txBuilder.up(stakeOwnership);
+				} catch (ProcedureException ex) {
+					throw new TxBuilderException(ex);
+				}
 			}
 			validatorsToUpdate.put(k, curValidator);
 		}

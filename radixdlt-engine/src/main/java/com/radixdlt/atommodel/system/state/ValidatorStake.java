@@ -18,7 +18,9 @@
 
 package com.radixdlt.atommodel.system.state;
 
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Pair;
@@ -28,13 +30,15 @@ import com.radixdlt.utils.UInt384;
 import java.util.Objects;
 
 public final class ValidatorStake implements Particle {
+	public static final UInt256 MINIMUM_STAKE = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
+
 	private final UInt256 totalStake;
 	private final UInt256 totalOwnership;
 
 	// Bucket keys
 	private final ECPublicKey validatorKey;
 
-	public ValidatorStake(
+	private ValidatorStake(
 		ECPublicKey validatorKey,
 		UInt256 totalStake,
 		UInt256 totalOwnership
@@ -49,6 +53,18 @@ public final class ValidatorStake implements Particle {
 		this.totalOwnership = totalOwnership;
 	}
 
+	public static ValidatorStake create(ECPublicKey validatorKey) {
+		return new ValidatorStake(validatorKey, UInt256.ZERO, UInt256.ZERO);
+	}
+
+	public static ValidatorStake create(
+		ECPublicKey validatorKey,
+		UInt256 totalStake,
+		UInt256 totalOwnership
+	) {
+		return new ValidatorStake(validatorKey, totalStake, totalOwnership);
+	}
+
 	public ValidatorStake addEmission(UInt256 amount) {
 		return new ValidatorStake(
 			validatorKey,
@@ -57,7 +73,11 @@ public final class ValidatorStake implements Particle {
 		);
 	}
 
-	public Pair<ValidatorStake, StakeOwnership> stake(REAddr owner, UInt256 stake) {
+	public Pair<ValidatorStake, StakeOwnership> stake(REAddr owner, UInt256 stake) throws ProcedureException {
+		if (stake.compareTo(MINIMUM_STAKE) < 0) {
+			throw new ProcedureException("Trying to stake " + stake + " but minimum stake is " + MINIMUM_STAKE);
+		}
+
 		if (totalStake.isZero()) {
 			var nextValidatorStake = new ValidatorStake(validatorKey, stake, stake);
 			var stakeOwnership = new StakeOwnership(validatorKey, owner, stake);

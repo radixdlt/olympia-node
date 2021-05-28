@@ -21,6 +21,7 @@ package com.radixdlt.atommodel.tokens.scrypt;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
+import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwned;
@@ -147,6 +148,13 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
+				if (u.getAmount().compareTo(ValidatorStake.MINIMUM_STAKE) < 0) {
+					throw new ProcedureException(
+						"Minimum amount to stake must be >= " + ValidatorStake.MINIMUM_STAKE
+							+ " but trying to stake " + u.getAmount()
+					);
+				}
+
 				var nextState = s.withdraw(REAddr.ofNativeToken(), u.getAmount());
 				if (s.from() != null) {
 					var actionGuess = new StakeTokens(s.from(), u.getDelegateKey(), u.getAmount());
