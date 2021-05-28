@@ -3,7 +3,7 @@ package com.radix.test.network;
 import com.radix.test.network.client.HttpException;
 import com.radix.test.network.client.NodeApiClient;
 import com.radixdlt.client.lib.api.AccountAddress;
-import com.radixdlt.client.lib.impl.SynchronousRadixApiClient;
+import com.radixdlt.client.lib.api.SynchronousRadixApiClient;
 import com.radixdlt.client.lib.network.HttpClients;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.Pair;

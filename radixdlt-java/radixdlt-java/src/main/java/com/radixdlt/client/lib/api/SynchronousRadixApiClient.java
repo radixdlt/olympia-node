@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.client.lib.impl;
+package com.radixdlt.client.lib.api;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,10 +23,6 @@ import org.apache.logging.log4j.Logger;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.radixdlt.client.lib.api.AccountAddress;
-import com.radixdlt.client.lib.api.NavigationCursor;
-import com.radixdlt.client.lib.api.RadixApi;
-import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.dto.BuiltTransactionDTO;
 import com.radixdlt.client.lib.dto.FinalizedTransaction;
 import com.radixdlt.client.lib.dto.JsonRpcRequest;
@@ -109,7 +105,7 @@ public class SynchronousRadixApiClient implements RadixApi {
 			   : baseUrl.substring(0, baseUrl.length() - 1);
 	}
 
-	public static Result<SynchronousRadixApiClient> connect(String url) {
+	static Result<SynchronousRadixApiClient> connect(String url) {
 		return connect(url, createClient());
 	}
 
@@ -119,6 +115,7 @@ public class SynchronousRadixApiClient implements RadixApi {
 			.orElseGet(() -> Result.fail(BASE_URL_IS_MANDATORY));
 	}
 
+	@Override
 	public SynchronousRadixApiClient withTrace() {
 		doTrace = true;
 		return this;
