@@ -24,7 +24,6 @@ import com.radixdlt.atommodel.system.state.HasEpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
-import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.system.state.ValidatorEpochData;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
@@ -80,30 +79,11 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		}
 	}
 
-
 	public SystemConstraintScryptV2() {
 		// Nothing here right now
 	}
 
-	private Result staticCheck(SystemParticle systemParticle) {
-		if (systemParticle.getEpoch() < 0) {
-			return Result.error("Epoch is less than 0");
-		}
-
-		if (systemParticle.getTimestamp() < 0) {
-			return Result.error("Timestamp is less than 0");
-		}
-
-		if (systemParticle.getView() < 0) {
-			return Result.error("View is less than 0");
-		}
-
-		// FIXME: Need to validate view, but need additional state to do that successfully
-
-		return Result.success();
-	}
-
-	private static final class RewardingValidators implements ReducerState {
+	public static final class RewardingValidators implements ReducerState {
 		private final TreeMap<ECPublicKey, ValidatorStake> curStake = new TreeMap<>(
 			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
 		);
@@ -182,14 +162,19 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				throw new ProcedureException("Invalid next epoch: " + u.getEpoch()
 					+ " Expected: " + (prevEpoch.getEpoch() + 1));
 			}
-			return new UpdatingEpochRound();
+			return new StartingEpochRound();
 		}
 	}
 
-	public static final class UpdatingEpochRound implements ReducerState {
+	public static final class StartingEpochRound implements ReducerState {
 	}
 
-	private static final class UpdatingEpochRound2 implements ReducerState {
+	private static final class Rewarding implements ReducerState {
+		private final UpdatingEpoch updatingEpoch;
+
+		Rewarding(UpdatingEpoch updatingEpoch) {
+			this.updatingEpoch = updatingEpoch;
+		}
 	}
 
 	private static final class UpdatingRound implements ReducerState {
@@ -417,6 +402,9 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		}
 	}
 
+	private static class AllocatingSystem implements ReducerState {
+	}
+
 	private void registerGenesisTransitions(SysCalls os) {
 		// For Mainnet Genesis
 		os.createUpProcedure(new UpProcedure<>(
@@ -432,6 +420,21 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 					throw new ProcedureException("First epoch must be 0.");
 				}
 
+				return ReducerResult.incomplete(new AllocatingSystem());
+			}
+		));
+		os.createUpProcedure(new UpProcedure<>(
+			AllocatingSystem.class, RoundData.class,
+			(u, r) -> PermissionLevel.SYSTEM,
+			(u, r, pubKey) -> {
+				if (pubKey.isPresent()) {
+					throw new AuthorizationException("System update should not be signed.");
+				}
+			},
+			(s, u, r) -> {
+				if (u.getView() != 0) {
+					throw new ProcedureException("First view must be 0.");
+				}
 				return ReducerResult.complete();
 			}
 		));
@@ -501,8 +504,19 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			(d, s, r) -> ReducerResult.incomplete(new UpdatingEpoch(d.getSubstate()))
 		));
 
+		os.createDownProcedure(new DownProcedure<>(
+			RoundData.class, UpdatingEpoch.class,
+			(d, r) -> PermissionLevel.SUPER_USER,
+			(d, r, pubKey) -> {
+				if (pubKey.isPresent()) {
+					throw new AuthorizationException("System update should not be signed.");
+				}
+			},
+			(d, s, r) -> ReducerResult.incomplete(new Rewarding(s))
+		));
+
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
-			ValidatorEpochData.class, UpdatingEpoch.class,
+			ValidatorEpochData.class, Rewarding.class,
 			r -> PermissionLevel.SUPER_USER,
 			(r, k) -> {
 				if (k.isPresent()) {
@@ -510,7 +524,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				}
 			},
 			(i, s, r) -> {
-				var rewardingValidators = new RewardingValidators(s);
+				var rewardingValidators = new RewardingValidators(s.updatingEpoch);
 				return ReducerResult.incomplete(rewardingValidators.process(i));
 			}
 		));
@@ -574,18 +588,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			(s, u, r) -> ReducerResult.incomplete(s.nextEpoch(u))
 		));
 
-		os.createDownProcedure(new DownProcedure<>(
-			RoundData.class, UpdatingEpochRound.class,
-			(d, r) -> PermissionLevel.SUPER_USER,
-			(d, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
-			(d, s, r) -> ReducerResult.incomplete(new UpdatingEpochRound2())
-		));
 		os.createUpProcedure(new UpProcedure<>(
-			UpdatingEpochRound2.class, RoundData.class,
+			StartingEpochRound.class, RoundData.class,
 			(u, r) -> PermissionLevel.SUPER_USER,
 			(u, r, pubKey) -> { },
 			(s, u, r) -> {
@@ -600,11 +604,6 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 	@Override
 	public void main(SysCalls os) {
-		os.registerParticle(SystemParticle.class, ParticleDefinition.<SystemParticle>builder()
-			.staticValidation(this::staticCheck)
-			.virtualizeUp(p -> p.getView() == 0 && p.getEpoch() == 0 && p.getTimestamp() == 0)
-			.build()
-		);
 		os.registerParticle(RoundData.class, ParticleDefinition.<RoundData>builder()
 			.staticValidation(p -> {
 				if (p.getTimestamp() < 0) {

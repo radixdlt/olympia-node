@@ -48,7 +48,6 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 	@Override
 	public void construct(SystemNextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
 		updateEpoch(action.validators(), txBuilder);
-		updateRoundData(txBuilder);
 	}
 
 	private void updateEpoch(List<ECPublicKey> validatorKeys, TxBuilder txBuilder) throws TxBuilderException {
@@ -60,6 +59,12 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 				p -> true,
 				Optional.of(SubstateWithArg.noArg(new EpochData(0))),
 				"No epoch data available"
+			);
+			txBuilder.down(
+				RoundData.class,
+				p -> true,
+				Optional.empty(),
+				"No round data available"
 			);
 		} else {
 			prevEpoch = txBuilder.down(
@@ -174,14 +179,6 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 		validatorKeys.forEach(k -> txBuilder.up(new ValidatorEpochData(k, 0)));
 
 		txBuilder.up(new EpochData(prevEpoch.getEpoch() + 1));
-	}
-
-	private void updateRoundData(TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.swap(
-			RoundData.class,
-			p -> true,
-			Optional.of(SubstateWithArg.noArg(new RoundData(0, 0))),
-			"No round data available"
-		).with(substateDown -> List.of(new RoundData(0, 0)));
+		txBuilder.up(new RoundData(0, 0));
 	}
 }
