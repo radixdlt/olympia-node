@@ -22,6 +22,7 @@ import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.SystemNextEpoch;
+import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
@@ -48,17 +49,15 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 	@Override
 	public void construct(SystemNextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
 		emissionsAndNextValidatorSet(action.validators(), txBuilder);
-		updatePreparedStake(txBuilder);
+		updatePreparedStake(action.validators(), txBuilder);
 		updateEpochData(txBuilder);
 		updateRoundData(txBuilder);
 	}
 
 	public void emissionsAndNextValidatorSet(List<ECPublicKey> validators, TxBuilder txBuilder) {
-		txBuilder.shutdownAll(ValidatorEpochData.class, i -> null);
-		validators.forEach(k -> txBuilder.up(new ValidatorEpochData(k, 0)));
 	}
 
-	private void updatePreparedStake(TxBuilder txBuilder) throws TxBuilderException {
+	private void updatePreparedStake(List<ECPublicKey> validators, TxBuilder txBuilder) throws TxBuilderException {
 		// TODO: Replace with loadAddr()
 		var epochUnlockedMaybe = txBuilder.find(EpochData.class, p -> true).map(EpochData::getEpoch);
 		long epochUnlocked;
@@ -67,6 +66,29 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 		} else {
 			epochUnlocked = txBuilder.find(SystemParticle.class, p -> true)
 				.map(SystemParticle::getEpoch).orElse(0L) + StakingConstraintScryptV3.EPOCHS_LOCKED;
+		}
+
+
+		var stakesToUpdate = new TreeMap<ECPublicKey, UInt256>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
+
+		var proposals = txBuilder.shutdownAll(ValidatorEpochData.class, i -> {
+			final TreeMap<ECPublicKey, Long> proposalsCompleted = new TreeMap<>(
+				(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
+			);
+			i.forEachRemaining(e -> proposalsCompleted.put(e.validatorKey(), e.proposalsCompleted()));
+			return proposalsCompleted;
+		});
+		for (var e : proposals.entrySet()) {
+			var k = e.getKey();
+			var numProposals = e.getValue();
+			var currentStake = txBuilder.down(
+				ValidatorStake.class,
+				s -> s.getValidatorKey().equals(k),
+				Optional.of(SubstateWithArg.noArg(new ValidatorStake(UInt256.ZERO, k))),
+				"Validator not found"
+			);
+			var emission = SystemConstraintScryptV2.REWARDS_PER_PROPOSAL.multiply(UInt256.from(numProposals));
+			stakesToUpdate.put(k, currentStake.getAmount().add(emission));
 		}
 
 		var allPreparedUnstake = txBuilder.shutdownAll(PreparedUnstakeOwned.class, i -> {
@@ -83,28 +105,28 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 			);
 			return map;
 		});
-
-		var stakesToUpdate = new TreeMap<ECPublicKey, UInt256>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
-
 		for (var e : allPreparedUnstake.entrySet()) {
 			var k = e.getKey();
-			var currentStake = txBuilder.down(
-				ValidatorStake.class,
-				p -> p.getValidatorKey().equals(k),
-				Optional.of(SubstateWithArg.noArg(new ValidatorStake(UInt256.ZERO, k))),
-				"Validator not found"
-			);
+			if (!stakesToUpdate.containsKey(k)) {
+				var currentStake = txBuilder.down(
+					ValidatorStake.class,
+					p -> p.getValidatorKey().equals(k),
+					Optional.of(SubstateWithArg.noArg(new ValidatorStake(UInt256.ZERO, k))),
+					"Validator not found"
+				);
+				stakesToUpdate.put(k, currentStake.getAmount());
+			}
 
 			var unstakes = e.getValue();
 			unstakes.forEach((addr, amt) ->
 				txBuilder.up(new TokensParticle(addr, amt, REAddr.ofNativeToken(), epochUnlocked))
 			);
 			var unstakeAmount = unstakes.values().stream().reduce(UInt256::add).orElseThrow();
-			if (currentStake.getAmount().compareTo(unstakeAmount) < 0) {
+			if (stakesToUpdate.get(k).compareTo(unstakeAmount) < 0) {
 				throw new IllegalStateException();
 			}
 
-			stakesToUpdate.put(k, currentStake.getAmount().subtract(unstakeAmount));
+			stakesToUpdate.put(k, stakesToUpdate.get(k).subtract(unstakeAmount));
 		}
 
 		var allPreparedStake = txBuilder.shutdownAll(PreparedStake.class, i -> {
@@ -137,7 +159,9 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 			var totalPreparedStake = stakes.values().stream().reduce(UInt256::add).orElseThrow();
 			stakesToUpdate.merge(k, totalPreparedStake, UInt256::add);
 		}
+
 		stakesToUpdate.forEach((k, stakeAmt) -> txBuilder.up(new ValidatorStake(stakeAmt, k)));
+		validators.forEach(k -> txBuilder.up(new ValidatorEpochData(k, 0)));
 	}
 
 	private void updateEpochData(TxBuilder txBuilder) throws TxBuilderException {
