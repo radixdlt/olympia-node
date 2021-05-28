@@ -169,17 +169,9 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 	public static final class StartingEpochRound implements ReducerState {
 	}
 
-	private static final class Rewarding implements ReducerState {
-		private final UpdatingEpoch updatingEpoch;
-
-		Rewarding(UpdatingEpoch updatingEpoch) {
-			this.updatingEpoch = updatingEpoch;
-		}
-	}
-
-	private static final class UpdatingRound implements ReducerState {
+	private static final class RoundClosed implements ReducerState {
 		private final RoundData prev;
-		private UpdatingRound(RoundData prev) {
+		private RoundClosed(RoundData prev) {
 			this.prev = prev;
 		}
 	}
@@ -450,10 +442,10 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 					throw new AuthorizationException("System update should not be signed.");
 				}
 			},
-			(d, s, r) -> ReducerResult.incomplete(new UpdatingRound(d.getSubstate()))
+			(d, s, r) -> ReducerResult.incomplete(new RoundClosed(d.getSubstate()))
 		));
 		os.createUpProcedure(new UpProcedure<>(
-			UpdatingRound.class, RoundData.class,
+			RoundClosed.class, RoundData.class,
 			(u, r) -> PermissionLevel.SUPER_USER,
 			(u, r, pubKey) -> { },
 			(s, u, r) -> {
@@ -493,7 +485,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 	private void epochUpdate(SysCalls os) {
 		// Epoch Update
 		os.createDownProcedure(new DownProcedure<>(
-			EpochData.class, VoidReducerState.class,
+			EpochData.class, RoundClosed.class,
 			(d, r) -> PermissionLevel.SUPER_USER,
 			(d, r, pubKey) -> {
 				if (pubKey.isPresent()) {
@@ -503,19 +495,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			(d, s, r) -> ReducerResult.incomplete(new UpdatingEpoch(d.getSubstate()))
 		));
 
-		os.createDownProcedure(new DownProcedure<>(
-			RoundData.class, UpdatingEpoch.class,
-			(d, r) -> PermissionLevel.SUPER_USER,
-			(d, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
-			(d, s, r) -> ReducerResult.incomplete(new Rewarding(s))
-		));
-
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
-			ValidatorEpochData.class, Rewarding.class,
+			ValidatorEpochData.class, UpdatingEpoch.class,
 			r -> PermissionLevel.SUPER_USER,
 			(r, k) -> {
 				if (k.isPresent()) {
@@ -523,7 +504,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				}
 			},
 			(i, s, r) -> {
-				var rewardingValidators = new RewardingValidators(s.updatingEpoch);
+				var rewardingValidators = new RewardingValidators(s);
 				return ReducerResult.incomplete(rewardingValidators.process(i));
 			}
 		));

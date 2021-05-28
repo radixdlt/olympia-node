@@ -54,17 +54,17 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 		var epochData = txBuilder.find(EpochData.class, p -> true);
 		final HasEpochData prevEpoch;
 		if (epochData.isPresent()) {
-			prevEpoch = txBuilder.down(
-				EpochData.class,
-				p -> true,
-				Optional.of(SubstateWithArg.noArg(new EpochData(0))),
-				"No epoch data available"
-			);
 			txBuilder.down(
 				RoundData.class,
 				p -> true,
 				Optional.empty(),
 				"No round data available"
+			);
+			prevEpoch = txBuilder.down(
+				EpochData.class,
+				p -> true,
+				Optional.of(SubstateWithArg.noArg(new EpochData(0))),
+				"No epoch data available"
 			);
 		} else {
 			prevEpoch = txBuilder.down(
