@@ -23,6 +23,7 @@ import org.junit.Test;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.TransactionRequest;
+import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.dto.FinalizedTransaction;
 import com.radixdlt.client.lib.dto.TokenBalancesDTO;
 import com.radixdlt.client.lib.dto.TransactionDTO;
@@ -301,6 +302,33 @@ public class SynchronousRadixApiClientTest {
 			});
 	}
 
+	@Test
+	@Ignore
+	public void listStakes() {
+		SynchronousRadixApiClient.connect(BASE_URL)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> client.stakePositions(ACCOUNT_ADDRESS1)
+				.onFailure(failure -> fail(failure.toString()))
+				.onSuccess(stakePositionsDTOS -> System.out.println("Stake positions: " + stakePositionsDTOS.toString()))
+			);
+	}
+
+	@Test
+	@Ignore
+	public void makeStake() {
+		SynchronousRadixApiClient.connect(BASE_URL)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> makeStake(client, UInt256.NINE));
+	}
+
+	@Test
+	@Ignore
+	public void makeUnStake() {
+		SynchronousRadixApiClient.connect(BASE_URL)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> makeUnStake(client, UInt256.NINE));
+	}
+
 	private List<String> formatTxns(List<TransactionDTO> t) {
 		return t.stream()
 			.map(v -> String.format(
@@ -312,6 +340,38 @@ public class SynchronousRadixApiClientTest {
 				v.getSentAt().getInstant().getNano()
 			))
 			.collect(Collectors.toList());
+	}
+
+	private void makeStake(SynchronousRadixApiClient client, UInt256 amount) {
+		var request = TransactionRequest.createBuilder()
+			.stake(ACCOUNT_ADDRESS1, ValidatorAddress.of(KEY_PAIR2.getPublicKey()), amount)
+			.build();
+
+		client.buildTransaction(request)
+			.onFailure(failure -> fail(failure.toString()))
+			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
+			.onSuccess(finalizedTransaction -> client.finalizeTransaction(finalizedTransaction)
+				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
+				.onSuccess(submittableTransaction -> client.submitTransaction(submittableTransaction)
+					.onFailure(failure -> fail(failure.toString()))
+					.onSuccess(txDTO -> submittableTransaction.rawTxId()
+						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))));
+	}
+
+	private void makeUnStake(SynchronousRadixApiClient client, UInt256 amount) {
+		var request = TransactionRequest.createBuilder()
+			.unstake(ACCOUNT_ADDRESS1, ValidatorAddress.of(KEY_PAIR2.getPublicKey()), amount)
+			.build();
+
+		client.buildTransaction(request)
+			.onFailure(failure -> fail(failure.toString()))
+			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
+			.onSuccess(finalizedTransaction -> client.finalizeTransaction(finalizedTransaction)
+				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
+				.onSuccess(submittableTransaction -> client.submitTransaction(submittableTransaction)
+					.onFailure(failure -> fail(failure.toString()))
+					.onSuccess(txDTO -> submittableTransaction.rawTxId()
+						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))));
 	}
 
 	private void addTransaction(SynchronousRadixApiClient client, UInt256 amount) {

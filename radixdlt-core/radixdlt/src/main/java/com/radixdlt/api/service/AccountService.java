@@ -116,10 +116,10 @@ public class AccountService {
 		var stakeReceived = radixEngine.getComputedState(StakeReceived.class);
 		var stakeFrom = jsonArray();
 
-		stakeReceived.forEach((addr, amt) -> {
+		stakeReceived.forEach((address, amt) -> {
 			stakeFrom.put(
 				jsonObject()
-					.put("delegator", AccountAddress.of(addr))
+					.put("delegator", AccountAddress.of(address))
 					.put("amount", amt)
 			);
 		});
