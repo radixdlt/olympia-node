@@ -214,7 +214,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			}
 
 			var expectedEpochUnlock = updatingEpoch.prevEpoch.getEpoch() + 1 + EPOCHS_LOCKED;
-			if (expectedEpochUnlock != u.getEpochUnlocked().get()) {
+			if (expectedEpochUnlock != epochUnlocked) {
 				throw new ProcedureException("Incorrect epoch unlock: " + epochUnlocked
 					+ " should be: " + expectedEpochUnlock);
 			}
