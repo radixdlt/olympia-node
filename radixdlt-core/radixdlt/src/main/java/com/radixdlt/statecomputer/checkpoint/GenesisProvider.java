@@ -31,6 +31,7 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -50,6 +51,7 @@ import org.radix.TokenIssuance;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -133,20 +135,28 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 			}
 			var temp = branch.construct(genesisBuilder.build()).buildWithoutSignature();
 			branch.execute(List.of(temp), PermissionLevel.SYSTEM);
-			final var genesisValidatorSet = branch.getComputedState(StakedValidators.class)
-				.toValidatorSet();
-			var keyList = genesisValidatorSet.nodes().stream()
-				.map(BFTNode::getKey)
-				.sorted(Comparator.comparing(ECPublicKey::getBytes, Arrays::compare))
-				.collect(Collectors.toList());
-			genesisBuilder.action(new SystemNextEpoch(keyList, timestamp));
+
+			var stakedValidators = branch.getComputedState(StakedValidators.class);
+			var genesisValidatorSet = new AtomicReference<BFTValidatorSet>();
+			genesisBuilder.action(new SystemNextEpoch(updates -> {
+				var cur = stakedValidators;
+				for (var u : updates) {
+					cur = cur.setStake(u.getValidatorKey(), u.getAmount());
+				}
+				// FIXME: cur.toValidatorSet() may be null
+				genesisValidatorSet.set(cur.toValidatorSet());
+				return genesisValidatorSet.get().nodes().stream()
+					.map(BFTNode::getKey)
+					.sorted(Comparator.comparing(ECPublicKey::getBytes, Arrays::compare))
+					.collect(Collectors.toList());
+			}, timestamp));
 			radixEngine.deleteBranches();
 			var txn = radixEngine.construct(genesisBuilder.build()).buildWithoutSignature();
 
 			var accumulatorState = new AccumulatorState(0, txn.getId().asHashCode());
 			var genesisProof = LedgerProof.genesis(
 				accumulatorState,
-				genesisValidatorSet,
+				genesisValidatorSet.get(),
 				timestamp
 			);
 			if (!genesisProof.isEndOfEpoch()) {

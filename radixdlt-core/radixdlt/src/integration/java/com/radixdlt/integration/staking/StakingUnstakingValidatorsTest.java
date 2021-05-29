@@ -173,7 +173,7 @@ public class StakingUnstakingValidatorsTest {
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
 			new BetanetForksModule(),
-			new RadixEngineOnlyLatestForkModule(View.of(10)),
+			new RadixEngineOnlyLatestForkModule(View.of(100)),
 			RadixEngineConfig.asModule(2, 4, 50),
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {

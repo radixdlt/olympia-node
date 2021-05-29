@@ -44,9 +44,7 @@ import java.util.stream.Stream;
 public final class StakedValidators {
 	private static final Comparator<ECPublicKey> keyOrdering = Comparator.comparing(ECPublicKey::euid);
 
-	private final Map<ECPublicKey, UInt256> base;
-	private final Map<ECPublicKey, UInt256> changeUp;
-	private final Map<ECPublicKey, UInt256> changeDown;
+	private final Map<ECPublicKey, UInt256> stake;
 	private final Set<ValidatorParticle> validatorParticles;
 	private static final Comparator<UInt256> stakeOrdering = Comparator.reverseOrder();
 	private static final Comparator<Map.Entry<ECPublicKey, UInt256>> validatorOrdering =
@@ -59,23 +57,19 @@ public final class StakedValidators {
 		int minValidators,
 		int maxValidators,
 		Set<ValidatorParticle> validatorParticles,
-		Map<ECPublicKey, UInt256> base,
-		Map<ECPublicKey, UInt256> changeUp,
-		Map<ECPublicKey, UInt256> changeDown
+		Map<ECPublicKey, UInt256> stake
 	) {
 		this.minValidators = minValidators;
 		this.maxValidators = maxValidators;
 		this.validatorParticles = validatorParticles;
-		this.base = base;
-		this.changeUp = changeUp;
-		this.changeDown = changeDown;
+		this.stake = stake;
 	}
 
 	public static StakedValidators create(
 		int minValidators,
 		int maxValidators
 	) {
-		return new StakedValidators(minValidators, maxValidators, Set.of(), Map.of(), Map.of(), Map.of());
+		return new StakedValidators(minValidators, maxValidators, Set.of(), Map.of());
 	}
 
 	public StakedValidators add(ValidatorParticle particle) {
@@ -84,7 +78,7 @@ public final class StakedValidators {
 			.add(particle)
 			.build();
 
-		return new StakedValidators(minValidators, maxValidators, set, base, changeUp, changeDown);
+		return new StakedValidators(minValidators, maxValidators, set, stake);
 	}
 
 	public StakedValidators remove(ValidatorParticle particle) {
@@ -94,66 +88,22 @@ public final class StakedValidators {
 			validatorParticles.stream()
 				.filter(e -> !e.equals(particle))
 				.collect(Collectors.toSet()),
-			base,
-			changeUp,
-			changeDown
+			stake
 		);
 	}
 
-	public StakedValidators base(ECPublicKey delegatedKey, UInt256 amount) {
-		final var nextBase = Stream.concat(
+	public StakedValidators setStake(ECPublicKey delegatedKey, UInt256 amount) {
+		final var nextStake = Stream.concat(
 			Stream.of(Maps.immutableEntry(delegatedKey, amount)),
-			this.base.entrySet().stream().filter(e -> !delegatedKey.equals(e.getKey()))
+			this.stake.entrySet().stream().filter(e -> !delegatedKey.equals(e.getKey()))
 		).collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
-		return new StakedValidators(minValidators, maxValidators, validatorParticles, nextBase, changeUp, changeDown);
-	}
-
-	public StakedValidators add(ECPublicKey delegatedKey, UInt256 amount) {
-		if (amount.isZero()) {
-			return this;
-		}
-
-		final var nextAmount = this.changeUp.getOrDefault(delegatedKey, UInt256.ZERO).add(amount);
-		final var nextStakedAmounts = Stream.concat(
-			Stream.of(Maps.immutableEntry(delegatedKey, nextAmount)),
-			this.changeUp.entrySet().stream().filter(e -> !delegatedKey.equals(e.getKey()))
-		).collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-
-		return new StakedValidators(minValidators, maxValidators, validatorParticles, base, nextStakedAmounts, changeDown);
-	}
-
-	public StakedValidators remove(ECPublicKey delegatedKey, UInt256 amount) {
-		if (amount.isZero()) {
-			return this;
-		}
-
-		final var nextAmount = this.changeDown.getOrDefault(delegatedKey, UInt256.ZERO).add(amount);
-		final var nextChangeDown = Stream.concat(
-			Stream.of(Maps.immutableEntry(delegatedKey, nextAmount)),
-			this.changeDown.entrySet().stream().filter(e -> !delegatedKey.equals(e.getKey()))
-		).collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-
-		return new StakedValidators(minValidators, maxValidators, validatorParticles, base, changeUp, nextChangeDown);
-	}
-
-	private Map<ECPublicKey, UInt256> stakedAmounts() {
-		return Stream.concat(base.entrySet().stream(), changeUp.entrySet().stream())
-			.collect(Collectors.toMap(
-				Map.Entry::getKey,
-				Map.Entry::getValue,
-				UInt256::add
-			)).entrySet().stream()
-			.collect(Collectors.toMap(
-				Map.Entry::getKey,
-				e -> e.getValue().subtract(changeDown.getOrDefault(e.getKey(), UInt256.ZERO))
-			));
+		return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStake);
 	}
 
 	public BFTValidatorSet toValidatorSet() {
-		var stakedAmounts = stakedAmounts();
 		var validatorMap = ImmutableMap.copyOf(
-			Maps.filterKeys(stakedAmounts, k -> validatorParticles.stream().map(ValidatorParticle::getKey).anyMatch(k::equals))
+			Maps.filterKeys(stake, k -> validatorParticles.stream().map(ValidatorParticle::getKey).anyMatch(k::equals))
 		);
 
 		final var potentialValidators = validatorMap.entrySet().stream()
@@ -173,9 +123,8 @@ public final class StakedValidators {
 	}
 
 	public UInt256 getStake(ECPublicKey validatorKey) {
-		var stakedAmounts = stakedAmounts();
-		var stake = stakedAmounts.get(validatorKey);
-		return (stake == null) ? UInt256.ZERO : stake;
+		var s = stake.get(validatorKey);
+		return (s == null) ? UInt256.ZERO : s;
 	}
 
 	public <T> List<T> map(BiFunction<ECPublicKey, ValidatorDetails, T> mapper) {
@@ -195,7 +144,7 @@ public final class StakedValidators {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(minValidators, maxValidators, validatorParticles, base, changeUp, changeDown);
+		return Objects.hash(minValidators, maxValidators, validatorParticles, stake);
 	}
 
 	@Override
@@ -208,8 +157,6 @@ public final class StakedValidators {
 		return this.minValidators == other.minValidators
 			&& this.maxValidators == other.maxValidators
 			&& Objects.equals(this.validatorParticles, other.validatorParticles)
-			&& Objects.equals(this.base, other.base)
-			&& Objects.equals(this.changeUp, other.changeUp)
-			&& Objects.equals(this.changeDown, other.changeDown);
+			&& Objects.equals(this.stake, other.stake);
 	}
 }

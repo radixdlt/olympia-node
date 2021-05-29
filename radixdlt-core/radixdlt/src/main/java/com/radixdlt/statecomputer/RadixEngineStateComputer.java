@@ -57,7 +57,9 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -175,23 +177,33 @@ public final class RadixEngineStateComputer implements StateComputer {
 		ImmutableList.Builder<PreparedTxn> successBuilder
 	) {
 		var view = vertex.getView();
-		final BFTValidatorSet validatorSet;
-		if (view.compareTo(epochCeilingView) >= 0) {
-			validatorSet = branch.getComputedState(StakedValidators.class).toValidatorSet();
-
-		} else {
-			validatorSet = null;
-		}
-
 		final TxAction systemAction;
-		if (validatorSet == null) {
+		var nextValidatorSet = new AtomicReference<BFTValidatorSet>();
+		if (view.compareTo(epochCeilingView) < 0) {
 			systemAction = new SystemNextView(view.number(), timestamp, vertex.getProposer().getKey());
 		} else {
-			var validatorKeys = validatorSet.nodes().stream()
-				.map(BFTNode::getKey)
-				.sorted(Comparator.comparing(ECPublicKey::getBytes, Arrays::compare))
-				.collect(Collectors.toList());
-			systemAction = new SystemNextEpoch(validatorKeys, timestamp);
+			var stakedValidators = branch.getComputedState(StakedValidators.class);
+			if (stakedValidators.toValidatorSet() == null) {
+				// FIXME: Better way to handle rare case when there isn't enough in validator set
+				systemAction = new SystemNextView(view.number(), timestamp, vertex.getProposer().getKey());
+			} else {
+				systemAction = new SystemNextEpoch(updates -> {
+					var cur = stakedValidators;
+					for (var u : updates) {
+						cur = cur.setStake(u.getValidatorKey(), u.getAmount());
+					}
+					// FIXME: cur.toValidatorSet() may be null
+					var validatorSet = cur.toValidatorSet();
+					if (validatorSet == null) {
+						throw new IllegalStateException();
+					}
+					nextValidatorSet.set(validatorSet);
+					return validatorSet.nodes().stream()
+						.map(BFTNode::getKey)
+						.sorted(Comparator.comparing(ECPublicKey::getBytes, Arrays::compare))
+						.collect(Collectors.toList());
+				}, timestamp);
+			}
 		}
 
 		final Txn systemUpdate;
@@ -212,7 +224,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		);
 		successBuilder.add(radixEngineCommand);
 
-		return validatorSet;
+		return nextValidatorSet.get();
 	}
 
 	private void executeUserCommands(

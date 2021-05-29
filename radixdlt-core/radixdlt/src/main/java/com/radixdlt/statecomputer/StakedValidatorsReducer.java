@@ -58,10 +58,7 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 	public Set<Class<? extends Particle>> particleClasses() {
 		return Set.of(
 			ValidatorParticle.class,
-			PreparedStake.class,
-			PreparedUnstakeOwned.class,
-			ValidatorStake.class,
-			ValidatorEpochData.class
+			ValidatorStake.class
 		);
 	}
 
@@ -79,19 +76,9 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 					return prev.add(v);
 				}
 				return prev;
-			} else if (p instanceof PreparedStake) {
-				var d = (PreparedStake) p;
-				return prev.add(d.getDelegateKey(), d.getAmount());
-			} else if (p instanceof PreparedUnstakeOwned) {
-				var d = (PreparedUnstakeOwned) p;
-				return prev.remove(d.getDelegateKey(), d.getAmount());
-			} else if (p instanceof ValidatorEpochData) {
-				var d = (ValidatorEpochData) p;
-				var emission = SystemConstraintScryptV2.REWARDS_PER_PROPOSAL.multiply(UInt256.from(d.proposalsCompleted()));
-				return prev.add(d.validatorKey(), emission);
 			} else {
 				var s = (ValidatorStake) p;
-				return prev.base(s.getValidatorKey(), s.getAmount());
+				return prev.setStake(s.getValidatorKey(), s.getAmount());
 			}
 		};
 	}
@@ -104,17 +91,6 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 				if (v.isRegisteredForNextEpoch()) {
 					return prev.remove(v);
 				}
-				return prev;
-			} else if (p instanceof PreparedStake) {
-				var d = (PreparedStake) p;
-				return prev.remove(d.getDelegateKey(), d.getAmount());
-			} else if (p instanceof PreparedUnstakeOwned) {
-				var d = (PreparedUnstakeOwned) p;
-				return prev.add(d.getDelegateKey(), d.getAmount());
-			} else if (p instanceof ValidatorEpochData) {
-				var d = (ValidatorEpochData) p;
-				var emission = SystemConstraintScryptV2.REWARDS_PER_PROPOSAL.multiply(UInt256.from(d.proposalsCompleted()));
-				return prev.remove(d.validatorKey(), emission);
 			}
 
 			return prev;

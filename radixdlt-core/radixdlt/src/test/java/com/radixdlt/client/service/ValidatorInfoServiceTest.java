@@ -122,9 +122,9 @@ public class ValidatorInfoServiceTest {
 			.add(particle1)
 			.add(particle2)
 			.add(particle3)
-			.add(validator1, UInt256.FIVE)
-			.add(validator2, UInt256.EIGHT)
-			.add(validator3, UInt256.TEN);
+			.setStake(validator1, UInt256.FIVE)
+			.setStake(validator2, UInt256.EIGHT)
+			.setStake(validator3, UInt256.TEN);
 
 		when(radixEngine.getComputedState(eq(StakedValidators.class))).thenReturn(validators);
 		return validatorInfoService;

@@ -47,7 +47,6 @@ import static com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2.EPOC
 public final class NextEpochConstructorV2 implements ActionConstructor<SystemNextEpoch> {
 	@Override
 	public void construct(SystemNextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
-		var validatorKeys = action.validators();
 		var epochData = txBuilder.find(EpochData.class, p -> true);
 		final HasEpochData prevEpoch;
 		if (epochData.isPresent()) {
@@ -177,6 +176,7 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 		}
 
 		validatorsToUpdate.forEach((k, validator) -> txBuilder.up(validator));
+		var validatorKeys = action.validators(validatorsToUpdate.values());
 		validatorKeys.forEach(k -> txBuilder.up(new ValidatorEpochData(k, 0)));
 
 		txBuilder.up(new EpochData(prevEpoch.getEpoch() + 1));
