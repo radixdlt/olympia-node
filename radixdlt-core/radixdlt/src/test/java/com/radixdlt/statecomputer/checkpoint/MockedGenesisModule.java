@@ -28,7 +28,6 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.utils.UInt256;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
 

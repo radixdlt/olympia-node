@@ -31,6 +31,7 @@ import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.atommodel.system.construction.NextEpochConstructorV2;
 import com.radixdlt.atommodel.system.construction.NextViewConstructorV2;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
+import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV2;
@@ -49,7 +50,6 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
-import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -110,10 +110,10 @@ public class NextViewV2Test {
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var txn = this.sut.construct(List.of(new CreateSystem(),
 			new CreateMutableToken("xrd", "xrd", "", "", ""),
-			new MintToken(REAddr.ofNativeToken(), accountAddr, UInt256.TEN),
-			new StakeTokens(accountAddr, key.getPublicKey(), UInt256.TEN),
+			new MintToken(REAddr.ofNativeToken(), accountAddr, ValidatorStake.MINIMUM_STAKE),
+			new StakeTokens(accountAddr, key.getPublicKey(), ValidatorStake.MINIMUM_STAKE),
 			new RegisterValidator(key.getPublicKey()),
-			new SystemNextEpoch(List.of(key.getPublicKey()), 0)
+			new SystemNextEpoch(u -> List.of(key.getPublicKey()), 0)
 		)).buildWithoutSignature();
 		this.sut.execute(List.of(txn), null, PermissionLevel.SYSTEM);
 	}

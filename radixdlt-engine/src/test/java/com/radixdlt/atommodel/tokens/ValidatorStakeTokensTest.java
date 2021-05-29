@@ -23,6 +23,7 @@ import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV1;
@@ -96,8 +97,8 @@ public class ValidatorStakeTokensTest {
 		List<ConstraintScrypt> scrypts,
 		ActionConstructor<StakeTokens> stakeTokensConstructor
 	) {
-		this.startAmt = startAmt;
-		this.stakeAmt = stakeAmt;
+		this.startAmt = ValidatorStake.MINIMUM_STAKE.multiply(startAmt);
+		this.stakeAmt = ValidatorStake.MINIMUM_STAKE.multiply(stakeAmt);
 		this.scrypts = scrypts;
 		this.stakeTokensConstructor = stakeTokensConstructor;
 	}

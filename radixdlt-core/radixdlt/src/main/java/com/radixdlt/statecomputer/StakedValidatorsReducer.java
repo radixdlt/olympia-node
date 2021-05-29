@@ -18,15 +18,11 @@
 package com.radixdlt.statecomputer;
 
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
-import com.radixdlt.atommodel.system.state.ValidatorEpochData;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwned;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
-import com.radixdlt.utils.UInt256;
 
 import java.util.Set;
 import java.util.function.BiFunction;

@@ -31,6 +31,7 @@ import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.atommodel.system.construction.NextEpochConstructorV2;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
+import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV2;
@@ -107,8 +108,8 @@ public class UnstakeTokensV2Test {
 		ActionConstructor<StakeTokens> stakeTokensConstructor,
 		ActionConstructor<UnstakeTokens> unstakeTokensConstructor
 	) {
-		this.startAmt = startAmt;
-		this.unstakeAmt = unstakeAmt;
+		this.startAmt = ValidatorStake.MINIMUM_STAKE.multiply(startAmt);
+		this.unstakeAmt = ValidatorStake.MINIMUM_STAKE.multiply(unstakeAmt);
 		this.scrypts = scrypts;
 		this.stakeTokensConstructor = stakeTokensConstructor;
 		this.unstakeTokensConstructor = unstakeTokensConstructor;
@@ -156,7 +157,7 @@ public class UnstakeTokensV2Test {
 		var stake = this.sut.construct(new StakeTokens(accountAddr, key.getPublicKey(), startAmt))
 			.signAndBuild(key::sign);
 		this.sut.execute(List.of(stake));
-		var nextEpoch = sut.construct(new SystemNextEpoch(List.of(key.getPublicKey()), 1))
+		var nextEpoch = sut.construct(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 1))
 			.buildWithoutSignature();
 		this.sut.execute(List.of(nextEpoch), null, PermissionLevel.SUPER_USER);
 
@@ -172,7 +173,7 @@ public class UnstakeTokensV2Test {
 		var stake = this.sut.construct(new StakeTokens(accountAddr, key.getPublicKey(), startAmt))
 			.signAndBuild(key::sign);
 		this.sut.execute(List.of(stake));
-		var nextEpoch = sut.construct(new SystemNextEpoch(List.of(key.getPublicKey()), 1))
+		var nextEpoch = sut.construct(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 1))
 			.buildWithoutSignature();
 		this.sut.execute(List.of(nextEpoch), null, PermissionLevel.SUPER_USER);
 
@@ -194,13 +195,13 @@ public class UnstakeTokensV2Test {
 		var txn = sut.construct(new StakeTokens(accountAddr, key.getPublicKey(), startAmt))
 			.signAndBuild(key::sign);
 		sut.execute(List.of(txn));
-		var nextEpoch = sut.construct(new SystemNextEpoch(List.of(key.getPublicKey()), 1))
+		var nextEpoch = sut.construct(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 1))
 			.buildWithoutSignature();
 		this.sut.execute(List.of(nextEpoch), null, PermissionLevel.SUPER_USER);
 		var unstake = this.sut.construct(new UnstakeTokens(accountAddr, key.getPublicKey(), unstakeAmt))
 			.signAndBuild(key::sign);
 		sut.execute(List.of(unstake));
-		var nextEpoch2 = sut.construct(new SystemNextEpoch(List.of(key.getPublicKey()), 1))
+		var nextEpoch2 = sut.construct(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 1))
 			.buildWithoutSignature();
 		this.sut.execute(List.of(nextEpoch2), null, PermissionLevel.SUPER_USER);
 
@@ -217,14 +218,14 @@ public class UnstakeTokensV2Test {
 		var txn = sut.construct(new StakeTokens(accountAddr, key.getPublicKey(), startAmt))
 			.signAndBuild(key::sign);
 		sut.execute(List.of(txn));
-		var nextEpoch = sut.construct(new SystemNextEpoch(List.of(key.getPublicKey()), 1))
+		var nextEpoch = sut.construct(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 1))
 			.buildWithoutSignature();
 		this.sut.execute(List.of(nextEpoch), null, PermissionLevel.SUPER_USER);
 		var unstake = this.sut.construct(new UnstakeTokens(accountAddr, key.getPublicKey(), unstakeAmt))
 			.signAndBuild(key::sign);
 		sut.execute(List.of(unstake));
 
-		var nextEpoch2 = sut.construct(new SystemNextEpoch(List.of(key.getPublicKey()), 1))
+		var nextEpoch2 = sut.construct(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 1))
 			.buildWithoutSignature();
 		this.sut.execute(List.of(nextEpoch2), null, PermissionLevel.SUPER_USER);
 
