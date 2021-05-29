@@ -36,6 +36,9 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.tokens.state.PreparedStake;
+import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
@@ -140,10 +143,12 @@ public class StakingUnstakingValidatorsTest {
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class).toInstance(nodeKeys);
 
-					nodeKeys.forEach(key -> {
+					nodeKeys.forEach(key ->
 						Multibinder.newSetBinder(binder(), TokenIssuance.class)
-							.addBinding().toInstance(TokenIssuance.of(key.getPublicKey(), UInt256.from(100)));
-					});
+							.addBinding().toInstance(
+								TokenIssuance.of(key.getPublicKey(), ValidatorStake.MINIMUM_STAKE.multiply(UInt256.TEN))
+						)
+					);
 				}
 			}
 		).injectMembers(this);
@@ -228,7 +233,7 @@ public class StakingUnstakingValidatorsTest {
 	public void stake_unstake_transfers() {
 		var random = new Random(12345);
 
-		for (int i = 0; i < 2000; i++) {
+		for (int i = 0; i < 5000; i++) {
 			processForCount(100);
 
 			var nodeIndex = random.nextInt(nodeKeys.size());
@@ -239,7 +244,7 @@ public class StakingUnstakingValidatorsTest {
 			var privKey = nodeKeys.get(nodeIndex);
 			var acct = REAddr.ofPubKeyAccount(privKey.getPublicKey());
 			var to = nodeKeys.get(random.nextInt(nodeKeys.size())).getPublicKey();
-			var amount = UInt256.from(random.nextInt(10));
+			var amount = UInt256.from(random.nextInt(10)).multiply(ValidatorStake.MINIMUM_STAKE);
 
 			var next = random.nextInt(10);
 			final TxAction action;
@@ -257,8 +262,12 @@ public class StakingUnstakingValidatorsTest {
 					action = new RegisterValidator(privKey.getPublicKey());
 					break;
 				case 4:
-					action = new UnregisterValidator(privKey.getPublicKey(), null, null);
-					break;
+					// Only unregister once in a while
+					if (random.nextInt(10) == 0) {
+						action = new UnregisterValidator(privKey.getPublicKey(), null, null);
+						break;
+					}
+					continue;
 				default:
 					continue;
 			}
@@ -267,8 +276,30 @@ public class StakingUnstakingValidatorsTest {
 				n.getInstance(new Key<EventDispatcher<MempoolRelayTrigger>>() { }).dispatch(MempoolRelayTrigger.create());
 				n.getInstance(new Key<EventDispatcher<SyncCheckTrigger>>() { }).dispatch(SyncCheckTrigger.create());
 			});
-
 		}
+
+		var entryStore = this.nodes.get(0).getInstance(BerkeleyLedgerEntryStore.class);
+		var totalTokens = entryStore.reduceUpParticles(TokensParticle.class, UInt256.ZERO,
+			(i, p) -> {
+				var tokens = (TokensParticle) p;
+				return i.add(tokens.getAmount());
+			}
+		);
+		logger.info("Total tokens: {}", totalTokens);
+		var totalStaked = entryStore.reduceUpParticles(ValidatorStake.class, UInt256.ZERO,
+			(i, p) -> {
+				var tokens = (ValidatorStake) p;
+				return i.add(tokens.getAmount());
+			}
+		);
+		logger.info("Total staked: {}", totalStaked);
+		var totalPrepared = entryStore.reduceUpParticles(PreparedStake.class, UInt256.ZERO,
+			(i, p) -> {
+				var tokens = (PreparedStake) p;
+				return i.add(tokens.getAmount());
+			}
+		);
+		logger.info("Total prepared: {}", totalPrepared);
 	}
 
 }

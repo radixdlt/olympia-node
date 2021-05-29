@@ -33,6 +33,7 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.consensus.HashSigner;
@@ -130,7 +131,7 @@ public class UnstakingLockedTokensTest {
 
 				@ProvidesIntoSet
 				private TokenIssuance mempoolFillerIssuance(@Self ECPublicKey self) {
-					return TokenIssuance.of(self, UInt256.from(100));
+					return TokenIssuance.of(self, ValidatorStake.MINIMUM_STAKE);
 				}
 			}
 		);
@@ -178,12 +179,12 @@ public class UnstakingLockedTokensTest {
 		}
 
 		var accountAddr = REAddr.ofPubKeyAccount(self);
-		var stakeTxn = dispatchAndWaitForCommit(new StakeTokens(accountAddr, self, UInt256.from(100)));
+		var stakeTxn = dispatchAndWaitForCommit(new StakeTokens(accountAddr, self, ValidatorStake.MINIMUM_STAKE));
 		runner.runNextEventsThrough(
 			EpochsLedgerUpdate.class,
 			e -> e.getEpochChange().map(c -> c.getEpoch() == unstakingEpoch).orElse(false)
 		);
-		var unstakeTxn = dispatchAndWaitForCommit(new UnstakeTokens(accountAddr, self, UInt256.from(100)));
+		var unstakeTxn = dispatchAndWaitForCommit(new UnstakeTokens(accountAddr, self, ValidatorStake.MINIMUM_STAKE));
 
 		if (transferEpoch > unstakingEpoch) {
 			runner.runNextEventsThrough(
@@ -193,7 +194,7 @@ public class UnstakingLockedTokensTest {
 		}
 
 		var otherAddr = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
-		var transferAction = new TransferToken(REAddr.ofNativeToken(), accountAddr, otherAddr, UInt256.from(100));
+		var transferAction = new TransferToken(REAddr.ofNativeToken(), accountAddr, otherAddr, ValidatorStake.MINIMUM_STAKE);
 
 		// Build transaction through radix engine
 		if (shouldSucceed) {
@@ -210,7 +211,7 @@ public class UnstakingLockedTokensTest {
 					&& p.getHoldingAddr().equals(accountAddr)
 					&& p.getEpochUnlocked().isPresent(),
 				amt -> new TokensParticle(accountAddr, amt, REAddr.ofNativeToken()),
-				UInt256.from(100),
+				ValidatorStake.MINIMUM_STAKE,
 				"Not enough balance for transfer."
 			).with(amt -> new TokensParticle(otherAddr, amt, REAddr.ofNativeToken()));
 			txBuilder.end();
