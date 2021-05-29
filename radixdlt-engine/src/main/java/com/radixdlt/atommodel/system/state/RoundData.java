@@ -27,7 +27,6 @@ public final class RoundData implements Particle {
 	private final long view;
 	private final long timestamp;
 
-
 	public RoundData(long view, long timestamp) {
 		this.view = view;
 		this.timestamp = timestamp;

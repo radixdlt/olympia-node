@@ -19,12 +19,12 @@ package com.radixdlt.statecomputer;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atommodel.system.state.SystemParticle;
+import com.radixdlt.atommodel.system.state.ValidatorEpochData;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.PostParsedChecker;
 import com.radixdlt.engine.BatchVerifier;
@@ -46,8 +46,6 @@ public class RadixEngineModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		bind(new TypeLiteral<BatchVerifier<LedgerAndBFTProof>>() { }).to(EpochProofVerifier.class).in(Scopes.SINGLETON);
-
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<Pair<String, StateReducer<?>>>() { });
 		Multibinder.newSetBinder(binder(), PostParsedChecker.class);
@@ -93,11 +91,15 @@ public class RadixEngineModule extends AbstractModule {
 
 		radixEngine.addStateReducer(stakedValidatorsReducer, true);
 		//radixEngine.addStateReducer(new DeprecatedStakesReducer(), true);
-		radixEngine.addStateReducer(new InflationReducer(), "inflation", true);
+		//radixEngine.addStateReducer(new InflationReducer(), "inflation", true);
 
 		var systemCache = new SubstateCacheRegister<>(SystemParticle.class, p -> true);
 		radixEngine.addSubstateCache(systemCache, true);
 		radixEngine.addStateReducer(new SystemReducer(), true);
+
+		var validatorsCache = new SubstateCacheRegister<>(ValidatorEpochData.class, p -> true);
+		radixEngine.addSubstateCache(validatorsCache, true);
+		radixEngine.addStateReducer(new CurrentValidatorsReducer(), false);
 
 		// Additional state reducers are not required for consensus so don't need to include their
 		// state in transient branches;

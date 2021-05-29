@@ -127,7 +127,7 @@ public class NextEpochTest {
 		sut.execute(List.of(start), null, PermissionLevel.SYSTEM);
 
 		// Act and Assert
-		var txn = sut.construct(new SystemNextEpoch(1))
+		var txn = sut.construct(new SystemNextEpoch(List.of(ECKeyPair.generateNew().getPublicKey()), 1))
 			.buildWithoutSignature();
 		this.sut.execute(List.of(txn), null, PermissionLevel.SUPER_USER);
 	}
@@ -146,7 +146,7 @@ public class NextEpochTest {
 		sut.execute(List.of(start), null, PermissionLevel.SYSTEM);
 
 		// Act and Assert
-		var txn = sut.construct(new SystemNextEpoch(1))
+		var txn = sut.construct(new SystemNextEpoch(List.of(ECKeyPair.generateNew().getPublicKey()), 1))
 			.buildWithoutSignature();
 		this.sut.execute(List.of(txn), null, PermissionLevel.SUPER_USER);
 	}

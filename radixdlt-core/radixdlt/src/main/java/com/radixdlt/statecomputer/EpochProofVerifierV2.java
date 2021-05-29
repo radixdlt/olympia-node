@@ -18,30 +18,32 @@
 
 package com.radixdlt.statecomputer;
 
+import com.google.common.collect.Sets;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.MetadataException;
 import com.radixdlt.ledger.ByzantineQuorumException;
 
-/**
- * Validates that the LedgerProof matches the computed state output
- */
-public final class EpochProofVerifier implements BatchVerifier<LedgerAndBFTProof> {
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+public class EpochProofVerifierV2 implements BatchVerifier<LedgerAndBFTProof> {
 	@Override
-	public PerStateChangeVerifier<LedgerAndBFTProof> newVerifier(ComputedState computedState) {
+	public BatchVerifier.PerStateChangeVerifier<LedgerAndBFTProof> newVerifier(BatchVerifier.ComputedState computedState) {
 		return new PerEpochVerifier(computedState);
 	}
 
-	private final class PerEpochVerifier implements PerStateChangeVerifier<LedgerAndBFTProof> {
+	private final class PerEpochVerifier implements BatchVerifier.PerStateChangeVerifier<LedgerAndBFTProof> {
 		private final EpochView epochView;
 		private boolean epochChangeFlag = false;
 
-		private PerEpochVerifier(ComputedState initState) {
+		private PerEpochVerifier(BatchVerifier.ComputedState initState) {
 			this.epochView = initState.get(EpochView.class);
 		}
 
 		@Override
-		public void test(ComputedState computedState) {
+		public void test(BatchVerifier.ComputedState computedState) {
 			if (epochChangeFlag) {
 				throw new ByzantineQuorumException("Additional commands added to end of epoch.");
 			}
@@ -53,7 +55,7 @@ public final class EpochProofVerifier implements BatchVerifier<LedgerAndBFTProof
 		}
 
 		@Override
-		public void testMetadata(LedgerAndBFTProof metadata, ComputedState computedState) throws MetadataException {
+		public void testMetadata(LedgerAndBFTProof metadata, BatchVerifier.ComputedState computedState) throws MetadataException {
 			// Verify that output of radix engine and signed output match
 			// TODO: Always follow radix engine as its a deeper source of truth and just mark validator
 			// TODO: set as malicious (RPNV1-633)
@@ -62,9 +64,24 @@ public final class EpochProofVerifier implements BatchVerifier<LedgerAndBFTProof
 					throw new IllegalStateException();
 				}
 
+				final var validatorKeys = computedState.get(CurrentValidators.class).validatorKeys();
 				final var reNextValidatorSet = computedState.get(StakedValidators.class).toValidatorSet();
+				if (reNextValidatorSet == null) {
+					throw new MetadataException("Computed state has no staked validators.");
+				}
 				final var signedValidatorSet = metadata.getProof().getNextValidatorSet()
 					.orElseThrow(() -> new MetadataException("RE has changed epochs but proofs don't show."));
+
+				var stakedKeys = reNextValidatorSet.nodes().stream().map(BFTNode::getKey).collect(Collectors.toSet());
+				if (!Objects.equals(stakedKeys, validatorKeys)) {
+					throw new MetadataException(
+						String.format(
+							"Current validators does not agree with staked validators stakedDiff: %s currentDiff: %s",
+							Sets.difference(stakedKeys, validatorKeys),
+							Sets.difference(validatorKeys, stakedKeys)
+						));
+				}
+
 				if (!signedValidatorSet.equals(reNextValidatorSet)) {
 					throw new MetadataException(
 						String.format(

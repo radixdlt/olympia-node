@@ -18,7 +18,7 @@
 
 package com.radixdlt.statecomputer;
 
-import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.system.state.ValidatorEpochData;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
 
@@ -26,35 +26,35 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-public final class InflationReducer implements StateReducer<Rewards> {
+public final class CurrentValidatorsReducer implements StateReducer<CurrentValidators> {
 	@Override
-	public Class<Rewards> stateClass() {
-		return Rewards.class;
+	public Class<CurrentValidators> stateClass() {
+		return CurrentValidators.class;
 	}
 
 	@Override
 	public Set<Class<? extends Particle>> particleClasses() {
-		return Set.of(ValidatorStake.class);
+		return Set.of(ValidatorEpochData.class);
 	}
 
 	@Override
-	public Supplier<Rewards> initial() {
-		return Rewards::create;
+	public Supplier<CurrentValidators> initial() {
+		return CurrentValidators::create;
 	}
 
 	@Override
-	public BiFunction<Rewards, Particle, Rewards> outputReducer() {
-		return (prev, p) -> {
-			var s = (ValidatorStake) p;
-			return prev.add(s.getValidatorKey(), s.getAmount());
+	public BiFunction<CurrentValidators, Particle, CurrentValidators> outputReducer() {
+		return (s, p) -> {
+			var validatorEpochData = (ValidatorEpochData) p;
+			return s.add(validatorEpochData);
 		};
 	}
 
 	@Override
-	public BiFunction<Rewards, Particle, Rewards> inputReducer() {
-		return (prev, p) -> {
-			var s = (ValidatorStake) p;
-			return prev.remove(s.getValidatorKey(), s.getAmount());
+	public BiFunction<CurrentValidators, Particle, CurrentValidators> inputReducer() {
+		return (s, p) -> {
+			var validatorEpochData = (ValidatorEpochData) p;
+			return s.remove(validatorEpochData);
 		};
 	}
 }

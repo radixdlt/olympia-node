@@ -30,8 +30,10 @@ import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.fees.NativeToken;
@@ -45,7 +47,10 @@ import com.radixdlt.utils.UInt256;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
 
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Generates a genesis atom
@@ -126,14 +131,17 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 			if (!additionalActions.isEmpty()) {
 				additionalActions.forEach(genesisBuilder::action);
 			}
-
-			genesisBuilder.action(new SystemNextEpoch(timestamp));
-			var txn = branch.construct(genesisBuilder.build()).buildWithoutSignature();
-			branch.execute(List.of(txn), PermissionLevel.SYSTEM);
-
+			var temp = branch.construct(genesisBuilder.build()).buildWithoutSignature();
+			branch.execute(List.of(temp), PermissionLevel.SYSTEM);
 			final var genesisValidatorSet = branch.getComputedState(StakedValidators.class)
 				.toValidatorSet();
+			var keyList = genesisValidatorSet.nodes().stream()
+				.map(BFTNode::getKey)
+				.sorted(Comparator.comparing(ECPublicKey::getBytes, Arrays::compare))
+				.collect(Collectors.toList());
+			genesisBuilder.action(new SystemNextEpoch(keyList, timestamp));
 			radixEngine.deleteBranches();
+			var txn = radixEngine.construct(genesisBuilder.build()).buildWithoutSignature();
 
 			var accumulatorState = new AccumulatorState(0, txn.getId().asHashCode());
 			var genesisProof = LedgerProof.genesis(

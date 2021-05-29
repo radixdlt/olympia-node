@@ -73,6 +73,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -224,6 +225,7 @@ public class InflationTest {
 	}
 
 	@Test
+	@Ignore
 	public void inflation_test() {
 		processForCount(100000);
 

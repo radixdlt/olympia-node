@@ -16,38 +16,47 @@
  *
  */
 
-package com.radixdlt.atommodel.system.state;
+package com.radixdlt.atommodel.tokens.state;
 
 import com.radixdlt.atommodel.tokens.Fungible;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 
-public final class Stake implements Fungible {
+public final class PreparedUnstakeOwned implements Fungible {
 	private final UInt256 amount;
 
 	// Bucket keys
-	private final ECPublicKey validatorKey;
+	private final REAddr owner;
+	private final ECPublicKey delegateKey;
 
-	public Stake(
-		UInt256 amount,
-		ECPublicKey validatorKey
+	public PreparedUnstakeOwned(
+		ECPublicKey delegateKey,
+		REAddr owner,
+		UInt256 amount
 	) {
-		this.validatorKey = Objects.requireNonNull(validatorKey);
+		this.delegateKey = Objects.requireNonNull(delegateKey);
+		this.owner = Objects.requireNonNull(owner);
 		this.amount = Objects.requireNonNull(amount);
 	}
 
-	public ECPublicKey getValidatorKey() {
-		return validatorKey;
+	public ECPublicKey getDelegateKey() {
+		return delegateKey;
+	}
+
+	public REAddr getOwner() {
+		return this.owner;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s]",
+		return String.format("%s[%s:%s:%s]",
 			getClass().getSimpleName(),
 			amount,
-			validatorKey
+			owner,
+			delegateKey
 		);
 	}
 
@@ -61,18 +70,20 @@ public final class Stake implements Fungible {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof Stake)) {
+		if (!(o instanceof PreparedUnstakeOwned)) {
 			return false;
 		}
-		var that = (Stake) o;
-		return Objects.equals(validatorKey, that.validatorKey)
+		var that = (PreparedUnstakeOwned) o;
+		return Objects.equals(delegateKey, that.delegateKey)
+			&& Objects.equals(owner, that.owner)
 			&& Objects.equals(amount, that.amount);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(
-			validatorKey,
+			delegateKey,
+			owner,
 			amount
 		);
 	}

@@ -55,7 +55,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @RunWith(Parameterized.class)
-public class StakeTokensTest {
+public class ValidatorStakeTokensTest {
 
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
@@ -90,7 +90,7 @@ public class StakeTokensTest {
 	private final List<ConstraintScrypt> scrypts;
 	private final ActionConstructor<StakeTokens> stakeTokensConstructor;
 
-	public StakeTokensTest(
+	public ValidatorStakeTokensTest(
 		UInt256 startAmt,
 		UInt256 stakeAmt,
 		List<ConstraintScrypt> scrypts,

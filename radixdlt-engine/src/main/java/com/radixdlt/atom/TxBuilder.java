@@ -205,7 +205,7 @@ public final class TxBuilder {
 		}
 	}
 
-	public <T extends Particle, U> U downAll(
+	public <T extends Particle, U> U shutdownAll(
 		Class<T> particleClass,
 		Function<Iterator<T>, U> mapper
 	) {
