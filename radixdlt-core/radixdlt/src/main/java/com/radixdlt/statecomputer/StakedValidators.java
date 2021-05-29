@@ -92,6 +92,11 @@ public final class StakedValidators {
 		);
 	}
 
+	public UInt256 getStake(ECPublicKey validatorKey) {
+		var s = stake.get(validatorKey);
+		return (s == null) ? UInt256.ZERO : s;
+	}
+
 	public StakedValidators setStake(ECPublicKey delegatedKey, UInt256 amount) {
 		final var nextStake = Stream.concat(
 			Stream.of(Maps.immutableEntry(delegatedKey, amount)),
@@ -120,11 +125,6 @@ public final class StakedValidators {
 			potentialValidators.subList(0, lastIndex).stream()
 				.map(p -> BFTValidator.from(BFTNode.create(p.getKey()), p.getValue()))
 		);
-	}
-
-	public UInt256 getStake(ECPublicKey validatorKey) {
-		var s = stake.get(validatorKey);
-		return (s == null) ? UInt256.ZERO : s;
 	}
 
 	public <T> List<T> map(BiFunction<ECPublicKey, ValidatorDetails, T> mapper) {

@@ -30,7 +30,7 @@ import com.radixdlt.utils.UInt384;
 import java.util.Objects;
 
 public final class ValidatorStake implements Particle {
-	public static final UInt256 MINIMUM_STAKE = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
+	public static final UInt256 MINIMUM_STAKE = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.from(100));
 
 	private final UInt256 totalStake;
 	private final UInt256 totalOwnership;
