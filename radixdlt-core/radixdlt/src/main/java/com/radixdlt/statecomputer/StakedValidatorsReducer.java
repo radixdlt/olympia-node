@@ -57,6 +57,7 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 	@Override
 	public Set<Class<? extends Particle>> particleClasses() {
 		return Set.of(
+			PreparedStake.class,
 			ValidatorParticle.class,
 			ValidatorStake.class
 		);
@@ -76,6 +77,9 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 					return prev.add(v);
 				}
 				return prev;
+			} else if (p instanceof PreparedStake) { // TODO: Remove for mainnet
+				var s = (PreparedStake) p;
+				return prev.add(s.getDelegateKey(), s.getAmount());
 			} else {
 				var s = (ValidatorStake) p;
 				return prev.setStake(s.getValidatorKey(), s.getAmount());
@@ -91,6 +95,9 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 				if (v.isRegisteredForNextEpoch()) {
 					return prev.remove(v);
 				}
+			} else if (p instanceof PreparedStake) { // TODO: Remove for mainnet
+				var s = (PreparedStake) p;
+				return prev.remove(s.getDelegateKey(), s.getAmount());
 			}
 
 			return prev;

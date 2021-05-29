@@ -106,6 +106,36 @@ public final class StakedValidators {
 		return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStake);
 	}
 
+
+	// TODO: Remove add/remove from mainnet
+	public StakedValidators add(ECPublicKey delegatedKey, UInt256 amount) {
+		if (amount.isZero()) {
+			return this;
+		}
+
+		final var nextAmount = this.stake.getOrDefault(delegatedKey, UInt256.ZERO).add(amount);
+		final var nextStakedAmounts = Stream.concat(
+			Stream.of(Maps.immutableEntry(delegatedKey, nextAmount)),
+			this.stake.entrySet().stream().filter(e -> !delegatedKey.equals(e.getKey()))
+		).collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+
+		return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStakedAmounts);
+	}
+
+	public StakedValidators remove(ECPublicKey delegatedKey, UInt256 amount) {
+		if (amount.isZero()) {
+			return this;
+		}
+
+		final var nextAmount = this.stake.getOrDefault(delegatedKey, UInt256.ZERO).add(amount);
+		final var nextStake = Stream.concat(
+			Stream.of(Maps.immutableEntry(delegatedKey, nextAmount)),
+			this.stake.entrySet().stream().filter(e -> !delegatedKey.equals(e.getKey()))
+		).collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+
+		return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStake);
+	}
+
 	public BFTValidatorSet toValidatorSet() {
 		var validatorMap = ImmutableMap.copyOf(
 			Maps.filterKeys(stake, k -> validatorParticles.stream().map(ValidatorParticle::getKey).anyMatch(k::equals))
