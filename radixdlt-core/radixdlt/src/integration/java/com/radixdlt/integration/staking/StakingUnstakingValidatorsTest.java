@@ -40,7 +40,7 @@ import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
@@ -284,9 +284,9 @@ public class StakingUnstakingValidatorsTest {
 		}
 
 		var entryStore = this.nodes.get(0).getInstance(BerkeleyLedgerEntryStore.class);
-		var totalTokens = entryStore.reduceUpParticles(TokensParticle.class, UInt256.ZERO,
+		var totalTokens = entryStore.reduceUpParticles(TokensInAccount.class, UInt256.ZERO,
 			(i, p) -> {
-				var tokens = (TokensParticle) p;
+				var tokens = (TokensInAccount) p;
 				return i.add(tokens.getAmount());
 			}
 		);

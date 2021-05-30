@@ -2,7 +2,7 @@ package com.radixdlt.chaos.mempoolfiller;
 
 import com.google.inject.Inject;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
@@ -35,7 +35,7 @@ public final class ParticleCounter implements StateReducer<Integer> {
 
 	@Override
 	public Set<Class<? extends Particle>> particleClasses() {
-		return Set.of(TokensParticle.class);
+		return Set.of(TokensInAccount.class);
 	}
 
 	@Override
@@ -46,7 +46,7 @@ public final class ParticleCounter implements StateReducer<Integer> {
 	@Override
 	public BiFunction<Integer, Particle, Integer> outputReducer() {
 		return (count, p) -> {
-			var t = (TokensParticle) p;
+			var t = (TokensInAccount) p;
 			if (t.getHoldingAddr().equals(addr)
 				&& t.getResourceAddr().isNativeToken()
 				&& t.getAmount().compareTo(fee.multiply(UInt256.TWO)) > 0) {
@@ -59,7 +59,7 @@ public final class ParticleCounter implements StateReducer<Integer> {
 	@Override
 	public BiFunction<Integer, Particle, Integer> inputReducer() {
 		return (count, p) -> {
-			var t = (TokensParticle) p;
+			var t = (TokensInAccount) p;
 			if (t.getHoldingAddr().equals(addr)
 				&& t.getResourceAddr().isNativeToken()
 				&& t.getAmount().compareTo(fee.multiply(UInt256.TWO)) > 0) {

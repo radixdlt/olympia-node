@@ -31,7 +31,7 @@ import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.system.state.ValidatorEpochData;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwned;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECPublicKey;
@@ -127,7 +127,7 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 				var nextStakeAndAmt = curValidatorStake.unstakeOwnership(amt);
 				curValidatorStake = nextStakeAndAmt.getFirst();
 				var unstakedAmt = nextStakeAndAmt.getSecond();
-				txBuilder.up(new TokensParticle(addr, unstakedAmt, REAddr.ofNativeToken(), epochUnlocked));
+				txBuilder.up(new TokensInAccount(addr, unstakedAmt, REAddr.ofNativeToken(), epochUnlocked));
 			}
 			validatorsToUpdate.put(k, curValidatorStake);
 		}

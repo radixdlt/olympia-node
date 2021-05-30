@@ -34,7 +34,7 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
@@ -205,14 +205,14 @@ public class UnstakingLockedTokensTest {
 		// Build transaction manually which spends locked transaction
 		var txn = radixEngine.construct(txBuilder -> {
 			txBuilder.swapFungible(
-				TokensParticle.class,
+				TokensInAccount.class,
 				p -> p.getResourceAddr().isNativeToken()
 					&& p.getHoldingAddr().equals(accountAddr)
 					&& p.getEpochUnlocked().isPresent(),
-				amt -> new TokensParticle(accountAddr, amt, REAddr.ofNativeToken()),
+				amt -> new TokensInAccount(accountAddr, amt, REAddr.ofNativeToken()),
 				ValidatorStake.MINIMUM_STAKE,
 				"Not enough balance for transfer."
-			).with(amt -> new TokensParticle(otherAddr, amt, REAddr.ofNativeToken()));
+			).with(amt -> new TokensInAccount(otherAddr, amt, REAddr.ofNativeToken()));
 			txBuilder.end();
 		}).signAndBuild(hashSigner::sign);
 		if (shouldSucceed) {

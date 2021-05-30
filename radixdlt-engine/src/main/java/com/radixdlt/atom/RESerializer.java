@@ -27,7 +27,7 @@ import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwned;
 import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.atomos.REAddrParticle;
@@ -72,11 +72,11 @@ public final class RESerializer {
 		REAddrParticle.class,
 		SystemParticle.class,
 		TokenDefinitionParticle.class,
-		TokensParticle.class,
+		TokensInAccount.class,
 		PreparedStake.class,
 		ValidatorParticle.class,
 		UniqueParticle.class,
-		TokensParticle.class,
+		TokensInAccount.class,
 		ValidatorStake.class,
 		RoundData.class,
 		EpochData.class,
@@ -89,7 +89,7 @@ public final class RESerializer {
 		Map.entry(REAddrParticle.class, List.of(SubstateType.RE_ADDR.id)),
 		Map.entry(SystemParticle.class, List.of(SubstateType.SYSTEM.id)),
 		Map.entry(TokenDefinitionParticle.class, List.of(SubstateType.TOKEN_DEF.id)),
-		Map.entry(TokensParticle.class, List.of(SubstateType.TOKENS.id, SubstateType.TOKENS_LOCKED.id)),
+		Map.entry(TokensInAccount.class, List.of(SubstateType.TOKENS.id, SubstateType.TOKENS_LOCKED.id)),
 		Map.entry(PreparedStake.class, List.of(SubstateType.PREPARED_STAKE.id)),
 		Map.entry(ValidatorParticle.class, List.of(SubstateType.VALIDATOR.id)),
 		Map.entry(UniqueParticle.class, List.of(SubstateType.UNIQUE.id)),
@@ -183,8 +183,8 @@ public final class RESerializer {
 			serializeData((REAddrParticle) p, buf);
 		} else if (p instanceof SystemParticle) {
 			serializeData((SystemParticle) p, buf);
-		} else if (p instanceof TokensParticle) {
-			serializeData((TokensParticle) p, buf);
+		} else if (p instanceof TokensInAccount) {
+			serializeData((TokensInAccount) p, buf);
 		} else if (p instanceof PreparedStake) {
 			serializeData((PreparedStake) p, buf);
 		} else if (p instanceof ValidatorParticle) {
@@ -278,34 +278,34 @@ public final class RESerializer {
 		return new SystemParticle(epoch, view, timestamp);
 	}
 
-	private static void serializeData(TokensParticle tokensParticle, ByteBuffer buf) {
-		tokensParticle.getEpochUnlocked().ifPresentOrElse(
+	private static void serializeData(TokensInAccount tokensInAccount, ByteBuffer buf) {
+		tokensInAccount.getEpochUnlocked().ifPresentOrElse(
 			e -> buf.put(SubstateType.TOKENS_LOCKED.id),
 			() -> buf.put(SubstateType.TOKENS.id)
 		);
 
-		serializeREAddr(buf, tokensParticle.getResourceAddr());
-		serializeREAddr(buf, tokensParticle.getHoldingAddr());
-		buf.put(tokensParticle.getAmount().toByteArray());
+		serializeREAddr(buf, tokensInAccount.getResourceAddr());
+		serializeREAddr(buf, tokensInAccount.getHoldingAddr());
+		buf.put(tokensInAccount.getAmount().toByteArray());
 
-		tokensParticle.getEpochUnlocked().ifPresent(buf::putLong);
+		tokensInAccount.getEpochUnlocked().ifPresent(buf::putLong);
 	}
 
-	private static TokensParticle deserializeTokensParticle(ByteBuffer buf) throws DeserializeException {
+	private static TokensInAccount deserializeTokensParticle(ByteBuffer buf) throws DeserializeException {
 		var rri = deserializeREAddr(buf);
 		var holdingAddr = deserializeREAddr(buf);
 		var amount = deserializeUInt256(buf);
 
-		return new TokensParticle(holdingAddr, amount, rri);
+		return new TokensInAccount(holdingAddr, amount, rri);
 	}
 
-	private static TokensParticle deserializeTokensLockedParticle(ByteBuffer buf) throws DeserializeException {
+	private static TokensInAccount deserializeTokensLockedParticle(ByteBuffer buf) throws DeserializeException {
 		var rri = deserializeREAddr(buf);
 		var holdingAddr = deserializeREAddr(buf);
 		var amount = deserializeUInt256(buf);
 		var epochUnlocked = buf.getLong();
 
-		return new TokensParticle(holdingAddr, amount, rri, epochUnlocked);
+		return new TokensInAccount(holdingAddr, amount, rri, epochUnlocked);
 	}
 
 	private static void serializeData(ValidatorStake stake, ByteBuffer buf) {

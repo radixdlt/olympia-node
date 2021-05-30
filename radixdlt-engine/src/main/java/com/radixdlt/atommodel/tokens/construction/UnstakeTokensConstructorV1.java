@@ -25,7 +25,7 @@ import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV2;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.identifiers.REAddr;
 
 public class UnstakeTokensConstructorV1 implements ActionConstructor<UnstakeOwnership> {
@@ -39,6 +39,6 @@ public class UnstakeTokensConstructorV1 implements ActionConstructor<UnstakeOwne
 			amt -> new PreparedStake(amt, action.accountAddr(), action.from()),
 			action.amount(),
 			"Not enough staked."
-		).with(amt -> new TokensParticle(action.accountAddr(), amt, REAddr.ofNativeToken(), epochUnlocked));
+		).with(amt -> new TokensInAccount(action.accountAddr(), amt, REAddr.ofNativeToken(), epochUnlocked));
 	}
 }

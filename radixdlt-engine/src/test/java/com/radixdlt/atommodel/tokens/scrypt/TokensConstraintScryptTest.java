@@ -23,7 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.crypto.ECPublicKey;
@@ -50,10 +50,10 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_token_instance_with_null_amount__result_has_error() {
-		TokensParticle tokensParticle = mock(TokensParticle.class);
-		when(tokensParticle.getResourceAddr()).thenReturn(mock(REAddr.class));
-		when(tokensParticle.getAmount()).thenReturn(null);
-		assertThat(staticCheck.apply(tokensParticle).getErrorMessage())
+		TokensInAccount tokensInAccount = mock(TokensInAccount.class);
+		when(tokensInAccount.getResourceAddr()).thenReturn(mock(REAddr.class));
+		when(tokensInAccount.getAmount()).thenReturn(null);
+		assertThat(staticCheck.apply(tokensInAccount).getErrorMessage())
 			.contains("null");
 	}
 
@@ -67,10 +67,10 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_token_instance_with_zero_amount__result_has_error() {
-		TokensParticle tokensParticle = mock(TokensParticle.class);
-		when(tokensParticle.getResourceAddr()).thenReturn(mock(REAddr.class));
-		when(tokensParticle.getAmount()).thenReturn(UInt256.ZERO);
-		assertThat(staticCheck.apply(tokensParticle).getErrorMessage())
+		TokensInAccount tokensInAccount = mock(TokensInAccount.class);
+		when(tokensInAccount.getResourceAddr()).thenReturn(mock(REAddr.class));
+		when(tokensInAccount.getAmount()).thenReturn(UInt256.ZERO);
+		assertThat(staticCheck.apply(tokensInAccount).getErrorMessage())
 			.contains("zero");
 	}
 

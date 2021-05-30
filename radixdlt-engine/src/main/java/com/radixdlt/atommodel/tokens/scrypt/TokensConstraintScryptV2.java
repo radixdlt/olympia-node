@@ -26,7 +26,7 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
@@ -65,8 +65,8 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		);
 
 		os.registerParticle(
-			TokensParticle.class,
-			ParticleDefinition.<TokensParticle>builder()
+			TokensInAccount.class,
+			ParticleDefinition.<TokensInAccount>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.build()
 		);
@@ -107,7 +107,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		));
 
 		os.createUpProcedure(new UpProcedure<>(
-			TokensConstraintScryptV2.NeedFixedTokenSupply.class, TokensParticle.class,
+			TokensConstraintScryptV2.NeedFixedTokenSupply.class, TokensInAccount.class,
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
@@ -184,7 +184,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 	private void defineMintTransferBurn(SysCalls os) {
 		// Mint
 		os.createUpProcedure(new UpProcedure<>(
-			VoidReducerState.class, TokensParticle.class,
+			VoidReducerState.class, TokensInAccount.class,
 			(u, r) -> u.getResourceAddr().isNativeToken() ? PermissionLevel.SYSTEM : PermissionLevel.USER,
 			(u, r, k) -> {
 				var tokenDef = (TokenDefinitionParticle) r.loadAddr(null, u.getResourceAddr())
@@ -222,7 +222,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 
 		// Initial Withdraw
 		os.createDownProcedure(new DownProcedure<>(
-			TokensParticle.class, VoidReducerState.class,
+			TokensInAccount.class, VoidReducerState.class,
 			(d, r) -> PermissionLevel.USER,
 			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
 			(d, s, r) -> {
@@ -238,7 +238,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 
 		// More Withdraws
 		os.createDownProcedure(new DownProcedure<>(
-			TokensParticle.class, TokenHoldingBucket.class,
+			TokensInAccount.class, TokenHoldingBucket.class,
 			(d, r) -> PermissionLevel.USER,
 			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
 			(d, s, r) -> {
@@ -254,7 +254,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 
 		// Deposit
 		os.createUpProcedure(new UpProcedure<>(
-			TokenHoldingBucket.class, TokensParticle.class,
+			TokenHoldingBucket.class, TokensInAccount.class,
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {

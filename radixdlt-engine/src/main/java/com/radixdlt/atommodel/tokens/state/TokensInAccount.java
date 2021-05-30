@@ -32,7 +32,7 @@ import java.util.Optional;
  *  A particle which represents an amount of transferrable fungible tokens
  *  owned by some key owner and stored in an account.
  */
-public final class TokensParticle implements Fungible {
+public final class TokensInAccount implements Fungible {
 	private final UInt256 amount;
 
 	private final REAddr resourceAddr;
@@ -42,7 +42,7 @@ public final class TokensParticle implements Fungible {
 	// Bucket properties
 	private final Long epochUnlocked;
 
-	public TokensParticle(
+	public TokensInAccount(
 		REAddr holdingAddress,
 		UInt256 amount,
 		REAddr resourceAddr
@@ -53,7 +53,7 @@ public final class TokensParticle implements Fungible {
 		this.epochUnlocked = null;
 	}
 
-	public TokensParticle(
+	public TokensInAccount(
 		REAddr holdingAddress,
 		UInt256 amount,
 		REAddr resourceAddr,
@@ -117,10 +117,10 @@ public final class TokensParticle implements Fungible {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof TokensParticle)) {
+		if (!(o instanceof TokensInAccount)) {
 			return false;
 		}
-		TokensParticle that = (TokensParticle) o;
+		TokensInAccount that = (TokensInAccount) o;
 		return Objects.equals(holdingAddress, that.holdingAddress)
 			&& Objects.equals(resourceAddr, that.resourceAddr)
 			&& Objects.equals(epochUnlocked, that.epochUnlocked)

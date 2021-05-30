@@ -27,7 +27,7 @@ import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
 import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.CMErrorCode;
@@ -87,7 +87,7 @@ public class TokenDefinitionTest {
 		);
 
 		var holdingAddress = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
-		var tokensParticle = new TokensParticle(
+		var tokensParticle = new TokensInAccount(
 			holdingAddress,
 			UInt256.TEN,
 			addr

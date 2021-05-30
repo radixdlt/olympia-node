@@ -39,7 +39,7 @@ import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV2;
 import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV2;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.CMErrorCode;
@@ -265,13 +265,13 @@ public class UnstakeOwnershipV2Test {
 		var txn2 = sut.construct(
 			txBuilder ->
 				txBuilder.swapFungible(
-					TokensParticle.class,
+					TokensInAccount.class,
 					p -> p.getResourceAddr().equals(REAddr.ofNativeToken())
 						&& p.getHoldingAddr().equals(accountAddr),
-					amt -> new TokensParticle(acct2, amt, REAddr.ofNativeToken()),
+					amt -> new TokensInAccount(acct2, amt, REAddr.ofNativeToken()),
 					unstakeAmt,
 					"Not enough balance for transfer."
-				).with(amt -> new TokensParticle(acct2, amt, REAddr.ofNativeToken()))
+				).with(amt -> new TokensInAccount(acct2, amt, REAddr.ofNativeToken()))
 		).signAndBuild(key::sign);
 
 		assertThatThrownBy(() -> sut.execute(List.of(txn2)))

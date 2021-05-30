@@ -17,6 +17,12 @@
 
 package com.radixdlt.client.store.berkeley;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.atommodel.tokens.state.PreparedStake;
+import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
+import com.radixdlt.atomos.REAddrParticle;
+import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.TxnParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -554,11 +560,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private void processRETransaction(REProcessedTxn reTxn) {
 		extractTimestamp(reTxn.upSubstates());
-
-		reTxn.getSignedBy().ifPresentOrElse(
-			p -> reTxn.getActions().forEach(a -> storeAction(p, a)),
-			() -> reTxn.getActions().forEach(a -> storeAction(null, a))
-		);
+		reTxn.getGroupedStateUpdates().forEach(this::updateSubstate);
 
 		var addressesInActions = reTxn.getActions().stream()
 			.map(REParsedAction::getTxAction)
@@ -589,129 +591,70 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			.onSuccess(parsed -> addresses.forEach(address -> storeSingleTransaction(parsed, address)));
 	}
 
-	private void storeAction(ECPublicKey user, REParsedAction action) {
-		if (action.getTxAction() instanceof TransferToken) {
-			var transferToken = (TransferToken) action.getTxAction();
-			var rri = getRriOrFail(transferToken.resourceAddr());
-			var entry0 = BalanceEntry.create(
-				transferToken.from(),
-				null,
-				rri,
-				UInt384.from(transferToken.amount()),
-				true
-			);
-			var entry1 = BalanceEntry.create(
-				transferToken.to(),
-				null,
-				rri,
-				UInt384.from(transferToken.amount()),
-				false
-			);
-			storeBalanceEntry(entry0);
-			storeBalanceEntry(entry1);
+	private void updateSubstate(List<REStateUpdate> updates) {
+		byte[] addressArg = null;
+		for (var update : updates) {
+			var substate = update.getRawSubstate();
+			if (substate instanceof TokensInAccount) {
+				var tokensInAccount = (TokensInAccount) substate;
+				var rri = getRriOrFail(tokensInAccount.getResourceAddr());
+				var accountEntry = BalanceEntry.create(
+					tokensInAccount.getHoldingAddr(),
+					null,
+					rri,
+					UInt384.from(tokensInAccount.getAmount()),
+					update.isShutDown()
+				);
+				storeBalanceEntry(accountEntry);
 
+				// Can probably optimize this out for every transfer
+				var tokenEntry = BalanceEntry.create(
+					null,
+					null,
+					rri,
+					UInt384.from(tokensInAccount.getAmount()),
+					update.isShutDown()
+				);
+				storeBalanceEntry(tokenEntry);
+			} else if (substate instanceof PreparedStake) {
+				var preparedStake = (PreparedStake) substate;
+				var rri = getRriOrFail(REAddr.ofNativeToken());
+				var accountEntry = BalanceEntry.create(
+					preparedStake.getOwner(),
+					null,
+					rri,
+					UInt384.from(preparedStake.getAmount()),
+					update.isShutDown()
+				);
+				storeBalanceEntry(accountEntry);
 
-		} else if (action.getTxAction() instanceof BurnToken) {
-			var burnToken = (BurnToken) action.getTxAction();
-			var rri = getRriOrFail(burnToken.resourceAddr());
-			var entry0 = BalanceEntry.create(
-				burnToken.from(),
-				null,
-				rri,
-				UInt384.from(burnToken.amount()),
-				true
-			);
-			var entry1 = BalanceEntry.create(
-				null,
-				null,
-				rri,
-				UInt384.from(burnToken.amount()),
-				true
-			);
-			storeBalanceEntry(entry0);
-			storeBalanceEntry(entry1);
-		} else if (action.getTxAction() instanceof MintToken) {
-			var mintToken = (MintToken) action.getTxAction();
-			var rri = getRriOrFail(mintToken.resourceAddr());
-			var entry0 = BalanceEntry.create(
-				mintToken.to(),
-				null,
-				rri,
-				UInt384.from(mintToken.amount()),
-				false
-			);
-			var entry1 = BalanceEntry.create(
-				null,
-				null,
-				rri,
-				UInt384.from(mintToken.amount()),
-				false
-			);
-			storeBalanceEntry(entry0);
-			storeBalanceEntry(entry1);
-		} else if (action.getTxAction() instanceof StakeTokens) {
-			var stakeTokens = (StakeTokens) action.getTxAction();
-			var rri = getRriOrFail(REAddr.ofNativeToken());
-			var entry0 = BalanceEntry.create(
-				stakeTokens.from(),
-				stakeTokens.to(),
-				rri,
-				UInt384.from(stakeTokens.amount()),
-				false
-			);
-			var entry1 = BalanceEntry.create(
-				stakeTokens.from(),
-				null,
-				rri,
-				UInt384.from(stakeTokens.amount()),
-				true
-			);
-			storeBalanceEntry(entry0);
-			storeBalanceEntry(entry1);
-		} else if (action.getTxAction() instanceof UnstakeOwnership) {
-			var unstakeTokens = (UnstakeOwnership) action.getTxAction();
-			var rri = getRriOrFail(REAddr.ofNativeToken());
-			var entry0 = BalanceEntry.create(
-				unstakeTokens.accountAddr(),
-				unstakeTokens.from(),
-				rri,
-				UInt384.from(unstakeTokens.amount()),
-				true
-			);
-			var entry1 = BalanceEntry.create(
-				unstakeTokens.accountAddr(),
-				null,
-				rri,
-				UInt384.from(unstakeTokens.amount()),
-				false
-			);
-			storeBalanceEntry(entry0);
-			storeBalanceEntry(entry1);
-		} else if (action.getTxAction() instanceof CreateMutableToken) {
-			var createMutableToken = (CreateMutableToken) action.getTxAction();
-			var record = TokenDefinitionRecord.from(user, createMutableToken);
-			storeTokenDefinition(record);
-		} else if (action.getTxAction() instanceof CreateFixedToken) {
-			var createFixedToken = (CreateFixedToken) action.getTxAction();
-			var record = TokenDefinitionRecord.from(createFixedToken);
-			storeTokenDefinition(record);
-
-			var entry0 = BalanceEntry.create(
-				createFixedToken.getAccountAddr(),
-				null,
-				record.rri(),
-				UInt384.from(createFixedToken.getSupply()),
-				false
-			);
-			var entry1 = BalanceEntry.create(
-				null,
-				null,
-				record.rri(),
-				UInt384.from(createFixedToken.getSupply()),
-				false
-			);
-			storeBalanceEntry(entry0);
-			storeBalanceEntry(entry1);
+				// Can probably optimize this out for every transfer
+				var tokenEntry = BalanceEntry.create(
+					null,
+					null,
+					rri,
+					UInt384.from(preparedStake.getAmount()),
+					update.isShutDown()
+				);
+				storeBalanceEntry(tokenEntry);
+			} else if (substate instanceof REAddrParticle) {
+				// FIXME: sort of a hacky way of getting this info
+				addressArg = update.getArg().orElseThrow();
+			} else if (substate instanceof TokenDefinitionParticle) {
+				var tokenResource = (TokenDefinitionParticle) substate;
+				var symbol = new String(addressArg);
+				var record = TokenDefinitionRecord.create(
+					symbol,
+					tokenResource.getName(),
+					tokenResource.getAddr(),
+					tokenResource.getDescription(),
+					UInt384.ZERO,
+					tokenResource.getIconUrl(),
+					tokenResource.getUrl(),
+					tokenResource.isMutable()
+				);
+				storeTokenDefinition(record);
+			}
 		}
 	}
 

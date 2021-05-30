@@ -24,7 +24,7 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 
 public class TransferTokensConstructorV2 implements ActionConstructor<TransferToken> {
 	@Override
@@ -40,13 +40,13 @@ public class TransferTokensConstructorV2 implements ActionConstructor<TransferTo
 		}
 
 		txBuilder.swapFungible(
-			TokensParticle.class,
+			TokensInAccount.class,
 			p -> p.getResourceAddr().equals(action.resourceAddr())
 				&& p.getHoldingAddr().equals(action.from())
 				&& p.getEpochUnlocked().map(e -> e <= currentEpoch).orElse(true),
-			amt -> new TokensParticle(action.from(), amt, action.resourceAddr()),
+			amt -> new TokensInAccount(action.from(), amt, action.resourceAddr()),
 			action.amount(),
 			"Not enough balance for transfer."
-		).with(amt -> new TokensParticle(action.to(), action.amount(), action.resourceAddr()));
+		).with(amt -> new TokensInAccount(action.to(), action.amount(), action.resourceAddr()));
 	}
 }

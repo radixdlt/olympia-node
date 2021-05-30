@@ -28,7 +28,7 @@ import com.radixdlt.atommodel.system.state.ValidatorEpochData;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwned;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
@@ -194,7 +194,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			this.onDone = onDone;
 		}
 
-		ReducerState unstake(TokensParticle u) throws ProcedureException {
+		ReducerState unstake(TokensInAccount u) throws ProcedureException {
 			if (!u.getResourceAddr().isNativeToken()) {
 				throw new ProcedureException("Can only destake to the native token.");
 			}
@@ -526,7 +526,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			(d, s, r) -> ReducerResult.incomplete(s.startUpdate(d.getSubstate()))
 		));
 		os.createUpProcedure(new UpProcedure<>(
-			Unstaking.class, TokensParticle.class,
+			Unstaking.class, TokensInAccount.class,
 			(u, r) -> PermissionLevel.SUPER_USER,
 			(u, r, k) -> { },
 			(s, u, r) -> ReducerResult.incomplete(s.unstake(u))

@@ -469,7 +469,7 @@ public final class ConstraintMachine {
 						// FIXME: this is a hack
 						// FIXME: do this via shutdownAll state update rather than individually
 						var substate = substateCursor.next();
-						stateUpdates.add(REStateUpdate.of(inst.getMicroOp(), substate, inst.getDataByteBuffer()));
+						stateUpdates.add(REStateUpdate.of(inst.getMicroOp(), substate, null, inst.getDataByteBuffer()));
 						return substate.getParticle();
 					}
 				};
@@ -481,39 +481,44 @@ public final class ConstraintMachine {
 			} else if (inst.isStateUpdate()) {
 				final Particle nextParticle;
 				final Substate substate;
+				final byte[] arg;
 				final Object o;
 				if (inst.getMicroOp() == REInstruction.REOp.UP) {
 					// TODO: Cleanup indexing of substate class
 					substate = inst.getData();
+					arg = null;
 					nextParticle = substate.getParticle();
 					o = nextParticle;
 					validationState.bootUp(instIndex, substate);
 				} else if (inst.getMicroOp() == REInstruction.REOp.VDOWN) {
 					substate = inst.getData();
+					arg = null;
 					nextParticle = substate.getParticle();
 					o = SubstateWithArg.noArg(nextParticle);
 					validationState.virtualShutdown(substate);
 				} else if (inst.getMicroOp() == REInstruction.REOp.VDOWNARG) {
 					substate = (Substate) ((Pair) inst.getData()).getFirst();
-					var argument = (byte[]) ((Pair) inst.getData()).getSecond();
+					arg = (byte[]) ((Pair) inst.getData()).getSecond();
 					nextParticle = substate.getParticle();
-					o = SubstateWithArg.withArg(nextParticle, argument);
+					o = SubstateWithArg.withArg(nextParticle, arg);
 					validationState.virtualShutdown(substate);
 				} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.DOWN) {
 					SubstateId substateId = inst.getData();
 					nextParticle = validationState.shutdown(substateId);
 					substate = Substate.create(nextParticle, substateId);
+					arg = null;
 					o = SubstateWithArg.noArg(nextParticle);
 				} else if (inst.getMicroOp() == REInstruction.REOp.LDOWN) {
 					SubstateId substateId = inst.getData();
 					nextParticle = validationState.localShutdown(substateId.getIndex().orElseThrow());
 					substate = Substate.create(nextParticle, substateId);
+					arg = null;
 					o = SubstateWithArg.noArg(nextParticle);
 				} else {
 					throw new ConstraintMachineException(CMErrorCode.UNKNOWN_OP, validationState);
 				}
 
-				parsed.add(REStateUpdate.of(inst.getMicroOp(), substate, inst.getDataByteBuffer()));
+				parsed.add(REStateUpdate.of(inst.getMicroOp(), substate, arg, inst.getDataByteBuffer()));
 
 				callProcedure(validationState, inst.getMicroOp(), nextParticle.getClass(), o);
 

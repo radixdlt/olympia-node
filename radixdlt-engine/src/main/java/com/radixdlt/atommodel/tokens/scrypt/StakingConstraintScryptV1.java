@@ -22,7 +22,7 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
@@ -67,7 +67,7 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 			}
 		));
 		os.createDownProcedure(new DownProcedure<>(
-			TokensParticle.class, StakingConstraintScryptV2.UnaccountedStake.class,
+			TokensInAccount.class, StakingConstraintScryptV2.UnaccountedStake.class,
 			(d, r) -> PermissionLevel.USER,
 			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
 			(d, s, r) -> {
@@ -116,7 +116,7 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 				var nextRemainder = s.subtract(UInt384.from(d.getSubstate().getAmount()));
 				if (nextRemainder.isEmpty()) {
 					// FIXME: This isn't 100% correct
-					var p = (TokensParticle) s.initialParticle();
+					var p = (TokensInAccount) s.initialParticle();
 					var action = new UnstakeOwnership(p.getHoldingAddr(), d.getSubstate().getDelegateKey(), p.getAmount());
 					return ReducerResult.complete(action);
 				}
@@ -155,7 +155,7 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 				}
 
 				// FIXME: This isn't 100% correct
-				var t = (TokensParticle) s.initialParticle();
+				var t = (TokensInAccount) s.initialParticle();
 				var action = new UnstakeOwnership(t.getHoldingAddr(), u.getDelegateKey(), t.getAmount());
 				return ReducerResult.complete(action);
 			}

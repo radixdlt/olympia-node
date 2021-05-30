@@ -25,7 +25,7 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.chaos.mempoolfiller.MempoolFiller;
 import com.radixdlt.consensus.bft.Self;
@@ -78,7 +78,7 @@ public final class NodeApplicationModule extends AbstractModule {
 	@ProvidesIntoSet
 	private SubstateCacheRegister<?> registeredSubstate(@Self REAddr self) {
 		return new SubstateCacheRegister<>(
-			TokensParticle.class,
+			TokensInAccount.class,
 			p -> p.getHoldingAddr().equals(self) && p.getResourceAddr().isNativeToken()
 		);
 	}
