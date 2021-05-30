@@ -20,7 +20,7 @@ package com.radixdlt.client.api;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -107,7 +107,7 @@ public class TransactionAction {
 			case STAKE:
 				return Stream.of(new StakeTokens(from, delegate, amount));
 			case UNSTAKE:
-				return Stream.of(new UnstakeTokens(from, delegate, amount));
+				return Stream.of(new UnstakeOwnership(from, delegate, amount));
 		}
 		throw new IllegalStateException("Unsupported action type " + actionType);
 	}

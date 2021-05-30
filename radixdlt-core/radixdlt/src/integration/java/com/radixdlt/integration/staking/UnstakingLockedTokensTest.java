@@ -32,7 +32,7 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
@@ -183,7 +183,7 @@ public class UnstakingLockedTokensTest {
 			EpochsLedgerUpdate.class,
 			e -> e.getEpochChange().map(c -> c.getEpoch() == unstakingEpoch).orElse(false)
 		);
-		var unstakeTxn = dispatchAndWaitForCommit(new UnstakeTokens(accountAddr, self, ValidatorStake.MINIMUM_STAKE));
+		var unstakeTxn = dispatchAndWaitForCommit(new UnstakeOwnership(accountAddr, self, ValidatorStake.MINIMUM_STAKE));
 
 		if (transferEpoch > unstakingEpoch) {
 			runner.runNextEventsThrough(

@@ -54,7 +54,7 @@ public final class NodeApplication {
 	}
 
 	private void processRequest(NodeApplicationRequest request) {
-		log.info("NodeServiceRequest {}", request);
+		log.trace("NodeServiceRequest {}", request);
 
 		try {
 			// TODO: remove use of mempoolAdd message and add to mempool synchronously

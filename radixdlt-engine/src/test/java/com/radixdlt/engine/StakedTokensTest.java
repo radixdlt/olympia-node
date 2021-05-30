@@ -26,7 +26,7 @@ import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atommodel.tokens.construction.BurnTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
@@ -81,7 +81,7 @@ public class StakedTokensTest {
 			.put(TransferToken.class, new TransferTokensConstructorV1())
 			.put(BurnToken.class, new BurnTokenConstructor())
 			.put(StakeTokens.class, new StakeTokensConstructorV1())
-			.put(UnstakeTokens.class, new UnstakeTokensConstructorV1())
+			.put(UnstakeOwnership.class, new UnstakeTokensConstructorV1())
 			.build();
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(actionConstructors, cm, this.store);
@@ -121,7 +121,7 @@ public class StakedTokensTest {
 		this.engine.execute(List.of(txn));
 
 		var txn2 = engine.construct(
-			new UnstakeTokens(this.tokenOwnerAccount, this.validatorKeyPair.getPublicKey(), UInt256.TEN)
+			new UnstakeOwnership(this.tokenOwnerAccount, this.validatorKeyPair.getPublicKey(), UInt256.TEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn2));
 	}
@@ -134,7 +134,7 @@ public class StakedTokensTest {
 		this.engine.execute(List.of(txn));
 
 		var txn2 = engine.construct(
-			new UnstakeTokens(this.tokenOwnerAccount, this.validatorKeyPair.getPublicKey(), UInt256.SEVEN)
+			new UnstakeOwnership(this.tokenOwnerAccount, this.validatorKeyPair.getPublicKey(), UInt256.SEVEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn2));
 	}

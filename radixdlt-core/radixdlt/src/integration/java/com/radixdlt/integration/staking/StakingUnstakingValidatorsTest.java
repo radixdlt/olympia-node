@@ -24,9 +24,11 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.util.Modules;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.application.NodeApplicationRequest;
@@ -35,7 +37,7 @@ import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
-import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
@@ -108,12 +110,18 @@ public class StakingUnstakingValidatorsTest {
 	private List<Supplier<Injector>> nodeCreators;
 	private List<Injector> nodes = new ArrayList<>();
 	private final ImmutableList<ECKeyPair> nodeKeys;
+	private final Module radixEngineConfiguration;
 
 	public StakingUnstakingValidatorsTest() {
 		this.nodeKeys = Stream.generate(ECKeyPair::generateNew)
-			.limit(8)
+			.limit(20)
 			.sorted(Comparator.comparing(k -> k.getPublicKey().euid()))
 			.collect(ImmutableList.toImmutableList());
+		this.radixEngineConfiguration = Modules.combine(
+			new BetanetForksModule(),
+			new RadixEngineOnlyLatestForkModule(View.of(100)),
+			RadixEngineConfig.asModule(1, 10, 50)
+		);
 	}
 
 	@Before
@@ -130,10 +138,8 @@ public class StakingUnstakingValidatorsTest {
 		Guice.createInjector(
 			new MockedGenesisModule(),
 			new CryptoModule(),
-			new BetanetForksModule(),
-			new RadixEngineOnlyLatestForkModule(View.of(10)),
 			new RadixEngineModule(),
-			RadixEngineConfig.asModule(1, 4, 50),
+			this.radixEngineConfiguration,
 			new AbstractModule() {
 				@Override
 				public void configure() {
@@ -177,9 +183,7 @@ public class StakingUnstakingValidatorsTest {
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
-			new BetanetForksModule(),
-			new RadixEngineOnlyLatestForkModule(View.of(100)),
-			RadixEngineConfig.asModule(2, 4, 50),
+			this.radixEngineConfiguration,
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {
 				@Override
@@ -256,7 +260,8 @@ public class StakingUnstakingValidatorsTest {
 					action = new StakeTokens(acct, to, amount);
 					break;
 				case 2:
-					action = new UnstakeTokens(acct, to, amount);
+					var unstakeAmt = random.nextBoolean() ? UInt256.from(random.nextLong()) : amount;
+					action = new UnstakeOwnership(acct, to, unstakeAmt);
 					break;
 				case 3:
 					action = new RegisterValidator(privKey.getPublicKey());
@@ -293,13 +298,14 @@ public class StakingUnstakingValidatorsTest {
 			}
 		);
 		logger.info("Total staked: {}", totalStaked);
-		var totalPrepared = entryStore.reduceUpParticles(PreparedStake.class, UInt256.ZERO,
+		var totalStakePrepared = entryStore.reduceUpParticles(PreparedStake.class, UInt256.ZERO,
 			(i, p) -> {
 				var tokens = (PreparedStake) p;
 				return i.add(tokens.getAmount());
 			}
 		);
-		logger.info("Total prepared: {}", totalPrepared);
+		logger.info("Total stake prepared: {}", totalStakePrepared);
+		logger.info("Total: {}", totalTokens.add(totalStaked).add(totalStakePrepared));
 	}
 
 }

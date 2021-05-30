@@ -33,7 +33,7 @@ import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.client.Rri;
 import com.radixdlt.client.api.TxHistoryEntry;
@@ -668,8 +668,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			);
 			storeBalanceEntry(entry0);
 			storeBalanceEntry(entry1);
-		} else if (action.getTxAction() instanceof UnstakeTokens) {
-			var unstakeTokens = (UnstakeTokens) action.getTxAction();
+		} else if (action.getTxAction() instanceof UnstakeOwnership) {
+			var unstakeTokens = (UnstakeOwnership) action.getTxAction();
 			var rri = getRriOrFail(REAddr.ofNativeToken());
 			var entry0 = BalanceEntry.create(
 				unstakeTokens.accountAddr(),
