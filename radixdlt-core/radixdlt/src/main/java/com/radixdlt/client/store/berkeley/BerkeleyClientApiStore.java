@@ -44,7 +44,7 @@ import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REParsedAction;
-import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
@@ -552,7 +552,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		act.getParsedTxs().forEach(this::processRETransaction);
 	}
 
-	private void processRETransaction(REParsedTxn reTxn) {
+	private void processRETransaction(REProcessedTxn reTxn) {
 		extractTimestamp(reTxn.upSubstates());
 
 		reTxn.getSignedBy().ifPresentOrElse(

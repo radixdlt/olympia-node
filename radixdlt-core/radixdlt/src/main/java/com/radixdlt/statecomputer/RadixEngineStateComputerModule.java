@@ -21,7 +21,7 @@ package com.radixdlt.statecomputer;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.Mempool;
 
@@ -30,6 +30,6 @@ public class RadixEngineStateComputerModule extends AbstractModule {
 	protected void configure() {
 		bind(StateComputerLedger.StateComputer.class).to(RadixEngineStateComputer.class).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<Mempool<?>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<Mempool<REParsedTxn>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<Mempool<REProcessedTxn>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
 	}
 }

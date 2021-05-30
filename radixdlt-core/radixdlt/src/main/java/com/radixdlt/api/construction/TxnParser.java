@@ -23,7 +23,7 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.utils.functional.Result;
 
@@ -39,11 +39,11 @@ public final class TxnParser {
 		this.logCMStore = Objects.requireNonNull(logCMStore);
 	}
 
-	public REParsedTxn parse(Txn txn) throws TxnParseException, ConstraintMachineException {
+	public REProcessedTxn parse(Txn txn) throws TxnParseException, ConstraintMachineException {
 		return constraintMachine.verify(logCMStore.createTransaction(), logCMStore, txn, PermissionLevel.SYSTEM);
 	}
 
-	public Result<REParsedTxn> parseTxn(Txn txn) {
+	public Result<REProcessedTxn> parseTxn(Txn txn) {
 		return Result.wrap(TxnParserErrors.TRANSACTION_PARSING_ERROR, () -> parse(txn));
 	}
 }

@@ -40,7 +40,7 @@ import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMErrorCode;
-import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
@@ -136,7 +136,7 @@ public class UnstakingLockedTokensTest {
 		);
 	}
 
-	public REParsedTxn waitForCommit() {
+	public REProcessedTxn waitForCommit() {
 		var mempoolAdd = runner.runNextEventsThrough(MempoolAddSuccess.class);
 		var committed = runner.runNextEventsThrough(
 			TxnsCommittedToLedger.class,
@@ -154,12 +154,12 @@ public class UnstakingLockedTokensTest {
 		return runner.runNextEventsThrough(MempoolAddFailure.class);
 	}
 
-	public REParsedTxn dispatchAndWaitForCommit(Txn txn) {
+	public REProcessedTxn dispatchAndWaitForCommit(Txn txn) {
 		mempoolAddEventDispatcher.dispatch(MempoolAdd.create(txn));
 		return waitForCommit();
 	}
 
-	public REParsedTxn dispatchAndWaitForCommit(TxAction action) {
+	public REProcessedTxn dispatchAndWaitForCommit(TxAction action) {
 		nodeApplicationRequestEventDispatcher.dispatch(NodeApplicationRequest.create(action));
 		return waitForCommit();
 	}

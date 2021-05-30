@@ -541,7 +541,7 @@ public final class ConstraintMachine {
 	 *
 	 * @return the first error found, otherwise an empty optional
 	 */
-	public REParsedTxn verify(
+	public REProcessedTxn verify(
 		CMStore.Transaction dbTxn,
 		CMStore cmStore,
 		Txn txn,
@@ -559,6 +559,6 @@ public final class ConstraintMachine {
 		var parsedInstructions = new ArrayList<List<REStateUpdate>>();
 		this.statefulVerify(validationState, result.instructions, parsedInstructions, parsedActions);
 
-		return new REParsedTxn(txn, result, parsedInstructions,  parsedActions);
+		return new REProcessedTxn(txn, result, parsedInstructions,  parsedActions);
 	}
 }

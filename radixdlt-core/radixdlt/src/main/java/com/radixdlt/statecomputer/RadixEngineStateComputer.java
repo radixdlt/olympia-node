@@ -31,7 +31,7 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
@@ -114,12 +114,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	public static class RadixEngineTxn implements PreparedTxn {
 		private final Txn txn;
-		private final REParsedTxn transaction;
+		private final REProcessedTxn transaction;
 		private final PermissionLevel permissionLevel;
 
 		public RadixEngineTxn(
 			Txn txn,
-			REParsedTxn transaction,
+			REProcessedTxn transaction,
 			PermissionLevel permissionLevel
 		) {
 			this.txn = txn;
@@ -158,7 +158,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	@Override
 	public List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
-		List<REParsedTxn> cmds = prepared.stream()
+		List<REProcessedTxn> cmds = prepared.stream()
 			.map(p -> (RadixEngineTxn) p)
 			.map(c -> c.transaction)
 			.collect(Collectors.toList());
@@ -206,7 +206,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		final Txn systemUpdate;
-		final List<REParsedTxn> txs;
+		final List<REProcessedTxn> txs;
 		try {
 			// TODO: combine construct/execute
 			systemUpdate = branch.construct(systemAction).buildWithoutSignature();
@@ -233,7 +233,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		ImmutableMap.Builder<Txn, Exception> errorBuilder
 	) {
 		nextTxns.forEach(txn -> {
-			final List<REParsedTxn> parsed;
+			final List<REProcessedTxn> parsed;
 			try {
 				parsed = branch.execute(List.of(txn));
 			} catch (RadixEngineException e) {
@@ -277,13 +277,13 @@ public final class RadixEngineStateComputer implements StateComputer {
 		return new StateComputerResult(successBuilder.build(), exceptionBuilder.build(), validatorSet);
 	}
 
-	private List<REParsedTxn> commitInternal(
+	private List<REProcessedTxn> commitInternal(
 		VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState
 	) {
 		var proof = verifiedTxnsAndProof.getProof();
 		var ledgerAndBFTProof = LedgerAndBFTProof.create(proof, vertexStoreState);
 
-		final List<REParsedTxn> radixEngineTxns;
+		final List<REProcessedTxn> radixEngineTxns;
 		try {
 			radixEngineTxns = this.radixEngine.execute(
 				verifiedTxnsAndProof.getTxns(),

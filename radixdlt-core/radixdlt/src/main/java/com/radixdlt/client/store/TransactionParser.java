@@ -25,7 +25,7 @@ import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.client.api.ActionEntry;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.constraintmachine.REParsedAction;
-import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
@@ -36,7 +36,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class TransactionParser {
-	private UInt256 computeFeePaid(REParsedTxn radixEngineTxn) {
+	private UInt256 computeFeePaid(REProcessedTxn radixEngineTxn) {
 		return radixEngineTxn.getActions()
 			.stream()
 			.map(REParsedAction::getTxAction)
@@ -67,7 +67,7 @@ public final class TransactionParser {
 		return (action instanceof BurnToken) && ((BurnToken) action).resourceAddr().isNativeToken();
 	}
 
-	public Result<TxHistoryEntry> parse(REParsedTxn parsedTxn, Instant txDate, Function<REAddr, String> addrToRri) {
+	public Result<TxHistoryEntry> parse(REProcessedTxn parsedTxn, Instant txDate, Function<REAddr, String> addrToRri) {
 		var txnId = parsedTxn.getTxn().getId();
 		var fee = computeFeePaid(parsedTxn);
 		var message = parsedTxn.getMsg()
