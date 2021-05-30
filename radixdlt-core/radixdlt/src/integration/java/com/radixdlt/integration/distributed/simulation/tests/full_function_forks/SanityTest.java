@@ -45,10 +45,10 @@ public class SanityTest {
 			NetworkLatencies.fixed()
 		)
 		.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
-		.addNodeModule(new BetanetForksModule())
-		.addNodeModule(new MockedRadixEngineForksModule())
-		.addGenesisModule(new BetanetForksModule())
-		.addGenesisModule(new MockedRadixEngineForksModule())
+		.addRadixEngineConfigModules(
+			new MockedRadixEngineForksModule(),
+			new BetanetForksModule()
+		)
 		.addNodeModule(MempoolConfig.asModule(1000, 10))
 		.addTestModules(
 			ConsensusMonitors.safety(),

@@ -100,7 +100,7 @@ public final class ConstraintMachine {
 	}
 
 	public static final class CMValidationState {
-		private PermissionLevel permissionLevel;
+		private final PermissionLevel permissionLevel;
 		private REInstruction curInstruction;
 		private int curIndex;
 
@@ -126,6 +126,16 @@ public final class ConstraintMachine {
 			this.store = store;
 			this.permissionLevel = permissionLevel;
 			this.signedBy = signedBy;
+		}
+
+		public void verifyPermissionLevel(PermissionLevel requiredLevel) throws ConstraintMachineException {
+			if (this.permissionLevel.compareTo(requiredLevel) < 0) {
+				throw new ConstraintMachineException(
+					CMErrorCode.PERMISSION_LEVEL_ERROR,
+					this,
+					"Required: " + requiredLevel + " Current: " + this.permissionLevel
+				);
+			}
 		}
 
 		public ReadableAddrs immutableIndex() {
@@ -391,13 +401,7 @@ public final class ConstraintMachine {
 		// System permissions don't require additional authorization
 		if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
 			var requiredLevel = methodProcedure.permissionLevel(authorizationParam, readable);
-			if (validationState.permissionLevel.compareTo(requiredLevel) < 0) {
-				throw new ConstraintMachineException(
-					CMErrorCode.PERMISSION_LEVEL_ERROR,
-					validationState,
-					"Required: " + requiredLevel + " Current: " + validationState.permissionLevel
-				);
-			}
+			validationState.verifyPermissionLevel(requiredLevel);
 		}
 
 		try {
@@ -548,6 +552,7 @@ public final class ConstraintMachine {
 		PermissionLevel permissionLevel
 	) throws TxnParseException, ConstraintMachineException {
 		var result = this.parse(txn);
+
 		var validationState = new CMValidationState(
 			virtualStoreLayer,
 			dbTxn,

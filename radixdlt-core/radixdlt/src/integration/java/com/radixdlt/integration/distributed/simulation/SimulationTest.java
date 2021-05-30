@@ -92,6 +92,7 @@ import io.reactivex.rxjava3.core.Single;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -440,8 +441,14 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder addGenesisModule(Module module) {
-			genesisModules.add(module);
+		public Builder addRadixEngineConfigModules(Module... modules) {
+			this.modules.add(modules);
+			this.genesisModules.addAll(Arrays.asList(modules));
+			return this;
+		}
+
+		public Builder addGenesisConfigModule(Module module) {
+			this.genesisModules.add(module);
 			return this;
 		}
 

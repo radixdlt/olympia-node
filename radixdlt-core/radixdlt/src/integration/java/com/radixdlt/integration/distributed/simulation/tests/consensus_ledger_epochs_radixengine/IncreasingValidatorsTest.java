@@ -46,12 +46,11 @@ public class IncreasingValidatorsTest {
 			NetworkLatencies.fixed()
 		)
 		.numNodes(50, 2) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware pacemaker
-		.addNodeModule(RadixEngineConfig.asModule(2, 40, 5))
-		.addNodeModule(new BetanetForksModule())
-		.addNodeModule(new RadixEngineOnlyLatestForkModule(View.of(10)))
-		.addGenesisModule(RadixEngineConfig.asModule(2, 40, 5))
-		.addGenesisModule(new BetanetForksModule())
-		.addGenesisModule(new RadixEngineOnlyLatestForkModule(View.of(10)))
+		.addRadixEngineConfigModules(
+			RadixEngineConfig.asModule(2, 40, 5),
+			new BetanetForksModule(),
+			new RadixEngineOnlyLatestForkModule(View.of(10))
+		)
 		.ledgerAndRadixEngineWithEpochHighView()
 		.addTestModules(
 			ConsensusMonitors.safety(),

@@ -44,12 +44,11 @@ public class SanityTest {
 			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed()
 		)
-		.addNodeModule(RadixEngineConfig.asModule(2, 50, 5))
-		.addNodeModule(new BetanetForksModule())
-		.addNodeModule(new RadixEngineOnlyLatestForkModule(View.of(10)))
-		.addGenesisModule(RadixEngineConfig.asModule(2, 50, 5))
-		.addGenesisModule(new BetanetForksModule())
-		.addGenesisModule(new RadixEngineOnlyLatestForkModule(View.of(10)))
+		.addRadixEngineConfigModules(
+			RadixEngineConfig.asModule(2, 50, 5),
+			new BetanetForksModule(),
+			new RadixEngineOnlyLatestForkModule(View.of(10))
+		)
 		.ledgerAndRadixEngineWithEpochHighView()
 		.addTestModules(
 			ConsensusMonitors.safety(),
