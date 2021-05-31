@@ -32,7 +32,7 @@ import java.util.Objects;
 
 public final class ValidatorStake implements Particle {
 	public static final UInt256 MINIMUM_STAKE = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
-	public static final int EPOCHS_LOCKED = 100; // Must go through one full epoch before being unlocked
+	public static final int EPOCHS_LOCKED = 1; // Must go through one full epoch before being unlocked
 
 	private final UInt256 totalStake;
 	private final UInt256 totalOwnership;
