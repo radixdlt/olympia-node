@@ -31,7 +31,7 @@ import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
-import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
@@ -126,8 +126,8 @@ public class ActionParserServiceTest {
 				assertEquals(1, parsed.size());
 
 				parsed.get(0).toAction().findAny()
-					.filter(UnstakeTokens.class::isInstance)
-					.map(UnstakeTokens.class::cast)
+					.filter(UnstakeOwnership.class::isInstance)
+					.map(UnstakeOwnership.class::cast)
 					.ifPresentOrElse(
 						unstake -> {
 							assertEquals(UInt256.EIGHT, unstake.amount());
