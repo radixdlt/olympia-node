@@ -18,7 +18,6 @@
 
 package com.radixdlt.atommodel.system.state;
 
-import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.constraintmachine.Particle;
@@ -33,6 +32,7 @@ import java.util.Objects;
 
 public final class ValidatorStake implements Particle {
 	public static final UInt256 MINIMUM_STAKE = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
+	public static final int EPOCHS_LOCKED = 100; // Must go through one full epoch before being unlocked
 
 	private final UInt256 totalStake;
 	private final UInt256 totalOwnership;
@@ -107,7 +107,7 @@ public final class ValidatorStake implements Particle {
 		}
 		var unstaked = unstaked384.getLow();
 		var nextValidatorStake = new ValidatorStake(validatorKey, totalStake.subtract(unstaked), totalOwnership.subtract(unstakeOwnership));
-		var epochUnlocked = curEpoch + SystemConstraintScryptV2.EPOCHS_LOCKED;
+		var epochUnlocked = curEpoch + EPOCHS_LOCKED;
 		var exittingStake = new ExittingStake(validatorKey, owner, epochUnlocked, unstaked);
 		return Pair.of(nextValidatorStake, exittingStake);
 	}

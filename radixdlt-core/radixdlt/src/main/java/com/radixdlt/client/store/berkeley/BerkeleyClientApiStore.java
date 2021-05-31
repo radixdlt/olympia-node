@@ -19,6 +19,7 @@ package com.radixdlt.client.store.berkeley;
 
 import com.radixdlt.atommodel.system.state.StakeOwnership;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
@@ -659,6 +660,17 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					update.isShutDown()
 				);
 				storeBalanceEntry(tokenEntry);
+			} else if (substate instanceof ExittingStake) {
+				var exittingStake = (ExittingStake) substate;
+				var rri = getRriOrFail(REAddr.ofNativeToken());
+				var tokenEntry = BalanceEntry.create(
+					null,
+					null,
+					rri,
+					UInt384.from(exittingStake.getAmount()),
+					update.isShutDown()
+				);
+				storeBalanceEntry(tokenEntry);
 			} else if (substate instanceof StakeOwnership) {
 				var stakeOwnership = (StakeOwnership) substate;
 				var accountEntry = BalanceEntry.create(
@@ -693,7 +705,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				);
 				storeBalanceEntry(validatorEntry);
 
-				// Can probably optimize this out for every transfer
 				var tokenEntry = BalanceEntry.create(
 					null,
 					null,

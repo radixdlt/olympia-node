@@ -58,7 +58,6 @@ import java.util.TreeSet;
 import java.util.function.Function;
 
 public class SystemConstraintScryptV2 implements ConstraintScrypt {
-	public static final int EPOCHS_LOCKED = 1; // Must go through one full epoch before being unlocked
 
 	public static final UInt256 REWARDS_PER_PROPOSAL = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
 
