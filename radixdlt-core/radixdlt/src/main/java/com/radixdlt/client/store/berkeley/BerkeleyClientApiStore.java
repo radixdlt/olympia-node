@@ -17,6 +17,8 @@
 
 package com.radixdlt.client.store.berkeley;
 
+import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
@@ -214,25 +216,29 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			);
 	}
 
-	private BalanceEntry computeStakeEntry(BalanceEntry entry) {
-		var key = asAddrBalanceValidatorStakeKey(entry.getDelegate());
+	private UInt384 computeStakeFromOwnership(ECPublicKey delegateKey, UInt384 ownership) {
+		var key = asAddrBalanceValidatorStakeKey(delegateKey);
 		var data = entry();
 		var status = addressBalances.get(null, key, data, null);
 		if (status == OperationStatus.NOTFOUND) {
 			// For pre-betanet3
-			return entry;
+			return ownership;
 		}
-		var delegateStake = restore(serialization, data.getData(), BalanceEntry.class).toOptional().orElseThrow();
+		var totalStake = restore(serialization, data.getData(), BalanceEntry.class).toOptional().orElseThrow();
 
-		var key2 = asAddrBalanceValidatorStakeOwnership(entry.getDelegate());
+		var key2 = asAddrBalanceValidatorStakeOwnership(delegateKey);
 		var data2 = entry();
 		addressBalances.get(null, key2, data2, null);
-		var delegateOwnership = restore(serialization, data2.getData(), BalanceEntry.class).toOptional().orElseThrow();
+		var totalOwnership = restore(serialization, data2.getData(), BalanceEntry.class).toOptional().orElseThrow();
+		return totalStake.getAmount().multiply(ownership).divide(totalOwnership.getAmount());
+	}
+
+	private BalanceEntry computeStakeEntry(BalanceEntry entry) {
 		return BalanceEntry.createBalance(
 			entry.getOwner(),
 			entry.getDelegate(),
 			getRriOrFail(REAddr.ofNativeToken()),
-			delegateStake.getAmount().multiply(entry.getAmount()).divide(delegateOwnership.getAmount())
+			computeStakeFromOwnership(entry.getDelegate(), entry.getAmount())
 		);
 	}
 
@@ -603,6 +609,12 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				} else if (a instanceof MintToken) {
 					var mintToken = (MintToken) a;
 					return Stream.of(mintToken.to());
+				} else if (a instanceof StakeTokens) {
+					var stakeTokens = (StakeTokens) a;
+					return Stream.of(stakeTokens.from());
+				} else if (a instanceof UnstakeOwnership) {
+					var unstake = (UnstakeOwnership) a;
+					return Stream.of(unstake.accountAddr());
 				} else if (a instanceof CreateFixedToken) {
 					var createFixedToken = (CreateFixedToken) a;
 					return Stream.of(createFixedToken.getAccountAddr());
@@ -616,7 +628,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			reTxn.getSignedBy().stream().map(REAddr::ofPubKeyAccount)
 		).collect(Collectors.toSet());
 
-		transactionParser.parse(reTxn, currentTimestamp.get(), this::getRriOrFail)
+		transactionParser.parse(reTxn, currentTimestamp.get(), this::getRriOrFail, this::computeStakeFromOwnership)
 			.onSuccess(parsed -> addresses.forEach(address -> storeSingleTransaction(parsed, address)));
 	}
 
