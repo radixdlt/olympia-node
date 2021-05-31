@@ -126,7 +126,9 @@
             <property name="processJavadoc" value="false"/>
         </module>
 
-        <module name="MethodLength"/>
+        <module name="MethodLength">
+            <property name="max" value="175"/>
+        </module>
         <!-- module name="ParameterNumber"/ -->
 
         <!-- Checks for whitespace                               -->

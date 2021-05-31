@@ -18,7 +18,6 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
@@ -36,6 +35,7 @@ import java.util.stream.Stream;
 public final class REProcessedTxn {
 	private final Txn txn;
 	private final List<List<REStateUpdate>> stateUpdates;
+	// TODO: Remove this
 	private final List<REParsedAction> actions;
 	private final ConstraintMachine.ParseResult statelessResult;
 
