@@ -20,6 +20,7 @@ package com.radixdlt.atommodel.tokens.scrypt;
 
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.Unknown;
+import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
@@ -202,8 +203,10 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 			StakeSharesHoldingBucket.class, PreparedUnstakeOwnership.class,
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> { },
-			(s, u, r) -> ReducerResult.incomplete(s.unstake(u))
-		));
+			(s, u, r) -> {
+				var actionGuess = new UnstakeOwnership(s.accountAddr, u.getDelegateKey(), u.getAmount());
+				return ReducerResult.incomplete(s.unstake(u), actionGuess);
+			}));
 
 		// Deallocate Stake Holding Bucket
 		os.createEndProcedure(new EndProcedure<>(
