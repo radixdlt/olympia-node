@@ -19,7 +19,9 @@
 package com.radixdlt.atommodel.system.state;
 
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atommodel.tokens.state.Bucket;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
+import com.radixdlt.atommodel.tokens.state.ValidatorStakeBucket;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
@@ -65,6 +67,10 @@ public final class ValidatorStake implements Particle {
 		UInt256 totalOwnership
 	) {
 		return new ValidatorStake(validatorKey, totalStake, totalOwnership);
+	}
+
+	public Bucket resourceInBucket() {
+		return new ValidatorStakeBucket(validatorKey);
 	}
 
 	public ValidatorStake addEmission(UInt256 amount) {

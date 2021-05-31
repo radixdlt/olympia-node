@@ -66,6 +66,10 @@ public final class ExittingStake implements Fungible {
 		);
 	}
 
+	public Bucket resourceInBucket() {
+		return new ExittingStakeBucket(owner, delegateKey);
+	}
+
 	public ECPublicKey getDelegateKey() {
 		return delegateKey;
 	}

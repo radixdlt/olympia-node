@@ -25,7 +25,7 @@ import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.tokens.state.ResourceInBucket;
+import com.radixdlt.atommodel.tokens.state.DeprecatedResourceInBucket;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
@@ -141,10 +141,10 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 	// TODO: Remove so that up particles cannot be created first
 	public static class UnaccountedTokens implements ReducerState {
 		private final Particle initialParticle;
-		private final ResourceInBucket resourceInBucket;
+		private final DeprecatedResourceInBucket resourceInBucket;
 		private final UInt384 amount;
 
-		public UnaccountedTokens(Particle initialParticle, ResourceInBucket resourceInBucket, UInt384 amount) {
+		public UnaccountedTokens(Particle initialParticle, DeprecatedResourceInBucket resourceInBucket, UInt384 amount) {
 			this.initialParticle = initialParticle;
 			this.resourceInBucket = resourceInBucket;
 			this.amount = amount;
@@ -154,7 +154,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			return initialParticle;
 		}
 
-		public ResourceInBucket resourceInBucket() {
+		public DeprecatedResourceInBucket resourceInBucket() {
 			return resourceInBucket;
 		}
 
@@ -193,7 +193,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			return initialParticle;
 		}
 
-		private Optional<ReducerState> subtract(ResourceInBucket resourceInBucket, UInt384 amountToSubtract) {
+		private Optional<ReducerState> subtract(DeprecatedResourceInBucket resourceInBucket, UInt384 amountToSubtract) {
 			var compare = amountToSubtract.compareTo(amount);
 			if (compare > 0) {
 				return Optional.of(new UnaccountedTokens(initialParticle, resourceInBucket, amountToSubtract.subtract(amount)));
@@ -271,7 +271,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			(s, u, r) -> {
 				var state = new UnaccountedTokens(
 					u,
-					u.resourceInBucket(),
+					u.deprecatedResourceInBucket(),
 					UInt384.from(u.getAmount())
 				);
 				return ReducerResult.incomplete(state);
@@ -301,7 +301,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 					throw new ProcedureException("Not the same address.");
 				}
 				var amt = UInt384.from(u.getAmount());
-				var nextRemainder = s.subtract(u.resourceInBucket(), amt);
+				var nextRemainder = s.subtract(u.deprecatedResourceInBucket(), amt);
 				if (nextRemainder.isEmpty()) {
 					// FIXME: This isn't 100% correct
 					var p = s.initialParticle;

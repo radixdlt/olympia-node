@@ -58,6 +58,10 @@ public final class PreparedStake implements Fungible {
 		return this.owner;
 	}
 
+	public Bucket resourceInBucket() {
+		return new PreparedStakeBucket(owner, delegateKey);
+	}
+
 	@Override
 	public String toString() {
 		return String.format("%s[%s:%s:%s]",

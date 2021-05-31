@@ -81,8 +81,12 @@ public final class TokensInAccount implements Fungible {
 		}
 	}
 
-	public ResourceInBucket resourceInBucket() {
-		return new ResourceInBucket(resourceAddr, holdingAddress, epochUnlocked);
+	public Bucket resourceInBucket() {
+		return new AccountBucket(resourceAddr, holdingAddress);
+	}
+
+	public DeprecatedResourceInBucket deprecatedResourceInBucket() {
+		return new DeprecatedResourceInBucket(resourceAddr, holdingAddress, epochUnlocked);
 	}
 
 	public Optional<Long> getEpochUnlocked() {
