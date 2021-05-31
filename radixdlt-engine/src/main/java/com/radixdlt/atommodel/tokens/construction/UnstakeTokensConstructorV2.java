@@ -21,19 +21,27 @@ package com.radixdlt.atommodel.tokens.construction;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.UnstakeOwnership;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
-import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwned;
+import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 
-public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeOwnership> {
+public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeTokens> {
 	@Override
-	public void construct(UnstakeOwnership action, TxBuilder txBuilder) throws TxBuilderException {
+	public void construct(UnstakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
+		var validatorStake = txBuilder.find(ValidatorStake.class, v -> v.getValidatorKey().equals(action.from()))
+			.orElseThrow(() -> new TxBuilderException("Validator does not exist."));
+
+		var ownershipAmt = action.amount()
+			.multiply(validatorStake.getTotalOwnership())
+			.divide(validatorStake.getTotalStake());
+
 		txBuilder.swapFungible(
 			StakeOwnership.class,
 			p -> p.getOwner().equals(action.accountAddr()) && p.getDelegateKey().equals(action.from()),
 			amt -> new StakeOwnership(action.from(), action.accountAddr(), amt),
-			action.amount(),
+			ownershipAmt,
 			"Not enough staked"
-		).with(amt -> new PreparedUnstakeOwned(action.from(), action.accountAddr(), amt));
+		).with(amt -> new PreparedUnstakeOwnership(action.from(), action.accountAddr(), amt));
 	}
 }

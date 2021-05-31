@@ -19,7 +19,6 @@ package com.radixdlt.store.berkeley;
 
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
-import com.sleepycat.je.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,7 +30,7 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -606,17 +605,17 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			upParticle(txn, buf, stateUpdate.getSubstate().getId());
 
 			// FIXME: Superhack
-			if (stateUpdate.getParticle() instanceof TokenDefinitionParticle) {
-				var p = (TokenDefinitionParticle) stateUpdate.getParticle();
+			if (stateUpdate.getRawSubstate() instanceof TokenResource) {
+				var p = (TokenResource) stateUpdate.getRawSubstate();
 				var addr = p.getAddr();
 				var buf2 = stateUpdate.getStateBuf();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
 				addrDatabase.putNoOverwrite(txn, new DatabaseEntry(addr.getBytes()), value);
-			} else if (stateUpdate.getParticle() instanceof SystemParticle) {
+			} else if (stateUpdate.getRawSubstate() instanceof SystemParticle) {
 				var buf2 = stateUpdate.getStateBuf();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
 				addrDatabase.put(txn, new DatabaseEntry(REAddr.ofSystem().getBytes()), value);
-			} else if (stateUpdate.getParticle() instanceof EpochData) {
+			} else if (stateUpdate.getRawSubstate() instanceof EpochData) {
 				var buf2 = stateUpdate.getStateBuf();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
 				addrDatabase.put(txn, new DatabaseEntry(REAddr.ofSystem().getBytes()), value);

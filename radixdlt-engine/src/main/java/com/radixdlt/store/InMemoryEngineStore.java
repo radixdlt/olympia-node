@@ -24,7 +24,7 @@ import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
-import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -48,11 +48,11 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 			stateUpdates.forEach(i -> storedParticles.put(i.getSubstate().getId(), i));
 			stateUpdates.stream()
 				.filter(REStateUpdate::isBootUp)
-				.map(REStateUpdate::getParticle)
+				.map(REStateUpdate::getRawSubstate)
 				.forEach(p -> {
 					// FIXME: Superhack
-					if (p instanceof TokenDefinitionParticle) {
-						var tokenDef = (TokenDefinitionParticle) p;
+					if (p instanceof TokenResource) {
+						var tokenDef = (TokenResource) p;
 						addrParticles.put(tokenDef.getAddr(), p);
 					} else if (p instanceof SystemParticle) {
 						addrParticles.put(REAddr.ofSystem(), p);
@@ -77,10 +77,10 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 		V v = initial;
 		synchronized (lock) {
 			for (var i : storedParticles.values()) {
-				if (!i.isBootUp() || !particleClass.isInstance(i.getParticle())) {
+				if (!i.isBootUp() || !particleClass.isInstance(i.getRawSubstate())) {
 					continue;
 				}
-				v = outputReducer.apply(v, particleClass.cast(i.getParticle()));
+				v = outputReducer.apply(v, particleClass.cast(i.getRawSubstate()));
 			}
 		}
 		return v;
@@ -96,7 +96,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 		final List<Substate> substates = new ArrayList<>();
 		synchronized (lock) {
 			for (var i : storedParticles.values()) {
-				if (!i.isBootUp() || !substateClass.isInstance(i.getParticle())) {
+				if (!i.isBootUp() || !substateClass.isInstance(i.getRawSubstate())) {
 					continue;
 				}
 				substates.add(i.getSubstate());
@@ -134,7 +134,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 				return Optional.empty();
 			}
 
-			var particle = inst.getParticle();
+			var particle = inst.getRawSubstate();
 			return Optional.of(particle);
 		}
 	}

@@ -17,6 +17,16 @@
 
 package com.radixdlt.client.store.berkeley;
 
+import com.radixdlt.atommodel.system.state.EpochData;
+import com.radixdlt.atommodel.system.state.RoundData;
+import com.radixdlt.atommodel.system.state.StakeOwnership;
+import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.tokens.state.ExittingStake;
+import com.radixdlt.atommodel.tokens.state.PreparedStake;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
+import com.radixdlt.atomos.REAddrParticle;
+import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.TxnParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,11 +39,8 @@ import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
-import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.client.Rri;
 import com.radixdlt.client.api.TxHistoryEntry;
@@ -42,7 +49,6 @@ import com.radixdlt.client.store.ClientApiStoreException;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.counters.SystemCounters;
@@ -71,6 +77,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -137,6 +144,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final StackingCollector<TxnsCommittedToLedger> txCollector = StackingCollector.create();
 	private final CompositeDisposable disposable = new CompositeDisposable();
 	private final AtomicReference<Instant> currentTimestamp = new AtomicReference<>(NOW);
+	private final AtomicLong currentEpoch = new AtomicLong(0);
 	private final TxnParser txnParser;
 	private final TransactionParser transactionParser;
 	private final ConstraintMachine constraintMachine;
@@ -206,10 +214,36 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			);
 	}
 
+	private BalanceEntry computeStakeEntry(BalanceEntry entry) {
+		var key = asAddrBalanceValidatorStakeKey(entry.getDelegate());
+		var data = entry();
+		var status = addressBalances.get(null, key, data, null);
+		if (status == OperationStatus.NOTFOUND) {
+			// For pre-betanet3
+			return entry;
+		}
+		var delegateStake = restore(serialization, data.getData(), BalanceEntry.class).toOptional().orElseThrow();
+
+		var key2 = asAddrBalanceValidatorStakeOwnership(entry.getDelegate());
+		var data2 = entry();
+		addressBalances.get(null, key2, data2, null);
+		var delegateOwnership = restore(serialization, data2.getData(), BalanceEntry.class).toOptional().orElseThrow();
+		return BalanceEntry.createBalance(
+			entry.getOwner(),
+			entry.getDelegate(),
+			getRriOrFail(REAddr.ofNativeToken()),
+			delegateStake.getAmount().multiply(entry.getAmount()).divide(delegateOwnership.getAmount())
+		);
+	}
+
+	public long getEpoch() {
+		return currentEpoch.get();
+	}
+
 	@Override
-	public Result<List<BalanceEntry>> getTokenBalances(REAddr addr, boolean retrieveStakes) {
+	public Result<List<BalanceEntry>> getTokenBalances(REAddr addr, BalanceType type) {
 		try (var cursor = addressBalances.openCursor(null, null)) {
-			var key = asKey(addr);
+			var key = asAddrBalanceKey(addr);
 			var data = entry();
 			var status = readBalance(() -> cursor.getSearchKeyRange(key, data, null), data);
 
@@ -225,8 +259,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 						() -> log.error("Error deserializing existing balance while scanning DB for address {}", addr)
 					)
 					.toOptional()
-					.filter(entry -> entry.isStake() == retrieveStakes)
+					.filter(entry -> entry.getType().equals(type))
 					.filter(entry -> entry.getOwner().equals(addr))
+					.map(entry -> type == BalanceType.STAKES ? computeStakeEntry(entry) : entry)
 					.ifPresent(list::add);
 
 				status = readBalance(() -> cursor.getNext(key, data, null), data);
@@ -262,7 +297,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	@Override
 	public Result<TokenDefinitionRecord> getTokenDefinition(REAddr addr) {
 		try (var cursor = tokenDefinitions.openCursor(null, null)) {
-			var key = asKey(addr);
+			var key = asAddrBalanceKey(addr);
 			var data = entry();
 
 			var status = withTime(
@@ -310,7 +345,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private Result<TxHistoryEntry> lookupTransactionInHistory(REAddr addr, Txn txn) {
-		var key = asKey(addr, Instant.EPOCH);
+		var key = asTxnHistoryKey(addr, Instant.EPOCH);
 		var data = entry();
 
 		try (var cursor = transactionHistory.openCursor(null, null)) {
@@ -342,7 +377,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		}
 
 		var instant = ptr.orElse(Instant.EPOCH);
-		var key = asKey(addr, instant);
+		var key = asTxnHistoryKey(addr, instant);
 		var data = entry();
 
 		try (var cursor = transactionHistory.openCursor(null, null)) {
@@ -553,12 +588,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private void processRETransaction(REProcessedTxn reTxn) {
-		extractTimestamp(reTxn.upSubstates());
-
-		reTxn.getSignedBy().ifPresentOrElse(
-			p -> reTxn.getActions().forEach(a -> storeAction(p, a)),
-			() -> reTxn.getActions().forEach(a -> storeAction(null, a))
-		);
+		extractTimestamp(reTxn);
+		reTxn.getGroupedStateUpdates().forEach(this::updateSubstate);
 
 		var addressesInActions = reTxn.getActions().stream()
 			.map(REParsedAction::getTxAction)
@@ -589,138 +620,170 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			.onSuccess(parsed -> addresses.forEach(address -> storeSingleTransaction(parsed, address)));
 	}
 
-	private void storeAction(ECPublicKey user, REParsedAction action) {
-		if (action.getTxAction() instanceof TransferToken) {
-			var transferToken = (TransferToken) action.getTxAction();
-			var rri = getRriOrFail(transferToken.resourceAddr());
-			var entry0 = BalanceEntry.create(
-				transferToken.from(),
-				null,
-				rri,
-				UInt384.from(transferToken.amount()),
-				true
-			);
-			var entry1 = BalanceEntry.create(
-				transferToken.to(),
-				null,
-				rri,
-				UInt384.from(transferToken.amount()),
-				false
-			);
-			storeBalanceEntry(entry0);
-			storeBalanceEntry(entry1);
+	private void updateSubstate(List<REStateUpdate> updates) {
+		byte[] addressArg = null;
+		for (var update : updates) {
+			var substate = update.getRawSubstate();
+			if (substate instanceof TokensInAccount) {
+				var tokensInAccount = (TokensInAccount) substate;
+				var rri = getRriOrFail(tokensInAccount.getResourceAddr());
+				var accountEntry = BalanceEntry.create(
+					tokensInAccount.getHoldingAddr(),
+					null,
+					rri,
+					UInt384.from(tokensInAccount.getAmount()),
+					update.isShutDown(),
+					null
+				);
+				storeBalanceEntry(accountEntry);
 
+				// Can probably optimize this out for every transfer
+				var tokenEntry = BalanceEntry.create(
+					null,
+					null,
+					rri,
+					UInt384.from(tokensInAccount.getAmount()),
+					update.isShutDown(),
+					null
+				);
+				storeBalanceEntry(tokenEntry);
+			} else if (substate instanceof PreparedStake) {
+				var preparedStake = (PreparedStake) substate;
+				var rri = getRriOrFail(REAddr.ofNativeToken());
+				var accountEntry = BalanceEntry.create(
+					preparedStake.getOwner(),
+					null,
+					rri,
+					UInt384.from(preparedStake.getAmount()),
+					update.isShutDown(),
+					null
+				);
+				storeBalanceEntry(accountEntry);
 
-		} else if (action.getTxAction() instanceof BurnToken) {
-			var burnToken = (BurnToken) action.getTxAction();
-			var rri = getRriOrFail(burnToken.resourceAddr());
-			var entry0 = BalanceEntry.create(
-				burnToken.from(),
-				null,
-				rri,
-				UInt384.from(burnToken.amount()),
-				true
-			);
-			var entry1 = BalanceEntry.create(
-				null,
-				null,
-				rri,
-				UInt384.from(burnToken.amount()),
-				true
-			);
-			storeBalanceEntry(entry0);
-			storeBalanceEntry(entry1);
-		} else if (action.getTxAction() instanceof MintToken) {
-			var mintToken = (MintToken) action.getTxAction();
-			var rri = getRriOrFail(mintToken.resourceAddr());
-			var entry0 = BalanceEntry.create(
-				mintToken.to(),
-				null,
-				rri,
-				UInt384.from(mintToken.amount()),
-				false
-			);
-			var entry1 = BalanceEntry.create(
-				null,
-				null,
-				rri,
-				UInt384.from(mintToken.amount()),
-				false
-			);
-			storeBalanceEntry(entry0);
-			storeBalanceEntry(entry1);
-		} else if (action.getTxAction() instanceof StakeTokens) {
-			var stakeTokens = (StakeTokens) action.getTxAction();
-			var rri = getRriOrFail(REAddr.ofNativeToken());
-			var entry0 = BalanceEntry.create(
-				stakeTokens.from(),
-				stakeTokens.to(),
-				rri,
-				UInt384.from(stakeTokens.amount()),
-				false
-			);
-			var entry1 = BalanceEntry.create(
-				stakeTokens.from(),
-				null,
-				rri,
-				UInt384.from(stakeTokens.amount()),
-				true
-			);
-			storeBalanceEntry(entry0);
-			storeBalanceEntry(entry1);
-		} else if (action.getTxAction() instanceof UnstakeOwnership) {
-			var unstakeTokens = (UnstakeOwnership) action.getTxAction();
-			var rri = getRriOrFail(REAddr.ofNativeToken());
-			var entry0 = BalanceEntry.create(
-				unstakeTokens.accountAddr(),
-				unstakeTokens.from(),
-				rri,
-				UInt384.from(unstakeTokens.amount()),
-				true
-			);
-			var entry1 = BalanceEntry.create(
-				unstakeTokens.accountAddr(),
-				null,
-				rri,
-				UInt384.from(unstakeTokens.amount()),
-				false
-			);
-			storeBalanceEntry(entry0);
-			storeBalanceEntry(entry1);
-		} else if (action.getTxAction() instanceof CreateMutableToken) {
-			var createMutableToken = (CreateMutableToken) action.getTxAction();
-			var record = TokenDefinitionRecord.from(user, createMutableToken);
-			storeTokenDefinition(record);
-		} else if (action.getTxAction() instanceof CreateFixedToken) {
-			var createFixedToken = (CreateFixedToken) action.getTxAction();
-			var record = TokenDefinitionRecord.from(createFixedToken);
-			storeTokenDefinition(record);
+				// Can probably optimize this out for every transfer
+				var tokenEntry = BalanceEntry.create(
+					null,
+					null,
+					rri,
+					UInt384.from(preparedStake.getAmount()),
+					update.isShutDown(),
+					null
+				);
+				storeBalanceEntry(tokenEntry);
+			} else if (substate instanceof ExittingStake) {
+				var exittingStake = (ExittingStake) substate;
+				var rri = getRriOrFail(REAddr.ofNativeToken());
 
-			var entry0 = BalanceEntry.create(
-				createFixedToken.getAccountAddr(),
-				null,
-				record.rri(),
-				UInt384.from(createFixedToken.getSupply()),
-				false
-			);
-			var entry1 = BalanceEntry.create(
-				null,
-				null,
-				record.rri(),
-				UInt384.from(createFixedToken.getSupply()),
-				false
-			);
-			storeBalanceEntry(entry0);
-			storeBalanceEntry(entry1);
+				var accountEntry = BalanceEntry.create(
+					exittingStake.getOwner(),
+					exittingStake.getDelegateKey(),
+					rri,
+					UInt384.from(exittingStake.getAmount()),
+					update.isShutDown(),
+					exittingStake.getEpochUnlocked()
+				);
+				storeBalanceEntry(accountEntry);
+
+				// Token balance
+				var tokenEntry = BalanceEntry.create(
+					null,
+					null,
+					rri,
+					UInt384.from(exittingStake.getAmount()),
+					update.isShutDown(),
+					null
+				);
+				storeBalanceEntry(tokenEntry);
+			} else if (substate instanceof StakeOwnership) {
+				var stakeOwnership = (StakeOwnership) substate;
+				var accountEntry = BalanceEntry.create(
+					stakeOwnership.getOwner(),
+					stakeOwnership.getDelegateKey(),
+					"stake-ownership",
+					UInt384.from(stakeOwnership.getAmount()),
+					update.isShutDown(),
+					null
+				);
+				storeBalanceEntry(accountEntry);
+			} else if (substate instanceof ValidatorStake) {
+				var validatorStake = (ValidatorStake) substate;
+				var rri = getRriOrFail(REAddr.ofNativeToken());
+
+				// validator ownership
+				var ownershipEntry = BalanceEntry.create(
+					null,
+					validatorStake.getValidatorKey(),
+					"stake-ownership",
+					UInt384.from(validatorStake.getTotalOwnership()),
+					update.isShutDown(),
+					null
+				);
+				storeBalanceEntry(ownershipEntry);
+
+				// validator stake
+				var validatorEntry = BalanceEntry.create(
+					null,
+					validatorStake.getValidatorKey(),
+					rri,
+					UInt384.from(validatorStake.getTotalStake()),
+					update.isShutDown(),
+					null
+				);
+				storeBalanceEntry(validatorEntry);
+
+				var tokenEntry = BalanceEntry.create(
+					null,
+					null,
+					rri,
+					UInt384.from(validatorStake.getTotalStake()),
+					update.isShutDown(),
+					null
+				);
+				storeBalanceEntry(tokenEntry);
+			} else if (substate instanceof REAddrParticle) {
+				// FIXME: sort of a hacky way of getting this info
+				addressArg = update.getArg().orElse("xrd".getBytes(StandardCharsets.UTF_8));
+			} else if (substate instanceof TokenResource) {
+				var tokenResource = (TokenResource) substate;
+				if (addressArg == null) {
+					throw new IllegalStateException();
+				}
+				var symbol = new String(addressArg);
+				var record = TokenDefinitionRecord.create(
+					symbol,
+					tokenResource.getName(),
+					tokenResource.getAddr(),
+					tokenResource.getDescription(),
+					UInt384.ZERO,
+					tokenResource.getIconUrl(),
+					tokenResource.getUrl(),
+					tokenResource.isMutable()
+				);
+				storeTokenDefinition(record);
+			}
 		}
 	}
 
-	private void extractTimestamp(Stream<Particle> upParticles) {
-		upParticles.filter(SystemParticle.class::isInstance)
+	private void extractTimestamp(REProcessedTxn txn) {
+		txn.upSubstates().filter(SystemParticle.class::isInstance)
 			.map(SystemParticle.class::cast)
 			.findFirst()
-			.map(SystemParticle::asInstant)
+			.ifPresent(s -> {
+				currentTimestamp.set(s.asInstant());
+				currentEpoch.set(s.getEpoch());
+			});
+
+		txn.upSubstates().filter(RoundData.class::isInstance)
+			.map(RoundData.class::cast)
+			.findFirst()
+			.map(r -> Instant.ofEpochMilli(r.getTimestamp()))
 			.ifPresent(currentTimestamp::set);
+
+		txn.upSubstates().filter(EpochData.class::isInstance)
+			.map(EpochData.class::cast)
+			.findFirst()
+			.map(EpochData::getEpoch)
+			.ifPresent(currentEpoch::set);
 	}
 
 	private Optional<ECPublicKey> extractCreator(Txn tx) {
@@ -732,7 +795,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private void storeSingleTransaction(TxHistoryEntry txn, REAddr address) {
-		var key = asKey(address, txn.timestamp());
+		var key = asTxnHistoryKey(address, txn.timestamp());
 		var data = serializeTo(entry(), txn);
 
 		var status = withTime(
@@ -747,7 +810,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private void storeTokenDefinition(TokenDefinitionRecord tokenDefinition) {
-		var key = asKey(tokenDefinition.addr());
+		var key = asAddrBalanceKey(tokenDefinition.addr());
 		var value = serializeTo(entry(), tokenDefinition);
 		var status = withTime(
 			() -> tokenDefinitions.putNoOverwrite(null, key, value),
@@ -761,11 +824,11 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private void storeBalanceEntry(BalanceEntry entry) {
-		var key = entry.isSupply() ? asKey(entry.rri()) : asKey(entry);
-		mergeBalances(key, entry(), entry);
+		var key = entry.isSupply() ? asKey(entry.rri()) : asAddrBalanceKey(entry);
+		mergeBalances(key, entry(), entry, entry.isUnstake());
 	}
 
-	private void mergeBalances(DatabaseEntry key, DatabaseEntry value, BalanceEntry balanceEntry) {
+	private void mergeBalances(DatabaseEntry key, DatabaseEntry value, BalanceEntry balanceEntry, boolean deleteIfZero) {
 		var database = balanceEntry.isSupply() ? supplyBalances : addressBalances;
 		var oldValue = entry();
 		var status = readBalance(() -> database.get(null, key, oldValue, null), oldValue);
@@ -776,11 +839,21 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			// Merge with existing balance
 			restore(serialization, oldValue.getData(), BalanceEntry.class)
 				.map(existingBalance -> existingBalance.add(balanceEntry))
-				.onSuccess(entry -> serializeTo(value, entry))
+				.onSuccess(entry -> {
+					if (deleteIfZero && entry.getAmount().isZero()) {
+						value.setData(null);
+					} else {
+						serializeTo(value, entry);
+					}
+				})
 				.onFailure(this::reportError);
 		}
 
-		status = writeBalance(() -> database.put(null, key, value), value);
+		if (value.getData() == null) {
+			status = database.delete(null, key);
+		} else {
+			status = writeBalance(() -> database.put(null, key, value), value);
+		}
 
 		if (status != OperationStatus.SUCCESS) {
 			log.error("Error while calculating merged balance {}", balanceEntry);
@@ -796,24 +869,55 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		return entry(rri.getBytes(StandardCharsets.UTF_8));
 	}
 
-	private static DatabaseEntry asKey(BalanceEntry balanceEntry) {
-		var address = buffer().writeBytes(balanceEntry.getOwner().getBytes());
-		var buf = address.writeBytes(balanceEntry.rri().getBytes(StandardCharsets.UTF_8));
+	private static DatabaseEntry asAddrBalanceKey(BalanceEntry balanceEntry) {
+		var buf = buffer();
+		if (balanceEntry.getOwner() != null) {
+			buf.writeBytes(balanceEntry.getOwner().getBytes());
+		} else {
+			buf.writeZero(ECPublicKey.COMPRESSED_BYTES + 1);
+		}
 
-		if (balanceEntry.isStake()) {
+		buf.writeBytes(balanceEntry.rri().getBytes(StandardCharsets.UTF_8));
+
+		if (balanceEntry.isStake() || balanceEntry.isUnstake()) {
 			buf.writeBytes(balanceEntry.getDelegate().getBytes());
 		} else {
 			buf.writeZero(ECPublicKey.COMPRESSED_BYTES);
 		}
 
+		if (balanceEntry.isUnstake()) {
+			buf.writeLong(balanceEntry.getEpochUnlocked());
+		} else {
+			buf.writeZero(Long.BYTES);
+		}
+
 		return entry(buf);
 	}
 
-	private static DatabaseEntry asKey(REAddr addr) {
+	private static DatabaseEntry asAddrBalanceKey(REAddr addr) {
 		return entry(addr.getBytes());
 	}
 
-	private static DatabaseEntry asKey(REAddr addr, Instant timestamp) {
+	private DatabaseEntry asAddrBalanceValidatorStakeKey(ECPublicKey validatorKey) {
+		var buf = buffer();
+		buf.writeZero(ECPublicKey.COMPRESSED_BYTES + 1);
+		var rri = getRriOrFail(REAddr.ofNativeToken());
+		buf.writeBytes(rri.getBytes(StandardCharsets.UTF_8));
+		buf.writeBytes(validatorKey.getBytes());
+		buf.writeZero(Long.BYTES);
+		return entry(buf);
+	}
+
+	private DatabaseEntry asAddrBalanceValidatorStakeOwnership(ECPublicKey validatorKey) {
+		var buf = buffer();
+		buf.writeZero(ECPublicKey.COMPRESSED_BYTES + 1);
+		buf.writeBytes("stake-ownership".getBytes(StandardCharsets.UTF_8));
+		buf.writeBytes(validatorKey.getBytes());
+		buf.writeZero(Long.BYTES);
+		return entry(buf);
+	}
+
+	private static DatabaseEntry asTxnHistoryKey(REAddr addr, Instant timestamp) {
 		return entry(buffer()
 						 .writeBytes(addr.getBytes())
 						 .writeLong(timestamp.getEpochSecond())

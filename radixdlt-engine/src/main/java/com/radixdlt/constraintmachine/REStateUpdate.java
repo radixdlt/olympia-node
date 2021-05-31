@@ -22,6 +22,7 @@ import com.radixdlt.atom.Substate;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Instruction which has been parsed and state checked by Radix Engine
@@ -29,19 +30,21 @@ import java.util.Objects;
 public final class REStateUpdate {
 	private final REInstruction.REOp op;
 	private final Substate substate;
+	private final byte[] arg;
 	private final ByteBuffer stateBuf;
 
-	private REStateUpdate(REInstruction.REOp op, Substate substate, ByteBuffer stateBuf) {
+	private REStateUpdate(REInstruction.REOp op, Substate substate, byte[] arg, ByteBuffer stateBuf) {
 		Objects.requireNonNull(op);
 		Objects.requireNonNull(substate);
 
 		this.op = op;
 		this.substate = substate;
+		this.arg = arg;
 		this.stateBuf = stateBuf;
 	}
 
-	public static REStateUpdate of(REInstruction.REOp op, Substate substate, ByteBuffer stateBuf) {
-		return new REStateUpdate(op, substate, stateBuf);
+	public static REStateUpdate of(REInstruction.REOp op, Substate substate, byte[] arg, ByteBuffer stateBuf) {
+		return new REStateUpdate(op, substate, arg, stateBuf);
 	}
 
 	public ByteBuffer getStateBuf() {
@@ -50,6 +53,10 @@ public final class REStateUpdate {
 
 	public REInstruction.REOp getOp() {
 		return op;
+	}
+
+	public Optional<byte[]> getArg() {
+		return Optional.ofNullable(arg);
 	}
 
 	public Spin getCheckSpin() {
@@ -72,12 +79,8 @@ public final class REStateUpdate {
 		return substate;
 	}
 
-	public Particle getParticle() {
+	public Particle getRawSubstate() {
 		return substate.getParticle();
-	}
-
-	public <T extends Particle> T getParticle(Class<T> cls) {
-		return cls.cast(substate.getParticle());
 	}
 
 	@Override

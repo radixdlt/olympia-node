@@ -19,7 +19,8 @@
 package com.radixdlt.application;
 
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.tokens.state.PreparedStake;
+import com.radixdlt.atommodel.system.state.StakeOwnership;
+import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
@@ -33,46 +34,55 @@ import java.util.function.Supplier;
 /**
  * Reduces radix engine to stake received
  */
-public final class StakeReceivedReducer implements StateReducer<StakeReceived> {
+public final class MyValidatorStakesReducer implements StateReducer<MyValidator> {
 	private final ECPublicKey key;
 
 	@Inject
-	public StakeReceivedReducer(@Self ECPublicKey key) {
+	public MyValidatorStakesReducer(@Self ECPublicKey key) {
 		this.key = Objects.requireNonNull(key);
 	}
 
 	@Override
-	public Class<StakeReceived> stateClass() {
-		return StakeReceived.class;
+	public Class<MyValidator> stateClass() {
+		return MyValidator.class;
 	}
 
 	@Override
 	public Set<Class<? extends Particle>> particleClasses() {
-		return Set.of(PreparedStake.class);
+		return Set.of(StakeOwnership.class, ValidatorStake.class);
 	}
 
 	@Override
-	public Supplier<StakeReceived> initial() {
-		return StakeReceived::new;
+	public Supplier<MyValidator> initial() {
+		return MyValidator::new;
 	}
 
 	@Override
-	public BiFunction<StakeReceived, Particle, StakeReceived> outputReducer() {
+	public BiFunction<MyValidator, Particle, MyValidator> outputReducer() {
 		return (stakes, p) -> {
-			var d = (PreparedStake) p;
-			if (d.getDelegateKey().equals(key)) {
-				stakes.addStake(d.getOwner(), d.getAmount());
+			if (p instanceof StakeOwnership) {
+				var d = (StakeOwnership) p;
+				if (d.getDelegateKey().equals(key)) {
+					stakes.addOwnership(d.getOwner(), d.getAmount());
+				}
+			} else if (p instanceof ValidatorStake) {
+				var d = (ValidatorStake) p;
+				if (d.getValidatorKey().equals(key)) {
+					stakes.setStake(d);
+				}
 			}
 			return stakes;
 		};
 	}
 
 	@Override
-	public BiFunction<StakeReceived, Particle, StakeReceived> inputReducer() {
+	public BiFunction<MyValidator, Particle, MyValidator> inputReducer() {
 		return (stakes, p) -> {
-			var d = (PreparedStake) p;
-			if (d.getDelegateKey().equals(key)) {
-				stakes.removeStake(d.getOwner(), d.getAmount());
+			if (p instanceof StakeOwnership) {
+				var d = (StakeOwnership) p;
+				if (d.getDelegateKey().equals(key)) {
+					stakes.removeOwnership(d.getOwner(), d.getAmount());
+				}
 			}
 			return stakes;
 		};

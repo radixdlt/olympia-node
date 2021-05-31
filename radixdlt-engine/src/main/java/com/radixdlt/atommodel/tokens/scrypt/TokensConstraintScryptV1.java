@@ -26,9 +26,9 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.ResourceInBucket;
-import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
@@ -61,15 +61,15 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 
 	private void registerParticles(SysCalls os) {
 		os.registerParticle(
-			TokenDefinitionParticle.class,
-			ParticleDefinition.<TokenDefinitionParticle>builder()
+			TokenResource.class,
+			ParticleDefinition.<TokenResource>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.build()
 		);
 
 		os.registerParticle(
-			TokensParticle.class,
-			ParticleDefinition.<TokensParticle>builder()
+			TokensInAccount.class,
+			ParticleDefinition.<TokensInAccount>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.build()
 		);
@@ -77,16 +77,16 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 
 	private static class NeedFixedTokenSupply implements ReducerState {
 		private final byte[] arg;
-		private final TokenDefinitionParticle tokenDefinitionParticle;
-		private NeedFixedTokenSupply(byte[] arg, TokenDefinitionParticle tokenDefinitionParticle) {
+		private final TokenResource tokenResource;
+		private NeedFixedTokenSupply(byte[] arg, TokenResource tokenResource) {
 			this.arg = arg;
-			this.tokenDefinitionParticle = tokenDefinitionParticle;
+			this.tokenResource = tokenResource;
 		}
 	}
 
 	private void defineTokenCreation(SysCalls os) {
 		os.createUpProcedure(new UpProcedure<>(
-			CMAtomOS.REAddrClaim.class, TokenDefinitionParticle.class,
+			CMAtomOS.REAddrClaim.class, TokenResource.class,
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
@@ -110,15 +110,15 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		));
 
 		os.createUpProcedure(new UpProcedure<>(
-			NeedFixedTokenSupply.class, TokensParticle.class,
+			NeedFixedTokenSupply.class, TokensInAccount.class,
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
-				if (!u.getResourceAddr().equals(s.tokenDefinitionParticle.getAddr())) {
+				if (!u.getResourceAddr().equals(s.tokenResource.getAddr())) {
 					throw new ProcedureException("Addresses don't match.");
 				}
 
-				if (!u.getAmount().equals(s.tokenDefinitionParticle.getSupply().orElseThrow())) {
+				if (!u.getAmount().equals(s.tokenResource.getSupply().orElseThrow())) {
 					throw new ProcedureException("Initial supply doesn't match.");
 				}
 
@@ -126,11 +126,11 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 					u.getResourceAddr(),
 					u.getHoldingAddr(),
 					new String(s.arg),
-					s.tokenDefinitionParticle.getName(),
-					s.tokenDefinitionParticle.getDescription(),
-					s.tokenDefinitionParticle.getIconUrl(),
-					s.tokenDefinitionParticle.getUrl(),
-					s.tokenDefinitionParticle.getSupply().orElseThrow()
+					s.tokenResource.getName(),
+					s.tokenResource.getDescription(),
+					s.tokenResource.getIconUrl(),
+					s.tokenResource.getUrl(),
+					s.tokenResource.getSupply().orElseThrow()
 				);
 
 				return ReducerResult.complete(action);
@@ -211,7 +211,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			UnaccountedTokens.class,
 			(s, r) -> s.resourceInBucket.resourceAddr().isNativeToken() ? PermissionLevel.SYSTEM : PermissionLevel.USER,
 			(s, r, k) -> {
-				var tokenDef = (TokenDefinitionParticle) r.loadAddr(null, s.resourceInBucket.resourceAddr())
+				var tokenDef = (TokenResource) r.loadAddr(null, s.resourceInBucket.resourceAddr())
 					.orElseThrow(() -> new AuthorizationException("Invalid token address: " + s.resourceInBucket.resourceAddr()));
 
 				tokenDef.verifyMintAuthorization(k);
@@ -226,15 +226,15 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 					throw new ProcedureException("Token does not exist.");
 				}
 				var particle = p.get();
-				if (!(particle instanceof TokenDefinitionParticle)) {
+				if (!(particle instanceof TokenResource)) {
 					throw new ProcedureException("Rri is not a token");
 				}
-				var tokenDef = (TokenDefinitionParticle) particle;
+				var tokenDef = (TokenResource) particle;
 				if (!tokenDef.isMutable()) {
 					throw new ProcedureException("Can only mint mutable tokens.");
 				}
 
-				var t = (TokensParticle) s.initialParticle;
+				var t = (TokensInAccount) s.initialParticle;
 				return Optional.of(new MintToken(s.resourceInBucket.resourceAddr(), t.getHoldingAddr(), s.amount.getLow()));
 			}
 		));
@@ -250,22 +250,22 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 					throw new ProcedureException("Token does not exist.");
 				}
 				var particle = p.get();
-				if (!(particle instanceof TokenDefinitionParticle)) {
+				if (!(particle instanceof TokenResource)) {
 					throw new ProcedureException("Rri is not a token");
 				}
-				var tokenDef = (TokenDefinitionParticle) particle;
+				var tokenDef = (TokenResource) particle;
 				if (!tokenDef.isMutable()) {
 					throw new ProcedureException("Can only burn mutable tokens.");
 				}
 
 				// FIXME: These aren't 100% correct
-				var t = (TokensParticle) s.initialParticle;
+				var t = (TokensInAccount) s.initialParticle;
 				return Optional.of(new BurnToken(s.tokenAddr, t.getHoldingAddr(), s.amount.getLow()));
 			}
 		));
 
 		os.createUpProcedure(new UpProcedure<>(
-			VoidReducerState.class, TokensParticle.class,
+			VoidReducerState.class, TokensInAccount.class,
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
@@ -279,7 +279,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		));
 
 		os.createDownProcedure(new DownProcedure<>(
-			TokensParticle.class, VoidReducerState.class,
+			TokensInAccount.class, VoidReducerState.class,
 			(d, r) -> PermissionLevel.USER,
 			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
 			(d, s, r) -> {
@@ -293,7 +293,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		));
 
 		os.createUpProcedure(new UpProcedure<>(
-			RemainderTokens.class, TokensParticle.class,
+			RemainderTokens.class, TokensInAccount.class,
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
@@ -305,8 +305,8 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 				if (nextRemainder.isEmpty()) {
 					// FIXME: This isn't 100% correct
 					var p = s.initialParticle;
-					if (p instanceof TokensParticle) {
-						var t = (TokensParticle) p;
+					if (p instanceof TokensInAccount) {
+						var t = (TokensInAccount) p;
 						var action = new TransferToken(t.getResourceAddr(), u.getHoldingAddr(), t.getHoldingAddr(), t.getAmount());
 						return ReducerResult.complete(action);
 					} else if (p instanceof PreparedStake) {
@@ -322,7 +322,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		));
 
 		os.createDownProcedure(new DownProcedure<>(
-			TokensParticle.class, UnaccountedTokens.class,
+			TokensInAccount.class, UnaccountedTokens.class,
 			(d, r) -> PermissionLevel.USER,
 			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
 			(d, s, r) -> {
@@ -334,8 +334,8 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 				if (nextRemainder.isEmpty()) {
 					// FIXME: This isn't 100% correct
 					var p = s.initialParticle;
-					if (p instanceof TokensParticle) {
-						var t = (TokensParticle) p;
+					if (p instanceof TokensInAccount) {
+						var t = (TokensInAccount) p;
 						var action = new TransferToken(t.getResourceAddr(), d.getSubstate().getHoldingAddr(), t.getHoldingAddr(), t.getAmount());
 						return ReducerResult.complete(action);
 					} else if (p instanceof PreparedStake) {

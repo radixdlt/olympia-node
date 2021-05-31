@@ -19,8 +19,8 @@ package com.radixdlt.atommodel.tokens;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.utils.UInt256;
 
@@ -104,21 +104,21 @@ public final class TokenDefinitionUtils {
 		return Result.success();
 	}
 
-	public static Result staticCheck(TokensParticle tokensParticle) {
-		if (tokensParticle.getAmount() == null) {
+	public static Result staticCheck(TokensInAccount tokensInAccount) {
+		if (tokensInAccount.getAmount() == null) {
 			return Result.error("amount must not be null");
 		}
-		if (tokensParticle.getAmount().isZero()) {
+		if (tokensInAccount.getAmount().isZero()) {
 			return Result.error("amount must not be zero");
 		}
-		if (!tokensParticle.getHoldingAddr().isAccount()) {
-			return Result.error("Tokens must be held by holding address: " + tokensParticle.getHoldingAddr());
+		if (!tokensInAccount.getHoldingAddr().isAccount()) {
+			return Result.error("Tokens must be held by holding address: " + tokensInAccount.getHoldingAddr());
 		}
 
 		return Result.success();
 	}
 
-	public static Result staticCheck(TokenDefinitionParticle tokenDefParticle) {
+	public static Result staticCheck(TokenResource tokenDefParticle) {
 		final Result descriptionResult = validateDescription(tokenDefParticle.getDescription());
 		if (descriptionResult.isError()) {
 			return descriptionResult;

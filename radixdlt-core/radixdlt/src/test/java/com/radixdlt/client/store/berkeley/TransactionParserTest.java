@@ -23,7 +23,7 @@ import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnstakeOwnership;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.tokens.construction.BurnTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
@@ -103,7 +103,7 @@ public class TransactionParserTest {
 			.put(TransferToken.class, new TransferTokensConstructorV1())
 			.put(BurnToken.class, new BurnTokenConstructor())
 			.put(StakeTokens.class, new StakeTokensConstructorV1())
-			.put(UnstakeOwnership.class, new UnstakeTokensConstructorV1())
+			.put(UnstakeTokens.class, new UnstakeTokensConstructorV1())
 			.build();
 
 		engine = new RadixEngine<>(actionConstructors, cm, store);
@@ -181,8 +181,8 @@ public class TransactionParserTest {
 		return new StakeTokens(tokenOwnerAcct, validatorKeyPair.getPublicKey(), UInt256.FIVE);
 	}
 
-	private UnstakeOwnership nativeUnstake() {
-		return new UnstakeOwnership(tokenOwnerAcct, validatorKeyPair.getPublicKey(), UInt256.FIVE);
+	private UnstakeTokens nativeUnstake() {
+		return new UnstakeTokens(tokenOwnerAcct, validatorKeyPair.getPublicKey(), UInt256.FIVE);
 	}
 
 	private List<ActionType> toActionTypes(TxHistoryEntry txEntry) {

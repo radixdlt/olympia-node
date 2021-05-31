@@ -30,7 +30,7 @@ import java.util.Optional;
 /**
  * Particle representing a fixed supply token definition
  */
-public final class TokenDefinitionParticle implements Particle {
+public final class TokenResource implements Particle {
 	private final REAddr addr;
 	private final String name;
 	private final String description;
@@ -39,7 +39,7 @@ public final class TokenDefinitionParticle implements Particle {
 	private final ECPublicKey minter;
 	private final UInt256 supply;
 
-	public TokenDefinitionParticle(
+	public TokenResource(
 		REAddr addr,
 		String name,
 		String description,
@@ -62,7 +62,7 @@ public final class TokenDefinitionParticle implements Particle {
 		this.minter = minter;
 	}
 
-	public TokenDefinitionParticle(
+	public TokenResource(
 		REAddr addr,
 		String name,
 		String description,
@@ -73,7 +73,7 @@ public final class TokenDefinitionParticle implements Particle {
 		this(addr, name, description, iconUrl, url, Objects.requireNonNull(supply), null);
 	}
 
-	public TokenDefinitionParticle(
+	public TokenResource(
 		REAddr addr,
 		String name,
 		String description,
@@ -133,10 +133,10 @@ public final class TokenDefinitionParticle implements Particle {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof TokenDefinitionParticle)) {
+		if (!(o instanceof TokenResource)) {
 			return false;
 		}
-		TokenDefinitionParticle that = (TokenDefinitionParticle) o;
+		TokenResource that = (TokenResource) o;
 		return Objects.equals(addr, that.addr)
 			&& Objects.equals(name, that.name)
 			&& Objects.equals(description, that.description)

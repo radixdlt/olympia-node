@@ -37,10 +37,11 @@ import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
-import com.radixdlt.atom.actions.UnstakeOwnership;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
@@ -261,7 +262,7 @@ public class StakingUnstakingValidatorsTest {
 					break;
 				case 2:
 					var unstakeAmt = random.nextBoolean() ? UInt256.from(random.nextLong()) : amount;
-					action = new UnstakeOwnership(acct, to, unstakeAmt);
+					action = new UnstakeTokens(acct, to, unstakeAmt);
 					break;
 				case 3:
 					action = new RegisterValidator(privKey.getPublicKey());
@@ -284,9 +285,9 @@ public class StakingUnstakingValidatorsTest {
 		}
 
 		var entryStore = this.nodes.get(0).getInstance(BerkeleyLedgerEntryStore.class);
-		var totalTokens = entryStore.reduceUpParticles(TokensParticle.class, UInt256.ZERO,
+		var totalTokens = entryStore.reduceUpParticles(TokensInAccount.class, UInt256.ZERO,
 			(i, p) -> {
-				var tokens = (TokensParticle) p;
+				var tokens = (TokensInAccount) p;
 				return i.add(tokens.getAmount());
 			}
 		);
@@ -294,7 +295,7 @@ public class StakingUnstakingValidatorsTest {
 		var totalStaked = entryStore.reduceUpParticles(ValidatorStake.class, UInt256.ZERO,
 			(i, p) -> {
 				var tokens = (ValidatorStake) p;
-				return i.add(tokens.getAmount());
+				return i.add(tokens.getTotalStake());
 			}
 		);
 		logger.info("Total staked: {}", totalStaked);
@@ -304,8 +305,15 @@ public class StakingUnstakingValidatorsTest {
 				return i.add(tokens.getAmount());
 			}
 		);
-		logger.info("Total stake prepared: {}", totalStakePrepared);
-		logger.info("Total: {}", totalTokens.add(totalStaked).add(totalStakePrepared));
+		logger.info("Total preparing stake: {}", totalStakePrepared);
+		var totalStakeExitting = entryStore.reduceUpParticles(ExittingStake.class, UInt256.ZERO,
+			(i, p) -> {
+				var tokens = (ExittingStake) p;
+				return i.add(tokens.getAmount());
+			}
+		);
+		logger.info("Total exitting stake: {}", totalStakeExitting);
+		logger.info("Total: {}", totalTokens.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting));
 	}
 
 }

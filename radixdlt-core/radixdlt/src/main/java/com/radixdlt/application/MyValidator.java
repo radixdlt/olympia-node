@@ -18,6 +18,7 @@
 
 package com.radixdlt.application;
 
+import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
@@ -28,25 +29,35 @@ import java.util.function.BiConsumer;
 /**
  * Amount of stake received from each of one's delegators.
  */
-public final class StakeReceived {
-	private final Map<REAddr, UInt256> stakes = new ConcurrentHashMap<>();
+public final class MyValidator {
+	private UInt256 totalStake = UInt256.ZERO;
+	private UInt256 totalOwnership = UInt256.ZERO;
+	private final Map<REAddr, UInt256> ownership = new ConcurrentHashMap<>();
 
-	public void addStake(REAddr delegate, UInt256 amount) {
-		stakes.merge(delegate, amount, UInt256::add);
+	public void setStake(ValidatorStake validatorStake) {
+		this.totalOwnership = validatorStake.getTotalOwnership();
+		this.totalStake = validatorStake.getTotalStake();
 	}
 
-	public void removeStake(REAddr delegate, UInt256 amount) {
-		stakes.computeIfPresent(delegate, (d, cur) -> {
+	public void addOwnership(REAddr delegate, UInt256 amount) {
+		ownership.merge(delegate, amount, UInt256::add);
+	}
+
+	public void removeOwnership(REAddr delegate, UInt256 amount) {
+		ownership.computeIfPresent(delegate, (d, cur) -> {
 			var newAmt = cur.subtract(amount);
 			return newAmt.isZero() ? null : newAmt;
 		});
 	}
 
 	public void forEach(BiConsumer<REAddr, UInt256> consumer) {
-		this.stakes.forEach(consumer);
+		this.ownership.forEach((addr, ownership) -> {
+			var stake = ownership.multiply(totalStake).divide(totalOwnership);
+			consumer.accept(addr, stake);
+		});
 	}
 
-	public UInt256 getTotal() {
-		return stakes.values().stream().reduce(UInt256::add).orElse(UInt256.ZERO);
+	public UInt256 getTotalStake() {
+		return totalStake;
 	}
 }

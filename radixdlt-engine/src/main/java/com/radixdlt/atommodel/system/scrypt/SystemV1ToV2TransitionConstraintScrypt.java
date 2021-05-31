@@ -20,7 +20,7 @@ package com.radixdlt.atommodel.system.scrypt;
 
 import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.atommodel.system.state.SystemParticle;
-import com.radixdlt.atommodel.system.state.ValidatorEpochData;
+import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
@@ -84,7 +84,7 @@ public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt 
 
 		// Epoch update
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
-			ValidatorEpochData.class, TransitionToV2.class,
+			ExittingStake.class, TransitionToV2.class,
 			r -> PermissionLevel.SUPER_USER,
 			(r, k) -> {
 				if (k.isPresent()) {
@@ -92,7 +92,7 @@ public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt 
 				}
 			},
 			(i, s, r) -> {
-				var rewardingValidators = new SystemConstraintScryptV2.RewardingValidators(
+				var rewardingValidators = new SystemConstraintScryptV2.ProcessExittingStake(
 					new SystemConstraintScryptV2.UpdatingEpoch(s.sys)
 				);
 				return ReducerResult.incomplete(rewardingValidators.process(i));

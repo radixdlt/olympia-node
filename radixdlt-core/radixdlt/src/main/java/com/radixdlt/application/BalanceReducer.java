@@ -19,7 +19,7 @@
 package com.radixdlt.application;
 
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
@@ -48,7 +48,7 @@ public final class BalanceReducer implements StateReducer<Balances> {
 
 	@Override
 	public Set<Class<? extends Particle>> particleClasses() {
-		return Set.of(TokensParticle.class);
+		return Set.of(TokensInAccount.class);
 	}
 
 	@Override
@@ -59,7 +59,7 @@ public final class BalanceReducer implements StateReducer<Balances> {
 	@Override
 	public BiFunction<Balances, Particle, Balances> outputReducer() {
 		return (balance, p) -> {
-			var tokens = (TokensParticle) p;
+			var tokens = (TokensInAccount) p;
 			if (tokens.getHoldingAddr().equals(addr)) {
 				return balance.add(tokens.getResourceAddr(), tokens.getAmount());
 			}
@@ -70,7 +70,7 @@ public final class BalanceReducer implements StateReducer<Balances> {
 	@Override
 	public BiFunction<Balances, Particle, Balances> inputReducer() {
 		return (balance, p) -> {
-			var tokens = (TokensParticle) p;
+			var tokens = (TokensInAccount) p;
 			if (tokens.getHoldingAddr().equals(addr)) {
 				return balance.remove(tokens.getResourceAddr(), tokens.getAmount());
 			}
