@@ -19,6 +19,7 @@ package com.radixdlt.client.store.berkeley;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.REAddr;
@@ -57,15 +58,20 @@ public class BalanceEntry {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final boolean negative;
 
+	@JsonProperty("epochUnlocked")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private final Long epochUnlocked;
+
 	@JsonCreator
 	private static BalanceEntry create(
 		@JsonProperty("owner") REAddr owner,
 		@JsonProperty("delegate") byte[] delegate,
 		@JsonProperty("rri") String rri,
 		@JsonProperty("amount") UInt384 amount,
-		@JsonProperty("negative") boolean negative
+		@JsonProperty("negative") boolean negative,
+		@JsonProperty("epochUnlocked") Long epochUnlocked
 	) {
-		return createFull(owner, delegate, rri, amount, negative);
+		return createFull(owner, delegate, rri, amount, negative, epochUnlocked);
 	}
 
 	public static BalanceEntry create(
@@ -73,26 +79,29 @@ public class BalanceEntry {
 		ECPublicKey delegate,
 		String rri,
 		UInt384 amount,
-		boolean negative
+		boolean negative,
+		Long epochUnlocked
 	) {
 		return createFull(
 			owner,
 			delegate == null ? null : delegate.getCompressedBytes(),
 			rri,
 			amount,
-			negative
+			negative,
+			epochUnlocked
 		);
 	}
 
 	private BalanceEntry(
 		REAddr owner, byte[] delegate, String rri,
-		UInt384 amount, boolean negative
+		UInt384 amount, boolean negative, Long epochUnlocked
 	) {
 		this.owner = owner;
 		this.delegate = delegate;
 		this.rri = rri;
 		this.amount = amount;
 		this.negative = negative;
+		this.epochUnlocked = epochUnlocked;
 	}
 
 	public static BalanceEntry createFull(
@@ -100,12 +109,13 @@ public class BalanceEntry {
 		byte[] delegate,
 		String rri,
 		UInt384 amount,
-		boolean negative
+		boolean negative,
+		Long epochUnlocked
 	) {
 		Objects.requireNonNull(rri);
 		Objects.requireNonNull(amount);
 
-		return new BalanceEntry(owner, delegate, rri, amount, negative);
+		return new BalanceEntry(owner, delegate, rri, amount, negative, epochUnlocked);
 	}
 
 	public static BalanceEntry createBalance(
@@ -116,12 +126,17 @@ public class BalanceEntry {
 			delegate == null ? null : delegate.getCompressedBytes(),
 			rri,
 			amount,
-			false
+			false,
+			null
 		);
 	}
 
 	public REAddr getOwner() {
 		return owner;
+	}
+
+	public Long getEpochUnlocked() {
+		return epochUnlocked;
 	}
 
 	public ECPublicKey getDelegate() {
@@ -144,8 +159,22 @@ public class BalanceEntry {
 		return owner == null && delegate == null;
 	}
 
+	public ClientApiStore.BalanceType getType() {
+		if (delegate == null) {
+			return ClientApiStore.BalanceType.SPENDABLE;
+		} else if (epochUnlocked == null) {
+			return ClientApiStore.BalanceType.STAKES;
+		} else {
+			return ClientApiStore.BalanceType.UNSTAKES;
+		}
+	}
+
 	public boolean isStake() {
-		return delegate != null;
+		return delegate != null && epochUnlocked == null;
+	}
+
+	public boolean isUnstake() {
+		return delegate != null && epochUnlocked != null;
 	}
 
 	public boolean isNegative() {
@@ -153,7 +182,7 @@ public class BalanceEntry {
 	}
 
 	public BalanceEntry negate() {
-		return new BalanceEntry(owner, delegate, rri, amount, !negative);
+		return new BalanceEntry(owner, delegate, rri, amount, !negative, epochUnlocked);
 	}
 
 	public BalanceEntry add(BalanceEntry balanceEntry) {
@@ -178,6 +207,7 @@ public class BalanceEntry {
 
 			return negative == entry.negative
 				&& Objects.equals(owner, entry.owner)
+				&& Objects.equals(epochUnlocked, entry.epochUnlocked)
 				&& Arrays.equals(delegate, entry.delegate)
 				&& rri.equals(entry.rri)
 				&& amount.equals(entry.amount);
@@ -187,13 +217,14 @@ public class BalanceEntry {
 
 	@Override
 	public final int hashCode() {
-		return Objects.hash(owner, Arrays.hashCode(delegate), rri, amount, negative);
+		return Objects.hash(owner, Arrays.hashCode(delegate), rri, amount, negative, epochUnlocked);
 	}
 
 	@Override
 	public String toString() {
 		return "/" + getOwner() + "/" + rri + " = " + (negative ? "-" : "+") + amount.toString()
-			+ (delegate == null ? "" : ", delegate " + getDelegate());
+			+ (delegate == null ? "" : ", delegate " + getDelegate())
+			+ (epochUnlocked == null ? "" : (", epochUnlocked " + epochUnlocked));
 	}
 
 	private BalanceEntry diff(BalanceEntry balanceEntry, boolean negate) {
@@ -202,10 +233,10 @@ public class BalanceEntry {
 					 ? this.amount.subtract(balanceEntry.amount)
 					 : balanceEntry.amount.subtract(this.amount);
 
-		return new BalanceEntry(owner, delegate, rri, amount, negate == isBigger);
+		return new BalanceEntry(owner, delegate, rri, amount, negate == isBigger, epochUnlocked);
 	}
 
 	private BalanceEntry sum(BalanceEntry balanceEntry, boolean negative) {
-		return new BalanceEntry(owner, delegate, rri, amount.add(balanceEntry.amount), negative);
+		return new BalanceEntry(owner, delegate, rri, amount.add(balanceEntry.amount), negative, epochUnlocked);
 	}
 }

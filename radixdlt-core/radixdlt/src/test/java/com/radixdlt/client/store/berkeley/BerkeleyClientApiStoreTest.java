@@ -20,6 +20,7 @@ import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.client.Rri;
@@ -145,7 +146,7 @@ public class BerkeleyClientApiStoreTest {
 
 		var clientApiStore = prepareApiStore(tx);
 
-		clientApiStore.getTokenBalances(TOKEN_ACCOUNT, false)
+		clientApiStore.getTokenBalances(TOKEN_ACCOUNT, ClientApiStore.BalanceType.SPENDABLE)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
 				assertEquals(UInt384.THREE, list.get(0).getAmount());
@@ -153,7 +154,7 @@ public class BerkeleyClientApiStoreTest {
 			})
 			.onFailureDo(() -> fail("Failure is not expected here"));
 
-		clientApiStore.getTokenBalances(OWNER_ACCOUNT, false)
+		clientApiStore.getTokenBalances(OWNER_ACCOUNT, ClientApiStore.BalanceType.SPENDABLE)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
 				assertEquals(UInt384.FOUR, list.get(0).getAmount());
