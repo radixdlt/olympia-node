@@ -20,15 +20,14 @@ package com.radixdlt.statecomputer.forks;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Singleton;
 
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-public class RadixEngineForksForTestingModule extends AbstractModule {
+public class RadixEngineForksOverwriteForTestingModule extends AbstractModule {
+
 	@Provides
-	@Singleton
 	private TreeMap<Long, ForkConfig> epochToForkConfig(
 		Map<String, Long> epochOverwrite,
 		Map<String, ForkConfig> configOverwrite,

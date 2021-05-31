@@ -27,12 +27,12 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-public class ShorterEpochsForTestingModule extends AbstractModule {
+public class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
 	private static final long INITIAL_VIEW_CEILING = 10L;
 
 	@Override
 	protected void configure() {
-		install(new RadixEngineForksForTestingModule());
+		install(new RadixEngineForksOverwriteForTestingModule());
 	}
 
 	@Provides

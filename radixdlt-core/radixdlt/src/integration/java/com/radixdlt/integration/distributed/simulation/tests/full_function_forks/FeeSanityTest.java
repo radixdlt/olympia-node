@@ -18,7 +18,7 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.full_function_forks;
 
-import com.radixdlt.statecomputer.forks.ShorterEpochsForTestingModule;
+import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
@@ -45,7 +45,7 @@ public class FeeSanityTest {
 		)
 		.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
 		.addRadixEngineConfigModules(
-			new ShorterEpochsForTestingModule(),
+			new ForkOverwritesWithShorterEpochsModule(),
 			new BetanetForksModule(),
 			new TokenFeeModule()
 		)
