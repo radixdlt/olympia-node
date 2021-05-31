@@ -16,12 +16,13 @@
  *
  */
 
-package com.radixdlt.integration.distributed;
+package com.radixdlt.statecomputer.forks;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.BatchVerifier;
@@ -29,6 +30,7 @@ import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.EpochMapKey;
 import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.sync.CommittedReader;
 
 import java.util.Map;
 import java.util.TreeMap;
@@ -57,37 +59,5 @@ public class MockedRadixEngineForksModule extends AbstractModule {
 						)
 				))
 		);
-	}
-
-	@Provides
-	@Singleton
-	@EpochCeilingView
-	private View epochCeilingHighView() {
-		return View.of(INITIAL_VIEW_CEILING);
-	}
-
-	@Provides
-	@Singleton
-	private ConstraintMachine buildConstraintMachine(
-		TreeMap<Long, ForkConfig> epochToForkConfig
-	) {
-		return epochToForkConfig.get(0L).getConstraintMachine();
-	}
-
-	@Provides
-	@Singleton
-	private ActionConstructors actionConstructors(
-		TreeMap<Long, ForkConfig> epochToForkConfig
-	) {
-		return epochToForkConfig.get(0L).getActionConstructors();
-	}
-
-
-	@Provides
-	@Singleton
-	private BatchVerifier<LedgerAndBFTProof> batchVerifier(
-		TreeMap<Long, ForkConfig> epochToForkConfig
-	) {
-		return epochToForkConfig.get(0L).getBatchVerifier();
 	}
 }

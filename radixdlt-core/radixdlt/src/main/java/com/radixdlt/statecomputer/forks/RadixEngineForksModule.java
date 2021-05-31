@@ -49,49 +49,4 @@ public final class RadixEngineForksModule extends AbstractModule {
 		);
 	}
 
-	@Provides
-	@Singleton
-	@EpochCeilingView
-	private View epochCeilingHighView(
-		CommittedReader committedReader, // TODO: This is a hack, remove
-		TreeMap<Long, ForkConfig> epochToForkConfig
-	) {
-		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
-		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return epochToForkConfig.floorEntry(epoch).getValue().getEpochCeilingView();
-	}
-
-	@Provides
-	@Singleton
-	private ConstraintMachine buildConstraintMachine(
-		CommittedReader committedReader, // TODO: This is a hack, remove
-		TreeMap<Long, ForkConfig> epochToForkConfig
-	) {
-		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
-		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return epochToForkConfig.floorEntry(epoch).getValue().getConstraintMachine();
-	}
-
-
-	@Provides
-	@Singleton
-	private ActionConstructors actionConstructors(
-		CommittedReader committedReader, // TODO: This is a hack, remove
-		TreeMap<Long, ForkConfig> epochToForkConfig
-	) {
-		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
-		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return epochToForkConfig.floorEntry(epoch).getValue().getActionConstructors();
-	}
-
-	@Provides
-	@Singleton
-	private BatchVerifier<LedgerAndBFTProof> batchVerifier(
-		CommittedReader committedReader, // TODO: This is a hack, remove
-		TreeMap<Long, ForkConfig> epochToForkConfig
-	) {
-		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
-		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return epochToForkConfig.floorEntry(epoch).getValue().getBatchVerifier();
-	}
 }

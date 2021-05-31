@@ -18,7 +18,7 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.full_function_forks;
 
-import com.radixdlt.integration.distributed.MockedRadixEngineForksModule;
+import com.radixdlt.statecomputer.forks.MockedRadixEngineForksModule;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
