@@ -37,7 +37,7 @@ import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
-import com.radixdlt.atom.actions.UnstakeOwnership;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
@@ -261,7 +261,7 @@ public class StakingUnstakingValidatorsTest {
 					break;
 				case 2:
 					var unstakeAmt = random.nextBoolean() ? UInt256.from(random.nextLong()) : amount;
-					action = new UnstakeOwnership(acct, to, unstakeAmt);
+					action = new UnstakeTokens(acct, to, unstakeAmt);
 					break;
 				case 3:
 					action = new RegisterValidator(privKey.getPublicKey());
@@ -294,7 +294,7 @@ public class StakingUnstakingValidatorsTest {
 		var totalStaked = entryStore.reduceUpParticles(ValidatorStake.class, UInt256.ZERO,
 			(i, p) -> {
 				var tokens = (ValidatorStake) p;
-				return i.add(tokens.getAmount());
+				return i.add(tokens.getTotalStake());
 			}
 		);
 		logger.info("Total staked: {}", totalStaked);

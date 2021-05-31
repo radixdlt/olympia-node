@@ -36,7 +36,7 @@ import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV2;
 import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV2;
-import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV2;
+import com.radixdlt.atommodel.tokens.construction.UnstakeOwnershipConstructor;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
@@ -64,7 +64,7 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @RunWith(Parameterized.class)
-public class UnstakeOwnershipV2Test {
+public class UnstakeTokensV2Test {
 
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
@@ -78,7 +78,7 @@ public class UnstakeOwnershipV2Test {
 					new StakingConstraintScryptV3()
 				),
 				new StakeTokensConstructorV2(),
-				new UnstakeTokensConstructorV2()
+				new UnstakeOwnershipConstructor()
 			},
 			{
 				List.of(UInt256.FIVE, UInt256.FIVE),
@@ -89,7 +89,7 @@ public class UnstakeOwnershipV2Test {
 					new StakingConstraintScryptV3()
 				),
 				new StakeTokensConstructorV2(),
-				new UnstakeTokensConstructorV2()
+				new UnstakeOwnershipConstructor()
 			},
 			{
 				List.of(UInt256.TEN),
@@ -100,7 +100,7 @@ public class UnstakeOwnershipV2Test {
 					new StakingConstraintScryptV3()
 				),
 				new StakeTokensConstructorV2(),
-				new UnstakeTokensConstructorV2()
+				new UnstakeOwnershipConstructor()
 			},
 			{
 				List.of(UInt256.FIVE, UInt256.FIVE),
@@ -111,7 +111,7 @@ public class UnstakeOwnershipV2Test {
 					new StakingConstraintScryptV3()
 				),
 				new StakeTokensConstructorV2(),
-				new UnstakeTokensConstructorV2()
+				new UnstakeOwnershipConstructor()
 			},
 		});
 	}
@@ -127,7 +127,7 @@ public class UnstakeOwnershipV2Test {
 	private final ActionConstructor<StakeTokens> stakeTokensConstructor;
 	private final ActionConstructor<UnstakeOwnership> unstakeTokensConstructor;
 
-	public UnstakeOwnershipV2Test(
+	public UnstakeTokensV2Test(
 		List<UInt256> stakes,
 		UInt256 unstakeAmt,
 		List<ConstraintScrypt> scrypts,

@@ -46,7 +46,7 @@ public final class InflationReducer implements StateReducer<Rewards> {
 	public BiFunction<Rewards, Particle, Rewards> outputReducer() {
 		return (prev, p) -> {
 			var s = (ValidatorStake) p;
-			return prev.add(s.getValidatorKey(), s.getAmount());
+			return prev.add(s.getValidatorKey(), s.getTotalStake());
 		};
 	}
 
@@ -54,7 +54,7 @@ public final class InflationReducer implements StateReducer<Rewards> {
 	public BiFunction<Rewards, Particle, Rewards> inputReducer() {
 		return (prev, p) -> {
 			var s = (ValidatorStake) p;
-			return prev.remove(s.getValidatorKey(), s.getAmount());
+			return prev.remove(s.getValidatorKey(), s.getTotalStake());
 		};
 	}
 }

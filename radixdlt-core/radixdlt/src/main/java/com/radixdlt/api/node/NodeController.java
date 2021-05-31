@@ -35,7 +35,7 @@ import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
-import com.radixdlt.atom.actions.UnstakeOwnership;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateValidator;
 import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.client.Rri;
@@ -220,7 +220,7 @@ public final class NodeController implements Controller {
 				var addressString = paramsObject.getString("from");
 				var delegate = ValidatorAddress.parse(addressString);
 				var amt = parseAmount(paramsObject, "amount");
-				return new UnstakeOwnership(account, delegate, amt);
+				return new UnstakeTokens(account, delegate, amt);
 			}
 			case "RegisterValidator": {
 				var name = paramsObject.has("name") ? paramsObject.getString("name") : null;

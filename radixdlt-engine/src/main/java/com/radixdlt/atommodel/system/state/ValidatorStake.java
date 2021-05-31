@@ -125,7 +125,7 @@ public final class ValidatorStake implements Particle {
 		return this.totalOwnership;
 	}
 
-	public UInt256 getAmount() {
+	public UInt256 getTotalStake() {
 		return this.totalStake;
 	}
 

@@ -688,7 +688,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					null,
 					validatorStake.getValidatorKey(),
 					rri,
-					UInt384.from(validatorStake.getAmount()),
+					UInt384.from(validatorStake.getTotalStake()),
 					update.isShutDown()
 				);
 				storeBalanceEntry(validatorEntry);
@@ -698,7 +698,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					null,
 					null,
 					rri,
-					UInt384.from(validatorStake.getAmount()),
+					UInt384.from(validatorStake.getTotalStake()),
 					update.isShutDown()
 				);
 				storeBalanceEntry(tokenEntry);

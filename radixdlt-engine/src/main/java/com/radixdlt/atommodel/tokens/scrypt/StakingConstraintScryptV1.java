@@ -19,7 +19,7 @@
 package com.radixdlt.atommodel.tokens.scrypt;
 
 import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.UnstakeOwnership;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
@@ -117,7 +117,7 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 				if (nextRemainder.isEmpty()) {
 					// FIXME: This isn't 100% correct
 					var p = (TokensInAccount) s.initialParticle();
-					var action = new UnstakeOwnership(p.getHoldingAddr(), d.getSubstate().getDelegateKey(), p.getAmount());
+					var action = new UnstakeTokens(p.getHoldingAddr(), d.getSubstate().getDelegateKey(), p.getAmount());
 					return ReducerResult.complete(action);
 				}
 
@@ -156,7 +156,7 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 
 				// FIXME: This isn't 100% correct
 				var t = (TokensInAccount) s.initialParticle();
-				var action = new UnstakeOwnership(t.getHoldingAddr(), u.getDelegateKey(), t.getAmount());
+				var action = new UnstakeTokens(t.getHoldingAddr(), u.getDelegateKey(), t.getAmount());
 				return ReducerResult.complete(action);
 			}
 		));

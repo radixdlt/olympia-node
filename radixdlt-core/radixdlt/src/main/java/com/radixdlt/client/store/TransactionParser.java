@@ -21,7 +21,7 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnstakeOwnership;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.client.api.ActionEntry;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.constraintmachine.REParsedAction;
@@ -56,8 +56,8 @@ public final class TransactionParser {
 			return ActionEntry.burn(burnToken, addrToRri);
 		} else if (txAction instanceof StakeTokens) {
 			return ActionEntry.stake((StakeTokens) txAction, addrToRri);
-		} else if (txAction instanceof UnstakeOwnership) {
-			return ActionEntry.unstake((UnstakeOwnership) txAction, addrToRri);
+		} else if (txAction instanceof UnstakeTokens) {
+			return ActionEntry.unstake((UnstakeTokens) txAction, addrToRri);
 		} else {
 			return ActionEntry.unknown();
 		}

@@ -35,6 +35,7 @@ import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeOwnership;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateValidator;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV1;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
@@ -49,6 +50,7 @@ import com.radixdlt.atommodel.system.construction.NextEpochConstructorV1;
 import com.radixdlt.atommodel.system.construction.NextViewConstructorV1;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV2;
 import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV2;
+import com.radixdlt.atommodel.tokens.construction.UnstakeOwnershipConstructor;
 import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV1;
 import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV2;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
@@ -110,11 +112,11 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(StakeTokens.class, new StakeTokensConstructorV1())
 			.put(TransferToken.class, new TransferTokensConstructorV1())
 			.put(UnregisterValidator.class, new UnregisterValidatorConstructor())
-			.put(UnstakeOwnership.class, new UnstakeTokensConstructorV1())
+			.put(UnstakeTokens.class, new UnstakeTokensConstructorV1())
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
 			.build();
 
-		return new ForkConfig(betanet1, actionConstructors, new EpochProofVerifierV1(), View.of(10L));
+		return new ForkConfig(betanet1, actionConstructors, new EpochProofVerifierV1(), View.of(100000L));
 	}
 
 	@ProvidesIntoMap
@@ -147,11 +149,11 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(StakeTokens.class, new StakeTokensConstructorV1())
 			.put(TransferToken.class, new TransferTokensConstructorV1())
 			.put(UnregisterValidator.class, new UnregisterValidatorConstructor())
-			.put(UnstakeOwnership.class, new UnstakeTokensConstructorV1())
+			.put(UnstakeTokens.class, new UnstakeTokensConstructorV1())
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
 			.build();
 
-		return new ForkConfig(betanet2, actionConstructors, new EpochProofVerifierV1(), View.of(10L));
+		return new ForkConfig(betanet2, actionConstructors, new EpochProofVerifierV1(), View.of(10000L));
 	}
 
 	@ProvidesIntoMap
@@ -182,12 +184,13 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(RegisterValidator.class, new RegisterValidatorConstructor())
 			.put(SplitToken.class, new SplitTokenConstructor())
 			.put(StakeTokens.class, new StakeTokensConstructorV2())
+			.put(UnstakeTokens.class, new UnstakeTokensConstructorV2())
+			.put(UnstakeOwnership.class, new UnstakeOwnershipConstructor())
 			.put(TransferToken.class, new TransferTokensConstructorV2())
 			.put(UnregisterValidator.class, new UnregisterValidatorConstructor())
-			.put(UnstakeOwnership.class, new UnstakeTokensConstructorV2())
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
 			.build();
 
-		return new ForkConfig(betanet3, actionConstructors, new EpochProofVerifierV2(), View.of(10L));
+		return new ForkConfig(betanet3, actionConstructors, new EpochProofVerifierV2(), View.of(10000L));
 	}
 }
