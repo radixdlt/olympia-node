@@ -23,9 +23,10 @@ import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.system.state.ValidatorEpochData;
+import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
-import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwned;
+import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atommodel.unique.state.UniqueParticle;
@@ -59,7 +60,8 @@ public final class RESerializer {
 		EPOCH_DATA((byte) 10),
 		STAKE_SHARE((byte) 11),
 		VALIDATOR_EPOCH_DATA((byte) 12),
-		PREPARED_UNSTAKE((byte) 13);
+		PREPARED_UNSTAKE((byte) 13),
+		EXITTING_STAKE((byte) 14);
 
 		private final byte id;
 
@@ -82,7 +84,8 @@ public final class RESerializer {
 		EpochData.class,
 		StakeOwnership.class,
 		ValidatorEpochData.class,
-		PreparedUnstakeOwned.class
+		PreparedUnstakeOwnership.class,
+		ExittingStake.class
 	);
 
 	private static Map<Class<? extends Particle>, List<Byte>> classToByteTypes = Map.ofEntries(
@@ -98,7 +101,8 @@ public final class RESerializer {
 		Map.entry(EpochData.class, List.of(SubstateType.EPOCH_DATA.id)),
 		Map.entry(StakeOwnership.class, List.of(SubstateType.STAKE_SHARE.id)),
 		Map.entry(ValidatorEpochData.class, List.of(SubstateType.VALIDATOR_EPOCH_DATA.id)),
-		Map.entry(PreparedUnstakeOwned.class, List.of(SubstateType.PREPARED_UNSTAKE.id))
+		Map.entry(PreparedUnstakeOwnership.class, List.of(SubstateType.PREPARED_UNSTAKE.id)),
+		Map.entry(ExittingStake.class, List.of(SubstateType.EXITTING_STAKE.id))
 	);
 
 	private RESerializer() {
@@ -172,6 +176,8 @@ public final class RESerializer {
 			return deserializeValidatorEpochData(buf);
 		} else if (type == SubstateType.PREPARED_UNSTAKE.id) {
 			return deserializePreparedUnstake(buf);
+		} else if (type == SubstateType.EXITTING_STAKE.id) {
+			return deserializeExittingStake(buf);
 		} else {
 			throw new DeserializeException("Unsupported type: " + type);
 		}
@@ -203,8 +209,10 @@ public final class RESerializer {
 			serializeData((StakeOwnership) p, buf);
 		} else if (p instanceof ValidatorEpochData) {
 			serializeData((ValidatorEpochData) p, buf);
-		} else if (p instanceof PreparedUnstakeOwned) {
-			serializeData((PreparedUnstakeOwned) p, buf);
+		} else if (p instanceof PreparedUnstakeOwnership) {
+			serializeData((PreparedUnstakeOwnership) p, buf);
+		} else if (p instanceof ExittingStake) {
+			serializeData((ExittingStake) p, buf);
 		} else {
 			throw new IllegalStateException("Unknown particle: " + p);
 		}
@@ -349,7 +357,24 @@ public final class RESerializer {
 		return new ValidatorEpochData(key, proposalCsCompleted);
 	}
 
-	private static void serializeData(PreparedUnstakeOwned p, ByteBuffer buf) {
+	private static void serializeData(ExittingStake p, ByteBuffer buf) {
+		buf.put(SubstateType.EXITTING_STAKE.id);
+		buf.putLong(p.getEpochUnlocked());
+		serializeKey(buf, p.getDelegateKey());
+		serializeREAddr(buf, p.getOwner());
+		buf.put(p.getAmount().toByteArray());
+	}
+
+	private static ExittingStake deserializeExittingStake(ByteBuffer buf) throws DeserializeException {
+		var epochUnlocked = buf.getLong();
+		var delegate = deserializeKey(buf);
+		var owner = deserializeREAddr(buf);
+		var amount = deserializeUInt256(buf);
+		return new ExittingStake(delegate, owner, epochUnlocked, amount);
+	}
+
+
+	private static void serializeData(PreparedUnstakeOwnership p, ByteBuffer buf) {
 		buf.put(SubstateType.PREPARED_UNSTAKE.id);
 
 		serializeKey(buf, p.getDelegateKey());
@@ -357,11 +382,11 @@ public final class RESerializer {
 		buf.put(p.getAmount().toByteArray());
 	}
 
-	private static PreparedUnstakeOwned deserializePreparedUnstake(ByteBuffer buf) throws DeserializeException {
+	private static PreparedUnstakeOwnership deserializePreparedUnstake(ByteBuffer buf) throws DeserializeException {
 		var delegate = deserializeKey(buf);
 		var owner = deserializeREAddr(buf);
 		var amount = deserializeUInt256(buf);
-		return new PreparedUnstakeOwned(delegate, owner, amount);
+		return new PreparedUnstakeOwnership(delegate, owner, amount);
 	}
 
 	private static void serializeData(PreparedStake p, ByteBuffer buf) {

@@ -39,6 +39,7 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -304,8 +305,15 @@ public class StakingUnstakingValidatorsTest {
 				return i.add(tokens.getAmount());
 			}
 		);
-		logger.info("Total stake prepared: {}", totalStakePrepared);
-		logger.info("Total: {}", totalTokens.add(totalStaked).add(totalStakePrepared));
+		logger.info("Total preparing stake: {}", totalStakePrepared);
+		var totalStakeExitting = entryStore.reduceUpParticles(ExittingStake.class, UInt256.ZERO,
+			(i, p) -> {
+				var tokens = (ExittingStake) p;
+				return i.add(tokens.getAmount());
+			}
+		);
+		logger.info("Total exitting stake: {}", totalStakeExitting);
+		logger.info("Total: {}", totalTokens.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting));
 	}
 
 }

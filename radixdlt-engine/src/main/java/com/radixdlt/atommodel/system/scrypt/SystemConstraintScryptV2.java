@@ -26,8 +26,9 @@ import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
 import com.radixdlt.atommodel.system.state.ValidatorEpochData;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwned;
+import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -53,6 +54,7 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Function;
 
 public class SystemConstraintScryptV2 implements ConstraintScrypt {
@@ -79,8 +81,51 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		}
 	}
 
-	public SystemConstraintScryptV2() {
-		// Nothing here right now
+	public static final class ProcessExittingStake implements ReducerState {
+		private final UpdatingEpoch updatingEpoch;
+		private final TreeSet<ExittingStake> exitting = new TreeSet<>(
+			(o1, o2) -> Arrays.compare(o1.dataKey(), o2.dataKey())
+		);
+
+		ProcessExittingStake(UpdatingEpoch updatingEpoch) {
+			this.updatingEpoch = updatingEpoch;
+		}
+
+		public ReducerState process(Iterator<ExittingStake> i) throws ProcedureException {
+			i.forEachRemaining(exitting::add);
+
+			return next();
+		}
+
+		public ReducerState unlock(TokensInAccount u) throws ProcedureException {
+			var exit = exitting.first();
+			exitting.remove(exit);
+			if (exit.getEpochUnlocked() != updatingEpoch.prevEpoch.getEpoch()) {
+				throw new ProcedureException("Stake must still be locked.");
+			}
+			var expected = exit.unlock();
+			if (!expected.equals(u)) {
+				throw new ProcedureException("Expecting next state to be " + expected + " but was " + u);
+			}
+
+			return next();
+		}
+
+		public ReducerState nextExit(ExittingStake u) throws ProcedureException {
+			var first = exitting.first();
+			var ownershipUnstake = exitting.remove(first);
+			if (!u.equals(first)) {
+				throw new ProcedureException("Exitting stake must be equivalent.");
+			}
+			if (u.getEpochUnlocked() == updatingEpoch.prevEpoch.getEpoch()) {
+				throw new ProcedureException("Expecting stake to be unlocked.");
+			}
+			return next();
+		}
+
+		public ReducerState next() {
+			return exitting.isEmpty() ? new RewardingValidators(updatingEpoch) : this;
+		}
 	}
 
 	public static final class RewardingValidators implements ReducerState {
@@ -194,29 +239,16 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			this.onDone = onDone;
 		}
 
-		ReducerState unstake(TokensInAccount u) throws ProcedureException {
-			if (!u.getResourceAddr().isNativeToken()) {
-				throw new ProcedureException("Can only destake to the native token.");
-			}
-			var epochUnlocked = u.getEpochUnlocked()
-				.orElseThrow(() -> new ProcedureException("Exiting from stake must be locked."));
-
+		ReducerState exit(ExittingStake u) throws ProcedureException {
 			var firstAddr = unstaking.firstKey();
-			if (!Objects.equals(u.getHoldingAddr(), firstAddr)) {
-				throw new ProcedureException("Unstaking incorrect addr");
-			}
 			var ownershipUnstake = unstaking.remove(firstAddr);
-			var nextValidatorAndAmt = current.unstakeOwnership(ownershipUnstake);
-			this.current = nextValidatorAndAmt.getFirst();
-			var expectedAmt = nextValidatorAndAmt.getSecond();
-			if (!expectedAmt.equals(u.getAmount())) {
-				throw new ProcedureException("Invalid amount");
-			}
-
-			var expectedEpochUnlock = updatingEpoch.prevEpoch.getEpoch() + 1 + EPOCHS_LOCKED;
-			if (expectedEpochUnlock != epochUnlocked) {
-				throw new ProcedureException("Incorrect epoch unlock: " + epochUnlocked
-					+ " should be: " + expectedEpochUnlock);
+			var nextValidatorAndExit = current.unstakeOwnership(
+				firstAddr, ownershipUnstake, updatingEpoch.prevEpoch.getEpoch()
+			);
+			this.current = nextValidatorAndExit.getFirst();
+			var expectedExit = nextValidatorAndExit.getSecond();
+			if (!u.equals(expectedExit)) {
+				throw new ProcedureException("Invalid exit expected " + expectedExit + " but was " + u);
 			}
 
 			return unstaking.isEmpty() ? onDone.apply(current) : this;
@@ -236,7 +268,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			this.curStake = curStake;
 		}
 
-		ReducerState unstakes(Iterator<PreparedUnstakeOwned> preparedUnstakeIterator) {
+		ReducerState unstakes(Iterator<PreparedUnstakeOwnership> preparedUnstakeIterator) {
 			preparedUnstakeIterator.forEachRemaining(preparedUnstakeOwned ->
 				preparingUnstake
 					.computeIfAbsent(
@@ -386,7 +418,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 			var expectedUpdate = curStake.remove(k);
 			if (!stake.equals(expectedUpdate)) {
-				throw new ProcedureException("Stake amount does not match.");
+				throw new ProcedureException("Stake amount does not match Expected: " + expectedUpdate + " Actual: " + stake);
 			}
 
 			return curStake.isEmpty() ? new CreatingNextValidatorSet(updatingEpoch) : this;
@@ -496,7 +528,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		));
 
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
-			ValidatorEpochData.class, UpdatingEpoch.class,
+			ExittingStake.class, UpdatingEpoch.class,
 			r -> PermissionLevel.SUPER_USER,
 			(r, k) -> {
 				if (k.isPresent()) {
@@ -504,13 +536,36 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				}
 			},
 			(i, s, r) -> {
-				var rewardingValidators = new RewardingValidators(s);
-				return ReducerResult.incomplete(rewardingValidators.process(i));
+				var exittingStake = new ProcessExittingStake(s);
+				return ReducerResult.incomplete(exittingStake.process(i));
 			}
+		));
+		os.createUpProcedure(new UpProcedure<>(
+			ProcessExittingStake.class, ExittingStake.class,
+			(u, r) -> PermissionLevel.SUPER_USER,
+			(u, r, k) -> { },
+			(s, u, r) -> ReducerResult.incomplete(s.nextExit(u))
+		));
+		os.createUpProcedure(new UpProcedure<>(
+			ProcessExittingStake.class, TokensInAccount.class,
+			(u, r) -> PermissionLevel.SUPER_USER,
+			(u, r, k) -> { },
+			(s, u, r) -> ReducerResult.incomplete(s.unlock(u))
 		));
 
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
-			PreparedUnstakeOwned.class, PreparingUnstake.class,
+			ValidatorEpochData.class, RewardingValidators.class,
+			r -> PermissionLevel.SUPER_USER,
+			(r, k) -> {
+				if (k.isPresent()) {
+					throw new AuthorizationException("System update should not be signed.");
+				}
+			},
+			(i, s, r) -> ReducerResult.incomplete(s.process(i))
+		));
+
+		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
+			PreparedUnstakeOwnership.class, PreparingUnstake.class,
 			r -> PermissionLevel.SUPER_USER,
 			(r, k) -> {
 				if (k.isPresent()) {
@@ -526,10 +581,10 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			(d, s, r) -> ReducerResult.incomplete(s.startUpdate(d.getSubstate()))
 		));
 		os.createUpProcedure(new UpProcedure<>(
-			Unstaking.class, TokensInAccount.class,
+			Unstaking.class, ExittingStake.class,
 			(u, r) -> PermissionLevel.SUPER_USER,
 			(u, r, k) -> { },
-			(s, u, r) -> ReducerResult.incomplete(s.unstake(u))
+			(s, u, r) -> ReducerResult.incomplete(s.exit(u))
 		));
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
 			PreparedStake.class, PreparingStake.class,
@@ -613,6 +668,17 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				.staticValidation(s -> {
 					if (s.getAmount().isZero()) {
 						return Result.error("amount must not be zero");
+					}
+					return Result.success();
+				})
+				.build()
+		);
+		os.registerParticle(
+			ExittingStake.class,
+			ParticleDefinition.<ExittingStake>builder()
+				.staticValidation(s -> {
+					if (s.getEpochUnlocked() < 0) {
+						return Result.error("epoch must be >= 0");
 					}
 					return Result.success();
 				})

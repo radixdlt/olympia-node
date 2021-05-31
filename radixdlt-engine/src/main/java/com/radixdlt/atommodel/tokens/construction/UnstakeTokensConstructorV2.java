@@ -24,7 +24,7 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
-import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwned;
+import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 
 public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeTokens> {
 	@Override
@@ -42,6 +42,6 @@ public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeToke
 			amt -> new StakeOwnership(action.from(), action.accountAddr(), amt),
 			ownershipAmt,
 			"Not enough staked"
-		).with(amt -> new PreparedUnstakeOwned(action.from(), action.accountAddr(), amt));
+		).with(amt -> new PreparedUnstakeOwnership(action.from(), action.accountAddr(), amt));
 	}
 }

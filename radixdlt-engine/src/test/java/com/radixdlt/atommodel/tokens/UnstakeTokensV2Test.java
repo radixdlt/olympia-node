@@ -39,7 +39,6 @@ import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV2;
 import com.radixdlt.atommodel.tokens.construction.UnstakeOwnershipConstructor;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
-import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.CMErrorCode;
@@ -239,42 +238,5 @@ public class UnstakeTokensV2Test {
 		// Assert
 		assertThatThrownBy(() -> sut.construct(new TransferToken(REAddr.ofNativeToken(), accountAddr, acct2, unstakeAmt)))
 			.isInstanceOf(TxBuilderException.class);
-	}
-
-	@Test
-	public void cant_spend_unstaked_tokens_immediately() throws Exception {
-		// Arrange
-		var acct2 = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
-		var txn = sut.construct(
-			this.stakes.stream().map(amt -> new StakeTokens(accountAddr, key.getPublicKey(), amt)).collect(Collectors.toList())
-		).signAndBuild(key::sign);
-		sut.execute(List.of(txn));
-		var nextEpoch = sut.construct(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 1))
-			.buildWithoutSignature();
-		this.sut.execute(List.of(nextEpoch), null, PermissionLevel.SUPER_USER);
-		var unstake = this.sut.construct(new UnstakeOwnership(accountAddr, key.getPublicKey(), unstakeAmt))
-			.signAndBuild(key::sign);
-		sut.execute(List.of(unstake));
-
-		var nextEpoch2 = sut.construct(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 1))
-			.buildWithoutSignature();
-		this.sut.execute(List.of(nextEpoch2), null, PermissionLevel.SUPER_USER);
-
-		// Act
-		// Assert
-		var txn2 = sut.construct(
-			txBuilder ->
-				txBuilder.swapFungible(
-					TokensInAccount.class,
-					p -> p.getResourceAddr().equals(REAddr.ofNativeToken())
-						&& p.getHoldingAddr().equals(accountAddr),
-					amt -> new TokensInAccount(acct2, amt, REAddr.ofNativeToken()),
-					unstakeAmt,
-					"Not enough balance for transfer."
-				).with(amt -> new TokensInAccount(acct2, amt, REAddr.ofNativeToken()))
-		).signAndBuild(key::sign);
-
-		assertThatThrownBy(() -> sut.execute(List.of(txn2)))
-			.isInstanceOf(RadixEngineException.class);
 	}
 }

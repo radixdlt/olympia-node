@@ -24,7 +24,7 @@ import com.radixdlt.atommodel.system.state.StakeOwnership;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwned;
+import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
@@ -58,8 +58,8 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		);
 
 		os.registerParticle(
-			PreparedUnstakeOwned.class,
-			ParticleDefinition.<PreparedUnstakeOwned>builder()
+			PreparedUnstakeOwnership.class,
+			ParticleDefinition.<PreparedUnstakeOwnership>builder()
 				.staticValidation(p -> {
 					if (p.getAmount().isZero()) {
 						return Result.error("amount must not be zero");
@@ -117,7 +117,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 			return new StakeSharesHoldingBucket(delegate, accountAddr, UInt384.from(stakeOwnership.getAmount()).add(shareAmount));
 		}
 
-		public StakeSharesHoldingBucket unstake(PreparedUnstakeOwned u) throws ProcedureException {
+		public StakeSharesHoldingBucket unstake(PreparedUnstakeOwnership u) throws ProcedureException {
 			if (!Objects.equals(accountAddr, u.getOwner())) {
 				throw new ProcedureException("Must unstake to self");
 			}
@@ -199,7 +199,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 			(s, u, r) -> ReducerResult.incomplete(s.withdrawShares(u))
 		));
 		os.createUpProcedure(new UpProcedure<>(
-			StakeSharesHoldingBucket.class, PreparedUnstakeOwned.class,
+			StakeSharesHoldingBucket.class, PreparedUnstakeOwnership.class,
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> ReducerResult.incomplete(s.unstake(u))

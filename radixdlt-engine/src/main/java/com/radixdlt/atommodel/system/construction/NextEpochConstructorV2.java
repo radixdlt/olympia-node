@@ -29,9 +29,9 @@ import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.system.state.ValidatorEpochData;
+import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwned;
-import com.radixdlt.atommodel.tokens.state.TokensInAccount;
+import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECPublicKey;
@@ -41,8 +41,7 @@ import com.radixdlt.utils.UInt256;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.TreeMap;
-
-import static com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2.EPOCHS_LOCKED;
+import java.util.TreeSet;
 
 public final class NextEpochConstructorV2 implements ActionConstructor<SystemNextEpoch> {
 	@Override
@@ -69,7 +68,21 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 				"No epoch data available"
 			);
 		}
-		long epochUnlocked = prevEpoch.getEpoch() + 1 + EPOCHS_LOCKED;
+
+		var exitting = txBuilder.shutdownAll(ExittingStake.class, i -> {
+			final TreeSet<ExittingStake> exit = new TreeSet<>(
+				(o1, o2) -> Arrays.compare(o1.dataKey(), o2.dataKey())
+			);
+			i.forEachRemaining(exit::add);
+			return exit;
+		});
+		for (var e : exitting) {
+			if (e.getEpochUnlocked() == prevEpoch.getEpoch()) {
+				txBuilder.up(e.unlock());
+			} else {
+				txBuilder.up(e); // TODO: optimize and remove this unneed read/write
+			}
+		}
 
 		var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorStake>(
 			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
@@ -93,7 +106,7 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 			validatorsToUpdate.put(k, currentStake.addEmission(emission));
 		}
 
-		var allPreparedUnstake = txBuilder.shutdownAll(PreparedUnstakeOwned.class, i -> {
+		var allPreparedUnstake = txBuilder.shutdownAll(PreparedUnstakeOwnership.class, i -> {
 			var map = new TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>>(
 				(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
 			);
@@ -124,10 +137,10 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 			for (var entry : unstakes.entrySet()) {
 				var addr = entry.getKey();
 				var amt = entry.getValue();
-				var nextStakeAndAmt = curValidatorStake.unstakeOwnership(amt);
+				var nextStakeAndAmt = curValidatorStake.unstakeOwnership(addr, amt, prevEpoch.getEpoch());
 				curValidatorStake = nextStakeAndAmt.getFirst();
-				var unstakedAmt = nextStakeAndAmt.getSecond();
-				txBuilder.up(new TokensInAccount(addr, unstakedAmt, REAddr.ofNativeToken(), epochUnlocked));
+				var exittingStake = nextStakeAndAmt.getSecond();
+				txBuilder.up(exittingStake);
 			}
 			validatorsToUpdate.put(k, curValidatorStake);
 		}

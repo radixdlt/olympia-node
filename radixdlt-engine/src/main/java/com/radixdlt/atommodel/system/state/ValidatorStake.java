@@ -18,7 +18,9 @@
 
 package com.radixdlt.atommodel.system.state;
 
+import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
@@ -94,7 +96,7 @@ public final class ValidatorStake implements Particle {
 		return Pair.of(nextValidatorStake, stakeOwnership);
 	}
 
-	public Pair<ValidatorStake, UInt256> unstakeOwnership(UInt256 unstakeOwnership) {
+	public Pair<ValidatorStake, ExittingStake> unstakeOwnership(REAddr owner, UInt256 unstakeOwnership, long curEpoch) {
 		if (totalOwnership.compareTo(unstakeOwnership) < 0) {
 			throw new IllegalStateException("Not enough ownership");
 		}
@@ -105,7 +107,9 @@ public final class ValidatorStake implements Particle {
 		}
 		var unstaked = unstaked384.getLow();
 		var nextValidatorStake = new ValidatorStake(validatorKey, totalStake.subtract(unstaked), totalOwnership.subtract(unstakeOwnership));
-		return Pair.of(nextValidatorStake, unstaked);
+		var epochUnlocked = curEpoch + SystemConstraintScryptV2.EPOCHS_LOCKED;
+		var exittingStake = new ExittingStake(validatorKey, owner, epochUnlocked, unstaked);
+		return Pair.of(nextValidatorStake, exittingStake);
 	}
 
 	public ECPublicKey getValidatorKey() {

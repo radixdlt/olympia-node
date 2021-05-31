@@ -23,23 +23,47 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public final class PreparedUnstakeOwned implements Fungible {
+public final class ExittingStake implements Fungible {
 	private final UInt256 amount;
 
 	// Bucket keys
 	private final REAddr owner;
 	private final ECPublicKey delegateKey;
+	private final long epochUnlocked;
 
-	public PreparedUnstakeOwned(
+	public ExittingStake(
 		ECPublicKey delegateKey,
 		REAddr owner,
+		long epochUnlocked,
 		UInt256 amount
 	) {
 		this.delegateKey = Objects.requireNonNull(delegateKey);
 		this.owner = Objects.requireNonNull(owner);
 		this.amount = Objects.requireNonNull(amount);
+		this.epochUnlocked = epochUnlocked;
+	}
+
+	public byte[] dataKey() {
+		var dataSize = ECPublicKey.COMPRESSED_BYTES + (ECPublicKey.COMPRESSED_BYTES + 1) + Long.BYTES;
+		var bytes = new byte[dataSize];
+		var byteBuffer = ByteBuffer.wrap(bytes);
+		byteBuffer.putLong(epochUnlocked);
+		byteBuffer.put(delegateKey.getCompressedBytes());
+		byteBuffer.put(owner.getBytes());
+		return bytes;
+	}
+
+	public long getEpochUnlocked() {
+		return epochUnlocked;
+	}
+
+	public TokensInAccount unlock() {
+		return new TokensInAccount(
+			owner, amount, REAddr.ofNativeToken()
+		);
 	}
 
 	public ECPublicKey getDelegateKey() {
@@ -52,11 +76,12 @@ public final class PreparedUnstakeOwned implements Fungible {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s:%s]",
+		return String.format("%s[%s:%s:%s:%s]",
 			getClass().getSimpleName(),
 			amount,
 			owner,
-			delegateKey
+			delegateKey,
+			epochUnlocked
 		);
 	}
 
@@ -70,13 +95,14 @@ public final class PreparedUnstakeOwned implements Fungible {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof PreparedUnstakeOwned)) {
+		if (!(o instanceof ExittingStake)) {
 			return false;
 		}
-		var that = (PreparedUnstakeOwned) o;
+		var that = (ExittingStake) o;
 		return Objects.equals(delegateKey, that.delegateKey)
 			&& Objects.equals(owner, that.owner)
-			&& Objects.equals(amount, that.amount);
+			&& Objects.equals(amount, that.amount)
+			&& this.epochUnlocked == that.epochUnlocked;
 	}
 
 	@Override
@@ -84,7 +110,8 @@ public final class PreparedUnstakeOwned implements Fungible {
 		return Objects.hash(
 			delegateKey,
 			owner,
-			amount
+			amount,
+			epochUnlocked
 		);
 	}
 }

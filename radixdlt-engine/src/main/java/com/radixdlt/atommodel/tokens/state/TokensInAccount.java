@@ -39,6 +39,7 @@ public final class TokensInAccount implements Fungible {
 
 	// Bucket
 	private final REAddr holdingAddress;
+
 	// Bucket properties
 	private final Long epochUnlocked;
 
