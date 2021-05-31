@@ -34,17 +34,14 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
-import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.identifiers.REAddr;
@@ -52,7 +49,6 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.statecomputer.RadixEngineConfig;
@@ -70,7 +66,6 @@ import org.radix.TokenIssuance;
 import java.util.Collection;
 import java.util.List;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 @RunWith(Parameterized.class)
@@ -200,29 +195,6 @@ public class UnstakingLockedTokensTest {
 			radixEngine.construct(transferAction);
 		} else {
 			assertThatThrownBy(() -> radixEngine.construct(transferAction)).isInstanceOf(TxBuilderException.class);
-		}
-
-		// Build transaction manually which spends locked transaction
-		var txn = radixEngine.construct(txBuilder -> {
-			txBuilder.swapFungible(
-				TokensInAccount.class,
-				p -> p.getResourceAddr().isNativeToken()
-					&& p.getHoldingAddr().equals(accountAddr)
-					&& p.getEpochUnlocked().isPresent(),
-				amt -> new TokensInAccount(accountAddr, amt, REAddr.ofNativeToken()),
-				ValidatorStake.MINIMUM_STAKE,
-				"Not enough balance for transfer."
-			).with(amt -> new TokensInAccount(otherAddr, amt, REAddr.ofNativeToken()));
-			txBuilder.end();
-		}).signAndBuild(hashSigner::sign);
-		if (shouldSucceed) {
-			dispatchAndWaitForCommit(txn);
-		} else {
-			var transferFailure = dispatchAndCheckForError(txn);
-			var ex = (MempoolRejectedException) transferFailure.getException();
-			var reException = (RadixEngineException) ex.getCause();
-			assertThat(reException).extracting("cause.errorCode")
-				.containsExactly(CMErrorCode.AUTHORIZATION_ERROR);
 		}
 	}
 }
