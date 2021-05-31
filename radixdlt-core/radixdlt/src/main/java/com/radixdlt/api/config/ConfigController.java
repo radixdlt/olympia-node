@@ -77,6 +77,7 @@ public class ConfigController implements Controller {
 		var forks = new JSONArray();
 		forkConfigTreeMap.forEach((e, config) -> forks.put(
 			new JSONObject()
+				.put("name", config.getName())
 				.put("ceiling_view", config.getEpochCeilingView().number())
 				.put("epoch", e)
 		));

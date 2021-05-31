@@ -28,7 +28,7 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.sync.CommittedReader;
@@ -142,7 +142,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 		Guice.createInjector(
 			new MockedGenesisModule(),
 			new BetanetForksModule(),
-			new RadixEngineOnlyLatestForkModule(View.of(10)),
+			new RadixEngineForksLatestOnlyModule(View.of(10)),
 			new RadixEngineModule(),
 			RadixEngineConfig.asModule(1, 10, 50),
 			new CryptoModule(),
@@ -205,7 +205,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
 			new BetanetForksModule(),
-			new RadixEngineOnlyLatestForkModule(View.of(88)),
+			new RadixEngineForksLatestOnlyModule(View.of(88)),
 			RadixEngineConfig.asModule(1, 10, 50),
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {

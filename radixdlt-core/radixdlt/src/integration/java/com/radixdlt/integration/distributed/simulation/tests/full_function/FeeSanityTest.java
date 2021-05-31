@@ -27,7 +27,7 @@ import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMon
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.statecomputer.transaction.TokenFeeModule;
 import com.radixdlt.sync.SyncConfig;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -47,7 +47,7 @@ public class FeeSanityTest {
 		.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
 		.addRadixEngineConfigModules(
 			new BetanetForksModule(),
-			new RadixEngineOnlyLatestForkModule(View.of(10L)),
+			new RadixEngineForksLatestOnlyModule(View.of(10L)),
 			new TokenFeeModule()
 		)
 		.addNodeModule(MempoolConfig.asModule(1000, 10))

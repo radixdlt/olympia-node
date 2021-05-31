@@ -70,7 +70,7 @@ import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.EngineStore;
@@ -120,7 +120,7 @@ public class StakingUnstakingValidatorsTest {
 			.collect(ImmutableList.toImmutableList());
 		this.radixEngineConfiguration = Modules.combine(
 			new BetanetForksModule(),
-			new RadixEngineOnlyLatestForkModule(View.of(100)),
+			new RadixEngineForksLatestOnlyModule(View.of(100)),
 			RadixEngineConfig.asModule(1, 10, 50)
 		);
 	}

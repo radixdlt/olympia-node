@@ -28,7 +28,7 @@ import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.utils.UInt384;
 import org.junit.Assert;
 import org.junit.Before;
@@ -112,7 +112,7 @@ public class BerkeleyClientApiStoreTest {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 0),
 			new BetanetForksModule(),
-			new RadixEngineOnlyLatestForkModule(View.of(100)),
+			new RadixEngineForksLatestOnlyModule(View.of(100)),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
