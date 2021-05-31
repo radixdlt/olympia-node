@@ -25,6 +25,7 @@ import com.radixdlt.atommodel.system.state.StakeOwnership;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
+import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.REAddrParticle;
@@ -234,11 +235,13 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private BalanceEntry computeStakeEntry(BalanceEntry entry) {
-		return BalanceEntry.createBalance(
+		return BalanceEntry.create(
 			entry.getOwner(),
 			entry.getDelegate(),
 			getRriOrFail(REAddr.ofNativeToken()),
-			computeStakeFromOwnership(entry.getDelegate(), entry.getAmount())
+			computeStakeFromOwnership(entry.getDelegate(), entry.getAmount()),
+			false,
+			entry.getEpochUnlocked()
 		);
 	}
 
@@ -267,7 +270,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					.toOptional()
 					.filter(entry -> entry.getType().equals(type))
 					.filter(entry -> entry.getOwner().equals(addr))
-					.map(entry -> type == BalanceType.STAKES ? computeStakeEntry(entry) : entry)
+					.map(entry -> entry.rri().equals("stake-ownership") ? computeStakeEntry(entry) : entry)
 					.ifPresent(list::add);
 
 				status = readBalance(() -> cursor.getNext(key, data, null), data);
@@ -594,7 +597,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private void processRETransaction(REProcessedTxn reTxn) {
-		extractTimestamp(reTxn);
 		reTxn.getGroupedStateUpdates().forEach(this::updateSubstate);
 
 		var addressesInActions = reTxn.getActions().stream()
@@ -664,7 +666,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				var rri = getRriOrFail(REAddr.ofNativeToken());
 				var accountEntry = BalanceEntry.create(
 					preparedStake.getOwner(),
-					null,
+					preparedStake.getDelegateKey(),
 					rri,
 					UInt384.from(preparedStake.getAmount()),
 					update.isShutDown(),
@@ -682,6 +684,18 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					null
 				);
 				storeBalanceEntry(tokenEntry);
+			} else if (substate instanceof PreparedUnstakeOwnership) {
+				var unstakeOwnership = (PreparedUnstakeOwnership) substate;
+				var accountEntry = BalanceEntry.create(
+					unstakeOwnership.getOwner(),
+					unstakeOwnership.getDelegateKey(),
+					"stake-ownership",
+					UInt384.from(unstakeOwnership.getAmount()),
+					update.isShutDown(),
+					getEpoch() + ValidatorStake.EPOCHS_LOCKED
+				);
+				storeBalanceEntry(accountEntry);
+
 			} else if (substate instanceof ExittingStake) {
 				var exittingStake = (ExittingStake) substate;
 				var rri = getRriOrFail(REAddr.ofNativeToken());
@@ -772,30 +786,18 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					tokenResource.isMutable()
 				);
 				storeTokenDefinition(record);
-			}
-		}
-	}
-
-	private void extractTimestamp(REProcessedTxn txn) {
-		txn.upSubstates().filter(SystemParticle.class::isInstance)
-			.map(SystemParticle.class::cast)
-			.findFirst()
-			.ifPresent(s -> {
+			} else if (substate instanceof SystemParticle && update.isBootUp()) {
+				var s = (SystemParticle) substate;
 				currentTimestamp.set(s.asInstant());
 				currentEpoch.set(s.getEpoch());
-			});
-
-		txn.upSubstates().filter(RoundData.class::isInstance)
-			.map(RoundData.class::cast)
-			.findFirst()
-			.map(r -> Instant.ofEpochMilli(r.getTimestamp()))
-			.ifPresent(currentTimestamp::set);
-
-		txn.upSubstates().filter(EpochData.class::isInstance)
-			.map(EpochData.class::cast)
-			.findFirst()
-			.map(EpochData::getEpoch)
-			.ifPresent(currentEpoch::set);
+			} else if (substate instanceof RoundData && update.isBootUp()) {
+				var d = (RoundData) substate;
+				currentTimestamp.set(d.asInstant());
+			} else if (substate instanceof EpochData && update.isBootUp()) {
+				var d = (EpochData) substate;
+				currentEpoch.set(d.getEpoch());
+			}
+		}
 	}
 
 	private Optional<ECPublicKey> extractCreator(Txn tx) {
@@ -837,7 +839,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private void storeBalanceEntry(BalanceEntry entry) {
 		var key = entry.isSupply() ? asKey(entry.rri()) : asAddrBalanceKey(entry);
-		mergeBalances(key, entry(), entry, entry.isUnstake());
+		mergeBalances(key, entry(), entry, entry.isUnstake() || entry.isStake());
 	}
 
 	private void mergeBalances(DatabaseEntry key, DatabaseEntry value, BalanceEntry balanceEntry, boolean deleteIfZero) {

@@ -82,13 +82,6 @@ public final class REProcessedTxn {
 		return stateUpdates.stream().flatMap(List::stream);
 	}
 
-	public Stream<Particle> upSubstates() {
-		return stateUpdates()
-			.filter(REStateUpdate::isBootUp)
-			.map(REStateUpdate::getSubstate)
-			.map(Substate::getParticle);
-	}
-
 	@Override
 	public int hashCode() {
 		return Objects.hash(txn, actions);
