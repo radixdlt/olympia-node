@@ -17,7 +17,7 @@
 
 package com.radixdlt.statecomputer;
 
-import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 
 import java.util.List;
 import java.util.Objects;
@@ -26,17 +26,17 @@ import java.util.Objects;
  * Event signifying that an atom was committed to ledger successfully
  */
 public final class TxnsCommittedToLedger {
-    private final List<REParsedTxn> parsedTxs;
+    private final List<REProcessedTxn> parsedTxs;
 
-    private TxnsCommittedToLedger(List<REParsedTxn> parsedTxs) {
+    private TxnsCommittedToLedger(List<REProcessedTxn> parsedTxs) {
         this.parsedTxs = parsedTxs;
     }
 
-    public List<REParsedTxn> getParsedTxs() {
+    public List<REProcessedTxn> getParsedTxs() {
         return parsedTxs;
     }
 
-    public static TxnsCommittedToLedger create(List<REParsedTxn> parsedTxs) {
+    public static TxnsCommittedToLedger create(List<REProcessedTxn> parsedTxs) {
         Objects.requireNonNull(parsedTxs);
         return new TxnsCommittedToLedger(parsedTxs);
     }

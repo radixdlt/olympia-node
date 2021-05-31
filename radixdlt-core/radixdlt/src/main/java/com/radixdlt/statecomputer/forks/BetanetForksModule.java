@@ -34,7 +34,7 @@ import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
-import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atom.actions.UpdateValidator;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV1;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
@@ -110,7 +110,7 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(StakeTokens.class, new StakeTokensConstructorV1())
 			.put(TransferToken.class, new TransferTokensConstructorV1())
 			.put(UnregisterValidator.class, new UnregisterValidatorConstructor())
-			.put(UnstakeTokens.class, new UnstakeTokensConstructorV1())
+			.put(UnstakeOwnership.class, new UnstakeTokensConstructorV1())
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
 			.build();
 
@@ -147,7 +147,7 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(StakeTokens.class, new StakeTokensConstructorV1())
 			.put(TransferToken.class, new TransferTokensConstructorV1())
 			.put(UnregisterValidator.class, new UnregisterValidatorConstructor())
-			.put(UnstakeTokens.class, new UnstakeTokensConstructorV1())
+			.put(UnstakeOwnership.class, new UnstakeTokensConstructorV1())
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
 			.build();
 
@@ -184,7 +184,7 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(StakeTokens.class, new StakeTokensConstructorV2())
 			.put(TransferToken.class, new TransferTokensConstructorV2())
 			.put(UnregisterValidator.class, new UnregisterValidatorConstructor())
-			.put(UnstakeTokens.class, new UnstakeTokensConstructorV2())
+			.put(UnstakeOwnership.class, new UnstakeTokensConstructorV2())
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
 			.build();
 

@@ -100,32 +100,42 @@ public final class ConstraintMachine {
 	}
 
 	public static final class CMValidationState {
-		private PermissionLevel permissionLevel;
+		private final PermissionLevel permissionLevel;
 		private REInstruction curInstruction;
 		private int curIndex;
 
 		private ReducerState reducerState = null;
 
-		private final Map<Integer, Particle> localUpParticles = new HashMap<>();
+		private final Map<Integer, Substate> localUpParticles = new HashMap<>();
 		private final Set<SubstateId> remoteDownParticles = new HashSet<>();
 		private final Optional<ECPublicKey> signedBy;
 		private final CMStore store;
-		private final CMStore.Transaction txn;
+		private final CMStore.Transaction dbTxn;
 		private final Predicate<Particle> virtualStoreLayer;
 		private TxAction txAction;
 
 		CMValidationState(
 			Predicate<Particle> virtualStoreLayer,
-			CMStore.Transaction txn,
+			CMStore.Transaction dbTxn,
 			CMStore store,
 			PermissionLevel permissionLevel,
 			Optional<ECPublicKey> signedBy
 		) {
 			this.virtualStoreLayer = virtualStoreLayer;
-			this.txn = txn;
+			this.dbTxn = dbTxn;
 			this.store = store;
 			this.permissionLevel = permissionLevel;
 			this.signedBy = signedBy;
+		}
+
+		public void verifyPermissionLevel(PermissionLevel requiredLevel) throws ConstraintMachineException {
+			if (this.permissionLevel.compareTo(requiredLevel) < 0) {
+				throw new ConstraintMachineException(
+					CMErrorCode.PERMISSION_LEVEL_ERROR,
+					this,
+					"Required: " + requiredLevel + " Current: " + this.permissionLevel
+				);
+			}
 		}
 
 		public ReadableAddrs immutableIndex() {
@@ -133,18 +143,20 @@ public final class ConstraintMachine {
 			return (ignoredTxn, addr) -> {
 				if (addr.isSystem()) {
 					return localUpParticles.values().stream()
+						.map(Substate::getParticle)
 						.filter(SystemParticle.class::isInstance)
 						.findFirst()
-						.or(() -> store.loadAddr(txn, addr))
+						.or(() -> store.loadAddr(dbTxn, addr))
 						.or(() -> Optional.of(new SystemParticle(0, 0, 0))); // A bit of a hack
 				} else {
 					return localUpParticles.values().stream()
+						.map(Substate::getParticle)
 						.filter(TokenDefinitionParticle.class::isInstance)
 						.map(TokenDefinitionParticle.class::cast)
 						.filter(p -> p.getAddr().equals(addr))
 						.findFirst()
 						.map(Particle.class::cast)
-						.or(() -> store.loadAddr(txn, addr));
+						.or(() -> store.loadAddr(dbTxn, addr));
 				}
 			};
 		}
@@ -154,11 +166,11 @@ public final class ConstraintMachine {
 				return Optional.empty();
 			}
 
-			return store.loadUpParticle(txn, substateId);
+			return store.loadUpParticle(dbTxn, substateId);
 		}
 
 		public void bootUp(int instructionIndex, Substate substate) {
-			localUpParticles.put(instructionIndex, substate.getParticle());
+			localUpParticles.put(instructionIndex, substate);
 		}
 
 		public void virtualShutdown(Substate substate) throws ConstraintMachineException {
@@ -170,7 +182,7 @@ public final class ConstraintMachine {
 				throw new ConstraintMachineException(CMErrorCode.INVALID_PARTICLE, this);
 			}
 
-			if (store.isVirtualDown(txn, substate.getId())) {
+			if (store.isVirtualDown(dbTxn, substate.getId())) {
 				throw new ConstraintMachineException(CMErrorCode.SUBSTATE_NOT_FOUND, this);
 			}
 
@@ -178,12 +190,12 @@ public final class ConstraintMachine {
 		}
 
 		public Particle localShutdown(int index) throws ConstraintMachineException {
-			var maybeParticle = localUpParticles.remove(index);
-			if (maybeParticle == null) {
+			var substate = localUpParticles.remove(index);
+			if (substate == null) {
 				throw new ConstraintMachineException(CMErrorCode.LOCAL_NONEXISTENT, this);
 			}
 
-			return maybeParticle;
+			return substate.getParticle();
 		}
 
 		public Optional<Particle> read(SubstateId substateId) {
@@ -199,9 +211,16 @@ public final class ConstraintMachine {
 			return maybeParticle.get();
 		}
 
-		public SubstateCursor shutdownAll(Class<? extends Particle> particleClass) throws ConstraintMachineException {
-			// TODO: add to remoteDownParticles?
-			return store.openIndexedCursor(txn, particleClass);
+		public SubstateCursor shutdownAll(Class<? extends Particle> particleClass) {
+			return SubstateCursor.concat(
+				SubstateCursor.wrapIterator(localUpParticles.values().stream()
+					.filter(s -> particleClass.isInstance(s.getParticle())).iterator()
+				),
+				() -> SubstateCursor.filter(
+					store.openIndexedCursor(dbTxn, particleClass),
+					s -> !remoteDownParticles.contains(s.getId())
+				)
+			);
 		}
 
 		Class<? extends ReducerState> getReducerStateClass() {
@@ -382,13 +401,7 @@ public final class ConstraintMachine {
 		// System permissions don't require additional authorization
 		if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
 			var requiredLevel = methodProcedure.permissionLevel(authorizationParam, readable);
-			if (validationState.permissionLevel.compareTo(requiredLevel) < 0) {
-				throw new ConstraintMachineException(
-					CMErrorCode.PERMISSION_LEVEL_ERROR,
-					validationState,
-					"Required: " + requiredLevel + " Current: " + validationState.permissionLevel
-				);
-			}
+			validationState.verifyPermissionLevel(requiredLevel);
 		}
 
 		try {
@@ -532,13 +545,14 @@ public final class ConstraintMachine {
 	 *
 	 * @return the first error found, otherwise an empty optional
 	 */
-	public REParsedTxn verify(
+	public REProcessedTxn verify(
 		CMStore.Transaction dbTxn,
 		CMStore cmStore,
 		Txn txn,
 		PermissionLevel permissionLevel
 	) throws TxnParseException, ConstraintMachineException {
 		var result = this.parse(txn);
+
 		var validationState = new CMValidationState(
 			virtualStoreLayer,
 			dbTxn,
@@ -550,6 +564,6 @@ public final class ConstraintMachine {
 		var parsedInstructions = new ArrayList<List<REStateUpdate>>();
 		this.statefulVerify(validationState, result.instructions, parsedInstructions, parsedActions);
 
-		return new REParsedTxn(txn, result, parsedInstructions,  parsedActions);
+		return new REProcessedTxn(txn, result, parsedInstructions,  parsedActions);
 	}
 }

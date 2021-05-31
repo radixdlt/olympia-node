@@ -30,6 +30,7 @@ import com.radixdlt.atommodel.system.construction.NextEpochConstructorV1;
 import com.radixdlt.atommodel.system.construction.NextEpochConstructorV2;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV1;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
+import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV1;
@@ -48,7 +49,6 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
-import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -127,7 +127,7 @@ public class NextEpochTest {
 		sut.execute(List.of(start), null, PermissionLevel.SYSTEM);
 
 		// Act and Assert
-		var txn = sut.construct(new SystemNextEpoch(List.of(ECKeyPair.generateNew().getPublicKey()), 1))
+		var txn = sut.construct(new SystemNextEpoch(u -> List.of(ECKeyPair.generateNew().getPublicKey()), 1))
 			.buildWithoutSignature();
 		this.sut.execute(List.of(txn), null, PermissionLevel.SUPER_USER);
 	}
@@ -140,13 +140,13 @@ public class NextEpochTest {
 		var start = sut.construct(List.of(
 			new CreateSystem(),
 			new CreateMutableToken("xrd", "xrd", "", "", ""),
-			new MintToken(REAddr.ofNativeToken(), accountAddr, UInt256.TEN),
-			new StakeTokens(accountAddr, key, UInt256.TEN)
+			new MintToken(REAddr.ofNativeToken(), accountAddr, ValidatorStake.MINIMUM_STAKE),
+			new StakeTokens(accountAddr, key, ValidatorStake.MINIMUM_STAKE)
 		)).buildWithoutSignature();
 		sut.execute(List.of(start), null, PermissionLevel.SYSTEM);
 
 		// Act and Assert
-		var txn = sut.construct(new SystemNextEpoch(List.of(ECKeyPair.generateNew().getPublicKey()), 1))
+		var txn = sut.construct(new SystemNextEpoch(u -> List.of(ECKeyPair.generateNew().getPublicKey()), 1))
 			.buildWithoutSignature();
 		this.sut.execute(List.of(txn), null, PermissionLevel.SUPER_USER);
 	}

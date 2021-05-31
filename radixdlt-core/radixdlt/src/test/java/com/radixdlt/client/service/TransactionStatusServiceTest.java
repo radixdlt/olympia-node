@@ -17,7 +17,7 @@
 package com.radixdlt.client.service;
 
 import com.radixdlt.atom.Txn;
-import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.mempool.MempoolAddFailure;
@@ -52,7 +52,7 @@ public class TransactionStatusServiceTest {
 		);
 
 		var txn = randomTxn();
-		var parsedTxn = new REParsedTxn(txn, null, null, null);
+		var parsedTxn = new REProcessedTxn(txn, null, null, null);
 		var one = TxnsCommittedToLedger.create(List.of(parsedTxn));
 		transactionStatusService.atomsCommittedToLedgerEventProcessor().process(one);
 
@@ -117,7 +117,7 @@ public class TransactionStatusServiceTest {
 		var succeeded = MempoolAddSuccess.create(txnSucceeded, null);
 		transactionStatusService.mempoolAddSuccessEventProcessor().process(succeeded);
 		var txnCommitted = randomTxn();
-		var parsedTxn = new REParsedTxn(txnCommitted, null, null, null);
+		var parsedTxn = new REProcessedTxn(txnCommitted, null, null, null);
 		var committed = TxnsCommittedToLedger.create(List.of(parsedTxn));
 		transactionStatusService.atomsCommittedToLedgerEventProcessor().process(committed);
 		var txnRejected = randomTxn();

@@ -33,22 +33,21 @@ import java.util.Optional;
 public class NextViewConstructorV2 implements ActionConstructor<SystemNextView> {
 	@Override
 	public void construct(SystemNextView action, TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.swap(
-			RoundData.class,
-			p -> true,
-			Optional.of(SubstateWithArg.noArg(new RoundData(0, 0))),
-			"No round state available."
-		).with(substateDown -> {
-			if (action.view() <= substateDown.getView()) {
-				throw new TxBuilderException("Next view: " + action + " isn't higher than current view: " + substateDown);
-			}
-			return List.of(new RoundData(action.view(), action.timestamp()));
-		});
-
 		var validatorEpochData = txBuilder.find(
 			ValidatorEpochData.class, p -> p.validatorKey().equals(action.leader())
 		);
 		if (validatorEpochData.isPresent()) {
+			txBuilder.swap(
+				RoundData.class,
+				p -> true,
+				Optional.of(SubstateWithArg.noArg(new RoundData(0, 0))),
+				"No round state available."
+			).with(substateDown -> {
+				if (action.view() <= substateDown.getView()) {
+					throw new TxBuilderException("Next view: " + action + " isn't higher than current view: " + substateDown);
+				}
+				return List.of(new RoundData(action.view(), action.timestamp()));
+			});
 			txBuilder.swap(
 				ValidatorEpochData.class,
 				p -> p.validatorKey().equals(action.leader()),
@@ -61,12 +60,14 @@ public class NextViewConstructorV2 implements ActionConstructor<SystemNextView> 
 			txBuilder.swap(
 				SystemParticle.class,
 				p -> true,
-				Optional.empty(),
-				"No validator epoch data"
-			).with(down -> List.of(
-				new SystemParticle(down.getEpoch(), down.getView(), down.getTimestamp()),
-				new ValidatorEpochData(action.leader(), 0)
-			));
+				Optional.of(SubstateWithArg.noArg(new SystemParticle(0, 0, 0))),
+				"No System particle available"
+			).with(substateDown -> {
+				if (action.view() <= substateDown.getView()) {
+					throw new TxBuilderException("Next view isn't higher than current view.");
+				}
+				return List.of(new SystemParticle(substateDown.getEpoch(), action.view(), action.timestamp()));
+			});
 		}
 	}
 }

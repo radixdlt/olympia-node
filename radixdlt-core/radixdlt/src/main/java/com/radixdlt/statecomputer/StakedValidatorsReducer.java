@@ -18,15 +18,11 @@
 package com.radixdlt.statecomputer;
 
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
-import com.radixdlt.atommodel.system.state.ValidatorEpochData;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwned;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
-import com.radixdlt.utils.UInt256;
 
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -57,11 +53,9 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 	@Override
 	public Set<Class<? extends Particle>> particleClasses() {
 		return Set.of(
-			ValidatorParticle.class,
 			PreparedStake.class,
-			PreparedUnstakeOwned.class,
-			ValidatorStake.class,
-			ValidatorEpochData.class
+			ValidatorParticle.class,
+			ValidatorStake.class
 		);
 	}
 
@@ -79,19 +73,12 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 					return prev.add(v);
 				}
 				return prev;
-			} else if (p instanceof PreparedStake) {
-				var d = (PreparedStake) p;
-				return prev.add(d.getDelegateKey(), d.getAmount());
-			} else if (p instanceof PreparedUnstakeOwned) {
-				var d = (PreparedUnstakeOwned) p;
-				return prev.remove(d.getDelegateKey(), d.getAmount());
-			} else if (p instanceof ValidatorEpochData) {
-				var d = (ValidatorEpochData) p;
-				var emission = SystemConstraintScryptV2.REWARDS_PER_PROPOSAL.multiply(UInt256.from(d.proposalsCompleted()));
-				return prev.add(d.validatorKey(), emission);
+			} else if (p instanceof PreparedStake) { // TODO: Remove for mainnet
+				var s = (PreparedStake) p;
+				return prev.add(s.getDelegateKey(), s.getAmount());
 			} else {
 				var s = (ValidatorStake) p;
-				return prev.base(s.getValidatorKey(), s.getAmount());
+				return prev.setStake(s.getValidatorKey(), s.getAmount());
 			}
 		};
 	}
@@ -104,17 +91,9 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 				if (v.isRegisteredForNextEpoch()) {
 					return prev.remove(v);
 				}
-				return prev;
-			} else if (p instanceof PreparedStake) {
-				var d = (PreparedStake) p;
-				return prev.remove(d.getDelegateKey(), d.getAmount());
-			} else if (p instanceof PreparedUnstakeOwned) {
-				var d = (PreparedUnstakeOwned) p;
-				return prev.add(d.getDelegateKey(), d.getAmount());
-			} else if (p instanceof ValidatorEpochData) {
-				var d = (ValidatorEpochData) p;
-				var emission = SystemConstraintScryptV2.REWARDS_PER_PROPOSAL.multiply(UInt256.from(d.proposalsCompleted()));
-				return prev.remove(d.validatorKey(), emission);
+			} else if (p instanceof PreparedStake) { // TODO: Remove for mainnet
+				var s = (PreparedStake) p;
+				return prev.remove(s.getDelegateKey(), s.getAmount());
 			}
 
 			return prev;

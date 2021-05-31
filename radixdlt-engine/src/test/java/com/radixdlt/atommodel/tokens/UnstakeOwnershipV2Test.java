@@ -27,10 +27,11 @@ import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.atommodel.system.construction.NextEpochConstructorV2;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
+import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV2;
@@ -58,17 +59,19 @@ import org.junit.runners.Parameterized;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @RunWith(Parameterized.class)
-public class UnstakeTokensV2Test {
+public class UnstakeOwnershipV2Test {
 
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
 		return List.of(new Object[][] {
 			{
-				UInt256.TEN, UInt256.TEN,
+				List.of(UInt256.TEN),
+				UInt256.TEN,
 				List.of(
 					new SystemConstraintScryptV2(),
 					new TokensConstraintScryptV2(),
@@ -78,7 +81,30 @@ public class UnstakeTokensV2Test {
 				new UnstakeTokensConstructorV2()
 			},
 			{
-				UInt256.TEN, UInt256.SIX,
+				List.of(UInt256.FIVE, UInt256.FIVE),
+				UInt256.TEN,
+				List.of(
+					new SystemConstraintScryptV2(),
+					new TokensConstraintScryptV2(),
+					new StakingConstraintScryptV3()
+				),
+				new StakeTokensConstructorV2(),
+				new UnstakeTokensConstructorV2()
+			},
+			{
+				List.of(UInt256.TEN),
+				UInt256.SIX,
+				List.of(
+					new SystemConstraintScryptV2(),
+					new TokensConstraintScryptV2(),
+					new StakingConstraintScryptV3()
+				),
+				new StakeTokensConstructorV2(),
+				new UnstakeTokensConstructorV2()
+			},
+			{
+				List.of(UInt256.FIVE, UInt256.FIVE),
+				UInt256.SIX,
 				List.of(
 					new SystemConstraintScryptV2(),
 					new TokensConstraintScryptV2(),
@@ -94,21 +120,23 @@ public class UnstakeTokensV2Test {
 	private REAddr accountAddr;
 	private RadixEngine<Void> sut;
 	private EngineStore<Void> store;
-	private final UInt256 startAmt;
+	private final List<UInt256> stakes;
+	private final UInt256 totalStakes;
 	private final UInt256 unstakeAmt;
 	private final List<ConstraintScrypt> scrypts;
 	private final ActionConstructor<StakeTokens> stakeTokensConstructor;
-	private final ActionConstructor<UnstakeTokens> unstakeTokensConstructor;
+	private final ActionConstructor<UnstakeOwnership> unstakeTokensConstructor;
 
-	public UnstakeTokensV2Test(
-		UInt256 startAmt,
+	public UnstakeOwnershipV2Test(
+		List<UInt256> stakes,
 		UInt256 unstakeAmt,
 		List<ConstraintScrypt> scrypts,
 		ActionConstructor<StakeTokens> stakeTokensConstructor,
-		ActionConstructor<UnstakeTokens> unstakeTokensConstructor
+		ActionConstructor<UnstakeOwnership> unstakeTokensConstructor
 	) {
-		this.startAmt = startAmt;
-		this.unstakeAmt = unstakeAmt;
+		this.stakes = stakes.stream().map(ValidatorStake.MINIMUM_STAKE::multiply).collect(Collectors.toList());
+		this.totalStakes = this.stakes.stream().reduce(UInt256::add).orElseThrow();
+		this.unstakeAmt = ValidatorStake.MINIMUM_STAKE.multiply(unstakeAmt);
 		this.scrypts = scrypts;
 		this.stakeTokensConstructor = stakeTokensConstructor;
 		this.unstakeTokensConstructor = unstakeTokensConstructor;
@@ -129,7 +157,7 @@ public class UnstakeTokensV2Test {
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.put(SystemNextEpoch.class, new NextEpochConstructorV2())
 				.put(StakeTokens.class, stakeTokensConstructor)
-				.put(UnstakeTokens.class, unstakeTokensConstructor)
+				.put(UnstakeOwnership.class, unstakeTokensConstructor)
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
 				.put(TransferToken.class, new TransferTokensConstructorV2())
@@ -144,7 +172,7 @@ public class UnstakeTokensV2Test {
 			List.of(
 				new CreateSystem(),
 				new CreateMutableToken("xrd", "Name", "", "", ""),
-				new MintToken(REAddr.ofNativeToken(), accountAddr, startAmt)
+				new MintToken(REAddr.ofNativeToken(), accountAddr, totalStakes)
 			)
 		).buildWithoutSignature();
 		this.sut.execute(List.of(txn), null, PermissionLevel.SYSTEM);
@@ -153,15 +181,16 @@ public class UnstakeTokensV2Test {
 	@Test
 	public void unstake_tokens_after_epoch() throws Exception {
 		// Arrange
-		var stake = this.sut.construct(new StakeTokens(accountAddr, key.getPublicKey(), startAmt))
-			.signAndBuild(key::sign);
+		var stake = this.sut.construct(
+			this.stakes.stream().map(amt -> new StakeTokens(accountAddr, key.getPublicKey(), amt)).collect(Collectors.toList())
+		).signAndBuild(key::sign);
 		this.sut.execute(List.of(stake));
-		var nextEpoch = sut.construct(new SystemNextEpoch(List.of(key.getPublicKey()), 1))
+		var nextEpoch = sut.construct(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 1))
 			.buildWithoutSignature();
 		this.sut.execute(List.of(nextEpoch), null, PermissionLevel.SUPER_USER);
 
 		// Act
-		var unstake = this.sut.construct(new UnstakeTokens(accountAddr, key.getPublicKey(), unstakeAmt))
+		var unstake = this.sut.construct(new UnstakeOwnership(accountAddr, key.getPublicKey(), unstakeAmt))
 			.signAndBuild(key::sign);
 		var parsed = this.sut.execute(List.of(unstake));
 	}
@@ -169,16 +198,17 @@ public class UnstakeTokensV2Test {
 	@Test
 	public void cannot_unstake_others_tokens() throws Exception {
 		// Arrange
-		var stake = this.sut.construct(new StakeTokens(accountAddr, key.getPublicKey(), startAmt))
-			.signAndBuild(key::sign);
+		var stake = this.sut.construct(
+			this.stakes.stream().map(amt -> new StakeTokens(accountAddr, key.getPublicKey(), amt)).collect(Collectors.toList())
+		).signAndBuild(key::sign);
 		this.sut.execute(List.of(stake));
-		var nextEpoch = sut.construct(new SystemNextEpoch(List.of(key.getPublicKey()), 1))
+		var nextEpoch = sut.construct(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 1))
 			.buildWithoutSignature();
 		this.sut.execute(List.of(nextEpoch), null, PermissionLevel.SUPER_USER);
 
 		// Act
 		var nextKey = ECKeyPair.generateNew();
-		var unstake = this.sut.construct(new UnstakeTokens(accountAddr, key.getPublicKey(), unstakeAmt))
+		var unstake = this.sut.construct(new UnstakeOwnership(accountAddr, key.getPublicKey(), unstakeAmt))
 			.signAndBuild(nextKey::sign);
 
 		assertThatThrownBy(() -> this.sut.execute(List.of(unstake)))
@@ -191,16 +221,17 @@ public class UnstakeTokensV2Test {
 	public void cant_construct_transfer_with_unstaked_tokens_immediately() throws Exception {
 		// Arrange
 		var acct2 = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
-		var txn = sut.construct(new StakeTokens(accountAddr, key.getPublicKey(), startAmt))
-			.signAndBuild(key::sign);
+		var txn = sut.construct(
+			this.stakes.stream().map(amt -> new StakeTokens(accountAddr, key.getPublicKey(), amt)).collect(Collectors.toList())
+		).signAndBuild(key::sign);
 		sut.execute(List.of(txn));
-		var nextEpoch = sut.construct(new SystemNextEpoch(List.of(key.getPublicKey()), 1))
+		var nextEpoch = sut.construct(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 1))
 			.buildWithoutSignature();
 		this.sut.execute(List.of(nextEpoch), null, PermissionLevel.SUPER_USER);
-		var unstake = this.sut.construct(new UnstakeTokens(accountAddr, key.getPublicKey(), unstakeAmt))
+		var unstake = this.sut.construct(new UnstakeOwnership(accountAddr, key.getPublicKey(), unstakeAmt))
 			.signAndBuild(key::sign);
 		sut.execute(List.of(unstake));
-		var nextEpoch2 = sut.construct(new SystemNextEpoch(List.of(key.getPublicKey()), 1))
+		var nextEpoch2 = sut.construct(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 1))
 			.buildWithoutSignature();
 		this.sut.execute(List.of(nextEpoch2), null, PermissionLevel.SUPER_USER);
 
@@ -214,17 +245,18 @@ public class UnstakeTokensV2Test {
 	public void cant_spend_unstaked_tokens_immediately() throws Exception {
 		// Arrange
 		var acct2 = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
-		var txn = sut.construct(new StakeTokens(accountAddr, key.getPublicKey(), startAmt))
-			.signAndBuild(key::sign);
+		var txn = sut.construct(
+			this.stakes.stream().map(amt -> new StakeTokens(accountAddr, key.getPublicKey(), amt)).collect(Collectors.toList())
+		).signAndBuild(key::sign);
 		sut.execute(List.of(txn));
-		var nextEpoch = sut.construct(new SystemNextEpoch(List.of(key.getPublicKey()), 1))
+		var nextEpoch = sut.construct(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 1))
 			.buildWithoutSignature();
 		this.sut.execute(List.of(nextEpoch), null, PermissionLevel.SUPER_USER);
-		var unstake = this.sut.construct(new UnstakeTokens(accountAddr, key.getPublicKey(), unstakeAmt))
+		var unstake = this.sut.construct(new UnstakeOwnership(accountAddr, key.getPublicKey(), unstakeAmt))
 			.signAndBuild(key::sign);
 		sut.execute(List.of(unstake));
 
-		var nextEpoch2 = sut.construct(new SystemNextEpoch(List.of(key.getPublicKey()), 1))
+		var nextEpoch2 = sut.construct(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 1))
 			.buildWithoutSignature();
 		this.sut.execute(List.of(nextEpoch2), null, PermissionLevel.SUPER_USER);
 

@@ -31,8 +31,6 @@ import java.util.Optional;
 public class NextViewConstructorV1 implements ActionConstructor<SystemNextView> {
 	@Override
 	public void construct(SystemNextView action, TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.assertIsSystem("Not permitted as user to execute system next view");
-
 		txBuilder.swap(
 			SystemParticle.class,
 			p -> true,

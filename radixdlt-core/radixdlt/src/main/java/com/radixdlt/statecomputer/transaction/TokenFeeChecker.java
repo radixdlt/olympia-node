@@ -24,7 +24,7 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.constraintmachine.REParsedAction;
-import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.engine.PostParsedChecker;
 import com.radixdlt.utils.UInt256;
@@ -38,7 +38,7 @@ public class TokenFeeChecker implements PostParsedChecker {
 		.multiply(UInt256.from(100));
 
 	@Override
-	public void check(PermissionLevel permissionLevel, REParsedTxn radixEngineTxn) throws ConstraintMachineException {
+	public void check(PermissionLevel permissionLevel, REProcessedTxn radixEngineTxn) throws ConstraintMachineException {
 		if (permissionLevel.equals(PermissionLevel.SYSTEM)) {
 			return;
 		}
@@ -63,7 +63,7 @@ public class TokenFeeChecker implements PostParsedChecker {
 		}
 	}
 
-	private UInt256 computeFeePaid(REParsedTxn radixEngineTxn) {
+	private UInt256 computeFeePaid(REProcessedTxn radixEngineTxn) {
 		return radixEngineTxn.getActions()
 			.stream()
 			.map(REParsedAction::getTxAction)

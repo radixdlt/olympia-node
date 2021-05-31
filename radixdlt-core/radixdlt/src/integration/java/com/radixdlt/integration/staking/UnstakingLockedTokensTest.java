@@ -32,14 +32,15 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.actions.UnstakeOwnership;
+import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMErrorCode;
-import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
@@ -59,7 +60,6 @@ import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
 import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.utils.UInt256;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -130,13 +130,13 @@ public class UnstakingLockedTokensTest {
 
 				@ProvidesIntoSet
 				private TokenIssuance mempoolFillerIssuance(@Self ECPublicKey self) {
-					return TokenIssuance.of(self, UInt256.from(100));
+					return TokenIssuance.of(self, ValidatorStake.MINIMUM_STAKE);
 				}
 			}
 		);
 	}
 
-	public REParsedTxn waitForCommit() {
+	public REProcessedTxn waitForCommit() {
 		var mempoolAdd = runner.runNextEventsThrough(MempoolAddSuccess.class);
 		var committed = runner.runNextEventsThrough(
 			TxnsCommittedToLedger.class,
@@ -154,12 +154,12 @@ public class UnstakingLockedTokensTest {
 		return runner.runNextEventsThrough(MempoolAddFailure.class);
 	}
 
-	public REParsedTxn dispatchAndWaitForCommit(Txn txn) {
+	public REProcessedTxn dispatchAndWaitForCommit(Txn txn) {
 		mempoolAddEventDispatcher.dispatch(MempoolAdd.create(txn));
 		return waitForCommit();
 	}
 
-	public REParsedTxn dispatchAndWaitForCommit(TxAction action) {
+	public REProcessedTxn dispatchAndWaitForCommit(TxAction action) {
 		nodeApplicationRequestEventDispatcher.dispatch(NodeApplicationRequest.create(action));
 		return waitForCommit();
 	}
@@ -178,12 +178,12 @@ public class UnstakingLockedTokensTest {
 		}
 
 		var accountAddr = REAddr.ofPubKeyAccount(self);
-		var stakeTxn = dispatchAndWaitForCommit(new StakeTokens(accountAddr, self, UInt256.from(100)));
+		var stakeTxn = dispatchAndWaitForCommit(new StakeTokens(accountAddr, self, ValidatorStake.MINIMUM_STAKE));
 		runner.runNextEventsThrough(
 			EpochsLedgerUpdate.class,
 			e -> e.getEpochChange().map(c -> c.getEpoch() == unstakingEpoch).orElse(false)
 		);
-		var unstakeTxn = dispatchAndWaitForCommit(new UnstakeTokens(accountAddr, self, UInt256.from(100)));
+		var unstakeTxn = dispatchAndWaitForCommit(new UnstakeOwnership(accountAddr, self, ValidatorStake.MINIMUM_STAKE));
 
 		if (transferEpoch > unstakingEpoch) {
 			runner.runNextEventsThrough(
@@ -193,7 +193,7 @@ public class UnstakingLockedTokensTest {
 		}
 
 		var otherAddr = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
-		var transferAction = new TransferToken(REAddr.ofNativeToken(), accountAddr, otherAddr, UInt256.from(100));
+		var transferAction = new TransferToken(REAddr.ofNativeToken(), accountAddr, otherAddr, ValidatorStake.MINIMUM_STAKE);
 
 		// Build transaction through radix engine
 		if (shouldSucceed) {
@@ -210,7 +210,7 @@ public class UnstakingLockedTokensTest {
 					&& p.getHoldingAddr().equals(accountAddr)
 					&& p.getEpochUnlocked().isPresent(),
 				amt -> new TokensParticle(accountAddr, amt, REAddr.ofNativeToken()),
-				UInt256.from(100),
+				ValidatorStake.MINIMUM_STAKE,
 				"Not enough balance for transfer."
 			).with(amt -> new TokensParticle(otherAddr, amt, REAddr.ofNativeToken()));
 			txBuilder.end();

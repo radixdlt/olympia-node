@@ -18,24 +18,94 @@
 
 package com.radixdlt.atommodel.system.state;
 
-import com.radixdlt.atommodel.tokens.Fungible;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt384;
 
 import java.util.Objects;
 
-public final class ValidatorStake implements Fungible {
-	private final UInt256 amount;
+public final class ValidatorStake implements Particle {
+	public static final UInt256 MINIMUM_STAKE = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
+
+	private final UInt256 totalStake;
+	private final UInt256 totalOwnership;
 
 	// Bucket keys
 	private final ECPublicKey validatorKey;
 
-	public ValidatorStake(
-		UInt256 amount,
-		ECPublicKey validatorKey
+	private ValidatorStake(
+		ECPublicKey validatorKey,
+		UInt256 totalStake,
+		UInt256 totalOwnership
 	) {
+		if (totalStake.isZero() != totalOwnership.isZero()) {
+			throw new IllegalArgumentException(
+				"Zero must be equivalent between stake and ownership: " + totalStake + " " + totalOwnership
+			);
+		}
 		this.validatorKey = Objects.requireNonNull(validatorKey);
-		this.amount = Objects.requireNonNull(amount);
+		this.totalStake = totalStake;
+		this.totalOwnership = totalOwnership;
+	}
+
+	public static ValidatorStake create(ECPublicKey validatorKey) {
+		return new ValidatorStake(validatorKey, UInt256.ZERO, UInt256.ZERO);
+	}
+
+	public static ValidatorStake create(
+		ECPublicKey validatorKey,
+		UInt256 totalStake,
+		UInt256 totalOwnership
+	) {
+		return new ValidatorStake(validatorKey, totalStake, totalOwnership);
+	}
+
+	public ValidatorStake addEmission(UInt256 amount) {
+		return new ValidatorStake(
+			validatorKey,
+			this.totalStake.add(amount),
+			totalOwnership
+		);
+	}
+
+	public Pair<ValidatorStake, StakeOwnership> stake(REAddr owner, UInt256 stake) throws ProcedureException {
+		if (stake.compareTo(MINIMUM_STAKE) < 0) {
+			throw new ProcedureException("Trying to stake " + stake + " but minimum stake is " + MINIMUM_STAKE);
+		}
+
+		if (totalStake.isZero()) {
+			var nextValidatorStake = new ValidatorStake(validatorKey, stake, stake);
+			var stakeOwnership = new StakeOwnership(validatorKey, owner, stake);
+			return Pair.of(nextValidatorStake, stakeOwnership);
+		}
+
+		var ownership384 = UInt384.from(totalOwnership).multiply(stake).divide(totalStake);
+		if (ownership384.isHighBitSet()) {
+			throw new IllegalStateException("Overflow");
+		}
+		var ownershipAmt = ownership384.getLow();
+		var stakeOwnership = new StakeOwnership(validatorKey, owner, ownershipAmt);
+		var nextValidatorStake = new ValidatorStake(validatorKey, totalStake.add(stake), totalOwnership.add(ownershipAmt));
+		return Pair.of(nextValidatorStake, stakeOwnership);
+	}
+
+	public Pair<ValidatorStake, UInt256> unstakeOwnership(UInt256 unstakeOwnership) {
+		if (totalOwnership.compareTo(unstakeOwnership) < 0) {
+			throw new IllegalStateException("Not enough ownership");
+		}
+
+		var unstaked384 = UInt384.from(totalStake).multiply(unstakeOwnership).divide(totalOwnership);
+		if (unstaked384.isHighBitSet()) {
+			throw new IllegalStateException("Overflow");
+		}
+		var unstaked = unstaked384.getLow();
+		var nextValidatorStake = new ValidatorStake(validatorKey, totalStake.subtract(unstaked), totalOwnership.subtract(unstakeOwnership));
+		return Pair.of(nextValidatorStake, unstaked);
 	}
 
 	public ECPublicKey getValidatorKey() {
@@ -46,14 +116,17 @@ public final class ValidatorStake implements Fungible {
 	public String toString() {
 		return String.format("%s[%s:%s]",
 			getClass().getSimpleName(),
-			amount,
+			totalStake,
 			validatorKey
 		);
 	}
 
-	@Override
+	public UInt256 getTotalOwnership() {
+		return this.totalOwnership;
+	}
+
 	public UInt256 getAmount() {
-		return this.amount;
+		return this.totalStake;
 	}
 
 	@Override
@@ -66,14 +139,16 @@ public final class ValidatorStake implements Fungible {
 		}
 		var that = (ValidatorStake) o;
 		return Objects.equals(validatorKey, that.validatorKey)
-			&& Objects.equals(amount, that.amount);
+			&& Objects.equals(totalOwnership, that.totalOwnership)
+			&& Objects.equals(totalStake, that.totalStake);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(
 			validatorKey,
-			amount
+			totalOwnership,
+			totalStake
 		);
 	}
 }

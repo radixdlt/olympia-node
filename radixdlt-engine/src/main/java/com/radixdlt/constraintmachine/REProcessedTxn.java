@@ -20,25 +20,26 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atommodel.system.state.EpochData;
+import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * Transaction which has been successfully parsed and state checked by radix engine
  */
-public final class REParsedTxn {
+public final class REProcessedTxn {
 	private final Txn txn;
 	private final List<List<REStateUpdate>> stateUpdates;
 	private final List<REParsedAction> actions;
 	private final ConstraintMachine.ParseResult statelessResult;
 
-	public REParsedTxn(
+	public REProcessedTxn(
 		Txn txn,
 		ConstraintMachine.ParseResult statelessResult,
 		List<List<REStateUpdate>> stateUpdates,
@@ -54,10 +55,6 @@ public final class REParsedTxn {
 		return statelessResult.getMsg();
 	}
 
-	public ConstraintMachine.ParseResult getStatelessResult() {
-		return statelessResult;
-	}
-
 	public Optional<ECPublicKey> getSignedBy() {
 		return statelessResult.getSignedBy();
 	}
@@ -70,24 +67,23 @@ public final class REParsedTxn {
 		return txn;
 	}
 
+	// FIXME: Currently a hack, better would be to put this at transaction layer for fees
 	public boolean isSystemOnly() {
-		return instructions().anyMatch(i -> i.getSubstate().getParticle() instanceof SystemParticle);
+		return stateUpdates().anyMatch(i -> i.getSubstate().getParticle() instanceof SystemParticle)
+			|| stateUpdates().anyMatch(i -> i.getSubstate().getParticle() instanceof RoundData)
+			|| stateUpdates().anyMatch(i -> i.getSubstate().getParticle() instanceof EpochData);
 	}
 
 	public List<List<REStateUpdate>> getGroupedStateUpdates() {
 		return stateUpdates;
 	}
 
-	public List<REStateUpdate> stateUpdates() {
-		return instructions().collect(Collectors.toList());
-	}
-
-	public Stream<REStateUpdate> instructions() {
+	public Stream<REStateUpdate> stateUpdates() {
 		return stateUpdates.stream().flatMap(List::stream);
 	}
 
 	public Stream<Particle> upSubstates() {
-		return instructions()
+		return stateUpdates()
 			.filter(REStateUpdate::isBootUp)
 			.map(REStateUpdate::getSubstate)
 			.map(Substate::getParticle);
@@ -100,11 +96,11 @@ public final class REParsedTxn {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof REParsedTxn)) {
+		if (!(o instanceof REProcessedTxn)) {
 			return false;
 		}
 
-		var other = (REParsedTxn) o;
+		var other = (REProcessedTxn) o;
 		return Objects.equals(this.txn, other.txn)
 			&& Objects.equals(this.actions, other.actions);
 	}

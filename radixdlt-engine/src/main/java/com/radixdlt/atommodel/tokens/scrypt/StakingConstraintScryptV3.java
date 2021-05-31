@@ -20,7 +20,8 @@ package com.radixdlt.atommodel.tokens.scrypt;
 
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.Unknown;
-import com.radixdlt.atommodel.system.state.StakeShares;
+import com.radixdlt.atommodel.system.state.StakeOwnership;
+import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwned;
@@ -46,7 +47,6 @@ import java.util.Objects;
 import java.util.Optional;
 
 public class StakingConstraintScryptV3 implements ConstraintScrypt {
-	public static final int EPOCHS_LOCKED = 2; // Must go through one full epoch before being unlocked
 
 	@Override
 	public void main(SysCalls os) {
@@ -78,8 +78,8 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		private final REAddr accountAddr;
 		private final ECPublicKey delegate;
 
-		public StakeSharesHoldingBucket(StakeShares stakeShares) {
-			this(stakeShares.getDelegateKey(), stakeShares.getOwner(), UInt384.from(stakeShares.getAmount()));
+		public StakeSharesHoldingBucket(StakeOwnership stakeOwnership) {
+			this(stakeOwnership.getDelegateKey(), stakeOwnership.getOwner(), UInt384.from(stakeOwnership.getAmount()));
 		}
 
 		public StakeSharesHoldingBucket(
@@ -92,29 +92,29 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 			this.shareAmount = amount;
 		}
 
-		public StakeSharesHoldingBucket withdrawShares(StakeShares stakeShares) throws ProcedureException {
-			if (!delegate.equals(stakeShares.getDelegateKey())) {
+		public StakeSharesHoldingBucket withdrawShares(StakeOwnership stakeOwnership) throws ProcedureException {
+			if (!delegate.equals(stakeOwnership.getDelegateKey())) {
 				throw new ProcedureException("Shares must be from same delegate");
 			}
-			if (!stakeShares.getOwner().equals(accountAddr)) {
+			if (!stakeOwnership.getOwner().equals(accountAddr)) {
 				throw new ProcedureException("Shares must be for same account");
 			}
-			var withdraw384 = UInt384.from(stakeShares.getAmount());
+			var withdraw384 = UInt384.from(stakeOwnership.getAmount());
 			if (shareAmount.compareTo(withdraw384) < 0) {
-				throw new NotEnoughResourcesException(stakeShares.getAmount(), shareAmount.getLow());
+				throw new NotEnoughResourcesException(stakeOwnership.getAmount(), shareAmount.getLow());
 			}
 
 			return new StakeSharesHoldingBucket(delegate, accountAddr, shareAmount.subtract(withdraw384));
 		}
 
-		public StakeSharesHoldingBucket depositShares(StakeShares stakeShares) throws ProcedureException {
-			if (!delegate.equals(stakeShares.getDelegateKey())) {
+		public StakeSharesHoldingBucket depositShares(StakeOwnership stakeOwnership) throws ProcedureException {
+			if (!delegate.equals(stakeOwnership.getDelegateKey())) {
 				throw new ProcedureException("Shares must be from same delegate");
 			}
-			if (!stakeShares.getOwner().equals(accountAddr)) {
+			if (!stakeOwnership.getOwner().equals(accountAddr)) {
 				throw new ProcedureException("Shares must be for same account");
 			}
-			return new StakeSharesHoldingBucket(delegate, accountAddr, UInt384.from(stakeShares.getAmount()).add(shareAmount));
+			return new StakeSharesHoldingBucket(delegate, accountAddr, UInt384.from(stakeOwnership.getAmount()).add(shareAmount));
 		}
 
 		public StakeSharesHoldingBucket unstake(PreparedUnstakeOwned u) throws ProcedureException {
@@ -148,6 +148,13 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
+				if (u.getAmount().compareTo(ValidatorStake.MINIMUM_STAKE) < 0) {
+					throw new ProcedureException(
+						"Minimum amount to stake must be >= " + ValidatorStake.MINIMUM_STAKE
+							+ " but trying to stake " + u.getAmount()
+					);
+				}
+
 				var nextState = s.withdraw(REAddr.ofNativeToken(), u.getAmount());
 				if (s.from() != null) {
 					var actionGuess = new StakeTokens(s.from(), u.getDelegateKey(), u.getAmount());
@@ -160,7 +167,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 
 		// Unstake
 		os.createDownProcedure(new DownProcedure<>(
-			StakeShares.class, VoidReducerState.class,
+			StakeOwnership.class, VoidReducerState.class,
 			(d, r) -> PermissionLevel.USER,
 			(d, r, k) -> {
 				try {
@@ -173,7 +180,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		));
 		// Additional Unstake
 		os.createDownProcedure(new DownProcedure<>(
-			StakeShares.class, StakeSharesHoldingBucket.class,
+			StakeOwnership.class, StakeSharesHoldingBucket.class,
 			(d, r) -> PermissionLevel.USER,
 			(d, r, k) -> {
 				try {
@@ -186,7 +193,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		));
 		// Change
 		os.createUpProcedure(new UpProcedure<>(
-			StakeSharesHoldingBucket.class, StakeShares.class,
+			StakeSharesHoldingBucket.class, StakeOwnership.class,
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> ReducerResult.incomplete(s.withdrawShares(u))

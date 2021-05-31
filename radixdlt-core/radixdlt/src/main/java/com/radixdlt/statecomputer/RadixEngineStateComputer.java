@@ -31,7 +31,7 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
@@ -58,6 +58,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -113,12 +114,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	public static class RadixEngineTxn implements PreparedTxn {
 		private final Txn txn;
-		private final REParsedTxn transaction;
+		private final REProcessedTxn transaction;
 		private final PermissionLevel permissionLevel;
 
 		public RadixEngineTxn(
 			Txn txn,
-			REParsedTxn transaction,
+			REProcessedTxn transaction,
 			PermissionLevel permissionLevel
 		) {
 			this.txn = txn;
@@ -157,7 +158,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	@Override
 	public List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
-		List<REParsedTxn> cmds = prepared.stream()
+		List<REProcessedTxn> cmds = prepared.stream()
 			.map(p -> (RadixEngineTxn) p)
 			.map(c -> c.transaction)
 			.collect(Collectors.toList());
@@ -175,27 +176,37 @@ public final class RadixEngineStateComputer implements StateComputer {
 		ImmutableList.Builder<PreparedTxn> successBuilder
 	) {
 		var view = vertex.getView();
-		final BFTValidatorSet validatorSet;
-		if (view.compareTo(epochCeilingView) >= 0) {
-			validatorSet = branch.getComputedState(StakedValidators.class).toValidatorSet();
-
-		} else {
-			validatorSet = null;
-		}
-
 		final TxAction systemAction;
-		if (validatorSet == null) {
+		var nextValidatorSet = new AtomicReference<BFTValidatorSet>();
+		if (view.compareTo(epochCeilingView) < 0) {
 			systemAction = new SystemNextView(view.number(), timestamp, vertex.getProposer().getKey());
 		} else {
-			var validatorKeys = validatorSet.nodes().stream()
-				.map(BFTNode::getKey)
-				.sorted(Comparator.comparing(ECPublicKey::getBytes, Arrays::compare))
-				.collect(Collectors.toList());
-			systemAction = new SystemNextEpoch(validatorKeys, timestamp);
+			var stakedValidators = branch.getComputedState(StakedValidators.class);
+			if (stakedValidators.toValidatorSet() == null) {
+				// FIXME: Better way to handle rare case when there isn't enough in validator set
+				systemAction = new SystemNextView(view.number(), timestamp, vertex.getProposer().getKey());
+			} else {
+				systemAction = new SystemNextEpoch(updates -> {
+					var cur = stakedValidators;
+					for (var u : updates) {
+						cur = cur.setStake(u.getValidatorKey(), u.getAmount());
+					}
+					// FIXME: cur.toValidatorSet() may be null
+					var validatorSet = cur.toValidatorSet();
+					if (validatorSet == null) {
+						throw new IllegalStateException();
+					}
+					nextValidatorSet.set(validatorSet);
+					return validatorSet.nodes().stream()
+						.map(BFTNode::getKey)
+						.sorted(Comparator.comparing(ECPublicKey::getBytes, Arrays::compare))
+						.collect(Collectors.toList());
+				}, timestamp);
+			}
 		}
 
 		final Txn systemUpdate;
-		final List<REParsedTxn> txs;
+		final List<REProcessedTxn> txs;
 		try {
 			// TODO: combine construct/execute
 			systemUpdate = branch.construct(systemAction).buildWithoutSignature();
@@ -212,7 +223,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		);
 		successBuilder.add(radixEngineCommand);
 
-		return validatorSet;
+		return nextValidatorSet.get();
 	}
 
 	private void executeUserCommands(
@@ -222,7 +233,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		ImmutableMap.Builder<Txn, Exception> errorBuilder
 	) {
 		nextTxns.forEach(txn -> {
-			final List<REParsedTxn> parsed;
+			final List<REProcessedTxn> parsed;
 			try {
 				parsed = branch.execute(List.of(txn));
 			} catch (RadixEngineException e) {
@@ -266,13 +277,13 @@ public final class RadixEngineStateComputer implements StateComputer {
 		return new StateComputerResult(successBuilder.build(), exceptionBuilder.build(), validatorSet);
 	}
 
-	private List<REParsedTxn> commitInternal(
+	private List<REProcessedTxn> commitInternal(
 		VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState
 	) {
 		var proof = verifiedTxnsAndProof.getProof();
 		var ledgerAndBFTProof = LedgerAndBFTProof.create(proof, vertexStoreState);
 
-		final List<REParsedTxn> radixEngineTxns;
+		final List<REProcessedTxn> radixEngineTxns;
 		try {
 			radixEngineTxns = this.radixEngine.execute(
 				verifiedTxnsAndProof.getTxns(),

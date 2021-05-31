@@ -22,7 +22,7 @@ import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.constraintmachine.REInstruction;
-import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
@@ -94,7 +94,7 @@ public final class ConstructionController implements Controller {
 		withBody(exchange, values -> {
 			var transactionHex = values.getString("transaction");
 			var transactionBytes = Hex.decode(transactionHex);
-			REParsedTxn parsedTxn;
+			REProcessedTxn parsedTxn;
 			try {
 				parsedTxn = txnParser.parse(Txn.create(transactionBytes));
 			} catch (TxnParseException | ConstraintMachineException e) {
@@ -109,7 +109,7 @@ public final class ConstructionController implements Controller {
 				.put("transaction_identifier", parsedTxn.getTxn().getId())
 				.put("transaction_size", parsedTxn.getTxn().getPayload().length)
 				.put("operations", ops);
-			parsedTxn.instructions().forEach(i -> {
+			parsedTxn.stateUpdates().forEach(i -> {
 				var jsonOp = jsonObject()
 					.put("type", i.getOp())
 					.put("parsed", i.getSubstate());

@@ -23,6 +23,7 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atommodel.system.state.EpochData;
+import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.identifiers.REAddr;
@@ -39,6 +40,6 @@ public class CreateSystemConstructorV2 implements ActionConstructor<CreateSystem
 			addr -> addr.getAddr().isSystem(),
 			Optional.of(SubstateWithArg.noArg(sysAddr)),
 			"No system address"
-		).with(i -> List.of(new EpochData(0)));
+		).with(i -> List.of(new EpochData(0), new RoundData(0, 0)));
 	}
 }

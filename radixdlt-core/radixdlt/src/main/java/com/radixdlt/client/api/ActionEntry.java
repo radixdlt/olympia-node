@@ -20,7 +20,7 @@ package com.radixdlt.client.api;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.ValidatorAddress;
 
@@ -120,7 +120,7 @@ public class ActionEntry {
 		);
 	}
 
-	public static ActionEntry unstake(UnstakeTokens unstakeToken, Function<REAddr, String> addrToRri) {
+	public static ActionEntry unstake(UnstakeOwnership unstakeToken, Function<REAddr, String> addrToRri) {
 		return create(
 			ActionType.UNSTAKE,
 			AccountAddress.of(unstakeToken.accountAddr()),

@@ -49,7 +49,7 @@ import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -318,7 +318,7 @@ public class BerkeleyClientApiStoreTest {
 	private BerkeleyClientApiStore prepareApiStore(Txn tx, Map<AID, Txn> txMap) throws RadixEngineException {
 		var transactions = engine.execute(List.of(tx), null, PermissionLevel.USER)
 			.stream()
-			.map(REParsedTxn::getTxn)
+			.map(REProcessedTxn::getTxn)
 			.collect(Collectors.toList());
 
 		transactions.forEach(txn -> txMap.put(txn.getId(), txn));

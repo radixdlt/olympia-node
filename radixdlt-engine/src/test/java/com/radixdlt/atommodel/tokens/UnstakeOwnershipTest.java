@@ -23,7 +23,7 @@ import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV1;
@@ -56,7 +56,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @RunWith(Parameterized.class)
-public class UnstakeTokensTest {
+public class UnstakeOwnershipTest {
 
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
@@ -82,14 +82,14 @@ public class UnstakeTokensTest {
 	private final UInt256 unstakeAmt;
 	private final List<ConstraintScrypt> scrypts;
 	private final ActionConstructor<StakeTokens> stakeTokensConstructor;
-	private final ActionConstructor<UnstakeTokens> unstakeTokensConstructor;
+	private final ActionConstructor<UnstakeOwnership> unstakeTokensConstructor;
 
-	public UnstakeTokensTest(
+	public UnstakeOwnershipTest(
 		UInt256 startAmt,
 		UInt256 unstakeAmt,
 		List<ConstraintScrypt> scrypts,
 		ActionConstructor<StakeTokens> stakeTokensConstructor,
-		ActionConstructor<UnstakeTokens> unstakeTokensConstructor
+		ActionConstructor<UnstakeOwnership> unstakeTokensConstructor
 	) {
 		this.startAmt = startAmt;
 		this.unstakeAmt = unstakeAmt;
@@ -111,7 +111,7 @@ public class UnstakeTokensTest {
 		this.engine = new RadixEngine<>(
 			ActionConstructors.newBuilder()
 				.put(StakeTokens.class, stakeTokensConstructor)
-				.put(UnstakeTokens.class, unstakeTokensConstructor)
+				.put(UnstakeOwnership.class, unstakeTokensConstructor)
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
 				.build(),
@@ -137,10 +137,10 @@ public class UnstakeTokensTest {
 		this.engine.execute(List.of(stake));
 
 		// Act
-		var unstake = this.engine.construct(new UnstakeTokens(accountAddr, key.getPublicKey(), unstakeAmt))
+		var unstake = this.engine.construct(new UnstakeOwnership(accountAddr, key.getPublicKey(), unstakeAmt))
 			.signAndBuild(key::sign);
 		var parsed = this.engine.execute(List.of(unstake));
-		var action = (UnstakeTokens) parsed.get(0).getActions().get(0).getTxAction();
+		var action = (UnstakeOwnership) parsed.get(0).getActions().get(0).getTxAction();
 		assertThat(action.amount()).isEqualTo(unstakeAmt);
 		assertThat(action.from()).isEqualTo(key.getPublicKey());
 		assertThat(action.accountAddr()).isEqualTo(accountAddr);
@@ -196,7 +196,7 @@ public class UnstakeTokensTest {
 
 		// Act
 		var nextKey = ECKeyPair.generateNew();
-		var unstake = this.engine.construct(new UnstakeTokens(accountAddr, key.getPublicKey(), unstakeAmt))
+		var unstake = this.engine.construct(new UnstakeOwnership(accountAddr, key.getPublicKey(), unstakeAmt))
 			.signAndBuild(nextKey::sign);
 
 		assertThatThrownBy(() -> this.engine.execute(List.of(unstake)))

@@ -27,6 +27,7 @@ import com.radixdlt.constraintmachine.SubstateWithArg;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public class NextEpochConstructorV1 implements ActionConstructor<SystemNextEpoch> {
 	@Override
@@ -37,5 +38,6 @@ public class NextEpochConstructorV1 implements ActionConstructor<SystemNextEpoch
 			Optional.of(SubstateWithArg.noArg(new SystemParticle(0, 0, 0))),
 			"No System particle available"
 		).with(substateDown -> List.of(new SystemParticle(substateDown.getEpoch() + 1, 0, action.timestamp())));
+		action.validators(Set.of()); // FIXME: Hack for backwards compatibility, remove for mainnet
 	}
 }

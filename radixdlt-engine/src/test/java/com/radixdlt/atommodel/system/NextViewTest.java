@@ -106,7 +106,7 @@ public final class NextViewTest {
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var txn = this.sut.construct(List.of(
 			new CreateSystem(),
-			new SystemNextEpoch(List.of(key.getPublicKey()), 0)
+			new SystemNextEpoch(u -> List.of(key.getPublicKey()), 0)
 		)).buildWithoutSignature();
 		this.sut.execute(List.of(txn), null, PermissionLevel.SYSTEM);
 	}

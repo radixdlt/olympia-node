@@ -26,6 +26,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
@@ -42,7 +43,6 @@ import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LastStoredProof;
-import com.radixdlt.utils.UInt256;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -89,8 +89,8 @@ public class StakingTest {
 				}
 
 				@ProvidesIntoSet
-				private TokenIssuance mempoolFillerIssuance() {
-					return TokenIssuance.of(staker.getPublicKey(), UInt256.FIVE);
+				private TokenIssuance issuance() {
+					return TokenIssuance.of(staker.getPublicKey(), ValidatorStake.MINIMUM_STAKE);
 				}
 			}
 		);
@@ -104,12 +104,12 @@ public class StakingTest {
 
 		// Act
 		var acct = REAddr.ofPubKeyAccount(staker.getPublicKey());
-		var atom = sut.construct(new StakeTokens(acct, self.getPublicKey(), UInt256.FIVE))
+		var atom = sut.construct(new StakeTokens(acct, self.getPublicKey(), ValidatorStake.MINIMUM_STAKE))
 			.signAndBuild(staker::sign);
 		sut.execute(List.of(atom));
 
 		// Assert
 		var nextStaked = sut.getComputedState(StakedValidators.class).getStake(self.getPublicKey());
-		assertThat(nextStaked).isEqualTo(UInt256.FIVE.add(staked));
+		assertThat(nextStaked).isEqualTo(ValidatorStake.MINIMUM_STAKE.add(staked));
 	}
 }

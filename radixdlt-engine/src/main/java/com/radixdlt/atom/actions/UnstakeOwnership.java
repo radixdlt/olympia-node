@@ -23,12 +23,12 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
-public class UnstakeTokens implements TxAction {
+public class UnstakeOwnership implements TxAction {
 	private final REAddr accountAddr;
 	private final ECPublicKey delegateAddress;
 	private final UInt256 amount;
 
-	public UnstakeTokens(REAddr accountAddr, ECPublicKey delegateAddress, UInt256 amount) {
+	public UnstakeOwnership(REAddr accountAddr, ECPublicKey delegateAddress, UInt256 amount) {
 		this.accountAddr = accountAddr;
 		this.delegateAddress = delegateAddress;
 		this.amount = amount;
@@ -44,5 +44,10 @@ public class UnstakeTokens implements TxAction {
 
 	public UInt256 amount() {
 		return amount;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{amt=%s}", this.getClass().getSimpleName(), amount);
 	}
 }

@@ -190,7 +190,7 @@ public class RadixEngineStateComputerTest {
 	private Txn systemUpdateTxn(long nextView, long nextEpoch) throws TxBuilderException {
 		TxBuilder builder;
 		if (nextEpoch >= 2) {
-			builder = radixEngine.construct(new SystemNextEpoch(List.of(registeredNodes.get(0).getPublicKey()), 0));
+			builder = radixEngine.construct(new SystemNextEpoch(u -> List.of(registeredNodes.get(0).getPublicKey()), 0));
 		} else {
 			builder = radixEngine.construct(new SystemNextView(nextView, 0,
 				registeredNodes.get(0).getPublicKey()

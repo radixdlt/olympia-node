@@ -29,7 +29,7 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.ConstraintMachineException;
-import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -52,6 +52,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
@@ -300,12 +301,12 @@ public final class RadixEngine<M> {
 			}
 		}
 
-		public List<REParsedTxn> execute(List<Txn> txns) throws RadixEngineException {
+		public List<REProcessedTxn> execute(List<Txn> txns) throws RadixEngineException {
 			assertNotDeleted();
 			return engine.execute(txns);
 		}
 
-		public List<REParsedTxn> execute(List<Txn> txns, PermissionLevel permissionLevel) throws RadixEngineException {
+		public List<REProcessedTxn> execute(List<Txn> txns, PermissionLevel permissionLevel) throws RadixEngineException {
 			assertNotDeleted();
 			return engine.execute(txns, null, permissionLevel);
 		}
@@ -362,7 +363,7 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	private REParsedTxn verify(CMStore.Transaction dbTransaction, Txn txn, PermissionLevel permissionLevel)
+	private REProcessedTxn verify(CMStore.Transaction dbTransaction, Txn txn, PermissionLevel permissionLevel)
 		throws TxnParseException, ConstraintMachineException {
 
 		var parsedTxn = constraintMachine.verify(
@@ -385,7 +386,7 @@ public final class RadixEngine<M> {
 	 *
 	 * @throws RadixEngineException on state conflict, dependency issues or bad atom
 	 */
-	public List<REParsedTxn> execute(List<Txn> txns) throws RadixEngineException {
+	public List<REProcessedTxn> execute(List<Txn> txns) throws RadixEngineException {
 		return execute(txns, null, PermissionLevel.USER);
 	}
 
@@ -397,7 +398,7 @@ public final class RadixEngine<M> {
 	 * @param permissionLevel permission level to execute on
 	 * @throws RadixEngineException on state conflict or dependency issues
 	 */
-	public List<REParsedTxn> execute(List<Txn> txns, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
+	public List<REProcessedTxn> execute(List<Txn> txns, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
 		synchronized (stateUpdateEngineLock) {
 			if (!branches.isEmpty()) {
 				throw new IllegalStateException(
@@ -419,16 +420,16 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	private List<REParsedTxn> executeInternal(
+	private List<REProcessedTxn> executeInternal(
 		CMStore.Transaction dbTransaction,
 		List<Txn> txns,
 		M meta,
 		PermissionLevel permissionLevel
 	) throws RadixEngineException {
 		var checker = batchVerifier.newVerifier(this::getComputedState);
-		var parsedTransactions = new ArrayList<REParsedTxn>();
+		var parsedTransactions = new ArrayList<REProcessedTxn>();
 		for (var txn : txns) {
-			final REParsedTxn parsedTxn;
+			final REProcessedTxn parsedTxn;
 			// TODO: combine verification and storage
 			try {
 				parsedTxn = this.verify(dbTransaction, txn, permissionLevel);
@@ -437,7 +438,7 @@ public final class RadixEngine<M> {
 			}
 
 			try {
-				this.engineStore.storeTxn(dbTransaction, txn, parsedTxn.stateUpdates());
+				this.engineStore.storeTxn(dbTransaction, txn, parsedTxn.stateUpdates().collect(Collectors.toList()));
 			} catch (Exception e) {
 				logger.error("Store of atom failed: " + parsedTxn, e);
 				throw e;

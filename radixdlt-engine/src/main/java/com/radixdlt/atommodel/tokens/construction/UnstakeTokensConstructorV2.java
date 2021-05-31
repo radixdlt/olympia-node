@@ -21,17 +21,17 @@ package com.radixdlt.atommodel.tokens.construction;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.atommodel.system.state.StakeShares;
+import com.radixdlt.atom.actions.UnstakeOwnership;
+import com.radixdlt.atommodel.system.state.StakeOwnership;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwned;
 
-public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeTokens> {
+public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeOwnership> {
 	@Override
-	public void construct(UnstakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
+	public void construct(UnstakeOwnership action, TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.swapFungible(
-			StakeShares.class,
+			StakeOwnership.class,
 			p -> p.getOwner().equals(action.accountAddr()) && p.getDelegateKey().equals(action.from()),
-			amt -> new StakeShares(action.from(), action.accountAddr(), amt),
+			amt -> new StakeOwnership(action.from(), action.accountAddr(), amt),
 			action.amount(),
 			"Not enough staked"
 		).with(amt -> new PreparedUnstakeOwned(action.from(), action.accountAddr(), amt));

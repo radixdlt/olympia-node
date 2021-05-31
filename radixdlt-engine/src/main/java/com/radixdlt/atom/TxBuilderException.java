@@ -22,6 +22,10 @@ package com.radixdlt.atom;
  * Exception which occurs when trying to build a transaction
  */
 public class TxBuilderException extends Exception {
+	public TxBuilderException(Throwable cause) {
+		super(cause);
+	}
+
 	public TxBuilderException(String message) {
 		super(message);
 	}
