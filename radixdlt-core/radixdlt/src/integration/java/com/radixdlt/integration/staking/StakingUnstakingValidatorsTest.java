@@ -62,7 +62,7 @@ import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
-import com.radixdlt.network.addressbook.PeersView;
+import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
@@ -198,8 +198,9 @@ public class StakingUnstakingValidatorsTest {
 
 				@Provides
 				private PeersView peersView(@Self BFTNode self) {
-					var peers = allNodes.stream().filter(n -> !self.equals(n)).collect(Collectors.toList());
-					return () -> peers;
+					return () -> allNodes.stream()
+						.filter(n -> !self.equals(n))
+						.map(PeersView.PeerInfo::fromBftNode);
 				}
 			}
 		);

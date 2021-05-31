@@ -73,6 +73,7 @@ public final class ECPublicKey {
 		return fromBytes(Bytes.fromHexString(hex));
 	}
 
+	@JsonCreator
 	public static ECPublicKey fromBase64(String base64) throws PublicKeyException {
 		return fromBytes(Bytes.fromBase64String(base64));
 	}

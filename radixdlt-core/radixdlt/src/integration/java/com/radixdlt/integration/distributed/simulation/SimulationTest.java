@@ -43,6 +43,8 @@ import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.network.p2p.NoOpPeerControl;
+import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
@@ -508,6 +510,7 @@ public class SimulationTest {
 					bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0); // Use constant timeout for now
 					bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class).toInstance(RateLimiter.create(50.0));
 					bind(NodeEvents.class).toInstance(nodeEvents);
+					bind(PeerControl.class).toInstance(new NoOpPeerControl());
 				}
 			});
 			modules.add(new MockedSystemModule());

@@ -21,21 +21,17 @@ import org.assertj.core.util.Files;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.radix.serialization.TestSetupUtils;
-import org.radix.universe.system.LocalSystem;
 
 import com.google.inject.Guice;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
-import com.radixdlt.network.transport.tcp.TCPConstants;
 import com.radixdlt.properties.RuntimeProperties;
 
 import java.io.File;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyDouble;
-import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;

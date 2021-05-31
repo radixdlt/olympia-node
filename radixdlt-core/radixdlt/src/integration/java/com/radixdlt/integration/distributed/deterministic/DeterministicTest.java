@@ -44,6 +44,8 @@ import com.radixdlt.FunctionalNodeModule;
 import com.radixdlt.MockedCryptoModule;
 import com.radixdlt.MockedPersistenceStoreModule;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.network.p2p.NoOpPeerControl;
+import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.recovery.MockedRecoveryModule;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
@@ -217,6 +219,7 @@ public final class DeterministicTest {
 					bind(Random.class).toInstance(new Random(123456));
 					bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class)
 						.toInstance(unlimitedRateLimiter());
+					bind(PeerControl.class).toInstance(new NoOpPeerControl());
 				}
 			});
 			modules.add(new MockedKeyModule());
