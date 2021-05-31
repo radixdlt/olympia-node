@@ -114,7 +114,7 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
 			.build();
 
-		return new ForkConfig(betanet1, actionConstructors, new EpochProofVerifierV1(), View.of(100000L));
+		return new ForkConfig(betanet1, actionConstructors, new EpochProofVerifierV1(), View.of(10L));
 	}
 
 	@ProvidesIntoMap
@@ -151,7 +151,7 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
 			.build();
 
-		return new ForkConfig(betanet2, actionConstructors, new EpochProofVerifierV1(), View.of(10000L));
+		return new ForkConfig(betanet2, actionConstructors, new EpochProofVerifierV1(), View.of(10L));
 	}
 
 	@ProvidesIntoMap
@@ -188,6 +188,6 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
 			.build();
 
-		return new ForkConfig(betanet3, actionConstructors, new EpochProofVerifierV2(), View.of(10000L));
+		return new ForkConfig(betanet3, actionConstructors, new EpochProofVerifierV2(), View.of(10L));
 	}
 }

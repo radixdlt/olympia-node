@@ -24,7 +24,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.atom.Substate;
-import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.TxnParseException;
@@ -58,9 +58,9 @@ public class FaucetModule extends AbstractModule {
 						.map(REInstruction::getData)
 						.filter(Substate.class::isInstance)
 						.map(s -> ((Substate) s).getParticle())
-						.filter(TokenDefinitionParticle.class::isInstance)
-						.map(TokenDefinitionParticle.class::cast)
-						.map(TokenDefinitionParticle::getAddr);
+						.filter(TokenResource.class::isInstance)
+						.map(TokenResource.class::cast)
+						.map(TokenResource::getAddr);
 				} catch (TxnParseException e) {
 					throw new IllegalStateException(e);
 				}

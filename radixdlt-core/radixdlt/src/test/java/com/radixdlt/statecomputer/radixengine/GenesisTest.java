@@ -25,7 +25,7 @@ import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.MutableTokenDefinition;
-import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.fees.NativeToken;
@@ -87,7 +87,7 @@ public class GenesisTest {
 		var p = readableAddrs.loadAddr(null, REAddr.ofNativeToken());
 		assertThat(p)
 			.hasValueSatisfying(particle -> {
-				var tok = (TokenDefinitionParticle) particle;
+				var tok = (TokenResource) particle;
 				assertThat(tok.getIconUrl()).isEqualTo(xrd.getIconUrl());
 				assertThat(tok.getUrl()).isEqualTo(xrd.getTokenUrl());
 			});

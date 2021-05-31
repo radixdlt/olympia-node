@@ -24,7 +24,7 @@ import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
-import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -51,8 +51,8 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 				.map(REStateUpdate::getRawSubstate)
 				.forEach(p -> {
 					// FIXME: Superhack
-					if (p instanceof TokenDefinitionParticle) {
-						var tokenDef = (TokenDefinitionParticle) p;
+					if (p instanceof TokenResource) {
+						var tokenDef = (TokenResource) p;
 						addrParticles.put(tokenDef.getAddr(), p);
 					} else if (p instanceof SystemParticle) {
 						addrParticles.put(REAddr.ofSystem(), p);

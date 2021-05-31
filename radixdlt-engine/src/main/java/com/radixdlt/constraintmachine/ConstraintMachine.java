@@ -25,7 +25,7 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.state.SystemParticle;
-import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
@@ -151,8 +151,8 @@ public final class ConstraintMachine {
 				} else {
 					return localUpParticles.values().stream()
 						.map(Substate::getParticle)
-						.filter(TokenDefinitionParticle.class::isInstance)
-						.map(TokenDefinitionParticle.class::cast)
+						.filter(TokenResource.class::isInstance)
+						.map(TokenResource.class::cast)
 						.filter(p -> p.getAddr().equals(addr))
 						.findFirst()
 						.map(Particle.class::cast)

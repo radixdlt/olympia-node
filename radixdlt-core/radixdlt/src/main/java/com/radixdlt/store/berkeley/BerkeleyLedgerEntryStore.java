@@ -30,7 +30,7 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -605,8 +605,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			upParticle(txn, buf, stateUpdate.getSubstate().getId());
 
 			// FIXME: Superhack
-			if (stateUpdate.getRawSubstate() instanceof TokenDefinitionParticle) {
-				var p = (TokenDefinitionParticle) stateUpdate.getRawSubstate();
+			if (stateUpdate.getRawSubstate() instanceof TokenResource) {
+				var p = (TokenResource) stateUpdate.getRawSubstate();
 				var addr = p.getAddr();
 				var buf2 = stateUpdate.getStateBuf();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());

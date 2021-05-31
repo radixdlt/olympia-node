@@ -19,7 +19,7 @@ package com.radixdlt.atommodel.tokens;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.utils.UInt256;
@@ -118,7 +118,7 @@ public final class TokenDefinitionUtils {
 		return Result.success();
 	}
 
-	public static Result staticCheck(TokenDefinitionParticle tokenDefParticle) {
+	public static Result staticCheck(TokenResource tokenDefParticle) {
 		final Result descriptionResult = validateDescription(tokenDefParticle.getDescription());
 		if (descriptionResult.isError()) {
 			return descriptionResult;

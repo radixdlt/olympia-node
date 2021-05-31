@@ -26,7 +26,7 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.ResourceInBucket;
-import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
@@ -61,8 +61,8 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 
 	private void registerParticles(SysCalls os) {
 		os.registerParticle(
-			TokenDefinitionParticle.class,
-			ParticleDefinition.<TokenDefinitionParticle>builder()
+			TokenResource.class,
+			ParticleDefinition.<TokenResource>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.build()
 		);
@@ -77,16 +77,16 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 
 	private static class NeedFixedTokenSupply implements ReducerState {
 		private final byte[] arg;
-		private final TokenDefinitionParticle tokenDefinitionParticle;
-		private NeedFixedTokenSupply(byte[] arg, TokenDefinitionParticle tokenDefinitionParticle) {
+		private final TokenResource tokenResource;
+		private NeedFixedTokenSupply(byte[] arg, TokenResource tokenResource) {
 			this.arg = arg;
-			this.tokenDefinitionParticle = tokenDefinitionParticle;
+			this.tokenResource = tokenResource;
 		}
 	}
 
 	private void defineTokenCreation(SysCalls os) {
 		os.createUpProcedure(new UpProcedure<>(
-			CMAtomOS.REAddrClaim.class, TokenDefinitionParticle.class,
+			CMAtomOS.REAddrClaim.class, TokenResource.class,
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
@@ -114,11 +114,11 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
-				if (!u.getResourceAddr().equals(s.tokenDefinitionParticle.getAddr())) {
+				if (!u.getResourceAddr().equals(s.tokenResource.getAddr())) {
 					throw new ProcedureException("Addresses don't match.");
 				}
 
-				if (!u.getAmount().equals(s.tokenDefinitionParticle.getSupply().orElseThrow())) {
+				if (!u.getAmount().equals(s.tokenResource.getSupply().orElseThrow())) {
 					throw new ProcedureException("Initial supply doesn't match.");
 				}
 
@@ -126,11 +126,11 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 					u.getResourceAddr(),
 					u.getHoldingAddr(),
 					new String(s.arg),
-					s.tokenDefinitionParticle.getName(),
-					s.tokenDefinitionParticle.getDescription(),
-					s.tokenDefinitionParticle.getIconUrl(),
-					s.tokenDefinitionParticle.getUrl(),
-					s.tokenDefinitionParticle.getSupply().orElseThrow()
+					s.tokenResource.getName(),
+					s.tokenResource.getDescription(),
+					s.tokenResource.getIconUrl(),
+					s.tokenResource.getUrl(),
+					s.tokenResource.getSupply().orElseThrow()
 				);
 
 				return ReducerResult.complete(action);
@@ -211,7 +211,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			UnaccountedTokens.class,
 			(s, r) -> s.resourceInBucket.resourceAddr().isNativeToken() ? PermissionLevel.SYSTEM : PermissionLevel.USER,
 			(s, r, k) -> {
-				var tokenDef = (TokenDefinitionParticle) r.loadAddr(null, s.resourceInBucket.resourceAddr())
+				var tokenDef = (TokenResource) r.loadAddr(null, s.resourceInBucket.resourceAddr())
 					.orElseThrow(() -> new AuthorizationException("Invalid token address: " + s.resourceInBucket.resourceAddr()));
 
 				tokenDef.verifyMintAuthorization(k);
@@ -226,10 +226,10 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 					throw new ProcedureException("Token does not exist.");
 				}
 				var particle = p.get();
-				if (!(particle instanceof TokenDefinitionParticle)) {
+				if (!(particle instanceof TokenResource)) {
 					throw new ProcedureException("Rri is not a token");
 				}
-				var tokenDef = (TokenDefinitionParticle) particle;
+				var tokenDef = (TokenResource) particle;
 				if (!tokenDef.isMutable()) {
 					throw new ProcedureException("Can only mint mutable tokens.");
 				}
@@ -250,10 +250,10 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 					throw new ProcedureException("Token does not exist.");
 				}
 				var particle = p.get();
-				if (!(particle instanceof TokenDefinitionParticle)) {
+				if (!(particle instanceof TokenResource)) {
 					throw new ProcedureException("Rri is not a token");
 				}
-				var tokenDef = (TokenDefinitionParticle) particle;
+				var tokenDef = (TokenResource) particle;
 				if (!tokenDef.isMutable()) {
 					throw new ProcedureException("Can only burn mutable tokens.");
 				}

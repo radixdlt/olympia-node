@@ -22,7 +22,7 @@ import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.CreateFixedToken;
-import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.SubstateWithArg;
@@ -40,7 +40,7 @@ public final class CreateFixedTokenConstructor implements ActionConstructor<Crea
 			Optional.of(SubstateWithArg.withArg(addrParticle, action.getSymbol().getBytes(StandardCharsets.UTF_8))),
 			"RRI not available"
 		);
-		txBuilder.up(new TokenDefinitionParticle(
+		txBuilder.up(new TokenResource(
 			action.getResourceAddr(),
 			action.getName(),
 			action.getDescription(),

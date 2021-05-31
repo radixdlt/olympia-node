@@ -141,7 +141,7 @@ public class BalanceEntry {
 	}
 
 	public boolean isSupply() {
-		return owner == null;
+		return owner == null && delegate == null;
 	}
 
 	public boolean isStake() {

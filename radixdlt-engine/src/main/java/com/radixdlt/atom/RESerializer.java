@@ -26,7 +26,7 @@ import com.radixdlt.atommodel.system.state.ValidatorEpochData;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwned;
-import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
@@ -71,7 +71,7 @@ public final class RESerializer {
 	private static List<Class<? extends Particle>> byteToClass = List.of(
 		REAddrParticle.class,
 		SystemParticle.class,
-		TokenDefinitionParticle.class,
+		TokenResource.class,
 		TokensInAccount.class,
 		PreparedStake.class,
 		ValidatorParticle.class,
@@ -88,7 +88,7 @@ public final class RESerializer {
 	private static Map<Class<? extends Particle>, List<Byte>> classToByteTypes = Map.ofEntries(
 		Map.entry(REAddrParticle.class, List.of(SubstateType.RE_ADDR.id)),
 		Map.entry(SystemParticle.class, List.of(SubstateType.SYSTEM.id)),
-		Map.entry(TokenDefinitionParticle.class, List.of(SubstateType.TOKEN_DEF.id)),
+		Map.entry(TokenResource.class, List.of(SubstateType.TOKEN_DEF.id)),
 		Map.entry(TokensInAccount.class, List.of(SubstateType.TOKENS.id, SubstateType.TOKENS_LOCKED.id)),
 		Map.entry(PreparedStake.class, List.of(SubstateType.PREPARED_STAKE.id)),
 		Map.entry(ValidatorParticle.class, List.of(SubstateType.VALIDATOR.id)),
@@ -191,8 +191,8 @@ public final class RESerializer {
 			serializeData((ValidatorParticle) p, buf);
 		} else if (p instanceof UniqueParticle) {
 			serializeData((UniqueParticle) p, buf);
-		} else if (p instanceof TokenDefinitionParticle) {
-			serializeData((TokenDefinitionParticle) p, buf);
+		} else if (p instanceof TokenResource) {
+			serializeData((TokenResource) p, buf);
 		} else if (p instanceof ValidatorStake) {
 			serializeData((ValidatorStake) p, buf);
 		} else if (p instanceof RoundData) {
@@ -407,7 +407,7 @@ public final class RESerializer {
 		return new UniqueParticle(rri);
 	}
 
-	private static void serializeData(TokenDefinitionParticle p, ByteBuffer buf) {
+	private static void serializeData(TokenResource p, ByteBuffer buf) {
 		buf.put(SubstateType.TOKEN_DEF.id);
 
 		serializeREAddr(buf, p.getAddr());
@@ -432,7 +432,7 @@ public final class RESerializer {
 		serializeString(buf, p.getIconUrl());
 	}
 
-	private static TokenDefinitionParticle deserializeTokenDefinitionParticle(ByteBuffer buf) throws DeserializeException {
+	private static TokenResource deserializeTokenDefinitionParticle(ByteBuffer buf) throws DeserializeException {
 		var rri = deserializeREAddr(buf);
 		var type = buf.get();
 		final UInt256 supply;
@@ -453,7 +453,7 @@ public final class RESerializer {
 		var description = deserializeString(buf);
 		var url = deserializeString(buf);
 		var iconUrl = deserializeString(buf);
-		return new TokenDefinitionParticle(rri, name, description, iconUrl, url, supply, minter);
+		return new TokenResource(rri, name, description, iconUrl, url, supply, minter);
 	}
 
 	private static UInt256 deserializeUInt256(ByteBuffer buf) {
