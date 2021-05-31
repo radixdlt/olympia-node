@@ -13,6 +13,12 @@ getent group $USER_NAME >/dev/null && groupmod -g $USER_ID radixdlt || groupadd 
 getent passwd $RADIXDLT_USER >/dev/null && usermod -u $USER_ID radixdlt || useradd -r -d "$RADIXDLT_HOME" -g $RADIXDLT_USER $RADIXDLT_USER
 chown -R radixdlt:radixdlt /home/radixdlt/
 
+#check for test network configs
+TEST_CONFIGS="${RADIXDLT_HOME:?}"/test.config
+if test -f "$TEST_CONFIGS"; then
+    cat $TEST_CONFIGS >> default.config.envsubst
+fi
+
 env | sort
 
 envsubst <"${RADIXDLT_HOME:?}"/default.config.envsubst >"${RADIXDLT_HOME:?}"/default.config
