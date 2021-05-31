@@ -26,19 +26,22 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-/**
- * Module responsible for creating TreeMap of epochs to Fork configuration
- * for use in the RadixEngine
- */
-public final class RadixEngineForksModule extends AbstractModule {
+public class RadixEngineForksForTestingModule extends AbstractModule {
 	@Provides
 	@Singleton
-	private TreeMap<Long, ForkConfig> epochToForkConfig(Map<EpochMapKey, ForkConfig> forkConfigs) {
+	private TreeMap<Long, ForkConfig> epochToForkConfig(
+		Map<String, Long> epochOverwrite,
+		Map<String, ForkConfig> configOverwrite,
+		Map<EpochMapKey, ForkConfig> forkConfigs
+	) {
 		return new TreeMap<>(
 			forkConfigs.entrySet()
 				.stream()
-				.collect(Collectors.toMap(e -> e.getKey().epoch(), Map.Entry::getValue))
+				.collect(
+					Collectors.toMap(
+						e -> epochOverwrite.getOrDefault(e.getValue().getName(), e.getKey().epoch()),
+						e -> configOverwrite.getOrDefault(e.getValue().getName(), e.getValue())
+					))
 		);
 	}
-
 }

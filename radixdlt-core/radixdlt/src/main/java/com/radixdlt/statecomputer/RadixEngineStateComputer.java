@@ -300,7 +300,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		if (proof.getNextValidatorSet().isPresent()) {
 			var forkConfig = epochToForkConfig.get(proof.getEpoch() + 1);
 			if (forkConfig != null) {
-				log.info("Epoch {} Forking constraint machine", proof.getEpoch() + 1);
+				log.info("Epoch {} Forking RadixEngine to {}", proof.getEpoch() + 1, forkConfig.getName());
 				this.radixEngine.replaceConstraintMachine(
 					forkConfig.getConstraintMachine(),
 					forkConfig.getActionConstructors(),

@@ -41,7 +41,7 @@ import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
 import com.radixdlt.statecomputer.transaction.TokenFeeModule;
 import com.radixdlt.store.DatabaseLocation;
@@ -83,7 +83,7 @@ public class TokenFeeTest {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
 			new BetanetForksModule(),
-			new RadixEngineOnlyLatestForkModule(View.of(100)),
+			new RadixEngineForksLatestOnlyModule(View.of(100)),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new TokenFeeModule(),

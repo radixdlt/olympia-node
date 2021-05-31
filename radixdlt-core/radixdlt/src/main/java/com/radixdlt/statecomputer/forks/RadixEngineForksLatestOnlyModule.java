@@ -21,14 +21,7 @@ package com.radixdlt.statecomputer.forks;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.atom.ActionConstructors;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.engine.BatchVerifier;
-import com.radixdlt.statecomputer.EpochCeilingView;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.sync.CommittedReader;
 
 import java.util.Comparator;
 import java.util.Map;
@@ -37,10 +30,10 @@ import java.util.TreeMap;
 /**
  * For testing only, only tests the latest state computer configuration
  */
-public class RadixEngineOnlyLatestForkModule extends AbstractModule {
+public class RadixEngineForksLatestOnlyModule extends AbstractModule {
 	private final View epochHighViewOverwrite;
 
-	public RadixEngineOnlyLatestForkModule(View epochHighViewOverwrite) {
+	public RadixEngineForksLatestOnlyModule(View epochHighViewOverwrite) {
 		this.epochHighViewOverwrite = epochHighViewOverwrite;
 	}
 
@@ -51,6 +44,7 @@ public class RadixEngineOnlyLatestForkModule extends AbstractModule {
 			.max(Comparator.comparing(e -> e.getKey().epoch()))
 			.map(Map.Entry::getValue)
 			.map(f -> new ForkConfig(
+				f.getName(),
 				f.getConstraintMachine(),
 				f.getActionConstructors(),
 				f.getBatchVerifier(),

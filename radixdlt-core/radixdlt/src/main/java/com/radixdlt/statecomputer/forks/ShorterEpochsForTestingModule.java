@@ -21,43 +21,47 @@ package com.radixdlt.statecomputer.forks;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.atom.ActionConstructors;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.engine.BatchVerifier;
-import com.radixdlt.statecomputer.EpochCeilingView;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.forks.EpochMapKey;
-import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.sync.CommittedReader;
 
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-public class MockedRadixEngineForksModule extends AbstractModule {
+public class ShorterEpochsForTestingModule extends AbstractModule {
 	private static final long INITIAL_VIEW_CEILING = 10L;
+
+	@Override
+	protected void configure() {
+		install(new RadixEngineForksForTestingModule());
+	}
 
 	@Provides
 	@Singleton
-	private TreeMap<Long, ForkConfig> epochToForkConfig(Map<EpochMapKey, ForkConfig> forkConfigs) {
+	private Map<String, Long> epochOverwrite(Map<EpochMapKey, ForkConfig> forkConfigs) {
 		var epoch = new AtomicLong(0);
+		return forkConfigs.entrySet().stream()
+			.collect(
+				Collectors.toMap(
+					e -> e.getValue().getName(),
+					e -> epoch.getAndAdd(5)
+				));
+	}
+
+	@Provides
+	@Singleton
+	private Map<String, ForkConfig> configOverwrite(Map<EpochMapKey, ForkConfig> forkConfigs) {
 		var viewCeiling = new AtomicLong(INITIAL_VIEW_CEILING);
-		return new TreeMap<>(
-			forkConfigs.entrySet()
-				.stream()
-				.collect(
-					Collectors.toMap(
-						e -> epoch.getAndAdd(5),
-						e -> new ForkConfig(
-							e.getValue().getConstraintMachine(),
-							e.getValue().getActionConstructors(),
-							e.getValue().getBatchVerifier(),
-							View.of(viewCeiling.get() % 2 == 0 ? viewCeiling.getAndIncrement() : viewCeiling.getAndDecrement())
-						)
-				))
-		);
+		return forkConfigs.entrySet().stream()
+			.collect(
+				Collectors.toMap(
+					e -> e.getValue().getName(),
+					e -> new ForkConfig(
+						e.getValue().getName(),
+						e.getValue().getConstraintMachine(),
+						e.getValue().getActionConstructors(),
+						e.getValue().getBatchVerifier(),
+						View.of(viewCeiling.get() % 2 == 0 ? viewCeiling.getAndIncrement() : viewCeiling.getAndDecrement())
+					)
+			));
 	}
 }

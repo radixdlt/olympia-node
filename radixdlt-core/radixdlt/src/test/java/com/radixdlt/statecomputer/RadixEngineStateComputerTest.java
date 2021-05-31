@@ -79,7 +79,7 @@ import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.statecomputer.transaction.EmptyTransactionCheckModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -129,7 +129,7 @@ public class RadixEngineStateComputerTest {
 
 				install(MempoolConfig.asModule(10, 10));
 				install(new BetanetForksModule());
-				install(new RadixEngineOnlyLatestForkModule(View.of(10)));
+				install(new RadixEngineForksLatestOnlyModule(View.of(10)));
 				install(RadixEngineConfig.asModule(1, 100, 50));
 
 				// HACK

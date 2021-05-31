@@ -28,21 +28,28 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
  * Configuration used for hard forks
  */
 public final class ForkConfig {
+	private final String name;
 	private final ConstraintMachine constraintMachine;
 	private final ActionConstructors actionConstructors;
 	private final BatchVerifier<LedgerAndBFTProof> batchVerifier;
 	private final View epochCeilingView;
 
 	public ForkConfig(
+		String name,
 		ConstraintMachine constraintMachine,
 		ActionConstructors actionConstructors,
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
 		View epochCeilingView
 	) {
+		this.name = name;
 		this.constraintMachine = constraintMachine;
 		this.actionConstructors = actionConstructors;
 		this.batchVerifier = batchVerifier;
 		this.epochCeilingView = epochCeilingView;
+	}
+
+	public String getName() {
+		return name;
 	}
 
 	public ConstraintMachine getConstraintMachine() {

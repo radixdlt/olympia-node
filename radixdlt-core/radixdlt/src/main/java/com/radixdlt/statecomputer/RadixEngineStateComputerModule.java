@@ -19,22 +19,11 @@
 package com.radixdlt.statecomputer;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.atom.ActionConstructors;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.sync.CommittedReader;
-
-import java.util.TreeMap;
 
 public class RadixEngineStateComputerModule extends AbstractModule {
 	@Override
