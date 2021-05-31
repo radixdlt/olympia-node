@@ -21,9 +21,9 @@ package com.radixdlt.api.node;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.radixdlt.application.Balances;
+import com.radixdlt.application.MyValidator;
 import com.radixdlt.application.NodeApplicationRequest;
-import com.radixdlt.application.StakeReceived;
-import com.radixdlt.application.StakedBalance;
+import com.radixdlt.application.MyStakedBalance;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.application.ValidatorInfo;
 import com.radixdlt.atom.TxAction;
@@ -93,10 +93,10 @@ public final class NodeController implements Controller {
 	}
 
 	private JSONObject getValidator() {
-		var stakeReceived = radixEngine.getComputedState(StakeReceived.class);
+		var myStakes = radixEngine.getComputedState(MyValidator.class);
 		var validatorInfo = radixEngine.getComputedState(ValidatorInfo.class);
 		var stakeFrom = new JSONArray();
-		stakeReceived.forEach((addr, amt) -> {
+		myStakes.forEach((addr, amt) -> {
 			stakeFrom.put(
 				new JSONObject()
 					.put("delegator", AccountAddress.of(addr))
@@ -108,13 +108,13 @@ public final class NodeController implements Controller {
 			.put("name", validatorInfo.getName())
 			.put("url", validatorInfo.getUrl())
 			.put("registered", validatorInfo.isRegistered())
-			.put("totalStake", TokenUnitConversions.subunitsToUnits(stakeReceived.getTotal()))
+			.put("totalStake", TokenUnitConversions.subunitsToUnits(myStakes.getTotalStake()))
 			.put("stakes", stakeFrom);
 	}
 
 	private JSONObject getBalance() {
 		var balances = radixEngine.getComputedState(Balances.class);
-		var stakedBalance = radixEngine.getComputedState(StakedBalance.class);
+		var stakedBalance = radixEngine.getComputedState(MyStakedBalance.class);
 		var stakeTo = new JSONArray();
 		stakedBalance.forEach((addr, amt) ->
 			stakeTo.put(

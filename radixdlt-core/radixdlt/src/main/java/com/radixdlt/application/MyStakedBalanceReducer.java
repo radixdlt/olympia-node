@@ -19,7 +19,8 @@
 package com.radixdlt.application;
 
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.tokens.state.PreparedStake;
+import com.radixdlt.atommodel.system.state.StakeOwnership;
+import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
@@ -30,46 +31,54 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-public final class StakedBalanceReducer implements StateReducer<StakedBalance> {
+public final class MyStakedBalanceReducer implements StateReducer<MyStakedBalance> {
 	private final REAddr accountAddr;
 
 	@Inject
-	public StakedBalanceReducer(@Self REAddr accountAddr) {
+	public MyStakedBalanceReducer(@Self REAddr accountAddr) {
 		this.accountAddr = Objects.requireNonNull(accountAddr);
 	}
 
 	@Override
-	public Class<StakedBalance> stateClass() {
-		return StakedBalance.class;
+	public Class<MyStakedBalance> stateClass() {
+		return MyStakedBalance.class;
 	}
 
 	@Override
 	public Set<Class<? extends Particle>> particleClasses() {
-		return Set.of(PreparedStake.class);
+		return Set.of(StakeOwnership.class, ValidatorStake.class);
 	}
 
 	@Override
-	public Supplier<StakedBalance> initial() {
-		return StakedBalance::new;
+	public Supplier<MyStakedBalance> initial() {
+		return MyStakedBalance::new;
 	}
 
 	@Override
-	public BiFunction<StakedBalance, Particle, StakedBalance> outputReducer() {
+	public BiFunction<MyStakedBalance, Particle, MyStakedBalance> outputReducer() {
 		return (stakes, p) -> {
-			var d = (PreparedStake) p;
-			if (d.getOwner().equals(accountAddr)) {
-				stakes.addStake(d.getDelegateKey(), d.getAmount());
+			if (p instanceof StakeOwnership) {
+				var d = (StakeOwnership) p;
+				if (d.getOwner().equals(accountAddr)) {
+					stakes.addOwnership(d.getDelegateKey(), d.getAmount());
+				}
+			} else if (p instanceof ValidatorStake) {
+				stakes.addValidatorStake((ValidatorStake) p);
 			}
 			return stakes;
 		};
 	}
 
 	@Override
-	public BiFunction<StakedBalance, Particle, StakedBalance> inputReducer() {
+	public BiFunction<MyStakedBalance, Particle, MyStakedBalance> inputReducer() {
 		return (balance, p) -> {
-			var d = (PreparedStake) p;
-			if (d.getOwner().equals(accountAddr)) {
-				balance.removeStake(d.getDelegateKey(), d.getAmount());
+			if (p instanceof StakeOwnership) {
+				var d = (StakeOwnership) p;
+				if (d.getOwner().equals(accountAddr)) {
+					balance.removeOwnership(d.getDelegateKey(), d.getAmount());
+				}
+			} else if (p instanceof ValidatorStake) {
+				balance.removeValidatorStake((ValidatorStake) p);
 			}
 			return balance;
 		};
