@@ -49,6 +49,7 @@ import com.radixdlt.network.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.DatabaseCacheSize;
+import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import org.apache.commons.cli.ParseException;
 import org.json.JSONObject;
@@ -135,10 +136,8 @@ public final class P2PTestNetworkRunner {
 						} catch (IOException e) {
 							throw new RuntimeException(e);
 						}
-						bindConstant().annotatedWith(DatabaseLocation.class)
-							.to(dbDir.getRoot().getAbsolutePath());
-						bindConstant().annotatedWith(DatabaseCacheSize.class)
-							.to((long) (Runtime.getRuntime().maxMemory() * 0.125));
+						bindConstant().annotatedWith(DatabaseLocation.class).to(dbDir.getRoot().getAbsolutePath());
+						bindConstant().annotatedWith(DatabaseCacheSize.class).to(100_000L);
 						bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(nodeKey);
 						bind(ECPublicKey.class).annotatedWith(Self.class).toInstance(nodeKey.getPublicKey());
 						bind(BFTNode.class).annotatedWith(Self.class).toInstance(BFTNode.create(nodeKey.getPublicKey()));
@@ -151,6 +150,12 @@ public final class P2PTestNetworkRunner {
 					}
 				}
 		);
+	}
+
+	public void cleanup() {
+		this.nodes.forEach(node -> {
+			node.injector.getInstance(DatabaseEnvironment.class).stop();
+		});
 	}
 
 	public RadixNodeUri getUri(int nodeIndex) {
@@ -180,4 +185,5 @@ public final class P2PTestNetworkRunner {
 	public TestNode getNode(int index) {
 		return this.nodes.get(index);
 	}
+
 }

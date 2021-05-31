@@ -18,6 +18,7 @@
 package com.radixdlt.network.p2p;
 
 import com.radixdlt.network.p2p.test.DeterministicP2PNetworkTest;
+import org.junit.After;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -27,6 +28,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public final class PeerManagerTest extends DeterministicP2PNetworkTest {
+
+	@After
+	public void cleanup() {
+		testNetworkRunner.cleanup();
+	}
 
 	@Test
 	public void when_findOrCreateChannel_then_should_create_if_not_exists() throws Exception {
@@ -145,5 +151,4 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
 		assertEquals(0L, testNetworkRunner.peerManager(0).activePeers().size());
 		assertEquals(0L, testNetworkRunner.peerManager(1).activePeers().size());
 	}
-
 }
