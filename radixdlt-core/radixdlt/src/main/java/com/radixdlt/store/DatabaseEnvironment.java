@@ -67,26 +67,26 @@ public final class DatabaseEnvironment {
 		environmentConfig.setCacheSize(cacheSize);
 		environmentConfig.setCacheMode(CacheMode.EVICT_LN);
 
-		this.environment = new Environment(dbHome, environmentConfig);
+		environment = new Environment(dbHome, environmentConfig);
 
 		log.info("DB cache size set to {} ({} bytes)", toHumanReadable(cacheSize), cacheSize);
 	}
 
 	public void stop() {
 		try {
-			this.environment.close();
+			environment.close();
 		} catch (DatabaseException e) {
 			log.error("Error while closing database. Possible DB corruption.");
 		}
-		this.environment = null;
+		environment = null;
 	}
 
 	public Environment getEnvironment() {
-		if (this.environment == null) {
+		if (environment == null) {
 			throw new IllegalStateException("environment is not started");
 		}
 
-		return this.environment;
+		return environment;
 	}
 
 	private static String toHumanReadable(long bytes) {

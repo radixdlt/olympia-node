@@ -20,6 +20,7 @@ package com.radixdlt.api.handler;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.radixdlt.api.service.TokenService;
 import com.radixdlt.api.store.TokenDefinitionRecord;
 
@@ -27,6 +28,7 @@ import static com.radixdlt.api.JsonRpcUtil.invalidParamsError;
 import static com.radixdlt.api.JsonRpcUtil.response;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
 
+@Singleton
 public class ArchiveTokenHandler {
 	private final TokenService tokenService;
 

@@ -20,32 +20,38 @@ package com.radixdlt.api.service;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.radix.universe.system.LocalSystem;
 
 import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.identifiers.ValidatorAddress;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
+import com.radixdlt.network.addressbook.AddressBook;
+import com.radixdlt.network.addressbook.PeerWithSystem;
+import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.statecomputer.MaxTxnsPerProposal;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
 
 import java.util.TreeMap;
+import java.util.stream.Stream;
 
-import io.undertow.server.HttpServerExchange;
-
-import static com.radixdlt.api.RestUtils.respond;
+import static com.radixdlt.api.JsonRpcUtil.jsonArray;
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 public class SystemConfigService {
-	private final long pacemakerTimeout;
-	private final int bftSyncPatienceMillis;
-	private final long mempoolMaxSize;
-	private final long mempoolThrottleMs;
-	private final int minValidators;
-	private final int maxValidators;
-	private final int maxTxnsPerProposal;
-	private final TreeMap<Long, ForkConfig> forkConfigTreeMap;
+	private final JSONObject radixEngineConfiguration;
+	private final JSONObject mempoolConfiguration;
+
+	private final InMemorySystemInfo inMemorySystemInfo;
+	private final AddressBook addressBook;
+	private final PeerWithSystem localPeer;
 
 	@Inject
 	public SystemConfigService(
@@ -56,43 +62,134 @@ public class SystemConfigService {
 		@MinValidators int minValidators,
 		@MaxValidators int maxValidators,
 		@MaxTxnsPerProposal int maxTxnsPerProposal,
-		TreeMap<Long, ForkConfig> forkConfigTreeMap
+		TreeMap<Long, ForkConfig> forkConfigTreeMap,
+		LocalSystem localSystem,
+		@Genesis VerifiedTxnsAndProof genesis,
+		InMemorySystemInfo inMemorySystemInfo,
+		AddressBook addressBook,
+		PeerWithSystem localPeer
 	) {
-		this.pacemakerTimeout = pacemakerTimeout;
-		this.bftSyncPatienceMillis = bftSyncPatienceMillis;
-		this.mempoolMaxSize = mempoolMaxSize;
-		this.mempoolThrottleMs = mempoolThrottleMs;
-		this.minValidators = minValidators;
-		this.maxValidators = maxValidators;
-		this.maxTxnsPerProposal = maxTxnsPerProposal;
-		this.forkConfigTreeMap = forkConfigTreeMap;
+		this.inMemorySystemInfo = inMemorySystemInfo;
+		this.addressBook = addressBook;
+		this.localPeer = localPeer;
+
+		this.radixEngineConfiguration = prepareRadixEngineConfiguration(forkConfigTreeMap, minValidators, maxValidators, maxTxnsPerProposal);
+		this.mempoolConfiguration = prepareMempoolConfiguration(mempoolMaxSize, mempoolThrottleMs);
 	}
 
-	//TODO: refactor into pieces of /system methods
-	void handleConfig(HttpServerExchange exchange) {
-		var forks = new JSONArray();
+	public JSONObject getRadixEngineConfiguration() {
+		return radixEngineConfiguration;
+	}
+
+	public JSONObject getMempoolConfiguration() {
+		return mempoolConfiguration;
+	}
+
+	private static JSONObject prepareRadixEngineConfiguration(
+		TreeMap<Long, ForkConfig> forkConfigTreeMap,
+		int minValidators,
+		int maxValidators,
+		int maxTxnsPerProposal
+	) {
+		var forks = jsonArray();
 		forkConfigTreeMap.forEach((e, config) -> forks.put(
-			new JSONObject()
+			jsonObject()
 				.put("name", config.getName())
 				.put("ceiling_view", config.getEpochCeilingView().number())
 				.put("epoch", e)
 		));
 
-		respond(exchange, new JSONObject()
-			.put("consensus", new JSONObject()
-				.put("pacemaker_timeout", pacemakerTimeout)
-				.put("bft_sync_patience_ms", bftSyncPatienceMillis)
-			)
-			.put("mempool", new JSONObject()
-				.put("max_size", mempoolMaxSize)
-				.put("throttle_ms", mempoolThrottleMs)
-			)
-			.put("radix_engine", new JSONObject()
-				.put("min_validators", minValidators)
-				.put("max_validators", maxValidators)
-				.put("max_txns_per_proposal", maxTxnsPerProposal)
-				.put("forks", forks)
-			)
+		return jsonObject().put("radix_engine", jsonObject()
+			.put("min_validators", minValidators)
+			.put("max_validators", maxValidators)
+			.put("max_txns_per_proposal", maxTxnsPerProposal)
+			.put("forks", forks)
 		);
 	}
+
+	private static JSONObject prepareMempoolConfiguration(int mempoolMaxSize, long mempoolThrottleMs) {
+		return jsonObject().put("mempool", jsonObject()
+			.put("max_size", mempoolMaxSize)
+			.put("throttle_ms", mempoolThrottleMs)
+		);
+	}
+
+	public JSONObject getApiConfiguration() {
+		//TODO: implement it
+		return null;
+	}
+
+	public JSONArray getLivePeers() {
+		var peerArray = new JSONArray();
+
+		selfAndOthers(addressBook.recentPeers())
+			.map(this::peerToJson)
+			.forEach(peerArray::put);
+
+		return peerArray;
+	}
+
+	private JSONObject peerToJson(PeerWithSystem peer) {
+		var json = jsonObject().put("address", ValidatorAddress.of(peer.getSystem().getKey()));
+
+		peer.getSystem()
+			.supportedTransports()
+			.filter(this::isTCP)
+			.forEach(t -> json.put("endpoint", getHostAndPort(t)));
+
+		return json;
+	}
+
+	private String getHostAndPort(TransportInfo t) {
+		return t.metadata().get("host") + ":" + t.metadata().get("port");
+	}
+
+	private boolean isTCP(TransportInfo t) {
+		return t.name().equals("TCP");
+	}
+
+	//TODO: remove code below
+
+//	void respondWithCurrentProof(final HttpServerExchange exchange) {
+//		var proof = inMemorySystemInfo.getCurrentProof();
+//		respond(exchange, proof == null ? new JSONObject() : proof.asJSON());
+//	}
+//
+//	void respondWithEpochProof(final HttpServerExchange exchange) {
+//		var proof = inMemorySystemInfo.getEpochProof();
+//		respond(exchange, proof == null ? new JSONObject() : proof.asJSON());
+//	}
+//
+//	@VisibleForTesting
+//	void respondWithLocalSystem(final HttpServerExchange exchange) {
+//		var json = DefaultSerialization.getInstance().toJsonObject(localSystem, DsonOutput.Output.API);
+//		respond(exchange, json);
+//	}
+//
+//	@VisibleForTesting
+//	void respondWithGenesis(final HttpServerExchange exchange) {
+//		var jsonObject = new JSONObject();
+//		var txns = new JSONArray();
+//		genesis.getTxns().forEach(txn -> txns.put(Bytes.toHexString(txn.getPayload())));
+//		jsonObject.put("txn", txns.get(0));
+//		jsonObject.put("proof", genesis.getProof().asJSON());
+//
+//		respond(exchange, jsonObject);
+//	}
+
+
+	private Stream<PeerWithSystem> selfAndOthers(Stream<PeerWithSystem> others) {
+		return Stream.concat(Stream.of(this.localPeer), others).distinct();
+	}
+
+	//TODO: refactor into pieces of /system methods
+//	void handleConfig(HttpServerExchange exchange) {
+//		respond(exchange, jsonObject()
+//			.put("consensus", jsonObject()
+//				.put("pacemaker_timeout", pacemakerTimeout)
+//				.put("bft_sync_patience_ms", bftSyncPatienceMillis)
+//			)
+//		);
+//	}
+
 }

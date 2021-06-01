@@ -20,6 +20,7 @@ package com.radixdlt.api.handler;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.radixdlt.api.service.AccountService;
 import com.radixdlt.utils.functional.Result;
 
@@ -27,6 +28,7 @@ import java.util.List;
 
 import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
 
+@Singleton
 public class ValidationHandler {
 	private final AccountService accountService;
 
@@ -42,11 +44,6 @@ public class ValidationHandler {
 	}
 
 	public JSONObject handleGetCurrentEpochData(JSONObject request) {
-		//TODO: implement it
-		throw new UnsupportedOperationException("Not implemented");
-	}
-
-	public JSONObject handleGetNextEpochData(JSONObject request) {
 		//TODO: implement it
 		throw new UnsupportedOperationException("Not implemented");
 	}

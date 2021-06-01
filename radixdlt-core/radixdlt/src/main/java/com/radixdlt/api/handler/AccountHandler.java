@@ -21,6 +21,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.api.service.AccountService;
 import com.radixdlt.api.service.ActionParserService;
@@ -38,6 +39,7 @@ import static com.radixdlt.api.JsonRpcUtil.safeArray;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
 import static com.radixdlt.utils.functional.Result.allOf;
 
+@Singleton
 public class AccountHandler {
 	private final AccountService accountService;
 	private final SubmissionService submissionService;

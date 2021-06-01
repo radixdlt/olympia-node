@@ -20,6 +20,7 @@ package com.radixdlt.api.handler;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.data.UnstakeEntry;
@@ -47,6 +48,7 @@ import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.ok;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
+@Singleton
 public class ArchiveAccountHandler {
 	private final AccountService accountService;
 
@@ -115,9 +117,9 @@ public class ArchiveAccountHandler {
 		return jsonObject().put(ARRAY, array);
 	}
 
-	private static JSONObject formatTokenBalances(REAddr addr, List<TokenBalance> balances) {
+	private static JSONObject formatTokenBalances(REAddr address, List<TokenBalance> balances) {
 		return jsonObject()
-			.put("owner", AccountAddress.of(addr))
+			.put("owner", AccountAddress.of(address))
 			.put("tokenBalances", fromList(balances, TokenBalance::asJson));
 	}
 

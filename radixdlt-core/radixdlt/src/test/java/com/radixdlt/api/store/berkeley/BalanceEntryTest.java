@@ -35,8 +35,8 @@ import static com.radixdlt.api.data.BalanceEntry.createBalance;
 public class BalanceEntryTest {
 	private static final ECPublicKey KEY = ECKeyPair.generateNew().getPublicKey();
 	private static final REAddr ACCT = REAddr.ofPubKeyAccount(KEY);
-	private static final REAddr TOKEN_ADDR = REAddr.ofHashedKey(KEY, "xrd");
-	private static final String TOKEN_RRI = Rri.of("xrd", TOKEN_ADDR);
+	private static final REAddr TOKEN_ADDRESS = REAddr.ofHashedKey(KEY, "xrd");
+	private static final String TOKEN_RRI = Rri.of("xrd", TOKEN_ADDRESS);
 
 	@Test
 	public void verifyBalanceCalculation() {

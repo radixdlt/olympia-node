@@ -29,6 +29,8 @@ import static org.mockito.Mockito.when;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 public class ArchiveNetworkHandlerTest {
+	private static final JSONObject EMPTY_REQUEST = jsonObject().put("id", "1");
+
 	private final NetworkInfoService networkInfoService = mock(NetworkInfoService.class);
 	private final ArchiveNetworkHandler handler = new ArchiveNetworkHandler(networkInfoService, 2);
 
@@ -37,12 +39,10 @@ public class ArchiveNetworkHandlerTest {
 		when(networkInfoService.throughput())
 			.thenReturn(123L);
 
-		var response = handler.handleNetworkGetId(requestWith());
-
+		var response = handler.handleNetworkGetId(EMPTY_REQUEST);
 		assertTrue(response.has("result"));
 
 		var result = response.getJSONObject("result");
-
 		assertEquals(2, result.get("networkId"));
 	}
 
@@ -51,12 +51,10 @@ public class ArchiveNetworkHandlerTest {
 		when(networkInfoService.throughput())
 			.thenReturn(123L);
 
-		var response = handler.handleNetworkGetThroughput(requestWith());
-
+		var response = handler.handleNetworkGetThroughput(EMPTY_REQUEST);
 		assertTrue(response.has("result"));
 
 		var result = response.getJSONObject("result");
-
 		assertEquals(123L, result.get("tps"));
 	}
 
@@ -65,20 +63,10 @@ public class ArchiveNetworkHandlerTest {
 		when(networkInfoService.demand())
 			.thenReturn(123L);
 
-		var response = handler.handleNetworkGetDemand(requestWith());
-
+		var response = handler.handleNetworkGetDemand(EMPTY_REQUEST);
 		assertTrue(response.has("result"));
 
 		var result = response.getJSONObject("result");
-
 		assertEquals(123L, result.get("tps"));
-	}
-
-	private JSONObject requestWith() {
-		return requestWith(null);
-	}
-
-	private JSONObject requestWith(Object params) {
-		return jsonObject().put("id", "1").putOpt("params", params);
 	}
 }
