@@ -250,7 +250,7 @@ public interface Result<T> {
 	 * @return created instance
 	 */
 	static <R> Result<R> fail(Failure value) {
-		return new ResultFail<R>(value);
+		return new ResultFail<>(value);
 	}
 
 	final class ResultOk<R> implements Result<R> {
@@ -376,15 +376,15 @@ public interface Result<T> {
 	}
 
 	static <T1> Mapper1<T1> allOf(Result<T1> op1) {
-		return () -> op1.flatMap(v1 -> Result.ok(tuple(v1)));
+		return () -> op1.flatMap(v1 -> ok(tuple(v1)));
 	}
 
 	static <T1, T2> Mapper2<T1, T2> allOf(Result<T1> op1, Result<T2> op2) {
-		return () -> op1.flatMap(v1 -> op2.flatMap(v2 -> Result.ok(tuple(v1, v2))));
+		return () -> op1.flatMap(v1 -> op2.flatMap(v2 -> ok(tuple(v1, v2))));
 	}
 
 	static <T1, T2, T3> Mapper3<T1, T2, T3> allOf(Result<T1> op1, Result<T2> op2, Result<T3> op3) {
-		return () -> op1.flatMap(v1 -> op2.flatMap(v2 -> op3.flatMap(v3 -> Result.ok(tuple(v1, v2, v3)))));
+		return () -> op1.flatMap(v1 -> op2.flatMap(v2 -> op3.flatMap(v3 -> ok(tuple(v1, v2, v3)))));
 	}
 
 	static <T1, T2, T3, T4> Mapper4<T1, T2, T3, T4> allOf(
@@ -394,7 +394,7 @@ public interface Result<T> {
 			v1 -> op2.flatMap(
 				v2 -> op3.flatMap(
 					v3 -> op4.flatMap(
-						v4 -> Result.ok(tuple(v1, v2, v3, v4))))));
+						v4 -> ok(tuple(v1, v2, v3, v4))))));
 	}
 
 	static <T1, T2, T3, T4, T5> Mapper5<T1, T2, T3, T4, T5> allOf(
@@ -405,7 +405,7 @@ public interface Result<T> {
 				v2 -> op3.flatMap(
 					v3 -> op4.flatMap(
 						v4 -> op5.flatMap(
-							v5 -> Result.ok(tuple(v1, v2, v3, v4, v5)))))));
+							v5 -> ok(tuple(v1, v2, v3, v4, v5)))))));
 	}
 
 	static <T1, T2, T3, T4, T5, T6> Mapper6<T1, T2, T3, T4, T5, T6> allOf(
@@ -418,7 +418,7 @@ public interface Result<T> {
 					v3 -> op4.flatMap(
 						v4 -> op5.flatMap(
 							v5 -> op6.flatMap(
-								v6 -> Result.ok(tuple(v1, v2, v3, v4, v5, v6))))))));
+								v6 -> ok(tuple(v1, v2, v3, v4, v5, v6))))))));
 	}
 
 	static <T1, T2, T3, T4, T5, T6, T7> Mapper7<T1, T2, T3, T4, T5, T6, T7> allOf(
@@ -432,7 +432,7 @@ public interface Result<T> {
 						v4 -> op5.flatMap(
 							v5 -> op6.flatMap(
 								v6 -> op7.flatMap(
-									v7 -> Result.ok(tuple(v1, v2, v3, v4, v5, v6, v7)))))))));
+									v7 -> ok(tuple(v1, v2, v3, v4, v5, v6, v7)))))))));
 	}
 
 	static <T1, T2, T3, T4, T5, T6, T7, T8> Mapper8<T1, T2, T3, T4, T5, T6, T7, T8> allOf(
@@ -447,7 +447,7 @@ public interface Result<T> {
 							v5 -> op6.flatMap(
 								v6 -> op7.flatMap(
 									v7 -> op8.flatMap(
-										v8 -> Result.ok(tuple(v1, v2, v3, v4, v5, v6, v7, v8))))))))));
+										v8 -> ok(tuple(v1, v2, v3, v4, v5, v6, v7, v8))))))))));
 	}
 
 	static <T1, T2, T3, T4, T5, T6, T7, T8, T9> Mapper9<T1, T2, T3, T4, T5, T6, T7, T8, T9> allOf(
@@ -463,8 +463,7 @@ public interface Result<T> {
 								v6 -> op7.flatMap(
 									v7 -> op8.flatMap(
 										v8 -> op9.flatMap(
-											v9 -> Result.ok(
-												tuple(v1, v2, v3, v4, v5, v6, v7, v8, v9)
+											v9 -> ok(tuple(v1, v2, v3, v4, v5, v6, v7, v8, v9)
 											))))))))));
 	}
 

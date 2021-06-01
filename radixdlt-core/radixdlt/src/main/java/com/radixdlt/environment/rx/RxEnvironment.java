@@ -80,18 +80,14 @@ public final class RxEnvironment implements Environment {
 
 	@Override
 	public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass) {
-		return (e, millis) -> {
-			getSubject(eventClass).ifPresent(s -> executorService.schedule(
-					() -> s.onNext(e), millis, TimeUnit.MILLISECONDS));
-		};
+		return (e, millis) -> getSubject(eventClass)
+			.ifPresent(s -> executorService.schedule(() -> s.onNext(e), millis, TimeUnit.MILLISECONDS));
 	}
 
 	@Override
 	public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(TypeLiteral<T> typeLiteral) {
-		return (e, millis) -> {
-			getSubject(typeLiteral).ifPresent(s -> executorService.schedule(
-					() -> s.onNext(e), millis, TimeUnit.MILLISECONDS));
-		};
+		return (e, millis) -> getSubject(typeLiteral)
+			.ifPresent(s -> executorService.schedule(() -> s.onNext(e), millis, TimeUnit.MILLISECONDS));
 	}
 
 	@Override

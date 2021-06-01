@@ -65,12 +65,12 @@ public class ArchiveAccountHandlerTest {
 
 	@Test
 	public void testTokenBalancePositional() {
-		var addr1 = REAddr.ofHashedKey(PUB_KEY, "xyz");
-		var addr2 = REAddr.ofHashedKey(PUB_KEY, "yzs");
-		var addr3 = REAddr.ofHashedKey(PUB_KEY, "zxy");
-		var balance1 = TokenBalance.create(Rri.of("xyz", addr1), UInt384.TWO);
-		var balance2 = TokenBalance.create(Rri.of("yzs", addr2), UInt384.FIVE);
-		var balance3 = TokenBalance.create(Rri.of("zxy", addr3), UInt384.EIGHT);
+		var address1 = REAddr.ofHashedKey(PUB_KEY, "xyz");
+		var address2 = REAddr.ofHashedKey(PUB_KEY, "yzs");
+		var address3 = REAddr.ofHashedKey(PUB_KEY, "zxy");
+		var balance1 = TokenBalance.create(Rri.of("xyz", address1), UInt384.TWO);
+		var balance2 = TokenBalance.create(Rri.of("yzs", address2), UInt384.FIVE);
+		var balance3 = TokenBalance.create(Rri.of("zxy", address3), UInt384.EIGHT);
 
 		when(accountService.getTokenBalances(any(REAddr.class)))
 			.thenReturn(Result.ok(List.of(balance1, balance2, balance3)));
@@ -92,12 +92,12 @@ public class ArchiveAccountHandlerTest {
 
 	@Test
 	public void testTokenBalanceNamed() {
-		var addr1 = REAddr.ofHashedKey(PUB_KEY, "xyz");
-		var addr2 = REAddr.ofHashedKey(PUB_KEY, "yzs");
-		var addr3 = REAddr.ofHashedKey(PUB_KEY, "zxy");
-		var balance1 = TokenBalance.create(Rri.of("xyz", addr1), UInt384.TWO);
-		var balance2 = TokenBalance.create(Rri.of("yzs", addr2), UInt384.FIVE);
-		var balance3 = TokenBalance.create(Rri.of("zxy", addr3), UInt384.EIGHT);
+		var address1 = REAddr.ofHashedKey(PUB_KEY, "xyz");
+		var address2 = REAddr.ofHashedKey(PUB_KEY, "yzs");
+		var address3 = REAddr.ofHashedKey(PUB_KEY, "zxy");
+		var balance1 = TokenBalance.create(Rri.of("xyz", address1), UInt384.TWO);
+		var balance2 = TokenBalance.create(Rri.of("yzs", address2), UInt384.FIVE);
+		var balance3 = TokenBalance.create(Rri.of("zxy", address3), UInt384.EIGHT);
 
 		when(accountService.getTokenBalances(any(REAddr.class)))
 			.thenReturn(Result.ok(List.of(balance1, balance2, balance3)));
@@ -171,7 +171,7 @@ public class ArchiveAccountHandlerTest {
 
 	@Test
 	public void testTransactionHistoryPositional() {
-		var entry = createTxHistoryEntry(AID.ZERO);
+		var entry = createTxHistoryEntry();
 
 		when(accountService.getTransactionHistory(any(), eq(5), any()))
 			.thenReturn(Result.ok(tuple(Optional.ofNullable(entry.timestamp()), List.of(entry))));
@@ -193,7 +193,7 @@ public class ArchiveAccountHandlerTest {
 
 	@Test
 	public void testTransactionHistoryNamed() {
-		var entry = createTxHistoryEntry(AID.ZERO);
+		var entry = createTxHistoryEntry();
 
 		when(accountService.getTransactionHistory(any(), eq(5), any()))
 			.thenReturn(Result.ok(tuple(Optional.ofNullable(entry.timestamp()), List.of(entry))));
@@ -226,10 +226,10 @@ public class ArchiveAccountHandlerTest {
 		assertEquals("Other", singleAction.getString("type"));
 	}
 
-	private TxHistoryEntry createTxHistoryEntry(AID txId) {
+	private TxHistoryEntry createTxHistoryEntry() {
 		var now = Instant.ofEpochMilli(Instant.now().toEpochMilli());
 		var action = ActionEntry.unknown();
-		return TxHistoryEntry.create(txId, now, UInt256.ONE, "text", List.of(action));
+		return TxHistoryEntry.create(AID.ZERO, now, UInt256.ONE, "text", List.of(action));
 	}
 
 	private JSONObject requestWith(Object params) {

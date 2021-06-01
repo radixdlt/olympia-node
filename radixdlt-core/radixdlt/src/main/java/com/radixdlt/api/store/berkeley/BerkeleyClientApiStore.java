@@ -466,7 +466,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private Result<REAddr> addrFromKey(DatabaseEntry key) {
 		var buf = Arrays.copyOf(key.getData(), ECPublicKey.COMPRESSED_BYTES + 1);
-		return Result.wrap(INVALID_ACCOUNT_ADDRESS, () -> REAddr.of(buf));
+		return wrap(INVALID_ACCOUNT_ADDRESS, () -> REAddr.of(buf));
 	}
 
 	private Result<Txn> retrieveTx(AID id) {
@@ -529,7 +529,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			return supplier.get();
 		} finally {
 			final var elapsed = (System.nanoTime() - start + 500L) / 1000L;
-			this.systemCounters.add(elapsedCounter, elapsed);
+			systemCounters.add(elapsedCounter, elapsed);
 			postAction.run();
 		}
 	}

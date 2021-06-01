@@ -42,7 +42,7 @@ public enum ActionType {
 
 	private final String text;
 
-	private static final Map<String, ActionType> TO_ACTION_TYPE = Arrays.stream(ActionType.values())
+	private static final Map<String, ActionType> TO_ACTION_TYPE = Arrays.stream(values())
 		.collect(Collectors.toMap(ActionType::toString, Function.identity()));
 
 	ActionType(String text) {

@@ -48,7 +48,7 @@ public final class EndpointConfig {
 
 	public enum Type {
 		ARCHIVE,
-		NODE;
+		NODE
 	}
 
 	public enum Environment {

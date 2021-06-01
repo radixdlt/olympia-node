@@ -1,4 +1,4 @@
-package com.radixdlt.api.archive.util;
+package com.radixdlt.client.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;

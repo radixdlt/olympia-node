@@ -200,8 +200,8 @@ public class BalanceEntry {
 	}
 
 	public BalanceEntry add(BalanceEntry balanceEntry) {
-		assert Objects.equals(this.owner, balanceEntry.owner);
-		assert this.rri.equals(balanceEntry.rri);
+		assert Objects.equals(owner, balanceEntry.owner);
+		assert rri.equals(balanceEntry.rri);
 
 		if (negative) {
 			return balanceEntry.negative ? sum(balanceEntry, true) : diff(balanceEntry, true);
@@ -242,7 +242,7 @@ public class BalanceEntry {
 	}
 
 	private BalanceEntry diff(BalanceEntry balanceEntry, boolean negate) {
-		var isBigger = this.amount.compareTo(balanceEntry.amount) >= 0;
+		var isBigger = amount.compareTo(balanceEntry.amount) >= 0;
 		var amount = isBigger
 					 ? this.amount.subtract(balanceEntry.amount)
 					 : balanceEntry.amount.subtract(this.amount);

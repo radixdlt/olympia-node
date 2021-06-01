@@ -22,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.api.data.TransactionAction;
 import com.radixdlt.api.faucet.FaucetToken;
@@ -44,6 +45,7 @@ import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
 
 import static java.util.Optional.empty;
 
+@Singleton
 public class FaucetHandler {
 	private static final Logger logger = LogManager.getLogger();
 	private static final UInt256 AMOUNT = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);

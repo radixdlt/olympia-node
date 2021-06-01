@@ -69,8 +69,8 @@ public class AccountService {
 		this.clientApiStore = clientApiStore;
 	}
 
-	public Result<List<TokenBalance>> getTokenBalances(REAddr addr) {
-		return clientApiStore.getTokenBalances(addr, false)
+	public Result<List<TokenBalance>> getTokenBalances(REAddr address) {
+		return clientApiStore.getTokenBalances(address, false)
 			.map(list -> list.stream().map(TokenBalance::from).collect(Collectors.toList()));
 	}
 

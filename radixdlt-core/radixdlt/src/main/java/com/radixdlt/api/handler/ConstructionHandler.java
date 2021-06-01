@@ -20,6 +20,7 @@ package com.radixdlt.api.handler;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.radixdlt.api.data.PreparedTransaction;
 import com.radixdlt.api.service.ActionParserService;
 import com.radixdlt.api.service.SubmissionService;
@@ -44,6 +45,7 @@ import static com.radixdlt.api.data.ApiErrors.INVALID_SIGNATURE_DER;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.wrap;
 
+@Singleton
 public class ConstructionHandler {
 	private final SubmissionService submissionService;
 	private final ActionParserService actionParserService;

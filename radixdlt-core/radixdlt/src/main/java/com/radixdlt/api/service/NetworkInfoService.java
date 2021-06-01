@@ -25,7 +25,6 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 
 import java.util.EnumMap;
-import java.util.List;
 
 import static com.radixdlt.api.data.NodeStatus.BOOTING;
 import static com.radixdlt.api.data.NodeStatus.NETWORK_HALTED;
@@ -69,7 +68,7 @@ public class NetworkInfoService {
 	}
 
 	public long throughput() {
-		return statistics.get(CounterType.ELAPSED_BDB_LEDGER_COMMIT).average();
+		return statistics.get(THROUGHPUT_KEY).average();
 	}
 
 	public long demand() {
@@ -116,9 +115,14 @@ public class NetworkInfoService {
 		private final Type type;
 		private long lastValue;
 
-		private ValueHolder(long averagingFactor) {
-			this.calculator = MovingAverage.create(averagingFactor);
-			this.deltaCalculator = MovingAverage.create(averagingFactor);
+		public enum Type {
+			ABSOLUTE,
+			INCREMENTAL
+		}
+
+		private ValueHolder(long averagingFactor, Type type) {
+			calculator = MovingAverage.create(averagingFactor);
+			deltaCalculator = MovingAverage.create(averagingFactor);
 			this.type = type;
 		}
 
@@ -128,7 +132,7 @@ public class NetworkInfoService {
 			lastValue = newValue;
 			deltaCalculator.update(lastDelta);
 
-			if (type == Type.ABSOLUTE) {
+			if (type == ABSOLUTE) {
 				calculator.update(newValue);
 			} else {
 				calculator.update(lastDelta);

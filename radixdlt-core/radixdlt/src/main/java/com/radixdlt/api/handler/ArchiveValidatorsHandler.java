@@ -20,6 +20,7 @@ package com.radixdlt.api.handler;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.radixdlt.api.data.ValidatorInfoDetails;
 import com.radixdlt.api.service.ValidatorInfoService;
 import com.radixdlt.crypto.ECPublicKey;
@@ -39,6 +40,7 @@ import static com.radixdlt.api.data.ApiErrors.INVALID_PAGE_SIZE;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.ok;
 
+@Singleton
 public class ArchiveValidatorsHandler {
 	private final ValidatorInfoService validatorInfoService;
 
