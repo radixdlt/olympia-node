@@ -52,6 +52,8 @@ public final class VertexStoreBFTSyncRequestProcessor implements RemoteEventProc
 
 		log.debug("SYNC_VERTICES: Received GetVerticesRequest {}", request);
 		var verticesMaybe = vertexStore.getVertices(request.getVertexId(), request.getCount());
+		var singleVerticesMaybe = vertexStore.getVertices(request.getVertexId(), request.getCount());
+		log.info("Processing GetVerticesRequest from {}, got vertices? {}, got a single vertex? {} {}", sender, verticesMaybe.isPresent(), singleVerticesMaybe.isPresent(), singleVerticesMaybe);
 		verticesMaybe.ifPresentOrElse(
 			fetched -> {
 				log.debug("SYNC_VERTICES: Sending Response {}", fetched);
