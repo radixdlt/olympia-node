@@ -669,40 +669,20 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				);
 			} else if (substate instanceof PreparedUnstakeOwnership) {
 				var unstakeOwnership = (PreparedUnstakeOwnership) substate;
-				var accountEntry = BalanceEntry.create(
-					unstakeOwnership.getOwner(),
-					unstakeOwnership.getDelegateKey(),
-					"stake-ownership",
-					UInt384.from(unstakeOwnership.getAmount()),
-					update.isShutDown(),
-					0L
+				bucketAccounting.merge(
+					unstakeOwnership.bucket(),
+					new BigInteger(update.isBootUp() ? 1 : -1, unstakeOwnership.getAmount().toByteArray(), 0, UInt256.BYTES),
+					BigInteger::add
 				);
-				storeBalanceEntry(accountEntry);
 			} else if (substate instanceof StakeOwnership) {
 				var stakeOwnership = (StakeOwnership) substate;
-				var accountEntry = BalanceEntry.create(
-					stakeOwnership.getOwner(),
-					stakeOwnership.getDelegateKey(),
-					"stake-ownership",
-					UInt384.from(stakeOwnership.getAmount()),
-					update.isShutDown(),
-					null
+				bucketAccounting.merge(
+					stakeOwnership.bucket(),
+					new BigInteger(update.isBootUp() ? 1 : -1, stakeOwnership.getAmount().toByteArray(), 0, UInt256.BYTES),
+					BigInteger::add
 				);
-				storeBalanceEntry(accountEntry);
 			} else if (substate instanceof ValidatorStake) {
 				var validatorStake = (ValidatorStake) substate;
-
-				// validator ownership
-				var ownershipEntry = BalanceEntry.create(
-					null,
-					validatorStake.getValidatorKey(),
-					"stake-ownership",
-					UInt384.from(validatorStake.getTotalOwnership()),
-					update.isShutDown(),
-					null
-				);
-				storeBalanceEntry(ownershipEntry);
-
 				bucketAccounting.merge(
 					validatorStake.resourceInBucket(),
 					new BigInteger(update.isBootUp() ? 1 : -1, validatorStake.getTotalStake().toByteArray(), 0, UInt256.BYTES),
@@ -746,7 +726,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				return;
 			}
 
-			var rri = getRriOrFail(r.resourceAddr());
+			var rri = r.resourceAddr() != null ? getRriOrFail(r.resourceAddr()) : "stake-ownership";
 			// Can probably optimize this out for every transfer
 			var tokenEntry = BalanceEntry.create(
 				r.getOwner(),
@@ -759,13 +739,37 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			storeBalanceEntry(tokenEntry);
 		});
 
+		var stakeOwnershipAccounting = bucketAccounting.entrySet().stream()
+			.filter(e -> e.getKey().resourceAddr() == null)
+			.collect(Collectors.toMap(
+				e -> e.getKey().getValidatorKey(),
+				Map.Entry::getValue,
+				BigInteger::add
+			));
+		stakeOwnershipAccounting.forEach((d, i) -> {
+			if (i.equals(BigInteger.ZERO)) {
+				return;
+			}
+
+			// Can probably optimize this out for every transfer
+			var tokenEntry = BalanceEntry.create(
+				null,
+				d,
+				"stake-ownership",
+				UInt384.from(i.abs().toByteArray()),
+				i.signum() == -1,
+				null
+			);
+			storeBalanceEntry(tokenEntry);
+		});
+
 		var resourceAccounting = bucketAccounting.entrySet().stream()
+			.filter(e -> e.getKey().resourceAddr() != null)
 			.collect(Collectors.toMap(
 				e -> e.getKey().resourceAddr(),
 				Map.Entry::getValue,
 				BigInteger::add
 			));
-
 		resourceAccounting.forEach((r, i) -> {
 			if (i.equals(BigInteger.ZERO)) {
 				return;

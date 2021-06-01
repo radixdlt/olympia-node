@@ -19,6 +19,7 @@
 package com.radixdlt.atommodel.system.state;
 
 import com.radixdlt.atommodel.tokens.Fungible;
+import com.radixdlt.atommodel.tokens.state.Bucket;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -45,6 +46,15 @@ public final class StakeOwnership implements Fungible {
 		this.amount = Objects.requireNonNull(amount);
 	}
 
+	@Override
+	public UInt256 getAmount() {
+		return this.amount;
+	}
+
+	public Bucket bucket() {
+		return new StakeOwnershipBucket(delegateKey, owner);
+	}
+
 	public ECPublicKey getDelegateKey() {
 		return delegateKey;
 	}
@@ -61,11 +71,6 @@ public final class StakeOwnership implements Fungible {
 			owner,
 			delegateKey
 		);
-	}
-
-	@Override
-	public UInt256 getAmount() {
-		return this.amount;
 	}
 
 	@Override

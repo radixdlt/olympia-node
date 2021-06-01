@@ -23,20 +23,18 @@ import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
 
-public class ExittingStakeBucket implements Bucket {
+public class ExittingOwnershipBucket implements Bucket {
 	private final REAddr owner;
-	private final ECPublicKey delegateKey;
-	private final Long epochUnlocked;
+	private final ECPublicKey delegate;
 
-	public ExittingStakeBucket(REAddr owner, ECPublicKey delegateKey, Long epochUnlocked) {
+	public ExittingOwnershipBucket(REAddr owner, ECPublicKey delegate) {
 		this.owner = owner;
-		this.delegateKey = delegateKey;
-		this.epochUnlocked = epochUnlocked;
+		this.delegate = delegate;
 	}
 
 	@Override
 	public REAddr resourceAddr() {
-		return REAddr.ofNativeToken();
+		return null;
 	}
 
 	@Override
@@ -46,28 +44,26 @@ public class ExittingStakeBucket implements Bucket {
 
 	@Override
 	public ECPublicKey getValidatorKey() {
-		return delegateKey;
+		return delegate;
 	}
 
 	@Override
 	public Long getEpochUnlock() {
-		return epochUnlocked;
+		return 0L;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(owner, delegateKey, epochUnlocked);
+		return Objects.hash(owner, delegate);
 	}
 
-	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof ExittingStakeBucket)) {
+		if (!(o instanceof ExittingOwnershipBucket)) {
 			return false;
 		}
 
-		var other = (ExittingStakeBucket) o;
+		var other = (ExittingOwnershipBucket) o;
 		return Objects.equals(this.owner, other.owner)
-			&& Objects.equals(this.delegateKey, other.delegateKey)
-			&& Objects.equals(this.epochUnlocked, other.epochUnlocked);
+			&& Objects.equals(this.delegate, other.delegate);
 	}
 }

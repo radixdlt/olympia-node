@@ -67,7 +67,7 @@ public final class ExittingStake implements Fungible {
 	}
 
 	public Bucket resourceInBucket() {
-		return new ExittingStakeBucket(owner, delegateKey);
+		return new ExittingStakeBucket(owner, delegateKey, epochUnlocked);
 	}
 
 	public ECPublicKey getDelegateKey() {
