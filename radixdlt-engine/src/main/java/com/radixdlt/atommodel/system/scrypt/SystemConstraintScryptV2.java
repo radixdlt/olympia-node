@@ -658,7 +658,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.registerParticle(
 			ValidatorStake.class,
 			ParticleDefinition.<ValidatorStake>builder()
-				.virtualizeUp(p -> p.getTotalStake().isZero())
+				.virtualizeUp(p -> p.getAmount().isZero())
 				.build()
 		);
 		os.registerParticle(

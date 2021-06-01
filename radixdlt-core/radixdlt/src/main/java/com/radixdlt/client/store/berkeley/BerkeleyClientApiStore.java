@@ -689,6 +689,21 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			}
 		}
 
+		var stakeOwnershipAccounting = bucketAccounting.entrySet().stream()
+			.filter(e -> e.getKey().resourceAddr() == null)
+			.collect(Collectors.toMap(
+				e -> e.getKey().getValidatorKey(),
+				Map.Entry::getValue,
+				BigInteger::add
+			));
+		var resourceAccounting = bucketAccounting.entrySet().stream()
+			.filter(e -> e.getKey().resourceAddr() != null)
+			.collect(Collectors.toMap(
+				e -> e.getKey().resourceAddr(),
+				Map.Entry::getValue,
+				BigInteger::add
+			));
+
 		var bucketEntries = bucketAccounting.entrySet().stream()
 			.filter(e -> !e.getValue().equals(BigInteger.ZERO))
 			.map(e -> {
@@ -703,14 +718,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					i.signum() == -1,
 					r.getEpochUnlock()
 				);
-			}).collect(Collectors.toList());
-		var stakeOwnershipAccounting = bucketAccounting.entrySet().stream()
-			.filter(e -> e.getKey().resourceAddr() == null)
-			.collect(Collectors.toMap(
-				e -> e.getKey().getValidatorKey(),
-				Map.Entry::getValue,
-				BigInteger::add
-			));
+			});
 		var stakeOwnershipEntries = stakeOwnershipAccounting.entrySet().stream()
 			.filter(e -> !e.getValue().equals(BigInteger.ZERO))
 			.map(e -> BalanceEntry.create(
@@ -720,13 +728,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					UInt384.from(e.getValue().abs().toByteArray()),
 					e.getValue().signum() == -1,
 					null
-			)).collect(Collectors.toList());
-		var resourceAccounting = bucketAccounting.entrySet().stream()
-			.filter(e -> e.getKey().resourceAddr() != null)
-			.collect(Collectors.toMap(
-				e -> e.getKey().resourceAddr(),
-				Map.Entry::getValue,
-				BigInteger::add
 			));
 		var resourceEntries = resourceAccounting.entrySet().stream()
 			.filter(e -> !e.getValue().equals(BigInteger.ZERO))
@@ -735,11 +736,10 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				var amt = UInt384.from(e.getValue().abs().toByteArray());
 				var isNegative = e.getValue().signum() == -1;
 				return BalanceEntry.resource(rri, amt, isNegative);
-			}).collect(Collectors.toList());
+			});
 
-		var entries = Streams.concat(bucketEntries.stream(), stakeOwnershipEntries.stream(), resourceEntries.stream())
-			.collect(Collectors.toList());
-		entries.forEach(this::storeBalanceEntry);
+		Streams.concat(bucketEntries, stakeOwnershipEntries, resourceEntries)
+			.forEach(this::storeBalanceEntry);
 	}
 
 	private Optional<ECPublicKey> extractCreator(Txn tx) {
