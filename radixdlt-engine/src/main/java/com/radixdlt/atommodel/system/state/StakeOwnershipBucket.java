@@ -18,7 +18,7 @@
 
 package com.radixdlt.atommodel.system.state;
 
-import com.radixdlt.atommodel.tokens.state.Bucket;
+import com.radixdlt.atommodel.tokens.Bucket;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 

@@ -16,7 +16,7 @@
  *
  */
 
-package com.radixdlt.atommodel.tokens.state;
+package com.radixdlt.atommodel.tokens;
 
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;

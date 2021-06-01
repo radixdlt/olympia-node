@@ -18,15 +18,15 @@
 
 package com.radixdlt.atommodel.system.state;
 
-import com.radixdlt.atommodel.tokens.Fungible;
-import com.radixdlt.atommodel.tokens.state.Bucket;
+import com.radixdlt.atommodel.tokens.ResourceInBucket;
+import com.radixdlt.atommodel.tokens.Bucket;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 
-public final class StakeOwnership implements Fungible {
+public final class StakeOwnership implements ResourceInBucket {
 	private final UInt256 amount;
 
 	// Bucket keys
