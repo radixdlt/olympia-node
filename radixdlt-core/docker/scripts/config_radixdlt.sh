@@ -10,7 +10,7 @@ USER_ID=${LOCAL_USER_ID:-999}
 USER_NAME=radixdlt
 # check and delete the user that is created in postinstal action of deb package
 getent group $USER_NAME >/dev/null && groupmod -g $USER_ID radixdlt || groupadd -r $USER_NAME
-getent passwd $RADIXDLT_USER >/dev/null && usermod -u $USER_ID radixdlt || useradd -r -d "$RADIXDLT_HOME" -g $RADIXDLT_USER $RADIXDLT_USER
+getent passwd $USER_NAME >/dev/null && usermod -u $USER_ID radixdlt || useradd -r -d "$RADIXDLT_HOME" -g $USER_NAME $USER_NAME
 chown -R radixdlt:radixdlt /home/radixdlt/
 
 #check for test network configs
