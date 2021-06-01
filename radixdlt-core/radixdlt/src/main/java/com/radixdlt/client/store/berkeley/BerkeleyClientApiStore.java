@@ -675,7 +675,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					"stake-ownership",
 					UInt384.from(unstakeOwnership.getAmount()),
 					update.isShutDown(),
-					getEpoch() + ValidatorStake.EPOCHS_LOCKED
+					0L
 				);
 				storeBalanceEntry(accountEntry);
 			} else if (substate instanceof StakeOwnership) {
