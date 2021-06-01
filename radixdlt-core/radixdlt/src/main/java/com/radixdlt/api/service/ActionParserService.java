@@ -166,7 +166,8 @@ public final class ActionParserService {
 	}
 
 	private static Result<ECPublicKey> validator(JSONObject element) {
-		return validator(element, "validator");
+		return param(element, "validator")
+			.flatMap(ValidatorAddress::fromString);
 	}
 
 	private static Result<UInt256> amount(JSONObject element) {
@@ -225,11 +226,6 @@ public final class ActionParserService {
 				.filter(String.class::isInstance)
 				.map(String.class::cast)
 		);
-	}
-
-	private static Result<ECPublicKey> validator(JSONObject element, String name) {
-		return param(element, name)
-			.flatMap(ValidatorAddress::fromString);
 	}
 
 	private static Result<REAddr> address(JSONObject element, String name) {

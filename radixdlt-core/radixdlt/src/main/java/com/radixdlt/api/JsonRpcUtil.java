@@ -73,7 +73,7 @@ public final class JsonRpcUtil {
 	}
 
 	public static Result<JSONObject> jsonObject(String data) {
-		return Result.wrap(UNABLE_TO_DECODE, () -> new JSONObject(data));
+		return wrap(UNABLE_TO_DECODE, () -> new JSONObject(data));
 	}
 
 	public static JSONObject jsonObject() {
@@ -91,15 +91,15 @@ public final class JsonRpcUtil {
 	}
 
 	public static Result<Integer> safeInteger(JSONObject params, String name) {
-		return Result.wrap(UNABLE_TO_DECODE, () -> params.getInt(name));
+		return wrap(UNABLE_TO_DECODE, () -> params.getInt(name));
 	}
 
 	public static Result<JSONArray> safeArray(JSONObject params, String name) {
-		return Result.fromOptional(MISSING_PARAMETER.with(name), ofNullable(params.optJSONArray(name)));
+		return fromOptional(MISSING_PARAMETER.with(name), ofNullable(params.optJSONArray(name)));
 	}
 
 	public static Result<String> safeString(JSONObject params, String name) {
-		return Result.fromOptional(MISSING_PARAMETER.with(name), optString(params, name));
+		return fromOptional(MISSING_PARAMETER.with(name), optString(params, name));
 	}
 
 	public static Optional<String> optString(JSONObject params, String name) {
@@ -109,7 +109,7 @@ public final class JsonRpcUtil {
 	}
 
 	public static Result<JSONObject> safeObject(JSONObject params, String name) {
-		return Result.fromOptional(MISSING_PARAMETER.with(name), ofNullable(params.optJSONObject(name)));
+		return fromOptional(MISSING_PARAMETER.with(name), ofNullable(params.optJSONObject(name)));
 	}
 
 	public static Result<byte[]> safeBlob(JSONObject params, String name) {
@@ -130,7 +130,10 @@ public final class JsonRpcUtil {
 	}
 
 	public static JSONObject protocolError(RpcError code, String message) {
-		return errorResponse(JSONObject.NULL, code, message);
+		return commonFields(JSONObject.NULL).put("error", jsonObject()
+			.put("code", code.code())
+			.put("message", message)
+		);
 	}
 
 	public static JSONObject extendedError(JSONObject request, int code, String message) {
@@ -141,10 +144,6 @@ public final class JsonRpcUtil {
 		var id = ofNullable(request.opt("id")).orElse(JSONObject.NULL);
 
 		return commonFields(id).put("error", response);
-	}
-
-	private static JSONObject errorResponse(Object id, RpcError code, String message) {
-		return commonFields(id).put("error", jsonObject().put("code", code.code()).put("message", message));
 	}
 
 	private static JSONObject commonFields(Object id) {

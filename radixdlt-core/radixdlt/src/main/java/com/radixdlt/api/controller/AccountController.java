@@ -32,7 +32,7 @@ public final class AccountController implements Controller {
 
 	@Override
 	public String root() {
-		return "/archive";
+		return "/account";
 	}
 
 	@Override

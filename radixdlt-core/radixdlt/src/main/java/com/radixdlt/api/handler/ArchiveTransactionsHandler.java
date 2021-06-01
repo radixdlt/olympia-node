@@ -20,12 +20,14 @@ package com.radixdlt.api.handler;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.service.TransactionStatusService;
 import com.radixdlt.identifiers.AID;
 
 import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
 
+@Singleton
 public class ArchiveTransactionsHandler {
 	private final TransactionStatusService transactionStatusService;
 

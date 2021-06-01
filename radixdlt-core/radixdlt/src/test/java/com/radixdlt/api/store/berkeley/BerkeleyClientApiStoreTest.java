@@ -61,15 +61,20 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
+import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt384;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -80,7 +85,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -101,7 +109,7 @@ public class BerkeleyClientApiStoreTest {
 	private DatabaseEnvironment environment;
 
 	@Rule
-	public TemporaryFolder folder = new TemporaryFolder();
+	public final TemporaryFolder folder = new TemporaryFolder();
 
 	@Inject
 	private TxnParser txnParser;
@@ -293,9 +301,7 @@ public class BerkeleyClientApiStoreTest {
 
 		clientApiStore.getTransaction(txId)
 			.onFailure(this::failWithMessage)
-			.onSuccess(entry -> {
-				assertEquals(txId, entry.getTxId());
-			});
+			.onSuccess(entry -> assertEquals(txId, entry.getTxId()));
 	}
 
 	@Test
@@ -350,7 +356,7 @@ public class BerkeleyClientApiStoreTest {
 	}
 
 	private void failWithMessage(com.radixdlt.utils.functional.Failure failure) {
-		Assert.fail(failure.message());
+		fail(failure.message());
 	}
 
 	private MutableTokenDefinition prepareMutableTokenDef(ECPublicKey key, String symbol) {
