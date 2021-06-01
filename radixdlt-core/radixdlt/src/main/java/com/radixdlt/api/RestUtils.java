@@ -28,17 +28,20 @@ import com.radixdlt.crypto.exception.PublicKeyException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.Deque;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import io.undertow.util.StatusCodes;
 
 public final class RestUtils {
 	public static final String CONTENT_TYPE_JSON = "application/json";
+
+	public static final HttpString METHOD_HEADER = HttpString.tryFromString("X-Radixdlt-Method");
+	public static final HttpString CORRELATION_HEADER = HttpString.tryFromString("X-Radixdlt-Correlation-Id");
 
 	private RestUtils() {
 		throw new IllegalStateException("Can't construct");
@@ -117,22 +120,26 @@ public final class RestUtils {
 	}
 
 	public static <T> void respondAsync(HttpServerExchange exchange, Supplier<T> objectSupplier) {
-		exchange.dispatch(() -> {
-			CompletableFuture
-				.supplyAsync(objectSupplier)
-				.whenComplete((response, exception) -> {
-					if (exception == null) {
-						respond(exchange, response);
-					} else {
-						exchange.setStatusCode(StatusCodes.BAD_REQUEST);
-						exchange.getResponseSender().send("Unable to handle request: " + exception.getMessage());
-					}
-				});
-		});
+		exchange.dispatch(() -> CompletableFuture
+			.supplyAsync(objectSupplier)
+			.whenComplete((response, exception) -> {
+				copyHeader(exchange, METHOD_HEADER);
+				copyHeader(exchange, CORRELATION_HEADER);
+
+				if (exception == null) {
+					respond(exchange, response);
+				} else {
+					exchange.setStatusCode(StatusCodes.BAD_REQUEST);
+					exchange.getResponseSender().send("Unable to handle request: " + exception.getMessage());
+				}
+			}));
 	}
 
-	public static Optional<String> getParameter(HttpServerExchange exchange, String name) {
-		// our routing handler puts path params into query params by default so we don't need to include them manually
-		return Optional.ofNullable(exchange.getQueryParameters().get(name)).map(Deque::getFirst);
+	private static void copyHeader(HttpServerExchange exchange, HttpString headerName) {
+		var inputHeaders = exchange.getRequestHeaders();
+		var outputHeaders = exchange.getResponseHeaders();
+
+		Optional.ofNullable(inputHeaders.getFirst(headerName))
+			.ifPresent(header -> outputHeaders.add(headerName, header));
 	}
 }
