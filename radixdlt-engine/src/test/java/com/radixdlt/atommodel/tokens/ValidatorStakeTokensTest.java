@@ -18,6 +18,7 @@
 
 package com.radixdlt.atommodel.tokens;
 
+import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.actions.CreateMutableToken;
@@ -32,6 +33,8 @@ import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV2;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
+import com.radixdlt.atommodel.tokens.state.AccountBucket;
+import com.radixdlt.atommodel.tokens.state.PreparedStakeBucket;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.CMErrorCode;
@@ -49,6 +52,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.math.BigInteger;
 import java.util.Collection;
 import java.util.List;
 
@@ -141,11 +145,18 @@ public class ValidatorStakeTokensTest {
 		// Act
 		var transfer = this.engine.construct(new StakeTokens(accountAddr, key.getPublicKey(), stakeAmt))
 			.signAndBuild(key::sign);
-		var parsed = this.engine.execute(List.of(transfer));
-		var action = (StakeTokens) parsed.get(0).getActions().get(0).getTxAction();
-		assertThat(action.amount()).isEqualTo(stakeAmt);
-		assertThat(action.from()).isEqualTo(accountAddr);
-		assertThat(action.to()).isEqualTo(key.getPublicKey());
+		var processed = this.engine.execute(List.of(transfer));
+		var accounting = REResourceAccounting.compute(processed.get(0).getGroupedStateUpdates().get(0));
+		assertThat(accounting.bucketAccounting())
+			.hasSize(2)
+			.containsEntry(
+				new AccountBucket(tokenAddr, accountAddr),
+				new BigInteger(-1, stakeAmt.toByteArray(), 0, UInt256.BYTES)
+			)
+			.containsEntry(
+				new PreparedStakeBucket(accountAddr, key.getPublicKey()),
+				new BigInteger(1, stakeAmt.toByteArray(), 0, UInt256.BYTES)
+			);
 	}
 
 	@Test

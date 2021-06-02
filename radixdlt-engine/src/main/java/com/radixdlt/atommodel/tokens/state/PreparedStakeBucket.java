@@ -24,7 +24,7 @@ import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
 
-public class PreparedStakeBucket implements Bucket {
+public final class PreparedStakeBucket implements Bucket {
 	private final REAddr owner;
 	private final ECPublicKey delegateKey;
 

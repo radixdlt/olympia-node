@@ -24,7 +24,7 @@ import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
 
-public class ExittingStakeBucket implements Bucket {
+public final class ExittingStakeBucket implements Bucket {
 	private final REAddr owner;
 	private final ECPublicKey delegateKey;
 	private final Long epochUnlocked;

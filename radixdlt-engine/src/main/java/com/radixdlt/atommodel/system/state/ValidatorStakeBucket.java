@@ -24,7 +24,7 @@ import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
 
-public class ValidatorStakeBucket implements Bucket {
+public final class ValidatorStakeBucket implements Bucket {
 	private final ECPublicKey validatorKey;
 
 	public ValidatorStakeBucket(ECPublicKey validatorKey) {

@@ -52,11 +52,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @RunWith(Parameterized.class)
-public class UnstakeTokensTest {
+public class UnstakeTokensV1Test {
 
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
@@ -84,7 +83,7 @@ public class UnstakeTokensTest {
 	private final ActionConstructor<StakeTokens> stakeTokensConstructor;
 	private final ActionConstructor<UnstakeTokens> unstakeTokensConstructor;
 
-	public UnstakeTokensTest(
+	public UnstakeTokensV1Test(
 		UInt256 startAmt,
 		UInt256 unstakeAmt,
 		List<ConstraintScrypt> scrypts,
@@ -139,11 +138,7 @@ public class UnstakeTokensTest {
 		// Act
 		var unstake = this.engine.construct(new UnstakeTokens(accountAddr, key.getPublicKey(), unstakeAmt))
 			.signAndBuild(key::sign);
-		var parsed = this.engine.execute(List.of(unstake));
-		var action = (UnstakeTokens) parsed.get(0).getActions().get(0).getTxAction();
-		assertThat(action.amount()).isEqualTo(unstakeAmt);
-		assertThat(action.from()).isEqualTo(key.getPublicKey());
-		assertThat(action.accountAddr()).isEqualTo(accountAddr);
+		var processed = this.engine.execute(List.of(unstake));
 	}
 
 	@Test

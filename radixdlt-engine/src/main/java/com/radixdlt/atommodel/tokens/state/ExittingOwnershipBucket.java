@@ -24,7 +24,7 @@ import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
 
-public class ExittingOwnershipBucket implements Bucket {
+public final class ExittingOwnershipBucket implements Bucket {
 	private final REAddr owner;
 	private final ECPublicKey delegate;
 

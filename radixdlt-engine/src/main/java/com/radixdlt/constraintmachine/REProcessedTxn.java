@@ -59,10 +59,6 @@ public final class REProcessedTxn {
 		return statelessResult.getSignedBy();
 	}
 
-	public List<REParsedAction> getActions() {
-		return actions;
-	}
-
 	public Txn getTxn() {
 		return txn;
 	}

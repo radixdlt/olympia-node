@@ -55,7 +55,7 @@ public final class AccountBucket implements Bucket {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(holdingAddress);
+		return Objects.hash(holdingAddress, resourceAddress);
 	}
 
 	@Override
@@ -65,6 +65,7 @@ public final class AccountBucket implements Bucket {
 		}
 
 		var other = (AccountBucket) o;
-		return Objects.equals(this.holdingAddress, other.holdingAddress);
+		return Objects.equals(this.holdingAddress, other.holdingAddress)
+			&& Objects.equals(this.resourceAddress, other.resourceAddress);
 	}
 }
