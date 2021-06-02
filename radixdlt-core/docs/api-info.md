@@ -70,6 +70,7 @@ Following configuration options control which APIs are enabled at the node:
   - `/account` supports methods to fetch your associated account info, and a one-step method to build, sign, and submit a transaction
   - `/validation` - read-only methods which provide same information as available today via all `/node/*` endpoints
   - `/system` - read-only methods which provide same information as available today via all `/system/*` endpoints
+  - `/discover` - dedicated to JSON RPC discovery method  
     
 - The `/system`, `/account` and `/validator` endpoints are expected to be protected by firewall and/or require authentication/etc. 
   (similar requirements/setup as we have today)
@@ -149,6 +150,12 @@ Node health status has following format: `{"status" : "<status>" }`, where `<sta
 | networking.get_peers | Get information about known peer nodes |
 | networking.get_data | Get data for networking |
 | checkpoints.get_checkpoints | Get genesis txn and proof |
+
+#### /discover
+
+| Method | Description |
+| --- | --- |
+| rpc.discover | Get the specification for the API (method name and behavior is defined in JSON RPC spec) |
 
 #### /validation
 
