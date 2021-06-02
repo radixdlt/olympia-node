@@ -99,6 +99,7 @@ public class ChaosControllerTest {
 
 		doAnswer(answer).when(sender).send(anyString());
 		when(exchange.getResponseHeaders()).thenReturn(mock(HeaderMap.class));
+		when(exchange.getRequestHeaders()).thenReturn(mock(HeaderMap.class));
 		when(exchange.getResponseSender()).thenReturn(sender);
 		when(exchange.getInputStream()).thenReturn(asStream(json));
 		when(exchange.isInIoThread()).thenReturn(true);
