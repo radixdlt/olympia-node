@@ -47,6 +47,7 @@ public final class DeterministicRunner {
 		return runNextEventsThrough(eventClass, t -> true);
 	}
 
+	@SuppressWarnings("unchecked")
 	public <T> T runNextEventsThrough(Class<T> eventClass, Predicate<T> eventPredicate) {
 		for (int i = 0; i < MAX_EVENTS_DEFAULT; i++) {
 			var msg = network.nextMessage().value();

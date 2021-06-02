@@ -129,14 +129,6 @@ public final class JsonRpcUtil {
 		return extendedError(request, RpcError.INVALID_PARAMS.code(), message);
 	}
 
-	public static JSONObject requestTooLongError(int length) {
-		return protocolError(RpcError.REQUEST_TOO_LONG, String.format("Request is too big: %d", length));
-	}
-
-	public static JSONObject serverError(JSONObject request, Exception e) {
-		return extendedError(request, RpcError.SERVER_ERROR.code(), e.getMessage());
-	}
-
 	public static JSONObject protocolError(RpcError code, String message) {
 		return errorResponse(JSONObject.NULL, code, message);
 	}
