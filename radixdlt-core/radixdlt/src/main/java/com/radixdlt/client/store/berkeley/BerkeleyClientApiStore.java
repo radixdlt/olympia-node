@@ -27,6 +27,8 @@ import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.accounting.TwoActorEntry;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.TxnParseException;
+import com.radixdlt.identifiers.AccountAddress;
+import com.radixdlt.identifiers.ValidatorAddress;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -82,6 +84,8 @@ import java.util.stream.Stream;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.client.api.ApiErrors.INVALID_PAGE_SIZE;
@@ -141,6 +145,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final CompositeDisposable disposable = new CompositeDisposable();
 	private final AtomicReference<Instant> currentTimestamp = new AtomicReference<>(NOW);
 	private final AtomicLong currentEpoch = new AtomicLong(0);
+	private final AtomicLong currentRound = new AtomicLong(0);
 	private final TxnParser txnParser;
 	private final TransactionParser transactionParser;
 	private final ConstraintMachine constraintMachine;
@@ -589,25 +594,72 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		act.getParsedTxs().forEach(this::processRETransaction);
 	}
 
+	private JSONObject accountingJson(
+		long epoch,
+		REProcessedTxn reTxn,
+		List<REResourceAccounting> accountingObjects
+	) {
+		var txnJson = new JSONObject();
+		txnJson.put("transaction_identifier", reTxn.getTxn().getId().toString());
+		txnJson.put("epoch", epoch);
+		if (currentRound.get() != 0L) {
+			txnJson.put("round", currentRound.get());
+		}
+		txnJson.put("epoch", epoch);
+		txnJson.put("timestamp", currentTimestamp.get().toEpochMilli());
+		txnJson.put("type", reTxn.isSystemOnly() ? "SYSTEM" : "USER");
+		txnJson.put("transaction_size", reTxn.getTxn().getPayload().length);
+		var accountingEntries = new JSONArray();
+		txnJson.put("accounting_entries", accountingEntries);
+		accountingObjects.forEach(accounting -> {
+			if (accounting.bucketAccounting().isEmpty()) {
+				return;
+			}
+
+			var entry = new JSONObject();
+			var bucketAccounting = new JSONArray();
+			var isFee = TwoActorEntry.parse(accounting.bucketAccounting()).map(TwoActorEntry::isFee).orElse(false);
+			entry.put("isFee", isFee);
+
+			accounting.bucketAccounting().forEach((b, i) -> {
+				var bucketJson = new JSONObject();
+				bucketJson.put("type", b.getClass().getSimpleName());
+				if (b.getOwner() != null) {
+					bucketJson.put("owner", AccountAddress.of(b.getOwner()));
+				}
+				if (b.getValidatorKey() != null) {
+					bucketJson.put("validator", ValidatorAddress.of(b.getValidatorKey()));
+				}
+				bucketJson.put("delta", i.toString());
+				bucketJson.put("asset", b.resourceAddr() == null ? "stake_ownership" : getRriOrFail(b.resourceAddr()));
+				bucketAccounting.put(bucketJson);
+			});
+			entry.put("entries", bucketAccounting);
+			accountingEntries.put(entry);
+		});
+		return txnJson;
+	}
+
 	private void processRETransaction(REProcessedTxn reTxn) {
+		// TODO: cur epoch retrieval a bit hacky but needs to be like this for now
+		// TODO: as epoch get updated at the end of an epoch transition
+		var curEpoch = currentEpoch.get();
 		var accountingObjects = reTxn.getGroupedStateUpdates().stream()
 			.map(this::processGroupedStateUpdates)
 			.collect(Collectors.toList());
 
+		var actions = accountingObjects.stream()
+			.map(a -> TwoActorEntry.parse(a.bucketAccounting()))
+			.collect(Collectors.toList());
 		var addressesInTxn =
 			accountingObjects.stream()
 				.flatMap(r -> r.bucketAccounting().keySet().stream())
 				.map(Bucket::getOwner)
 				.filter(Objects::nonNull);
-
 		var addresses = Stream.concat(
 			addressesInTxn,
 			reTxn.getSignedBy().stream().map(REAddr::ofPubKeyAccount)
 		).collect(Collectors.toSet());
-
-		var actions = accountingObjects.stream()
-			.map(a -> TwoActorEntry.parse(a.bucketAccounting()))
-			.collect(Collectors.toList());
 
 		transactionParser.parse(
 			reTxn,
@@ -616,6 +668,10 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			this::getRriOrFail,
 			this::computeStakeFromOwnership
 		).onSuccess(parsed -> addresses.forEach(address -> storeSingleTransaction(parsed, address)));
+
+		if (log.isTraceEnabled()) {
+			log.trace("TRANSACTION_LOG: {}", accountingJson(curEpoch, reTxn, accountingObjects));
+		}
 	}
 
 	private REResourceAccounting processGroupedStateUpdates(List<REStateUpdate> updates) {
@@ -647,9 +703,11 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				var s = (SystemParticle) substate;
 				currentTimestamp.set(s.asInstant());
 				currentEpoch.set(s.getEpoch());
+				currentRound.set(s.getView());
 			} else if (substate instanceof RoundData) {
 				var d = (RoundData) substate;
 				currentTimestamp.set(d.asInstant());
+				currentRound.set(d.getView());
 			} else if (substate instanceof EpochData) {
 				var d = (EpochData) substate;
 				currentEpoch.set(d.getEpoch());

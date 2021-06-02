@@ -48,16 +48,11 @@ public final class TransactionParser {
 			.stream()
 			.filter(Optional::isPresent)
 			.map(Optional::get)
-			.filter(TransactionParser::isFeeEntry)
+			.filter(TwoActorEntry::isFee)
 			.map(TwoActorEntry::amount)
 			.map(i -> UInt256.from(i.toByteArray()))
 			.reduce(UInt256::add)
 			.orElse(UInt256.ZERO);
-	}
-
-	private static boolean isFeeEntry(TwoActorEntry entry) {
-		return entry.resourceAddr().map(REAddr::isNativeToken).orElse(false)
-			&& entry.to().isEmpty();
 	}
 
 	private static String bucketToString(Bucket bucket) {
@@ -126,13 +121,9 @@ public final class TransactionParser {
 			.map(bytes -> new String(bytes, RadixConstants.STANDARD_CHARSET));
 
 		var actions = actionEntries.stream()
-			.filter(e -> e.isEmpty() || !isFeeEntry(e.get()))
+			.filter(e -> e.map(a -> !a.isFee()).orElse(true))
 			.map(a -> mapToActionEntry(a, addrToRri, computeStakeFromOwnership))
 			.collect(Collectors.toList());
-
-		if (!actions.isEmpty()) {
-			System.out.println(actions);
-		}
 
 		return Result.ok(TxHistoryEntry.create(txnId, txDate, fee, message.orElse(null), actions));
 	}

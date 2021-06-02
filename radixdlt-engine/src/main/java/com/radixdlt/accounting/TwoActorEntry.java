@@ -39,6 +39,11 @@ public final class TwoActorEntry {
 		this.amount = amount;
 	}
 
+	public boolean isFee() {
+		return resourceAddr().map(REAddr::isNativeToken).orElse(false)
+			&& to().isEmpty();
+	}
+
 	public Optional<Bucket> from() {
 		return Optional.ofNullable(from);
 	}
