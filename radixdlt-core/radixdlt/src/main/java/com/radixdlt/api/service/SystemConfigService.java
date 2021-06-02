@@ -24,7 +24,6 @@ import org.radix.universe.system.LocalSystem;
 
 import com.google.inject.Inject;
 import com.radixdlt.EndpointConfig;
-import com.radixdlt.api.JsonRpcUtil;
 import com.radixdlt.api.qualifier.AtArchive;
 import com.radixdlt.api.qualifier.AtNode;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
@@ -36,7 +35,6 @@ import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.transport.TransportInfo;
-import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.MaxTxnsPerProposal;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;

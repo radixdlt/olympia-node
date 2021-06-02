@@ -16,18 +16,32 @@
  *
  */
 
-package com.radixdlt.api.controller;
+package com.radixdlt.api;
 
-import com.radixdlt.api.AbstractJsonRpcController;
 import com.radixdlt.api.server.JsonRpcServer;
 
-public final class ConstructionController  extends AbstractJsonRpcController {
-	public ConstructionController(JsonRpcServer jsonRpcServer) {
-		super(jsonRpcServer);
+import io.undertow.server.RoutingHandler;
+
+/**
+ * Common base class for JSON RPC endpoint controllers
+ */
+public abstract class AbstractJsonRpcController implements Controller {
+	private final JsonRpcServer jsonRpcServer;
+
+	protected AbstractJsonRpcController(JsonRpcServer jsonRpcServer) {
+		this.jsonRpcServer = jsonRpcServer;
 	}
 
-	@Override
-	public String root() {
-		return "/construction";
+	public void configureRoutes(RoutingHandler handler) {
+		var path = sanitize(root());
+
+		handler.post(path, jsonRpcServer);
+		handler.post(path + "/", jsonRpcServer);
+	}
+
+	private static String sanitize(String baseUrl) {
+		return !baseUrl.endsWith("/")
+			   ? baseUrl
+			   : baseUrl.substring(0, baseUrl.length() - 1);
 	}
 }

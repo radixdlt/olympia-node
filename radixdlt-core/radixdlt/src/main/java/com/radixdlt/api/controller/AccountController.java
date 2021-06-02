@@ -18,26 +18,16 @@
 
 package com.radixdlt.api.controller;
 
-import com.radixdlt.api.Controller;
+import com.radixdlt.api.AbstractJsonRpcController;
 import com.radixdlt.api.server.JsonRpcServer;
 
-import io.undertow.server.RoutingHandler;
-
-public final class AccountController implements Controller {
-	private final JsonRpcServer jsonRpcServer;
-
+public final class AccountController extends AbstractJsonRpcController {
 	public AccountController(JsonRpcServer jsonRpcServer) {
-		this.jsonRpcServer = jsonRpcServer;
+		super(jsonRpcServer);
 	}
 
 	@Override
 	public String root() {
 		return "/account";
-	}
-
-	@Override
-	public void configureRoutes(RoutingHandler handler) {
-		handler.post("/account", jsonRpcServer::handleHttpRequest);
-		handler.post("/account/", jsonRpcServer::handleHttpRequest);
 	}
 }
