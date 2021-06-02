@@ -28,15 +28,20 @@ import com.radixdlt.api.JsonRpcHandler;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+
 import static com.radixdlt.api.JsonRpcUtil.invalidParamsError;
 import static com.radixdlt.api.JsonRpcUtil.methodNotFound;
+import static com.radixdlt.api.RestUtils.respond;
+import static com.radixdlt.api.RestUtils.withBodyAsync;
 
 import static java.util.Optional.ofNullable;
 
 /**
  * Stateless Json Rpc 2.0 Server
  */
-public final class JsonRpcServer {
+public final class JsonRpcServer implements HttpHandler {
 	private static final Logger log = LogManager.getLogger();
 
 	private final Map<String, JsonRpcHandler> handlers = new HashMap<>();
@@ -44,6 +49,11 @@ public final class JsonRpcServer {
 	@Inject
 	public JsonRpcServer(Map<String, JsonRpcHandler> additionalHandlers) {
 		fillHandlers(additionalHandlers);
+	}
+
+	@Override
+	public void handleRequest(HttpServerExchange exchange) {
+		withBodyAsync(exchange, request -> respond(exchange, handle(request)));
 	}
 
 	public JSONObject handle(JSONObject request) {

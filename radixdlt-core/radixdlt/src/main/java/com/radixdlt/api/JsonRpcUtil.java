@@ -122,7 +122,8 @@ public final class JsonRpcUtil {
 		return protocolError(RpcError.PARSE_ERROR, message);
 	}
 
-	public static JSONObject methodNotFound(JSONObject request, String method) {
+	public static JSONObject methodNotFound(JSONObject request) {
+		var method = request.getString("method");
 		return extendedError(request, RpcError.METHOD_NOT_FOUND.code(), "Method " + method + " not found");
 	}
 
