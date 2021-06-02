@@ -65,6 +65,13 @@ public class ValidatorInfoService {
 		return () -> Result.ok(tuple(newCursor, list));
 	}
 
+	public List<ValidatorInfoDetails> getAllValidators() {
+		var validators = radixEngine.getComputedState(StakedValidators.class);
+		var result = validators.map(this::fillDetails);
+		result.sort(Comparator.comparing(ValidatorInfoDetails::getTotalStake).reversed());
+		return result;
+	}
+
 	public Result<ValidatorInfoDetails> getValidator(ECPublicKey validatorPublicKey) {
 		var validators = radixEngine.getComputedState(StakedValidators.class);
 

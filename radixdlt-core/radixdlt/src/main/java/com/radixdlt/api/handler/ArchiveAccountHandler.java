@@ -23,7 +23,6 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.api.data.TxHistoryEntry;
-import com.radixdlt.api.data.UnstakeEntry;
 import com.radixdlt.api.service.AccountService;
 import com.radixdlt.api.store.TokenBalance;
 import com.radixdlt.identifiers.AccountAddress;
@@ -93,9 +92,9 @@ public class ArchiveAccountHandler {
 			request,
 			"address",
 			(address) -> AccountAddress.parseFunctional(address)
-				.flatMap(archiveService::getUnstakePositions)
+				.flatMap(accountService::getUnstakePositions)
 				.map(positions -> {
-					var curEpoch = archiveService.getEpoch();
+					var curEpoch = accountService.getEpoch();
 					return formatUnstakePositions(positions, curEpoch);
 				})
 		);
@@ -111,8 +110,7 @@ public class ArchiveAccountHandler {
 				.put("validator", ValidatorAddress.of(unstake.getDelegate()))
 				.put("amount", unstake.getAmount())
 				.put("epochsUntil", unstake.getEpochUnlocked() - curEpoch)
-				//TODO: fix this
-				.put("withdrawTxID", unstake.getWithdrawTxId())
+				.put("withdrawTxID", unstake.getTxId())
 		);
 		return jsonObject().put(ARRAY, array);
 	}

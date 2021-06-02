@@ -23,6 +23,10 @@ import org.json.JSONObject;
 import org.radix.universe.system.LocalSystem;
 
 import com.google.inject.Inject;
+import com.radixdlt.EndpointConfig;
+import com.radixdlt.api.JsonRpcUtil;
+import com.radixdlt.api.qualifier.AtArchive;
+import com.radixdlt.api.qualifier.AtNode;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.identifiers.ValidatorAddress;
@@ -32,6 +36,7 @@ import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.transport.TransportInfo;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.MaxTxnsPerProposal;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
@@ -39,15 +44,19 @@ import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 
+import java.util.List;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.radixdlt.api.JsonRpcUtil.fromList;
 import static com.radixdlt.api.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 public class SystemConfigService {
 	private final JSONObject radixEngineConfiguration;
 	private final JSONObject mempoolConfiguration;
+	private final JSONObject apiConfiguration;
 
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final AddressBook addressBook;
@@ -55,6 +64,8 @@ public class SystemConfigService {
 
 	@Inject
 	public SystemConfigService(
+		@AtNode List<EndpointConfig> nodeEndpoints,
+		@AtArchive List<EndpointConfig> archiveEndpoints,
 		@PacemakerTimeout long pacemakerTimeout,
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
 		@MempoolMaxSize int mempoolMaxSize,
@@ -73,8 +84,9 @@ public class SystemConfigService {
 		this.addressBook = addressBook;
 		this.localPeer = localPeer;
 
-		this.radixEngineConfiguration = prepareRadixEngineConfiguration(forkConfigTreeMap, minValidators, maxValidators, maxTxnsPerProposal);
-		this.mempoolConfiguration = prepareMempoolConfiguration(mempoolMaxSize, mempoolThrottleMs);
+		radixEngineConfiguration = prepareRadixEngineConfiguration(forkConfigTreeMap, minValidators, maxValidators, maxTxnsPerProposal);
+		mempoolConfiguration = prepareMempoolConfiguration(mempoolMaxSize, mempoolThrottleMs);
+		apiConfiguration = prepareApiConfiguration(nodeEndpoints, archiveEndpoints);
 	}
 
 	public JSONObject getRadixEngineConfiguration() {
@@ -83,6 +95,32 @@ public class SystemConfigService {
 
 	public JSONObject getMempoolConfiguration() {
 		return mempoolConfiguration;
+	}
+
+	public JSONObject getApiConfiguration() {
+		return apiConfiguration;
+	}
+
+	public JSONArray getLivePeers() {
+		var peerArray = new JSONArray();
+
+		selfAndOthers(addressBook.recentPeers())
+			.map(this::peerToJson)
+			.forEach(peerArray::put);
+
+		return peerArray;
+	}
+
+	private JSONObject prepareApiConfiguration(
+		List<EndpointConfig> nodeEndpoints,
+		List<EndpointConfig> archiveEndpoints
+	) {
+		var list = Stream.concat(nodeEndpoints.stream(), archiveEndpoints.stream()).collect(Collectors.toList());
+
+		return jsonObject().put(
+			"endpoints",
+			fromList(list, cfg -> jsonObject().put("path", "/" + cfg.name()))
+		);
 	}
 
 	private static JSONObject prepareRadixEngineConfiguration(
@@ -112,21 +150,6 @@ public class SystemConfigService {
 			.put("max_size", mempoolMaxSize)
 			.put("throttle_ms", mempoolThrottleMs)
 		);
-	}
-
-	public JSONObject getApiConfiguration() {
-		//TODO: implement it
-		return null;
-	}
-
-	public JSONArray getLivePeers() {
-		var peerArray = new JSONArray();
-
-		selfAndOthers(addressBook.recentPeers())
-			.map(this::peerToJson)
-			.forEach(peerArray::put);
-
-		return peerArray;
 	}
 
 	private JSONObject peerToJson(PeerWithSystem peer) {

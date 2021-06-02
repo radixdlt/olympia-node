@@ -31,7 +31,8 @@ import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
-import com.radixdlt.atom.actions.UnstakeOwnership;
+import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.actions.UpdateValidator;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
@@ -126,8 +127,8 @@ public class ActionParserServiceTest {
 				assertEquals(1, parsed.size());
 
 				parsed.get(0).toAction().findAny()
-					.filter(UnstakeOwnership.class::isInstance)
-					.map(UnstakeOwnership.class::cast)
+					.filter(UnstakeTokens.class::isInstance)
+					.map(UnstakeTokens.class::cast)
 					.ifPresentOrElse(
 						unstake -> {
 							assertEquals(UInt256.EIGHT, unstake.amount());
@@ -261,6 +262,87 @@ public class ActionParserServiceTest {
 				parsed.get(0).toAction().findAny()
 					.filter(RegisterValidator.class::isInstance)
 					.map(RegisterValidator.class::cast)
+					.ifPresentOrElse(
+						register -> {
+							assertNull(register.name());
+							assertNull(register.url());
+							assertEquals(key, register.validatorKey());
+						},
+						Assert::fail
+					);
+			});
+	}
+
+	@Test
+	public void updateValidatorIsParsedCorrectlyWithUrlAndName() {
+		var key = ECKeyPair.generateNew().getPublicKey();
+		var validatorAddr = ValidatorAddress.of(key);
+
+		var source = "[{\"type\":\"UpdateValidator\", \"validator\":\"%s\", \"name\":\"%s\", \"url\":\"%s\"}]";
+		var actions = jsonArray(String.format(source, validatorAddr, "validator 1", "http://localhost/"));
+
+		actionParserService.parse(actions)
+			.onFailure(this::fail)
+			.onSuccess(parsed -> {
+				assertEquals(1, parsed.size());
+
+				parsed.get(0).toAction().findAny()
+					.filter(UpdateValidator.class::isInstance)
+					.map(UpdateValidator.class::cast)
+					.ifPresentOrElse(
+						register -> {
+							assertEquals("validator 1", register.name());
+							assertEquals("http://localhost/", register.url());
+							assertEquals(key, register.validatorKey());
+						},
+						Assert::fail
+					);
+			});
+	}
+
+	@Test
+	public void updateValidatorIsParsedCorrectlyWithUrl() {
+		var key = ECKeyPair.generateNew().getPublicKey();
+		var validatorAddr = ValidatorAddress.of(key);
+
+		var source = "[{\"type\":\"UpdateValidator\", \"validator\":\"%s\", \"url\":\"%s\"}]";
+		var actions = jsonArray(String.format(source, validatorAddr, "http://localhost/"));
+
+		actionParserService.parse(actions)
+			.onFailure(this::fail)
+			.onSuccess(parsed -> {
+				assertEquals(1, parsed.size());
+
+				parsed.get(0).toAction().findAny()
+					.filter(UpdateValidator.class::isInstance)
+					.map(UpdateValidator.class::cast)
+					.ifPresentOrElse(
+						register -> {
+							assertNull(register.name());
+							assertEquals("http://localhost/", register.url());
+							assertEquals(key, register.validatorKey());
+						},
+						Assert::fail
+					);
+			});
+	}
+
+	@Test
+	public void updateValidatorIsParsedCorrectly() {
+		var key = ECKeyPair.generateNew().getPublicKey();
+		var validatorAddr = ValidatorAddress.of(key);
+
+		var source = "[{\"type\":\"UpdateValidator\", \"validator\":\"%s\"}]";
+		var actions = jsonArray(String.format(source, validatorAddr));
+
+		actionParserService.parse(actions)
+			.onFailure(this::fail)
+			.onSuccess(parsed -> {
+				assertEquals(1, parsed.size());
+
+				parsed.get(0).toAction().findAny()
+					.filter(UpdateValidator.class::isInstance)
+					.map(UpdateValidator.class::cast)
 					.ifPresentOrElse(
 						register -> {
 							assertNull(register.name());

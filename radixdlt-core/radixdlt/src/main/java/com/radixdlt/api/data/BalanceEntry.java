@@ -17,15 +17,13 @@
 
 package com.radixdlt.api.data;
 
-import org.json.JSONObject;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.store.ClientApiStore;
+import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -34,8 +32,6 @@ import com.radixdlt.utils.UInt384;
 
 import java.util.Arrays;
 import java.util.Objects;
-
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 @SerializerId2("radix.api.balance")
 public class BalanceEntry {
@@ -67,6 +63,10 @@ public class BalanceEntry {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final Long epochUnlocked;
 
+	@JsonProperty("txId")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private final AID txId;
+
 	@JsonCreator
 	private static BalanceEntry create(
 		@JsonProperty("owner") REAddr owner,
@@ -74,9 +74,10 @@ public class BalanceEntry {
 		@JsonProperty("rri") String rri,
 		@JsonProperty("amount") UInt384 amount,
 		@JsonProperty("negative") boolean negative,
-		@JsonProperty("epochUnlocked") Long epochUnlocked
+		@JsonProperty("epochUnlocked") Long epochUnlocked,
+		@JsonProperty("txId") AID txId
 	) {
-		return createFull(owner, delegate, rri, amount, negative, epochUnlocked);
+		return createFull(owner, delegate, rri, amount, negative, epochUnlocked, txId);
 	}
 
 
@@ -94,7 +95,8 @@ public class BalanceEntry {
 		String rri,
 		UInt384 amount,
 		boolean negative,
-		Long epochUnlocked
+		Long epochUnlocked,
+		AID txId
 	) {
 		return createFull(
 			owner,
@@ -102,13 +104,24 @@ public class BalanceEntry {
 			rri,
 			amount,
 			negative,
-			epochUnlocked
+			epochUnlocked,
+			txId
 		);
+	}
+	public static BalanceEntry create(
+		REAddr owner,
+		ECPublicKey delegate,
+		String rri,
+		UInt384 amount,
+		boolean negative
+	) {
+		return create(owner, delegate, rri, amount, negative, null, null);
 	}
 
 	private BalanceEntry(
 		REAddr owner, byte[] delegate, String rri,
-		UInt384 amount, boolean negative, Long epochUnlocked
+		UInt384 amount, boolean negative, Long epochUnlocked,
+		AID txId
 	) {
 		this.owner = owner;
 		this.delegate = delegate;
@@ -116,6 +129,7 @@ public class BalanceEntry {
 		this.amount = amount;
 		this.negative = negative;
 		this.epochUnlocked = epochUnlocked;
+		this.txId = txId;
 	}
 
 	public static BalanceEntry createFull(
@@ -124,23 +138,23 @@ public class BalanceEntry {
 		String rri,
 		UInt384 amount,
 		boolean negative,
-		Long epochUnlocked
+		Long epochUnlocked,
+		AID txId
 	) {
 		Objects.requireNonNull(rri);
 		Objects.requireNonNull(amount);
 
-		return new BalanceEntry(owner, delegate, rri, amount, negative, epochUnlocked);
+		return new BalanceEntry(owner, delegate, rri, amount, negative, epochUnlocked, txId);
 	}
 
-	public static BalanceEntry createBalance(
-		REAddr owner, ECPublicKey delegate, String rri, UInt384 amount
-	) {
+	public static BalanceEntry createBalance(REAddr owner, ECPublicKey delegate, String rri, UInt384 amount) {
 		return createFull(
 			owner,
 			delegate == null ? null : delegate.getCompressedBytes(),
 			rri,
 			amount,
 			false,
+			null,
 			null
 		);
 	}
@@ -173,6 +187,10 @@ public class BalanceEntry {
 		return owner == null && delegate == null;
 	}
 
+	public AID getTxId() {
+		return txId;
+	}
+
 	public ClientApiStore.BalanceType getType() {
 		if (delegate == null) {
 			return ClientApiStore.BalanceType.SPENDABLE;
@@ -196,7 +214,7 @@ public class BalanceEntry {
 	}
 
 	public BalanceEntry negate() {
-		return new BalanceEntry(owner, delegate, rri, amount, !negative, epochUnlocked);
+		return new BalanceEntry(owner, delegate, rri, amount, !negative, epochUnlocked, txId);
 	}
 
 	public BalanceEntry add(BalanceEntry balanceEntry) {
@@ -224,14 +242,15 @@ public class BalanceEntry {
 				&& Objects.equals(epochUnlocked, entry.epochUnlocked)
 				&& Arrays.equals(delegate, entry.delegate)
 				&& rri.equals(entry.rri)
-				&& amount.equals(entry.amount);
+				&& amount.equals(entry.amount)
+				&& Objects.equals(txId, entry.txId);
 		}
 		return false;
 	}
 
 	@Override
 	public final int hashCode() {
-		return Objects.hash(owner, Arrays.hashCode(delegate), rri, amount, negative, epochUnlocked);
+		return Objects.hash(owner, Arrays.hashCode(delegate), rri, amount, negative, epochUnlocked, txId);
 	}
 
 	@Override
@@ -247,16 +266,10 @@ public class BalanceEntry {
 					 ? this.amount.subtract(balanceEntry.amount)
 					 : balanceEntry.amount.subtract(this.amount);
 
-		return new BalanceEntry(owner, delegate, rri, amount, negate == isBigger, epochUnlocked);
+		return new BalanceEntry(owner, delegate, rri, amount, negate == isBigger, epochUnlocked, txId);
 	}
 
 	private BalanceEntry sum(BalanceEntry balanceEntry, boolean negative) {
-		return new BalanceEntry(owner, delegate, rri, amount.add(balanceEntry.amount), negative, epochUnlocked);
-	}
-
-	public JSONObject asJson() {
-		return jsonObject()
-			.put("validator", ValidatorAddress.of(getDelegate()))
-			.put("amount", amount);
+		return new BalanceEntry(owner, delegate, rri, amount.add(balanceEntry.amount), negative, epochUnlocked, txId);
 	}
 }

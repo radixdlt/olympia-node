@@ -36,6 +36,7 @@ import java.util.Optional;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.JsonRpcUtil.optString;
 import static com.radixdlt.api.JsonRpcUtil.safeArray;
+import static com.radixdlt.api.JsonRpcUtil.withNoParameters;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
 import static com.radixdlt.utils.functional.Result.allOf;
 
@@ -60,7 +61,7 @@ public class AccountHandler {
 	}
 
 	public JSONObject handleAccountGetInfo(JSONObject request) {
-		return withRequiredParameters(request, List.of(), List.of(), params -> Result.ok(accountService.getAccountInfo()));
+		return withNoParameters(request, accountService::getAccountInfo);
 	}
 
 	public JSONObject handleAccountSubmitTransactionSingleStep(JSONObject request) {

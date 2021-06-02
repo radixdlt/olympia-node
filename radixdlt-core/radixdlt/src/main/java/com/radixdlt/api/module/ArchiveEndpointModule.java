@@ -29,7 +29,7 @@ import com.radixdlt.api.handler.ArchiveAccountHandler;
 import com.radixdlt.api.handler.ArchiveTransactionsHandler;
 import com.radixdlt.api.handler.ArchiveNetworkHandler;
 import com.radixdlt.api.handler.ArchiveTokenHandler;
-import com.radixdlt.api.handler.ArchiveValidatorsHandler;
+import com.radixdlt.api.handler.ArchiveValidationHandler;
 import com.radixdlt.api.qualifier.Archive;
 import com.radixdlt.api.qualifier.AtArchive;
 import com.radixdlt.api.server.JsonRpcServer;
@@ -108,15 +108,15 @@ public class ArchiveEndpointModule extends AbstractModule {
 	@Archive
 	@ProvidesIntoMap
 	@StringMapKey("validators.get_next_epoch_set")
-	public JsonRpcHandler validatorsGetNextEpochSet(ArchiveValidatorsHandler archiveValidatorsHandler) {
-		return archiveValidatorsHandler::handleValidatorsGetNextEpochSet;
+	public JsonRpcHandler validatorsGetNextEpochSet(ArchiveValidationHandler archiveValidationHandler) {
+		return archiveValidationHandler::handleValidatorsGetNextEpochSet;
 	}
 
 	@Archive
 	@ProvidesIntoMap
 	@StringMapKey("validators.lookup_validator")
-	public JsonRpcHandler validatorsLookupValidator(ArchiveValidatorsHandler archiveValidatorsHandler) {
-		return archiveValidatorsHandler::handleValidatorsLookupValidator;
+	public JsonRpcHandler validatorsLookupValidator(ArchiveValidationHandler archiveValidationHandler) {
+		return archiveValidationHandler::handleValidatorsLookupValidator;
 	}
 
 	@Archive

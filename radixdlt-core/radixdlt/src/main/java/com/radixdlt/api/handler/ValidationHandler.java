@@ -21,30 +21,42 @@ import org.json.JSONObject;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.radixdlt.api.data.ValidatorInfoDetails;
 import com.radixdlt.api.service.AccountService;
-import com.radixdlt.utils.functional.Result;
+import com.radixdlt.api.service.ValidatorInfoService;
 
-import java.util.List;
-
-import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
+import static com.radixdlt.api.JsonRpcUtil.fromList;
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.JsonRpcUtil.withNoParameters;
 
 @Singleton
 public class ValidationHandler {
 	private final AccountService accountService;
+	private final ValidatorInfoService validatorInfoService;
 
 	@Inject
-	public ValidationHandler(AccountService accountService) {
+	public ValidationHandler(AccountService accountService, ValidatorInfoService validatorInfoService) {
 		this.accountService = accountService;
+		this.validatorInfoService = validatorInfoService;
 	}
 
 	public JSONObject handleGetNodeInfo(JSONObject request) {
-		return withRequiredParameters(
-			request, List.of(), List.of(), params -> Result.ok(accountService.getValidatorInfo())
-		);
+		return withNoParameters(request, accountService::getValidatorInfo);
+	}
+
+	public JSONObject handleGetNextEpochData(JSONObject request) {
+		return withNoParameters(request, this::listValidators);
 	}
 
 	public JSONObject handleGetCurrentEpochData(JSONObject request) {
 		//TODO: implement it
 		throw new UnsupportedOperationException("Not implemented");
+	}
+
+	private JSONObject listValidators() {
+		return jsonObject().put(
+			"validators",
+			fromList(validatorInfoService.getAllValidators(), ValidatorInfoDetails::asJson)
+		);
 	}
 }

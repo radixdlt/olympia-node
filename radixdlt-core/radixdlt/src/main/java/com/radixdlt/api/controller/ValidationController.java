@@ -40,38 +40,4 @@ public final class ValidationController implements Controller {
 		handler.post("/validation", jsonRpcServer::handleHttpRequest);
 		handler.post("/validation/", jsonRpcServer::handleHttpRequest);
 	}
-	//TODO: check adding fee in other places
-	/*
-	void handleExecute(HttpServerExchange exchange) {
-		// TODO: implement JSON-RPC 2.0 specification
-		withBody(exchange, values -> {
-			try {
-				var actionsArray = values.getJSONArray("actions");
-				var actions = new ArrayList<TxAction>();
-				actions.add(new PayFee(account, TokenFeeChecker.FIXED_FEE));
-				for (int i = 0; i < actionsArray.length(); i++) {
-					var actionObject = actionsArray.getJSONObject(i);
-					var txAction = parseAction(actionObject);
-					actions.add(txAction);
-				}
-				var completableFuture = new CompletableFuture<MempoolAddSuccess>();
-				var request = NodeApplicationRequest.create(actions, completableFuture);
-				nodeApplicationRequestEventDispatcher.dispatch(request);
-
-				var success = completableFuture.get();
-				respond(exchange, jsonObject()
-					.put("result", jsonObject()
-						.put("transaction", Hex.toHexString(success.getTxn().getPayload()))
-						.put("transaction_identifier", success.getTxn().getId().toString())
-					)
-				);
-			} catch (ExecutionException | RuntimeException e) {
-				respond(exchange, jsonObject()
-					.put("error", jsonObject()
-					.put("message", e.getCause().getMessage()))
-				);
-			}
-		});
-	}
-	 */
 }

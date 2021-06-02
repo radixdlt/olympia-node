@@ -37,11 +37,10 @@ import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
+import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
 
 import static java.util.Optional.empty;
 
@@ -69,11 +68,9 @@ public class FaucetHandler {
 	}
 
 	public JSONObject requestTokens(JSONObject request) {
-		return withRequiredParameters(
-			request,
-			List.of("address"),
-			List.of(),
-			params -> parseAddress(params).flatMap(this::sendTokens)
+		return withRequiredStringParameter(
+			request, "address",
+			address -> AccountAddress.parseFunctional(address).flatMap(this::sendTokens)
 		);
 	}
 
@@ -89,10 +86,6 @@ public class FaucetHandler {
 
 	private TransactionAction transfer(REAddr destination, REAddr rri) {
 		return TransactionAction.transfer(account, destination, AMOUNT, rri);
-	}
-
-	private Result<REAddr> parseAddress(JSONObject params) {
-		return AccountAddress.parseFunctional(params.getString("address"));
 	}
 
 	private static JSONObject formatTxId(AID txId) {
