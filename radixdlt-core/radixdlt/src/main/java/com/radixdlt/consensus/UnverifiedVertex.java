@@ -39,7 +39,7 @@ import javax.annotation.concurrent.Immutable;
  * Vertex in a Vertex graph
  */
 @Immutable
-@SerializerId2("vtx")
+@SerializerId2("consensus.vertex")
 public final class UnverifiedVertex {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
@@ -57,7 +57,7 @@ public final class UnverifiedVertex {
 
 	@JsonProperty("tout")
 	@DsonOutput(Output.ALL)
-	private final boolean proposerTimedOut;
+	private final Boolean proposerTimedOut;
 
 	private final BFTNode proposer;
 
@@ -67,14 +67,14 @@ public final class UnverifiedVertex {
 		@JsonProperty("view") Long viewId,
 		@JsonProperty("txns") List<byte[]> txns,
 		@JsonProperty("p") byte[] proposer,
-		@JsonProperty("tout") boolean proposerTimedOut
+		@JsonProperty("tout") Boolean proposerTimedOut
 	) throws PublicKeyException {
 		this(
 			qc,
 			viewId != null ? View.of(viewId) : null,
 			txns == null ? List.of() : txns,
 			proposer != null ? BFTNode.fromPublicKeyBytes(proposer) : null,
-			proposerTimedOut
+			proposerTimedOut != null && proposerTimedOut
 		);
 	}
 
