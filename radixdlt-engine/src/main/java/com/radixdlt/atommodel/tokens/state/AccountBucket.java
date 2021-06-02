@@ -54,6 +54,11 @@ public final class AccountBucket implements Bucket {
 	}
 
 	@Override
+	public String toString() {
+		return String.format("%s{res=%s owner=%s}", this.getClass().getSimpleName(), resourceAddress, holdingAddress);
+	}
+
+	@Override
 	public int hashCode() {
 		return Objects.hash(holdingAddress, resourceAddress);
 	}

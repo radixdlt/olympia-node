@@ -60,7 +60,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @RunWith(Parameterized.class)
-public class ValidatorStakeTokensTest {
+public class StakeTokensTest {
 
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
@@ -95,7 +95,7 @@ public class ValidatorStakeTokensTest {
 	private final List<ConstraintScrypt> scrypts;
 	private final ActionConstructor<StakeTokens> stakeTokensConstructor;
 
-	public ValidatorStakeTokensTest(
+	public StakeTokensTest(
 		UInt256 startAmt,
 		UInt256 stakeAmt,
 		List<ConstraintScrypt> scrypts,
@@ -133,7 +133,6 @@ public class ValidatorStakeTokensTest {
 		// Arrange
 		var key = ECKeyPair.generateNew();
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
-		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
 		var txn = this.engine.construct(
 			List.of(
 				new CreateMutableToken("xrd", "Name", "", "", ""),
@@ -150,7 +149,7 @@ public class ValidatorStakeTokensTest {
 		assertThat(accounting.bucketAccounting())
 			.hasSize(2)
 			.containsEntry(
-				new AccountBucket(tokenAddr, accountAddr),
+				new AccountBucket(REAddr.ofNativeToken(), accountAddr),
 				new BigInteger(-1, stakeAmt.toByteArray(), 0, UInt256.BYTES)
 			)
 			.containsEntry(

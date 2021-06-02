@@ -162,7 +162,7 @@ public class TransferTokensTest {
 				new BigInteger(-1, transferAmt.toByteArray(), 0, UInt256.BYTES)
 			)
 			.containsEntry(
-				new AccountBucket(tokenAddr, accountAddr),
+				new AccountBucket(tokenAddr, to),
 				new BigInteger(1, transferAmt.toByteArray(), 0, UInt256.BYTES)
 			);
 		assertThat(accounting.resourceAccounting()).isEmpty();

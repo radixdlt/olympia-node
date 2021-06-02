@@ -21,7 +21,6 @@ package com.radixdlt.atommodel;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.tokens.Bucket;
-import com.radixdlt.constraintmachine.Particle;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
