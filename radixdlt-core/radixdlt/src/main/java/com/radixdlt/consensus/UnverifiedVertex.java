@@ -74,15 +74,15 @@ public final class UnverifiedVertex {
 			viewId != null ? View.of(viewId) : null,
 			txns == null ? List.of() : txns,
 			proposer != null ? BFTNode.fromPublicKeyBytes(proposer) : null,
-			proposerTimedOut != null && proposerTimedOut
+			proposerTimedOut
 		);
 	}
 
-	public UnverifiedVertex(QuorumCertificate qc, View view, List<byte[]> txns, BFTNode proposer, boolean proposerTimedOut) {
+	public UnverifiedVertex(QuorumCertificate qc, View view, List<byte[]> txns, BFTNode proposer, Boolean proposerTimedOut) {
 		this.qc = Objects.requireNonNull(qc);
 		this.view = Objects.requireNonNull(view);
 
-		if (proposerTimedOut && !txns.isEmpty()) {
+		if (proposerTimedOut != null && proposerTimedOut && !txns.isEmpty()) {
 			throw new IllegalArgumentException("Txns must be empty if timeout");
 		}
 
@@ -165,7 +165,7 @@ public final class UnverifiedVertex {
 
 		UnverifiedVertex v = (UnverifiedVertex) o;
 		return Objects.equals(v.view, this.view)
-			&& v.proposerTimedOut ==  this.proposerTimedOut
+			&& Objects.equals(v.proposerTimedOut, this.proposerTimedOut)
 			&& Objects.equals(v.proposer, this.proposer)
 			&& Objects.equals(v.getTxns(), this.getTxns())
 			&& Objects.equals(v.qc, this.qc);
