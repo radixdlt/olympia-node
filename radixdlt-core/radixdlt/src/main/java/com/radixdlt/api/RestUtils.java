@@ -72,6 +72,7 @@ public final class RestUtils {
 			.whenComplete((__, err) -> sendStatusResponse(exchange, err));
 	}
 
+
 	private static void sendStatusResponse(final HttpServerExchange exchange, final Throwable err) {
 		if (err == null) {
 			if (!exchange.isResponseStarted()) {
