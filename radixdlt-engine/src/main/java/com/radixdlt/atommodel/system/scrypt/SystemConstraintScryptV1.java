@@ -18,7 +18,6 @@
 
 package com.radixdlt.atommodel.system.scrypt;
 
-import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
@@ -111,13 +110,7 @@ public final class SystemConstraintScryptV1 implements ConstraintScrypt {
 					throw new ProcedureException("Change of epochs must start with view 0.");
 				}
 
-				return s.sys.getEpoch() != u.getEpoch()
-					? ReducerResult.complete()
-					: ReducerResult.complete(new SystemNextView(
-						u.getView(),
-						u.getTimestamp(),
-						null
-					));
+				return ReducerResult.complete();
 			}
 		));
 	}

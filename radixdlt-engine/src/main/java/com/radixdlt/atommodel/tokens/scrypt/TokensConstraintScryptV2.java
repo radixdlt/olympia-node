@@ -18,12 +18,6 @@
 
 package com.radixdlt.atommodel.tokens.scrypt;
 
-import com.radixdlt.atom.actions.BurnToken;
-import com.radixdlt.atom.actions.CreateFixedToken;
-import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
@@ -46,7 +40,6 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
-import java.util.Optional;
 
 public class TokensConstraintScryptV2 implements ConstraintScrypt {
 	@Override
@@ -92,14 +85,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 				}
 
 				if (u.isMutable()) {
-					var action = new CreateMutableToken(
-						new String(s.getArg()),
-						u.getName(),
-						u.getDescription(),
-						u.getIconUrl(),
-						u.getUrl()
-					);
-					return ReducerResult.complete(action);
+					return ReducerResult.complete();
 				}
 
 				return ReducerResult.incomplete(new TokensConstraintScryptV2.NeedFixedTokenSupply(s.getArg(), u));
@@ -119,18 +105,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 					throw new ProcedureException("Initial supply doesn't match.");
 				}
 
-				var action = new CreateFixedToken(
-					u.getResourceAddr(),
-					u.getHoldingAddr(),
-					new String(s.arg),
-					s.tokenResource.getName(),
-					s.tokenResource.getDescription(),
-					s.tokenResource.getIconUrl(),
-					s.tokenResource.getUrl(),
-					s.tokenResource.getSupply().orElseThrow()
-				);
-
-				return ReducerResult.complete(action);
+				return ReducerResult.complete();
 			}
 		));
 	}
@@ -191,7 +166,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 					.orElseThrow(() -> new AuthorizationException("Invalid token address: " + u.getResourceAddr()));
 				tokenDef.verifyMintAuthorization(k);
 			},
-			(s, u, r) -> ReducerResult.complete(new MintToken(u.getResourceAddr(), u.getHoldingAddr(), u.getAmount()))
+			(s, u, r) -> ReducerResult.complete()
 		));
 
 		// Burn
@@ -213,9 +188,6 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 					if (!tokenDef.isMutable()) {
 						throw new ProcedureException("Can only burn mutable tokens.");
 					}
-					return Optional.of(new BurnToken(s.tokenAddr, s.from, s.amount.getLow()));
-				} else {
-					return Optional.empty();
 				}
 			}
 		));
@@ -259,17 +231,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 			(u, r, k) -> { },
 			(s, u, r) -> {
 				var nextState = s.withdraw(u.getResourceAddr(), u.getAmount());
-
-				if (s.from != null) {
-					if (!u.getHoldingAddr().equals(s.from)) {
-						var actionGuess = new TransferToken(u.getResourceAddr(), s.from, u.getHoldingAddr(), u.getAmount());
-						return ReducerResult.incomplete(nextState, actionGuess);
-					} else {
-						return ReducerResult.incomplete(nextState);
-					}
-				}
-
-				return ReducerResult.incomplete(nextState, Unknown.create());
+				return ReducerResult.incomplete(nextState);
 			}
 		));
 	}

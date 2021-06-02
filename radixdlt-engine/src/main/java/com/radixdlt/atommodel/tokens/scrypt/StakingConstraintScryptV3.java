@@ -18,9 +18,6 @@
 
 package com.radixdlt.atommodel.tokens.scrypt;
 
-import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.Unknown;
-import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
@@ -45,7 +42,6 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt384;
 
 import java.util.Objects;
-import java.util.Optional;
 
 public class StakingConstraintScryptV3 implements ConstraintScrypt {
 
@@ -158,12 +154,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 
 				var resourceAddr = u.bucket().resourceAddr();
 				var nextState = s.withdraw(resourceAddr, u.getAmount());
-				if (s.from() != null) {
-					var actionGuess = new StakeTokens(s.from(), u.getDelegateKey(), u.getAmount());
-					return ReducerResult.incomplete(nextState, actionGuess);
-				}
-
-				return ReducerResult.incomplete(nextState, Unknown.create());
+				return ReducerResult.incomplete(nextState);
 			}
 		));
 
@@ -204,20 +195,15 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 			StakeOwnershipHoldingBucket.class, PreparedUnstakeOwnership.class,
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> { },
-			(s, u, r) -> {
-				var actionGuess = new UnstakeOwnership(s.accountAddr, u.getDelegateKey(), u.getAmount());
-				return ReducerResult.incomplete(s.unstake(u), actionGuess);
-			}));
+			(s, u, r) -> ReducerResult.incomplete(s.unstake(u))
+		));
 
 		// Deallocate Stake Holding Bucket
 		os.createEndProcedure(new EndProcedure<>(
 			StakeOwnershipHoldingBucket.class,
 			(s, r) -> PermissionLevel.USER,
 			(s, r, k) -> { },
-			(s, r) -> {
-				s.destroy();
-				return Optional.empty();
-			}
+			(s, r) -> s.destroy()
 		));
 	}
 }
