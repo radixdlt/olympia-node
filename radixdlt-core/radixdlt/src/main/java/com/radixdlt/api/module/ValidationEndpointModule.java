@@ -25,7 +25,7 @@ import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.api.controller.ValidationController;
-import com.radixdlt.api.handler.ArchiveValidatorsHandler;
+import com.radixdlt.api.handler.ArchiveValidationHandler;
 import com.radixdlt.api.handler.ValidationHandler;
 import com.radixdlt.api.qualifier.AtNode;
 import com.radixdlt.api.qualifier.Validation;
@@ -64,7 +64,7 @@ public class ValidationEndpointModule extends AbstractModule {
 	@Validation
 	@ProvidesIntoMap
 	@StringMapKey("validation.get_next_epoch_data")
-	public JsonRpcHandler getNextEpochData(ArchiveValidatorsHandler validationHandler) {
-		return validationHandler::handleValidatorsGetNextEpochSet;
+	public JsonRpcHandler getNextEpochData(ValidationHandler validationHandler) {
+		return validationHandler::handleGetNextEpochData;
 	}
 }

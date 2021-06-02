@@ -40,7 +40,6 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import com.radixdlt.api.data.ActionType;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -49,10 +48,20 @@ import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.Rri;
+import com.radixdlt.api.construction.TxnParser;
+import com.radixdlt.api.data.ActionType;
+import com.radixdlt.api.store.ClientApiStore.BalanceType;
+import com.radixdlt.api.store.TransactionParser;
 import com.radixdlt.atom.FixedTokenDefinition;
 import com.radixdlt.atom.MutableTokenDefinition;
+import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atom.actions.CreateFixedToken;
+import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.counters.SystemCounters;
@@ -158,7 +167,7 @@ public class BerkeleyClientApiStoreTest {
 
 		var clientApiStore = prepareApiStore(tx);
 
-		clientApiStore.getTokenBalances(TOKEN_ACCOUNT, ClientApiStore.BalanceType.SPENDABLE)
+		clientApiStore.getTokenBalances(TOKEN_ACCOUNT, BalanceType.SPENDABLE)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
 				assertEquals(UInt384.THREE, list.get(0).getAmount());
@@ -166,7 +175,7 @@ public class BerkeleyClientApiStoreTest {
 			})
 			.onFailureDo(() -> fail("Failure is not expected here"));
 
-		clientApiStore.getTokenBalances(OWNER_ACCOUNT, ClientApiStore.BalanceType.SPENDABLE)
+		clientApiStore.getTokenBalances(OWNER_ACCOUNT, BalanceType.SPENDABLE)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
 				assertEquals(UInt384.FOUR, list.get(0).getAmount());

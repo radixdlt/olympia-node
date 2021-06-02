@@ -43,13 +43,13 @@ import static com.radixdlt.api.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
-public class ArchiveValidatorsHandlerTest {
+public class ArchiveValidationHandlerTest {
 	private static final ECPublicKey V1 = ECKeyPair.generateNew().getPublicKey();
 	private static final ECPublicKey V2 = ECKeyPair.generateNew().getPublicKey();
 	private static final ECPublicKey V3 = ECKeyPair.generateNew().getPublicKey();
 
 	private final ValidatorInfoService validatorInfoService = mock(ValidatorInfoService.class);
-	private final ArchiveValidatorsHandler handler = new ArchiveValidatorsHandler(validatorInfoService);
+	private final ArchiveValidationHandler handler = new ArchiveValidationHandler(validatorInfoService);
 
 	@Test
 	public void testValidatorsPositional() {

@@ -32,9 +32,8 @@ import com.radixdlt.api.qualifier.AtNode;
 import com.radixdlt.api.qualifier.Faucet;
 import com.radixdlt.api.server.JsonRpcServer;
 import com.radixdlt.atom.Substate;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
+import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.engine.parser.REParser;
@@ -45,7 +44,6 @@ import com.radixdlt.statecomputer.checkpoint.Genesis;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class FaucetEndpointModule extends AbstractModule {
 	@AtNode

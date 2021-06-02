@@ -48,6 +48,8 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.api.data.ScheduledQueueFlush;
 import com.radixdlt.api.module.ArchiveApiModule;
 import com.radixdlt.api.module.NodeApiModule;
+import com.radixdlt.api.qualifier.AtArchive;
+import com.radixdlt.api.qualifier.AtNode;
 import com.radixdlt.api.service.NetworkInfoService;
 import com.radixdlt.api.service.ScheduledCacheCleanup;
 import com.radixdlt.api.service.ScheduledStatsCollecting;
@@ -83,6 +85,7 @@ import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
 import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksModule;
 import com.radixdlt.statecomputer.transaction.EmptyTransactionCheckModule;
 import com.radixdlt.statecomputer.transaction.TokenFeeModule;
@@ -93,6 +96,7 @@ import com.radixdlt.universe.Universe.UniverseType;
 import com.radixdlt.universe.UniverseModule;
 
 import java.io.IOException;
+import java.util.List;
 
 import static com.radixdlt.EndpointConfig.enabledArchiveEndpoints;
 import static com.radixdlt.EndpointConfig.enabledNodeEndpoints;
@@ -101,6 +105,8 @@ import static com.radixdlt.EndpointConfig.enabledNodeEndpoints;
  * Module which manages everything in a single node
  */
 public final class RadixNodeModule extends AbstractModule {
+	private static final Logger log = LogManager.getLogger();
+
 	private final RuntimeProperties properties;
 
 	public RadixNodeModule(RuntimeProperties properties) {
@@ -219,6 +225,9 @@ public final class RadixNodeModule extends AbstractModule {
 	private void configureApi(UniverseType universeType) {
 		var archiveEndpoints = enabledArchiveEndpoints(properties, universeType);
 		var nodeEndpoints = enabledNodeEndpoints(properties, universeType);
+
+		bind(new TypeLiteral<List<EndpointConfig>>() {}).annotatedWith(AtNode.class).toInstance(nodeEndpoints);
+		bind(new TypeLiteral<List<EndpointConfig>>() {}).annotatedWith(AtArchive.class).toInstance(archiveEndpoints);
 
 		if (archiveEndpoints.size() > 0 || nodeEndpoints.size() > 0) {
 			var eventBinder = Multibinder

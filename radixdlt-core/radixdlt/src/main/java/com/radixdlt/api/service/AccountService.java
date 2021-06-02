@@ -24,12 +24,12 @@ import com.google.inject.Inject;
 import com.radixdlt.api.Rri;
 import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.api.data.TxHistoryEntry;
-import com.radixdlt.api.data.UnstakeEntry;
 import com.radixdlt.api.store.ClientApiStore;
+import com.radixdlt.api.store.ClientApiStore.BalanceType;
 import com.radixdlt.api.store.TokenBalance;
 import com.radixdlt.application.Balances;
-import com.radixdlt.application.StakeReceived;
-import com.radixdlt.application.StakedBalance;
+import com.radixdlt.application.MyStakedBalance;
+import com.radixdlt.application.MyValidator;
 import com.radixdlt.application.ValidatorInfo;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
@@ -70,7 +70,7 @@ public class AccountService {
 	}
 
 	public Result<List<TokenBalance>> getTokenBalances(REAddr address) {
-		return clientApiStore.getTokenBalances(address, false)
+		return clientApiStore.getTokenBalances(address, BalanceType.SPENDABLE)
 			.map(list -> list.stream().map(TokenBalance::from).collect(Collectors.toList()));
 	}
 
@@ -82,11 +82,15 @@ public class AccountService {
 	}
 
 	public Result<List<BalanceEntry>> getStakePositions(REAddr address) {
-		return clientApiStore.getTokenBalances(address, true);
+		return clientApiStore.getTokenBalances(address, BalanceType.STAKES);
 	}
 
-	public Result<List<UnstakeEntry>> getUnstakePositions(REAddr address) {
-		return clientApiStore.getPendingUnstakes(address);
+	public Result<List<BalanceEntry>> getUnstakePositions(REAddr address) {
+		return clientApiStore.getTokenBalances(address, BalanceType.UNSTAKES);
+	}
+
+	public long getEpoch() {
+		return clientApiStore.getEpoch();
 	}
 
 	public JSONObject getAccountInfo() {
@@ -113,7 +117,7 @@ public class AccountService {
 	}
 
 	private Pair<UInt256, JSONArray> getValidatorStakes() {
-		var stakeReceived = radixEngine.getComputedState(StakeReceived.class);
+		var stakeReceived = radixEngine.getComputedState(MyValidator.class);
 		var stakeFrom = jsonArray();
 
 		stakeReceived.forEach((address, amt) -> {
@@ -124,7 +128,7 @@ public class AccountService {
 			);
 		});
 
-		return Pair.of(stakeReceived.getTotal(), stakeFrom);
+		return Pair.of(stakeReceived.getTotalStake(), stakeFrom);
 	}
 
 	private String getOwnAddress() {
@@ -133,7 +137,7 @@ public class AccountService {
 
 	private JSONObject getOwnBalance() {
 		var balances = radixEngine.getComputedState(Balances.class);
-		var stakedBalance = radixEngine.getComputedState(StakedBalance.class);
+		var stakedBalance = radixEngine.getComputedState(MyStakedBalance.class);
 
 		var stakesArray = jsonArray();
 		stakedBalance.forEach((publicKey, amount) -> stakesArray.put(constructStakeEntry(publicKey, amount)));

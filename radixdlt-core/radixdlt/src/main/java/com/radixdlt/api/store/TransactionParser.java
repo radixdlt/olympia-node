@@ -17,6 +17,8 @@
 
 package com.radixdlt.api.store;
 
+import com.radixdlt.api.data.ActionEntry;
+import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.StakeTokens;
