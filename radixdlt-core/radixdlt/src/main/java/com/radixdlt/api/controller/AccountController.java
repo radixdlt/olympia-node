@@ -19,6 +19,7 @@
 package com.radixdlt.api.controller;
 
 import com.radixdlt.api.AbstractJsonRpcController;
+import com.radixdlt.api.AbstractJsonRpcController;
 import com.radixdlt.api.server.JsonRpcServer;
 
 public final class AccountController extends AbstractJsonRpcController {
