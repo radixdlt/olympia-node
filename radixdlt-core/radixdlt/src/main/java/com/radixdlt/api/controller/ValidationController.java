@@ -18,26 +18,16 @@
 
 package com.radixdlt.api.controller;
 
-import com.radixdlt.api.Controller;
+import com.radixdlt.api.AbstractJsonRpcController;
 import com.radixdlt.api.server.JsonRpcServer;
 
-import io.undertow.server.RoutingHandler;
-
-public final class ValidationController implements Controller {
-	private final JsonRpcServer jsonRpcServer;
-
+public final class ValidationController extends AbstractJsonRpcController {
 	public ValidationController(JsonRpcServer jsonRpcServer) {
-		this.jsonRpcServer = jsonRpcServer;
+		super(jsonRpcServer);
 	}
 
 	@Override
 	public String root() {
 		return "/validation";
-	}
-
-	@Override
-	public void configureRoutes(final RoutingHandler handler) {
-		handler.post("/validation", jsonRpcServer::handleHttpRequest);
-		handler.post("/validation/", jsonRpcServer::handleHttpRequest);
 	}
 }
