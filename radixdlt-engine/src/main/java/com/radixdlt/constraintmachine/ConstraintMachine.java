@@ -290,7 +290,8 @@ public final class ConstraintMachine {
 			throw verifierState.exception("Transaction is too big: " + txn.getPayload().length + " > " + MAX_TXN_SIZE);
 		}
 
-		long particleIndex = 0;
+		long numEnds = 0;
+		long substateUpdateIndex = 0;
 		int numMessages = 0;
 		ECDSASignature sig = null;
 		int sigPosition = 0;
@@ -328,7 +329,7 @@ public final class ConstraintMachine {
 					}
 				}
 
-				particleIndex++;
+				substateUpdateIndex++;
 
 			} else if (inst.getMicroOp() == REInstruction.REOp.MSG) {
 				numMessages++;
@@ -337,10 +338,11 @@ public final class ConstraintMachine {
 				}
 				verifierState.msg(inst.getData());
 			} else if (inst.getMicroOp() == REInstruction.REOp.END) {
-				if (particleIndex == 0) {
+				if (substateUpdateIndex == 0) {
 					throw verifierState.exception("Empty group");
 				}
-				particleIndex = 0;
+				numEnds++;
+				substateUpdateIndex = 0;
 			} else if (inst.getMicroOp() == REInstruction.REOp.SIG) {
 				sigPosition = curPos;
 				sig = inst.getData();
@@ -349,8 +351,12 @@ public final class ConstraintMachine {
 			}
 		}
 
-		if (particleIndex != 0) {
-			throw verifierState.exception("Missing group");
+		if (substateUpdateIndex != 0) {
+			throw verifierState.exception("Missing end");
+		}
+
+		if (numEnds == 0) {
+			throw verifierState.exception("No state updates");
 		}
 
 		if (sig != null) {
