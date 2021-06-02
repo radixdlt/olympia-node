@@ -374,7 +374,6 @@ public final class BFTSync implements BFTSyncer {
 			if (this.syncRequestRateLimiter.tryAcquire()) {
 				VertexRequestTimeout scheduledTimeout = VertexRequestTimeout.create(request);
 				this.timeoutDispatcher.dispatch(scheduledTimeout, bftSyncPatienceMillis);
-				log.info("Sending BFT sync request {} to {}, authors = {}", request, authors.get(0), authors);
 				this.requestSender.dispatch(authors.get(0), request);
 			} else {
 				log.warn("RATE_LIMIT: Request dropped");
