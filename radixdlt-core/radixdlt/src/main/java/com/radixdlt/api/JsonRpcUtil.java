@@ -118,10 +118,6 @@ public final class JsonRpcUtil {
 			.flatMap(param -> wrap(INVALID_HEX_STRING, () -> Bytes.fromHexString(param)));
 	}
 
-	public static JSONObject parseError(String message) {
-		return protocolError(RpcError.PARSE_ERROR, message);
-	}
-
 	public static JSONObject methodNotFound(JSONObject request) {
 		var method = request.getString("method");
 		return extendedError(request, RpcError.METHOD_NOT_FOUND.code(), "Method " + method + " not found");
