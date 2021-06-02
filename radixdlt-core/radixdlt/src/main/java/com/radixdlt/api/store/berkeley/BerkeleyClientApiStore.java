@@ -42,22 +42,17 @@ import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.api.data.ScheduledQueueFlush;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.state.SystemParticle;
-import com.radixdlt.client.Rri;
-import com.radixdlt.client.api.TxHistoryEntry;
-import com.radixdlt.client.store.ClientApiStore;
-import com.radixdlt.client.store.ClientApiStoreException;
-import com.radixdlt.client.store.TokenDefinitionRecord;
-import com.radixdlt.client.store.TransactionParser;
-import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.api.Rri;
-import com.radixdlt.api.data.TxHistoryEntry;
-import com.radixdlt.api.store.ClientApiStore;
-import com.radixdlt.api.store.ClientApiStoreException;
-import com.radixdlt.api.store.TokenDefinitionRecord;
-import com.radixdlt.api.store.TransactionParser;
-import com.radixdlt.atommodel.system.state.SystemParticle;
+import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.tokens.state.ExittingStake;
+import com.radixdlt.atommodel.tokens.state.PreparedStake;
+import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
+import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.constraintmachine.REStateUpdate;
+import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
@@ -132,6 +127,7 @@ import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_APIDB_TRA
 import static com.radixdlt.identifiers.CommonErrors.INVALID_ACCOUNT_ADDRESS;
 import static com.radixdlt.serialization.DsonOutput.Output;
 import static com.radixdlt.serialization.SerializationUtils.restore;
+import static com.radixdlt.utils.functional.Result.wrap;
 
 @Singleton
 public class BerkeleyClientApiStore implements ClientApiStore {
@@ -683,7 +679,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private REResourceAccounting processGroupedStateUpdates(List<REStateUpdate> updates) {
 		byte[] addressArg = null;
-
 		for (var update : updates) {
 			var substate = update.getRawSubstate();
 			if (substate instanceof UnclaimedREAddr) {

@@ -41,11 +41,11 @@ import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.ok;
 
 @Singleton
-public class ArchiveValidatorsHandler {
+public class ArchiveValidationHandler {
 	private final ValidatorInfoService validatorInfoService;
 
 	@Inject
-	public ArchiveValidatorsHandler(ValidatorInfoService validatorInfoService) {
+	public ArchiveValidationHandler(ValidatorInfoService validatorInfoService) {
 		this.validatorInfoService = validatorInfoService;
 	}
 
@@ -57,7 +57,7 @@ public class ArchiveValidatorsHandler {
 			params -> allOf(parseSize(params), ok(parseAddressCursor(params)))
 				.flatMap((size, cursor) ->
 							 validatorInfoService.getValidators(size, cursor)
-								 .map(ArchiveValidatorsHandler::formatValidatorResponse))
+								 .map(ArchiveValidationHandler::formatValidatorResponse))
 		);
 	}
 
@@ -84,7 +84,7 @@ public class ArchiveValidatorsHandler {
 	private static Optional<ECPublicKey> parseAddressCursor(JSONObject params) {
 		return safeString(params, "cursor")
 			.toOptional()
-			.flatMap(ArchiveValidatorsHandler::parsePublicKey);
+			.flatMap(ArchiveValidationHandler::parsePublicKey);
 	}
 
 	private static Optional<ECPublicKey> parsePublicKey(String address) {

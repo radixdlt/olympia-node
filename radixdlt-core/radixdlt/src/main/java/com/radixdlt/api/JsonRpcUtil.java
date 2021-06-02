@@ -27,6 +27,7 @@ import com.radixdlt.utils.functional.Result;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static com.radixdlt.api.data.ApiErrors.INVALID_HEX_STRING;
 import static com.radixdlt.api.data.ApiErrors.MISSING_PARAMETER;
@@ -174,6 +175,18 @@ public final class JsonRpcUtil {
 			List.of(),
 			params -> safeString(params, name).flatMap(fn)
 		);
+	}
+
+	public static JSONObject withNoParameters(JSONObject request, Supplier<JSONObject> fn) {
+		return withRequiredParameters(request, List.of(), List.of(), __ -> ok(fn.get()));
+	}
+
+	public static JSONObject withRequiredParameters(
+		JSONObject request,
+		List<String> required,
+		Function<JSONObject, Result<JSONObject>> fn
+	) {
+		return withRequiredParameters(request, required, List.of(), fn);
 	}
 
 	public static JSONObject withRequiredParameters(

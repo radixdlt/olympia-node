@@ -48,17 +48,16 @@ public final class EndpointConfig {
 
 	public enum Type {
 		ARCHIVE,
-		NODE
+		NODE;
 	}
 
 	public enum Environment {
 		ALL,
-		DEV_ONLY
+		DEV_ONLY;
 	}
 
 	private static final String API_PREFIX = "api.";
 	private static final String API_SUFFIX_ENABLE = ".enable";
-
 	private static final String API_ARCHIVE = "archive";
 	private static final String API_CONSTRUCTION = "construction";
 	private static final String API_SYSTEM = "system";
@@ -81,7 +80,6 @@ public final class EndpointConfig {
 		new EndpointConfig(API_HEALTH, true, NODE, ALL, HealthEndpointModule::new),
 		new EndpointConfig(API_VERSION, true, NODE, ALL, VersionEndpointModule::new)
 	);
-
 	private static final List<EndpointConfig> ARCHIVE_ENDPOINTS = ENDPOINTS.stream()
 		.filter(e -> e.type == ARCHIVE)
 		.collect(Collectors.toList());
@@ -95,6 +93,7 @@ public final class EndpointConfig {
 	private final Type type;
 	private final Environment environment;
 	private final Supplier<Module> moduleSupplier;
+
 	private EndpointConfig(
 		String name,
 		boolean defaultValue,
@@ -108,7 +107,6 @@ public final class EndpointConfig {
 		this.environment = environment;
 		this.moduleSupplier = moduleSupplier;
 	}
-
 	public static List<EndpointConfig> enabledArchiveEndpoints(RuntimeProperties properties, UniverseType env) {
 		return ARCHIVE_ENDPOINTS.stream()
 			.filter(e -> e.isEnabled(properties))

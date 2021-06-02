@@ -127,6 +127,13 @@ public final class ActionParserService {
 					optionalUrl(element)
 				).map(TransactionAction::unregister);
 
+			case UPDATE_VALIDATOR:
+				return allOf(
+					validator(element),
+					optionalName(element),
+					optionalUrl(element)
+				).map(TransactionAction::update);
+
 			case CREATE_FIXED:
 				return allOf(
 					from(element),

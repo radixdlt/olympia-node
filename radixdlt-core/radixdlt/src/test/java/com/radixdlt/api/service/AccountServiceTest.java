@@ -24,6 +24,7 @@ import com.radixdlt.api.Rri;
 import com.radixdlt.api.data.ActionEntry;
 import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.store.ClientApiStore;
+import com.radixdlt.api.store.ClientApiStore.BalanceType;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
@@ -66,7 +67,7 @@ public class AccountServiceTest {
 		var balance2 = createBalance(OWNER_ACCOUNT, null, rri2, UInt384.NINE);
 		var balances = Result.ok(List.of(balance1, balance2));
 
-		when(clientApiStore.getTokenBalances(OWNER_ACCOUNT, false))
+		when(clientApiStore.getTokenBalances(OWNER_ACCOUNT, BalanceType.SPENDABLE))
 			.thenReturn(balances);
 
 		archiveService.getTokenBalances(OWNER_ACCOUNT)
@@ -93,7 +94,7 @@ public class AccountServiceTest {
 		);
 		var balances = Result.ok(List.of(balance1, balance2, balance3));
 
-		when(clientApiStore.getTokenBalances(OWNER_ACCOUNT, true))
+		when(clientApiStore.getTokenBalances(OWNER_ACCOUNT, BalanceType.STAKES))
 			.thenReturn(balances);
 
 		archiveService.getStakePositions(OWNER_ACCOUNT)

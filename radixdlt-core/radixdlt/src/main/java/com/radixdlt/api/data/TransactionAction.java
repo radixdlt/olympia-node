@@ -25,7 +25,9 @@ import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.actions.UpdateValidator;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -126,6 +128,13 @@ public class TransactionAction {
 		);
 	}
 
+	public static TransactionAction update(ECPublicKey delegate, Optional<String> name, Optional<String> url) {
+		return create(
+			ActionType.UPDATE_VALIDATOR, null, null, delegate, null, null,
+			name.orElse(null), url.orElse(null), null, null, null, null
+		);
+	}
+
 	public static TransactionAction createFixed(
 		REAddr from, REAddr rri, String symbol, String name,
 		String description, String iconUrl, String tokenUrl, UInt256 amount
@@ -174,6 +183,8 @@ public class TransactionAction {
 				return Stream.of(new RegisterValidator(delegate, name, url));
 			case UNREGISTER_VALIDATOR:
 				return Stream.of(new UnregisterValidator(delegate, name, url));
+			case UPDATE_VALIDATOR:
+				return Stream.of(new UpdateValidator(delegate, name, url));
 			case CREATE_FIXED:
 				return Stream.of(new CreateFixedToken(rriValue(), from, symbol, name, description, iconUrl, tokenUrl, amount));
 			case CREATE_MUTABLE:
