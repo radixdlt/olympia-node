@@ -17,6 +17,9 @@
 
 package com.radixdlt.api.service;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.api.data.NodeStatus;
@@ -37,6 +40,8 @@ import static com.radixdlt.counters.SystemCounters.CounterType;
 
 @Singleton
 public class NetworkInfoService {
+	private static final Logger log = LogManager.getLogger();
+
 	private static final long THRESHOLD = 3;                      // Maximum difference between ledger and target
 	private static final long DEFAULT_COLLECTING_INTERVAL = 1000L; // 1 second
 	private static final long DEFAULT_AVERAGING_FACTOR = 10L;     // averaging time in multiples of collecting interval
@@ -48,16 +53,19 @@ public class NetworkInfoService {
 	public static final CounterType TARGET_KEY = CounterType.SYNC_TARGET_STATE_VERSION;
 
 	private final SystemCounters systemCounters;
+	private final SystemConfigService systemConfigService;
 	private final ScheduledEventDispatcher<ScheduledStatsCollecting> scheduledStatsCollecting;
 	private final EnumMap<CounterType, ValueHolder> statistics = new EnumMap<>(CounterType.class);
 
 	@Inject
 	public NetworkInfoService(
 		SystemCounters systemCounters,
-		ScheduledEventDispatcher<ScheduledStatsCollecting> scheduledStatsCollecting
+		ScheduledEventDispatcher<ScheduledStatsCollecting> scheduledStatsCollecting,
+		SystemConfigService systemConfigService
 	) {
 		this.scheduledStatsCollecting = scheduledStatsCollecting;
 		this.systemCounters = systemCounters;
+		this.systemConfigService = systemConfigService;
 
 		statistics.put(THROUGHPUT_KEY, new ValueHolder(DEFAULT_AVERAGING_FACTOR, INCREMENTAL));
 		statistics.put(DEMAND_KEY, new ValueHolder(DEFAULT_AVERAGING_FACTOR, ABSOLUTE));
@@ -93,6 +101,8 @@ public class NetworkInfoService {
 	public EventProcessor<ScheduledStatsCollecting> updateStats() {
 		return flush -> {
 			collectStats();
+			log.info("PROOF::: {}", systemConfigService.getLatestProof().toString());
+			log.info("CHECKPOINT::: {}", systemConfigService.getCheckpoints().toString(2));
 			scheduledStatsCollecting.dispatch(ScheduledStatsCollecting.create(), DEFAULT_COLLECTING_INTERVAL);
 		};
 	}
