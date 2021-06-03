@@ -17,6 +17,7 @@
 
 package com.radixdlt.network.transport.tcp;
 
+import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -91,6 +92,11 @@ public class TCPTransportControlImplTest {
 			@Override
 			public int messageBufferSize(int defaultValue) {
 				return 255;
+			}
+
+			@Override
+			public JSONObject asJson() {
+				return new JSONObject();
 			}
 		};
 

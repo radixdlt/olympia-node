@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+
+import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -193,6 +195,11 @@ public class NettyTCPTransportRTTTest {
 			@Override
 			public int messageBufferSize(int defaultValue) {
 				return 255;
+			}
+
+			@Override
+			public JSONObject asJson() {
+				return new JSONObject();
 			}
 		};
 		Module systemCounterModule = new AbstractModule() {

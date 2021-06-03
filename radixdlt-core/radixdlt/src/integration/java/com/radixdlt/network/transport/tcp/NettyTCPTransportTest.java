@@ -25,6 +25,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
+
+import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -187,6 +189,11 @@ public class NettyTCPTransportTest {
 			@Override
 			public int messageBufferSize(int defaultValue) {
 				return 255;
+			}
+
+			@Override
+			public JSONObject asJson() {
+				return new JSONObject();
 			}
 		};
 		Module systemCounterModule = new AbstractModule() {

@@ -17,10 +17,12 @@
 
 package com.radixdlt.network.transport.tcp;
 
+import org.json.JSONObject;
+
 import com.radixdlt.properties.RuntimeProperties;
 
 /**
- * Static configuration data for UDP transport configuration.
+ * Static configuration data for TCP transport configuration.
  */
 public interface TCPConfiguration {
 
@@ -95,6 +97,13 @@ public interface TCPConfiguration {
 	int messageBufferSize(int defaultValue);
 
 	/**
+	 * Format configuration data as JSON.
+	 *
+	 * @return formatted configuration data.
+	 */
+	JSONObject asJson();
+
+	/**
 	 * Create a configuration from specified {@link RuntimeProperties}.
 	 *
 	 * @param properties the properties to read the configuration from
@@ -140,6 +149,19 @@ public interface TCPConfiguration {
 			@Override
 			public int messageBufferSize(int defaultValue) {
 				return properties.get("network.tcp.message_buffer_size", defaultValue);
+			}
+
+			@Override
+			public JSONObject asJson() {
+				return new JSONObject()
+				.put("address", networkAddress(""))
+				.put("listen_port", listenPort(0))
+				.put("broadcast_port", broadcastPort(0))
+				.put("max_in_channels", maxInChannelCount(0))
+				.put("max_out_channels", maxOutChannelCount(0))
+				.put("priority", priority(0))
+				.put("debug_data", debugData(false))
+				.put("message_buffer_size", messageBufferSize(0));
 			}
 		};
 	}
