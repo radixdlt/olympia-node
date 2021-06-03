@@ -17,6 +17,7 @@
 
 package com.radixdlt.statecomputer;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
@@ -52,10 +53,13 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 
 	@Override
 	public Set<Class<? extends Particle>> particleClasses() {
-		return Set.of(
-			PreparedStake.class,
+		// Use immutable set here so that we can guarantee order
+		// as there is a bit of a hack in that PreparedStake must be loaded
+		// after ValidatorStake to get to the correct state
+		return ImmutableSet.of(
 			ValidatorParticle.class,
-			ValidatorStake.class
+			ValidatorStake.class,
+			PreparedStake.class
 		);
 	}
 
