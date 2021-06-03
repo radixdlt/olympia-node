@@ -26,7 +26,7 @@ import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.StatelessSubstateVerifier;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.REAddr;
@@ -36,7 +36,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TokensConstraintScryptTest {
-	private static ConstraintMachine.StatelessSubstateVerifier<Particle> staticCheck;
+	private static StatelessSubstateVerifier<Particle> staticCheck;
 
 	@BeforeClass
 	public static void initializeConstraintScrypt() {

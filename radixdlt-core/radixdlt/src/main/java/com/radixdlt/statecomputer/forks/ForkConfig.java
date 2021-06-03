@@ -22,6 +22,7 @@ import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.BatchVerifier;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
 /**
@@ -29,6 +30,7 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
  */
 public final class ForkConfig {
 	private final String name;
+	private final REParser parser;
 	private final ConstraintMachine constraintMachine;
 	private final ActionConstructors actionConstructors;
 	private final BatchVerifier<LedgerAndBFTProof> batchVerifier;
@@ -36,12 +38,14 @@ public final class ForkConfig {
 
 	public ForkConfig(
 		String name,
+		REParser parser,
 		ConstraintMachine constraintMachine,
 		ActionConstructors actionConstructors,
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
 		View epochCeilingView
 	) {
 		this.name = name;
+		this.parser = parser;
 		this.constraintMachine = constraintMachine;
 		this.actionConstructors = actionConstructors;
 		this.batchVerifier = batchVerifier;
@@ -50,6 +54,10 @@ public final class ForkConfig {
 
 	public String getName() {
 		return name;
+	}
+
+	public REParser getParser() {
+		return parser;
 	}
 
 	public ConstraintMachine getConstraintMachine() {

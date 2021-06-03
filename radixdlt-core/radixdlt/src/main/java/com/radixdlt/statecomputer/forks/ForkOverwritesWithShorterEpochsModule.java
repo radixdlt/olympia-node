@@ -57,6 +57,7 @@ public class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
 					e -> e.getValue().getName(),
 					e -> new ForkConfig(
 						e.getValue().getName(),
+						e.getValue().getParser(),
 						e.getValue().getConstraintMachine(),
 						e.getValue().getActionConstructors(),
 						e.getValue().getBatchVerifier(),

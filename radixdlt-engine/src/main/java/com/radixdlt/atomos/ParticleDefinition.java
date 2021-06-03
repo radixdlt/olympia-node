@@ -17,8 +17,8 @@
 
 package com.radixdlt.atomos;
 
-import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.StatelessSubstateVerifier;
 
 import java.util.function.Predicate;
 
@@ -29,18 +29,18 @@ import java.util.function.Predicate;
 // FIXME: unchecked, rawtypes
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class ParticleDefinition<T extends Particle> {
-	private final ConstraintMachine.StatelessSubstateVerifier staticValidation; // may be null
+	private final StatelessSubstateVerifier staticValidation; // may be null
 	private final Predicate<T> virtualizeSpin; // may be null
 
 	private ParticleDefinition(
-		ConstraintMachine.StatelessSubstateVerifier staticValidation,
+		StatelessSubstateVerifier staticValidation,
 		Predicate<T> virtualizeSpin
 	) {
 		this.staticValidation = staticValidation;
 		this.virtualizeSpin = virtualizeSpin;
 	}
 
-	ConstraintMachine.StatelessSubstateVerifier<Particle> getStaticValidation() {
+	StatelessSubstateVerifier<Particle> getStaticValidation() {
 		return staticValidation;
 	}
 
@@ -62,13 +62,13 @@ public class ParticleDefinition<T extends Particle> {
 	 * @param <T> The type of the particle to be defined
 	 */
 	public static class Builder<T extends Particle> {
-		private ConstraintMachine.StatelessSubstateVerifier<T> staticValidation = x -> { };
+		private StatelessSubstateVerifier<T> staticValidation = x -> { };
 		private Predicate<T> virtualizedParticles = x -> false;
 
 		private Builder() {
 		}
 
-		public Builder<T> staticValidation(ConstraintMachine.StatelessSubstateVerifier<T> staticValidation) {
+		public Builder<T> staticValidation(StatelessSubstateVerifier<T> staticValidation) {
 			this.staticValidation = staticValidation;
 			return this;
 		}

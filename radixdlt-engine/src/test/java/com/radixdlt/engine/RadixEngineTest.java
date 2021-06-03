@@ -22,40 +22,15 @@ import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV1;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.store.EngineStore;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.store.InMemoryEngineStore;
-import com.radixdlt.test.utils.TypedMocks;
 
 import java.util.List;
-import java.util.Set;
-import java.util.function.BiFunction;
-import java.util.function.Supplier;
-import org.junit.Before;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class RadixEngineTest {
-	private ConstraintMachine constraintMachine;
-	private EngineStore<Void> engineStore;
-	private RadixEngine<Void> radixEngine;
-
-	@Before
-	public void setup() {
-		this.constraintMachine = mock(ConstraintMachine.class);
-		this.engineStore = TypedMocks.rmock(EngineStore.class);
-		this.radixEngine = new RadixEngine<>(
-			ActionConstructors.newBuilder().build(),
-			constraintMachine,
-			engineStore
-		);
-	}
-
 	@Test
 	public void empty_particle_group_should_throw_error() {
 		// Arrange
@@ -63,11 +38,11 @@ public class RadixEngineTest {
 		cmAtomOS.load(new SystemConstraintScryptV1());
 		var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
-			cmAtomOS.buildStatelessSubstateVerifier(),
 			cmAtomOS.getProcedures()
 		);
+		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
 		var actionConstructors = ActionConstructors.newBuilder().build();
-		RadixEngine<Void> engine = new RadixEngine<>(actionConstructors, cm, new InMemoryEngineStore<>());
+		RadixEngine<Void> engine = new RadixEngine<>(parser, actionConstructors, cm, new InMemoryEngineStore<>());
 
 		// Act
 		// Assert
@@ -76,40 +51,5 @@ public class RadixEngineTest {
 			.build();
 		assertThatThrownBy(() -> engine.execute(List.of(atom)))
 			.isInstanceOf(RadixEngineException.class);
-	}
-
-	@Test
-	public void when_add_state_computer__then_store_is_accessed_for_initial_computation() {
-		Object state = mock(Object.class);
-		when(engineStore.reduceUpParticles(any(), any(), any())).thenReturn(state);
-		radixEngine.addStateReducer(
-			new StateReducer<>() {
-				public Class<Object> stateClass() {
-					return Object.class;
-				}
-
-				@Override
-				public Set<Class<? extends Particle>> particleClasses() {
-					return Set.of(Particle.class);
-				}
-
-				@Override
-				public Supplier<Object> initial() {
-					return () -> mock(Object.class);
-				}
-
-				@Override
-				public BiFunction<Object, Particle, Object> outputReducer() {
-					return (o, p) -> o;
-				}
-
-				@Override
-				public BiFunction<Object, Particle, Object> inputReducer() {
-					return (o, p) -> o;
-				}
-			},
-			true
-		);
-		assertThat(radixEngine.getComputedState(Object.class)).isEqualTo(state);
 	}
 }

@@ -19,7 +19,6 @@ package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.constraintmachine.AuthorizationException;
-import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
@@ -31,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.StatelessSubstateVerifier;
 import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.identifiers.REAddr;
@@ -130,7 +130,7 @@ public final class CMAtomOS {
 		return procedures;
 	}
 
-	public ConstraintMachine.StatelessSubstateVerifier<Particle> buildStatelessSubstateVerifier() {
+	public StatelessSubstateVerifier<Particle> buildStatelessSubstateVerifier() {
 		final ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions
 			= ImmutableMap.copyOf(this.particleDefinitions);
 		return p -> {

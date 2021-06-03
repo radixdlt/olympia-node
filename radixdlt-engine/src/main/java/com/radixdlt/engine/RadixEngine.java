@@ -36,6 +36,7 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 
@@ -153,25 +154,29 @@ public final class RadixEngine<M> {
 	private final Map<Class<?>, SubstateCache<?>> substateCache = new HashMap<>();
 	private final List<RadixEngineBranch<M>> branches = new ArrayList<>();
 
+	private REParser parser;
 	private BatchVerifier<M> batchVerifier;
 	private ActionConstructors actionConstructors;
 	private ConstraintMachine constraintMachine;
 
 	public RadixEngine(
+		REParser parser,
 		ActionConstructors actionConstructors,
 		ConstraintMachine constraintMachine,
 		EngineStore<M> engineStore
 	) {
-		this(actionConstructors, constraintMachine, engineStore, null, BatchVerifier.empty());
+		this(parser, actionConstructors, constraintMachine, engineStore, null, BatchVerifier.empty());
 	}
 
 	public RadixEngine(
+		REParser parser,
 		ActionConstructors actionConstructors,
 		ConstraintMachine constraintMachine,
 		EngineStore<M> engineStore,
 		PostParsedChecker checker,
 		BatchVerifier<M> batchVerifier
 	) {
+		this.parser = Objects.requireNonNull(parser);
 		this.actionConstructors = Objects.requireNonNull(actionConstructors);
 		this.constraintMachine = Objects.requireNonNull(constraintMachine);
 		this.engineStore = Objects.requireNonNull(engineStore);
@@ -270,6 +275,7 @@ public final class RadixEngine<M> {
 		private boolean deleted = false;
 
 		private RadixEngineBranch(
+			REParser parser,
 			ActionConstructors actionToConstructorMap,
 			ConstraintMachine constraintMachine,
 			EngineStore<M> parentStore,
@@ -280,6 +286,7 @@ public final class RadixEngine<M> {
 			var transientEngineStore = new TransientEngineStore<>(parentStore);
 
 			this.engine = new RadixEngine<>(
+				parser,
 				actionToConstructorMap,
 				constraintMachine,
 				transientEngineStore,
@@ -349,6 +356,7 @@ public final class RadixEngine<M> {
 				}
 			});
 			RadixEngineBranch<M> branch = new RadixEngineBranch<>(
+				this.parser,
 				this.actionConstructors,
 				this.constraintMachine,
 				this.engineStore,
@@ -365,19 +373,23 @@ public final class RadixEngine<M> {
 
 	private REProcessedTxn verify(CMStore.Transaction dbTransaction, Txn txn, PermissionLevel permissionLevel)
 		throws TxnParseException, ConstraintMachineException {
+		var parsedTxn = parser.parse(txn);
 
-		var parsedTxn = constraintMachine.verify(
+		var stateUpdates = constraintMachine.verify(
 			dbTransaction,
 			engineStore,
-			txn,
+			parsedTxn.instructions(),
+			parsedTxn.getSignedBy(),
 			permissionLevel
 		);
 
+		var processedTxn = new REProcessedTxn(parsedTxn, stateUpdates);
+
 		if (checker != null) {
-			checker.check(permissionLevel, parsedTxn);
+			checker.check(permissionLevel, processedTxn);
 		}
 
-		return parsedTxn;
+		return processedTxn;
 	}
 
 	/**

@@ -45,6 +45,7 @@ public class RadixEngineForksLatestOnlyModule extends AbstractModule {
 			.map(Map.Entry::getValue)
 			.map(f -> new ForkConfig(
 				f.getName(),
+				f.getParser(),
 				f.getConstraintMachine(),
 				f.getActionConstructors(),
 				f.getBatchVerifier(),

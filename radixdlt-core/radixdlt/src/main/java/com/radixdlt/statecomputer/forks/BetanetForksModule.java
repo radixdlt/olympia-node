@@ -73,6 +73,7 @@ import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.EpochProofVerifierV1;
 import com.radixdlt.statecomputer.EpochProofVerifierV2;
 
@@ -94,10 +95,9 @@ public final class BetanetForksModule extends AbstractModule {
 		v1.load(new SystemConstraintScryptV1());
 		var betanet1 = new ConstraintMachine(
 			v1.virtualizedUpParticles(),
-			v1.buildStatelessSubstateVerifier(),
 			v1.getProcedures()
 		);
-
+		var parser = new REParser(v1.buildStatelessSubstateVerifier());
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateSystem.class, new CreateSystemConstructorV1())
 			.put(BurnToken.class, new BurnTokenConstructor())
@@ -116,7 +116,7 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
 			.build();
 
-		return new ForkConfig("betanet1", betanet1, actionConstructors, new EpochProofVerifierV1(), View.of(100000L));
+		return new ForkConfig("betanet1", parser, betanet1, actionConstructors, new EpochProofVerifierV1(), View.of(100000L));
 	}
 
 	@ProvidesIntoMap
@@ -131,10 +131,10 @@ public final class BetanetForksModule extends AbstractModule {
 		v2.load(new SystemConstraintScryptV1());
 		var betanet2 = new ConstraintMachine(
 			v2.virtualizedUpParticles(),
-			v2.buildStatelessSubstateVerifier(),
 			v2.getProcedures()
 		);
 
+		var parser = new REParser(v2.buildStatelessSubstateVerifier());
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateSystem.class, new CreateSystemConstructorV1())
 			.put(BurnToken.class, new BurnTokenConstructor())
@@ -153,7 +153,7 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
 			.build();
 
-		return new ForkConfig("betanet2", betanet2, actionConstructors, new EpochProofVerifierV1(), View.of(10000L));
+		return new ForkConfig("betanet2", parser, betanet2, actionConstructors, new EpochProofVerifierV1(), View.of(10000L));
 	}
 
 	@ProvidesIntoMap
@@ -168,10 +168,10 @@ public final class BetanetForksModule extends AbstractModule {
 		v3.load(new SystemV1ToV2TransitionConstraintScrypt());
 		var betanet3 = new ConstraintMachine(
 			v3.virtualizedUpParticles(),
-			v3.buildStatelessSubstateVerifier(),
 			v3.getProcedures()
 		);
 
+		var parser = new REParser(v3.buildStatelessSubstateVerifier());
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateSystem.class, new CreateSystemConstructorV2())
 			.put(BurnToken.class, new BurnTokenConstructor())
@@ -191,6 +191,6 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
 			.build();
 
-		return new ForkConfig("betanet3", betanet3, actionConstructors, new EpochProofVerifierV2(), View.of(10000L));
+		return new ForkConfig("betanet3", parser, betanet3, actionConstructors, new EpochProofVerifierV2(), View.of(10000L));
 	}
 }

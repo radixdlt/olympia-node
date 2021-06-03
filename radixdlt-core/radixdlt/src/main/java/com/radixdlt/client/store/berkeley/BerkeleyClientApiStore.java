@@ -27,6 +27,7 @@ import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.accounting.TwoActorEntry;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.TxnParseException;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.ValidatorAddress;
 import org.apache.logging.log4j.LogManager;
@@ -45,7 +46,6 @@ import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.ClientApiStoreException;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.TransactionParser;
-import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -148,7 +148,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final AtomicLong currentRound = new AtomicLong(0);
 	private final TxnParser txnParser;
 	private final TransactionParser transactionParser;
-	private final ConstraintMachine constraintMachine;
+	private final REParser parser;
 
 	private Database transactionHistory;
 	private Database tokenDefinitions;
@@ -161,7 +161,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	public BerkeleyClientApiStore(
 		DatabaseEnvironment dbEnv,
-		ConstraintMachine constraintMachine,
+		REParser parser,
 		TxnParser txnParser,
 		BerkeleyLedgerEntryStore store,
 		Serialization serialization,
@@ -171,7 +171,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		boolean isTest
 	) {
 		this.dbEnv = dbEnv;
-		this.constraintMachine = constraintMachine;
+		this.parser = parser;
 		this.txnParser = txnParser;
 		this.store = store;
 		this.serialization = serialization;
@@ -185,7 +185,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	@Inject
 	public BerkeleyClientApiStore(
 		DatabaseEnvironment dbEnv,
-		ConstraintMachine constraintMachine,
+		REParser parser,
 		TxnParser txnParser,
 		BerkeleyLedgerEntryStore store,
 		Serialization serialization,
@@ -194,7 +194,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		TransactionParser transactionParser
 	) {
 		this.dbEnv = dbEnv;
-		this.constraintMachine = constraintMachine;
+		this.parser = parser;
 		this.txnParser = txnParser;
 		this.store = store;
 		this.serialization = serialization;
@@ -756,7 +756,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private Optional<ECPublicKey> extractCreator(Txn tx) {
 		try {
-			return constraintMachine.parse(tx).getSignedBy();
+			return parser.parse(tx).getSignedBy();
 		} catch (TxnParseException e) {
 			throw new IllegalStateException();
 		}

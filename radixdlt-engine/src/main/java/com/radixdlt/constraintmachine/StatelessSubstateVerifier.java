@@ -18,12 +18,6 @@
 
 package com.radixdlt.constraintmachine;
 
-public class TxnParseException extends Exception {
-	public TxnParseException(String message, Throwable cause) {
-		super(message, cause);
-	}
-
-	public TxnParseException(String message) {
-		super(message);
-	}
+public interface StatelessSubstateVerifier<T extends Particle> {
+	void verify(T particle) throws TxnParseException;
 }

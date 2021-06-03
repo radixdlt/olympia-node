@@ -30,6 +30,7 @@ import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import org.junit.Before;
@@ -52,11 +53,11 @@ public class SystemTest {
 		cmAtomOS.load(new SystemConstraintScryptV1());
 		var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
-			cmAtomOS.buildStatelessSubstateVerifier(),
 			cmAtomOS.getProcedures()
 		);
+		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
 		this.store = new InMemoryEngineStore<>();
-		this.engine = new RadixEngine<>(ActionConstructors.newBuilder().build(), cm, store);
+		this.engine = new RadixEngine<>(parser, ActionConstructors.newBuilder().build(), cm, store);
 	}
 
 	@Test

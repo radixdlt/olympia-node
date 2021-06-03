@@ -22,10 +22,10 @@ import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.client.Rri;
 import com.radixdlt.client.store.TransactionParser;
-import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
@@ -106,7 +106,7 @@ public class BerkeleyClientApiStoreTest {
 	private RadixEngine<LedgerAndBFTProof> engine;
 
 	@Inject
-	private ConstraintMachine constraintMachine;
+	private REParser parser;
 
 	private Injector createInjector() {
 		return Guice.createInjector(
@@ -335,7 +335,7 @@ public class BerkeleyClientApiStoreTest {
 
 		return new BerkeleyClientApiStore(
 			environment,
-			constraintMachine,
+			parser,
 			txnParser,
 			ledgerStore,
 			serialization,

@@ -37,6 +37,7 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -79,11 +80,12 @@ public final class MintTokensTest {
 		cmAtomOS.load(scrypt);
 		var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
-			cmAtomOS.buildStatelessSubstateVerifier(),
 			cmAtomOS.getProcedures()
 		);
+		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
+			parser,
 			ActionConstructors.newBuilder()
 				.put(TransferToken.class, transferTokensConstructor)
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())

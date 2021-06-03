@@ -30,6 +30,7 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import org.junit.Before;
@@ -49,11 +50,12 @@ public class RegisterValidatorTest {
 		cmAtomOS.load(new ValidatorConstraintScrypt());
 		var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
-			cmAtomOS.buildStatelessSubstateVerifier(),
 			cmAtomOS.getProcedures()
 		);
+		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
+			parser,
 			ActionConstructors.newBuilder()
 				.put(RegisterValidator.class, new RegisterValidatorConstructor())
 				.build(),

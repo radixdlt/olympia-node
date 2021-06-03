@@ -41,6 +41,7 @@ import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV2;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
 import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
+import com.radixdlt.engine.parser.REParser;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -100,9 +101,9 @@ public class TransactionParserTest {
 
 		final var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
-			cmAtomOS.buildStatelessSubstateVerifier(),
 			cmAtomOS.getProcedures()
 		);
+		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
 
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
@@ -116,7 +117,7 @@ public class TransactionParserTest {
 			.put(CreateSystem.class, new CreateSystemConstructorV2())
 			.build();
 
-		engine = new RadixEngine<>(actionConstructors, cm, store);
+		engine = new RadixEngine<>(parser, actionConstructors, cm, store);
 
 		var txn0 = engine.construct(
 			TxActionListBuilder.create()

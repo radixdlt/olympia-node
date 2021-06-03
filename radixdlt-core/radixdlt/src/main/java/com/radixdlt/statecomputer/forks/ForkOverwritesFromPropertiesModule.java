@@ -63,6 +63,7 @@ public class ForkOverwritesFromPropertiesModule extends AbstractModule {
 				logger.warn("Overwriting views of " + c.getName() + " from " + c.getEpochCeilingView() + " to " + view);
 				var overwrite = new ForkConfig(
 					c.getName(),
+					c.getParser(),
 					c.getConstraintMachine(),
 					c.getActionConstructors(),
 					c.getBatchVerifier(),

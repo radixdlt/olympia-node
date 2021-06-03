@@ -17,23 +17,16 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.google.common.hash.HashCode;
-
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.ReadableAddrs;
 import com.radixdlt.utils.Pair;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -50,24 +43,14 @@ import java.util.function.Predicate;
 // FIXME: unchecked, rawtypes
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class ConstraintMachine {
-	private static final int MAX_TXN_SIZE = 1024 * 1024;
-	private static final int MAX_NUM_MESSAGES = 1;
-
-	public interface StatelessSubstateVerifier<T extends Particle> {
-		void verify(T particle) throws TxnParseException;
-	}
-
 	private final Predicate<Particle> virtualStoreLayer;
-	private final StatelessSubstateVerifier<Particle> statelessSubstateVerifier;
 	private final Procedures procedures;
 
 	public ConstraintMachine(
 		Predicate<Particle> virtualStoreLayer,
-		StatelessSubstateVerifier<Particle> statelessSubstateVerifier,
 		Procedures procedures
 	) {
 		this.virtualStoreLayer = virtualStoreLayer;
-		this.statelessSubstateVerifier = statelessSubstateVerifier;
 		this.procedures = procedures;
 	}
 
@@ -205,136 +188,6 @@ public final class ConstraintMachine {
 	}
 
 
-	public static class ParseResult {
-		private final List<REInstruction> instructions;
-		private ECDSASignature signature;
-		private HashCode hashToSign;
-		private ECPublicKey publicKey;
-		private final Txn txn;
-		private byte[] msg;
-
-		ParseResult(Txn txn) {
-			this.txn = txn;
-			this.instructions = new ArrayList<>();
-		}
-
-		void msg(byte[] msg) {
-			this.msg = msg;
-		}
-
-		public Optional<byte[]> getMsg() {
-			return Optional.ofNullable(msg);
-		}
-
-		void addParsed(REInstruction instruction) {
-			this.instructions.add(instruction);
-		}
-
-		void signatureData(HashCode hashToSign, ECDSASignature signature, ECPublicKey publicKey) {
-			this.hashToSign = hashToSign;
-			this.signature = signature;
-			this.publicKey = publicKey;
-		}
-
-		public List<REInstruction> instructionsParsed() {
-			return instructions;
-		}
-
-		public Optional<ECPublicKey> getSignedBy() {
-			return Optional.ofNullable(publicKey);
-		}
-
-		private int index() {
-			return instructions.size();
-		}
-
-		public TxnParseException exception(String message) {
-			return new TxnParseException(message + "@" + index() + " parsed: " + instructions);
-		}
-	}
-
-	public ParseResult parse(Txn txn) throws TxnParseException {
-		var verifierState = new ParseResult(txn);
-
-		if (txn.getPayload().length > MAX_TXN_SIZE) {
-			throw verifierState.exception("Transaction is too big: " + txn.getPayload().length + " > " + MAX_TXN_SIZE);
-		}
-
-		long numEnds = 0;
-		long substateUpdateIndex = 0;
-		int numMessages = 0;
-		ECDSASignature sig = null;
-		int sigPosition = 0;
-
-		var buf = ByteBuffer.wrap(txn.getPayload());
-		while (buf.hasRemaining()) {
-			if (sig != null) {
-				throw verifierState.exception("Signature must be last");
-			}
-
-			int curPos = buf.position();
-			final REInstruction inst;
-			try {
-				inst = REInstruction.readFrom(txn, verifierState.index(), buf);
-			} catch (DeserializeException e) {
-				throw verifierState.exception("Could not read instruction");
-			}
-			verifierState.addParsed(inst);
-
-			if (inst.isStateUpdate()) {
-				var data = inst.getData();
-				if (data instanceof Substate) {
-					Substate substate = (Substate) data;
-					statelessSubstateVerifier.verify(substate.getParticle());
-				} else if (data instanceof Pair) {
-					Substate substate = (Substate) ((Pair) data).getFirst();
-					statelessSubstateVerifier.verify(substate.getParticle());
-				}
-
-				substateUpdateIndex++;
-
-			} else if (inst.getMicroOp() == REInstruction.REOp.MSG) {
-				numMessages++;
-				if (numMessages > MAX_NUM_MESSAGES) {
-					throw verifierState.exception("Too many messages");
-				}
-				verifierState.msg(inst.getData());
-			} else if (inst.getMicroOp() == REInstruction.REOp.END) {
-				if (substateUpdateIndex == 0) {
-					throw verifierState.exception("Empty group");
-				}
-				numEnds++;
-				substateUpdateIndex = 0;
-			} else if (inst.getMicroOp() == REInstruction.REOp.SIG) {
-				sigPosition = curPos;
-				sig = inst.getData();
-			} else {
-				throw verifierState.exception("Unknown CM Op " + inst.getMicroOp());
-			}
-		}
-
-		if (substateUpdateIndex != 0) {
-			throw verifierState.exception("Missing end");
-		}
-
-		if (numEnds == 0) {
-			throw verifierState.exception("No state updates");
-		}
-
-		if (sig != null) {
-			var hash = HashUtils.sha256(txn.getPayload(), 0, sigPosition); // This is a double hash
-			var pubKey = ECPublicKey.recoverFrom(hash, sig)
-				.orElseThrow(() -> verifierState.exception("Invalid signature"));
-			if (!pubKey.verify(hash, sig)) {
-				throw verifierState.exception("Invalid signature");
-			}
-			verifierState.signatureData(hash, sig, pubKey);
-		}
-
-		return verifierState;
-	}
-
-
 	/**
 	 * Executes a transition procedure given the next spun particle and a current validation state.
 	 */
@@ -393,15 +246,15 @@ public final class ConstraintMachine {
 	 * Executes transition procedures and witness validators in a particle group and validates
 	 * that the particle group is well formed.
 	 */
-	void statefulVerify(
+	List<List<REStateUpdate>> statefulVerify(
 		CMValidationState validationState,
-		List<REInstruction> instructions,
-		List<List<REStateUpdate>> parsedInstructions
+		List<REInstruction> instructions
 	) throws ConstraintMachineException {
 		int instIndex = 0;
 		var expectEnd = false;
 
-		var parsed = new ArrayList<REStateUpdate>();
+		var groupedStateUpdates = new ArrayList<List<REStateUpdate>>();
+		var stateUpdates = new ArrayList<REStateUpdate>();
 
 		for (REInstruction inst : instructions) {
 			validationState.curIndex = instIndex;
@@ -414,7 +267,7 @@ public final class ConstraintMachine {
 			if (inst.getMicroOp() == REInstruction.REOp.DOWNALL) {
 				Class<? extends Particle> particleClass = inst.getData();
 				var substateCursor = validationState.shutdownAll(particleClass);
-				final var stateUpdates = parsed;
+				var tmp = stateUpdates;
 				var iterator = new Iterator<Particle>() {
 					@Override
 					public boolean hasNext() {
@@ -426,7 +279,7 @@ public final class ConstraintMachine {
 						// FIXME: this is a hack
 						// FIXME: do this via shutdownAll state update rather than individually
 						var substate = substateCursor.next();
-						stateUpdates.add(REStateUpdate.of(inst.getMicroOp(), substate, null, inst.getDataByteBuffer()));
+						tmp.add(REStateUpdate.of(inst.getMicroOp(), substate, null, inst.getDataByteBuffer()));
 						return substate.getParticle();
 					}
 				};
@@ -475,14 +328,14 @@ public final class ConstraintMachine {
 					throw new ConstraintMachineException(CMErrorCode.UNKNOWN_OP, validationState);
 				}
 
-				parsed.add(REStateUpdate.of(inst.getMicroOp(), substate, arg, inst.getDataByteBuffer()));
+				stateUpdates.add(REStateUpdate.of(inst.getMicroOp(), substate, arg, inst.getDataByteBuffer()));
 
 				callProcedure(validationState, inst.getMicroOp(), nextParticle.getClass(), o);
 
 				expectEnd = validationState.reducerState == null;
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.END) {
-				parsedInstructions.add(parsed);
-				parsed = new ArrayList<>();
+				groupedStateUpdates.add(stateUpdates);
+				stateUpdates = new ArrayList<>();
 
 				if (validationState.reducerState != null) {
 					callProcedure(validationState, inst.getMicroOp(), null, null);
@@ -493,6 +346,8 @@ public final class ConstraintMachine {
 
 			instIndex++;
 		}
+
+		return groupedStateUpdates;
 	}
 
 	/**
@@ -501,24 +356,21 @@ public final class ConstraintMachine {
 	 *
 	 * @return the first error found, otherwise an empty optional
 	 */
-	public REProcessedTxn verify(
+	public List<List<REStateUpdate>> verify(
 		CMStore.Transaction dbTxn,
 		CMStore cmStore,
-		Txn txn,
+		List<REInstruction> instructions,
+		Optional<ECPublicKey> signature,
 		PermissionLevel permissionLevel
 	) throws TxnParseException, ConstraintMachineException {
-		var result = this.parse(txn);
-
 		var validationState = new CMValidationState(
 			virtualStoreLayer,
 			dbTxn,
 			cmStore,
 			permissionLevel,
-			Optional.ofNullable(result.publicKey)
+			signature
 		);
-		var parsedInstructions = new ArrayList<List<REStateUpdate>>();
-		this.statefulVerify(validationState, result.instructions, parsedInstructions);
 
-		return new REProcessedTxn(txn, result, parsedInstructions);
+		return this.statefulVerify(validationState, instructions);
 	}
 }
