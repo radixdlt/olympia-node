@@ -111,11 +111,11 @@ public class StakeTokensTest {
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
 		scrypts.forEach(cmAtomOS::load);
-		var cm = new ConstraintMachine.Builder()
-			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
-			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
-			.setParticleTransitionProcedures(cmAtomOS.getProcedures())
-			.build();
+		var cm = new ConstraintMachine(
+			cmAtomOS.virtualizedUpParticles(),
+			cmAtomOS.buildStatelessSubstateVerifier(),
+			cmAtomOS.getProcedures()
+		);
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
 			ActionConstructors.newBuilder()

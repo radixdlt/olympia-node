@@ -25,7 +25,6 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
-import com.radixdlt.atomos.Result;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
@@ -43,7 +42,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
@@ -55,46 +53,21 @@ public final class ConstraintMachine {
 	private static final int MAX_TXN_SIZE = 1024 * 1024;
 	private static final int MAX_NUM_MESSAGES = 1;
 
-	public static class Builder {
-		private Predicate<Particle> virtualStoreLayer;
-		private Function<Particle, Result> particleStaticCheck;
-		private Procedures procedures;
-
-		public Builder setParticleStaticCheck(Function<Particle, Result> particleStaticCheck) {
-			this.particleStaticCheck = particleStaticCheck;
-			return this;
-		}
-
-		public Builder setParticleTransitionProcedures(Procedures procedures) {
-			this.procedures = procedures;
-			return this;
-		}
-
-		public Builder setVirtualStoreLayer(Predicate<Particle> virtualStoreLayer) {
-			this.virtualStoreLayer = virtualStoreLayer;
-			return this;
-		}
-
-		public ConstraintMachine build() {
-			return new ConstraintMachine(
-				virtualStoreLayer,
-				particleStaticCheck,
-				procedures
-			);
-		}
+	public interface StatelessSubstateVerifier<T extends Particle> {
+		void verify(T particle) throws TxnParseException;
 	}
 
 	private final Predicate<Particle> virtualStoreLayer;
-	private final Function<Particle, Result> particleStaticCheck;
+	private final StatelessSubstateVerifier<Particle> statelessSubstateVerifier;
 	private final Procedures procedures;
 
-	ConstraintMachine(
+	public ConstraintMachine(
 		Predicate<Particle> virtualStoreLayer,
-		Function<Particle, Result> particleStaticCheck,
+		StatelessSubstateVerifier<Particle> statelessSubstateVerifier,
 		Procedures procedures
 	) {
 		this.virtualStoreLayer = virtualStoreLayer;
-		this.particleStaticCheck = particleStaticCheck;
+		this.statelessSubstateVerifier = statelessSubstateVerifier;
 		this.procedures = procedures;
 	}
 
@@ -276,10 +249,7 @@ public final class ConstraintMachine {
 		}
 
 		public TxnParseException exception(String message) {
-			return new TxnParseException(
-				message + "@" + index() + " parsed: " + instructions,
-				this
-			);
+			return new TxnParseException(message + "@" + index() + " parsed: " + instructions);
 		}
 	}
 
@@ -315,18 +285,10 @@ public final class ConstraintMachine {
 				var data = inst.getData();
 				if (data instanceof Substate) {
 					Substate substate = (Substate) data;
-					final Result staticCheckResult = particleStaticCheck.apply(substate.getParticle());
-					if (staticCheckResult.isError()) {
-						var errMsg = staticCheckResult.getErrorMessage();
-						throw verifierState.exception(errMsg);
-					}
+					statelessSubstateVerifier.verify(substate.getParticle());
 				} else if (data instanceof Pair) {
 					Substate substate = (Substate) ((Pair) data).getFirst();
-					final Result staticCheckResult = particleStaticCheck.apply(substate.getParticle());
-					if (staticCheckResult.isError()) {
-						var errMsg = staticCheckResult.getErrorMessage();
-						throw verifierState.exception(errMsg);
-					}
+					statelessSubstateVerifier.verify(substate.getParticle());
 				}
 
 				substateUpdateIndex++;

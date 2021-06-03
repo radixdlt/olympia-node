@@ -87,11 +87,11 @@ public class NextViewV2Test {
 		cmAtomOS.load(new StakingConstraintScryptV3());
 		cmAtomOS.load(new TokensConstraintScryptV2());
 		cmAtomOS.load(new ValidatorConstraintScrypt());
-		var cm = new ConstraintMachine.Builder()
-			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
-			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
-			.setParticleTransitionProcedures(cmAtomOS.getProcedures())
-			.build();
+		var cm = new ConstraintMachine(
+			cmAtomOS.virtualizedUpParticles(),
+			cmAtomOS.buildStatelessSubstateVerifier(),
+			cmAtomOS.getProcedures()
+		);
 		this.store = new InMemoryEngineStore<>();
 		this.sut = new RadixEngine<>(
 			ActionConstructors.newBuilder()

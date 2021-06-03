@@ -53,13 +53,13 @@ public class TokenDefinitionTest {
 
 	@Before
 	public void setup() {
-		CMAtomOS cmAtomOS = new CMAtomOS();
+		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new TokensConstraintScryptV1());
-		ConstraintMachine cm = new ConstraintMachine.Builder()
-			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
-			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
-			.setParticleTransitionProcedures(cmAtomOS.getProcedures())
-			.build();
+		var cm = new ConstraintMachine(
+			cmAtomOS.virtualizedUpParticles(),
+			cmAtomOS.buildStatelessSubstateVerifier(),
+			cmAtomOS.getProcedures()
+		);
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
 			ActionConstructors.newBuilder()

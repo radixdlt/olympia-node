@@ -25,7 +25,6 @@ import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
-import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
@@ -35,6 +34,7 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
@@ -59,9 +59,8 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 			ParticleDefinition.<PreparedUnstakeOwnership>builder()
 				.staticValidation(p -> {
 					if (p.getAmount().isZero()) {
-						return Result.error("amount must not be zero");
+						throw new TxnParseException("amount must not be zero");
 					}
-					return Result.success();
 				})
 				.build()
 		);

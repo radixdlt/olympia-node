@@ -21,7 +21,6 @@ package com.radixdlt.atommodel.system.scrypt;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
-import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
@@ -29,6 +28,7 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 
@@ -44,22 +44,18 @@ public final class SystemConstraintScryptV1 implements ConstraintScrypt {
 		// Nothing here right now
 	}
 
-	private Result staticCheck(SystemParticle systemParticle) {
+	private void staticCheck(SystemParticle systemParticle) throws TxnParseException {
 		if (systemParticle.getEpoch() < 0) {
-			return Result.error("Epoch is less than 0");
+			throw new TxnParseException("Epoch is less than 0");
 		}
 
 		if (systemParticle.getTimestamp() < 0) {
-			return Result.error("Timestamp is less than 0");
+			throw new TxnParseException("Timestamp is less than 0");
 		}
 
 		if (systemParticle.getView() < 0) {
-			return Result.error("View is less than 0");
+			throw new TxnParseException("View is less than 0");
 		}
-
-		// FIXME: Need to validate view, but need additional state to do that successfully
-
-		return Result.success();
 	}
 
 

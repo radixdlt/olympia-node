@@ -32,7 +32,6 @@ import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
-import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -41,6 +40,7 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.ShutdownAllProcedure;
+import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
@@ -640,18 +640,21 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.registerParticle(RoundData.class, ParticleDefinition.<RoundData>builder()
 			.staticValidation(p -> {
 				if (p.getTimestamp() < 0) {
-					return Result.error("Timestamp is less than 0");
+					throw new TxnParseException("Timestamp is less than 0");
 				}
 				if (p.getView() < 0) {
-					return Result.error("View is less than 0");
+					throw new TxnParseException("View is less than 0");
 				}
-				return Result.success();
 			})
 			.virtualizeUp(p -> p.getView() == 0 && p.getTimestamp() == 0)
 			.build()
 		);
 		os.registerParticle(EpochData.class, ParticleDefinition.<EpochData>builder()
-			.staticValidation(p -> p.getEpoch() < 0 ? Result.error("Epoch is less than 0") : Result.success())
+			.staticValidation(p -> {
+				if (p.getEpoch() < 0) {
+					throw new TxnParseException("Epoch is less than 0");
+				}
+			})
 			.build()
 		);
 		os.registerParticle(
@@ -665,9 +668,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			ParticleDefinition.<StakeOwnership>builder()
 				.staticValidation(s -> {
 					if (s.getAmount().isZero()) {
-						return Result.error("amount must not be zero");
+						throw new TxnParseException("amount must not be zero");
 					}
-					return Result.success();
 				})
 				.build()
 		);
@@ -676,9 +678,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			ParticleDefinition.<ExittingStake>builder()
 				.staticValidation(s -> {
 					if (s.getEpochUnlocked() < 0) {
-						return Result.error("epoch must be >= 0");
+						throw new TxnParseException("epoch must be >= 0");
 					}
-					return Result.success();
 				})
 				.build()
 		);
@@ -687,9 +688,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			ParticleDefinition.<ValidatorEpochData>builder()
 				.staticValidation(s -> {
 					if (s.proposalsCompleted() < 0) {
-						return Result.error("proposals completed must be >= 0");
+						throw new TxnParseException("proposals completed must be >= 0");
 					}
-					return Result.success();
 				})
 				.build()
 		);

@@ -92,11 +92,11 @@ public final class BetanetForksModule extends AbstractModule {
 		v1.load(new StakingConstraintScryptV1());
 		v1.load(new UniqueParticleConstraintScrypt());
 		v1.load(new SystemConstraintScryptV1());
-		var betanet1 = new ConstraintMachine.Builder()
-			.setVirtualStoreLayer(v1.virtualizedUpParticles())
-			.setParticleTransitionProcedures(v1.getProcedures())
-			.setParticleStaticCheck(v1.buildParticleStaticCheck())
-			.build();
+		var betanet1 = new ConstraintMachine(
+			v1.virtualizedUpParticles(),
+			v1.buildStatelessSubstateVerifier(),
+			v1.getProcedures()
+		);
 
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateSystem.class, new CreateSystemConstructorV1())
@@ -129,11 +129,11 @@ public final class BetanetForksModule extends AbstractModule {
 		v2.load(new StakingConstraintScryptV2());
 		v2.load(new UniqueParticleConstraintScrypt());
 		v2.load(new SystemConstraintScryptV1());
-		var betanet2 = new ConstraintMachine.Builder()
-			.setVirtualStoreLayer(v2.virtualizedUpParticles())
-			.setParticleTransitionProcedures(v2.getProcedures())
-			.setParticleStaticCheck(v2.buildParticleStaticCheck())
-			.build();
+		var betanet2 = new ConstraintMachine(
+			v2.virtualizedUpParticles(),
+			v2.buildStatelessSubstateVerifier(),
+			v2.getProcedures()
+		);
 
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateSystem.class, new CreateSystemConstructorV1())
@@ -166,11 +166,11 @@ public final class BetanetForksModule extends AbstractModule {
 		v3.load(new UniqueParticleConstraintScrypt());
 		v3.load(new SystemConstraintScryptV2());
 		v3.load(new SystemV1ToV2TransitionConstraintScrypt());
-		var betanet3 = new ConstraintMachine.Builder()
-			.setVirtualStoreLayer(v3.virtualizedUpParticles())
-			.setParticleTransitionProcedures(v3.getProcedures())
-			.setParticleStaticCheck(v3.buildParticleStaticCheck())
-			.build();
+		var betanet3 = new ConstraintMachine(
+			v3.virtualizedUpParticles(),
+			v3.buildStatelessSubstateVerifier(),
+			v3.getProcedures()
+		);
 
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateSystem.class, new CreateSystemConstructorV2())

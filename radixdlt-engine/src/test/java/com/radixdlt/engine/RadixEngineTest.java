@@ -59,13 +59,13 @@ public class RadixEngineTest {
 	@Test
 	public void empty_particle_group_should_throw_error() {
 		// Arrange
-		CMAtomOS cmAtomOS = new CMAtomOS();
+		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new SystemConstraintScryptV1());
-		ConstraintMachine cm = new ConstraintMachine.Builder()
-			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
-			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
-			.setParticleTransitionProcedures(cmAtomOS.getProcedures())
-			.build();
+		var cm = new ConstraintMachine(
+			cmAtomOS.virtualizedUpParticles(),
+			cmAtomOS.buildStatelessSubstateVerifier(),
+			cmAtomOS.getProcedures()
+		);
 		var actionConstructors = ActionConstructors.newBuilder().build();
 		RadixEngine<Void> engine = new RadixEngine<>(actionConstructors, cm, new InMemoryEngineStore<>());
 

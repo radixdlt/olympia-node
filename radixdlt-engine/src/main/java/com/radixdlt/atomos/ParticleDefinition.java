@@ -17,9 +17,9 @@
 
 package com.radixdlt.atomos;
 
+import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
 
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
@@ -29,18 +29,18 @@ import java.util.function.Predicate;
 // FIXME: unchecked, rawtypes
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class ParticleDefinition<T extends Particle> {
-	private final Function<T, Result> staticValidation; // may be null
+	private final ConstraintMachine.StatelessSubstateVerifier staticValidation; // may be null
 	private final Predicate<T> virtualizeSpin; // may be null
 
 	private ParticleDefinition(
-		Function<T, Result> staticValidation,
+		ConstraintMachine.StatelessSubstateVerifier staticValidation,
 		Predicate<T> virtualizeSpin
 	) {
 		this.staticValidation = staticValidation;
 		this.virtualizeSpin = virtualizeSpin;
 	}
 
-	Function<T, Result> getStaticValidation() {
+	ConstraintMachine.StatelessSubstateVerifier<Particle> getStaticValidation() {
 		return staticValidation;
 	}
 
@@ -62,13 +62,13 @@ public class ParticleDefinition<T extends Particle> {
 	 * @param <T> The type of the particle to be defined
 	 */
 	public static class Builder<T extends Particle> {
-		private Function<T, Result> staticValidation = x -> Result.success();
+		private ConstraintMachine.StatelessSubstateVerifier<T> staticValidation = x -> { };
 		private Predicate<T> virtualizedParticles = x -> false;
 
 		private Builder() {
 		}
 
-		public Builder<T> staticValidation(Function<T, Result> staticValidation) {
+		public Builder<T> staticValidation(ConstraintMachine.StatelessSubstateVerifier<T> staticValidation) {
 			this.staticValidation = staticValidation;
 			return this;
 		}
@@ -89,7 +89,7 @@ public class ParticleDefinition<T extends Particle> {
 		public <U extends Particle> ParticleDefinition<U> build() {
 			// cast as necessary
 			return new ParticleDefinition<>(
-				staticValidation == null ? null : p -> staticValidation.apply((T) p),
+				staticValidation == null ? null : p -> staticValidation.verify((T) p),
 				p -> virtualizedParticles.test((T) p)
 			);
 		}

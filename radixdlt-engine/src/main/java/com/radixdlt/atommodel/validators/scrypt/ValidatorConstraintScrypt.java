@@ -21,14 +21,16 @@ package com.radixdlt.atommodel.validators.scrypt;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
-import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.AuthorizationException;
+import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.DownProcedure;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 
@@ -94,14 +96,12 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		+ "(%[0-9A-Fa-f]{2}|[-()_.!~*';/?:@&=+$,A-Za-z0-9])+)([).!';/?:,][[:blank:]])?$"
 	);
 
-	private static <I> Function<I, Result> checkAddressAndUrl(Function<I, String> urlMapper) {
+	private static <I extends Particle> ConstraintMachine.StatelessSubstateVerifier<I> checkAddressAndUrl(Function<I, String> urlMapper) {
 		return particle -> {
 			String url = urlMapper.apply(particle);
 			if (!url.isEmpty() && !OWASP_URL_REGEX.matcher(url).matches()) {
-				return Result.error("url is not a valid URL: " + url);
+				throw new TxnParseException("url is not a valid URL: " + url);
 			}
-
-			return Result.success();
 		};
 	}
 }

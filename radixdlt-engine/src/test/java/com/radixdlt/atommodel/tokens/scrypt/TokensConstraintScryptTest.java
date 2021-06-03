@@ -18,7 +18,7 @@
 
 package com.radixdlt.atommodel.tokens.scrypt;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
@@ -26,18 +26,17 @@ import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
-import java.util.function.Function;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TokensConstraintScryptTest {
-	private static Function<Particle, Result> staticCheck;
+	private static ConstraintMachine.StatelessSubstateVerifier<Particle> staticCheck;
 
 	@BeforeClass
 	public static void initializeConstraintScrypt() {
@@ -45,7 +44,7 @@ public class TokensConstraintScryptTest {
 		cmAtomOS.load(new ValidatorConstraintScrypt());
 		cmAtomOS.load(new TokensConstraintScryptV1());
 		cmAtomOS.load(new StakingConstraintScryptV1());
-		staticCheck = cmAtomOS.buildParticleStaticCheck();
+		staticCheck = cmAtomOS.buildStatelessSubstateVerifier();
 	}
 
 	@Test
@@ -53,16 +52,16 @@ public class TokensConstraintScryptTest {
 		TokensInAccount tokensInAccount = mock(TokensInAccount.class);
 		when(tokensInAccount.getResourceAddr()).thenReturn(mock(REAddr.class));
 		when(tokensInAccount.getAmount()).thenReturn(null);
-		assertThat(staticCheck.apply(tokensInAccount).getErrorMessage())
-			.contains("null");
+		assertThatThrownBy(() -> staticCheck.verify(tokensInAccount))
+			.hasMessageContaining("null");
 	}
 
 	@Test
 	public void when_validating_staked_token_with_null_amount__result_has_error() {
 		PreparedStake staked = mock(PreparedStake.class);
 		when(staked.getAmount()).thenReturn(null);
-		assertThat(staticCheck.apply(staked).getErrorMessage())
-			.contains("null");
+		assertThatThrownBy(() -> staticCheck.verify(staked))
+			.hasMessageContaining("null");
 	}
 
 	@Test
@@ -70,8 +69,8 @@ public class TokensConstraintScryptTest {
 		TokensInAccount tokensInAccount = mock(TokensInAccount.class);
 		when(tokensInAccount.getResourceAddr()).thenReturn(mock(REAddr.class));
 		when(tokensInAccount.getAmount()).thenReturn(UInt256.ZERO);
-		assertThat(staticCheck.apply(tokensInAccount).getErrorMessage())
-			.contains("zero");
+		assertThatThrownBy(() -> staticCheck.verify(tokensInAccount))
+			.hasMessageContaining("zero");
 	}
 
 	@Test
@@ -79,15 +78,15 @@ public class TokensConstraintScryptTest {
 		PreparedStake delegatedStake = mock(PreparedStake.class);
 		when(delegatedStake.getDelegateKey()).thenReturn(mock(ECPublicKey.class));
 		when(delegatedStake.getAmount()).thenReturn(UInt256.ZERO);
-		assertThat(staticCheck.apply(delegatedStake).getErrorMessage())
-			.contains("zero");
+		assertThatThrownBy(() -> staticCheck.verify(delegatedStake))
+			.hasMessageContaining("zero");
 	}
 
 	@Test
 	public void when_validating_staked_token_with_null_delegate_address__result_has_error() {
 		PreparedStake staked = mock(PreparedStake.class);
 		when(staked.getDelegateKey()).thenReturn(null);
-		assertThat(staticCheck.apply(staked).getErrorMessage())
-			.contains("delegateAddress");
+		assertThatThrownBy(() -> staticCheck.verify(staked))
+			.hasMessageContaining("delegateAddress");
 	}
 }

@@ -94,11 +94,11 @@ public class NextEpochV2Test {
 		var cmAtomOS = new CMAtomOS();
 		scrypts.forEach(cmAtomOS::load);
 		cmAtomOS.load(new UniqueParticleConstraintScrypt()); // For v1 start
-		var cm = new ConstraintMachine.Builder()
-			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
-			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
-			.setParticleTransitionProcedures(cmAtomOS.getProcedures())
-			.build();
+		var cm = new ConstraintMachine(
+			cmAtomOS.virtualizedUpParticles(),
+			cmAtomOS.buildStatelessSubstateVerifier(),
+			cmAtomOS.getProcedures()
+		);
 		this.store = new InMemoryEngineStore<>();
 		this.sut = new RadixEngine<>(constructors, cm, store);
 	}
