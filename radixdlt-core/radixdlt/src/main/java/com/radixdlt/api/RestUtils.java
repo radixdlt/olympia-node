@@ -18,27 +18,31 @@
 
 package com.radixdlt.api;
 
-import com.radixdlt.client.ThrowingConsumer;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.google.common.io.CharStreams;
+import com.radixdlt.client.ThrowingConsumer;
 import com.radixdlt.crypto.exception.PublicKeyException;
 
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.Deque;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import io.undertow.util.StatusCodes;
+
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 public final class RestUtils {
 	public static final String CONTENT_TYPE_JSON = "application/json";
+
+	public static final HttpString METHOD_HEADER = HttpString.tryFromString("X-Radixdlt-Method");
+	public static final HttpString CORRELATION_HEADER = HttpString.tryFromString("X-Radixdlt-Correlation-Id");
+	private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
 
 	private RestUtils() {
 		throw new IllegalStateException("Can't construct");
@@ -52,18 +56,21 @@ public final class RestUtils {
 		}
 	}
 
-	public static void withBodyAsyncAndDefaultResponse(HttpServerExchange exchange, ThrowingConsumer<JSONObject> bodyHandler) {
+	public static void withBodyAsync(HttpServerExchange exchange, ThrowingConsumer<JSONObject> bodyHandler) {
 		if (exchange.isInIoThread()) {
 			exchange.dispatch(() -> handleAsync(exchange, bodyHandler));
 		} else {
 			try {
 				handleBody(exchange, bodyHandler);
+				sendStatusResponse(exchange, null);
 			} catch (Exception e) {
 				sendStatusResponse(exchange, e);
-				return;
 			}
-			sendStatusResponse(exchange, null);
 		}
+	}
+
+	public static void respond(HttpServerExchange exchange, Object object) {
+		respondWithCode(exchange, StatusCodes.OK, object.toString());
 	}
 
 	private static void handleAsync(HttpServerExchange exchange, ThrowingConsumer<JSONObject> bodyHandler) {
@@ -72,68 +79,75 @@ public final class RestUtils {
 			.whenComplete((__, err) -> sendStatusResponse(exchange, err));
 	}
 
-
-	private static void sendStatusResponse(final HttpServerExchange exchange, final Throwable err) {
+	private static void sendStatusResponse(HttpServerExchange exchange, Throwable err) {
 		if (err == null) {
 			if (!exchange.isResponseStarted()) {
-				exchange.setStatusCode(StatusCodes.OK);
-				exchange.getResponseSender().send("{}");
+				respond(exchange, jsonObject());
 			}
 			return;
 		}
 
 		if (!(err instanceof RuntimeException)) {
-			exchange.setStatusCode(StatusCodes.INTERNAL_SERVER_ERROR);
-			exchange.getResponseSender().send("Unable to handle request: " + err.getMessage());
+			sendError(exchange, StatusCodes.INTERNAL_SERVER_ERROR, "Unable to handle request", err);
 			return;
 		}
 
 		var exception = err.getCause();
 
 		if (exception instanceof JSONException) {
-			exchange.setStatusCode(StatusCodes.UNPROCESSABLE_ENTITY);
-			exchange.getResponseSender().send("Error while parsing request JSON");
+			sendError(exchange, StatusCodes.UNPROCESSABLE_ENTITY, "Error while parsing request JSON", exception);
 		} else if (exception instanceof PublicKeyException) {
-			exchange.setStatusCode(StatusCodes.BAD_REQUEST);
-			exchange.getResponseSender().send("Invalid public key");
-		} else if (exception instanceof IOException) {
-			exchange.setStatusCode(StatusCodes.INTERNAL_SERVER_ERROR);
-			exchange.getResponseSender().send("Unable to handle request:" + exception.getMessage());
+			sendError(exchange, StatusCodes.BAD_REQUEST, "Invalid public key", exception);
+		} else {
+			sendError(exchange, StatusCodes.INTERNAL_SERVER_ERROR, "Unable to handle request", exception);
 		}
 	}
 
-	private static void handleBody(final HttpServerExchange exchange, final ThrowingConsumer<JSONObject> bodyHandler) {
-		exchange.startBlocking();
+	private static void handleBody(HttpServerExchange exchange, ThrowingConsumer<JSONObject> bodyHandler) {
+		copyHeader(exchange, METHOD_HEADER);
+		copyHeader(exchange, CORRELATION_HEADER);
 
-		try (var httpStreamReader = new InputStreamReader(exchange.getInputStream(), StandardCharsets.UTF_8)) {
-			bodyHandler.accept(new JSONObject(CharStreams.toString(httpStreamReader)));
+		var body = readBody(exchange, DEFAULT_MAX_REQUEST_SIZE);
+
+		try {
+			bodyHandler.accept(new JSONObject(body));
 		} catch (Exception t) {
 			throw new RuntimeException(t);
 		}
 	}
 
-	public static void respond(HttpServerExchange exchange, Object object) {
+	private static String readBody(HttpServerExchange exchange, long maxRequestSize) {
+		exchange.setMaxEntitySize(maxRequestSize);
+		exchange.startBlocking();
+
+		try (var httpStreamReader = new InputStreamReader(exchange.getInputStream(), StandardCharsets.UTF_8)) {
+			var source = CharStreams.toString(httpStreamReader);
+
+			if (source.length() > maxRequestSize) {
+				throw new JSONException("Request too long");
+			}
+
+			return source;
+		} catch (Exception t) {
+			throw new RuntimeException(t);
+		}
+	}
+
+	private static void sendError(HttpServerExchange exchange, int statusCode, String message, Throwable error) {
+		respondWithCode(exchange, statusCode, message + " (" + error.getMessage() + ")");
+	}
+
+	private static void respondWithCode(HttpServerExchange exchange, int statusCode, String data) {
 		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
-		exchange.getResponseSender().send(object.toString());
+		exchange.setStatusCode(statusCode);
+		exchange.getResponseSender().send(data);
 	}
 
-	public static <T> void respondAsync(HttpServerExchange exchange, Supplier<T> objectSupplier) {
-		exchange.dispatch(() -> {
-			CompletableFuture
-				.supplyAsync(objectSupplier)
-				.whenComplete((response, exception) -> {
-					if (exception == null) {
-						respond(exchange, response);
-					} else {
-						exchange.setStatusCode(StatusCodes.BAD_REQUEST);
-						exchange.getResponseSender().send("Unable to handle request: " + exception.getMessage());
-					}
-				});
-		});
-	}
+	private static void copyHeader(HttpServerExchange exchange, HttpString headerName) {
+		var inputHeaders = exchange.getRequestHeaders();
+		var outputHeaders = exchange.getResponseHeaders();
 
-	public static Optional<String> getParameter(HttpServerExchange exchange, String name) {
-		// our routing handler puts path params into query params by default so we don't need to include them manually
-		return Optional.ofNullable(exchange.getQueryParameters().get(name)).map(Deque::getFirst);
+		Optional.ofNullable(inputHeaders.getFirst(headerName))
+			.ifPresent(header -> outputHeaders.add(headerName, header));
 	}
 }
