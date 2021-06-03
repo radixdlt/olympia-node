@@ -39,7 +39,8 @@ public class NetworkInfoServiceTest {
 	@SuppressWarnings("unchecked")
 	private final ScheduledEventDispatcher<ScheduledStatsCollecting> dispatcher = mock(ScheduledEventDispatcher.class);
 	private final SystemCounters systemCounters = new SystemCountersImpl();
-	private final NetworkInfoService networkInfoService = new NetworkInfoService(systemCounters, dispatcher);
+	private final SystemConfigService systemConfigService = mock(SystemConfigService.class);
+	private final NetworkInfoService networkInfoService = new NetworkInfoService(systemCounters, dispatcher, systemConfigService);
 
 	@Test
 	public void testDemand() {

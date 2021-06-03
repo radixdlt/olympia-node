@@ -40,18 +40,15 @@ public class SystemHandler {
 	}
 
 	public JSONObject apiGetData(JSONObject request) {
-		//TODO: implement it
-		throw new UnsupportedOperationException("Not implemented");
+		return systemConfigService.getApiData();
 	}
 
 	public JSONObject bftGetConfiguration(JSONObject request) {
-		//TODO: implement it
-		throw new UnsupportedOperationException("Not implemented");
+		return systemConfigService.getBftConfiguration();
 	}
 
 	public JSONObject bftGetData(JSONObject request) {
-		//TODO: implement it
-		throw new UnsupportedOperationException("Not implemented");
+		return systemConfigService.getBftData();
 	}
 
 	public JSONObject mempoolGetConfiguration(JSONObject request) {
@@ -59,18 +56,15 @@ public class SystemHandler {
 	}
 
 	public JSONObject mempoolGetData(JSONObject request) {
-		//TODO: implement it
-		throw new UnsupportedOperationException("Not implemented");
+		return systemConfigService.getMempoolData();
 	}
 
 	public JSONObject ledgerGetLatestProof(JSONObject request) {
-		//TODO: implement it
-		throw new UnsupportedOperationException("Not implemented");
+		return systemConfigService.getLatestProof();
 	}
 
 	public JSONObject ledgerGetLatestEpochProof(JSONObject request) {
-		//TODO: implement it
-		throw new UnsupportedOperationException("Not implemented");
+		return systemConfigService.getLatestEpochProof();
 	}
 
 	public JSONObject radixEngineGetConfiguration(JSONObject request) {
@@ -78,36 +72,30 @@ public class SystemHandler {
 	}
 
 	public JSONObject radixEngineGetData(JSONObject request) {
-		//TODO: implement it
-		throw new UnsupportedOperationException("Not implemented");
+		return systemConfigService.getRadixEngineData();
 	}
 
 	public JSONObject syncGetConfiguration(JSONObject request) {
-		//TODO: implement it
-		throw new UnsupportedOperationException("Not implemented");
+		return systemConfigService.getSyncConfig();
 	}
 
 	public JSONObject syncGetData(JSONObject request) {
-		//TODO: implement it
-		throw new UnsupportedOperationException("Not implemented");
+		return systemConfigService.getSyncData();
 	}
 
 	public JSONObject networkingGetConfiguration(JSONObject request) {
-		//TODO: implement it
-		throw new UnsupportedOperationException("Not implemented");
+		return systemConfigService.getNetworkingConfiguration();
 	}
 
 	public JSONObject networkingGetPeers(JSONObject request) {
-		return jsonObject().put(ARRAY, systemConfigService.getLivePeers());
+		return jsonObject().put(ARRAY, systemConfigService.getNetworkingPeers());
 	}
 
 	public JSONObject networkingGetData(JSONObject request) {
-		//TODO: implement it
-		throw new UnsupportedOperationException("Not implemented");
+		return systemConfigService.getNetworkingData();
 	}
 
 	public JSONObject checkpointsGetCheckpoints(JSONObject request) {
-		//TODO: implement it
-		throw new UnsupportedOperationException("Not implemented");
+		return systemConfigService.getCheckpoints();
 	}
 }

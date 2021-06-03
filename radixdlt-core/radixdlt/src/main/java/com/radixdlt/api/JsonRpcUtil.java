@@ -85,7 +85,7 @@ public final class JsonRpcUtil {
 		return new JSONArray();
 	}
 
-	public static <T> JSONArray fromList(List<T> input, Function<T, JSONObject> mapper) {
+	public static <T> JSONArray fromList(List<T> input, Function<T, Object> mapper) {
 		var array = jsonArray();
 		input.forEach(element -> array.put(mapper.apply(element)));
 		return array;
