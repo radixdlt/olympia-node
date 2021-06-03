@@ -18,15 +18,15 @@
 
 package com.radixdlt.client;
 
-import com.radixdlt.api.Controller;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
+import com.radixdlt.api.Controller;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 
-import static com.radixdlt.api.RestUtils.respondAsync;
+import static com.radixdlt.api.RestUtils.respond;
+import static com.radixdlt.api.RestUtils.withBodyAsync;
 
 public final class RpcController implements Controller {
 	private final JsonRpcServer jsonRpcServer;
@@ -44,6 +44,6 @@ public final class RpcController implements Controller {
 
 	@VisibleForTesting
 	void handleRpc(HttpServerExchange exchange) {
-		respondAsync(exchange, () -> jsonRpcServer.handleJsonRpc(exchange));
+		withBodyAsync(exchange, request -> respond(exchange, jsonRpcServer.handle(request)));
 	}
 }

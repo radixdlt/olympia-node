@@ -31,7 +31,7 @@ public class JsonRpcServerTest {
 	public void when_send_json_rpc_request_with_no_id__return_json_error_response() {
 		var server = new JsonRpcServer(Map.of());
 
-		var response = server.handleRpc(jsonObject().toString());
+		var response = server.handle(jsonObject());
 
 		assertThat(response.getString("jsonrpc")).isEqualTo("2.0");
 		assertThat(response.has("result")).isFalse();
@@ -39,20 +39,6 @@ public class JsonRpcServerTest {
 		assertThat(response.isNull("id")).isTrue();
 		assertThat(response.getJSONObject("error")).isNotNull();
 		assertThat(response.getJSONObject("error").get("code")).isEqualTo(RpcError.INVALID_PARAMS.code());
-		assertThat(response.getJSONObject("error").getString("message")).isNotEmpty();
-	}
-
-	@Test
-	public void when_send_oversized_json_rpc_request_with__return_json_error_response() {
-		var server = new JsonRpcServer(Map.of(), 5);
-
-		var response = server.handleRpc("123456");
-		assertThat(response.getString("jsonrpc")).isEqualTo("2.0");
-		assertThat(response.has("result")).isFalse();
-		assertThat(response.has("id")).isTrue();
-		assertThat(response.isNull("id")).isTrue();
-		assertThat(response.getJSONObject("error")).isNotNull();
-		assertThat(response.getJSONObject("error").get("code")).isEqualTo(RpcError.REQUEST_TOO_LONG.code());
 		assertThat(response.getJSONObject("error").getString("message")).isNotEmpty();
 	}
 }
