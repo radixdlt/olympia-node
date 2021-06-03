@@ -151,12 +151,6 @@ Node health status has following format: `{"status" : "<status>" }`, where `<sta
 | networking.get_data | Get data for networking |
 | checkpoints.get_checkpoints | Get genesis txn and proof |
 
-#### /discover
-
-| Method | Description |
-| --- | --- |
-| rpc.discover | Get the specification for the API (method name and behavior is defined in JSON RPC spec) |
-
 #### /validation
 
 | Method | Description |
