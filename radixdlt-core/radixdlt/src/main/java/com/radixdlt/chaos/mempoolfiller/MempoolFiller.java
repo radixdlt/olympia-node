@@ -124,12 +124,6 @@ public final class MempoolFiller {
 				return;
 			}
 
-			var particleCount = radixEngine.getComputedState(Integer.class);
-			if (particleCount == 0) {
-				logger.info("Mempool Filler empty balance");
-				return;
-			}
-
 			var actions = TxActionListBuilder.create()
 				.splitNative(REAddr.ofNativeToken(), TokenFeeChecker.FIXED_FEE.multiply(UInt256.TWO))
 				.burn(REAddr.ofNativeToken(), account, TokenFeeChecker.FIXED_FEE)
