@@ -6,6 +6,9 @@ RUN apt-get -y update > /dev/null && \
     apt-get clean > /dev/null && \
     rm -rf /var/lib/apt/lists/* /var/tmp/* /tmp/*
 
+COPY scripts/fix-vulnerabilities.sh /tmp
+RUN /tmp/fix-vulnerabilities.sh
+
 # set entrypoint and default command
 ENTRYPOINT [ "/opt/radixdlt/config_radixdlt.sh" ]
 CMD ["/bin/bash", "-xe", "/opt/radixdlt/bin/radixdlt"]
