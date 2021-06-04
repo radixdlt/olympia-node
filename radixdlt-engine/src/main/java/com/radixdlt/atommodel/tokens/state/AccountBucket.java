@@ -21,11 +21,10 @@ package com.radixdlt.atommodel.tokens.state;
 import com.radixdlt.atommodel.system.state.HasEpochData;
 import com.radixdlt.atommodel.tokens.Bucket;
 import com.radixdlt.constraintmachine.AuthorizationException;
-import com.radixdlt.constraintmachine.ExecutionContext;
+import com.radixdlt.constraintmachine.DownAuthorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.store.ReadableAddrs;
 
 import java.util.Objects;
 
@@ -42,24 +41,24 @@ public final class AccountBucket implements Bucket {
 	}
 
 	@Override
-	public PermissionLevel withdrawPermissionLevel() {
-		return PermissionLevel.USER;
-	}
+	public DownAuthorization withdrawAuthorization() {
+		return new DownAuthorization(
+			PermissionLevel.USER,
+			(r, c) -> {
+				try {
+					holdingAddress.verifyWithdrawAuthorization(c.key());
+				} catch (REAddr.BucketWithdrawAuthorizationException e) {
+					throw new AuthorizationException(e.getMessage());
+				}
 
-	@Override
-	public void verifyWithdrawAuthorization(ReadableAddrs readable, ExecutionContext context) throws AuthorizationException {
-		try {
-			holdingAddress.verifyWithdrawAuthorization(context.key());
-		} catch (REAddr.BucketWithdrawAuthorizationException e) {
-			throw new AuthorizationException(e.getMessage());
-		}
-
-		if (epochUnlocked != null) {
-			var system = (HasEpochData) readable.loadAddr(null, REAddr.ofSystem()).orElseThrow();
-			if (epochUnlocked > system.getEpoch()) {
-				throw new AuthorizationException("Tokens are locked until epoch " + epochUnlocked + " current " + system.getEpoch());
+				if (epochUnlocked != null) {
+					var system = (HasEpochData) r.loadAddr(null, REAddr.ofSystem()).orElseThrow();
+					if (epochUnlocked > system.getEpoch()) {
+						throw new AuthorizationException("Tokens are locked until epoch " + epochUnlocked + " current " + system.getEpoch());
+					}
+				}
 			}
-		}
+		);
 	}
 
 	@Override

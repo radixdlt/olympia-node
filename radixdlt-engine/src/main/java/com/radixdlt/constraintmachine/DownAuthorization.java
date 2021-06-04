@@ -21,8 +21,24 @@ import com.radixdlt.store.ReadableAddrs;
 
 /**
  * Validates whether a specific transition procedure is permissible
- * @param <I> particle class
  */
-public interface DownAuthorization<I extends Particle> {
-	void verify(SubstateWithArg<I> input, ReadableAddrs readableAddrs, ExecutionContext context) throws AuthorizationException;
+public final class DownAuthorization {
+	public interface DownAuthorizer {
+		void verify(ReadableAddrs readableAddrs, ExecutionContext context) throws AuthorizationException;
+	}
+	private final PermissionLevel permissionLevel;
+	private final DownAuthorizer authorizer;
+
+	public DownAuthorization(PermissionLevel permissionLevel, DownAuthorizer authorizer) {
+		this.permissionLevel = permissionLevel;
+		this.authorizer = authorizer;
+	}
+
+	public PermissionLevel permissionLevel() {
+		return permissionLevel;
+	}
+
+	public DownAuthorizer authorizer() {
+		return authorizer;
+	}
 }

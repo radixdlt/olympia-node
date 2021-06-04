@@ -23,6 +23,7 @@ import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.AuthorizationException;
+import com.radixdlt.constraintmachine.DownAuthorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -60,12 +61,14 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 
 		os.createDownProcedure(new DownProcedure<>(
 			ValidatorParticle.class, VoidReducerState.class,
-			d -> PermissionLevel.USER,
-			(d, r, c) -> {
-				if (!c.key().map(d.getSubstate().getKey()::equals).orElse(false)) {
-					throw new AuthorizationException("Key does not match.");
+			d -> new DownAuthorization(
+				PermissionLevel.USER,
+				(r, c) -> {
+					if (!c.key().map(d.getSubstate().getKey()::equals).orElse(false)) {
+						throw new AuthorizationException("Key does not match.");
+					}
 				}
-			},
+			),
 			(d, s, r) -> {
 				if (d.getArg().isPresent()) {
 					throw new ProcedureException("Args not allowed");

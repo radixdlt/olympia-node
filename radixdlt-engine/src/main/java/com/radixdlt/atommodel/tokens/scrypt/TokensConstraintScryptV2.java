@@ -195,8 +195,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		// Initial Withdraw
 		os.createDownProcedure(new DownProcedure<>(
 			TokensInAccount.class, VoidReducerState.class,
-			d -> d.getSubstate().bucket().withdrawPermissionLevel(),
-			(d, r, c) -> d.getSubstate().bucket().verifyWithdrawAuthorization(r, c),
+			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> {
 				var tokens = d.getSubstate();
 				var state = new TokenHoldingBucket(
@@ -211,8 +210,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		// More Withdraws
 		os.createDownProcedure(new DownProcedure<>(
 			TokensInAccount.class, TokenHoldingBucket.class,
-			d -> d.getSubstate().bucket().withdrawPermissionLevel(),
-			(d, r, c) -> d.getSubstate().bucket().verifyWithdrawAuthorization(r, c),
+			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> {
 				var tokens = d.getSubstate();
 				var nextState = s.deposit(

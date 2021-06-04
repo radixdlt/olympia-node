@@ -18,18 +18,14 @@
 
 package com.radixdlt.atommodel.tokens;
 
-import com.radixdlt.constraintmachine.AuthorizationException;
-import com.radixdlt.constraintmachine.ExecutionContext;
-import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.DownAuthorization;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.store.ReadableAddrs;
 
 // TODO: these methods are really here for client api,
 // TODO: fix to be more in line with scrypto abstractions
 public interface Bucket {
-	PermissionLevel withdrawPermissionLevel();
-	void verifyWithdrawAuthorization(ReadableAddrs readable, ExecutionContext context) throws AuthorizationException;
+	DownAuthorization withdrawAuthorization();
 
 	REAddr resourceAddr();
 	REAddr getOwner();

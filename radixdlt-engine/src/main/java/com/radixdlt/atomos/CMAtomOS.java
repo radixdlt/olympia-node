@@ -19,6 +19,7 @@ package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.constraintmachine.AuthorizationException;
+import com.radixdlt.constraintmachine.DownAuthorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
@@ -87,15 +88,18 @@ public final class CMAtomOS {
 				REAddrParticle.class, VoidReducerState.class,
 				d -> {
 					var name = new String(d.getArg().orElseThrow());
-					return systemNames.contains(name)
+					var permissionLevel = systemNames.contains(name)
 						|| d.getSubstate().getAddr().isNativeToken()
 						|| d.getSubstate().getAddr().isSystem()
 						? PermissionLevel.SYSTEM : PermissionLevel.USER;
-				},
-				(d, r, ctx) -> {
-					if (!ctx.key().map(k -> d.getSubstate().allow(k, d.getArg())).orElse(false)) {
-						throw new AuthorizationException("Invalid key/arg combination.");
-					}
+					return new DownAuthorization(
+						permissionLevel,
+						(r, ctx) -> {
+							if (!ctx.key().map(k -> d.getSubstate().allow(k, d.getArg())).orElse(false)) {
+								throw new AuthorizationException("Invalid key/arg combination.");
+							}
+						}
+					);
 				},
 				(d, s, r) -> {
 					if (d.getSubstate().getAddr().isSystem()) {

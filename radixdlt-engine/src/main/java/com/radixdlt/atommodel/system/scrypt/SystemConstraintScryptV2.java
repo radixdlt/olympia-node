@@ -34,6 +34,7 @@ import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.AuthorizationException;
+import com.radixdlt.constraintmachine.DownAuthorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
@@ -466,12 +467,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		// Round update
 		os.createDownProcedure(new DownProcedure<>(
 			RoundData.class, VoidReducerState.class,
-			d -> PermissionLevel.SUPER_USER,
-			(d, r, c) -> {
-				if (c.key().isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			d -> new DownAuthorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> ReducerResult.incomplete(new RoundClosed(d.getSubstate()))
 		));
 		os.createUpProcedure(new UpProcedure<>(
@@ -489,12 +485,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		));
 		os.createDownProcedure(new DownProcedure<>(
 			ValidatorEpochData.class, UpdateValidatorEpochData.class,
-			d -> PermissionLevel.SUPER_USER,
-			(d, r, c) -> {
-				if (c.key().isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			d -> new DownAuthorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> ReducerResult.incomplete(new UpdatingValidatorEpochData(d.getSubstate()))
 		));
 		os.createUpProcedure(new UpProcedure<>(
@@ -516,8 +507,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		// Epoch Update
 		os.createDownProcedure(new DownProcedure<>(
 			EpochData.class, RoundClosed.class,
-			d -> PermissionLevel.SUPER_USER,
-			(d, r, c) -> { },
+			d -> new DownAuthorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> ReducerResult.incomplete(new UpdatingEpoch(d.getSubstate()))
 		));
 
@@ -532,14 +522,14 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		));
 		os.createUpProcedure(new UpProcedure<>(
 			ProcessExittingStake.class, ExittingStake.class,
-			u -> u.bucket().withdrawPermissionLevel(),
-			(u, r, c) -> u.bucket().verifyWithdrawAuthorization(r, c),
+			u -> PermissionLevel.SUPER_USER,
+			(u, r, c) -> { },
 			(s, u, r) -> ReducerResult.incomplete(s.nextExit(u))
 		));
 		os.createUpProcedure(new UpProcedure<>(
 			ProcessExittingStake.class, TokensInAccount.class,
-			u -> u.bucket().withdrawPermissionLevel(),
-			(u, r, c) -> u.bucket().verifyWithdrawAuthorization(r, c),
+			u -> PermissionLevel.SUPER_USER,
+			(u, r, c) -> { },
 			(s, u, r) -> ReducerResult.incomplete(s.unlock(u))
 		));
 
@@ -558,8 +548,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		));
 		os.createDownProcedure(new DownProcedure<>(
 			ValidatorStake.class, LoadingStake.class,
-			d -> d.getSubstate().bucket().withdrawPermissionLevel(),
-			(d, r, c) -> d.getSubstate().bucket().verifyWithdrawAuthorization(r, c),
+			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> ReducerResult.incomplete(s.startUpdate(d.getSubstate()))
 		));
 		os.createUpProcedure(new UpProcedure<>(

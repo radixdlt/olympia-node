@@ -26,6 +26,7 @@ import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.AuthorizationException;
+import com.radixdlt.constraintmachine.DownAuthorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -134,8 +135,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		));
 		os.createDownProcedure(new DownProcedure<>(
 			TokensInAccount.class, UnaccountedStake.class,
-			d -> d.getSubstate().bucket().withdrawPermissionLevel(),
-			(d, r, c) -> d.getSubstate().bucket().verifyWithdrawAuthorization(r, c),
+			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> {
 				if (!d.getSubstate().getResourceAddr().isNativeToken()) {
 					throw new ProcedureException("Not the same address.");
@@ -153,14 +153,16 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		// Unstake
 		os.createDownProcedure(new DownProcedure<>(
 			PreparedStake.class, TokensConstraintScryptV1.UnaccountedTokens.class,
-			d -> PermissionLevel.USER,
-			(d, r, c) -> {
-				try {
-					d.getSubstate().getOwner().verifyWithdrawAuthorization(c.key());
-				} catch (REAddr.BucketWithdrawAuthorizationException e) {
-					throw new AuthorizationException(e.getMessage());
+			d -> new DownAuthorization(
+				PermissionLevel.USER,
+				(r, c) -> {
+					try {
+						d.getSubstate().getOwner().verifyWithdrawAuthorization(c.key());
+					} catch (REAddr.BucketWithdrawAuthorizationException e) {
+						throw new AuthorizationException(e.getMessage());
+					}
 				}
-			},
+			),
 			(d, s, r) -> {
 				if (!s.resourceInBucket().isNativeToken()) {
 					throw new ProcedureException("Can only destake to the native token.");

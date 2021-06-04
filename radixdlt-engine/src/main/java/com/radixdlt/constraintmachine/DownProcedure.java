@@ -26,20 +26,17 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 	private final Class<D> downClass;
 	private final Class<S> reducerStateClass;
 	private final DownReducer<D, S> downReducer;
-	private final Function<SubstateWithArg<D>, PermissionLevel> permissionLevel;
-	private final DownAuthorization<D> downAuthorization;
+	private final Function<SubstateWithArg<D>, DownAuthorization> authorization;
 
 	public DownProcedure(
 		Class<D> downClass, Class<S> reducerStateClass,
-		Function<SubstateWithArg<D>, PermissionLevel> permissionLevel,
-		DownAuthorization<D> downAuthorization,
+		Function<SubstateWithArg<D>, DownAuthorization> authorization,
 		DownReducer<D, S> downReducer
 	) {
 		this.downClass = downClass;
 		this.reducerStateClass = reducerStateClass;
 		this.downReducer = downReducer;
-		this.permissionLevel = permissionLevel;
-		this.downAuthorization = downAuthorization;
+		this.authorization = authorization;
 	}
 
 	public ProcedureKey getDownProcedureKey() {
@@ -48,12 +45,12 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 
 	@Override
 	public PermissionLevel permissionLevel(Object o) {
-		return permissionLevel.apply((SubstateWithArg<D>) o);
+		return authorization.apply((SubstateWithArg<D>) o).permissionLevel();
 	}
 
 	@Override
 	public void verifyAuthorization(Object o, ReadableAddrs readableAddrs, ExecutionContext context) throws AuthorizationException {
-		downAuthorization.verify((SubstateWithArg<D>) o, readableAddrs, context);
+		authorization.apply((SubstateWithArg<D>) o).authorizer().verify(readableAddrs, context);
 	}
 
 	@Override

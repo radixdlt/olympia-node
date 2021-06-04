@@ -248,8 +248,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 
 		os.createDownProcedure(new DownProcedure<>(
 			TokensInAccount.class, VoidReducerState.class,
-			d -> d.getSubstate().bucket().withdrawPermissionLevel(),
-			(d, r, c) -> d.getSubstate().bucket().verifyWithdrawAuthorization(r, c),
+			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> {
 				var state = new RemainderTokens(
 					d.getSubstate(),
@@ -279,8 +278,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 
 		os.createDownProcedure(new DownProcedure<>(
 			TokensInAccount.class, UnaccountedTokens.class,
-			d -> d.getSubstate().bucket().withdrawPermissionLevel(),
-			(d, r, c) -> d.getSubstate().bucket().verifyWithdrawAuthorization(r, c),
+			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> {
 				if (!s.resourceInBucket.resourceAddr().equals(d.getSubstate().getResourceAddr())) {
 					throw new ProcedureException("Not the same address.");
