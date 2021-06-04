@@ -47,7 +47,7 @@ public final class JsonRpcServer {
 	}
 
 	public JSONObject handle(JSONObject request) {
-		log.trace("RPC: input {}", request);
+		log.debug("RPC: input {}", request);
 
 		if (!request.has("id")) {
 			return invalidParamsError(request, "The 'id' missing");
@@ -68,7 +68,7 @@ public final class JsonRpcServer {
 	}
 
 	private static <T> T logValue(String message, T value) {
-		log.trace("RPC: {} {}", message, value);
+		log.debug("RPC: {} {}", message, value);
 		return value;
 	}
 }
