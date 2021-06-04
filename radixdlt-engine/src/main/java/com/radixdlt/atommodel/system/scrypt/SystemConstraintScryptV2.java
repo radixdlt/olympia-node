@@ -33,8 +33,7 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
-import com.radixdlt.constraintmachine.AuthorizationException;
-import com.radixdlt.constraintmachine.DownAuthorization;
+import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
@@ -431,12 +430,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		// For Mainnet Genesis
 		os.createUpProcedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, EpochData.class,
-			u -> PermissionLevel.SYSTEM,
-			(u, r, c) -> {
-				if (c.key().isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> {
 				if (u.getEpoch() != 0) {
 					throw new ProcedureException("First epoch must be 0.");
@@ -447,12 +441,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		));
 		os.createUpProcedure(new UpProcedure<>(
 			AllocatingSystem.class, RoundData.class,
-			u -> PermissionLevel.SYSTEM,
-			(u, r, c) -> {
-				if (c.key().isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> {
 				if (u.getView() != 0) {
 					throw new ProcedureException("First view must be 0.");
@@ -467,13 +456,12 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		// Round update
 		os.createDownProcedure(new DownProcedure<>(
 			RoundData.class, VoidReducerState.class,
-			d -> new DownAuthorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> ReducerResult.incomplete(new RoundClosed(d.getSubstate()))
 		));
 		os.createUpProcedure(new UpProcedure<>(
 			RoundClosed.class, RoundData.class,
-			u -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> { },
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> {
 				var curData = s.prev;
 				if (curData.getView() >= u.getView()) {
@@ -485,17 +473,12 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		));
 		os.createDownProcedure(new DownProcedure<>(
 			ValidatorEpochData.class, UpdateValidatorEpochData.class,
-			d -> new DownAuthorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> ReducerResult.incomplete(new UpdatingValidatorEpochData(d.getSubstate()))
 		));
 		os.createUpProcedure(new UpProcedure<>(
 			UpdatingValidatorEpochData.class, ValidatorEpochData.class,
-			u -> PermissionLevel.SUPER_USER,
-			(u, r, c) -> {
-				if (c.key().isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> {
 				s.update(u);
 				return ReducerResult.complete();
@@ -507,7 +490,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		// Epoch Update
 		os.createDownProcedure(new DownProcedure<>(
 			EpochData.class, RoundClosed.class,
-			d -> new DownAuthorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> ReducerResult.incomplete(new UpdatingEpoch(d.getSubstate()))
 		));
 
@@ -522,14 +505,12 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		));
 		os.createUpProcedure(new UpProcedure<>(
 			ProcessExittingStake.class, ExittingStake.class,
-			u -> PermissionLevel.SUPER_USER,
-			(u, r, c) -> { },
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> ReducerResult.incomplete(s.nextExit(u))
 		));
 		os.createUpProcedure(new UpProcedure<>(
 			ProcessExittingStake.class, TokensInAccount.class,
-			u -> PermissionLevel.SUPER_USER,
-			(u, r, c) -> { },
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> ReducerResult.incomplete(s.unlock(u))
 		));
 
@@ -553,8 +534,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		));
 		os.createUpProcedure(new UpProcedure<>(
 			Unstaking.class, ExittingStake.class,
-			u -> PermissionLevel.SUPER_USER,
-			(u, r, k) -> { },
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> ReducerResult.incomplete(s.exit(u))
 		));
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
@@ -565,35 +545,30 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		));
 		os.createUpProcedure(new UpProcedure<>(
 			Staking.class, StakeOwnership.class,
-			u -> PermissionLevel.SUPER_USER,
-			(u, r, k) -> { },
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> ReducerResult.incomplete(s.stake(u))
 		));
 		os.createUpProcedure(new UpProcedure<>(
 			UpdatingValidatorStakes.class, ValidatorStake.class,
-			u -> PermissionLevel.SUPER_USER,
-			(u, r, k) -> { },
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> ReducerResult.incomplete(s.updateStake(u))
 		));
 
 		os.createUpProcedure(new UpProcedure<>(
 			CreatingNextValidatorSet.class, ValidatorEpochData.class,
-			u -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> { },
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> ReducerResult.incomplete(s.nextValidator(u))
 		));
 
 		os.createUpProcedure(new UpProcedure<>(
 			CreatingNextValidatorSet.class, EpochData.class,
-			u -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> { },
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> ReducerResult.incomplete(s.nextEpoch(u))
 		));
 
 		os.createUpProcedure(new UpProcedure<>(
 			StartingEpochRound.class, RoundData.class,
-			u -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> { },
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> {
 				if (u.getView() != 0) {
 					throw new ProcedureException("Epoch must start with view 0");

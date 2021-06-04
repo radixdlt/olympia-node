@@ -19,7 +19,7 @@ package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.constraintmachine.AuthorizationException;
-import com.radixdlt.constraintmachine.DownAuthorization;
+import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
@@ -92,7 +92,7 @@ public final class CMAtomOS {
 						|| d.getSubstate().getAddr().isNativeToken()
 						|| d.getSubstate().getAddr().isSystem()
 						? PermissionLevel.SYSTEM : PermissionLevel.USER;
-					return new DownAuthorization(
+					return new Authorization(
 						permissionLevel,
 						(r, ctx) -> {
 							if (!ctx.key().map(k -> d.getSubstate().allow(k, d.getArg())).orElse(false)) {

@@ -25,6 +25,7 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
+import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
@@ -77,8 +78,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 	private void defineTokenCreation(SysCalls os) {
 		os.createUpProcedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, TokenResource.class,
-			u -> PermissionLevel.USER,
-			(u, r, k) -> { },
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, r) -> {
 				if (!u.getAddr().equals(s.getAddr())) {
 					throw new ProcedureException("Addresses don't match");
@@ -94,8 +94,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 
 		os.createUpProcedure(new UpProcedure<>(
 			TokensConstraintScryptV2.NeedFixedTokenSupply.class, TokensInAccount.class,
-			u -> PermissionLevel.USER,
-			(u, r, k) -> { },
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, r) -> {
 				if (!u.getResourceAddr().equals(s.tokenResource.getAddr())) {
 					throw new ProcedureException("Addresses don't match.");
@@ -160,11 +159,13 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		// Mint
 		os.createUpProcedure(new UpProcedure<>(
 			VoidReducerState.class, TokensInAccount.class,
-			u -> u.getResourceAddr().isNativeToken() ? PermissionLevel.SYSTEM : PermissionLevel.USER,
-			(u, r, c) -> {
-				var tokenDef = (TokenResource) r.loadAddr(null, u.getResourceAddr())
-					.orElseThrow(() -> new AuthorizationException("Invalid token address: " + u.getResourceAddr()));
-				tokenDef.verifyMintAuthorization(c.key());
+			u -> {
+				var level = u.getResourceAddr().isNativeToken() ? PermissionLevel.SYSTEM : PermissionLevel.USER;
+				return new Authorization(level, (r, c) -> {
+					var tokenDef = (TokenResource) r.loadAddr(null, u.getResourceAddr())
+						.orElseThrow(() -> new AuthorizationException("Invalid token address: " + u.getResourceAddr()));
+					tokenDef.verifyMintAuthorization(c.key());
+				});
 			},
 			(s, u, r) -> ReducerResult.complete()
 		));
@@ -225,8 +226,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		// Deposit
 		os.createUpProcedure(new UpProcedure<>(
 			TokenHoldingBucket.class, TokensInAccount.class,
-			u -> PermissionLevel.USER,
-			(u, r, k) -> { },
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, r) -> {
 				var nextState = s.withdraw(u.getResourceAddr(), u.getAmount());
 				return ReducerResult.incomplete(nextState);

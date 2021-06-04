@@ -26,6 +26,7 @@ import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
+import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
 import com.radixdlt.constraintmachine.NotEnoughResourcesException;
@@ -140,8 +141,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		// Stake
 		os.createUpProcedure(new UpProcedure<>(
 			TokensConstraintScryptV2.TokenHoldingBucket.class, PreparedStake.class,
-			u -> PermissionLevel.USER,
-			(u, r, k) -> { },
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, r) -> {
 				if (u.getAmount().compareTo(ValidatorStake.MINIMUM_STAKE) < 0) {
 					throw new ProcedureException(
@@ -171,14 +171,12 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		// Change
 		os.createUpProcedure(new UpProcedure<>(
 			StakeOwnershipHoldingBucket.class, StakeOwnership.class,
-			u -> PermissionLevel.USER,
-			(u, r, k) -> { },
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, r) -> ReducerResult.incomplete(s.withdrawOwnership(u))
 		));
 		os.createUpProcedure(new UpProcedure<>(
 			StakeOwnershipHoldingBucket.class, PreparedUnstakeOwnership.class,
-			u -> PermissionLevel.USER,
-			(u, r, k) -> { },
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, r) -> ReducerResult.incomplete(s.unstake(u))
 		));
 

@@ -22,14 +22,14 @@ import com.radixdlt.store.ReadableAddrs;
 /**
  * Validates whether a specific transition procedure is permissible
  */
-public final class DownAuthorization {
-	public interface DownAuthorizer {
+public final class Authorization {
+	public interface Authorizer {
 		void verify(ReadableAddrs readableAddrs, ExecutionContext context) throws AuthorizationException;
 	}
 	private final PermissionLevel permissionLevel;
-	private final DownAuthorizer authorizer;
+	private final Authorizer authorizer;
 
-	public DownAuthorization(PermissionLevel permissionLevel, DownAuthorizer authorizer) {
+	public Authorization(PermissionLevel permissionLevel, Authorizer authorizer) {
 		this.permissionLevel = permissionLevel;
 		this.authorizer = authorizer;
 	}
@@ -38,7 +38,7 @@ public final class DownAuthorization {
 		return permissionLevel;
 	}
 
-	public DownAuthorizer authorizer() {
+	public Authorizer authorizer() {
 		return authorizer;
 	}
 }

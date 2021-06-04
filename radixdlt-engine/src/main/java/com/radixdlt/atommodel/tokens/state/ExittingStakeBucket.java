@@ -19,7 +19,7 @@
 package com.radixdlt.atommodel.tokens.state;
 
 import com.radixdlt.atommodel.tokens.Bucket;
-import com.radixdlt.constraintmachine.DownAuthorization;
+import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -38,8 +38,8 @@ public final class ExittingStakeBucket implements Bucket {
 	}
 
 	@Override
-	public DownAuthorization withdrawAuthorization() {
-		return new DownAuthorization(PermissionLevel.SUPER_USER, (r, c) -> { });
+	public Authorization withdrawAuthorization() {
+		return new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { });
 	}
 
 	@Override

@@ -26,11 +26,11 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 	private final Class<D> downClass;
 	private final Class<S> reducerStateClass;
 	private final DownReducer<D, S> downReducer;
-	private final Function<SubstateWithArg<D>, DownAuthorization> authorization;
+	private final Function<SubstateWithArg<D>, Authorization> authorization;
 
 	public DownProcedure(
 		Class<D> downClass, Class<S> reducerStateClass,
-		Function<SubstateWithArg<D>, DownAuthorization> authorization,
+		Function<SubstateWithArg<D>, Authorization> authorization,
 		DownReducer<D, S> downReducer
 	) {
 		this.downClass = downClass;

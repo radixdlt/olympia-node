@@ -25,21 +25,18 @@ public final class UpProcedure<S extends ReducerState, U extends Particle> imple
 	private final Class<S> reducerStateClass;
 	private final Class<U> upClass;
 	private final UpReducer<S, U> upReducer;
-	private final UpAuthorization<U> upAuthorization;
-	private final Function<U, PermissionLevel> permissionLevel;
+	private final Function<U, Authorization> authorization;
 
 	public UpProcedure(
 		Class<S> reducerStateClass,
 		Class<U> upClass,
-		Function<U, PermissionLevel> permissionLevel,
-		UpAuthorization<U> upAuthorization,
+		Function<U, Authorization> authorization,
 		UpReducer<S, U> upReducer
 	) {
 		this.reducerStateClass = reducerStateClass;
 		this.upClass = upClass;
 		this.upReducer = upReducer;
-		this.upAuthorization = upAuthorization;
-		this.permissionLevel = permissionLevel;
+		this.authorization = authorization;
 	}
 
 	public ProcedureKey getUpProcedureKey() {
@@ -48,12 +45,12 @@ public final class UpProcedure<S extends ReducerState, U extends Particle> imple
 
 	@Override
 	public PermissionLevel permissionLevel(Object o) {
-		return permissionLevel.apply((U) o);
+		return authorization.apply((U) o).permissionLevel();
 	}
 
 	@Override
 	public void verifyAuthorization(Object o, ReadableAddrs readableAddrs, ExecutionContext context) throws AuthorizationException {
-		upAuthorization.verify((U) o, readableAddrs, context);
+		authorization.apply((U) o).authorizer().verify(readableAddrs, context);
 	}
 
 	@Override

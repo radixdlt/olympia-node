@@ -23,7 +23,7 @@ import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.AuthorizationException;
-import com.radixdlt.constraintmachine.DownAuthorization;
+import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -61,7 +61,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 
 		os.createDownProcedure(new DownProcedure<>(
 			ValidatorParticle.class, VoidReducerState.class,
-			d -> new DownAuthorization(
+			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {
 					if (!c.key().map(d.getSubstate().getKey()::equals).orElse(false)) {
@@ -79,8 +79,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 
 		os.createUpProcedure(new UpProcedure<>(
 			ValidatorUpdate.class, ValidatorParticle.class,
-			u -> PermissionLevel.USER,
-			(u, r, k) -> { },
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, r) -> {
 				if (!Objects.equals(s.prevState.getKey(), u.getKey())) {
 					throw new ProcedureException(String.format(

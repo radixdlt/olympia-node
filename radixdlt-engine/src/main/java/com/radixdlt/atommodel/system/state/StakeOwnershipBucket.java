@@ -20,12 +20,10 @@ package com.radixdlt.atommodel.system.state;
 
 import com.radixdlt.atommodel.tokens.Bucket;
 import com.radixdlt.constraintmachine.AuthorizationException;
-import com.radixdlt.constraintmachine.DownAuthorization;
-import com.radixdlt.constraintmachine.ExecutionContext;
+import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.store.ReadableAddrs;
 
 import java.util.Objects;
 
@@ -42,8 +40,8 @@ public final class StakeOwnershipBucket implements Bucket {
 	}
 
 	@Override
-	public DownAuthorization withdrawAuthorization() {
-		return new DownAuthorization(
+	public Authorization withdrawAuthorization() {
+		return new Authorization(
 			PermissionLevel.USER,
 			(r, c) -> {
 				try {

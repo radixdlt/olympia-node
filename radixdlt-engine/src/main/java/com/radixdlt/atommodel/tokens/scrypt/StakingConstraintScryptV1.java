@@ -25,7 +25,7 @@ import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.AuthorizationException;
-import com.radixdlt.constraintmachine.DownAuthorization;
+import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
@@ -55,8 +55,7 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 		// Stake
 		os.createUpProcedure(new UpProcedure<>(
 			VoidReducerState.class, PreparedStake.class,
-			u -> PermissionLevel.USER,
-			(u, r, k) -> { },
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, r) -> {
 				var state = new StakingConstraintScryptV2.UnaccountedStake(
 					u,
@@ -86,7 +85,7 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 		// Unstake
 		os.createDownProcedure(new DownProcedure<>(
 			PreparedStake.class, TokensConstraintScryptV1.UnaccountedTokens.class,
-			d -> new DownAuthorization(
+			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {
 					try {
@@ -132,8 +131,7 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 		// For change
 		os.createUpProcedure(new UpProcedure<>(
 			StakingConstraintScryptV2.RemainderStake.class, PreparedStake.class,
-			u -> PermissionLevel.USER,
-			(u, r, k) -> { },
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, r) -> {
 				if (!u.getAmount().equals(s.amount())) {
 					throw new ProcedureException("Remainder must be filled exactly.");

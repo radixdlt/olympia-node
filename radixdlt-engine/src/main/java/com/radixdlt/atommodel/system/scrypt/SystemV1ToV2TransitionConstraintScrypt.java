@@ -23,7 +23,7 @@ import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
-import com.radixdlt.constraintmachine.DownAuthorization;
+import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
@@ -70,7 +70,7 @@ public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt 
 
 		os.createDownProcedure(new DownProcedure<>(
 			SystemParticle.class, VoidReducerState.class,
-			d -> new DownAuthorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> ReducerResult.incomplete(new TransitionToV2(d.getSubstate()))
 		));
 
@@ -90,8 +90,7 @@ public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt 
 		// Round update
 		os.createUpProcedure(new UpProcedure<>(
 			TransitionToV2.class, SystemParticle.class,
-			u -> PermissionLevel.SUPER_USER,
-			(u, r, c) -> { },
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> {
 				var curState = s.sys;
 				if (curState.getEpoch() != u.getEpoch()) {
