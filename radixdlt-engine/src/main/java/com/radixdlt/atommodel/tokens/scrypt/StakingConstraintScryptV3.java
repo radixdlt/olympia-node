@@ -26,7 +26,6 @@ import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
-import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
 import com.radixdlt.constraintmachine.NotEnoughResourcesException;
@@ -160,27 +159,15 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		// Unstake
 		os.createDownProcedure(new DownProcedure<>(
 			StakeOwnership.class, VoidReducerState.class,
-			d -> PermissionLevel.USER,
-			(d, r, c) -> {
-				try {
-					d.getSubstate().getOwner().verifyWithdrawAuthorization(c.key());
-				} catch (REAddr.BucketWithdrawAuthorizationException e) {
-					throw new AuthorizationException(e.getMessage());
-				}
-			},
+			d -> d.getSubstate().bucket().withdrawPermissionLevel(),
+			(d, r, c) -> d.getSubstate().bucket().verifyWithdrawAuthorization(r, c),
 			(d, s, r) -> ReducerResult.incomplete(new StakeOwnershipHoldingBucket(d.getSubstate()))
 		));
 		// Additional Unstake
 		os.createDownProcedure(new DownProcedure<>(
 			StakeOwnership.class, StakeOwnershipHoldingBucket.class,
-			d -> PermissionLevel.USER,
-			(d, r, c) -> {
-				try {
-					d.getSubstate().getOwner().verifyWithdrawAuthorization(c.key());
-				} catch (REAddr.BucketWithdrawAuthorizationException e) {
-					throw new AuthorizationException(e.getMessage());
-				}
-			},
+			d -> d.getSubstate().bucket().withdrawPermissionLevel(),
+			(d, r, c) -> d.getSubstate().bucket().verifyWithdrawAuthorization(r, c),
 			(d, s, r) -> ReducerResult.incomplete(s.depositOwnership(d.getSubstate()))
 		));
 		// Change

@@ -22,7 +22,6 @@ import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
-import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
@@ -78,22 +77,14 @@ public final class SystemConstraintScryptV1 implements ConstraintScrypt {
 		os.createDownProcedure(new DownProcedure<>(
 			SystemParticle.class, VoidReducerState.class,
 			d -> PermissionLevel.SUPER_USER,
-			(d, r, c) -> {
-				if (c.key().isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			(d, r, c) -> { },
 			(d, s, r) -> ReducerResult.incomplete(new UpdatingSystem(d.getSubstate()))
 		));
 
 		os.createUpProcedure(new UpProcedure<>(
 			UpdatingSystem.class, SystemParticle.class,
 			u -> PermissionLevel.SUPER_USER,
-			(u, r, c) -> {
-				if (c.key().isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			(u, r, c) -> { },
 			(s, u, r) -> {
 				var curState = s.sys;
 				if (curState.getEpoch() == u.getEpoch()) {

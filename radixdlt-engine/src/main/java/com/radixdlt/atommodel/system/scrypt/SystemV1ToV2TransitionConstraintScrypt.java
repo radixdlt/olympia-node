@@ -23,7 +23,6 @@ import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
-import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
@@ -71,11 +70,7 @@ public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt 
 		os.createDownProcedure(new DownProcedure<>(
 			SystemParticle.class, VoidReducerState.class,
 			d -> PermissionLevel.SUPER_USER,
-			(d, r, c) -> {
-				if (c.key().isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			(d, r, c) -> { },
 			(d, s, r) -> ReducerResult.incomplete(new TransitionToV2(d.getSubstate()))
 		));
 
@@ -83,11 +78,7 @@ public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt 
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
 			ExittingStake.class, TransitionToV2.class,
 			() -> PermissionLevel.SUPER_USER,
-			(r, c) -> {
-				if (c.key().isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			(r, c) -> { },
 			(i, s, r) -> {
 				var rewardingValidators = new SystemConstraintScryptV2.ProcessExittingStake(
 					new SystemConstraintScryptV2.UpdatingEpoch(s.sys)
@@ -100,11 +91,7 @@ public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt 
 		os.createUpProcedure(new UpProcedure<>(
 			TransitionToV2.class, SystemParticle.class,
 			u -> PermissionLevel.SUPER_USER,
-			(u, r, c) -> {
-				if (c.key().isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			(u, r, c) -> { },
 			(s, u, r) -> {
 				var curState = s.sys;
 				if (curState.getEpoch() != u.getEpoch()) {

@@ -90,6 +90,14 @@ public final class ConstraintMachine {
 					"Required: " + requiredLevel + " Current: " + this.permissionLevel
 				);
 			}
+
+			if (requiredLevel.compareTo(PermissionLevel.SUPER_USER) >= 0 && signedBy.isPresent()) {
+				throw new ConstraintMachineException(
+					CMErrorCode.AUTHORIZATION_ERROR,
+					this,
+					"System updates should not be signed."
+				);
+			}
 		}
 
 		public ReadableAddrs immutableIndex() {

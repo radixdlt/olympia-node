@@ -517,22 +517,14 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.createDownProcedure(new DownProcedure<>(
 			EpochData.class, RoundClosed.class,
 			d -> PermissionLevel.SUPER_USER,
-			(d, r, c) -> {
-				if (c.key().isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			(d, r, c) -> { },
 			(d, s, r) -> ReducerResult.incomplete(new UpdatingEpoch(d.getSubstate()))
 		));
 
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
 			ExittingStake.class, UpdatingEpoch.class,
 			() -> PermissionLevel.SUPER_USER,
-			(r, c) -> {
-				if (c.key().isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			(r, c) -> { },
 			(i, s, r) -> {
 				var exittingStake = new ProcessExittingStake(s);
 				return ReducerResult.incomplete(exittingStake.process(i));
@@ -540,42 +532,34 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		));
 		os.createUpProcedure(new UpProcedure<>(
 			ProcessExittingStake.class, ExittingStake.class,
-			u -> PermissionLevel.SUPER_USER,
-			(u, r, k) -> { },
+			u -> u.bucket().withdrawPermissionLevel(),
+			(u, r, c) -> u.bucket().verifyWithdrawAuthorization(r, c),
 			(s, u, r) -> ReducerResult.incomplete(s.nextExit(u))
 		));
 		os.createUpProcedure(new UpProcedure<>(
 			ProcessExittingStake.class, TokensInAccount.class,
-			u -> PermissionLevel.SUPER_USER,
-			(u, r, k) -> { },
+			u -> u.bucket().withdrawPermissionLevel(),
+			(u, r, c) -> u.bucket().verifyWithdrawAuthorization(r, c),
 			(s, u, r) -> ReducerResult.incomplete(s.unlock(u))
 		));
 
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
 			ValidatorEpochData.class, RewardingValidators.class,
 			() -> PermissionLevel.SUPER_USER,
-			(r, c) -> {
-				if (c.key().isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			(r, c) -> { },
 			(i, s, r) -> ReducerResult.incomplete(s.process(i))
 		));
 
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
 			PreparedUnstakeOwnership.class, PreparingUnstake.class,
 			() -> PermissionLevel.SUPER_USER,
-			(r, c) -> {
-				if (c.key().isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			(r, c) -> { },
 			(i, s, r) -> ReducerResult.incomplete(s.unstakes(i))
 		));
 		os.createDownProcedure(new DownProcedure<>(
 			ValidatorStake.class, LoadingStake.class,
-			d -> PermissionLevel.SUPER_USER,
-			(d, r, k) -> { },
+			d -> d.getSubstate().bucket().withdrawPermissionLevel(),
+			(d, r, c) -> d.getSubstate().bucket().verifyWithdrawAuthorization(r, c),
 			(d, s, r) -> ReducerResult.incomplete(s.startUpdate(d.getSubstate()))
 		));
 		os.createUpProcedure(new UpProcedure<>(
@@ -587,11 +571,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
 			PreparedStake.class, PreparingStake.class,
 			() -> PermissionLevel.SUPER_USER,
-			(r, c) -> {
-				if (c.key().isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			(r, c) -> { },
 			(i, s, r) -> ReducerResult.incomplete(s.prepareStakes(i))
 		));
 		os.createUpProcedure(new UpProcedure<>(

@@ -19,8 +19,12 @@
 package com.radixdlt.atommodel.system.state;
 
 import com.radixdlt.atommodel.tokens.Bucket;
+import com.radixdlt.constraintmachine.AuthorizationException;
+import com.radixdlt.constraintmachine.ExecutionContext;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.store.ReadableAddrs;
 
 import java.util.Objects;
 
@@ -29,6 +33,16 @@ public final class ValidatorStakeBucket implements Bucket {
 
 	public ValidatorStakeBucket(ECPublicKey validatorKey) {
 		this.validatorKey = validatorKey;
+	}
+
+	@Override
+	public PermissionLevel withdrawPermissionLevel() {
+		return PermissionLevel.SUPER_USER;
+	}
+
+	@Override
+	public void verifyWithdrawAuthorization(ReadableAddrs readable, ExecutionContext context) throws AuthorizationException {
+		 // No other authorization required
 	}
 
 	@Override
