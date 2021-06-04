@@ -430,7 +430,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		// For Mainnet Genesis
 		os.createUpProcedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, EpochData.class,
-			(u, r) -> PermissionLevel.SYSTEM,
+			u -> PermissionLevel.SYSTEM,
 			(u, r, pubKey) -> {
 				if (pubKey.isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
@@ -446,7 +446,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		));
 		os.createUpProcedure(new UpProcedure<>(
 			AllocatingSystem.class, RoundData.class,
-			(u, r) -> PermissionLevel.SYSTEM,
+			u -> PermissionLevel.SYSTEM,
 			(u, r, pubKey) -> {
 				if (pubKey.isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
@@ -466,7 +466,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		// Round update
 		os.createDownProcedure(new DownProcedure<>(
 			RoundData.class, VoidReducerState.class,
-			(d, r) -> PermissionLevel.SUPER_USER,
+			d -> PermissionLevel.SUPER_USER,
 			(d, r, pubKey) -> {
 				if (pubKey.isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
@@ -476,7 +476,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		));
 		os.createUpProcedure(new UpProcedure<>(
 			RoundClosed.class, RoundData.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
+			u -> PermissionLevel.SUPER_USER,
 			(u, r, pubKey) -> { },
 			(s, u, r) -> {
 				var curData = s.prev;
@@ -489,7 +489,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		));
 		os.createDownProcedure(new DownProcedure<>(
 			ValidatorEpochData.class, UpdateValidatorEpochData.class,
-			(d, r) -> PermissionLevel.SUPER_USER,
+			d -> PermissionLevel.SUPER_USER,
 			(d, r, pubKey) -> {
 				if (pubKey.isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
@@ -499,7 +499,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		));
 		os.createUpProcedure(new UpProcedure<>(
 			UpdatingValidatorEpochData.class, ValidatorEpochData.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
+			u -> PermissionLevel.SUPER_USER,
 			(u, r, pubKey) -> {
 				if (pubKey.isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
@@ -516,7 +516,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		// Epoch Update
 		os.createDownProcedure(new DownProcedure<>(
 			EpochData.class, RoundClosed.class,
-			(d, r) -> PermissionLevel.SUPER_USER,
+			d -> PermissionLevel.SUPER_USER,
 			(d, r, pubKey) -> {
 				if (pubKey.isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
@@ -527,7 +527,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
 			ExittingStake.class, UpdatingEpoch.class,
-			r -> PermissionLevel.SUPER_USER,
+			() -> PermissionLevel.SUPER_USER,
 			(r, k) -> {
 				if (k.isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
@@ -540,20 +540,20 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		));
 		os.createUpProcedure(new UpProcedure<>(
 			ProcessExittingStake.class, ExittingStake.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
+			u -> PermissionLevel.SUPER_USER,
 			(u, r, k) -> { },
 			(s, u, r) -> ReducerResult.incomplete(s.nextExit(u))
 		));
 		os.createUpProcedure(new UpProcedure<>(
 			ProcessExittingStake.class, TokensInAccount.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
+			u -> PermissionLevel.SUPER_USER,
 			(u, r, k) -> { },
 			(s, u, r) -> ReducerResult.incomplete(s.unlock(u))
 		));
 
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
 			ValidatorEpochData.class, RewardingValidators.class,
-			r -> PermissionLevel.SUPER_USER,
+			() -> PermissionLevel.SUPER_USER,
 			(r, k) -> {
 				if (k.isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
@@ -564,7 +564,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
 			PreparedUnstakeOwnership.class, PreparingUnstake.class,
-			r -> PermissionLevel.SUPER_USER,
+			() -> PermissionLevel.SUPER_USER,
 			(r, k) -> {
 				if (k.isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
@@ -574,19 +574,19 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		));
 		os.createDownProcedure(new DownProcedure<>(
 			ValidatorStake.class, LoadingStake.class,
-			(d, r) -> PermissionLevel.SUPER_USER,
+			d -> PermissionLevel.SUPER_USER,
 			(d, r, k) -> { },
 			(d, s, r) -> ReducerResult.incomplete(s.startUpdate(d.getSubstate()))
 		));
 		os.createUpProcedure(new UpProcedure<>(
 			Unstaking.class, ExittingStake.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
+			u -> PermissionLevel.SUPER_USER,
 			(u, r, k) -> { },
 			(s, u, r) -> ReducerResult.incomplete(s.exit(u))
 		));
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
 			PreparedStake.class, PreparingStake.class,
-			r -> PermissionLevel.SUPER_USER,
+			() -> PermissionLevel.SUPER_USER,
 			(r, k) -> {
 				if (k.isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
@@ -596,34 +596,34 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		));
 		os.createUpProcedure(new UpProcedure<>(
 			Staking.class, StakeOwnership.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
+			u -> PermissionLevel.SUPER_USER,
 			(u, r, k) -> { },
 			(s, u, r) -> ReducerResult.incomplete(s.stake(u))
 		));
 		os.createUpProcedure(new UpProcedure<>(
 			UpdatingValidatorStakes.class, ValidatorStake.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
+			u -> PermissionLevel.SUPER_USER,
 			(u, r, k) -> { },
 			(s, u, r) -> ReducerResult.incomplete(s.updateStake(u))
 		));
 
 		os.createUpProcedure(new UpProcedure<>(
 			CreatingNextValidatorSet.class, ValidatorEpochData.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
+			u -> PermissionLevel.SUPER_USER,
 			(u, r, pubKey) -> { },
 			(s, u, r) -> ReducerResult.incomplete(s.nextValidator(u))
 		));
 
 		os.createUpProcedure(new UpProcedure<>(
 			CreatingNextValidatorSet.class, EpochData.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
+			u -> PermissionLevel.SUPER_USER,
 			(u, r, pubKey) -> { },
 			(s, u, r) -> ReducerResult.incomplete(s.nextEpoch(u))
 		));
 
 		os.createUpProcedure(new UpProcedure<>(
 			StartingEpochRound.class, RoundData.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
+			u -> PermissionLevel.SUPER_USER,
 			(u, r, pubKey) -> { },
 			(s, u, r) -> {
 				if (u.getView() != 0) {

@@ -23,18 +23,18 @@ import com.radixdlt.store.ReadableAddrs;
 
 import java.util.Iterator;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> implements MethodProcedure {
 	private final Class<D> downClass;
 	private final Class<S> reducerStateClass;
 	private final ShutdownAllReducer<D, S> downReducer;
-	private final Function<ReadableAddrs, PermissionLevel> permissionLevel;
+	private final Supplier<PermissionLevel> permissionLevel;
 	private final ShutdownAllAuthorization authorization;
 
 	public ShutdownAllProcedure(
 		Class<D> downClass, Class<S> reducerStateClass,
-		Function<ReadableAddrs, PermissionLevel> permissionLevel,
+		Supplier<PermissionLevel> permissionLevel,
 		ShutdownAllAuthorization shutdownAllAuthorization,
 		ShutdownAllReducer<D, S> downReducer
 	) {
@@ -50,8 +50,8 @@ public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> im
 	}
 
 	@Override
-	public PermissionLevel permissionLevel(Object o, ReadableAddrs readableAddrs) {
-		return permissionLevel.apply(readableAddrs);
+	public PermissionLevel permissionLevel(Object o) {
+		return permissionLevel.get();
 	}
 
 	@Override

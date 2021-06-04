@@ -214,15 +214,15 @@ public final class ConstraintMachine {
 			authorizationParam = procedureParam;
 		}
 
-		var readable = validationState.immutableIndex();
 		var reducerState = validationState.reducerState;
 		final ReducerResult reducerResult;
 		// System permissions don't require additional authorization
 		if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
-			var requiredLevel = methodProcedure.permissionLevel(authorizationParam, readable);
+			var requiredLevel = methodProcedure.permissionLevel(authorizationParam);
 			validationState.verifyPermissionLevel(requiredLevel);
 		}
 
+		var readable = validationState.immutableIndex();
 		try {
 			if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
 				methodProcedure.verifyAuthorization(authorizationParam, readable, validationState.signedBy);

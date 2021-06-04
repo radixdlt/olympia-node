@@ -77,7 +77,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 	private void defineTokenCreation(SysCalls os) {
 		os.createUpProcedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, TokenResource.class,
-			(u, r) -> PermissionLevel.USER,
+			u -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
 				if (!u.getAddr().equals(s.getAddr())) {
@@ -94,7 +94,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 
 		os.createUpProcedure(new UpProcedure<>(
 			TokensConstraintScryptV2.NeedFixedTokenSupply.class, TokensInAccount.class,
-			(u, r) -> PermissionLevel.USER,
+			u -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
 				if (!u.getResourceAddr().equals(s.tokenResource.getAddr())) {
@@ -160,7 +160,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		// Mint
 		os.createUpProcedure(new UpProcedure<>(
 			VoidReducerState.class, TokensInAccount.class,
-			(u, r) -> u.getResourceAddr().isNativeToken() ? PermissionLevel.SYSTEM : PermissionLevel.USER,
+			u -> u.getResourceAddr().isNativeToken() ? PermissionLevel.SYSTEM : PermissionLevel.USER,
 			(u, r, k) -> {
 				var tokenDef = (TokenResource) r.loadAddr(null, u.getResourceAddr())
 					.orElseThrow(() -> new AuthorizationException("Invalid token address: " + u.getResourceAddr()));
@@ -172,7 +172,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		// Burn
 		os.createEndProcedure(new EndProcedure<>(
 			TokenHoldingBucket.class,
-			(s, r) -> PermissionLevel.USER,
+			s -> PermissionLevel.USER,
 			(s, r, k) -> { },
 			(s, r) -> {
 				if (!s.amount.isZero()) {
@@ -195,7 +195,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		// Initial Withdraw
 		os.createDownProcedure(new DownProcedure<>(
 			TokensInAccount.class, VoidReducerState.class,
-			(d, r) -> PermissionLevel.USER,
+			d -> PermissionLevel.USER,
 			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
 			(d, s, r) -> {
 				var tokens = d.getSubstate();
@@ -211,7 +211,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		// More Withdraws
 		os.createDownProcedure(new DownProcedure<>(
 			TokensInAccount.class, TokenHoldingBucket.class,
-			(d, r) -> PermissionLevel.USER,
+			d -> PermissionLevel.USER,
 			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
 			(d, s, r) -> {
 				var tokens = d.getSubstate();
@@ -227,7 +227,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		// Deposit
 		os.createUpProcedure(new UpProcedure<>(
 			TokenHoldingBucket.class, TokensInAccount.class,
-			(u, r) -> PermissionLevel.USER,
+			u -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
 				var nextState = s.withdraw(u.getResourceAddr(), u.getAmount());

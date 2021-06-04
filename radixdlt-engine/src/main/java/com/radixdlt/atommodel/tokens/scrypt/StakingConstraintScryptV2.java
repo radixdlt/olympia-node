@@ -122,7 +122,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		// Stake
 		os.createUpProcedure(new UpProcedure<>(
 			VoidReducerState.class, PreparedStake.class,
-			(u, r) -> PermissionLevel.USER,
+			u -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
 				var state = new UnaccountedStake(
@@ -134,7 +134,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		));
 		os.createDownProcedure(new DownProcedure<>(
 			TokensInAccount.class, UnaccountedStake.class,
-			(d, r) -> PermissionLevel.USER,
+			d -> PermissionLevel.USER,
 			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
 			(d, s, r) -> {
 				if (!d.getSubstate().getResourceAddr().isNativeToken()) {
@@ -153,7 +153,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		// Unstake
 		os.createDownProcedure(new DownProcedure<>(
 			PreparedStake.class, TokensConstraintScryptV1.UnaccountedTokens.class,
-			(d, r) -> PermissionLevel.USER,
+			d -> PermissionLevel.USER,
 			(d, r, k) -> {
 				try {
 					d.getSubstate().getOwner().verifyWithdrawAuthorization(k);
@@ -204,7 +204,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		// For change
 		os.createUpProcedure(new UpProcedure<>(
 			RemainderStake.class, PreparedStake.class,
-			(u, r) -> PermissionLevel.USER,
+			u -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
 				if (!u.getAmount().equals(s.amount)) {

@@ -77,7 +77,7 @@ public final class SystemConstraintScryptV1 implements ConstraintScrypt {
 
 		os.createDownProcedure(new DownProcedure<>(
 			SystemParticle.class, VoidReducerState.class,
-			(d, r) -> PermissionLevel.SUPER_USER,
+			d -> PermissionLevel.SUPER_USER,
 			(d, r, pubKey) -> {
 				if (pubKey.isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
@@ -88,7 +88,7 @@ public final class SystemConstraintScryptV1 implements ConstraintScrypt {
 
 		os.createUpProcedure(new UpProcedure<>(
 			UpdatingSystem.class, SystemParticle.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
+			u -> PermissionLevel.SUPER_USER,
 			(u, r, pubKey) -> {
 				if (pubKey.isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");

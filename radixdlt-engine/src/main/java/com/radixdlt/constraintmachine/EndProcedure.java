@@ -22,17 +22,17 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.store.ReadableAddrs;
 
 import java.util.Optional;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
 public class EndProcedure<S extends ReducerState> implements MethodProcedure {
 	private final Class<S> reducerStateClass;
-	private final BiFunction<S, ReadableAddrs, PermissionLevel> permissionLevel;
+	private final Function<S, PermissionLevel> permissionLevel;
 	private final EndAuthorization<S> endAuthorization;
 	private final EndReducer<S> endReducer;
 
 	public EndProcedure(
 		Class<S> reducerStateClass,
-		BiFunction<S, ReadableAddrs, PermissionLevel> permissionLevel,
+		Function<S, PermissionLevel> permissionLevel,
 		EndAuthorization<S> endAuthorization,
 		EndReducer<S> endReducer
 	) {
@@ -47,8 +47,8 @@ public class EndProcedure<S extends ReducerState> implements MethodProcedure {
 	}
 
 	@Override
-	public PermissionLevel permissionLevel(Object o, ReadableAddrs readableAddrs) {
-		return permissionLevel.apply((S) o, readableAddrs);
+	public PermissionLevel permissionLevel(Object o) {
+		return permissionLevel.apply((S) o);
 	}
 
 	@Override

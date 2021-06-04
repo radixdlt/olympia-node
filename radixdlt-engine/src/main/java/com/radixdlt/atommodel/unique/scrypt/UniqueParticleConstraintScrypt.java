@@ -37,7 +37,7 @@ public class UniqueParticleConstraintScrypt implements ConstraintScrypt {
 		);
 		os.createUpProcedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, UniqueParticle.class,
-			(u, r) -> PermissionLevel.USER,
+			u -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
 				if (!u.getREAddr().equals(s.getAddr())) {

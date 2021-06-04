@@ -80,7 +80,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 	private void defineTokenCreation(SysCalls os) {
 		os.createUpProcedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, TokenResource.class,
-			(u, r) -> PermissionLevel.USER,
+			u -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
 				if (!u.getAddr().equals(s.getAddr())) {
@@ -97,7 +97,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 
 		os.createUpProcedure(new UpProcedure<>(
 			NeedFixedTokenSupply.class, TokensInAccount.class,
-			(u, r) -> PermissionLevel.USER,
+			u -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
 				if (!u.getResourceAddr().equals(s.tokenResource.getAddr())) {
@@ -184,7 +184,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		// Mint
 		os.createEndProcedure(new EndProcedure<>(
 			UnaccountedTokens.class,
-			(s, r) -> s.resourceInBucket.resourceAddr().isNativeToken() ? PermissionLevel.SYSTEM : PermissionLevel.USER,
+			s -> s.resourceInBucket.resourceAddr().isNativeToken() ? PermissionLevel.SYSTEM : PermissionLevel.USER,
 			(s, r, k) -> {
 				var tokenDef = (TokenResource) r.loadAddr(null, s.resourceInBucket.resourceAddr())
 					.orElseThrow(() -> new AuthorizationException("Invalid token address: " + s.resourceInBucket.resourceAddr()));
@@ -214,7 +214,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		// Burn
 		os.createEndProcedure(new EndProcedure<>(
 			RemainderTokens.class,
-			(s, r) -> PermissionLevel.USER,
+			s -> PermissionLevel.USER,
 			(s, r, k) -> { },
 			(s, r) -> {
 				var p = r.loadAddr(null, s.tokenAddr);
@@ -234,7 +234,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 
 		os.createUpProcedure(new UpProcedure<>(
 			VoidReducerState.class, TokensInAccount.class,
-			(u, r) -> PermissionLevel.USER,
+			u -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
 				var state = new UnaccountedTokens(
@@ -248,7 +248,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 
 		os.createDownProcedure(new DownProcedure<>(
 			TokensInAccount.class, VoidReducerState.class,
-			(d, r) -> PermissionLevel.USER,
+			d -> PermissionLevel.USER,
 			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
 			(d, s, r) -> {
 				var state = new RemainderTokens(
@@ -262,7 +262,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 
 		os.createUpProcedure(new UpProcedure<>(
 			RemainderTokens.class, TokensInAccount.class,
-			(u, r) -> PermissionLevel.USER,
+			u -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
 				if (!s.tokenAddr.equals(u.getResourceAddr())) {
@@ -279,7 +279,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 
 		os.createDownProcedure(new DownProcedure<>(
 			TokensInAccount.class, UnaccountedTokens.class,
-			(d, r) -> PermissionLevel.USER,
+			d -> PermissionLevel.USER,
 			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
 			(d, s, r) -> {
 				if (!s.resourceInBucket.resourceAddr().equals(d.getSubstate().getResourceAddr())) {

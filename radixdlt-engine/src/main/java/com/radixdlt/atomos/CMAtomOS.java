@@ -85,7 +85,7 @@ public final class CMAtomOS {
 			os.registerParticle(REAddrParticle.class, RRI_PARTICLE_DEF);
 			os.createDownProcedure(new DownProcedure<>(
 				REAddrParticle.class, VoidReducerState.class,
-				(d, r) -> {
+				d -> {
 					var name = new String(d.getArg().orElseThrow());
 					return systemNames.contains(name)
 						|| d.getSubstate().getAddr().isNativeToken()

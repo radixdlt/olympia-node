@@ -141,7 +141,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		// Stake
 		os.createUpProcedure(new UpProcedure<>(
 			TokensConstraintScryptV2.TokenHoldingBucket.class, PreparedStake.class,
-			(u, r) -> PermissionLevel.USER,
+			u -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
 				if (u.getAmount().compareTo(ValidatorStake.MINIMUM_STAKE) < 0) {
@@ -160,7 +160,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		// Unstake
 		os.createDownProcedure(new DownProcedure<>(
 			StakeOwnership.class, VoidReducerState.class,
-			(d, r) -> PermissionLevel.USER,
+			d -> PermissionLevel.USER,
 			(d, r, k) -> {
 				try {
 					d.getSubstate().getOwner().verifyWithdrawAuthorization(k);
@@ -173,7 +173,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		// Additional Unstake
 		os.createDownProcedure(new DownProcedure<>(
 			StakeOwnership.class, StakeOwnershipHoldingBucket.class,
-			(d, r) -> PermissionLevel.USER,
+			d -> PermissionLevel.USER,
 			(d, r, k) -> {
 				try {
 					d.getSubstate().getOwner().verifyWithdrawAuthorization(k);
@@ -186,13 +186,13 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		// Change
 		os.createUpProcedure(new UpProcedure<>(
 			StakeOwnershipHoldingBucket.class, StakeOwnership.class,
-			(u, r) -> PermissionLevel.USER,
+			u -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> ReducerResult.incomplete(s.withdrawOwnership(u))
 		));
 		os.createUpProcedure(new UpProcedure<>(
 			StakeOwnershipHoldingBucket.class, PreparedUnstakeOwnership.class,
-			(u, r) -> PermissionLevel.USER,
+			u -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> ReducerResult.incomplete(s.unstake(u))
 		));
@@ -200,7 +200,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		// Deallocate Stake Holding Bucket
 		os.createEndProcedure(new EndProcedure<>(
 			StakeOwnershipHoldingBucket.class,
-			(s, r) -> PermissionLevel.USER,
+			s -> PermissionLevel.USER,
 			(s, r, k) -> { },
 			(s, r) -> s.destroy()
 		));

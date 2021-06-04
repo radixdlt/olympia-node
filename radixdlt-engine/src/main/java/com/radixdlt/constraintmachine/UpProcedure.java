@@ -22,19 +22,19 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.store.ReadableAddrs;
 
 import java.util.Optional;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
 public final class UpProcedure<S extends ReducerState, U extends Particle> implements MethodProcedure {
 	private final Class<S> reducerStateClass;
 	private final Class<U> upClass;
 	private final UpReducer<S, U> upReducer;
 	private final UpAuthorization<U> upAuthorization;
-	private final BiFunction<U, ReadableAddrs, PermissionLevel> permissionLevel;
+	private final Function<U, PermissionLevel> permissionLevel;
 
 	public UpProcedure(
 		Class<S> reducerStateClass,
 		Class<U> upClass,
-		BiFunction<U, ReadableAddrs, PermissionLevel> permissionLevel,
+		Function<U, PermissionLevel> permissionLevel,
 		UpAuthorization<U> upAuthorization,
 		UpReducer<S, U> upReducer
 	) {
@@ -50,8 +50,8 @@ public final class UpProcedure<S extends ReducerState, U extends Particle> imple
 	}
 
 	@Override
-	public PermissionLevel permissionLevel(Object o, ReadableAddrs readableAddrs) {
-		return permissionLevel.apply((U) o, readableAddrs);
+	public PermissionLevel permissionLevel(Object o) {
+		return permissionLevel.apply((U) o);
 	}
 
 	@Override

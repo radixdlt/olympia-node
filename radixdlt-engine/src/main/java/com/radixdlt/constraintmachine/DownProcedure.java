@@ -22,18 +22,18 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.store.ReadableAddrs;
 
 import java.util.Optional;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
 public class DownProcedure<D extends Particle, S extends ReducerState> implements MethodProcedure {
 	private final Class<D> downClass;
 	private final Class<S> reducerStateClass;
 	private final DownReducer<D, S> downReducer;
-	private final BiFunction<SubstateWithArg<D>, ReadableAddrs, PermissionLevel> permissionLevel;
+	private final Function<SubstateWithArg<D>, PermissionLevel> permissionLevel;
 	private final DownAuthorization<D> downAuthorization;
 
 	public DownProcedure(
 		Class<D> downClass, Class<S> reducerStateClass,
-		BiFunction<SubstateWithArg<D>, ReadableAddrs, PermissionLevel> permissionLevel,
+		Function<SubstateWithArg<D>, PermissionLevel> permissionLevel,
 		DownAuthorization<D> downAuthorization,
 		DownReducer<D, S> downReducer
 	) {
@@ -49,8 +49,8 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 	}
 
 	@Override
-	public PermissionLevel permissionLevel(Object o, ReadableAddrs readableAddrs) {
-		return permissionLevel.apply((SubstateWithArg<D>) o, readableAddrs);
+	public PermissionLevel permissionLevel(Object o) {
+		return permissionLevel.apply((SubstateWithArg<D>) o);
 	}
 
 	@Override
