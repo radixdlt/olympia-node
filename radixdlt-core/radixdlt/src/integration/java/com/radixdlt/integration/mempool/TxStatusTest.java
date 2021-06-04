@@ -53,7 +53,7 @@ import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.UInt256;
 import org.junit.Rule;
@@ -61,6 +61,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.radix.TokenIssuance;
 
 import java.util.Collection;
 import java.util.List;
@@ -108,7 +109,7 @@ public class TxStatusTest {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
 			new BetanetForksModule(),
-			new RadixEngineOnlyLatestForkModule(View.of(100)),
+			new RadixEngineForksLatestOnlyModule(View.of(100)),
 			RadixEngineConfig.asModule(1, 10, 10),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
@@ -118,6 +119,11 @@ public class TxStatusTest {
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
+				}
+
+				@ProvidesIntoSet
+				private TokenIssuance mempoolFillerIssuance(@Self ECPublicKey self) {
+					return TokenIssuance.of(self, ValidatorStake.MINIMUM_STAKE);
 				}
 			}
 		);
