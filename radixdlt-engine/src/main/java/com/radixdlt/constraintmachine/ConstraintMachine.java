@@ -209,12 +209,13 @@ public final class ConstraintMachine {
 		// TODO: Reduce the 2 following procedures to 1
 		final Object authorizationParam;
 		if (op == REInstruction.REOp.END) {
+			// FIXME: this is only needed for deprecated TokensConstraintScryptV1
+			// FIXME: can remove for mainnet
 			authorizationParam = validationState.reducerState;
 		} else {
 			authorizationParam = procedureParam;
 		}
 
-		var reducerState = validationState.reducerState;
 		final ReducerResult reducerResult;
 		// System permissions don't require additional authorization
 		if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
@@ -222,10 +223,12 @@ public final class ConstraintMachine {
 			validationState.verifyPermissionLevel(requiredLevel);
 		}
 
+		var context = new ExecutionContext(validationState.signedBy);
 		var readable = validationState.immutableIndex();
+		var reducerState = validationState.reducerState;
 		try {
 			if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
-				methodProcedure.verifyAuthorization(authorizationParam, readable, validationState.signedBy);
+				methodProcedure.verifyAuthorization(authorizationParam, readable, context);
 			}
 			reducerResult = methodProcedure.call(procedureParam, reducerState, readable);
 		} catch (AuthorizationException e) {

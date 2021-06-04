@@ -61,8 +61,8 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		os.createDownProcedure(new DownProcedure<>(
 			ValidatorParticle.class, VoidReducerState.class,
 			d -> PermissionLevel.USER,
-			(d, r, k) -> {
-				if (!k.map(d.getSubstate().getKey()::equals).orElse(false)) {
+			(d, r, c) -> {
+				if (!c.key().map(d.getSubstate().getKey()::equals).orElse(false)) {
 					throw new AuthorizationException("Key does not match.");
 				}
 			},

@@ -185,11 +185,11 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		os.createEndProcedure(new EndProcedure<>(
 			UnaccountedTokens.class,
 			s -> s.resourceInBucket.resourceAddr().isNativeToken() ? PermissionLevel.SYSTEM : PermissionLevel.USER,
-			(s, r, k) -> {
+			(s, r, c) -> {
 				var tokenDef = (TokenResource) r.loadAddr(null, s.resourceInBucket.resourceAddr())
 					.orElseThrow(() -> new AuthorizationException("Invalid token address: " + s.resourceInBucket.resourceAddr()));
 
-				tokenDef.verifyMintAuthorization(k);
+				tokenDef.verifyMintAuthorization(c.key());
 			},
 			(s, r) -> {
 				if (s.resourceInBucket.epochUnlocked().isPresent()) {
@@ -249,7 +249,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		os.createDownProcedure(new DownProcedure<>(
 			TokensInAccount.class, VoidReducerState.class,
 			d -> PermissionLevel.USER,
-			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
+			(d, r, c) -> d.getSubstate().verifyWithdrawAuthorization(c.key(), r),
 			(d, s, r) -> {
 				var state = new RemainderTokens(
 					d.getSubstate(),
@@ -280,7 +280,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		os.createDownProcedure(new DownProcedure<>(
 			TokensInAccount.class, UnaccountedTokens.class,
 			d -> PermissionLevel.USER,
-			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
+			(d, r, c) -> d.getSubstate().verifyWithdrawAuthorization(c.key(), r),
 			(d, s, r) -> {
 				if (!s.resourceInBucket.resourceAddr().equals(d.getSubstate().getResourceAddr())) {
 					throw new ProcedureException("Not the same address.");

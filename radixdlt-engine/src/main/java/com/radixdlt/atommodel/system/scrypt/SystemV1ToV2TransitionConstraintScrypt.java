@@ -71,8 +71,8 @@ public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt 
 		os.createDownProcedure(new DownProcedure<>(
 			SystemParticle.class, VoidReducerState.class,
 			d -> PermissionLevel.SUPER_USER,
-			(d, r, pubKey) -> {
-				if (pubKey.isPresent()) {
+			(d, r, c) -> {
+				if (c.key().isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
 				}
 			},
@@ -83,8 +83,8 @@ public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt 
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
 			ExittingStake.class, TransitionToV2.class,
 			() -> PermissionLevel.SUPER_USER,
-			(r, k) -> {
-				if (k.isPresent()) {
+			(r, c) -> {
+				if (c.key().isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
 				}
 			},
@@ -100,8 +100,8 @@ public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt 
 		os.createUpProcedure(new UpProcedure<>(
 			TransitionToV2.class, SystemParticle.class,
 			u -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> {
-				if (pubKey.isPresent()) {
+			(u, r, c) -> {
+				if (c.key().isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
 				}
 			},

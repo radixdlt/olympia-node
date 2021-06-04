@@ -17,15 +17,12 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.store.ReadableAddrs;
-
-import java.util.Optional;
 
 /**
  * Validates whether a specific transition procedure is permissible
  * @param <I> particle class
  */
 public interface DownAuthorization<I extends Particle> {
-	void verify(SubstateWithArg<I> input, ReadableAddrs readableAddrs, Optional<ECPublicKey> signedBy) throws AuthorizationException;
+	void verify(SubstateWithArg<I> input, ReadableAddrs readableAddrs, ExecutionContext context) throws AuthorizationException;
 }

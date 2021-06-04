@@ -18,10 +18,7 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.store.ReadableAddrs;
-
-import java.util.Optional;
 import java.util.function.Function;
 
 public final class UpProcedure<S extends ReducerState, U extends Particle> implements MethodProcedure {
@@ -55,8 +52,8 @@ public final class UpProcedure<S extends ReducerState, U extends Particle> imple
 	}
 
 	@Override
-	public void verifyAuthorization(Object o, ReadableAddrs readableAddrs, Optional<ECPublicKey> key) throws AuthorizationException {
-		upAuthorization.verify((U) o, readableAddrs, key);
+	public void verifyAuthorization(Object o, ReadableAddrs readableAddrs, ExecutionContext context) throws AuthorizationException {
+		upAuthorization.verify((U) o, readableAddrs, context);
 	}
 
 	@Override

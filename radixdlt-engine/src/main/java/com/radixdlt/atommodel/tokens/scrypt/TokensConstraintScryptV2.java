@@ -161,10 +161,10 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		os.createUpProcedure(new UpProcedure<>(
 			VoidReducerState.class, TokensInAccount.class,
 			u -> u.getResourceAddr().isNativeToken() ? PermissionLevel.SYSTEM : PermissionLevel.USER,
-			(u, r, k) -> {
+			(u, r, c) -> {
 				var tokenDef = (TokenResource) r.loadAddr(null, u.getResourceAddr())
 					.orElseThrow(() -> new AuthorizationException("Invalid token address: " + u.getResourceAddr()));
-				tokenDef.verifyMintAuthorization(k);
+				tokenDef.verifyMintAuthorization(c.key());
 			},
 			(s, u, r) -> ReducerResult.complete()
 		));
@@ -196,7 +196,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		os.createDownProcedure(new DownProcedure<>(
 			TokensInAccount.class, VoidReducerState.class,
 			d -> PermissionLevel.USER,
-			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
+			(d, r, c) -> d.getSubstate().verifyWithdrawAuthorization(c.key(), r),
 			(d, s, r) -> {
 				var tokens = d.getSubstate();
 				var state = new TokenHoldingBucket(
@@ -212,7 +212,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		os.createDownProcedure(new DownProcedure<>(
 			TokensInAccount.class, TokenHoldingBucket.class,
 			d -> PermissionLevel.USER,
-			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
+			(d, r, c) -> d.getSubstate().verifyWithdrawAuthorization(c.key(), r),
 			(d, s, r) -> {
 				var tokens = d.getSubstate();
 				var nextState = s.deposit(

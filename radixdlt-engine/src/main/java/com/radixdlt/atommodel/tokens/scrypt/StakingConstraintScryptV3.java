@@ -161,9 +161,9 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		os.createDownProcedure(new DownProcedure<>(
 			StakeOwnership.class, VoidReducerState.class,
 			d -> PermissionLevel.USER,
-			(d, r, k) -> {
+			(d, r, c) -> {
 				try {
-					d.getSubstate().getOwner().verifyWithdrawAuthorization(k);
+					d.getSubstate().getOwner().verifyWithdrawAuthorization(c.key());
 				} catch (REAddr.BucketWithdrawAuthorizationException e) {
 					throw new AuthorizationException(e.getMessage());
 				}
@@ -174,9 +174,9 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		os.createDownProcedure(new DownProcedure<>(
 			StakeOwnership.class, StakeOwnershipHoldingBucket.class,
 			d -> PermissionLevel.USER,
-			(d, r, k) -> {
+			(d, r, c) -> {
 				try {
-					d.getSubstate().getOwner().verifyWithdrawAuthorization(k);
+					d.getSubstate().getOwner().verifyWithdrawAuthorization(c.key());
 				} catch (REAddr.BucketWithdrawAuthorizationException e) {
 					throw new AuthorizationException(e.getMessage());
 				}

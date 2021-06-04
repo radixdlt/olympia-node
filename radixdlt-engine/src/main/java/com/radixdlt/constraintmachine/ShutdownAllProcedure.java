@@ -18,11 +18,9 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.store.ReadableAddrs;
 
 import java.util.Iterator;
-import java.util.Optional;
 import java.util.function.Supplier;
 
 public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> implements MethodProcedure {
@@ -55,8 +53,8 @@ public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> im
 	}
 
 	@Override
-	public void verifyAuthorization(Object o, ReadableAddrs readableAddrs, Optional<ECPublicKey> key) throws AuthorizationException {
-		authorization.verify(readableAddrs, key);
+	public void verifyAuthorization(Object o, ReadableAddrs readableAddrs, ExecutionContext context) throws AuthorizationException {
+		authorization.verify(readableAddrs, context);
 	}
 
 	@Override

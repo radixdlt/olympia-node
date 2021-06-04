@@ -18,11 +18,8 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.store.ReadableAddrs;
 
-import java.util.Optional;
-
 public interface EndAuthorization<S extends ReducerState> {
-	void verify(S state, ReadableAddrs readableAddrs, Optional<ECPublicKey> signedBy) throws AuthorizationException;
+	void verify(S state, ReadableAddrs readableAddrs, ExecutionContext context) throws AuthorizationException;
 }

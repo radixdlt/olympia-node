@@ -135,7 +135,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		os.createDownProcedure(new DownProcedure<>(
 			TokensInAccount.class, UnaccountedStake.class,
 			d -> PermissionLevel.USER,
-			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
+			(d, r, c) -> d.getSubstate().verifyWithdrawAuthorization(c.key(), r),
 			(d, s, r) -> {
 				if (!d.getSubstate().getResourceAddr().isNativeToken()) {
 					throw new ProcedureException("Not the same address.");
@@ -154,9 +154,9 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		os.createDownProcedure(new DownProcedure<>(
 			PreparedStake.class, TokensConstraintScryptV1.UnaccountedTokens.class,
 			d -> PermissionLevel.USER,
-			(d, r, k) -> {
+			(d, r, c) -> {
 				try {
-					d.getSubstate().getOwner().verifyWithdrawAuthorization(k);
+					d.getSubstate().getOwner().verifyWithdrawAuthorization(c.key());
 				} catch (REAddr.BucketWithdrawAuthorizationException e) {
 					throw new AuthorizationException(e.getMessage());
 				}

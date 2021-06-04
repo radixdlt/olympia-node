@@ -431,8 +431,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.createUpProcedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, EpochData.class,
 			u -> PermissionLevel.SYSTEM,
-			(u, r, pubKey) -> {
-				if (pubKey.isPresent()) {
+			(u, r, c) -> {
+				if (c.key().isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
 				}
 			},
@@ -447,8 +447,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.createUpProcedure(new UpProcedure<>(
 			AllocatingSystem.class, RoundData.class,
 			u -> PermissionLevel.SYSTEM,
-			(u, r, pubKey) -> {
-				if (pubKey.isPresent()) {
+			(u, r, c) -> {
+				if (c.key().isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
 				}
 			},
@@ -467,8 +467,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.createDownProcedure(new DownProcedure<>(
 			RoundData.class, VoidReducerState.class,
 			d -> PermissionLevel.SUPER_USER,
-			(d, r, pubKey) -> {
-				if (pubKey.isPresent()) {
+			(d, r, c) -> {
+				if (c.key().isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
 				}
 			},
@@ -490,8 +490,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.createDownProcedure(new DownProcedure<>(
 			ValidatorEpochData.class, UpdateValidatorEpochData.class,
 			d -> PermissionLevel.SUPER_USER,
-			(d, r, pubKey) -> {
-				if (pubKey.isPresent()) {
+			(d, r, c) -> {
+				if (c.key().isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
 				}
 			},
@@ -500,8 +500,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.createUpProcedure(new UpProcedure<>(
 			UpdatingValidatorEpochData.class, ValidatorEpochData.class,
 			u -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> {
-				if (pubKey.isPresent()) {
+			(u, r, c) -> {
+				if (c.key().isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
 				}
 			},
@@ -517,8 +517,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.createDownProcedure(new DownProcedure<>(
 			EpochData.class, RoundClosed.class,
 			d -> PermissionLevel.SUPER_USER,
-			(d, r, pubKey) -> {
-				if (pubKey.isPresent()) {
+			(d, r, c) -> {
+				if (c.key().isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
 				}
 			},
@@ -528,8 +528,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
 			ExittingStake.class, UpdatingEpoch.class,
 			() -> PermissionLevel.SUPER_USER,
-			(r, k) -> {
-				if (k.isPresent()) {
+			(r, c) -> {
+				if (c.key().isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
 				}
 			},
@@ -554,8 +554,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
 			ValidatorEpochData.class, RewardingValidators.class,
 			() -> PermissionLevel.SUPER_USER,
-			(r, k) -> {
-				if (k.isPresent()) {
+			(r, c) -> {
+				if (c.key().isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
 				}
 			},
@@ -565,8 +565,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
 			PreparedUnstakeOwnership.class, PreparingUnstake.class,
 			() -> PermissionLevel.SUPER_USER,
-			(r, k) -> {
-				if (k.isPresent()) {
+			(r, c) -> {
+				if (c.key().isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
 				}
 			},
@@ -587,8 +587,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
 			PreparedStake.class, PreparingStake.class,
 			() -> PermissionLevel.SUPER_USER,
-			(r, k) -> {
-				if (k.isPresent()) {
+			(r, c) -> {
+				if (c.key().isPresent()) {
 					throw new AuthorizationException("System update should not be signed.");
 				}
 			},

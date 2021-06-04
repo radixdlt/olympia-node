@@ -92,8 +92,8 @@ public final class CMAtomOS {
 						|| d.getSubstate().getAddr().isSystem()
 						? PermissionLevel.SYSTEM : PermissionLevel.USER;
 				},
-				(d, r, pubKey) -> {
-					if (!pubKey.map(k -> d.getSubstate().allow(k, d.getArg())).orElse(false)) {
+				(d, r, ctx) -> {
+					if (!ctx.key().map(k -> d.getSubstate().allow(k, d.getArg())).orElse(false)) {
 						throw new AuthorizationException("Invalid key/arg combination.");
 					}
 				},

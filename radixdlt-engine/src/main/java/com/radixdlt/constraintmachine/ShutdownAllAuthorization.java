@@ -18,11 +18,8 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.store.ReadableAddrs;
 
-import java.util.Optional;
-
 public interface ShutdownAllAuthorization {
-	void verify(ReadableAddrs readableAddrs, Optional<ECPublicKey> signedBy) throws AuthorizationException;
+	void verify(ReadableAddrs readableAddrs, ExecutionContext context) throws AuthorizationException;
 }

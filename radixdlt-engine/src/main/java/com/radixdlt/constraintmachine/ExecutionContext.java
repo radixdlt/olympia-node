@@ -18,10 +18,18 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.store.ReadableAddrs;
+import com.radixdlt.crypto.ECPublicKey;
 
-public interface MethodProcedure {
-	PermissionLevel permissionLevel(Object o);
-	void verifyAuthorization(Object o, ReadableAddrs readableAddrs, ExecutionContext context) throws AuthorizationException;
-	ReducerResult call(Object o, ReducerState reducerState, ReadableAddrs readableAddrs) throws ProcedureException;
+import java.util.Optional;
+
+public class ExecutionContext {
+	private Optional<ECPublicKey> key;
+
+	public ExecutionContext(Optional<ECPublicKey> key) {
+		this.key = key;
+	}
+
+	public Optional<ECPublicKey> key() {
+		return key;
+	}
 }
