@@ -46,7 +46,6 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.integration.staking.DeterministicRunner;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -62,7 +61,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.radix.TokenIssuance;
 
 import java.util.Collection;
 import java.util.List;
@@ -121,11 +119,6 @@ public class TxStatusTest {
 					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
-
-				@ProvidesIntoSet
-				private TokenIssuance mempoolFillerIssuance(@Self ECPublicKey self) {
-					return TokenIssuance.of(self, ValidatorStake.MINIMUM_STAKE);
-				}
 			}
 		);
 	}
@@ -143,25 +136,9 @@ public class TxStatusTest {
 			.orElseThrow();
 	}
 
-
-	public MempoolAddFailure dispatchAndCheckForError(Txn txn) {
-		mempoolAddEventDispatcher.dispatch(MempoolAdd.create(txn));
-		return runner.runNextEventsThrough(MempoolAddFailure.class);
-	}
-
-	public REProcessedTxn dispatchAndWaitForCommit(Txn txn) {
-		mempoolAddEventDispatcher.dispatch(MempoolAdd.create(txn));
-		return waitForCommit();
-	}
-
 	public REProcessedTxn dispatchAndWaitForCommit(TxAction action) {
 		nodeApplicationRequestEventDispatcher.dispatch(NodeApplicationRequest.create(action));
 		return waitForCommit();
-	}
-
-	public MempoolAddFailure dispatchAndWaitForFailure(TxAction action) {
-		nodeApplicationRequestEventDispatcher.dispatch(NodeApplicationRequest.create(action));
-		return runner.runNextEventsThrough(MempoolAddFailure.class);
 	}
 
 	@Test
@@ -175,12 +152,6 @@ public class TxStatusTest {
 		// Not existing transaction Id
 		var notExistingTxId = AID.from(HashUtils.random256().asBytes());
 		assertEquals(TRANSACTION_NOT_FOUND, transactionStatusService.getTransactionStatus(notExistingTxId));
-
-		// Not enought balance
-		var invalidTransfer = new TransferToken(REAddr.ofNativeToken(), accountAddr, otherAddr,
-			ValidatorStake.MINIMUM_STAKE.multiply(UInt256.TWO));
-		var invalidTransferTxId = dispatchAndWaitForFailure(invalidTransfer);
-		assertEquals(FAILED, transactionStatusService.getTransactionStatus(invalidTransferTxId.getTxn().getId()));
 
 		// Correct transfer
 		var transferAction = new TransferToken(REAddr.ofNativeToken(), accountAddr, otherAddr,
