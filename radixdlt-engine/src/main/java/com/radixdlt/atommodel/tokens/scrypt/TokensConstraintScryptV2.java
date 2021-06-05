@@ -173,8 +173,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		// Burn
 		os.createEndProcedure(new EndProcedure<>(
 			TokenHoldingBucket.class,
-			s -> PermissionLevel.USER,
-			(s, r, k) -> { },
+			s -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, r) -> {
 				if (!s.amount.isZero()) {
 					var p = r.loadAddr(null, s.tokenAddr);

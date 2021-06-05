@@ -183,12 +183,17 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		// Mint
 		os.createEndProcedure(new EndProcedure<>(
 			UnaccountedTokens.class,
-			s -> s.resourceInBucket.resourceAddr().isNativeToken() ? PermissionLevel.SYSTEM : PermissionLevel.USER,
-			(s, r, c) -> {
-				var tokenDef = (TokenResource) r.loadAddr(null, s.resourceInBucket.resourceAddr())
-					.orElseThrow(() -> new AuthorizationException("Invalid token address: " + s.resourceInBucket.resourceAddr()));
+			s -> {
+				var level = s.resourceInBucket.resourceAddr().isNativeToken() ? PermissionLevel.SYSTEM : PermissionLevel.USER;
+				return new Authorization(
+					level,
+					(r, c) -> {
+						var tokenDef = (TokenResource) r.loadAddr(null, s.resourceInBucket.resourceAddr())
+							.orElseThrow(() -> new AuthorizationException("Invalid token address: " + s.resourceInBucket.resourceAddr()));
 
-				tokenDef.verifyMintAuthorization(c.key());
+						tokenDef.verifyMintAuthorization(c.key());
+					}
+				);
 			},
 			(s, r) -> {
 				if (s.resourceInBucket.epochUnlocked().isPresent()) {
@@ -213,8 +218,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		// Burn
 		os.createEndProcedure(new EndProcedure<>(
 			RemainderTokens.class,
-			s -> PermissionLevel.USER,
-			(s, r, k) -> { },
+			s -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, r) -> {
 				var p = r.loadAddr(null, s.tokenAddr);
 				if (p.isEmpty()) {

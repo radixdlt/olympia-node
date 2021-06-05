@@ -183,8 +183,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		// Deallocate Stake Holding Bucket
 		os.createEndProcedure(new EndProcedure<>(
 			StakeOwnershipHoldingBucket.class,
-			s -> PermissionLevel.USER,
-			(s, r, k) -> { },
+			s -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, r) -> s.destroy()
 		));
 	}

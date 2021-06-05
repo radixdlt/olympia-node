@@ -23,19 +23,16 @@ import java.util.function.Function;
 
 public class EndProcedure<S extends ReducerState> implements MethodProcedure {
 	private final Class<S> reducerStateClass;
-	private final Function<S, PermissionLevel> permissionLevel;
-	private final EndAuthorization<S> endAuthorization;
+	private final Function<S, Authorization> authorization;
 	private final EndReducer<S> endReducer;
 
 	public EndProcedure(
 		Class<S> reducerStateClass,
-		Function<S, PermissionLevel> permissionLevel,
-		EndAuthorization<S> endAuthorization,
+		Function<S, Authorization> authorization,
 		EndReducer<S> endReducer
 	) {
 		this.reducerStateClass = reducerStateClass;
-		this.permissionLevel = permissionLevel;
-		this.endAuthorization = endAuthorization;
+		this.authorization = authorization;
 		this.endReducer = endReducer;
 	}
 
@@ -45,12 +42,12 @@ public class EndProcedure<S extends ReducerState> implements MethodProcedure {
 
 	@Override
 	public PermissionLevel permissionLevel(Object o) {
-		return permissionLevel.apply((S) o);
+		return authorization.apply((S) o).permissionLevel();
 	}
 
 	@Override
 	public void verifyAuthorization(Object o, ReadableAddrs readableAddrs, ExecutionContext context) throws AuthorizationException {
-		endAuthorization.verify((S) o, readableAddrs, context);
+		authorization.apply((S) o).authorizer().verify(readableAddrs, context);
 	}
 
 	@Override
