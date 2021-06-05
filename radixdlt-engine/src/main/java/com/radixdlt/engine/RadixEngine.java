@@ -257,12 +257,14 @@ public final class RadixEngine<M> {
 	public void replaceConstraintMachine(
 		ConstraintMachine constraintMachine,
 		ActionConstructors actionToConstructorMap,
-		BatchVerifier<M> batchVerifier
+		BatchVerifier<M> batchVerifier,
+		REParser parser
 	) {
 		synchronized (stateUpdateEngineLock) {
 			this.constraintMachine = constraintMachine;
 			this.actionConstructors = actionToConstructorMap;
 			this.batchVerifier = batchVerifier;
+			this.parser = parser;
 		}
 	}
 
