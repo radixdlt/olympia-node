@@ -128,7 +128,7 @@ public class RadixEngineStateComputerTest {
 
 				install(MempoolConfig.asModule(10, 10));
 				install(new BetanetForksModule());
-				install(new RadixEngineForksLatestOnlyModule(View.of(10)));
+				install(new RadixEngineForksLatestOnlyModule(View.of(10), false));
 				install(RadixEngineConfig.asModule(1, 100, 50));
 
 				// HACK

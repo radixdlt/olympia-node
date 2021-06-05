@@ -305,7 +305,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 					forkConfig.getConstraintMachine(),
 					forkConfig.getActionConstructors(),
 					forkConfig.getBatchVerifier(),
-					forkConfig.getParser()
+					forkConfig.getParser(),
+					forkConfig.getPostProcessedVerifier()
 				);
 				this.epochCeilingView = forkConfig.getEpochCeilingView();
 			}

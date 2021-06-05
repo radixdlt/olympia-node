@@ -133,7 +133,7 @@ public class RecoveryTest {
 			new MockedGenesisModule(),
 			new CryptoModule(),
 			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(100L)),
+			new RadixEngineForksLatestOnlyModule(View.of(100L), false),
 			new RadixEngineModule(),
 			new AbstractModule() {
 				@Override
@@ -172,7 +172,7 @@ public class RecoveryTest {
 
 		return Guice.createInjector(
 			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(epochCeilingView)),
+			new RadixEngineForksLatestOnlyModule(View.of(epochCeilingView), false),
 			MempoolConfig.asModule(10, 10),
 			RadixEngineConfig.asModule(1, Integer.MAX_VALUE, 50),
 			new AbstractModule() {

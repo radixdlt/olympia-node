@@ -28,7 +28,7 @@ import com.radixdlt.atommodel.system.state.ValidatorEpochData;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.engine.PostParsedChecker;
+import com.radixdlt.engine.PostProcessedVerifier;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
@@ -54,7 +54,6 @@ public class RadixEngineModule extends AbstractModule {
 	protected void configure() {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<Pair<String, StateReducer<?>>>() { });
-		Multibinder.newSetBinder(binder(), PostParsedChecker.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<SubstateCacheRegister<?>>() { });
 	}
 
@@ -116,12 +115,13 @@ public class RadixEngineModule extends AbstractModule {
 	}
 
 	@Provides
-	PostParsedChecker checker(Set<PostParsedChecker> checkers) {
-		return (permissionLevel, reTxn) -> {
-			for (var checker : checkers) {
-				checker.check(permissionLevel, reTxn);
-			}
-		};
+	PostProcessedVerifier checker(
+		CommittedReader committedReader, // TODO: This is a hack, remove
+		TreeMap<Long, ForkConfig> epochToForkConfig
+	) {
+		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
+		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
+		return epochToForkConfig.floorEntry(epoch).getValue().getPostProcessedVerifier();
 	}
 
 	@Provides
@@ -131,7 +131,7 @@ public class RadixEngineModule extends AbstractModule {
 		ConstraintMachine constraintMachine,
 		ActionConstructors actionConstructors,
 		EngineStore<LedgerAndBFTProof> engineStore,
-		PostParsedChecker checker,
+		PostProcessedVerifier checker,
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
 		Set<StateReducer<?>> stateReducers,
 		Set<Pair<String, StateReducer<?>>> namedStateReducers,

@@ -120,7 +120,7 @@ public class StakingUnstakingValidatorsTest {
 			.collect(ImmutableList.toImmutableList());
 		this.radixEngineConfiguration = Modules.combine(
 			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(100)),
+			new RadixEngineForksLatestOnlyModule(View.of(100), false),
 			RadixEngineConfig.asModule(1, 10, 50)
 		);
 	}

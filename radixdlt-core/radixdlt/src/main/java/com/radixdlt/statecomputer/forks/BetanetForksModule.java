@@ -76,6 +76,7 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.EpochProofVerifierV1;
 import com.radixdlt.statecomputer.EpochProofVerifierV2;
+import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
 
 import java.util.Set;
 
@@ -116,7 +117,15 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
 			.build();
 
-		return new ForkConfig("betanet1", parser, betanet1, actionConstructors, new EpochProofVerifierV1(), View.of(100000L));
+		return new ForkConfig(
+			"betanet1",
+			parser,
+			betanet1,
+			actionConstructors,
+			new EpochProofVerifierV1(),
+			new TokenFeeChecker(),
+			View.of(100000L)
+		);
 	}
 
 	@ProvidesIntoMap
@@ -153,7 +162,15 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
 			.build();
 
-		return new ForkConfig("betanet2", parser, betanet2, actionConstructors, new EpochProofVerifierV1(), View.of(10000L));
+		return new ForkConfig(
+			"betanet2",
+			parser,
+			betanet2,
+			actionConstructors,
+			new EpochProofVerifierV1(),
+			new TokenFeeChecker(),
+			View.of(10000L)
+		);
 	}
 
 	@ProvidesIntoMap
@@ -191,6 +208,14 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
 			.build();
 
-		return new ForkConfig("betanet3", parser, betanet3, actionConstructors, new EpochProofVerifierV2(), View.of(10000L));
+		return new ForkConfig(
+			"betanet3",
+			parser,
+			betanet3,
+			actionConstructors,
+			new EpochProofVerifierV2(),
+			new TokenFeeChecker(),
+			View.of(10000L)
+		);
 	}
 }

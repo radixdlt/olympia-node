@@ -67,6 +67,7 @@ public class ForkOverwritesFromPropertiesModule extends AbstractModule {
 					c.getConstraintMachine(),
 					c.getActionConstructors(),
 					c.getBatchVerifier(),
+					c.getPostProcessedVerifier(),
 					View.of(view)
 				);
 				overwrites.put(c.getName(), overwrite);

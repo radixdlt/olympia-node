@@ -49,7 +49,7 @@ public class RandomValidatorsTest {
 		.addRadixEngineConfigModules(
 			RadixEngineConfig.asModule(2, 50, 5),
 			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(10))
+			new RadixEngineForksLatestOnlyModule(View.of(10), false)
 		)
 		.ledgerAndRadixEngineWithEpochHighView()
 		.addTestModules(

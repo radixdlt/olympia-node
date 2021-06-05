@@ -76,7 +76,7 @@ public class MutableTokenTest {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
 			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(100)),
+			new RadixEngineForksLatestOnlyModule(View.of(100), false),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),

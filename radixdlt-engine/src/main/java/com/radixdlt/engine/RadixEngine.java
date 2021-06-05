@@ -148,7 +148,6 @@ public final class RadixEngine<M> {
 	}
 
 	private final EngineStore<M> engineStore;
-	private final PostParsedChecker checker;
 	private final Object stateUpdateEngineLock = new Object();
 	private final Map<Pair<Class<?>, String>, ApplicationStateReducer<?, M>> stateComputers = new HashMap<>();
 	private final Map<Class<?>, SubstateCache<?>> substateCache = new HashMap<>();
@@ -158,6 +157,7 @@ public final class RadixEngine<M> {
 	private BatchVerifier<M> batchVerifier;
 	private ActionConstructors actionConstructors;
 	private ConstraintMachine constraintMachine;
+	private PostProcessedVerifier postProcessedVerifier;
 
 	public RadixEngine(
 		REParser parser,
@@ -173,14 +173,14 @@ public final class RadixEngine<M> {
 		ActionConstructors actionConstructors,
 		ConstraintMachine constraintMachine,
 		EngineStore<M> engineStore,
-		PostParsedChecker checker,
+		PostProcessedVerifier postProcessedVerifier,
 		BatchVerifier<M> batchVerifier
 	) {
 		this.parser = Objects.requireNonNull(parser);
 		this.actionConstructors = Objects.requireNonNull(actionConstructors);
 		this.constraintMachine = Objects.requireNonNull(constraintMachine);
 		this.engineStore = Objects.requireNonNull(engineStore);
-		this.checker = checker;
+		this.postProcessedVerifier = postProcessedVerifier;
 		this.batchVerifier = batchVerifier;
 	}
 
@@ -258,13 +258,15 @@ public final class RadixEngine<M> {
 		ConstraintMachine constraintMachine,
 		ActionConstructors actionToConstructorMap,
 		BatchVerifier<M> batchVerifier,
-		REParser parser
+		REParser parser,
+		PostProcessedVerifier postProcessedVerifier
 	) {
 		synchronized (stateUpdateEngineLock) {
 			this.constraintMachine = constraintMachine;
 			this.actionConstructors = actionToConstructorMap;
 			this.batchVerifier = batchVerifier;
 			this.parser = parser;
+			this.postProcessedVerifier = postProcessedVerifier;
 		}
 	}
 
@@ -281,7 +283,7 @@ public final class RadixEngine<M> {
 			ActionConstructors actionToConstructorMap,
 			ConstraintMachine constraintMachine,
 			EngineStore<M> parentStore,
-			PostParsedChecker checker,
+			PostProcessedVerifier checker,
 			Map<Pair<Class<?>, String>, ApplicationStateReducer<?, M>> stateComputers,
 			Map<Class<?>, SubstateCache<?>> substateCache
 		) {
@@ -362,7 +364,7 @@ public final class RadixEngine<M> {
 				this.actionConstructors,
 				this.constraintMachine,
 				this.engineStore,
-				this.checker,
+				this.postProcessedVerifier,
 				branchedStateComputers,
 				branchedCache
 			);
@@ -386,8 +388,8 @@ public final class RadixEngine<M> {
 		);
 		var processedTxn = new REProcessedTxn(parsedTxn, stateUpdates);
 
-		if (checker != null) {
-			checker.check(permissionLevel, processedTxn);
+		if (postProcessedVerifier != null) {
+			postProcessedVerifier.check(permissionLevel, processedTxn);
 		}
 
 		return processedTxn;

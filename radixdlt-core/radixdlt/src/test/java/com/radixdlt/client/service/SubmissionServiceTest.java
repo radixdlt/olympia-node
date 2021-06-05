@@ -132,7 +132,7 @@ public class SubmissionServiceTest {
 			@Override
 			public void configure() {
 				install(new BetanetForksModule());
-				install(new RadixEngineForksLatestOnlyModule(View.of(10)));
+				install(new RadixEngineForksLatestOnlyModule(View.of(10), false));
 				install(RadixEngineConfig.asModule(1, 100, 50));
 				install(MempoolConfig.asModule(10, 10));
 

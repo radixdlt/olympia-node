@@ -33,35 +33,55 @@ import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.sync.SyncConfig;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+@RunWith(Parameterized.class)
 public class SanityTest {
-	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(4)
-		.networkModules(
-			NetworkOrdering.inOrder(),
-			NetworkLatencies.fixed()
-		)
-		.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
-		.addRadixEngineConfigModules(
-			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(10L))
-		)
-		.addNodeModule(MempoolConfig.asModule(1000, 10))
-		.addTestModules(
-			ConsensusMonitors.safety(),
-			ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-			ConsensusMonitors.noTimeouts(),
-			ConsensusMonitors.directParents(),
-			LedgerMonitors.consensusToLedger(),
-			LedgerMonitors.ordered(),
-			RadixEngineMonitors.noInvalidProposedCommands(),
-			ApplicationMonitors.mempoolCommitted()
-		)
-		.addMempoolSubmissionsSteadyState(new RadixEngineUniqueGenerator());
+	@Parameterized.Parameters
+	public static Collection<Object[]> fees() {
+		return List.of(new Object[][] {
+			{true}, {false},
+		});
+	}
+
+	private final Builder bftTestBuilder;
+
+	public SanityTest(boolean fees) {
+		bftTestBuilder = SimulationTest.builder()
+			.numNodes(4)
+			.networkModules(
+				NetworkOrdering.inOrder(),
+				NetworkLatencies.fixed()
+			)
+			.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
+			.addRadixEngineConfigModules(
+				new BetanetForksModule(),
+				new RadixEngineForksLatestOnlyModule(View.of(10L), fees)
+			)
+			.addNodeModule(MempoolConfig.asModule(1000, 10))
+			.addTestModules(
+				ConsensusMonitors.safety(),
+				ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+				ConsensusMonitors.noTimeouts(),
+				ConsensusMonitors.directParents(),
+				LedgerMonitors.consensusToLedger(),
+				LedgerMonitors.ordered(),
+				RadixEngineMonitors.noInvalidProposedCommands()
+			)
+			.addMempoolSubmissionsSteadyState(new RadixEngineUniqueGenerator());
+
+		if (!fees) {
+			bftTestBuilder.addTestModules(ApplicationMonitors.mempoolCommitted());
+		}
+	}
+
 
 	@Test
 	public void sanity_tests_should_pass() {

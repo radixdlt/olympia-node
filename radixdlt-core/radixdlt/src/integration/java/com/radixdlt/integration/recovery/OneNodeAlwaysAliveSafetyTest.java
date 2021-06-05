@@ -142,7 +142,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 		Guice.createInjector(
 			new MockedGenesisModule(),
 			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(10)),
+			new RadixEngineForksLatestOnlyModule(View.of(10), false),
 			new RadixEngineModule(),
 			RadixEngineConfig.asModule(1, 10, 50),
 			new CryptoModule(),
@@ -205,7 +205,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
 			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(88)),
+			new RadixEngineForksLatestOnlyModule(View.of(88), false),
 			RadixEngineConfig.asModule(1, 10, 50),
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {

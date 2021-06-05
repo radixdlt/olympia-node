@@ -22,6 +22,7 @@ import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.BatchVerifier;
+import com.radixdlt.engine.PostProcessedVerifier;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
@@ -34,6 +35,7 @@ public final class ForkConfig {
 	private final ConstraintMachine constraintMachine;
 	private final ActionConstructors actionConstructors;
 	private final BatchVerifier<LedgerAndBFTProof> batchVerifier;
+	private final PostProcessedVerifier postProcessedVerifier;
 	private final View epochCeilingView;
 
 	public ForkConfig(
@@ -42,6 +44,7 @@ public final class ForkConfig {
 		ConstraintMachine constraintMachine,
 		ActionConstructors actionConstructors,
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
+		PostProcessedVerifier postProcessedVerifier,
 		View epochCeilingView
 	) {
 		this.name = name;
@@ -49,6 +52,7 @@ public final class ForkConfig {
 		this.constraintMachine = constraintMachine;
 		this.actionConstructors = actionConstructors;
 		this.batchVerifier = batchVerifier;
+		this.postProcessedVerifier = postProcessedVerifier;
 		this.epochCeilingView = epochCeilingView;
 	}
 
@@ -70,6 +74,10 @@ public final class ForkConfig {
 
 	public BatchVerifier<LedgerAndBFTProof> getBatchVerifier() {
 		return batchVerifier;
+	}
+
+	public PostProcessedVerifier getPostProcessedVerifier() {
+		return postProcessedVerifier;
 	}
 
 	public View getEpochCeilingView() {
