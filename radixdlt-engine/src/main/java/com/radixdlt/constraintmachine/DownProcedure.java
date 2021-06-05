@@ -44,13 +44,8 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 	}
 
 	@Override
-	public PermissionLevel permissionLevel(Object o) {
-		return authorization.apply((SubstateWithArg<D>) o).permissionLevel();
-	}
-
-	@Override
-	public void verifyAuthorization(Object o, ReadableAddrs readableAddrs, ExecutionContext context) throws AuthorizationException {
-		authorization.apply((SubstateWithArg<D>) o).authorizer().verify(readableAddrs, context);
+	public Authorization authorization(Object o) {
+		return authorization.apply((SubstateWithArg<D>) o);
 	}
 
 	@Override

@@ -44,13 +44,8 @@ public final class UpProcedure<S extends ReducerState, U extends Particle> imple
 	}
 
 	@Override
-	public PermissionLevel permissionLevel(Object o) {
-		return authorization.apply((U) o).permissionLevel();
-	}
-
-	@Override
-	public void verifyAuthorization(Object o, ReadableAddrs readableAddrs, ExecutionContext context) throws AuthorizationException {
-		authorization.apply((U) o).authorizer().verify(readableAddrs, context);
+	public Authorization authorization(Object o) {
+		return authorization.apply((U) o);
 	}
 
 	@Override

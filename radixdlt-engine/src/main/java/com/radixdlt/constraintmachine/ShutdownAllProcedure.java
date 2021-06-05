@@ -27,20 +27,17 @@ public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> im
 	private final Class<D> downClass;
 	private final Class<S> reducerStateClass;
 	private final ShutdownAllReducer<D, S> downReducer;
-	private final Supplier<PermissionLevel> permissionLevel;
-	private final ShutdownAllAuthorization authorization;
+	private final Supplier<Authorization> authorization;
 
 	public ShutdownAllProcedure(
 		Class<D> downClass, Class<S> reducerStateClass,
-		Supplier<PermissionLevel> permissionLevel,
-		ShutdownAllAuthorization shutdownAllAuthorization,
+		Supplier<Authorization> authorization,
 		ShutdownAllReducer<D, S> downReducer
 	) {
 		this.downClass = downClass;
 		this.reducerStateClass = reducerStateClass;
 		this.downReducer = downReducer;
-		this.permissionLevel = permissionLevel;
-		this.authorization = shutdownAllAuthorization;
+		this.authorization = authorization;
 	}
 
 	public ProcedureKey getKey() {
@@ -48,13 +45,8 @@ public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> im
 	}
 
 	@Override
-	public PermissionLevel permissionLevel(Object o) {
-		return permissionLevel.get();
-	}
-
-	@Override
-	public void verifyAuthorization(Object o, ReadableAddrs readableAddrs, ExecutionContext context) throws AuthorizationException {
-		authorization.verify(readableAddrs, context);
+	public Authorization authorization(Object o) {
+		return authorization.get();
 	}
 
 	@Override

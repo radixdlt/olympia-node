@@ -87,11 +87,13 @@ public final class CMAtomOS {
 			os.createDownProcedure(new DownProcedure<>(
 				REAddrParticle.class, VoidReducerState.class,
 				d -> {
-					var name = new String(d.getArg().orElseThrow());
-					var permissionLevel = systemNames.contains(name)
-						|| d.getSubstate().getAddr().isNativeToken()
-						|| d.getSubstate().getAddr().isSystem()
-						? PermissionLevel.SYSTEM : PermissionLevel.USER;
+					final PermissionLevel permissionLevel;
+					if (d.getSubstate().getAddr().isNativeToken() || d.getSubstate().getAddr().isSystem()) {
+						permissionLevel = PermissionLevel.SYSTEM;
+					} else {
+						var name = new String(d.getArg().orElseThrow());
+						permissionLevel = systemNames.contains(name) ? PermissionLevel.SYSTEM : PermissionLevel.USER;
+					}
 					return new Authorization(
 						permissionLevel,
 						(r, ctx) -> {

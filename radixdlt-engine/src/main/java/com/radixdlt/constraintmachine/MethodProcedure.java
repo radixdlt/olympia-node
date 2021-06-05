@@ -21,7 +21,6 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.store.ReadableAddrs;
 
 public interface MethodProcedure {
-	PermissionLevel permissionLevel(Object o);
-	void verifyAuthorization(Object o, ReadableAddrs readableAddrs, ExecutionContext context) throws AuthorizationException;
+	Authorization authorization(Object o);
 	ReducerResult call(Object o, ReducerState reducerState, ReadableAddrs readableAddrs) throws ProcedureException;
 }

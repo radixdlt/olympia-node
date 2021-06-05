@@ -496,8 +496,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
 			ExittingStake.class, UpdatingEpoch.class,
-			() -> PermissionLevel.SUPER_USER,
-			(r, c) -> { },
+			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(i, s, r) -> {
 				var exittingStake = new ProcessExittingStake(s);
 				return ReducerResult.incomplete(exittingStake.process(i));
@@ -516,15 +515,13 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
 			ValidatorEpochData.class, RewardingValidators.class,
-			() -> PermissionLevel.SUPER_USER,
-			(r, c) -> { },
+			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(i, s, r) -> ReducerResult.incomplete(s.process(i))
 		));
 
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
 			PreparedUnstakeOwnership.class, PreparingUnstake.class,
-			() -> PermissionLevel.SUPER_USER,
-			(r, c) -> { },
+			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(i, s, r) -> ReducerResult.incomplete(s.unstakes(i))
 		));
 		os.createDownProcedure(new DownProcedure<>(
@@ -539,8 +536,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		));
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
 			PreparedStake.class, PreparingStake.class,
-			() -> PermissionLevel.SUPER_USER,
-			(r, c) -> { },
+			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(i, s, r) -> ReducerResult.incomplete(s.prepareStakes(i))
 		));
 		os.createUpProcedure(new UpProcedure<>(

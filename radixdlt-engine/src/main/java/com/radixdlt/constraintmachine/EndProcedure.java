@@ -41,13 +41,8 @@ public class EndProcedure<S extends ReducerState> implements MethodProcedure {
 	}
 
 	@Override
-	public PermissionLevel permissionLevel(Object o) {
-		return authorization.apply((S) o).permissionLevel();
-	}
-
-	@Override
-	public void verifyAuthorization(Object o, ReadableAddrs readableAddrs, ExecutionContext context) throws AuthorizationException {
-		authorization.apply((S) o).authorizer().verify(readableAddrs, context);
+	public Authorization authorization(Object o) {
+		return authorization.apply((S) o);
 	}
 
 	@Override

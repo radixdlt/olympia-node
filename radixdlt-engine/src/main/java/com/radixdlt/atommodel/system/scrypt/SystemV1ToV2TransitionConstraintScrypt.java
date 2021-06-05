@@ -77,8 +77,7 @@ public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt 
 		// Epoch update
 		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
 			ExittingStake.class, TransitionToV2.class,
-			() -> PermissionLevel.SUPER_USER,
-			(r, c) -> { },
+			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(i, s, r) -> {
 				var rewardingValidators = new SystemConstraintScryptV2.ProcessExittingStake(
 					new SystemConstraintScryptV2.UpdatingEpoch(s.sys)

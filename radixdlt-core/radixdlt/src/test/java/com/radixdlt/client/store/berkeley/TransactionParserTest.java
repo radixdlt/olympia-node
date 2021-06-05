@@ -127,7 +127,7 @@ public class TransactionParserTest {
 		).buildWithoutSignature();
 		var validatorBuilder = this.engine.construct(
 			List.of(new RegisterValidator(this.validatorKeyPair.getPublicKey()), new CreateSystem()));
-		var txn1 = validatorBuilder.signAndBuild(this.validatorKeyPair::sign);
+		var txn1 = validatorBuilder.buildWithoutSignature();
 
 		engine.execute(List.of(txn0, txn1), null, PermissionLevel.SYSTEM);
 	}
