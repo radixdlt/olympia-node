@@ -375,8 +375,8 @@ public final class RadixEngine<M> {
 
 	private REProcessedTxn verify(CMStore.Transaction dbTransaction, Txn txn, PermissionLevel permissionLevel)
 		throws TxnParseException, ConstraintMachineException {
-		var parsedTxn = parser.parse(txn);
 
+		var parsedTxn = parser.parse(txn);
 		var stateUpdates = constraintMachine.verify(
 			dbTransaction,
 			engineStore,
@@ -384,7 +384,6 @@ public final class RadixEngine<M> {
 			parsedTxn.getSignedBy(),
 			permissionLevel
 		);
-
 		var processedTxn = new REProcessedTxn(parsedTxn, stateUpdates);
 
 		if (checker != null) {

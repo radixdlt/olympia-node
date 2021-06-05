@@ -116,7 +116,6 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 				if (nextRemainder.get() instanceof TokensConstraintScryptV1.RemainderTokens) {
 					TokensConstraintScryptV1.RemainderTokens remainderTokens = (TokensConstraintScryptV1.RemainderTokens) nextRemainder.get();
 					var stakeRemainder = new StakingConstraintScryptV2.RemainderStake(
-						remainderTokens.initialParticle(),
 						remainderTokens.amount().getLow(),
 						d.getSubstate().getOwner(),
 						d.getSubstate().getDelegateKey()

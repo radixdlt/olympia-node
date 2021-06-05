@@ -30,7 +30,6 @@ import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
@@ -114,18 +113,12 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 
 	// TODO: Remove so that up particles cannot be created first
 	public static class UnaccountedTokens implements ReducerState {
-		private final Particle initialParticle;
 		private final DeprecatedResourceInBucket resourceInBucket;
 		private final UInt384 amount;
 
-		public UnaccountedTokens(Particle initialParticle, DeprecatedResourceInBucket resourceInBucket, UInt384 amount) {
-			this.initialParticle = initialParticle;
+		public UnaccountedTokens(DeprecatedResourceInBucket resourceInBucket, UInt384 amount) {
 			this.resourceInBucket = resourceInBucket;
 			this.amount = amount;
-		}
-
-		public Particle initialParticle() {
-			return initialParticle;
 		}
 
 		public DeprecatedResourceInBucket resourceInBucket() {
@@ -135,9 +128,9 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		public Optional<ReducerState> subtract(UInt384 amountAccounted) {
 			var compare = amountAccounted.compareTo(amount);
 			if (compare > 0) {
-				return Optional.of(new RemainderTokens(initialParticle, resourceInBucket.resourceAddr(), amountAccounted.subtract(amount)));
+				return Optional.of(new RemainderTokens(resourceInBucket.resourceAddr(), amountAccounted.subtract(amount)));
 			} else if (compare < 0) {
-				return Optional.of(new UnaccountedTokens(initialParticle, resourceInBucket, amount.subtract(amountAccounted)));
+				return Optional.of(new UnaccountedTokens(resourceInBucket, amount.subtract(amountAccounted)));
 			} else {
 				return Optional.empty();
 			}
@@ -147,14 +140,11 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 	public static class RemainderTokens implements ReducerState {
 		private final REAddr tokenAddr;
 		private final UInt384 amount;
-		private final Particle initialParticle;
 
 		public RemainderTokens(
-			Particle initialParticle, // TODO: Remove, Hack for now
 			REAddr tokenAddr,
 			UInt384 amount
 		) {
-			this.initialParticle = initialParticle;
 			this.tokenAddr = tokenAddr;
 			this.amount = amount;
 		}
@@ -163,16 +153,12 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			return amount;
 		}
 
-		public Particle initialParticle() {
-			return initialParticle;
-		}
-
 		private Optional<ReducerState> subtract(DeprecatedResourceInBucket resourceInBucket, UInt384 amountToSubtract) {
 			var compare = amountToSubtract.compareTo(amount);
 			if (compare > 0) {
-				return Optional.of(new UnaccountedTokens(initialParticle, resourceInBucket, amountToSubtract.subtract(amount)));
+				return Optional.of(new UnaccountedTokens(resourceInBucket, amountToSubtract.subtract(amount)));
 			} else if (compare < 0) {
-				return Optional.of(new RemainderTokens(initialParticle, tokenAddr, amount.subtract(amountToSubtract)));
+				return Optional.of(new RemainderTokens(tokenAddr, amount.subtract(amountToSubtract)));
 			} else {
 				return Optional.empty();
 			}
@@ -240,7 +226,6 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, r) -> {
 				var state = new UnaccountedTokens(
-					u,
 					u.deprecatedResourceInBucket(),
 					UInt384.from(u.getAmount())
 				);
@@ -253,7 +238,6 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> {
 				var state = new RemainderTokens(
-					d.getSubstate(),
 					d.getSubstate().getResourceAddr(),
 					UInt384.from(d.getSubstate().getAmount())
 				);

@@ -59,20 +59,14 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 	}
 
 	public static class RemainderStake implements ReducerState {
-		private final Particle initialParticle;
 		private final UInt256 amount;
 		private final REAddr owner;
 		private final ECPublicKey delegate;
 
-		RemainderStake(Particle initialParticle, UInt256 amount, REAddr owner, ECPublicKey delegate) {
-			this.initialParticle = initialParticle;
+		RemainderStake(UInt256 amount, REAddr owner, ECPublicKey delegate) {
 			this.amount = amount;
 			this.owner = owner;
 			this.delegate = delegate;
-		}
-
-		public Particle initialParticle() {
-			return initialParticle;
 		}
 
 		public UInt256 amount() {
@@ -101,15 +95,11 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 			return amount;
 		}
 
-		public PreparedStake initialParticle() {
-			return initialParticle;
-		}
-
 		public Optional<ReducerState> subtract(UInt384 amountAccounted) {
 			var compare = amountAccounted.compareTo(amount);
 			if (compare > 0) {
 				return Optional.of(new TokensConstraintScryptV1.RemainderTokens(
-					initialParticle, REAddr.ofNativeToken(), amountAccounted.subtract(amount))
+					REAddr.ofNativeToken(), amountAccounted.subtract(amount))
 				);
 			} else if (compare < 0) {
 				return Optional.of(new UnaccountedStake(initialParticle, amount.subtract(amountAccounted)));
@@ -190,7 +180,6 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 				if (nextRemainder.get() instanceof TokensConstraintScryptV1.RemainderTokens) {
 					TokensConstraintScryptV1.RemainderTokens remainderTokens = (TokensConstraintScryptV1.RemainderTokens) nextRemainder.get();
 					var stakeRemainder = new RemainderStake(
-						remainderTokens.initialParticle(),
 						remainderTokens.amount().getLow(),
 						d.getSubstate().getOwner(),
 						d.getSubstate().getDelegateKey()
