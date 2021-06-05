@@ -18,14 +18,7 @@
 
 package com.radixdlt.atommodel.tokens.scrypt;
 
-import com.radixdlt.atom.actions.BurnToken;
-import com.radixdlt.atom.actions.CreateFixedToken;
-import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.tokens.state.ResourceInBucket;
+import com.radixdlt.atommodel.tokens.state.DeprecatedResourceInBucket;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
@@ -95,14 +88,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 				}
 
 				if (u.isMutable()) {
-					var action = new CreateMutableToken(
-						new String(s.getArg()),
-						u.getName(),
-						u.getDescription(),
-						u.getIconUrl(),
-						u.getUrl()
-					);
-					return ReducerResult.complete(action);
+					return ReducerResult.complete();
 				}
 
 				return ReducerResult.incomplete(new NeedFixedTokenSupply(s.getArg(), u));
@@ -122,18 +108,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 					throw new ProcedureException("Initial supply doesn't match.");
 				}
 
-				var action = new CreateFixedToken(
-					u.getResourceAddr(),
-					u.getHoldingAddr(),
-					new String(s.arg),
-					s.tokenResource.getName(),
-					s.tokenResource.getDescription(),
-					s.tokenResource.getIconUrl(),
-					s.tokenResource.getUrl(),
-					s.tokenResource.getSupply().orElseThrow()
-				);
-
-				return ReducerResult.complete(action);
+				return ReducerResult.complete();
 			}
 		));
 	}
@@ -141,10 +116,10 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 	// TODO: Remove so that up particles cannot be created first
 	public static class UnaccountedTokens implements ReducerState {
 		private final Particle initialParticle;
-		private final ResourceInBucket resourceInBucket;
+		private final DeprecatedResourceInBucket resourceInBucket;
 		private final UInt384 amount;
 
-		public UnaccountedTokens(Particle initialParticle, ResourceInBucket resourceInBucket, UInt384 amount) {
+		public UnaccountedTokens(Particle initialParticle, DeprecatedResourceInBucket resourceInBucket, UInt384 amount) {
 			this.initialParticle = initialParticle;
 			this.resourceInBucket = resourceInBucket;
 			this.amount = amount;
@@ -154,7 +129,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			return initialParticle;
 		}
 
-		public ResourceInBucket resourceInBucket() {
+		public DeprecatedResourceInBucket resourceInBucket() {
 			return resourceInBucket;
 		}
 
@@ -193,7 +168,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			return initialParticle;
 		}
 
-		private Optional<ReducerState> subtract(ResourceInBucket resourceInBucket, UInt384 amountToSubtract) {
+		private Optional<ReducerState> subtract(DeprecatedResourceInBucket resourceInBucket, UInt384 amountToSubtract) {
 			var compare = amountToSubtract.compareTo(amount);
 			if (compare > 0) {
 				return Optional.of(new UnaccountedTokens(initialParticle, resourceInBucket, amountToSubtract.subtract(amount)));
@@ -233,9 +208,6 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 				if (!tokenDef.isMutable()) {
 					throw new ProcedureException("Can only mint mutable tokens.");
 				}
-
-				var t = (TokensInAccount) s.initialParticle;
-				return Optional.of(new MintToken(s.resourceInBucket.resourceAddr(), t.getHoldingAddr(), s.amount.getLow()));
 			}
 		));
 
@@ -257,10 +229,6 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 				if (!tokenDef.isMutable()) {
 					throw new ProcedureException("Can only burn mutable tokens.");
 				}
-
-				// FIXME: These aren't 100% correct
-				var t = (TokensInAccount) s.initialParticle;
-				return Optional.of(new BurnToken(s.tokenAddr, t.getHoldingAddr(), s.amount.getLow()));
 			}
 		));
 
@@ -271,7 +239,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			(s, u, r) -> {
 				var state = new UnaccountedTokens(
 					u,
-					u.resourceInBucket(),
+					u.deprecatedResourceInBucket(),
 					UInt384.from(u.getAmount())
 				);
 				return ReducerResult.incomplete(state);
@@ -301,21 +269,9 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 					throw new ProcedureException("Not the same address.");
 				}
 				var amt = UInt384.from(u.getAmount());
-				var nextRemainder = s.subtract(u.resourceInBucket(), amt);
+				var nextRemainder = s.subtract(u.deprecatedResourceInBucket(), amt);
 				if (nextRemainder.isEmpty()) {
-					// FIXME: This isn't 100% correct
-					var p = s.initialParticle;
-					if (p instanceof TokensInAccount) {
-						var t = (TokensInAccount) p;
-						var action = new TransferToken(t.getResourceAddr(), u.getHoldingAddr(), t.getHoldingAddr(), t.getAmount());
-						return ReducerResult.complete(action);
-					} else if (p instanceof PreparedStake) {
-						var t = (PreparedStake) p;
-						var action = new StakeTokens(t.getOwner(), t.getDelegateKey(), t.getAmount());
-						return ReducerResult.complete(action);
-					} else {
-						throw new IllegalStateException();
-					}
+					return ReducerResult.complete();
 				}
 				return ReducerResult.incomplete(nextRemainder.get());
 			}
@@ -332,19 +288,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 				var amt = UInt384.from(d.getSubstate().getAmount());
 				var nextRemainder = s.subtract(amt);
 				if (nextRemainder.isEmpty()) {
-					// FIXME: This isn't 100% correct
-					var p = s.initialParticle;
-					if (p instanceof TokensInAccount) {
-						var t = (TokensInAccount) p;
-						var action = new TransferToken(t.getResourceAddr(), d.getSubstate().getHoldingAddr(), t.getHoldingAddr(), t.getAmount());
-						return ReducerResult.complete(action);
-					} else if (p instanceof PreparedStake) {
-						var t = (PreparedStake) p;
-						var action = new StakeTokens(t.getOwner(), t.getDelegateKey(), t.getAmount());
-						return ReducerResult.complete(action);
-					} else {
-						throw new IllegalStateException();
-					}
+					return ReducerResult.complete();
 				}
 
 				return ReducerResult.incomplete(nextRemainder.get());

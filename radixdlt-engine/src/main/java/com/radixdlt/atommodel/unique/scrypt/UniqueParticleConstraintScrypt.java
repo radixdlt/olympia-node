@@ -18,7 +18,6 @@
 
 package com.radixdlt.atommodel.unique.scrypt;
 
-import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ParticleDefinition;
@@ -44,7 +43,7 @@ public class UniqueParticleConstraintScrypt implements ConstraintScrypt {
 				if (!u.getREAddr().equals(s.getAddr())) {
 					throw new ProcedureException("Addresses don't match");
 				}
-				return ReducerResult.complete(Unknown.create());
+				return ReducerResult.complete();
 			}
 		));
 	}

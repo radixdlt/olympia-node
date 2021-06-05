@@ -18,9 +18,6 @@
 
 package com.radixdlt.atommodel.tokens.scrypt;
 
-import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.Unknown;
-import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
@@ -45,7 +42,6 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt384;
 
 import java.util.Objects;
-import java.util.Optional;
 
 public class StakingConstraintScryptV3 implements ConstraintScrypt {
 
@@ -74,16 +70,16 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		defineStaking(os);
 	}
 
-	public static class StakeSharesHoldingBucket implements ReducerState {
+	public static class StakeOwnershipHoldingBucket implements ReducerState {
 		private final UInt384 shareAmount;
 		private final REAddr accountAddr;
 		private final ECPublicKey delegate;
 
-		public StakeSharesHoldingBucket(StakeOwnership stakeOwnership) {
+		public StakeOwnershipHoldingBucket(StakeOwnership stakeOwnership) {
 			this(stakeOwnership.getDelegateKey(), stakeOwnership.getOwner(), UInt384.from(stakeOwnership.getAmount()));
 		}
 
-		public StakeSharesHoldingBucket(
+		public StakeOwnershipHoldingBucket(
 			ECPublicKey delegate,
 			REAddr accountAddr,
 			UInt384 amount
@@ -93,7 +89,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 			this.shareAmount = amount;
 		}
 
-		public StakeSharesHoldingBucket withdrawShares(StakeOwnership stakeOwnership) throws ProcedureException {
+		public StakeOwnershipHoldingBucket withdrawOwnership(StakeOwnership stakeOwnership) throws ProcedureException {
 			if (!delegate.equals(stakeOwnership.getDelegateKey())) {
 				throw new ProcedureException("Shares must be from same delegate");
 			}
@@ -105,20 +101,20 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 				throw new NotEnoughResourcesException(stakeOwnership.getAmount(), shareAmount.getLow());
 			}
 
-			return new StakeSharesHoldingBucket(delegate, accountAddr, shareAmount.subtract(withdraw384));
+			return new StakeOwnershipHoldingBucket(delegate, accountAddr, shareAmount.subtract(withdraw384));
 		}
 
-		public StakeSharesHoldingBucket depositShares(StakeOwnership stakeOwnership) throws ProcedureException {
+		public StakeOwnershipHoldingBucket depositOwnership(StakeOwnership stakeOwnership) throws ProcedureException {
 			if (!delegate.equals(stakeOwnership.getDelegateKey())) {
 				throw new ProcedureException("Shares must be from same delegate");
 			}
 			if (!stakeOwnership.getOwner().equals(accountAddr)) {
 				throw new ProcedureException("Shares must be for same account");
 			}
-			return new StakeSharesHoldingBucket(delegate, accountAddr, UInt384.from(stakeOwnership.getAmount()).add(shareAmount));
+			return new StakeOwnershipHoldingBucket(delegate, accountAddr, UInt384.from(stakeOwnership.getAmount()).add(shareAmount));
 		}
 
-		public StakeSharesHoldingBucket unstake(PreparedUnstakeOwnership u) throws ProcedureException {
+		public StakeOwnershipHoldingBucket unstake(PreparedUnstakeOwnership u) throws ProcedureException {
 			if (!Objects.equals(accountAddr, u.getOwner())) {
 				throw new ProcedureException("Must unstake to self");
 			}
@@ -128,7 +124,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 				throw new NotEnoughResourcesException(u.getAmount(), shareAmount.getLow());
 			}
 
-			return new StakeSharesHoldingBucket(
+			return new StakeOwnershipHoldingBucket(
 				delegate,
 				accountAddr,
 				shareAmount.subtract(unstakeAmount)
@@ -156,13 +152,9 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 					);
 				}
 
-				var nextState = s.withdraw(REAddr.ofNativeToken(), u.getAmount());
-				if (s.from() != null) {
-					var actionGuess = new StakeTokens(s.from(), u.getDelegateKey(), u.getAmount());
-					return ReducerResult.incomplete(nextState, actionGuess);
-				}
-
-				return ReducerResult.incomplete(nextState, Unknown.create());
+				var resourceAddr = u.bucket().resourceAddr();
+				var nextState = s.withdraw(resourceAddr, u.getAmount());
+				return ReducerResult.incomplete(nextState);
 			}
 		));
 
@@ -177,11 +169,11 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 					throw new AuthorizationException(e.getMessage());
 				}
 			},
-			(d, s, r) -> ReducerResult.incomplete(new StakeSharesHoldingBucket(d.getSubstate()))
+			(d, s, r) -> ReducerResult.incomplete(new StakeOwnershipHoldingBucket(d.getSubstate()))
 		));
 		// Additional Unstake
 		os.createDownProcedure(new DownProcedure<>(
-			StakeOwnership.class, StakeSharesHoldingBucket.class,
+			StakeOwnership.class, StakeOwnershipHoldingBucket.class,
 			(d, r) -> PermissionLevel.USER,
 			(d, r, k) -> {
 				try {
@@ -190,33 +182,28 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 					throw new AuthorizationException(e.getMessage());
 				}
 			},
-			(d, s, r) -> ReducerResult.incomplete(s.depositShares(d.getSubstate()))
+			(d, s, r) -> ReducerResult.incomplete(s.depositOwnership(d.getSubstate()))
 		));
 		// Change
 		os.createUpProcedure(new UpProcedure<>(
-			StakeSharesHoldingBucket.class, StakeOwnership.class,
+			StakeOwnershipHoldingBucket.class, StakeOwnership.class,
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> { },
-			(s, u, r) -> ReducerResult.incomplete(s.withdrawShares(u))
+			(s, u, r) -> ReducerResult.incomplete(s.withdrawOwnership(u))
 		));
 		os.createUpProcedure(new UpProcedure<>(
-			StakeSharesHoldingBucket.class, PreparedUnstakeOwnership.class,
+			StakeOwnershipHoldingBucket.class, PreparedUnstakeOwnership.class,
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> { },
-			(s, u, r) -> {
-				var actionGuess = new UnstakeOwnership(s.accountAddr, u.getDelegateKey(), u.getAmount());
-				return ReducerResult.incomplete(s.unstake(u), actionGuess);
-			}));
+			(s, u, r) -> ReducerResult.incomplete(s.unstake(u))
+		));
 
 		// Deallocate Stake Holding Bucket
 		os.createEndProcedure(new EndProcedure<>(
-			StakeSharesHoldingBucket.class,
+			StakeOwnershipHoldingBucket.class,
 			(s, r) -> PermissionLevel.USER,
 			(s, r, k) -> { },
-			(s, r) -> {
-				s.destroy();
-				return Optional.empty();
-			}
+			(s, r) -> s.destroy()
 		));
 	}
 }

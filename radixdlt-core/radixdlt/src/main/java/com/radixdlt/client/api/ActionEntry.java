@@ -134,6 +134,10 @@ public class ActionEntry {
 		return new ActionEntry(ActionType.UNKNOWN, null, null, null, null);
 	}
 
+	public String getRri() {
+		return rri;
+	}
+
 	public ActionType getType() {
 		return type;
 	}

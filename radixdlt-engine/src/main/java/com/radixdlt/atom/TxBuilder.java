@@ -21,7 +21,7 @@ package com.radixdlt.atom;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
-import com.radixdlt.atommodel.tokens.Fungible;
+import com.radixdlt.atommodel.tokens.ResourceInBucket;
 import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.Particle;
@@ -258,7 +258,7 @@ public final class TxBuilder {
 		void with(FungibleMapper<U> mapper) throws TxBuilderException;
 	}
 
-	private <T extends Fungible> UInt256 downFungible(
+	private <T extends ResourceInBucket> UInt256 downFungible(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		UInt256 amount,
@@ -278,7 +278,7 @@ public final class TxBuilder {
 		return spent.subtract(amount);
 	}
 
-	public <T extends Fungible> void deallocateFungible(
+	public <T extends ResourceInBucket> void deallocateFungible(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		FungibleMapper<T> remainderMapper,
@@ -308,7 +308,7 @@ public final class TxBuilder {
 		}
 	}
 
-	public <T extends Fungible, U extends Fungible> FungibleReplacer<U> deprecatedSwapFungible(
+	public <T extends ResourceInBucket, U extends ResourceInBucket> FungibleReplacer<U> deprecatedSwapFungible(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		FungibleMapper<T> remainderMapper,
@@ -330,7 +330,7 @@ public final class TxBuilder {
 		};
 	}
 
-	public <T extends Fungible> void downFungible(
+	public <T extends ResourceInBucket> void downFungible(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		UInt256 amount,
@@ -354,7 +354,7 @@ public final class TxBuilder {
 		}
 	}
 
-	public <T extends Fungible, U extends Fungible> FungibleReplacer<U> swapFungible(
+	public <T extends ResourceInBucket, U extends ResourceInBucket> FungibleReplacer<U> swapFungible(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		FungibleMapper<T> remainderMapper,

@@ -21,6 +21,7 @@ package com.radixdlt.atommodel.tokens;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.utils.UInt256;
 
-public interface Fungible extends Particle {
+public interface ResourceInBucket extends Particle {
 	UInt256 getAmount();
+	Bucket bucket();
 }

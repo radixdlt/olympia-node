@@ -18,7 +18,6 @@
 
 package com.radixdlt.atommodel.validators.scrypt;
 
-import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
@@ -84,7 +83,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 						s.prevState.getKey(), u.getKey()
 					));
 				}
-				return ReducerResult.complete(Unknown.create());
+				return ReducerResult.complete();
 			}
 		));
 	}

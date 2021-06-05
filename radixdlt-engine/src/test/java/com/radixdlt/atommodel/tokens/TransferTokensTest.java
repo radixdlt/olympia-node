@@ -18,6 +18,7 @@
 
 package com.radixdlt.atommodel.tokens;
 
+import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.actions.CreateMutableToken;
@@ -29,6 +30,7 @@ import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV1;
 import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV2;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
+import com.radixdlt.atommodel.tokens.state.AccountBucket;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.CMErrorCode;
@@ -45,6 +47,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.math.BigInteger;
 import java.util.Collection;
 import java.util.List;
 
@@ -148,13 +151,20 @@ public class TransferTokensTest {
 		var to = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
 		var transfer = this.engine.construct(new TransferToken(tokenAddr, accountAddr, to, transferAmt))
 			.signAndBuild(key::sign);
-		var parsed = this.engine.execute(List.of(transfer));
+		var processed = this.engine.execute(List.of(transfer));
 
 		// Assert
-		var action = (TransferToken) parsed.get(0).getActions().get(0).getTxAction();
-		assertThat(action.amount()).isEqualTo(transferAmt);
-		assertThat(action.from()).isEqualTo(accountAddr);
-		assertThat(action.to()).isEqualTo(to);
-		assertThat(action.resourceAddr()).isEqualTo(tokenAddr);
+		var accounting = REResourceAccounting.compute(processed.get(0).getGroupedStateUpdates().get(0));
+		assertThat(accounting.bucketAccounting())
+			.hasSize(2)
+			.containsEntry(
+				new AccountBucket(tokenAddr, accountAddr),
+				new BigInteger(-1, transferAmt.toByteArray(), 0, UInt256.BYTES)
+			)
+			.containsEntry(
+				new AccountBucket(tokenAddr, to),
+				new BigInteger(1, transferAmt.toByteArray(), 0, UInt256.BYTES)
+			);
+		assertThat(accounting.resourceAccounting()).isEmpty();
 	}
 }
