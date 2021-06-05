@@ -39,14 +39,14 @@ public final class REInstruction {
 		UP((byte) 1, (txn, i, b) -> {
 			var p = RESerializer.deserialize(b);
 			return Substate.create(p, SubstateId.ofSubstate(txn.getId(), i));
-		}, Spin.NEUTRAL, Spin.UP),
+		}, Spin.UP),
 		VDOWN((byte) 2, (txn, i, b) -> {
 			int pos = b.position();
 			var p = RESerializer.deserialize(b);
 			int length = b.position() - pos;
 			var buf = ByteBuffer.wrap(b.array(), pos, length);
 			return Substate.create(p, SubstateId.ofVirtualSubstate(buf));
-		}, Spin.UP, Spin.DOWN),
+		}, Spin.DOWN),
 		VDOWNARG((byte) 3, (txn, i, b) -> {
 			int pos = b.position();
 			var p = RESerializer.deserialize(b);
@@ -56,44 +56,38 @@ public final class REInstruction {
 			var arg = new byte[Byte.toUnsignedInt(argLength)];
 			b.get(arg);
 			return Pair.of(Substate.create(p, SubstateId.ofVirtualSubstate(buf)), arg);
-		}, Spin.UP, Spin.DOWN),
-		DOWN((byte) 4, (txn, i, b) -> SubstateId.fromBuffer(b), Spin.UP, Spin.DOWN),
+		}, Spin.DOWN),
+		DOWN((byte) 4, (txn, i, b) -> SubstateId.fromBuffer(b), Spin.DOWN),
 		LDOWN((byte) 5, (txn, i, b) -> {
 			var index = b.getInt();
 			if (index < 0 || index >= i) {
 				throw new DeserializeException("Bad local index: " + index);
 			}
 			return SubstateId.ofSubstate(txn.getId(), index);
-		}, Spin.UP, Spin.DOWN),
+		}, Spin.DOWN),
 		DOWNALL((byte) 8, (txn, i, b) -> {
 			var classId = b.get();
 			return RESerializer.byteToClass(classId); // Just to check to make sure classId exists
-		}, Spin.UP, Spin.DOWN),
+		}, Spin.DOWN),
 		MSG((byte) 6, (txn, i, b) -> {
 			var length = Byte.toUnsignedInt(b.get());
 			var bytes = new byte[length];
 			b.get(bytes);
 			return bytes;
-		}, null, null),
+		}, null),
 		SIG((byte) 7, (txn, i, b) -> {
 			return RESerializer.deserializeSignature(b);
-		}, null, null),
-		END((byte) 0, (txn, i, b) -> null, null, null);
+		}, null),
+		END((byte) 0, (txn, i, b) -> null, null);
 
 		private final ReadData readData;
-		private final Spin checkSpin;
 		private final Spin nextSpin;
 		private final byte opCode;
 
-		REOp(byte opCode, ReadData readData, Spin checkSpin, Spin nextSpin) {
+		REOp(byte opCode, ReadData readData, Spin nextSpin) {
 			this.opCode = opCode;
 			this.readData =  readData;
-			this.checkSpin = checkSpin;
 			this.nextSpin = nextSpin;
-		}
-
-		public Spin getCheckSpin() {
-			return checkSpin;
 		}
 
 		public Spin getNextSpin() {
@@ -150,11 +144,7 @@ public final class REInstruction {
 	}
 
 	public boolean isStateUpdate() {
-		return operation.checkSpin != null;
-	}
-
-	public Spin getCheckSpin() {
-		return operation.checkSpin;
+		return operation.nextSpin != null;
 	}
 
 	public static REInstruction readFrom(Txn txn, int index, ByteBuffer buf) throws DeserializeException {

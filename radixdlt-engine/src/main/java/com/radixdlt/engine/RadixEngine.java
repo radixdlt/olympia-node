@@ -32,7 +32,7 @@ import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.crypto.ECPublicKey;
@@ -98,10 +98,11 @@ public final class RadixEngine<M> {
 			}
 		}
 
-		void processCheckSpin(Particle p, Spin checkSpin) {
+		void processStateUpdate(REStateUpdate stateUpdate) {
 			for (var particleClass : particleClasses) {
+				var p = stateUpdate.getSubstate().getParticle();
 				if (particleClass.isInstance(p)) {
-					if (checkSpin == Spin.NEUTRAL) {
+					if (stateUpdate.isBootUp()) {
 						curValue = outputReducer.apply(curValue, p);
 					} else {
 						curValue = inputReducer.apply(curValue, p);
@@ -463,10 +464,8 @@ public final class RadixEngine<M> {
 			// Non-persisted computed state
 			for (var group : parsedTxn.getGroupedStateUpdates()) {
 				group.forEach(update -> {
+					stateComputers.forEach((a, computer) -> computer.processStateUpdate(update));
 					final var particle = update.getSubstate().getParticle();
-					final var checkSpin = update.getCheckSpin();
-					stateComputers.forEach((a, computer) -> computer.processCheckSpin(particle, checkSpin));
-
 					var cache = substateCache.get(particle.getClass());
 					if (cache != null && cache.test(particle)) {
 						if (update.isBootUp()) {

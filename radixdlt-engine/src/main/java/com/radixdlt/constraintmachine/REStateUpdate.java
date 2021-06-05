@@ -59,10 +59,6 @@ public final class REStateUpdate {
 		return Optional.ofNullable(arg);
 	}
 
-	public Spin getCheckSpin() {
-		return op.getCheckSpin();
-	}
-
 	public Spin getNextSpin() {
 		return op.getNextSpin();
 	}
