@@ -22,14 +22,36 @@ import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Optional;
 
-public class ExecutionContext {
-	private Optional<ECPublicKey> key;
+public final class ExecutionContext {
+	private final PermissionLevel level;
+	private final Optional<ECPublicKey> key;
 
-	public ExecutionContext(Optional<ECPublicKey> key) {
+	public ExecutionContext(PermissionLevel level, Optional<ECPublicKey> key) {
+		this.level = level;
 		this.key = key;
 	}
 
 	public Optional<ECPublicKey> key() {
 		return key;
+	}
+
+	public PermissionLevel permissionLevel() {
+		return level;
+	}
+
+	public void verifyPermissionLevel(PermissionLevel requiredLevel) throws ConstraintMachineException {
+		if (this.level.compareTo(requiredLevel) < 0) {
+			throw new ConstraintMachineException(
+				CMErrorCode.PERMISSION_LEVEL_ERROR,
+				"Required: " + requiredLevel + " Current: " + this.level
+			);
+		}
+
+		if (requiredLevel.compareTo(PermissionLevel.SUPER_USER) >= 0 && key.isPresent()) {
+			throw new ConstraintMachineException(
+				CMErrorCode.AUTHORIZATION_ERROR,
+				"System updates should not be signed."
+			);
+		}
 	}
 }

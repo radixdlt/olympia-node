@@ -54,16 +54,9 @@ public final class ConstraintMachine {
 		this.procedures = procedures;
 	}
 
-	public static final class CMValidationState {
-		private final PermissionLevel permissionLevel;
-		private REInstruction curInstruction;
-		private int curIndex;
-
-		private ReducerState reducerState = null;
-
+	private static final class CMValidationState {
 		private final Map<Integer, Substate> localUpParticles = new HashMap<>();
 		private final Set<SubstateId> remoteDownParticles = new HashSet<>();
-		private final Optional<ECPublicKey> signedBy;
 		private final CMStore store;
 		private final CMStore.Transaction dbTxn;
 		private final Predicate<Particle> virtualStoreLayer;
@@ -71,33 +64,11 @@ public final class ConstraintMachine {
 		CMValidationState(
 			Predicate<Particle> virtualStoreLayer,
 			CMStore.Transaction dbTxn,
-			CMStore store,
-			PermissionLevel permissionLevel,
-			Optional<ECPublicKey> signedBy
+			CMStore store
 		) {
 			this.virtualStoreLayer = virtualStoreLayer;
 			this.dbTxn = dbTxn;
 			this.store = store;
-			this.permissionLevel = permissionLevel;
-			this.signedBy = signedBy;
-		}
-
-		public void verifyPermissionLevel(PermissionLevel requiredLevel) throws ConstraintMachineException {
-			if (this.permissionLevel.compareTo(requiredLevel) < 0) {
-				throw new ConstraintMachineException(
-					CMErrorCode.PERMISSION_LEVEL_ERROR,
-					this,
-					"Required: " + requiredLevel + " Current: " + this.permissionLevel
-				);
-			}
-
-			if (requiredLevel.compareTo(PermissionLevel.SUPER_USER) >= 0 && signedBy.isPresent()) {
-				throw new ConstraintMachineException(
-					CMErrorCode.AUTHORIZATION_ERROR,
-					this,
-					"System updates should not be signed."
-				);
-			}
 		}
 
 		public ReadableAddrs immutableIndex() {
@@ -137,15 +108,15 @@ public final class ConstraintMachine {
 
 		public void virtualShutdown(Substate substate) throws ConstraintMachineException {
 			if (remoteDownParticles.contains(substate.getId())) {
-				throw new ConstraintMachineException(CMErrorCode.SUBSTATE_NOT_FOUND, this);
+				throw new ConstraintMachineException(CMErrorCode.SUBSTATE_NOT_FOUND);
 			}
 
 			if (!virtualStoreLayer.test(substate.getParticle())) {
-				throw new ConstraintMachineException(CMErrorCode.INVALID_PARTICLE, this);
+				throw new ConstraintMachineException(CMErrorCode.INVALID_PARTICLE);
 			}
 
 			if (store.isVirtualDown(dbTxn, substate.getId())) {
-				throw new ConstraintMachineException(CMErrorCode.SUBSTATE_NOT_FOUND, this);
+				throw new ConstraintMachineException(CMErrorCode.SUBSTATE_NOT_FOUND);
 			}
 
 			remoteDownParticles.add(substate.getId());
@@ -154,7 +125,7 @@ public final class ConstraintMachine {
 		public Particle localShutdown(int index) throws ConstraintMachineException {
 			var substate = localUpParticles.remove(index);
 			if (substate == null) {
-				throw new ConstraintMachineException(CMErrorCode.LOCAL_NONEXISTENT, this);
+				throw new ConstraintMachineException(CMErrorCode.LOCAL_NONEXISTENT);
 			}
 
 			return substate.getParticle();
@@ -167,7 +138,7 @@ public final class ConstraintMachine {
 		public Particle shutdown(SubstateId substateId) throws ConstraintMachineException {
 			var maybeParticle = loadUpParticle(substateId);
 			if (maybeParticle.isEmpty()) {
-				throw new ConstraintMachineException(CMErrorCode.SUBSTATE_NOT_FOUND, this);
+				throw new ConstraintMachineException(CMErrorCode.SUBSTATE_NOT_FOUND);
 			}
 			remoteDownParticles.add(substateId);
 			return maybeParticle.get();
@@ -184,23 +155,15 @@ public final class ConstraintMachine {
 				)
 			);
 		}
-
-		Class<? extends ReducerState> getReducerStateClass() {
-			return reducerState != null ? reducerState.getClass() : VoidReducerState.class;
-		}
-
-		@Override
-		public String toString() {
-			return String.format("CMState{state=%s inst=%s}", this.reducerState, this.curInstruction);
-		}
 	}
-
 
 	/**
 	 * Executes a transition procedure given the next spun particle and a current validation state.
 	 */
-	void callProcedure(
-		CMValidationState validationState,
+	ReducerState callProcedure(
+		ReducerState reducerState,
+		ReadableAddrs readableAddrs,
+		ExecutionContext context,
 		REInstruction.REOp op,
 		Class<? extends Particle> particleClass,
 		Object procedureParam
@@ -208,10 +171,13 @@ public final class ConstraintMachine {
 
 		final MethodProcedure methodProcedure;
 		try {
-			var key = ProcedureKey.of(particleClass, validationState.getReducerStateClass());
+			var reducerStateClass = reducerState != null
+				? reducerState.getClass()
+				: VoidReducerState.class;
+			var key = ProcedureKey.of(particleClass, reducerStateClass);
 			methodProcedure = this.procedures.getProcedure(op, key);
 		} catch (MissingProcedureException e) {
-			throw new ConstraintMachineException(CMErrorCode.MISSING_PROCEDURE, validationState, e);
+			throw new ConstraintMachineException(CMErrorCode.MISSING_PROCEDURE, e);
 		}
 
 		// TODO: Reduce the 2 following procedures to 1
@@ -219,37 +185,27 @@ public final class ConstraintMachine {
 		if (op == REInstruction.REOp.END) {
 			// FIXME: this is only needed for deprecated TokensConstraintScryptV1
 			// FIXME: can remove for mainnet
-			authorizationParam = validationState.reducerState;
+			authorizationParam = reducerState;
 		} else {
 			authorizationParam = procedureParam;
 		}
 
-		final ReducerResult reducerResult;
 		// System permissions don't require additional authorization
 		var authorization = methodProcedure.authorization(authorizationParam);
 		var requiredLevel = authorization.permissionLevel();
-		validationState.verifyPermissionLevel(requiredLevel);
-
-		var context = new ExecutionContext(validationState.signedBy);
-		var readable = validationState.immutableIndex();
-		var reducerState = validationState.reducerState;
+		context.verifyPermissionLevel(requiredLevel);
 		try {
-			if (validationState.permissionLevel != PermissionLevel.SYSTEM) {
-				authorization.authorizer().verify(readable, context);
+			if (context.permissionLevel() != PermissionLevel.SYSTEM) {
+				authorization.authorizer().verify(readableAddrs, context);
 			}
-			reducerResult = methodProcedure.call(procedureParam, reducerState, readable);
+			return methodProcedure.call(procedureParam, reducerState, readableAddrs).state();
 		} catch (AuthorizationException e) {
-			throw new ConstraintMachineException(CMErrorCode.AUTHORIZATION_ERROR, validationState, e);
+			throw new ConstraintMachineException(CMErrorCode.AUTHORIZATION_ERROR, e);
 		} catch (ProcedureException e) {
-			throw new ConstraintMachineException(CMErrorCode.PROCEDURE_ERROR, validationState, e);
+			throw new ConstraintMachineException(CMErrorCode.PROCEDURE_ERROR, e);
 		} catch (Exception e) {
-			throw new ConstraintMachineException(CMErrorCode.UNKNOWN_ERROR, validationState, e);
+			throw new ConstraintMachineException(CMErrorCode.UNKNOWN_ERROR, e);
 		}
-
-		reducerResult.ifCompleteElse(
-			() -> validationState.reducerState = null,
-			nextState -> validationState.reducerState = nextState
-		);
 	}
 
 	/**
@@ -257,21 +213,20 @@ public final class ConstraintMachine {
 	 * that the particle group is well formed.
 	 */
 	List<List<REStateUpdate>> statefulVerify(
+		ExecutionContext context,
 		CMValidationState validationState,
 		List<REInstruction> instructions
 	) throws ConstraintMachineException {
 		int instIndex = 0;
 		var expectEnd = false;
-
+		ReducerState reducerState = null;
+		var readableAddrs = validationState.immutableIndex();
 		var groupedStateUpdates = new ArrayList<List<REStateUpdate>>();
 		var stateUpdates = new ArrayList<REStateUpdate>();
 
 		for (REInstruction inst : instructions) {
-			validationState.curIndex = instIndex;
-			validationState.curInstruction = inst;
-
 			if (expectEnd && inst.getMicroOp() != REInstruction.REOp.END) {
-				throw new ConstraintMachineException(CMErrorCode.MISSING_PARTICLE_GROUP, validationState);
+				throw new ConstraintMachineException(CMErrorCode.MISSING_PARTICLE_GROUP);
 			}
 
 			if (inst.getMicroOp() == REInstruction.REOp.DOWNALL) {
@@ -294,7 +249,7 @@ public final class ConstraintMachine {
 					}
 				};
 				try {
-					callProcedure(validationState, inst.getMicroOp(), particleClass, iterator);
+					reducerState = callProcedure(reducerState, readableAddrs, context, inst.getMicroOp(), particleClass, iterator);
 				} finally {
 					substateCursor.close();
 				}
@@ -335,20 +290,18 @@ public final class ConstraintMachine {
 					arg = null;
 					o = SubstateWithArg.noArg(nextParticle);
 				} else {
-					throw new ConstraintMachineException(CMErrorCode.UNKNOWN_OP, validationState);
+					throw new ConstraintMachineException(CMErrorCode.UNKNOWN_OP);
 				}
 
 				stateUpdates.add(REStateUpdate.of(inst.getMicroOp(), substate, arg, inst.getDataByteBuffer()));
-
-				callProcedure(validationState, inst.getMicroOp(), nextParticle.getClass(), o);
-
-				expectEnd = validationState.reducerState == null;
+				reducerState = callProcedure(reducerState, readableAddrs, context, inst.getMicroOp(), nextParticle.getClass(), o);
+				expectEnd = reducerState == null;
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.END) {
 				groupedStateUpdates.add(stateUpdates);
 				stateUpdates = new ArrayList<>();
 
-				if (validationState.reducerState != null) {
-					callProcedure(validationState, inst.getMicroOp(), null, null);
+				if (reducerState != null) {
+					reducerState = callProcedure(reducerState, readableAddrs, context, inst.getMicroOp(), null, null);
 				}
 
 				expectEnd = false;
@@ -373,14 +326,8 @@ public final class ConstraintMachine {
 		Optional<ECPublicKey> signature,
 		PermissionLevel permissionLevel
 	) throws TxnParseException, ConstraintMachineException {
-		var validationState = new CMValidationState(
-			virtualStoreLayer,
-			dbTxn,
-			cmStore,
-			permissionLevel,
-			signature
-		);
-
-		return this.statefulVerify(validationState, instructions);
+		var validationState = new CMValidationState(virtualStoreLayer, dbTxn, cmStore);
+		var context = new ExecutionContext(permissionLevel, signature);
+		return this.statefulVerify(context, validationState, instructions);
 	}
 }

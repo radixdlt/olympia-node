@@ -18,9 +18,7 @@
 
 package com.radixdlt.constraintmachine;
 
-import java.util.function.Consumer;
-
-public class ReducerResult {
+public final class ReducerResult {
 	private final ReducerState reducerState;
 
 	private ReducerResult(ReducerState reducerState) {
@@ -35,14 +33,7 @@ public class ReducerResult {
 		return new ReducerResult(null);
 	}
 
-	public void ifCompleteElse(
-		Runnable completeConsumer,
-		Consumer<ReducerState> incompleteConsumer
-	) {
-		if (reducerState == null) {
-			completeConsumer.run();
-		} else {
-			incompleteConsumer.accept(reducerState);
-		}
+	public ReducerState state() {
+		return reducerState;
 	}
 }

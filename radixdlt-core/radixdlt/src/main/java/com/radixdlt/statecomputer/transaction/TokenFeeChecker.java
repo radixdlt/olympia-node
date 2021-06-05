@@ -57,7 +57,6 @@ public class TokenFeeChecker implements PostParsedChecker {
 		if (feePaid.compareTo(FIXED_FEE) < 0) {
 			throw new ConstraintMachineException(
 				CMErrorCode.FEE_NOT_FOUND,
-				null,
 				String.format("atom fee invalid: '%s' is less than fixed fee of '%s'",
 					TokenUnitConversions.subunitsToUnits(feePaid),
 					TokenUnitConversions.subunitsToUnits(FIXED_FEE)

@@ -160,8 +160,10 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		os.createUpProcedure(new UpProcedure<>(
 			VoidReducerState.class, TokensInAccount.class,
 			u -> {
-				var level = u.getResourceAddr().isNativeToken() ? PermissionLevel.SYSTEM : PermissionLevel.USER;
-				return new Authorization(level, (r, c) -> {
+				if (u.getResourceAddr().isNativeToken()) {
+					return new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { });
+				}
+				return new Authorization(PermissionLevel.USER, (r, c) -> {
 					var tokenDef = (TokenResource) r.loadAddr(null, u.getResourceAddr())
 						.orElseThrow(() -> new AuthorizationException("Invalid token address: " + u.getResourceAddr()));
 					tokenDef.verifyMintAuthorization(c.key());
