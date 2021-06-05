@@ -113,32 +113,20 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		private final REAddr tokenAddr;
 		private final UInt384 amount;
 
-		// This is to keep track of where resource is coming from
-		// If resource is coming from more than one account then this is just null
-		// FIXME: This is a little bit of a hack
-		private final REAddr from;
-
 		private TokenHoldingBucket(
 			REAddr tokenAddr,
-			UInt384 amount,
-			REAddr from
+			UInt384 amount
 		) {
 			this.tokenAddr = tokenAddr;
 			this.amount = amount;
-			this.from = from;
 		}
 
-		public REAddr from() {
-			return from;
-		}
-
-		private TokenHoldingBucket deposit(REAddr resourceAddr, UInt256 amountToAdd, REAddr from) throws ProcedureException {
+		private TokenHoldingBucket deposit(REAddr resourceAddr, UInt256 amountToAdd) throws ProcedureException {
 			if (!this.tokenAddr.equals(resourceAddr)) {
 				throw new InvalidResourceException(resourceAddr, tokenAddr);
 			}
 
-			var nextFrom = this.from.equals(from) ? from : null;
-			return new TokenHoldingBucket(tokenAddr, UInt384.from(amountToAdd).add(amount), nextFrom);
+			return new TokenHoldingBucket(tokenAddr, UInt384.from(amountToAdd).add(amount));
 		}
 
 		public TokenHoldingBucket withdraw(REAddr resourceAddr, UInt256 amountToWithdraw) throws ProcedureException {
@@ -151,7 +139,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 				throw new NotEnoughResourcesException(amountToWithdraw, amount.getLow());
 			}
 
-			return new TokenHoldingBucket(tokenAddr, amount.subtract(withdraw384), from);
+			return new TokenHoldingBucket(tokenAddr, amount.subtract(withdraw384));
 		}
 	}
 
@@ -202,8 +190,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 				var tokens = d.getSubstate();
 				var state = new TokenHoldingBucket(
 					tokens.getResourceAddr(),
-					UInt384.from(tokens.getAmount()),
-					tokens.getHoldingAddr()
+					UInt384.from(tokens.getAmount())
 				);
 				return ReducerResult.incomplete(state);
 			}
@@ -217,8 +204,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 				var tokens = d.getSubstate();
 				var nextState = s.deposit(
 					tokens.getResourceAddr(),
-					tokens.getAmount(),
-					tokens.getHoldingAddr()
+					tokens.getAmount()
 				);
 				return ReducerResult.incomplete(nextState);
 			}
