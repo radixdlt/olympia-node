@@ -157,41 +157,34 @@ public final class ConstraintMachine {
 		}
 	}
 
-	/**
-	 * Executes a transition procedure given the next spun particle and a current validation state.
-	 */
-	ReducerState callProcedure(
-		ReducerState reducerState,
-		ReadableAddrs readableAddrs,
-		ExecutionContext context,
+	private MethodProcedure loadProcedure(
 		REInstruction.REOp op,
 		Class<? extends Particle> particleClass,
-		Object procedureParam
+		ReducerState reducerState
 	) throws ConstraintMachineException {
-
-		final MethodProcedure methodProcedure;
 		try {
 			var reducerStateClass = reducerState != null
 				? reducerState.getClass()
 				: VoidReducerState.class;
 			var key = ProcedureKey.of(particleClass, reducerStateClass);
-			methodProcedure = this.procedures.getProcedure(op, key);
+			return this.procedures.getProcedure(op, key);
 		} catch (MissingProcedureException e) {
 			throw new ConstraintMachineException(CMErrorCode.MISSING_PROCEDURE, e);
 		}
+	}
 
-		// TODO: Reduce the 2 following procedures to 1
-		final Object authorizationParam;
-		if (op == REInstruction.REOp.END) {
-			// FIXME: this is only needed for deprecated TokensConstraintScryptV1
-			// FIXME: can remove for mainnet
-			authorizationParam = reducerState;
-		} else {
-			authorizationParam = procedureParam;
-		}
-
+	/**
+	 * Executes a transition procedure given the next spun particle and a current validation state.
+	 */
+	private ReducerState callProcedure(
+		MethodProcedure methodProcedure,
+		ReducerState reducerState,
+		ReadableAddrs readableAddrs,
+		ExecutionContext context,
+		Object procedureParam
+	) throws ConstraintMachineException {
 		// System permissions don't require additional authorization
-		var authorization = methodProcedure.authorization(authorizationParam);
+		var authorization = methodProcedure.authorization(procedureParam);
 		var requiredLevel = authorization.permissionLevel();
 		context.verifyPermissionLevel(requiredLevel);
 		try {
@@ -249,7 +242,8 @@ public final class ConstraintMachine {
 					}
 				};
 				try {
-					reducerState = callProcedure(reducerState, readableAddrs, context, inst.getMicroOp(), particleClass, iterator);
+					var methodProcedure = loadProcedure(inst.getMicroOp(), particleClass, reducerState);
+					reducerState = callProcedure(methodProcedure, reducerState, readableAddrs, context, iterator);
 				} finally {
 					substateCursor.close();
 				}
@@ -294,14 +288,17 @@ public final class ConstraintMachine {
 				}
 
 				stateUpdates.add(REStateUpdate.of(inst.getMicroOp(), substate, arg, inst.getDataByteBuffer()));
-				reducerState = callProcedure(reducerState, readableAddrs, context, inst.getMicroOp(), nextParticle.getClass(), o);
+
+				var methodProcedure = loadProcedure(inst.getMicroOp(), nextParticle.getClass(), reducerState);
+				reducerState = callProcedure(methodProcedure, reducerState, readableAddrs, context, o);
 				expectEnd = reducerState == null;
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.END) {
 				groupedStateUpdates.add(stateUpdates);
 				stateUpdates = new ArrayList<>();
 
 				if (reducerState != null) {
-					reducerState = callProcedure(reducerState, readableAddrs, context, inst.getMicroOp(), null, null);
+					var methodProcedure = loadProcedure(inst.getMicroOp(), null, reducerState);
+					reducerState = callProcedure(methodProcedure, reducerState, readableAddrs, context, reducerState);
 				}
 
 				expectEnd = false;
