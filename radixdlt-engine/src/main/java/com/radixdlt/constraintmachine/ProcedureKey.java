@@ -21,21 +21,21 @@ package com.radixdlt.constraintmachine;
 import java.util.Objects;
 
 public final class ProcedureKey {
-	private final Class<? extends Particle> substateClass;
-	private final Class<? extends ReducerState> reducerStateClass;
+	private final Class<? extends ReducerState> currentState;
+	private final Class<? extends Particle> eventType;
 
-	private ProcedureKey(Class<? extends Particle> substateClass, Class<? extends ReducerState> reducerStateClass) {
-		this.substateClass = substateClass;
-		this.reducerStateClass = reducerStateClass;
+	private ProcedureKey(Class<? extends ReducerState> currentState, Class<? extends Particle> eventType) {
+		this.currentState = currentState;
+		this.eventType = eventType;
 	}
 
-	public static ProcedureKey of(Class<? extends Particle> substateClass, Class<? extends ReducerState> reducerStateClass) {
-		return new ProcedureKey(substateClass, reducerStateClass);
+	public static ProcedureKey of(Class<? extends ReducerState> currentState, Class<? extends Particle> event) {
+		return new ProcedureKey(currentState, event);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(substateClass, reducerStateClass);
+		return Objects.hash(eventType, currentState);
 	}
 
 	@Override
@@ -45,12 +45,12 @@ public final class ProcedureKey {
 		}
 
 		var other = (ProcedureKey) o;
-		return Objects.equals(this.substateClass, other.substateClass)
-			&& Objects.equals(this.reducerStateClass, other.reducerStateClass);
+		return Objects.equals(this.eventType, other.eventType)
+			&& Objects.equals(this.currentState, other.currentState);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{substate=%s reducer=%s}", this.getClass().getSimpleName(), substateClass, reducerStateClass);
+		return String.format("%s{current=%s event=%s}", this.getClass().getSimpleName(), currentState, eventType);
 	}
 }

@@ -37,7 +37,7 @@ public class EndProcedure<S extends ReducerState> implements MethodProcedure {
 	}
 
 	public ProcedureKey getEndProcedureKey() {
-		return ProcedureKey.of(null, reducerStateClass);
+		return ProcedureKey.of(reducerStateClass, null);
 	}
 
 	@Override

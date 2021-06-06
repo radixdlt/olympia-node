@@ -166,7 +166,7 @@ public final class ConstraintMachine {
 			var reducerStateClass = reducerState != null
 				? reducerState.getClass()
 				: VoidReducerState.class;
-			var key = ProcedureKey.of(particleClass, reducerStateClass);
+			var key = ProcedureKey.of(reducerStateClass, particleClass);
 			return this.procedures.getProcedure(op, key);
 		} catch (MissingProcedureException e) {
 			throw new ConstraintMachineException(CMErrorCode.MISSING_PROCEDURE, e);

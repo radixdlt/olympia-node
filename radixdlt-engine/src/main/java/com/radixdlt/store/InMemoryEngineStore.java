@@ -119,10 +119,10 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 		}
 	}
 
-	public Spin getSpin(SubstateId substateId) {
+	public Optional<Spin> getSpin(SubstateId substateId) {
 		synchronized (lock) {
 			var inst = storedParticles.get(substateId);
-			return inst == null ? Spin.NEUTRAL : inst.getNextSpin();
+			return Optional.ofNullable(inst).map(REStateUpdate::getNextSpin);
 		}
 	}
 
