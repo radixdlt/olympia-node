@@ -17,9 +17,23 @@
 
 package com.radixdlt.constraintmachine;
 
-public enum Spin {
-	UP,
-	DOWN;
+public enum REOp {
+	UP(true),
+	DOWN(true),
+	DOWNALL(true),
+	SIG(false),
+	MSG(false),
+	END(false);
+
+	private final boolean isSubstateUpdate;
+
+	REOp(boolean isSubstateUpdate) {
+		this.isSubstateUpdate = isSubstateUpdate;
+	}
+
+	public boolean isSubstateUpdate() {
+		return isSubstateUpdate;
+	}
 
 	@Override
 	public String toString() {

@@ -122,11 +122,11 @@ public final class REParser {
 
 				parserState.substateUpdate();
 
-			} else if (inst.getMicroOp() == REInstruction.REOp.MSG) {
+			} else if (inst.getMicroOp() == REInstruction.REMicroOp.MSG) {
 				parserState.msg(inst.getData());
-			} else if (inst.getMicroOp() == REInstruction.REOp.END) {
+			} else if (inst.getMicroOp() == REInstruction.REMicroOp.END) {
 				parserState.end();
-			} else if (inst.getMicroOp() == REInstruction.REOp.SIG) {
+			} else if (inst.getMicroOp() == REInstruction.REMicroOp.SIG) {
 				sigPosition = curPos;
 				sig = inst.getData();
 			} else {

@@ -41,7 +41,7 @@ public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> im
 	}
 
 	public ProcedureKey getKey() {
-		return ProcedureKey.of(reducerStateClass, downClass);
+		return ProcedureKey.of(reducerStateClass, new SubstateUpdateKey(REOp.DOWNALL, downClass));
 	}
 
 	@Override

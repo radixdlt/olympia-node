@@ -22,15 +22,15 @@ import java.util.Objects;
 
 public final class ProcedureKey {
 	private final Class<? extends ReducerState> currentState;
-	private final Class<? extends Particle> eventType;
+	private final Object eventType;
 
-	private ProcedureKey(Class<? extends ReducerState> currentState, Class<? extends Particle> eventType) {
+	private ProcedureKey(Class<? extends ReducerState> currentState, Object eventType) {
 		this.currentState = currentState;
 		this.eventType = eventType;
 	}
 
-	public static ProcedureKey of(Class<? extends ReducerState> currentState, Class<? extends Particle> event) {
-		return new ProcedureKey(currentState, event);
+	public static ProcedureKey of(Class<? extends ReducerState> currentState, SubstateUpdateKey substateUpdateKey) {
+		return new ProcedureKey(currentState, substateUpdateKey);
 	}
 
 	@Override

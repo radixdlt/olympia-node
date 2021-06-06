@@ -36,7 +36,7 @@ import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REStateUpdate;
-import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.constraintmachine.REOp;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.identifiers.AID;
@@ -319,7 +319,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return (SecondaryConfig) new SecondaryConfig()
 			.setKeyCreator(
 				(secondary, key, data, result) -> {
-					if (entryToSpin(data) == Spin.DOWN) {
+					if (entryToSpin(data) == REOp.DOWN) {
 						return false;
 					}
 
@@ -583,12 +583,12 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return entry(new byte[0]);
 	}
 
-	private Spin entryToSpin(DatabaseEntry e) {
-		return e.getData().length == 0 ? Spin.DOWN : Spin.UP;
+	private REOp entryToSpin(DatabaseEntry e) {
+		return e.getData().length == 0 ? REOp.DOWN : REOp.UP;
 	}
 
 	private Optional<Particle> entryToUpParticle(DatabaseEntry e) {
-		if (entryToSpin(e) == Spin.DOWN) {
+		if (entryToSpin(e) == REOp.DOWN) {
 			return Optional.empty();
 		}
 
@@ -627,7 +627,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				downSubstate(txn, stateUpdate.getSubstate().getId());
 			}
 		} else {
-			throw new IllegalStateException("Must bootup or shutdown to update particle.");
+			throw new IllegalStateException("Must bootup or shutdown to update particle: " + stateUpdate);
 		}
 	}
 

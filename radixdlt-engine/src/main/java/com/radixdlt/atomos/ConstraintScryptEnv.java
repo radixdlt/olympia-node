@@ -20,6 +20,7 @@ package com.radixdlt.atomos;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
+import com.radixdlt.constraintmachine.MethodProcedure;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.ProcedureKey;
 import com.radixdlt.constraintmachine.Procedures;
@@ -40,20 +41,14 @@ public final class ConstraintScryptEnv implements SysCalls {
 	private final ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions;
 
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> scryptParticleDefinitions;
-	private final Map<ProcedureKey, DownProcedure<Particle, ReducerState>> downProcedures;
-	private final Map<ProcedureKey, ShutdownAllProcedure<Particle, ReducerState>> shutdownAllProcedures;
-	private final Map<ProcedureKey, UpProcedure<ReducerState, Particle>> upProcedures;
-	private final Map<ProcedureKey, EndProcedure<ReducerState>> endProcedures;
+	private final Map<ProcedureKey, MethodProcedure> procedures;
 
 	ConstraintScryptEnv(
 		ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions
 	) {
 		this.particleDefinitions = particleDefinitions;
 		this.scryptParticleDefinitions = new HashMap<>();
-		this.downProcedures = new HashMap<>();
-		this.shutdownAllProcedures = new HashMap<>();
-		this.upProcedures = new HashMap<>();
-		this.endProcedures = new HashMap<>();
+		this.procedures = new HashMap<>();
 	}
 
 	public Map<Class<? extends Particle>, ParticleDefinition<Particle>> getScryptParticleDefinitions() {
@@ -61,7 +56,7 @@ public final class ConstraintScryptEnv implements SysCalls {
 	}
 
 	public Procedures getProcedures() {
-		return new Procedures(upProcedures, downProcedures, shutdownAllProcedures, endProcedures);
+		return new Procedures(procedures);
 	}
 
 	private <T extends Particle> boolean particleDefinitionExists(Class<T> particleClass) {
@@ -83,36 +78,36 @@ public final class ConstraintScryptEnv implements SysCalls {
 		ShutdownAllProcedure<D, S> shutdownAllProcedure
 	) {
 		var key = shutdownAllProcedure.getKey();
-		if (shutdownAllProcedures.containsKey(key)) {
+		if (procedures.containsKey(key)) {
 			throw new IllegalStateException(key + " already created");
 		}
-		shutdownAllProcedures.put(key, (ShutdownAllProcedure<Particle, ReducerState>) shutdownAllProcedure);
+		procedures.put(key, shutdownAllProcedure);
 	}
 
 	@Override
 	public <D extends Particle, S extends ReducerState> void createDownProcedure(DownProcedure<D, S> downProcedure) {
 		var key = downProcedure.getDownProcedureKey();
-		if (downProcedures.containsKey(key)) {
+		if (procedures.containsKey(key)) {
 			throw new IllegalStateException(key + " already created");
 		}
-		downProcedures.put(key, (DownProcedure<Particle, ReducerState>) downProcedure);
+		procedures.put(key, downProcedure);
 	}
 
 	@Override
 	public <U extends Particle, S extends ReducerState> void createUpProcedure(UpProcedure<S, U> upProcedure) {
 		var key = upProcedure.getUpProcedureKey();
-		if (upProcedures.containsKey(key)) {
+		if (procedures.containsKey(key)) {
 			throw new IllegalStateException(key + " already created");
 		}
-		upProcedures.put(key, (UpProcedure<ReducerState, Particle>) upProcedure);
+		procedures.put(key, upProcedure);
 	}
 
 	@Override
 	public <S extends ReducerState> void createEndProcedure(EndProcedure<S> endProcedure) {
 		var key = endProcedure.getEndProcedureKey();
-		if (endProcedures.containsKey(key)) {
+		if (procedures.containsKey(key)) {
 			throw new IllegalStateException(key + " already created");
 		}
-		endProcedures.put(key, (EndProcedure<ReducerState>) endProcedure);
+		procedures.put(key, endProcedure);
 	}
 }

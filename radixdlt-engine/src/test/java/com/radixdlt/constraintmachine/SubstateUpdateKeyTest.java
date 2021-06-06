@@ -18,10 +18,16 @@
 
 package com.radixdlt.constraintmachine;
 
-public class MissingProcedureException extends Exception {
-	public MissingProcedureException(
-		ProcedureKey key
-	) {
-		super("Missing: " + key);
+import junit.framework.TestCase;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
+import org.junit.Test;
+
+public class SubstateUpdateKeyTest extends TestCase {
+	@Test
+	public void equalsVerifier() {
+		EqualsVerifier.forClass(SubstateUpdateKey.class)
+			.suppress(Warning.NONFINAL_FIELDS)
+			.verify();
 	}
 }

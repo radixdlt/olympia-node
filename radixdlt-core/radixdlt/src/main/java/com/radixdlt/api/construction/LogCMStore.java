@@ -77,7 +77,7 @@ public final class LogCMStore implements CMStore {
 					try {
 						var i = REInstruction.readFrom(txn, cur, buf);
 						if (cur == index) {
-							if (i.getMicroOp() != REInstruction.REOp.UP) {
+							if (i.getMicroOp() != REInstruction.REMicroOp.UP) {
 								return Optional.empty();
 							}
 							Substate s = i.getData();

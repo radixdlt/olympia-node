@@ -40,7 +40,7 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 	}
 
 	public ProcedureKey getDownProcedureKey() {
-		return ProcedureKey.of(reducerStateClass, downClass);
+		return ProcedureKey.of(reducerStateClass, new SubstateUpdateKey(REOp.DOWN, downClass));
 	}
 
 	@Override

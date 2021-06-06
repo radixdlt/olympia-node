@@ -40,7 +40,7 @@ public final class UpProcedure<S extends ReducerState, U extends Particle> imple
 	}
 
 	public ProcedureKey getUpProcedureKey() {
-		return ProcedureKey.of(reducerStateClass, upClass);
+		return ProcedureKey.of(reducerStateClass, new SubstateUpdateKey(REOp.UP, upClass));
 	}
 
 	@Override

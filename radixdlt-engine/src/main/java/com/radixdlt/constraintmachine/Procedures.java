@@ -23,71 +23,30 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class Procedures {
-	private final Map<ProcedureKey, UpProcedure<ReducerState, Particle>> upProcedures;
-	private final Map<ProcedureKey, DownProcedure<Particle, ReducerState>> downProcedures;
-	private final Map<ProcedureKey, ShutdownAllProcedure<Particle, ReducerState>> shutdownAllProcedures;
-	private final Map<ProcedureKey, EndProcedure<ReducerState>> endProcedures;
+	private final Map<ProcedureKey, MethodProcedure> procedures;
 
-	public Procedures(
-		Map<ProcedureKey, UpProcedure<ReducerState, Particle>> upProcedures,
-		Map<ProcedureKey, DownProcedure<Particle, ReducerState>> downProcedures,
-		Map<ProcedureKey, ShutdownAllProcedure<Particle, ReducerState>> shutdownAllProcedures,
-		Map<ProcedureKey, EndProcedure<ReducerState>> endProcedures
-	) {
-		this.upProcedures = upProcedures;
-		this.downProcedures = downProcedures;
-		this.shutdownAllProcedures = shutdownAllProcedures;
-		this.endProcedures = endProcedures;
+	public Procedures(Map<ProcedureKey, MethodProcedure> procedures) {
+		this.procedures = procedures;
 	}
 
 	public static Procedures empty() {
-		return new Procedures(Map.of(), Map.of(), Map.of(), Map.of());
+		return new Procedures(Map.of());
 	}
 
 	public Procedures combine(Procedures other) {
-		var combinedUpProcedures =
+		var combinedProcedures =
 			Stream.concat(
-				this.upProcedures.entrySet().stream(),
-				other.upProcedures.entrySet().stream()
+				this.procedures.entrySet().stream(),
+				other.procedures.entrySet().stream()
 			).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-		var combinedDownProcedures =
-			Stream.concat(
-				this.downProcedures.entrySet().stream(),
-				other.downProcedures.entrySet().stream()
-			).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-		var combinedShutdownAllProcedures =
-			Stream.concat(
-				this.shutdownAllProcedures.entrySet().stream(),
-				other.shutdownAllProcedures.entrySet().stream()
-			).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-		var combinedEndProcedures =
-			Stream.concat(
-				this.endProcedures.entrySet().stream(),
-				other.endProcedures.entrySet().stream()
-			).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-		return new Procedures(combinedUpProcedures, combinedDownProcedures, combinedShutdownAllProcedures, combinedEndProcedures);
+		return new Procedures(combinedProcedures);
 	}
 
-	public MethodProcedure getProcedure(
-		REInstruction.REOp op,
-		ProcedureKey key
-	) throws MissingProcedureException {
-		MethodProcedure methodProcedure = null;
-		if (op == REInstruction.REOp.DOWNALL) {
-			methodProcedure = shutdownAllProcedures.get(key);
-		} else if (op == REInstruction.REOp.END) {
-			methodProcedure = endProcedures.get(key);
-		} else if (op.getNextSpin() == Spin.UP) {
-			methodProcedure = upProcedures.get(key);
-		} else if (op.getNextSpin() == Spin.DOWN) {
-			methodProcedure = downProcedures.get(key);
-		}
+	public MethodProcedure getProcedure(ProcedureKey key) throws MissingProcedureException {
+		var methodProcedure = procedures.get(key);
 		if (methodProcedure == null) {
-			throw new MissingProcedureException(op, key);
+			throw new MissingProcedureException(key);
 		}
 		return methodProcedure;
 	}
