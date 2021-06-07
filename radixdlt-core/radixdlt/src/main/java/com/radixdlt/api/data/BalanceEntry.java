@@ -80,13 +80,12 @@ public class BalanceEntry {
 		return createFull(owner, delegate, rri, amount, negative, epochUnlocked, txId);
 	}
 
-
 	public static BalanceEntry resource(
 		String rri,
 		UInt384 amount,
 		boolean negative
 	) {
-		return createFull(null, null, rri, amount, negative, null);
+		return createFull(null, null, rri, amount, negative, null, null);
 	}
 
 	public static BalanceEntry create(
@@ -108,6 +107,7 @@ public class BalanceEntry {
 			txId
 		);
 	}
+
 	public static BalanceEntry create(
 		REAddr owner,
 		ECPublicKey delegate,
