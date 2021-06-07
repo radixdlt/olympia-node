@@ -2,12 +2,14 @@ FROM ubuntu:20.04
 MAINTAINER radixdlt <devops@radixdlt.com>
 
 RUN apt-get -y update > /dev/null && \
-    apt-get -y --no-install-recommends install net-tools iptables iproute2 gettext-base curl tcpdump strace attr software-properties-common openjdk-11-jdk > /dev/null && \
+    apt-get -y --no-install-recommends install net-tools iptables iproute2 gettext-base curl tcpdump strace attr software-properties-common > /dev/null && \
     apt-get clean > /dev/null && \
     rm -rf /var/lib/apt/lists/* /var/tmp/* /tmp/*
 
 COPY scripts/fix-vulnerabilities.sh /tmp
 RUN /tmp/fix-vulnerabilities.sh
+
+RUN apt-get -y --no-install-recommends install openjdk-11-jdk
 
 # set entrypoint and default command
 ENTRYPOINT [ "/opt/radixdlt/config_radixdlt.sh" ]
