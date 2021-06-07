@@ -18,6 +18,7 @@
 
 package com.radixdlt.atommodel.tokens;
 
+import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
@@ -40,8 +41,10 @@ import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.math.BigInteger;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class BurnTokensV3Test {
@@ -69,8 +72,35 @@ public class BurnTokensV3Test {
 		);
 	}
 
+
 	@Test
-	public void cannot_burn_tokens_if_not_owner() throws Exception {
+	public void can_burn_tokens_if_owner_of_token_resource() throws Exception {
+		// Arrange
+		var key = ECKeyPair.generateNew();
+		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
+		var txn = this.engine.construct(
+			key.getPublicKey(),
+			new CreateMutableToken("test", "Name", "", "", "")
+		).signAndBuild(key::sign);
+		this.engine.execute(List.of(txn));
+		var account = REAddr.ofPubKeyAccount(key.getPublicKey());
+		var mintTxn = this.engine.construct(new MintToken(tokenAddr, account, UInt256.TEN)).signAndBuild(key::sign);
+		this.engine.execute(List.of(mintTxn));
+
+		// Act
+		var burnTxn = this.engine.construct(new BurnToken(tokenAddr, account, UInt256.TEN))
+			.signAndBuild(key::sign);
+		var processed = this.engine.execute(List.of(burnTxn));
+
+		// Assert
+		var accounting = REResourceAccounting.compute(processed.get(0).getGroupedStateUpdates().get(0));
+		assertThat(accounting.resourceAccounting())
+			.hasSize(1)
+			.containsEntry(tokenAddr, BigInteger.valueOf(-10));
+	}
+
+	@Test
+	public void cannot_burn_tokens_if_not_owner_of_token_resource() throws Exception {
 		// Arrange
 		var key = ECKeyPair.generateNew();
 		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
