@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 
 public final class TransactionParser {
 	private static String bucketToString(Bucket bucket) {
-		if (bucket.getValidatorKey() != null && bucket instanceof ExittingOwnershipBucket) {
+		if (bucket.getValidatorKey() != null && !(bucket instanceof ExittingOwnershipBucket)) {
 			return ValidatorAddress.of(bucket.getValidatorKey());
 		}
 
