@@ -39,7 +39,7 @@ import javax.annotation.concurrent.Immutable;
  * Vertex in a Vertex graph
  */
 @Immutable
-@SerializerId2("vtx")
+@SerializerId2("consensus.vertex")
 public final class UnverifiedVertex {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
@@ -57,7 +57,7 @@ public final class UnverifiedVertex {
 
 	@JsonProperty("tout")
 	@DsonOutput(Output.ALL)
-	private final boolean proposerTimedOut;
+	private final Boolean proposerTimedOut;
 
 	private final BFTNode proposer;
 
@@ -67,7 +67,7 @@ public final class UnverifiedVertex {
 		@JsonProperty("view") Long viewId,
 		@JsonProperty("txns") List<byte[]> txns,
 		@JsonProperty("p") byte[] proposer,
-		@JsonProperty("tout") boolean proposerTimedOut
+		@JsonProperty("tout") Boolean proposerTimedOut
 	) throws PublicKeyException {
 		this(
 			qc,
@@ -78,11 +78,11 @@ public final class UnverifiedVertex {
 		);
 	}
 
-	public UnverifiedVertex(QuorumCertificate qc, View view, List<byte[]> txns, BFTNode proposer, boolean proposerTimedOut) {
+	public UnverifiedVertex(QuorumCertificate qc, View view, List<byte[]> txns, BFTNode proposer, Boolean proposerTimedOut) {
 		this.qc = Objects.requireNonNull(qc);
 		this.view = Objects.requireNonNull(view);
 
-		if (proposerTimedOut && !txns.isEmpty()) {
+		if (proposerTimedOut != null && proposerTimedOut && !txns.isEmpty()) {
 			throw new IllegalArgumentException("Txns must be empty if timeout");
 		}
 
@@ -165,7 +165,7 @@ public final class UnverifiedVertex {
 
 		UnverifiedVertex v = (UnverifiedVertex) o;
 		return Objects.equals(v.view, this.view)
-			&& v.proposerTimedOut ==  this.proposerTimedOut
+			&& Objects.equals(v.proposerTimedOut, this.proposerTimedOut)
 			&& Objects.equals(v.proposer, this.proposer)
 			&& Objects.equals(v.getTxns(), this.getTxns())
 			&& Objects.equals(v.qc, this.qc);

@@ -70,6 +70,7 @@ import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
@@ -88,9 +89,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.radix.TokenIssuance;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
@@ -98,8 +102,17 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@RunWith(Parameterized.class)
 public class StakingUnstakingValidatorsTest {
 	private static final Logger logger = LogManager.getLogger();
+	@Parameterized.Parameters
+	public static Collection<Object[]> forksModule() {
+		return List.of(new Object[][] {
+			{new RadixEngineForksLatestOnlyModule(View.of(100))},
+			{new ForkOverwritesWithShorterEpochsModule()},
+		});
+	}
+
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
@@ -113,14 +126,14 @@ public class StakingUnstakingValidatorsTest {
 	private final ImmutableList<ECKeyPair> nodeKeys;
 	private final Module radixEngineConfiguration;
 
-	public StakingUnstakingValidatorsTest() {
+	public StakingUnstakingValidatorsTest(Module forkModule) {
 		this.nodeKeys = Stream.generate(ECKeyPair::generateNew)
 			.limit(20)
 			.sorted(Comparator.comparing(k -> k.getPublicKey().euid()))
 			.collect(ImmutableList.toImmutableList());
 		this.radixEngineConfiguration = Modules.combine(
 			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(100)),
+			forkModule,
 			RadixEngineConfig.asModule(1, 10, 50)
 		);
 	}
@@ -206,6 +219,22 @@ public class StakingUnstakingValidatorsTest {
 		);
 	}
 
+	private void restartNode(int index) {
+		this.network.dropMessages(m -> m.channelId().receiverIndex() == index);
+		Injector injector = nodeCreators.get(index).get();
+		stopDatabase(this.nodes.set(index, injector));
+		withThreadCtx(injector, () -> injector.getInstance(DeterministicProcessor.class).start());
+	}
+
+	private void withThreadCtx(Injector injector, Runnable r) {
+		ThreadContext.put("bftNode", " " + injector.getInstance(Key.get(BFTNode.class, Self.class)));
+		try {
+			r.run();
+		} finally {
+			ThreadContext.remove("bftNode");
+		}
+	}
+
 	private Timed<ControlledMessage> processNext() {
 		Timed<ControlledMessage> msg = this.network.nextMessage();
 		logger.debug("Processing message {}", msg);
@@ -235,7 +264,7 @@ public class StakingUnstakingValidatorsTest {
 	 * trends to minimum.
 	 */
 	@Test
-	public void stake_unstake_transfers() {
+	public void stake_unstake_transfers_restarts() {
 		var random = new Random(12345);
 
 		for (int i = 0; i < 5000; i++) {
@@ -273,6 +302,9 @@ public class StakingUnstakingValidatorsTest {
 						action = new UnregisterValidator(privKey.getPublicKey(), null, null);
 						break;
 					}
+					continue;
+				case 5:
+					restartNode(nodeIndex);
 					continue;
 				default:
 					continue;

@@ -123,17 +123,34 @@ public final class StakedValidators {
 	}
 
 	public StakedValidators remove(ECPublicKey delegatedKey, UInt256 amount) {
+		if (!this.stake.containsKey(delegatedKey)) {
+			throw new IllegalStateException("Removing stake which doesn't exist.");
+		}
+
 		if (amount.isZero()) {
 			return this;
 		}
 
-		final var nextAmount = this.stake.getOrDefault(delegatedKey, UInt256.ZERO).add(amount);
-		final var nextStake = Stream.concat(
-			Stream.of(Maps.immutableEntry(delegatedKey, nextAmount)),
-			this.stake.entrySet().stream().filter(e -> !delegatedKey.equals(e.getKey()))
-		).collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+		final var oldAmount = this.stake.get(delegatedKey);
+		final var comparison = amount.compareTo(oldAmount);
 
-		return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStake);
+		if (comparison == 0) {
+			// remove stake
+			final var nextStakedAmounts = this.stake.entrySet().stream()
+				.filter(e -> !delegatedKey.equals(e.getKey()))
+				.collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+			return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStakedAmounts);
+		} else if (comparison < 0) {
+			// reduce stake
+			final var nextAmount = oldAmount.subtract(amount);
+			final var nextStakedAmounts = Stream.concat(
+				Stream.of(Maps.immutableEntry(delegatedKey, nextAmount)),
+				this.stake.entrySet().stream().filter(e -> !delegatedKey.equals(e.getKey()))
+			).collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+			return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStakedAmounts);
+		} else {
+			throw new IllegalStateException("Removing stake which doesn't exist.");
+		}
 	}
 
 	public BFTValidatorSet toValidatorSet() {
