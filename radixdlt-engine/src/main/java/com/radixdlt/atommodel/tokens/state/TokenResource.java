@@ -36,7 +36,7 @@ public final class TokenResource implements Particle {
 	private final String description;
 	private final String iconUrl;
 	private final String url;
-	private final ECPublicKey minter;
+	private final ECPublicKey owner;
 	private final UInt256 supply;
 
 	public TokenResource(
@@ -46,7 +46,7 @@ public final class TokenResource implements Particle {
 		String iconUrl,
 		String url,
 		UInt256 supply,
-		ECPublicKey minter
+		ECPublicKey owner
 	) {
 		this.addr = Objects.requireNonNull(addr);
 		this.name = Objects.requireNonNull(name);
@@ -54,12 +54,12 @@ public final class TokenResource implements Particle {
 		this.iconUrl = Objects.requireNonNull(iconUrl);
 		this.url = Objects.requireNonNull(url);
 
-		if (supply != null && minter != null) {
+		if (supply != null && owner != null) {
 			throw new IllegalArgumentException("Can't have fixed supply and minter");
 		}
 
 		this.supply = supply;
-		this.minter = minter;
+		this.owner = owner;
 	}
 
 	public TokenResource(
@@ -79,19 +79,25 @@ public final class TokenResource implements Particle {
 		String description,
 		String iconUrl,
 		String url,
-		ECPublicKey minter
+		ECPublicKey owner
 	) {
-		this(addr, name, description, iconUrl, url, null, minter);
+		this(addr, name, description, iconUrl, url, null, owner);
 	}
 
 	public void verifyMintAuthorization(Optional<ECPublicKey> key) throws AuthorizationException {
-		if (!key.flatMap(p -> getMinter().map(p::equals)).orElse(false)) {
+		if (!key.flatMap(p -> getOwner().map(p::equals)).orElse(false)) {
 			throw new AuthorizationException("Key not authorized: " + key);
 		}
 	}
 
-	public Optional<ECPublicKey> getMinter() {
-		return Optional.ofNullable(minter);
+	public void verifyBurnAuthorization(Optional<ECPublicKey> key) throws AuthorizationException {
+		if (!key.flatMap(p -> getOwner().map(p::equals)).orElse(false)) {
+			throw new AuthorizationException("Key not authorized: " + key);
+		}
+	}
+
+	public Optional<ECPublicKey> getOwner() {
+		return Optional.ofNullable(owner);
 	}
 
 	public boolean isMutable() {
@@ -143,11 +149,11 @@ public final class TokenResource implements Particle {
 			&& Objects.equals(supply, that.supply)
 			&& Objects.equals(iconUrl, that.iconUrl)
 			&& Objects.equals(url, that.url)
-			&& Objects.equals(minter, that.minter);
+			&& Objects.equals(owner, that.owner);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(addr, name, description, supply, iconUrl, url, minter);
+		return Objects.hash(addr, name, description, supply, iconUrl, url, owner);
 	}
 }

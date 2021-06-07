@@ -59,6 +59,7 @@ import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV1;
 import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV2;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
+import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
 import com.radixdlt.atommodel.tokens.construction.SplitTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV1;
@@ -238,7 +239,7 @@ public final class BetanetForksModule extends AbstractModule {
 		var fixedFee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(100));
 		final CMAtomOS v4 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
 		v4.load(new ValidatorConstraintScrypt()); // load before TokensConstraintScrypt due to dependency
-		v4.load(new TokensConstraintScryptV2());
+		v4.load(new TokensConstraintScryptV3());
 		v4.load(new FeeConstraintScrypt());
 		v4.load(new StakingConstraintScryptV3());
 		v4.load(new UniqueParticleConstraintScrypt());

@@ -442,7 +442,7 @@ public final class RESerializer {
 				buf.put(i.toByteArray());
 			},
 			() -> {
-				p.getMinter().ifPresentOrElse(
+				p.getOwner().ifPresentOrElse(
 					m -> {
 						buf.put((byte) 1);
 						serializeKey(buf, m);
