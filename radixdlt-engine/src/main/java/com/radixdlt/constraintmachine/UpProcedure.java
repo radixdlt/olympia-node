@@ -21,7 +21,7 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.store.ReadableAddrs;
 import java.util.function.Function;
 
-public final class UpProcedure<S extends ReducerState, U extends Particle> implements MethodProcedure {
+public final class UpProcedure<S extends ReducerState, U extends Particle> implements Procedure {
 	private final Class<S> reducerStateClass;
 	private final Class<U> upClass;
 	private final UpReducer<S, U> upReducer;
@@ -39,8 +39,9 @@ public final class UpProcedure<S extends ReducerState, U extends Particle> imple
 		this.authorization = authorization;
 	}
 
-	public ProcedureKey getUpProcedureKey() {
-		return ProcedureKey.of(reducerStateClass, new SubstateUpdateKey(REOp.UP, upClass));
+	@Override
+	public ProcedureKey key() {
+		return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.UP, upClass));
 	}
 
 	@Override
@@ -49,7 +50,12 @@ public final class UpProcedure<S extends ReducerState, U extends Particle> imple
 	}
 
 	@Override
-	public ReducerResult call(Object o, ReducerState reducerState, ReadableAddrs readableAddrs) throws ProcedureException {
+	public ReducerResult call(
+		Object o,
+		ReducerState reducerState,
+		ReadableAddrs readableAddrs,
+		ExecutionContext context
+	) throws ProcedureException {
 		return upReducer.reduce((S) reducerState, (U) o, readableAddrs);
 	}
 }

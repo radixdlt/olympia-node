@@ -18,30 +18,15 @@
 
 package com.radixdlt.constraintmachine;
 
-import java.util.Objects;
+import com.radixdlt.store.ReadableAddrs;
 
-public final class SubstateUpdateKey {
-	private final REOp op;
-	private final Class<? extends Particle> particleClass;
-
-	public SubstateUpdateKey(REOp op, Class<? extends Particle> particleClass) {
-		this.op = op;
-		this.particleClass = particleClass;
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(op, particleClass);
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof SubstateUpdateKey)) {
-			return false;
-		}
-
-		var other = (SubstateUpdateKey) o;
-		return Objects.equals(this.op, other.op)
-			&& Objects.equals(this.particleClass, other.particleClass);
-	}
+public interface Procedure {
+	ProcedureKey key();
+	Authorization authorization(Object o);
+	ReducerResult call(
+		Object o,
+		ReducerState reducerState,
+		ReadableAddrs readableAddrs,
+		ExecutionContext context
+	) throws ProcedureException;
 }

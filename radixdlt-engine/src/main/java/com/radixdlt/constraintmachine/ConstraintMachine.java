@@ -23,6 +23,7 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.ReadableAddrs;
 import com.radixdlt.utils.Pair;
@@ -45,6 +46,7 @@ import java.util.function.Predicate;
 public final class ConstraintMachine {
 	private final Predicate<Particle> virtualStoreLayer;
 	private final Procedures procedures;
+	private final Metering metering;
 
 	public ConstraintMachine(
 		Predicate<Particle> virtualStoreLayer,
@@ -52,6 +54,17 @@ public final class ConstraintMachine {
 	) {
 		this.virtualStoreLayer = virtualStoreLayer;
 		this.procedures = procedures;
+		this.metering = (k, param, context) -> { };
+	}
+
+	public ConstraintMachine(
+		Predicate<Particle> virtualStoreLayer,
+		Procedures procedures,
+		Metering metering
+	) {
+		this.virtualStoreLayer = virtualStoreLayer;
+		this.procedures = procedures;
+		this.metering = metering;
 	}
 
 	private static final class CMValidationState {
@@ -157,15 +170,15 @@ public final class ConstraintMachine {
 		}
 	}
 
-	private MethodProcedure loadProcedure(
+	private Procedure loadProcedure(
 		ReducerState reducerState,
-		SubstateUpdateKey substateUpdateKey
+		OpSignature opSignature
 	) throws ConstraintMachineException {
 		try {
 			var reducerStateClass = reducerState != null
 				? reducerState.getClass()
 				: VoidReducerState.class;
-			var key = ProcedureKey.of(reducerStateClass, substateUpdateKey);
+			var key = ProcedureKey.of(reducerStateClass, opSignature);
 			return this.procedures.getProcedure(key);
 		} catch (MissingProcedureException e) {
 			throw new ConstraintMachineException(CMErrorCode.MISSING_PROCEDURE, e);
@@ -176,21 +189,26 @@ public final class ConstraintMachine {
 	 * Executes a transition procedure given the next spun particle and a current validation state.
 	 */
 	private ReducerState callProcedure(
-		MethodProcedure methodProcedure,
+		Procedure procedure,
+		Object procedureParam,
 		ReducerState reducerState,
 		ReadableAddrs readableAddrs,
-		ExecutionContext context,
-		Object procedureParam
+		ExecutionContext context
 	) throws ConstraintMachineException {
 		// System permissions don't require additional authorization
-		var authorization = methodProcedure.authorization(procedureParam);
+		var authorization = procedure.authorization(procedureParam);
 		var requiredLevel = authorization.permissionLevel();
 		context.verifyPermissionLevel(requiredLevel);
 		try {
+			if (requiredLevel == PermissionLevel.USER) {
+				this.metering.onUserInstruction(procedure.key(), procedureParam, context);
+			}
+
 			if (context.permissionLevel() != PermissionLevel.SYSTEM) {
 				authorization.authorizer().verify(readableAddrs, context);
 			}
-			return methodProcedure.call(procedureParam, reducerState, readableAddrs).state();
+
+			return procedure.call(procedureParam, reducerState, readableAddrs, context).state();
 		} catch (AuthorizationException e) {
 			throw new ConstraintMachineException(CMErrorCode.AUTHORIZATION_ERROR, e);
 		} catch (ProcedureException e) {
@@ -221,7 +239,12 @@ public final class ConstraintMachine {
 				throw new ConstraintMachineException(CMErrorCode.MISSING_PARTICLE_GROUP);
 			}
 
-			if (inst.getMicroOp() == REInstruction.REMicroOp.DOWNALL) {
+			if (inst.getMicroOp() == REInstruction.REMicroOp.SYSCALL) {
+				CallData callData = inst.getData();
+				var opSignature = OpSignature.ofMethod(inst.getMicroOp().getOp(), REAddr.ofSystem());
+				var methodProcedure = loadProcedure(reducerState, opSignature);
+				reducerState = callProcedure(methodProcedure, callData, reducerState, readableAddrs, context);
+			} else if (inst.getMicroOp() == REInstruction.REMicroOp.DOWNALL) {
 				Class<? extends Particle> particleClass = inst.getData();
 				var substateCursor = validationState.shutdownAll(particleClass);
 				var tmp = stateUpdates;
@@ -241,9 +264,11 @@ public final class ConstraintMachine {
 					}
 				};
 				try {
-					var eventId = new SubstateUpdateKey(inst.getMicroOp().getOp(), particleClass);
+					var eventId = OpSignature.ofSubstateUpdate(
+						inst.getMicroOp().getOp(), particleClass
+					);
 					var methodProcedure = loadProcedure(reducerState, eventId);
-					reducerState = callProcedure(methodProcedure, reducerState, readableAddrs, context, iterator);
+					reducerState = callProcedure(methodProcedure, iterator, reducerState, readableAddrs, context);
 				} finally {
 					substateCursor.close();
 				}
@@ -289,18 +314,18 @@ public final class ConstraintMachine {
 
 				var op = inst.getMicroOp().getOp();
 				stateUpdates.add(REStateUpdate.of(op, substate, arg, inst.getDataByteBuffer()));
-				var eventId = new SubstateUpdateKey(op, nextParticle.getClass());
+				var eventId = OpSignature.ofSubstateUpdate(op, nextParticle.getClass());
 				var methodProcedure = loadProcedure(reducerState, eventId);
-				reducerState = callProcedure(methodProcedure, reducerState, readableAddrs, context, o);
+				reducerState = callProcedure(methodProcedure, o, reducerState, readableAddrs, context);
 				expectEnd = reducerState == null;
 			} else if (inst.getMicroOp() == REInstruction.REMicroOp.END) {
 				groupedStateUpdates.add(stateUpdates);
 				stateUpdates = new ArrayList<>();
 
 				if (reducerState != null) {
-					var eventId = new SubstateUpdateKey(inst.getMicroOp().getOp(), null);
+					var eventId = OpSignature.ofSubstateUpdate(inst.getMicroOp().getOp(), null);
 					var methodProcedure = loadProcedure(reducerState, eventId);
-					reducerState = callProcedure(methodProcedure, reducerState, readableAddrs, context, reducerState);
+					reducerState = callProcedure(methodProcedure, reducerState, reducerState, readableAddrs, context);
 				}
 
 				expectEnd = false;

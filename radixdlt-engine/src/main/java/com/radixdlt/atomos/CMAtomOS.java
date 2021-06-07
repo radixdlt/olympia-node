@@ -83,8 +83,8 @@ public final class CMAtomOS {
 		this.systemNames = systemNames;
 
 		this.load(os -> {
-			os.registerParticle(REAddrParticle.class, RRI_PARTICLE_DEF);
-			os.createDownProcedure(new DownProcedure<>(
+			os.particle(REAddrParticle.class, RRI_PARTICLE_DEF);
+			os.procedure(new DownProcedure<>(
 				REAddrParticle.class, VoidReducerState.class,
 				d -> {
 					final PermissionLevel permissionLevel;

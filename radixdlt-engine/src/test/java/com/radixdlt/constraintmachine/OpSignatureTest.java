@@ -18,15 +18,14 @@
 
 package com.radixdlt.constraintmachine;
 
-import junit.framework.TestCase;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 
-public class SubstateUpdateKeyTest extends TestCase {
+public class OpSignatureTest {
 	@Test
 	public void equalsVerifier() {
-		EqualsVerifier.forClass(SubstateUpdateKey.class)
+		EqualsVerifier.forClass(OpSignature.class)
 			.suppress(Warning.NONFINAL_FIELDS)
 			.verify();
 	}

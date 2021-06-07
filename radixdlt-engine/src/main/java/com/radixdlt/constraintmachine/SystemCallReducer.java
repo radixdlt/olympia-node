@@ -18,9 +18,6 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.store.ReadableAddrs;
-
-public interface MethodProcedure {
-	Authorization authorization(Object o);
-	ReducerResult call(Object o, ReducerState reducerState, ReadableAddrs readableAddrs) throws ProcedureException;
+public interface SystemCallReducer<S extends ReducerState> {
+	ReducerResult reduce(S reducerState, CallData c, ExecutionContext context) throws ProcedureException;
 }

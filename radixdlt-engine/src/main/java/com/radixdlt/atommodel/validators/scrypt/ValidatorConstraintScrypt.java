@@ -21,7 +21,7 @@ package com.radixdlt.atommodel.validators.scrypt;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
-import com.radixdlt.atomos.SysCalls;
+import com.radixdlt.atomos.Loader;
 import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
@@ -52,14 +52,14 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 	}
 
 	@Override
-	public void main(SysCalls os) {
-		os.registerParticle(ValidatorParticle.class, ParticleDefinition.<ValidatorParticle>builder()
+	public void main(Loader os) {
+		os.particle(ValidatorParticle.class, ParticleDefinition.<ValidatorParticle>builder()
 			.staticValidation(checkAddressAndUrl(ValidatorParticle::getUrl))
 			.virtualizeUp(p -> !p.isRegisteredForNextEpoch() && p.getUrl().isEmpty() && p.getName().isEmpty())
 			.build()
 		);
 
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			ValidatorParticle.class, VoidReducerState.class,
 			d -> new Authorization(
 				PermissionLevel.USER,
@@ -77,7 +77,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 			}
 		));
 
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			ValidatorUpdate.class, ValidatorParticle.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, r) -> {

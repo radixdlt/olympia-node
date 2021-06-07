@@ -22,7 +22,7 @@ import com.radixdlt.store.ReadableAddrs;
 
 import java.util.function.Function;
 
-public class DownProcedure<D extends Particle, S extends ReducerState> implements MethodProcedure {
+public class DownProcedure<D extends Particle, S extends ReducerState> implements Procedure {
 	private final Class<D> downClass;
 	private final Class<S> reducerStateClass;
 	private final DownReducer<D, S> downReducer;
@@ -39,8 +39,9 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 		this.authorization = authorization;
 	}
 
-	public ProcedureKey getDownProcedureKey() {
-		return ProcedureKey.of(reducerStateClass, new SubstateUpdateKey(REOp.DOWN, downClass));
+	@Override
+	public ProcedureKey key() {
+		return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.DOWN, downClass));
 	}
 
 	@Override
@@ -49,7 +50,12 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 	}
 
 	@Override
-	public ReducerResult call(Object o, ReducerState reducerState, ReadableAddrs readableAddrs) throws ProcedureException {
+	public ReducerResult call(
+		Object o,
+		ReducerState reducerState,
+		ReadableAddrs readableAddrs,
+		ExecutionContext context
+	) throws ProcedureException {
 		return downReducer.reduce((SubstateWithArg<D>) o, (S) reducerState, readableAddrs);
 	}
 }

@@ -24,7 +24,7 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
-import com.radixdlt.atomos.SysCalls;
+import com.radixdlt.atomos.Loader;
 import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
@@ -46,8 +46,8 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 	public static final int EPOCHS_LOCKED = 2; // Must go through one full epoch before being unlocked
 
 	@Override
-	public void main(SysCalls os) {
-		os.registerParticle(
+	public void main(Loader os) {
+		os.particle(
 			PreparedStake.class,
 			ParticleDefinition.<PreparedStake>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
@@ -108,9 +108,9 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		}
 	}
 
-	private void defineStaking(SysCalls os) {
+	private void defineStaking(Loader os) {
 		// Stake
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			VoidReducerState.class, PreparedStake.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, r) -> {
@@ -121,7 +121,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 				return ReducerResult.incomplete(state);
 			}
 		));
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			TokensInAccount.class, UnaccountedStake.class,
 			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> {
@@ -139,7 +139,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		));
 
 		// Unstake
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			PreparedStake.class, TokensConstraintScryptV1.UnaccountedTokens.class,
 			d -> new Authorization(
 				PermissionLevel.USER,
@@ -191,7 +191,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		));
 
 		// For change
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			RemainderStake.class, PreparedStake.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, r) -> {

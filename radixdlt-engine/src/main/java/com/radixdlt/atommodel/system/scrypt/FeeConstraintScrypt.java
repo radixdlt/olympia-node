@@ -16,35 +16,31 @@
  *
  */
 
-package com.radixdlt.atommodel.unique.scrypt;
+package com.radixdlt.atommodel.system.scrypt;
 
-import com.radixdlt.atommodel.unique.state.UniqueParticle;
-import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.atomos.ParticleDefinition;
-import com.radixdlt.atomos.Loader;
+import com.radixdlt.atommodel.tokens.scrypt.TokenHoldingBucket;
 import com.radixdlt.atomos.ConstraintScrypt;
+import com.radixdlt.atomos.Loader;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
-import com.radixdlt.constraintmachine.UpProcedure;
+import com.radixdlt.constraintmachine.SystemCallProcedure;
+import com.radixdlt.identifiers.REAddr;
 
-public class UniqueParticleConstraintScrypt implements ConstraintScrypt {
+public final class FeeConstraintScrypt implements ConstraintScrypt {
 	@Override
 	public void main(Loader os) {
-		os.particle(
-			UniqueParticle.class,
-			ParticleDefinition.<UniqueParticle>builder().build()
-		);
-		os.procedure(new UpProcedure<>(
-			CMAtomOS.REAddrClaim.class, UniqueParticle.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, u, r) -> {
-				if (!u.getREAddr().equals(s.getAddr())) {
-					throw new ProcedureException("Addresses don't match");
+		os.procedure(
+			new SystemCallProcedure<>(
+				TokenHoldingBucket.class, REAddr.ofSystem(),
+				() -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+				(s, d, c) -> {
+					var amt = d.getUInt256();
+					var nextState = s.withdraw(REAddr.ofNativeToken(), amt);
+					c.depositFeeReserve(amt);
+					return ReducerResult.incomplete(nextState);
 				}
-				return ReducerResult.complete();
-			}
-		));
+			)
+		);
 	}
 }

@@ -22,20 +22,20 @@ import java.util.Objects;
 
 public final class ProcedureKey {
 	private final Class<? extends ReducerState> currentState;
-	private final Object eventType;
+	private final OpSignature opSignature;
 
-	private ProcedureKey(Class<? extends ReducerState> currentState, Object eventType) {
+	private ProcedureKey(Class<? extends ReducerState> currentState, OpSignature opSignature) {
 		this.currentState = currentState;
-		this.eventType = eventType;
+		this.opSignature = opSignature;
 	}
 
-	public static ProcedureKey of(Class<? extends ReducerState> currentState, SubstateUpdateKey substateUpdateKey) {
-		return new ProcedureKey(currentState, substateUpdateKey);
+	public static ProcedureKey of(Class<? extends ReducerState> currentState, OpSignature opSignature) {
+		return new ProcedureKey(currentState, opSignature);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(eventType, currentState);
+		return Objects.hash(opSignature, currentState);
 	}
 
 	@Override
@@ -45,12 +45,12 @@ public final class ProcedureKey {
 		}
 
 		var other = (ProcedureKey) o;
-		return Objects.equals(this.eventType, other.eventType)
+		return Objects.equals(this.opSignature, other.opSignature)
 			&& Objects.equals(this.currentState, other.currentState);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{current=%s event=%s}", this.getClass().getSimpleName(), currentState, eventType);
+		return String.format("%s{current=%s opSignature=%s}", this.getClass().getSimpleName(), currentState, opSignature);
 	}
 }

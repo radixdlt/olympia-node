@@ -19,16 +19,33 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.utils.UInt256;
 
 import java.util.Optional;
 
 public final class ExecutionContext {
 	private final PermissionLevel level;
 	private final Optional<ECPublicKey> key;
+	private UInt256 feeReserve;
 
 	public ExecutionContext(PermissionLevel level, Optional<ECPublicKey> key) {
 		this.level = level;
 		this.key = key;
+		this.feeReserve = UInt256.ZERO;
+	}
+
+	public void depositFeeReserve(UInt256 fee) {
+		this.feeReserve = this.feeReserve.add(fee);
+	}
+
+	public void verifyHasReserve(UInt256 amount) throws NotEnoughFeesException {
+		if (feeReserve.compareTo(amount) < 0) {
+			throw new NotEnoughFeesException();
+		}
+	}
+
+	public UInt256 feeReserve() {
+		return this.feeReserve;
 	}
 
 	public Optional<ECPublicKey> key() {

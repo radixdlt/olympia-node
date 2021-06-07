@@ -18,32 +18,37 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.ReadableAddrs;
-import java.util.function.Function;
 
-public class EndProcedure<S extends ReducerState> implements Procedure {
+import java.util.function.Supplier;
+
+public class SystemCallProcedure<S extends ReducerState> implements Procedure {
 	private final Class<S> reducerStateClass;
-	private final Function<S, Authorization> authorization;
-	private final EndReducer<S> endReducer;
+	private final REAddr addr;
+	private final SystemCallReducer<S> reducer;
+	private final Supplier<Authorization> authorization;
 
-	public EndProcedure(
+	public SystemCallProcedure(
 		Class<S> reducerStateClass,
-		Function<S, Authorization> authorization,
-		EndReducer<S> endReducer
+		REAddr addr,
+		Supplier<Authorization> authorization,
+		SystemCallReducer<S> reducer
 	) {
 		this.reducerStateClass = reducerStateClass;
+		this.addr = addr;
+		this.reducer = reducer;
 		this.authorization = authorization;
-		this.endReducer = endReducer;
 	}
 
 	@Override
 	public ProcedureKey key() {
-		return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.END, null));
+		return ProcedureKey.of(reducerStateClass, OpSignature.ofMethod(REOp.SYSCALL, addr));
 	}
 
 	@Override
 	public Authorization authorization(Object o) {
-		return authorization.apply((S) o);
+		return authorization.get();
 	}
 
 	@Override
@@ -51,9 +56,8 @@ public class EndProcedure<S extends ReducerState> implements Procedure {
 		Object o,
 		ReducerState reducerState,
 		ReadableAddrs readableAddrs,
-		ExecutionContext executionContext
+		ExecutionContext context
 	) throws ProcedureException {
-		endReducer.reduce((S) reducerState, readableAddrs);
-		return ReducerResult.complete();
+		return reducer.reduce((S) reducerState, (CallData) o, context);
 	}
 }

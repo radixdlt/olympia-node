@@ -24,7 +24,7 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ParticleDefinition;
-import com.radixdlt.atomos.SysCalls;
+import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.AuthorizationException;
@@ -46,21 +46,21 @@ import java.util.Optional;
  */
 public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 	@Override
-	public void main(SysCalls os) {
+	public void main(Loader os) {
 		registerParticles(os);
 		defineTokenCreation(os);
 		defineMintTransferBurn(os);
 	}
 
-	private void registerParticles(SysCalls os) {
-		os.registerParticle(
+	private void registerParticles(Loader os) {
+		os.particle(
 			TokenResource.class,
 			ParticleDefinition.<TokenResource>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.build()
 		);
 
-		os.registerParticle(
+		os.particle(
 			TokensInAccount.class,
 			ParticleDefinition.<TokensInAccount>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
@@ -77,8 +77,8 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		}
 	}
 
-	private void defineTokenCreation(SysCalls os) {
-		os.createUpProcedure(new UpProcedure<>(
+	private void defineTokenCreation(Loader os) {
+		os.procedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, TokenResource.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, r) -> {
@@ -94,7 +94,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			}
 		));
 
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			NeedFixedTokenSupply.class, TokensInAccount.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, r) -> {
@@ -165,9 +165,9 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		}
 	}
 
-	private void defineMintTransferBurn(SysCalls os) {
+	private void defineMintTransferBurn(Loader os) {
 		// Mint
-		os.createEndProcedure(new EndProcedure<>(
+		os.procedure(new EndProcedure<>(
 			UnaccountedTokens.class,
 			s -> {
 				var level = s.resourceInBucket.resourceAddr().isNativeToken() ? PermissionLevel.SYSTEM : PermissionLevel.USER;
@@ -202,7 +202,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		));
 
 		// Burn
-		os.createEndProcedure(new EndProcedure<>(
+		os.procedure(new EndProcedure<>(
 			RemainderTokens.class,
 			s -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, r) -> {
@@ -221,7 +221,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			}
 		));
 
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			VoidReducerState.class, TokensInAccount.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, r) -> {
@@ -233,7 +233,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			}
 		));
 
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			TokensInAccount.class, VoidReducerState.class,
 			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> {
@@ -245,7 +245,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			}
 		));
 
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			RemainderTokens.class, TokensInAccount.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, r) -> {
@@ -261,7 +261,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			}
 		));
 
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			TokensInAccount.class, UnaccountedTokens.class,
 			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> {

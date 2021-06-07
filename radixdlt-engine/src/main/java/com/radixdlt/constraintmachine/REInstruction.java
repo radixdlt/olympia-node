@@ -78,7 +78,14 @@ public final class REInstruction {
 		SIG((byte) 7, (txn, i, b) -> {
 			return RESerializer.deserializeSignature(b);
 		}, REOp.SIG),
+		SYSCALL((byte) 9, (txn, i, b) -> {
+			int bufSize = b.get();
+			var callData = new byte[bufSize];
+			b.get(callData);
+			return new CallData(ByteBuffer.wrap(callData));
+		}, REOp.SYSCALL),
 		END((byte) 0, (txn, i, b) -> null, REOp.END);
+
 
 		private final ReadData readData;
 		private final REOp op;

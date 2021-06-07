@@ -23,9 +23,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class Procedures {
-	private final Map<ProcedureKey, MethodProcedure> procedures;
+	private final Map<ProcedureKey, Procedure> procedures;
 
-	public Procedures(Map<ProcedureKey, MethodProcedure> procedures) {
+	public Procedures(Map<ProcedureKey, Procedure> procedures) {
 		this.procedures = procedures;
 	}
 
@@ -43,11 +43,11 @@ public final class Procedures {
 		return new Procedures(combinedProcedures);
 	}
 
-	public MethodProcedure getProcedure(ProcedureKey key) throws MissingProcedureException {
-		var methodProcedure = procedures.get(key);
-		if (methodProcedure == null) {
+	public Procedure getProcedure(ProcedureKey key) throws MissingProcedureException {
+		var procedure = procedures.get(key);
+		if (procedure == null) {
 			throw new MissingProcedureException(key);
 		}
-		return methodProcedure;
+		return procedure;
 	}
 }

@@ -21,7 +21,7 @@ package com.radixdlt.atommodel.system.scrypt;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
-import com.radixdlt.atomos.SysCalls;
+import com.radixdlt.atomos.Loader;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -68,20 +68,20 @@ public final class SystemConstraintScryptV1 implements ConstraintScrypt {
 	}
 
 	@Override
-	public void main(SysCalls os) {
-		os.registerParticle(SystemParticle.class, ParticleDefinition.<SystemParticle>builder()
+	public void main(Loader os) {
+		os.particle(SystemParticle.class, ParticleDefinition.<SystemParticle>builder()
 			.staticValidation(this::staticCheck)
 			.virtualizeUp(p -> p.getView() == 0 && p.getEpoch() == 0 && p.getTimestamp() == 0)
 			.build()
 		);
 
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			SystemParticle.class, VoidReducerState.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> ReducerResult.incomplete(new UpdatingSystem(d.getSubstate()))
 		));
 
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			UpdatingSystem.class, SystemParticle.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> {

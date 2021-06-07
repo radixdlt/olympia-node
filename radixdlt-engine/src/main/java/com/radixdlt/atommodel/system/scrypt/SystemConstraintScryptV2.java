@@ -32,7 +32,7 @@ import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
-import com.radixdlt.atomos.SysCalls;
+import com.radixdlt.atomos.Loader;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
@@ -426,9 +426,9 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 	private static class AllocatingSystem implements ReducerState {
 	}
 
-	private void registerGenesisTransitions(SysCalls os) {
+	private void registerGenesisTransitions(Loader os) {
 		// For Mainnet Genesis
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, EpochData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> {
@@ -439,7 +439,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				return ReducerResult.incomplete(new AllocatingSystem());
 			}
 		));
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			AllocatingSystem.class, RoundData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> {
@@ -452,14 +452,14 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 	}
 
 
-	private void roundUpdate(SysCalls os) {
+	private void roundUpdate(Loader os) {
 		// Round update
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			RoundData.class, VoidReducerState.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> ReducerResult.incomplete(new RoundClosed(d.getSubstate()))
 		));
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			RoundClosed.class, RoundData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> {
@@ -471,12 +471,12 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				return ReducerResult.incomplete(new UpdateValidatorEpochData());
 			}
 		));
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			ValidatorEpochData.class, UpdateValidatorEpochData.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> ReducerResult.incomplete(new UpdatingValidatorEpochData(d.getSubstate()))
 		));
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			UpdatingValidatorEpochData.class, ValidatorEpochData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> {
@@ -486,15 +486,15 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		));
 	}
 
-	private void epochUpdate(SysCalls os) {
+	private void epochUpdate(Loader os) {
 		// Epoch Update
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			EpochData.class, RoundClosed.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> ReducerResult.incomplete(new UpdatingEpoch(d.getSubstate()))
 		));
 
-		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
+		os.procedure(new ShutdownAllProcedure<>(
 			ExittingStake.class, UpdatingEpoch.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(i, s, r) -> {
@@ -502,67 +502,67 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				return ReducerResult.incomplete(exittingStake.process(i));
 			}
 		));
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			ProcessExittingStake.class, ExittingStake.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> ReducerResult.incomplete(s.nextExit(u))
 		));
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			ProcessExittingStake.class, TokensInAccount.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> ReducerResult.incomplete(s.unlock(u))
 		));
 
-		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
+		os.procedure(new ShutdownAllProcedure<>(
 			ValidatorEpochData.class, RewardingValidators.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(i, s, r) -> ReducerResult.incomplete(s.process(i))
 		));
 
-		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
+		os.procedure(new ShutdownAllProcedure<>(
 			PreparedUnstakeOwnership.class, PreparingUnstake.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(i, s, r) -> ReducerResult.incomplete(s.unstakes(i))
 		));
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			ValidatorStake.class, LoadingStake.class,
 			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> ReducerResult.incomplete(s.startUpdate(d.getSubstate()))
 		));
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			Unstaking.class, ExittingStake.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> ReducerResult.incomplete(s.exit(u))
 		));
-		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
+		os.procedure(new ShutdownAllProcedure<>(
 			PreparedStake.class, PreparingStake.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(i, s, r) -> ReducerResult.incomplete(s.prepareStakes(i))
 		));
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			Staking.class, StakeOwnership.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> ReducerResult.incomplete(s.stake(u))
 		));
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			UpdatingValidatorStakes.class, ValidatorStake.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> ReducerResult.incomplete(s.updateStake(u))
 		));
 
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			CreatingNextValidatorSet.class, ValidatorEpochData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> ReducerResult.incomplete(s.nextValidator(u))
 		));
 
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			CreatingNextValidatorSet.class, EpochData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> ReducerResult.incomplete(s.nextEpoch(u))
 		));
 
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			StartingEpochRound.class, RoundData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, r) -> {
@@ -576,8 +576,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 	}
 
 	@Override
-	public void main(SysCalls os) {
-		os.registerParticle(RoundData.class, ParticleDefinition.<RoundData>builder()
+	public void main(Loader os) {
+		os.particle(RoundData.class, ParticleDefinition.<RoundData>builder()
 			.staticValidation(p -> {
 				if (p.getTimestamp() < 0) {
 					throw new TxnParseException("Timestamp is less than 0");
@@ -589,7 +589,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			.virtualizeUp(p -> p.getView() == 0 && p.getTimestamp() == 0)
 			.build()
 		);
-		os.registerParticle(EpochData.class, ParticleDefinition.<EpochData>builder()
+		os.particle(EpochData.class, ParticleDefinition.<EpochData>builder()
 			.staticValidation(p -> {
 				if (p.getEpoch() < 0) {
 					throw new TxnParseException("Epoch is less than 0");
@@ -597,13 +597,13 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			})
 			.build()
 		);
-		os.registerParticle(
+		os.particle(
 			ValidatorStake.class,
 			ParticleDefinition.<ValidatorStake>builder()
 				.virtualizeUp(p -> p.getAmount().isZero())
 				.build()
 		);
-		os.registerParticle(
+		os.particle(
 			StakeOwnership.class,
 			ParticleDefinition.<StakeOwnership>builder()
 				.staticValidation(s -> {
@@ -613,7 +613,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				})
 				.build()
 		);
-		os.registerParticle(
+		os.particle(
 			ExittingStake.class,
 			ParticleDefinition.<ExittingStake>builder()
 				.staticValidation(s -> {
@@ -623,7 +623,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				})
 				.build()
 		);
-		os.registerParticle(
+		os.particle(
 			ValidatorEpochData.class,
 			ParticleDefinition.<ValidatorEpochData>builder()
 				.staticValidation(s -> {
