@@ -21,6 +21,7 @@ package com.radixdlt.atom;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.SplitToken;
 import com.radixdlt.atom.actions.TransferToken;
@@ -85,6 +86,12 @@ public class TxActionListBuilder {
 
 	public TxActionListBuilder mint(REAddr rri, REAddr to, UInt256 amount) {
 		var action = new MintToken(rri, to, amount);
+		actions.add(action);
+		return this;
+	}
+
+	public TxActionListBuilder payFee(REAddr from, UInt256 amount) {
+		var action = new PayFee(from, amount);
 		actions.add(action);
 		return this;
 	}

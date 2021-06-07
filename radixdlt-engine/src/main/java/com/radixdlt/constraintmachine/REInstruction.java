@@ -79,7 +79,7 @@ public final class REInstruction {
 			return RESerializer.deserializeSignature(b);
 		}, REOp.SIG),
 		SYSCALL((byte) 9, (txn, i, b) -> {
-			int bufSize = b.get();
+			int bufSize = Byte.toUnsignedInt(b.get());
 			// TODO: Remove buffer copy
 			var callData = new byte[bufSize];
 			b.get(callData);

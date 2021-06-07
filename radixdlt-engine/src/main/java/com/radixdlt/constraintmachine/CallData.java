@@ -20,7 +20,6 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.utils.UInt256;
 
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public final class CallData {
