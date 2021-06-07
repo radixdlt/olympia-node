@@ -60,10 +60,8 @@ public final class DatabaseEnvironment {
 		environmentConfig.setAllowCreate(true);
 		environmentConfig.setLockTimeout(30, TimeUnit.SECONDS);
 		environmentConfig.setDurability(COMMIT_NO_SYNC);
-		environmentConfig.setConfigParam(LOG_FILE_MAX, "1073741824");
 		environmentConfig.setConfigParam(LOG_FILE_CACHE_SIZE, "256");
 		environmentConfig.setConfigParam(ENV_RUN_CHECKPOINTER, "true");
-		environmentConfig.setConfigParam(CHECKPOINTER_BYTES_INTERVAL, "250000000");
 		environmentConfig.setConfigParam(ENV_RUN_CLEANER, "true");
 		environmentConfig.setConfigParam(ENV_RUN_EVICTOR, "true");
 		environmentConfig.setConfigParam(ENV_RUN_VERIFIER, "false");

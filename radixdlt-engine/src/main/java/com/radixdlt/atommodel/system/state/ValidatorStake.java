@@ -88,10 +88,6 @@ public final class ValidatorStake implements ResourceInBucket {
 	}
 
 	public Pair<ValidatorStake, StakeOwnership> stake(REAddr owner, UInt256 stake) throws ProcedureException {
-		if (stake.compareTo(MINIMUM_STAKE) < 0) {
-			throw new ProcedureException("Trying to stake " + stake + " but minimum stake is " + MINIMUM_STAKE);
-		}
-
 		if (totalStake.isZero()) {
 			var nextValidatorStake = new ValidatorStake(validatorKey, stake, stake);
 			var stakeOwnership = new StakeOwnership(validatorKey, owner, stake);
