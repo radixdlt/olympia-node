@@ -121,7 +121,8 @@ public final class REParser {
 				}
 
 				parserState.substateUpdate();
-
+			} else if (inst.getMicroOp() == REInstruction.REMicroOp.SYSCALL) {
+				// TODO: make sure this is called only once
 			} else if (inst.getMicroOp() == REInstruction.REMicroOp.MSG) {
 				parserState.msg(inst.getData());
 			} else if (inst.getMicroOp() == REInstruction.REMicroOp.END) {

@@ -27,7 +27,7 @@ import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
@@ -82,7 +82,7 @@ public class TokenFeeTest {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
 			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(100), false),
+			new RadixEngineForksLatestOnlyModule(View.of(100), true),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
@@ -109,9 +109,10 @@ public class TokenFeeTest {
 	@Test
 	public void when_validating_atom_with_particles__result_has_no_error() throws Exception {
 		var account = REAddr.ofPubKeyAccount(ecKeyPair.getPublicKey());
-		var atom = sut.construct(ecKeyPair.getPublicKey(), new BurnToken(REAddr.ofNativeToken(), account, TokenFeeChecker.FIXED_FEE))
-			.mutex("test")
-			.signAndBuild(ecKeyPair::sign);
+		var atom = sut.construct(
+			ecKeyPair.getPublicKey(),
+			new PayFee(account, TokenFeeChecker.FIXED_FEE)
+		).mutex("test").signAndBuild(ecKeyPair::sign);
 
 		sut.execute(List.of(atom));
 	}
@@ -126,8 +127,10 @@ public class TokenFeeTest {
 	@Test
 	public void when_validating_atom_with_fee_and_no_change__result_has_no_error() throws Exception {
 		var account = REAddr.ofPubKeyAccount(ecKeyPair.getPublicKey());
-		var txn = sut.construct(ecKeyPair.getPublicKey(), new BurnToken(REAddr.ofNativeToken(), account, TokenFeeChecker.FIXED_FEE))
-			.signAndBuild(ecKeyPair::sign);
+		var txn = sut.construct(
+			ecKeyPair.getPublicKey(),
+			new PayFee(account, TokenFeeChecker.FIXED_FEE)
+		).signAndBuild(ecKeyPair::sign);
 
 		sut.execute(List.of(txn));
 	}

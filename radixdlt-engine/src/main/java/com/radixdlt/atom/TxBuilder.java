@@ -22,6 +22,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.tokens.ResourceInBucket;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.Particle;
@@ -330,25 +331,20 @@ public final class TxBuilder {
 		};
 	}
 
-	public <T extends ResourceInBucket> void downFungible(
-		Class<T> particleClass,
-		Predicate<T> particlePredicate,
-		UInt256 amount,
+	public <T extends ResourceInBucket, U extends ResourceInBucket> void payFee(
+		Predicate<TokensInAccount> particlePredicate,
 		FungibleMapper<T> remainderMapper,
+		UInt256 amount,
 		String errorMessage
 	) throws TxBuilderException {
-		UInt256 spent = UInt256.ZERO;
-		while (spent.compareTo(amount) < 0) {
-			var substateDown = down(
-				particleClass,
-				particlePredicate,
-				errorMessage
-			);
-
-			spent = spent.add(substateDown.getAmount());
-		}
-
-		var remainder = spent.subtract(amount);
+		// Take
+		var remainder = downFungible(
+			TokensInAccount.class,
+			particlePredicate,
+			amount,
+			errorMessage
+		);
+		lowLevelBuilder.payFee(amount);
 		if (!remainder.isZero()) {
 			up(remainderMapper.map(remainder));
 		}

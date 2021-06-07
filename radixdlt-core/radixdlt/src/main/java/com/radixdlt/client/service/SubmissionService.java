@@ -17,6 +17,7 @@
 
 package com.radixdlt.client.service;
 
+import com.radixdlt.atom.actions.PayFee;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -25,7 +26,6 @@ import com.google.inject.Inject;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.client.api.PreparedTransaction;
 import com.radixdlt.client.api.TransactionAction;
 import com.radixdlt.crypto.ECDSASignature;
@@ -97,8 +97,8 @@ public final class SubmissionService {
 
 	private List<TxAction> toActionsAndFee(REAddr addr, List<TransactionAction> steps) {
 		return Stream.concat(
-			steps.stream().flatMap(TransactionAction::toAction),
-			Stream.of(new BurnToken(REAddr.ofNativeToken(), addr, TokenFeeChecker.FIXED_FEE))
+			Stream.of(new PayFee(addr, TokenFeeChecker.FIXED_FEE)),
+			steps.stream().flatMap(TransactionAction::toAction)
 		).collect(Collectors.toList());
 	}
 

@@ -24,6 +24,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.utils.Ints;
+import com.radixdlt.utils.UInt256;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -157,6 +158,14 @@ public final class TxLowLevelBuilder {
 
 	public TxLowLevelBuilder end() {
 		instruction(REInstruction.REMicroOp.END, new byte[0]);
+		return this;
+	}
+
+	public TxLowLevelBuilder payFee(UInt256 amount) {
+		var data = new byte[1 + UInt256.BYTES];
+		data[0] = UInt256.BYTES;
+		amount.toByteArray(data, 1);
+		instruction(REInstruction.REMicroOp.SYSCALL, data);
 		return this;
 	}
 

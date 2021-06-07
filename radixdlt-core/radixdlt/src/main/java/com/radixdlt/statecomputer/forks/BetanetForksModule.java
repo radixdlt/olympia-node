@@ -27,6 +27,7 @@ import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.DeprecatedUnstakeTokens;
 import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.SplitToken;
 import com.radixdlt.atom.actions.StakeTokens;
@@ -40,6 +41,9 @@ import com.radixdlt.atom.actions.UpdateValidator;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV1;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.atommodel.system.construction.NextEpochConstructorV2;
+import com.radixdlt.atommodel.system.construction.PayFeeConstructorV1;
+import com.radixdlt.atommodel.system.construction.PayFeeConstructorV2;
+import com.radixdlt.atommodel.system.scrypt.FeeConstraintScrypt;
 import com.radixdlt.atommodel.system.scrypt.SystemV1ToV2TransitionConstraintScrypt;
 import com.radixdlt.atommodel.tokens.construction.BurnTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.CreateFixedTokenConstructor;
@@ -55,7 +59,6 @@ import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV1;
 import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV2;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
-import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
 import com.radixdlt.atommodel.tokens.construction.SplitTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV1;
@@ -74,8 +77,7 @@ import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
-import com.radixdlt.constraintmachine.REOp;
-import com.radixdlt.constraintmachine.SubstateWithArg;
+import com.radixdlt.constraintmachine.metering.FixedFeeMetering;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.EpochProofVerifierV1;
 import com.radixdlt.statecomputer.EpochProofVerifierV2;
@@ -106,6 +108,7 @@ public final class BetanetForksModule extends AbstractModule {
 		var parser = new REParser(v1.buildStatelessSubstateVerifier());
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateSystem.class, new CreateSystemConstructorV1())
+			.put(PayFee.class, new PayFeeConstructorV1())
 			.put(BurnToken.class, new BurnTokenConstructor())
 			.put(CreateFixedToken.class, new CreateFixedTokenConstructor())
 			.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
@@ -152,6 +155,7 @@ public final class BetanetForksModule extends AbstractModule {
 		var parser = new REParser(v2.buildStatelessSubstateVerifier());
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateSystem.class, new CreateSystemConstructorV1())
+			.put(PayFee.class, new PayFeeConstructorV1())
 			.put(BurnToken.class, new BurnTokenConstructor())
 			.put(CreateFixedToken.class, new CreateFixedTokenConstructor())
 			.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
@@ -198,6 +202,7 @@ public final class BetanetForksModule extends AbstractModule {
 		var parser = new REParser(v3.buildStatelessSubstateVerifier());
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateSystem.class, new CreateSystemConstructorV2())
+			.put(PayFee.class, new PayFeeConstructorV1())
 			.put(BurnToken.class, new BurnTokenConstructor())
 			.put(CreateFixedToken.class, new CreateFixedTokenConstructor())
 			.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
@@ -234,6 +239,7 @@ public final class BetanetForksModule extends AbstractModule {
 		final CMAtomOS v4 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
 		v4.load(new ValidatorConstraintScrypt()); // load before TokensConstraintScrypt due to dependency
 		v4.load(new TokensConstraintScryptV2());
+		v4.load(new FeeConstraintScrypt());
 		v4.load(new StakingConstraintScryptV3());
 		v4.load(new UniqueParticleConstraintScrypt());
 		v4.load(new SystemConstraintScryptV2());
@@ -241,23 +247,8 @@ public final class BetanetForksModule extends AbstractModule {
 		var betanet4 = new ConstraintMachineConfig(
 			v4.virtualizedUpParticles(),
 			v4.getProcedures(),
-			(procedureKey, param, context) -> {
-				// TODO: Clean this up
-				if (procedureKey.opSignature().op() == REOp.DOWN
-					&& param instanceof SubstateWithArg) {
-					var substateWithArg = (SubstateWithArg) param;
-					if (substateWithArg.getSubstate() instanceof TokensInAccount) {
-						var tokensInAccount = (TokensInAccount) substateWithArg.getSubstate();
-						if (tokensInAccount.getResourceAddr().isNativeToken()) {
-							return;
-						}
-					}
-				}
-
-				context.verifyHasReserve(fixedFee);
-			}
+			new FixedFeeMetering(fixedFee)
 		);
-
 		var parser = new REParser(v4.buildStatelessSubstateVerifier());
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateSystem.class, new CreateSystemConstructorV2())
@@ -276,6 +267,7 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(TransferToken.class, new TransferTokensConstructorV2())
 			.put(UnregisterValidator.class, new UnregisterValidatorConstructor())
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
+			.put(PayFee.class, new PayFeeConstructorV2())
 			.build();
 
 		return new ForkConfig(
