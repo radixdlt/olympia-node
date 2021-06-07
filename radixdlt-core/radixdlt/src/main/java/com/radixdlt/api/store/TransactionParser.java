@@ -17,27 +17,14 @@
 
 package com.radixdlt.api.store;
 
-import com.radixdlt.api.data.ActionEntry;
-import com.radixdlt.api.data.TxHistoryEntry;
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.BurnToken;
-import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.api.data.ActionEntry;
-import com.radixdlt.api.data.TxHistoryEntry;
-import com.radixdlt.api.archive.api.ActionEntry;
-import com.radixdlt.api.archive.api.TxHistoryEntry;
-import com.radixdlt.atom.actions.UnstakeOwnership;
-import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.accounting.TwoActorEntry;
+import com.radixdlt.api.data.ActionEntry;
+import com.radixdlt.api.data.ActionType;
+import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.atommodel.system.state.StakeOwnershipBucket;
 import com.radixdlt.atommodel.tokens.Bucket;
 import com.radixdlt.atommodel.tokens.state.AccountBucket;
 import com.radixdlt.atommodel.tokens.state.ExittingOwnershipBucket;
-import com.radixdlt.client.api.ActionEntry;
-import com.radixdlt.client.api.ActionType;
-import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AccountAddress;

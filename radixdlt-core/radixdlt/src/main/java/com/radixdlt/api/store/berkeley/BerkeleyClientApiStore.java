@@ -32,22 +32,31 @@ import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.ValidatorAddress;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.Streams;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.radixdlt.accounting.REResourceAccounting;
+import com.radixdlt.accounting.TwoActorEntry;
+import com.radixdlt.api.Rri;
 import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.api.data.ScheduledQueueFlush;
+import com.radixdlt.api.data.TxHistoryEntry;
+import com.radixdlt.api.store.ClientApiStore;
+import com.radixdlt.api.store.ClientApiStoreException;
+import com.radixdlt.api.store.TokenDefinitionRecord;
+import com.radixdlt.api.store.TransactionParser;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atommodel.system.state.EpochData;
+import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
-import com.radixdlt.atommodel.system.state.ValidatorStake;
-import com.radixdlt.atommodel.tokens.state.ExittingStake;
-import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
+import com.radixdlt.atommodel.tokens.Bucket;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
-import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.REProcessedTxn;
@@ -59,7 +68,9 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -90,8 +101,6 @@ import java.util.stream.Stream;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.api.data.ApiErrors.INVALID_PAGE_SIZE;
@@ -246,7 +255,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			getRriOrFail(REAddr.ofNativeToken()),
 			computeStakeFromOwnership(entry.getDelegate(), entry.getAmount()),
 			false,
-			entry.getEpochUnlocked()
+			entry.getEpochUnlocked(),
+			null
 		);
 	}
 
@@ -650,7 +660,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		// TODO: as epoch get updated at the end of an epoch transition
 		var curEpoch = currentEpoch.get();
 		var accountingObjects = reTxn.getGroupedStateUpdates().stream()
-			.map(this::processGroupedStateUpdates)
+			.map(updates -> processGroupedStateUpdates(updates, reTxn.getTxn().getId()))
 			.collect(Collectors.toList());
 
 		var actions = accountingObjects.stream()
@@ -677,8 +687,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		log.debug("TRANSACTION_LOG: {}", () -> accountingJson(curEpoch, reTxn, accountingObjects));
 	}
 
-	private REResourceAccounting processGroupedStateUpdates(List<REStateUpdate> updates) {
+	private REResourceAccounting processGroupedStateUpdates(List<REStateUpdate> updates, AID txId) {
 		byte[] addressArg = null;
+
 		for (var update : updates) {
 			var substate = update.getRawSubstate();
 			if (substate instanceof UnclaimedREAddr) {
@@ -729,7 +740,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					rri,
 					UInt384.from(i.abs().toByteArray()),
 					i.signum() == -1,
-					r.getEpochUnlock()
+					r.getEpochUnlock(),
+					txId
 				);
 			});
 		var stakeOwnershipEntries = accounting.stakeOwnershipAccounting().entrySet().stream()
@@ -740,7 +752,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					"stake-ownership",
 					UInt384.from(e.getValue().abs().toByteArray()),
 					e.getValue().signum() == -1,
-					null
+					null,
+					txId
 			));
 		var resourceEntries = accounting.resourceAccounting().entrySet().stream()
 			.filter(e -> !e.getValue().equals(BigInteger.ZERO))
