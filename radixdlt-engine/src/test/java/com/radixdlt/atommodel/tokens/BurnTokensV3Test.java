@@ -18,7 +18,6 @@
 
 package com.radixdlt.atommodel.tokens;
 
-import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
@@ -26,12 +25,13 @@ import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atommodel.tokens.construction.BurnTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
-import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
-import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
+import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
@@ -40,26 +40,23 @@ import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.math.BigInteger;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class BurnTokensTest {
+public class BurnTokensV3Test {
 	private RadixEngine<Void> engine;
-	private EngineStore<Void> store;
 
 	@Before
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new ValidatorConstraintScrypt());
-		cmAtomOS.load(new TokensConstraintScryptV1());
+		cmAtomOS.load(new TokensConstraintScryptV3());
 		var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()
 		);
 		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
-		this.store = new InMemoryEngineStore<>();
+		EngineStore<Void> store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
 			parser,
 			ActionConstructors.newBuilder()
@@ -73,7 +70,7 @@ public class BurnTokensTest {
 	}
 
 	@Test
-	public void burn_tokens() throws Exception {
+	public void cannot_burn_tokens_if_not_owner() throws Exception {
 		// Arrange
 		var key = ECKeyPair.generateNew();
 		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
@@ -89,13 +86,8 @@ public class BurnTokensTest {
 
 		// Act
 		var burnTxn = this.engine.construct(new BurnToken(tokenAddr, nextAccountAddr, UInt256.TEN)).signAndBuild(nextKey::sign);
-		var processed = this.engine.execute(List.of(burnTxn));
-
-		// Assert
-		var accounting = REResourceAccounting.compute(processed.get(0).getGroupedStateUpdates().get(0));
-		assertThat(accounting.resourceAccounting())
-			.hasSize(1)
-			.containsEntry(tokenAddr, BigInteger.valueOf(-10));
+		assertThatThrownBy(() -> this.engine.execute(List.of(burnTxn)))
+			.isInstanceOf(RadixEngineException.class)
+			.hasRootCauseExactlyInstanceOf(AuthorizationException.class);
 	}
-
 }
