@@ -50,7 +50,7 @@ public class ValidationHandler {
 
 	public JSONObject handleGetCurrentEpochData(JSONObject request) {
 		//TODO: implement it
-		throw new UnsupportedOperationException("Not implemented");
+		return jsonObject();
 	}
 
 	private JSONObject listValidators() {

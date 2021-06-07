@@ -23,11 +23,6 @@ import com.radixdlt.api.server.JsonRpcServer;
 
 public final class SystemController extends AbstractJsonRpcController {
 	public SystemController(JsonRpcServer jsonRpcServer) {
-		super(jsonRpcServer);
-	}
-
-	@Override
-	public String root() {
-		return "/system";
+		super(jsonRpcServer, "/system");
 	}
 }

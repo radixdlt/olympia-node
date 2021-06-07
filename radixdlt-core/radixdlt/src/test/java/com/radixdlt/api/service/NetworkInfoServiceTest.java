@@ -16,6 +16,7 @@
  */
 package com.radixdlt.api.service;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import com.radixdlt.counters.SystemCounters;
@@ -24,7 +25,9 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.data.NodeStatus.BOOTING;
 import static com.radixdlt.api.data.NodeStatus.STALLED;
 import static com.radixdlt.api.data.NodeStatus.SYNCING;
@@ -41,6 +44,12 @@ public class NetworkInfoServiceTest {
 	private final SystemCounters systemCounters = new SystemCountersImpl();
 	private final SystemConfigService systemConfigService = mock(SystemConfigService.class);
 	private final NetworkInfoService networkInfoService = new NetworkInfoService(systemCounters, dispatcher, systemConfigService);
+
+	@Before
+	public void setup() {
+		when(systemConfigService.getLatestProof()).thenReturn(jsonObject());
+		when(systemConfigService.getCheckpoints()).thenReturn(jsonObject());
+	}
 
 	@Test
 	public void testDemand() {
