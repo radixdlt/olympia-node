@@ -63,7 +63,8 @@ public class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
 					e -> new ForkConfig(
 						e.getValue().getName(),
 						e.getValue().getParser(),
-						e.getValue().getConstraintMachine(),
+						fees ? e.getValue().getConstraintMachineConfig()
+							: e.getValue().getConstraintMachineConfig().metering((procedureKey, param, context) -> { }),
 						e.getValue().getActionConstructors(),
 						e.getValue().getBatchVerifier(),
 						fees ? e.getValue().getPostProcessedVerifier() : (p, t) -> { },

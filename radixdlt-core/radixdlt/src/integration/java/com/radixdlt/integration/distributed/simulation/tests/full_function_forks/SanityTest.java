@@ -30,11 +30,14 @@ import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.Rad
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
 import com.radixdlt.sync.SyncConfig;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -46,13 +49,15 @@ public class SanityTest {
 	@Parameterized.Parameters
 	public static Collection<Object[]> fees() {
 		return List.of(new Object[][] {
-			{true}, {false},
+			{false}, {true},
 		});
 	}
 
+	private static final Logger logger = LogManager.getLogger();
 	private final Builder bftTestBuilder;
 
 	public SanityTest(boolean fees) {
+		logger.info("Test fees={}", fees);
 		bftTestBuilder = SimulationTest.builder()
 			.numNodes(4)
 			.networkModules(
@@ -86,7 +91,8 @@ public class SanityTest {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
 
-		final var results = simulationTest.run().awaitCompletion();
+		final var results = simulationTest
+			.run(Duration.ofMinutes(1)).awaitCompletion();
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 }

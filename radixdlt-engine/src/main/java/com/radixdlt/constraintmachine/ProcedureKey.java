@@ -33,6 +33,10 @@ public final class ProcedureKey {
 		return new ProcedureKey(currentState, opSignature);
 	}
 
+	public OpSignature opSignature() {
+		return opSignature;
+	}
+
 	@Override
 	public int hashCode() {
 		return Objects.hash(opSignature, currentState);

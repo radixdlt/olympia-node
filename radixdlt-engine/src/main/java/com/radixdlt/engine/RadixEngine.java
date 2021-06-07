@@ -28,6 +28,7 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -256,14 +257,18 @@ public final class RadixEngine<M> {
 	}
 
 	public void replaceConstraintMachine(
-		ConstraintMachine constraintMachine,
+		ConstraintMachineConfig constraintMachineConfig,
 		ActionConstructors actionToConstructorMap,
 		BatchVerifier<M> batchVerifier,
 		REParser parser,
 		PostProcessedVerifier postProcessedVerifier
 	) {
 		synchronized (stateUpdateEngineLock) {
-			this.constraintMachine = constraintMachine;
+			this.constraintMachine = new ConstraintMachine(
+				constraintMachineConfig.getVirtualStoreLayer(),
+				constraintMachineConfig.getProcedures(),
+				constraintMachineConfig.getMetering()
+			);
 			this.actionConstructors = actionToConstructorMap;
 			this.batchVerifier = batchVerifier;
 			this.parser = parser;

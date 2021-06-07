@@ -200,11 +200,11 @@ public final class ConstraintMachine {
 		var requiredLevel = authorization.permissionLevel();
 		context.verifyPermissionLevel(requiredLevel);
 		try {
-			if (requiredLevel == PermissionLevel.USER) {
-				this.metering.onUserInstruction(procedure.key(), procedureParam, context);
-			}
-
 			if (context.permissionLevel() != PermissionLevel.SYSTEM) {
+				if (requiredLevel == PermissionLevel.USER) {
+					this.metering.onUserInstruction(procedure.key(), procedureParam, context);
+				}
+
 				authorization.authorizer().verify(readableAddrs, context);
 			}
 

@@ -28,6 +28,7 @@ import com.radixdlt.atommodel.system.state.ValidatorEpochData;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.engine.PostProcessedVerifier;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.RadixEngine;
@@ -72,13 +73,25 @@ public class RadixEngineModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private ConstraintMachine buildConstraintMachine(
+	private ConstraintMachineConfig buildConstraintMachineConfig(
 		CommittedReader committedReader, // TODO: This is a hack, remove
 		TreeMap<Long, ForkConfig> epochToForkConfig
 	) {
 		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
 		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return epochToForkConfig.floorEntry(epoch).getValue().getConstraintMachine();
+		return epochToForkConfig.floorEntry(epoch).getValue().getConstraintMachineConfig();
+	}
+
+	@Provides
+	@Singleton
+	private ConstraintMachine constraintMachine(
+		ConstraintMachineConfig config
+	) {
+		return new ConstraintMachine(
+			config.getVirtualStoreLayer(),
+			config.getProcedures(),
+			config.getMetering()
+		);
 	}
 
 	@Provides

@@ -20,7 +20,7 @@ package com.radixdlt.statecomputer.forks;
 
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.PostProcessedVerifier;
 import com.radixdlt.engine.parser.REParser;
@@ -32,7 +32,7 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 public final class ForkConfig {
 	private final String name;
 	private final REParser parser;
-	private final ConstraintMachine constraintMachine;
+	private final ConstraintMachineConfig constraintMachineConfig;
 	private final ActionConstructors actionConstructors;
 	private final BatchVerifier<LedgerAndBFTProof> batchVerifier;
 	private final PostProcessedVerifier postProcessedVerifier;
@@ -41,7 +41,7 @@ public final class ForkConfig {
 	public ForkConfig(
 		String name,
 		REParser parser,
-		ConstraintMachine constraintMachine,
+		ConstraintMachineConfig constraintMachineConfig,
 		ActionConstructors actionConstructors,
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
 		PostProcessedVerifier postProcessedVerifier,
@@ -49,7 +49,7 @@ public final class ForkConfig {
 	) {
 		this.name = name;
 		this.parser = parser;
-		this.constraintMachine = constraintMachine;
+		this.constraintMachineConfig = constraintMachineConfig;
 		this.actionConstructors = actionConstructors;
 		this.batchVerifier = batchVerifier;
 		this.postProcessedVerifier = postProcessedVerifier;
@@ -64,8 +64,8 @@ public final class ForkConfig {
 		return parser;
 	}
 
-	public ConstraintMachine getConstraintMachine() {
-		return constraintMachine;
+	public ConstraintMachineConfig getConstraintMachineConfig() {
+		return constraintMachineConfig;
 	}
 
 	public ActionConstructors getActionConstructors() {

@@ -23,5 +23,5 @@ public interface Metering {
 		ProcedureKey procedureKey,
 		Object param,
 		ExecutionContext context
-	);
+	) throws AuthorizationException;
 }

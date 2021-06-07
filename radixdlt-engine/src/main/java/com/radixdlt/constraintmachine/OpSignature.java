@@ -31,6 +31,10 @@ public final class OpSignature {
 		this.type = type;
 	}
 
+	public REOp op() {
+		return op;
+	}
+
 	public static OpSignature ofSubstateUpdate(REOp op, Class<? extends Particle> particleClass) {
 		return new OpSignature(op, particleClass);
 	}

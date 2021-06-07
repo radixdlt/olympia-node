@@ -64,7 +64,7 @@ public class ForkOverwritesFromPropertiesModule extends AbstractModule {
 				var overwrite = new ForkConfig(
 					c.getName(),
 					c.getParser(),
-					c.getConstraintMachine(),
+					c.getConstraintMachineConfig(),
 					c.getActionConstructors(),
 					c.getBatchVerifier(),
 					c.getPostProcessedVerifier(),
