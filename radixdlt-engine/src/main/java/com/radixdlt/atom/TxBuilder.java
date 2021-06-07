@@ -331,7 +331,7 @@ public final class TxBuilder {
 		};
 	}
 
-	public <T extends ResourceInBucket, U extends ResourceInBucket> void payFee(
+	public <T extends ResourceInBucket> void payFee(
 		Predicate<TokensInAccount> particlePredicate,
 		FungibleMapper<T> remainderMapper,
 		UInt256 amount,

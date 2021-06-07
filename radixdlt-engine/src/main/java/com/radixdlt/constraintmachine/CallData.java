@@ -24,14 +24,22 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public final class CallData {
-	private final ByteBuffer byteBuffer;
-	public CallData(ByteBuffer byteBuffer) {
-		this.byteBuffer = Objects.requireNonNull(byteBuffer);
+	private final byte[] data;
+	public CallData(byte[] data) {
+		this.data = Objects.requireNonNull(data);
 	}
 
-	public UInt256 getUInt256() {
-		var bytes = new byte[UInt256.BYTES];
-		byteBuffer.get(bytes);
-		return UInt256.from(bytes);
+	public byte get(int offset) throws CallDataAccessException {
+		if (offset < 0 || (offset + Byte.BYTES) > data.length) {
+			throw new CallDataAccessException(data.length, offset, Byte.BYTES);
+		}
+		return data[offset];
+	}
+
+	public UInt256 getUInt256(int offset) throws CallDataAccessException {
+		if (offset < 0 || (offset + UInt256.BYTES) > data.length) {
+			throw new CallDataAccessException(data.length, offset, UInt256.BYTES);
+		}
+		return UInt256.from(data, offset);
 	}
 }

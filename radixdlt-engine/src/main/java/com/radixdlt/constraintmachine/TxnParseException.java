@@ -23,6 +23,10 @@ public class TxnParseException extends Exception {
 		super(message, cause);
 	}
 
+	public TxnParseException(Throwable cause) {
+		super(cause);
+	}
+
 	public TxnParseException(String message) {
 		super(message);
 	}

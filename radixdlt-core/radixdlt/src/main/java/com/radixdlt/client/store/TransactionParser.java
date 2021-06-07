@@ -43,18 +43,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class TransactionParser {
-	private static UInt256 computeFeePaid(List<Optional<TwoActorEntry>> actionEntries) {
-		return actionEntries
-			.stream()
-			.filter(Optional::isPresent)
-			.map(Optional::get)
-			.filter(TwoActorEntry::isFee)
-			.map(TwoActorEntry::amount)
-			.map(i -> UInt256.from(i.toByteArray()))
-			.reduce(UInt256::add)
-			.orElse(UInt256.ZERO);
-	}
-
 	private static String bucketToString(Bucket bucket) {
 		if (bucket.getValidatorKey() != null && bucket instanceof ExittingOwnershipBucket) {
 			return ValidatorAddress.of(bucket.getValidatorKey());
@@ -109,15 +97,15 @@ public final class TransactionParser {
 	}
 
 	public Result<TxHistoryEntry> parse(
-		REProcessedTxn parsedTxn,
+		REProcessedTxn processedTxn,
 		List<Optional<TwoActorEntry>> actionEntries,
 		Instant txDate,
 		Function<REAddr, String> addrToRri,
 		BiFunction<ECPublicKey, UInt384, UInt384> computeStakeFromOwnership
 	) {
-		var txnId = parsedTxn.getTxn().getId();
-		var fee = computeFeePaid(actionEntries);
-		var message = parsedTxn.getMsg()
+		var txnId = processedTxn.getTxnId();
+		var fee = processedTxn.getFeePaid();
+		var message = processedTxn.getMsg()
 			.map(bytes -> new String(bytes, RadixConstants.STANDARD_CHARSET));
 
 		var actions = actionEntries.stream()

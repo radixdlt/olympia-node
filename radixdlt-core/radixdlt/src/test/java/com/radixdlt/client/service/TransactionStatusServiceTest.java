@@ -25,6 +25,7 @@ import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.functions.Consumer;
@@ -53,7 +54,7 @@ public class TransactionStatusServiceTest {
 		);
 
 		var txn = randomTxn();
-		var parsedTxn = new ParsedTxn(txn, null, null, null);
+		var parsedTxn = new ParsedTxn(txn, UInt256.ZERO, null, null, null);
 		var processedTxn = new REProcessedTxn(parsedTxn, null);
 		var one = TxnsCommittedToLedger.create(List.of(processedTxn));
 		transactionStatusService.atomsCommittedToLedgerEventProcessor().process(one);
@@ -119,7 +120,7 @@ public class TransactionStatusServiceTest {
 		var succeeded = MempoolAddSuccess.create(txnSucceeded, null);
 		transactionStatusService.mempoolAddSuccessEventProcessor().process(succeeded);
 		var txnCommitted = randomTxn();
-		var parsedTxn = new ParsedTxn(txnCommitted, null, null, null);
+		var parsedTxn = new ParsedTxn(txnCommitted, UInt256.ZERO, null, null, null);
 		var processedTxn = new REProcessedTxn(parsedTxn, null);
 		var committed = TxnsCommittedToLedger.create(List.of(processedTxn));
 		transactionStatusService.atomsCommittedToLedgerEventProcessor().process(committed);

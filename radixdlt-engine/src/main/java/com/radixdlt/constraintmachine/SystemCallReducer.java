@@ -19,5 +19,6 @@
 package com.radixdlt.constraintmachine;
 
 public interface SystemCallReducer<S extends ReducerState> {
-	ReducerResult reduce(S reducerState, CallData c, ExecutionContext context) throws ProcedureException;
+	ReducerResult reduce(S reducerState, CallData c, ExecutionContext context)
+		throws ProcedureException, CallDataAccessException;
 }

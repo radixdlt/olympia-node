@@ -24,6 +24,8 @@ import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.engine.parser.ParsedTxn;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.utils.UInt256;
 
 import java.util.List;
 import java.util.Objects;
@@ -45,12 +47,20 @@ public final class REProcessedTxn {
 		this.stateUpdates = stateUpdates;
 	}
 
+	public UInt256 getFeePaid() {
+		return parsedTxn.getFeePaid();
+	}
+
 	public Optional<byte[]> getMsg() {
 		return parsedTxn.getMsg();
 	}
 
 	public Optional<ECPublicKey> getSignedBy() {
 		return parsedTxn.getSignedBy();
+	}
+
+	public AID getTxnId() {
+		return parsedTxn.txn().getId();
 	}
 
 	public Txn getTxn() {

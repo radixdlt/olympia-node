@@ -20,6 +20,8 @@ package com.radixdlt.engine.parser;
 
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.constraintmachine.CallData;
+import com.radixdlt.constraintmachine.CallDataAccessException;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.StatelessSubstateVerifier;
@@ -29,6 +31,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.UInt256;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -91,6 +94,7 @@ public final class REParser {
 			throw new TxnParseException("Transaction is too big: " + txn.getPayload().length + " > " + MAX_TXN_SIZE);
 		}
 
+		UInt256 feePaid = null;
 		ECDSASignature sig = null;
 		int sigPosition = 0;
 		var parserState = new ParserState();
@@ -122,7 +126,20 @@ public final class REParser {
 
 				parserState.substateUpdate();
 			} else if (inst.getMicroOp() == REInstruction.REMicroOp.SYSCALL) {
-				// TODO: make sure this is called only once
+				try {
+					CallData callData = inst.getData();
+					// TODO: Need to rethink how stateless verification occurs here
+					// TODO: Along with FeeConstraintScrypt.java
+					if (callData.get(0) != 0) {
+						throw new TxnParseException("Invalid call data type: " + callData.get(0));
+					}
+					if (feePaid != null) {
+						throw new TxnParseException("Should only pay fees once.");
+					}
+					feePaid = callData.getUInt256(1);
+				} catch (CallDataAccessException e) {
+					throw new TxnParseException(e);
+				}
 			} else if (inst.getMicroOp() == REInstruction.REMicroOp.MSG) {
 				parserState.msg(inst.getData());
 			} else if (inst.getMicroOp() == REInstruction.REMicroOp.END) {
@@ -137,17 +154,18 @@ public final class REParser {
 
 		parserState.finish();
 
-
+		final ECPublicKey pubKey;
 		if (sig != null) {
 			var hash = HashUtils.sha256(txn.getPayload(), 0, sigPosition); // This is a double hash
-			var pubKey = ECPublicKey.recoverFrom(hash, sig)
+			pubKey = ECPublicKey.recoverFrom(hash, sig)
 				.orElseThrow(() -> new TxnParseException("Invalid signature"));
 			if (!pubKey.verify(hash, sig)) {
 				throw new TxnParseException("Invalid signature");
 			}
-			return new ParsedTxn(txn, parserState.instructions, parserState.msg, pubKey);
+		} else {
+			pubKey = null;
 		}
 
-		return new ParsedTxn(txn, parserState.instructions, parserState.msg, null);
+		return new ParsedTxn(txn, feePaid, parserState.instructions, parserState.msg, pubKey);
 	}
 }

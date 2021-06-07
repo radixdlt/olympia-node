@@ -21,6 +21,7 @@ package com.radixdlt.engine.parser;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.utils.UInt256;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,9 +31,17 @@ public final class ParsedTxn {
 	private final ECPublicKey publicKey;
 	private final Txn txn;
 	private final byte[] msg;
+	private final UInt256 feePaid;
 
-	public ParsedTxn(Txn txn, List<REInstruction> instructions, byte[] msg, ECPublicKey publicKey) {
+	public ParsedTxn(
+		Txn txn,
+		UInt256 feePaid,
+		List<REInstruction> instructions,
+		byte[] msg,
+		ECPublicKey publicKey
+	) {
 		this.txn = txn;
+		this.feePaid = feePaid;
 		this.instructions = instructions;
 		this.msg = msg;
 		this.publicKey = publicKey;
@@ -40,6 +49,10 @@ public final class ParsedTxn {
 
 	public Txn txn() {
 		return txn;
+	}
+
+	public UInt256 getFeePaid() {
+		return feePaid == null ? UInt256.ZERO : feePaid;
 	}
 
 	public List<REInstruction> instructions() {

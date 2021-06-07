@@ -39,6 +39,7 @@ public final class TwoActorEntry {
 		this.amount = amount;
 	}
 
+	// TODO: Remove for mainnet
 	public boolean isFee() {
 		return resourceAddr().map(REAddr::isNativeToken).orElse(false)
 			&& to().isEmpty();

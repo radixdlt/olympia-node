@@ -58,6 +58,10 @@ public class SystemCallProcedure<S extends ReducerState> implements Procedure {
 		ReadableAddrs readableAddrs,
 		ExecutionContext context
 	) throws ProcedureException {
-		return reducer.reduce((S) reducerState, (CallData) o, context);
+		try {
+			return reducer.reduce((S) reducerState, (CallData) o, context);
+		} catch (CallDataAccessException e) {
+			throw new ProcedureException(e);
+		}
 	}
 }

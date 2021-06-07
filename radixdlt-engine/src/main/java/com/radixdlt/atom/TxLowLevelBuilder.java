@@ -162,9 +162,10 @@ public final class TxLowLevelBuilder {
 	}
 
 	public TxLowLevelBuilder payFee(UInt256 amount) {
-		var data = new byte[1 + UInt256.BYTES];
-		data[0] = UInt256.BYTES;
-		amount.toByteArray(data, 1);
+		var data = new byte[2 + UInt256.BYTES];
+		data[0] = UInt256.BYTES + 1;
+		data[1] = 0;
+		amount.toByteArray(data, 2);
 		instruction(REInstruction.REMicroOp.SYSCALL, data);
 		return this;
 	}

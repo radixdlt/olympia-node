@@ -80,9 +80,10 @@ public final class REInstruction {
 		}, REOp.SIG),
 		SYSCALL((byte) 9, (txn, i, b) -> {
 			int bufSize = b.get();
+			// TODO: Remove buffer copy
 			var callData = new byte[bufSize];
 			b.get(callData);
-			return new CallData(ByteBuffer.wrap(callData));
+			return new CallData(callData);
 		}, REOp.SYSCALL),
 		END((byte) 0, (txn, i, b) -> null, REOp.END);
 

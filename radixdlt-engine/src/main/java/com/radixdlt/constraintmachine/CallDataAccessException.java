@@ -18,12 +18,8 @@
 
 package com.radixdlt.constraintmachine;
 
-public class ProcedureException extends Exception {
-	public ProcedureException(Throwable cause) {
-		super(cause);
-	}
-
-	public ProcedureException(String msg) {
-		super(msg);
+public class CallDataAccessException extends Exception {
+	public CallDataAccessException(int callDataSize, int index, int accessSize) {
+		super("CallData invalid access (index: " + index + " accessSize: " + accessSize + ") on size " + callDataSize);
 	}
 }

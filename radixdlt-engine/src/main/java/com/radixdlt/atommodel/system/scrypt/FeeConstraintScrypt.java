@@ -23,6 +23,7 @@ import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.SystemCallProcedure;
 import com.radixdlt.identifiers.REAddr;
@@ -35,7 +36,12 @@ public final class FeeConstraintScrypt implements ConstraintScrypt {
 				TokenHoldingBucket.class, REAddr.ofSystem(),
 				() -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 				(s, d, c) -> {
-					var amt = d.getUInt256();
+					var type = d.get(0);
+					if (type != 0) {
+						throw new ProcedureException("Invalid call type: " + type);
+					}
+
+					var amt = d.getUInt256(1);
 					var nextState = s.withdraw(REAddr.ofNativeToken(), amt);
 					c.depositFeeReserve(amt);
 					return ReducerResult.incomplete(nextState);
