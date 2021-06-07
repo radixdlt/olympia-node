@@ -23,11 +23,6 @@ import com.radixdlt.api.server.JsonRpcServer;
 
 public final class FaucetController  extends AbstractJsonRpcController {
 	public FaucetController(JsonRpcServer jsonRpcServer) {
-		super(jsonRpcServer);
-	}
-
-	@Override
-	public String root() {
-		return "/faucet";
+		super(jsonRpcServer, "/faucet");
 	}
 }

@@ -23,11 +23,6 @@ import com.radixdlt.api.server.JsonRpcServer;
 
 public final class ValidationController extends AbstractJsonRpcController {
 	public ValidationController(JsonRpcServer jsonRpcServer) {
-		super(jsonRpcServer);
-	}
-
-	@Override
-	public String root() {
-		return "/validation";
+		super(jsonRpcServer, "/validation");
 	}
 }

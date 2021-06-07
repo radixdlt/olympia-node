@@ -27,9 +27,11 @@ import io.undertow.server.RoutingHandler;
  */
 public abstract class AbstractJsonRpcController implements Controller {
 	private final JsonRpcServer jsonRpcServer;
+	private final String root;
 
-	protected AbstractJsonRpcController(JsonRpcServer jsonRpcServer) {
+	protected AbstractJsonRpcController(JsonRpcServer jsonRpcServer, String root) {
 		this.jsonRpcServer = jsonRpcServer;
+		this.root = root;
 	}
 
 	public void configureRoutes(RoutingHandler handler) {
@@ -37,6 +39,11 @@ public abstract class AbstractJsonRpcController implements Controller {
 
 		handler.post(path, jsonRpcServer);
 		handler.post(path + "/", jsonRpcServer);
+	}
+
+	@Override
+	public String root() {
+		return root;
 	}
 
 	private static String sanitize(String baseUrl) {

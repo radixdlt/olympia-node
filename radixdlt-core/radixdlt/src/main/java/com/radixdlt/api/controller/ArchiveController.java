@@ -26,11 +26,6 @@ import com.radixdlt.api.server.JsonRpcServer;
 public final class ArchiveController extends AbstractJsonRpcController {
 	@Inject
 	public ArchiveController(@Archive JsonRpcServer jsonRpcServer) {
-		super(jsonRpcServer);
-	}
-
-	@Override
-	public String root() {
-		return "/archive";
+		super(jsonRpcServer, "/archive");
 	}
 }

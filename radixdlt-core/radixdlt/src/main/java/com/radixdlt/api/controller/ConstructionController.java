@@ -23,11 +23,6 @@ import com.radixdlt.api.server.JsonRpcServer;
 
 public final class ConstructionController  extends AbstractJsonRpcController {
 	public ConstructionController(JsonRpcServer jsonRpcServer) {
-		super(jsonRpcServer);
-	}
-
-	@Override
-	public String root() {
-		return "/construction";
+		super(jsonRpcServer, "/construction");
 	}
 }

@@ -19,16 +19,10 @@
 package com.radixdlt.api.controller;
 
 import com.radixdlt.api.AbstractJsonRpcController;
-import com.radixdlt.api.AbstractJsonRpcController;
 import com.radixdlt.api.server.JsonRpcServer;
 
 public final class AccountController extends AbstractJsonRpcController {
 	public AccountController(JsonRpcServer jsonRpcServer) {
-		super(jsonRpcServer);
-	}
-
-	@Override
-	public String root() {
-		return "/account";
+		super(jsonRpcServer, "/account");
 	}
 }
