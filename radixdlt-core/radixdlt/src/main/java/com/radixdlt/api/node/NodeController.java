@@ -27,6 +27,7 @@ import com.radixdlt.application.MyStakedBalance;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.application.ValidatorInfo;
 import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
@@ -60,7 +61,6 @@ import org.json.JSONObject;
 import com.radixdlt.api.Controller;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -248,15 +248,15 @@ public final class NodeController implements Controller {
 		withBody(exchange, values -> {
 			try {
 				var actionsArray = values.getJSONArray("actions");
-				var actions = new ArrayList<TxAction>();
-				actions.add(new PayFee(account, TokenFeeChecker.FIXED_FEE));
+				var txnConstructionRequest = TxnConstructionRequest.create();
+				txnConstructionRequest.action(new PayFee(account, TokenFeeChecker.FIXED_FEE));
 				for (int i = 0; i < actionsArray.length(); i++) {
 					var actionObject = actionsArray.getJSONObject(i);
 					var txAction = parseAction(actionObject);
-					actions.add(txAction);
+					txnConstructionRequest.action(txAction);
 				}
 				var completableFuture = new CompletableFuture<MempoolAddSuccess>();
-				var request = NodeApplicationRequest.create(actions, completableFuture);
+				var request = NodeApplicationRequest.create(txnConstructionRequest, completableFuture);
 				nodeApplicationRequestEventDispatcher.dispatch(request);
 
 				var success = completableFuture.get();

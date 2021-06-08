@@ -84,15 +84,13 @@ public final class FaucetController implements Controller {
 				return;
 			}
 
-			var builder = TxnConstructionRequest.create();
-			builder.action(new PayFee(account, TokenFeeChecker.FIXED_FEE));
+			var txnConstructionRequest = TxnConstructionRequest.create();
+			txnConstructionRequest.action(new PayFee(account, TokenFeeChecker.FIXED_FEE));
 			for (var tokenAddr : tokensToSend) {
-				builder.transfer(tokenAddr, account, address, AMOUNT);
+				txnConstructionRequest.transfer(tokenAddr, account, address, AMOUNT);
 			}
-			var actions = builder.getActions();
-
 			var completableFuture = new CompletableFuture<MempoolAddSuccess>();
-			var request = NodeApplicationRequest.create(actions, completableFuture);
+			var request = NodeApplicationRequest.create(txnConstructionRequest, completableFuture);
 			faucetRequestDispatcher.dispatch(request);
 
 			try {

@@ -57,7 +57,7 @@ public final class NodeValidatorRandomRegistrator implements SimulationTest.Simu
 					txnConstructionRequest.unregisterAsValidator(node.getKey());
 				}
 
-				var request = NodeApplicationRequest.create(txnConstructionRequest.getActions());
+				var request = NodeApplicationRequest.create(txnConstructionRequest);
 				d.dispatch(request);
 			});
 	}

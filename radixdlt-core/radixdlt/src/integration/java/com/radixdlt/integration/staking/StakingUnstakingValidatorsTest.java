@@ -33,6 +33,7 @@ import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
@@ -317,11 +318,12 @@ public class StakingUnstakingValidatorsTest {
 					continue;
 			}
 
-			var actions = Stream.concat(
-				payFees ? Stream.of(new PayFee(acct, FIXED_FEE)) : Stream.empty(),
-				Stream.of(action)
-			).collect(Collectors.toList());
-			dispatcher.dispatch(NodeApplicationRequest.create(actions));
+			var request = TxnConstructionRequest.create();
+			if (payFees) {
+				request.action(new PayFee(acct, FIXED_FEE));
+			}
+			request.action(action);
+			dispatcher.dispatch(NodeApplicationRequest.create(request));
 			this.nodes.forEach(n -> {
 				n.getInstance(new Key<EventDispatcher<MempoolRelayTrigger>>() { }).dispatch(MempoolRelayTrigger.create());
 				n.getInstance(new Key<EventDispatcher<SyncCheckTrigger>>() { }).dispatch(SyncCheckTrigger.create());

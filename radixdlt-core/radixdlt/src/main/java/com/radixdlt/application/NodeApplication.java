@@ -21,7 +21,6 @@ package com.radixdlt.application;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
@@ -59,7 +58,7 @@ public final class NodeApplication {
 
 		try {
 			// TODO: remove use of mempoolAdd message and add to mempool synchronously
-			var txBuilder = radixEngine.construct(TxnConstructionRequest.create().actions(request.getActions()));
+			var txBuilder = radixEngine.construct(request.getRequest());
 			var txn = txBuilder.signAndBuild(hashSigner::sign);
 			var mempoolAdd = request.completableFuture()
 				.map(f -> MempoolAdd.create(txn, f))
