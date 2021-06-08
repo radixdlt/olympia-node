@@ -36,7 +36,6 @@ import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import com.radixdlt.mempool.MempoolConfig;
 import org.radix.universe.system.LocalSystem;
 
 import com.google.inject.AbstractModule;
@@ -87,8 +86,6 @@ import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
 import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksModule;
-import com.radixdlt.statecomputer.transaction.EmptyTransactionCheckModule;
-import com.radixdlt.statecomputer.transaction.TokenFeeModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
