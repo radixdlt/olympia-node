@@ -17,6 +17,21 @@
 
 package org.radix.network.discovery;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.net.HostAndPort;
+import com.google.inject.Inject;
+import com.radixdlt.network.transport.StaticTransportMetadata;
+import com.radixdlt.network.transport.TransportInfo;
+import com.radixdlt.network.transport.tcp.TCPConfiguration;
+import com.radixdlt.network.transport.tcp.TCPConstants;
+import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.Pair;
+
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -34,20 +49,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import com.google.inject.Inject;
-import com.radixdlt.network.transport.tcp.TCPConfiguration;
-import com.radixdlt.utils.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.net.HostAndPort;
-import com.radixdlt.network.transport.StaticTransportMetadata;
-import com.radixdlt.network.transport.TransportInfo;
-import com.radixdlt.network.transport.tcp.TCPConstants;
-import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.universe.Universe;
 
 public class BootstrapDiscovery {
 	// https://en.wikipedia.org/wiki/Domain_Name_System

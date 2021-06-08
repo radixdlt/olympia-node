@@ -18,6 +18,13 @@
 
 package com.radixdlt.integration.mempool;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.radix.TokenIssuance;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -26,12 +33,12 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
+import com.radixdlt.api.service.TransactionStatusService;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
-import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
-import com.radixdlt.client.service.TransactionStatusService;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
@@ -54,18 +61,14 @@ import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.radix.TokenIssuance;
 
 import java.util.Collection;
 import java.util.List;
 
-import static com.radixdlt.client.api.TransactionStatus.*;
 import static org.junit.Assert.assertEquals;
+
+import static com.radixdlt.api.data.TransactionStatus.CONFIRMED;
+import static com.radixdlt.api.data.TransactionStatus.TRANSACTION_NOT_FOUND;
 
 @RunWith(Parameterized.class)
 public class TxStatusTest {
@@ -160,8 +163,8 @@ public class TxStatusTest {
 		// Correct transfer
 		var transferAction = new TransferToken(REAddr.ofNativeToken(), accountAddr, otherAddr,
 			ValidatorStake.MINIMUM_STAKE);
+
 		var transferDispatched = dispatchAndWaitForCommit(transferAction);
 		assertEquals(CONFIRMED, transactionStatusService.getTransactionStatus(transferDispatched.getTxn().getId()));
-
 	}
 }
