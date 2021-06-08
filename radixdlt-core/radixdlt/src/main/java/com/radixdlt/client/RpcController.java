@@ -25,8 +25,7 @@ import com.radixdlt.api.Controller;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 
-import static com.radixdlt.api.RestUtils.respond;
-import static com.radixdlt.api.RestUtils.withBodyAsync;
+import static com.radixdlt.api.RestUtils.*;
 
 public final class RpcController implements Controller {
 	private final JsonRpcServer jsonRpcServer;
@@ -44,6 +43,6 @@ public final class RpcController implements Controller {
 
 	@VisibleForTesting
 	void handleRpc(HttpServerExchange exchange) {
-		withBodyAsync(exchange, request -> respond(exchange, jsonRpcServer.handle(request)));
+		withBody(exchange, request -> respond(exchange, jsonRpcServer.handle(request)));
 	}
 }
