@@ -10,9 +10,6 @@ This document describes reorganization and proposed changes to the whole node AP
 
  | Path | Method | Description | Comments |
  | --- | --- | --- | --- |
- | /chaos/message-flooder | PUT | message flooder | Necessary for testnets only |
- | /chaos/mempool-filler | PUT | mempool flooder |  Necessary for testnets only |
- | /faucet/request | POST | faucet API |  Necessary for testnets and betanet only |
  | /node/parse | POST | Transaction blob parsing |  No sensitive information |
  | /node/txn | POST | Retrieve transaction blob |  No sensitive information |
  | /node/submit | POST | Submit transaction blob |  No sensitive information |
@@ -56,8 +53,6 @@ Following configuration options control which APIs are enabled at the node:
 | --- | --- |
 | client_api.enable | Enables JSON-RPC APIs|
 | universe_api.enable | Enables `/universe.json` API |
-| faucet.enable | Enables `/faucet/request` API |
-| chaos.enable | Enables `/chaos/message-flooder` and `/chaos/mempool-filler` APIs |
 
 </details>
 
@@ -70,15 +65,9 @@ Following configuration options control which APIs are enabled at the node:
   - `/account` supports methods to fetch your associated account info, and a one-step method to build, sign, and submit a transaction
   - `/validation` - read-only methods which provide same information as available today via all `/node/*` endpoints
   - `/system` - read-only methods which provide same information as available today via all `/system/*` endpoints
-  - `/discover` - dedicated to JSON RPC discovery method  
     
 - The `/system`, `/account` and `/validator` endpoints are expected to be protected by firewall and/or require authentication/etc. 
   (similar requirements/setup as we have today)
-  
-- The following endpoints are supported until mainnet release (necessary for testing/debugging):
-  - `/chaos/message-flooder` 
-  - `/chaos/mempool-filler`
-  - `/faucet` 
 
 ### REST APIs
 
@@ -160,12 +149,6 @@ Node health status has following format: `{"status" : "<status>" }`, where `<sta
 | validation.get_next_epoch_data | Get information about the next set of validators
 
 
-#### /faucet
-
-| Method | Description |
-| --- | --- |
-| faucet.request_tokens | Make a request for tokens for a particular account
-
 ### New Actions
 In order to make JSON RPC API complete, we need to support following actions while building transactions:
 
@@ -197,7 +180,5 @@ The following configuration options control which APIs are enabled at the node:
 | api.account.enable | `/account` | Disabled
 | api.validation.enable | `/validation` endpoint | Disabled
 | api.universe.enable | `/universe.json` | Disabled
-| api.faucet.enable | `/faucet/request` | Disabled; __Can't be enabled on mainnet__
-| api.chaos.enable | `/chaos/message-flooder` and `/chaos/mempool-filler`| Disabled; __Can't be enabled on mainnet__
 | api.health.enable | `/health` | Enabled
 | api.version.enable | `/version` | Enabled
