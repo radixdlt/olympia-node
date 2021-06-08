@@ -26,12 +26,19 @@ import java.util.Optional;
 public final class ExecutionContext {
 	private final PermissionLevel level;
 	private final Optional<ECPublicKey> key;
+	private final boolean disableResourceDeallocation;
 	private UInt256 feeReserve;
 
-	public ExecutionContext(PermissionLevel level, Optional<ECPublicKey> key) {
+	public ExecutionContext(
+		PermissionLevel level,
+		Optional<ECPublicKey> key,
+		UInt256 feeReserve,
+		boolean disableResourceDeallocation
+	) {
 		this.level = level;
 		this.key = key;
-		this.feeReserve = UInt256.ZERO;
+		this.disableResourceDeallocation = disableResourceDeallocation;
+		this.feeReserve = feeReserve;
 	}
 
 	public void depositFeeReserve(UInt256 fee) {
@@ -44,8 +51,10 @@ public final class ExecutionContext {
 		}
 	}
 
-	public UInt256 feeReserve() {
-		return this.feeReserve;
+	public void verifyCanDeallocateResources() throws ProcedureException {
+		if (disableResourceDeallocation) {
+			throw new ProcedureException("Deallocation of resources not enabled.");
+		}
 	}
 
 	public Optional<ECPublicKey> key() {

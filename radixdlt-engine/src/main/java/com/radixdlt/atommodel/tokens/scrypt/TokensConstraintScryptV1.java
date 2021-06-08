@@ -181,7 +181,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 					}
 				);
 			},
-			(s, r) -> {
+			(s, c, r) -> {
 				if (s.resourceInBucket.epochUnlocked().isPresent()) {
 					throw new ProcedureException("Cannot mint locked tokens.");
 				}
@@ -205,7 +205,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		os.procedure(new EndProcedure<>(
 			RemainderTokens.class,
 			s -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, r) -> {
+			(s, c, r) -> {
 				var p = r.loadAddr(null, s.tokenAddr);
 				if (p.isEmpty()) {
 					throw new ProcedureException("Token does not exist.");

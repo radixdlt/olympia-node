@@ -72,7 +72,6 @@ public class BurnTokensV3Test {
 		);
 	}
 
-
 	@Test
 	public void can_burn_tokens_if_owner_of_token_resource() throws Exception {
 		// Arrange
@@ -97,6 +96,33 @@ public class BurnTokensV3Test {
 		assertThat(accounting.resourceAccounting())
 			.hasSize(1)
 			.containsEntry(tokenAddr, BigInteger.valueOf(-10));
+	}
+
+	@Test
+	public void cannot_burn_tokens_if_deallocation_disabled() throws Exception {
+		// Arrange
+		var key = ECKeyPair.generateNew();
+		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
+		var txn = this.engine.construct(
+			key.getPublicKey(),
+			new CreateMutableToken("test", "Name", "", "", "")
+		).signAndBuild(key::sign);
+		this.engine.execute(List.of(txn));
+		var account = REAddr.ofPubKeyAccount(key.getPublicKey());
+		var mintTxn = this.engine.construct(new MintToken(tokenAddr, account, UInt256.TEN))
+			.signAndBuild(key::sign);
+		this.engine.execute(List.of(mintTxn));
+
+		// Act
+		var burnTxn = this.engine.construct(txBuilder -> {
+			txBuilder.toLowLevelBuilder().disableDeallocation();
+			new BurnTokenConstructor().construct(new BurnToken(tokenAddr, account, UInt256.TEN), txBuilder);
+			txBuilder.end();
+		}).signAndBuild(key::sign);
+
+		// Assert
+		assertThatThrownBy(() -> this.engine.execute(List.of(burnTxn)))
+			.isInstanceOf(RadixEngineException.class);
 	}
 
 	@Test

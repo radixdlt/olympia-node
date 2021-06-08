@@ -29,6 +29,7 @@ import com.radixdlt.atomos.Loader;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
+import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
@@ -39,6 +40,7 @@ import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.store.ReadableAddrs;
 import com.radixdlt.utils.UInt384;
 
 import java.util.Objects;
@@ -130,7 +132,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 			);
 		}
 
-		public void destroy() throws ProcedureException {
+		public void destroy(ExecutionContext context, ReadableAddrs readableAddrs) throws ProcedureException {
 			if (!shareAmount.isZero()) {
 				throw new ProcedureException("Shares cannot be burnt.");
 			}
@@ -184,7 +186,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		os.procedure(new EndProcedure<>(
 			StakeOwnershipHoldingBucket.class,
 			s -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, r) -> s.destroy()
+			StakeOwnershipHoldingBucket::destroy
 		));
 	}
 }

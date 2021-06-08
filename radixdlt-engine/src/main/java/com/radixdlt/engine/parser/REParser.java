@@ -46,10 +46,18 @@ public final class REParser {
 	}
 
 	private static class ParserState {
-		final List<REInstruction> instructions = new ArrayList<>();
+		private final List<REInstruction> instructions = new ArrayList<>();
 		private byte[] msg = null;
-		int substateUpdateCount = 0;
-		int endCount = 0;
+		private int substateUpdateCount = 0;
+		private int endCount = 0;
+		private boolean disableResourceDeallocation = false;
+
+		void header(boolean disableResourceDeallocation) throws TxnParseException {
+			if (instructions.size() != 1) {
+				throw new TxnParseException("Header must be first");
+			}
+			this.disableResourceDeallocation = disableResourceDeallocation;
+		}
 
 		void nextInstruction(REInstruction inst) {
 			instructions.add(inst);
@@ -125,6 +133,8 @@ public final class REParser {
 				}
 
 				parserState.substateUpdate();
+			} else if (inst.getMicroOp() == REInstruction.REMicroOp.HEADER) {
+				parserState.header(inst.getData());
 			} else if (inst.getMicroOp() == REInstruction.REMicroOp.SYSCALL) {
 				try {
 					CallData callData = inst.getData();
@@ -166,6 +176,13 @@ public final class REParser {
 			pubKey = null;
 		}
 
-		return new ParsedTxn(txn, feePaid, parserState.instructions, parserState.msg, pubKey);
+		return new ParsedTxn(
+			txn,
+			feePaid,
+			parserState.instructions,
+			parserState.msg,
+			pubKey,
+			parserState.disableResourceDeallocation
+		);
 	}
 }

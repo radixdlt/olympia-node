@@ -32,19 +32,22 @@ public final class ParsedTxn {
 	private final Txn txn;
 	private final byte[] msg;
 	private final UInt256 feePaid;
+	private final boolean disableResourceDeallocation;
 
 	public ParsedTxn(
 		Txn txn,
 		UInt256 feePaid,
 		List<REInstruction> instructions,
 		byte[] msg,
-		ECPublicKey publicKey
+		ECPublicKey publicKey,
+		boolean disableResourceDeallocation
 	) {
 		this.txn = txn;
 		this.feePaid = feePaid;
 		this.instructions = instructions;
 		this.msg = msg;
 		this.publicKey = publicKey;
+		this.disableResourceDeallocation = disableResourceDeallocation;
 	}
 
 	public Txn txn() {
@@ -65,5 +68,9 @@ public final class ParsedTxn {
 
 	public Optional<ECPublicKey> getSignedBy() {
 		return Optional.ofNullable(publicKey);
+	}
+
+	public boolean disableResourceDeallocation() {
+		return disableResourceDeallocation;
 	}
 }

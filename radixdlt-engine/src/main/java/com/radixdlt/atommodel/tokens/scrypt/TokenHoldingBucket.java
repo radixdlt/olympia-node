@@ -19,6 +19,7 @@
 package com.radixdlt.atommodel.tokens.scrypt;
 
 import com.radixdlt.atommodel.tokens.state.TokenResource;
+import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.InvalidResourceException;
 import com.radixdlt.constraintmachine.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.ProcedureException;
@@ -69,9 +70,10 @@ public class TokenHoldingBucket implements ReducerState {
 		return new TokenHoldingBucket(this.resourceAddr, amount.subtract(withdraw384));
 	}
 
-
-	public void destroy(ReadableAddrs r) throws ProcedureException {
+	public void destroy(ExecutionContext c, ReadableAddrs r) throws ProcedureException {
 		if (!amount.isZero()) {
+			c.verifyCanDeallocateResources();
+
 			var p = r.loadAddr(null, resourceAddr);
 			if (p.isEmpty()) {
 				throw new ProcedureException("Token does not exist.");

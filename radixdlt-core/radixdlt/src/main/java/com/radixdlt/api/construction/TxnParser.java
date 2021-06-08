@@ -51,9 +51,10 @@ public final class TxnParser {
 		var stateUpdates = constraintMachine.verify(
 			logCMStore.createTransaction(),
 			logCMStore,
+			PermissionLevel.SYSTEM,
 			parsedTxn.instructions(),
 			parsedTxn.getSignedBy(),
-			PermissionLevel.SYSTEM
+			parsedTxn.disableResourceDeallocation()
 		);
 
 		return new REProcessedTxn(parsedTxn, stateUpdates);

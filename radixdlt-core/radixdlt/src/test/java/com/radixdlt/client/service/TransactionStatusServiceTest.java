@@ -26,9 +26,6 @@ import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt256;
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.functions.Consumer;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -38,9 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.radixdlt.client.api.TransactionStatus.*;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class TransactionStatusServiceTest {
 	@Test
@@ -54,7 +49,7 @@ public class TransactionStatusServiceTest {
 		);
 
 		var txn = randomTxn();
-		var parsedTxn = new ParsedTxn(txn, UInt256.ZERO, null, null, null);
+		var parsedTxn = new ParsedTxn(txn, UInt256.ZERO, null, null, null, false);
 		var processedTxn = new REProcessedTxn(parsedTxn, null);
 		var one = TxnsCommittedToLedger.create(List.of(processedTxn));
 		transactionStatusService.atomsCommittedToLedgerEventProcessor().process(one);
@@ -120,7 +115,7 @@ public class TransactionStatusServiceTest {
 		var succeeded = MempoolAddSuccess.create(txnSucceeded, null);
 		transactionStatusService.mempoolAddSuccessEventProcessor().process(succeeded);
 		var txnCommitted = randomTxn();
-		var parsedTxn = new ParsedTxn(txnCommitted, UInt256.ZERO, null, null, null);
+		var parsedTxn = new ParsedTxn(txnCommitted, UInt256.ZERO, null, null, null, false);
 		var processedTxn = new REProcessedTxn(parsedTxn, null);
 		var committed = TxnsCommittedToLedger.create(List.of(processedTxn));
 		transactionStatusService.atomsCommittedToLedgerEventProcessor().process(committed);
@@ -142,15 +137,6 @@ public class TransactionStatusServiceTest {
 	@SuppressWarnings("unchecked")
 	private ScheduledEventDispatcher<ScheduledCacheCleanup> mockEventDispatcher() {
 		return mock(ScheduledEventDispatcher.class);
-	}
-
-	@SuppressWarnings("unchecked")
-	private <T> Observable<T> mockObservable(Class<T> clazz) {
-		var observable = mock(Observable.class);
-
-		when(observable.subscribe(any(Consumer.class))).thenReturn(Disposable.disposed());
-
-		return observable;
 	}
 
 	private Txn randomTxn() {

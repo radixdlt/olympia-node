@@ -85,6 +85,17 @@ public final class REInstruction {
 			b.get(callData);
 			return new CallData(callData);
 		}, REOp.SYSCALL),
+		HEADER((byte) 10, (txn, i, b) -> {
+			int version = b.get();
+			if (version != 0) {
+				throw new DeserializeException("Version must be 0");
+			}
+			var flags = b.get();
+			if ((flags & 0xe) != 0) {
+				throw new DeserializeException("Invalid flags");
+			}
+			return (flags & 0x1) == 1;
+		}, REOp.HEADER),
 		END((byte) 0, (txn, i, b) -> null, REOp.END);
 
 

@@ -27,6 +27,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.ReadableAddrs;
 import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.UInt256;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -346,12 +347,13 @@ public final class ConstraintMachine {
 	public List<List<REStateUpdate>> verify(
 		CMStore.Transaction dbTxn,
 		CMStore cmStore,
+		PermissionLevel permissionLevel,
 		List<REInstruction> instructions,
 		Optional<ECPublicKey> signature,
-		PermissionLevel permissionLevel
+		boolean disableResourceDeallocation
 	) throws TxnParseException, ConstraintMachineException {
 		var validationState = new CMValidationState(virtualStoreLayer, dbTxn, cmStore);
-		var context = new ExecutionContext(permissionLevel, signature);
+		var context = new ExecutionContext(permissionLevel, signature, UInt256.ZERO, disableResourceDeallocation);
 		return this.statefulVerify(context, validationState, instructions);
 	}
 }

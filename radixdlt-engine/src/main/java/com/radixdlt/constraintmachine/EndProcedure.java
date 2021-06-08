@@ -53,7 +53,7 @@ public class EndProcedure<S extends ReducerState> implements Procedure {
 		ReadableAddrs readableAddrs,
 		ExecutionContext executionContext
 	) throws ProcedureException {
-		endReducer.reduce((S) reducerState, readableAddrs);
+		endReducer.reduce((S) reducerState, executionContext, readableAddrs);
 		return ReducerResult.complete();
 	}
 }

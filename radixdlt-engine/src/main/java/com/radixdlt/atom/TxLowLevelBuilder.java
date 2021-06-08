@@ -170,6 +170,12 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
+	public TxLowLevelBuilder disableDeallocation() {
+		var data = new byte[] {0, 1};
+		instruction(REInstruction.REMicroOp.HEADER, data);
+		return this;
+	}
+
 	public byte[] blob() {
 		return blobStream.toByteArray();
 	}

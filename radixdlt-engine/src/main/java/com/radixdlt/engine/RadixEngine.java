@@ -388,9 +388,10 @@ public final class RadixEngine<M> {
 		var stateUpdates = constraintMachine.verify(
 			dbTransaction,
 			engineStore,
+			permissionLevel,
 			parsedTxn.instructions(),
 			parsedTxn.getSignedBy(),
-			permissionLevel
+			parsedTxn.disableResourceDeallocation()
 		);
 		var processedTxn = new REProcessedTxn(parsedTxn, stateUpdates);
 
@@ -538,7 +539,6 @@ public final class RadixEngine<M> {
 				: TxBuilder.newBuilder(filteredStore);
 
 			executable.execute(txBuilder);
-
 
 			return txBuilder;
 		}
