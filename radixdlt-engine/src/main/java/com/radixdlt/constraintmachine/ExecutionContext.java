@@ -26,18 +26,18 @@ import java.util.Optional;
 public final class ExecutionContext {
 	private final PermissionLevel level;
 	private final Optional<ECPublicKey> key;
-	private final boolean disableResourceDeallocation;
+	private final boolean disableResourceAllocAndDestroy;
 	private UInt256 feeReserve;
 
 	public ExecutionContext(
 		PermissionLevel level,
 		Optional<ECPublicKey> key,
 		UInt256 feeReserve,
-		boolean disableResourceDeallocation
+		boolean disableResourceAllocAndDestroy
 	) {
 		this.level = level;
 		this.key = key;
-		this.disableResourceDeallocation = disableResourceDeallocation;
+		this.disableResourceAllocAndDestroy = disableResourceAllocAndDestroy;
 		this.feeReserve = feeReserve;
 	}
 
@@ -51,9 +51,15 @@ public final class ExecutionContext {
 		}
 	}
 
-	public void verifyCanDeallocateResources() throws ProcedureException {
-		if (disableResourceDeallocation) {
-			throw new ProcedureException("Deallocation of resources not enabled.");
+	public void verifyCanAllocateResources() throws ProcedureException {
+		if (disableResourceAllocAndDestroy) {
+			throw new ProcedureException("Allocation of resources not enabled.");
+		}
+	}
+
+	public void verifyCanDestroyResources() throws ProcedureException {
+		if (disableResourceAllocAndDestroy) {
+			throw new ProcedureException("Destruction of resources not enabled.");
 		}
 	}
 

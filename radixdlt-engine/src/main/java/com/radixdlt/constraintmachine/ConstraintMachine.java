@@ -350,10 +350,10 @@ public final class ConstraintMachine {
 		PermissionLevel permissionLevel,
 		List<REInstruction> instructions,
 		Optional<ECPublicKey> signature,
-		boolean disableResourceDeallocation
+		boolean disableResourceAllocAndDestroy
 	) throws TxnParseException, ConstraintMachineException {
 		var validationState = new CMValidationState(virtualStoreLayer, dbTxn, cmStore);
-		var context = new ExecutionContext(permissionLevel, signature, UInt256.ZERO, disableResourceDeallocation);
+		var context = new ExecutionContext(permissionLevel, signature, UInt256.ZERO, disableResourceAllocAndDestroy);
 		return this.statefulVerify(context, validationState, instructions);
 	}
 }

@@ -54,7 +54,7 @@ public final class TxnParser {
 			PermissionLevel.SYSTEM,
 			parsedTxn.instructions(),
 			parsedTxn.getSignedBy(),
-			parsedTxn.disableResourceDeallocation()
+			parsedTxn.disableResourceAllocAndDestroy()
 		);
 
 		return new REProcessedTxn(parsedTxn, stateUpdates);

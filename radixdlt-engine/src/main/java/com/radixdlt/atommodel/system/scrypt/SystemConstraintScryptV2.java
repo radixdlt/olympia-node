@@ -431,7 +431,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, EpochData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, u, r) -> {
+			(s, u, c, r) -> {
 				if (u.getEpoch() != 0) {
 					throw new ProcedureException("First epoch must be 0.");
 				}
@@ -442,7 +442,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			AllocatingSystem.class, RoundData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, u, r) -> {
+			(s, u, c, r) -> {
 				if (u.getView() != 0) {
 					throw new ProcedureException("First view must be 0.");
 				}
@@ -462,7 +462,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			RoundClosed.class, RoundData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, u, r) -> {
+			(s, u, c, r) -> {
 				var curData = s.prev;
 				if (curData.getView() >= u.getView()) {
 					throw new ProcedureException("Next view must be greater than previous.");
@@ -479,7 +479,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			UpdatingValidatorEpochData.class, ValidatorEpochData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, u, r) -> {
+			(s, u, c, r) -> {
 				s.update(u);
 				return ReducerResult.complete();
 			}
@@ -505,12 +505,12 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			ProcessExittingStake.class, ExittingStake.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, u, r) -> ReducerResult.incomplete(s.nextExit(u))
+			(s, u, c, r) -> ReducerResult.incomplete(s.nextExit(u))
 		));
 		os.procedure(new UpProcedure<>(
 			ProcessExittingStake.class, TokensInAccount.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, u, r) -> ReducerResult.incomplete(s.unlock(u))
+			(s, u, c, r) -> ReducerResult.incomplete(s.unlock(u))
 		));
 
 		os.procedure(new ShutdownAllProcedure<>(
@@ -532,7 +532,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			Unstaking.class, ExittingStake.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, u, r) -> ReducerResult.incomplete(s.exit(u))
+			(s, u, c, r) -> ReducerResult.incomplete(s.exit(u))
 		));
 		os.procedure(new ShutdownAllProcedure<>(
 			PreparedStake.class, PreparingStake.class,
@@ -542,30 +542,30 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			Staking.class, StakeOwnership.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, u, r) -> ReducerResult.incomplete(s.stake(u))
+			(s, u, c, r) -> ReducerResult.incomplete(s.stake(u))
 		));
 		os.procedure(new UpProcedure<>(
 			UpdatingValidatorStakes.class, ValidatorStake.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, u, r) -> ReducerResult.incomplete(s.updateStake(u))
+			(s, u, c, r) -> ReducerResult.incomplete(s.updateStake(u))
 		));
 
 		os.procedure(new UpProcedure<>(
 			CreatingNextValidatorSet.class, ValidatorEpochData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, u, r) -> ReducerResult.incomplete(s.nextValidator(u))
+			(s, u, c, r) -> ReducerResult.incomplete(s.nextValidator(u))
 		));
 
 		os.procedure(new UpProcedure<>(
 			CreatingNextValidatorSet.class, EpochData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, u, r) -> ReducerResult.incomplete(s.nextEpoch(u))
+			(s, u, c, r) -> ReducerResult.incomplete(s.nextEpoch(u))
 		));
 
 		os.procedure(new UpProcedure<>(
 			StartingEpochRound.class, RoundData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, u, r) -> {
+			(s, u, c, r) -> {
 				if (u.getView() != 0) {
 					throw new ProcedureException("Epoch must start with view 0");
 				}

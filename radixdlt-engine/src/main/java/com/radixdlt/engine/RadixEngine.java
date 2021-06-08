@@ -391,7 +391,7 @@ public final class RadixEngine<M> {
 			permissionLevel,
 			parsedTxn.instructions(),
 			parsedTxn.getSignedBy(),
-			parsedTxn.disableResourceDeallocation()
+			parsedTxn.disableResourceAllocAndDestroy()
 		);
 		var processedTxn = new REProcessedTxn(parsedTxn, stateUpdates);
 

@@ -144,7 +144,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			TokenHoldingBucket.class, PreparedStake.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, u, r) -> {
+			(s, u, c, r) -> {
 				if (u.getAmount().compareTo(ValidatorStake.MINIMUM_STAKE) < 0) {
 					throw new ProcedureException(
 						"Minimum amount to stake must be >= " + ValidatorStake.MINIMUM_STAKE
@@ -174,12 +174,12 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			StakeOwnershipHoldingBucket.class, StakeOwnership.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, u, r) -> ReducerResult.incomplete(s.withdrawOwnership(u))
+			(s, u, c, r) -> ReducerResult.incomplete(s.withdrawOwnership(u))
 		));
 		os.procedure(new UpProcedure<>(
 			StakeOwnershipHoldingBucket.class, PreparedUnstakeOwnership.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, u, r) -> ReducerResult.incomplete(s.unstake(u))
+			(s, u, c, r) -> ReducerResult.incomplete(s.unstake(u))
 		));
 
 		// Deallocate Stake Holding Bucket

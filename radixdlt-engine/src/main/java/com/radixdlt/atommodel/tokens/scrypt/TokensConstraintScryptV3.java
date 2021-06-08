@@ -74,7 +74,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, TokenResource.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, u, r) -> {
+			(s, u, c, r) -> {
 				if (!u.getAddr().equals(s.getAddr())) {
 					throw new ProcedureException("Addresses don't match");
 				}
@@ -90,7 +90,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			NeedFixedTokenSupply.class, TokensInAccount.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, u, r) -> {
+			(s, u, c, r) -> {
 				if (!u.getResourceAddr().equals(s.tokenResource.getAddr())) {
 					throw new ProcedureException("Addresses don't match.");
 				}
@@ -119,7 +119,10 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 					tokenDef.verifyMintAuthorization(c.key());
 				});
 			},
-			(s, u, r) -> ReducerResult.complete()
+			(s, u, c, r) -> {
+				c.verifyCanDestroyResources();
+				return ReducerResult.complete();
+			}
 		));
 
 		// Burn
@@ -168,7 +171,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			TokenHoldingBucket.class, TokensInAccount.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, u, r) -> {
+			(s, u, c, r) -> {
 				var nextState = s.withdraw(u.getResourceAddr(), u.getAmount());
 				return ReducerResult.incomplete(nextState);
 			}

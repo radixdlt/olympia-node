@@ -50,13 +50,13 @@ public final class REParser {
 		private byte[] msg = null;
 		private int substateUpdateCount = 0;
 		private int endCount = 0;
-		private boolean disableResourceDeallocation = false;
+		private boolean disableResourceAllocAndDestroy = false;
 
-		void header(boolean disableResourceDeallocation) throws TxnParseException {
+		void header(boolean disableResourceAllocAndDestroy) throws TxnParseException {
 			if (instructions.size() != 1) {
 				throw new TxnParseException("Header must be first");
 			}
-			this.disableResourceDeallocation = disableResourceDeallocation;
+			this.disableResourceAllocAndDestroy = disableResourceAllocAndDestroy;
 		}
 
 		void nextInstruction(REInstruction inst) {
@@ -182,7 +182,7 @@ public final class REParser {
 			parserState.instructions,
 			parserState.msg,
 			pubKey,
-			parserState.disableResourceDeallocation
+			parserState.disableResourceAllocAndDestroy
 		);
 	}
 }

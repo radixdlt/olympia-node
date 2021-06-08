@@ -32,7 +32,7 @@ public final class ParsedTxn {
 	private final Txn txn;
 	private final byte[] msg;
 	private final UInt256 feePaid;
-	private final boolean disableResourceDeallocation;
+	private final boolean disableResourceAllocAndDestroy;
 
 	public ParsedTxn(
 		Txn txn,
@@ -40,14 +40,14 @@ public final class ParsedTxn {
 		List<REInstruction> instructions,
 		byte[] msg,
 		ECPublicKey publicKey,
-		boolean disableResourceDeallocation
+		boolean disableResourceAllocAndDestroy
 	) {
 		this.txn = txn;
 		this.feePaid = feePaid;
 		this.instructions = instructions;
 		this.msg = msg;
 		this.publicKey = publicKey;
-		this.disableResourceDeallocation = disableResourceDeallocation;
+		this.disableResourceAllocAndDestroy = disableResourceAllocAndDestroy;
 	}
 
 	public Txn txn() {
@@ -70,7 +70,7 @@ public final class ParsedTxn {
 		return Optional.ofNullable(publicKey);
 	}
 
-	public boolean disableResourceDeallocation() {
-		return disableResourceDeallocation;
+	public boolean disableResourceAllocAndDestroy() {
+		return disableResourceAllocAndDestroy;
 	}
 }

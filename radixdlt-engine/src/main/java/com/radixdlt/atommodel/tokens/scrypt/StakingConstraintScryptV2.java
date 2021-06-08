@@ -113,7 +113,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			VoidReducerState.class, PreparedStake.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, u, r) -> {
+			(s, u, c, r) -> {
 				var state = new UnaccountedStake(
 					u,
 					UInt384.from(u.getAmount())
@@ -194,7 +194,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			RemainderStake.class, PreparedStake.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, u, r) -> {
+			(s, u, c, r) -> {
 				if (!u.getAmount().equals(s.amount)) {
 					throw new ProcedureException("Remainder must be filled exactly.");
 				}

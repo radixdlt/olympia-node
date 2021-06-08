@@ -90,7 +90,7 @@ public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt 
 		os.procedure(new UpProcedure<>(
 			TransitionToV2.class, SystemParticle.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, u, r) -> {
+			(s, u, c, r) -> {
 				var curState = s.sys;
 				if (curState.getEpoch() != u.getEpoch()) {
 					throw new ProcedureException("Cannot change epochs.");

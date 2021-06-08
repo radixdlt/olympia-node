@@ -84,7 +84,7 @@ public final class SystemConstraintScryptV1 implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			UpdatingSystem.class, SystemParticle.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, u, r) -> {
+			(s, u, c, r) -> {
 				var curState = s.sys;
 				if (curState.getEpoch() == u.getEpoch()) {
 					if (curState.getView() >= u.getView()) {

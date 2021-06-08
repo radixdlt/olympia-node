@@ -80,7 +80,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			ValidatorUpdate.class, ValidatorParticle.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, u, r) -> {
+			(s, u, c, r) -> {
 				if (!Objects.equals(s.prevState.getKey(), u.getKey())) {
 					throw new ProcedureException(String.format(
 						"validator addresses do not match: %s != %s",
