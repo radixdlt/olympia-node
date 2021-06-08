@@ -18,13 +18,12 @@
 
 package com.radixdlt.atommodel.tokens.scrypt;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.state.SystemParticle;
-import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
+import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
@@ -51,8 +50,8 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 	@Override
 	public void main(SysCalls os) {
 		os.registerParticle(
-			DeprecatedStake.class,
-			ParticleDefinition.<DeprecatedStake>builder()
+			PreparedStake.class,
+			ParticleDefinition.<PreparedStake>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.build()
 		);
@@ -88,18 +87,13 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		public ECPublicKey delegate() {
 			return delegate;
 		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(RemainderStake.class);
-		}
 	}
 
 	public static class UnaccountedStake implements ReducerState {
-		private final DeprecatedStake initialParticle;
+		private final PreparedStake initialParticle;
 		private final UInt384 amount;
 
-		public UnaccountedStake(DeprecatedStake initialParticle, UInt384 amount) {
+		public UnaccountedStake(PreparedStake initialParticle, UInt384 amount) {
 			this.initialParticle = initialParticle;
 			this.amount = amount;
 		}
@@ -108,7 +102,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 			return amount;
 		}
 
-		public DeprecatedStake initialParticle() {
+		public PreparedStake initialParticle() {
 			return initialParticle;
 		}
 
@@ -124,17 +118,12 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 				return Optional.empty();
 			}
 		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(UnaccountedStake.class);
-		}
 	}
 
 	private void defineStaking(SysCalls os) {
 		// Stake
 		os.createUpProcedure(new UpProcedure<>(
-			VoidReducerState.class, DeprecatedStake.class,
+			VoidReducerState.class, PreparedStake.class,
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
@@ -146,7 +135,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 			}
 		));
 		os.createDownProcedure(new DownProcedure<>(
-			TokensParticle.class, UnaccountedStake.class,
+			TokensInAccount.class, UnaccountedStake.class,
 			(d, r) -> PermissionLevel.USER,
 			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
 			(d, s, r) -> {
@@ -168,7 +157,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 
 		// Unstake
 		os.createDownProcedure(new DownProcedure<>(
-			DeprecatedStake.class, TokensConstraintScryptV1.UnaccountedTokens.class,
+			PreparedStake.class, TokensConstraintScryptV1.UnaccountedTokens.class,
 			(d, r) -> PermissionLevel.USER,
 			(d, r, k) -> {
 				try {
@@ -200,7 +189,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 				var nextRemainder = s.subtract(UInt384.from(d.getSubstate().getAmount()));
 				if (nextRemainder.isEmpty()) {
 					// FIXME: This isn't 100% correct
-					var p = (TokensParticle) s.initialParticle();
+					var p = (TokensInAccount) s.initialParticle();
 					var action = new UnstakeTokens(p.getHoldingAddr(), d.getSubstate().getDelegateKey(), p.getAmount());
 					return ReducerResult.complete(action);
 				}
@@ -222,7 +211,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 
 		// For change
 		os.createUpProcedure(new UpProcedure<>(
-			RemainderStake.class, DeprecatedStake.class,
+			RemainderStake.class, PreparedStake.class,
 			(u, r) -> PermissionLevel.USER,
 			(u, r, k) -> { },
 			(s, u, r) -> {
@@ -239,7 +228,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 				}
 
 				// FIXME: This isn't 100% correct
-				var t = (TokensParticle) s.initialParticle;
+				var t = (TokensInAccount) s.initialParticle;
 				var action = new UnstakeTokens(t.getHoldingAddr(), u.getDelegateKey(), t.getAmount());
 				return ReducerResult.complete(action);
 			}

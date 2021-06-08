@@ -37,7 +37,7 @@ import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.Rad
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.sync.SyncConfig;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.assertj.core.api.Condition;
@@ -61,10 +61,10 @@ public class MempoolFillTest {
 			NetworkLatencies.fixed()
 		)
 		.fullFunctionNodes(SyncConfig.of(800L, 10, 5000L))
-		.addNodeModule(new BetanetForksModule())
-		.addNodeModule(new RadixEngineOnlyLatestForkModule(View.of(10L)))
-		.addGenesisModule(new BetanetForksModule())
-		.addGenesisModule(new RadixEngineOnlyLatestForkModule(View.of(10L)))
+		.addRadixEngineConfigModules(
+			new BetanetForksModule(),
+			new RadixEngineForksLatestOnlyModule(View.of(10L))
+		)
 		.addNodeModule(new AbstractModule() {
 			@Override
 			protected void configure() {
@@ -73,7 +73,7 @@ public class MempoolFillTest {
 				install(new NodeApplicationModule());
 			}
 		})
-		.addGenesisModule(new AbstractModule() {
+		.addGenesisConfigModule(new AbstractModule() {
 			@ProvidesIntoSet
 			private TokenIssuance mempoolFillerIssuance(@Genesis ImmutableList<ECKeyPair> validators) {
 				return TokenIssuance.of(validators.get(0).getPublicKey(), TokenUnitConversions.unitsToSubunits(10000000000L));

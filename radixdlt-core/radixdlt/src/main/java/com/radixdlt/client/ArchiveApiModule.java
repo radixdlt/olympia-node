@@ -40,7 +40,7 @@ import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.statecomputer.AtomsCommittedToLedger;
+import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 
 public class ArchiveApiModule extends AbstractModule {
 	@Override
@@ -57,7 +57,7 @@ public class ArchiveApiModule extends AbstractModule {
 		bind(TransactionStatusService.class).in(Scopes.SINGLETON);
 		bind(NetworkInfoService.class).in(Scopes.SINGLETON);
 
-		eventBinder.addBinding().toInstance(AtomsCommittedToLedger.class);
+		eventBinder.addBinding().toInstance(TxnsCommittedToLedger.class);
 		eventBinder.addBinding().toInstance(ScheduledQueueFlush.class);
 		eventBinder.addBinding().toInstance(ScheduledCacheCleanup.class);
 		eventBinder.addBinding().toInstance(ScheduledStatsCollecting.class);
@@ -165,7 +165,7 @@ public class ArchiveApiModule extends AbstractModule {
 	) {
 		return new EventProcessorOnRunner<>(
 			Runners.APPLICATION,
-			AtomsCommittedToLedger.class,
+			TxnsCommittedToLedger.class,
 			berkeleyClientApiStore.atomsCommittedToLedgerEventProcessor()
 		);
 	}
@@ -201,7 +201,7 @@ public class ArchiveApiModule extends AbstractModule {
 	public EventProcessorOnRunner<?> atomsCommittedToLedgerTransactionStatus(TransactionStatusService transactionStatusService) {
 		return new EventProcessorOnRunner<>(
 			Runners.APPLICATION,
-			AtomsCommittedToLedger.class,
+			TxnsCommittedToLedger.class,
 			transactionStatusService.atomsCommittedToLedgerEventProcessor()
 		);
 	}

@@ -44,7 +44,7 @@ import java.util.stream.Stream;
 public final class StakedValidators {
 	private static final Comparator<ECPublicKey> keyOrdering = Comparator.comparing(ECPublicKey::euid);
 
-	private final Map<ECPublicKey, UInt256> stakedAmounts;
+	private final Map<ECPublicKey, UInt256> stake;
 	private final Set<ValidatorParticle> validatorParticles;
 	private static final Comparator<UInt256> stakeOrdering = Comparator.reverseOrder();
 	private static final Comparator<Map.Entry<ECPublicKey, UInt256>> validatorOrdering =
@@ -57,12 +57,12 @@ public final class StakedValidators {
 		int minValidators,
 		int maxValidators,
 		Set<ValidatorParticle> validatorParticles,
-		Map<ECPublicKey, UInt256> stakedAmounts
+		Map<ECPublicKey, UInt256> stake
 	) {
 		this.minValidators = minValidators;
 		this.maxValidators = maxValidators;
 		this.validatorParticles = validatorParticles;
-		this.stakedAmounts = stakedAmounts;
+		this.stake = stake;
 	}
 
 	public static StakedValidators create(
@@ -73,12 +73,12 @@ public final class StakedValidators {
 	}
 
 	public StakedValidators add(ValidatorParticle particle) {
-		var map = ImmutableSet.<ValidatorParticle>builder()
+		var set = ImmutableSet.<ValidatorParticle>builder()
 			.addAll(validatorParticles)
 			.add(particle)
 			.build();
 
-		return new StakedValidators(minValidators, maxValidators, map, stakedAmounts);
+		return new StakedValidators(minValidators, maxValidators, set, stake);
 	}
 
 	public StakedValidators remove(ValidatorParticle particle) {
@@ -88,58 +88,57 @@ public final class StakedValidators {
 			validatorParticles.stream()
 				.filter(e -> !e.equals(particle))
 				.collect(Collectors.toSet()),
-			stakedAmounts
+			stake
 		);
 	}
 
+	public UInt256 getStake(ECPublicKey validatorKey) {
+		var s = stake.get(validatorKey);
+		return (s == null) ? UInt256.ZERO : s;
+	}
+
+	public StakedValidators setStake(ECPublicKey delegatedKey, UInt256 amount) {
+		final var nextStake = Stream.concat(
+			Stream.of(Maps.immutableEntry(delegatedKey, amount)),
+			this.stake.entrySet().stream().filter(e -> !delegatedKey.equals(e.getKey()))
+		).collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+
+		return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStake);
+	}
+
+
+	// TODO: Remove add/remove from mainnet
 	public StakedValidators add(ECPublicKey delegatedKey, UInt256 amount) {
 		if (amount.isZero()) {
 			return this;
 		}
 
-		final var nextAmount = this.stakedAmounts.getOrDefault(delegatedKey, UInt256.ZERO).add(amount);
+		final var nextAmount = this.stake.getOrDefault(delegatedKey, UInt256.ZERO).add(amount);
 		final var nextStakedAmounts = Stream.concat(
 			Stream.of(Maps.immutableEntry(delegatedKey, nextAmount)),
-			this.stakedAmounts.entrySet().stream().filter(e -> !delegatedKey.equals(e.getKey()))
+			this.stake.entrySet().stream().filter(e -> !delegatedKey.equals(e.getKey()))
 		).collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
 		return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStakedAmounts);
 	}
 
 	public StakedValidators remove(ECPublicKey delegatedKey, UInt256 amount) {
-		if (!this.stakedAmounts.containsKey(delegatedKey)) {
-			throw new IllegalStateException("Removing stake which doesn't exist.");
-		}
-
 		if (amount.isZero()) {
 			return this;
 		}
 
-		final var oldAmount = this.stakedAmounts.get(delegatedKey);
-		final var comparison = amount.compareTo(oldAmount);
+		final var nextAmount = this.stake.getOrDefault(delegatedKey, UInt256.ZERO).add(amount);
+		final var nextStake = Stream.concat(
+			Stream.of(Maps.immutableEntry(delegatedKey, nextAmount)),
+			this.stake.entrySet().stream().filter(e -> !delegatedKey.equals(e.getKey()))
+		).collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
-		if (comparison == 0) {
-			// remove stake
-			final var nextStakedAmounts = this.stakedAmounts.entrySet().stream()
-				.filter(e -> !delegatedKey.equals(e.getKey()))
-				.collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-			return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStakedAmounts);
-		} else if (comparison < 0) {
-			// reduce stake
-			final var nextAmount = oldAmount.subtract(amount);
-			final var nextStakedAmounts = Stream.concat(
-				Stream.of(Maps.immutableEntry(delegatedKey, nextAmount)),
-				this.stakedAmounts.entrySet().stream().filter(e -> !delegatedKey.equals(e.getKey()))
-			).collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-			return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStakedAmounts);
-		} else {
-			throw new IllegalStateException("Removing stake which doesn't exist.");
-		}
+		return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStake);
 	}
 
 	public BFTValidatorSet toValidatorSet() {
 		var validatorMap = ImmutableMap.copyOf(
-			Maps.filterKeys(stakedAmounts, k -> validatorParticles.stream().map(ValidatorParticle::getKey).anyMatch(k::equals))
+			Maps.filterKeys(stake, k -> validatorParticles.stream().map(ValidatorParticle::getKey).anyMatch(k::equals))
 		);
 
 		final var potentialValidators = validatorMap.entrySet().stream()
@@ -156,11 +155,6 @@ public final class StakedValidators {
 			potentialValidators.subList(0, lastIndex).stream()
 				.map(p -> BFTValidator.from(BFTNode.create(p.getKey()), p.getValue()))
 		);
-	}
-
-	public UInt256 getStake(ECPublicKey validatorKey) {
-		var stake = stakedAmounts.get(validatorKey);
-		return (stake == null) ? UInt256.ZERO : stake;
 	}
 
 	public <T> List<T> map(BiFunction<ECPublicKey, ValidatorDetails, T> mapper) {
@@ -180,7 +174,7 @@ public final class StakedValidators {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(minValidators, maxValidators, validatorParticles, stakedAmounts);
+		return Objects.hash(minValidators, maxValidators, validatorParticles, stake);
 	}
 
 	@Override
@@ -193,6 +187,6 @@ public final class StakedValidators {
 		return this.minValidators == other.minValidators
 			&& this.maxValidators == other.maxValidators
 			&& Objects.equals(this.validatorParticles, other.validatorParticles)
-			&& Objects.equals(this.stakedAmounts, other.stakedAmounts);
+			&& Objects.equals(this.stake, other.stake);
 	}
 }

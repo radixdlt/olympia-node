@@ -22,19 +22,19 @@ import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.DeprecatedUnstakeTokens;
-import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.PreparedStake;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.identifiers.REAddr;
 
 public final class DeprecatedUnstakeTokensConstructor implements ActionConstructor<DeprecatedUnstakeTokens> {
 	@Override
 	public void construct(DeprecatedUnstakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.deprecatedSwapFungible(
-			DeprecatedStake.class,
+			PreparedStake.class,
 			p -> p.getOwner().equals(action.accountAddr()) && p.getDelegateKey().equals(action.from()),
-			amt -> new DeprecatedStake(amt, action.accountAddr(), action.from()),
+			amt -> new PreparedStake(amt, action.accountAddr(), action.from()),
 			action.amount(),
 			"Not enough staked."
-		).with(amt -> new TokensParticle(action.accountAddr(), amt, REAddr.ofNativeToken()));
+		).with(amt -> new TokensInAccount(action.accountAddr(), amt, REAddr.ofNativeToken()));
 	}
 }

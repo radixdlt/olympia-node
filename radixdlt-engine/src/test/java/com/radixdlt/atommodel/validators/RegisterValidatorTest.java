@@ -83,7 +83,7 @@ public class RegisterValidatorTest {
 			.signAndBuild(key::sign);
 		assertThatThrownBy(() -> this.engine.execute(List.of(registerTxn)))
 			.isInstanceOf(RadixEngineException.class)
-			.extracting("cmError.errorCode")
+			.extracting("cause.errorCode")
 			.containsExactly(CMErrorCode.AUTHORIZATION_ERROR);
 	}
 
@@ -101,7 +101,7 @@ public class RegisterValidatorTest {
 		// Act and Assert
 		assertThatThrownBy(() -> this.engine.execute(List.of(txn)))
 			.isInstanceOf(RadixEngineException.class)
-			.extracting("cmError.errorCode")
+			.extracting("cause.errorCode")
 			.containsExactly(CMErrorCode.PROCEDURE_ERROR);
 	}
 }

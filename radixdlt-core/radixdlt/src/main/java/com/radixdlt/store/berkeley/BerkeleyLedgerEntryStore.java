@@ -17,6 +17,7 @@
 
 package com.radixdlt.store.berkeley;
 
+import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,12 +30,12 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.REParsedInstruction;
+import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -189,7 +190,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public void storeTxn(Transaction dbTxn, Txn txn, List<REParsedInstruction> stateUpdates) {
+	public void storeTxn(Transaction dbTxn, Txn txn, List<REStateUpdate> stateUpdates) {
 		withTime(() -> doStore(unwrap(dbTxn), txn, stateUpdates), CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
 	}
 
@@ -445,6 +446,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 	private static class BerkeleySubstateCursor implements SubstateCursor {
 		private final SecondaryDatabase db;
+		private final com.sleepycat.je.Transaction dbTxn;
 		private SecondaryCursor cursor;
 		private OperationStatus status;
 
@@ -452,13 +454,14 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		private DatabaseEntry value = entry();
 		private DatabaseEntry substateIdBytes = entry();
 
-		BerkeleySubstateCursor(SecondaryDatabase db, byte[] indexableBytes) {
+		BerkeleySubstateCursor(com.sleepycat.je.Transaction dbTxn, SecondaryDatabase db, byte[] indexableBytes) {
+			this.dbTxn = dbTxn;
 			this.db = db;
 			this.index = entry(indexableBytes);
 		}
 
 		private void open() {
-			this.cursor = db.openCursor(null, null);
+			this.cursor = db.openCursor(dbTxn, null);
 			this.status = cursor.getSearchKey(index, substateIdBytes, value, null);
 		}
 
@@ -490,26 +493,32 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public SubstateCursor openIndexedCursor(Class<? extends Particle> particleClass) {
+	public SubstateCursor openIndexedCursor(Transaction wrappedDbTxn, Class<? extends Particle> particleClass) {
+		var dbTxn = unwrap(wrappedDbTxn);
 		var typeBytes = RESerializer.classToBytes(particleClass);
 		if (typeBytes.size() == 1) {
 			final byte[] indexableBytes = new byte[] {typeBytes.get(0)};
-			var cursor = new BerkeleySubstateCursor(upParticleDatabase, indexableBytes);
+			var cursor = new BerkeleySubstateCursor(dbTxn, upParticleDatabase, indexableBytes);
 			cursor.open();
 			return cursor;
 		} else if (typeBytes.size() == 2) {
 			final byte[] indexableBytes = new byte[] {typeBytes.get(0)};
-			var cursor = new BerkeleySubstateCursor(upParticleDatabase, indexableBytes);
+			var cursor = new BerkeleySubstateCursor(dbTxn, upParticleDatabase, indexableBytes);
 			cursor.open();
 			return SubstateCursor.concat(cursor, () -> {
 				final byte[] type2 = new byte[] {typeBytes.get(1)};
-				var cursor2 = new BerkeleySubstateCursor(upParticleDatabase, type2);
+				var cursor2 = new BerkeleySubstateCursor(dbTxn, upParticleDatabase, type2);
 				cursor2.open();
 				return cursor2;
 			});
 		} else {
 			throw new IllegalStateException("Cannot handle more than 2 types per class");
 		}
+	}
+
+	@Override
+	public SubstateCursor openIndexedCursor(Class<? extends Particle> particleClass) {
+		return openIndexedCursor(null, particleClass);
 	}
 
 	public <V> V reduceUpParticles(
@@ -590,27 +599,32 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 	}
 
-	private void updateParticle(com.sleepycat.je.Transaction txn, REParsedInstruction inst) {
-		if (inst.isBootUp()) {
-			var buf = inst.getInstruction().getDataByteBuffer();
-			upParticle(txn, buf, inst.getSubstate().getId());
+	private void updateParticle(com.sleepycat.je.Transaction txn, REStateUpdate stateUpdate) {
+		if (stateUpdate.isBootUp()) {
+			var buf = stateUpdate.getStateBuf();
+			upParticle(txn, buf, stateUpdate.getSubstate().getId());
 
-			if (inst.getParticle() instanceof TokenDefinitionParticle) {
-				var p = (TokenDefinitionParticle) inst.getParticle();
+			// FIXME: Superhack
+			if (stateUpdate.getRawSubstate() instanceof TokenResource) {
+				var p = (TokenResource) stateUpdate.getRawSubstate();
 				var addr = p.getAddr();
-				var buf2 = inst.getInstruction().getDataByteBuffer();
+				var buf2 = stateUpdate.getStateBuf();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
 				addrDatabase.putNoOverwrite(txn, new DatabaseEntry(addr.getBytes()), value);
-			} else if (inst.getParticle() instanceof SystemParticle) {
-				var buf2 = inst.getInstruction().getDataByteBuffer();
+			} else if (stateUpdate.getRawSubstate() instanceof SystemParticle) {
+				var buf2 = stateUpdate.getStateBuf();
+				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
+				addrDatabase.put(txn, new DatabaseEntry(REAddr.ofSystem().getBytes()), value);
+			} else if (stateUpdate.getRawSubstate() instanceof EpochData) {
+				var buf2 = stateUpdate.getStateBuf();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
 				addrDatabase.put(txn, new DatabaseEntry(REAddr.ofSystem().getBytes()), value);
 			}
-		} else if (inst.isShutDown()) {
-			if (inst.getSubstate().getId().isVirtual()) {
-				downVirtualSubstate(txn, inst.getSubstate().getId());
+		} else if (stateUpdate.isShutDown()) {
+			if (stateUpdate.getSubstate().getId().isVirtual()) {
+				downVirtualSubstate(txn, stateUpdate.getSubstate().getId());
 			} else {
-				downSubstate(txn, inst.getSubstate().getId());
+				downSubstate(txn, stateUpdate.getSubstate().getId());
 			}
 		} else {
 			throw new IllegalStateException("Must bootup or shutdown to update particle.");
@@ -620,7 +634,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	private void doStore(
 		com.sleepycat.je.Transaction transaction,
 		Txn txn,
-		List<REParsedInstruction> stateUpdates
+		List<REStateUpdate> stateUpdates
 	) {
 		final long stateVersion;
 		try (var cursor = atomDatabase.openCursor(transaction, null)) {

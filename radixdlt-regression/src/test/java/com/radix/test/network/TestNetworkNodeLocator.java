@@ -24,7 +24,7 @@ public class TestNetworkNodeLocator {
 
     private static final Logger logger = LogManager.getLogger();
 
-    private static final int MAX_EXPECTED_LOCALNET_NODES = 4;
+    private static final int MAX_EXPECTED_LOCALNET_NODES = 3;
 
     private TestNetworkNodeLocator() {
 

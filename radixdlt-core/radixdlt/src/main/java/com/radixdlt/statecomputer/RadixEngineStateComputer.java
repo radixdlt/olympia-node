@@ -20,6 +20,7 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
+import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.SystemNextEpoch;
@@ -30,8 +31,9 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
@@ -51,9 +53,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -70,7 +75,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher;
 	private final EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher;
 	private final EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher;
-	private final EventDispatcher<AtomsCommittedToLedger> committedDispatcher;
+	private final EventDispatcher<TxnsCommittedToLedger> committedDispatcher;
 	private final TreeMap<Long, ForkConfig> epochToForkConfig;
 	private final SystemCounters systemCounters;
 
@@ -87,7 +92,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher,
 		EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher,
 		EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher,
-		EventDispatcher<AtomsCommittedToLedger> committedDispatcher,
+		EventDispatcher<TxnsCommittedToLedger> committedDispatcher,
 		SystemCounters systemCounters
 	) {
 		if (epochCeilingView.isGenesis()) {
@@ -109,12 +114,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	public static class RadixEngineTxn implements PreparedTxn {
 		private final Txn txn;
-		private final REParsedTxn transaction;
+		private final REProcessedTxn transaction;
 		private final PermissionLevel permissionLevel;
 
 		public RadixEngineTxn(
 			Txn txn,
-			REParsedTxn transaction,
+			REProcessedTxn transaction,
 			PermissionLevel permissionLevel
 		) {
 			this.txn = txn;
@@ -153,7 +158,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	@Override
 	public List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
-		List<REParsedTxn> cmds = prepared.stream()
+		List<REProcessedTxn> cmds = prepared.stream()
 			.map(p -> (RadixEngineTxn) p)
 			.map(c -> c.transaction)
 			.collect(Collectors.toList());
@@ -171,26 +176,44 @@ public final class RadixEngineStateComputer implements StateComputer {
 		ImmutableList.Builder<PreparedTxn> successBuilder
 	) {
 		var view = vertex.getView();
-		final BFTValidatorSet validatorSet;
-		if (view.compareTo(epochCeilingView) >= 0) {
-			validatorSet = branch.getComputedState(StakedValidators.class).toValidatorSet();
+		final TxAction systemAction;
+		var nextValidatorSet = new AtomicReference<BFTValidatorSet>();
+		if (view.compareTo(epochCeilingView) < 0) {
+			systemAction = new SystemNextView(view.number(), timestamp, vertex.getProposer().getKey());
 		} else {
-			validatorSet = null;
+			var stakedValidators = branch.getComputedState(StakedValidators.class);
+			if (stakedValidators.toValidatorSet() == null) {
+				// FIXME: Better way to handle rare case when there isn't enough in validator set
+				systemAction = new SystemNextView(view.number(), timestamp, vertex.getProposer().getKey());
+			} else {
+				systemAction = new SystemNextEpoch(updates -> {
+					var cur = stakedValidators;
+					for (var u : updates) {
+						cur = cur.setStake(u.getValidatorKey(), u.getTotalStake());
+					}
+					// FIXME: cur.toValidatorSet() may be null
+					var validatorSet = cur.toValidatorSet();
+					if (validatorSet == null) {
+						throw new IllegalStateException();
+					}
+					nextValidatorSet.set(validatorSet);
+					return validatorSet.nodes().stream()
+						.map(BFTNode::getKey)
+						.sorted(Comparator.comparing(ECPublicKey::getBytes, Arrays::compare))
+						.collect(Collectors.toList());
+				}, timestamp);
+			}
 		}
 
-		var systemAction = validatorSet == null
-			? new SystemNextView(view.number(), timestamp, vertex.getProposer().getKey())
-			: new SystemNextEpoch(timestamp);
-
 		final Txn systemUpdate;
-		final List<REParsedTxn> txs;
+		final List<REProcessedTxn> txs;
 		try {
 			// TODO: combine construct/execute
 			systemUpdate = branch.construct(systemAction).buildWithoutSignature();
 			txs = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException | TxBuilderException e) {
 			throw new IllegalStateException(
-				String.format("Failed to execute system update:%n%s", e.getMessage()), e
+				String.format("Failed to execute system update: %s", systemAction), e
 			);
 		}
 		RadixEngineTxn radixEngineCommand = new RadixEngineTxn(
@@ -200,7 +223,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		);
 		successBuilder.add(radixEngineCommand);
 
-		return validatorSet;
+		return nextValidatorSet.get();
 	}
 
 	private void executeUserCommands(
@@ -210,7 +233,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		ImmutableMap.Builder<Txn, Exception> errorBuilder
 	) {
 		nextTxns.forEach(txn -> {
-			final List<REParsedTxn> parsed;
+			final List<REProcessedTxn> parsed;
 			try {
 				parsed = branch.execute(List.of(txn));
 			} catch (RadixEngineException e) {
@@ -254,13 +277,13 @@ public final class RadixEngineStateComputer implements StateComputer {
 		return new StateComputerResult(successBuilder.build(), exceptionBuilder.build(), validatorSet);
 	}
 
-	private List<REParsedTxn> commitInternal(
+	private List<REProcessedTxn> commitInternal(
 		VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState
 	) {
 		var proof = verifiedTxnsAndProof.getProof();
 		var ledgerAndBFTProof = LedgerAndBFTProof.create(proof, vertexStoreState);
 
-		final List<REParsedTxn> radixEngineTxns;
+		final List<REProcessedTxn> radixEngineTxns;
 		try {
 			radixEngineTxns = this.radixEngine.execute(
 				verifiedTxnsAndProof.getTxns(),
@@ -277,10 +300,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 		if (proof.getNextValidatorSet().isPresent()) {
 			var forkConfig = epochToForkConfig.get(proof.getEpoch() + 1);
 			if (forkConfig != null) {
-				log.info("Epoch {} Forking constraint machine", proof.getEpoch() + 1);
+				log.info("Epoch {} Forking RadixEngine to {}", proof.getEpoch() + 1, forkConfig.getName());
 				this.radixEngine.replaceConstraintMachine(
 					forkConfig.getConstraintMachine(),
-					forkConfig.getActionConstructors()
+					forkConfig.getActionConstructors(),
+					forkConfig.getBatchVerifier()
 				);
 				this.epochCeilingView = forkConfig.getEpochCeilingView();
 			}
@@ -310,7 +334,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 			mempoolAtomsRemovedEventDispatcher.dispatch(atomsRemovedFromMempool);
 		}
 
-		var txns = verifiedTxnsAndProof.getTxns();
-		committedDispatcher.dispatch(AtomsCommittedToLedger.create(txns, txCommitted));
+		committedDispatcher.dispatch(TxnsCommittedToLedger.create(txCommitted));
 	}
 }

@@ -1,0 +1,23 @@
+name: 'Build'
+description: 'Build radixdlt and save artifacts. Uses github context'
+inputs:
+  is_release:
+    description: 'True if it is a release'
+    required: true
+    default: false
+  gradle_command:
+    description: 'Gradle command to run'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - id: set_variables
+      run: |
+        if [[ ${{ inputs.is_release }} == "false"  ]];then
+          echo "Workflow triggered by push to a branch"
+          export CI_VERSION=true
+        fi
+        version=$(./gradlew radixCiVersion | grep radixdlt-version | cut -d: -f2)
+        echo "Version: $version"
+        ./gradlew ${{ inputs.gradle_command }}
+      shell: bash

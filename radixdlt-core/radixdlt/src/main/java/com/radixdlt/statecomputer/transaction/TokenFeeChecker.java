@@ -21,9 +21,10 @@ package com.radixdlt.statecomputer.transaction;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.atomos.Result;
+import com.radixdlt.constraintmachine.CMErrorCode;
+import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.constraintmachine.REParsedAction;
-import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.engine.PostParsedChecker;
 import com.radixdlt.utils.UInt256;
@@ -37,32 +38,32 @@ public class TokenFeeChecker implements PostParsedChecker {
 		.multiply(UInt256.from(100));
 
 	@Override
-	public Result check(PermissionLevel permissionLevel, REParsedTxn radixEngineTxn) {
+	public void check(PermissionLevel permissionLevel, REProcessedTxn radixEngineTxn) throws ConstraintMachineException {
 		if (permissionLevel.equals(PermissionLevel.SYSTEM)) {
-			return Result.success();
+			return;
 		}
 
 		// no fees for system updates
 		if (radixEngineTxn.isSystemOnly()) {
-			return Result.success();
+			return;
 		}
 
 		// FIXME: This logic needs to move into the constraint machine and must be first
 		// FIXME: action checked
 		var feePaid = computeFeePaid(radixEngineTxn);
 		if (feePaid.compareTo(FIXED_FEE) < 0) {
-			return Result.error(
+			throw new ConstraintMachineException(
+				CMErrorCode.FEE_NOT_FOUND,
+				null,
 				String.format("atom fee invalid: '%s' is less than fixed fee of '%s'",
 					TokenUnitConversions.subunitsToUnits(feePaid),
 					TokenUnitConversions.subunitsToUnits(FIXED_FEE)
 				)
 			);
 		}
-
-		return Result.success();
 	}
 
-	private UInt256 computeFeePaid(REParsedTxn radixEngineTxn) {
+	private UInt256 computeFeePaid(REProcessedTxn radixEngineTxn) {
 		return radixEngineTxn.getActions()
 			.stream()
 			.map(REParsedAction::getTxAction)

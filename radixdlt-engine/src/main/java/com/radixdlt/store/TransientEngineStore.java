@@ -3,7 +3,7 @@ package com.radixdlt.store;
 import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.constraintmachine.REParsedInstruction;
+import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.REAddr;
@@ -22,7 +22,7 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public void storeTxn(Transaction dbTxn, Txn txn, List<REParsedInstruction> stateUpdates) {
+	public void storeTxn(Transaction dbTxn, Txn txn, List<REStateUpdate> stateUpdates) {
 		transientStore.storeTxn(dbTxn, txn, stateUpdates);
 	}
 
@@ -54,6 +54,17 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 		}
 
 		return transientStore.loadUpParticle(txn, substateId);
+	}
+
+	@Override
+	public SubstateCursor openIndexedCursor(Transaction dbTxn, Class<? extends Particle> particleClass) {
+		return SubstateCursor.concat(
+			transientStore.openIndexedCursor(particleClass),
+			() -> SubstateCursor.filter(
+				base.openIndexedCursor(dbTxn, particleClass),
+				s -> transientStore.getSpin(s.getId()) != Spin.DOWN
+			)
+		);
 	}
 
 	@Override

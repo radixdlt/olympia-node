@@ -1,0 +1,79 @@
+
+on:
+  release:
+    types: [published]
+name: Start release process
+jobs:
+  start_radixdlt_iac_release:
+    name: Start radixdlt-iac release ${{ github.event.release.tag_name }}
+    runs-on: ubuntu-latest
+    environment: publish-artifacts
+    steps:
+      - name: Trigger radixdlt/radixdlt-iac release ${{ github.event.release.tag_name }}
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.RADIXBOT_GITHUB_REPO_PACKAGES_TOKEN }}
+          repository: radixdlt/radixdlt-iac
+          event-type: start_release
+          client-payload: |
+            {
+              "ref": "${{ github.ref }}",
+              "release_tag": "${{ github.event.release.tag_name }}",
+              "release_url": "${{ github.event.release.html_url }}",
+              "release_job_url": "https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}"
+            }
+  start_radixdlt_nginx_release:
+    name: Start radixdlt-nginx release ${{ github.event.release.tag_name }}
+    runs-on: ubuntu-latest
+    environment: publish-artifacts
+    steps:
+      - name: Trigger radixdlt/radixdlt-nginx release ${{ github.event.release.tag_name }}
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.RADIXBOT_GITHUB_REPO_PACKAGES_TOKEN }}
+          repository: radixdlt/radixdlt-nginx
+          event-type: start_release
+          client-payload: |
+            {
+              "ref": "${{ github.ref }}",
+               "release_tag": "${{ github.event.release.tag_name }}",
+               "release_url": "${{ github.event.release.html_url }}",
+              "release_job_url": "https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}"
+            }
+  start_radixdlt_node_runner:
+    name: Start node-runner release ${{ github.event.release.tag_name }}
+    runs-on: ubuntu-latest
+    environment: publish-artifacts
+    steps:
+      - name: Trigger radixdlt/node-runner release ${{ github.event.release.tag_name }}
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.RADIXBOT_GITHUB_REPO_PACKAGES_TOKEN }}
+          repository: radixdlt/node-runner
+          event-type: start_release
+          client-payload: |
+            {
+              "ref": "${{ github.ref }}",
+              "release_tag": "${{ github.event.release.tag_name }}",
+              "release_url": "${{ github.event.release.html_url }}",
+              "release_job_url": "https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}"
+            }
+
+  start_radixdlt_metrics_exporter:
+    name: Start metrics exporter release ${{ github.event.release.tag_name }}
+    runs-on: ubuntu-latest
+    environment: publish-artifacts
+    steps:
+      - name: Trigger radixdlt/metrics-exporter release ${{ github.event.release.tag_name }}
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.RADIXBOT_GITHUB_REPO_PACKAGES_TOKEN }}
+          repository: radixdlt/metrics-exporter
+          event-type: start_release
+          client-payload: |
+            {
+              "ref": "${{ github.ref }}",
+              "release_tag": "${{ github.event.release.tag_name }}",
+              "release_url": "${{ github.event.release.html_url }}",
+              "release_job_url": "https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}"
+            }

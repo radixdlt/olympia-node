@@ -27,6 +27,7 @@ import com.radixdlt.api.faucet.FaucetModule;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -163,7 +164,12 @@ public final class RadixNodeModule extends AbstractModule {
 
 		// State Computer
 		install(new BetanetForksModule());
-		install(new RadixEngineForksModule());
+		if (properties.get("overwrite_forks.enable", false)) {
+			log.info("Enabling fork overwrites");
+			install(new ForkOverwritesFromPropertiesModule());
+		} else {
+			install(new RadixEngineForksModule());
+		}
 		install(new RadixEngineStateComputerModule());
 		install(new RadixEngineModule());
 		install(new RadixEngineStoreModule());

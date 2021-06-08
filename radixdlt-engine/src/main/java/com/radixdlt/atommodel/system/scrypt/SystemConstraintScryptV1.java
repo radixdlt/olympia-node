@@ -18,8 +18,6 @@
 
 package com.radixdlt.atommodel.system.scrypt;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -72,11 +70,6 @@ public final class SystemConstraintScryptV1 implements ConstraintScrypt {
 		private UpdatingSystem(SystemParticle sys) {
 			this.sys = sys;
 		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(UpdatingSystem.class);
-		}
 	}
 
 	@Override
@@ -119,7 +112,7 @@ public final class SystemConstraintScryptV1 implements ConstraintScrypt {
 				}
 
 				return s.sys.getEpoch() != u.getEpoch()
-					? ReducerResult.complete(new SystemNextEpoch(u.getTimestamp()))
+					? ReducerResult.complete()
 					: ReducerResult.complete(new SystemNextView(
 						u.getView(),
 						u.getTimestamp(),

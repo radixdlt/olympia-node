@@ -28,12 +28,13 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.constraintmachine.REParsedInstruction;
-import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.constraintmachine.ConstraintMachineException;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
@@ -51,6 +52,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
@@ -150,8 +152,8 @@ public final class RadixEngine<M> {
 	private final Map<Pair<Class<?>, String>, ApplicationStateReducer<?, M>> stateComputers = new HashMap<>();
 	private final Map<Class<?>, SubstateCache<?>> substateCache = new HashMap<>();
 	private final List<RadixEngineBranch<M>> branches = new ArrayList<>();
-	private final BatchVerifier<M> batchVerifier;
 
+	private BatchVerifier<M> batchVerifier;
 	private ActionConstructors actionConstructors;
 	private ConstraintMachine constraintMachine;
 
@@ -249,11 +251,13 @@ public final class RadixEngine<M> {
 
 	public void replaceConstraintMachine(
 		ConstraintMachine constraintMachine,
-		ActionConstructors actionToConstructorMap
+		ActionConstructors actionToConstructorMap,
+		BatchVerifier<M> batchVerifier
 	) {
 		synchronized (stateUpdateEngineLock) {
 			this.constraintMachine = constraintMachine;
 			this.actionConstructors = actionToConstructorMap;
+			this.batchVerifier = batchVerifier;
 		}
 	}
 
@@ -263,6 +267,7 @@ public final class RadixEngine<M> {
 	 */
 	public static class RadixEngineBranch<M> {
 		private final RadixEngine<M> engine;
+		private boolean deleted = false;
 
 		private RadixEngineBranch(
 			ActionConstructors actionToConstructorMap,
@@ -286,29 +291,45 @@ public final class RadixEngine<M> {
 			engine.stateComputers.putAll(stateComputers);
 		}
 
-		public List<REParsedTxn> execute(List<Txn> txns) throws RadixEngineException {
+		private void delete() {
+			deleted = true;
+		}
+
+		private void assertNotDeleted() {
+			if (deleted) {
+				throw new IllegalStateException();
+			}
+		}
+
+		public List<REProcessedTxn> execute(List<Txn> txns) throws RadixEngineException {
+			assertNotDeleted();
 			return engine.execute(txns);
 		}
 
-		public List<REParsedTxn> execute(List<Txn> txns, PermissionLevel permissionLevel) throws RadixEngineException {
+		public List<REProcessedTxn> execute(List<Txn> txns, PermissionLevel permissionLevel) throws RadixEngineException {
+			assertNotDeleted();
 			return engine.execute(txns, null, permissionLevel);
 		}
 
 		public TxBuilder construct(TxAction action) throws TxBuilderException {
+			assertNotDeleted();
 			return engine.construct(action);
 		}
 
 		public TxBuilder construct(List<TxAction> actions) throws TxBuilderException {
+			assertNotDeleted();
 			return engine.construct(actions);
 		}
 
 		public <U> U getComputedState(Class<U> applicationStateClass) {
+			assertNotDeleted();
 			return engine.getComputedState(applicationStateClass);
 		}
 	}
 
 	public void deleteBranches() {
 		synchronized (stateUpdateEngineLock) {
+			branches.forEach(RadixEngineBranch::delete);
 			branches.clear();
 		}
 	}
@@ -342,8 +363,8 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	private REParsedTxn verify(CMStore.Transaction dbTransaction, Txn txn, PermissionLevel permissionLevel)
-		throws RadixEngineException {
+	private REProcessedTxn verify(CMStore.Transaction dbTransaction, Txn txn, PermissionLevel permissionLevel)
+		throws TxnParseException, ConstraintMachineException {
 
 		var parsedTxn = constraintMachine.verify(
 			dbTransaction,
@@ -353,15 +374,7 @@ public final class RadixEngine<M> {
 		);
 
 		if (checker != null) {
-			var hookResult = checker.check(permissionLevel, parsedTxn);
-			if (hookResult.isError()) {
-				throw new RadixEngineException(
-					txn,
-					RadixEngineErrorCode.HOOK_ERROR,
-					"Checker failed: " + hookResult.getErrorMessage(),
-					parsedTxn.getStatelessResult()
-				);
-			}
+			checker.check(permissionLevel, parsedTxn);
 		}
 
 		return parsedTxn;
@@ -373,7 +386,7 @@ public final class RadixEngine<M> {
 	 *
 	 * @throws RadixEngineException on state conflict, dependency issues or bad atom
 	 */
-	public List<REParsedTxn> execute(List<Txn> txns) throws RadixEngineException {
+	public List<REProcessedTxn> execute(List<Txn> txns) throws RadixEngineException {
 		return execute(txns, null, PermissionLevel.USER);
 	}
 
@@ -385,7 +398,7 @@ public final class RadixEngine<M> {
 	 * @param permissionLevel permission level to execute on
 	 * @throws RadixEngineException on state conflict or dependency issues
 	 */
-	public List<REParsedTxn> execute(List<Txn> txns, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
+	public List<REProcessedTxn> execute(List<Txn> txns, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
 		synchronized (stateUpdateEngineLock) {
 			if (!branches.isEmpty()) {
 				throw new IllegalStateException(
@@ -407,19 +420,25 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	private List<REParsedTxn> executeInternal(
+	private List<REProcessedTxn> executeInternal(
 		CMStore.Transaction dbTransaction,
 		List<Txn> txns,
 		M meta,
 		PermissionLevel permissionLevel
 	) throws RadixEngineException {
 		var checker = batchVerifier.newVerifier(this::getComputedState);
-		var parsedTransactions = new ArrayList<REParsedTxn>();
+		var parsedTransactions = new ArrayList<REProcessedTxn>();
 		for (var txn : txns) {
+			final REProcessedTxn parsedTxn;
 			// TODO: combine verification and storage
-			var parsedTxn = this.verify(dbTransaction, txn, permissionLevel);
 			try {
-				this.engineStore.storeTxn(dbTransaction, txn, parsedTxn.stateUpdates());
+				parsedTxn = this.verify(dbTransaction, txn, permissionLevel);
+			} catch (TxnParseException | ConstraintMachineException e) {
+				throw new RadixEngineException(txn, e);
+			}
+
+			try {
+				this.engineStore.storeTxn(dbTransaction, txn, parsedTxn.stateUpdates().collect(Collectors.toList()));
 			} catch (Exception e) {
 				logger.error("Store of atom failed: " + parsedTxn, e);
 				throw e;
@@ -427,28 +446,34 @@ public final class RadixEngine<M> {
 
 			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
 			// Non-persisted computed state
-			parsedTxn.instructions().filter(REParsedInstruction::isStateUpdate).forEach(parsedInstruction -> {
-				final var particle = parsedInstruction.getSubstate().getParticle();
-				final var checkSpin = parsedInstruction.getCheckSpin();
-				stateComputers.forEach((a, computer) -> computer.processCheckSpin(particle, checkSpin));
+			for (var group : parsedTxn.getGroupedStateUpdates()) {
+				group.forEach(update -> {
+					final var particle = update.getSubstate().getParticle();
+					final var checkSpin = update.getCheckSpin();
+					stateComputers.forEach((a, computer) -> computer.processCheckSpin(particle, checkSpin));
 
-				var cache = substateCache.get(particle.getClass());
-				if (cache != null && cache.test(particle)) {
-					if (parsedInstruction.isBootUp()) {
-						cache.bringUp(parsedInstruction.getSubstate());
-					} else {
-						cache.shutDown(parsedInstruction.getSubstate().getId());
+					var cache = substateCache.get(particle.getClass());
+					if (cache != null && cache.test(particle)) {
+						if (update.isBootUp()) {
+							cache.bringUp(update.getSubstate());
+						} else {
+							cache.shutDown(update.getSubstate().getId());
+						}
 					}
-				}
+				});
 
-				if (parsedInstruction.isBootUp()) {
-					checker.test(this::getComputedState);
-				}
-			});
+				checker.test(this::getComputedState);
+			}
+
 			parsedTransactions.add(parsedTxn);
 		}
 
-		checker.testMetadata(meta, this::getComputedState);
+		try {
+			checker.testMetadata(meta, this::getComputedState);
+		} catch (MetadataException e) {
+			logger.error("Invalid metadata: " + parsedTransactions);
+			throw e;
+		}
 
 		if (meta != null) {
 			this.engineStore.storeMetadata(dbTransaction, meta);

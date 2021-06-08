@@ -22,9 +22,10 @@ import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
-import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
-import com.radixdlt.constraintmachine.REParsedInstruction;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
+import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.REAddr;
@@ -38,23 +39,24 @@ import java.util.function.BiFunction;
 
 public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateStore {
 	private final Object lock = new Object();
-	private final Map<SubstateId, REParsedInstruction> storedParticles = new HashMap<>();
+	private final Map<SubstateId, REStateUpdate> storedParticles = new HashMap<>();
 	private final Map<REAddr, Particle> addrParticles = new HashMap<>();
 
 	@Override
-	public void storeTxn(Transaction dbTxn, Txn txn, List<REParsedInstruction> stateUpdates) {
+	public void storeTxn(Transaction dbTxn, Txn txn, List<REStateUpdate> stateUpdates) {
 		synchronized (lock) {
+			stateUpdates.forEach(i -> storedParticles.put(i.getSubstate().getId(), i));
 			stateUpdates.stream()
-				.filter(REParsedInstruction::isStateUpdate)
-				.forEach(i -> storedParticles.put(i.getSubstate().getId(), i));
-			stateUpdates.stream()
-				.filter(REParsedInstruction::isBootUp)
-				.map(REParsedInstruction::getParticle)
+				.filter(REStateUpdate::isBootUp)
+				.map(REStateUpdate::getRawSubstate)
 				.forEach(p -> {
-					if (p instanceof TokenDefinitionParticle) {
-						var tokenDef = (TokenDefinitionParticle) p;
+					// FIXME: Superhack
+					if (p instanceof TokenResource) {
+						var tokenDef = (TokenResource) p;
 						addrParticles.put(tokenDef.getAddr(), p);
 					} else if (p instanceof SystemParticle) {
+						addrParticles.put(REAddr.ofSystem(), p);
+					} else if (p instanceof EpochData) {
 						addrParticles.put(REAddr.ofSystem(), p);
 					}
 				});
@@ -75,13 +77,18 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 		V v = initial;
 		synchronized (lock) {
 			for (var i : storedParticles.values()) {
-				if (!i.isBootUp() || !particleClass.isInstance(i.getParticle())) {
+				if (!i.isBootUp() || !particleClass.isInstance(i.getRawSubstate())) {
 					continue;
 				}
-				v = outputReducer.apply(v, particleClass.cast(i.getParticle()));
+				v = outputReducer.apply(v, particleClass.cast(i.getRawSubstate()));
 			}
 		}
 		return v;
+	}
+
+	@Override
+	public SubstateCursor openIndexedCursor(Transaction dbTxn, Class<? extends Particle> substateClass) {
+		return openIndexedCursor(substateClass);
 	}
 
 	@Override
@@ -89,7 +96,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 		final List<Substate> substates = new ArrayList<>();
 		synchronized (lock) {
 			for (var i : storedParticles.values()) {
-				if (!i.isBootUp() || !substateClass.isInstance(i.getParticle())) {
+				if (!i.isBootUp() || !substateClass.isInstance(i.getRawSubstate())) {
 					continue;
 				}
 				substates.add(i.getSubstate());
@@ -127,7 +134,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 				return Optional.empty();
 			}
 
-			var particle = inst.getParticle();
+			var particle = inst.getRawSubstate();
 			return Optional.of(particle);
 		}
 	}

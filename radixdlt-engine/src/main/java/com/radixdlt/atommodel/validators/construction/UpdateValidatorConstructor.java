@@ -24,6 +24,8 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UpdateValidator;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 
+import java.util.List;
+
 public final class UpdateValidatorConstructor implements ActionConstructor<UpdateValidator> {
 	@Override
 	public void construct(UpdateValidator action, TxBuilder txBuilder) throws TxBuilderException {
@@ -32,12 +34,12 @@ public final class UpdateValidatorConstructor implements ActionConstructor<Updat
 			p -> p.getKey().equals(action.validatorKey()),
 			"Invalid state."
 		).with(
-			substateDown -> new ValidatorParticle(
+			substateDown -> List.of(new ValidatorParticle(
 				action.validatorKey(),
 				substateDown.isRegisteredForNextEpoch(),
 				action.name() == null ? substateDown.getName() : action.name(),
 				action.name() == null ? substateDown.getUrl() : action.url()
-			)
+			))
 		);
 	}
 }

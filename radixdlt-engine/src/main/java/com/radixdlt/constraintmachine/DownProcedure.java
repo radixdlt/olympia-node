@@ -20,7 +20,6 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.store.ReadableAddrs;
-import com.radixdlt.utils.Pair;
 
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -45,8 +44,8 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 		this.downAuthorization = downAuthorization;
 	}
 
-	public Pair<Class<? extends Particle>, Class<? extends ReducerState>> getDownProcedureKey() {
-		return Pair.of(downClass, reducerStateClass);
+	public ProcedureKey getDownProcedureKey() {
+		return ProcedureKey.of(downClass, reducerStateClass);
 	}
 
 	@Override

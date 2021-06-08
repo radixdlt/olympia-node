@@ -20,7 +20,6 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.store.ReadableAddrs;
-import com.radixdlt.utils.Pair;
 
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -46,8 +45,8 @@ public final class UpProcedure<S extends ReducerState, U extends Particle> imple
 		this.permissionLevel = permissionLevel;
 	}
 
-	public Pair<Class<? extends ReducerState>, Class<? extends Particle>> getUpProcedureKey() {
-		return Pair.of(reducerStateClass, upClass);
+	public ProcedureKey getUpProcedureKey() {
+		return ProcedureKey.of(upClass, reducerStateClass);
 	}
 
 	@Override

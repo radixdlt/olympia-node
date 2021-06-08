@@ -18,7 +18,6 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -49,6 +48,7 @@ public final class CMAtomOS {
 		.virtualizeUp(v ->
 			v.getAddr().getType() == REAddr.REAddrType.NATIVE_TOKEN
 			|| v.getAddr().getType() == REAddr.REAddrType.HASHED_KEY
+			|| v.getAddr().isSystem()
 			// PUB_KEY type is already an account so cannot down
 		)
 		.build();
@@ -75,11 +75,6 @@ public final class CMAtomOS {
 		public REAddr getAddr() {
 			return this.addrParticle.getAddr();
 		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(REAddrClaim.class);
-		}
 	}
 
 	public CMAtomOS(Set<String> systemNames) {
@@ -92,7 +87,9 @@ public final class CMAtomOS {
 				REAddrParticle.class, VoidReducerState.class,
 				(d, r) -> {
 					var name = new String(d.getArg().orElseThrow());
-					return systemNames.contains(name) || d.getSubstate().getAddr().isNativeToken()
+					return systemNames.contains(name)
+						|| d.getSubstate().getAddr().isNativeToken()
+						|| d.getSubstate().getAddr().isSystem()
 						? PermissionLevel.SYSTEM : PermissionLevel.USER;
 				},
 				(d, r, pubKey) -> {
@@ -101,6 +98,10 @@ public final class CMAtomOS {
 					}
 				},
 				(d, s, r) -> {
+					if (d.getSubstate().getAddr().isSystem()) {
+						return ReducerResult.incomplete(new REAddrClaim(d.getSubstate(), null));
+					}
+
 					if (d.getArg().isEmpty()) {
 						throw new ProcedureException("REAddr must be claimed with a name");
 					}

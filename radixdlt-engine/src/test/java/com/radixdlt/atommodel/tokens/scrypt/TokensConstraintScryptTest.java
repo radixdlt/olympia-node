@@ -22,8 +22,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
-import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.PreparedStake;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.crypto.ECPublicKey;
@@ -50,16 +50,16 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_token_instance_with_null_amount__result_has_error() {
-		TokensParticle tokensParticle = mock(TokensParticle.class);
-		when(tokensParticle.getResourceAddr()).thenReturn(mock(REAddr.class));
-		when(tokensParticle.getAmount()).thenReturn(null);
-		assertThat(staticCheck.apply(tokensParticle).getErrorMessage())
+		TokensInAccount tokensInAccount = mock(TokensInAccount.class);
+		when(tokensInAccount.getResourceAddr()).thenReturn(mock(REAddr.class));
+		when(tokensInAccount.getAmount()).thenReturn(null);
+		assertThat(staticCheck.apply(tokensInAccount).getErrorMessage())
 			.contains("null");
 	}
 
 	@Test
 	public void when_validating_staked_token_with_null_amount__result_has_error() {
-		DeprecatedStake staked = mock(DeprecatedStake.class);
+		PreparedStake staked = mock(PreparedStake.class);
 		when(staked.getAmount()).thenReturn(null);
 		assertThat(staticCheck.apply(staked).getErrorMessage())
 			.contains("null");
@@ -67,16 +67,16 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_token_instance_with_zero_amount__result_has_error() {
-		TokensParticle tokensParticle = mock(TokensParticle.class);
-		when(tokensParticle.getResourceAddr()).thenReturn(mock(REAddr.class));
-		when(tokensParticle.getAmount()).thenReturn(UInt256.ZERO);
-		assertThat(staticCheck.apply(tokensParticle).getErrorMessage())
+		TokensInAccount tokensInAccount = mock(TokensInAccount.class);
+		when(tokensInAccount.getResourceAddr()).thenReturn(mock(REAddr.class));
+		when(tokensInAccount.getAmount()).thenReturn(UInt256.ZERO);
+		assertThat(staticCheck.apply(tokensInAccount).getErrorMessage())
 			.contains("zero");
 	}
 
 	@Test
 	public void when_validating_staked_token_with_zero_amount__result_has_error() {
-		DeprecatedStake delegatedStake = mock(DeprecatedStake.class);
+		PreparedStake delegatedStake = mock(PreparedStake.class);
 		when(delegatedStake.getDelegateKey()).thenReturn(mock(ECPublicKey.class));
 		when(delegatedStake.getAmount()).thenReturn(UInt256.ZERO);
 		assertThat(staticCheck.apply(delegatedStake).getErrorMessage())
@@ -85,7 +85,7 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_staked_token_with_null_delegate_address__result_has_error() {
-		DeprecatedStake staked = mock(DeprecatedStake.class);
+		PreparedStake staked = mock(PreparedStake.class);
 		when(staked.getDelegateKey()).thenReturn(null);
 		assertThat(staticCheck.apply(staked).getErrorMessage())
 			.contains("delegateAddress");

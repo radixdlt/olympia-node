@@ -18,7 +18,6 @@
 
 package com.radixdlt.atommodel.validators.scrypt;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -47,11 +46,6 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 
 		private ValidatorUpdate(ValidatorParticle prevState) {
 			this.prevState = prevState;
-		}
-
-		@Override
-		public TypeToken<? extends ReducerState> getTypeToken() {
-			return TypeToken.of(ValidatorUpdate.class);
 		}
 	}
 

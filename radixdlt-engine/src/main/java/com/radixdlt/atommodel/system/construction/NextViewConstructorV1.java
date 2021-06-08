@@ -25,13 +25,12 @@ import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 
+import java.util.List;
 import java.util.Optional;
 
 public class NextViewConstructorV1 implements ActionConstructor<SystemNextView> {
 	@Override
 	public void construct(SystemNextView action, TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.assertIsSystem("Not permitted as user to execute system next view");
-
 		txBuilder.swap(
 			SystemParticle.class,
 			p -> true,
@@ -41,7 +40,7 @@ public class NextViewConstructorV1 implements ActionConstructor<SystemNextView> 
 			if (action.view() <= substateDown.getView()) {
 				throw new TxBuilderException("Next view isn't higher than current view.");
 			}
-			return new SystemParticle(substateDown.getEpoch(), action.view(), action.timestamp());
+			return List.of(new SystemParticle(substateDown.getEpoch(), action.view(), action.timestamp()));
 		});
 	}
 }

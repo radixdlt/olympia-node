@@ -25,7 +25,7 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.sync.CommittedReader;
 import org.junit.Assert;
 import org.junit.Before;
@@ -65,7 +65,7 @@ import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.AtomsCommittedToLedger;
+import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -133,7 +133,7 @@ public class SubmissionServiceTest {
 			@Override
 			public void configure() {
 				install(new BetanetForksModule());
-				install(new RadixEngineOnlyLatestForkModule(View.of(10)));
+				install(new RadixEngineForksLatestOnlyModule(View.of(10)));
 				install(RadixEngineConfig.asModule(1, 100, 50));
 				install(MempoolConfig.asModule(10, 10));
 
@@ -154,7 +154,7 @@ public class SubmissionServiceTest {
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<AtomsCommittedToLedger>>() { })
+				bind(new TypeLiteral<EventDispatcher<TxnsCommittedToLedger>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));

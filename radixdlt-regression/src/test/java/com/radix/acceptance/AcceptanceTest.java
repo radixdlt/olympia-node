@@ -16,19 +16,25 @@ public abstract class AcceptanceTest {
 
     private static final Logger logger = LogManager.getLogger();
 
-    public static final UInt256 FAUCET_AMOUNT = Utils.fromMajorToMinor(UInt256.from(10));
-    public static final UInt256 FIXED_FEES = UInt256.from(100000000000000000L);
+    /**
+     * the faucet always sends the same amount per transaction
+     */
+    public static final UInt256 FIXED_FAUCET_AMOUNT = Utils.fromMajorToMinor(UInt256.from(10));
 
     private final TestNetwork testNetwork;
     private final List<Account> accounts;
+    protected final Account account1;
+    protected final Account account2;
 
     public AcceptanceTest() {
         testNetwork = TestNetwork.initializeFromEnv();
         accounts = Lists.newArrayList();
         IntStream.range(0, 5).forEach(i -> {
-            var account = testNetwork.generateNewAccount().fold(Utils::toRuntimeException, newAccount -> newAccount);
+            var account = testNetwork.generateNewAccount().fold(Utils::toTestFailureException, newAccount -> newAccount);
             accounts.add(account);
         });
+        account1 = accounts.get(0);
+        account2 = accounts.get(1);
     }
 
     public Account getTestAccount() {
@@ -45,6 +51,14 @@ public abstract class AcceptanceTest {
 
     public TestNetwork getNetwork() {
         return testNetwork;
+    }
+
+    /**
+     * Calls the faucet for the given account and waits for the faucet tokens to arrive
+     */
+    public void callFaucetAndWaitForTokens(Account account) {
+        faucet(account.getAddress());
+        Utils.waitForBalanceToReach(account, FIXED_FAUCET_AMOUNT);
     }
 
 }

@@ -24,9 +24,11 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.util.Modules;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.application.NodeApplicationRequest;
@@ -36,6 +38,10 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.tokens.state.ExittingStake;
+import com.radixdlt.atommodel.tokens.state.PreparedStake;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
@@ -64,7 +70,7 @@ import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.EngineStore;
@@ -105,12 +111,18 @@ public class StakingUnstakingValidatorsTest {
 	private List<Supplier<Injector>> nodeCreators;
 	private List<Injector> nodes = new ArrayList<>();
 	private final ImmutableList<ECKeyPair> nodeKeys;
+	private final Module radixEngineConfiguration;
 
 	public StakingUnstakingValidatorsTest() {
 		this.nodeKeys = Stream.generate(ECKeyPair::generateNew)
-			.limit(8)
+			.limit(20)
 			.sorted(Comparator.comparing(k -> k.getPublicKey().euid()))
 			.collect(ImmutableList.toImmutableList());
+		this.radixEngineConfiguration = Modules.combine(
+			new BetanetForksModule(),
+			new RadixEngineForksLatestOnlyModule(View.of(100)),
+			RadixEngineConfig.asModule(1, 10, 50)
+		);
 	}
 
 	@Before
@@ -127,10 +139,8 @@ public class StakingUnstakingValidatorsTest {
 		Guice.createInjector(
 			new MockedGenesisModule(),
 			new CryptoModule(),
-			new BetanetForksModule(),
-			new RadixEngineOnlyLatestForkModule(View.of(10)),
 			new RadixEngineModule(),
-			RadixEngineConfig.asModule(1, 4, 50),
+			this.radixEngineConfiguration,
 			new AbstractModule() {
 				@Override
 				public void configure() {
@@ -140,10 +150,12 @@ public class StakingUnstakingValidatorsTest {
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class).toInstance(nodeKeys);
 
-					nodeKeys.forEach(key -> {
+					nodeKeys.forEach(key ->
 						Multibinder.newSetBinder(binder(), TokenIssuance.class)
-							.addBinding().toInstance(TokenIssuance.of(key.getPublicKey(), UInt256.from(100)));
-					});
+							.addBinding().toInstance(
+								TokenIssuance.of(key.getPublicKey(), ValidatorStake.MINIMUM_STAKE.multiply(UInt256.TEN))
+						)
+					);
 				}
 			}
 		).injectMembers(this);
@@ -172,9 +184,7 @@ public class StakingUnstakingValidatorsTest {
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
-			new BetanetForksModule(),
-			new RadixEngineOnlyLatestForkModule(View.of(10)),
-			RadixEngineConfig.asModule(2, 4, 50),
+			this.radixEngineConfiguration,
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {
 				@Override
@@ -228,7 +238,7 @@ public class StakingUnstakingValidatorsTest {
 	public void stake_unstake_transfers() {
 		var random = new Random(12345);
 
-		for (int i = 0; i < 2000; i++) {
+		for (int i = 0; i < 5000; i++) {
 			processForCount(100);
 
 			var nodeIndex = random.nextInt(nodeKeys.size());
@@ -239,7 +249,7 @@ public class StakingUnstakingValidatorsTest {
 			var privKey = nodeKeys.get(nodeIndex);
 			var acct = REAddr.ofPubKeyAccount(privKey.getPublicKey());
 			var to = nodeKeys.get(random.nextInt(nodeKeys.size())).getPublicKey();
-			var amount = UInt256.from(random.nextInt(10));
+			var amount = UInt256.from(random.nextInt(10)).multiply(ValidatorStake.MINIMUM_STAKE);
 
 			var next = random.nextInt(10);
 			final TxAction action;
@@ -251,14 +261,19 @@ public class StakingUnstakingValidatorsTest {
 					action = new StakeTokens(acct, to, amount);
 					break;
 				case 2:
-					action = new UnstakeTokens(acct, to, amount);
+					var unstakeAmt = random.nextBoolean() ? UInt256.from(random.nextLong()) : amount;
+					action = new UnstakeTokens(acct, to, unstakeAmt);
 					break;
 				case 3:
 					action = new RegisterValidator(privKey.getPublicKey());
 					break;
 				case 4:
-					action = new UnregisterValidator(privKey.getPublicKey(), null, null);
-					break;
+					// Only unregister once in a while
+					if (random.nextInt(10) == 0) {
+						action = new UnregisterValidator(privKey.getPublicKey(), null, null);
+						break;
+					}
+					continue;
 				default:
 					continue;
 			}
@@ -267,8 +282,38 @@ public class StakingUnstakingValidatorsTest {
 				n.getInstance(new Key<EventDispatcher<MempoolRelayTrigger>>() { }).dispatch(MempoolRelayTrigger.create());
 				n.getInstance(new Key<EventDispatcher<SyncCheckTrigger>>() { }).dispatch(SyncCheckTrigger.create());
 			});
-
 		}
+
+		var entryStore = this.nodes.get(0).getInstance(BerkeleyLedgerEntryStore.class);
+		var totalTokens = entryStore.reduceUpParticles(TokensInAccount.class, UInt256.ZERO,
+			(i, p) -> {
+				var tokens = (TokensInAccount) p;
+				return i.add(tokens.getAmount());
+			}
+		);
+		logger.info("Total tokens: {}", totalTokens);
+		var totalStaked = entryStore.reduceUpParticles(ValidatorStake.class, UInt256.ZERO,
+			(i, p) -> {
+				var tokens = (ValidatorStake) p;
+				return i.add(tokens.getTotalStake());
+			}
+		);
+		logger.info("Total staked: {}", totalStaked);
+		var totalStakePrepared = entryStore.reduceUpParticles(PreparedStake.class, UInt256.ZERO,
+			(i, p) -> {
+				var tokens = (PreparedStake) p;
+				return i.add(tokens.getAmount());
+			}
+		);
+		logger.info("Total preparing stake: {}", totalStakePrepared);
+		var totalStakeExitting = entryStore.reduceUpParticles(ExittingStake.class, UInt256.ZERO,
+			(i, p) -> {
+				var tokens = (ExittingStake) p;
+				return i.add(tokens.getAmount());
+			}
+		);
+		logger.info("Total exitting stake: {}", totalStakeExitting);
+		logger.info("Total: {}", totalTokens.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting));
 	}
 
 }

@@ -1,0 +1,72 @@
+
+on:
+  create:
+    branches:
+      - release\/*
+name: Add rc tags
+jobs:
+  add_rc_tag_to_radixdlt_iac:
+    name: Add rc tag to radixdlt-iac
+    runs-on: ubuntu-latest
+    environment: publish-artifacts
+    steps:
+      - name: Trigger radixdlt/radixdlt-iac rc_tag event ${{ github.ref }}
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.RADIXBOT_GITHUB_REPO_PACKAGES_TOKEN }}
+          repository: radixdlt/radixdlt-iac
+          event-type: rc_tag
+          client-payload: |
+            {
+              "ref": "${{ github.ref }}",
+              "release_job_url": "https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}"
+            }
+  add_rc_tag_to_radixdlt_nginx:
+    name: Add rc tag to radixdlt-nginx
+    runs-on: ubuntu-latest
+    environment: publish-artifacts
+    steps:
+      - name: Trigger radixdlt/radixdlt-nginx rc_tag event ${{ github.ref }}
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.RADIXBOT_GITHUB_REPO_PACKAGES_TOKEN }}
+          repository: radixdlt/radixdlt-nginx
+          event-type: rc_tag
+          client-payload: |
+            {
+              "ref": "${{ github.ref }}",
+              "release_job_url": "https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}"
+            }
+  add_rc_tag_to_radixdlt_node_runner:
+    name:  Add rc tag to node-runner
+    runs-on: ubuntu-latest
+    environment: publish-artifacts
+    steps:
+      - name: Trigger radixdlt/node-runner rc_tag event ${{ github.ref }}
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.RADIXBOT_GITHUB_REPO_PACKAGES_TOKEN }}
+          repository: radixdlt/node-runner
+          event-type: rc_tag
+          client-payload: |
+            {
+              "ref": "${{ github.ref }}",
+              "release_job_url": "https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}"
+            }
+
+  add_rc_tag_to_radixdlt_metrics_exporter:
+    name: Add rc tag to metrics-exporter
+    runs-on: ubuntu-latest
+    environment: publish-artifacts
+    steps:
+      - name: Trigger radixdlt/metrics-exporter rc_tag event ${{ github.ref }}
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.RADIXBOT_GITHUB_REPO_PACKAGES_TOKEN }}
+          repository: radixdlt/metrics-exporter
+          event-type: rc_tag
+          client-payload: |
+            {
+              "ref": "${{ github.ref }}",
+              "release_job_url": "https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}"
+            }

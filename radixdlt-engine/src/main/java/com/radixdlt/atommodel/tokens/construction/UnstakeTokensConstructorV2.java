@@ -22,23 +22,26 @@ import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.atommodel.system.state.SystemParticle;
-import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV2;
-import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
-import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.atommodel.system.state.StakeOwnership;
+import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 
 public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeTokens> {
 	@Override
 	public void construct(UnstakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
-		var epochUnlocked = txBuilder.find(SystemParticle.class, p -> true)
-			.map(SystemParticle::getEpoch).orElse(0L) + StakingConstraintScryptV2.EPOCHS_LOCKED;
+		var validatorStake = txBuilder.find(ValidatorStake.class, v -> v.getValidatorKey().equals(action.from()))
+			.orElseThrow(() -> new TxBuilderException("Validator does not exist."));
+
+		var ownershipAmt = action.amount()
+			.multiply(validatorStake.getTotalOwnership())
+			.divide(validatorStake.getTotalStake());
+
 		txBuilder.swapFungible(
-			DeprecatedStake.class,
+			StakeOwnership.class,
 			p -> p.getOwner().equals(action.accountAddr()) && p.getDelegateKey().equals(action.from()),
-			amt -> new DeprecatedStake(amt, action.accountAddr(), action.from()),
-			action.amount(),
-			"Not enough staked."
-		).with(amt -> new TokensParticle(action.accountAddr(), amt, REAddr.ofNativeToken(), epochUnlocked));
+			amt -> new StakeOwnership(action.from(), action.accountAddr(), amt),
+			ownershipAmt,
+			"Not enough staked"
+		).with(amt -> new PreparedUnstakeOwnership(action.from(), action.accountAddr(), amt));
 	}
 }

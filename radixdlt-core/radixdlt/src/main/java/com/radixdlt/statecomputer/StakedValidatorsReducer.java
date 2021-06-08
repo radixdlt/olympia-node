@@ -18,8 +18,8 @@
 package com.radixdlt.statecomputer;
 
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.system.state.Stake;
-import com.radixdlt.atommodel.tokens.state.DeprecatedStake;
+import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
@@ -52,7 +52,11 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 
 	@Override
 	public Set<Class<? extends Particle>> particleClasses() {
-		return Set.of(ValidatorParticle.class, DeprecatedStake.class, Stake.class);
+		return Set.of(
+			PreparedStake.class,
+			ValidatorParticle.class,
+			ValidatorStake.class
+		);
 	}
 
 	@Override
@@ -69,12 +73,12 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 					return prev.add(v);
 				}
 				return prev;
-			} else if (p instanceof DeprecatedStake) {
-				var d = (DeprecatedStake) p;
-				return prev.add(d.getDelegateKey(), d.getAmount());
+			} else if (p instanceof PreparedStake) { // TODO: Remove for mainnet
+				var s = (PreparedStake) p;
+				return prev.add(s.getDelegateKey(), s.getAmount());
 			} else {
-				var s = (Stake) p;
-				return prev.add(s.getValidatorKey(), s.getAmount());
+				var s = (ValidatorStake) p;
+				return prev.setStake(s.getValidatorKey(), s.getTotalStake());
 			}
 		};
 	}
@@ -87,14 +91,12 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 				if (v.isRegisteredForNextEpoch()) {
 					return prev.remove(v);
 				}
-				return prev;
-			} else if (p instanceof DeprecatedStake) {
-				var d = (DeprecatedStake) p;
-				return prev.remove(d.getDelegateKey(), d.getAmount());
-			} else {
-				var s = (Stake) p;
-				return prev.remove(s.getValidatorKey(), s.getAmount());
+			} else if (p instanceof PreparedStake) { // TODO: Remove for mainnet
+				var s = (PreparedStake) p;
+				return prev.remove(s.getDelegateKey(), s.getAmount());
 			}
+
+			return prev;
 		};
 	}
 }

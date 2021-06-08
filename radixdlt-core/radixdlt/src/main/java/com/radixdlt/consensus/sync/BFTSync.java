@@ -70,6 +70,8 @@ import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import static java.util.function.Predicate.not;
+
 /**
  * Manages keeping the VertexStore and pacemaker in sync for consensus
  */
@@ -275,10 +277,13 @@ public final class BFTSync implements BFTSyncer {
 	private void doQCSync(SyncState syncState) {
 		syncState.setSyncStage(SyncStage.GET_QC_VERTICES);
 		log.debug("SYNC_VERTICES: QC: Sending initial GetVerticesRequest for sync={}", syncState);
-		ImmutableList<BFTNode> authors = Stream.concat(
-			Stream.of(syncState.author),
-			syncState.highQC().highestQC().getSigners().filter(n -> !n.equals(syncState.author))
-		).collect(ImmutableList.toImmutableList());
+		final var authors = Stream
+			.concat(
+				Stream.of(syncState.author),
+				syncState.highQC().highestQC().getSigners().filter(n -> !n.equals(syncState.author))
+			)
+			.filter(not(n -> n.equals(this.self)))
+			.collect(ImmutableList.toImmutableList());
 
 		final var qc = syncState.highQC().highestQC();
 		this.sendBFTSyncRequest(qc.getView(), qc.getProposed().getVertexId(), 1, authors, syncState.localSyncId);
@@ -291,10 +296,13 @@ public final class BFTSync implements BFTSyncer {
 		log.debug("SYNC_VERTICES: Committed: Sending initial GetVerticesRequest for sync={}", syncState);
 		// Retrieve the 3 vertices preceding the committedQC so we can create a valid committed root
 
-		ImmutableList<BFTNode> authors = Stream.concat(
-			Stream.of(syncState.author),
-			syncState.highQC().highestCommittedQC().getSigners().filter(n -> !n.equals(syncState.author))
-		).collect(ImmutableList.toImmutableList());
+		final var authors = Stream
+			.concat(
+				Stream.of(syncState.author),
+				syncState.highQC().highestCommittedQC().getSigners().filter(n -> !n.equals(syncState.author))
+			)
+			.filter(not(n -> n.equals(this.self)))
+			.collect(ImmutableList.toImmutableList());
 
 		this.sendBFTSyncRequest(commitedView, committedQCId, 3, authors, syncState.localSyncId);
 	}
@@ -313,10 +321,7 @@ public final class BFTSync implements BFTSyncer {
 			return;
 		}
 
-		var authors = syncRequestState.authors.stream()
-			.filter(author -> !author.equals(self)).collect(ImmutableList.toImmutableList());
-
-		if (authors.isEmpty()) {
+		if (syncRequestState.authors.isEmpty()) {
 			throw new IllegalStateException("Request contains no authors except ourselves");
 		}
 
@@ -340,7 +345,7 @@ public final class BFTSync implements BFTSyncer {
 				throw new IllegalStateException("Inconsistent sync state, please contact Radix team member on Discord. ("
 					+ msg + ")");
 			} else {
-				syncToQC(syncState.highQC, randomFrom(authors));
+				syncToQC(syncState.highQC, randomFrom(syncRequestState.authors));
 			}
 		}
 	}
@@ -451,10 +456,13 @@ public final class BFTSync implements BFTSyncer {
 			log.debug("SYNC_VERTICES: Sending further GetVerticesRequest for {} fetched={} root={}",
 				syncState.highQC(), syncState.fetched.size(), vertexStore.getRoot());
 
-			ImmutableList<BFTNode> authors = Stream.concat(
-				Stream.of(syncState.author),
-				vertex.getQC().getSigners().filter(n -> !n.equals(syncState.author))
-			).collect(ImmutableList.toImmutableList());
+			final var authors = Stream
+				.concat(
+					Stream.of(syncState.author),
+					vertex.getQC().getSigners().filter(n -> !n.equals(syncState.author))
+				)
+				.filter(not(n -> n.equals(this.self)))
+				.collect(ImmutableList.toImmutableList());
 
 			this.sendBFTSyncRequest(syncState.highQC.highestQC().getView(), parentId, 1, authors, syncState.localSyncId);
 		}

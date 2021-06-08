@@ -38,7 +38,7 @@ import com.radixdlt.integration.distributed.simulation.application.NodeValidator
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import org.apache.commons.collections4.MapUtils;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -51,12 +51,11 @@ public class RandomVoteAndViewTimeoutDropperTest {
 			NetworkLatencies.fixed(),
 			NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.2)
 		)
-		.addNodeModule(RadixEngineConfig.asModule(2, 50, 5))
-		.addNodeModule(new BetanetForksModule())
-		.addNodeModule(new RadixEngineOnlyLatestForkModule(View.of(10)))
-		.addGenesisModule(RadixEngineConfig.asModule(2, 50, 5))
-		.addGenesisModule(new BetanetForksModule())
-		.addGenesisModule(new RadixEngineOnlyLatestForkModule(View.of(10)))
+		.addRadixEngineConfigModules(
+			RadixEngineConfig.asModule(2, 50, 5),
+			new BetanetForksModule(),
+			new RadixEngineForksLatestOnlyModule(View.of(10))
+		)
 		.ledgerAndRadixEngineWithEpochHighView()
 		.addTestModules(
 			ConsensusMonitors.safety(),

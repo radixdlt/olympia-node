@@ -24,7 +24,7 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 /**
- * Reduces particles to state
+ * Reduces substates to some aggregate state
  */
 public interface StateReducer<U> {
     Class<U> stateClass();

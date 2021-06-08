@@ -18,61 +18,19 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.atom.Txn;
-import com.radixdlt.constraintmachine.CMError;
-import com.radixdlt.constraintmachine.ConstraintMachine.StatelessVerificationResult;
-import java.util.Objects;
-import javax.annotation.Nullable;
 
 /**
  * Exception thrown by Radix Engine
  */
 @SuppressWarnings("serial")
 public final class RadixEngineException extends Exception {
-	private final RadixEngineErrorCode errorCode;
-	private final CMError cmError;
-	private final StatelessVerificationResult result;
+	private final Txn txn;
 
 	public RadixEngineException(
 		Txn txn,
-		RadixEngineErrorCode errorCode,
-		String message,
-		StatelessVerificationResult result
+		Exception cause
 	) {
-		this(txn, errorCode, message, result, null);
-	}
-
-	public RadixEngineException(
-		Txn txn,
-		RadixEngineErrorCode errorCode,
-		String message,
-		StatelessVerificationResult result,
-		CMError cmError
-	) {
-		super(message + " " + (cmError == null ? "" : cmError) + " Txn=" + txn.getId());
-		this.errorCode = Objects.requireNonNull(errorCode);
-		this.result = result;
-		this.cmError = cmError;
-	}
-
-	public StatelessVerificationResult getResult() {
-		return result;
-	}
-
-	/**
-	 * Retrieve the high-level error code associated with the exception
-	 * @return the error code
-	 */
-	public RadixEngineErrorCode getErrorCode() {
-		return this.errorCode;
-	}
-
-	/**
-	 * Get the {@link CMError} related to this exception
-	 *
-	 * @return the constraint machine error
-	 */
-	@Nullable
-	public CMError getCmError() {
-		return cmError;
+		super(cause);
+		this.txn = txn;
 	}
 }

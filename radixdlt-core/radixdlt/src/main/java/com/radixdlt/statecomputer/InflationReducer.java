@@ -18,7 +18,7 @@
 
 package com.radixdlt.statecomputer;
 
-import com.radixdlt.atommodel.system.state.Stake;
+import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
 
@@ -34,7 +34,7 @@ public final class InflationReducer implements StateReducer<Rewards> {
 
 	@Override
 	public Set<Class<? extends Particle>> particleClasses() {
-		return Set.of(Stake.class);
+		return Set.of(ValidatorStake.class);
 	}
 
 	@Override
@@ -45,16 +45,16 @@ public final class InflationReducer implements StateReducer<Rewards> {
 	@Override
 	public BiFunction<Rewards, Particle, Rewards> outputReducer() {
 		return (prev, p) -> {
-			var s = (Stake) p;
-			return prev.add(s.getValidatorKey(), s.getAmount());
+			var s = (ValidatorStake) p;
+			return prev.add(s.getValidatorKey(), s.getTotalStake());
 		};
 	}
 
 	@Override
 	public BiFunction<Rewards, Particle, Rewards> inputReducer() {
 		return (prev, p) -> {
-			var s = (Stake) p;
-			return prev.remove(s.getValidatorKey(), s.getAmount());
+			var s = (ValidatorStake) p;
+			return prev.remove(s.getValidatorKey(), s.getTotalStake());
 		};
 	}
 }

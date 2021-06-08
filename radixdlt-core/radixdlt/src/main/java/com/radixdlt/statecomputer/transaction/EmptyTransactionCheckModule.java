@@ -20,7 +20,8 @@ package com.radixdlt.statecomputer.transaction;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.atomos.Result;
+import com.radixdlt.constraintmachine.CMErrorCode;
+import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.engine.PostParsedChecker;
 
 /**
@@ -29,9 +30,10 @@ import com.radixdlt.engine.PostParsedChecker;
 public class EmptyTransactionCheckModule extends AbstractModule {
 	@ProvidesIntoSet
 	private PostParsedChecker emptyTxChecker() {
-		return (permissionLevel, reTxn) ->
-			reTxn.getActions().isEmpty()
-				? Result.error("atom has no instructions")
-				: Result.success();
+		return (permissionLevel, reTxn) -> {
+			if (reTxn.getGroupedStateUpdates().isEmpty()) {
+				throw new ConstraintMachineException(CMErrorCode.NO_STATE_UPDATES, null);
+			}
+		};
 	}
 }

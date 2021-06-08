@@ -26,8 +26,8 @@ import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
-import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.CMErrorCode;
@@ -77,7 +77,7 @@ public class TokenDefinitionTest {
 		var keyPair = ECKeyPair.generateNew();
 		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
 		var addrParticle = new REAddrParticle(addr);
-		var tokenDefinitionParticle = new TokenDefinitionParticle(
+		var tokenDefinitionParticle = new TokenResource(
 			addr,
 			"TEST",
 			"description",
@@ -87,7 +87,7 @@ public class TokenDefinitionTest {
 		);
 
 		var holdingAddress = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
-		var tokensParticle = new TokensParticle(
+		var tokensParticle = new TokensInAccount(
 			holdingAddress,
 			UInt256.TEN,
 			addr
@@ -111,7 +111,7 @@ public class TokenDefinitionTest {
 		var keyPair = ECKeyPair.generateNew();
 		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
 		var addrParticle = new REAddrParticle(addr);
-		var tokenDefinitionParticle = new TokenDefinitionParticle(
+		var tokenDefinitionParticle = new TokenResource(
 			addr,
 			"TEST",
 			"description",
@@ -136,7 +136,7 @@ public class TokenDefinitionTest {
 		var keyPair = ECKeyPair.generateNew();
 		// Arrange
 		var addr = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "smthng");
-		var tokenDefinitionParticle = new TokenDefinitionParticle(
+		var tokenDefinitionParticle = new TokenResource(
 			addr,
 			"TEST",
 			"description",
@@ -155,7 +155,7 @@ public class TokenDefinitionTest {
 		// Act and Assert
 		assertThatThrownBy(() -> this.engine.execute(List.of(txn)))
 			.isInstanceOf(RadixEngineException.class)
-			.extracting("cmError.errorCode")
+			.extracting("cause.errorCode")
 			.containsExactly(CMErrorCode.AUTHORIZATION_ERROR);
 	}
 }

@@ -1,5 +1,5 @@
 Feature: Token Transfer
-  As a radix user,
+  As an account owner,
   I want to be able to transfer tokens to other accounts,
   So that I can participate in the economy
 

@@ -84,7 +84,7 @@ public class HighLevelApiServiceTest {
 		var balance2 = createBalance(OWNER_ACCOUNT, null, rri2, UInt384.NINE);
 		var balances = Result.ok(List.of(balance1, balance2));
 
-		when(clientApiStore.getTokenBalances(OWNER_ACCOUNT, false))
+		when(clientApiStore.getTokenBalances(OWNER_ACCOUNT, ClientApiStore.BalanceType.SPENDABLE))
 			.thenReturn(balances);
 
 		highLevelApiService.getTokenBalances(OWNER_ACCOUNT)
@@ -111,7 +111,7 @@ public class HighLevelApiServiceTest {
 		);
 		var balances = Result.ok(List.of(balance1, balance2, balance3));
 
-		when(clientApiStore.getTokenBalances(OWNER_ACCOUNT, true))
+		when(clientApiStore.getTokenBalances(OWNER_ACCOUNT, ClientApiStore.BalanceType.STAKES))
 			.thenReturn(balances);
 
 		highLevelApiService.getStakePositions(OWNER_ACCOUNT)

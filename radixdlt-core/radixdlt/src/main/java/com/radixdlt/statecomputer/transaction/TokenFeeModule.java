@@ -24,7 +24,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.engine.PostParsedChecker;
 import com.radixdlt.fees.FeeEntry;
@@ -54,7 +54,7 @@ public class TokenFeeModule extends AbstractModule {
 			// 1 millirad per byte after the first three kilobytes
 			PerBytesFeeEntry.of(1,  3072, milliRads(1L)),
 			// 1,000 millirads per fixed supply token definition
-			PerParticleFeeEntry.of(TokenDefinitionParticle.class, 0, milliRads(1000L))
+			PerParticleFeeEntry.of(TokenResource.class, 0, milliRads(1000L))
 		);
 
 		// Minimum fee of 40 millirads

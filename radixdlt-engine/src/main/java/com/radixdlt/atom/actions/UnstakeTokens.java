@@ -45,4 +45,9 @@ public class UnstakeTokens implements TxAction {
 	public UInt256 amount() {
 		return amount;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{amt=%s}", this.getClass().getSimpleName(), amount);
+	}
 }

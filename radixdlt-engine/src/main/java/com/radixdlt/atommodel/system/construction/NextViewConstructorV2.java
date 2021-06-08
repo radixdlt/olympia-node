@@ -22,28 +22,52 @@ import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.SystemNextView;
-import com.radixdlt.atommodel.system.state.Stake;
-import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
+import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
+import com.radixdlt.atommodel.system.state.ValidatorEpochData;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 
+import java.util.List;
 import java.util.Optional;
 
 public class NextViewConstructorV2 implements ActionConstructor<SystemNextView> {
 	@Override
 	public void construct(SystemNextView action, TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.swap(
-			SystemParticle.class,
-			p -> true,
-			Optional.of(SubstateWithArg.noArg(new SystemParticle(0, 0, 0))),
-			"No System particle available"
-		).with(substateDown -> {
-			if (action.view() <= substateDown.getView()) {
-				throw new TxBuilderException("Next view isn't higher than current view.");
-			}
-			return new SystemParticle(substateDown.getEpoch(), action.view(), action.timestamp());
-		});
-
-		txBuilder.up(new Stake(SystemConstraintScryptV2.REWARDS_PER_PROPOSAL, action.leader()));
+		var validatorEpochData = txBuilder.find(
+			ValidatorEpochData.class, p -> p.validatorKey().equals(action.leader())
+		);
+		if (validatorEpochData.isPresent()) {
+			txBuilder.swap(
+				RoundData.class,
+				p -> true,
+				Optional.of(SubstateWithArg.noArg(new RoundData(0, 0))),
+				"No round state available."
+			).with(substateDown -> {
+				if (action.view() <= substateDown.getView()) {
+					throw new TxBuilderException("Next view: " + action + " isn't higher than current view: " + substateDown);
+				}
+				return List.of(new RoundData(action.view(), action.timestamp()));
+			});
+			txBuilder.swap(
+				ValidatorEpochData.class,
+				p -> p.validatorKey().equals(action.leader()),
+				Optional.empty(),
+				"No validator epoch data"
+			).with(down -> List.of(
+				new ValidatorEpochData(down.validatorKey(), down.proposalsCompleted() + 1)
+			));
+		} else {
+			txBuilder.swap(
+				SystemParticle.class,
+				p -> true,
+				Optional.of(SubstateWithArg.noArg(new SystemParticle(0, 0, 0))),
+				"No System particle available"
+			).with(substateDown -> {
+				if (action.view() <= substateDown.getView()) {
+					throw new TxBuilderException("Next view isn't higher than current view.");
+				}
+				return List.of(new SystemParticle(substateDown.getEpoch(), action.view(), action.timestamp()));
+			});
+		}
 	}
 }

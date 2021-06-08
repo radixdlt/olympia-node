@@ -20,6 +20,7 @@ import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.client.Rri;
@@ -27,7 +28,7 @@ import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.utils.UInt384;
 import org.junit.Assert;
 import org.junit.Before;
@@ -49,7 +50,7 @@ import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -111,7 +112,7 @@ public class BerkeleyClientApiStoreTest {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 0),
 			new BetanetForksModule(),
-			new RadixEngineOnlyLatestForkModule(View.of(100)),
+			new RadixEngineForksLatestOnlyModule(View.of(100)),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
@@ -145,7 +146,7 @@ public class BerkeleyClientApiStoreTest {
 
 		var clientApiStore = prepareApiStore(tx);
 
-		clientApiStore.getTokenBalances(TOKEN_ACCOUNT, false)
+		clientApiStore.getTokenBalances(TOKEN_ACCOUNT, ClientApiStore.BalanceType.SPENDABLE)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
 				assertEquals(UInt384.THREE, list.get(0).getAmount());
@@ -153,7 +154,7 @@ public class BerkeleyClientApiStoreTest {
 			})
 			.onFailureDo(() -> fail("Failure is not expected here"));
 
-		clientApiStore.getTokenBalances(OWNER_ACCOUNT, false)
+		clientApiStore.getTokenBalances(OWNER_ACCOUNT, ClientApiStore.BalanceType.SPENDABLE)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
 				assertEquals(UInt384.FOUR, list.get(0).getAmount());
@@ -318,7 +319,7 @@ public class BerkeleyClientApiStoreTest {
 	private BerkeleyClientApiStore prepareApiStore(Txn tx, Map<AID, Txn> txMap) throws RadixEngineException {
 		var transactions = engine.execute(List.of(tx), null, PermissionLevel.USER)
 			.stream()
-			.map(REParsedTxn::getTxn)
+			.map(REProcessedTxn::getTxn)
 			.collect(Collectors.toList());
 
 		transactions.forEach(txn -> txMap.put(txn.getId(), txn));

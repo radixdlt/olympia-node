@@ -17,7 +17,7 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.full_function_forks;
 
-import com.radixdlt.integration.distributed.MockedRadixEngineForksModule;
+import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
 import com.radixdlt.integration.distributed.simulation.monitors.application.ApplicationMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
@@ -45,10 +45,10 @@ public class SanityTest {
 			NetworkLatencies.fixed()
 		)
 		.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
-		.addNodeModule(new BetanetForksModule())
-		.addNodeModule(new MockedRadixEngineForksModule())
-		.addGenesisModule(new BetanetForksModule())
-		.addGenesisModule(new MockedRadixEngineForksModule())
+		.addRadixEngineConfigModules(
+			new ForkOverwritesWithShorterEpochsModule(),
+			new BetanetForksModule()
+		)
 		.addNodeModule(MempoolConfig.asModule(1000, 10))
 		.addTestModules(
 			ConsensusMonitors.safety(),

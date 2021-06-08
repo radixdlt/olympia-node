@@ -17,8 +17,8 @@
 
 package com.radixdlt.engine;
 
-import com.radixdlt.atomos.Result;
-import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.constraintmachine.ConstraintMachineException;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
 
 /**
@@ -31,5 +31,5 @@ public interface PostParsedChecker {
 	 * Checks that an atom is well-formed
 	 * @return result of the check
 	 */
-	Result check(PermissionLevel permissionLevel, REParsedTxn radixEngineTxn);
+	void check(PermissionLevel permissionLevel, REProcessedTxn radixEngineTxn) throws ConstraintMachineException;
 }

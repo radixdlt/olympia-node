@@ -21,6 +21,7 @@ import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 import com.radixdlt.constraintmachine.UpProcedure;
 
 /**
@@ -35,6 +36,7 @@ public interface SysCalls {
 	 * @param <T> The type of the particle
 	 */
 	<T extends Particle> void registerParticle(Class<T> particleClass, ParticleDefinition<T> particleDefinition);
+	<D extends Particle, S extends ReducerState> void createShutDownAllProcedure(ShutdownAllProcedure<D, S> downProcedure);
 	<I extends Particle, S extends ReducerState> void createDownProcedure(DownProcedure<I, S> downProcedure);
 	<O extends Particle, S extends ReducerState> void createUpProcedure(UpProcedure<S, O> upProcedure);
 	<S extends ReducerState> void createEndProcedure(EndProcedure<S> endProcedure);

@@ -26,11 +26,15 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.MutableTokenDefinition;
+import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.fees.NativeToken;
@@ -44,7 +48,11 @@ import com.radixdlt.utils.UInt256;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
 
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 /**
  * Generates a genesis atom
@@ -100,6 +108,9 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 		var genesisBuilder = TxActionListBuilder.create();
 		var rri = REAddr.ofNativeToken();
 		try {
+			// Initialize system address
+			genesisBuilder.action(new CreateSystem());
+
 			// Network token
 			genesisBuilder.createMutableToken(tokenDefinition);
 			for (var e : issuances.entrySet()) {
@@ -122,19 +133,30 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 			if (!additionalActions.isEmpty()) {
 				additionalActions.forEach(genesisBuilder::action);
 			}
+			var temp = branch.construct(genesisBuilder.build()).buildWithoutSignature();
+			branch.execute(List.of(temp), PermissionLevel.SYSTEM);
 
-			genesisBuilder.action(new SystemNextEpoch(timestamp));
-			var txn = branch.construct(genesisBuilder.build()).buildWithoutSignature();
-			branch.execute(List.of(txn), PermissionLevel.SYSTEM);
-
-			final var genesisValidatorSet = branch.getComputedState(StakedValidators.class)
-				.toValidatorSet();
+			var stakedValidators = branch.getComputedState(StakedValidators.class);
+			var genesisValidatorSet = new AtomicReference<BFTValidatorSet>();
+			genesisBuilder.action(new SystemNextEpoch(updates -> {
+				var cur = stakedValidators;
+				for (var u : updates) {
+					cur = cur.setStake(u.getValidatorKey(), u.getTotalStake());
+				}
+				// FIXME: cur.toValidatorSet() may be null
+				genesisValidatorSet.set(cur.toValidatorSet());
+				return genesisValidatorSet.get().nodes().stream()
+					.map(BFTNode::getKey)
+					.sorted(Comparator.comparing(ECPublicKey::getBytes, Arrays::compare))
+					.collect(Collectors.toList());
+			}, timestamp));
 			radixEngine.deleteBranches();
+			var txn = radixEngine.construct(genesisBuilder.build()).buildWithoutSignature();
 
 			var accumulatorState = new AccumulatorState(0, txn.getId().asHashCode());
 			var genesisProof = LedgerProof.genesis(
 				accumulatorState,
-				genesisValidatorSet,
+				genesisValidatorSet.get(),
 				timestamp
 			);
 			if (!genesisProof.isEndOfEpoch()) {
