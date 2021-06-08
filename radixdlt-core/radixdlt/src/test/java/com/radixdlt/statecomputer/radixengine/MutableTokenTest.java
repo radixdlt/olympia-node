@@ -95,14 +95,14 @@ public class MutableTokenTest {
 		// Arrange
 		createInjector().injectMembers(this);
 		var tokDef = new MutableTokenDefinition(
+			keyPair.getPublicKey(),
 			"xrd",
 			"XRD",
 			"XRD",
 			null,
 			null
 		);
-		var txn = sut.construct(keyPair.getPublicKey(), new CreateMutableToken(tokDef))
-			.signAndBuild(keyPair::sign);
+		var txn = sut.construct(new CreateMutableToken(tokDef)).signAndBuild(keyPair::sign);
 
 		// Act/Assert
 		assertThatThrownBy(() -> sut.execute(List.of(txn))).isInstanceOf(RadixEngineException.class);
@@ -117,9 +117,7 @@ public class MutableTokenTest {
 
 		// Act/Assert
 		var account = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
-		var txn = sut.construct(
-			keyPair.getPublicKey(), List.of(new MintToken(REAddr.ofNativeToken(), account, UInt256.SEVEN))
-		)
+		var txn = sut.construct(new MintToken(REAddr.ofNativeToken(), account, UInt256.SEVEN))
 			.signAndBuild(keyPair::sign);
 		assertThatThrownBy(() -> sut.execute(List.of(txn))).isInstanceOf(RadixEngineException.class);
 	}
@@ -129,6 +127,7 @@ public class MutableTokenTest {
 		// Arrange
 		createInjector().injectMembers(this);
 		var tokDef = new MutableTokenDefinition(
+			keyPair.getPublicKey(),
 			"test",
 			"test",
 			"desc",
@@ -138,11 +137,11 @@ public class MutableTokenTest {
 
 		var account = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
 		var tokenAddr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
-		var txn = sut.construct(keyPair.getPublicKey(), TxnConstructionRequest.create()
-			.createMutableToken(tokDef)
-			.mint(tokenAddr, account, UInt256.SEVEN)
-			.transfer(tokenAddr, account, account, UInt256.FIVE)
-			.getActions()
+		var txn = sut.construct(
+			TxnConstructionRequest.create()
+				.createMutableToken(tokDef)
+				.mint(tokenAddr, account, UInt256.SEVEN)
+				.transfer(tokenAddr, account, account, UInt256.FIVE)
 		).signAndBuild(keyPair::sign);
 
 		// Act/Assert
@@ -154,6 +153,7 @@ public class MutableTokenTest {
 		// Arrange
 		createInjector().injectMembers(this);
 		var tokDef = new MutableTokenDefinition(
+			keyPair.getPublicKey(),
 			"test",
 			"test",
 			"desc",
@@ -162,10 +162,10 @@ public class MutableTokenTest {
 		);
 
 		var tokenAddr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
-		var txn = sut.construct(keyPair.getPublicKey(), TxnConstructionRequest.create()
-			.createMutableToken(tokDef)
-			.mint(tokenAddr, REAddr.ofHashedKey(keyPair.getPublicKey(), "test"), UInt256.SEVEN)
-			.getActions()
+		var txn = sut.construct(
+			TxnConstructionRequest.create()
+				.createMutableToken(tokDef)
+				.mint(tokenAddr, REAddr.ofHashedKey(keyPair.getPublicKey(), "test"), UInt256.SEVEN)
 		).signAndBuild(keyPair::sign);
 
 		// Act/Assert
@@ -177,14 +177,14 @@ public class MutableTokenTest {
 		// Arrange
 		createInjector().injectMembers(this);
 		var tokDef = new MutableTokenDefinition(
+			keyPair.getPublicKey(),
 			"test",
 			"test",
 			null,
 			null,
 			null
 		);
-		var atom = sut.construct(keyPair.getPublicKey(), new CreateMutableToken(tokDef))
-			.signAndBuild(keyPair::sign);
+		var atom = sut.construct(new CreateMutableToken(tokDef)).signAndBuild(keyPair::sign);
 
 		// Act/Assert
 		sut.execute(List.of(atom));

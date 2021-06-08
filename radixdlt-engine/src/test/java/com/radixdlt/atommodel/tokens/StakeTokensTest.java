@@ -138,7 +138,7 @@ public class StakeTokensTest {
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var txn = this.engine.construct(
 			TxnConstructionRequest.create()
-				.action(new CreateMutableToken("xrd", "Name", "", "", ""))
+				.action(new CreateMutableToken(null, "xrd", "Name", "", "", ""))
 				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, startAmt))
 		).buildWithoutSignature();
 		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
@@ -168,7 +168,7 @@ public class StakeTokensTest {
 		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
 		var txn = this.engine.construct(
 			TxnConstructionRequest.create()
-				.action(new CreateMutableToken("xrd", "Name", "", "", ""))
+				.action(new CreateMutableToken(null, "xrd", "Name", "", "", ""))
 				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, startAmt))
 		).buildWithoutSignature();
 		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);

@@ -18,12 +18,15 @@
 
 package com.radixdlt.atom;
 
+import com.radixdlt.crypto.ECPublicKey;
+
 import java.util.Objects;
 
 /**
  * Specifies high level parameters to a token definition
  */
 public final class MutableTokenDefinition {
+	private final ECPublicKey key;
 	private final String symbol;
 	private final String name;
 	private final String description;
@@ -31,17 +34,23 @@ public final class MutableTokenDefinition {
 	private final String tokenUrl;
 
 	public MutableTokenDefinition(
+		ECPublicKey key,
 		String symbol,
 		String name,
 		String description,
 		String iconUrl,
 		String tokenUrl
 	) {
+		this.key = key;
 		this.symbol = symbol.toLowerCase();
 		this.name = Objects.requireNonNull(name);
 		this.description = description;
 		this.iconUrl = iconUrl;
 		this.tokenUrl = tokenUrl;
+	}
+
+	public ECPublicKey getKey() {
+		return key;
 	}
 
 	public String getSymbol() {

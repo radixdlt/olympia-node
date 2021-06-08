@@ -37,7 +37,6 @@ import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
@@ -508,10 +507,10 @@ public final class RadixEngine<M> {
 	}
 
 	public TxBuilder construct(TxBuilderExecutable executable) throws TxBuilderException {
-		return construct(null, executable, Set.of());
+		return construct(executable, Set.of());
 	}
 
-	public TxBuilder construct(ECPublicKey user, TxBuilderExecutable executable, Set<SubstateId> avoid) throws TxBuilderException {
+	private TxBuilder construct(TxBuilderExecutable executable, Set<SubstateId> avoid) throws TxBuilderException {
 		synchronized (stateUpdateEngineLock) {
 			SubstateStore substateStore = c -> {
 				var cache = substateCache.get(c);
@@ -535,9 +534,7 @@ public final class RadixEngine<M> {
 				i -> !avoid.contains(i.getId())
 			);
 
-			var txBuilder = user != null
-				? TxBuilder.newBuilder(user, filteredStore)
-				: TxBuilder.newBuilder(filteredStore);
+			var txBuilder = TxBuilder.newBuilder(filteredStore);
 
 			executable.execute(txBuilder);
 
@@ -546,33 +543,11 @@ public final class RadixEngine<M> {
 	}
 
 	public TxBuilder construct(TxAction action) throws TxBuilderException {
-		return construct(null, List.of(action));
-	}
-
-	public TxBuilder construct(ECPublicKey user, TxAction action) throws TxBuilderException {
-		return construct(user, List.of(action));
-	}
-
-	public TxBuilder construct(ECPublicKey user, List<TxAction> actions) throws TxBuilderException {
-		return construct(user, actions, Set.of());
-	}
-
-	public TxBuilder construct(ECPublicKey user, List<TxAction> actions, Set<SubstateId> avoid) throws TxBuilderException {
-		return construct(
-			user,
-			txBuilder -> {
-				for (var action : actions) {
-					this.actionConstructors.construct(action, txBuilder);
-					txBuilder.end();
-				}
-			},
-			avoid
-		);
+		return construct(TxnConstructionRequest.create().action(action));
 	}
 
 	public TxBuilder construct(TxnConstructionRequest request) throws TxBuilderException {
 		return construct(
-			null,
 			txBuilder -> {
 				if (request.isDisableResourceAllocAndDestroy()) {
 					txBuilder.toLowLevelBuilder().disableResourceAllocAndDestroy();
@@ -583,7 +558,7 @@ public final class RadixEngine<M> {
 				}
 				request.getMsg().ifPresent(txBuilder::message);
 			},
-			Set.of()
+			request.getSubstatesToAvoid()
 		);
 	}
 }

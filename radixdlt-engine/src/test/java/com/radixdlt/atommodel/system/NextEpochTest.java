@@ -142,7 +142,7 @@ public class NextEpochTest {
 		var start = sut.construct(
 			TxnConstructionRequest.create()
 				.action(new CreateSystem())
-				.action(new CreateMutableToken("xrd", "xrd", "", "", ""))
+				.action(new CreateMutableToken(null, "xrd", "xrd", "", "", ""))
 				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, ValidatorStake.MINIMUM_STAKE))
 				.action(new StakeTokens(accountAddr, key, ValidatorStake.MINIMUM_STAKE))
 		).buildWithoutSignature();

@@ -88,6 +88,7 @@ public class StakedTokensTest {
 		this.engine = new RadixEngine<>(parser, actionConstructors, cm, this.store);
 
 		var tokDef = new MutableTokenDefinition(
+			null,
 			"xrd",
 			"Test",
 			"description",

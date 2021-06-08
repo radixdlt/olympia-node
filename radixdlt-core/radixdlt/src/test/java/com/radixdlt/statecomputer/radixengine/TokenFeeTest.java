@@ -109,10 +109,8 @@ public class TokenFeeTest {
 	@Test
 	public void when_validating_atom_with_particles__result_has_no_error() throws Exception {
 		var account = REAddr.ofPubKeyAccount(ecKeyPair.getPublicKey());
-		var atom = sut.construct(
-			ecKeyPair.getPublicKey(),
-			new PayFee(account, TokenFeeChecker.FIXED_FEE)
-		).mutex("test").signAndBuild(ecKeyPair::sign);
+		var atom = sut.construct(new PayFee(account, TokenFeeChecker.FIXED_FEE))
+			.mutex(ecKeyPair.getPublicKey(), "test").signAndBuild(ecKeyPair::sign);
 
 		sut.execute(List.of(atom));
 	}
@@ -127,10 +125,8 @@ public class TokenFeeTest {
 	@Test
 	public void when_validating_atom_with_fee_and_no_change__result_has_no_error() throws Exception {
 		var account = REAddr.ofPubKeyAccount(ecKeyPair.getPublicKey());
-		var txn = sut.construct(
-			ecKeyPair.getPublicKey(),
-			new PayFee(account, TokenFeeChecker.FIXED_FEE)
-		).signAndBuild(ecKeyPair::sign);
+		var txn = sut.construct(new PayFee(account, TokenFeeChecker.FIXED_FEE))
+			.signAndBuild(ecKeyPair::sign);
 
 		sut.execute(List.of(txn));
 	}

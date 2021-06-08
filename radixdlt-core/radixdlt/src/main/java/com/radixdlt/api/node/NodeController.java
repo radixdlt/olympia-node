@@ -170,7 +170,7 @@ public final class NodeController implements Controller {
 				var description = paramsObject.getString("description");
 				var iconUrl = paramsObject.getString("iconUrl");
 				var url = paramsObject.getString("url");
-				return new CreateMutableToken(symbol, name, description, iconUrl, url);
+				return new CreateMutableToken(bftKey, symbol, name, description, iconUrl, url);
 			}
 			case "CreateFixedToken": {
 				var symbol = paramsObject.getString("symbol");

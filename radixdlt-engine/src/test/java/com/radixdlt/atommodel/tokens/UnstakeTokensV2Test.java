@@ -174,7 +174,7 @@ public class UnstakeTokensV2Test {
 		var txn = this.sut.construct(
 			TxnConstructionRequest.create()
 				.action(new CreateSystem())
-				.action(new CreateMutableToken("xrd", "Name", "", "", ""))
+				.action(new CreateMutableToken(null, "xrd", "Name", "", "", ""))
 				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, totalStakes))
 		).buildWithoutSignature();
 		this.sut.execute(List.of(txn), null, PermissionLevel.SYSTEM);

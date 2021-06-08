@@ -124,16 +124,16 @@ public final class MempoolFiller {
 				return;
 			}
 
-			var actions = TxnConstructionRequest.create()
-				.splitNative(REAddr.ofNativeToken(), TokenFeeChecker.FIXED_FEE.multiply(UInt256.TWO))
-				.burn(REAddr.ofNativeToken(), account, TokenFeeChecker.FIXED_FEE)
-				.getActions();
-
 			var shuttingDown = radixEngineMempool.getShuttingDownSubstates();
+			var txnConstructionRequest = TxnConstructionRequest.create()
+				.splitNative(REAddr.ofNativeToken(), account, TokenFeeChecker.FIXED_FEE.multiply(UInt256.TWO))
+				.burn(REAddr.ofNativeToken(), account, TokenFeeChecker.FIXED_FEE)
+				.avoidSubstates(shuttingDown);
+
 			var txns = new ArrayList<Txn>();
 			for (int i = 0; i < numTransactions; i++) {
 				try {
-					var builder = radixEngine.construct(self, actions, shuttingDown);
+					var builder = radixEngine.construct(txnConstructionRequest);
 					shuttingDown.addAll(builder.toLowLevelBuilder().remoteDownSubstate());
 					var txn = builder.signAndBuild(hashSigner::sign);
 					txns.add(txn);

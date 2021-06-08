@@ -119,8 +119,7 @@ public final class MintTokensTest {
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
 		var txn = this.engine.construct(
-			key.getPublicKey(),
-			new CreateMutableToken("test", "Name", "", "", "")
+			new CreateMutableToken(key.getPublicKey(), "test", "Name", "", "", "")
 		).signAndBuild(key::sign);
 		this.engine.execute(List.of(txn));
 
@@ -138,8 +137,7 @@ public final class MintTokensTest {
 		// Arrange
 		var key = ECKeyPair.generateNew();
 		var txn = this.engine.construct(
-			key.getPublicKey(),
-			new CreateMutableToken("test", "Name", "", "", "")
+			new CreateMutableToken(key.getPublicKey(), "test", "Name", "", "", "")
 		).signAndBuild(key::sign);
 		this.engine.execute(List.of(txn));
 

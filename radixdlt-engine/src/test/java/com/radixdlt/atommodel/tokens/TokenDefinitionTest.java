@@ -146,7 +146,7 @@ public class TokenDefinitionTest {
 			"",
 			keyPair.getPublicKey()
 		);
-		var builder = TxBuilder.newBuilder(keyPair.getPublicKey())
+		var builder = TxBuilder.newBuilder()
 			.toLowLevelBuilder()
 			.virtualDown(new REAddrParticle(addr), "smthng".getBytes(StandardCharsets.UTF_8))
 			.up(tokenDefinitionParticle)

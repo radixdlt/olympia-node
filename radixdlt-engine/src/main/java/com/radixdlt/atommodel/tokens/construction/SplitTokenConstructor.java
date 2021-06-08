@@ -23,14 +23,12 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.SplitToken;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 public final class SplitTokenConstructor implements ActionConstructor<SplitToken> {
 	@Override
 	public void construct(SplitToken action, TxBuilder txBuilder) throws TxBuilderException {
-		var key = txBuilder.getUserOrFail("Must have address");
-		var userAccount = REAddr.ofPubKeyAccount(key);
+		var userAccount = action.userAcct();
 		var substate = txBuilder.findSubstate(
 			TokensInAccount.class,
 			p -> p.getResourceAddr().equals(action.rri())

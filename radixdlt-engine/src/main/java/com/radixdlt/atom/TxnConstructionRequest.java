@@ -33,11 +33,13 @@ import com.radixdlt.utils.UInt256;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public class TxnConstructionRequest {
 	private boolean disableResourceAllocAndDestroy = false;
 	private final List<TxAction> actions = new ArrayList<>();
 	private byte[] msg = null;
+	private Set<SubstateId> toAvoid;
 
 	private TxnConstructionRequest() {
 	}
@@ -75,14 +77,7 @@ public class TxnConstructionRequest {
 	}
 
 	public TxnConstructionRequest createMutableToken(MutableTokenDefinition def) {
-		var action = new CreateMutableToken(
-			def.getSymbol(),
-			def.getName(),
-			def.getDescription(),
-			def.getIconUrl(),
-			def.getTokenUrl()
-		);
-		actions.add(action);
+		actions.add(new CreateMutableToken(def));
 		return this;
 	}
 
@@ -98,8 +93,8 @@ public class TxnConstructionRequest {
 		return this;
 	}
 
-	public TxnConstructionRequest splitNative(REAddr rri, UInt256 minSize) {
-		var action = new SplitToken(rri, minSize);
+	public TxnConstructionRequest splitNative(REAddr rri, REAddr userAcct, UInt256 minSize) {
+		var action = new SplitToken(rri, userAcct, minSize);
 		actions.add(action);
 		return this;
 	}
@@ -126,6 +121,15 @@ public class TxnConstructionRequest {
 		var action = new BurnToken(rri, from, amount);
 		actions.add(action);
 		return this;
+	}
+
+	public TxnConstructionRequest avoidSubstates(Set<SubstateId> toAvoid) {
+		this.toAvoid = toAvoid;
+		return this;
+	}
+
+	public Set<SubstateId> getSubstatesToAvoid() {
+		return this.toAvoid == null ? Set.of() : this.toAvoid;
 	}
 
 	public List<TxAction> getActions() {

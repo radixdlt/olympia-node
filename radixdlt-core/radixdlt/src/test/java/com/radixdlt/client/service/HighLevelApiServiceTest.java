@@ -127,7 +127,7 @@ public class HighLevelApiServiceTest {
 	@Test
 	public void testGetTokenDescription() {
 		var token = REAddr.ofHashedKey(TOKEN_KEY, "fff");
-		var definition = TokenDefinitionRecord.from(TOKEN_KEY, mutableTokenDef("fff"));
+		var definition = TokenDefinitionRecord.from(TOKEN_KEY, mutableTokenDef(TOKEN_KEY, "fff"));
 
 		when(clientApiStore.parseRri(any()))
 			.thenReturn(Result.ok(token));
@@ -181,8 +181,9 @@ public class HighLevelApiServiceTest {
 		return TxHistoryEntry.create(txId, now, UInt256.ONE, "text", List.of(action));
 	}
 
-	private CreateMutableToken mutableTokenDef(String symbol) {
+	private CreateMutableToken mutableTokenDef(ECPublicKey key, String symbol) {
 		return new CreateMutableToken(
+			key,
 			symbol,
 			symbol,
 			description(symbol),
