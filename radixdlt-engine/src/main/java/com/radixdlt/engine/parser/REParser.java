@@ -60,9 +60,10 @@ public final class REParser {
 		}
 
 		void msg(byte[] msg) throws TxnParseException {
-			if (msg != null) {
+			if (this.msg != null) {
 				throw new TxnParseException("Too many messages");
 			}
+			this.msg = msg;
 		}
 
 		void substateUpdate() {
@@ -86,9 +87,9 @@ public final class REParser {
 				throw new TxnParseException("No state updates");
 			}
 		}
-
 	}
 
+	@SuppressWarnings("rawtypes")
 	public ParsedTxn parse(Txn txn) throws TxnParseException {
 		if (txn.getPayload().length > MAX_TXN_SIZE) {
 			throw new TxnParseException("Transaction is too big: " + txn.getPayload().length + " > " + MAX_TXN_SIZE);
