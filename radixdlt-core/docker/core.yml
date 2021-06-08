@@ -10,16 +10,16 @@ services:
       RADIXDLT_ENABLE_CLIENT_API: "true"
       RADIXDLT_CLIENT_API_PORT: 8080
       RADIXDLT_NODE_API_PORT: 3333
-      RADIXDLT_ARCHIVE_API_ENABLE: ${RADIXDLT_ARCHIVE_API_ENABLE}
-      RADIXDLT_ACCOUNT_API_ENABLE: ${RADIXDLT_ACCOUNT_API_ENABLE}
-      RADIXDLT_CONSTRUCT_API_ENABLE: ${RADIXDLT_CONSTRUCT_API_ENABLE}
-      RADIXDLT_CHAOS_API_ENABLE: ${RADIXDLT_CHAOS_API_ENABLE}
-      RADIXDLT_FAUCET_API_ENABLE: ${RADIXDLT_FAUCET_API_ENABLE}
-      RADIXDLT_HEALTH_API_ENABLE: ${RADIXDLT_HEALTH_API_ENABLE}
-      RADIXDLT_SYSTEM_API_ENABLE: ${RADIXDLT_SYSTEM_API_ENABLE}
-      RADIXDLT_VALIDATION_API_ENABLE: ${RADIXDLT_VALIDATION_API_ENABLE}
-      RADIXDLT_VERSION_API_ENABLE: ${RADIXDLT_VERSION_API_ENABLE}
-      RADIXDLT_UNIVERSE_API_ENABLE: ${RADIXDLT_UNIVERSE_API_ENABLE}
+      RADIXDLT_ARCHIVE_API_ENABLE: "true"
+      RADIXDLT_ACCOUNT_API_ENABLE: "true"
+      RADIXDLT_CONSTRUCT_API_ENABLE: "true"
+      RADIXDLT_CHAOS_API_ENABLE: "true"
+      RADIXDLT_FAUCET_API_ENABLE: "true"
+      RADIXDLT_HEALTH_API_ENABLE: "true"
+      RADIXDLT_SYSTEM_API_ENABLE: "true"
+      RADIXDLT_VALIDATION_API_ENABLE: "true"
+      RADIXDLT_VERSION_API_ENABLE: "true"
+      RADIXDLT_UNIVERSE_API_ENABLE: "true"
       RADIXDLT_UNIVERSE: ${RADIXDLT_UNIVERSE}
       JAVA_OPTS: -server -Xmx512m -Xmx512m -XX:+HeapDumpOnOutOfMemoryError -XX:+AlwaysPreTouch -Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStoreType=jks -Djava.security.egd=file:/dev/urandom -Dcom.sun.management.jmxremote.port=9011 -Dcom.sun.management.jmxremote.rmi.port=9011 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=core -agentlib:jdwp=transport=dt_socket,address=50505,suspend=n,server=y
     image: radixdlt/radixdlt-core:develop
