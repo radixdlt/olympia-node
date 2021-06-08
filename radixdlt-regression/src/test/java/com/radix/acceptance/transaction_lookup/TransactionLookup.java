@@ -6,6 +6,7 @@ import com.radix.test.TransactionUtils;
 import com.radix.test.Utils;
 import com.radixdlt.client.lib.dto.TransactionStatus;
 import com.radixdlt.client.lib.dto.TxDTO;
+
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import org.apache.logging.log4j.LogManager;
@@ -44,9 +45,9 @@ public class TransactionLookup extends AcceptanceTest {
 
     @Then("I can lookup my transaction and observe it contains the expected information")
     public void i_can_lookup_my_transaction_and_observe_it_contains_the_expected_information() {
-        var transactionDto = await().atMost(Durations.FIVE_SECONDS).ignoreExceptions().until(() ->
-            account1.lookupTransaction(transaction.getTxId()).fold(Utils::toTestFailureException,
-                transactionDTO -> transactionDTO), Objects::nonNull);
+        var transactionDto = await().atMost(Durations.FIVE_SECONDS).ignoreExceptions()
+            .until(() -> account1.transaction().lookup(transaction.getTxId()).fold(Utils::toTestFailureException,
+			transactionDTO -> transactionDTO), Objects::nonNull);
 
         Assertions.assertNativeTokenTransferTransaction(account1, account2, expectAmountMajor, transactionDto);
     }
@@ -62,8 +63,8 @@ public class TransactionLookup extends AcceptanceTest {
 
     @Then("I can observe those {int} transactions in my transaction history")
     public void i_can_observe_those_transactions_in_my_transaction_history(Integer numOfTransactions) {
-        var historyDTO = account1.transactionHistory(account1.getAddress(), numOfTransactions,
-            Optional.empty()).fold(Utils::toTestFailureException, historyDto -> historyDto);
+        var historyDTO = account1.account().history(account1.getAddress(), numOfTransactions, Optional.empty())
+            .fold(Utils::toTestFailureException, historyDto -> historyDto);
 
         var transactions = historyDTO.getTransactions();
         assertEquals(numOfTransactions.intValue(), transactions.size());

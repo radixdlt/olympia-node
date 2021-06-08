@@ -20,9 +20,11 @@ package com.radix.acceptance.staking;
 import com.radix.acceptance.AcceptanceTest;
 import com.radix.test.TransactionUtils;
 import com.radix.test.Utils;
+import com.radixdlt.client.lib.api.RadixApi;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponseDTO;
 import com.radixdlt.utils.UInt256;
+
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -101,7 +103,7 @@ public class Staking extends AcceptanceTest {
      */
     private void updateValidatorInformation() {
         validators.clear();
-        validators = getTestAccount().validators(1000, Optional.empty())
+		validators = ((RadixApi) getTestAccount()).validator().list(1000, Optional.empty())
             .fold(failure -> new ArrayList<>(), ValidatorsResponseDTO::getValidators);
         if (validators.isEmpty()) {
             Assert.fail("No validators were found in the network, test cannot proceed.");
