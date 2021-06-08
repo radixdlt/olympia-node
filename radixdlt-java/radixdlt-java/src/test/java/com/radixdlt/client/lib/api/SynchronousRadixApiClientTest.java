@@ -231,7 +231,7 @@ public class SynchronousRadixApiClientTest {
 	}
 
 	@Test
-	//@Ignore //Useful testbed for experiments
+	@Ignore //Useful testbed for experiments
 	public void testBuildTransactionWithMessage() {
 		var request = TransactionRequest.createBuilder()
 			.transfer(
@@ -245,7 +245,7 @@ public class SynchronousRadixApiClientTest {
 
 		SynchronousRadixApiClient.connect(BASE_URL)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.withTrace().buildTransaction(request)
+			.onSuccess(client -> client.buildTransaction(request)
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(builtTransactionDTO -> assertEquals(UInt256.from(100000000000000000L), builtTransactionDTO.getFee()))
 				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
