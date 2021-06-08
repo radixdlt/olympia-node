@@ -20,7 +20,9 @@ package com.radixdlt.atommodel.tokens;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.MintToken;
@@ -170,11 +172,10 @@ public class UnstakeTokensV2Test {
 		this.key = ECKeyPair.generateNew();
 		this.accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var txn = this.sut.construct(
-			List.of(
-				new CreateSystem(),
-				new CreateMutableToken("xrd", "Name", "", "", ""),
-				new MintToken(REAddr.ofNativeToken(), accountAddr, totalStakes)
-			)
+			TxnConstructionRequest.create()
+				.action(new CreateSystem())
+				.action(new CreateMutableToken("xrd", "Name", "", "", ""))
+				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, totalStakes))
 		).buildWithoutSignature();
 		this.sut.execute(List.of(txn), null, PermissionLevel.SYSTEM);
 	}
@@ -182,8 +183,11 @@ public class UnstakeTokensV2Test {
 	@Test
 	public void unstake_tokens_after_epoch() throws Exception {
 		// Arrange
+		var stakeActions = this.stakes.stream()
+			.map(amt -> new StakeTokens(accountAddr, key.getPublicKey(), amt))
+			.collect(Collectors.<TxAction>toList());
 		var stake = this.sut.construct(
-			this.stakes.stream().map(amt -> new StakeTokens(accountAddr, key.getPublicKey(), amt)).collect(Collectors.toList())
+			TxnConstructionRequest.create().actions(stakeActions)
 		).signAndBuild(key::sign);
 		this.sut.execute(List.of(stake));
 		var nextEpoch = sut.construct(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 1))
@@ -199,8 +203,11 @@ public class UnstakeTokensV2Test {
 	@Test
 	public void cannot_unstake_others_tokens() throws Exception {
 		// Arrange
+		var stakeActions = this.stakes.stream()
+			.map(amt -> new StakeTokens(accountAddr, key.getPublicKey(), amt))
+			.collect(Collectors.<TxAction>toList());
 		var stake = this.sut.construct(
-			this.stakes.stream().map(amt -> new StakeTokens(accountAddr, key.getPublicKey(), amt)).collect(Collectors.toList())
+			TxnConstructionRequest.create().actions(stakeActions)
 		).signAndBuild(key::sign);
 		this.sut.execute(List.of(stake));
 		var nextEpoch = sut.construct(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 1))
@@ -222,8 +229,11 @@ public class UnstakeTokensV2Test {
 	public void cant_construct_transfer_with_unstaked_tokens_immediately() throws Exception {
 		// Arrange
 		var acct2 = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
+		var stakeActions = this.stakes.stream()
+			.map(amt -> new StakeTokens(accountAddr, key.getPublicKey(), amt))
+			.collect(Collectors.<TxAction>toList());
 		var txn = sut.construct(
-			this.stakes.stream().map(amt -> new StakeTokens(accountAddr, key.getPublicKey(), amt)).collect(Collectors.toList())
+			TxnConstructionRequest.create().actions(stakeActions)
 		).signAndBuild(key::sign);
 		sut.execute(List.of(txn));
 		var nextEpoch = sut.construct(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 1))

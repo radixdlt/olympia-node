@@ -20,7 +20,7 @@ package com.radixdlt.integration.distributed.simulation.application;
 
 import com.google.inject.Inject;
 import com.radixdlt.application.NodeApplicationRequest;
-import com.radixdlt.atom.TxActionListBuilder;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
@@ -50,14 +50,14 @@ public final class NodeValidatorRandomRegistrator implements SimulationTest.Simu
 			.map(i -> nodes.get(random.nextInt(nodes.size())))
 			.subscribe(node -> {
 				var d = network.getDispatcher(NodeApplicationRequest.class, node);
-				var builder = TxActionListBuilder.create();
+				var txnConstructionRequest = TxnConstructionRequest.create();
 				if (random.nextBoolean()) {
-					builder.registerAsValidator(node.getKey());
+					txnConstructionRequest.registerAsValidator(node.getKey());
 				} else {
-					builder.unregisterAsValidator(node.getKey());
+					txnConstructionRequest.unregisterAsValidator(node.getKey());
 				}
 
-				var request = NodeApplicationRequest.create(builder.build());
+				var request = NodeApplicationRequest.create(txnConstructionRequest.getActions());
 				d.dispatch(request);
 			});
 	}

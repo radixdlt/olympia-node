@@ -36,6 +36,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.TxnParseException;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.store.CMStore;
@@ -333,9 +334,9 @@ public final class RadixEngine<M> {
 			return engine.construct(action);
 		}
 
-		public TxBuilder construct(List<TxAction> actions) throws TxBuilderException {
+		public TxBuilder construct(TxnConstructionRequest request) throws TxBuilderException {
 			assertNotDeleted();
-			return engine.construct(actions);
+			return engine.construct(request);
 		}
 
 		public <U> U getComputedState(Class<U> applicationStateClass) {
@@ -548,10 +549,6 @@ public final class RadixEngine<M> {
 		return construct(null, List.of(action));
 	}
 
-	public TxBuilder construct(List<TxAction> actions) throws TxBuilderException {
-		return construct(null, actions);
-	}
-
 	public TxBuilder construct(ECPublicKey user, TxAction action) throws TxBuilderException {
 		return construct(user, List.of(action));
 	}
@@ -570,6 +567,23 @@ public final class RadixEngine<M> {
 				}
 			},
 			avoid
+		);
+	}
+
+	public TxBuilder construct(TxnConstructionRequest request) throws TxBuilderException {
+		return construct(
+			null,
+			txBuilder -> {
+				if (request.isDisableResourceAllocAndDestroy()) {
+					txBuilder.toLowLevelBuilder().disableResourceAllocAndDestroy();
+				}
+				for (var action : request.getActions()) {
+					this.actionConstructors.construct(action, txBuilder);
+					txBuilder.end();
+				}
+				request.getMsg().ifPresent(txBuilder::message);
+			},
+			Set.of()
 		);
 	}
 }

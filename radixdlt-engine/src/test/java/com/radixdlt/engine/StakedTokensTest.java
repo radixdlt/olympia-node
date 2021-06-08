@@ -19,7 +19,7 @@ package com.radixdlt.engine;
 
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.MutableTokenDefinition;
-import com.radixdlt.atom.TxActionListBuilder;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
@@ -95,11 +95,10 @@ public class StakedTokensTest {
 			null
 		);
 		var txn0 = engine.construct(
-			TxActionListBuilder.create()
+			TxnConstructionRequest.create()
 				.createMutableToken(tokDef)
 				.mint(this.tokenRri, tokenOwnerAccount, UInt256.TEN)
 				.registerAsValidator(this.validatorKeyPair.getPublicKey())
-				.build()
 		).buildWithoutSignature();
 
 		this.engine.execute(List.of(txn0), null, PermissionLevel.SYSTEM);

@@ -115,7 +115,7 @@ public class BurnTokensV3Test {
 
 		// Act
 		var burnTxn = this.engine.construct(txBuilder -> {
-			txBuilder.toLowLevelBuilder().disableDeallocation();
+			txBuilder.toLowLevelBuilder().disableResourceAllocAndDestroy();
 			new BurnTokenConstructor().construct(new BurnToken(tokenAddr, account, UInt256.TEN), txBuilder);
 			txBuilder.end();
 		}).signAndBuild(key::sign);

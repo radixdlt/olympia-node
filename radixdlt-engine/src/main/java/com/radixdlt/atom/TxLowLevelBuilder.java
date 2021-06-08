@@ -170,7 +170,7 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
-	public TxLowLevelBuilder disableDeallocation() {
+	public TxLowLevelBuilder disableResourceAllocAndDestroy() {
 		var data = new byte[] {0, 1};
 		instruction(REInstruction.REMicroOp.HEADER, data);
 		return this;

@@ -19,7 +19,7 @@ package com.radixdlt.chaos.mempoolfiller;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.atom.TxActionListBuilder;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.HashSigner;
@@ -124,10 +124,10 @@ public final class MempoolFiller {
 				return;
 			}
 
-			var actions = TxActionListBuilder.create()
+			var actions = TxnConstructionRequest.create()
 				.splitNative(REAddr.ofNativeToken(), TokenFeeChecker.FIXED_FEE.multiply(UInt256.TWO))
 				.burn(REAddr.ofNativeToken(), account, TokenFeeChecker.FIXED_FEE)
-				.build();
+				.getActions();
 
 			var shuttingDown = radixEngineMempool.getShuttingDownSubstates();
 			var txns = new ArrayList<Txn>();

@@ -19,7 +19,7 @@ package com.radixdlt.client.store.berkeley;
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.accounting.TwoActorEntry;
 import com.radixdlt.atom.ActionConstructors;
-import com.radixdlt.atom.TxActionListBuilder;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.MintToken;
@@ -122,13 +122,15 @@ public class TransactionParserTest {
 		engine = new RadixEngine<>(parser, actionConstructors, cm, store);
 
 		var txn0 = engine.construct(
-			TxActionListBuilder.create()
+			TxnConstructionRequest.create()
 				.createMutableToken(tokDef)
 				.mint(this.tokenRri, this.tokenOwnerAcct, ValidatorStake.MINIMUM_STAKE.multiply(UInt256.TWO))
-				.build()
 		).buildWithoutSignature();
 		var validatorBuilder = this.engine.construct(
-			List.of(new RegisterValidator(this.validatorKeyPair.getPublicKey()), new CreateSystem()));
+			TxnConstructionRequest.create()
+				.action(new RegisterValidator(this.validatorKeyPair.getPublicKey()))
+				.action(new CreateSystem())
+		);
 		var txn1 = validatorBuilder.buildWithoutSignature();
 
 		engine.execute(List.of(txn0, txn1), null, PermissionLevel.SYSTEM);
@@ -164,12 +166,12 @@ public class TransactionParserTest {
 	@Test
 	public void transferIsParsedCorrectly() throws Exception {
 		//Use different token
-		var txn = engine.construct(tokenOwnerKeyPair.getPublicKey(), TxActionListBuilder.create()
+		var txn = engine.construct(tokenOwnerKeyPair.getPublicKey(), TxnConstructionRequest.create()
 			.payFee(tokenOwnerAcct, UInt256.FOUR)
 			.createMutableToken(tokDefII)
 			.mint(tokenRriII, tokenOwnerAcct, ValidatorStake.MINIMUM_STAKE.multiply(UInt256.TWO))
 			.transfer(tokenRriII, tokenOwnerAcct, otherAccount, ValidatorStake.MINIMUM_STAKE)
-			.build()
+			.getActions()
 		).signAndBuild(tokenOwnerKeyPair::sign);
 
 		executeAndDecode(List.of(ActionType.UNKNOWN, ActionType.MINT, ActionType.TRANSFER), UInt256.FOUR, txn);

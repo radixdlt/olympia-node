@@ -25,7 +25,7 @@ import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.MutableTokenDefinition;
-import com.radixdlt.atom.TxActionListBuilder;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
@@ -138,11 +138,11 @@ public class MutableTokenTest {
 
 		var account = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
 		var tokenAddr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
-		var txn = sut.construct(keyPair.getPublicKey(), TxActionListBuilder.create()
+		var txn = sut.construct(keyPair.getPublicKey(), TxnConstructionRequest.create()
 			.createMutableToken(tokDef)
 			.mint(tokenAddr, account, UInt256.SEVEN)
 			.transfer(tokenAddr, account, account, UInt256.FIVE)
-			.build()
+			.getActions()
 		).signAndBuild(keyPair::sign);
 
 		// Act/Assert
@@ -162,10 +162,10 @@ public class MutableTokenTest {
 		);
 
 		var tokenAddr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
-		var txn = sut.construct(keyPair.getPublicKey(), TxActionListBuilder.create()
+		var txn = sut.construct(keyPair.getPublicKey(), TxnConstructionRequest.create()
 			.createMutableToken(tokDef)
 			.mint(tokenAddr, REAddr.ofHashedKey(keyPair.getPublicKey(), "test"), UInt256.SEVEN)
-			.build()
+			.getActions()
 		).signAndBuild(keyPair::sign);
 
 		// Act/Assert

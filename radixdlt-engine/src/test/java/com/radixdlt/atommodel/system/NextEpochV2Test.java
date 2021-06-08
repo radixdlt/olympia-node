@@ -19,6 +19,7 @@
 package com.radixdlt.atommodel.system;
 
 import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.MintToken;
@@ -109,12 +110,13 @@ public class NextEpochV2Test {
 		// Arrange
 		var key = ECKeyPair.generateNew().getPublicKey();
 		var accountAddr = REAddr.ofPubKeyAccount(key);
-		var start = sut.construct(List.of(
-			new CreateSystem(),
-			new CreateMutableToken("xrd", "xrd", "", "", ""),
-			new MintToken(REAddr.ofNativeToken(), accountAddr, ValidatorStake.MINIMUM_STAKE),
-			new StakeTokens(accountAddr, key, ValidatorStake.MINIMUM_STAKE)
-		)).buildWithoutSignature();
+		var start = sut.construct(
+			TxnConstructionRequest.create()
+				.action(new CreateSystem())
+				.action(new CreateMutableToken("xrd", "xrd", "", "", ""))
+				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, ValidatorStake.MINIMUM_STAKE))
+				.action(new StakeTokens(accountAddr, key, ValidatorStake.MINIMUM_STAKE))
+		).buildWithoutSignature();
 		sut.execute(List.of(start), null, PermissionLevel.SYSTEM);
 
 		// Act
