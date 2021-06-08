@@ -125,7 +125,7 @@ public final class SubmissionService {
 		var completableFuture = new CompletableFuture<MempoolAddSuccess>();
 		var mempoolAdd = MempoolAdd.create(txn, completableFuture);
 
-		this.mempoolAddEventDispatcher.dispatch(mempoolAdd);
+		mempoolAddEventDispatcher.dispatch(mempoolAdd);
 
 		try {
 			var success = completableFuture.get();
@@ -134,7 +134,7 @@ public final class SubmissionService {
 			logger.warn("Unable to fulfill submission request: " + txId.toJson() + ": ", e);
 			return SUBMISSION_FAILURE.with(e.getMessage()).result();
 		} catch (InterruptedException e) {
-			// unrecoverable error, propagate
+			Thread.currentThread().interrupt();
 			throw new IllegalStateException(e);
 		}
 	}

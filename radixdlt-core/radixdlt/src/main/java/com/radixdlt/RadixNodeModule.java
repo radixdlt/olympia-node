@@ -226,7 +226,7 @@ public final class RadixNodeModule extends AbstractModule {
 		bind(new TypeLiteral<List<EndpointConfig>>() {}).annotatedWith(AtNode.class).toInstance(nodeEndpoints);
 		bind(new TypeLiteral<List<EndpointConfig>>() {}).annotatedWith(AtArchive.class).toInstance(archiveEndpoints);
 
-		if (archiveEndpoints.size() > 0 || nodeEndpoints.size() > 0) {
+		if (hasActiveEndpoints(archiveEndpoints, nodeEndpoints)) {
 			var eventBinder = Multibinder
 				.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
 				.permitDuplicates();
@@ -238,13 +238,17 @@ public final class RadixNodeModule extends AbstractModule {
 			eventBinder.addBinding().toInstance(ScheduledStatsCollecting.class);
 		}
 
-		if (archiveEndpoints.size() > 0) {
+		if (!archiveEndpoints.isEmpty()) {
 			install(new ArchiveApiModule(archiveEndpoints));
 		}
 
-		if (nodeEndpoints.size() > 0) {
+		if (!nodeEndpoints.isEmpty()) {
 			install(new NodeApiModule(nodeEndpoints));
 		}
+	}
+
+	private boolean hasActiveEndpoints(List<EndpointConfig> archiveEndpoints, List<EndpointConfig> nodeEndpoints) {
+		return !archiveEndpoints.isEmpty() || !nodeEndpoints.isEmpty();
 	}
 
 	@ProvidesIntoSet
