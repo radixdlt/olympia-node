@@ -22,9 +22,13 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 
+import java.util.stream.IntStream;
+
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
+import static com.radixdlt.client.service.NetworkInfoService.DEMAND_KEY;
+import static com.radixdlt.client.service.NetworkInfoService.THROUGHPUT_KEY;
 import static com.radixdlt.counters.SystemCounters.CounterType;
 
 public class NetworkInfoServiceTest {
@@ -37,8 +41,11 @@ public class NetworkInfoServiceTest {
 	public void testDemand() {
 		assertEquals(0, networkInfoService.demand());
 
-		systemCounters.add(CounterType.MEMPOOL_PROPOSED_TRANSACTION, 1L);
-		updateStats(10, CounterType.MEMPOOL_PROPOSED_TRANSACTION);
+		systemCounters.set(DEMAND_KEY, 2L);
+		updateStats(5, DEMAND_KEY, false);
+
+		systemCounters.set(DEMAND_KEY, 0L);
+		updateStats(5, DEMAND_KEY, false);
 
 		assertEquals(1, networkInfoService.demand());
 	}
@@ -47,16 +54,18 @@ public class NetworkInfoServiceTest {
 	public void testThroughput() {
 		assertEquals(0, networkInfoService.throughput());
 
-		systemCounters.add(CounterType.ELAPSED_BDB_LEDGER_COMMIT, 1L);
-		updateStats(10, CounterType.ELAPSED_BDB_LEDGER_COMMIT);
+		systemCounters.add(THROUGHPUT_KEY, 1L);
+		updateStats(10, THROUGHPUT_KEY, true);
 
 		assertEquals(1, networkInfoService.throughput());
 	}
 
-	private void updateStats(int times, CounterType counterType) {
-		for (int i = 0; i < times; i++) {
-			systemCounters.increment(counterType);
+	private void updateStats(int times, CounterType counterType, boolean increment) {
+		IntStream.range(0, times).forEach(__ -> {
+			if (increment) {
+				systemCounters.increment(counterType);
+			}
 			networkInfoService.updateStats().process(ScheduledStatsCollecting.create());
-		}
+		});
 	}
 }

@@ -24,18 +24,16 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 
 import java.util.EnumMap;
-import java.util.List;
 
+import static com.radixdlt.client.service.NetworkInfoService.ValueHolder.Type.ABSOLUTE;
+import static com.radixdlt.client.service.NetworkInfoService.ValueHolder.Type.INCREMENTAL;
 import static com.radixdlt.counters.SystemCounters.CounterType;
 
 public class NetworkInfoService {
 	private static final long DEFAULT_COLLECTING_INTERVAL = 1000L; // 1 second
 	private static final long DEFAULT_AVERAGING_FACTOR = 10L; // averaging time in multiples of collecting interval
-
-	private static final List<CounterType> COUNTERS = List.of(
-		CounterType.ELAPSED_BDB_LEDGER_COMMIT,
-		CounterType.MEMPOOL_PROPOSED_TRANSACTION
-	);
+	public static final CounterType THROUGHPUT_KEY = CounterType.COUNT_BDB_LEDGER_COMMIT;
+	public static final CounterType DEMAND_KEY = CounterType.MEMPOOL_COUNT;
 
 	private final SystemCounters systemCounters;
 	private final ScheduledEventDispatcher<ScheduledStatsCollecting> scheduledStatsCollecting;
@@ -48,17 +46,18 @@ public class NetworkInfoService {
 	) {
 		this.scheduledStatsCollecting = scheduledStatsCollecting;
 		this.systemCounters = systemCounters;
-		COUNTERS.forEach(cnt -> statistics.put(cnt, new ValueHolder(DEFAULT_AVERAGING_FACTOR)));
+		statistics.put(THROUGHPUT_KEY, new ValueHolder(DEFAULT_AVERAGING_FACTOR, INCREMENTAL));
+		statistics.put(DEMAND_KEY, new ValueHolder(DEFAULT_AVERAGING_FACTOR, ABSOLUTE));
 
 		scheduledStatsCollecting.dispatch(ScheduledStatsCollecting.create(), DEFAULT_COLLECTING_INTERVAL);
 	}
 
 	public long throughput() {
-		return statistics.get(CounterType.ELAPSED_BDB_LEDGER_COMMIT).average();
+		return statistics.get(THROUGHPUT_KEY).average();
 	}
 
 	public long demand() {
-		return statistics.get(CounterType.MEMPOOL_PROPOSED_TRANSACTION).average();
+		return statistics.get(DEMAND_KEY).average();
 	}
 
 	public EventProcessor<ScheduledStatsCollecting> updateStats() {
@@ -70,24 +69,35 @@ public class NetworkInfoService {
 
 	@VisibleForTesting
 	void collectStats() {
-		COUNTERS.forEach(cnt -> statistics.compute(cnt, this::updateCounter));
+		statistics.forEach((key, value) -> statistics.compute(key, this::updateCounter));
 	}
 
 	private ValueHolder updateCounter(CounterType counterType, ValueHolder holder) {
 		return counterType != null ? holder.update(systemCounters.get(counterType)) : null;
 	}
 
-	private static class ValueHolder {
+	static class ValueHolder {
 		private final MovingAverage calculator;
+		private final Type type;
 		private long lastValue;
 
-		private ValueHolder(long averagingFactor) {
+		public enum Type {
+			ABSOLUTE,
+			INCREMENTAL
+		}
+
+		private ValueHolder(long averagingFactor, Type type) {
 			this.calculator = MovingAverage.create(averagingFactor);
+			this.type = type;
 		}
 
 		public ValueHolder update(long newValue) {
-			calculator.update(newValue - lastValue);
-			lastValue = newValue;
+			if (type == Type.ABSOLUTE) {
+				calculator.update(newValue);
+			} else {
+				calculator.update(newValue - lastValue);
+				lastValue = newValue;
+			}
 			return this;
 		}
 
