@@ -60,7 +60,7 @@ public class ArchiveAccountHandler {
 		return withRequiredStringParameter(
 			request,
 			"address",
-			(address) -> AccountAddress.parseFunctional(address)
+			address -> AccountAddress.parseFunctional(address)
 				.flatMap(key -> accountService.getTokenBalances(key).map(v -> tuple(key, v)))
 				.map(tuple -> tuple.map(ArchiveAccountHandler::formatTokenBalances))
 		);
@@ -81,7 +81,7 @@ public class ArchiveAccountHandler {
 		return withRequiredStringParameter(
 			request,
 			"address",
-			(address) -> AccountAddress.parseFunctional(address)
+			address -> AccountAddress.parseFunctional(address)
 				.flatMap(accountService::getStakePositions)
 				.map(this::formatStakePositions)
 		);
@@ -91,12 +91,9 @@ public class ArchiveAccountHandler {
 		return withRequiredStringParameter(
 			request,
 			"address",
-			(address) -> AccountAddress.parseFunctional(address)
+			address -> AccountAddress.parseFunctional(address)
 				.flatMap(accountService::getUnstakePositions)
-				.map(positions -> {
-					var curEpoch = accountService.getEpoch();
-					return formatUnstakePositions(positions, curEpoch);
-				})
+				.map(positions -> formatUnstakePositions(positions, accountService.getEpoch()))
 		);
 	}
 

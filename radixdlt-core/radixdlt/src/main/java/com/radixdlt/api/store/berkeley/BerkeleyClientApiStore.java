@@ -256,7 +256,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			computeStakeFromOwnership(entry.getDelegate(), entry.getAmount()),
 			false,
 			entry.getEpochUnlocked(),
-			null
+			entry.getTxId()
 		);
 	}
 

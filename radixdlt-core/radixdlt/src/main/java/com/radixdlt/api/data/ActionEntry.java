@@ -17,25 +17,15 @@
 
 package com.radixdlt.api.data;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.identifiers.AccountAddress;
-import com.radixdlt.identifiers.ValidatorAddress;
-
 import org.json.JSONObject;
 
-import com.radixdlt.atom.actions.BurnToken;
-import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.identifiers.REAddr;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.UInt256;
-
-import java.util.function.Function;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
@@ -88,46 +78,6 @@ public class ActionEntry {
 		requireNonNull(type);
 
 		return new ActionEntry(type, from, to, amount, rri);
-	}
-
-	public static ActionEntry transfer(TransferToken transferToken, Function<REAddr, String> addrToRri) {
-		return create(
-			ActionType.TRANSFER,
-			AccountAddress.of(transferToken.from()),
-			AccountAddress.of(transferToken.to()),
-			transferToken.amount(),
-			addrToRri.apply(transferToken.resourceAddr())
-		);
-	}
-
-	public static ActionEntry burn(BurnToken burnToken, Function<REAddr, String> addrToRri) {
-		return create(
-			ActionType.BURN,
-			AccountAddress.of(burnToken.from()),
-			null,
-			burnToken.amount(),
-			addrToRri.apply(burnToken.resourceAddr())
-		);
-	}
-
-	public static ActionEntry stake(StakeTokens stakeToken, Function<REAddr, String> addrToRri) {
-		return create(
-			ActionType.STAKE,
-			AccountAddress.of(stakeToken.from()),
-			ValidatorAddress.of(stakeToken.to()),
-			stakeToken.amount(),
-			addrToRri.apply(REAddr.ofNativeToken())
-		);
-	}
-
-	public static ActionEntry unstake(UnstakeTokens unstakeToken, Function<REAddr, String> addrToRri) {
-		return create(
-			ActionType.UNSTAKE,
-			AccountAddress.of(unstakeToken.accountAddr()),
-			ValidatorAddress.of(unstakeToken.from()),
-			unstakeToken.amount(),
-			addrToRri.apply(REAddr.ofNativeToken())
-		);
 	}
 
 	public static ActionEntry unknown() {
