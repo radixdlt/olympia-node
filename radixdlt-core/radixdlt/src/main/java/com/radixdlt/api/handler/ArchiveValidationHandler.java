@@ -65,7 +65,7 @@ public class ArchiveValidationHandler {
 		return withRequiredStringParameter(
 			request,
 			"validatorAddress",
-			(address) -> ValidatorAddress.fromString(address)
+			address -> ValidatorAddress.fromString(address)
 				.flatMap(validatorInfoService::getValidator)
 				.map(ValidatorInfoDetails::asJson)
 		);

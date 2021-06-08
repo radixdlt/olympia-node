@@ -108,16 +108,6 @@ public class BalanceEntry {
 		);
 	}
 
-	public static BalanceEntry create(
-		REAddr owner,
-		ECPublicKey delegate,
-		String rri,
-		UInt384 amount,
-		boolean negative
-	) {
-		return create(owner, delegate, rri, amount, negative, null, null);
-	}
-
 	private BalanceEntry(
 		REAddr owner, byte[] delegate, String rri,
 		UInt384 amount, boolean negative, Long epochUnlocked,

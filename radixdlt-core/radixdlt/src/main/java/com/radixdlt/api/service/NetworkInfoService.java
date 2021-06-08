@@ -101,8 +101,6 @@ public class NetworkInfoService {
 	public EventProcessor<ScheduledStatsCollecting> updateStats() {
 		return flush -> {
 			collectStats();
-			log.info("PROOF::: {}", systemConfigService.getLatestProof().toString());
-			log.info("CHECKPOINT::: {}", systemConfigService.getCheckpoints().toString(2));
 			scheduledStatsCollecting.dispatch(ScheduledStatsCollecting.create(), DEFAULT_COLLECTING_INTERVAL);
 		};
 	}
