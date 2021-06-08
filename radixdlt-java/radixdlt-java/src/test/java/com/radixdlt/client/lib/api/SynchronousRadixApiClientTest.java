@@ -131,7 +131,7 @@ public class SynchronousRadixApiClientTest {
 	public void testNetworkId() throws IOException {
 		prepareClient(NETWORK_ID)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.networkId()
+			.onSuccess(client -> client.network().id()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(networkIdDTO -> assertEquals(2, networkIdDTO.getNetworkId())));
 	}
@@ -140,7 +140,7 @@ public class SynchronousRadixApiClientTest {
 	public void testNativeToken() throws IOException {
 		prepareClient(NATIVE_TOKEN)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.nativeToken()
+			.onSuccess(client -> client.token().describeNative()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(tokenInfoDTO -> assertEquals("Rads", tokenInfoDTO.getName())));
 	}
@@ -149,7 +149,7 @@ public class SynchronousRadixApiClientTest {
 	public void testTokenInfo() throws IOException {
 		prepareClient(NATIVE_TOKEN)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.tokenInfo("xrd_rb1qya85pwq")
+			.onSuccess(client -> client.token().describe("xrd_rb1qya85pwq")
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(tokenInfoDTO -> assertEquals("Rads", tokenInfoDTO.getName())));
 	}
@@ -159,7 +159,7 @@ public class SynchronousRadixApiClientTest {
 		prepareClient(TX_HISTORY)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(
-				client -> client.transactionHistory(ACCOUNT_ADDRESS1, 5, Optional.empty())
+				client -> client.account().history(ACCOUNT_ADDRESS1, 5, Optional.empty())
 					.onFailure(failure -> fail(failure.toString()))
 					.onSuccess(transactionHistoryDTO -> assertNotNull(transactionHistoryDTO.getCursor()))
 					.onSuccess(transactionHistoryDTO -> assertNotNull(transactionHistoryDTO.getTransactions()))
@@ -174,7 +174,7 @@ public class SynchronousRadixApiClientTest {
 	public void testTokenBalances() throws IOException {
 		prepareClient(TOKEN_BALANCES)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.tokenBalances(ACCOUNT_ADDRESS1)
+			.onSuccess(client -> client.account().balances(ACCOUNT_ADDRESS1)
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(tokenBalancesDTO -> assertEquals(ACCOUNT_ADDRESS1, tokenBalancesDTO.getOwner()))
 				.map(TokenBalancesDTO::getTokenBalances)
@@ -185,7 +185,7 @@ public class SynchronousRadixApiClientTest {
 	public void testErrorResponse() throws IOException {
 		prepareClient(ERROR_RESPONSE)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.lookupTransaction(AID.ZERO)
+			.onSuccess(client -> client.transaction().lookup(AID.ZERO)
 				.onFailure(failure -> assertEquals(2523, failure.code()))
 				.onSuccess(__ -> fail()));
 	}
@@ -194,7 +194,7 @@ public class SynchronousRadixApiClientTest {
 	public void testDemand() throws IOException {
 		prepareClient(DEMAND)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.networkTransactionDemand()
+			.onSuccess(client -> client.network().demand()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(networkStatsDTO -> assertEquals(5L, networkStatsDTO.getTps())));
 	}
@@ -203,7 +203,7 @@ public class SynchronousRadixApiClientTest {
 	public void testThroughput() throws IOException {
 		prepareClient(THROUGHPUT)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.networkTransactionThroughput()
+			.onSuccess(client -> client.network().throughput()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(networkStatsDTO -> assertEquals(8L, networkStatsDTO.getTps())));
 	}
@@ -223,7 +223,7 @@ public class SynchronousRadixApiClientTest {
 
 		prepareClient(BUILT_TRANSACTION)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.buildTransaction(request)
+			.onSuccess(client -> client.transaction().build(request)
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(dto -> assertEquals(UInt256.from(100000000000000000L), dto.getFee()))
 				.onSuccess(dto -> assertArrayEquals(hash, dto.getTransaction().getHashToSign()))
@@ -245,14 +245,14 @@ public class SynchronousRadixApiClientTest {
 
 		SynchronousRadixApiClient.connect(BASE_URL)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.buildTransaction(request)
+			.onSuccess(client -> client.transaction().build(request)
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(builtTransactionDTO -> assertEquals(UInt256.from(100000000000000000L), builtTransactionDTO.getFee()))
 				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
-				.onSuccess(finalizedTransaction -> client.finalizeTransaction(finalizedTransaction)
+				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
 					.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
 					.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
-					.onSuccess(submittableTransaction -> client.submitTransaction(submittableTransaction)
+					.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 						.onFailure(failure -> fail(failure.toString()))
 						.onSuccess(txDTO -> submittableTransaction.rawTxId()
 							.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))))
@@ -268,7 +268,7 @@ public class SynchronousRadixApiClientTest {
 				client -> {
 					var cursorHolder = new AtomicReference<NavigationCursor>();
 					do {
-						client.transactionHistory(ACCOUNT_ADDRESS1, 5, Optional.ofNullable(cursorHolder.get()))
+						client.account().history(ACCOUNT_ADDRESS1, 5, Optional.ofNullable(cursorHolder.get()))
 							.onFailure(failure -> fail(failure.toString()))
 							.onSuccess(v -> v.getCursor().ifPresent(System.out::println))
 							.onSuccess(v -> v.getCursor().ifPresentOrElse(cursorHolder::set, () -> cursorHolder.set(null)))
@@ -303,7 +303,7 @@ public class SynchronousRadixApiClientTest {
 	public void listStakes() {
 		SynchronousRadixApiClient.connect(BASE_URL)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.stakePositions(ACCOUNT_ADDRESS1)
+			.onSuccess(client -> client.account().stakes(ACCOUNT_ADDRESS1)
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(stakePositionsDTOS -> System.out.println("Stake positions: " + stakePositionsDTOS.toString()))
 			);
@@ -314,7 +314,7 @@ public class SynchronousRadixApiClientTest {
 	public void listUnStakes() {
 		SynchronousRadixApiClient.connect(BASE_URL)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.unstakePositions(ACCOUNT_ADDRESS1)
+			.onSuccess(client -> client.account().unstakes(ACCOUNT_ADDRESS1)
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(unstakePositionsDTOS -> System.out.println("UnStake positions: " + unstakePositionsDTOS.toString()))
 			);
@@ -355,12 +355,12 @@ public class SynchronousRadixApiClientTest {
 			.message("Test message")
 			.build();
 
-		client.buildTransaction(request)
+		client.transaction().build(request)
 			.onFailure(failure -> fail(failure.toString()))
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR2))
-			.onSuccess(finalizedTransaction -> client.finalizeTransaction(finalizedTransaction)
+			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
 				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
-				.onSuccess(submittableTransaction -> client.submitTransaction(submittableTransaction)
+				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 					.onFailure(failure -> fail(failure.toString()))
 					.onSuccess(txDTO -> submittableTransaction.rawTxId()
 						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))));
@@ -384,12 +384,12 @@ public class SynchronousRadixApiClientTest {
 			.stake(ACCOUNT_ADDRESS1, ValidatorAddress.of(KEY_PAIR2.getPublicKey()), amount)
 			.build();
 
-		client.buildTransaction(request)
+		client.transaction().build(request)
 			.onFailure(failure -> fail(failure.toString()))
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
-			.onSuccess(finalizedTransaction -> client.finalizeTransaction(finalizedTransaction)
+			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
 				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
-				.onSuccess(submittableTransaction -> client.submitTransaction(submittableTransaction)
+				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 					.onFailure(failure -> fail(failure.toString()))
 					.onSuccess(txDTO -> submittableTransaction.rawTxId()
 						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))));
@@ -400,12 +400,12 @@ public class SynchronousRadixApiClientTest {
 			.unstake(ACCOUNT_ADDRESS1, ValidatorAddress.of(KEY_PAIR2.getPublicKey()), amount)
 			.build();
 
-		client.buildTransaction(request)
+		client.transaction().build(request)
 			.onFailure(failure -> fail(failure.toString()))
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
-			.onSuccess(finalizedTransaction -> client.finalizeTransaction(finalizedTransaction)
+			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
 				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
-				.onSuccess(submittableTransaction -> client.submitTransaction(submittableTransaction)
+				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 					.onFailure(failure -> fail(failure.toString()))
 					.onSuccess(txDTO -> submittableTransaction.rawTxId()
 						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))));
@@ -422,14 +422,14 @@ public class SynchronousRadixApiClientTest {
 			.message("Test message")
 			.build();
 
-		client.buildTransaction(request)
+		client.transaction().build(request)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(builtTransactionDTO -> assertEquals(UInt256.from(100000000000000000L), builtTransactionDTO.getFee()))
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
-			.onSuccess(finalizedTransaction -> client.finalizeTransaction(finalizedTransaction)
+			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
 				.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
 				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
-				.onSuccess(submittableTransaction -> client.submitTransaction(submittableTransaction)
+				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 					.onFailure(failure -> fail(failure.toString()))
 					.onSuccess(txDTO -> submittableTransaction.rawTxId()
 						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))));
@@ -442,7 +442,7 @@ public class SynchronousRadixApiClientTest {
 
 		prepareClient(FINALIZE_TRANSACTION)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.finalizeTransaction(request)
+			.onSuccess(client -> client.transaction().finalize(request)
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(dto -> assertEquals(txId, dto.getTxId()))
 			);
@@ -455,7 +455,7 @@ public class SynchronousRadixApiClientTest {
 
 		prepareClient(FINALIZE_TRANSACTION)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.submitTransaction(request)
+			.onSuccess(client -> client.transaction().submit(request)
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(dto -> assertEquals(txId, dto.getTxId()))
 			);
