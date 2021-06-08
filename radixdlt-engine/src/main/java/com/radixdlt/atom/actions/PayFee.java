@@ -16,15 +16,26 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.atom.actions;
 
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.store.ReadableAddrs;
+import com.radixdlt.atom.TxAction;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.UInt256;
 
-import java.util.Optional;
+public class PayFee implements TxAction {
+	private final REAddr accountAddr;
+	private final UInt256 amount;
 
-public interface MethodProcedure {
-	PermissionLevel permissionLevel(Object o, ReadableAddrs readableAddrs);
-	void verifyAuthorization(Object o, ReadableAddrs readableAddrs, Optional<ECPublicKey> key) throws AuthorizationException;
-	ReducerResult call(Object o, ReducerState reducerState, ReadableAddrs readableAddrs) throws ProcedureException;
+	public PayFee(REAddr accountAddr, UInt256 amount) {
+		this.accountAddr = accountAddr;
+		this.amount = amount;
+	}
+
+	public REAddr from() {
+		return accountAddr;
+	}
+
+	public UInt256 amount() {
+		return amount;
+	}
 }

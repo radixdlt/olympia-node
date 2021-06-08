@@ -49,7 +49,7 @@ public class IncreasingValidatorsTest {
 		.addRadixEngineConfigModules(
 			RadixEngineConfig.asModule(2, 40, 5),
 			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(10))
+			new RadixEngineForksLatestOnlyModule(View.of(10), false)
 		)
 		.ledgerAndRadixEngineWithEpochHighView()
 		.addTestModules(

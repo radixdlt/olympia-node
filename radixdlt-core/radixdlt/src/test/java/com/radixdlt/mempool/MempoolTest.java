@@ -81,7 +81,7 @@ public class MempoolTest {
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10, 200, 500, 10),
 			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(100)),
+			new RadixEngineForksLatestOnlyModule(View.of(100), false),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),

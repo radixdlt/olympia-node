@@ -18,12 +18,15 @@
 
 package com.radixdlt.atommodel.tokens;
 
+import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 
 // TODO: these methods are really here for client api,
 // TODO: fix to be more in line with scrypto abstractions
 public interface Bucket {
+	Authorization withdrawAuthorization();
+
 	REAddr resourceAddr();
 	REAddr getOwner();
 	ECPublicKey getValidatorKey();

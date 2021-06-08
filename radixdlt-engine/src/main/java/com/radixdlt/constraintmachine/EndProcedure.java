@@ -18,46 +18,41 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.store.ReadableAddrs;
+import java.util.function.Function;
 
-import java.util.Optional;
-import java.util.function.BiFunction;
-
-public class EndProcedure<S extends ReducerState> implements MethodProcedure {
+public class EndProcedure<S extends ReducerState> implements Procedure {
 	private final Class<S> reducerStateClass;
-	private final BiFunction<S, ReadableAddrs, PermissionLevel> permissionLevel;
-	private final EndAuthorization<S> endAuthorization;
+	private final Function<S, Authorization> authorization;
 	private final EndReducer<S> endReducer;
 
 	public EndProcedure(
 		Class<S> reducerStateClass,
-		BiFunction<S, ReadableAddrs, PermissionLevel> permissionLevel,
-		EndAuthorization<S> endAuthorization,
+		Function<S, Authorization> authorization,
 		EndReducer<S> endReducer
 	) {
 		this.reducerStateClass = reducerStateClass;
-		this.permissionLevel = permissionLevel;
-		this.endAuthorization = endAuthorization;
+		this.authorization = authorization;
 		this.endReducer = endReducer;
 	}
 
-	public ProcedureKey getEndProcedureKey() {
-		return ProcedureKey.of(null, reducerStateClass);
+	@Override
+	public ProcedureKey key() {
+		return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.END, null));
 	}
 
 	@Override
-	public PermissionLevel permissionLevel(Object o, ReadableAddrs readableAddrs) {
-		return permissionLevel.apply((S) o, readableAddrs);
+	public Authorization authorization(Object o) {
+		return authorization.apply((S) o);
 	}
 
 	@Override
-	public void verifyAuthorization(Object o, ReadableAddrs readableAddrs, Optional<ECPublicKey> key) throws AuthorizationException {
-		endAuthorization.verify((S) o, readableAddrs, key);
-	}
-
-	@Override
-	public ReducerResult call(Object o, ReducerState reducerState, ReadableAddrs readableAddrs) throws ProcedureException {
+	public ReducerResult call(
+		Object o,
+		ReducerState reducerState,
+		ReadableAddrs readableAddrs,
+		ExecutionContext executionContext
+	) throws ProcedureException {
 		endReducer.reduce((S) reducerState, readableAddrs);
 		return ReducerResult.complete();
 	}

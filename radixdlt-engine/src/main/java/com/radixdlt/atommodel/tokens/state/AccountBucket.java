@@ -18,7 +18,11 @@
 
 package com.radixdlt.atommodel.tokens.state;
 
+import com.radixdlt.atommodel.system.state.HasEpochData;
 import com.radixdlt.atommodel.tokens.Bucket;
+import com.radixdlt.constraintmachine.AuthorizationException;
+import com.radixdlt.constraintmachine.Authorization;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 
@@ -27,10 +31,34 @@ import java.util.Objects;
 public final class AccountBucket implements Bucket {
 	private final REAddr resourceAddress;
 	private final REAddr holdingAddress;
+	// TODO: Remove in mainnet
+	private final Long epochUnlocked;
 
-	public AccountBucket(REAddr resourceAddress, REAddr holdingAddress) {
+	public AccountBucket(REAddr resourceAddress, REAddr holdingAddress, Long epochUnlocked) {
 		this.resourceAddress = resourceAddress;
 		this.holdingAddress = holdingAddress;
+		this.epochUnlocked = epochUnlocked;
+	}
+
+	@Override
+	public Authorization withdrawAuthorization() {
+		return new Authorization(
+			PermissionLevel.USER,
+			(r, c) -> {
+				try {
+					holdingAddress.verifyWithdrawAuthorization(c.key());
+				} catch (REAddr.BucketWithdrawAuthorizationException e) {
+					throw new AuthorizationException(e.getMessage());
+				}
+
+				if (epochUnlocked != null) {
+					var system = (HasEpochData) r.loadAddr(null, REAddr.ofSystem()).orElseThrow();
+					if (epochUnlocked > system.getEpoch()) {
+						throw new AuthorizationException("Tokens are locked until epoch " + epochUnlocked + " current " + system.getEpoch());
+					}
+				}
+			}
+		);
 	}
 
 	@Override
@@ -50,6 +78,7 @@ public final class AccountBucket implements Bucket {
 
 	@Override
 	public Long getEpochUnlock() {
+		// This should still be null as its a different epoch unlock
 		return null;
 	}
 
@@ -60,7 +89,7 @@ public final class AccountBucket implements Bucket {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(holdingAddress, resourceAddress);
+		return Objects.hash(holdingAddress, resourceAddress, epochUnlocked);
 	}
 
 	@Override
@@ -71,6 +100,7 @@ public final class AccountBucket implements Bucket {
 
 		var other = (AccountBucket) o;
 		return Objects.equals(this.holdingAddress, other.holdingAddress)
-			&& Objects.equals(this.resourceAddress, other.resourceAddress);
+			&& Objects.equals(this.resourceAddress, other.resourceAddress)
+			&& Objects.equals(this.epochUnlocked, other.epochUnlocked);
 	}
 }

@@ -68,7 +68,7 @@ public class PacemakerTest {
 			MempoolConfig.asModule(10, 10),
 			new BetanetForksModule(),
 			RadixEngineConfig.asModule(1, Integer.MAX_VALUE, 50),
-			new RadixEngineForksLatestOnlyModule(View.of(100L)),
+			new RadixEngineForksLatestOnlyModule(View.of(100L), false),
 			new MockedGenesisModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new AbstractModule() {

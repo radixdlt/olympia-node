@@ -107,7 +107,7 @@ public class TxStatusTest {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
 			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(100)),
+			new RadixEngineForksLatestOnlyModule(View.of(100), false),
 			RadixEngineConfig.asModule(1, 10, 10),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),

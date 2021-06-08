@@ -19,6 +19,8 @@
 package com.radixdlt.atommodel.tokens.state;
 
 import com.radixdlt.atommodel.tokens.Bucket;
+import com.radixdlt.constraintmachine.Authorization;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 
@@ -31,6 +33,11 @@ public final class PreparedStakeBucket implements Bucket {
 	public PreparedStakeBucket(REAddr owner, ECPublicKey delegateKey) {
 		this.owner = owner;
 		this.delegateKey = delegateKey;
+	}
+
+	@Override
+	public Authorization withdrawAuthorization() {
+		return new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { });
 	}
 
 	@Override

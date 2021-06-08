@@ -28,12 +28,12 @@ import java.util.Optional;
  * Instruction which has been parsed and state checked by Radix Engine
  */
 public final class REStateUpdate {
-	private final REInstruction.REOp op;
+	private final REOp op;
 	private final Substate substate;
 	private final byte[] arg;
 	private final ByteBuffer stateBuf;
 
-	private REStateUpdate(REInstruction.REOp op, Substate substate, byte[] arg, ByteBuffer stateBuf) {
+	private REStateUpdate(REOp op, Substate substate, byte[] arg, ByteBuffer stateBuf) {
 		Objects.requireNonNull(op);
 		Objects.requireNonNull(substate);
 
@@ -43,7 +43,7 @@ public final class REStateUpdate {
 		this.stateBuf = stateBuf;
 	}
 
-	public static REStateUpdate of(REInstruction.REOp op, Substate substate, byte[] arg, ByteBuffer stateBuf) {
+	public static REStateUpdate of(REOp op, Substate substate, byte[] arg, ByteBuffer stateBuf) {
 		return new REStateUpdate(op, substate, arg, stateBuf);
 	}
 
@@ -51,28 +51,20 @@ public final class REStateUpdate {
 		return stateBuf;
 	}
 
-	public REInstruction.REOp getOp() {
-		return op;
-	}
-
 	public Optional<byte[]> getArg() {
 		return Optional.ofNullable(arg);
 	}
 
-	public Spin getCheckSpin() {
-		return op.getCheckSpin();
-	}
-
-	public Spin getNextSpin() {
-		return op.getNextSpin();
+	public REOp getOp() {
+		return op;
 	}
 
 	public boolean isBootUp() {
-		return this.op.getNextSpin() == Spin.UP;
+		return this.op == REOp.UP;
 	}
 
 	public boolean isShutDown() {
-		return this.op.getNextSpin() == Spin.DOWN;
+		return this.op == REOp.DOWN;
 	}
 
 	public Substate getSubstate() {

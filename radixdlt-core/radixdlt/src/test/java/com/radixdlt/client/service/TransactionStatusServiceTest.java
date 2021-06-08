@@ -19,11 +19,13 @@ package com.radixdlt.client.service;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.engine.parser.ParsedTxn;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.functions.Consumer;
@@ -52,8 +54,9 @@ public class TransactionStatusServiceTest {
 		);
 
 		var txn = randomTxn();
-		var parsedTxn = new REProcessedTxn(txn, null, null);
-		var one = TxnsCommittedToLedger.create(List.of(parsedTxn));
+		var parsedTxn = new ParsedTxn(txn, UInt256.ZERO, null, null, null);
+		var processedTxn = new REProcessedTxn(parsedTxn, null);
+		var one = TxnsCommittedToLedger.create(List.of(processedTxn));
 		transactionStatusService.atomsCommittedToLedgerEventProcessor().process(one);
 
 		assertEquals(CONFIRMED, transactionStatusService.getTransactionStatus(txn.getId()));
@@ -117,8 +120,9 @@ public class TransactionStatusServiceTest {
 		var succeeded = MempoolAddSuccess.create(txnSucceeded, null);
 		transactionStatusService.mempoolAddSuccessEventProcessor().process(succeeded);
 		var txnCommitted = randomTxn();
-		var parsedTxn = new REProcessedTxn(txnCommitted, null, null);
-		var committed = TxnsCommittedToLedger.create(List.of(parsedTxn));
+		var parsedTxn = new ParsedTxn(txnCommitted, UInt256.ZERO, null, null, null);
+		var processedTxn = new REProcessedTxn(parsedTxn, null);
+		var committed = TxnsCommittedToLedger.create(List.of(processedTxn));
 		transactionStatusService.atomsCommittedToLedgerEventProcessor().process(committed);
 		var txnRejected = randomTxn();
 		var rejected = MempoolAddFailure.create(txnRejected, null, null);

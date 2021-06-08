@@ -19,12 +19,8 @@
 package com.radixdlt.atommodel.tokens.state;
 
 import com.radixdlt.atommodel.tokens.Bucket;
-import com.radixdlt.atommodel.system.state.HasEpochData;
 import com.radixdlt.atommodel.tokens.ResourceInBucket;
-import com.radixdlt.constraintmachine.AuthorizationException;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.store.ReadableAddrs;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 import java.util.Optional;
@@ -67,21 +63,6 @@ public final class TokensInAccount implements ResourceInBucket {
 		this.epochUnlocked = epochUnlocked;
 	}
 
-	public void verifyWithdrawAuthorization(Optional<ECPublicKey> key, ReadableAddrs readable) throws AuthorizationException {
-		try {
-			holdingAddress.verifyWithdrawAuthorization(key);
-		} catch (REAddr.BucketWithdrawAuthorizationException e) {
-			throw new AuthorizationException(e.getMessage());
-		}
-
-		if (epochUnlocked != null) {
-			var system = (HasEpochData) readable.loadAddr(null, REAddr.ofSystem()).orElseThrow();
-			if (epochUnlocked > system.getEpoch()) {
-				throw new AuthorizationException("Tokens are locked until epoch " + epochUnlocked + " current " + system.getEpoch());
-			}
-		}
-	}
-
 	@Override
 	public UInt256 getAmount() {
 		return this.amount;
@@ -89,7 +70,7 @@ public final class TokensInAccount implements ResourceInBucket {
 
 	@Override
 	public Bucket bucket() {
-		return new AccountBucket(resourceAddr, holdingAddress);
+		return new AccountBucket(resourceAddr, holdingAddress, epochUnlocked);
 	}
 
 	public DeprecatedResourceInBucket deprecatedResourceInBucket() {

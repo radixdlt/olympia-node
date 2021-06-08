@@ -24,8 +24,9 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 /**
  * This module checks for constraints outside of the FSM constraint
  * machine
+ * TODO: Remove for mainnet
  */
-public interface PostParsedChecker {
+public interface PostProcessedVerifier {
 
 	/**
 	 * Checks that an atom is well-formed

@@ -19,6 +19,7 @@ package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.constraintmachine.AuthorizationException;
+import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
@@ -28,9 +29,10 @@ import com.radixdlt.constraintmachine.ReducerState;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.StatelessSubstateVerifier;
+import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.identifiers.REAddr;
 
@@ -44,7 +46,6 @@ import java.util.stream.Collectors;
 @SuppressWarnings("rawtypes")
 public final class CMAtomOS {
 	private static final ParticleDefinition<REAddrParticle> RRI_PARTICLE_DEF = ParticleDefinition.<REAddrParticle>builder()
-		.staticValidation(rri -> Result.success())
 		.virtualizeUp(v ->
 			v.getAddr().getType() == REAddr.REAddrType.NATIVE_TOKEN
 			|| v.getAddr().getType() == REAddr.REAddrType.HASHED_KEY
@@ -82,20 +83,25 @@ public final class CMAtomOS {
 		this.systemNames = systemNames;
 
 		this.load(os -> {
-			os.registerParticle(REAddrParticle.class, RRI_PARTICLE_DEF);
-			os.createDownProcedure(new DownProcedure<>(
+			os.particle(REAddrParticle.class, RRI_PARTICLE_DEF);
+			os.procedure(new DownProcedure<>(
 				REAddrParticle.class, VoidReducerState.class,
-				(d, r) -> {
-					var name = new String(d.getArg().orElseThrow());
-					return systemNames.contains(name)
-						|| d.getSubstate().getAddr().isNativeToken()
-						|| d.getSubstate().getAddr().isSystem()
-						? PermissionLevel.SYSTEM : PermissionLevel.USER;
-				},
-				(d, r, pubKey) -> {
-					if (!pubKey.map(k -> d.getSubstate().allow(k, d.getArg())).orElse(false)) {
-						throw new AuthorizationException("Invalid key/arg combination.");
+				d -> {
+					final PermissionLevel permissionLevel;
+					if (d.getSubstate().getAddr().isNativeToken() || d.getSubstate().getAddr().isSystem()) {
+						permissionLevel = PermissionLevel.SYSTEM;
+					} else {
+						var name = new String(d.getArg().orElseThrow());
+						permissionLevel = systemNames.contains(name) ? PermissionLevel.SYSTEM : PermissionLevel.USER;
 					}
+					return new Authorization(
+						permissionLevel,
+						(r, ctx) -> {
+							if (!ctx.key().map(k -> d.getSubstate().allow(k, d.getArg())).orElse(false)) {
+								throw new AuthorizationException("Invalid key/arg combination.");
+							}
+						}
+					);
 				},
 				(d, s, r) -> {
 					if (d.getSubstate().getAddr().isSystem()) {
@@ -130,22 +136,17 @@ public final class CMAtomOS {
 		return procedures;
 	}
 
-	public Function<Particle, Result> buildParticleStaticCheck() {
+	public StatelessSubstateVerifier<Particle> buildStatelessSubstateVerifier() {
 		final ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions
 			= ImmutableMap.copyOf(this.particleDefinitions);
 		return p -> {
 			final ParticleDefinition<Particle> particleDefinition = particleDefinitions.get(p.getClass());
 			if (particleDefinition == null) {
-				return Result.error("Unknown particle type: " + p.getClass());
+				throw new TxnParseException("Unknown particle type: " + p.getClass());
 			}
 
-			final Function<Particle, Result> staticValidation = particleDefinition.getStaticValidation();
-			final Result staticCheckResult = staticValidation.apply(p);
-			if (staticCheckResult.isError()) {
-				return staticCheckResult;
-			}
-
-			return Result.success();
+			var staticVerifier = particleDefinition.getStaticValidation();
+			staticVerifier.verify(p);
 		};
 	}
 

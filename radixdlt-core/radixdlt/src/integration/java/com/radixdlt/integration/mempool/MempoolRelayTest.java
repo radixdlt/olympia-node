@@ -159,7 +159,7 @@ public class MempoolRelayTest {
 			new CryptoModule(),
 			new RadixEngineModule(),
 			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(100)),
+			new RadixEngineForksLatestOnlyModule(View.of(100), false),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new AbstractModule() {
 				@Override
@@ -186,7 +186,7 @@ public class MempoolRelayTest {
 		return Guice.createInjector(
 			MempoolConfig.asModule(500, 100, 10, 10, 10),
 			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(100)),
+			new RadixEngineForksLatestOnlyModule(View.of(100), false),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new PersistedNodeForTestingModule(),
 			new MempoolFillerModule(),

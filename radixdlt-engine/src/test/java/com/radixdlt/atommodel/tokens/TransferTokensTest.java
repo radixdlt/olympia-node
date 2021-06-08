@@ -38,6 +38,7 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -89,13 +90,14 @@ public class TransferTokensTest {
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(scrypt);
-		var cm = new ConstraintMachine.Builder()
-			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
-			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
-			.setParticleTransitionProcedures(cmAtomOS.getProcedures())
-			.build();
+		var cm = new ConstraintMachine(
+			cmAtomOS.virtualizedUpParticles(),
+			cmAtomOS.getProcedures()
+		);
+		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
+			parser,
 			ActionConstructors.newBuilder()
 				.put(TransferToken.class, transferTokensConstructor)
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
@@ -158,11 +160,11 @@ public class TransferTokensTest {
 		assertThat(accounting.bucketAccounting())
 			.hasSize(2)
 			.containsEntry(
-				new AccountBucket(tokenAddr, accountAddr),
+				new AccountBucket(tokenAddr, accountAddr, null),
 				new BigInteger(-1, transferAmt.toByteArray(), 0, UInt256.BYTES)
 			)
 			.containsEntry(
-				new AccountBucket(tokenAddr, to),
+				new AccountBucket(tokenAddr, to, null),
 				new BigInteger(1, transferAmt.toByteArray(), 0, UInt256.BYTES)
 			);
 		assertThat(accounting.resourceAccounting()).isEmpty();

@@ -31,6 +31,7 @@ import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
@@ -248,12 +249,12 @@ public final class NodeController implements Controller {
 			try {
 				var actionsArray = values.getJSONArray("actions");
 				var actions = new ArrayList<TxAction>();
+				actions.add(new PayFee(account, TokenFeeChecker.FIXED_FEE));
 				for (int i = 0; i < actionsArray.length(); i++) {
 					var actionObject = actionsArray.getJSONObject(i);
 					var txAction = parseAction(actionObject);
 					actions.add(txAction);
 				}
-				actions.add(new BurnToken(REAddr.ofNativeToken(), account, TokenFeeChecker.FIXED_FEE));
 				var completableFuture = new CompletableFuture<MempoolAddSuccess>();
 				var request = NodeApplicationRequest.create(actions, completableFuture);
 				nodeApplicationRequestEventDispatcher.dispatch(request);

@@ -41,6 +41,7 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -94,13 +95,13 @@ public class NextEpochV2Test {
 		var cmAtomOS = new CMAtomOS();
 		scrypts.forEach(cmAtomOS::load);
 		cmAtomOS.load(new UniqueParticleConstraintScrypt()); // For v1 start
-		var cm = new ConstraintMachine.Builder()
-			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
-			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
-			.setParticleTransitionProcedures(cmAtomOS.getProcedures())
-			.build();
+		var cm = new ConstraintMachine(
+			cmAtomOS.virtualizedUpParticles(),
+			cmAtomOS.getProcedures()
+		);
+		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
 		this.store = new InMemoryEngineStore<>();
-		this.sut = new RadixEngine<>(constructors, cm, store);
+		this.sut = new RadixEngine<>(parser, constructors, cm, store);
 	}
 
 	@Test

@@ -17,36 +17,28 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.store.ReadableAddrs;
+
 /**
- * The state of a {@link Particle}
+ * Validates whether a specific transition procedure is permissible
  */
-//TODO: clean up unused 'intValue'
-public enum Spin {
-	NEUTRAL(0),
-	UP(1),
-	DOWN(-1);
+public final class Authorization {
+	public interface Authorizer {
+		void verify(ReadableAddrs readableAddrs, ExecutionContext context) throws AuthorizationException;
+	}
+	private final PermissionLevel permissionLevel;
+	private final Authorizer authorizer;
 
-	private final int intValue;
-
-	Spin(int intValue) {
-		this.intValue = intValue;
+	public Authorization(PermissionLevel permissionLevel, Authorizer authorizer) {
+		this.permissionLevel = permissionLevel;
+		this.authorizer = authorizer;
 	}
 
-	public static Spin valueOf(int intValue) {
-		switch (intValue) {
-			case 1: return UP;
-			case 0: return NEUTRAL;
-			case -1: return DOWN;
-			default: throw new IllegalArgumentException("No spin type of value: " + intValue);
-		}
+	public PermissionLevel permissionLevel() {
+		return permissionLevel;
 	}
 
-	public int intValue() {
-		return intValue;
-	}
-
-	@Override
-	public String toString() {
-		return this.name();
+	public Authorizer authorizer() {
+		return authorizer;
 	}
 }

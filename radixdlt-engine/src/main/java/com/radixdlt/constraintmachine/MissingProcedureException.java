@@ -20,9 +20,8 @@ package com.radixdlt.constraintmachine;
 
 public class MissingProcedureException extends Exception {
 	public MissingProcedureException(
-		REInstruction.REOp op,
 		ProcedureKey key
 	) {
-		super("Missing: " + op + " " + key);
+		super("Missing: " + key);
 	}
 }

@@ -27,7 +27,7 @@ import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.constraintmachine.REOp;
 import com.radixdlt.identifiers.REAddr;
 
 import java.util.ArrayList;
@@ -119,10 +119,10 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 		}
 	}
 
-	public Spin getSpin(SubstateId substateId) {
+	public Optional<REOp> getSpin(SubstateId substateId) {
 		synchronized (lock) {
 			var inst = storedParticles.get(substateId);
-			return inst == null ? Spin.NEUTRAL : inst.getNextSpin();
+			return Optional.ofNullable(inst).map(REStateUpdate::getOp);
 		}
 	}
 
@@ -130,7 +130,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	public Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId) {
 		synchronized (lock) {
 			var inst = storedParticles.get(substateId);
-			if (inst == null || inst.getNextSpin() != Spin.UP) {
+			if (inst == null || inst.getOp() != REOp.UP) {
 				return Optional.empty();
 			}
 

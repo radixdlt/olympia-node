@@ -17,17 +17,13 @@
 
 package com.radixdlt.atomos;
 
-import com.radixdlt.constraintmachine.DownProcedure;
-import com.radixdlt.constraintmachine.EndProcedure;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.ShutdownAllProcedure;
-import com.radixdlt.constraintmachine.UpProcedure;
+import com.radixdlt.constraintmachine.Procedure;
 
 /**
  * The interface in which a constraint scrypt can be programmed against.
  */
-public interface SysCalls {
+public interface Loader {
 	/**
 	 * Registers a Particle.
 	 * This is required for all other system calls using the particle.
@@ -35,9 +31,6 @@ public interface SysCalls {
 	 * @param particleDefinition The particle definition
 	 * @param <T> The type of the particle
 	 */
-	<T extends Particle> void registerParticle(Class<T> particleClass, ParticleDefinition<T> particleDefinition);
-	<D extends Particle, S extends ReducerState> void createShutDownAllProcedure(ShutdownAllProcedure<D, S> downProcedure);
-	<I extends Particle, S extends ReducerState> void createDownProcedure(DownProcedure<I, S> downProcedure);
-	<O extends Particle, S extends ReducerState> void createUpProcedure(UpProcedure<S, O> upProcedure);
-	<S extends ReducerState> void createEndProcedure(EndProcedure<S> endProcedure);
+	<T extends Particle> void particle(Class<T> particleClass, ParticleDefinition<T> particleDefinition);
+	void procedure(Procedure procedure);
 }

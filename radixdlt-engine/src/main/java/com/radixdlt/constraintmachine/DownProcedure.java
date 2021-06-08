@@ -18,48 +18,44 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.store.ReadableAddrs;
 
-import java.util.Optional;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
-public class DownProcedure<D extends Particle, S extends ReducerState> implements MethodProcedure {
+public class DownProcedure<D extends Particle, S extends ReducerState> implements Procedure {
 	private final Class<D> downClass;
 	private final Class<S> reducerStateClass;
 	private final DownReducer<D, S> downReducer;
-	private final BiFunction<SubstateWithArg<D>, ReadableAddrs, PermissionLevel> permissionLevel;
-	private final DownAuthorization<D> downAuthorization;
+	private final Function<SubstateWithArg<D>, Authorization> authorization;
 
 	public DownProcedure(
 		Class<D> downClass, Class<S> reducerStateClass,
-		BiFunction<SubstateWithArg<D>, ReadableAddrs, PermissionLevel> permissionLevel,
-		DownAuthorization<D> downAuthorization,
+		Function<SubstateWithArg<D>, Authorization> authorization,
 		DownReducer<D, S> downReducer
 	) {
 		this.downClass = downClass;
 		this.reducerStateClass = reducerStateClass;
 		this.downReducer = downReducer;
-		this.permissionLevel = permissionLevel;
-		this.downAuthorization = downAuthorization;
-	}
-
-	public ProcedureKey getDownProcedureKey() {
-		return ProcedureKey.of(downClass, reducerStateClass);
+		this.authorization = authorization;
 	}
 
 	@Override
-	public PermissionLevel permissionLevel(Object o, ReadableAddrs readableAddrs) {
-		return permissionLevel.apply((SubstateWithArg<D>) o, readableAddrs);
+	public ProcedureKey key() {
+		return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.DOWN, downClass));
 	}
 
 	@Override
-	public void verifyAuthorization(Object o, ReadableAddrs readableAddrs, Optional<ECPublicKey> key) throws AuthorizationException {
-		downAuthorization.verify((SubstateWithArg<D>) o, readableAddrs, key);
+	public Authorization authorization(Object o) {
+		return authorization.apply((SubstateWithArg<D>) o);
 	}
 
 	@Override
-	public ReducerResult call(Object o, ReducerState reducerState, ReadableAddrs readableAddrs) throws ProcedureException {
+	public ReducerResult call(
+		Object o,
+		ReducerState reducerState,
+		ReadableAddrs readableAddrs,
+		ExecutionContext context
+	) throws ProcedureException {
 		return downReducer.reduce((SubstateWithArg<D>) o, (S) reducerState, readableAddrs);
 	}
 }

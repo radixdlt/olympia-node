@@ -25,9 +25,8 @@ import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
-import com.radixdlt.atomos.Result;
-import com.radixdlt.atomos.SysCalls;
-import com.radixdlt.constraintmachine.AuthorizationException;
+import com.radixdlt.atomos.Loader;
+import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
 import com.radixdlt.constraintmachine.NotEnoughResourcesException;
@@ -35,6 +34,7 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
@@ -46,22 +46,21 @@ import java.util.Objects;
 public class StakingConstraintScryptV3 implements ConstraintScrypt {
 
 	@Override
-	public void main(SysCalls os) {
-		os.registerParticle(
+	public void main(Loader os) {
+		os.particle(
 			PreparedStake.class,
 			ParticleDefinition.<PreparedStake>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.build()
 		);
 
-		os.registerParticle(
+		os.particle(
 			PreparedUnstakeOwnership.class,
 			ParticleDefinition.<PreparedUnstakeOwnership>builder()
 				.staticValidation(p -> {
 					if (p.getAmount().isZero()) {
-						return Result.error("amount must not be zero");
+						throw new TxnParseException("amount must not be zero");
 					}
-					return Result.success();
 				})
 				.build()
 		);
@@ -138,12 +137,11 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		}
 	}
 
-	private void defineStaking(SysCalls os) {
+	private void defineStaking(Loader os) {
 		// Stake
-		os.createUpProcedure(new UpProcedure<>(
-			TokensConstraintScryptV2.TokenHoldingBucket.class, PreparedStake.class,
-			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> { },
+		os.procedure(new UpProcedure<>(
+			TokenHoldingBucket.class, PreparedStake.class,
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, r) -> {
 				if (u.getAmount().compareTo(ValidatorStake.MINIMUM_STAKE) < 0) {
 					throw new ProcedureException(
@@ -159,50 +157,33 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		));
 
 		// Unstake
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			StakeOwnership.class, VoidReducerState.class,
-			(d, r) -> PermissionLevel.USER,
-			(d, r, k) -> {
-				try {
-					d.getSubstate().getOwner().verifyWithdrawAuthorization(k);
-				} catch (REAddr.BucketWithdrawAuthorizationException e) {
-					throw new AuthorizationException(e.getMessage());
-				}
-			},
+			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> ReducerResult.incomplete(new StakeOwnershipHoldingBucket(d.getSubstate()))
 		));
 		// Additional Unstake
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			StakeOwnership.class, StakeOwnershipHoldingBucket.class,
-			(d, r) -> PermissionLevel.USER,
-			(d, r, k) -> {
-				try {
-					d.getSubstate().getOwner().verifyWithdrawAuthorization(k);
-				} catch (REAddr.BucketWithdrawAuthorizationException e) {
-					throw new AuthorizationException(e.getMessage());
-				}
-			},
+			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> ReducerResult.incomplete(s.depositOwnership(d.getSubstate()))
 		));
 		// Change
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			StakeOwnershipHoldingBucket.class, StakeOwnership.class,
-			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> { },
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, r) -> ReducerResult.incomplete(s.withdrawOwnership(u))
 		));
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			StakeOwnershipHoldingBucket.class, PreparedUnstakeOwnership.class,
-			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> { },
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, r) -> ReducerResult.incomplete(s.unstake(u))
 		));
 
 		// Deallocate Stake Holding Bucket
-		os.createEndProcedure(new EndProcedure<>(
+		os.procedure(new EndProcedure<>(
 			StakeOwnershipHoldingBucket.class,
-			(s, r) -> PermissionLevel.USER,
-			(s, r, k) -> { },
+			s -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, r) -> s.destroy()
 		));
 	}

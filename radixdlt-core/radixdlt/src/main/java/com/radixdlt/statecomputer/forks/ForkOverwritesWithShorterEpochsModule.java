@@ -29,6 +29,11 @@ import java.util.stream.Collectors;
 
 public class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
 	private static final long INITIAL_VIEW_CEILING = 10L;
+	private final boolean fees;
+
+	public ForkOverwritesWithShorterEpochsModule(boolean fees) {
+		this.fees = fees;
+	}
 
 	@Override
 	protected void configure() {
@@ -57,9 +62,12 @@ public class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
 					e -> e.getValue().getName(),
 					e -> new ForkConfig(
 						e.getValue().getName(),
-						e.getValue().getConstraintMachine(),
+						e.getValue().getParser(),
+						fees ? e.getValue().getConstraintMachineConfig()
+							: e.getValue().getConstraintMachineConfig().metering((procedureKey, param, context) -> { }),
 						e.getValue().getActionConstructors(),
 						e.getValue().getBatchVerifier(),
+						fees ? e.getValue().getPostProcessedVerifier() : (p, t) -> { },
 						View.of(viewCeiling.get() % 2 == 0 ? viewCeiling.getAndIncrement() : viewCeiling.getAndDecrement())
 					)
 			));

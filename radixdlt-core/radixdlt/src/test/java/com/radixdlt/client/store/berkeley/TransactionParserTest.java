@@ -20,19 +20,20 @@ import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.accounting.TwoActorEntry;
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.TxActionListBuilder;
-import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.atommodel.system.construction.NextEpochConstructorV2;
+import com.radixdlt.atommodel.system.construction.PayFeeConstructorV2;
+import com.radixdlt.atommodel.system.scrypt.FeeConstraintScrypt;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
-import com.radixdlt.atommodel.tokens.construction.BurnTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV2;
@@ -41,6 +42,7 @@ import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV2;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
 import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
+import com.radixdlt.engine.parser.REParser;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -97,26 +99,27 @@ public class TransactionParserTest {
 		cmAtomOS.load(new ValidatorConstraintScrypt());
 		cmAtomOS.load(new TokensConstraintScryptV2());
 		cmAtomOS.load(new StakingConstraintScryptV3());
+		cmAtomOS.load(new FeeConstraintScrypt());
 
-		final var cm = new ConstraintMachine.Builder()
-			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
-			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
-			.setParticleTransitionProcedures(cmAtomOS.getProcedures())
-			.build();
+		final var cm = new ConstraintMachine(
+			cmAtomOS.virtualizedUpParticles(),
+			cmAtomOS.getProcedures()
+		);
+		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
 
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 			.put(RegisterValidator.class, new RegisterValidatorConstructor())
 			.put(MintToken.class, new MintTokenConstructor())
 			.put(TransferToken.class, new TransferTokensConstructorV2())
-			.put(BurnToken.class, new BurnTokenConstructor())
+			.put(PayFee.class, new PayFeeConstructorV2())
 			.put(StakeTokens.class, new StakeTokensConstructorV2())
 			.put(UnstakeTokens.class, new UnstakeTokensConstructorV2())
 			.put(SystemNextEpoch.class, new NextEpochConstructorV2())
 			.put(CreateSystem.class, new CreateSystemConstructorV2())
 			.build();
 
-		engine = new RadixEngine<>(actionConstructors, cm, store);
+		engine = new RadixEngine<>(parser, actionConstructors, cm, store);
 
 		var txn0 = engine.construct(
 			TxActionListBuilder.create()
@@ -126,7 +129,7 @@ public class TransactionParserTest {
 		).buildWithoutSignature();
 		var validatorBuilder = this.engine.construct(
 			List.of(new RegisterValidator(this.validatorKeyPair.getPublicKey()), new CreateSystem()));
-		var txn1 = validatorBuilder.signAndBuild(this.validatorKeyPair::sign);
+		var txn1 = validatorBuilder.buildWithoutSignature();
 
 		engine.execute(List.of(txn0, txn1), null, PermissionLevel.SYSTEM);
 	}
@@ -134,7 +137,7 @@ public class TransactionParserTest {
 	@Test
 	public void stakeIsParsedCorrectly() throws Exception {
 		var txn = engine.construct(tokenOwnerKeyPair.getPublicKey(),
-			List.of(nativeStake(), new BurnToken(tokenRri, tokenOwnerAcct, UInt256.TWO))
+			List.of(new PayFee(tokenOwnerAcct, UInt256.TWO), nativeStake())
 		)
 			.signAndBuild(tokenOwnerKeyPair::sign);
 
@@ -151,7 +154,7 @@ public class TransactionParserTest {
 		engine.execute(List.of(nextEpoch), null, PermissionLevel.SYSTEM);
 
 		var txn2 = engine.construct(tokenOwnerKeyPair.getPublicKey(),
-			List.of(nativeUnstake(), new BurnToken(tokenRri, tokenOwnerAcct, UInt256.FOUR))
+			List.of(new PayFee(tokenOwnerAcct, UInt256.FOUR), nativeUnstake())
 		)
 			.signAndBuild(tokenOwnerKeyPair::sign);
 
@@ -162,10 +165,10 @@ public class TransactionParserTest {
 	public void transferIsParsedCorrectly() throws Exception {
 		//Use different token
 		var txn = engine.construct(tokenOwnerKeyPair.getPublicKey(), TxActionListBuilder.create()
+			.payFee(tokenOwnerAcct, UInt256.FOUR)
 			.createMutableToken(tokDefII)
 			.mint(tokenRriII, tokenOwnerAcct, ValidatorStake.MINIMUM_STAKE.multiply(UInt256.TWO))
 			.transfer(tokenRriII, tokenOwnerAcct, otherAccount, ValidatorStake.MINIMUM_STAKE)
-			.burn(tokenRri, tokenOwnerAcct, UInt256.FOUR)
 			.build()
 		).signAndBuild(tokenOwnerKeyPair::sign);
 

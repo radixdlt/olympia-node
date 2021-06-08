@@ -26,6 +26,7 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -46,13 +47,13 @@ public class UniqueTest {
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new UniqueParticleConstraintScrypt());
-		var cm = new ConstraintMachine.Builder()
-			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
-			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
-			.setParticleTransitionProcedures(cmAtomOS.getProcedures())
-			.build();
+		var cm = new ConstraintMachine(
+			cmAtomOS.virtualizedUpParticles(),
+			cmAtomOS.getProcedures()
+		);
+		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
 		this.store = new InMemoryEngineStore<>();
-		this.engine = new RadixEngine<>(ActionConstructors.newBuilder().build(), cm, store);
+		this.engine = new RadixEngine<>(parser, ActionConstructors.newBuilder().build(), cm, store);
 	}
 
 	@Test

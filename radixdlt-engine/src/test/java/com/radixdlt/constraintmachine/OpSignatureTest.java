@@ -18,11 +18,15 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.store.ReadableAddrs;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
+import org.junit.Test;
 
-import java.util.Optional;
-
-public interface EndAuthorization<S extends ReducerState> {
-	void verify(S state, ReadableAddrs readableAddrs, Optional<ECPublicKey> signedBy) throws AuthorizationException;
+public class OpSignatureTest {
+	@Test
+	public void equalsVerifier() {
+		EqualsVerifier.forClass(OpSignature.class)
+			.suppress(Warning.NONFINAL_FIELDS)
+			.verify();
+	}
 }

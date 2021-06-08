@@ -18,13 +18,12 @@
 package com.radixdlt.atomos;
 
 import java.util.Objects;
-import java.util.function.Function;
 
 import org.junit.Test;
 
 import com.radixdlt.constraintmachine.Particle;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 public class CMAtomOSTest {
 	private static final class TestParticle implements Particle {
@@ -47,20 +46,12 @@ public class CMAtomOSTest {
 		}
 	}
 
-	private abstract static class TestParticle0 implements Particle {
-		// Empty
-	}
-
-	private abstract static class TestParticle1 implements Particle {
-		// Empty
-	}
-
 	@Test
 	public void when_a_particle_which_is_not_registered_via_os_is_validated__it_should_cause_errors() {
-		CMAtomOS os = new CMAtomOS();
-		Function<Particle, Result> staticCheck = os.buildParticleStaticCheck();
+		var os = new CMAtomOS();
+		var staticCheck = os.buildStatelessSubstateVerifier();
 		TestParticle testParticle = new TestParticle();
-		assertThat(staticCheck.apply(testParticle).getErrorMessage())
-			.contains("Unknown particle type");
+		assertThatThrownBy(() -> staticCheck.verify(testParticle))
+			.hasMessageContaining("Unknown particle type");
 	}
 }

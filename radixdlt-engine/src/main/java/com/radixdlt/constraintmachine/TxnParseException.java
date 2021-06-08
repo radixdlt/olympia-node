@@ -19,7 +19,15 @@
 package com.radixdlt.constraintmachine;
 
 public class TxnParseException extends Exception {
-	public TxnParseException(String message, ConstraintMachine.ParseResult parseResult) {
+	public TxnParseException(String message, Throwable cause) {
+		super(message, cause);
+	}
+
+	public TxnParseException(Throwable cause) {
+		super(cause);
+	}
+
+	public TxnParseException(String message) {
 		super(message);
 	}
 }

@@ -26,7 +26,7 @@ import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.engine.PostParsedChecker;
+import com.radixdlt.engine.PostProcessedVerifier;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
@@ -36,7 +36,7 @@ import java.util.Optional;
  * Checks that metadata in the ledger atom is well formed and follows what is
  * needed for both consensus and governance.
  */
-public class TokenFeeChecker implements PostParsedChecker {
+public class TokenFeeChecker implements PostProcessedVerifier {
 	public static final UInt256 FIXED_FEE = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3)
 		.multiply(UInt256.from(100));
 
@@ -57,7 +57,6 @@ public class TokenFeeChecker implements PostParsedChecker {
 		if (feePaid.compareTo(FIXED_FEE) < 0) {
 			throw new ConstraintMachineException(
 				CMErrorCode.FEE_NOT_FOUND,
-				null,
 				String.format("atom fee invalid: '%s' is less than fixed fee of '%s'",
 					TokenUnitConversions.subunitsToUnits(feePaid),
 					TokenUnitConversions.subunitsToUnits(FIXED_FEE)

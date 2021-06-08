@@ -39,6 +39,7 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -101,13 +102,14 @@ public class UnstakeTokensV1Test {
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
 		scrypts.forEach(cmAtomOS::load);
-		var cm = new ConstraintMachine.Builder()
-			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
-			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
-			.setParticleTransitionProcedures(cmAtomOS.getProcedures())
-			.build();
+		var cm = new ConstraintMachine(
+			cmAtomOS.virtualizedUpParticles(),
+			cmAtomOS.getProcedures()
+		);
+		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
+			parser,
 			ActionConstructors.newBuilder()
 				.put(StakeTokens.class, stakeTokensConstructor)
 				.put(UnstakeTokens.class, unstakeTokensConstructor)

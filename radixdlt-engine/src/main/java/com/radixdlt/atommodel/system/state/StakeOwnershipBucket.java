@@ -19,6 +19,9 @@
 package com.radixdlt.atommodel.system.state;
 
 import com.radixdlt.atommodel.tokens.Bucket;
+import com.radixdlt.constraintmachine.AuthorizationException;
+import com.radixdlt.constraintmachine.Authorization;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 
@@ -34,6 +37,20 @@ public final class StakeOwnershipBucket implements Bucket {
 	) {
 		this.delegateKey = Objects.requireNonNull(delegateKey);
 		this.owner = Objects.requireNonNull(owner);
+	}
+
+	@Override
+	public Authorization withdrawAuthorization() {
+		return new Authorization(
+			PermissionLevel.USER,
+			(r, c) -> {
+				try {
+					owner.verifyWithdrawAuthorization(c.key());
+				} catch (REAddr.BucketWithdrawAuthorizationException e) {
+					throw new AuthorizationException(e.getMessage());
+				}
+			}
+		);
 	}
 
 	@Override

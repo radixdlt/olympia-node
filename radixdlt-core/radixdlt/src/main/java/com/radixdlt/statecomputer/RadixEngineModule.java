@@ -28,11 +28,13 @@ import com.radixdlt.atommodel.system.state.ValidatorEpochData;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.engine.PostParsedChecker;
+import com.radixdlt.constraintmachine.ConstraintMachineConfig;
+import com.radixdlt.engine.PostProcessedVerifier;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.engine.SubstateCacheRegister;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.sync.CommittedReader;
@@ -53,7 +55,6 @@ public class RadixEngineModule extends AbstractModule {
 	protected void configure() {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<Pair<String, StateReducer<?>>>() { });
-		Multibinder.newSetBinder(binder(), PostParsedChecker.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<SubstateCacheRegister<?>>() { });
 	}
 
@@ -72,13 +73,25 @@ public class RadixEngineModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private ConstraintMachine buildConstraintMachine(
+	private ConstraintMachineConfig buildConstraintMachineConfig(
 		CommittedReader committedReader, // TODO: This is a hack, remove
 		TreeMap<Long, ForkConfig> epochToForkConfig
 	) {
 		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
 		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return epochToForkConfig.floorEntry(epoch).getValue().getConstraintMachine();
+		return epochToForkConfig.floorEntry(epoch).getValue().getConstraintMachineConfig();
+	}
+
+	@Provides
+	@Singleton
+	private ConstraintMachine constraintMachine(
+		ConstraintMachineConfig config
+	) {
+		return new ConstraintMachine(
+			config.getVirtualStoreLayer(),
+			config.getProcedures(),
+			config.getMetering()
+		);
 	}
 
 	@Provides
@@ -92,7 +105,6 @@ public class RadixEngineModule extends AbstractModule {
 		return epochToForkConfig.floorEntry(epoch).getValue().getActionConstructors();
 	}
 
-
 	@Provides
 	@Singleton
 	private BatchVerifier<LedgerAndBFTProof> batchVerifier(
@@ -105,21 +117,34 @@ public class RadixEngineModule extends AbstractModule {
 	}
 
 	@Provides
-	PostParsedChecker checker(Set<PostParsedChecker> checkers) {
-		return (permissionLevel, reTxn) -> {
-			for (var checker : checkers) {
-				checker.check(permissionLevel, reTxn);
-			}
-		};
+	@Singleton
+	private REParser parser(
+		CommittedReader committedReader, // TODO: This is a hack, remove
+		TreeMap<Long, ForkConfig> epochToForkConfig
+	) {
+		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
+		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
+		return epochToForkConfig.floorEntry(epoch).getValue().getParser();
+	}
+
+	@Provides
+	PostProcessedVerifier checker(
+		CommittedReader committedReader, // TODO: This is a hack, remove
+		TreeMap<Long, ForkConfig> epochToForkConfig
+	) {
+		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
+		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
+		return epochToForkConfig.floorEntry(epoch).getValue().getPostProcessedVerifier();
 	}
 
 	@Provides
 	@Singleton
 	private RadixEngine<LedgerAndBFTProof> getRadixEngine(
+		REParser parser,
 		ConstraintMachine constraintMachine,
 		ActionConstructors actionConstructors,
 		EngineStore<LedgerAndBFTProof> engineStore,
-		PostParsedChecker checker,
+		PostProcessedVerifier checker,
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
 		Set<StateReducer<?>> stateReducers,
 		Set<Pair<String, StateReducer<?>>> namedStateReducers,
@@ -127,6 +152,7 @@ public class RadixEngineModule extends AbstractModule {
 		StakedValidatorsReducer stakedValidatorsReducer
 	) {
 		var radixEngine = new RadixEngine<>(
+			parser,
 			actionConstructors,
 			constraintMachine,
 			engineStore,
@@ -142,8 +168,6 @@ public class RadixEngineModule extends AbstractModule {
 		//   .build();
 
 		radixEngine.addStateReducer(stakedValidatorsReducer, true);
-		//radixEngine.addStateReducer(new DeprecatedStakesReducer(), true);
-		//radixEngine.addStateReducer(new InflationReducer(), "inflation", true);
 
 		var systemCache = new SubstateCacheRegister<>(SystemParticle.class, p -> true);
 		radixEngine.addSubstateCache(systemCache, true);

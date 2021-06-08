@@ -24,40 +24,37 @@ import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
-import com.radixdlt.atomos.SysCalls;
+import com.radixdlt.atomos.Loader;
+import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
-import com.radixdlt.constraintmachine.InvalidResourceException;
-import com.radixdlt.constraintmachine.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
 
 public class TokensConstraintScryptV2 implements ConstraintScrypt {
 	@Override
-	public void main(SysCalls os) {
+	public void main(Loader os) {
 		registerParticles(os);
 		defineTokenCreation(os);
 		defineMintTransferBurn(os);
 	}
 
-	private void registerParticles(SysCalls os) {
-		os.registerParticle(
+	private void registerParticles(Loader os) {
+		os.particle(
 			TokenResource.class,
 			ParticleDefinition.<TokenResource>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.build()
 		);
 
-		os.registerParticle(
+		os.particle(
 			TokensInAccount.class,
 			ParticleDefinition.<TokensInAccount>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
@@ -74,11 +71,10 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		}
 	}
 
-	private void defineTokenCreation(SysCalls os) {
-		os.createUpProcedure(new UpProcedure<>(
+	private void defineTokenCreation(Loader os) {
+		os.procedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, TokenResource.class,
-			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> { },
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, r) -> {
 				if (!u.getAddr().equals(s.getAddr())) {
 					throw new ProcedureException("Addresses don't match");
@@ -92,10 +88,9 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 			}
 		));
 
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			TokensConstraintScryptV2.NeedFixedTokenSupply.class, TokensInAccount.class,
-			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> { },
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, r) -> {
 				if (!u.getResourceAddr().equals(s.tokenResource.getAddr())) {
 					throw new ProcedureException("Addresses don't match.");
@@ -110,125 +105,62 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 		));
 	}
 
-	public static class TokenHoldingBucket implements ReducerState {
-		private final REAddr tokenAddr;
-		private final UInt384 amount;
-
-		// This is to keep track of where resource is coming from
-		// If resource is coming from more than one account then this is just null
-		// FIXME: This is a little bit of a hack
-		private final REAddr from;
-
-		private TokenHoldingBucket(
-			REAddr tokenAddr,
-			UInt384 amount,
-			REAddr from
-		) {
-			this.tokenAddr = tokenAddr;
-			this.amount = amount;
-			this.from = from;
-		}
-
-		public REAddr from() {
-			return from;
-		}
-
-		private TokenHoldingBucket deposit(REAddr resourceAddr, UInt256 amountToAdd, REAddr from) throws ProcedureException {
-			if (!this.tokenAddr.equals(resourceAddr)) {
-				throw new InvalidResourceException(resourceAddr, tokenAddr);
-			}
-
-			var nextFrom = this.from.equals(from) ? from : null;
-			return new TokenHoldingBucket(tokenAddr, UInt384.from(amountToAdd).add(amount), nextFrom);
-		}
-
-		public TokenHoldingBucket withdraw(REAddr resourceAddr, UInt256 amountToWithdraw) throws ProcedureException {
-			if (!tokenAddr.equals(resourceAddr)) {
-				throw new InvalidResourceException(resourceAddr, tokenAddr);
-			}
-
-			var withdraw384 = UInt384.from(amountToWithdraw);
-			if (amount.compareTo(withdraw384) < 0) {
-				throw new NotEnoughResourcesException(amountToWithdraw, amount.getLow());
-			}
-
-			return new TokenHoldingBucket(tokenAddr, amount.subtract(withdraw384), from);
-		}
-	}
-
-	private void defineMintTransferBurn(SysCalls os) {
+	private void defineMintTransferBurn(Loader os) {
 		// Mint
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			VoidReducerState.class, TokensInAccount.class,
-			(u, r) -> u.getResourceAddr().isNativeToken() ? PermissionLevel.SYSTEM : PermissionLevel.USER,
-			(u, r, k) -> {
-				var tokenDef = (TokenResource) r.loadAddr(null, u.getResourceAddr())
-					.orElseThrow(() -> new AuthorizationException("Invalid token address: " + u.getResourceAddr()));
-				tokenDef.verifyMintAuthorization(k);
+			u -> {
+				if (u.getResourceAddr().isNativeToken()) {
+					return new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { });
+				}
+				return new Authorization(PermissionLevel.USER, (r, c) -> {
+					var tokenDef = (TokenResource) r.loadAddr(null, u.getResourceAddr())
+						.orElseThrow(() -> new AuthorizationException("Invalid token address: " + u.getResourceAddr()));
+					tokenDef.verifyMintAuthorization(c.key());
+				});
 			},
 			(s, u, r) -> ReducerResult.complete()
 		));
 
 		// Burn
-		os.createEndProcedure(new EndProcedure<>(
+		os.procedure(new EndProcedure<>(
 			TokenHoldingBucket.class,
-			(s, r) -> PermissionLevel.USER,
-			(s, r, k) -> { },
-			(s, r) -> {
-				if (!s.amount.isZero()) {
-					var p = r.loadAddr(null, s.tokenAddr);
-					if (p.isEmpty()) {
-						throw new ProcedureException("Token does not exist.");
-					}
-					var particle = p.get();
-					if (!(particle instanceof TokenResource)) {
-						throw new ProcedureException("Rri is not a token");
-					}
-					var tokenDef = (TokenResource) particle;
-					if (!tokenDef.isMutable()) {
-						throw new ProcedureException("Can only burn mutable tokens.");
-					}
-				}
-			}
+			s -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			TokenHoldingBucket::destroy
 		));
 
 		// Initial Withdraw
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			TokensInAccount.class, VoidReducerState.class,
-			(d, r) -> PermissionLevel.USER,
-			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
+			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> {
 				var tokens = d.getSubstate();
 				var state = new TokenHoldingBucket(
 					tokens.getResourceAddr(),
-					UInt384.from(tokens.getAmount()),
-					tokens.getHoldingAddr()
+					UInt384.from(tokens.getAmount())
 				);
 				return ReducerResult.incomplete(state);
 			}
 		));
 
 		// More Withdraws
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			TokensInAccount.class, TokenHoldingBucket.class,
-			(d, r) -> PermissionLevel.USER,
-			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
+			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> {
 				var tokens = d.getSubstate();
 				var nextState = s.deposit(
 					tokens.getResourceAddr(),
-					tokens.getAmount(),
-					tokens.getHoldingAddr()
+					tokens.getAmount()
 				);
 				return ReducerResult.incomplete(nextState);
 			}
 		));
 
 		// Deposit
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			TokenHoldingBucket.class, TokensInAccount.class,
-			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> { },
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, r) -> {
 				var nextState = s.withdraw(u.getResourceAddr(), u.getAmount());
 				return ReducerResult.incomplete(nextState);
