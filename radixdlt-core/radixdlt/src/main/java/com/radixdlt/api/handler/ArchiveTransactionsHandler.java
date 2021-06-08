@@ -40,7 +40,7 @@ public class ArchiveTransactionsHandler {
 		return withRequiredStringParameter(
 			request,
 			"txID",
-			(idString) -> AID.fromString(idString)
+			idString -> AID.fromString(idString)
 				.map(txId -> transactionStatusService.getTransactionStatus(txId).asJson().put("txID", txId))
 		);
 	}
@@ -49,7 +49,7 @@ public class ArchiveTransactionsHandler {
 		return withRequiredStringParameter(
 			request,
 			"txID",
-			(idString) -> AID.fromString(idString)
+			idString -> AID.fromString(idString)
 				.flatMap(txId -> transactionStatusService.getTransaction(txId).map(TxHistoryEntry::asJson))
 		);
 	}
