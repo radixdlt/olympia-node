@@ -21,8 +21,9 @@ package com.radixdlt.api.faucet;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.radixdlt.application.NodeApplicationRequest;
-import com.radixdlt.atom.TxActionListBuilder;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventDispatcher;
@@ -83,17 +84,13 @@ public final class FaucetController implements Controller {
 				return;
 			}
 
-			var builder = TxActionListBuilder.create();
-
+			var txnConstructionRequest = TxnConstructionRequest.create();
+			txnConstructionRequest.action(new PayFee(account, TokenFeeChecker.FIXED_FEE));
 			for (var tokenAddr : tokensToSend) {
-				builder.transfer(tokenAddr, account, address, AMOUNT);
+				txnConstructionRequest.transfer(tokenAddr, account, address, AMOUNT);
 			}
-
-			var actions = builder.burn(REAddr.ofNativeToken(), account, TokenFeeChecker.FIXED_FEE)
-				.build();
-
 			var completableFuture = new CompletableFuture<MempoolAddSuccess>();
-			var request = NodeApplicationRequest.create(actions, completableFuture);
+			var request = NodeApplicationRequest.create(txnConstructionRequest, completableFuture);
 			faucetRequestDispatcher.dispatch(request);
 
 			try {

@@ -29,6 +29,7 @@ import com.radixdlt.atomos.Loader;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
+import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
@@ -39,6 +40,7 @@ import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.store.ReadableAddrs;
 import com.radixdlt.utils.UInt384;
 
 import java.util.Objects;
@@ -130,7 +132,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 			);
 		}
 
-		public void destroy() throws ProcedureException {
+		public void destroy(ExecutionContext context, ReadableAddrs readableAddrs) throws ProcedureException {
 			if (!shareAmount.isZero()) {
 				throw new ProcedureException("Shares cannot be burnt.");
 			}
@@ -142,7 +144,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			TokenHoldingBucket.class, PreparedStake.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, u, r) -> {
+			(s, u, c, r) -> {
 				if (u.getAmount().compareTo(ValidatorStake.MINIMUM_STAKE) < 0) {
 					throw new ProcedureException(
 						"Minimum amount to stake must be >= " + ValidatorStake.MINIMUM_STAKE
@@ -172,19 +174,19 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			StakeOwnershipHoldingBucket.class, StakeOwnership.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, u, r) -> ReducerResult.incomplete(s.withdrawOwnership(u))
+			(s, u, c, r) -> ReducerResult.incomplete(s.withdrawOwnership(u))
 		));
 		os.procedure(new UpProcedure<>(
 			StakeOwnershipHoldingBucket.class, PreparedUnstakeOwnership.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, u, r) -> ReducerResult.incomplete(s.unstake(u))
+			(s, u, c, r) -> ReducerResult.incomplete(s.unstake(u))
 		));
 
 		// Deallocate Stake Holding Bucket
 		os.procedure(new EndProcedure<>(
 			StakeOwnershipHoldingBucket.class,
 			s -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, r) -> s.destroy()
+			StakeOwnershipHoldingBucket::destroy
 		));
 	}
 }

@@ -56,6 +56,6 @@ public final class UpProcedure<S extends ReducerState, U extends Particle> imple
 		ReadableAddrs readableAddrs,
 		ExecutionContext context
 	) throws ProcedureException {
-		return upReducer.reduce((S) reducerState, (U) o, readableAddrs);
+		return upReducer.reduce((S) reducerState, (U) o, context, readableAddrs);
 	}
 }

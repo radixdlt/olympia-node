@@ -49,32 +49,19 @@ import java.util.stream.StreamSupport;
  */
 public final class TxBuilder {
 	private final TxLowLevelBuilder lowLevelBuilder;
-	private final ECPublicKey user;
 	private final SubstateStore remoteSubstate;
 
-	private TxBuilder(
-		ECPublicKey user,
-		SubstateStore remoteSubstate
-	) {
-		this.user = user;
+	private TxBuilder(SubstateStore remoteSubstate) {
 		this.lowLevelBuilder = TxLowLevelBuilder.newBuilder();
 		this.remoteSubstate = remoteSubstate;
 	}
 
-	public static TxBuilder newBuilder(ECPublicKey user, SubstateStore remoteSubstate) {
-		return new TxBuilder(user, remoteSubstate);
-	}
-
-	public static TxBuilder newBuilder(ECPublicKey user) {
-		return new TxBuilder(user, SubstateStore.empty());
-	}
-
 	public static TxBuilder newBuilder(SubstateStore remoteSubstate) {
-		return new TxBuilder(null, remoteSubstate);
+		return new TxBuilder(remoteSubstate);
 	}
 
 	public static TxBuilder newBuilder() {
-		return new TxBuilder(null, SubstateStore.empty());
+		return new TxBuilder(SubstateStore.empty());
 	}
 
 	public TxLowLevelBuilder toLowLevelBuilder() {
@@ -122,11 +109,21 @@ public final class TxBuilder {
 	}
 
 	// For mempool filler
-	public <T extends Particle> Substate findSubstate(
+	public <T extends Particle> T downSubstate(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		String errorMessage
 	) throws TxBuilderException {
+		var localSubstate = lowLevelBuilder.localUpSubstate().stream()
+			.filter(s -> particleClass.isInstance(s.getParticle()))
+			.filter(s -> particlePredicate.test((T) s.getParticle()))
+			.findFirst();
+
+		if (localSubstate.isPresent()) {
+			localDown(localSubstate.get().getIndex());
+			return (T) localSubstate.get().getParticle();
+		}
+
 		try (var cursor = createRemoteSubstateCursor(particleClass)) {
 			var substateRead = iteratorToStream(cursor)
 				.filter(s -> particlePredicate.test(particleClass.cast(s.getParticle())))
@@ -136,7 +133,9 @@ public final class TxBuilder {
 				throw new TxBuilderException(errorMessage);
 			}
 
-			return substateRead.get();
+			down(substateRead.get().getId());
+
+			return (T) substateRead.get().getParticle();
 		}
 	}
 
@@ -375,34 +374,8 @@ public final class TxBuilder {
 		};
 	}
 
-	public Optional<ECPublicKey> getUser() {
-		return Optional.ofNullable(user);
-	}
-
-	public ECPublicKey getUserOrFail(String errorMessage) throws TxBuilderException {
-		if (user == null) {
-			throw new TxBuilderException(errorMessage);
-		}
-		return user;
-	}
-
-
-	public void assertHasAddress(String message) throws TxBuilderException {
-		if (user == null) {
-			throw new TxBuilderException(message);
-		}
-	}
-
-	public void assertIsSystem(String message) throws TxBuilderException {
-		if (user != null) {
-			throw new TxBuilderException(message);
-		}
-	}
-
-	public TxBuilder mutex(String id) throws TxBuilderException {
-		assertHasAddress("Must have address");
-
-		final var addr = REAddr.ofHashedKey(user, id);
+	public TxBuilder mutex(ECPublicKey key, String id) throws TxBuilderException {
+		final var addr = REAddr.ofHashedKey(key, id);
 		swap(
 			REAddrParticle.class,
 			p -> p.getAddr().equals(addr),

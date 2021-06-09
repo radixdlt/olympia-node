@@ -19,43 +19,43 @@
 package com.radixdlt.application;
 
 import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.mempool.MempoolAddSuccess;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 public final class NodeApplicationRequest {
-	private final List<TxAction> actions;
+	private final TxnConstructionRequest request;
 	private final CompletableFuture<MempoolAddSuccess> completableFuture;
 
 	private NodeApplicationRequest(
-		List<TxAction> actions,
+		TxnConstructionRequest request,
 		CompletableFuture<MempoolAddSuccess> completableFuture
 	) {
-		this.actions = actions;
+		this.request = request;
 		this.completableFuture = completableFuture;
 	}
 
 	public static NodeApplicationRequest create(TxAction action) {
-		return create(List.of(action));
+		return create(TxnConstructionRequest.create().action(action));
 	}
 
-	public static NodeApplicationRequest create(List<TxAction> actions) {
-		return create(actions, null);
+	public static NodeApplicationRequest create(TxnConstructionRequest request) {
+		return create(request, null);
 	}
 
 	public static NodeApplicationRequest create(
-		List<TxAction> actions,
+		TxnConstructionRequest request,
 		CompletableFuture<MempoolAddSuccess> completableFuture
 	) {
-		Objects.requireNonNull(actions);
-		return new NodeApplicationRequest(actions, completableFuture);
+		Objects.requireNonNull(request);
+		return new NodeApplicationRequest(request, completableFuture);
 	}
 
-	public List<TxAction> getActions() {
-		return actions;
+	public TxnConstructionRequest getRequest() {
+		return request;
 	}
 
 	public Optional<CompletableFuture<MempoolAddSuccess>> completableFuture() {
@@ -64,6 +64,6 @@ public final class NodeApplicationRequest {
 
 	@Override
 	public String toString() {
-		return String.format("%s{%s}", this.getClass().getSimpleName(), this.actions);
+		return String.format("%s{%s}", this.getClass().getSimpleName(), this.request);
 	}
 }

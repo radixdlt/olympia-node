@@ -20,6 +20,7 @@ package com.radixdlt.atommodel.system;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.MintToken;
@@ -110,13 +111,15 @@ public class NextViewV2Test {
 		);
 		this.key = ECKeyPair.generateNew();
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
-		var txn = this.sut.construct(List.of(new CreateSystem(),
-			new CreateMutableToken("xrd", "xrd", "", "", ""),
-			new MintToken(REAddr.ofNativeToken(), accountAddr, ValidatorStake.MINIMUM_STAKE),
-			new StakeTokens(accountAddr, key.getPublicKey(), ValidatorStake.MINIMUM_STAKE),
-			new RegisterValidator(key.getPublicKey()),
-			new SystemNextEpoch(u -> List.of(key.getPublicKey()), 0)
-		)).buildWithoutSignature();
+		var txn = this.sut.construct(
+			TxnConstructionRequest.create()
+				.action(new CreateSystem())
+				.action(new CreateMutableToken(null, "xrd", "xrd", "", "", ""))
+				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, ValidatorStake.MINIMUM_STAKE))
+				.action(new StakeTokens(accountAddr, key.getPublicKey(), ValidatorStake.MINIMUM_STAKE))
+				.action(new RegisterValidator(key.getPublicKey()))
+				.action(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 0))
+		).buildWithoutSignature();
 		this.sut.execute(List.of(txn), null, PermissionLevel.SYSTEM);
 	}
 

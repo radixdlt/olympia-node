@@ -19,6 +19,7 @@
 package com.radixdlt.atommodel.tokens.scrypt;
 
 import com.radixdlt.atommodel.tokens.state.TokenResource;
+import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.InvalidResourceException;
 import com.radixdlt.constraintmachine.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.ProcedureException;
@@ -29,28 +30,36 @@ import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
 public class TokenHoldingBucket implements ReducerState {
-	private final REAddr tokenAddr;
+	private final REAddr resourceAddr;
 	private final UInt384 amount;
 
 	TokenHoldingBucket(
-		REAddr tokenAddr,
+		REAddr resourceAddr,
 		UInt384 amount
 	) {
-		this.tokenAddr = tokenAddr;
+		this.resourceAddr = resourceAddr;
 		this.amount = amount;
 	}
 
+	public boolean isEmpty() {
+		return amount.isZero();
+	}
+
+	public REAddr getResourceAddr() {
+		return resourceAddr;
+	}
+
 	public TokenHoldingBucket deposit(REAddr resourceAddr, UInt256 amountToAdd) throws ProcedureException {
-		if (!this.tokenAddr.equals(resourceAddr)) {
-			throw new InvalidResourceException(resourceAddr, tokenAddr);
+		if (!this.resourceAddr.equals(resourceAddr)) {
+			throw new InvalidResourceException(resourceAddr, this.resourceAddr);
 		}
 
-		return new TokenHoldingBucket(tokenAddr, UInt384.from(amountToAdd).add(amount));
+		return new TokenHoldingBucket(this.resourceAddr, UInt384.from(amountToAdd).add(amount));
 	}
 
 	public TokenHoldingBucket withdraw(REAddr resourceAddr, UInt256 amountToWithdraw) throws ProcedureException {
-		if (!tokenAddr.equals(resourceAddr)) {
-			throw new InvalidResourceException(resourceAddr, tokenAddr);
+		if (!this.resourceAddr.equals(resourceAddr)) {
+			throw new InvalidResourceException(resourceAddr, this.resourceAddr);
 		}
 
 		var withdraw384 = UInt384.from(amountToWithdraw);
@@ -58,13 +67,14 @@ public class TokenHoldingBucket implements ReducerState {
 			throw new NotEnoughResourcesException(amountToWithdraw, amount.getLow());
 		}
 
-		return new TokenHoldingBucket(tokenAddr, amount.subtract(withdraw384));
+		return new TokenHoldingBucket(this.resourceAddr, amount.subtract(withdraw384));
 	}
 
-
-	public void destroy(ReadableAddrs r) throws ProcedureException {
+	public void destroy(ExecutionContext c, ReadableAddrs r) throws ProcedureException {
 		if (!amount.isZero()) {
-			var p = r.loadAddr(null, tokenAddr);
+			c.verifyCanAllocAndDestroyResources();
+
+			var p = r.loadAddr(null, resourceAddr);
 			if (p.isEmpty()) {
 				throw new ProcedureException("Token does not exist.");
 			}

@@ -32,77 +32,107 @@ import com.radixdlt.utils.UInt256;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
-public class TxActionListBuilder {
+public class TxnConstructionRequest {
+	private boolean disableResourceAllocAndDestroy = false;
 	private final List<TxAction> actions = new ArrayList<>();
+	private byte[] msg = null;
+	private Set<SubstateId> toAvoid;
 
-	private TxActionListBuilder() {
+	private TxnConstructionRequest() {
 	}
 
-	public static TxActionListBuilder create() {
-		return new TxActionListBuilder();
+	public static TxnConstructionRequest create() {
+		return new TxnConstructionRequest();
 	}
 
-	public TxActionListBuilder action(TxAction txAction) {
+	public Optional<byte[]> getMsg() {
+		return Optional.ofNullable(msg);
+	}
+
+	public TxnConstructionRequest msg(byte[] msg) {
+		this.msg = msg;
+		return this;
+	}
+
+	public boolean isDisableResourceAllocAndDestroy() {
+		return disableResourceAllocAndDestroy;
+	}
+
+	public TxnConstructionRequest disableResourceAllocAndDestroy() {
+		this.disableResourceAllocAndDestroy = true;
+		return this;
+	}
+
+	public TxnConstructionRequest action(TxAction txAction) {
 		actions.add(txAction);
 		return this;
 	}
 
-	public TxActionListBuilder createMutableToken(MutableTokenDefinition def) {
-		var action = new CreateMutableToken(
-			def.getSymbol(),
-			def.getName(),
-			def.getDescription(),
-			def.getIconUrl(),
-			def.getTokenUrl()
-		);
-		actions.add(action);
+	public TxnConstructionRequest actions(List<TxAction> actions) {
+		this.actions.addAll(actions);
 		return this;
 	}
 
-	public TxActionListBuilder registerAsValidator(ECPublicKey validatorKey) {
+	public TxnConstructionRequest createMutableToken(MutableTokenDefinition def) {
+		actions.add(new CreateMutableToken(def));
+		return this;
+	}
+
+	public TxnConstructionRequest registerAsValidator(ECPublicKey validatorKey) {
 		var action = new RegisterValidator(validatorKey, null, null);
 		actions.add(action);
 		return this;
 	}
 
-	public TxActionListBuilder unregisterAsValidator(ECPublicKey validatorKey) {
+	public TxnConstructionRequest unregisterAsValidator(ECPublicKey validatorKey) {
 		var action = new UnregisterValidator(validatorKey, null, null);
 		actions.add(action);
 		return this;
 	}
 
-	public TxActionListBuilder splitNative(REAddr rri, UInt256 minSize) {
-		var action = new SplitToken(rri, minSize);
+	public TxnConstructionRequest splitNative(REAddr rri, REAddr userAcct, UInt256 minSize) {
+		var action = new SplitToken(rri, userAcct, minSize);
 		actions.add(action);
 		return this;
 	}
 
-	public TxActionListBuilder transfer(REAddr rri, REAddr from, REAddr to, UInt256 amount) {
+	public TxnConstructionRequest transfer(REAddr rri, REAddr from, REAddr to, UInt256 amount) {
 		var action = new TransferToken(rri, from, to, amount);
 		actions.add(action);
 		return this;
 	}
 
-	public TxActionListBuilder mint(REAddr rri, REAddr to, UInt256 amount) {
+	public TxnConstructionRequest mint(REAddr rri, REAddr to, UInt256 amount) {
 		var action = new MintToken(rri, to, amount);
 		actions.add(action);
 		return this;
 	}
 
-	public TxActionListBuilder payFee(REAddr from, UInt256 amount) {
+	public TxnConstructionRequest payFee(REAddr from, UInt256 amount) {
 		var action = new PayFee(from, amount);
 		actions.add(action);
 		return this;
 	}
 
-	public TxActionListBuilder burn(REAddr rri, REAddr from, UInt256 amount) {
+	public TxnConstructionRequest burn(REAddr rri, REAddr from, UInt256 amount) {
 		var action = new BurnToken(rri, from, amount);
 		actions.add(action);
 		return this;
 	}
 
-	public List<TxAction> build() {
+	public TxnConstructionRequest avoidSubstates(Set<SubstateId> toAvoid) {
+		this.toAvoid = toAvoid;
+		return this;
+	}
+
+	public Set<SubstateId> getSubstatesToAvoid() {
+		return this.toAvoid == null ? Set.of() : this.toAvoid;
+	}
+
+	public List<TxAction> getActions() {
 		return actions;
 	}
 }

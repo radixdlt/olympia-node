@@ -31,8 +31,8 @@ public class RadixEngineUniqueGenerator implements TxnGenerator {
 	public Txn nextTxn() {
 		var keyPair = ECKeyPair.generateNew();
 		try {
-			return TxBuilder.newBuilder(keyPair.getPublicKey())
-				.mutex("test")
+			return TxBuilder.newBuilder()
+				.mutex(keyPair.getPublicKey(), "test")
 				.signAndBuild(keyPair::sign);
 		} catch (TxBuilderException e) {
 			throw new RuntimeException(e);

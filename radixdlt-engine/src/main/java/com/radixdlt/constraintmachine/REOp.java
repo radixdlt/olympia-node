@@ -22,6 +22,7 @@ public enum REOp {
 	DOWN(true),
 	DOWNALL(true),
 	SYSCALL(false),
+	HEADER(false),
 	SIG(false),
 	MSG(false),
 	END(false);

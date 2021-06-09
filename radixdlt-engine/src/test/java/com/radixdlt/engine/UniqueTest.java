@@ -58,8 +58,8 @@ public class UniqueTest {
 
 	@Test
 	public void using_own_mutex_should_work() throws Exception {
-		var atom = TxBuilder.newBuilder(keyPair.getPublicKey())
-			.mutex("np")
+		var atom = TxBuilder.newBuilder()
+			.mutex(keyPair.getPublicKey(), "np")
 			.signAndBuild(keyPair::sign);
 		this.engine.execute(List.of(atom));
 	}
@@ -67,7 +67,7 @@ public class UniqueTest {
 	@Test
 	public void using_someone_elses_mutex_should_fail() {
 		var addr = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "smthng");
-		var builder = TxBuilder.newBuilder(keyPair.getPublicKey())
+		var builder = TxBuilder.newBuilder()
 			.toLowLevelBuilder()
 			.virtualDown(new REAddrParticle(addr), "smthng".getBytes(StandardCharsets.UTF_8))
 			.up(new UniqueParticle(addr))

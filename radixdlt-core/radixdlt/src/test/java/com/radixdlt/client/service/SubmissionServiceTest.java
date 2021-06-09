@@ -208,8 +208,7 @@ public class SubmissionServiceTest {
 		var acct = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var action = new TransferToken(nativeToken, acct, ALICE_ACCT, BIG_AMOUNT);
 
-		var tx = radixEngine.construct(key.getPublicKey(), List.of(action))
-			.signAndBuild(key::sign);
+		var tx = radixEngine.construct(action).signAndBuild(key::sign);
 
 		radixEngine.execute(List.of(tx));
 
@@ -275,8 +274,7 @@ public class SubmissionServiceTest {
 		var acct = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var action = new TransferToken(nativeToken, acct, ALICE_ACCT, BIG_AMOUNT);
 
-		var tx = radixEngine.construct(key.getPublicKey(), List.of(action))
-			.signAndBuild(key::sign);
+		var tx = radixEngine.construct(action).signAndBuild(key::sign);
 
 		radixEngine.execute(List.of(tx));
 

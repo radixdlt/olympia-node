@@ -23,8 +23,8 @@ import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Loader;
+import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
@@ -37,8 +37,7 @@ import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.utils.UInt384;
 
-
-public class TokensConstraintScryptV2 implements ConstraintScrypt {
+public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 	@Override
 	public void main(Loader os) {
 		registerParticles(os);
@@ -84,12 +83,12 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 					return ReducerResult.complete();
 				}
 
-				return ReducerResult.incomplete(new TokensConstraintScryptV2.NeedFixedTokenSupply(s.getArg(), u));
+				return ReducerResult.incomplete(new NeedFixedTokenSupply(s.getArg(), u));
 			}
 		));
 
 		os.procedure(new UpProcedure<>(
-			TokensConstraintScryptV2.NeedFixedTokenSupply.class, TokensInAccount.class,
+			NeedFixedTokenSupply.class, TokensInAccount.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> {
 				if (!u.getResourceAddr().equals(s.tokenResource.getAddr())) {
@@ -111,21 +110,32 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 			VoidReducerState.class, TokensInAccount.class,
 			u -> {
 				if (u.getResourceAddr().isNativeToken()) {
-					return new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { });
+					return new Authorization(PermissionLevel.SYSTEM, (r, c) -> { });
 				}
+
 				return new Authorization(PermissionLevel.USER, (r, c) -> {
 					var tokenDef = (TokenResource) r.loadAddr(null, u.getResourceAddr())
 						.orElseThrow(() -> new AuthorizationException("Invalid token address: " + u.getResourceAddr()));
 					tokenDef.verifyMintAuthorization(c.key());
 				});
 			},
-			(s, u, c, r) -> ReducerResult.complete()
+			(s, u, c, r) -> {
+				c.verifyCanAllocAndDestroyResources();
+				return ReducerResult.complete();
+			}
 		));
 
 		// Burn
 		os.procedure(new EndProcedure<>(
 			TokenHoldingBucket.class,
-			s -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			s -> new Authorization(PermissionLevel.USER, (r, c) -> {
+				if (s.isEmpty()) {
+					return;
+				}
+				var tokenDef = (TokenResource) r.loadAddr(null, s.getResourceAddr())
+					.orElseThrow(() -> new AuthorizationException("Invalid token address: " + s.getResourceAddr()));
+				tokenDef.verifyBurnAuthorization(c.key());
+			}),
 			TokenHoldingBucket::destroy
 		));
 

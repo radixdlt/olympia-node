@@ -21,6 +21,7 @@ package com.radixdlt.atommodel.tokens;
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.StakeTokens;
@@ -136,10 +137,9 @@ public class StakeTokensTest {
 		var key = ECKeyPair.generateNew();
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var txn = this.engine.construct(
-			List.of(
-				new CreateMutableToken("xrd", "Name", "", "", ""),
-				new MintToken(REAddr.ofNativeToken(), accountAddr, startAmt)
-			)
+			TxnConstructionRequest.create()
+				.action(new CreateMutableToken(null, "xrd", "Name", "", "", ""))
+				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, startAmt))
 		).buildWithoutSignature();
 		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
 
@@ -167,10 +167,9 @@ public class StakeTokensTest {
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
 		var txn = this.engine.construct(
-			List.of(
-				new CreateMutableToken("xrd", "Name", "", "", ""),
-				new MintToken(REAddr.ofNativeToken(), accountAddr, startAmt)
-			)
+			TxnConstructionRequest.create()
+				.action(new CreateMutableToken(null, "xrd", "Name", "", "", ""))
+				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, startAmt))
 		).buildWithoutSignature();
 		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
 

@@ -81,7 +81,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, TokenResource.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, u, r) -> {
+			(s, u, c, r) -> {
 				if (!u.getAddr().equals(s.getAddr())) {
 					throw new ProcedureException("Addresses don't match");
 				}
@@ -97,7 +97,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			NeedFixedTokenSupply.class, TokensInAccount.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, u, r) -> {
+			(s, u, c, r) -> {
 				if (!u.getResourceAddr().equals(s.tokenResource.getAddr())) {
 					throw new ProcedureException("Addresses don't match.");
 				}
@@ -181,7 +181,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 					}
 				);
 			},
-			(s, r) -> {
+			(s, c, r) -> {
 				if (s.resourceInBucket.epochUnlocked().isPresent()) {
 					throw new ProcedureException("Cannot mint locked tokens.");
 				}
@@ -205,7 +205,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		os.procedure(new EndProcedure<>(
 			RemainderTokens.class,
 			s -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, r) -> {
+			(s, c, r) -> {
 				var p = r.loadAddr(null, s.tokenAddr);
 				if (p.isEmpty()) {
 					throw new ProcedureException("Token does not exist.");
@@ -224,7 +224,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			VoidReducerState.class, TokensInAccount.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, u, r) -> {
+			(s, u, c, r) -> {
 				var state = new UnaccountedTokens(
 					u.deprecatedResourceInBucket(),
 					UInt384.from(u.getAmount())
@@ -248,7 +248,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			RemainderTokens.class, TokensInAccount.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, u, r) -> {
+			(s, u, c, r) -> {
 				if (!s.tokenAddr.equals(u.getResourceAddr())) {
 					throw new ProcedureException("Not the same address.");
 				}

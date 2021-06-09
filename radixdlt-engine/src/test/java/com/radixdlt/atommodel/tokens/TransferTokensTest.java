@@ -21,6 +21,7 @@ package com.radixdlt.atommodel.tokens;
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
@@ -115,11 +116,9 @@ public class TransferTokensTest {
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
 		var txn = this.engine.construct(
-			key.getPublicKey(),
-			List.of(
-				new CreateMutableToken("test", "Name", "", "", ""),
-				new MintToken(tokenAddr, accountAddr, startAmt)
-			)
+			TxnConstructionRequest.create()
+				.action(new CreateMutableToken(key.getPublicKey(), "test", "Name", "", "", ""))
+				.action(new MintToken(tokenAddr, accountAddr, startAmt))
 		).signAndBuild(key::sign);
 		this.engine.execute(List.of(txn));
 
@@ -141,11 +140,9 @@ public class TransferTokensTest {
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
 		var txn = this.engine.construct(
-			key.getPublicKey(),
-			List.of(
-				new CreateMutableToken("test", "Name", "", "", ""),
-				new MintToken(tokenAddr, accountAddr, startAmt)
-			)
+			TxnConstructionRequest.create()
+				.action(new CreateMutableToken(key.getPublicKey(), "test", "Name", "", "", ""))
+				.action(new MintToken(tokenAddr, accountAddr, startAmt))
 		).signAndBuild(key::sign);
 		this.engine.execute(List.of(txn));
 

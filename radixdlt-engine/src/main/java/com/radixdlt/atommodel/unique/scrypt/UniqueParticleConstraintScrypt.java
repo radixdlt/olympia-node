@@ -39,7 +39,7 @@ public class UniqueParticleConstraintScrypt implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, UniqueParticle.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, u, r) -> {
+			(s, u, c, r) -> {
 				if (!u.getREAddr().equals(s.getAddr())) {
 					throw new ProcedureException("Addresses don't match");
 				}

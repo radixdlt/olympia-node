@@ -18,7 +18,6 @@
 
 package com.radixdlt.atommodel.tokens;
 
-import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.actions.CreateMutableToken;
@@ -26,14 +25,12 @@ import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV1;
 import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV2;
-import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
-import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
+import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -47,20 +44,17 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.math.BigInteger;
 import java.util.Collection;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @RunWith(Parameterized.class)
-public final class MintTokensTest {
+public class NativeTokensTest {
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
 		return List.of(new Object[][] {
-			{new TokensConstraintScryptV1(), new TransferTokensConstructorV1()},
-			{new TokensConstraintScryptV2(), new TransferTokensConstructorV2()}
+			{new TokensConstraintScryptV3(), new TransferTokensConstructorV2()},
 		});
 	}
 
@@ -69,13 +63,13 @@ public final class MintTokensTest {
 	private RadixEngine<Void> engine;
 	private EngineStore<Void> store;
 
-	public MintTokensTest(ConstraintScrypt scrypt, ActionConstructor<TransferToken> transferTokensConstructor) {
+	public NativeTokensTest(ConstraintScrypt scrypt, ActionConstructor<TransferToken> transferTokensConstructor) {
 		this.scrypt = scrypt;
 		this.transferTokensConstructor = transferTokensConstructor;
 	}
 
 	@Before
-	public void setup() {
+	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(scrypt);
 		var cm = new ConstraintMachine(
@@ -94,62 +88,21 @@ public final class MintTokensTest {
 			cm,
 			store
 		);
-	}
-
-	@Test
-	public void mint_tokens_with_no_tokendef() throws Exception {
-		// Arrange
-		var key = ECKeyPair.generateNew();
-		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
-		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
-
-		// Act and Assert
-		var mintTxn = this.engine.construct(new MintToken(tokenAddr, accountAddr, UInt256.TEN))
-			.signAndBuild(key::sign);
-		assertThatThrownBy(() -> this.engine.execute(List.of(mintTxn)))
-			.isInstanceOf(RadixEngineException.class)
-			.extracting("cause.errorCode")
-			.containsExactly(CMErrorCode.AUTHORIZATION_ERROR);
-	}
-
-	@Test
-	public void mint_tokens_as_owner() throws Exception {
-		// Arrange
-		var key = ECKeyPair.generateNew();
-		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
-		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
 		var txn = this.engine.construct(
-			new CreateMutableToken(key.getPublicKey(), "test", "Name", "", "", "")
-		).signAndBuild(key::sign);
-		this.engine.execute(List.of(txn));
-
-		// Act and Assert
-		var mintTxn = this.engine.construct(new MintToken(tokenAddr, accountAddr, UInt256.TEN)).signAndBuild(key::sign);
-		var processed = this.engine.execute(List.of(mintTxn));
-		var accounting = REResourceAccounting.compute(processed.get(0).getGroupedStateUpdates().get(0));
-		assertThat(accounting.resourceAccounting())
-			.hasSize(1)
-			.containsEntry(tokenAddr, BigInteger.valueOf(10));
+			new CreateMutableToken(null, "xrd", "xrd", "", "", "")
+		).buildWithoutSignature();
+		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
 	}
 
-	@Test
-	public void authorization_failure_on_mint() throws Exception {
-		// Arrange
-		var key = ECKeyPair.generateNew();
-		var txn = this.engine.construct(
-			new CreateMutableToken(key.getPublicKey(), "test", "Name", "", "", "")
-		).signAndBuild(key::sign);
-		this.engine.execute(List.of(txn));
 
-		// Act, Assert
-		var addr = REAddr.ofHashedKey(key.getPublicKey(), "test");
-		var nextKey = ECKeyPair.generateNew();
-		var mintTxn = this.engine.construct(
-			new MintToken(addr, REAddr.ofPubKeyAccount(key.getPublicKey()), UInt256.ONE)
-		).signAndBuild(nextKey::sign);
-		assertThatThrownBy(() -> this.engine.execute(List.of(mintTxn)))
-			.isInstanceOf(RadixEngineException.class)
-			.extracting("cause.errorCode")
-			.containsExactly(CMErrorCode.AUTHORIZATION_ERROR);
+	@Test
+	public void mint_native_token_as_super_user_should_fail() throws Exception {
+		// Arrange
+		var addr = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
+		var txn = this.engine.construct(
+			new MintToken(REAddr.ofNativeToken(), addr, UInt256.TEN)
+		).buildWithoutSignature();
+		assertThatThrownBy(() -> this.engine.execute(List.of(txn), null, PermissionLevel.SUPER_USER))
+			.isInstanceOf(RadixEngineException.class);
 	}
 }
