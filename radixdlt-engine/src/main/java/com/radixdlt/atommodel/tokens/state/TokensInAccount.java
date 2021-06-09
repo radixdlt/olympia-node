@@ -18,7 +18,6 @@
 
 package com.radixdlt.atommodel.tokens.state;
 
-import com.radixdlt.atommodel.system.state.HasEpochData;
 import com.radixdlt.atommodel.tokens.Fungible;
 import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.crypto.ECPublicKey;
@@ -72,15 +71,6 @@ public final class TokensInAccount implements Fungible {
 		} catch (REAddr.BucketWithdrawAuthorizationException e) {
 			throw new AuthorizationException(e.getMessage());
 		}
-
-		/*
-		if (epochUnlocked != null) {
-			var system = (HasEpochData) readable.loadAddr(null, REAddr.ofSystem()).orElseThrow();
-			if (epochUnlocked > system.getEpoch()) {
-				throw new AuthorizationException("Tokens are locked until epoch " + epochUnlocked + " current " + system.getEpoch());
-			}
-		}
-		 */
 	}
 
 	public ResourceInBucket resourceInBucket() {
