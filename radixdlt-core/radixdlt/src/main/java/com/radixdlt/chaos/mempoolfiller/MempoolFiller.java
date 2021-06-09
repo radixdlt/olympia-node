@@ -22,11 +22,11 @@ import com.google.inject.name.Named;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
@@ -62,7 +62,6 @@ public final class MempoolFiller {
 	private final PeersView peersView;
 	private final Random random;
 	private final HashSigner hashSigner;
-	private final ECPublicKey self;
 	private final REAddr account;
 
 	private boolean enabled = false;
@@ -71,7 +70,6 @@ public final class MempoolFiller {
 
 	@Inject
 	public MempoolFiller(
-		@Self ECPublicKey self,
 		@Self REAddr account,
 		@Named("RadixEngine") HashSigner hashSigner,
 		RadixEngineMempool radixEngineMempool,
@@ -83,7 +81,6 @@ public final class MempoolFiller {
 		Random random,
 		SystemCounters systemCounters
 	) {
-		this.self = self;
 		this.account = account;
 		this.hashSigner = hashSigner;
 		this.radixEngine = radixEngine;
@@ -126,8 +123,8 @@ public final class MempoolFiller {
 
 			var shuttingDown = radixEngineMempool.getShuttingDownSubstates();
 			var txnConstructionRequest = TxnConstructionRequest.create()
+				.action(new PayFee(account, TokenFeeChecker.FIXED_FEE))
 				.splitNative(REAddr.ofNativeToken(), account, TokenFeeChecker.FIXED_FEE.multiply(UInt256.TWO))
-				.burn(REAddr.ofNativeToken(), account, TokenFeeChecker.FIXED_FEE)
 				.avoidSubstates(shuttingDown);
 
 			var txns = new ArrayList<Txn>();

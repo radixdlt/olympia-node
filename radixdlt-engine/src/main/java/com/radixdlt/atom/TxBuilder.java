@@ -109,11 +109,21 @@ public final class TxBuilder {
 	}
 
 	// For mempool filler
-	public <T extends Particle> Substate findSubstate(
+	public <T extends Particle> T downSubstate(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		String errorMessage
 	) throws TxBuilderException {
+		var localSubstate = lowLevelBuilder.localUpSubstate().stream()
+			.filter(s -> particleClass.isInstance(s.getParticle()))
+			.filter(s -> particlePredicate.test((T) s.getParticle()))
+			.findFirst();
+
+		if (localSubstate.isPresent()) {
+			localDown(localSubstate.get().getIndex());
+			return (T) localSubstate.get().getParticle();
+		}
+
 		try (var cursor = createRemoteSubstateCursor(particleClass)) {
 			var substateRead = iteratorToStream(cursor)
 				.filter(s -> particlePredicate.test(particleClass.cast(s.getParticle())))
@@ -123,7 +133,9 @@ public final class TxBuilder {
 				throw new TxBuilderException(errorMessage);
 			}
 
-			return substateRead.get();
+			down(substateRead.get().getId());
+
+			return (T) substateRead.get().getParticle();
 		}
 	}
 
