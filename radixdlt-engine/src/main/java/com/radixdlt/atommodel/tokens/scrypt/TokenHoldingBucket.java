@@ -72,7 +72,7 @@ public class TokenHoldingBucket implements ReducerState {
 
 	public void destroy(ExecutionContext c, ReadableAddrs r) throws ProcedureException {
 		if (!amount.isZero()) {
-			c.verifyCanDestroyResources();
+			c.verifyCanAllocAndDestroyResources();
 
 			var p = r.loadAddr(null, resourceAddr);
 			if (p.isEmpty()) {

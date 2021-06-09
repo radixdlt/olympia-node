@@ -120,7 +120,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				});
 			},
 			(s, u, c, r) -> {
-				c.verifyCanDestroyResources();
+				c.verifyCanAllocAndDestroyResources();
 				return ReducerResult.complete();
 			}
 		));

@@ -51,13 +51,7 @@ public final class ExecutionContext {
 		}
 	}
 
-	public void verifyCanAllocateResources() throws ProcedureException {
-		if (disableResourceAllocAndDestroy) {
-			throw new ProcedureException("Allocation of resources not enabled.");
-		}
-	}
-
-	public void verifyCanDestroyResources() throws ProcedureException {
+	public void verifyCanAllocAndDestroyResources() throws ProcedureException {
 		if (disableResourceAllocAndDestroy) {
 			throw new ProcedureException("Destruction of resources not enabled.");
 		}
