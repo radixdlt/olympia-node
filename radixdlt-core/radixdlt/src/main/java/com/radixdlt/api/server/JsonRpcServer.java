@@ -34,7 +34,7 @@ import io.undertow.server.HttpServerExchange;
 import static com.radixdlt.api.JsonRpcUtil.invalidParamsError;
 import static com.radixdlt.api.JsonRpcUtil.methodNotFound;
 import static com.radixdlt.api.RestUtils.respond;
-import static com.radixdlt.api.RestUtils.withBodyAsync;
+import static com.radixdlt.api.RestUtils.withBody;
 
 import static java.util.Optional.ofNullable;
 
@@ -53,7 +53,7 @@ public final class JsonRpcServer implements HttpHandler {
 
 	@Override
 	public void handleRequest(HttpServerExchange exchange) {
-		withBodyAsync(exchange, request -> respond(exchange, handle(request)));
+		withBody(exchange, request -> respond(exchange, handle(request)));
 	}
 
 	public JSONObject handle(JSONObject request) {
