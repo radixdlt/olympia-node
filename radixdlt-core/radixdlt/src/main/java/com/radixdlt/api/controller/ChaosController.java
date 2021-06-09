@@ -36,7 +36,6 @@ import io.undertow.server.RoutingHandler;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.RestUtils.respond;
 import static com.radixdlt.api.RestUtils.withBody;
-import static com.radixdlt.api.RestUtils.withBodyAsync;
 
 public final class ChaosController implements Controller {
 	private final EventDispatcher<MempoolFillerUpdate> mempoolDispatcher;
@@ -63,7 +62,7 @@ public final class ChaosController implements Controller {
 
 	@VisibleForTesting
 	void handleMessageFlood(HttpServerExchange exchange) {
-		withBodyAsync(exchange, values -> {
+		withBody(exchange, values -> {
 			var update = MessageFlooderUpdate.create();
 
 			if (values.getBoolean("enabled")) {
