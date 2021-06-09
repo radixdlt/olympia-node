@@ -157,7 +157,7 @@ public final class BetanetForksModule extends AbstractModule {
 	}
 
 	@ProvidesIntoMap
-	@EpochMapKey(epoch = 570L)
+	@EpochMapKey(epoch = 584L)
 	ForkConfig betanetV3() {
 		final CMAtomOS v3 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
 		v3.load(new ValidatorConstraintScrypt()); // load before TokensConstraintScrypt due to dependency
