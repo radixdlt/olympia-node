@@ -98,11 +98,6 @@ public final class Account implements RadixApi {
         return client.ledger();
     }
 
-    @Override
-    public Faucet faucet() {
-        return client.faucet();
-    }
-
     public AccountAddress getAddress() {
         return address;
     }

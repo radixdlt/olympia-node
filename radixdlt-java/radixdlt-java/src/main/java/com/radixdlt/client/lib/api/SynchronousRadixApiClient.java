@@ -40,9 +40,24 @@ import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositionsDTO;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponseDTO;
+import com.radixdlt.client.lib.dto.extra.ApiConfigurationDTO;
+import com.radixdlt.client.lib.dto.extra.ApiDataDTO;
+import com.radixdlt.client.lib.dto.extra.CheckpointDTO;
+import com.radixdlt.client.lib.dto.extra.ConsensusConfigurationDTO;
+import com.radixdlt.client.lib.dto.extra.ConsensusDataDTO;
+import com.radixdlt.client.lib.dto.extra.EpochDataDTO;
+import com.radixdlt.client.lib.dto.extra.LocalAccountDTO;
+import com.radixdlt.client.lib.dto.extra.LocalValidatorInfoDTO;
+import com.radixdlt.client.lib.dto.extra.MempoolConfigurationDTO;
+import com.radixdlt.client.lib.dto.extra.MempoolDataDTO;
 import com.radixdlt.client.lib.dto.extra.NetworkConfigurationDTO;
 import com.radixdlt.client.lib.dto.extra.NetworkDataDTO;
 import com.radixdlt.client.lib.dto.extra.NetworkPeersDTO;
+import com.radixdlt.client.lib.dto.extra.ProofDTO;
+import com.radixdlt.client.lib.dto.extra.RadixEngineConfigurationDTO;
+import com.radixdlt.client.lib.dto.extra.RadixEngineDataDTO;
+import com.radixdlt.client.lib.dto.extra.SyncConfigurationDTO;
+import com.radixdlt.client.lib.dto.extra.SyncDataDTO;
 import com.radixdlt.client.lib.network.HttpClients;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.functional.Result;
@@ -60,22 +75,42 @@ import okhttp3.RequestBody;
 import static com.radixdlt.client.lib.api.ClientLibraryErrors.BASE_URL_IS_MANDATORY;
 import static com.radixdlt.client.lib.api.ClientLibraryErrors.NO_CONTENT;
 import static com.radixdlt.client.lib.api.ClientLibraryErrors.UNABLE_TO_READ_RESPONSE_BODY;
-import static com.radixdlt.client.lib.dto.RpcMethod.BUILD_TRANSACTION;
-import static com.radixdlt.client.lib.dto.RpcMethod.FINALIZE_TRANSACTION;
-import static com.radixdlt.client.lib.dto.RpcMethod.LOOKUP_TRANSACTION;
-import static com.radixdlt.client.lib.dto.RpcMethod.LOOKUP_VALIDATOR;
-import static com.radixdlt.client.lib.dto.RpcMethod.NATIVE_TOKEN;
+import static com.radixdlt.client.lib.dto.RpcMethod.ACCOUNT_INFO;
+import static com.radixdlt.client.lib.dto.RpcMethod.ACCOUNT_SUBMIT_SINGLE_STEP;
+import static com.radixdlt.client.lib.dto.RpcMethod.API_CONFIGURATION;
+import static com.radixdlt.client.lib.dto.RpcMethod.API_DATA;
+import static com.radixdlt.client.lib.dto.RpcMethod.BFT_CONFIGURATION;
+import static com.radixdlt.client.lib.dto.RpcMethod.BFT_DATA;
+import static com.radixdlt.client.lib.dto.RpcMethod.CONSTRUCTION_BUILD;
+import static com.radixdlt.client.lib.dto.RpcMethod.CONSTRUCTION_FINALIZE;
+import static com.radixdlt.client.lib.dto.RpcMethod.LEDGER_CHECKPOINTS;
+import static com.radixdlt.client.lib.dto.RpcMethod.LEDGER_EPOCH_PROOF;
+import static com.radixdlt.client.lib.dto.RpcMethod.LEDGER_PROOF;
+import static com.radixdlt.client.lib.dto.RpcMethod.MEMPOOL_CONFIGURATION;
+import static com.radixdlt.client.lib.dto.RpcMethod.MEMPOOL_DATA;
+import static com.radixdlt.client.lib.dto.RpcMethod.NETWORK_DATA;
+import static com.radixdlt.client.lib.dto.RpcMethod.NETWORK_PEERS;
+import static com.radixdlt.client.lib.dto.RpcMethod.RADIX_ENGINE_CONFIGURATION;
+import static com.radixdlt.client.lib.dto.RpcMethod.RADIX_ENGINE_DATA;
+import static com.radixdlt.client.lib.dto.RpcMethod.SYNC_CONFIGURATION;
+import static com.radixdlt.client.lib.dto.RpcMethod.SYNC_DATA;
+import static com.radixdlt.client.lib.dto.RpcMethod.TRANSACTION_LOOKUP;
+import static com.radixdlt.client.lib.dto.RpcMethod.VALIDATION_CURRENT_EPOCH;
+import static com.radixdlt.client.lib.dto.RpcMethod.VALIDATION_NEXT_EPOCH;
+import static com.radixdlt.client.lib.dto.RpcMethod.VALIDATION_NODE_INFO;
+import static com.radixdlt.client.lib.dto.RpcMethod.VALIDATORS_LOOKUP;
+import static com.radixdlt.client.lib.dto.RpcMethod.TOKEN_NATIVE;
 import static com.radixdlt.client.lib.dto.RpcMethod.NETWORK_ID;
-import static com.radixdlt.client.lib.dto.RpcMethod.NETWORK_TRANSACTION_DEMAND;
-import static com.radixdlt.client.lib.dto.RpcMethod.NETWORK_TRANSACTION_THROUGHPUT;
-import static com.radixdlt.client.lib.dto.RpcMethod.STAKE_POSITIONS;
-import static com.radixdlt.client.lib.dto.RpcMethod.STATUS_OF_TRANSACTION;
-import static com.radixdlt.client.lib.dto.RpcMethod.SUBMIT_TRANSACTION;
-import static com.radixdlt.client.lib.dto.RpcMethod.TOKEN_BALANCES;
+import static com.radixdlt.client.lib.dto.RpcMethod.NETWORK_DEMAND;
+import static com.radixdlt.client.lib.dto.RpcMethod.NETWORK_THROUGHPUT;
+import static com.radixdlt.client.lib.dto.RpcMethod.ACCOUNT_STAKES;
+import static com.radixdlt.client.lib.dto.RpcMethod.TRANSACTION_STATUS;
+import static com.radixdlt.client.lib.dto.RpcMethod.CONSTRUCTION_SUBMIT;
+import static com.radixdlt.client.lib.dto.RpcMethod.ACCOUNT_BALANCES;
 import static com.radixdlt.client.lib.dto.RpcMethod.TOKEN_INFO;
-import static com.radixdlt.client.lib.dto.RpcMethod.TRANSACTION_HISTORY;
-import static com.radixdlt.client.lib.dto.RpcMethod.UNSTAKE_POSITIONS;
-import static com.radixdlt.client.lib.dto.RpcMethod.VALIDATORS;
+import static com.radixdlt.client.lib.dto.RpcMethod.ACCOUNT_HISTORY;
+import static com.radixdlt.client.lib.dto.RpcMethod.ACCOUNT_UNSTAKES;
+import static com.radixdlt.client.lib.dto.RpcMethod.VALIDATORS_LIST;
 import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DESERIALIZE;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 
@@ -99,44 +134,44 @@ public class SynchronousRadixApiClient implements RadixApi {
 	private final Network network = new Network() {
 		@Override
 		public Result<NetworkIdDTO> id() {
-			return call(request(NETWORK_ID), new TypeReference<JsonRpcResponse<NetworkIdDTO>>() {});
+			return call(request(NETWORK_ID), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<NetworkStatsDTO> throughput() {
-			return call(request(NETWORK_TRANSACTION_THROUGHPUT), new TypeReference<JsonRpcResponse<NetworkStatsDTO>>() {});
+			return call(request(NETWORK_THROUGHPUT), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<NetworkStatsDTO> demand() {
-			return call(request(NETWORK_TRANSACTION_DEMAND), new TypeReference<JsonRpcResponse<NetworkStatsDTO>>() {});
+			return call(request(NETWORK_DEMAND), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<NetworkConfigurationDTO> configuration() {
-			throw new UnsupportedOperationException(); //TODO: implement it
+			return call(request(NETWORK_DEMAND), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<NetworkDataDTO> data() {
-			throw new UnsupportedOperationException(); //TODO: implement it
+			return call(request(NETWORK_DATA), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<NetworkPeersDTO> peers() {
-			throw new UnsupportedOperationException(); //TODO: implement it
+			return call(request(NETWORK_PEERS), new TypeReference<>() {});
 		}
 	};
 
 	private final Token token = new Token() {
 		@Override
 		public Result<TokenInfoDTO> describeNative() {
-			return call(request(NATIVE_TOKEN), new TypeReference<JsonRpcResponse<TokenInfoDTO>>() {});
+			return call(request(TOKEN_NATIVE), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<TokenInfoDTO> describe(String rri) {
-			return call(request(TOKEN_INFO, rri), new TypeReference<JsonRpcResponse<TokenInfoDTO>>() {});
+			return call(request(TOKEN_INFO, rri), new TypeReference<>() {});
 		}
 	};
 
@@ -144,77 +179,180 @@ public class SynchronousRadixApiClient implements RadixApi {
 		@Override
 		public Result<BuiltTransactionDTO> build(TransactionRequest request) {
 			return call(
-				request(BUILD_TRANSACTION, request.getActions(), request.getMessage()),
-				new TypeReference<JsonRpcResponse<BuiltTransactionDTO>>() {}
+				request(CONSTRUCTION_BUILD, request.getActions(), request.getMessage()),
+				new TypeReference<>() {}
 			);
 		}
 
 		@Override
 		public Result<TxDTO> finalize(FinalizedTransaction request) {
 			return call(
-				request(FINALIZE_TRANSACTION, request.getBlob(), request.getSignature(), request.getPublicKey()),
-				new TypeReference<JsonRpcResponse<TxDTO>>() {}
+				request(CONSTRUCTION_FINALIZE, request.getBlob(), request.getSignature(), request.getPublicKey()),
+				new TypeReference<>() {}
 			);
 		}
 
 		@Override
 		public Result<TxDTO> submit(FinalizedTransaction request) {
 			return call(
-				request(SUBMIT_TRANSACTION, request.getBlob(), request.getSignature(), request.getPublicKey(), request.getTxId()),
-				new TypeReference<JsonRpcResponse<TxDTO>>() {}
+				request(CONSTRUCTION_SUBMIT, request.getBlob(), request.getSignature(), request.getPublicKey(), request.getTxId()),
+				new TypeReference<>() {}
 			);
 		}
 
 		@Override
 		public Result<TransactionDTO> lookup(AID txId) {
-			return call(request(LOOKUP_TRANSACTION, txId.toString()), new TypeReference<JsonRpcResponse<TransactionDTO>>() {});
+			return call(request(TRANSACTION_LOOKUP, txId.toString()), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<TransactionStatusDTO> status(AID txId) {
-			return call(request(STATUS_OF_TRANSACTION, txId.toString()), new TypeReference<JsonRpcResponse<TransactionStatusDTO>>() {});
+			return call(request(TRANSACTION_STATUS, txId.toString()), new TypeReference<>() {});
 		}
 	};
 
 	private final SingleAccount account = new SingleAccount() {
 		@Override
 		public Result<TokenBalancesDTO> balances(AccountAddress address) {
-			return call(request(TOKEN_BALANCES, address.toString()), new TypeReference<JsonRpcResponse<TokenBalancesDTO>>() {});
+			return call(request(ACCOUNT_BALANCES, address.toString()), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<TransactionHistoryDTO> history(
 			AccountAddress address, int size, Optional<NavigationCursor> cursor
 		) {
-			var request = request(TRANSACTION_HISTORY, address.toString(), size);
+			var request = request(ACCOUNT_HISTORY, address.toString(), size);
 			cursor.ifPresent(cursorValue -> request.addParameters(cursorValue.value()));
 
-			return call(request, new TypeReference<JsonRpcResponse<TransactionHistoryDTO>>() {});
+			return call(request, new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<List<StakePositionsDTO>> stakes(AccountAddress address) {
-			return call(request(STAKE_POSITIONS, address.toString()), new TypeReference<JsonRpcResponse<List<StakePositionsDTO>>>() {});
+			return call(request(ACCOUNT_STAKES, address.toString()), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<List<UnstakePositionsDTO>> unstakes(AccountAddress address) {
-			return call(request(UNSTAKE_POSITIONS, address.toString()), new TypeReference<JsonRpcResponse<List<UnstakePositionsDTO>>>() {});
+			return call(request(ACCOUNT_UNSTAKES, address.toString()), new TypeReference<>() {});
 		}
 	};
 
 	private final Validator validator = new Validator() {
 		@Override
 		public Result<ValidatorsResponseDTO> list(int size, Optional<NavigationCursor> cursor) {
-			var request = request(VALIDATORS, size);
+			var request = request(VALIDATORS_LIST, size);
 			cursor.ifPresent(cursorValue -> request.addParameters(cursorValue.value()));
 
-			return call(request, new TypeReference<JsonRpcResponse<ValidatorsResponseDTO>>() {});
+			return call(request, new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<ValidatorDTO> lookup(String validatorAddress) {
-			return call(request(LOOKUP_VALIDATOR, validatorAddress), new TypeReference<JsonRpcResponse<ValidatorDTO>>() {});
+			return call(request(VALIDATORS_LOOKUP, validatorAddress), new TypeReference<>() {});
+		}
+	};
+
+	private final Local local = new Local() {
+		@Override
+		public Result<LocalAccountDTO> accountInfo() {
+			return call(request(ACCOUNT_INFO), new TypeReference<>() {});
+		}
+
+		@Override
+		public Result<TxDTO> submitTxSingleStep() {
+			return call(request(ACCOUNT_SUBMIT_SINGLE_STEP), new TypeReference<>() {});
+		}
+
+		@Override
+		public Result<LocalValidatorInfoDTO> validatorInfo() {
+			return call(request(VALIDATION_NODE_INFO), new TypeReference<>() {});
+		}
+
+		@Override
+		public Result<EpochDataDTO> currentEpoch() {
+			return call(request(VALIDATION_CURRENT_EPOCH), new TypeReference<>() {});
+		}
+
+		@Override
+		public Result<EpochDataDTO> nextEpoch() {
+			return call(request(VALIDATION_NEXT_EPOCH), new TypeReference<>() {});
+		}
+	};
+
+	private final Api api = new Api() {
+		@Override
+		public Result<ApiConfigurationDTO> configuration() {
+			return call(request(API_CONFIGURATION), new TypeReference<>() {});
+		}
+
+		@Override
+		public Result<ApiDataDTO> data() {
+			return call(request(API_DATA), new TypeReference<>() {});
+		}
+	};
+
+	private final Consensus consensus = new Consensus() {
+		@Override
+		public Result<ConsensusConfigurationDTO> configuration() {
+			return call(request(BFT_CONFIGURATION), new TypeReference<>() {});
+		}
+
+		@Override
+		public Result<ConsensusDataDTO> data() {
+			return call(request(BFT_DATA), new TypeReference<>() {});
+		}
+	};
+
+	private final Mempool mempool = new Mempool() {
+		@Override
+		public Result<MempoolConfigurationDTO> configuration() {
+			return call(request(MEMPOOL_CONFIGURATION), new TypeReference<>() {});
+		}
+
+		@Override
+		public Result<MempoolDataDTO> data() {
+			return call(request(MEMPOOL_DATA), new TypeReference<>() {});
+		}
+	};
+	private final RadixEngine radixEngine = new RadixEngine() {
+		@Override
+		public Result<RadixEngineConfigurationDTO> configuration() {
+			return call(request(RADIX_ENGINE_CONFIGURATION), new TypeReference<>() {});
+		}
+
+		@Override
+		public Result<RadixEngineDataDTO> data() {
+			return call(request(RADIX_ENGINE_DATA), new TypeReference<>() {});
+		}
+	};
+
+	private final Sync sync = new Sync() {
+		@Override
+		public Result<SyncConfigurationDTO> configuration() {
+			return call(request(SYNC_CONFIGURATION), new TypeReference<>() {});
+		}
+
+		@Override
+		public Result<SyncDataDTO> data() {
+			return call(request(SYNC_DATA), new TypeReference<>() {});
+		}
+	};
+
+	private final Ledger ledger = new Ledger() {
+		@Override
+		public Result<ProofDTO> latest() {
+			return call(request(LEDGER_PROOF), new TypeReference<>() {});
+		}
+
+		@Override
+		public Result<ProofDTO> epoch() {
+			return call(request(LEDGER_EPOCH_PROOF), new TypeReference<>() {});
+		}
+
+		@Override
+		public Result<CheckpointDTO> checkpoints() {
+			return call(request(LEDGER_CHECKPOINTS), new TypeReference<>() {});
 		}
 	};
 
@@ -256,7 +394,7 @@ public class SynchronousRadixApiClient implements RadixApi {
 
 	@Override
 	public Local local() {
-		throw new UnsupportedOperationException(); //TODO: implement it
+		return local;
 	}
 
 	@Override
@@ -271,37 +409,32 @@ public class SynchronousRadixApiClient implements RadixApi {
 
 	@Override
 	public Api api() {
-		throw new UnsupportedOperationException(); //TODO: implement it
+		return api;
 	}
 
 	@Override
 	public Consensus consensus() {
-		throw new UnsupportedOperationException(); //TODO: implement it
+		return consensus;
 	}
 
 	@Override
 	public Mempool mempool() {
-		throw new UnsupportedOperationException(); //TODO: implement it
+		return mempool;
 	}
 
 	@Override
 	public RadixEngine radixEngine() {
-		throw new UnsupportedOperationException(); //TODO: implement it
+		return radixEngine;
 	}
 
 	@Override
 	public Sync sync() {
-		throw new UnsupportedOperationException(); //TODO: implement it
+		return sync;
 	}
 
 	@Override
 	public Ledger ledger() {
-		throw new UnsupportedOperationException(); //TODO: implement it
-	}
-
-	@Override
-	public Faucet faucet() {
-		throw new UnsupportedOperationException(); //TODO: implement it
+		return ledger;
 	}
 
 	@Override

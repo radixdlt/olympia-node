@@ -5,7 +5,7 @@ enum EndPoint {
 	CONSTRUCTION("/construction"),
 	SYSTEM("/system"),
 	ACCOUNT("/account"),
-	VALIDATOR("/validator");
+	VALIDATION("/validation");
 
 	final String path;
 
