@@ -183,10 +183,4 @@ public interface RadixApi {
 	}
 
 	Ledger ledger();
-
-	interface Faucet {
-		Result<TxDTO> request(AccountAddress address); //faucet.request_tokens
-	}
-
-	Faucet faucet();
 }
