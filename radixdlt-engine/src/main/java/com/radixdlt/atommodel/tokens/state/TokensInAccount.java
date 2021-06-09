@@ -73,12 +73,14 @@ public final class TokensInAccount implements Fungible {
 			throw new AuthorizationException(e.getMessage());
 		}
 
+		/*
 		if (epochUnlocked != null) {
 			var system = (HasEpochData) readable.loadAddr(null, REAddr.ofSystem()).orElseThrow();
 			if (epochUnlocked > system.getEpoch()) {
 				throw new AuthorizationException("Tokens are locked until epoch " + epochUnlocked + " current " + system.getEpoch());
 			}
 		}
+		 */
 	}
 
 	public ResourceInBucket resourceInBucket() {
