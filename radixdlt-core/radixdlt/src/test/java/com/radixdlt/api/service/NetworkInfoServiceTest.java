@@ -22,6 +22,8 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 
+import java.util.stream.IntStream;
+
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
@@ -46,8 +48,11 @@ public class NetworkInfoServiceTest {
 	public void testDemand() {
 		assertEquals(0, networkInfoService.demand());
 
-		systemCounters.add(CounterType.MEMPOOL_PROPOSED_TRANSACTION, 1L);
-		updateStats(10, CounterType.MEMPOOL_PROPOSED_TRANSACTION);
+		systemCounters.set(DEMAND_KEY, 2L);
+		updateStats(5, DEMAND_KEY, false);
+
+		systemCounters.set(DEMAND_KEY, 0L);
+		updateStats(5, DEMAND_KEY, false);
 
 		assertEquals(1, networkInfoService.demand());
 	}
@@ -56,8 +61,8 @@ public class NetworkInfoServiceTest {
 	public void testThroughput() {
 		assertEquals(0, networkInfoService.throughput());
 
-		systemCounters.add(CounterType.ELAPSED_BDB_LEDGER_COMMIT, 1L);
-		updateStats(10, CounterType.ELAPSED_BDB_LEDGER_COMMIT);
+		systemCounters.add(THROUGHPUT_KEY, 1L);
+		updateStats(10, THROUGHPUT_KEY, true);
 
 		assertEquals(1, networkInfoService.throughput());
 	}
