@@ -23,7 +23,7 @@ import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.atomos.ParticleDefinition;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.Authorization;
@@ -53,18 +53,18 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 	}
 
 	private void registerParticles(Loader os) {
-		os.particle(
-			TokenResource.class,
-			ParticleDefinition.<TokenResource>builder()
-				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.build()
+		os.substate(
+			new SubstateDefinition<>(
+				TokenResource.class,
+				TokenDefinitionUtils::staticCheck
+			)
 		);
 
-		os.particle(
-			TokensInAccount.class,
-			ParticleDefinition.<TokensInAccount>builder()
-				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.build()
+		os.substate(
+			new SubstateDefinition<>(
+				TokensInAccount.class,
+				TokenDefinitionUtils::staticCheck
+			)
 		);
 	}
 

@@ -24,7 +24,7 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.ParticleDefinition;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
@@ -49,24 +49,23 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 
 	@Override
 	public void main(Loader os) {
-		os.particle(
-			PreparedStake.class,
-			ParticleDefinition.<PreparedStake>builder()
-				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.build()
+		os.substate(
+			new SubstateDefinition<>(
+				PreparedStake.class,
+				TokenDefinitionUtils::staticCheck
+			)
 		);
 
-		os.particle(
-			PreparedUnstakeOwnership.class,
-			ParticleDefinition.<PreparedUnstakeOwnership>builder()
-				.staticValidation(p -> {
+		os.substate(
+			new SubstateDefinition<>(
+				PreparedUnstakeOwnership.class,
+				p -> {
 					if (p.getAmount().isZero()) {
 						throw new TxnParseException("amount must not be zero");
 					}
-				})
-				.build()
+				}
+			)
 		);
-
 
 		defineStaking(os);
 	}

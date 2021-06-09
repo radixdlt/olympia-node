@@ -31,7 +31,7 @@ import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.ParticleDefinition;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -577,61 +577,66 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 	@Override
 	public void main(Loader os) {
-		os.particle(RoundData.class, ParticleDefinition.<RoundData>builder()
-			.staticValidation(p -> {
-				if (p.getTimestamp() < 0) {
-					throw new TxnParseException("Timestamp is less than 0");
-				}
-				if (p.getView() < 0) {
-					throw new TxnParseException("View is less than 0");
-				}
-			})
-			.virtualizeUp(p -> p.getView() == 0 && p.getTimestamp() == 0)
-			.build()
+		os.substate(
+			new SubstateDefinition<>(
+				RoundData.class,
+				p -> {
+					if (p.getTimestamp() < 0) {
+						throw new TxnParseException("Timestamp is less than 0");
+					}
+					if (p.getView() < 0) {
+						throw new TxnParseException("View is less than 0");
+					}
+				},
+				p -> p.getView() == 0 && p.getTimestamp() == 0
+			)
 		);
-		os.particle(EpochData.class, ParticleDefinition.<EpochData>builder()
-			.staticValidation(p -> {
-				if (p.getEpoch() < 0) {
-					throw new TxnParseException("Epoch is less than 0");
+		os.substate(
+			new SubstateDefinition<>(
+				EpochData.class,
+				p -> {
+					if (p.getEpoch() < 0) {
+						throw new TxnParseException("Epoch is less than 0");
+					}
 				}
-			})
-			.build()
+			)
 		);
-		os.particle(
-			ValidatorStake.class,
-			ParticleDefinition.<ValidatorStake>builder()
-				.virtualizeUp(p -> p.getAmount().isZero())
-				.build()
+		os.substate(
+			new SubstateDefinition<>(
+				ValidatorStake.class,
+				p -> { },
+				p -> p.getAmount().isZero()
+			)
 		);
-		os.particle(
-			StakeOwnership.class,
-			ParticleDefinition.<StakeOwnership>builder()
-				.staticValidation(s -> {
+		os.substate(
+			new SubstateDefinition<>(
+				StakeOwnership.class,
+				s -> {
 					if (s.getAmount().isZero()) {
 						throw new TxnParseException("amount must not be zero");
 					}
-				})
-				.build()
+				}
+			)
 		);
-		os.particle(
-			ExittingStake.class,
-			ParticleDefinition.<ExittingStake>builder()
-				.staticValidation(s -> {
+		os.substate(
+			new SubstateDefinition<>(
+				ExittingStake.class,
+				s -> {
 					if (s.getEpochUnlocked() < 0) {
 						throw new TxnParseException("epoch must be >= 0");
 					}
-				})
-				.build()
+				}
+			)
 		);
-		os.particle(
-			ValidatorEpochData.class,
-			ParticleDefinition.<ValidatorEpochData>builder()
-				.staticValidation(s -> {
+		os.substate(
+			new SubstateDefinition<>(
+				ValidatorEpochData.class,
+				s -> {
 					if (s.proposalsCompleted() < 0) {
 						throw new TxnParseException("proposals completed must be >= 0");
 					}
-				})
-				.build()
+				}
+			)
 		);
 
 		registerGenesisTransitions(os);

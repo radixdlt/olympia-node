@@ -319,7 +319,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return (SecondaryConfig) new SecondaryConfig()
 			.setKeyCreator(
 				(secondary, key, data, result) -> {
-					if (entryToSpin(data) == REOp.DOWN) {
+					if (entryToSpin(data) != REOp.UP) {
 						return false;
 					}
 

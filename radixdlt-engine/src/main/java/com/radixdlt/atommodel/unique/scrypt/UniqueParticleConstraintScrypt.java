@@ -20,7 +20,7 @@ package com.radixdlt.atommodel.unique.scrypt;
 
 import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.atomos.ParticleDefinition;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.Authorization;
@@ -32,9 +32,11 @@ import com.radixdlt.constraintmachine.UpProcedure;
 public class UniqueParticleConstraintScrypt implements ConstraintScrypt {
 	@Override
 	public void main(Loader os) {
-		os.particle(
-			UniqueParticle.class,
-			ParticleDefinition.<UniqueParticle>builder().build()
+		os.substate(
+			new SubstateDefinition<>(
+				UniqueParticle.class,
+				p -> { }
+			)
 		);
 		os.procedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, UniqueParticle.class,

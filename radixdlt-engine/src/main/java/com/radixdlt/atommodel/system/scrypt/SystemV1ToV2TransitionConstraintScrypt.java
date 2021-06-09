@@ -21,7 +21,7 @@ package com.radixdlt.atommodel.system.scrypt;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.ParticleDefinition;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
@@ -62,10 +62,12 @@ public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt 
 
 	@Override
 	public void main(Loader os) {
-		os.particle(SystemParticle.class, ParticleDefinition.<SystemParticle>builder()
-			.staticValidation(this::staticCheck)
-			.virtualizeUp(p -> p.getView() == 0 && p.getEpoch() == 0 && p.getTimestamp() == 0)
-			.build()
+		os.substate(
+			new SubstateDefinition<>(
+				SystemParticle.class,
+				this::staticCheck,
+				p -> p.getView() == 0 && p.getEpoch() == 0 && p.getTimestamp() == 0
+			)
 		);
 
 		os.procedure(new DownProcedure<>(

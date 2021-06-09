@@ -24,7 +24,7 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.unique.state.UniqueParticle;
-import com.radixdlt.atomos.REAddrParticle;
+import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolConfig;
@@ -76,7 +76,7 @@ public final class UniqueTest {
 
 	private Txn uniqueTxn(ECKeyPair keyPair) {
 		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
-		var rriParticle = new REAddrParticle(addr);
+		var rriParticle = new UnclaimedREAddr(addr);
 		var uniqueParticle = new UniqueParticle(addr);
 		var atomBuilder = TxLowLevelBuilder.newBuilder()
 			.virtualDown(rriParticle, "test".getBytes(StandardCharsets.UTF_8))

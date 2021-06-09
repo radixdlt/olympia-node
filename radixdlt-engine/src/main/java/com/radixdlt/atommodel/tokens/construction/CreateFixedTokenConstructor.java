@@ -24,7 +24,7 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
-import com.radixdlt.atomos.REAddrParticle;
+import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 
 import java.nio.charset.StandardCharsets;
@@ -33,9 +33,9 @@ import java.util.Optional;
 public final class CreateFixedTokenConstructor implements ActionConstructor<CreateFixedToken> {
 	@Override
 	public void construct(CreateFixedToken action, TxBuilder txBuilder) throws TxBuilderException {
-		var addrParticle = new REAddrParticle(action.getResourceAddr());
+		var addrParticle = new UnclaimedREAddr(action.getResourceAddr());
 		txBuilder.down(
-			REAddrParticle.class,
+			UnclaimedREAddr.class,
 			p -> p.getAddr().equals(action.getResourceAddr()),
 			Optional.of(SubstateWithArg.withArg(addrParticle, action.getSymbol().getBytes(StandardCharsets.UTF_8))),
 			"RRI not available"

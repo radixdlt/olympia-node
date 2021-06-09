@@ -22,7 +22,7 @@ import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.ParticleDefinition;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.Authorization;
@@ -40,11 +40,11 @@ import java.util.Objects;
 public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 	@Override
 	public void main(Loader os) {
-		os.particle(
-			PreparedStake.class,
-			ParticleDefinition.<PreparedStake>builder()
-				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.build()
+		os.substate(
+			new SubstateDefinition<>(
+				PreparedStake.class,
+				TokenDefinitionUtils::staticCheck
+			)
 		);
 
 		defineStaking(os);

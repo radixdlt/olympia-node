@@ -29,7 +29,7 @@ import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.atomos.REAddrParticle;
+import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
@@ -78,7 +78,7 @@ public class TokenDefinitionTest {
 		// Arrange
 		var keyPair = ECKeyPair.generateNew();
 		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
-		var addrParticle = new REAddrParticle(addr);
+		var addrParticle = new UnclaimedREAddr(addr);
 		var tokenDefinitionParticle = new TokenResource(
 			addr,
 			"TEST",
@@ -112,7 +112,7 @@ public class TokenDefinitionTest {
 		// Arrange
 		var keyPair = ECKeyPair.generateNew();
 		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
-		var addrParticle = new REAddrParticle(addr);
+		var addrParticle = new UnclaimedREAddr(addr);
 		var tokenDefinitionParticle = new TokenResource(
 			addr,
 			"TEST",
@@ -148,7 +148,7 @@ public class TokenDefinitionTest {
 		);
 		var builder = TxBuilder.newBuilder()
 			.toLowLevelBuilder()
-			.virtualDown(new REAddrParticle(addr), "smthng".getBytes(StandardCharsets.UTF_8))
+			.virtualDown(new UnclaimedREAddr(addr), "smthng".getBytes(StandardCharsets.UTF_8))
 			.up(tokenDefinitionParticle)
 			.end();
 		var sig = keyPair.sign(builder.hashToSign());

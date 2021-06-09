@@ -27,10 +27,9 @@ public interface Loader {
 	/**
 	 * Registers a Particle.
 	 * This is required for all other system calls using the particle.
-	 * @param particleClass The particle class
-	 * @param particleDefinition The particle definition
+	 * @param substateDefinition The particle definition
 	 * @param <T> The type of the particle
 	 */
-	<T extends Particle> void particle(Class<T> particleClass, ParticleDefinition<T> particleDefinition);
+	<T extends Particle> void substate(SubstateDefinition<T> substateDefinition);
 	void procedure(Procedure procedure);
 }

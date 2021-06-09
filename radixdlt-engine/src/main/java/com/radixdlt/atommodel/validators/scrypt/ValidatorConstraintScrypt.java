@@ -20,7 +20,7 @@ package com.radixdlt.atommodel.validators.scrypt;
 
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.ParticleDefinition;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.Authorization;
@@ -53,10 +53,12 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 
 	@Override
 	public void main(Loader os) {
-		os.particle(ValidatorParticle.class, ParticleDefinition.<ValidatorParticle>builder()
-			.staticValidation(checkAddressAndUrl(ValidatorParticle::getUrl))
-			.virtualizeUp(p -> !p.isRegisteredForNextEpoch() && p.getUrl().isEmpty() && p.getName().isEmpty())
-			.build()
+		os.substate(
+			new SubstateDefinition<>(
+				ValidatorParticle.class,
+				checkAddressAndUrl(ValidatorParticle::getUrl),
+				p -> !p.isRegisteredForNextEpoch() && p.getUrl().isEmpty() && p.getName().isEmpty()
+			)
 		);
 
 		os.procedure(new DownProcedure<>(

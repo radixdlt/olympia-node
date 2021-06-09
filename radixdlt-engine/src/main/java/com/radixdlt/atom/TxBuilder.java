@@ -24,7 +24,7 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.tokens.ResourceInBucket;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atommodel.unique.state.UniqueParticle;
-import com.radixdlt.atomos.REAddrParticle;
+import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECDSASignature;
@@ -377,9 +377,9 @@ public final class TxBuilder {
 	public TxBuilder mutex(ECPublicKey key, String id) throws TxBuilderException {
 		final var addr = REAddr.ofHashedKey(key, id);
 		swap(
-			REAddrParticle.class,
+			UnclaimedREAddr.class,
 			p -> p.getAddr().equals(addr),
-			Optional.of(SubstateWithArg.withArg(new REAddrParticle(addr), id.getBytes(StandardCharsets.UTF_8))),
+			Optional.of(SubstateWithArg.withArg(new UnclaimedREAddr(addr), id.getBytes(StandardCharsets.UTF_8))),
 			"RRI not available"
 		).with(r -> List.of(new UniqueParticle(addr)));
 

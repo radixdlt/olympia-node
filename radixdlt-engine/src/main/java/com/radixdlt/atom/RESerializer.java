@@ -31,7 +31,7 @@ import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
-import com.radixdlt.atomos.REAddrParticle;
+import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
@@ -71,7 +71,7 @@ public final class RESerializer {
 	}
 
 	private static List<Class<? extends Particle>> byteToClass = List.of(
-		REAddrParticle.class,
+		UnclaimedREAddr.class,
 		SystemParticle.class,
 		TokenResource.class,
 		TokensInAccount.class,
@@ -89,7 +89,7 @@ public final class RESerializer {
 	);
 
 	private static Map<Class<? extends Particle>, List<Byte>> classToByteTypes = Map.ofEntries(
-		Map.entry(REAddrParticle.class, List.of(SubstateType.RE_ADDR.id)),
+		Map.entry(UnclaimedREAddr.class, List.of(SubstateType.RE_ADDR.id)),
 		Map.entry(SystemParticle.class, List.of(SubstateType.SYSTEM.id)),
 		Map.entry(TokenResource.class, List.of(SubstateType.TOKEN_DEF.id)),
 		Map.entry(TokensInAccount.class, List.of(SubstateType.TOKENS.id, SubstateType.TOKENS_LOCKED.id)),
@@ -185,8 +185,8 @@ public final class RESerializer {
 
 	public static byte[] serialize(Particle p) {
 		var buf = ByteBuffer.allocate(1024);
-		if (p instanceof REAddrParticle) {
-			serializeData((REAddrParticle) p, buf);
+		if (p instanceof UnclaimedREAddr) {
+			serializeData((UnclaimedREAddr) p, buf);
 		} else if (p instanceof SystemParticle) {
 			serializeData((SystemParticle) p, buf);
 		} else if (p instanceof TokensInAccount) {
@@ -238,16 +238,16 @@ public final class RESerializer {
 		return type.get().parse(buf);
 	}
 
-	private static void serializeData(REAddrParticle rriParticle, ByteBuffer buf) {
+	private static void serializeData(UnclaimedREAddr rriParticle, ByteBuffer buf) {
 		buf.put(SubstateType.RE_ADDR.id);
 
 		var rri = rriParticle.getAddr();
 		serializeREAddr(buf, rri);
 	}
 
-	private static REAddrParticle deserializeRRIParticle(ByteBuffer buf) throws DeserializeException {
+	private static UnclaimedREAddr deserializeRRIParticle(ByteBuffer buf) throws DeserializeException {
 		var rri = deserializeREAddr(buf);
-		return new REAddrParticle(rri);
+		return new UnclaimedREAddr(rri);
 	}
 
 	private static void serializeData(RoundData roundData, ByteBuffer buf) {
