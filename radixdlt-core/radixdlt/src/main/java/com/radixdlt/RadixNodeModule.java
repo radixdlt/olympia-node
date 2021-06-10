@@ -31,8 +31,6 @@ import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import com.radixdlt.statecomputer.transaction.EmptyTransactionCheckModule;
-import com.radixdlt.statecomputer.transaction.TokenFeeModule;
 import com.radixdlt.mempool.MempoolConfig;
 import org.radix.universe.system.LocalSystem;
 
@@ -173,10 +171,6 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new RadixEngineStateComputerModule());
 		install(new RadixEngineModule());
 		install(new RadixEngineStoreModule());
-
-		// Post constraint checkers - Fees, emptiness
-		install(new EmptyTransactionCheckModule());
-		install(new TokenFeeModule());
 
 		// Checkpoints
 		install(new RadixEngineCheckpointModule());

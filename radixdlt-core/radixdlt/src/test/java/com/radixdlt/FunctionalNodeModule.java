@@ -32,7 +32,6 @@ import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
-import com.radixdlt.statecomputer.transaction.EmptyTransactionCheckModule;
 import com.radixdlt.sync.MockedSyncServiceModule;
 
 /**
@@ -128,7 +127,6 @@ public final class FunctionalNodeModule extends AbstractModule {
 				if (!hasRadixEngine) {
 					install(new MockedMempoolStateComputerModule());
 				} else {
-					install(new EmptyTransactionCheckModule());
 					install(new RadixEngineStateComputerModule());
 					install(new RadixEngineModule());
 					install(new NodeApplicationModule());

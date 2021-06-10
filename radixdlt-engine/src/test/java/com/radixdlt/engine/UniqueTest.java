@@ -26,6 +26,7 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -46,19 +47,19 @@ public class UniqueTest {
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new UniqueParticleConstraintScrypt());
-		var cm = new ConstraintMachine.Builder()
-			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
-			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
-			.setParticleTransitionProcedures(cmAtomOS.getProcedures())
-			.build();
+		var cm = new ConstraintMachine(
+			cmAtomOS.virtualizedUpParticles(),
+			cmAtomOS.getProcedures()
+		);
+		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
 		this.store = new InMemoryEngineStore<>();
-		this.engine = new RadixEngine<>(ActionConstructors.newBuilder().build(), cm, store);
+		this.engine = new RadixEngine<>(parser, ActionConstructors.newBuilder().build(), cm, store);
 	}
 
 	@Test
 	public void using_own_mutex_should_work() throws Exception {
-		var atom = TxBuilder.newBuilder(keyPair.getPublicKey())
-			.mutex("np")
+		var atom = TxBuilder.newBuilder()
+			.mutex(keyPair.getPublicKey(), "np")
 			.signAndBuild(keyPair::sign);
 		this.engine.execute(List.of(atom));
 	}
@@ -66,7 +67,7 @@ public class UniqueTest {
 	@Test
 	public void using_someone_elses_mutex_should_fail() {
 		var addr = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "smthng");
-		var builder = TxBuilder.newBuilder(keyPair.getPublicKey())
+		var builder = TxBuilder.newBuilder()
 			.toLowLevelBuilder()
 			.virtualDown(new REAddrParticle(addr), "smthng".getBytes(StandardCharsets.UTF_8))
 			.up(new UniqueParticle(addr))

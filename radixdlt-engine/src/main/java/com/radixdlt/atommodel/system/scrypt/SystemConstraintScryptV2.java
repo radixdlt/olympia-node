@@ -18,7 +18,6 @@
 
 package com.radixdlt.atommodel.system.scrypt;
 
-import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.HasEpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
@@ -33,15 +32,15 @@ import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
-import com.radixdlt.atomos.Result;
-import com.radixdlt.atomos.SysCalls;
-import com.radixdlt.constraintmachine.AuthorizationException;
+import com.radixdlt.atomos.Loader;
+import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.ShutdownAllProcedure;
+import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
@@ -427,17 +426,12 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 	private static class AllocatingSystem implements ReducerState {
 	}
 
-	private void registerGenesisTransitions(SysCalls os) {
+	private void registerGenesisTransitions(Loader os) {
 		// For Mainnet Genesis
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, EpochData.class,
-			(u, r) -> PermissionLevel.SYSTEM,
-			(u, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
-			(s, u, r) -> {
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> {
 				if (u.getEpoch() != 0) {
 					throw new ProcedureException("First epoch must be 0.");
 				}
@@ -445,15 +439,10 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				return ReducerResult.incomplete(new AllocatingSystem());
 			}
 		));
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			AllocatingSystem.class, RoundData.class,
-			(u, r) -> PermissionLevel.SYSTEM,
-			(u, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
-			(s, u, r) -> {
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> {
 				if (u.getView() != 0) {
 					throw new ProcedureException("First view must be 0.");
 				}
@@ -463,23 +452,17 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 	}
 
 
-	private void roundUpdate(SysCalls os) {
+	private void roundUpdate(Loader os) {
 		// Round update
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			RoundData.class, VoidReducerState.class,
-			(d, r) -> PermissionLevel.SUPER_USER,
-			(d, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> ReducerResult.incomplete(new RoundClosed(d.getSubstate()))
 		));
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			RoundClosed.class, RoundData.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> { },
-			(s, u, r) -> {
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> {
 				var curData = s.prev;
 				if (curData.getView() >= u.getView()) {
 					throw new ProcedureException("Next view must be greater than previous.");
@@ -488,145 +471,101 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				return ReducerResult.incomplete(new UpdateValidatorEpochData());
 			}
 		));
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			ValidatorEpochData.class, UpdateValidatorEpochData.class,
-			(d, r) -> PermissionLevel.SUPER_USER,
-			(d, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> ReducerResult.incomplete(new UpdatingValidatorEpochData(d.getSubstate()))
 		));
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			UpdatingValidatorEpochData.class, ValidatorEpochData.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
-			(s, u, r) -> {
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> {
 				s.update(u);
-				return ReducerResult.complete(Unknown.create());
+				return ReducerResult.complete();
 			}
 		));
 	}
 
-	private void epochUpdate(SysCalls os) {
+	private void epochUpdate(Loader os) {
 		// Epoch Update
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			EpochData.class, RoundClosed.class,
-			(d, r) -> PermissionLevel.SUPER_USER,
-			(d, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> ReducerResult.incomplete(new UpdatingEpoch(d.getSubstate()))
 		));
 
-		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
+		os.procedure(new ShutdownAllProcedure<>(
 			ExittingStake.class, UpdatingEpoch.class,
-			r -> PermissionLevel.SUPER_USER,
-			(r, k) -> {
-				if (k.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(i, s, r) -> {
 				var exittingStake = new ProcessExittingStake(s);
 				return ReducerResult.incomplete(exittingStake.process(i));
 			}
 		));
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			ProcessExittingStake.class, ExittingStake.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, k) -> { },
-			(s, u, r) -> ReducerResult.incomplete(s.nextExit(u))
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> ReducerResult.incomplete(s.nextExit(u))
 		));
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			ProcessExittingStake.class, TokensInAccount.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, k) -> { },
-			(s, u, r) -> ReducerResult.incomplete(s.unlock(u))
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> ReducerResult.incomplete(s.unlock(u))
 		));
 
-		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
+		os.procedure(new ShutdownAllProcedure<>(
 			ValidatorEpochData.class, RewardingValidators.class,
-			r -> PermissionLevel.SUPER_USER,
-			(r, k) -> {
-				if (k.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(i, s, r) -> ReducerResult.incomplete(s.process(i))
 		));
 
-		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
+		os.procedure(new ShutdownAllProcedure<>(
 			PreparedUnstakeOwnership.class, PreparingUnstake.class,
-			r -> PermissionLevel.SUPER_USER,
-			(r, k) -> {
-				if (k.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(i, s, r) -> ReducerResult.incomplete(s.unstakes(i))
 		));
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			ValidatorStake.class, LoadingStake.class,
-			(d, r) -> PermissionLevel.SUPER_USER,
-			(d, r, k) -> { },
+			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> ReducerResult.incomplete(s.startUpdate(d.getSubstate()))
 		));
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			Unstaking.class, ExittingStake.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, k) -> { },
-			(s, u, r) -> ReducerResult.incomplete(s.exit(u))
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> ReducerResult.incomplete(s.exit(u))
 		));
-		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
+		os.procedure(new ShutdownAllProcedure<>(
 			PreparedStake.class, PreparingStake.class,
-			r -> PermissionLevel.SUPER_USER,
-			(r, k) -> {
-				if (k.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(i, s, r) -> ReducerResult.incomplete(s.prepareStakes(i))
 		));
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			Staking.class, StakeOwnership.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, k) -> { },
-			(s, u, r) -> ReducerResult.incomplete(s.stake(u))
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> ReducerResult.incomplete(s.stake(u))
 		));
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			UpdatingValidatorStakes.class, ValidatorStake.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, k) -> { },
-			(s, u, r) -> ReducerResult.incomplete(s.updateStake(u))
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> ReducerResult.incomplete(s.updateStake(u))
 		));
 
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			CreatingNextValidatorSet.class, ValidatorEpochData.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> { },
-			(s, u, r) -> ReducerResult.incomplete(s.nextValidator(u))
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> ReducerResult.incomplete(s.nextValidator(u))
 		));
 
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			CreatingNextValidatorSet.class, EpochData.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> { },
-			(s, u, r) -> ReducerResult.incomplete(s.nextEpoch(u))
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> ReducerResult.incomplete(s.nextEpoch(u))
 		));
 
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			StartingEpochRound.class, RoundData.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> { },
-			(s, u, r) -> {
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> {
 				if (u.getView() != 0) {
 					throw new ProcedureException("Epoch must start with view 0");
 				}
@@ -637,60 +576,60 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 	}
 
 	@Override
-	public void main(SysCalls os) {
-		os.registerParticle(RoundData.class, ParticleDefinition.<RoundData>builder()
+	public void main(Loader os) {
+		os.particle(RoundData.class, ParticleDefinition.<RoundData>builder()
 			.staticValidation(p -> {
 				if (p.getTimestamp() < 0) {
-					return Result.error("Timestamp is less than 0");
+					throw new TxnParseException("Timestamp is less than 0");
 				}
 				if (p.getView() < 0) {
-					return Result.error("View is less than 0");
+					throw new TxnParseException("View is less than 0");
 				}
-				return Result.success();
 			})
 			.virtualizeUp(p -> p.getView() == 0 && p.getTimestamp() == 0)
 			.build()
 		);
-		os.registerParticle(EpochData.class, ParticleDefinition.<EpochData>builder()
-			.staticValidation(p -> p.getEpoch() < 0 ? Result.error("Epoch is less than 0") : Result.success())
+		os.particle(EpochData.class, ParticleDefinition.<EpochData>builder()
+			.staticValidation(p -> {
+				if (p.getEpoch() < 0) {
+					throw new TxnParseException("Epoch is less than 0");
+				}
+			})
 			.build()
 		);
-		os.registerParticle(
+		os.particle(
 			ValidatorStake.class,
 			ParticleDefinition.<ValidatorStake>builder()
-				.virtualizeUp(p -> p.getTotalStake().isZero())
+				.virtualizeUp(p -> p.getAmount().isZero())
 				.build()
 		);
-		os.registerParticle(
+		os.particle(
 			StakeOwnership.class,
 			ParticleDefinition.<StakeOwnership>builder()
 				.staticValidation(s -> {
 					if (s.getAmount().isZero()) {
-						return Result.error("amount must not be zero");
+						throw new TxnParseException("amount must not be zero");
 					}
-					return Result.success();
 				})
 				.build()
 		);
-		os.registerParticle(
+		os.particle(
 			ExittingStake.class,
 			ParticleDefinition.<ExittingStake>builder()
 				.staticValidation(s -> {
 					if (s.getEpochUnlocked() < 0) {
-						return Result.error("epoch must be >= 0");
+						throw new TxnParseException("epoch must be >= 0");
 					}
-					return Result.success();
 				})
 				.build()
 		);
-		os.registerParticle(
+		os.particle(
 			ValidatorEpochData.class,
 			ParticleDefinition.<ValidatorEpochData>builder()
 				.staticValidation(s -> {
 					if (s.proposalsCompleted() < 0) {
-						return Result.error("proposals completed must be >= 0");
+						throw new TxnParseException("proposals completed must be >= 0");
 					}
-					return Result.success();
 				})
 				.build()
 		);

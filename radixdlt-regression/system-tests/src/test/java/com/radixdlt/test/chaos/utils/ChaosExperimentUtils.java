@@ -22,6 +22,7 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.radixdlt.client.lib.network.HttpClients;
+import com.radixdlt.test.chaos.ansible.AnsibleImageWrapper;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -135,4 +136,20 @@ public class ChaosExperimentUtils {
         return requestJson.toString();
     }
 
+    public static void startMempoolFillers(AnsibleImageWrapper ansible, int numberOfFillersToStart) {
+        ansible.getNodeAddressList().stream().limit(numberOfFillersToStart).forEach(host -> {
+            String response = toggleMempoolfillerInContainer(host, true);
+            logger.info("Response from {}: {}", host, response);
+        });
+    }
+
+    public static void stopAllMempoolFillers(AnsibleImageWrapper ansible) {
+        ansible.getNodeAddressList().forEach(host -> toggleMempoolfillerInContainer(host, false));
+    }
+
+    private static String toggleMempoolfillerInContainer(String host, boolean enable) {
+        String command = " docker exec radixdlt_core_1 bash -c 'curl -s -X PUT localhost:3333/chaos/mempool-filler -d "
+            + "'{\"enabled\":" + enable + "}''";
+        return runCommandOverSsh(host, command);
+    }
 }

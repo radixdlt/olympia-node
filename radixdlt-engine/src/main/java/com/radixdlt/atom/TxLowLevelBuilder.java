@@ -24,6 +24,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.utils.Ints;
+import com.radixdlt.utils.UInt256;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -83,7 +84,7 @@ public final class TxLowLevelBuilder {
 		return data;
 	}
 
-	private void instruction(REInstruction.REOp op, byte[] data) {
+	private void instruction(REInstruction.REMicroOp op, byte[] data) {
 		blobStream.write(op.opCode());
 		try {
 			blobStream.write(data);
@@ -94,7 +95,7 @@ public final class TxLowLevelBuilder {
 	}
 
 	public TxLowLevelBuilder message(byte[] bytes) {
-		instruction(REInstruction.REOp.MSG, varLengthData(bytes));
+		instruction(REInstruction.REMicroOp.MSG, varLengthData(bytes));
 		return this;
 	}
 
@@ -107,14 +108,14 @@ public final class TxLowLevelBuilder {
 		Objects.requireNonNull(particle, "particle is required");
 		this.localUpParticles.put(instructionIndex, LocalSubstate.create(instructionIndex, particle));
 		var bytes = RESerializer.serialize(particle);
-		instruction(REInstruction.REOp.UP, bytes);
+		instruction(REInstruction.REMicroOp.UP, bytes);
 		return this;
 	}
 
 	public TxLowLevelBuilder virtualDown(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
 		var bytes = RESerializer.serialize(particle);
-		instruction(REInstruction.REOp.VDOWN, bytes);
+		instruction(REInstruction.REMicroOp.VDOWN, bytes);
 		return this;
 	}
 
@@ -125,7 +126,7 @@ public final class TxLowLevelBuilder {
 		buf.put(bytes);
 		buf.put((byte) arg.length); // arg length
 		buf.put(arg);
-		instruction(REInstruction.REOp.VDOWNARG, buf.array());
+		instruction(REInstruction.REMicroOp.VDOWNARG, buf.array());
 		this.remoteDownSubstate.add(SubstateId.ofVirtualSubstate(bytes));
 		return this;
 	}
@@ -135,12 +136,12 @@ public final class TxLowLevelBuilder {
 		if (particle == null) {
 			throw new IllegalStateException("Local particle does not exist: " + index);
 		}
-		instruction(REInstruction.REOp.LDOWN, Ints.toByteArray(index));
+		instruction(REInstruction.REMicroOp.LDOWN, Ints.toByteArray(index));
 		return this;
 	}
 
 	public TxLowLevelBuilder down(SubstateId substateId) {
-		instruction(REInstruction.REOp.DOWN, substateId.asBytes());
+		instruction(REInstruction.REMicroOp.DOWN, substateId.asBytes());
 		this.remoteDownSubstate.add(substateId);
 		return this;
 	}
@@ -151,12 +152,27 @@ public final class TxLowLevelBuilder {
 			throw new IllegalStateException("Cannot down all of particle with multiple ids");
 		}
 
-		instruction(REInstruction.REOp.DOWNALL, new byte[] {classIds.get(0)});
+		instruction(REInstruction.REMicroOp.DOWNALL, new byte[] {classIds.get(0)});
 		return this;
 	}
 
 	public TxLowLevelBuilder end() {
-		instruction(REInstruction.REOp.END, new byte[0]);
+		instruction(REInstruction.REMicroOp.END, new byte[0]);
+		return this;
+	}
+
+	public TxLowLevelBuilder payFee(UInt256 amount) {
+		var data = new byte[2 + UInt256.BYTES];
+		data[0] = UInt256.BYTES + 1;
+		data[1] = 0;
+		amount.toByteArray(data, 2);
+		instruction(REInstruction.REMicroOp.SYSCALL, data);
+		return this;
+	}
+
+	public TxLowLevelBuilder disableResourceAllocAndDestroy() {
+		var data = new byte[] {0, 1};
+		instruction(REInstruction.REMicroOp.HEADER, data);
 		return this;
 	}
 
@@ -169,7 +185,7 @@ public final class TxLowLevelBuilder {
 	}
 
 	public TxLowLevelBuilder sig(ECDSASignature signature) {
-		instruction(REInstruction.REOp.SIG, RESerializer.serializeSignature(signature));
+		instruction(REInstruction.REMicroOp.SIG, RESerializer.serializeSignature(signature));
 		return this;
 	}
 

@@ -33,6 +33,8 @@ import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
@@ -102,14 +104,18 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.radixdlt.statecomputer.transaction.TokenFeeChecker.FIXED_FEE;
+
 @RunWith(Parameterized.class)
 public class StakingUnstakingValidatorsTest {
 	private static final Logger logger = LogManager.getLogger();
 	@Parameterized.Parameters
 	public static Collection<Object[]> forksModule() {
 		return List.of(new Object[][] {
-			{new RadixEngineForksLatestOnlyModule(View.of(100))},
-			{new ForkOverwritesWithShorterEpochsModule()},
+			{new RadixEngineForksLatestOnlyModule(View.of(100), false), false},
+			{new ForkOverwritesWithShorterEpochsModule(false), false},
+			{new RadixEngineForksLatestOnlyModule(View.of(100), true), true},
+			{new ForkOverwritesWithShorterEpochsModule(true), true},
 		});
 	}
 
@@ -125,8 +131,9 @@ public class StakingUnstakingValidatorsTest {
 	private List<Injector> nodes = new ArrayList<>();
 	private final ImmutableList<ECKeyPair> nodeKeys;
 	private final Module radixEngineConfiguration;
+	private final boolean payFees;
 
-	public StakingUnstakingValidatorsTest(Module forkModule) {
+	public StakingUnstakingValidatorsTest(Module forkModule, boolean payFees) {
 		this.nodeKeys = Stream.generate(ECKeyPair::generateNew)
 			.limit(20)
 			.sorted(Comparator.comparing(k -> k.getPublicKey().euid()))
@@ -136,6 +143,7 @@ public class StakingUnstakingValidatorsTest {
 			forkModule,
 			RadixEngineConfig.asModule(1, 10, 50)
 		);
+		this.payFees = payFees;
 	}
 
 	@Before
@@ -309,7 +317,13 @@ public class StakingUnstakingValidatorsTest {
 				default:
 					continue;
 			}
-			dispatcher.dispatch(NodeApplicationRequest.create(action));
+
+			var request = TxnConstructionRequest.create();
+			if (payFees) {
+				request.action(new PayFee(acct, FIXED_FEE));
+			}
+			request.action(action);
+			dispatcher.dispatch(NodeApplicationRequest.create(request));
 			this.nodes.forEach(n -> {
 				n.getInstance(new Key<EventDispatcher<MempoolRelayTrigger>>() { }).dispatch(MempoolRelayTrigger.create());
 				n.getInstance(new Key<EventDispatcher<SyncCheckTrigger>>() { }).dispatch(SyncCheckTrigger.create());
@@ -327,7 +341,7 @@ public class StakingUnstakingValidatorsTest {
 		var totalStaked = entryStore.reduceUpParticles(ValidatorStake.class, UInt256.ZERO,
 			(i, p) -> {
 				var tokens = (ValidatorStake) p;
-				return i.add(tokens.getTotalStake());
+				return i.add(tokens.getAmount());
 			}
 		);
 		logger.info("Total staked: {}", totalStaked);

@@ -5,7 +5,6 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.REAddr;
 
 import java.util.List;
@@ -49,7 +48,7 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 
 	@Override
 	public Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId) {
-		if (transientStore.getSpin(substateId) == Spin.NEUTRAL) {
+		if (transientStore.getSpin(substateId).isEmpty()) {
 			return base.loadUpParticle(txn, substateId);
 		}
 
@@ -62,7 +61,7 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 			transientStore.openIndexedCursor(particleClass),
 			() -> SubstateCursor.filter(
 				base.openIndexedCursor(dbTxn, particleClass),
-				s -> transientStore.getSpin(s.getId()) != Spin.DOWN
+				s -> transientStore.getSpin(s.getId()).isEmpty()
 			)
 		);
 	}
@@ -73,7 +72,7 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 			transientStore.openIndexedCursor(particleClass),
 			() -> SubstateCursor.filter(
 				base.openIndexedCursor(particleClass),
-				s -> transientStore.getSpin(s.getId()) != Spin.DOWN
+				s -> transientStore.getSpin(s.getId()).isEmpty()
 			)
 		);
 	}

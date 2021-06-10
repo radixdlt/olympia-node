@@ -319,7 +319,7 @@ public final class RESerializer {
 	private static void serializeData(ValidatorStake stake, ByteBuffer buf) {
 		buf.put(SubstateType.STAKE.id);
 		serializeKey(buf, stake.getValidatorKey());
-		buf.put(stake.getTotalStake().toByteArray());
+		buf.put(stake.getAmount().toByteArray());
 		buf.put(stake.getTotalOwnership().toByteArray());
 	}
 
@@ -442,7 +442,7 @@ public final class RESerializer {
 				buf.put(i.toByteArray());
 			},
 			() -> {
-				p.getMinter().ifPresentOrElse(
+				p.getOwner().ifPresentOrElse(
 					m -> {
 						buf.put((byte) 1);
 						serializeKey(buf, m);

@@ -19,7 +19,7 @@ package com.radixdlt.engine;
 
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.MutableTokenDefinition;
-import com.radixdlt.atom.TxActionListBuilder;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
@@ -37,6 +37,7 @@ import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV1;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV1;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV2;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.engine.parser.REParser;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -69,11 +70,11 @@ public class StakedTokensTest {
 		cmAtomOS.load(new ValidatorConstraintScrypt());
 		cmAtomOS.load(new TokensConstraintScryptV1());
 		cmAtomOS.load(new StakingConstraintScryptV2());
-		final var cm = new ConstraintMachine.Builder()
-			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
-			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
-			.setParticleTransitionProcedures(cmAtomOS.getProcedures())
-			.build();
+		final var cm = new ConstraintMachine(
+			cmAtomOS.virtualizedUpParticles(),
+			cmAtomOS.getProcedures()
+		);
+		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 			.put(RegisterValidator.class, new RegisterValidatorConstructor())
@@ -84,9 +85,10 @@ public class StakedTokensTest {
 			.put(UnstakeTokens.class, new UnstakeTokensConstructorV1())
 			.build();
 		this.store = new InMemoryEngineStore<>();
-		this.engine = new RadixEngine<>(actionConstructors, cm, this.store);
+		this.engine = new RadixEngine<>(parser, actionConstructors, cm, this.store);
 
 		var tokDef = new MutableTokenDefinition(
+			null,
 			"xrd",
 			"Test",
 			"description",
@@ -94,11 +96,10 @@ public class StakedTokensTest {
 			null
 		);
 		var txn0 = engine.construct(
-			TxActionListBuilder.create()
+			TxnConstructionRequest.create()
 				.createMutableToken(tokDef)
 				.mint(this.tokenRri, tokenOwnerAccount, UInt256.TEN)
 				.registerAsValidator(this.validatorKeyPair.getPublicKey())
-				.build()
 		).buildWithoutSignature();
 
 		this.engine.execute(List.of(txn0), null, PermissionLevel.SYSTEM);

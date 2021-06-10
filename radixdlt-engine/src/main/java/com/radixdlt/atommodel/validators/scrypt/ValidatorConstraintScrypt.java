@@ -18,18 +18,20 @@
 
 package com.radixdlt.atommodel.validators.scrypt;
 
-import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
-import com.radixdlt.atomos.Result;
-import com.radixdlt.atomos.SysCalls;
+import com.radixdlt.atomos.Loader;
 import com.radixdlt.constraintmachine.AuthorizationException;
+import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.StatelessSubstateVerifier;
+import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 
@@ -50,21 +52,23 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 	}
 
 	@Override
-	public void main(SysCalls os) {
-		os.registerParticle(ValidatorParticle.class, ParticleDefinition.<ValidatorParticle>builder()
+	public void main(Loader os) {
+		os.particle(ValidatorParticle.class, ParticleDefinition.<ValidatorParticle>builder()
 			.staticValidation(checkAddressAndUrl(ValidatorParticle::getUrl))
 			.virtualizeUp(p -> !p.isRegisteredForNextEpoch() && p.getUrl().isEmpty() && p.getName().isEmpty())
 			.build()
 		);
 
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			ValidatorParticle.class, VoidReducerState.class,
-			(d, r) -> PermissionLevel.USER,
-			(d, r, k) -> {
-				if (!k.map(d.getSubstate().getKey()::equals).orElse(false)) {
-					throw new AuthorizationException("Key does not match.");
+			d -> new Authorization(
+				PermissionLevel.USER,
+				(r, c) -> {
+					if (!c.key().map(d.getSubstate().getKey()::equals).orElse(false)) {
+						throw new AuthorizationException("Key does not match.");
+					}
 				}
-			},
+			),
 			(d, s, r) -> {
 				if (d.getArg().isPresent()) {
 					throw new ProcedureException("Args not allowed");
@@ -73,18 +77,17 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 			}
 		));
 
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			ValidatorUpdate.class, ValidatorParticle.class,
-			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> { },
-			(s, u, r) -> {
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			(s, u, c, r) -> {
 				if (!Objects.equals(s.prevState.getKey(), u.getKey())) {
 					throw new ProcedureException(String.format(
 						"validator addresses do not match: %s != %s",
 						s.prevState.getKey(), u.getKey()
 					));
 				}
-				return ReducerResult.complete(Unknown.create());
+				return ReducerResult.complete();
 			}
 		));
 	}
@@ -95,14 +98,12 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		+ "(%[0-9A-Fa-f]{2}|[-()_.!~*';/?:@&=+$,A-Za-z0-9])+)([).!';/?:,][[:blank:]])?$"
 	);
 
-	private static <I> Function<I, Result> checkAddressAndUrl(Function<I, String> urlMapper) {
+	private static <I extends Particle> StatelessSubstateVerifier<I> checkAddressAndUrl(Function<I, String> urlMapper) {
 		return particle -> {
 			String url = urlMapper.apply(particle);
 			if (!url.isEmpty() && !OWASP_URL_REGEX.matcher(url).matches()) {
-				return Result.error("url is not a valid URL: " + url);
+				throw new TxnParseException("url is not a valid URL: " + url);
 			}
-
-			return Result.success();
 		};
 	}
 }

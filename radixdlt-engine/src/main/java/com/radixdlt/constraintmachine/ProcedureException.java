@@ -19,6 +19,10 @@
 package com.radixdlt.constraintmachine;
 
 public class ProcedureException extends Exception {
+	public ProcedureException(Throwable cause) {
+		super(cause);
+	}
+
 	public ProcedureException(String msg) {
 		super(msg);
 	}

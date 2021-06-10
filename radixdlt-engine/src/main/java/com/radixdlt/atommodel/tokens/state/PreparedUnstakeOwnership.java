@@ -18,14 +18,15 @@
 
 package com.radixdlt.atommodel.tokens.state;
 
-import com.radixdlt.atommodel.tokens.Fungible;
+import com.radixdlt.atommodel.tokens.Bucket;
+import com.radixdlt.atommodel.tokens.ResourceInBucket;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 
-public final class PreparedUnstakeOwnership implements Fungible {
+public final class PreparedUnstakeOwnership implements ResourceInBucket {
 	private final UInt256 amount;
 
 	// Bucket keys
@@ -51,6 +52,15 @@ public final class PreparedUnstakeOwnership implements Fungible {
 	}
 
 	@Override
+	public UInt256 getAmount() {
+		return this.amount;
+	}
+
+	public Bucket bucket() {
+		return new ExittingOwnershipBucket(owner, delegateKey);
+	}
+
+	@Override
 	public String toString() {
 		return String.format("%s[%s:%s:%s]",
 			getClass().getSimpleName(),
@@ -58,11 +68,6 @@ public final class PreparedUnstakeOwnership implements Fungible {
 			owner,
 			delegateKey
 		);
-	}
-
-	@Override
-	public UInt256 getAmount() {
-		return this.amount;
 	}
 
 	@Override

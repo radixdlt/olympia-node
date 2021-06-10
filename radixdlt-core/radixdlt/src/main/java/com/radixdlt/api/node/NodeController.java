@@ -27,10 +27,12 @@ import com.radixdlt.application.MyStakedBalance;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.application.ValidatorInfo;
 import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
@@ -59,7 +61,6 @@ import org.json.JSONObject;
 import com.radixdlt.api.Controller;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -169,7 +170,7 @@ public final class NodeController implements Controller {
 				var description = paramsObject.getString("description");
 				var iconUrl = paramsObject.getString("iconUrl");
 				var url = paramsObject.getString("url");
-				return new CreateMutableToken(symbol, name, description, iconUrl, url);
+				return new CreateMutableToken(bftKey, symbol, name, description, iconUrl, url);
 			}
 			case "CreateFixedToken": {
 				var symbol = paramsObject.getString("symbol");
@@ -247,15 +248,15 @@ public final class NodeController implements Controller {
 		withBody(exchange, values -> {
 			try {
 				var actionsArray = values.getJSONArray("actions");
-				var actions = new ArrayList<TxAction>();
+				var txnConstructionRequest = TxnConstructionRequest.create();
+				txnConstructionRequest.action(new PayFee(account, TokenFeeChecker.FIXED_FEE));
 				for (int i = 0; i < actionsArray.length(); i++) {
 					var actionObject = actionsArray.getJSONObject(i);
 					var txAction = parseAction(actionObject);
-					actions.add(txAction);
+					txnConstructionRequest.action(txAction);
 				}
-				actions.add(new BurnToken(REAddr.ofNativeToken(), account, TokenFeeChecker.FIXED_FEE));
 				var completableFuture = new CompletableFuture<MempoolAddSuccess>();
-				var request = NodeApplicationRequest.create(actions, completableFuture);
+				var request = NodeApplicationRequest.create(txnConstructionRequest, completableFuture);
 				nodeApplicationRequestEventDispatcher.dispatch(request);
 
 				var success = completableFuture.get();

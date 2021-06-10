@@ -20,7 +20,9 @@ package com.radixdlt.atommodel.tokens;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.MintToken;
@@ -47,6 +49,7 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -145,13 +148,14 @@ public class UnstakeTokensV2Test {
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
 		scrypts.forEach(cmAtomOS::load);
-		var cm = new ConstraintMachine.Builder()
-			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
-			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
-			.setParticleTransitionProcedures(cmAtomOS.getProcedures())
-			.build();
+		var cm = new ConstraintMachine(
+			cmAtomOS.virtualizedUpParticles(),
+			cmAtomOS.getProcedures()
+		);
+		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
 		this.store = new InMemoryEngineStore<>();
 		this.sut = new RadixEngine<>(
+			parser,
 			ActionConstructors.newBuilder()
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.put(SystemNextEpoch.class, new NextEpochConstructorV2())
@@ -168,11 +172,10 @@ public class UnstakeTokensV2Test {
 		this.key = ECKeyPair.generateNew();
 		this.accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var txn = this.sut.construct(
-			List.of(
-				new CreateSystem(),
-				new CreateMutableToken("xrd", "Name", "", "", ""),
-				new MintToken(REAddr.ofNativeToken(), accountAddr, totalStakes)
-			)
+			TxnConstructionRequest.create()
+				.action(new CreateSystem())
+				.action(new CreateMutableToken(null, "xrd", "Name", "", "", ""))
+				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, totalStakes))
 		).buildWithoutSignature();
 		this.sut.execute(List.of(txn), null, PermissionLevel.SYSTEM);
 	}
@@ -180,8 +183,11 @@ public class UnstakeTokensV2Test {
 	@Test
 	public void unstake_tokens_after_epoch() throws Exception {
 		// Arrange
+		var stakeActions = this.stakes.stream()
+			.map(amt -> new StakeTokens(accountAddr, key.getPublicKey(), amt))
+			.collect(Collectors.<TxAction>toList());
 		var stake = this.sut.construct(
-			this.stakes.stream().map(amt -> new StakeTokens(accountAddr, key.getPublicKey(), amt)).collect(Collectors.toList())
+			TxnConstructionRequest.create().actions(stakeActions)
 		).signAndBuild(key::sign);
 		this.sut.execute(List.of(stake));
 		var nextEpoch = sut.construct(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 1))
@@ -197,8 +203,11 @@ public class UnstakeTokensV2Test {
 	@Test
 	public void cannot_unstake_others_tokens() throws Exception {
 		// Arrange
+		var stakeActions = this.stakes.stream()
+			.map(amt -> new StakeTokens(accountAddr, key.getPublicKey(), amt))
+			.collect(Collectors.<TxAction>toList());
 		var stake = this.sut.construct(
-			this.stakes.stream().map(amt -> new StakeTokens(accountAddr, key.getPublicKey(), amt)).collect(Collectors.toList())
+			TxnConstructionRequest.create().actions(stakeActions)
 		).signAndBuild(key::sign);
 		this.sut.execute(List.of(stake));
 		var nextEpoch = sut.construct(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 1))
@@ -220,8 +229,11 @@ public class UnstakeTokensV2Test {
 	public void cant_construct_transfer_with_unstaked_tokens_immediately() throws Exception {
 		// Arrange
 		var acct2 = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
+		var stakeActions = this.stakes.stream()
+			.map(amt -> new StakeTokens(accountAddr, key.getPublicKey(), amt))
+			.collect(Collectors.<TxAction>toList());
 		var txn = sut.construct(
-			this.stakes.stream().map(amt -> new StakeTokens(accountAddr, key.getPublicKey(), amt)).collect(Collectors.toList())
+			TxnConstructionRequest.create().actions(stakeActions)
 		).signAndBuild(key::sign);
 		sut.execute(List.of(txn));
 		var nextEpoch = sut.construct(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 1))

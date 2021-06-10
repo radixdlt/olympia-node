@@ -17,20 +17,19 @@
 
 package com.radixdlt.client.store.berkeley;
 
-import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.UnstakeOwnership;
+import com.google.common.collect.Streams;
+import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
-import com.radixdlt.atommodel.system.state.StakeOwnership;
-import com.radixdlt.atommodel.system.state.ValidatorStake;
-import com.radixdlt.atommodel.tokens.state.ExittingStake;
-import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
+import com.radixdlt.atommodel.tokens.Bucket;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
-import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.REAddrParticle;
+import com.radixdlt.accounting.TwoActorEntry;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.TxnParseException;
+import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.identifiers.AccountAddress;
+import com.radixdlt.identifiers.ValidatorAddress;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,10 +39,6 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atom.actions.BurnToken;
-import com.radixdlt.atom.actions.CreateFixedToken;
-import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.client.Rri;
 import com.radixdlt.client.api.TxHistoryEntry;
@@ -51,8 +46,6 @@ import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.ClientApiStoreException;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.TransactionParser;
-import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -73,11 +66,13 @@ import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.OperationStatus;
 
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -89,6 +84,8 @@ import java.util.stream.Stream;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.client.api.ApiErrors.INVALID_PAGE_SIZE;
@@ -148,9 +145,10 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final CompositeDisposable disposable = new CompositeDisposable();
 	private final AtomicReference<Instant> currentTimestamp = new AtomicReference<>(NOW);
 	private final AtomicLong currentEpoch = new AtomicLong(0);
+	private final AtomicLong currentRound = new AtomicLong(0);
 	private final TxnParser txnParser;
 	private final TransactionParser transactionParser;
-	private final ConstraintMachine constraintMachine;
+	private final REParser parser;
 
 	private Database transactionHistory;
 	private Database tokenDefinitions;
@@ -163,7 +161,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	public BerkeleyClientApiStore(
 		DatabaseEnvironment dbEnv,
-		ConstraintMachine constraintMachine,
+		REParser parser,
 		TxnParser txnParser,
 		BerkeleyLedgerEntryStore store,
 		Serialization serialization,
@@ -173,7 +171,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		boolean isTest
 	) {
 		this.dbEnv = dbEnv;
-		this.constraintMachine = constraintMachine;
+		this.parser = parser;
 		this.txnParser = txnParser;
 		this.store = store;
 		this.serialization = serialization;
@@ -187,7 +185,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	@Inject
 	public BerkeleyClientApiStore(
 		DatabaseEnvironment dbEnv,
-		ConstraintMachine constraintMachine,
+		REParser parser,
 		TxnParser txnParser,
 		BerkeleyLedgerEntryStore store,
 		Serialization serialization,
@@ -196,7 +194,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		TransactionParser transactionParser
 	) {
 		this.dbEnv = dbEnv;
-		this.constraintMachine = constraintMachine;
+		this.parser = parser;
 		this.txnParser = txnParser;
 		this.store = store;
 		this.serialization = serialization;
@@ -596,177 +594,92 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		act.getParsedTxs().forEach(this::processRETransaction);
 	}
 
-	private void processRETransaction(REProcessedTxn reTxn) {
-		reTxn.getGroupedStateUpdates().forEach(this::updateSubstate);
+	private JSONObject accountingJson(
+		long epoch,
+		REProcessedTxn reTxn,
+		List<REResourceAccounting> accountingObjects
+	) {
+		var txnJson = new JSONObject();
+		txnJson.put("transaction_identifier", reTxn.getTxn().getId().toString());
+		txnJson.put("epoch", epoch);
+		if (currentRound.get() != 0L) {
+			txnJson.put("round", currentRound.get());
+		}
+		txnJson.put("epoch", epoch);
+		txnJson.put("timestamp", currentTimestamp.get().toEpochMilli());
+		txnJson.put("type", reTxn.isSystemOnly() ? "SYSTEM" : "USER");
+		txnJson.put("transaction_size", reTxn.getTxn().getPayload().length);
+		var accountingEntries = new JSONArray();
+		txnJson.put("accounting_entries", accountingEntries);
+		accountingObjects.forEach(accounting -> {
+			if (accounting.bucketAccounting().isEmpty()) {
+				return;
+			}
 
-		var addressesInActions = reTxn.getActions().stream()
-			.map(REParsedAction::getTxAction)
-			.flatMap(a -> {
-				if (a instanceof TransferToken) {
-					var transferToken = (TransferToken) a;
-					return Stream.of(transferToken.from(), transferToken.to());
-				} else if (a instanceof BurnToken) {
-					var burnToken = (BurnToken) a;
-					return Stream.of(burnToken.from());
-				} else if (a instanceof MintToken) {
-					var mintToken = (MintToken) a;
-					return Stream.of(mintToken.to());
-				} else if (a instanceof StakeTokens) {
-					var stakeTokens = (StakeTokens) a;
-					return Stream.of(stakeTokens.from());
-				} else if (a instanceof UnstakeOwnership) {
-					var unstake = (UnstakeOwnership) a;
-					return Stream.of(unstake.accountAddr());
-				} else if (a instanceof CreateFixedToken) {
-					var createFixedToken = (CreateFixedToken) a;
-					return Stream.of(createFixedToken.getAccountAddr());
+			var entry = new JSONObject();
+			var bucketAccounting = new JSONArray();
+			var isFee = TwoActorEntry.parse(accounting.bucketAccounting()).map(TwoActorEntry::isFee).orElse(false);
+			entry.put("isFee", isFee);
+
+			accounting.bucketAccounting().forEach((b, i) -> {
+				var bucketJson = new JSONObject();
+				bucketJson.put("type", b.getClass().getSimpleName());
+				if (b.getOwner() != null) {
+					bucketJson.put("owner", AccountAddress.of(b.getOwner()));
 				}
-
-				return Stream.empty();
+				if (b.getValidatorKey() != null) {
+					bucketJson.put("validator", ValidatorAddress.of(b.getValidatorKey()));
+				}
+				bucketJson.put("delta", i.toString());
+				bucketJson.put("asset", b.resourceAddr() == null ? "stake_ownership" : getRriOrFail(b.resourceAddr()));
+				bucketAccounting.put(bucketJson);
 			});
+			entry.put("entries", bucketAccounting);
+			accountingEntries.put(entry);
+		});
+		return txnJson;
+	}
 
+	private void processRETransaction(REProcessedTxn reTxn) {
+		// TODO: cur epoch retrieval a bit hacky but needs to be like this for now
+		// TODO: as epoch get updated at the end of an epoch transition
+		var curEpoch = currentEpoch.get();
+		var accountingObjects = reTxn.getGroupedStateUpdates().stream()
+			.map(this::processGroupedStateUpdates)
+			.collect(Collectors.toList());
+
+		var actions = accountingObjects.stream()
+			.map(a -> TwoActorEntry.parse(a.bucketAccounting()))
+			.collect(Collectors.toList());
+		var addressesInTxn =
+			accountingObjects.stream()
+				.flatMap(r -> r.bucketAccounting().keySet().stream())
+				.map(Bucket::getOwner)
+				.filter(Objects::nonNull);
 		var addresses = Stream.concat(
-			addressesInActions,
+			addressesInTxn,
 			reTxn.getSignedBy().stream().map(REAddr::ofPubKeyAccount)
 		).collect(Collectors.toSet());
 
-		transactionParser.parse(reTxn, currentTimestamp.get(), this::getRriOrFail, this::computeStakeFromOwnership)
-			.onSuccess(parsed -> addresses.forEach(address -> storeSingleTransaction(parsed, address)));
+		transactionParser.parse(
+			reTxn,
+			actions,
+			currentTimestamp.get(),
+			this::getRriOrFail,
+			this::computeStakeFromOwnership
+		).onSuccess(parsed -> addresses.forEach(address -> storeSingleTransaction(parsed, address)));
+
+		if (log.isTraceEnabled()) {
+			log.trace("TRANSACTION_LOG: {}", accountingJson(curEpoch, reTxn, accountingObjects));
+		}
 	}
 
-	private void updateSubstate(List<REStateUpdate> updates) {
+	private REResourceAccounting processGroupedStateUpdates(List<REStateUpdate> updates) {
 		byte[] addressArg = null;
+
 		for (var update : updates) {
 			var substate = update.getRawSubstate();
-			if (substate instanceof TokensInAccount) {
-				var tokensInAccount = (TokensInAccount) substate;
-				var rri = getRriOrFail(tokensInAccount.getResourceAddr());
-				var accountEntry = BalanceEntry.create(
-					tokensInAccount.getHoldingAddr(),
-					null,
-					rri,
-					UInt384.from(tokensInAccount.getAmount()),
-					update.isShutDown(),
-					null
-				);
-				storeBalanceEntry(accountEntry);
-
-				// Can probably optimize this out for every transfer
-				var tokenEntry = BalanceEntry.create(
-					null,
-					null,
-					rri,
-					UInt384.from(tokensInAccount.getAmount()),
-					update.isShutDown(),
-					null
-				);
-				storeBalanceEntry(tokenEntry);
-			} else if (substate instanceof PreparedStake) {
-				var preparedStake = (PreparedStake) substate;
-				var rri = getRriOrFail(REAddr.ofNativeToken());
-				var accountEntry = BalanceEntry.create(
-					preparedStake.getOwner(),
-					preparedStake.getDelegateKey(),
-					rri,
-					UInt384.from(preparedStake.getAmount()),
-					update.isShutDown(),
-					null
-				);
-				storeBalanceEntry(accountEntry);
-
-				// Can probably optimize this out for every transfer
-				var tokenEntry = BalanceEntry.create(
-					null,
-					null,
-					rri,
-					UInt384.from(preparedStake.getAmount()),
-					update.isShutDown(),
-					null
-				);
-				storeBalanceEntry(tokenEntry);
-			} else if (substate instanceof PreparedUnstakeOwnership) {
-				var unstakeOwnership = (PreparedUnstakeOwnership) substate;
-				var accountEntry = BalanceEntry.create(
-					unstakeOwnership.getOwner(),
-					unstakeOwnership.getDelegateKey(),
-					"stake-ownership",
-					UInt384.from(unstakeOwnership.getAmount()),
-					update.isShutDown(),
-					getEpoch() + ValidatorStake.EPOCHS_LOCKED
-				);
-				storeBalanceEntry(accountEntry);
-
-			} else if (substate instanceof ExittingStake) {
-				var exittingStake = (ExittingStake) substate;
-				var rri = getRriOrFail(REAddr.ofNativeToken());
-
-				var accountEntry = BalanceEntry.create(
-					exittingStake.getOwner(),
-					exittingStake.getDelegateKey(),
-					rri,
-					UInt384.from(exittingStake.getAmount()),
-					update.isShutDown(),
-					exittingStake.getEpochUnlocked()
-				);
-				storeBalanceEntry(accountEntry);
-
-				// Token balance
-				var tokenEntry = BalanceEntry.create(
-					null,
-					null,
-					rri,
-					UInt384.from(exittingStake.getAmount()),
-					update.isShutDown(),
-					null
-				);
-				storeBalanceEntry(tokenEntry);
-			} else if (substate instanceof StakeOwnership) {
-				var stakeOwnership = (StakeOwnership) substate;
-				var accountEntry = BalanceEntry.create(
-					stakeOwnership.getOwner(),
-					stakeOwnership.getDelegateKey(),
-					"stake-ownership",
-					UInt384.from(stakeOwnership.getAmount()),
-					update.isShutDown(),
-					null
-				);
-				storeBalanceEntry(accountEntry);
-			} else if (substate instanceof ValidatorStake) {
-				var validatorStake = (ValidatorStake) substate;
-				var rri = getRriOrFail(REAddr.ofNativeToken());
-
-				// validator ownership
-				var ownershipEntry = BalanceEntry.create(
-					null,
-					validatorStake.getValidatorKey(),
-					"stake-ownership",
-					UInt384.from(validatorStake.getTotalOwnership()),
-					update.isShutDown(),
-					null
-				);
-				storeBalanceEntry(ownershipEntry);
-
-				// validator stake
-				var validatorEntry = BalanceEntry.create(
-					null,
-					validatorStake.getValidatorKey(),
-					rri,
-					UInt384.from(validatorStake.getTotalStake()),
-					update.isShutDown(),
-					null
-				);
-				storeBalanceEntry(validatorEntry);
-
-				var tokenEntry = BalanceEntry.create(
-					null,
-					null,
-					rri,
-					UInt384.from(validatorStake.getTotalStake()),
-					update.isShutDown(),
-					null
-				);
-				storeBalanceEntry(tokenEntry);
-			} else if (substate instanceof REAddrParticle) {
+			if (substate instanceof REAddrParticle) {
 				// FIXME: sort of a hacky way of getting this info
 				addressArg = update.getArg().orElse("xrd".getBytes(StandardCharsets.UTF_8));
 			} else if (substate instanceof TokenResource) {
@@ -786,23 +699,64 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					tokenResource.isMutable()
 				);
 				storeTokenDefinition(record);
-			} else if (substate instanceof SystemParticle && update.isBootUp()) {
+			} else if (substate instanceof SystemParticle) {
 				var s = (SystemParticle) substate;
 				currentTimestamp.set(s.asInstant());
 				currentEpoch.set(s.getEpoch());
-			} else if (substate instanceof RoundData && update.isBootUp()) {
+				currentRound.set(s.getView());
+			} else if (substate instanceof RoundData) {
 				var d = (RoundData) substate;
 				currentTimestamp.set(d.asInstant());
-			} else if (substate instanceof EpochData && update.isBootUp()) {
+				currentRound.set(d.getView());
+			} else if (substate instanceof EpochData) {
 				var d = (EpochData) substate;
 				currentEpoch.set(d.getEpoch());
 			}
 		}
+
+		var accounting = REResourceAccounting.compute(updates);
+		var bucketAccounting = accounting.bucketAccounting();
+		var bucketEntries = bucketAccounting.entrySet().stream()
+			.map(e -> {
+				var r = e.getKey();
+				var i = e.getValue();
+				var rri = r.resourceAddr() != null ? getRriOrFail(r.resourceAddr()) : "stake-ownership";
+				return BalanceEntry.create(
+					r.getOwner(),
+					r.getValidatorKey(),
+					rri,
+					UInt384.from(i.abs().toByteArray()),
+					i.signum() == -1,
+					r.getEpochUnlock()
+				);
+			});
+		var stakeOwnershipEntries = accounting.stakeOwnershipAccounting().entrySet().stream()
+			.filter(e -> !e.getValue().equals(BigInteger.ZERO))
+			.map(e -> BalanceEntry.create(
+					null,
+					e.getKey(),
+					"stake-ownership",
+					UInt384.from(e.getValue().abs().toByteArray()),
+					e.getValue().signum() == -1,
+					null
+			));
+		var resourceEntries = accounting.resourceAccounting().entrySet().stream()
+			.filter(e -> !e.getValue().equals(BigInteger.ZERO))
+			.map(e -> {
+				var rri = getRriOrFail(e.getKey());
+				var amt = UInt384.from(e.getValue().abs().toByteArray());
+				var isNegative = e.getValue().signum() == -1;
+				return BalanceEntry.resource(rri, amt, isNegative);
+			});
+		Streams.concat(bucketEntries, stakeOwnershipEntries, resourceEntries)
+			.forEach(this::storeBalanceEntry);
+
+		return accounting;
 	}
 
 	private Optional<ECPublicKey> extractCreator(Txn tx) {
 		try {
-			return constraintMachine.parse(tx).getSignedBy();
+			return parser.parse(tx).getSignedBy();
 		} catch (TxnParseException e) {
 			throw new IllegalStateException();
 		}

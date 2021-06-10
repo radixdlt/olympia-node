@@ -25,22 +25,39 @@ import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.TxnParseException;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.Objects;
 
 public final class TxnParser {
 	private final LogCMStore logCMStore;
+	private final REParser parser;
 	private final ConstraintMachine constraintMachine;
 
 	@Inject
-	public TxnParser(ConstraintMachine constraintMachine, LogCMStore logCMStore) {
+	public TxnParser(
+		REParser parser,
+		ConstraintMachine constraintMachine,
+		LogCMStore logCMStore
+	) {
+		this.parser = parser;
 		this.constraintMachine = Objects.requireNonNull(constraintMachine);
 		this.logCMStore = Objects.requireNonNull(logCMStore);
 	}
 
 	public REProcessedTxn parse(Txn txn) throws TxnParseException, ConstraintMachineException {
-		return constraintMachine.verify(logCMStore.createTransaction(), logCMStore, txn, PermissionLevel.SYSTEM);
+		var parsedTxn = parser.parse(txn);
+		var stateUpdates = constraintMachine.verify(
+			logCMStore.createTransaction(),
+			logCMStore,
+			PermissionLevel.SYSTEM,
+			parsedTxn.instructions(),
+			parsedTxn.getSignedBy(),
+			parsedTxn.disableResourceAllocAndDestroy()
+		);
+
+		return new REProcessedTxn(parsedTxn, stateUpdates);
 	}
 
 	public Result<REProcessedTxn> parseTxn(Txn txn) {

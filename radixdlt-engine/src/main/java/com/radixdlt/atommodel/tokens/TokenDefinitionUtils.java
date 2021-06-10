@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
-import com.radixdlt.atomos.Result;
+import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.utils.UInt256;
 
 import java.util.regex.Pattern;
@@ -67,73 +67,52 @@ public final class TokenDefinitionUtils {
 		return "xrd";
 	}
 
-	private static Result validateUrl(String url) {
+	private static void validateUrl(String url) throws TxnParseException {
 		if (!url.isEmpty() && !OWASP_URL_REGEX.matcher(url).matches()) {
-			return Result.error("URL: not a valid URL: " + url);
+			throw new TxnParseException("URL: not a valid URL: " + url);
 		}
-		return Result.success();
 	}
 
-	private static Result validateIconUrl(String iconUrl) {
+	private static void validateIconUrl(String iconUrl) throws TxnParseException {
 		if (!iconUrl.isEmpty() && !OWASP_URL_REGEX.matcher(iconUrl).matches()) {
-			return Result.error("Icon: not a valid URL: " + iconUrl);
+			throw new TxnParseException("Icon: not a valid URL: " + iconUrl);
 		}
-		return Result.success();
 	}
 
-	static Result validateDescription(String description) {
+	static void validateDescription(String description) throws TxnParseException {
 		if (description.length() > MAX_DESCRIPTION_LENGTH) {
-			return Result.error("Description: invalid length, description must be shorter than or equal to "
+			throw new TxnParseException("Description: invalid length, description must be shorter than or equal to "
 				+ MAX_DESCRIPTION_LENGTH + " but is " + description.length());
 		}
-
-		return Result.success();
 	}
 
-	public static Result staticCheck(PreparedStake stakedParticle) {
+	public static void staticCheck(PreparedStake stakedParticle) throws TxnParseException {
 		if (stakedParticle.getDelegateKey() == null) {
-			return Result.error("delegateAddress must not be null");
+			throw new TxnParseException("delegateAddress must not be null");
 		}
 		if (stakedParticle.getAmount() == null) {
-			return Result.error("amount must not be null");
+			throw new TxnParseException("amount must not be null");
 		}
 		if (stakedParticle.getAmount().isZero()) {
-			return Result.error("amount must not be zero");
+			throw new TxnParseException("amount must not be zero");
 		}
-
-		return Result.success();
 	}
 
-	public static Result staticCheck(TokensInAccount tokensInAccount) {
+	public static void staticCheck(TokensInAccount tokensInAccount) throws TxnParseException {
 		if (tokensInAccount.getAmount() == null) {
-			return Result.error("amount must not be null");
+			throw new TxnParseException("amount must not be null");
 		}
 		if (tokensInAccount.getAmount().isZero()) {
-			return Result.error("amount must not be zero");
+			throw new TxnParseException("amount must not be zero");
 		}
 		if (!tokensInAccount.getHoldingAddr().isAccount()) {
-			return Result.error("Tokens must be held by holding address: " + tokensInAccount.getHoldingAddr());
+			throw new TxnParseException("Tokens must be held by holding address: " + tokensInAccount.getHoldingAddr());
 		}
-
-		return Result.success();
 	}
 
-	public static Result staticCheck(TokenResource tokenDefParticle) {
-		final Result descriptionResult = validateDescription(tokenDefParticle.getDescription());
-		if (descriptionResult.isError()) {
-			return descriptionResult;
-		}
-
-		final Result iconResult = validateIconUrl(tokenDefParticle.getIconUrl());
-		if (iconResult.isError()) {
-			return iconResult;
-		}
-
-		final Result urlResult = validateUrl(tokenDefParticle.getUrl());
-		if (urlResult.isError()) {
-			return urlResult;
-		}
-
-		return Result.success();
+	public static void staticCheck(TokenResource tokenDefParticle) throws TxnParseException {
+		validateDescription(tokenDefParticle.getDescription());
+		validateIconUrl(tokenDefParticle.getIconUrl());
+		validateUrl(tokenDefParticle.getUrl());
 	}
 }

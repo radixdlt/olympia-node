@@ -78,9 +78,13 @@ public class AnsibleImageWrapper {
     }
 
     public String runPlaybook(String playbook, String options, String tag) {
+        String awsAccessKeyId = System.getenv("AWS_ACCESS_KEY_ID");
+        String awsSecretAccessKey = System.getenv("AWS_SECRET_ACCESS_KEY");
+        String testnetName = clusterName.contains("_") ? clusterName.substring(0, clusterName.indexOf("_")) : clusterName;
         List<String> commandParts = Lists.newArrayList(
                 "docker", "run", "--rm", "-v", "key-volume:/ansible/ssh", "--name", "node-ansible",
-                image, playbook, "--limit", clusterName, "-t", tag
+                "-e", "AWS_ACCESS_KEY_ID=" + awsAccessKeyId, "-e", "AWS_SECRET_ACCESS_KEY=" + awsSecretAccessKey,
+                image, "-i", "aws-plugin-inventory/" + testnetName + "_aws_ec2.yml", playbook, "--limit", clusterName, "-t", tag
         );
         if (StringUtils.isNotBlank(options)) {
             commandParts.add("-e");

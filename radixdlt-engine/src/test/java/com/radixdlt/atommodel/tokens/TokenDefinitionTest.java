@@ -35,6 +35,7 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -53,15 +54,16 @@ public class TokenDefinitionTest {
 
 	@Before
 	public void setup() {
-		CMAtomOS cmAtomOS = new CMAtomOS();
+		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new TokensConstraintScryptV1());
-		ConstraintMachine cm = new ConstraintMachine.Builder()
-			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
-			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
-			.setParticleTransitionProcedures(cmAtomOS.getProcedures())
-			.build();
+		var cm = new ConstraintMachine(
+			cmAtomOS.virtualizedUpParticles(),
+			cmAtomOS.getProcedures()
+		);
+		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
+			parser,
 			ActionConstructors.newBuilder()
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
@@ -144,7 +146,7 @@ public class TokenDefinitionTest {
 			"",
 			keyPair.getPublicKey()
 		);
-		var builder = TxBuilder.newBuilder(keyPair.getPublicKey())
+		var builder = TxBuilder.newBuilder()
 			.toLowLevelBuilder()
 			.virtualDown(new REAddrParticle(addr), "smthng".getBytes(StandardCharsets.UTF_8))
 			.up(tokenDefinitionParticle)

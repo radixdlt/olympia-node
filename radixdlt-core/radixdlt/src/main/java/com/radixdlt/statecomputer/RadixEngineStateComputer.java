@@ -197,7 +197,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				systemAction = new SystemNextEpoch(updates -> {
 					var cur = stakedValidators;
 					for (var u : updates) {
-						cur = cur.setStake(u.getValidatorKey(), u.getTotalStake());
+						cur = cur.setStake(u.getValidatorKey(), u.getAmount());
 					}
 					// FIXME: cur.toValidatorSet() may be null
 					var validatorSet = cur.toValidatorSet();
@@ -310,9 +310,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 			if (forkConfig != null) {
 				log.info("Epoch {} Forking RadixEngine to {}", proof.getEpoch() + 1, forkConfig.getName());
 				this.radixEngine.replaceConstraintMachine(
-					forkConfig.getConstraintMachine(),
+					forkConfig.getConstraintMachineConfig(),
 					forkConfig.getActionConstructors(),
-					forkConfig.getBatchVerifier()
+					forkConfig.getBatchVerifier(),
+					forkConfig.getParser(),
+					forkConfig.getPostProcessedVerifier()
 				);
 				this.epochCeilingView = forkConfig.getEpochCeilingView();
 			}

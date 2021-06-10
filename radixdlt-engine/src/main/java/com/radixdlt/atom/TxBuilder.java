@@ -21,7 +21,8 @@ package com.radixdlt.atom;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
-import com.radixdlt.atommodel.tokens.Fungible;
+import com.radixdlt.atommodel.tokens.ResourceInBucket;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.atomos.REAddrParticle;
 import com.radixdlt.constraintmachine.Particle;
@@ -48,32 +49,19 @@ import java.util.stream.StreamSupport;
  */
 public final class TxBuilder {
 	private final TxLowLevelBuilder lowLevelBuilder;
-	private final ECPublicKey user;
 	private final SubstateStore remoteSubstate;
 
-	private TxBuilder(
-		ECPublicKey user,
-		SubstateStore remoteSubstate
-	) {
-		this.user = user;
+	private TxBuilder(SubstateStore remoteSubstate) {
 		this.lowLevelBuilder = TxLowLevelBuilder.newBuilder();
 		this.remoteSubstate = remoteSubstate;
 	}
 
-	public static TxBuilder newBuilder(ECPublicKey user, SubstateStore remoteSubstate) {
-		return new TxBuilder(user, remoteSubstate);
-	}
-
-	public static TxBuilder newBuilder(ECPublicKey user) {
-		return new TxBuilder(user, SubstateStore.empty());
-	}
-
 	public static TxBuilder newBuilder(SubstateStore remoteSubstate) {
-		return new TxBuilder(null, remoteSubstate);
+		return new TxBuilder(remoteSubstate);
 	}
 
 	public static TxBuilder newBuilder() {
-		return new TxBuilder(null, SubstateStore.empty());
+		return new TxBuilder(SubstateStore.empty());
 	}
 
 	public TxLowLevelBuilder toLowLevelBuilder() {
@@ -121,11 +109,21 @@ public final class TxBuilder {
 	}
 
 	// For mempool filler
-	public <T extends Particle> Substate findSubstate(
+	public <T extends Particle> T downSubstate(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		String errorMessage
 	) throws TxBuilderException {
+		var localSubstate = lowLevelBuilder.localUpSubstate().stream()
+			.filter(s -> particleClass.isInstance(s.getParticle()))
+			.filter(s -> particlePredicate.test((T) s.getParticle()))
+			.findFirst();
+
+		if (localSubstate.isPresent()) {
+			localDown(localSubstate.get().getIndex());
+			return (T) localSubstate.get().getParticle();
+		}
+
 		try (var cursor = createRemoteSubstateCursor(particleClass)) {
 			var substateRead = iteratorToStream(cursor)
 				.filter(s -> particlePredicate.test(particleClass.cast(s.getParticle())))
@@ -135,7 +133,9 @@ public final class TxBuilder {
 				throw new TxBuilderException(errorMessage);
 			}
 
-			return substateRead.get();
+			down(substateRead.get().getId());
+
+			return (T) substateRead.get().getParticle();
 		}
 	}
 
@@ -258,7 +258,7 @@ public final class TxBuilder {
 		void with(FungibleMapper<U> mapper) throws TxBuilderException;
 	}
 
-	private <T extends Fungible> UInt256 downFungible(
+	private <T extends ResourceInBucket> UInt256 downFungible(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		UInt256 amount,
@@ -278,7 +278,7 @@ public final class TxBuilder {
 		return spent.subtract(amount);
 	}
 
-	public <T extends Fungible> void deallocateFungible(
+	public <T extends ResourceInBucket> void deallocateFungible(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		FungibleMapper<T> remainderMapper,
@@ -308,7 +308,7 @@ public final class TxBuilder {
 		}
 	}
 
-	public <T extends Fungible, U extends Fungible> FungibleReplacer<U> deprecatedSwapFungible(
+	public <T extends ResourceInBucket, U extends ResourceInBucket> FungibleReplacer<U> deprecatedSwapFungible(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		FungibleMapper<T> remainderMapper,
@@ -330,31 +330,26 @@ public final class TxBuilder {
 		};
 	}
 
-	public <T extends Fungible> void downFungible(
-		Class<T> particleClass,
-		Predicate<T> particlePredicate,
-		UInt256 amount,
+	public <T extends ResourceInBucket> void payFee(
+		Predicate<TokensInAccount> particlePredicate,
 		FungibleMapper<T> remainderMapper,
+		UInt256 amount,
 		String errorMessage
 	) throws TxBuilderException {
-		UInt256 spent = UInt256.ZERO;
-		while (spent.compareTo(amount) < 0) {
-			var substateDown = down(
-				particleClass,
-				particlePredicate,
-				errorMessage
-			);
-
-			spent = spent.add(substateDown.getAmount());
-		}
-
-		var remainder = spent.subtract(amount);
+		// Take
+		var remainder = downFungible(
+			TokensInAccount.class,
+			particlePredicate,
+			amount,
+			errorMessage
+		);
+		lowLevelBuilder.payFee(amount);
 		if (!remainder.isZero()) {
 			up(remainderMapper.map(remainder));
 		}
 	}
 
-	public <T extends Fungible, U extends Fungible> FungibleReplacer<U> swapFungible(
+	public <T extends ResourceInBucket, U extends ResourceInBucket> FungibleReplacer<U> swapFungible(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		FungibleMapper<T> remainderMapper,
@@ -379,34 +374,8 @@ public final class TxBuilder {
 		};
 	}
 
-	public Optional<ECPublicKey> getUser() {
-		return Optional.ofNullable(user);
-	}
-
-	public ECPublicKey getUserOrFail(String errorMessage) throws TxBuilderException {
-		if (user == null) {
-			throw new TxBuilderException(errorMessage);
-		}
-		return user;
-	}
-
-
-	public void assertHasAddress(String message) throws TxBuilderException {
-		if (user == null) {
-			throw new TxBuilderException(message);
-		}
-	}
-
-	public void assertIsSystem(String message) throws TxBuilderException {
-		if (user != null) {
-			throw new TxBuilderException(message);
-		}
-	}
-
-	public TxBuilder mutex(String id) throws TxBuilderException {
-		assertHasAddress("Must have address");
-
-		final var addr = REAddr.ofHashedKey(user, id);
+	public TxBuilder mutex(ECPublicKey key, String id) throws TxBuilderException {
+		final var addr = REAddr.ofHashedKey(key, id);
 		swap(
 			REAddrParticle.class,
 			p -> p.getAddr().equals(addr),

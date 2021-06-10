@@ -19,6 +19,7 @@
 package com.radixdlt.atommodel.system;
 
 import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atom.actions.SystemNextView;
@@ -39,7 +40,7 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import org.junit.Before;
@@ -90,24 +91,25 @@ public final class NextViewTest {
 	@Before
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
-		scrypts.forEach(cmAtomOS::load);
-		var cm = new ConstraintMachine.Builder()
-			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
-			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
-			.setParticleTransitionProcedures(cmAtomOS.getProcedures())
-			.build();
+		this.scrypts.forEach(cmAtomOS::load);
+		var cm = new ConstraintMachine(
+			cmAtomOS.virtualizedUpParticles(),
+			cmAtomOS.getProcedures()
+		);
+		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
 		this.store = new InMemoryEngineStore<>();
 		this.sut = new RadixEngine<>(
+			parser,
 			actionConstructors,
 			cm,
 			store
 		);
 		this.key = ECKeyPair.generateNew();
-		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
-		var txn = this.sut.construct(List.of(
-			new CreateSystem(),
-			new SystemNextEpoch(u -> List.of(key.getPublicKey()), 0)
-		)).buildWithoutSignature();
+		var txn = this.sut.construct(
+			TxnConstructionRequest.create()
+				.action(new CreateSystem())
+				.action(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 0))
+		).buildWithoutSignature();
 		this.sut.execute(List.of(txn), null, PermissionLevel.SYSTEM);
 	}
 

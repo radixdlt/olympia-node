@@ -18,49 +18,44 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.store.ReadableAddrs;
+import java.util.function.Function;
 
-import java.util.Optional;
-import java.util.function.BiFunction;
-
-public final class UpProcedure<S extends ReducerState, U extends Particle> implements MethodProcedure {
+public final class UpProcedure<S extends ReducerState, U extends Particle> implements Procedure {
 	private final Class<S> reducerStateClass;
 	private final Class<U> upClass;
 	private final UpReducer<S, U> upReducer;
-	private final UpAuthorization<U> upAuthorization;
-	private final BiFunction<U, ReadableAddrs, PermissionLevel> permissionLevel;
+	private final Function<U, Authorization> authorization;
 
 	public UpProcedure(
 		Class<S> reducerStateClass,
 		Class<U> upClass,
-		BiFunction<U, ReadableAddrs, PermissionLevel> permissionLevel,
-		UpAuthorization<U> upAuthorization,
+		Function<U, Authorization> authorization,
 		UpReducer<S, U> upReducer
 	) {
 		this.reducerStateClass = reducerStateClass;
 		this.upClass = upClass;
 		this.upReducer = upReducer;
-		this.upAuthorization = upAuthorization;
-		this.permissionLevel = permissionLevel;
-	}
-
-	public ProcedureKey getUpProcedureKey() {
-		return ProcedureKey.of(upClass, reducerStateClass);
+		this.authorization = authorization;
 	}
 
 	@Override
-	public PermissionLevel permissionLevel(Object o, ReadableAddrs readableAddrs) {
-		return permissionLevel.apply((U) o, readableAddrs);
+	public ProcedureKey key() {
+		return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.UP, upClass));
 	}
 
 	@Override
-	public void verifyAuthorization(Object o, ReadableAddrs readableAddrs, Optional<ECPublicKey> key) throws AuthorizationException {
-		upAuthorization.verify((U) o, readableAddrs, key);
+	public Authorization authorization(Object o) {
+		return authorization.apply((U) o);
 	}
 
 	@Override
-	public ReducerResult call(Object o, ReducerState reducerState, ReadableAddrs readableAddrs) throws ProcedureException {
-		return upReducer.reduce((S) reducerState, (U) o, readableAddrs);
+	public ReducerResult call(
+		Object o,
+		ReducerState reducerState,
+		ReadableAddrs readableAddrs,
+		ExecutionContext context
+	) throws ProcedureException {
+		return upReducer.reduce((S) reducerState, (U) o, context, readableAddrs);
 	}
 }

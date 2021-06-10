@@ -144,7 +144,7 @@ public class RecoveryLivenessTest {
 			new MockedGenesisModule(),
 			new CryptoModule(),
 			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(epochCeilingView)),
+			new RadixEngineForksLatestOnlyModule(View.of(epochCeilingView), false),
 			new RadixEngineModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new AbstractModule() {
@@ -188,7 +188,7 @@ public class RecoveryLivenessTest {
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
 			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(epochCeilingView)),
+			new RadixEngineForksLatestOnlyModule(View.of(epochCeilingView), false),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {

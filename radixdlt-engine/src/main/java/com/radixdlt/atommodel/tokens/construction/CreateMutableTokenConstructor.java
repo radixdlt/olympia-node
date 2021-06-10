@@ -33,9 +33,9 @@ import java.util.Optional;
 public final class CreateMutableTokenConstructor implements ActionConstructor<CreateMutableToken> {
 	@Override
 	public void construct(CreateMutableToken action, TxBuilder txBuilder) throws TxBuilderException {
-		final var reAddress = txBuilder.getUser().map(a -> REAddr.ofHashedKey(a, action.getSymbol()))
-			.orElse(REAddr.ofNativeToken());
-
+		final var reAddress = action.getKey() == null
+			? REAddr.ofNativeToken()
+			: REAddr.ofHashedKey(action.getKey(), action.getSymbol());
 		txBuilder.down(
 			REAddrParticle.class,
 			p -> p.getAddr().equals(reAddress),
@@ -48,7 +48,7 @@ public final class CreateMutableTokenConstructor implements ActionConstructor<Cr
 			action.getDescription(),
 			action.getIconUrl(),
 			action.getTokenUrl(),
-			txBuilder.getUser().orElse(null)
+			action.getKey()
 		));
 	}
 }

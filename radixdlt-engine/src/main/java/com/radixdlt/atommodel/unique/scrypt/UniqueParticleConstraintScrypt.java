@@ -18,12 +18,12 @@
 
 package com.radixdlt.atommodel.unique.scrypt;
 
-import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ParticleDefinition;
-import com.radixdlt.atomos.SysCalls;
+import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.ConstraintScrypt;
+import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
@@ -31,20 +31,19 @@ import com.radixdlt.constraintmachine.UpProcedure;
 
 public class UniqueParticleConstraintScrypt implements ConstraintScrypt {
 	@Override
-	public void main(SysCalls os) {
-		os.registerParticle(
+	public void main(Loader os) {
+		os.particle(
 			UniqueParticle.class,
 			ParticleDefinition.<UniqueParticle>builder().build()
 		);
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, UniqueParticle.class,
-			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> { },
-			(s, u, r) -> {
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			(s, u, c, r) -> {
 				if (!u.getREAddr().equals(s.getAddr())) {
 					throw new ProcedureException("Addresses don't match");
 				}
-				return ReducerResult.complete(Unknown.create());
+				return ReducerResult.complete();
 			}
 		));
 	}

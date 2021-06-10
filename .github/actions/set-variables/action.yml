@@ -29,7 +29,7 @@ runs:
           echo "::set-output name=is_release::true"
           echo "::set-output name=release_version::${{ github.event.release.tag_name }}"
           echo "::set-output name=ref::${{ github.event.release.tag_name }}"
-          echo "::set-output name=radixdlt_image::radixdlt-core/radixdlt"
+          echo "::set-output name=radixdlt_image::radixdlt/radixdlt-core"
           echo "::set-output name=keygen_image::radixdlt/keygen"
 
           echo "is_release: true"

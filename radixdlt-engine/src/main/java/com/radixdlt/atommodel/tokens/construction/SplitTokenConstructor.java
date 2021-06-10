@@ -23,15 +23,13 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.SplitToken;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 public final class SplitTokenConstructor implements ActionConstructor<SplitToken> {
 	@Override
 	public void construct(SplitToken action, TxBuilder txBuilder) throws TxBuilderException {
-		var key = txBuilder.getUserOrFail("Must have address");
-		var userAccount = REAddr.ofPubKeyAccount(key);
-		var substate = txBuilder.findSubstate(
+		var userAccount = action.userAcct();
+		var tokens = txBuilder.downSubstate(
 			TokensInAccount.class,
 			p -> p.getResourceAddr().equals(action.rri())
 				&& p.getHoldingAddr().equals(userAccount)
@@ -39,10 +37,8 @@ public final class SplitTokenConstructor implements ActionConstructor<SplitToken
 			"Could not find large particle greater than " + action.minSize()
 		);
 
-		txBuilder.down(substate.getId());
-		var particle = (TokensInAccount) substate.getParticle();
-		var amt1 = particle.getAmount().divide(UInt256.TWO);
-		var amt2 = particle.getAmount().subtract(amt1);
+		var amt1 = tokens.getAmount().divide(UInt256.TWO);
+		var amt2 = tokens.getAmount().subtract(amt1);
 		txBuilder.up(new TokensInAccount(userAccount, amt1, action.rri()));
 		txBuilder.up(new TokensInAccount(userAccount, amt2, action.rri()));
 	}

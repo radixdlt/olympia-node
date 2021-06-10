@@ -17,15 +17,15 @@
 
 package com.radixdlt.client.service;
 
+import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.atom.actions.PayFee;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
-import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.client.api.PreparedTransaction;
 import com.radixdlt.client.api.TransactionAction;
 import com.radixdlt.crypto.ECDSASignature;
@@ -46,7 +46,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.radixdlt.atom.actions.ActionErrors.DIFFERENT_SOURCE_ADDRESSES;
 import static com.radixdlt.atom.actions.ActionErrors.EMPTY_TRANSACTIONS_NOT_SUPPORTED;
@@ -84,10 +83,8 @@ public final class SubmissionService {
 		return Result.wrap(
 			UNABLE_TO_PREPARE_TX,
 			() -> {
-				var txBuilder = radixEngine.construct(toActionsAndFee(addr, steps));
-
-				message.ifPresent(text -> txBuilder.message(text.getBytes(RadixConstants.STANDARD_CHARSET)));
-
+				var txnConstructionRequest = toConstructionRequest(addr, steps, message, false);
+				var txBuilder = radixEngine.construct(txnConstructionRequest);
 				return txBuilder
 					.buildForExternalSign()
 					.map(this::toPreparedTx);
@@ -95,11 +92,20 @@ public final class SubmissionService {
 		);
 	}
 
-	private List<TxAction> toActionsAndFee(REAddr addr, List<TransactionAction> steps) {
-		return Stream.concat(
-			steps.stream().flatMap(TransactionAction::toAction),
-			Stream.of(new BurnToken(REAddr.ofNativeToken(), addr, TokenFeeChecker.FIXED_FEE))
-		).collect(Collectors.toList());
+	private TxnConstructionRequest toConstructionRequest(
+		REAddr addr,
+		List<TransactionAction> steps,
+		Optional<String> message,
+		boolean disableResourceAllocAndDestroy
+	) {
+		var txnConstructionRequest = TxnConstructionRequest.create();
+		if (disableResourceAllocAndDestroy) {
+			txnConstructionRequest.disableResourceAllocAndDestroy();
+		}
+		txnConstructionRequest.action(new PayFee(addr, TokenFeeChecker.FIXED_FEE));
+		steps.stream().flatMap(TransactionAction::toAction).forEach(txnConstructionRequest::action);
+		message.map(t -> t.getBytes(RadixConstants.STANDARD_CHARSET)).ifPresent(txnConstructionRequest::msg);
+		return txnConstructionRequest;
 	}
 
 	public Result<AID> calculateTxId(byte[] blob, ECDSASignature recoverable) {

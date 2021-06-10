@@ -32,9 +32,11 @@ import java.util.TreeMap;
  */
 public class RadixEngineForksLatestOnlyModule extends AbstractModule {
 	private final View epochHighViewOverwrite;
+	private final boolean fees;
 
-	public RadixEngineForksLatestOnlyModule(View epochHighViewOverwrite) {
+	public RadixEngineForksLatestOnlyModule(View epochHighViewOverwrite, boolean fees) {
 		this.epochHighViewOverwrite = epochHighViewOverwrite;
+		this.fees = fees;
 	}
 
 	@Provides
@@ -45,9 +47,11 @@ public class RadixEngineForksLatestOnlyModule extends AbstractModule {
 			.map(Map.Entry::getValue)
 			.map(f -> new ForkConfig(
 				f.getName(),
-				f.getConstraintMachine(),
+				f.getParser(),
+				fees ? f.getConstraintMachineConfig() : f.getConstraintMachineConfig().metering((procedureKey, param, context) -> { }),
 				f.getActionConstructors(),
 				f.getBatchVerifier(),
+				fees ? f.getPostProcessedVerifier() : (p, t) -> { },
 				epochHighViewOverwrite
 			))
 			.orElseThrow();
