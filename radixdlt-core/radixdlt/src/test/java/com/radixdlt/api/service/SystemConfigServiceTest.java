@@ -25,7 +25,10 @@ import com.radixdlt.counters.SystemCountersImpl;
 
 import java.util.List;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
+import static com.radixdlt.api.service.SystemConfigService.toCamelCase;
 
 public class SystemConfigServiceTest {
 	@Test
@@ -58,9 +61,16 @@ public class SystemConfigServiceTest {
 		assertConversionIsFull("networkingData", SystemConfigService.NETWORKING_COUNTERS);
 	}
 
+	@Test
+	public void testCamelCaseConversion() {
+		assertEquals("Ss", toCamelCase("_ss_"));
+		assertEquals("SSA", toCamelCase("_s_s_a"));
+		assertEquals("requestTimeout", toCamelCase("request_timeout"));
+	}
+
 	private static void assertConversionIsFull(String name, List<CounterType> counterTypes) {
 		var systemCounters = new SystemCountersImpl();
-		var result = SystemConfigService.countersToJson(systemCounters, counterTypes);
+		var result = SystemConfigService.countersToJson(systemCounters, counterTypes, false);
 
 		counterTypes.forEach(counterType -> assertPathExists(result, counterType.jsonPath()));
 	}
@@ -70,7 +80,7 @@ public class SystemConfigServiceTest {
 		var ptr = object;
 
 		while (iterator.hasNext()) {
-			var element = iterator.next();
+			var element = toCamelCase(iterator.next());
 
 			if (ptr.has(element)) {
 				ptr = ptr.optJSONObject(element);

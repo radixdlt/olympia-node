@@ -3,9 +3,9 @@ package com.radix.test.account;
 import com.radix.test.Utils;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.RadixApi;
-import com.radixdlt.client.lib.dto.BalanceDTO;
-import com.radixdlt.client.lib.dto.TokenInfoDTO;
-import com.radixdlt.client.lib.dto.TokenBalancesDTO;
+import com.radixdlt.client.lib.dto.Balance;
+import com.radixdlt.client.lib.dto.TokenInfo;
+import com.radixdlt.client.lib.dto.TokenBalances;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
@@ -23,9 +23,9 @@ public final class Account implements RadixApi {
     private final RadixApi client;
     private final ECKeyPair keyPair;
     private final AccountAddress address;
-    private final TokenInfoDTO nativeToken;
+    private final TokenInfo nativeToken;
 
-    private Account(RadixApi client, ECKeyPair keyPair, TokenInfoDTO nativeToken) {
+    private Account(RadixApi client, ECKeyPair keyPair, TokenInfo nativeToken) {
         this.client = client;
         this.keyPair = keyPair;
         this.address = AccountAddress.create(keyPair.getPublicKey());
@@ -120,27 +120,27 @@ public final class Account implements RadixApi {
     /**
      * returns the (already queried) native token
      */
-    public TokenInfoDTO getNativeToken() {
+    public TokenInfo getNativeToken() {
         return nativeToken;
     }
 
-    public Result<BalanceDTO> ownNativeTokenBalance() {
-        BalanceDTO zeroNativeTokenBalance = BalanceDTO.create(nativeToken.getRri(), UInt256.ZERO);
+    public Result<Balance> ownNativeTokenBalance() {
+        Balance zeroNativeTokenBalance = Balance.create(nativeToken.getRri(), UInt256.ZERO);
         return ownTokenBalances().map(tokenBalancesDTO -> {
             if (tokenBalancesDTO.getTokenBalances().size() == 0) {
                 return zeroNativeTokenBalance;
             }
-            var balances = tokenBalancesDTO.getTokenBalances().stream().filter(balanceDTO ->
-                    balanceDTO.getRri().equals(nativeToken.getRri())).collect(Collectors.toList());
+            var balances = tokenBalancesDTO.getTokenBalances().stream().filter(balance ->
+                    balance.getRri().equals(nativeToken.getRri())).collect(Collectors.toList());
             return balances.isEmpty() ? zeroNativeTokenBalance : balances.get(0);
         });
     }
 
-    public BalanceDTO getOwnNativeTokenBalance() {
-        return ownNativeTokenBalance().fold(Utils::toTestFailureException, balanceDTO -> balanceDTO);
+    public Balance getOwnNativeTokenBalance() {
+        return ownNativeTokenBalance().fold(Utils::toTestFailureException, balance -> balance);
     }
 
-    public Result<TokenBalancesDTO> ownTokenBalances() {
+    public Result<TokenBalances> ownTokenBalances() {
         return client.account().balances(address);
     }
 }

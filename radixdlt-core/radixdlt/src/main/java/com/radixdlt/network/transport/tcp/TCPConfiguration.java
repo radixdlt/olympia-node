@@ -155,15 +155,14 @@ public interface TCPConfiguration {
 			public JSONObject asJson() {
 				return new JSONObject()
 				.put("address", networkAddress(""))
-				.put("listen_port", listenPort(0))
-				.put("broadcast_port", broadcastPort(0))
-				.put("max_in_channels", maxInChannelCount(0))
-				.put("max_out_channels", maxOutChannelCount(0))
+				.put("listenPort", listenPort(0))
+				.put("broadcastPort", broadcastPort(0))
+				.put("maxInChannelCount", maxInChannelCount(0))
+				.put("maxOutChannelCount", maxOutChannelCount(0))
 				.put("priority", priority(0))
-				.put("debug_data", debugData(false))
-				.put("message_buffer_size", messageBufferSize(0));
+				.put("debugData", debugData(false))
+				.put("messageBufferSize", messageBufferSize(0));
 			}
 		};
 	}
-
 }

@@ -18,17 +18,17 @@
 package com.radixdlt.client.lib.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.lib.dto.ActionDTO;
+import com.radixdlt.client.lib.dto.Action;
 import com.radixdlt.utils.UInt256;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class TransactionRequest {
-	private final List<ActionDTO> actions;
+	private final List<Action> actions;
 	private final String message;
 
-	private TransactionRequest(String message, List<ActionDTO> actions) {
+	private TransactionRequest(String message, List<Action> actions) {
 		this.message = message;
 		this.actions = actions;
 	}
@@ -43,29 +43,29 @@ public class TransactionRequest {
 	}
 
 	@JsonProperty("actions")
-	public List<ActionDTO> getActions() {
+	public List<Action> getActions() {
 		return actions;
 	}
 
 	public static final class TransactionRequestBuilder {
-		private final List<ActionDTO> actions = new ArrayList<>();
+		private final List<Action> actions = new ArrayList<>();
 		private String message;
 
 		private TransactionRequestBuilder() { }
 
 		//TODO: add more actions
 		public TransactionRequestBuilder transfer(AccountAddress from, AccountAddress to, UInt256 amount, String rri) {
-			actions.add(ActionDTO.transfer(from, to, amount, rri));
+			actions.add(Action.transfer(from, to, amount, rri));
 			return this;
 		}
 
 		public TransactionRequestBuilder stake(AccountAddress from, ValidatorAddress validator, UInt256 amount) {
-			actions.add(ActionDTO.stake(from, validator, amount));
+			actions.add(Action.stake(from, validator, amount));
 			return this;
 		}
 
 		public TransactionRequestBuilder unstake(AccountAddress from, ValidatorAddress validator, UInt256 amount) {
-			actions.add(ActionDTO.unstake(from, validator, amount));
+			actions.add(Action.unstake(from, validator, amount));
 			return this;
 		}
 
