@@ -62,7 +62,7 @@ public final class EndpointConfig {
 	private static final String API_CONSTRUCTION = "construction";
 	private static final String API_SYSTEM = "system";
 	private static final String API_ACCOUNT = "account";
-	private static final String API_VALIDATOR = "validator";
+	private static final String API_VALIDATION = "validation";
 	private static final String API_UNIVERSE = "universe";
 	private static final String API_FAUCET = "faucet";
 	private static final String API_CHAOS = "chaos";
@@ -73,7 +73,7 @@ public final class EndpointConfig {
 		new EndpointConfig(API_CONSTRUCTION, false, ARCHIVE, ALL, ConstructEndpointModule::new),
 		new EndpointConfig(API_SYSTEM, false, NODE, ALL, SystemEndpointModule::new),
 		new EndpointConfig(API_ACCOUNT, false, NODE, ALL, AccountEndpointModule::new),
-		new EndpointConfig(API_VALIDATOR, false, NODE, ALL, ValidationEndpointModule::new),
+		new EndpointConfig(API_VALIDATION, false, NODE, ALL, ValidationEndpointModule::new),
 		new EndpointConfig(API_UNIVERSE, false, NODE, ALL, UniverseEndpointModule::new),
 		new EndpointConfig(API_FAUCET, false, NODE, DEV_ONLY, FaucetEndpointModule::new),
 		new EndpointConfig(API_CHAOS, false, NODE, DEV_ONLY, ChaosEndpointModule::new),

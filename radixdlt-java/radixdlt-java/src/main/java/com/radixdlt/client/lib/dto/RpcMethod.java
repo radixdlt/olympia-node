@@ -71,7 +71,7 @@ public enum RpcMethod {
 		return method;
 	}
 
-	public String path() {
-		return endPoint.path();
+	public EndPoint endPoint() {
+		return endPoint;
 	}
 }

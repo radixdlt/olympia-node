@@ -27,13 +27,13 @@ import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.api.controller.AccountController;
 import com.radixdlt.api.handler.AccountHandler;
 import com.radixdlt.api.qualifier.Account;
-import com.radixdlt.api.qualifier.AtArchive;
+import com.radixdlt.api.qualifier.AtNode;
 import com.radixdlt.api.server.JsonRpcServer;
 
 import java.util.Map;
 
 public class AccountEndpointModule extends AbstractModule {
-	@AtArchive
+	@AtNode
 	@ProvidesIntoSet
 	public Controller accountController(@Account JsonRpcServer jsonRpcServer) {
 		return new AccountController(jsonRpcServer);

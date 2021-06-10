@@ -23,8 +23,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.api.service.SystemConfigService;
 
-import static com.radixdlt.api.JsonRpcUtil.ARRAY;
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.JsonRpcUtil.response;
 
 @Singleton
 public class SystemHandler {
@@ -36,66 +35,66 @@ public class SystemHandler {
 	}
 
 	public JSONObject apiGetConfiguration(JSONObject request) {
-		return systemConfigService.getApiConfiguration();
+		return response(request, systemConfigService.getApiConfiguration());
 	}
 
 	public JSONObject apiGetData(JSONObject request) {
-		return systemConfigService.getApiData();
+		return response(request, systemConfigService.getApiData());
 	}
 
 	public JSONObject bftGetConfiguration(JSONObject request) {
-		return systemConfigService.getBftConfiguration();
+		return response(request, systemConfigService.getBftConfiguration());
 	}
 
 	public JSONObject bftGetData(JSONObject request) {
-		return systemConfigService.getBftData();
+		return response(request, systemConfigService.getBftData());
 	}
 
 	public JSONObject mempoolGetConfiguration(JSONObject request) {
-		return systemConfigService.getMempoolConfiguration();
+		return response(request, systemConfigService.getMempoolConfiguration());
 	}
 
 	public JSONObject mempoolGetData(JSONObject request) {
-		return systemConfigService.getMempoolData();
+		return response(request, systemConfigService.getMempoolData());
 	}
 
 	public JSONObject ledgerGetLatestProof(JSONObject request) {
-		return systemConfigService.getLatestProof();
+		return response(request, systemConfigService.getLatestProof());
 	}
 
 	public JSONObject ledgerGetLatestEpochProof(JSONObject request) {
-		return systemConfigService.getLatestEpochProof();
+		return response(request, systemConfigService.getLatestEpochProof());
 	}
 
 	public JSONObject radixEngineGetConfiguration(JSONObject request) {
-		return systemConfigService.getRadixEngineConfiguration();
+		return response(request, systemConfigService.getRadixEngineConfiguration());
 	}
 
 	public JSONObject radixEngineGetData(JSONObject request) {
-		return systemConfigService.getRadixEngineData();
+		return response(request, systemConfigService.getRadixEngineData());
 	}
 
 	public JSONObject syncGetConfiguration(JSONObject request) {
-		return systemConfigService.getSyncConfig();
+		return response(request, systemConfigService.getSyncConfig());
 	}
 
 	public JSONObject syncGetData(JSONObject request) {
-		return systemConfigService.getSyncData();
+		return response(request, systemConfigService.getSyncData());
 	}
 
 	public JSONObject networkingGetConfiguration(JSONObject request) {
-		return systemConfigService.getNetworkingConfiguration();
+		return response(request, systemConfigService.getNetworkingConfiguration());
 	}
 
 	public JSONObject networkingGetPeers(JSONObject request) {
-		return jsonObject().put(ARRAY, systemConfigService.getNetworkingPeers());
+		return response(request, systemConfigService.getNetworkingPeers());
 	}
 
 	public JSONObject networkingGetData(JSONObject request) {
-		return systemConfigService.getNetworkingData();
+		return response(request, systemConfigService.getNetworkingData());
 	}
 
 	public JSONObject checkpointsGetCheckpoints(JSONObject request) {
-		return systemConfigService.getCheckpoints();
+		return response(request, systemConfigService.getCheckpoints());
 	}
 }

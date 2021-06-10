@@ -17,38 +17,38 @@
 
 package com.radixdlt.client.lib.api;
 
-import com.radixdlt.client.lib.dto.BuiltTransactionDTO;
+import com.radixdlt.client.lib.dto.BuiltTransaction;
 import com.radixdlt.client.lib.dto.FinalizedTransaction;
-import com.radixdlt.client.lib.dto.NetworkIdDTO;
-import com.radixdlt.client.lib.dto.NetworkStatsDTO;
-import com.radixdlt.client.lib.dto.StakePositionsDTO;
-import com.radixdlt.client.lib.dto.TokenBalancesDTO;
-import com.radixdlt.client.lib.dto.TokenInfoDTO;
+import com.radixdlt.client.lib.dto.NetworkId;
+import com.radixdlt.client.lib.dto.NetworkStats;
+import com.radixdlt.client.lib.dto.StakePositions;
+import com.radixdlt.client.lib.dto.TokenBalances;
+import com.radixdlt.client.lib.dto.TokenInfo;
 import com.radixdlt.client.lib.dto.TransactionDTO;
-import com.radixdlt.client.lib.dto.TransactionHistoryDTO;
+import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
 import com.radixdlt.client.lib.dto.TxDTO;
-import com.radixdlt.client.lib.dto.UnstakePositionsDTO;
+import com.radixdlt.client.lib.dto.UnstakePositions;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
-import com.radixdlt.client.lib.dto.ValidatorsResponseDTO;
-import com.radixdlt.client.lib.dto.extra.ApiConfigurationDTO;
-import com.radixdlt.client.lib.dto.extra.ApiDataDTO;
-import com.radixdlt.client.lib.dto.extra.CheckpointDTO;
-import com.radixdlt.client.lib.dto.extra.ConsensusConfigurationDTO;
-import com.radixdlt.client.lib.dto.extra.ConsensusDataDTO;
-import com.radixdlt.client.lib.dto.extra.EpochDataDTO;
-import com.radixdlt.client.lib.dto.extra.LocalAccountDTO;
-import com.radixdlt.client.lib.dto.extra.LocalValidatorInfoDTO;
-import com.radixdlt.client.lib.dto.extra.MempoolConfigurationDTO;
-import com.radixdlt.client.lib.dto.extra.MempoolDataDTO;
-import com.radixdlt.client.lib.dto.extra.NetworkConfigurationDTO;
-import com.radixdlt.client.lib.dto.extra.NetworkDataDTO;
-import com.radixdlt.client.lib.dto.extra.NetworkPeersDTO;
-import com.radixdlt.client.lib.dto.extra.ProofDTO;
-import com.radixdlt.client.lib.dto.extra.RadixEngineConfigurationDTO;
-import com.radixdlt.client.lib.dto.extra.RadixEngineDataDTO;
-import com.radixdlt.client.lib.dto.extra.SyncConfigurationDTO;
-import com.radixdlt.client.lib.dto.extra.SyncDataDTO;
+import com.radixdlt.client.lib.dto.ValidatorsResponse;
+import com.radixdlt.client.lib.dto.ApiConfiguration;
+import com.radixdlt.client.lib.dto.ApiData;
+import com.radixdlt.client.lib.dto.Checkpoint;
+import com.radixdlt.client.lib.dto.ConsensusConfiguration;
+import com.radixdlt.client.lib.dto.ConsensusData;
+import com.radixdlt.client.lib.dto.EpochData;
+import com.radixdlt.client.lib.dto.LocalAccount;
+import com.radixdlt.client.lib.dto.LocalValidatorInfo;
+import com.radixdlt.client.lib.dto.MempoolConfiguration;
+import com.radixdlt.client.lib.dto.MempoolData;
+import com.radixdlt.client.lib.dto.NetworkConfiguration;
+import com.radixdlt.client.lib.dto.NetworkData;
+import com.radixdlt.client.lib.dto.NetworkPeers;
+import com.radixdlt.client.lib.dto.Proof;
+import com.radixdlt.client.lib.dto.RadixEngineConfiguration;
+import com.radixdlt.client.lib.dto.RadixEngineData;
+import com.radixdlt.client.lib.dto.SyncConfiguration;
+import com.radixdlt.client.lib.dto.SyncData;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.functional.Result;
 
@@ -56,30 +56,37 @@ import java.util.List;
 import java.util.Optional;
 
 public interface RadixApi {
-	static Result<SynchronousRadixApiClient> connect(String baseUrl) {
-		return SynchronousRadixApiClient.connect(baseUrl);
+	int DEFAULT_PRIMARY_PORT = 8080;
+	int DEFAULT_SECONDARY_PORT = 3333;
+
+	static Result<RadixApi> connect(String baseUrl) {
+		return connect(baseUrl, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT);
+	}
+
+	static Result<RadixApi> connect(String baseUrl, int primaryPort, int secondaryPort) {
+		return DefaultRadixApi.connect(baseUrl, primaryPort, secondaryPort);
 	}
 
 	RadixApi withTrace();
 
 	interface Network {
-		Result<NetworkIdDTO> id();
+		Result<NetworkId> id();
 
-		Result<NetworkStatsDTO> throughput();
+		Result<NetworkStats> throughput();
 
-		Result<NetworkStatsDTO> demand();
+		Result<NetworkStats> demand();
 
-		Result<NetworkConfigurationDTO> configuration();
+		Result<NetworkConfiguration> configuration();
 
-		Result<NetworkDataDTO> data();
+		Result<NetworkData> data();
 
-		Result<NetworkPeersDTO> peers();
+		Result<NetworkPeers> peers();
 	}
 
 	Network network();
 
 	interface Transaction {
-		Result<BuiltTransactionDTO> build(TransactionRequest request);
+		Result<BuiltTransaction> build(TransactionRequest request);
 
 		Result<TxDTO> finalize(FinalizedTransaction request);
 
@@ -93,41 +100,41 @@ public interface RadixApi {
 	Transaction transaction();
 
 	interface Token {
-		Result<TokenInfoDTO> describeNative();
+		Result<TokenInfo> describeNative();
 
-		Result<TokenInfoDTO> describe(String rri);
+		Result<TokenInfo> describe(String rri);
 	}
 
 	Token token();
 
 	interface Local {
-		Result<LocalAccountDTO> accountInfo();
+		Result<LocalAccount> accountInfo();
 
 		Result<TxDTO> submitTxSingleStep();
 
-		Result<LocalValidatorInfoDTO> validatorInfo(); //validation.get_node_info
+		Result<LocalValidatorInfo> validatorInfo();
 
-		Result<EpochDataDTO> currentEpoch(); //validation.get_current_epoch_data
+		Result<EpochData> currentEpoch();
 
-		Result<EpochDataDTO> nextEpoch(); //validation.get_next_epoch_data
+		Result<EpochData> nextEpoch();
 	}
 
 	Local local();
 
 	interface SingleAccount {
-		Result<TokenBalancesDTO> balances(AccountAddress address);
+		Result<TokenBalances> balances(AccountAddress address);
 
-		Result<TransactionHistoryDTO> history(AccountAddress address, int size, Optional<NavigationCursor> cursor);
+		Result<TransactionHistory> history(AccountAddress address, int size, Optional<NavigationCursor> cursor);
 
-		Result<List<StakePositionsDTO>> stakes(AccountAddress address);
+		Result<List<StakePositions>> stakes(AccountAddress address);
 
-		Result<List<UnstakePositionsDTO>> unstakes(AccountAddress address);
+		Result<List<UnstakePositions>> unstakes(AccountAddress address);
 	}
 
 	SingleAccount account();
 
 	interface Validator {
-		Result<ValidatorsResponseDTO> list(int size, Optional<NavigationCursor> cursor);
+		Result<ValidatorsResponse> list(int size, Optional<NavigationCursor> cursor);
 
 		Result<ValidatorDTO> lookup(String validatorAddress);
 	}
@@ -135,51 +142,51 @@ public interface RadixApi {
 	Validator validator();
 
 	interface Api {
-		Result<ApiConfigurationDTO> configuration();
+		Result<ApiConfiguration> configuration();
 
-		Result<ApiDataDTO> data();
+		Result<ApiData> data();
 	}
 
 	Api api();
 
 	interface Consensus {
-		Result<ConsensusConfigurationDTO> configuration();
+		Result<ConsensusConfiguration> configuration();
 
-		Result<ConsensusDataDTO> data();
+		Result<ConsensusData> data();
 	}
 
 	Consensus consensus();
 
 	interface Mempool {
-		Result<MempoolConfigurationDTO> configuration();
+		Result<MempoolConfiguration> configuration();
 
-		Result<MempoolDataDTO> data();
+		Result<MempoolData> data();
 	}
 
 	Mempool mempool();
 
 	interface RadixEngine {
-		Result<RadixEngineConfigurationDTO> configuration();
+		Result<RadixEngineConfiguration> configuration();
 
-		Result<RadixEngineDataDTO> data();
+		Result<RadixEngineData> data();
 	}
 
 	RadixEngine radixEngine();
 
 	interface Sync {
-		Result<SyncConfigurationDTO> configuration();
+		Result<SyncConfiguration> configuration();
 
-		Result<SyncDataDTO> data();
+		Result<SyncData> data();
 	}
 
 	Sync sync();
 
 	interface Ledger {
-		Result<ProofDTO> latest(); //ledger.get_latest_proof
+		Result<Proof> latest(); //ledger.get_latest_proof
 
-		Result<ProofDTO> epoch(); //ledger.get_latest_epoch_proof
+		Result<Proof> epoch(); //ledger.get_latest_epoch_proof
 
-		Result<CheckpointDTO> checkpoints(); //checkpoints.get_checkpoints
+		Result<Checkpoint> checkpoints(); //checkpoints.get_checkpoints
 	}
 
 	Ledger ledger();

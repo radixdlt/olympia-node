@@ -91,7 +91,10 @@ public class ArchiveHttpServer implements ModuleRunner {
 	private HttpHandler configureRoutes() {
 		var handler = Handlers.routing(true); // add path params to query params with this flag
 
-		controllers.forEach(controller -> controller.configureRoutes(handler));
+		controllers.forEach(controller -> {
+			log.info("Configuring routes under {}", controller.root());
+			controller.configureRoutes(handler);
+		});
 
 		handler.setFallbackHandler(ArchiveHttpServer::fallbackHandler);
 		handler.setInvalidMethodHandler(ArchiveHttpServer::invalidMethodHandler);

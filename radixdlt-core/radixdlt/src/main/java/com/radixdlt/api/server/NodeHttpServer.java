@@ -22,6 +22,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.qualifier.AtNode;
@@ -44,6 +45,7 @@ import static java.util.logging.Logger.getLogger;
 /**
  * Radix Node API
  */
+@Singleton
 public final class NodeHttpServer implements ModuleRunner {
 	private static final Logger log = LogManager.getLogger();
 
@@ -89,15 +91,15 @@ public final class NodeHttpServer implements ModuleRunner {
 
 	@Override
 	public void stop() {
-		this.server.stop();
+		server.stop();
 	}
 
 	private HttpHandler configureRoutes() {
 		var handler = Handlers.routing(true); // add path params to query params with this flag
 
-		controllers.forEach(c -> {
-			log.info("Configuring routes under {}", c.root());
-			c.configureRoutes(handler);
+		controllers.forEach(controller -> {
+			log.info("Configuring routes under {}", controller.root());
+			controller.configureRoutes(handler);
 		});
 
 		handler.setFallbackHandler(NodeHttpServer::fallbackHandler);

@@ -27,7 +27,7 @@ import com.radixdlt.api.service.ValidatorInfoService;
 
 import static com.radixdlt.api.JsonRpcUtil.fromList;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.JsonRpcUtil.withNoParameters;
+import static com.radixdlt.api.JsonRpcUtil.response;
 
 @Singleton
 public class ValidationHandler {
@@ -41,22 +41,18 @@ public class ValidationHandler {
 	}
 
 	public JSONObject handleGetNodeInfo(JSONObject request) {
-		return withNoParameters(request, accountService::getValidatorInfo);
+		return response(request, accountService.getValidatorInfo());
 	}
 
 	public JSONObject handleGetNextEpochData(JSONObject request) {
-		return withNoParameters(request, this::listValidators);
+		return response(request, jsonObject().put(
+			"validators",
+			fromList(validatorInfoService.getAllValidators(), ValidatorInfoDetails::asJson)
+		));
 	}
 
 	public JSONObject handleGetCurrentEpochData(JSONObject request) {
 		//TODO: implement it
 		return jsonObject();
-	}
-
-	private JSONObject listValidators() {
-		return jsonObject().put(
-			"validators",
-			fromList(validatorInfoService.getAllValidators(), ValidatorInfoDetails::asJson)
-		);
 	}
 }

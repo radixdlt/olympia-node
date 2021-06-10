@@ -17,26 +17,26 @@
 
 package com.radix.acceptance.staking;
 
-import com.radix.acceptance.AcceptanceTest;
-import com.radix.test.TransactionUtils;
-import com.radix.test.Utils;
-import com.radixdlt.client.lib.api.RadixApi;
-import com.radixdlt.client.lib.dto.ValidatorDTO;
-import com.radixdlt.client.lib.dto.ValidatorsResponseDTO;
-import com.radixdlt.utils.UInt256;
-
-import io.cucumber.java.en.Given;
-import io.cucumber.java.en.Then;
-import io.cucumber.java.en.When;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.assertj.core.util.Lists;
 import org.awaitility.Durations;
 import org.junit.Assert;
 
+import com.radix.acceptance.AcceptanceTest;
+import com.radix.test.TransactionUtils;
+import com.radix.test.Utils;
+import com.radixdlt.client.lib.dto.ValidatorDTO;
+import com.radixdlt.client.lib.dto.ValidatorsResponse;
+import com.radixdlt.utils.UInt256;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
@@ -103,8 +103,8 @@ public class Staking extends AcceptanceTest {
      */
     private void updateValidatorInformation() {
         validators.clear();
-		validators = ((RadixApi) getTestAccount()).validator().list(1000, Optional.empty())
-            .fold(failure -> new ArrayList<>(), ValidatorsResponseDTO::getValidators);
+		validators = getTestAccount().validator().list(1000, Optional.empty())
+            .fold(failure -> new ArrayList<>(), ValidatorsResponse::getValidators);
         if (validators.isEmpty()) {
             Assert.fail("No validators were found in the network, test cannot proceed.");
         }
