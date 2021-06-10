@@ -135,14 +135,12 @@ public final class BetanetForksModule extends AbstractModule {
 			actionConstructors,
 			new EpochProofVerifierV1(),
 			new TokenFeeChecker(),
-			//View.of(100000L)
-			View.of(1000L)
+			View.of(100000L)
 		);
 	}
 
 	@ProvidesIntoMap
-	//@EpochMapKey(epoch = 45L)
-	@EpochMapKey(epoch = 4L)
+	@EpochMapKey(epoch = 45L)
 	ForkConfig betanetV2() {
 		// V2 Betanet ConstraintMachine
 		final CMAtomOS v2 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
@@ -186,13 +184,12 @@ public final class BetanetForksModule extends AbstractModule {
 			actionConstructors,
 			new EpochProofVerifierV1(),
 			new TokenFeeChecker(),
-			//View.of(10000L)
-			View.of(1000L)
+			View.of(10000L)
 		);
 	}
 
 	@ProvidesIntoMap
-	@EpochMapKey(epoch = 8L)
+	@EpochMapKey(epoch = 500L)
 	ForkConfig betanetV3() {
 		final CMAtomOS v3 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
 		v3.load(new ValidatorConstraintScrypt()); // load before TokensConstraintScrypt due to dependency
@@ -237,13 +234,13 @@ public final class BetanetForksModule extends AbstractModule {
 			actionConstructors,
 			new EpochProofVerifierV2(),
 			new TokenFeeChecker(),
-			View.of(1000L)
+			View.of(10000L)
 		);
 	}
 
 
 	@ProvidesIntoMap
-	@EpochMapKey(epoch = 10L)
+	@EpochMapKey(epoch = 800L)
 	ForkConfig betanetV4() {
 		var fixedFee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(100));
 		final CMAtomOS v4 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
