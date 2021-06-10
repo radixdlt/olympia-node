@@ -205,7 +205,7 @@ public class SystemConfigService {
 	}
 
 	public JSONObject getApiData() {
-		return countersToJson(systemCounters, API_COUNTERS);
+		return countersToJson(systemCounters, API_COUNTERS, false);
 	}
 
 	public JSONObject getBftConfiguration() {
@@ -213,7 +213,7 @@ public class SystemConfigService {
 	}
 
 	public JSONObject getBftData() {
-		return countersToJson(systemCounters, BFT_COUNTERS);
+		return countersToJson(systemCounters, BFT_COUNTERS, true);
 	}
 
 	public JSONObject getMempoolConfiguration() {
@@ -221,7 +221,7 @@ public class SystemConfigService {
 	}
 
 	public JSONObject getMempoolData() {
-		return countersToJson(systemCounters, MEMPOOL_COUNTERS);
+		return countersToJson(systemCounters, MEMPOOL_COUNTERS, true);
 	}
 
 	public JSONObject getLatestProof() {
@@ -239,7 +239,7 @@ public class SystemConfigService {
 	}
 
 	public JSONObject getRadixEngineData() {
-		return countersToJson(systemCounters, RADIX_ENGINE_COUNTERS);
+		return countersToJson(systemCounters, RADIX_ENGINE_COUNTERS, true);
 	}
 
 	public JSONObject getSyncConfig() {
@@ -247,7 +247,7 @@ public class SystemConfigService {
 	}
 
 	public JSONObject getSyncData() {
-		return countersToJson(systemCounters, SYNC_COUNTERS);
+		return countersToJson(systemCounters, SYNC_COUNTERS, true);
 	}
 
 	public JSONObject getNetworkingConfiguration() {
@@ -265,7 +265,7 @@ public class SystemConfigService {
 	}
 
 	public JSONObject getNetworkingData() {
-		return countersToJson(systemCounters, NETWORKING_COUNTERS);
+		return countersToJson(systemCounters, NETWORKING_COUNTERS, false);
 	}
 
 	public JSONObject getCheckpoints() {
@@ -273,19 +273,23 @@ public class SystemConfigService {
 	}
 
 	@VisibleForTesting
-	static JSONObject countersToJson(SystemCounters systemCounters, List<CounterType> counterTypes) {
+	static JSONObject countersToJson(SystemCounters counters, List<CounterType> types, boolean skipTopLevel) {
 		var result = jsonObject();
-		counterTypes.forEach(counterType -> counterToJson(result, systemCounters, counterType));
+		types.forEach(counterType -> counterToJson(result, counters, counterType, skipTopLevel));
 		return result;
 	}
 
 	@VisibleForTesting
-	static void counterToJson(JSONObject obj, SystemCounters systemCounters, CounterType type) {
+	static void counterToJson(JSONObject obj, SystemCounters systemCounters, CounterType type, boolean skipTopLevel) {
 		var ptr = obj;
 		var iterator = List.of(type.jsonPath().split("\\.")).listIterator();
 
+		if (skipTopLevel && iterator.hasNext()) {
+			iterator.next();
+		}
+
 		while (iterator.hasNext()) {
-			var element = iterator.next();
+			var element = toCamelCase(iterator.next());
 
 			if (ptr.has(element)) {
 				ptr = ptr.getJSONObject(element);
@@ -302,13 +306,32 @@ public class SystemConfigService {
 	}
 
 	@VisibleForTesting
+	static String toCamelCase(String input) {
+		var output = new StringBuilder();
+
+		boolean upCaseNext = false;
+
+		for (var chr : input.toCharArray()) {
+			if (chr == '_') {
+				upCaseNext = true;
+				continue;
+			}
+
+			output.append(upCaseNext ? Character.toUpperCase(chr) : chr);
+			upCaseNext = false;
+		}
+
+		return output.toString();
+	}
+
+	@VisibleForTesting
 	static JSONObject prepareApiConfiguration(List<EndpointConfig> nodeEndpoints, List<EndpointConfig> archiveEndpoints) {
 		var list = Stream.concat(nodeEndpoints.stream(), archiveEndpoints.stream())
 			.collect(Collectors.toList());
 
 		return jsonObject().put(
 			"endpoints",
-			fromList(list, cfg -> jsonObject().put("path", "/" + cfg.name()))
+			fromList(list, cfg -> "/" + cfg.name())
 		);
 	}
 
@@ -323,33 +346,29 @@ public class SystemConfigService {
 		forkConfigTreeMap.forEach((e, config) -> forks.put(
 			jsonObject()
 				.put("name", config.getName())
-				.put("ceiling_view", config.getEpochCeilingView().number())
+				.put("ceilingView", config.getEpochCeilingView().number())
 				.put("epoch", e)
 		));
 
-		return jsonObject().put("radix_engine", jsonObject()
-			.put("min_validators", minValidators)
-			.put("max_validators", maxValidators)
-			.put("max_txns_per_proposal", maxTxnsPerProposal)
-			.put("forks", forks)
-		);
+		return jsonObject()
+			.put("minValidators", minValidators)
+			.put("maxValidators", maxValidators)
+			.put("maxTxnsPerProposal", maxTxnsPerProposal)
+			.put("forks", forks);
 	}
 
 	@VisibleForTesting
 	static JSONObject prepareMempoolConfiguration(int mempoolMaxSize, long mempoolThrottleMs) {
-		return jsonObject().put("mempool", jsonObject()
-			.put("max_size", mempoolMaxSize)
-			.put("throttle_ms", mempoolThrottleMs)
-		);
+		return jsonObject()
+			.put("maxSize", mempoolMaxSize)
+			.put("throttleMs", mempoolThrottleMs);
 	}
 
 	@VisibleForTesting
 	static JSONObject prepareBftConfiguration(long pacemakerTimeout, long bftSyncPatienceMillis) {
 		return jsonObject()
-			.put("consensus", jsonObject()
-				.put("pacemaker_timeout", pacemakerTimeout)
-				.put("bft_sync_patience_ms", bftSyncPatienceMillis)
-			);
+			.put("pacemakerTimeout", pacemakerTimeout)
+			.put("bftSyncPatienceMs", bftSyncPatienceMillis);
 	}
 
 	@VisibleForTesting

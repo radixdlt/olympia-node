@@ -1,20 +1,29 @@
 package com.radixdlt.client.lib.dto;
 
-enum EndPoint {
-	ARCHIVE("/archive"),
-	CONSTRUCTION("/construction"),
-	SYSTEM("/system"),
-	ACCOUNT("/account"),
-	VALIDATION("/validation");
+import static com.radixdlt.client.lib.dto.PortSelector.PRIMARY;
+import static com.radixdlt.client.lib.dto.PortSelector.SECONDARY;
 
-	final String path;
+public enum EndPoint {
+	ARCHIVE("/archive", PRIMARY),
+	CONSTRUCTION("/construction", PRIMARY),
+	SYSTEM("/system", SECONDARY),
+	ACCOUNT("/account", SECONDARY),
+	VALIDATION("/validation", SECONDARY);
 
-	EndPoint(String path) {
+	private final String path;
+	private final PortSelector portSelector;
+
+	EndPoint(String path, PortSelector portSelector) {
 		this.path = path;
+		this.portSelector = portSelector;
 	}
 
 	public String path() {
 		return path;
+	}
+
+	public PortSelector portSelector() {
+		return portSelector;
 	}
 }
 

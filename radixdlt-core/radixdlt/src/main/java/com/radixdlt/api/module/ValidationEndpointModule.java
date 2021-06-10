@@ -34,7 +34,6 @@ import java.util.Map;
 
 public class ValidationEndpointModule extends AbstractModule {
 	@AtNode
-	@Validation
 	@ProvidesIntoSet
 	public Controller validationController(@Validation JsonRpcServer jsonRpcServer) {
 		return new ValidationController(jsonRpcServer);

@@ -30,24 +30,22 @@ public class JsonRpcRequest {
 
 	private final String version;
 	private final String id;
-	private final String method;
-	private final String path;
+	private final RpcMethod method;
 	private final List<Object> parameters = new ArrayList<>();
 
-	private JsonRpcRequest(String version, String id, String method, String path, List<Object> parameters) {
+	private JsonRpcRequest(String version, String id, RpcMethod method, List<Object> parameters) {
 		this.version = version;
 		this.id = id;
 		this.method = method;
-		this.path = path;
 		this.parameters.addAll(parameters);
 	}
 
-	public static JsonRpcRequest create(String method, String path, Long id, Object... parameters) {
+	public static JsonRpcRequest create(RpcMethod method, Long id, Object... parameters) {
 		var list = Stream.of(parameters)
 			.filter(JsonRpcRequest::isNotEmpty)
 			.collect(Collectors.toList());
 
-		return new JsonRpcRequest(VERSION, id.toString(), method, path, list);
+		return new JsonRpcRequest(VERSION, id.toString(), method, list);
 	}
 
 	private static boolean isNotEmpty(Object obj) {
@@ -79,7 +77,7 @@ public class JsonRpcRequest {
 
 	@JsonProperty("method")
 	public String getMethod() {
-		return method;
+		return method.method();
 	}
 
 	public JsonRpcRequest addParameters(Object... params) {
@@ -87,7 +85,7 @@ public class JsonRpcRequest {
 		return this;
 	}
 
-	public String path() {
-		return path;
+	public RpcMethod rpcDetails() {
+		return method;
 	}
 }
