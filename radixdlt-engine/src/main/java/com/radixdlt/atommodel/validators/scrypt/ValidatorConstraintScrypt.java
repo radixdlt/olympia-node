@@ -18,6 +18,7 @@
 
 package com.radixdlt.atommodel.validators.scrypt;
 
+import com.radixdlt.atom.RESerializer;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.SubstateDefinition;
@@ -25,19 +26,15 @@ import com.radixdlt.atomos.Loader;
 import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.StatelessSubstateVerifier;
-import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 
 import java.util.Objects;
-import java.util.function.Function;
-import java.util.regex.Pattern;
+import java.util.Set;
 
 /**
  * Constraint Scrypt defining the Validator FSM.
@@ -56,7 +53,15 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				ValidatorParticle.class,
-				checkAddressAndUrl(ValidatorParticle::getUrl),
+				Set.of(RESerializer.SubstateType.VALIDATOR.id()),
+				(b, buf) -> {
+					var key = RESerializer.deserializeKey(buf);
+					var isRegistered = buf.get() != 0; // isRegistered
+					var name = RESerializer.deserializeString(buf);
+					var url = RESerializer.deserializeUrl(buf);
+					return new ValidatorParticle(key, isRegistered, name, url);
+
+				},
 				p -> !p.isRegisteredForNextEpoch() && p.getUrl().isEmpty() && p.getName().isEmpty()
 			)
 		);
@@ -92,20 +97,5 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 				return ReducerResult.complete();
 			}
 		));
-	}
-
-	// From the OWASP validation repository: https://www.owasp.org/index.php/OWASP_Validation_Regex_Repository
-	private static final Pattern OWASP_URL_REGEX = Pattern.compile(
-		"^((((https?|ftps?|gopher|telnet|nntp)://)|(mailto:|news:))"
-		+ "(%[0-9A-Fa-f]{2}|[-()_.!~*';/?:@&=+$,A-Za-z0-9])+)([).!';/?:,][[:blank:]])?$"
-	);
-
-	private static <I extends Particle> StatelessSubstateVerifier<I> checkAddressAndUrl(Function<I, String> urlMapper) {
-		return particle -> {
-			String url = urlMapper.apply(particle);
-			if (!url.isEmpty() && !OWASP_URL_REGEX.matcher(url).matches()) {
-				throw new TxnParseException("url is not a valid URL: " + url);
-			}
-		};
 	}
 }

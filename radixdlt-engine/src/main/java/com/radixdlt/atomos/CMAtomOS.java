@@ -18,6 +18,7 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.atom.RESerializer;
 import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
@@ -31,8 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.StatelessSubstateVerifier;
-import com.radixdlt.constraintmachine.TxnParseException;
+import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.identifiers.REAddr;
 
@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
 // FIXME: rawtypes
 @SuppressWarnings("rawtypes")
 public final class CMAtomOS {
-	private final Map<Class<? extends Particle>, SubstateDefinition<Particle>> particleDefinitions = new HashMap<>();
+	private final Map<Class<? extends Particle>, SubstateDefinition<? extends Particle>> substateDefinitions = new HashMap<>();
 	private final Set<String> systemNames;
 	private Procedures procedures = Procedures.empty();
 	public static final String NAME_REGEX = "[a-z0-9]+";
@@ -77,7 +77,11 @@ public final class CMAtomOS {
 			os.substate(
 				new SubstateDefinition<>(
 					UnclaimedREAddr.class,
-					p -> { },
+					Set.of(RESerializer.SubstateType.RE_ADDR.id()),
+					(b, buf) -> {
+						var rri = RESerializer.deserializeREAddr(buf);
+						return new UnclaimedREAddr(rri);
+					},
 					v -> v.getAddr().getType() == REAddr.REAddrType.NATIVE_TOKEN
 						|| v.getAddr().getType() == REAddr.REAddrType.HASHED_KEY
 						|| v.getAddr().isSystem()
@@ -126,9 +130,9 @@ public final class CMAtomOS {
 	}
 
 	public void load(ConstraintScrypt constraintScrypt) {
-		var constraintScryptEnv = new ConstraintScryptEnv(ImmutableMap.copyOf(particleDefinitions));
+		var constraintScryptEnv = new ConstraintScryptEnv(ImmutableMap.copyOf(substateDefinitions));
 		constraintScrypt.main(constraintScryptEnv);
-		this.particleDefinitions.putAll(constraintScryptEnv.getScryptParticleDefinitions());
+		this.substateDefinitions.putAll(constraintScryptEnv.getScryptParticleDefinitions());
 		this.procedures = this.procedures.combine(constraintScryptEnv.getProcedures());
 	}
 
@@ -136,24 +140,17 @@ public final class CMAtomOS {
 		return procedures;
 	}
 
-	public StatelessSubstateVerifier<Particle> buildStatelessSubstateVerifier() {
-		final ImmutableMap<Class<? extends Particle>, SubstateDefinition<Particle>> particleDefinitions
-			= ImmutableMap.copyOf(this.particleDefinitions);
-		return p -> {
-			final SubstateDefinition<Particle> substateDefinition = particleDefinitions.get(p.getClass());
-			if (substateDefinition == null) {
-				throw new TxnParseException("Unknown particle type: " + p.getClass());
-			}
-
-			var staticVerifier = substateDefinition.getStaticValidation();
-			staticVerifier.verify(p);
-		};
+	public SubstateDeserialization buildSubstateDeserialization() {
+		return new SubstateDeserialization(this.substateDefinitions.values());
 	}
 
 	public Predicate<Particle> virtualizedUpParticles() {
-		Map<? extends Class<? extends Particle>, Predicate<Particle>> virtualizedParticles = particleDefinitions.entrySet().stream()
+		Map<? extends Class<? extends Particle>, Predicate<Particle>> virtualizedParticles = substateDefinitions.entrySet().stream()
 			.filter(def -> def.getValue().getVirtualized() != null)
-			.collect(Collectors.toMap(Map.Entry::getKey, def -> def.getValue().getVirtualized()));
+			.collect(Collectors.toMap(
+				Map.Entry::getKey,
+				def -> p -> ((Predicate<Particle>) def.getValue().getVirtualized()).test(p))
+			);
 
 		return p -> {
 			var virtualizer = virtualizedParticles.get(p.getClass());

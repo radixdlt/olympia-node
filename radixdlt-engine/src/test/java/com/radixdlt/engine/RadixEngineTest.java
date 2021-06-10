@@ -40,7 +40,7 @@ public class RadixEngineTest {
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()
 		);
-		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
+		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		var actionConstructors = ActionConstructors.newBuilder().build();
 		RadixEngine<Void> engine = new RadixEngine<>(parser, actionConstructors, cm, new InMemoryEngineStore<>());
 

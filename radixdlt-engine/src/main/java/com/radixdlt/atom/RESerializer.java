@@ -44,9 +44,15 @@ import com.radixdlt.utils.UInt256;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 public final class RESerializer {
-	private enum SubstateType {
+	private static final Pattern OWASP_URL_REGEX = Pattern.compile(
+		"^((((https?|ftps?|gopher|telnet|nntp)://)|(mailto:|news:))"
+			+ "(%[0-9A-Fa-f]{2}|[-()_.!~*';/?:@&=+$,A-Za-z0-9])+)([).!';/?:,][[:blank:]])?$"
+	);
+
+	public enum SubstateType {
 		RE_ADDR((byte) 0),
 		SYSTEM((byte) 1),
 		TOKEN_DEF((byte) 2),
@@ -58,7 +64,7 @@ public final class RESerializer {
 		STAKE((byte) 8),
 		ROUND_DATA((byte) 9),
 		EPOCH_DATA((byte) 10),
-		STAKE_SHARE((byte) 11),
+		STAKE_OWNERSHIP((byte) 11),
 		VALIDATOR_EPOCH_DATA((byte) 12),
 		PREPARED_UNSTAKE((byte) 13),
 		EXITTING_STAKE((byte) 14);
@@ -67,6 +73,10 @@ public final class RESerializer {
 
 		SubstateType(byte id) {
 			this.id = id;
+		}
+
+		public byte id() {
+			return id;
 		}
 	}
 
@@ -99,7 +109,7 @@ public final class RESerializer {
 		Map.entry(ValidatorStake.class, List.of(SubstateType.STAKE.id)),
 		Map.entry(RoundData.class, List.of(SubstateType.ROUND_DATA.id)),
 		Map.entry(EpochData.class, List.of(SubstateType.EPOCH_DATA.id)),
-		Map.entry(StakeOwnership.class, List.of(SubstateType.STAKE_SHARE.id)),
+		Map.entry(StakeOwnership.class, List.of(SubstateType.STAKE_OWNERSHIP.id)),
 		Map.entry(ValidatorEpochData.class, List.of(SubstateType.VALIDATOR_EPOCH_DATA.id)),
 		Map.entry(PreparedUnstakeOwnership.class, List.of(SubstateType.PREPARED_UNSTAKE.id)),
 		Map.entry(ExittingStake.class, List.of(SubstateType.EXITTING_STAKE.id))
@@ -129,13 +139,6 @@ public final class RESerializer {
 		var sArray = new byte[32];
 		buf.get(sArray);
 		return ECDSASignature.deserialize(rArray, sArray, v);
-	}
-
-	public static Class<? extends Particle> byteToClass(byte classId) throws DeserializeException {
-		if (classId < 0 || classId >= byteToClass.size()) {
-			throw new DeserializeException("Bad classId");
-		}
-		return byteToClass.get(classId);
 	}
 
 	public static List<Byte> classToBytes(Class<? extends Particle> particleClass) {
@@ -170,7 +173,7 @@ public final class RESerializer {
 			return deserializeRoundState(buf);
 		} else if (type == SubstateType.EPOCH_DATA.id) {
 			return deserializeEpochState(buf);
-		} else if (type == SubstateType.STAKE_SHARE.id) {
+		} else if (type == SubstateType.STAKE_OWNERSHIP.id) {
 			return deserializeStakeShare(buf);
 		} else if (type == SubstateType.VALIDATOR_EPOCH_DATA.id) {
 			return deserializeValidatorEpochData(buf);
@@ -331,7 +334,7 @@ public final class RESerializer {
 	}
 
 	private static void serializeData(StakeOwnership p, ByteBuffer buf) {
-		buf.put(SubstateType.STAKE_SHARE.id);
+		buf.put(SubstateType.STAKE_OWNERSHIP.id);
 
 		serializeKey(buf, p.getDelegateKey());
 		serializeREAddr(buf, p.getOwner());
@@ -481,17 +484,35 @@ public final class RESerializer {
 		return new TokenResource(rri, name, description, iconUrl, url, supply, minter);
 	}
 
-	private static UInt256 deserializeUInt256(ByteBuffer buf) {
+	public static Long deserializeNonNegativeLong(ByteBuffer buf) throws DeserializeException {
+		var l = buf.getLong();
+		if (l < 0) {
+			throw new DeserializeException("Long must be positive");
+		}
+		return l;
+	}
+
+	public static UInt256 deserializeUInt256(ByteBuffer buf) {
 		var amountDest = new byte[UInt256.BYTES]; // amount
 		buf.get(amountDest);
 		return UInt256.from(amountDest);
+	}
+
+	public static UInt256 deserializeNonZeroUInt256(ByteBuffer buf) throws DeserializeException {
+		var amountDest = new byte[UInt256.BYTES]; // amount
+		buf.get(amountDest);
+		var uint256 = UInt256.from(amountDest);
+		if (uint256.isZero()) {
+			throw new DeserializeException("Cannot be zero.");
+		}
+		return uint256;
 	}
 
 	private static void serializeKey(ByteBuffer buf, ECPublicKey key) {
 		buf.put(key.getCompressedBytes()); // address
 	}
 
-	private static ECPublicKey deserializeKey(ByteBuffer buf) throws DeserializeException {
+	public static ECPublicKey deserializeKey(ByteBuffer buf) throws DeserializeException {
 		try {
 			var keyBytes = new byte[33];
 			buf.get(keyBytes);
@@ -501,7 +522,7 @@ public final class RESerializer {
 		}
 	}
 
-	private static void serializeString(ByteBuffer buf, String s) {
+	public static void serializeString(ByteBuffer buf, String s) {
 		var sBytes = s.getBytes(RadixConstants.STANDARD_CHARSET);
 		if (sBytes.length > 255) {
 			throw new IllegalArgumentException("string cannot be greater than 255 chars");
@@ -516,5 +537,16 @@ public final class RESerializer {
 		var dest = new byte[len];
 		buf.get(dest);
 		return new String(dest, RadixConstants.STANDARD_CHARSET);
+	}
+
+	public static String deserializeUrl(ByteBuffer buf) throws DeserializeException {
+		var len = Byte.toUnsignedInt(buf.get()); // url
+		var dest = new byte[len];
+		buf.get(dest);
+		var url = new String(dest, RadixConstants.STANDARD_CHARSET);
+		if (!url.isEmpty() && !OWASP_URL_REGEX.matcher(url).matches()) {
+			throw new DeserializeException("URL: not a valid URL: " + url);
+		}
+		return url;
 	}
 }

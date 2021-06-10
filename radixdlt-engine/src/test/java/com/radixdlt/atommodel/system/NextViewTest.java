@@ -31,6 +31,7 @@ import com.radixdlt.atommodel.system.construction.NextViewConstructorV1;
 import com.radixdlt.atommodel.system.construction.NextViewConstructorV2;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV1;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
+import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
 import com.radixdlt.atommodel.unique.scrypt.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -67,7 +68,7 @@ public final class NextViewTest {
 					.build()
 			},
 			{
-				List.of(new SystemConstraintScryptV2()),
+				List.of(new SystemConstraintScryptV2(), new StakingConstraintScryptV3()),
 				ActionConstructors.newBuilder()
 					.put(SystemNextView.class, new NextViewConstructorV2())
 					.put(CreateSystem.class, new CreateSystemConstructorV2())
@@ -96,7 +97,7 @@ public final class NextViewTest {
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()
 		);
-		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
+		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		this.store = new InMemoryEngineStore<>();
 		this.sut = new RadixEngine<>(
 			parser,

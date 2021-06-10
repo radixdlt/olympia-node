@@ -57,7 +57,7 @@ public class BurnTokensV1Test {
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()
 		);
-		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
+		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		EngineStore<Void> store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
 			parser,

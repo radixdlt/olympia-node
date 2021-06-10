@@ -18,8 +18,9 @@
 package com.radixdlt.atomos;
 
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.StatelessSubstateVerifier;
+import com.radixdlt.constraintmachine.SubstateDeserializer;
 
+import java.util.Set;
 import java.util.function.Predicate;
 
 /**
@@ -30,34 +31,43 @@ import java.util.function.Predicate;
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class SubstateDefinition<T extends Particle> {
 	private final Class<T> substateClass;
-	private final StatelessSubstateVerifier<T> staticValidation; // may be null
+	private final Set<Byte> typeBytes;
+	private final SubstateDeserializer<T> deserializer;
 	private final Predicate<T> virtualized; // may be null
 
 	public SubstateDefinition(
 		Class<T> substateClass,
-		StatelessSubstateVerifier<T> staticValidation
+		Set<Byte> typeBytes,
+		SubstateDeserializer<T> deserializer
 	) {
 		this.substateClass = substateClass;
-		this.staticValidation = staticValidation;
-		this.virtualized = x -> false;
+		this.typeBytes = typeBytes;
+		this.deserializer = deserializer;
+		this.virtualized = s -> false;
 	}
 
 	public SubstateDefinition(
 		Class<T> substateClass,
-		StatelessSubstateVerifier<T> staticValidation,
+		Set<Byte> typeBytes,
+		SubstateDeserializer<T> deserializer,
 		Predicate<T> virtualized
 	) {
 		this.substateClass = substateClass;
-		this.staticValidation = staticValidation;
+		this.typeBytes = typeBytes;
+		this.deserializer = deserializer;
 		this.virtualized = virtualized;
+	}
+
+	public Set<Byte> getTypeBytes() {
+		return typeBytes;
 	}
 
 	public Class<T> getSubstateClass() {
 		return substateClass;
 	}
 
-	public StatelessSubstateVerifier<Particle> getStaticValidation() {
-		return p -> staticValidation.verify((T) p);
+	public SubstateDeserializer<T> getDeserializer() {
+		return deserializer;
 	}
 
 	public Predicate<T> getVirtualized() {

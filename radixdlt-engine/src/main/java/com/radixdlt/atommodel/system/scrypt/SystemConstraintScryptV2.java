@@ -18,6 +18,7 @@
 
 package com.radixdlt.atommodel.system.scrypt;
 
+import com.radixdlt.atom.RESerializer;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.HasEpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
@@ -40,7 +41,6 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.ShutdownAllProcedure;
-import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
@@ -580,13 +580,11 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				RoundData.class,
-				p -> {
-					if (p.getTimestamp() < 0) {
-						throw new TxnParseException("Timestamp is less than 0");
-					}
-					if (p.getView() < 0) {
-						throw new TxnParseException("View is less than 0");
-					}
+				Set.of(RESerializer.SubstateType.ROUND_DATA.id()),
+				(b, buf) -> {
+					var view = RESerializer.deserializeNonNegativeLong(buf);
+					var timestamp = RESerializer.deserializeNonNegativeLong(buf);
+					return new RoundData(view, timestamp);
 				},
 				p -> p.getView() == 0 && p.getTimestamp() == 0
 			)
@@ -594,47 +592,59 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				EpochData.class,
-				p -> {
-					if (p.getEpoch() < 0) {
-						throw new TxnParseException("Epoch is less than 0");
-					}
+				Set.of(RESerializer.SubstateType.EPOCH_DATA.id()),
+				(b, buf) -> {
+					var epoch = RESerializer.deserializeNonNegativeLong(buf);
+					return new EpochData(epoch);
 				}
 			)
 		);
 		os.substate(
 			new SubstateDefinition<>(
 				ValidatorStake.class,
-				p -> { },
-				p -> p.getAmount().isZero()
+				Set.of(RESerializer.SubstateType.STAKE.id()),
+				(b, buf) -> {
+					var delegate = RESerializer.deserializeKey(buf);
+					var amount = RESerializer.deserializeUInt256(buf);
+					var ownership = RESerializer.deserializeUInt256(buf);
+					return ValidatorStake.create(delegate, amount, ownership);
+				},
+				s -> s.getAmount().isZero() && s.getTotalOwnership().isZero()
 			)
 		);
 		os.substate(
 			new SubstateDefinition<>(
 				StakeOwnership.class,
-				s -> {
-					if (s.getAmount().isZero()) {
-						throw new TxnParseException("amount must not be zero");
-					}
+				Set.of(RESerializer.SubstateType.STAKE_OWNERSHIP.id()),
+				(b, buf) -> {
+					var delegate = RESerializer.deserializeKey(buf);
+					var owner = RESerializer.deserializeREAddr(buf);
+					var amount = RESerializer.deserializeNonZeroUInt256(buf);
+					return new StakeOwnership(delegate, owner, amount);
 				}
 			)
 		);
 		os.substate(
 			new SubstateDefinition<>(
 				ExittingStake.class,
-				s -> {
-					if (s.getEpochUnlocked() < 0) {
-						throw new TxnParseException("epoch must be >= 0");
-					}
+				Set.of(RESerializer.SubstateType.EXITTING_STAKE.id()),
+				(b, buf) -> {
+					var epochUnlocked = RESerializer.deserializeNonNegativeLong(buf);
+					var delegate = RESerializer.deserializeKey(buf);
+					var owner = RESerializer.deserializeREAddr(buf);
+					var amount = RESerializer.deserializeNonZeroUInt256(buf);
+					return new ExittingStake(delegate, owner, epochUnlocked, amount);
 				}
 			)
 		);
 		os.substate(
 			new SubstateDefinition<>(
 				ValidatorEpochData.class,
-				s -> {
-					if (s.proposalsCompleted() < 0) {
-						throw new TxnParseException("proposals completed must be >= 0");
-					}
+				Set.of(RESerializer.SubstateType.VALIDATOR_EPOCH_DATA.id()),
+				(b, buf) -> {
+					var key = RESerializer.deserializeKey(buf);
+					var proposalsCompleted = RESerializer.deserializeNonNegativeLong(buf);
+					return new ValidatorEpochData(key, proposalsCompleted);
 				}
 			)
 		);

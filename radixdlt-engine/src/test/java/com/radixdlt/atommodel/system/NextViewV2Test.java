@@ -93,7 +93,7 @@ public class NextViewV2Test {
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()
 		);
-		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
+		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		this.store = new InMemoryEngineStore<>();
 		this.sut = new RadixEngine<>(
 			parser,

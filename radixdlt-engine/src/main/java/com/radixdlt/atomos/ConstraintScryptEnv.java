@@ -32,20 +32,20 @@ import java.util.Map;
 // FIXME: unchecked, rawtypes
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class ConstraintScryptEnv implements Loader {
-	private final ImmutableMap<Class<? extends Particle>, SubstateDefinition<Particle>> particleDefinitions;
+	private final ImmutableMap<Class<? extends Particle>, SubstateDefinition<? extends Particle>> particleDefinitions;
 
-	private final Map<Class<? extends Particle>, SubstateDefinition<Particle>> scryptParticleDefinitions;
+	private final Map<Class<? extends Particle>, SubstateDefinition<? extends Particle>> scryptParticleDefinitions;
 	private final Map<ProcedureKey, Procedure> procedures;
 
 	ConstraintScryptEnv(
-		ImmutableMap<Class<? extends Particle>, SubstateDefinition<Particle>> particleDefinitions
+		ImmutableMap<Class<? extends Particle>, SubstateDefinition<? extends Particle>> particleDefinitions
 	) {
 		this.particleDefinitions = particleDefinitions;
 		this.scryptParticleDefinitions = new HashMap<>();
 		this.procedures = new HashMap<>();
 	}
 
-	public Map<Class<? extends Particle>, SubstateDefinition<Particle>> getScryptParticleDefinitions() {
+	public Map<Class<? extends Particle>, SubstateDefinition<? extends Particle>> getScryptParticleDefinitions() {
 		return scryptParticleDefinitions;
 	}
 
@@ -64,7 +64,7 @@ public final class ConstraintScryptEnv implements Loader {
 			throw new IllegalStateException("Substate " + substateClass + " is already registered");
 		}
 
-		scryptParticleDefinitions.put(substateClass, (SubstateDefinition<Particle>) substateDefinition);
+		scryptParticleDefinitions.put(substateClass, substateDefinition);
 	}
 
 	@Override

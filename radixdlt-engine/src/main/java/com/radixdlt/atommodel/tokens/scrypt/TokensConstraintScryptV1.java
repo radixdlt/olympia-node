@@ -18,9 +18,9 @@
 
 package com.radixdlt.atommodel.tokens.scrypt;
 
+import com.radixdlt.atom.RESerializer;
 import com.radixdlt.atommodel.tokens.state.DeprecatedResourceInBucket;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.SubstateDefinition;
@@ -36,10 +36,14 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Scrypt which defines how tokens are managed.
@@ -56,14 +60,52 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				TokenResource.class,
-				TokenDefinitionUtils::staticCheck
+				Set.of(RESerializer.SubstateType.TOKEN_DEF.id()),
+				(b, buf) -> {
+					var rri = RESerializer.deserializeREAddr(buf);
+					var type = buf.get();
+					final UInt256 supply;
+					final ECPublicKey minter;
+					if (type == 0) {
+						supply = null;
+						minter = null;
+					} else if (type == 1) {
+						supply = null;
+						minter = RESerializer.deserializeKey(buf);
+					} else if (type == 2) {
+						supply = RESerializer.deserializeUInt256(buf);
+						minter = null;
+					} else {
+						throw new DeserializeException("Unknown token def type " + type);
+					}
+					var name = RESerializer.deserializeString(buf);
+					var description = RESerializer.deserializeString(buf);
+					var url = RESerializer.deserializeUrl(buf);
+					var iconUrl = RESerializer.deserializeUrl(buf);
+					return new TokenResource(rri, name, description, iconUrl, url, supply, minter);
+				}
 			)
 		);
 
 		os.substate(
 			new SubstateDefinition<>(
 				TokensInAccount.class,
-				TokenDefinitionUtils::staticCheck
+				Set.of(RESerializer.SubstateType.TOKENS.id(), RESerializer.SubstateType.TOKENS_LOCKED.id()),
+				(b, buf) -> {
+					var rri = RESerializer.deserializeREAddr(buf);
+					var holdingAddr = RESerializer.deserializeREAddr(buf);
+					if (!holdingAddr.isAccount()) {
+						throw new DeserializeException("Tokens must be held by holding address: " + holdingAddr);
+					}
+					var amount = RESerializer.deserializeNonZeroUInt256(buf);
+
+					if (b == RESerializer.SubstateType.TOKENS.id()) {
+						return new TokensInAccount(holdingAddr, amount, rri);
+					} else {
+						var epochUnlocked = buf.getLong();
+						return new TokensInAccount(holdingAddr, amount, rri, epochUnlocked);
+					}
+				}
 			)
 		);
 	}

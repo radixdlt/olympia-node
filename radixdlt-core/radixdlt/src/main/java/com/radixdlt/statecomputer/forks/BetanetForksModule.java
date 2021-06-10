@@ -106,7 +106,7 @@ public final class BetanetForksModule extends AbstractModule {
 			v1.getProcedures(),
 			(procedureKey, param, context) -> { }
 		);
-		var parser = new REParser(v1.buildStatelessSubstateVerifier());
+		var parser = new REParser(v1.buildSubstateDeserialization());
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateSystem.class, new CreateSystemConstructorV1())
 			.put(PayFee.class, new PayFeeConstructorV1())
@@ -153,7 +153,7 @@ public final class BetanetForksModule extends AbstractModule {
 			(procedureKey, param, context) -> { }
 		);
 
-		var parser = new REParser(v2.buildStatelessSubstateVerifier());
+		var parser = new REParser(v2.buildSubstateDeserialization());
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateSystem.class, new CreateSystemConstructorV1())
 			.put(PayFee.class, new PayFeeConstructorV1())
@@ -200,7 +200,7 @@ public final class BetanetForksModule extends AbstractModule {
 			(procedureKey, param, context) -> { }
 		);
 
-		var parser = new REParser(v3.buildStatelessSubstateVerifier());
+		var parser = new REParser(v3.buildSubstateDeserialization());
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateSystem.class, new CreateSystemConstructorV2())
 			.put(PayFee.class, new PayFeeConstructorV1())
@@ -250,7 +250,7 @@ public final class BetanetForksModule extends AbstractModule {
 			v4.getProcedures(),
 			new FixedFeeMetering(fixedFee)
 		);
-		var parser = new REParser(v4.buildStatelessSubstateVerifier());
+		var parser = new REParser(v4.buildSubstateDeserialization());
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateSystem.class, new CreateSystemConstructorV2())
 			.put(BurnToken.class, new BurnTokenConstructor())

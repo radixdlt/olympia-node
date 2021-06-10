@@ -18,6 +18,7 @@
 
 package com.radixdlt.atommodel.system.scrypt;
 
+import com.radixdlt.atom.RESerializer;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -33,6 +34,9 @@ import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.serialization.DeserializeException;
+
+import java.util.Set;
 
 // TODO: Remove for mainnet
 public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt {
@@ -62,13 +66,26 @@ public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt 
 
 	@Override
 	public void main(Loader os) {
-		os.substate(
-			new SubstateDefinition<>(
-				SystemParticle.class,
-				this::staticCheck,
-				p -> p.getView() == 0 && p.getEpoch() == 0 && p.getTimestamp() == 0
-			)
-		);
+		os.substate(new SubstateDefinition<>(
+			SystemParticle.class,
+			Set.of(RESerializer.SubstateType.SYSTEM.id()),
+			(b, buf) -> {
+				var epoch = buf.getLong();
+				if (epoch < 0) {
+					throw new DeserializeException("Epoch is less than 0");
+				}
+				var view = buf.getLong();
+				if (view < 0) {
+					throw new DeserializeException("View is less than 0");
+				}
+				var timestamp = buf.getLong();
+				if (timestamp < 0) {
+					throw new DeserializeException("Timestamp is less than 0");
+				}
+				return new SystemParticle(epoch, view, timestamp);
+			},
+			p -> p.getView() == 0 && p.getEpoch() == 0 && p.getTimestamp() == 0
+		));
 
 		os.procedure(new DownProcedure<>(
 			SystemParticle.class, VoidReducerState.class,

@@ -18,6 +18,10 @@
 
 package com.radixdlt.constraintmachine;
 
-public interface StatelessSubstateVerifier<T extends Particle> {
-	void verify(T particle) throws TxnParseException;
+import com.radixdlt.serialization.DeserializeException;
+
+import java.nio.ByteBuffer;
+
+public interface SubstateDeserializer<T extends Particle> {
+	T deserialize(Byte typeByte, ByteBuffer buf) throws DeserializeException;
 }

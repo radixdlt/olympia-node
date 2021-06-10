@@ -18,8 +18,8 @@
 
 package com.radixdlt.atommodel.tokens.scrypt;
 
+import com.radixdlt.atom.RESerializer;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.SubstateDefinition;
@@ -36,6 +36,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt384;
 
 import java.util.Objects;
+import java.util.Set;
 
 public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 	@Override
@@ -43,7 +44,13 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				PreparedStake.class,
-				TokenDefinitionUtils::staticCheck
+				Set.of(RESerializer.SubstateType.PREPARED_STAKE.id()),
+				(b, buf) -> {
+					var owner = RESerializer.deserializeREAddr(buf);
+					var delegate = RESerializer.deserializeKey(buf);
+					var amount = RESerializer.deserializeNonZeroUInt256(buf);
+					return new PreparedStake(amount, owner, delegate);
+				}
 			)
 		);
 
