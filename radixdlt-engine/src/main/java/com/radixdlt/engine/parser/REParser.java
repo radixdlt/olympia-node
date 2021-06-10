@@ -42,6 +42,10 @@ public final class REParser {
 		this.substateDeserialization = substateDeserialization;
 	}
 
+	public SubstateDeserialization getSubstateDeserialization() {
+		return substateDeserialization;
+	}
+
 	private static class ParserState {
 		private final List<REInstruction> instructions = new ArrayList<>();
 		private byte[] msg = null;

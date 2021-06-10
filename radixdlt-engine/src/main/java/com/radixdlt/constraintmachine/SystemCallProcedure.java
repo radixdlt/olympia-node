@@ -19,7 +19,6 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.store.ReadableAddrs;
 
 import java.util.function.Supplier;
 

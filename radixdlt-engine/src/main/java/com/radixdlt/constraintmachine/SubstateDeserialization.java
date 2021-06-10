@@ -25,10 +25,12 @@ import com.radixdlt.utils.Pair;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class SubstateDeserialization {
 	private final Map<Byte, SubstateDefinition<? extends Particle>> byteToDeserializer;
+	private final Map<Class<? extends Particle>, Set<Byte>> classToTypeBytes;
 
 	public SubstateDeserialization(
 		Collection<SubstateDefinition<? extends Particle>> definitions
@@ -36,9 +38,11 @@ public final class SubstateDeserialization {
 		this.byteToDeserializer = definitions.stream()
 			.flatMap(d -> d.getTypeBytes().stream().map(b -> Pair.of(b, d)))
 			.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
+		this.classToTypeBytes = definitions.stream()
+			.collect(Collectors.toMap(SubstateDefinition::getSubstateClass, SubstateDefinition::getTypeBytes));
 	}
 
-	Class<? extends Particle> byteToClass(Byte typeByte) throws DeserializeException {
+	public Class<? extends Particle> byteToClass(Byte typeByte) throws DeserializeException {
 		var definition = byteToDeserializer.get(typeByte);
 		if (definition == null) {
 			throw new DeserializeException("Unknown byte type: " + typeByte);
@@ -46,7 +50,19 @@ public final class SubstateDeserialization {
 		return definition.getSubstateClass();
 	}
 
-	Particle deserialize(ByteBuffer buf) throws DeserializeException {
+	public Set<Byte> classToBytes(Class<? extends Particle> substateClass) {
+		var typeBytes = classToTypeBytes.get(substateClass);
+		if (typeBytes == null) {
+			throw new IllegalStateException("Unknown substate class: " + substateClass);
+		}
+		return typeBytes;
+	}
+
+	public Particle deserialize(byte[] b) throws DeserializeException {
+		return deserialize(ByteBuffer.wrap(b));
+	}
+
+	public Particle deserialize(ByteBuffer buf) throws DeserializeException {
 		var typeByte = buf.get();
 		var deserializer = byteToDeserializer.get(typeByte);
 		if (deserializer == null) {

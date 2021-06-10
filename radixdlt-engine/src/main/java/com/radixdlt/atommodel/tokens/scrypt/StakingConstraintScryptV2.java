@@ -172,7 +172,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 					throw new ProcedureException("Exiting from stake must be locked.");
 				}
 
-				var system = (SystemParticle) r.loadAddr(null, REAddr.ofSystem()).orElseThrow();
+				var system = (SystemParticle) r.loadAddr(REAddr.ofSystem()).orElseThrow();
 				if (system.getEpoch() + EPOCHS_LOCKED != epochUnlocked.get()) {
 					throw new ProcedureException("Incorrect epoch unlock: " + epochUnlocked.get()
 						+ " should be: " + (system.getEpoch() + EPOCHS_LOCKED));

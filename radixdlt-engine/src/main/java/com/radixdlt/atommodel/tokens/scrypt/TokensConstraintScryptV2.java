@@ -157,7 +157,7 @@ public class TokensConstraintScryptV2 implements ConstraintScrypt {
 					return new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { });
 				}
 				return new Authorization(PermissionLevel.USER, (r, c) -> {
-					var tokenDef = (TokenResource) r.loadAddr(null, u.getResourceAddr())
+					var tokenDef = (TokenResource) r.loadAddr(u.getResourceAddr())
 						.orElseThrow(() -> new AuthorizationException("Invalid token address: " + u.getResourceAddr()));
 					tokenDef.verifyMintAuthorization(c.key());
 				});

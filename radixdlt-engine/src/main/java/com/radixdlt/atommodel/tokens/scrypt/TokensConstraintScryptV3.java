@@ -157,7 +157,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				}
 
 				return new Authorization(PermissionLevel.USER, (r, c) -> {
-					var tokenDef = (TokenResource) r.loadAddr(null, u.getResourceAddr())
+					var tokenDef = (TokenResource) r.loadAddr(u.getResourceAddr())
 						.orElseThrow(() -> new AuthorizationException("Invalid token address: " + u.getResourceAddr()));
 					tokenDef.verifyMintAuthorization(c.key());
 				});
@@ -175,7 +175,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				if (s.isEmpty()) {
 					return;
 				}
-				var tokenDef = (TokenResource) r.loadAddr(null, s.getResourceAddr())
+				var tokenDef = (TokenResource) r.loadAddr(s.getResourceAddr())
 					.orElseThrow(() -> new AuthorizationException("Invalid token address: " + s.getResourceAddr()));
 				tokenDef.verifyBurnAuthorization(c.key());
 			}),

@@ -24,12 +24,13 @@ import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
+import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.TxnIndex;
 import com.radixdlt.store.CMStore;
-import com.radixdlt.store.ReadableAddrs;
+import com.radixdlt.store.ReadableAddrsStore;
 
 import java.util.Optional;
 
@@ -40,13 +41,13 @@ import java.util.Optional;
  */
 public final class LogCMStore implements CMStore {
 	private final TxnIndex txnIndex;
-	private final ReadableAddrs readableAddrs;
+	private final ReadableAddrsStore readableAddrs;
 	private final REParser reParser;
 
 	@Inject
 	public LogCMStore(
 		TxnIndex txnIndex,
-		ReadableAddrs readableAddrs,
+		ReadableAddrsStore readableAddrs,
 		REParser reParser
 	) {
 		this.txnIndex = txnIndex;
@@ -65,12 +66,12 @@ public final class LogCMStore implements CMStore {
 	}
 
 	@Override
-	public Optional<Particle> loadAddr(Transaction tx, REAddr rri) {
-		return readableAddrs.loadAddr(tx, rri);
+	public Optional<Particle> loadAddr(Transaction tx, REAddr rri, SubstateDeserialization deserialization) {
+		return readableAddrs.loadAddr(tx, rri, deserialization);
 	}
 
 	@Override
-	public Optional<Particle> loadUpParticle(Transaction dbTxn, SubstateId substateId) {
+	public Optional<Particle> loadUpParticle(Transaction dbTxn, SubstateId substateId, SubstateDeserialization deserialization) {
 		var txnId = substateId.getTxnId();
 		return txnIndex.get(txnId)
 			.flatMap(txn -> {
@@ -93,7 +94,11 @@ public final class LogCMStore implements CMStore {
 	}
 
 	@Override
-	public SubstateCursor openIndexedCursor(Transaction dbTransaction, Class<? extends Particle> particleClass) {
+	public SubstateCursor openIndexedCursor(
+		Transaction dbTransaction,
+		Class<? extends Particle> particleClass,
+		SubstateDeserialization deserialization
+	) {
 		throw new UnsupportedOperationException();
 	}
 }

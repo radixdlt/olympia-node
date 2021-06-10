@@ -216,7 +216,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 				return new Authorization(
 					level,
 					(r, c) -> {
-						var tokenDef = (TokenResource) r.loadAddr(null, s.resourceInBucket.resourceAddr())
+						var tokenDef = (TokenResource) r.loadAddr(s.resourceInBucket.resourceAddr())
 							.orElseThrow(() -> new AuthorizationException("Invalid token address: " + s.resourceInBucket.resourceAddr()));
 
 						tokenDef.verifyMintAuthorization(c.key());
@@ -228,7 +228,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 					throw new ProcedureException("Cannot mint locked tokens.");
 				}
 
-				var p = r.loadAddr(null, s.resourceInBucket.resourceAddr());
+				var p = r.loadAddr(s.resourceInBucket.resourceAddr());
 				if (p.isEmpty()) {
 					throw new ProcedureException("Token does not exist.");
 				}
@@ -248,7 +248,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 			RemainderTokens.class,
 			s -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, c, r) -> {
-				var p = r.loadAddr(null, s.tokenAddr);
+				var p = r.loadAddr(s.tokenAddr);
 				if (p.isEmpty()) {
 					throw new ProcedureException("Token does not exist.");
 				}

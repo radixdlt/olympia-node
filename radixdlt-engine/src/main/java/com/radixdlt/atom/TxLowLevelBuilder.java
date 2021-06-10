@@ -146,13 +146,8 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
-	public TxLowLevelBuilder downAll(Class<? extends Particle> particleClass) {
-		var classIds = RESerializer.classToBytes(particleClass);
-		if (classIds.size() != 1) {
-			throw new IllegalStateException("Cannot down all of particle with multiple ids");
-		}
-
-		instruction(REInstruction.REMicroOp.DOWNALL, new byte[] {classIds.get(0)});
+	public TxLowLevelBuilder downAll(Byte typeByte) {
+		instruction(REInstruction.REMicroOp.DOWNALL, new byte[] {typeByte});
 		return this;
 	}
 

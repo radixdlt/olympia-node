@@ -17,8 +17,6 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.store.ReadableAddrs;
-
 /**
  * Validates whether a specific transition procedure is permissible
  */

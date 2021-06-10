@@ -28,6 +28,7 @@ import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
@@ -36,7 +37,7 @@ import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.ReadableAddrs;
+import com.radixdlt.store.ReadableAddrsStore;
 import com.radixdlt.store.LastStoredProof;
 import org.junit.Rule;
 import org.junit.Test;
@@ -59,7 +60,10 @@ public class GenesisTest {
 	private LedgerProof ledgerProof;
 
 	@Inject
-	private ReadableAddrs readableAddrs;
+	private ReadableAddrsStore readableAddrs;
+
+	@Inject
+	private REParser parser;
 
 	private Injector createInjector() {
 		return Guice.createInjector(
@@ -84,7 +88,7 @@ public class GenesisTest {
 		// Arrange
 		createInjector().injectMembers(this);
 
-		var p = readableAddrs.loadAddr(null, REAddr.ofNativeToken());
+		var p = readableAddrs.loadAddr(null, REAddr.ofNativeToken(), parser.getSubstateDeserialization());
 		assertThat(p)
 			.hasValueSatisfying(particle -> {
 				var tok = (TokenResource) particle;

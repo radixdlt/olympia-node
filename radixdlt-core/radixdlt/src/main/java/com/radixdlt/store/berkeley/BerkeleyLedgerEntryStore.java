@@ -19,6 +19,7 @@ package com.radixdlt.store.berkeley;
 
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
+import com.radixdlt.constraintmachine.SubstateDeserialization;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -447,6 +448,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	private static class BerkeleySubstateCursor implements SubstateCursor {
 		private final SecondaryDatabase db;
 		private final com.sleepycat.je.Transaction dbTxn;
+		private final SubstateDeserialization deserialization;
 		private SecondaryCursor cursor;
 		private OperationStatus status;
 
@@ -454,10 +456,16 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		private DatabaseEntry value = entry();
 		private DatabaseEntry substateIdBytes = entry();
 
-		BerkeleySubstateCursor(com.sleepycat.je.Transaction dbTxn, SecondaryDatabase db, byte[] indexableBytes) {
+		BerkeleySubstateCursor(
+			com.sleepycat.je.Transaction dbTxn,
+			SecondaryDatabase db,
+			byte[] indexableBytes,
+			SubstateDeserialization deserialization
+		) {
 			this.dbTxn = dbTxn;
 			this.db = db;
 			this.index = entry(indexableBytes);
+			this.deserialization = deserialization;
 		}
 
 		private void open() {
@@ -482,7 +490,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			}
 
 			try {
-				var rawSubstate = RESerializer.deserialize(value.getData());
+				var rawSubstate = deserialization.deserialize(value.getData());
 				var substate = Substate.create(rawSubstate, SubstateId.fromBytes(substateIdBytes.getData()));
 				status = cursor.getNextDup(index, substateIdBytes, value, null);
 				return substate;
@@ -493,21 +501,26 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public SubstateCursor openIndexedCursor(Transaction wrappedDbTxn, Class<? extends Particle> particleClass) {
+	public SubstateCursor openIndexedCursor(
+		Transaction wrappedDbTxn,
+		Class<? extends Particle> particleClass,
+		SubstateDeserialization deserialization
+	) {
 		var dbTxn = unwrap(wrappedDbTxn);
-		var typeBytes = RESerializer.classToBytes(particleClass);
+		var typeBytes = deserialization.classToBytes(particleClass);
 		if (typeBytes.size() == 1) {
-			final byte[] indexableBytes = new byte[] {typeBytes.get(0)};
-			var cursor = new BerkeleySubstateCursor(dbTxn, upParticleDatabase, indexableBytes);
+			final byte[] indexableBytes = new byte[] {typeBytes.iterator().next()};
+			var cursor = new BerkeleySubstateCursor(dbTxn, upParticleDatabase, indexableBytes, deserialization);
 			cursor.open();
 			return cursor;
 		} else if (typeBytes.size() == 2) {
-			final byte[] indexableBytes = new byte[] {typeBytes.get(0)};
-			var cursor = new BerkeleySubstateCursor(dbTxn, upParticleDatabase, indexableBytes);
+			var iter = typeBytes.iterator();
+			final byte[] indexableBytes = new byte[] {iter.next()};
+			var cursor = new BerkeleySubstateCursor(dbTxn, upParticleDatabase, indexableBytes, deserialization);
 			cursor.open();
 			return SubstateCursor.concat(cursor, () -> {
-				final byte[] type2 = new byte[] {typeBytes.get(1)};
-				var cursor2 = new BerkeleySubstateCursor(dbTxn, upParticleDatabase, type2);
+				final byte[] type2 = new byte[] {iter.next()};
+				var cursor2 = new BerkeleySubstateCursor(dbTxn, upParticleDatabase, type2, deserialization);
 				cursor2.open();
 				return cursor2;
 			});
@@ -517,16 +530,21 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public SubstateCursor openIndexedCursor(Class<? extends Particle> particleClass) {
-		return openIndexedCursor(null, particleClass);
+	public SubstateCursor openIndexedCursor(
+		Class<? extends Particle> particleClass,
+		SubstateDeserialization substateDeserialization
+	) {
+		return openIndexedCursor(null, particleClass, substateDeserialization);
 	}
 
+	@Override
 	public <V> V reduceUpParticles(
 		Class<? extends Particle> particleClass,
 		V initial,
-		BiFunction<V, Particle, V> outputReducer
+		BiFunction<V, Particle, V> outputReducer,
+		SubstateDeserialization substateDeserialization
 	) {
-		var typeBytes = RESerializer.classToBytes(particleClass);
+		var typeBytes = substateDeserialization.classToBytes(particleClass);
 		V v = initial;
 		for (Byte indexableByte : typeBytes) {
 			try (var particleCursor = upParticleDatabase.openCursor(null, null)) {
@@ -536,7 +554,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				while (status == SUCCESS) {
 					Particle particle;
 					try {
-						particle = RESerializer.deserialize(value.getData());
+						particle = substateDeserialization.deserialize(value.getData());
 					} catch (DeserializeException e) {
 						throw new IllegalStateException();
 					}
@@ -587,13 +605,13 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return e.getData().length == 0 ? REOp.DOWN : REOp.UP;
 	}
 
-	private Optional<Particle> entryToUpParticle(DatabaseEntry e) {
+	private Optional<Particle> entryToUpParticle(DatabaseEntry e, SubstateDeserialization deserialization) {
 		if (entryToSpin(e) == REOp.DOWN) {
 			return Optional.empty();
 		}
 
 		try {
-			return Optional.of(RESerializer.deserialize(e.getData()));
+			return Optional.of(deserialization.deserialize(e.getData()));
 		} catch (DeserializeException ex) {
 			throw new IllegalStateException("Unable to deserialize particle");
 		}
@@ -732,7 +750,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public Optional<Particle> loadAddr(Transaction tx, REAddr rri) {
+	public Optional<Particle> loadAddr(Transaction tx, REAddr rri, SubstateDeserialization deserialization) {
 		var buf = ByteBuffer.allocate(128);
 		RESerializer.serializeREAddr(buf, rri);
 		var pos = buf.position();
@@ -743,7 +761,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			return Optional.empty();
 		}
 
-		return entryToUpParticle(value);
+		return entryToUpParticle(value, deserialization);
 	}
 
 	@Override
@@ -755,7 +773,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public Optional<Particle> loadUpParticle(Transaction tx, SubstateId substateId) {
+	public Optional<Particle> loadUpParticle(Transaction tx, SubstateId substateId, SubstateDeserialization deserialization) {
 		var key = entry(substateId.asBytes());
 		var value = entry();
 		var status = particleDatabase.get(unwrap(tx), key, value, DEFAULT);
@@ -763,7 +781,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			return Optional.empty();
 		}
 
-		return entryToUpParticle(value);
+		return entryToUpParticle(value, deserialization);
 	}
 
 	@Override

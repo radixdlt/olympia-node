@@ -18,8 +18,6 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.store.ReadableAddrs;
-
 public interface Procedure {
 	ProcedureKey key();
 	Authorization authorization(Object o);

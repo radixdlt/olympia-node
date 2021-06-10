@@ -51,6 +51,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class TokenDefinitionTest {
 	private RadixEngine<Void> engine;
 	private EngineStore<Void> store;
+	private REParser parser;
 
 	@Before
 	public void setup() {
@@ -60,7 +61,7 @@ public class TokenDefinitionTest {
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()
 		);
-		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
+		this.parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
 			parser,
@@ -146,7 +147,7 @@ public class TokenDefinitionTest {
 			"",
 			keyPair.getPublicKey()
 		);
-		var builder = TxBuilder.newBuilder()
+		var builder = TxBuilder.newBuilder(parser.getSubstateDeserialization())
 			.toLowLevelBuilder()
 			.virtualDown(new UnclaimedREAddr(addr), "smthng".getBytes(StandardCharsets.UTF_8))
 			.up(tokenDefinitionParticle)

@@ -33,13 +33,13 @@ import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
+import com.radixdlt.constraintmachine.ReadableAddrs;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.store.ReadableAddrs;
 import com.radixdlt.utils.UInt384;
 
 import java.util.Objects;

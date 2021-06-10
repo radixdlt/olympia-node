@@ -50,6 +50,7 @@ public final class TxnParser {
 		var parsedTxn = parser.parse(txn);
 		var stateUpdates = constraintMachine.verify(
 			logCMStore.createTransaction(),
+			parser.getSubstateDeserialization(),
 			logCMStore,
 			PermissionLevel.SYSTEM,
 			parsedTxn.instructions(),

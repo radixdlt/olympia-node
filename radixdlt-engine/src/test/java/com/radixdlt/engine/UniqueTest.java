@@ -42,6 +42,7 @@ public class UniqueTest {
 	private ECKeyPair keyPair = ECKeyPair.generateNew();
 	private RadixEngine<Void> engine;
 	private EngineStore<Void> store;
+	private REParser parser;
 
 	@Before
 	public void setup() {
@@ -51,14 +52,14 @@ public class UniqueTest {
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()
 		);
-		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
+		this.parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(parser, ActionConstructors.newBuilder().build(), cm, store);
 	}
 
 	@Test
 	public void using_own_mutex_should_work() throws Exception {
-		var atom = TxBuilder.newBuilder()
+		var atom = TxBuilder.newBuilder(parser.getSubstateDeserialization())
 			.mutex(keyPair.getPublicKey(), "np")
 			.signAndBuild(keyPair::sign);
 		this.engine.execute(List.of(atom));
@@ -67,7 +68,7 @@ public class UniqueTest {
 	@Test
 	public void using_someone_elses_mutex_should_fail() {
 		var addr = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "smthng");
-		var builder = TxBuilder.newBuilder()
+		var builder = TxBuilder.newBuilder(parser.getSubstateDeserialization())
 			.toLowLevelBuilder()
 			.virtualDown(new UnclaimedREAddr(addr), "smthng".getBytes(StandardCharsets.UTF_8))
 			.up(new UniqueParticle(addr))

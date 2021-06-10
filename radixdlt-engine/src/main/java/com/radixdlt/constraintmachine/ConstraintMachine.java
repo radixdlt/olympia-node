@@ -25,7 +25,6 @@ import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.CMStore;
-import com.radixdlt.store.ReadableAddrs;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
@@ -74,26 +73,29 @@ public final class ConstraintMachine {
 		private final CMStore store;
 		private final CMStore.Transaction dbTxn;
 		private final Predicate<Particle> virtualStoreLayer;
+		private final SubstateDeserialization deserialization;
 
 		CMValidationState(
+			SubstateDeserialization deserialization,
 			Predicate<Particle> virtualStoreLayer,
 			CMStore.Transaction dbTxn,
 			CMStore store
 		) {
+			this.deserialization = deserialization;
 			this.virtualStoreLayer = virtualStoreLayer;
 			this.dbTxn = dbTxn;
 			this.store = store;
 		}
 
-		public ReadableAddrs immutableIndex() {
+		public ReadableAddrs readableAddrs() {
 			// TODO: Fix ReadableAddrs interface (remove txn)
-			return (ignoredTxn, addr) -> {
+			return addr -> {
 				if (addr.isSystem()) {
 					return localUpParticles.values().stream()
 						.map(Substate::getParticle)
 						.filter(SystemParticle.class::isInstance)
 						.findFirst()
-						.or(() -> store.loadAddr(dbTxn, addr))
+						.or(() -> store.loadAddr(dbTxn, addr, deserialization))
 						.or(() -> Optional.of(new SystemParticle(0, 0, 0))); // A bit of a hack
 				} else {
 					return localUpParticles.values().stream()
@@ -103,7 +105,7 @@ public final class ConstraintMachine {
 						.filter(p -> p.getAddr().equals(addr))
 						.findFirst()
 						.map(Particle.class::cast)
-						.or(() -> store.loadAddr(dbTxn, addr));
+						.or(() -> store.loadAddr(dbTxn, addr, deserialization));
 				}
 			};
 		}
@@ -113,7 +115,7 @@ public final class ConstraintMachine {
 				return Optional.empty();
 			}
 
-			return store.loadUpParticle(dbTxn, substateId);
+			return store.loadUpParticle(dbTxn, substateId, deserialization);
 		}
 
 		public void bootUp(int instructionIndex, Substate substate) {
@@ -164,7 +166,7 @@ public final class ConstraintMachine {
 					.filter(s -> particleClass.isInstance(s.getParticle())).iterator()
 				),
 				() -> SubstateCursor.filter(
-					store.openIndexedCursor(dbTxn, particleClass),
+					store.openIndexedCursor(dbTxn, particleClass, deserialization),
 					s -> !remoteDownParticles.contains(s.getId())
 				)
 			);
@@ -231,7 +233,7 @@ public final class ConstraintMachine {
 		int instIndex = 0;
 		var expectEnd = false;
 		ReducerState reducerState = null;
-		var readableAddrs = validationState.immutableIndex();
+		var readableAddrs = validationState.readableAddrs();
 		var groupedStateUpdates = new ArrayList<List<REStateUpdate>>();
 		var stateUpdates = new ArrayList<REStateUpdate>();
 
@@ -346,13 +348,14 @@ public final class ConstraintMachine {
 	 */
 	public List<List<REStateUpdate>> verify(
 		CMStore.Transaction dbTxn,
+		SubstateDeserialization deserialization,
 		CMStore cmStore,
 		PermissionLevel permissionLevel,
 		List<REInstruction> instructions,
 		Optional<ECPublicKey> signature,
 		boolean disableResourceAllocAndDestroy
 	) throws TxnParseException, ConstraintMachineException {
-		var validationState = new CMValidationState(virtualStoreLayer, dbTxn, cmStore);
+		var validationState = new CMValidationState(deserialization, virtualStoreLayer, dbTxn, cmStore);
 		var context = new ExecutionContext(permissionLevel, signature, UInt256.ZERO, disableResourceAllocAndDestroy);
 		return this.statefulVerify(context, validationState, instructions);
 	}

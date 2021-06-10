@@ -23,9 +23,9 @@ import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.InvalidResourceException;
 import com.radixdlt.constraintmachine.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.ProcedureException;
+import com.radixdlt.constraintmachine.ReadableAddrs;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.store.ReadableAddrs;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
@@ -74,7 +74,7 @@ public class TokenHoldingBucket implements ReducerState {
 		if (!amount.isZero()) {
 			c.verifyCanAllocAndDestroyResources();
 
-			var p = r.loadAddr(null, resourceAddr);
+			var p = r.loadAddr(resourceAddr);
 			if (p.isEmpty()) {
 				throw new ProcedureException("Token does not exist.");
 			}
