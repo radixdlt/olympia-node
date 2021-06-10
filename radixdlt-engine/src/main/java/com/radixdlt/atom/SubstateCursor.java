@@ -110,4 +110,22 @@ public interface SubstateCursor extends Iterator<Substate>, Closeable {
 			}
 		};
 	}
+
+	static SubstateCursor empty() {
+		return new SubstateCursor() {
+			@Override
+			public void close() {
+			}
+
+			@Override
+			public boolean hasNext() {
+				return false;
+			}
+
+			@Override
+			public Substate next() {
+				throw new IllegalStateException();
+			}
+		};
+	}
 }

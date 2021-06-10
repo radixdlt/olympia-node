@@ -75,7 +75,7 @@ public class SanityTest {
 				LedgerMonitors.ordered(),
 				RadixEngineMonitors.noInvalidProposedCommands()
 			)
-			.addMempoolSubmissionsSteadyState(new RadixEngineUniqueGenerator());
+			.addMempoolSubmissionsSteadyState(RadixEngineUniqueGenerator.class);
 
 		if (!fees) {
 			bftTestBuilder.addTestModules(ApplicationMonitors.mempoolCommitted());

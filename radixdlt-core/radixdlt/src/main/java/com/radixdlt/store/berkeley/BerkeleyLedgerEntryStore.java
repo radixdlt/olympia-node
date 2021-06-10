@@ -508,7 +508,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	) {
 		var dbTxn = unwrap(wrappedDbTxn);
 		var typeBytes = deserialization.classToBytes(particleClass);
-		if (typeBytes.size() == 1) {
+		if (typeBytes.size() == 0) {
+			return SubstateCursor.empty();
+		} else if (typeBytes.size() == 1) {
 			final byte[] indexableBytes = new byte[] {typeBytes.iterator().next()};
 			var cursor = new BerkeleySubstateCursor(dbTxn, upParticleDatabase, indexableBytes, deserialization);
 			cursor.open();

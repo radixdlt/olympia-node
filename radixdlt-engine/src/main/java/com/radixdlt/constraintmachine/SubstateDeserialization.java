@@ -53,7 +53,7 @@ public final class SubstateDeserialization {
 	public Set<Byte> classToBytes(Class<? extends Particle> substateClass) {
 		var typeBytes = classToTypeBytes.get(substateClass);
 		if (typeBytes == null) {
-			throw new IllegalStateException("Unknown substate class: " + substateClass);
+			return Set.of();
 		}
 		return typeBytes;
 	}
