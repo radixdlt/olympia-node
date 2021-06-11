@@ -52,7 +52,7 @@ public class LocalValidatorInfo {
 	@JsonCreator
 	public static LocalValidatorInfo create(
 		@JsonProperty("address") ValidatorAddress address,
-		@JsonProperty("total_stake") UInt256 totalStake,
+		@JsonProperty("totalStake") UInt256 totalStake,
 		@JsonProperty("name") String name,
 		@JsonProperty("url") String url,
 		@JsonProperty("registered") boolean registered,
