@@ -24,21 +24,19 @@ import com.radixdlt.api.service.AccountService;
 import com.radixdlt.api.service.ActionParserService;
 import com.radixdlt.api.service.SubmissionService;
 import com.radixdlt.api.store.ClientApiStore;
-import com.radixdlt.api.store.TokenDefinitionRecord;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.ValidatorAddress;
-import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
@@ -53,9 +51,7 @@ public class AccountHandlerTest {
 
 	private final ECKeyPair keyPair = ECKeyPair.generateNew();
 	private final ECPublicKey bftKey = keyPair.getPublicKey();
-	private final ECPublicKey delegate = ECKeyPair.generateNew().getPublicKey();
 	private final HashSigner hashSigner = keyPair::sign;
-	private final REAddr rriAddress = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "wsx");
 
 	private final AccountHandler handler = new AccountHandler(
 		accountService, submissionService, actionParserService, hashSigner
@@ -99,7 +95,7 @@ public class AccountHandlerTest {
 	public void testHandleAccountSubmitTransactionSingleStep() {
 		var aid = AID.from(HashUtils.random256().asBytes());
 
-		when(submissionService.oneStepSubmit(any(), any(), any()))
+		when(submissionService.oneStepSubmit(any(), any(), any(), eq(false)))
 			.thenReturn(Result.ok(aid));
 
 		var actions = jsonArray()
@@ -125,14 +121,5 @@ public class AccountHandlerTest {
 
 	private JSONObject requestWith(Object params) {
 		return jsonObject().put("id", "1").putOpt("params", params);
-	}
-
-	private Result<TokenDefinitionRecord> buildToken(String name) {
-		return Result.ok(
-			TokenDefinitionRecord.create(
-				name, name, rriAddress, name + " " + name, UInt384.EIGHT,
-				"http://" + name.toLowerCase() + ".icon.url", "http://" + name.toLowerCase() + "home.url",
-				false
-			));
 	}
 }

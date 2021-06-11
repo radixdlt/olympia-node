@@ -148,6 +148,7 @@ public final class ActionParserService {
 
 			case CREATE_MUTABLE:
 				return allOf(
+					pubKey(element),
 					symbol(element),
 					name(element),
 					optionalDescription(element),
@@ -157,6 +158,11 @@ public final class ActionParserService {
 		}
 
 		return UNSUPPORTED_ACTION.with(type).result();
+	}
+
+	private Result<ECPublicKey> pubKey(JSONObject element) {
+		return param(element, "signerPublicKey")
+			.flatMap(ECPublicKey::fromHexString);
 	}
 
 	private Result<REAddr> rri(JSONObject element) {

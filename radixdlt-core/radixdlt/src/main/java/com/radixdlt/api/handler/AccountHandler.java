@@ -69,14 +69,22 @@ public class AccountHandler {
 	}
 
 	private Result<JSONObject> respondWithTransactionId(JSONObject params) {
-		return allOf(safeArray(params, "actions"), Result.ok(optString(params, "message")))
+		return allOf(
+			safeArray(params, "actions"),
+			Result.ok(optString(params, "message")),
+			Result.ok(params.optBoolean("disableResourceAllocationAndDestroy"))
+		)
 			.flatMap(this::parseSignSubmit)
 			.map(AccountHandler::formatTxId);
 	}
 
-	private Result<AID> parseSignSubmit(JSONArray actions, Optional<String> message) {
+	private Result<AID> parseSignSubmit(
+		JSONArray actions, Optional<String> message, boolean disableResourceAllocationAndDestroy
+	) {
 		return actionParserService.parse(actions)
-			.flatMap(steps -> submissionService.oneStepSubmit(steps, message, hashSigner));
+			.flatMap(steps -> submissionService.oneStepSubmit(
+				steps, message, hashSigner, disableResourceAllocationAndDestroy
+			));
 	}
 
 	private static JSONObject formatTxId(AID txId) {
