@@ -22,5 +22,5 @@ public enum NodeStatus {
 	SYNCING,
 	UP,
 	STALLED,
-	NETWORK_HALTED
+	OUT_OF_SYNC
 }
