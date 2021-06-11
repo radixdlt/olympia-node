@@ -18,6 +18,7 @@
 
 package com.radixdlt.atommodel.system.scrypt;
 
+import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -31,7 +32,6 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.serialization.DeserializeException;
 
 import java.util.Set;
 
@@ -63,18 +63,9 @@ public final class SystemConstraintScryptV1 implements ConstraintScrypt {
 			SystemParticle.class,
 			Set.of(SubstateTypeId.SYSTEM.id()),
 			(b, buf) -> {
-				var epoch = buf.getLong();
-				if (epoch < 0) {
-					throw new DeserializeException("Epoch is less than 0");
-				}
-				var view = buf.getLong();
-				if (view < 0) {
-					throw new DeserializeException("View is less than 0");
-				}
-				var timestamp = buf.getLong();
-				if (timestamp < 0) {
-					throw new DeserializeException("Timestamp is less than 0");
-				}
+				var epoch = REFieldSerialization.deserializeNonNegativeLong(buf);
+				var view = REFieldSerialization.deserializeNonNegativeLong(buf);
+				var timestamp = REFieldSerialization.deserializeNonNegativeLong(buf);
 				return new SystemParticle(epoch, view, timestamp);
 			},
 			(s, buf) -> {

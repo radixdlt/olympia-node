@@ -18,6 +18,7 @@
 
 package com.radixdlt.atommodel.system.scrypt;
 
+import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
@@ -31,31 +32,13 @@ import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.ShutdownAllProcedure;
-import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.serialization.DeserializeException;
 
 import java.util.Set;
 
 // TODO: Remove for mainnet
 public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt {
-	private void staticCheck(SystemParticle systemParticle) throws TxnParseException {
-		if (systemParticle.getEpoch() < 0) {
-			throw new TxnParseException("Epoch is less than 0");
-		}
-
-		if (systemParticle.getTimestamp() < 0) {
-			throw new TxnParseException("Timestamp is less than 0");
-		}
-
-		if (systemParticle.getView() < 0) {
-			throw new TxnParseException("View is less than 0");
-		}
-
-		// FIXME: Need to validate view, but need additional state to do that successfully
-	}
-
 	private static final class TransitionToV2 implements ReducerState {
 		private final SystemParticle sys;
 
@@ -70,18 +53,9 @@ public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt 
 			SystemParticle.class,
 			Set.of(SubstateTypeId.SYSTEM.id()),
 			(b, buf) -> {
-				var epoch = buf.getLong();
-				if (epoch < 0) {
-					throw new DeserializeException("Epoch is less than 0");
-				}
-				var view = buf.getLong();
-				if (view < 0) {
-					throw new DeserializeException("View is less than 0");
-				}
-				var timestamp = buf.getLong();
-				if (timestamp < 0) {
-					throw new DeserializeException("Timestamp is less than 0");
-				}
+				var epoch = REFieldSerialization.deserializeNonNegativeLong(buf);
+				var view = REFieldSerialization.deserializeNonNegativeLong(buf);
+				var timestamp = REFieldSerialization.deserializeNonNegativeLong(buf);
 				return new SystemParticle(epoch, view, timestamp);
 			},
 			(s, buf) -> {
