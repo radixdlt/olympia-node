@@ -471,10 +471,11 @@ public class ActionParserServiceTest {
 
 	@Test
 	public void createMutableTokenIsParsedCorrectlyWithOptionalElements() {
+		var publicKey = ECKeyPair.generateNew().getPublicKey();
 		var source = "[{\"type\":\"CreateMutableSupplyToken\", \"symbol\":\"%s\", \"name\":\"%s\", "
-			+ "\"description\":\"%s\", \"iconUrl\":\"%s\", \"tokenUrl\":\"%s\"}]";
+			+ "\"description\":\"%s\", \"iconUrl\":\"%s\", \"tokenUrl\":\"%s\", \"signerPublicKey\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, "symbol", "name",
-											  "description", "http://icon.url/", "http://token.url/"
+											  "description", "http://icon.url/", "http://token.url/", publicKey.toHex()
 		));
 
 		actionParserService.parse(actions)
@@ -500,8 +501,9 @@ public class ActionParserServiceTest {
 
 	@Test
 	public void createMutableTokenIsParsedCorrectlyWithoutOptionalElements() {
-		var source = "[{\"type\":\"CreateMutableSupplyToken\", \"symbol\":\"%s\", \"name\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, "symbol", "name"));
+		var publicKey = ECKeyPair.generateNew().getPublicKey();
+		var source = "[{\"type\":\"CreateMutableSupplyToken\", \"symbol\":\"%s\", \"name\":\"%s\", \"signerPublicKey\":\"%s\"}]";
+		var actions = jsonArray(String.format(source, "symbol", "name", publicKey.toHex()));
 
 		actionParserService.parse(actions)
 			.onFailure(this::fail)

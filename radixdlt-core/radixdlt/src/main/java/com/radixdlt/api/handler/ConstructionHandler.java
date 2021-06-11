@@ -40,8 +40,8 @@ import static com.radixdlt.api.JsonRpcUtil.safeBlob;
 import static com.radixdlt.api.JsonRpcUtil.safeObject;
 import static com.radixdlt.api.JsonRpcUtil.safeString;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
-import static com.radixdlt.api.data.ApiErrors.INVALID_PUBLIC_KEY;
 import static com.radixdlt.api.data.ApiErrors.INVALID_SIGNATURE_DER;
+import static com.radixdlt.identifiers.CommonErrors.INVALID_PUBLIC_KEY;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.wrap;
 
@@ -60,13 +60,15 @@ public class ConstructionHandler {
 		return withRequiredParameters(
 			request,
 			List.of("actions"),
-			List.of("message"),
+			List.of("message", "disableResourceAllocationAndDestroy"),
 			params ->
 				safeArray(params, "actions")
 					.flatMap(actions -> actionParserService.parse(actions)
-						.flatMap(steps -> submissionService.prepareTransaction(steps, optString(params, "message")))
-						.map(PreparedTransaction::asJson)
-					)
+						.flatMap(steps -> submissionService.prepareTransaction(
+							steps,
+							optString(params, "message"),
+							params.optBoolean("disableResourceAllocationAndDestroy")))
+						.map(PreparedTransaction::asJson))
 		);
 	}
 

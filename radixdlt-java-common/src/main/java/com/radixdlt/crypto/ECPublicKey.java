@@ -29,11 +29,14 @@ import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.functional.Result;
 
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
+
+import static com.radixdlt.identifiers.CommonErrors.INVALID_PUBLIC_KEY;
 
 /**
  * Asymmetric EC public key provider fixed to curve 'secp256k1'
@@ -83,8 +86,12 @@ public final class ECPublicKey {
 			.map(ECPublicKey::new);
 	}
 
+	public static Result<ECPublicKey> fromHexString(String hexadecimal) {
+		return Result.wrap(INVALID_PUBLIC_KEY, () -> fromHex(hexadecimal));
+	}
+
 	public EUID euid() {
-		return this.uid.get();
+		return uid.get();
 	}
 
 	public ECPoint getEcPoint() {
@@ -94,11 +101,11 @@ public final class ECPublicKey {
 	@JsonProperty("publicKey")
 	@DsonOutput(DsonOutput.Output.ALL)
 	public byte[] getBytes() {
-		return this.uncompressedBytes.get();
+		return uncompressedBytes.get();
 	}
 
 	public byte[] getCompressedBytes() {
-		return this.ecPoint.getEncoded(true);
+		return ecPoint.getEncoded(true);
 	}
 
 	public boolean verify(HashCode hash, ECDSASignature signature) {
@@ -118,7 +125,7 @@ public final class ECPublicKey {
 	}
 
 	public String toHex() {
-		return Bytes.toHexString(this.getBytes());
+		return Bytes.toHexString(getBytes());
 	}
 
 	@Override

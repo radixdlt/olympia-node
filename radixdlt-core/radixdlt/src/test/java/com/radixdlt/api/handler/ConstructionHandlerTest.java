@@ -46,6 +46,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -69,7 +70,7 @@ public class ConstructionHandlerTest {
 	public void testBuildTransactionPositional() {
 		var prepared = PreparedTransaction.create(randomBytes(), randomBytes(), UInt256.TEN);
 
-		when(submissionService.prepareTransaction(any(), any()))
+		when(submissionService.prepareTransaction(any(), any(), eq(false)))
 			.thenReturn(Result.ok(prepared));
 
 		var actions = jsonArray()
@@ -97,7 +98,7 @@ public class ConstructionHandlerTest {
 	public void testBuildTransactionNamed() {
 		var prepared = PreparedTransaction.create(randomBytes(), randomBytes(), UInt256.TEN);
 
-		when(submissionService.prepareTransaction(any(), any()))
+		when(submissionService.prepareTransaction(any(), any(), eq(false)))
 			.thenReturn(Result.ok(prepared));
 
 		var actions = jsonArray()

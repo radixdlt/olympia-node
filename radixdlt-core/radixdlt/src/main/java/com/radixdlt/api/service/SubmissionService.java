@@ -68,7 +68,9 @@ public final class SubmissionService {
 		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
 	}
 
-	public Result<PreparedTransaction> prepareTransaction(List<TransactionAction> steps, Optional<String> message) {
+	public Result<PreparedTransaction> prepareTransaction(
+		List<TransactionAction> steps, Optional<String> message, boolean disableResourceAllocAndDestroy
+	) {
 		var addresses = steps.stream()
 			.map(TransactionAction::getFrom)
 			.filter(Objects::nonNull)
@@ -85,9 +87,11 @@ public final class SubmissionService {
 		return Result.wrap(
 			UNABLE_TO_PREPARE_TX,
 			() -> {
-				var txnConstructionRequest = toConstructionRequest(addr, steps, message, false);
-				var txBuilder = radixEngine.construct(txnConstructionRequest);
-				return txBuilder
+				var txnConstructionRequest = toConstructionRequest(
+					addr, steps, message, disableResourceAllocAndDestroy
+				);
+
+				return radixEngine.construct(txnConstructionRequest)
 					.buildForExternalSign()
 					.map(this::toPreparedTx);
 			}
@@ -111,17 +115,20 @@ public final class SubmissionService {
 	}
 
 	public Result<AID> calculateTxId(byte[] blob, ECDSASignature recoverable) {
-		return Result.ok(TxLowLevelBuilder.newBuilder(blob).sig(recoverable).build())
-			.map(Txn::getId);
+		return Result.ok(buildTxn(blob, recoverable)).map(Txn::getId);
 	}
 
 	public Result<AID> submitTx(byte[] blob, ECDSASignature recoverable, AID txId) {
-		var txn = TxLowLevelBuilder.newBuilder(blob).sig(recoverable).build();
+		var txn = buildTxn(blob, recoverable);
 
 		if (!txn.getId().equals(txId)) {
 			return TRANSACTION_ADDRESS_DOES_NOT_MATCH.result();
 		}
 
+		return submit(txn);
+	}
+
+	private Result<AID> submit(Txn txn) {
 		var completableFuture = new CompletableFuture<MempoolAddSuccess>();
 		var mempoolAdd = MempoolAdd.create(txn, completableFuture);
 
@@ -131,12 +138,24 @@ public final class SubmissionService {
 			var success = completableFuture.get();
 			return Result.ok(success.getTxn().getId());
 		} catch (ExecutionException e) {
-			logger.warn("Unable to fulfill submission request: " + txId.toJson() + ": ", e);
+			logger.warn("Unable to fulfill submission request: " + txn.getId() + ": ", e);
 			return SUBMISSION_FAILURE.with(e.getMessage()).result();
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			throw new IllegalStateException(e);
 		}
+	}
+
+	private Txn buildTxn(byte[] blob, ECDSASignature recoverable) {
+		return TxLowLevelBuilder.newBuilder(blob).sig(recoverable).build();
+	}
+
+	public Result<AID> oneStepSubmit(
+		List<TransactionAction> steps, Optional<String> message, HashSigner signer, boolean disableResourceAllocAndDestroy
+	) {
+		return prepareTransaction(steps, message, disableResourceAllocAndDestroy)
+			.map(prepared -> buildTxn(prepared.getBlob(), signer.sign(prepared.getHashToSign())))
+			.flatMap(this::submit);
 	}
 
 	private PreparedTransaction toPreparedTx(byte[] first, HashCode second) {
