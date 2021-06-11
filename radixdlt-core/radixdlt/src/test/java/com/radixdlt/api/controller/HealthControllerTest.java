@@ -48,7 +48,6 @@ public class HealthControllerTest {
 		controller.configureRoutes(handler);
 
 		verify(handler).get(eq("/health"), any());
-		verify(handler).get(eq("/health/"), any());
 	}
 
 	@Test

@@ -41,7 +41,6 @@ public class VersionControllerTest {
 		controller.configureRoutes(handler);
 
 		verify(handler).get(eq("/version"), any());
-		verify(handler).get(eq("/version/"), any());
 	}
 
 	@Test
