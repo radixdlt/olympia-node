@@ -18,6 +18,10 @@
 
 package com.radixdlt.constraintmachine;
 
-public interface UpReducer<S extends ReducerState, O extends Particle> {
-	ReducerResult reduce(S reducerState, O up, ExecutionContext context, ReadableAddrs readableAddrs) throws ProcedureException;
+import com.radixdlt.identifiers.REAddr;
+
+import java.util.Optional;
+
+public interface ReadableAddrs {
+	Optional<Particle> loadAddr(REAddr addr);
 }

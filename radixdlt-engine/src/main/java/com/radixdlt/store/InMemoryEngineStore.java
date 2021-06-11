@@ -28,6 +28,7 @@ import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REOp;
+import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.identifiers.REAddr;
 
 import java.util.ArrayList;
@@ -72,7 +73,8 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	public <V> V reduceUpParticles(
 		Class<? extends Particle> particleClass,
 		V initial,
-		BiFunction<V, Particle, V> outputReducer
+		BiFunction<V, Particle, V> outputReducer,
+		SubstateDeserialization substateDeserialization
 	) {
 		V v = initial;
 		synchronized (lock) {
@@ -87,12 +89,16 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	}
 
 	@Override
-	public SubstateCursor openIndexedCursor(Transaction dbTxn, Class<? extends Particle> substateClass) {
-		return openIndexedCursor(substateClass);
+	public SubstateCursor openIndexedCursor(
+		Transaction dbTxn,
+		Class<? extends Particle> substateClass,
+		SubstateDeserialization deserialization
+	) {
+		return openIndexedCursor(substateClass, deserialization);
 	}
 
 	@Override
-	public SubstateCursor openIndexedCursor(Class<? extends Particle> substateClass) {
+	public SubstateCursor openIndexedCursor(Class<? extends Particle> substateClass, SubstateDeserialization deserialization) {
 		final List<Substate> substates = new ArrayList<>();
 		synchronized (lock) {
 			for (var i : storedParticles.values()) {
@@ -127,7 +133,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	}
 
 	@Override
-	public Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId) {
+	public Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId, SubstateDeserialization deserialization) {
 		synchronized (lock) {
 			var inst = storedParticles.get(substateId);
 			if (inst == null || inst.getOp() != REOp.UP) {
@@ -140,7 +146,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	}
 
 	@Override
-	public Optional<Particle> loadAddr(Transaction dbTxn, REAddr rri) {
+	public Optional<Particle> loadAddr(Transaction dbTxn, REAddr rri, SubstateDeserialization deserialization) {
 		synchronized (lock) {
 			return Optional.ofNullable(addrParticles.get(rri));
 		}

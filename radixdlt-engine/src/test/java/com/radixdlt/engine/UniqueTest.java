@@ -23,8 +23,9 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.atommodel.unique.scrypt.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.atomos.REAddrParticle;
+import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
@@ -42,6 +43,8 @@ public class UniqueTest {
 	private ECKeyPair keyPair = ECKeyPair.generateNew();
 	private RadixEngine<Void> engine;
 	private EngineStore<Void> store;
+	private REParser parser;
+	private SubstateSerialization serialization;
 
 	@Before
 	public void setup() {
@@ -51,14 +54,15 @@ public class UniqueTest {
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()
 		);
-		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
+		this.parser = new REParser(cmAtomOS.buildSubstateDeserialization());
+		this.serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();
-		this.engine = new RadixEngine<>(parser, ActionConstructors.newBuilder().build(), cm, store);
+		this.engine = new RadixEngine<>(parser, serialization, ActionConstructors.newBuilder().build(), cm, store);
 	}
 
 	@Test
 	public void using_own_mutex_should_work() throws Exception {
-		var atom = TxBuilder.newBuilder()
+		var atom = TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization)
 			.mutex(keyPair.getPublicKey(), "np")
 			.signAndBuild(keyPair::sign);
 		this.engine.execute(List.of(atom));
@@ -67,9 +71,9 @@ public class UniqueTest {
 	@Test
 	public void using_someone_elses_mutex_should_fail() {
 		var addr = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "smthng");
-		var builder = TxBuilder.newBuilder()
+		var builder = TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization)
 			.toLowLevelBuilder()
-			.virtualDown(new REAddrParticle(addr), "smthng".getBytes(StandardCharsets.UTF_8))
+			.virtualDown(new UnclaimedREAddr(addr), "smthng".getBytes(StandardCharsets.UTF_8))
 			.up(new UniqueParticle(addr))
 			.end();
 		var sig = keyPair.sign(builder.hashToSign());

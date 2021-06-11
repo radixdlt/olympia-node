@@ -21,6 +21,7 @@ package com.radixdlt.atom;
 import com.google.common.hash.HashCode;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.utils.Ints;
@@ -45,9 +46,11 @@ public final class TxLowLevelBuilder {
 	private final ByteArrayOutputStream blobStream;
 	private final Map<Integer, LocalSubstate> localUpParticles = new HashMap<>();
 	private final Set<SubstateId> remoteDownSubstate = new HashSet<>();
+	private final SubstateSerialization serialization;
 	private int instructionIndex = 0;
 
-	TxLowLevelBuilder(ByteArrayOutputStream blobStream) {
+	TxLowLevelBuilder(SubstateSerialization serialization, ByteArrayOutputStream blobStream) {
+		this.serialization = serialization;
 		this.blobStream = blobStream;
 	}
 
@@ -58,11 +61,12 @@ public final class TxLowLevelBuilder {
 		} catch (IOException e) {
 			throw new IllegalStateException("Unable to write data.");
 		}
-		return new TxLowLevelBuilder(blobStream);
+		// TODO: Cleanup null serialization, but works for now as only used for client side signing
+		return new TxLowLevelBuilder(null, blobStream);
 	}
 
-	public static TxLowLevelBuilder newBuilder() {
-		return new TxLowLevelBuilder(new ByteArrayOutputStream());
+	public static TxLowLevelBuilder newBuilder(SubstateSerialization serialization) {
+		return new TxLowLevelBuilder(serialization, new ByteArrayOutputStream());
 	}
 
 	public Set<SubstateId> remoteDownSubstate() {
@@ -107,21 +111,21 @@ public final class TxLowLevelBuilder {
 	public TxLowLevelBuilder up(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
 		this.localUpParticles.put(instructionIndex, LocalSubstate.create(instructionIndex, particle));
-		var bytes = RESerializer.serialize(particle);
+		var bytes = serialization.serialize(particle);
 		instruction(REInstruction.REMicroOp.UP, bytes);
 		return this;
 	}
 
 	public TxLowLevelBuilder virtualDown(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
-		var bytes = RESerializer.serialize(particle);
+		var bytes = serialization.serialize(particle);
 		instruction(REInstruction.REMicroOp.VDOWN, bytes);
 		return this;
 	}
 
 	public TxLowLevelBuilder virtualDown(Particle particle, byte[] arg) {
 		Objects.requireNonNull(particle, "particle is required");
-		var bytes = RESerializer.serialize(particle);
+		var bytes = serialization.serialize(particle);
 		var buf = ByteBuffer.allocate(bytes.length + 1 + arg.length);
 		buf.put(bytes);
 		buf.put((byte) arg.length); // arg length
@@ -146,13 +150,8 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
-	public TxLowLevelBuilder downAll(Class<? extends Particle> particleClass) {
-		var classIds = RESerializer.classToBytes(particleClass);
-		if (classIds.size() != 1) {
-			throw new IllegalStateException("Cannot down all of particle with multiple ids");
-		}
-
-		instruction(REInstruction.REMicroOp.DOWNALL, new byte[] {classIds.get(0)});
+	public TxLowLevelBuilder downAll(Byte typeByte) {
+		instruction(REInstruction.REMicroOp.DOWNALL, new byte[] {typeByte});
 		return this;
 	}
 
@@ -185,7 +184,7 @@ public final class TxLowLevelBuilder {
 	}
 
 	public TxLowLevelBuilder sig(ECDSASignature signature) {
-		instruction(REInstruction.REMicroOp.SIG, RESerializer.serializeSignature(signature));
+		instruction(REInstruction.REMicroOp.SIG, REFieldSerialization.serializeSignature(signature));
 		return this;
 	}
 

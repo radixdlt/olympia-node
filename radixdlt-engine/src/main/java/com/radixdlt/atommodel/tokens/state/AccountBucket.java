@@ -52,7 +52,7 @@ public final class AccountBucket implements Bucket {
 				}
 
 				if (epochUnlocked != null) {
-					var system = (HasEpochData) r.loadAddr(null, REAddr.ofSystem()).orElseThrow();
+					var system = (HasEpochData) r.loadAddr(REAddr.ofSystem()).orElseThrow();
 					if (epochUnlocked > system.getEpoch()) {
 						throw new AuthorizationException("Tokens are locked until epoch " + epochUnlocked + " current " + system.getEpoch());
 					}

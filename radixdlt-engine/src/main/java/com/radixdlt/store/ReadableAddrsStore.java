@@ -19,6 +19,7 @@
 package com.radixdlt.store;
 
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.identifiers.REAddr;
 
 import java.util.Optional;
@@ -26,6 +27,6 @@ import java.util.Optional;
 /**
  * Index into immutable substates
  */
-public interface ReadableAddrs {
-	Optional<Particle> loadAddr(CMStore.Transaction dbTxn, REAddr addr);
+public interface ReadableAddrsStore {
+	Optional<Particle> loadAddr(CMStore.Transaction dbTxn, REAddr addr, SubstateDeserialization deserialization);
 }

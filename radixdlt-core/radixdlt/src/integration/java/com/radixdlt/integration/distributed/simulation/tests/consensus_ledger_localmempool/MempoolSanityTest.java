@@ -57,7 +57,7 @@ public class MempoolSanityTest {
 			LedgerMonitors.ordered(),
 			ApplicationMonitors.mempoolCommitted()
 		)
-		.addMempoolSubmissionsSteadyState(new IncrementalBytes());
+		.addMempoolSubmissionsSteadyState(IncrementalBytes.class);
 
 	/**
 	 * TODO: This is more of a test for mempoolSubmissionSteadyState, should move somewhere else

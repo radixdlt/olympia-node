@@ -18,19 +18,16 @@
 
 package com.radixdlt.engine.parser;
 
-import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.CallData;
 import com.radixdlt.constraintmachine.CallDataAccessException;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
-import com.radixdlt.constraintmachine.StatelessSubstateVerifier;
+import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
 import java.nio.ByteBuffer;
@@ -39,10 +36,14 @@ import java.util.List;
 
 public final class REParser {
 	private static final int MAX_TXN_SIZE = 1024 * 1024;
-	private final StatelessSubstateVerifier<Particle> statelessVerifier;
+	private final SubstateDeserialization substateDeserialization;
 
-	public REParser(StatelessSubstateVerifier<Particle> statelessVerifier) {
-		this.statelessVerifier = statelessVerifier;
+	public REParser(SubstateDeserialization substateDeserialization) {
+		this.substateDeserialization = substateDeserialization;
+	}
+
+	public SubstateDeserialization getSubstateDeserialization() {
+		return substateDeserialization;
 	}
 
 	private static class ParserState {
@@ -117,22 +118,13 @@ public final class REParser {
 			int curPos = buf.position();
 			final REInstruction inst;
 			try {
-				inst = REInstruction.readFrom(txn, parserState.curIndex(), buf);
+				inst = REInstruction.readFrom(txn, parserState.curIndex(), buf, substateDeserialization);
 			} catch (DeserializeException e) {
 				throw new TxnParseException("Could not read instruction", e);
 			}
 			parserState.nextInstruction(inst);
 
 			if (inst.isStateUpdate()) {
-				var data = inst.getData();
-				if (data instanceof Substate) {
-					Substate substate = (Substate) data;
-					statelessVerifier.verify(substate.getParticle());
-				} else if (data instanceof Pair) {
-					Substate substate = (Substate) ((Pair) data).getFirst();
-					statelessVerifier.verify(substate.getParticle());
-				}
-
 				parserState.substateUpdate();
 			} else if (inst.getMicroOp() == REInstruction.REMicroOp.HEADER) {
 				parserState.header(inst.getData());

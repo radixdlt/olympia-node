@@ -24,8 +24,10 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.tokens.ResourceInBucket;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atommodel.unique.state.UniqueParticle;
-import com.radixdlt.atomos.REAddrParticle;
+import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
@@ -50,18 +52,28 @@ import java.util.stream.StreamSupport;
 public final class TxBuilder {
 	private final TxLowLevelBuilder lowLevelBuilder;
 	private final SubstateStore remoteSubstate;
+	private final SubstateDeserialization deserialization;
 
-	private TxBuilder(SubstateStore remoteSubstate) {
-		this.lowLevelBuilder = TxLowLevelBuilder.newBuilder();
+	private TxBuilder(
+		SubstateStore remoteSubstate,
+		SubstateDeserialization deserialization,
+		SubstateSerialization serialization
+	) {
+		this.lowLevelBuilder = TxLowLevelBuilder.newBuilder(serialization);
 		this.remoteSubstate = remoteSubstate;
+		this.deserialization = deserialization;
 	}
 
-	public static TxBuilder newBuilder(SubstateStore remoteSubstate) {
-		return new TxBuilder(remoteSubstate);
+	public static TxBuilder newBuilder(
+		SubstateStore remoteSubstate,
+		SubstateDeserialization deserialization,
+		SubstateSerialization serialization
+	) {
+		return new TxBuilder(remoteSubstate, deserialization, serialization);
 	}
 
-	public static TxBuilder newBuilder() {
-		return new TxBuilder(SubstateStore.empty());
+	public static TxBuilder newBuilder(SubstateDeserialization deserialization, SubstateSerialization serialization) {
+		return new TxBuilder(SubstateStore.empty(), deserialization, serialization);
 	}
 
 	public TxLowLevelBuilder toLowLevelBuilder() {
@@ -93,7 +105,7 @@ public final class TxBuilder {
 
 	private SubstateCursor createRemoteSubstateCursor(Class<? extends Particle> particleClass) {
 		return SubstateCursor.filter(
-			remoteSubstate.openIndexedCursor(particleClass),
+			remoteSubstate.openIndexedCursor(particleClass, deserialization),
 			s -> !lowLevelBuilder.remoteDownSubstate().contains(s.getId())
 		);
 	}
@@ -218,7 +230,11 @@ public final class TxBuilder {
 				.iterator();
 			var remoteIterator = Iterators.transform(cursor, s -> (T) s.getParticle());
 			var result = mapper.apply(Iterators.concat(localIterator, remoteIterator));
-			lowLevelBuilder.downAll(particleClass);
+			var typeBytes = deserialization.classToBytes(particleClass);
+			if (typeBytes.size() != 1) {
+				throw new IllegalStateException("Cannot down all of particle with multiple ids");
+			}
+			lowLevelBuilder.downAll(typeBytes.iterator().next());
 			return result;
 		}
 	}
@@ -377,9 +393,9 @@ public final class TxBuilder {
 	public TxBuilder mutex(ECPublicKey key, String id) throws TxBuilderException {
 		final var addr = REAddr.ofHashedKey(key, id);
 		swap(
-			REAddrParticle.class,
+			UnclaimedREAddr.class,
 			p -> p.getAddr().equals(addr),
-			Optional.of(SubstateWithArg.withArg(new REAddrParticle(addr), id.getBytes(StandardCharsets.UTF_8))),
+			Optional.of(SubstateWithArg.withArg(new UnclaimedREAddr(addr), id.getBytes(StandardCharsets.UTF_8))),
 			"RRI not available"
 		).with(r -> List.of(new UniqueParticle(addr)));
 

@@ -18,9 +18,11 @@
 
 package com.radixdlt.atommodel.system.scrypt;
 
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.ParticleDefinition;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
@@ -28,9 +30,10 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
+
+import java.util.Set;
 
 /**
  * Allows for the update of the epoch, timestamp and view state.
@@ -44,20 +47,6 @@ public final class SystemConstraintScryptV1 implements ConstraintScrypt {
 		// Nothing here right now
 	}
 
-	private void staticCheck(SystemParticle systemParticle) throws TxnParseException {
-		if (systemParticle.getEpoch() < 0) {
-			throw new TxnParseException("Epoch is less than 0");
-		}
-
-		if (systemParticle.getTimestamp() < 0) {
-			throw new TxnParseException("Timestamp is less than 0");
-		}
-
-		if (systemParticle.getView() < 0) {
-			throw new TxnParseException("View is less than 0");
-		}
-	}
-
 
 	private static final class UpdatingSystem implements ReducerState {
 		private final SystemParticle sys;
@@ -67,13 +56,26 @@ public final class SystemConstraintScryptV1 implements ConstraintScrypt {
 		}
 	}
 
+
 	@Override
 	public void main(Loader os) {
-		os.particle(SystemParticle.class, ParticleDefinition.<SystemParticle>builder()
-			.staticValidation(this::staticCheck)
-			.virtualizeUp(p -> p.getView() == 0 && p.getEpoch() == 0 && p.getTimestamp() == 0)
-			.build()
-		);
+		os.substate(new SubstateDefinition<>(
+			SystemParticle.class,
+			Set.of(SubstateTypeId.SYSTEM.id()),
+			(b, buf) -> {
+				var epoch = REFieldSerialization.deserializeNonNegativeLong(buf);
+				var view = REFieldSerialization.deserializeNonNegativeLong(buf);
+				var timestamp = REFieldSerialization.deserializeNonNegativeLong(buf);
+				return new SystemParticle(epoch, view, timestamp);
+			},
+			(s, buf) -> {
+				buf.put(SubstateTypeId.SYSTEM.id());
+				buf.putLong(s.getEpoch());
+				buf.putLong(s.getView());
+				buf.putLong(s.getTimestamp());
+			},
+			p -> p.getView() == 0 && p.getEpoch() == 0 && p.getTimestamp() == 0
+		));
 
 		os.procedure(new DownProcedure<>(
 			SystemParticle.class, VoidReducerState.class,

@@ -18,8 +18,6 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.store.ReadableAddrs;
-
 import java.util.function.Function;
 
 public class DownProcedure<D extends Particle, S extends ReducerState> implements Procedure {

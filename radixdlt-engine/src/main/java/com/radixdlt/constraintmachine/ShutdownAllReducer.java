@@ -18,8 +18,6 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.store.ReadableAddrs;
-
 import java.util.Iterator;
 
 public interface ShutdownAllReducer<D extends Particle, S extends ReducerState> {

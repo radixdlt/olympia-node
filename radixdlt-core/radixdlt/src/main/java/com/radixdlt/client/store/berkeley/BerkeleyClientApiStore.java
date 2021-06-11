@@ -23,7 +23,7 @@ import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.tokens.Bucket;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
-import com.radixdlt.atomos.REAddrParticle;
+import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.accounting.TwoActorEntry;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.TxnParseException;
@@ -677,7 +677,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 		for (var update : updates) {
 			var substate = update.getRawSubstate();
-			if (substate instanceof REAddrParticle) {
+			if (substate instanceof UnclaimedREAddr) {
 				// FIXME: sort of a hacky way of getting this info
 				addressArg = update.getArg().orElse("xrd".getBytes(StandardCharsets.UTF_8));
 			} else if (substate instanceof TokenResource) {

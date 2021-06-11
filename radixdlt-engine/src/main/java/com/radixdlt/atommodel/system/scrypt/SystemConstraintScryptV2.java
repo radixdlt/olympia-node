@@ -18,6 +18,8 @@
 
 package com.radixdlt.atommodel.system.scrypt;
 
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.HasEpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
@@ -31,7 +33,7 @@ import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.ParticleDefinition;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -40,7 +42,6 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.ShutdownAllProcedure;
-import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
@@ -577,61 +578,109 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 	@Override
 	public void main(Loader os) {
-		os.particle(RoundData.class, ParticleDefinition.<RoundData>builder()
-			.staticValidation(p -> {
-				if (p.getTimestamp() < 0) {
-					throw new TxnParseException("Timestamp is less than 0");
+		os.substate(
+			new SubstateDefinition<>(
+				RoundData.class,
+				Set.of(SubstateTypeId.ROUND_DATA.id()),
+				(b, buf) -> {
+					var view = REFieldSerialization.deserializeNonNegativeLong(buf);
+					var timestamp = REFieldSerialization.deserializeNonNegativeLong(buf);
+					return new RoundData(view, timestamp);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.ROUND_DATA.id());
+					buf.putLong(s.getView());
+					buf.putLong(s.getTimestamp());
+				},
+				p -> p.getView() == 0 && p.getTimestamp() == 0
+			)
+		);
+		os.substate(
+			new SubstateDefinition<>(
+				EpochData.class,
+				Set.of(SubstateTypeId.EPOCH_DATA.id()),
+				(b, buf) -> {
+					var epoch = REFieldSerialization.deserializeNonNegativeLong(buf);
+					return new EpochData(epoch);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.EPOCH_DATA.id());
+					buf.putLong(s.getEpoch());
 				}
-				if (p.getView() < 0) {
-					throw new TxnParseException("View is less than 0");
+			)
+		);
+		os.substate(
+			new SubstateDefinition<>(
+				ValidatorStake.class,
+				Set.of(SubstateTypeId.STAKE.id()),
+				(b, buf) -> {
+					var delegate = REFieldSerialization.deserializeKey(buf);
+					var amount = REFieldSerialization.deserializeUInt256(buf);
+					var ownership = REFieldSerialization.deserializeUInt256(buf);
+					return ValidatorStake.create(delegate, amount, ownership);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.STAKE.id());
+					REFieldSerialization.serializeKey(buf, s.getValidatorKey());
+					buf.put(s.getAmount().toByteArray());
+					buf.put(s.getTotalOwnership().toByteArray());
+				},
+				s -> s.getAmount().isZero() && s.getTotalOwnership().isZero()
+			)
+		);
+		os.substate(
+			new SubstateDefinition<>(
+				StakeOwnership.class,
+				Set.of(SubstateTypeId.STAKE_OWNERSHIP.id()),
+				(b, buf) -> {
+					var delegate = REFieldSerialization.deserializeKey(buf);
+					var owner = REFieldSerialization.deserializeREAddr(buf);
+					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
+					return new StakeOwnership(delegate, owner, amount);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.STAKE_OWNERSHIP.id());
+					REFieldSerialization.serializeKey(buf, s.getDelegateKey());
+					REFieldSerialization.serializeREAddr(buf, s.getOwner());
+					buf.put(s.getAmount().toByteArray());
 				}
-			})
-			.virtualizeUp(p -> p.getView() == 0 && p.getTimestamp() == 0)
-			.build()
+			)
 		);
-		os.particle(EpochData.class, ParticleDefinition.<EpochData>builder()
-			.staticValidation(p -> {
-				if (p.getEpoch() < 0) {
-					throw new TxnParseException("Epoch is less than 0");
+		os.substate(
+			new SubstateDefinition<>(
+				ExittingStake.class,
+				Set.of(SubstateTypeId.EXITTING_STAKE.id()),
+				(b, buf) -> {
+					var epochUnlocked = REFieldSerialization.deserializeNonNegativeLong(buf);
+					var delegate = REFieldSerialization.deserializeKey(buf);
+					var owner = REFieldSerialization.deserializeREAddr(buf);
+					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
+					return new ExittingStake(delegate, owner, epochUnlocked, amount);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.EXITTING_STAKE.id());
+					buf.putLong(s.getEpochUnlocked());
+					REFieldSerialization.serializeKey(buf, s.getDelegateKey());
+					REFieldSerialization.serializeREAddr(buf, s.getOwner());
+					buf.put(s.getAmount().toByteArray());
 				}
-			})
-			.build()
+			)
 		);
-		os.particle(
-			ValidatorStake.class,
-			ParticleDefinition.<ValidatorStake>builder()
-				.virtualizeUp(p -> p.getAmount().isZero())
-				.build()
-		);
-		os.particle(
-			StakeOwnership.class,
-			ParticleDefinition.<StakeOwnership>builder()
-				.staticValidation(s -> {
-					if (s.getAmount().isZero()) {
-						throw new TxnParseException("amount must not be zero");
-					}
-				})
-				.build()
-		);
-		os.particle(
-			ExittingStake.class,
-			ParticleDefinition.<ExittingStake>builder()
-				.staticValidation(s -> {
-					if (s.getEpochUnlocked() < 0) {
-						throw new TxnParseException("epoch must be >= 0");
-					}
-				})
-				.build()
-		);
-		os.particle(
-			ValidatorEpochData.class,
-			ParticleDefinition.<ValidatorEpochData>builder()
-				.staticValidation(s -> {
-					if (s.proposalsCompleted() < 0) {
-						throw new TxnParseException("proposals completed must be >= 0");
-					}
-				})
-				.build()
+		os.substate(
+			new SubstateDefinition<>(
+				ValidatorEpochData.class,
+				Set.of(SubstateTypeId.VALIDATOR_EPOCH_DATA.id()),
+				(b, buf) -> {
+					var key = REFieldSerialization.deserializeKey(buf);
+					var proposalsCompleted = REFieldSerialization.deserializeNonNegativeLong(buf);
+					return new ValidatorEpochData(key, proposalsCompleted);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.VALIDATOR_EPOCH_DATA.id());
+					REFieldSerialization.serializeKey(buf, s.validatorKey());
+					buf.putLong(s.proposalsCompleted());
+				}
+			)
 		);
 
 		registerGenesisTransitions(os);

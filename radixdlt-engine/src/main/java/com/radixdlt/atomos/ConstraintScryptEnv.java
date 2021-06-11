@@ -25,7 +25,6 @@ import com.radixdlt.constraintmachine.Procedures;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * SysCall environment for CMAtomOS Constraint Scrypts.
@@ -33,20 +32,20 @@ import java.util.Objects;
 // FIXME: unchecked, rawtypes
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class ConstraintScryptEnv implements Loader {
-	private final ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions;
+	private final ImmutableMap<Class<? extends Particle>, SubstateDefinition<? extends Particle>> particleDefinitions;
 
-	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> scryptParticleDefinitions;
+	private final Map<Class<? extends Particle>, SubstateDefinition<? extends Particle>> scryptParticleDefinitions;
 	private final Map<ProcedureKey, Procedure> procedures;
 
 	ConstraintScryptEnv(
-		ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions
+		ImmutableMap<Class<? extends Particle>, SubstateDefinition<? extends Particle>> particleDefinitions
 	) {
 		this.particleDefinitions = particleDefinitions;
 		this.scryptParticleDefinitions = new HashMap<>();
 		this.procedures = new HashMap<>();
 	}
 
-	public Map<Class<? extends Particle>, ParticleDefinition<Particle>> getScryptParticleDefinitions() {
+	public Map<Class<? extends Particle>, SubstateDefinition<? extends Particle>> getScryptParticleDefinitions() {
 		return scryptParticleDefinitions;
 	}
 
@@ -59,13 +58,13 @@ public final class ConstraintScryptEnv implements Loader {
 	}
 
 	@Override
-	public <T extends Particle> void particle(Class<T> particleClass, ParticleDefinition<T> particleDefinition) {
-		if (particleDefinitionExists(particleClass)) {
-			throw new IllegalStateException("Particle " + particleClass + " is already registered");
+	public <T extends Particle> void substate(SubstateDefinition<T> substateDefinition) {
+		var substateClass = substateDefinition.getSubstateClass();
+		if (particleDefinitionExists(substateClass)) {
+			throw new IllegalStateException("Substate " + substateClass + " is already registered");
 		}
-		Objects.requireNonNull(particleDefinition, "particleDefinition");
 
-		scryptParticleDefinitions.put(particleClass, (ParticleDefinition<Particle>) particleDefinition);
+		scryptParticleDefinitions.put(substateClass, substateDefinition);
 	}
 
 	@Override

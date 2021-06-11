@@ -80,6 +80,7 @@ public class NextEpochV2Test {
 
 	private RadixEngine<Void> sut;
 	private EngineStore<Void> store;
+	private REParser parser;
 	private final List<ConstraintScrypt> scrypts;
 	private final ActionConstructors constructors;
 
@@ -100,9 +101,10 @@ public class NextEpochV2Test {
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()
 		);
-		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
+		this.parser = new REParser(cmAtomOS.buildSubstateDeserialization());
+		var serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();
-		this.sut = new RadixEngine<>(parser, constructors, cm, store);
+		this.sut = new RadixEngine<>(parser, serialization, constructors, cm, store);
 	}
 
 	@Test
@@ -125,6 +127,6 @@ public class NextEpochV2Test {
 		this.sut.execute(List.of(txn), null, PermissionLevel.SUPER_USER);
 
 		// Assert
-		assertThat(store.openIndexedCursor(PreparedStake.class)).isEmpty();
+		assertThat(store.openIndexedCursor(PreparedStake.class, parser.getSubstateDeserialization())).isEmpty();
 	}
 }

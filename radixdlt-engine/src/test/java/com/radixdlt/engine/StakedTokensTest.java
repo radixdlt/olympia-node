@@ -74,7 +74,8 @@ public class StakedTokensTest {
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()
 		);
-		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
+		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
+		var serialization = cmAtomOS.buildSubstateSerialization();
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 			.put(RegisterValidator.class, new RegisterValidatorConstructor())
@@ -85,7 +86,7 @@ public class StakedTokensTest {
 			.put(UnstakeTokens.class, new UnstakeTokensConstructorV1())
 			.build();
 		this.store = new InMemoryEngineStore<>();
-		this.engine = new RadixEngine<>(parser, actionConstructors, cm, this.store);
+		this.engine = new RadixEngine<>(parser, serialization, actionConstructors, cm, this.store);
 
 		var tokDef = new MutableTokenDefinition(
 			null,

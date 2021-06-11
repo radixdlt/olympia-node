@@ -21,6 +21,7 @@ import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.SubstateDeserialization;
 
 import java.util.List;
 import java.util.function.BiFunction;
@@ -48,6 +49,7 @@ public interface EngineStore<M> extends SubstateStore, CMStore {
 	<V> V reduceUpParticles(
 		Class<? extends Particle> particleClass,
 		V initial,
-		BiFunction<V, Particle, V> outputReducer
+		BiFunction<V, Particle, V> outputReducer,
+		SubstateDeserialization deserialization
 	);
 }

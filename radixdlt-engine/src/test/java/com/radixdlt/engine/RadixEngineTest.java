@@ -40,13 +40,14 @@ public class RadixEngineTest {
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()
 		);
-		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
+		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
+		var serialization = cmAtomOS.buildSubstateSerialization();
 		var actionConstructors = ActionConstructors.newBuilder().build();
-		RadixEngine<Void> engine = new RadixEngine<>(parser, actionConstructors, cm, new InMemoryEngineStore<>());
+		RadixEngine<Void> engine = new RadixEngine<>(parser, serialization, actionConstructors, cm, new InMemoryEngineStore<>());
 
 		// Act
 		// Assert
-		var atom = TxLowLevelBuilder.newBuilder()
+		var atom = TxLowLevelBuilder.newBuilder(serialization)
 			.end()
 			.build();
 		assertThatThrownBy(() -> engine.execute(List.of(atom)))

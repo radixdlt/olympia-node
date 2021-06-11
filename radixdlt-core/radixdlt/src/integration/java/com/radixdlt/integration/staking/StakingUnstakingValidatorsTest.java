@@ -51,6 +51,7 @@ import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
@@ -125,6 +126,9 @@ public class StakingUnstakingValidatorsTest {
 	@Inject
 	@Genesis
 	private VerifiedTxnsAndProof genesis;
+
+	@Inject
+	private REParser reParser;
 
 	private DeterministicNetwork network;
 	private List<Supplier<Injector>> nodeCreators;
@@ -335,28 +339,32 @@ public class StakingUnstakingValidatorsTest {
 			(i, p) -> {
 				var tokens = (TokensInAccount) p;
 				return i.add(tokens.getAmount());
-			}
+			},
+			reParser.getSubstateDeserialization()
 		);
 		logger.info("Total tokens: {}", totalTokens);
 		var totalStaked = entryStore.reduceUpParticles(ValidatorStake.class, UInt256.ZERO,
 			(i, p) -> {
 				var tokens = (ValidatorStake) p;
 				return i.add(tokens.getAmount());
-			}
+			},
+			reParser.getSubstateDeserialization()
 		);
 		logger.info("Total staked: {}", totalStaked);
 		var totalStakePrepared = entryStore.reduceUpParticles(PreparedStake.class, UInt256.ZERO,
 			(i, p) -> {
 				var tokens = (PreparedStake) p;
 				return i.add(tokens.getAmount());
-			}
+			},
+			reParser.getSubstateDeserialization()
 		);
 		logger.info("Total preparing stake: {}", totalStakePrepared);
 		var totalStakeExitting = entryStore.reduceUpParticles(ExittingStake.class, UInt256.ZERO,
 			(i, p) -> {
 				var tokens = (ExittingStake) p;
 				return i.add(tokens.getAmount());
-			}
+			},
+			reParser.getSubstateDeserialization()
 		);
 		logger.info("Total exitting stake: {}", totalStakeExitting);
 		logger.info("Total: {}", totalTokens.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting));

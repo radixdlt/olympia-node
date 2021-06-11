@@ -18,12 +18,13 @@
 
 package com.radixdlt.atommodel.tokens.scrypt;
 
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.ParticleDefinition;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.Authorization;
@@ -41,17 +42,30 @@ import com.radixdlt.utils.UInt384;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 	public static final int EPOCHS_LOCKED = 2; // Must go through one full epoch before being unlocked
 
 	@Override
 	public void main(Loader os) {
-		os.particle(
-			PreparedStake.class,
-			ParticleDefinition.<PreparedStake>builder()
-				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.build()
+		os.substate(
+			new SubstateDefinition<>(
+				PreparedStake.class,
+				Set.of(SubstateTypeId.PREPARED_STAKE.id()),
+				(b, buf) -> {
+					var owner = REFieldSerialization.deserializeREAddr(buf);
+					var delegate = REFieldSerialization.deserializeKey(buf);
+					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
+					return new PreparedStake(amount, owner, delegate);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.PREPARED_STAKE.id());
+					REFieldSerialization.serializeREAddr(buf, s.getOwner());
+					REFieldSerialization.serializeKey(buf, s.getDelegateKey());
+					buf.put(s.getAmount().toByteArray());
+				}
+			)
 		);
 
 		defineStaking(os);
@@ -165,7 +179,7 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 					throw new ProcedureException("Exiting from stake must be locked.");
 				}
 
-				var system = (SystemParticle) r.loadAddr(null, REAddr.ofSystem()).orElseThrow();
+				var system = (SystemParticle) r.loadAddr(REAddr.ofSystem()).orElseThrow();
 				if (system.getEpoch() + EPOCHS_LOCKED != epochUnlocked.get()) {
 					throw new ProcedureException("Incorrect epoch unlock: " + epochUnlocked.get()
 						+ " should be: " + (system.getEpoch() + EPOCHS_LOCKED));

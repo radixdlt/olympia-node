@@ -27,6 +27,7 @@ import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -43,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class RegisterValidatorTest {
 	private RadixEngine<Void> engine;
 	private EngineStore<Void> store;
+	private SubstateSerialization serialization;
 
 	@Before
 	public void setup() {
@@ -52,10 +54,12 @@ public class RegisterValidatorTest {
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()
 		);
-		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
+		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
+		this.serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
 			parser,
+			serialization,
 			ActionConstructors.newBuilder()
 				.put(RegisterValidator.class, new RegisterValidatorConstructor())
 				.build(),
@@ -93,7 +97,7 @@ public class RegisterValidatorTest {
 	public void changing_validator_key_should_fail() {
 		// Arrange
 		var key = ECKeyPair.generateNew();
-		var builder = TxLowLevelBuilder.newBuilder()
+		var builder = TxLowLevelBuilder.newBuilder(serialization)
 			.virtualDown(new ValidatorParticle(key.getPublicKey(), false))
 			.up(new ValidatorParticle(ECKeyPair.generateNew().getPublicKey(), true))
 			.end();

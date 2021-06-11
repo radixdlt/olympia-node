@@ -18,13 +18,14 @@
 
 package com.radixdlt.atommodel.tokens.scrypt;
 
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
-import com.radixdlt.atomos.ParticleDefinition;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
@@ -35,7 +36,12 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
+
+import java.util.Set;
 
 public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 	@Override
@@ -46,18 +52,89 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 	}
 
 	private void registerParticles(Loader os) {
-		os.particle(
-			TokenResource.class,
-			ParticleDefinition.<TokenResource>builder()
-				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.build()
+		os.substate(
+			new SubstateDefinition<>(
+				TokenResource.class,
+				Set.of(SubstateTypeId.TOKEN_DEF.id()),
+				(b, buf) -> {
+					var rri = REFieldSerialization.deserializeREAddr(buf);
+					var type = buf.get();
+					final UInt256 supply;
+					final ECPublicKey minter;
+					if (type == 0) {
+						supply = null;
+						minter = null;
+					} else if (type == 1) {
+						supply = null;
+						minter = REFieldSerialization.deserializeKey(buf);
+					} else if (type == 2) {
+						supply = REFieldSerialization.deserializeNonZeroUInt256(buf);
+						minter = null;
+					} else {
+						throw new DeserializeException("Unknown token def type " + type);
+					}
+					var name = REFieldSerialization.deserializeString(buf);
+					var description = REFieldSerialization.deserializeString(buf);
+					var url = REFieldSerialization.deserializeUrl(buf);
+					var iconUrl = REFieldSerialization.deserializeUrl(buf);
+					return new TokenResource(rri, name, description, iconUrl, url, supply, minter);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.TOKEN_DEF.id());
+					REFieldSerialization.serializeREAddr(buf, s.getAddr());
+					s.getSupply().ifPresentOrElse(
+						i -> {
+							buf.put((byte) 2);
+							buf.put(i.toByteArray());
+						},
+						() -> {
+							s.getOwner().ifPresentOrElse(
+								m -> {
+									buf.put((byte) 1);
+									REFieldSerialization.serializeKey(buf, m);
+								},
+								() -> buf.put((byte) 0)
+							);
+						}
+					);
+					REFieldSerialization.serializeString(buf, s.getName());
+					REFieldSerialization.serializeString(buf, s.getDescription());
+					REFieldSerialization.serializeString(buf, s.getUrl());
+					REFieldSerialization.serializeString(buf, s.getIconUrl());
+				}
+			)
 		);
 
-		os.particle(
-			TokensInAccount.class,
-			ParticleDefinition.<TokensInAccount>builder()
-				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.build()
+		os.substate(
+			new SubstateDefinition<>(
+				TokensInAccount.class,
+				Set.of(SubstateTypeId.TOKENS.id(), SubstateTypeId.TOKENS_LOCKED.id()),
+				(b, buf) -> {
+					var rri = REFieldSerialization.deserializeREAddr(buf);
+					var holdingAddr = REFieldSerialization.deserializeREAddr(buf);
+					if (!holdingAddr.isAccount()) {
+						throw new DeserializeException("Tokens must be held by holding address: " + holdingAddr);
+					}
+					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
+
+					if (b == SubstateTypeId.TOKENS.id()) {
+						return new TokensInAccount(holdingAddr, amount, rri);
+					} else {
+						var epochUnlocked = buf.getLong();
+						return new TokensInAccount(holdingAddr, amount, rri, epochUnlocked);
+					}
+				},
+				(s, buf) -> {
+					s.getEpochUnlocked().ifPresentOrElse(
+						e -> buf.put(SubstateTypeId.TOKENS_LOCKED.id()),
+						() -> buf.put(SubstateTypeId.TOKENS.id())
+					);
+					REFieldSerialization.serializeREAddr(buf, s.getResourceAddr());
+					REFieldSerialization.serializeREAddr(buf, s.getHoldingAddr());
+					buf.put(s.getAmount().toByteArray());
+					s.getEpochUnlocked().ifPresent(buf::putLong);
+				}
+			)
 		);
 	}
 
@@ -114,7 +191,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				}
 
 				return new Authorization(PermissionLevel.USER, (r, c) -> {
-					var tokenDef = (TokenResource) r.loadAddr(null, u.getResourceAddr())
+					var tokenDef = (TokenResource) r.loadAddr(u.getResourceAddr())
 						.orElseThrow(() -> new AuthorizationException("Invalid token address: " + u.getResourceAddr()));
 					tokenDef.verifyMintAuthorization(c.key());
 				});
@@ -132,7 +209,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				if (s.isEmpty()) {
 					return;
 				}
-				var tokenDef = (TokenResource) r.loadAddr(null, s.getResourceAddr())
+				var tokenDef = (TokenResource) r.loadAddr(s.getResourceAddr())
 					.orElseThrow(() -> new AuthorizationException("Invalid token address: " + s.getResourceAddr()));
 				tokenDef.verifyBurnAuthorization(c.key());
 			}),

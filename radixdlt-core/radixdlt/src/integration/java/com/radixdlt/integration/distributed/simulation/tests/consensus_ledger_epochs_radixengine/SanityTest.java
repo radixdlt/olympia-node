@@ -60,7 +60,7 @@ public class SanityTest {
 			RadixEngineMonitors.noInvalidProposedCommands(),
 			ApplicationMonitors.mempoolCommitted()
 		)
-		.addMempoolSubmissionsSteadyState(new RadixEngineUniqueGenerator());
+		.addMempoolSubmissionsSteadyState(RadixEngineUniqueGenerator.class);
 
 	@Test
 	public void sanity_tests_should_pass() {

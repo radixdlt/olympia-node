@@ -18,6 +18,10 @@
 
 package com.radixdlt.constraintmachine;
 
-public interface UpReducer<S extends ReducerState, O extends Particle> {
-	ReducerResult reduce(S reducerState, O up, ExecutionContext context, ReadableAddrs readableAddrs) throws ProcedureException;
+import com.radixdlt.serialization.DeserializeException;
+
+import java.nio.ByteBuffer;
+
+public interface SubstateDeserializer<T extends Particle> {
+	T deserialize(Byte typeByte, ByteBuffer buf) throws DeserializeException;
 }

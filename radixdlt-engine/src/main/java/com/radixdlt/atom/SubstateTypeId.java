@@ -16,8 +16,32 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.atom;
 
-public interface UpReducer<S extends ReducerState, O extends Particle> {
-	ReducerResult reduce(S reducerState, O up, ExecutionContext context, ReadableAddrs readableAddrs) throws ProcedureException;
+public enum SubstateTypeId {
+	UNCLAIMED_READDR((byte) 0),
+	SYSTEM((byte) 1),
+	TOKEN_DEF((byte) 2),
+	TOKENS((byte) 3),
+	PREPARED_STAKE((byte) 4),
+	VALIDATOR((byte) 5),
+	UNIQUE((byte) 6),
+	TOKENS_LOCKED((byte) 7),
+	STAKE((byte) 8),
+	ROUND_DATA((byte) 9),
+	EPOCH_DATA((byte) 10),
+	STAKE_OWNERSHIP((byte) 11),
+	VALIDATOR_EPOCH_DATA((byte) 12),
+	PREPARED_UNSTAKE((byte) 13),
+	EXITTING_STAKE((byte) 14);
+
+	private final byte id;
+
+	SubstateTypeId(byte id) {
+		this.id = id;
+	}
+
+	public byte id() {
+		return id;
+	}
 }

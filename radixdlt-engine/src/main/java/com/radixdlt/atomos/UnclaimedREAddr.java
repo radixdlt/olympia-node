@@ -24,10 +24,10 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 
-public final class REAddrParticle implements Particle {
+public final class UnclaimedREAddr implements Particle {
 	private final REAddr addr;
 
-	public REAddrParticle(REAddr addr) {
+	public UnclaimedREAddr(REAddr addr) {
 		this.addr = addr;
 	}
 
@@ -46,10 +46,10 @@ public final class REAddrParticle implements Particle {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (!(obj instanceof REAddrParticle)) {
+		if (!(obj instanceof UnclaimedREAddr)) {
 			return false;
 		}
-		final var that = (REAddrParticle) obj;
+		final var that = (UnclaimedREAddr) obj;
 		return Objects.equals(this.addr, that.addr);
 	}
 

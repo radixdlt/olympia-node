@@ -117,10 +117,12 @@ public class StakeTokensTest {
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()
 		);
-		var parser = new REParser(cmAtomOS.buildStatelessSubstateVerifier());
+		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
+		var serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
 			parser,
+			serialization,
 			ActionConstructors.newBuilder()
 				.put(StakeTokens.class, stakeTokensConstructor)
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())

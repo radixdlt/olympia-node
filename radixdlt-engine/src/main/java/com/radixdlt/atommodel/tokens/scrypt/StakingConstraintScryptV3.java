@@ -18,13 +18,14 @@
 
 package com.radixdlt.atommodel.tokens.scrypt;
 
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.ParticleDefinition;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
@@ -33,40 +34,59 @@ import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
+import com.radixdlt.constraintmachine.ReadableAddrs;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.store.ReadableAddrs;
 import com.radixdlt.utils.UInt384;
 
 import java.util.Objects;
+import java.util.Set;
 
 public class StakingConstraintScryptV3 implements ConstraintScrypt {
 
 	@Override
 	public void main(Loader os) {
-		os.particle(
-			PreparedStake.class,
-			ParticleDefinition.<PreparedStake>builder()
-				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.build()
+		os.substate(
+			new SubstateDefinition<>(
+				PreparedStake.class,
+				Set.of(SubstateTypeId.PREPARED_STAKE.id()),
+				(b, buf) -> {
+					var owner = REFieldSerialization.deserializeREAddr(buf);
+					var delegate = REFieldSerialization.deserializeKey(buf);
+					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
+					return new PreparedStake(amount, owner, delegate);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.PREPARED_STAKE.id());
+					REFieldSerialization.serializeREAddr(buf, s.getOwner());
+					REFieldSerialization.serializeKey(buf, s.getDelegateKey());
+					buf.put(s.getAmount().toByteArray());
+				}
+			)
 		);
 
-		os.particle(
-			PreparedUnstakeOwnership.class,
-			ParticleDefinition.<PreparedUnstakeOwnership>builder()
-				.staticValidation(p -> {
-					if (p.getAmount().isZero()) {
-						throw new TxnParseException("amount must not be zero");
-					}
-				})
-				.build()
+		os.substate(
+			new SubstateDefinition<>(
+				PreparedUnstakeOwnership.class,
+				Set.of(SubstateTypeId.PREPARED_UNSTAKE.id()),
+				(b, buf) -> {
+					var delegate = REFieldSerialization.deserializeKey(buf);
+					var owner = REFieldSerialization.deserializeREAddr(buf);
+					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
+					return new PreparedUnstakeOwnership(delegate, owner, amount);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.PREPARED_UNSTAKE.id());
+					REFieldSerialization.serializeKey(buf, s.getDelegateKey());
+					REFieldSerialization.serializeREAddr(buf, s.getOwner());
+					buf.put(s.getAmount().toByteArray());
+				}
+			)
 		);
-
 
 		defineStaking(os);
 	}
