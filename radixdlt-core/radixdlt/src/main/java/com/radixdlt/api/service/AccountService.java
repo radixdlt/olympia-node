@@ -108,7 +108,7 @@ public class AccountService {
 			.put("name", validatorInfo.getName())
 			.put("url", validatorInfo.getUrl())
 			.put("registered", validatorInfo.isRegistered())
-			.put("total_stake", validatorStakes.getFirst())
+			.put("totalStake", validatorStakes.getFirst())
 			.put("stakes", validatorStakes.getSecond());
 	}
 

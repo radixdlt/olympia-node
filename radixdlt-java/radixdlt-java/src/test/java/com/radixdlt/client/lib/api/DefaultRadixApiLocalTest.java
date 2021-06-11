@@ -49,7 +49,7 @@ public class DefaultRadixApiLocalTest {
 		+ "ri\":\"gum_rb1qvnrj7v43s875nuq7lv2hlghmydvz3udnv3kwssy0stqang8k7\"}]}},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
 	private static final String VALIDATOR_INFO = "{\"result\":{\"address\":\"vb1q27acjcz0vs0dg9mwv7nwyxfxu28rcvu35zwcn"
 		+ "n9ulul25ss3kfgkue7d6p\",\"stakes\":[{\"amount\":\"1005000000000000000000000\",\"delegator\":\"brx1qspll7tm64"
-		+ "64am4yypzn59p42g6a8qhkguhc269p3vhs27s5vq5h24sh5s4yh\"}],\"name\":\"\",\"registered\":true,\"total_stake\":"
+		+ "64am4yypzn59p42g6a8qhkguhc269p3vhs27s5vq5h24sh5s4yh\"}],\"name\":\"\",\"registered\":true,\"totalStake\":"
 		+ "\"1005000000000000000000000\",\"url\":\"\"},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
 	private static final String NEXT_EPOCH = "{\"result\":{\"validators\":[{\"totalDelegatedStake\":"
 		+ "\"3355000000000000000000000\",\"address\":\"vb1q27acjcz0vs0dg9mwv7nwyxfxu28rcvu35zwcnn9ulu"
