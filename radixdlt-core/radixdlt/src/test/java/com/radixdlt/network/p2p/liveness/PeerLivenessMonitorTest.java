@@ -41,7 +41,7 @@ public class PeerLivenessMonitorTest {
 
 	@Before
 	public void setup() throws ParseException {
-		this.p2PConfig = P2PConfig.fromRuntimeProperties(new RuntimeProperties(new JSONObject(), new String[] { }));
+		this.p2PConfig = P2PConfig.fromRuntimeProperties(new RuntimeProperties(new JSONObject(), new String[] {}));
 		this.peersView = mock(PeersView.class);
 		this.peerEventDispatcher = rmock(EventDispatcher.class);
 		this.pingEventDispatcher = rmock(RemoteEventDispatcher.class);
