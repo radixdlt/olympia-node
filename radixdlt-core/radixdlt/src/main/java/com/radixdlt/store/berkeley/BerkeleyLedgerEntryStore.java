@@ -26,7 +26,7 @@ import org.apache.logging.log4j.Logger;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.radixdlt.atom.RESerializer;
+import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
@@ -754,7 +754,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	@Override
 	public Optional<Particle> loadAddr(Transaction tx, REAddr rri, SubstateDeserialization deserialization) {
 		var buf = ByteBuffer.allocate(128);
-		RESerializer.serializeREAddr(buf, rri);
+		REFieldSerialization.serializeREAddr(buf, rri);
 		var pos = buf.position();
 		var key = new DatabaseEntry(buf.array(), 0, pos);
 		var value = entry();

@@ -118,8 +118,9 @@ public class NextEpochTest {
 			cmAtomOS.getProcedures()
 		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
+		var serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();
-		this.sut = new RadixEngine<>(parser, constructors, cm, store);
+		this.sut = new RadixEngine<>(parser, serialization, constructors, cm, store);
 	}
 
 	@Test

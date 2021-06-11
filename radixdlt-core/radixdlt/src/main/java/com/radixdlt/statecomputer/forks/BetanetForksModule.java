@@ -107,6 +107,7 @@ public final class BetanetForksModule extends AbstractModule {
 			(procedureKey, param, context) -> { }
 		);
 		var parser = new REParser(v1.buildSubstateDeserialization());
+		var serialization = v1.buildSubstateSerialization();
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateSystem.class, new CreateSystemConstructorV1())
 			.put(PayFee.class, new PayFeeConstructorV1())
@@ -129,6 +130,7 @@ public final class BetanetForksModule extends AbstractModule {
 		return new ForkConfig(
 			"betanet1",
 			parser,
+			serialization,
 			betanet1,
 			actionConstructors,
 			new EpochProofVerifierV1(),
@@ -154,6 +156,7 @@ public final class BetanetForksModule extends AbstractModule {
 		);
 
 		var parser = new REParser(v2.buildSubstateDeserialization());
+		var serialization = v2.buildSubstateSerialization();
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateSystem.class, new CreateSystemConstructorV1())
 			.put(PayFee.class, new PayFeeConstructorV1())
@@ -176,6 +179,7 @@ public final class BetanetForksModule extends AbstractModule {
 		return new ForkConfig(
 			"betanet2",
 			parser,
+			serialization,
 			betanet2,
 			actionConstructors,
 			new EpochProofVerifierV1(),
@@ -201,6 +205,7 @@ public final class BetanetForksModule extends AbstractModule {
 		);
 
 		var parser = new REParser(v3.buildSubstateDeserialization());
+		var serialization = v3.buildSubstateSerialization();
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateSystem.class, new CreateSystemConstructorV2())
 			.put(PayFee.class, new PayFeeConstructorV1())
@@ -224,6 +229,7 @@ public final class BetanetForksModule extends AbstractModule {
 		return new ForkConfig(
 			"betanet3",
 			parser,
+			serialization,
 			betanet3,
 			actionConstructors,
 			new EpochProofVerifierV2(),
@@ -251,6 +257,7 @@ public final class BetanetForksModule extends AbstractModule {
 			new FixedFeeMetering(fixedFee)
 		);
 		var parser = new REParser(v4.buildSubstateDeserialization());
+		var serialization = v4.buildSubstateSerialization();
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateSystem.class, new CreateSystemConstructorV2())
 			.put(BurnToken.class, new BurnTokenConstructor())
@@ -274,6 +281,7 @@ public final class BetanetForksModule extends AbstractModule {
 		return new ForkConfig(
 			"betanet4",
 			parser,
+			serialization,
 			betanet4,
 			actionConstructors,
 			new EpochProofVerifierV2(),

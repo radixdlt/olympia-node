@@ -48,6 +48,7 @@ public class RadixEngineForksLatestOnlyModule extends AbstractModule {
 			.map(f -> new ForkConfig(
 				f.getName(),
 				f.getParser(),
+				f.getSubstateSerialization(),
 				fees ? f.getConstraintMachineConfig() : f.getConstraintMachineConfig().metering((procedureKey, param, context) -> { }),
 				f.getActionConstructors(),
 				f.getBatchVerifier(),

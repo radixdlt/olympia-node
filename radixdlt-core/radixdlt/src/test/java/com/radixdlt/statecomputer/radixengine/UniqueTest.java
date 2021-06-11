@@ -26,6 +26,7 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -54,7 +55,11 @@ public final class UniqueTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
-	@Inject private RadixEngine<LedgerAndBFTProof> sut;
+	@Inject
+	private RadixEngine<LedgerAndBFTProof> sut;
+
+	@Inject
+	private SubstateSerialization substateSerialization;
 
 	private Injector createInjector() {
 		return Guice.createInjector(
@@ -78,7 +83,7 @@ public final class UniqueTest {
 		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
 		var rriParticle = new UnclaimedREAddr(addr);
 		var uniqueParticle = new UniqueParticle(addr);
-		var atomBuilder = TxLowLevelBuilder.newBuilder()
+		var atomBuilder = TxLowLevelBuilder.newBuilder(substateSerialization)
 			.virtualDown(rriParticle, "test".getBytes(StandardCharsets.UTF_8))
 			.up(uniqueParticle)
 			.end();

@@ -27,7 +27,6 @@ import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.DefaultSerialization;
@@ -55,6 +54,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
@@ -103,6 +103,9 @@ public class RadixEngineStateComputerTest {
 
 	@Inject
 	private RadixEngineStateComputer sut;
+
+	@Inject
+	private SubstateSerialization substateSerialization;
 
 	private Serialization serialization = DefaultSerialization.getInstance();
 	private InMemoryEngineStore<LedgerAndBFTProof> engineStore;
@@ -174,14 +177,13 @@ public class RadixEngineStateComputerTest {
 	@Before
 	public void setup() throws RadixEngineException {
 		this.engineStore = new InMemoryEngineStore<>();
-		Injector injector = Guice.createInjector(
+		Guice.createInjector(
 			new RadixEngineCheckpointModule(),
 			new RadixEngineStateComputerModule(),
 			new RadixEngineModule(),
 			new MockedGenesisModule(),
 			getExternalModule()
-		);
-		injector.injectMembers(this);
+		).injectMembers(this);
 		setupGenesis();
 	}
 
@@ -268,7 +270,7 @@ public class RadixEngineStateComputerTest {
 		// Arrange
 		var txn = radixEngine.construct(new SystemNextView(1, 0, registeredNodes.get(0).getPublicKey()))
 			.buildWithoutSignature();
-		var illegalTxn = TxLowLevelBuilder.newBuilder()
+		var illegalTxn = TxLowLevelBuilder.newBuilder(substateSerialization)
 			.down(SubstateId.ofSubstate(txn.getId(), 1))
 			.up(new SystemParticle(1, 3, 0))
 			.end()

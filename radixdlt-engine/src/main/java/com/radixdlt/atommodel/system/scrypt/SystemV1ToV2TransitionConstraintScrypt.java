@@ -18,7 +18,7 @@
 
 package com.radixdlt.atommodel.system.scrypt;
 
-import com.radixdlt.atom.RESerializer;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -68,7 +68,7 @@ public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt 
 	public void main(Loader os) {
 		os.substate(new SubstateDefinition<>(
 			SystemParticle.class,
-			Set.of(RESerializer.SubstateType.SYSTEM.id()),
+			Set.of(SubstateTypeId.SYSTEM.id()),
 			(b, buf) -> {
 				var epoch = buf.getLong();
 				if (epoch < 0) {
@@ -83,6 +83,12 @@ public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt 
 					throw new DeserializeException("Timestamp is less than 0");
 				}
 				return new SystemParticle(epoch, view, timestamp);
+			},
+			(s, buf) -> {
+				buf.put(SubstateTypeId.SYSTEM.id());
+				buf.putLong(s.getEpoch());
+				buf.putLong(s.getView());
+				buf.putLong(s.getTimestamp());
 			},
 			p -> p.getView() == 0 && p.getEpoch() == 0 && p.getTimestamp() == 0
 		));

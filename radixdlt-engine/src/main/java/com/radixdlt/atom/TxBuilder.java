@@ -27,6 +27,7 @@ import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
@@ -53,21 +54,26 @@ public final class TxBuilder {
 	private final SubstateStore remoteSubstate;
 	private final SubstateDeserialization deserialization;
 
-	private TxBuilder(SubstateStore remoteSubstate, SubstateDeserialization deserialization) {
-		this.lowLevelBuilder = TxLowLevelBuilder.newBuilder();
+	private TxBuilder(
+		SubstateStore remoteSubstate,
+		SubstateDeserialization deserialization,
+		SubstateSerialization serialization
+	) {
+		this.lowLevelBuilder = TxLowLevelBuilder.newBuilder(serialization);
 		this.remoteSubstate = remoteSubstate;
 		this.deserialization = deserialization;
 	}
 
 	public static TxBuilder newBuilder(
 		SubstateStore remoteSubstate,
-		SubstateDeserialization deserialization
+		SubstateDeserialization deserialization,
+		SubstateSerialization serialization
 	) {
-		return new TxBuilder(remoteSubstate, deserialization);
+		return new TxBuilder(remoteSubstate, deserialization, serialization);
 	}
 
-	public static TxBuilder newBuilder(SubstateDeserialization deserialization) {
-		return new TxBuilder(SubstateStore.empty(), deserialization);
+	public static TxBuilder newBuilder(SubstateDeserialization deserialization, SubstateSerialization serialization) {
+		return new TxBuilder(SubstateStore.empty(), deserialization, serialization);
 	}
 
 	public TxLowLevelBuilder toLowLevelBuilder() {

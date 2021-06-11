@@ -94,9 +94,11 @@ public class NextViewV2Test {
 			cmAtomOS.getProcedures()
 		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
+		var serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();
 		this.sut = new RadixEngine<>(
 			parser,
+			serialization,
 			ActionConstructors.newBuilder()
 				.put(SystemNextEpoch.class, new NextEpochConstructorV2())
 				.put(CreateSystem.class, new CreateSystemConstructorV2())

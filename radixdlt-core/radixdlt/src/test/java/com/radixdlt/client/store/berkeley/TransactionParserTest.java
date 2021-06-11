@@ -106,6 +106,7 @@ public class TransactionParserTest {
 			cmAtomOS.getProcedures()
 		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
+		var substateSerialization = cmAtomOS.buildSubstateSerialization();
 
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
@@ -119,7 +120,7 @@ public class TransactionParserTest {
 			.put(CreateSystem.class, new CreateSystemConstructorV2())
 			.build();
 
-		engine = new RadixEngine<>(parser, actionConstructors, cm, store);
+		engine = new RadixEngine<>(parser, substateSerialization, actionConstructors, cm, store);
 
 		var txn0 = engine.construct(
 			TxnConstructionRequest.create()

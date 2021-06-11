@@ -31,6 +31,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyPair;
@@ -74,6 +75,7 @@ public class MempoolTest {
 	@Inject private RadixEngineStateComputer stateComputer;
 	@Inject private SystemCounters systemCounters;
 	@Inject private PeersView peersView;
+	@Inject private SubstateSerialization serialization;
 	@Inject @MempoolRelayInitialDelay private long initialDelay;
 	@Inject @MempoolRelayRepeatDelay private long repeatDelay;
 
@@ -99,8 +101,8 @@ public class MempoolTest {
 		return peersView.peers().get(0);
 	}
 
-	private static Txn createTxn(ECKeyPair keyPair, int numParticles) {
-		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder();
+	private Txn createTxn(ECKeyPair keyPair, int numParticles) {
+		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder(serialization);
 		for (int i = 0; i < numParticles; i++) {
 			var symbol = "test" + (char) ('c' + i);
 			var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), symbol);
@@ -115,7 +117,7 @@ public class MempoolTest {
 		return atomBuilder.sig(signature).build();
 	}
 
-	private static Txn createTxn(ECKeyPair keyPair) {
+	private Txn createTxn(ECKeyPair keyPair) {
 		return createTxn(keyPair, 1);
 	}
 

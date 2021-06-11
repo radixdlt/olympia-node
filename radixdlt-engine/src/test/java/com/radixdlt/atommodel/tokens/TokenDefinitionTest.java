@@ -32,6 +32,7 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -52,6 +53,7 @@ public class TokenDefinitionTest {
 	private RadixEngine<Void> engine;
 	private EngineStore<Void> store;
 	private REParser parser;
+	private SubstateSerialization serialization;
 
 	@Before
 	public void setup() {
@@ -62,9 +64,11 @@ public class TokenDefinitionTest {
 			cmAtomOS.getProcedures()
 		);
 		this.parser = new REParser(cmAtomOS.buildSubstateDeserialization());
+		this.serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
 			parser,
+			serialization,
 			ActionConstructors.newBuilder()
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
@@ -95,7 +99,7 @@ public class TokenDefinitionTest {
 			UInt256.TEN,
 			addr
 		);
-		var builder = TxLowLevelBuilder.newBuilder()
+		var builder = TxLowLevelBuilder.newBuilder(serialization)
 			.virtualDown(addrParticle, "test".getBytes(StandardCharsets.UTF_8))
 			.up(tokenDefinitionParticle)
 			.up(tokensParticle)
@@ -122,7 +126,7 @@ public class TokenDefinitionTest {
 			"",
 			UInt256.TEN
 		);
-		var builder = TxLowLevelBuilder.newBuilder()
+		var builder = TxLowLevelBuilder.newBuilder(serialization)
 			.virtualDown(addrParticle, "test".getBytes(StandardCharsets.UTF_8))
 			.up(tokenDefinitionParticle)
 			.end();
@@ -147,7 +151,7 @@ public class TokenDefinitionTest {
 			"",
 			keyPair.getPublicKey()
 		);
-		var builder = TxBuilder.newBuilder(parser.getSubstateDeserialization())
+		var builder = TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization)
 			.toLowLevelBuilder()
 			.virtualDown(new UnclaimedREAddr(addr), "smthng".getBytes(StandardCharsets.UTF_8))
 			.up(tokenDefinitionParticle)

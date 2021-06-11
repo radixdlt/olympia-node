@@ -18,7 +18,8 @@
 
 package com.radixdlt.atommodel.validators.scrypt;
 
-import com.radixdlt.atom.RESerializer;
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.SubstateDefinition;
@@ -53,14 +54,21 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				ValidatorParticle.class,
-				Set.of(RESerializer.SubstateType.VALIDATOR.id()),
+				Set.of(SubstateTypeId.VALIDATOR.id()),
 				(b, buf) -> {
-					var key = RESerializer.deserializeKey(buf);
+					var key = REFieldSerialization.deserializeKey(buf);
 					var isRegistered = buf.get() != 0; // isRegistered
-					var name = RESerializer.deserializeString(buf);
-					var url = RESerializer.deserializeUrl(buf);
+					var name = REFieldSerialization.deserializeString(buf);
+					var url = REFieldSerialization.deserializeUrl(buf);
 					return new ValidatorParticle(key, isRegistered, name, url);
 
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.VALIDATOR.id());
+					REFieldSerialization.serializeKey(buf, s.getKey());
+					buf.put((byte) (s.isRegisteredForNextEpoch() ? 1 : 0)); // isRegistered
+					REFieldSerialization.serializeString(buf, s.getName());
+					REFieldSerialization.serializeString(buf, s.getUrl());
 				},
 				p -> !p.isRegisteredForNextEpoch() && p.getUrl().isEmpty() && p.getName().isEmpty()
 			)

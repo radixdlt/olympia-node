@@ -18,7 +18,8 @@
 
 package com.radixdlt.atommodel.system.scrypt;
 
-import com.radixdlt.atom.RESerializer;
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.HasEpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
@@ -580,11 +581,16 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				RoundData.class,
-				Set.of(RESerializer.SubstateType.ROUND_DATA.id()),
+				Set.of(SubstateTypeId.ROUND_DATA.id()),
 				(b, buf) -> {
-					var view = RESerializer.deserializeNonNegativeLong(buf);
-					var timestamp = RESerializer.deserializeNonNegativeLong(buf);
+					var view = REFieldSerialization.deserializeNonNegativeLong(buf);
+					var timestamp = REFieldSerialization.deserializeNonNegativeLong(buf);
 					return new RoundData(view, timestamp);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.ROUND_DATA.id());
+					buf.putLong(s.getView());
+					buf.putLong(s.getTimestamp());
 				},
 				p -> p.getView() == 0 && p.getTimestamp() == 0
 			)
@@ -592,22 +598,32 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				EpochData.class,
-				Set.of(RESerializer.SubstateType.EPOCH_DATA.id()),
+				Set.of(SubstateTypeId.EPOCH_DATA.id()),
 				(b, buf) -> {
-					var epoch = RESerializer.deserializeNonNegativeLong(buf);
+					var epoch = REFieldSerialization.deserializeNonNegativeLong(buf);
 					return new EpochData(epoch);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.EPOCH_DATA.id());
+					buf.putLong(s.getEpoch());
 				}
 			)
 		);
 		os.substate(
 			new SubstateDefinition<>(
 				ValidatorStake.class,
-				Set.of(RESerializer.SubstateType.STAKE.id()),
+				Set.of(SubstateTypeId.STAKE.id()),
 				(b, buf) -> {
-					var delegate = RESerializer.deserializeKey(buf);
-					var amount = RESerializer.deserializeUInt256(buf);
-					var ownership = RESerializer.deserializeUInt256(buf);
+					var delegate = REFieldSerialization.deserializeKey(buf);
+					var amount = REFieldSerialization.deserializeUInt256(buf);
+					var ownership = REFieldSerialization.deserializeUInt256(buf);
 					return ValidatorStake.create(delegate, amount, ownership);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.STAKE.id());
+					REFieldSerialization.serializeKey(buf, s.getValidatorKey());
+					buf.put(s.getAmount().toByteArray());
+					buf.put(s.getTotalOwnership().toByteArray());
 				},
 				s -> s.getAmount().isZero() && s.getTotalOwnership().isZero()
 			)
@@ -615,36 +631,54 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				StakeOwnership.class,
-				Set.of(RESerializer.SubstateType.STAKE_OWNERSHIP.id()),
+				Set.of(SubstateTypeId.STAKE_OWNERSHIP.id()),
 				(b, buf) -> {
-					var delegate = RESerializer.deserializeKey(buf);
-					var owner = RESerializer.deserializeREAddr(buf);
-					var amount = RESerializer.deserializeNonZeroUInt256(buf);
+					var delegate = REFieldSerialization.deserializeKey(buf);
+					var owner = REFieldSerialization.deserializeREAddr(buf);
+					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					return new StakeOwnership(delegate, owner, amount);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.STAKE_OWNERSHIP.id());
+					REFieldSerialization.serializeKey(buf, s.getDelegateKey());
+					REFieldSerialization.serializeREAddr(buf, s.getOwner());
+					buf.put(s.getAmount().toByteArray());
 				}
 			)
 		);
 		os.substate(
 			new SubstateDefinition<>(
 				ExittingStake.class,
-				Set.of(RESerializer.SubstateType.EXITTING_STAKE.id()),
+				Set.of(SubstateTypeId.EXITTING_STAKE.id()),
 				(b, buf) -> {
-					var epochUnlocked = RESerializer.deserializeNonNegativeLong(buf);
-					var delegate = RESerializer.deserializeKey(buf);
-					var owner = RESerializer.deserializeREAddr(buf);
-					var amount = RESerializer.deserializeNonZeroUInt256(buf);
+					var epochUnlocked = REFieldSerialization.deserializeNonNegativeLong(buf);
+					var delegate = REFieldSerialization.deserializeKey(buf);
+					var owner = REFieldSerialization.deserializeREAddr(buf);
+					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					return new ExittingStake(delegate, owner, epochUnlocked, amount);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.EXITTING_STAKE.id());
+					buf.putLong(s.getEpochUnlocked());
+					REFieldSerialization.serializeKey(buf, s.getDelegateKey());
+					REFieldSerialization.serializeREAddr(buf, s.getOwner());
+					buf.put(s.getAmount().toByteArray());
 				}
 			)
 		);
 		os.substate(
 			new SubstateDefinition<>(
 				ValidatorEpochData.class,
-				Set.of(RESerializer.SubstateType.VALIDATOR_EPOCH_DATA.id()),
+				Set.of(SubstateTypeId.VALIDATOR_EPOCH_DATA.id()),
 				(b, buf) -> {
-					var key = RESerializer.deserializeKey(buf);
-					var proposalsCompleted = RESerializer.deserializeNonNegativeLong(buf);
+					var key = REFieldSerialization.deserializeKey(buf);
+					var proposalsCompleted = REFieldSerialization.deserializeNonNegativeLong(buf);
 					return new ValidatorEpochData(key, proposalsCompleted);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.VALIDATOR_EPOCH_DATA.id());
+					REFieldSerialization.serializeKey(buf, s.validatorKey());
+					buf.putLong(s.proposalsCompleted());
 				}
 			)
 		);

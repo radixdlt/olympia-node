@@ -18,7 +18,8 @@
 
 package com.radixdlt.atommodel.unique.scrypt;
 
-import com.radixdlt.atom.RESerializer;
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.SubstateDefinition;
@@ -38,10 +39,14 @@ public class UniqueParticleConstraintScrypt implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				UniqueParticle.class,
-				Set.of(RESerializer.SubstateType.UNIQUE.id()),
+				Set.of(SubstateTypeId.UNIQUE.id()),
 				(b, buf) -> {
-					var rri = RESerializer.deserializeREAddr(buf);
+					var rri = REFieldSerialization.deserializeREAddr(buf);
 					return new UniqueParticle(rri);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.UNIQUE.id());
+					REFieldSerialization.serializeREAddr(buf, s.getREAddr());
 				}
 			)
 		);

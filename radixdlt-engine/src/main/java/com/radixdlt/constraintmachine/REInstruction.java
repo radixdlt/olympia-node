@@ -19,7 +19,7 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.RESerializer;
+import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Pair;
@@ -97,7 +97,7 @@ public final class REInstruction {
 		SIG((byte) 7, REOp.SIG) {
 			@Override
 			Object read(Txn txn, int i, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
-				return RESerializer.deserializeSignature(b);
+				return REFieldSerialization.deserializeSignature(b);
 			}
 		},
 		SYSCALL((byte) 9, REOp.SYSCALL) {

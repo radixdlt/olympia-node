@@ -30,6 +30,7 @@ import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -63,6 +64,9 @@ public class TokenFeeTest {
 
 	@Inject
 	private RadixEngine<LedgerAndBFTProof> sut;
+
+	@Inject
+	private SubstateSerialization substateSerialization;
 
 	private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
 
@@ -117,7 +121,7 @@ public class TokenFeeTest {
 
 	@Test
 	public void when_validating_atom_without_particles__result_has_error() {
-		var txn = TxLowLevelBuilder.newBuilder().build();
+		var txn = TxLowLevelBuilder.newBuilder(substateSerialization).build();
 		assertThatThrownBy(() -> sut.execute(List.of(txn)))
 			.isInstanceOf(RadixEngineException.class);
 	}

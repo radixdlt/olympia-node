@@ -59,9 +59,11 @@ public class BurnTokensV3Test {
 			cmAtomOS.getProcedures()
 		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
+		var serialization = cmAtomOS.buildSubstateSerialization();
 		EngineStore<Void> store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
 			parser,
+			serialization,
 			ActionConstructors.newBuilder()
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())

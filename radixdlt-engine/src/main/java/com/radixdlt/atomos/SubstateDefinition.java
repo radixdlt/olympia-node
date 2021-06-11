@@ -19,6 +19,7 @@ package com.radixdlt.atomos;
 
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserializer;
+import com.radixdlt.constraintmachine.SubstateSerializer;
 
 import java.util.Set;
 import java.util.function.Predicate;
@@ -33,16 +34,19 @@ public final class SubstateDefinition<T extends Particle> {
 	private final Class<T> substateClass;
 	private final Set<Byte> typeBytes;
 	private final SubstateDeserializer<T> deserializer;
+	private final SubstateSerializer<T> serializer;
 	private final Predicate<T> virtualized; // may be null
 
 	public SubstateDefinition(
 		Class<T> substateClass,
 		Set<Byte> typeBytes,
-		SubstateDeserializer<T> deserializer
+		SubstateDeserializer<T> deserializer,
+		SubstateSerializer<T> serializer
 	) {
 		this.substateClass = substateClass;
 		this.typeBytes = typeBytes;
 		this.deserializer = deserializer;
+		this.serializer = serializer;
 		this.virtualized = s -> false;
 	}
 
@@ -50,11 +54,13 @@ public final class SubstateDefinition<T extends Particle> {
 		Class<T> substateClass,
 		Set<Byte> typeBytes,
 		SubstateDeserializer<T> deserializer,
+		SubstateSerializer<T> serializer,
 		Predicate<T> virtualized
 	) {
 		this.substateClass = substateClass;
 		this.typeBytes = typeBytes;
 		this.deserializer = deserializer;
+		this.serializer = serializer;
 		this.virtualized = virtualized;
 	}
 
@@ -64,6 +70,10 @@ public final class SubstateDefinition<T extends Particle> {
 
 	public Class<T> getSubstateClass() {
 		return substateClass;
+	}
+
+	public SubstateSerializer<T> getSerializer() {
+		return serializer;
 	}
 
 	public SubstateDeserializer<T> getDeserializer() {

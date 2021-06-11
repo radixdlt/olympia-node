@@ -18,7 +18,8 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atom.RESerializer;
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
@@ -33,6 +34,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.identifiers.REAddr;
 
@@ -77,10 +79,15 @@ public final class CMAtomOS {
 			os.substate(
 				new SubstateDefinition<>(
 					UnclaimedREAddr.class,
-					Set.of(RESerializer.SubstateType.RE_ADDR.id()),
+					Set.of(SubstateTypeId.UNCLAIMED_READDR.id()),
 					(b, buf) -> {
-						var rri = RESerializer.deserializeREAddr(buf);
+						var rri = REFieldSerialization.deserializeREAddr(buf);
 						return new UnclaimedREAddr(rri);
+					},
+					(s, buf) -> {
+						buf.put(SubstateTypeId.UNCLAIMED_READDR.id());
+						var rri = s.getAddr();
+						REFieldSerialization.serializeREAddr(buf, rri);
 					},
 					v -> v.getAddr().getType() == REAddr.REAddrType.NATIVE_TOKEN
 						|| v.getAddr().getType() == REAddr.REAddrType.HASHED_KEY
@@ -142,6 +149,10 @@ public final class CMAtomOS {
 
 	public SubstateDeserialization buildSubstateDeserialization() {
 		return new SubstateDeserialization(this.substateDefinitions.values());
+	}
+
+	public SubstateSerialization buildSubstateSerialization() {
+		return new SubstateSerialization(this.substateDefinitions.values());
 	}
 
 	public Predicate<Particle> virtualizedUpParticles() {

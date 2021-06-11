@@ -35,6 +35,7 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.engine.parser.REParser;
@@ -160,6 +161,7 @@ public final class RadixEngine<M> {
 	private final List<RadixEngineBranch<M>> branches = new ArrayList<>();
 
 	private REParser parser;
+	private SubstateSerialization serialization;
 	private BatchVerifier<M> batchVerifier;
 	private ActionConstructors actionConstructors;
 	private ConstraintMachine constraintMachine;
@@ -167,15 +169,17 @@ public final class RadixEngine<M> {
 
 	public RadixEngine(
 		REParser parser,
+		SubstateSerialization serialization,
 		ActionConstructors actionConstructors,
 		ConstraintMachine constraintMachine,
 		EngineStore<M> engineStore
 	) {
-		this(parser, actionConstructors, constraintMachine, engineStore, null, BatchVerifier.empty());
+		this(parser, serialization, actionConstructors, constraintMachine, engineStore, null, BatchVerifier.empty());
 	}
 
 	public RadixEngine(
 		REParser parser,
+		SubstateSerialization serialization,
 		ActionConstructors actionConstructors,
 		ConstraintMachine constraintMachine,
 		EngineStore<M> engineStore,
@@ -183,6 +187,7 @@ public final class RadixEngine<M> {
 		BatchVerifier<M> batchVerifier
 	) {
 		this.parser = Objects.requireNonNull(parser);
+		this.serialization = Objects.requireNonNull(serialization);
 		this.actionConstructors = Objects.requireNonNull(actionConstructors);
 		this.constraintMachine = Objects.requireNonNull(constraintMachine);
 		this.engineStore = Objects.requireNonNull(engineStore);
@@ -294,6 +299,7 @@ public final class RadixEngine<M> {
 
 		private RadixEngineBranch(
 			REParser parser,
+			SubstateSerialization serialization,
 			ActionConstructors actionToConstructorMap,
 			ConstraintMachine constraintMachine,
 			EngineStore<M> parentStore,
@@ -305,6 +311,7 @@ public final class RadixEngine<M> {
 
 			this.engine = new RadixEngine<>(
 				parser,
+				serialization,
 				actionToConstructorMap,
 				constraintMachine,
 				transientEngineStore,
@@ -375,6 +382,7 @@ public final class RadixEngine<M> {
 			});
 			RadixEngineBranch<M> branch = new RadixEngineBranch<>(
 				this.parser,
+				this.serialization,
 				this.actionConstructors,
 				this.constraintMachine,
 				this.engineStore,
@@ -543,7 +551,11 @@ public final class RadixEngine<M> {
 				i -> !avoid.contains(i.getId())
 			);
 
-			var txBuilder = TxBuilder.newBuilder(filteredStore, parser.getSubstateDeserialization());
+			var txBuilder = TxBuilder.newBuilder(
+				filteredStore,
+				parser.getSubstateDeserialization(),
+				serialization
+			);
 
 			executable.execute(txBuilder);
 

@@ -77,9 +77,11 @@ public class NativeTokensTest {
 			cmAtomOS.getProcedures()
 		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
+		var serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
 			parser,
+			serialization,
 			ActionConstructors.newBuilder()
 				.put(TransferToken.class, transferTokensConstructor)
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())

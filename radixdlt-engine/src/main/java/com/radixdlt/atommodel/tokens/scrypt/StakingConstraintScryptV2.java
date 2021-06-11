@@ -18,7 +18,8 @@
 
 package com.radixdlt.atommodel.tokens.scrypt;
 
-import com.radixdlt.atom.RESerializer;
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
@@ -51,12 +52,18 @@ public final class StakingConstraintScryptV2 implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				PreparedStake.class,
-				Set.of(RESerializer.SubstateType.PREPARED_STAKE.id()),
+				Set.of(SubstateTypeId.PREPARED_STAKE.id()),
 				(b, buf) -> {
-					var owner = RESerializer.deserializeREAddr(buf);
-					var delegate = RESerializer.deserializeKey(buf);
-					var amount = RESerializer.deserializeNonZeroUInt256(buf);
+					var owner = REFieldSerialization.deserializeREAddr(buf);
+					var delegate = REFieldSerialization.deserializeKey(buf);
+					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					return new PreparedStake(amount, owner, delegate);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.PREPARED_STAKE.id());
+					REFieldSerialization.serializeREAddr(buf, s.getOwner());
+					REFieldSerialization.serializeKey(buf, s.getDelegateKey());
+					buf.put(s.getAmount().toByteArray());
 				}
 			)
 		);

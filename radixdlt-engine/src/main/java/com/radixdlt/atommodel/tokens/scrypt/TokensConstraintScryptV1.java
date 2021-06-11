@@ -18,7 +18,8 @@
 
 package com.radixdlt.atommodel.tokens.scrypt;
 
-import com.radixdlt.atom.RESerializer;
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.tokens.state.DeprecatedResourceInBucket;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
@@ -60,9 +61,9 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				TokenResource.class,
-				Set.of(RESerializer.SubstateType.TOKEN_DEF.id()),
+				Set.of(SubstateTypeId.TOKEN_DEF.id()),
 				(b, buf) -> {
-					var rri = RESerializer.deserializeREAddr(buf);
+					var rri = REFieldSerialization.deserializeREAddr(buf);
 					var type = buf.get();
 					final UInt256 supply;
 					final ECPublicKey minter;
@@ -71,18 +72,41 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 						minter = null;
 					} else if (type == 1) {
 						supply = null;
-						minter = RESerializer.deserializeKey(buf);
+						minter = REFieldSerialization.deserializeKey(buf);
 					} else if (type == 2) {
-						supply = RESerializer.deserializeUInt256(buf);
+						supply = REFieldSerialization.deserializeUInt256(buf);
 						minter = null;
 					} else {
 						throw new DeserializeException("Unknown token def type " + type);
 					}
-					var name = RESerializer.deserializeString(buf);
-					var description = RESerializer.deserializeString(buf);
-					var url = RESerializer.deserializeUrl(buf);
-					var iconUrl = RESerializer.deserializeUrl(buf);
+					var name = REFieldSerialization.deserializeString(buf);
+					var description = REFieldSerialization.deserializeString(buf);
+					var url = REFieldSerialization.deserializeUrl(buf);
+					var iconUrl = REFieldSerialization.deserializeUrl(buf);
 					return new TokenResource(rri, name, description, iconUrl, url, supply, minter);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.TOKEN_DEF.id());
+					REFieldSerialization.serializeREAddr(buf, s.getAddr());
+					s.getSupply().ifPresentOrElse(
+						i -> {
+							buf.put((byte) 2);
+							buf.put(i.toByteArray());
+						},
+						() -> {
+							s.getOwner().ifPresentOrElse(
+								m -> {
+									buf.put((byte) 1);
+									REFieldSerialization.serializeKey(buf, m);
+								},
+								() -> buf.put((byte) 0)
+							);
+						}
+					);
+					REFieldSerialization.serializeString(buf, s.getName());
+					REFieldSerialization.serializeString(buf, s.getDescription());
+					REFieldSerialization.serializeString(buf, s.getUrl());
+					REFieldSerialization.serializeString(buf, s.getIconUrl());
 				}
 			)
 		);
@@ -90,21 +114,31 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				TokensInAccount.class,
-				Set.of(RESerializer.SubstateType.TOKENS.id(), RESerializer.SubstateType.TOKENS_LOCKED.id()),
+				Set.of(SubstateTypeId.TOKENS.id(), SubstateTypeId.TOKENS_LOCKED.id()),
 				(b, buf) -> {
-					var rri = RESerializer.deserializeREAddr(buf);
-					var holdingAddr = RESerializer.deserializeREAddr(buf);
+					var rri = REFieldSerialization.deserializeREAddr(buf);
+					var holdingAddr = REFieldSerialization.deserializeREAddr(buf);
 					if (!holdingAddr.isAccount()) {
 						throw new DeserializeException("Tokens must be held by holding address: " + holdingAddr);
 					}
-					var amount = RESerializer.deserializeNonZeroUInt256(buf);
+					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
 
-					if (b == RESerializer.SubstateType.TOKENS.id()) {
+					if (b == SubstateTypeId.TOKENS.id()) {
 						return new TokensInAccount(holdingAddr, amount, rri);
 					} else {
 						var epochUnlocked = buf.getLong();
 						return new TokensInAccount(holdingAddr, amount, rri, epochUnlocked);
 					}
+				},
+				(s, buf) -> {
+					s.getEpochUnlocked().ifPresentOrElse(
+						e -> buf.put(SubstateTypeId.TOKENS_LOCKED.id()),
+						() -> buf.put(SubstateTypeId.TOKENS.id())
+					);
+					REFieldSerialization.serializeREAddr(buf, s.getResourceAddr());
+					REFieldSerialization.serializeREAddr(buf, s.getHoldingAddr());
+					buf.put(s.getAmount().toByteArray());
+					s.getEpochUnlocked().ifPresent(buf::putLong);
 				}
 			)
 		);

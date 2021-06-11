@@ -29,6 +29,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.engine.PostProcessedVerifier;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.RadixEngine;
@@ -128,6 +129,18 @@ public class RadixEngineModule extends AbstractModule {
 	}
 
 	@Provides
+	@Singleton
+	private SubstateSerialization substateSerialization(
+		CommittedReader committedReader, // TODO: This is a hack, remove
+		TreeMap<Long, ForkConfig> epochToForkConfig
+	) {
+		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
+		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
+		return epochToForkConfig.floorEntry(epoch).getValue().getSubstateSerialization();
+	}
+
+
+	@Provides
 	PostProcessedVerifier checker(
 		CommittedReader committedReader, // TODO: This is a hack, remove
 		TreeMap<Long, ForkConfig> epochToForkConfig
@@ -141,6 +154,7 @@ public class RadixEngineModule extends AbstractModule {
 	@Singleton
 	private RadixEngine<LedgerAndBFTProof> getRadixEngine(
 		REParser parser,
+		SubstateSerialization serialization,
 		ConstraintMachine constraintMachine,
 		ActionConstructors actionConstructors,
 		EngineStore<LedgerAndBFTProof> engineStore,
@@ -153,6 +167,7 @@ public class RadixEngineModule extends AbstractModule {
 	) {
 		var radixEngine = new RadixEngine<>(
 			parser,
+			serialization,
 			actionConstructors,
 			constraintMachine,
 			engineStore,

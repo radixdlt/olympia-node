@@ -21,6 +21,7 @@ package com.radixdlt.statecomputer.forks;
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.PostProcessedVerifier;
 import com.radixdlt.engine.parser.REParser;
@@ -32,6 +33,7 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 public final class ForkConfig {
 	private final String name;
 	private final REParser parser;
+	private final SubstateSerialization serialization;
 	private final ConstraintMachineConfig constraintMachineConfig;
 	private final ActionConstructors actionConstructors;
 	private final BatchVerifier<LedgerAndBFTProof> batchVerifier;
@@ -41,6 +43,7 @@ public final class ForkConfig {
 	public ForkConfig(
 		String name,
 		REParser parser,
+		SubstateSerialization serialization,
 		ConstraintMachineConfig constraintMachineConfig,
 		ActionConstructors actionConstructors,
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
@@ -49,6 +52,7 @@ public final class ForkConfig {
 	) {
 		this.name = name;
 		this.parser = parser;
+		this.serialization = serialization;
 		this.constraintMachineConfig = constraintMachineConfig;
 		this.actionConstructors = actionConstructors;
 		this.batchVerifier = batchVerifier;
@@ -62,6 +66,10 @@ public final class ForkConfig {
 
 	public REParser getParser() {
 		return parser;
+	}
+
+	public SubstateSerialization getSubstateSerialization() {
+		return serialization;
 	}
 
 	public ConstraintMachineConfig getConstraintMachineConfig() {
