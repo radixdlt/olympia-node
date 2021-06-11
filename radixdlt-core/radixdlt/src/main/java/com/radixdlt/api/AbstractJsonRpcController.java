@@ -38,7 +38,6 @@ public abstract class AbstractJsonRpcController implements Controller {
 		var path = sanitize(root());
 
 		handler.post(path, jsonRpcServer);
-		handler.post(path + "/", jsonRpcServer);
 	}
 
 	@Override

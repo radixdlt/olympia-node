@@ -84,7 +84,7 @@ Node health status has following format: `{"status" : "<status>" }`, where `<sta
  - SYNCING - node is catching up the network
  - UP - node is in sync with consensus
  - STALLED - node is out of sync and not trying to sync with network, but network is still available.
- - NETWORK_HALTED - node is out of sync and does not get updates from network (for example, connection to network is lost).
+ - OUT_OF_SYNC - node is out of sync and does not get updates from network (for example, connection to network is lost).
 
 ### JSON-RPC APIs
 

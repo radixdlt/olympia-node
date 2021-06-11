@@ -18,104 +18,20 @@
 
 package com.radixdlt.api.server;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.qualifier.AtNode;
 import com.radixdlt.properties.RuntimeProperties;
-import com.stijndewitt.undertow.cors.AllowAll;
-import com.stijndewitt.undertow.cors.Filter;
 
 import java.util.Set;
-import java.util.logging.Level;
 
-import io.undertow.Handlers;
-import io.undertow.Undertow;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.RoutingHandler;
-import io.undertow.util.StatusCodes;
-
-import static java.util.logging.Logger.getLogger;
-
-/**
- * Radix Node API
- */
 @Singleton
-public final class NodeHttpServer implements ModuleRunner {
-	private static final Logger log = LogManager.getLogger();
-
+public final class NodeHttpServer extends AbstractHttpServer {
 	private static final int DEFAULT_PORT = 3333;
-	private final int port;
-	private final Set<Controller> controllers;
-
-	private Undertow server;
 
 	@Inject
-	public NodeHttpServer(
-		@AtNode Set<Controller> controllers,
-		RuntimeProperties properties
-	) {
-		this.port = properties.get("api.node.port", DEFAULT_PORT);
-		this.controllers = controllers;
-	}
-
-	private static void fallbackHandler(HttpServerExchange exchange) {
-		exchange.setStatusCode(StatusCodes.NOT_FOUND);
-		exchange.getResponseSender().send(
-			"No matching path found for " + exchange.getRequestMethod() + " " + exchange.getRequestPath()
-		);
-	}
-
-	private static void invalidMethodHandler(HttpServerExchange exchange) {
-		exchange.setStatusCode(StatusCodes.NOT_ACCEPTABLE);
-		exchange.getResponseSender().send(
-			"Invalid method, path exists for " + exchange.getRequestMethod() + " " + exchange.getRequestPath()
-		);
-	}
-
-	@Override
-	public void start() {
-		server = Undertow.builder()
-			.addHttpListener(port, "0.0.0.0")
-			.setHandler(configureRoutes())
-			.build();
-		server.start();
-
-		log.info("Starting NODE HTTP Server at {}", port);
-	}
-
-	@Override
-	public void stop() {
-		server.stop();
-	}
-
-	private HttpHandler configureRoutes() {
-		var handler = Handlers.routing(true); // add path params to query params with this flag
-
-		controllers.forEach(controller -> {
-			log.info("Configuring routes under {}", controller.root());
-			controller.configureRoutes(handler);
-		});
-
-		handler.setFallbackHandler(NodeHttpServer::fallbackHandler);
-		handler.setInvalidMethodHandler(NodeHttpServer::invalidMethodHandler);
-
-		return wrapWithCorsFilter(handler);
-	}
-
-	private Filter wrapWithCorsFilter(final RoutingHandler handler) {
-		var filter = new Filter(handler);
-
-		// Disable INFO logging for CORS filter, as it's a bit distracting
-		getLogger(filter.getClass().getName()).setLevel(Level.WARNING);
-		filter.setPolicyClass(AllowAll.class.getName());
-		filter.setUrlPattern("^.*$");
-
-		return filter;
+	public NodeHttpServer(@AtNode Set<Controller> controllers, RuntimeProperties properties) {
+		super(controllers, properties, "node", DEFAULT_PORT);
 	}
 }

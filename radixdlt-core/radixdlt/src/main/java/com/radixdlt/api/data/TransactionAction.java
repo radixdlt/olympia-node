@@ -168,6 +168,7 @@ public class TransactionAction {
 
 	public Stream<TxAction> toAction() {
 		switch (actionType) {
+			case UNKNOWN:
 			case MSG:
 				return Stream.empty();
 			case TRANSFER:
