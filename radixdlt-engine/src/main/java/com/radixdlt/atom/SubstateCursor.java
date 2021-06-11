@@ -23,6 +23,7 @@ import com.google.common.collect.Iterators;
 
 import java.io.Closeable;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
 /**
@@ -124,7 +125,7 @@ public interface SubstateCursor extends Iterator<Substate>, Closeable {
 
 			@Override
 			public Substate next() {
-				throw new IllegalStateException();
+				throw new NoSuchElementException();
 			}
 		};
 	}
