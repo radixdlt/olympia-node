@@ -41,6 +41,5 @@ public class SystemControllerTest {
 		controller.configureRoutes(handler);
 
 		verify(handler).post(eq("/system"), any());
-		verify(handler).post(eq("/system/"), any());
 	}
 }

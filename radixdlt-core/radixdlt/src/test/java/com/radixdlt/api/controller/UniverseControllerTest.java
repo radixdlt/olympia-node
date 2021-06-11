@@ -41,7 +41,6 @@ public class UniverseControllerTest {
 		controller.configureRoutes(handler);
 
 		verify(handler).get(eq("/universe.json"), any());
-		verify(handler).get(eq("/universe.json/"), any());
 	}
 
 	@Test

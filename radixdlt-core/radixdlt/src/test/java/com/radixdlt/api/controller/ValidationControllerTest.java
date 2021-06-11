@@ -41,6 +41,5 @@ public class ValidationControllerTest {
 		controller.configureRoutes(handler);
 
 		verify(handler).post(eq("/validation"), any());
-		verify(handler).post(eq("/validation/"), any());
 	}
 }

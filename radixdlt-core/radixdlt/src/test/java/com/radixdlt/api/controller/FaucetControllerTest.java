@@ -41,6 +41,5 @@ public class FaucetControllerTest {
 		controller.configureRoutes(handler);
 
 		verify(handler).post(eq("/faucet"), any());
-		verify(handler).post(eq("/faucet/"), any());
 	}
 }
