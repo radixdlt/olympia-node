@@ -669,9 +669,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			this::computeStakeFromOwnership
 		).onSuccess(parsed -> addresses.forEach(address -> storeSingleTransaction(parsed, address)));
 
-		if (log.isTraceEnabled()) {
-			log.trace("TRANSACTION_LOG: {}", accountingJson(curEpoch, reTxn, accountingObjects));
-		}
+		log.debug("TRANSACTION_LOG: {}", () -> accountingJson(curEpoch, reTxn, accountingObjects));
 	}
 
 	private REResourceAccounting processGroupedStateUpdates(List<REStateUpdate> updates) {
