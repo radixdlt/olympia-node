@@ -25,18 +25,19 @@ import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.MutableTokenDefinition;
-import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.ReadableAddrs;
+import com.radixdlt.store.ReadableAddrsStore;
 import com.radixdlt.store.LastStoredProof;
 import org.junit.Rule;
 import org.junit.Test;
@@ -59,13 +60,16 @@ public class GenesisTest {
 	private LedgerProof ledgerProof;
 
 	@Inject
-	private ReadableAddrs readableAddrs;
+	private ReadableAddrsStore readableAddrs;
+
+	@Inject
+	private REParser parser;
 
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
 			new BetanetForksModule(),
-			new RadixEngineOnlyLatestForkModule(View.of(100)),
+			new RadixEngineForksLatestOnlyModule(View.of(100), false),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
@@ -84,10 +88,10 @@ public class GenesisTest {
 		// Arrange
 		createInjector().injectMembers(this);
 
-		var p = readableAddrs.loadAddr(null, REAddr.ofNativeToken());
+		var p = readableAddrs.loadAddr(null, REAddr.ofNativeToken(), parser.getSubstateDeserialization());
 		assertThat(p)
 			.hasValueSatisfying(particle -> {
-				var tok = (TokenDefinitionParticle) particle;
+				var tok = (TokenResource) particle;
 				assertThat(tok.getIconUrl()).isEqualTo(xrd.getIconUrl());
 				assertThat(tok.getUrl()).isEqualTo(xrd.getTokenUrl());
 			});

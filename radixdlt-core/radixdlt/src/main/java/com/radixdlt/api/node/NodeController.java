@@ -21,21 +21,23 @@ package com.radixdlt.api.node;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.radixdlt.application.Balances;
+import com.radixdlt.application.MyValidator;
 import com.radixdlt.application.NodeApplicationRequest;
-import com.radixdlt.application.StakeReceived;
-import com.radixdlt.application.StakedBalance;
+import com.radixdlt.application.MyStakedBalance;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.application.ValidatorInfo;
 import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
-import com.radixdlt.atom.actions.UnstakeOwnership;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateValidator;
 import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.client.Rri;
@@ -59,7 +61,6 @@ import org.json.JSONObject;
 import com.radixdlt.api.Controller;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -93,10 +94,10 @@ public final class NodeController implements Controller {
 	}
 
 	private JSONObject getValidator() {
-		var stakeReceived = radixEngine.getComputedState(StakeReceived.class);
+		var myStakes = radixEngine.getComputedState(MyValidator.class);
 		var validatorInfo = radixEngine.getComputedState(ValidatorInfo.class);
 		var stakeFrom = new JSONArray();
-		stakeReceived.forEach((addr, amt) -> {
+		myStakes.forEach((addr, amt) -> {
 			stakeFrom.put(
 				new JSONObject()
 					.put("delegator", AccountAddress.of(addr))
@@ -108,13 +109,13 @@ public final class NodeController implements Controller {
 			.put("name", validatorInfo.getName())
 			.put("url", validatorInfo.getUrl())
 			.put("registered", validatorInfo.isRegistered())
-			.put("totalStake", TokenUnitConversions.subunitsToUnits(stakeReceived.getTotal()))
+			.put("totalStake", TokenUnitConversions.subunitsToUnits(myStakes.getTotalStake()))
 			.put("stakes", stakeFrom);
 	}
 
 	private JSONObject getBalance() {
 		var balances = radixEngine.getComputedState(Balances.class);
-		var stakedBalance = radixEngine.getComputedState(StakedBalance.class);
+		var stakedBalance = radixEngine.getComputedState(MyStakedBalance.class);
 		var stakeTo = new JSONArray();
 		stakedBalance.forEach((addr, amt) ->
 			stakeTo.put(
@@ -169,7 +170,7 @@ public final class NodeController implements Controller {
 				var description = paramsObject.getString("description");
 				var iconUrl = paramsObject.getString("iconUrl");
 				var url = paramsObject.getString("url");
-				return new CreateMutableToken(symbol, name, description, iconUrl, url);
+				return new CreateMutableToken(bftKey, symbol, name, description, iconUrl, url);
 			}
 			case "CreateFixedToken": {
 				var symbol = paramsObject.getString("symbol");
@@ -220,7 +221,7 @@ public final class NodeController implements Controller {
 				var addressString = paramsObject.getString("from");
 				var delegate = ValidatorAddress.parse(addressString);
 				var amt = parseAmount(paramsObject, "amount");
-				return new UnstakeOwnership(account, delegate, amt);
+				return new UnstakeTokens(account, delegate, amt);
 			}
 			case "RegisterValidator": {
 				var name = paramsObject.has("name") ? paramsObject.getString("name") : null;
@@ -247,15 +248,15 @@ public final class NodeController implements Controller {
 		withBody(exchange, values -> {
 			try {
 				var actionsArray = values.getJSONArray("actions");
-				var actions = new ArrayList<TxAction>();
+				var txnConstructionRequest = TxnConstructionRequest.create();
+				txnConstructionRequest.action(new PayFee(account, TokenFeeChecker.FIXED_FEE));
 				for (int i = 0; i < actionsArray.length(); i++) {
 					var actionObject = actionsArray.getJSONObject(i);
 					var txAction = parseAction(actionObject);
-					actions.add(txAction);
+					txnConstructionRequest.action(txAction);
 				}
-				actions.add(new BurnToken(REAddr.ofNativeToken(), account, TokenFeeChecker.FIXED_FEE));
 				var completableFuture = new CompletableFuture<MempoolAddSuccess>();
-				var request = NodeApplicationRequest.create(actions, completableFuture);
+				var request = NodeApplicationRequest.create(txnConstructionRequest, completableFuture);
 				nodeApplicationRequestEventDispatcher.dispatch(request);
 
 				var success = completableFuture.get();

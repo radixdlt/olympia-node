@@ -29,5 +29,5 @@ public interface ConstraintScrypt {
 	 *
 	 * @param os interface to the system calls to configure constraints on the ledger
 	 */
-	void main(SysCalls os);
+	void main(Loader os);
 }

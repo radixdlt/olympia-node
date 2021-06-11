@@ -21,21 +21,25 @@ package com.radixdlt.constraintmachine;
 import java.util.Objects;
 
 public final class ProcedureKey {
-	private final Class<? extends Particle> substateClass;
-	private final Class<? extends ReducerState> reducerStateClass;
+	private final Class<? extends ReducerState> currentState;
+	private final OpSignature opSignature;
 
-	private ProcedureKey(Class<? extends Particle> substateClass, Class<? extends ReducerState> reducerStateClass) {
-		this.substateClass = substateClass;
-		this.reducerStateClass = reducerStateClass;
+	private ProcedureKey(Class<? extends ReducerState> currentState, OpSignature opSignature) {
+		this.currentState = currentState;
+		this.opSignature = opSignature;
 	}
 
-	public static ProcedureKey of(Class<? extends Particle> substateClass, Class<? extends ReducerState> reducerStateClass) {
-		return new ProcedureKey(substateClass, reducerStateClass);
+	public static ProcedureKey of(Class<? extends ReducerState> currentState, OpSignature opSignature) {
+		return new ProcedureKey(currentState, opSignature);
+	}
+
+	public OpSignature opSignature() {
+		return opSignature;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(substateClass, reducerStateClass);
+		return Objects.hash(opSignature, currentState);
 	}
 
 	@Override
@@ -45,12 +49,12 @@ public final class ProcedureKey {
 		}
 
 		var other = (ProcedureKey) o;
-		return Objects.equals(this.substateClass, other.substateClass)
-			&& Objects.equals(this.reducerStateClass, other.reducerStateClass);
+		return Objects.equals(this.opSignature, other.opSignature)
+			&& Objects.equals(this.currentState, other.currentState);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{substate=%s reducer=%s}", this.getClass().getSimpleName(), substateClass, reducerStateClass);
+		return String.format("%s{current=%s opSignature=%s}", this.getClass().getSimpleName(), currentState, opSignature);
 	}
 }

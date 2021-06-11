@@ -28,14 +28,17 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.TxnParseException;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 
@@ -62,6 +65,7 @@ public final class RadixEngine<M> {
 
 	private static class ApplicationStateReducer<U, M> {
 		private final Set<Class<? extends Particle>> particleClasses;
+		private final REParser reParser;
 		private final BiFunction<U, Particle, U> outputReducer;
 		private final BiFunction<U, Particle, U> inputReducer;
 		private final boolean includeInBranches;
@@ -72,9 +76,11 @@ public final class RadixEngine<M> {
 			U initialValue,
 			BiFunction<U, Particle, U> outputReducer,
 			BiFunction<U, Particle, U> inputReducer,
-			boolean includeInBranches
+			boolean includeInBranches,
+			REParser reParser
 		) {
 			this.particleClasses = particleClasses;
+			this.reParser = reParser;
 			this.curValue = initialValue;
 			this.outputReducer = outputReducer;
 			this.inputReducer = inputReducer;
@@ -87,20 +93,22 @@ public final class RadixEngine<M> {
 				curValue,
 				outputReducer,
 				inputReducer,
-				includeInBranches
+				includeInBranches,
+				reParser
 			);
 		}
 
 		void initialize(EngineStore<M> engineStore) {
 			for (var particleClass : particleClasses) {
-				curValue = engineStore.reduceUpParticles(particleClass, curValue, outputReducer);
+				curValue = engineStore.reduceUpParticles(particleClass, curValue, outputReducer, reParser.getSubstateDeserialization());
 			}
 		}
 
-		void processCheckSpin(Particle p, Spin checkSpin) {
+		void processStateUpdate(REStateUpdate stateUpdate) {
 			for (var particleClass : particleClasses) {
+				var p = stateUpdate.getSubstate().getParticle();
 				if (particleClass.isInstance(p)) {
-					if (checkSpin == Spin.NEUTRAL) {
+					if (stateUpdate.isBootUp()) {
 						curValue = outputReducer.apply(curValue, p);
 					} else {
 						curValue = inputReducer.apply(curValue, p);
@@ -147,35 +155,43 @@ public final class RadixEngine<M> {
 	}
 
 	private final EngineStore<M> engineStore;
-	private final PostParsedChecker checker;
 	private final Object stateUpdateEngineLock = new Object();
 	private final Map<Pair<Class<?>, String>, ApplicationStateReducer<?, M>> stateComputers = new HashMap<>();
 	private final Map<Class<?>, SubstateCache<?>> substateCache = new HashMap<>();
 	private final List<RadixEngineBranch<M>> branches = new ArrayList<>();
 
+	private REParser parser;
+	private SubstateSerialization serialization;
 	private BatchVerifier<M> batchVerifier;
 	private ActionConstructors actionConstructors;
 	private ConstraintMachine constraintMachine;
+	private PostProcessedVerifier postProcessedVerifier;
 
 	public RadixEngine(
+		REParser parser,
+		SubstateSerialization serialization,
 		ActionConstructors actionConstructors,
 		ConstraintMachine constraintMachine,
 		EngineStore<M> engineStore
 	) {
-		this(actionConstructors, constraintMachine, engineStore, null, BatchVerifier.empty());
+		this(parser, serialization, actionConstructors, constraintMachine, engineStore, null, BatchVerifier.empty());
 	}
 
 	public RadixEngine(
+		REParser parser,
+		SubstateSerialization serialization,
 		ActionConstructors actionConstructors,
 		ConstraintMachine constraintMachine,
 		EngineStore<M> engineStore,
-		PostParsedChecker checker,
+		PostProcessedVerifier postProcessedVerifier,
 		BatchVerifier<M> batchVerifier
 	) {
+		this.parser = Objects.requireNonNull(parser);
+		this.serialization = Objects.requireNonNull(serialization);
 		this.actionConstructors = Objects.requireNonNull(actionConstructors);
 		this.constraintMachine = Objects.requireNonNull(constraintMachine);
 		this.engineStore = Objects.requireNonNull(engineStore);
-		this.checker = checker;
+		this.postProcessedVerifier = postProcessedVerifier;
 		this.batchVerifier = batchVerifier;
 	}
 
@@ -186,7 +202,10 @@ public final class RadixEngine<M> {
 			}
 
 			var cache = new SubstateCache<>(substateCacheRegister.getParticlePredicate(), includeInBranches);
-			try (var cursor = engineStore.openIndexedCursor(substateCacheRegister.getParticleClass())) {
+			try (var cursor = engineStore.openIndexedCursor(
+				substateCacheRegister.getParticleClass(),
+				parser.getSubstateDeserialization()
+			)) {
 				cursor.forEachRemaining(substate -> {
 					var p = substateCacheRegister.getParticleClass().cast(substate.getParticle());
 					if (substateCacheRegister.getParticlePredicate().test(p)) {
@@ -214,7 +233,8 @@ public final class RadixEngine<M> {
 			stateReducer.initial().get(),
 			stateReducer.outputReducer(),
 			stateReducer.inputReducer(),
-			includeInBranches
+			includeInBranches,
+			parser
 		);
 
 		synchronized (stateUpdateEngineLock) {
@@ -250,14 +270,24 @@ public final class RadixEngine<M> {
 	}
 
 	public void replaceConstraintMachine(
-		ConstraintMachine constraintMachine,
+		ConstraintMachineConfig constraintMachineConfig,
+		SubstateSerialization serialization,
 		ActionConstructors actionToConstructorMap,
-		BatchVerifier<M> batchVerifier
+		BatchVerifier<M> batchVerifier,
+		REParser parser,
+		PostProcessedVerifier postProcessedVerifier
 	) {
 		synchronized (stateUpdateEngineLock) {
-			this.constraintMachine = constraintMachine;
+			this.constraintMachine = new ConstraintMachine(
+				constraintMachineConfig.getVirtualStoreLayer(),
+				constraintMachineConfig.getProcedures(),
+				constraintMachineConfig.getMetering()
+			);
 			this.actionConstructors = actionToConstructorMap;
 			this.batchVerifier = batchVerifier;
+			this.parser = parser;
+			this.postProcessedVerifier = postProcessedVerifier;
+			this.serialization = serialization;
 		}
 	}
 
@@ -270,16 +300,20 @@ public final class RadixEngine<M> {
 		private boolean deleted = false;
 
 		private RadixEngineBranch(
+			REParser parser,
+			SubstateSerialization serialization,
 			ActionConstructors actionToConstructorMap,
 			ConstraintMachine constraintMachine,
 			EngineStore<M> parentStore,
-			PostParsedChecker checker,
+			PostProcessedVerifier checker,
 			Map<Pair<Class<?>, String>, ApplicationStateReducer<?, M>> stateComputers,
 			Map<Class<?>, SubstateCache<?>> substateCache
 		) {
 			var transientEngineStore = new TransientEngineStore<>(parentStore);
 
 			this.engine = new RadixEngine<>(
+				parser,
+				serialization,
 				actionToConstructorMap,
 				constraintMachine,
 				transientEngineStore,
@@ -316,9 +350,9 @@ public final class RadixEngine<M> {
 			return engine.construct(action);
 		}
 
-		public TxBuilder construct(List<TxAction> actions) throws TxBuilderException {
+		public TxBuilder construct(TxnConstructionRequest request) throws TxBuilderException {
 			assertNotDeleted();
-			return engine.construct(actions);
+			return engine.construct(request);
 		}
 
 		public <U> U getComputedState(Class<U> applicationStateClass) {
@@ -349,10 +383,12 @@ public final class RadixEngine<M> {
 				}
 			});
 			RadixEngineBranch<M> branch = new RadixEngineBranch<>(
+				this.parser,
+				this.serialization,
 				this.actionConstructors,
 				this.constraintMachine,
 				this.engineStore,
-				this.checker,
+				this.postProcessedVerifier,
 				branchedStateComputers,
 				branchedCache
 			);
@@ -366,18 +402,23 @@ public final class RadixEngine<M> {
 	private REProcessedTxn verify(CMStore.Transaction dbTransaction, Txn txn, PermissionLevel permissionLevel)
 		throws TxnParseException, ConstraintMachineException {
 
-		var parsedTxn = constraintMachine.verify(
+		var parsedTxn = parser.parse(txn);
+		var stateUpdates = constraintMachine.verify(
 			dbTransaction,
+			parser.getSubstateDeserialization(),
 			engineStore,
-			txn,
-			permissionLevel
+			permissionLevel,
+			parsedTxn.instructions(),
+			parsedTxn.getSignedBy(),
+			parsedTxn.disableResourceAllocAndDestroy()
 		);
+		var processedTxn = new REProcessedTxn(parsedTxn, stateUpdates);
 
-		if (checker != null) {
-			checker.check(permissionLevel, parsedTxn);
+		if (postProcessedVerifier != null) {
+			postProcessedVerifier.check(permissionLevel, processedTxn);
 		}
 
-		return parsedTxn;
+		return processedTxn;
 	}
 
 	/**
@@ -448,10 +489,8 @@ public final class RadixEngine<M> {
 			// Non-persisted computed state
 			for (var group : parsedTxn.getGroupedStateUpdates()) {
 				group.forEach(update -> {
+					stateComputers.forEach((a, computer) -> computer.processStateUpdate(update));
 					final var particle = update.getSubstate().getParticle();
-					final var checkSpin = update.getCheckSpin();
-					stateComputers.forEach((a, computer) -> computer.processCheckSpin(particle, checkSpin));
-
 					var cache = substateCache.get(particle.getClass());
 					if (cache != null && cache.test(particle)) {
 						if (update.isBootUp()) {
@@ -487,15 +526,15 @@ public final class RadixEngine<M> {
 	}
 
 	public TxBuilder construct(TxBuilderExecutable executable) throws TxBuilderException {
-		return construct(null, executable, Set.of());
+		return construct(executable, Set.of());
 	}
 
-	public TxBuilder construct(ECPublicKey user, TxBuilderExecutable executable, Set<SubstateId> avoid) throws TxBuilderException {
+	private TxBuilder construct(TxBuilderExecutable executable, Set<SubstateId> avoid) throws TxBuilderException {
 		synchronized (stateUpdateEngineLock) {
-			SubstateStore substateStore = c -> {
+			SubstateStore substateStore = (c, d) -> {
 				var cache = substateCache.get(c);
 				if (cache == null) {
-					return engineStore.openIndexedCursor(c);
+					return engineStore.openIndexedCursor(c, d);
 				}
 
 				var cacheIterator = cache.cache.asMap().values().iterator();
@@ -503,54 +542,46 @@ public final class RadixEngine<M> {
 				return SubstateCursor.concat(
 					SubstateCursor.wrapIterator(cacheIterator),
 					() -> SubstateCursor.filter(
-						engineStore.openIndexedCursor(c),
+						engineStore.openIndexedCursor(c, parser.getSubstateDeserialization()),
 						next -> !cache.cache.asMap().containsKey(next.getId())
 					)
 				);
 			};
 
-			SubstateStore filteredStore = c -> SubstateCursor.filter(
-				substateStore.openIndexedCursor(c),
+			SubstateStore filteredStore = (c, d) -> SubstateCursor.filter(
+				substateStore.openIndexedCursor(c, d),
 				i -> !avoid.contains(i.getId())
 			);
 
-			var txBuilder = user != null
-				? TxBuilder.newBuilder(user, filteredStore)
-				: TxBuilder.newBuilder(filteredStore);
+			var txBuilder = TxBuilder.newBuilder(
+				filteredStore,
+				parser.getSubstateDeserialization(),
+				serialization
+			);
 
 			executable.execute(txBuilder);
-
 
 			return txBuilder;
 		}
 	}
 
 	public TxBuilder construct(TxAction action) throws TxBuilderException {
-		return construct(null, List.of(action));
+		return construct(TxnConstructionRequest.create().action(action));
 	}
 
-	public TxBuilder construct(List<TxAction> actions) throws TxBuilderException {
-		return construct(null, actions);
-	}
-
-	public TxBuilder construct(ECPublicKey user, TxAction action) throws TxBuilderException {
-		return construct(user, List.of(action));
-	}
-
-	public TxBuilder construct(ECPublicKey user, List<TxAction> actions) throws TxBuilderException {
-		return construct(user, actions, Set.of());
-	}
-
-	public TxBuilder construct(ECPublicKey user, List<TxAction> actions, Set<SubstateId> avoid) throws TxBuilderException {
+	public TxBuilder construct(TxnConstructionRequest request) throws TxBuilderException {
 		return construct(
-			user,
 			txBuilder -> {
-				for (var action : actions) {
+				if (request.isDisableResourceAllocAndDestroy()) {
+					txBuilder.toLowLevelBuilder().disableResourceAllocAndDestroy();
+				}
+				for (var action : request.getActions()) {
 					this.actionConstructors.construct(action, txBuilder);
 					txBuilder.end();
 				}
+				request.getMsg().ifPresent(txBuilder::message);
 			},
-			avoid
+			request.getSubstatesToAvoid()
 		);
 	}
 }

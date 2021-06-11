@@ -25,7 +25,7 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.sync.CommittedReader;
 import org.junit.Assert;
 import org.junit.Before;
@@ -74,7 +74,6 @@ import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.StakedValidators;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
-import com.radixdlt.statecomputer.transaction.EmptyTransactionCheckModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.TypedMocks;
@@ -133,7 +132,7 @@ public class SubmissionServiceTest {
 			@Override
 			public void configure() {
 				install(new BetanetForksModule());
-				install(new RadixEngineOnlyLatestForkModule(View.of(10)));
+				install(new RadixEngineForksLatestOnlyModule(View.of(10), false));
 				install(RadixEngineConfig.asModule(1, 100, 50));
 				install(MempoolConfig.asModule(10, 10));
 
@@ -197,7 +196,6 @@ public class SubmissionServiceTest {
 		var injector = Guice.createInjector(
 			new RadixEngineCheckpointModule(),
 			new RadixEngineModule(),
-			new EmptyTransactionCheckModule(),
 			new MockedGenesisModule(),
 			localModule()
 		);
@@ -210,8 +208,7 @@ public class SubmissionServiceTest {
 		var acct = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var action = new TransferToken(nativeToken, acct, ALICE_ACCT, BIG_AMOUNT);
 
-		var tx = radixEngine.construct(key.getPublicKey(), List.of(action))
-			.signAndBuild(key::sign);
+		var tx = radixEngine.construct(action).signAndBuild(key::sign);
 
 		radixEngine.execute(List.of(tx));
 
@@ -277,8 +274,7 @@ public class SubmissionServiceTest {
 		var acct = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var action = new TransferToken(nativeToken, acct, ALICE_ACCT, BIG_AMOUNT);
 
-		var tx = radixEngine.construct(key.getPublicKey(), List.of(action))
-			.signAndBuild(key::sign);
+		var tx = radixEngine.construct(action).signAndBuild(key::sign);
 
 		radixEngine.execute(List.of(tx));
 

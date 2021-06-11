@@ -20,13 +20,14 @@ package com.radixdlt.store;
 import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.SubstateDeserialization;
 
 import java.util.Optional;
 
 /**
  * Read only store interface for Constraint Machine validation
  */
-public interface CMStore extends ReadableAddrs {
+public interface CMStore extends ReadableAddrsStore {
 	/**
 	 * Hack for atomic transaction, better to implement
 	 * whole function in single interface in future.
@@ -47,7 +48,15 @@ public interface CMStore extends ReadableAddrs {
 
 	boolean isVirtualDown(Transaction txn, SubstateId substateId);
 
-	Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId);
+	Optional<Particle> loadUpParticle(
+		Transaction txn,
+		SubstateId substateId,
+		SubstateDeserialization deserialization
+	);
 
-	SubstateCursor openIndexedCursor(Transaction txn, Class<? extends Particle> particleClass);
+	SubstateCursor openIndexedCursor(
+		Transaction txn,
+		Class<? extends Particle> particleClass,
+		SubstateDeserialization deserialization
+	);
 }

@@ -24,10 +24,11 @@ import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
-import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.constraintmachine.REOp;
+import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.identifiers.REAddr;
 
 import java.util.ArrayList;
@@ -48,11 +49,11 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 			stateUpdates.forEach(i -> storedParticles.put(i.getSubstate().getId(), i));
 			stateUpdates.stream()
 				.filter(REStateUpdate::isBootUp)
-				.map(REStateUpdate::getParticle)
+				.map(REStateUpdate::getRawSubstate)
 				.forEach(p -> {
 					// FIXME: Superhack
-					if (p instanceof TokenDefinitionParticle) {
-						var tokenDef = (TokenDefinitionParticle) p;
+					if (p instanceof TokenResource) {
+						var tokenDef = (TokenResource) p;
 						addrParticles.put(tokenDef.getAddr(), p);
 					} else if (p instanceof SystemParticle) {
 						addrParticles.put(REAddr.ofSystem(), p);
@@ -72,31 +73,36 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	public <V> V reduceUpParticles(
 		Class<? extends Particle> particleClass,
 		V initial,
-		BiFunction<V, Particle, V> outputReducer
+		BiFunction<V, Particle, V> outputReducer,
+		SubstateDeserialization substateDeserialization
 	) {
 		V v = initial;
 		synchronized (lock) {
 			for (var i : storedParticles.values()) {
-				if (!i.isBootUp() || !particleClass.isInstance(i.getParticle())) {
+				if (!i.isBootUp() || !particleClass.isInstance(i.getRawSubstate())) {
 					continue;
 				}
-				v = outputReducer.apply(v, particleClass.cast(i.getParticle()));
+				v = outputReducer.apply(v, particleClass.cast(i.getRawSubstate()));
 			}
 		}
 		return v;
 	}
 
 	@Override
-	public SubstateCursor openIndexedCursor(Transaction dbTxn, Class<? extends Particle> substateClass) {
-		return openIndexedCursor(substateClass);
+	public SubstateCursor openIndexedCursor(
+		Transaction dbTxn,
+		Class<? extends Particle> substateClass,
+		SubstateDeserialization deserialization
+	) {
+		return openIndexedCursor(substateClass, deserialization);
 	}
 
 	@Override
-	public SubstateCursor openIndexedCursor(Class<? extends Particle> substateClass) {
+	public SubstateCursor openIndexedCursor(Class<? extends Particle> substateClass, SubstateDeserialization deserialization) {
 		final List<Substate> substates = new ArrayList<>();
 		synchronized (lock) {
 			for (var i : storedParticles.values()) {
-				if (!i.isBootUp() || !substateClass.isInstance(i.getParticle())) {
+				if (!i.isBootUp() || !substateClass.isInstance(i.getRawSubstate())) {
 					continue;
 				}
 				substates.add(i.getSubstate());
@@ -119,28 +125,28 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 		}
 	}
 
-	public Spin getSpin(SubstateId substateId) {
+	public Optional<REOp> getSpin(SubstateId substateId) {
 		synchronized (lock) {
 			var inst = storedParticles.get(substateId);
-			return inst == null ? Spin.NEUTRAL : inst.getNextSpin();
+			return Optional.ofNullable(inst).map(REStateUpdate::getOp);
 		}
 	}
 
 	@Override
-	public Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId) {
+	public Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId, SubstateDeserialization deserialization) {
 		synchronized (lock) {
 			var inst = storedParticles.get(substateId);
-			if (inst == null || inst.getNextSpin() != Spin.UP) {
+			if (inst == null || inst.getOp() != REOp.UP) {
 				return Optional.empty();
 			}
 
-			var particle = inst.getParticle();
+			var particle = inst.getRawSubstate();
 			return Optional.of(particle);
 		}
 	}
 
 	@Override
-	public Optional<Particle> loadAddr(Transaction dbTxn, REAddr rri) {
+	public Optional<Particle> loadAddr(Transaction dbTxn, REAddr rri, SubstateDeserialization deserialization) {
 		synchronized (lock) {
 			return Optional.ofNullable(addrParticles.get(rri));
 		}

@@ -18,6 +18,7 @@
 
 package com.radixdlt.atommodel.tokens;
 
+import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.actions.CreateMutableToken;
@@ -36,6 +37,7 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -45,6 +47,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.math.BigInteger;
 import java.util.Collection;
 import java.util.List;
 
@@ -75,13 +78,16 @@ public final class MintTokensTest {
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(scrypt);
-		var cm = new ConstraintMachine.Builder()
-			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
-			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
-			.setParticleTransitionProcedures(cmAtomOS.getProcedures())
-			.build();
+		var cm = new ConstraintMachine(
+			cmAtomOS.virtualizedUpParticles(),
+			cmAtomOS.getProcedures()
+		);
+		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
+		var serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
+			parser,
+			serialization,
 			ActionConstructors.newBuilder()
 				.put(TransferToken.class, transferTokensConstructor)
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
@@ -115,18 +121,17 @@ public final class MintTokensTest {
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
 		var txn = this.engine.construct(
-			key.getPublicKey(),
-			new CreateMutableToken("test", "Name", "", "", "")
+			new CreateMutableToken(key.getPublicKey(), "test", "Name", "", "", "")
 		).signAndBuild(key::sign);
 		this.engine.execute(List.of(txn));
 
 		// Act and Assert
 		var mintTxn = this.engine.construct(new MintToken(tokenAddr, accountAddr, UInt256.TEN)).signAndBuild(key::sign);
-		var parsed = this.engine.execute(List.of(mintTxn));
-		var action = (MintToken) parsed.get(0).getActions().get(0).getTxAction();
-		assertThat(action.amount()).isEqualTo(UInt256.TEN);
-		assertThat(action.to()).isEqualTo(accountAddr);
-		assertThat(action.resourceAddr()).isEqualTo(tokenAddr);
+		var processed = this.engine.execute(List.of(mintTxn));
+		var accounting = REResourceAccounting.compute(processed.get(0).getGroupedStateUpdates().get(0));
+		assertThat(accounting.resourceAccounting())
+			.hasSize(1)
+			.containsEntry(tokenAddr, BigInteger.valueOf(10));
 	}
 
 	@Test
@@ -134,8 +139,7 @@ public final class MintTokensTest {
 		// Arrange
 		var key = ECKeyPair.generateNew();
 		var txn = this.engine.construct(
-			key.getPublicKey(),
-			new CreateMutableToken("test", "Name", "", "", "")
+			new CreateMutableToken(key.getPublicKey(), "test", "Name", "", "", "")
 		).signAndBuild(key::sign);
 		this.engine.execute(List.of(txn));
 

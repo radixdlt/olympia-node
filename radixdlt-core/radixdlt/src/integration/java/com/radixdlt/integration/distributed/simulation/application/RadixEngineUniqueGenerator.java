@@ -17,22 +17,31 @@
 
 package com.radixdlt.integration.distributed.simulation.application;
 
+import com.google.inject.Inject;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.engine.parser.REParser;
 
 /**
  * Generates a new unique rri consumer command. Because new addresses are used
  * on every call, the command should never fail when executed on a radix engine.
  */
 public class RadixEngineUniqueGenerator implements TxnGenerator {
+	@Inject
+	private REParser parser;
+
+	@Inject
+	private SubstateSerialization serialization;
+
 	@Override
 	public Txn nextTxn() {
 		var keyPair = ECKeyPair.generateNew();
 		try {
-			return TxBuilder.newBuilder(keyPair.getPublicKey())
-				.mutex("test")
+			return TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization)
+				.mutex(keyPair.getPublicKey(), "test")
 				.signAndBuild(keyPair::sign);
 		} catch (TxBuilderException e) {
 			throw new RuntimeException(e);

@@ -17,6 +17,7 @@
 
 package com.radixdlt.client.handler;
 
+import com.radixdlt.atommodel.system.state.ValidatorStake;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
@@ -31,7 +32,6 @@ import com.radixdlt.client.service.ValidatorInfoService;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.berkeley.BalanceEntry;
-import com.radixdlt.client.store.berkeley.UnstakeEntry;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.ECPublicKey;
@@ -217,7 +217,10 @@ public class HighLevelApiHandler {
 			"address",
 			(address) -> AccountAddress.parseFunctional(address)
 				.flatMap(highLevelApiService::getUnstakePositions)
-				.map(HighLevelApiHandler::formatUnstakePositions)
+				.map(positions -> {
+					var curEpoch = highLevelApiService.getEpoch();
+					return formatUnstakePositions(positions, curEpoch);
+				})
 		);
 	}
 
@@ -243,13 +246,14 @@ public class HighLevelApiHandler {
 	// internal processing
 	//-----------------------------------------------------------------------------------------------------
 
-	private static JSONObject formatUnstakePositions(List<UnstakeEntry> balances) {
+	private static JSONObject formatUnstakePositions(List<BalanceEntry> balances, long curEpoch) {
 		var array = fromList(balances, unstake ->
 			jsonObject()
-				.put("validator", ValidatorAddress.of(unstake.getValidator()))
+				.put("validator", ValidatorAddress.of(unstake.getDelegate()))
 				.put("amount", unstake.getAmount())
-				.put("epochsUntil", unstake.getEpochsUntil())
-				.put("withdrawTxID", unstake.getWithdrawTxId())
+				.put("epochsUntil", unstake.getEpochUnlocked().equals(0L)
+					? ValidatorStake.EPOCHS_LOCKED
+					: unstake.getEpochUnlocked() - curEpoch)
 		);
 		return jsonObject().put(ARRAY, array);
 	}

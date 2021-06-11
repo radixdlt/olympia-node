@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.TxActionListBuilder;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.actions.CreateSystem;
@@ -105,40 +105,40 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 		});
 
 		var branch = radixEngine.transientBranch();
-		var genesisBuilder = TxActionListBuilder.create();
+		var genesisTxnConstruction = TxnConstructionRequest.create();
 		var rri = REAddr.ofNativeToken();
 		try {
 			// Initialize system address
-			genesisBuilder.action(new CreateSystem());
+			genesisTxnConstruction.action(new CreateSystem());
 
 			// Network token
-			genesisBuilder.createMutableToken(tokenDefinition);
+			genesisTxnConstruction.createMutableToken(tokenDefinition);
 			for (var e : issuances.entrySet()) {
 				var addr = REAddr.ofPubKeyAccount(e.getKey());
-				genesisBuilder.mint(rri, addr, e.getValue());
+				genesisTxnConstruction.mint(rri, addr, e.getValue());
 			}
 
 			// Initial validator registration
 			for (var validatorKey : validatorKeys) {
-				genesisBuilder.registerAsValidator(validatorKey.getPublicKey());
+				genesisTxnConstruction.registerAsValidator(validatorKey.getPublicKey());
 			}
 
 			// Initial stakes
 			for (var stakeDelegation : stakeDelegations) {
 				var delegateAddr = REAddr.ofPubKeyAccount(stakeDelegation.staker());
 				var stakeTokens = new StakeTokens(delegateAddr, stakeDelegation.delegate(), stakeDelegation.amount());
-				genesisBuilder.action(stakeTokens);
+				genesisTxnConstruction.action(stakeTokens);
 			}
 
 			if (!additionalActions.isEmpty()) {
-				additionalActions.forEach(genesisBuilder::action);
+				additionalActions.forEach(genesisTxnConstruction::action);
 			}
-			var temp = branch.construct(genesisBuilder.build()).buildWithoutSignature();
+			var temp = branch.construct(genesisTxnConstruction).buildWithoutSignature();
 			branch.execute(List.of(temp), PermissionLevel.SYSTEM);
 
 			var stakedValidators = branch.getComputedState(StakedValidators.class);
 			var genesisValidatorSet = new AtomicReference<BFTValidatorSet>();
-			genesisBuilder.action(new SystemNextEpoch(updates -> {
+			genesisTxnConstruction.action(new SystemNextEpoch(updates -> {
 				var cur = stakedValidators;
 				for (var u : updates) {
 					cur = cur.setStake(u.getValidatorKey(), u.getAmount());
@@ -151,7 +151,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 					.collect(Collectors.toList());
 			}, timestamp));
 			radixEngine.deleteBranches();
-			var txn = radixEngine.construct(genesisBuilder.build()).buildWithoutSignature();
+			var txn = radixEngine.construct(genesisTxnConstruction).buildWithoutSignature();
 
 			var accumulatorState = new AccumulatorState(0, txn.getId().asHashCode());
 			var genesisProof = LedgerProof.genesis(

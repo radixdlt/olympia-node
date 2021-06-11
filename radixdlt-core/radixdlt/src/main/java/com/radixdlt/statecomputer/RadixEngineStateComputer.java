@@ -179,12 +179,20 @@ public final class RadixEngineStateComputer implements StateComputer {
 		final TxAction systemAction;
 		var nextValidatorSet = new AtomicReference<BFTValidatorSet>();
 		if (view.compareTo(epochCeilingView) < 0) {
-			systemAction = new SystemNextView(view.number(), timestamp, vertex.getProposer().getKey());
+			systemAction = new SystemNextView(
+				view.number(),
+				timestamp,
+				vertex.getProposer() != null ? vertex.getProposer().getKey() : null
+			);
 		} else {
 			var stakedValidators = branch.getComputedState(StakedValidators.class);
 			if (stakedValidators.toValidatorSet() == null) {
 				// FIXME: Better way to handle rare case when there isn't enough in validator set
-				systemAction = new SystemNextView(view.number(), timestamp, vertex.getProposer().getKey());
+				systemAction = new SystemNextView(
+					view.number(),
+					timestamp,
+					vertex.getProposer() != null ? vertex.getProposer().getKey() : null
+				);
 			} else {
 				systemAction = new SystemNextEpoch(updates -> {
 					var cur = stakedValidators;
@@ -300,11 +308,14 @@ public final class RadixEngineStateComputer implements StateComputer {
 		if (proof.getNextValidatorSet().isPresent()) {
 			var forkConfig = epochToForkConfig.get(proof.getEpoch() + 1);
 			if (forkConfig != null) {
-				log.info("Epoch {} Forking constraint machine", proof.getEpoch() + 1);
+				log.info("Epoch {} Forking RadixEngine to {}", proof.getEpoch() + 1, forkConfig.getName());
 				this.radixEngine.replaceConstraintMachine(
-					forkConfig.getConstraintMachine(),
+					forkConfig.getConstraintMachineConfig(),
+					forkConfig.getSubstateSerialization(),
 					forkConfig.getActionConstructors(),
-					forkConfig.getBatchVerifier()
+					forkConfig.getBatchVerifier(),
+					forkConfig.getParser(),
+					forkConfig.getPostProcessedVerifier()
 				);
 				this.epochCeilingView = forkConfig.getEpochCeilingView();
 			}

@@ -18,258 +18,229 @@
 
 package com.radixdlt.atommodel.tokens.scrypt;
 
-import com.radixdlt.atom.actions.BurnToken;
-import com.radixdlt.atom.actions.CreateFixedToken;
-import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.Unknown;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.ParticleDefinition;
-import com.radixdlt.atomos.SysCalls;
+import com.radixdlt.atomos.SubstateDefinition;
+import com.radixdlt.atomos.Loader;
+import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
-import com.radixdlt.constraintmachine.InvalidResourceException;
-import com.radixdlt.constraintmachine.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
-import java.util.Optional;
+import java.util.Set;
+
 
 public class TokensConstraintScryptV2 implements ConstraintScrypt {
 	@Override
-	public void main(SysCalls os) {
+	public void main(Loader os) {
 		registerParticles(os);
 		defineTokenCreation(os);
 		defineMintTransferBurn(os);
 	}
 
-	private void registerParticles(SysCalls os) {
-		os.registerParticle(
-			TokenDefinitionParticle.class,
-			ParticleDefinition.<TokenDefinitionParticle>builder()
-				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.build()
+	private void registerParticles(Loader os) {
+		os.substate(
+			new SubstateDefinition<>(
+				TokenResource.class,
+				Set.of(SubstateTypeId.TOKEN_DEF.id()),
+				(b, buf) -> {
+					var rri = REFieldSerialization.deserializeREAddr(buf);
+					var type = buf.get();
+					final UInt256 supply;
+					final ECPublicKey minter;
+					if (type == 0) {
+						supply = null;
+						minter = null;
+					} else if (type == 1) {
+						supply = null;
+						minter = REFieldSerialization.deserializeKey(buf);
+					} else if (type == 2) {
+						supply = REFieldSerialization.deserializeUInt256(buf);
+						minter = null;
+					} else {
+						throw new DeserializeException("Unknown token def type " + type);
+					}
+					var name = REFieldSerialization.deserializeString(buf);
+					var description = REFieldSerialization.deserializeString(buf);
+					var url = REFieldSerialization.deserializeUrl(buf);
+					var iconUrl = REFieldSerialization.deserializeUrl(buf);
+					return new TokenResource(rri, name, description, iconUrl, url, supply, minter);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.TOKEN_DEF.id());
+					REFieldSerialization.serializeREAddr(buf, s.getAddr());
+					s.getSupply().ifPresentOrElse(
+						i -> {
+							buf.put((byte) 2);
+							buf.put(i.toByteArray());
+						},
+						() -> {
+							s.getOwner().ifPresentOrElse(
+								m -> {
+									buf.put((byte) 1);
+									REFieldSerialization.serializeKey(buf, m);
+								},
+								() -> buf.put((byte) 0)
+							);
+						}
+					);
+					REFieldSerialization.serializeString(buf, s.getName());
+					REFieldSerialization.serializeString(buf, s.getDescription());
+					REFieldSerialization.serializeString(buf, s.getUrl());
+					REFieldSerialization.serializeString(buf, s.getIconUrl());
+				}
+			)
 		);
 
-		os.registerParticle(
-			TokensParticle.class,
-			ParticleDefinition.<TokensParticle>builder()
-				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.build()
+		os.substate(
+			new SubstateDefinition<>(
+				TokensInAccount.class,
+				Set.of(SubstateTypeId.TOKENS.id(), SubstateTypeId.TOKENS_LOCKED.id()),
+				(b, buf) -> {
+					var rri = REFieldSerialization.deserializeREAddr(buf);
+					var holdingAddr = REFieldSerialization.deserializeREAddr(buf);
+					if (!holdingAddr.isAccount()) {
+						throw new DeserializeException("Tokens must be held by holding address: " + holdingAddr);
+					}
+					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
+
+					if (b == SubstateTypeId.TOKENS.id()) {
+						return new TokensInAccount(holdingAddr, amount, rri);
+					} else {
+						var epochUnlocked = buf.getLong();
+						return new TokensInAccount(holdingAddr, amount, rri, epochUnlocked);
+					}
+				},
+				(s, buf) -> {
+					s.getEpochUnlocked().ifPresentOrElse(
+						e -> buf.put(SubstateTypeId.TOKENS_LOCKED.id()),
+						() -> buf.put(SubstateTypeId.TOKENS.id())
+					);
+					REFieldSerialization.serializeREAddr(buf, s.getResourceAddr());
+					REFieldSerialization.serializeREAddr(buf, s.getHoldingAddr());
+					buf.put(s.getAmount().toByteArray());
+					s.getEpochUnlocked().ifPresent(buf::putLong);
+				}
+			)
 		);
 	}
 
 	private static class NeedFixedTokenSupply implements ReducerState {
 		private final byte[] arg;
-		private final TokenDefinitionParticle tokenDefinitionParticle;
-		private NeedFixedTokenSupply(byte[] arg, TokenDefinitionParticle tokenDefinitionParticle) {
+		private final TokenResource tokenResource;
+		private NeedFixedTokenSupply(byte[] arg, TokenResource tokenResource) {
 			this.arg = arg;
-			this.tokenDefinitionParticle = tokenDefinitionParticle;
+			this.tokenResource = tokenResource;
 		}
 	}
 
-	private void defineTokenCreation(SysCalls os) {
-		os.createUpProcedure(new UpProcedure<>(
-			CMAtomOS.REAddrClaim.class, TokenDefinitionParticle.class,
-			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> { },
-			(s, u, r) -> {
+	private void defineTokenCreation(Loader os) {
+		os.procedure(new UpProcedure<>(
+			CMAtomOS.REAddrClaim.class, TokenResource.class,
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			(s, u, c, r) -> {
 				if (!u.getAddr().equals(s.getAddr())) {
 					throw new ProcedureException("Addresses don't match");
 				}
 
 				if (u.isMutable()) {
-					var action = new CreateMutableToken(
-						new String(s.getArg()),
-						u.getName(),
-						u.getDescription(),
-						u.getIconUrl(),
-						u.getUrl()
-					);
-					return ReducerResult.complete(action);
+					return ReducerResult.complete();
 				}
 
 				return ReducerResult.incomplete(new TokensConstraintScryptV2.NeedFixedTokenSupply(s.getArg(), u));
 			}
 		));
 
-		os.createUpProcedure(new UpProcedure<>(
-			TokensConstraintScryptV2.NeedFixedTokenSupply.class, TokensParticle.class,
-			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> { },
-			(s, u, r) -> {
-				if (!u.getResourceAddr().equals(s.tokenDefinitionParticle.getAddr())) {
+		os.procedure(new UpProcedure<>(
+			TokensConstraintScryptV2.NeedFixedTokenSupply.class, TokensInAccount.class,
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			(s, u, c, r) -> {
+				if (!u.getResourceAddr().equals(s.tokenResource.getAddr())) {
 					throw new ProcedureException("Addresses don't match.");
 				}
 
-				if (!u.getAmount().equals(s.tokenDefinitionParticle.getSupply().orElseThrow())) {
+				if (!u.getAmount().equals(s.tokenResource.getSupply().orElseThrow())) {
 					throw new ProcedureException("Initial supply doesn't match.");
 				}
 
-				var action = new CreateFixedToken(
-					u.getResourceAddr(),
-					u.getHoldingAddr(),
-					new String(s.arg),
-					s.tokenDefinitionParticle.getName(),
-					s.tokenDefinitionParticle.getDescription(),
-					s.tokenDefinitionParticle.getIconUrl(),
-					s.tokenDefinitionParticle.getUrl(),
-					s.tokenDefinitionParticle.getSupply().orElseThrow()
-				);
-
-				return ReducerResult.complete(action);
+				return ReducerResult.complete();
 			}
 		));
 	}
 
-	public static class TokenHoldingBucket implements ReducerState {
-		private final REAddr tokenAddr;
-		private final UInt384 amount;
-
-		// This is to keep track of where resource is coming from
-		// If resource is coming from more than one account then this is just null
-		// FIXME: This is a little bit of a hack
-		private final REAddr from;
-
-		private TokenHoldingBucket(
-			REAddr tokenAddr,
-			UInt384 amount,
-			REAddr from
-		) {
-			this.tokenAddr = tokenAddr;
-			this.amount = amount;
-			this.from = from;
-		}
-
-		public REAddr from() {
-			return from;
-		}
-
-		private TokenHoldingBucket deposit(REAddr resourceAddr, UInt256 amountToAdd, REAddr from) throws ProcedureException {
-			if (!this.tokenAddr.equals(resourceAddr)) {
-				throw new InvalidResourceException(resourceAddr, tokenAddr);
-			}
-
-			var nextFrom = this.from.equals(from) ? from : null;
-			return new TokenHoldingBucket(tokenAddr, UInt384.from(amountToAdd).add(amount), nextFrom);
-		}
-
-		public TokenHoldingBucket withdraw(REAddr resourceAddr, UInt256 amountToWithdraw) throws ProcedureException {
-			if (!tokenAddr.equals(resourceAddr)) {
-				throw new InvalidResourceException(resourceAddr, tokenAddr);
-			}
-
-			var withdraw384 = UInt384.from(amountToWithdraw);
-			if (amount.compareTo(withdraw384) < 0) {
-				throw new NotEnoughResourcesException(amountToWithdraw, amount.getLow());
-			}
-
-			return new TokenHoldingBucket(tokenAddr, amount.subtract(withdraw384), from);
-		}
-	}
-
-	private void defineMintTransferBurn(SysCalls os) {
+	private void defineMintTransferBurn(Loader os) {
 		// Mint
-		os.createUpProcedure(new UpProcedure<>(
-			VoidReducerState.class, TokensParticle.class,
-			(u, r) -> u.getResourceAddr().isNativeToken() ? PermissionLevel.SYSTEM : PermissionLevel.USER,
-			(u, r, k) -> {
-				var tokenDef = (TokenDefinitionParticle) r.loadAddr(null, u.getResourceAddr())
-					.orElseThrow(() -> new AuthorizationException("Invalid token address: " + u.getResourceAddr()));
-				tokenDef.verifyMintAuthorization(k);
+		os.procedure(new UpProcedure<>(
+			VoidReducerState.class, TokensInAccount.class,
+			u -> {
+				if (u.getResourceAddr().isNativeToken()) {
+					return new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { });
+				}
+				return new Authorization(PermissionLevel.USER, (r, c) -> {
+					var tokenDef = (TokenResource) r.loadAddr(u.getResourceAddr())
+						.orElseThrow(() -> new AuthorizationException("Invalid token address: " + u.getResourceAddr()));
+					tokenDef.verifyMintAuthorization(c.key());
+				});
 			},
-			(s, u, r) -> ReducerResult.complete(new MintToken(u.getResourceAddr(), u.getHoldingAddr(), u.getAmount()))
+			(s, u, c, r) -> ReducerResult.complete()
 		));
 
 		// Burn
-		os.createEndProcedure(new EndProcedure<>(
+		os.procedure(new EndProcedure<>(
 			TokenHoldingBucket.class,
-			(s, r) -> PermissionLevel.USER,
-			(s, r, k) -> { },
-			(s, r) -> {
-				if (!s.amount.isZero()) {
-					var p = r.loadAddr(null, s.tokenAddr);
-					if (p.isEmpty()) {
-						throw new ProcedureException("Token does not exist.");
-					}
-					var particle = p.get();
-					if (!(particle instanceof TokenDefinitionParticle)) {
-						throw new ProcedureException("Rri is not a token");
-					}
-					var tokenDef = (TokenDefinitionParticle) particle;
-					if (!tokenDef.isMutable()) {
-						throw new ProcedureException("Can only burn mutable tokens.");
-					}
-					return Optional.of(new BurnToken(s.tokenAddr, s.from, s.amount.getLow()));
-				} else {
-					return Optional.empty();
-				}
-			}
+			s -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			TokenHoldingBucket::destroy
 		));
 
 		// Initial Withdraw
-		os.createDownProcedure(new DownProcedure<>(
-			TokensParticle.class, VoidReducerState.class,
-			(d, r) -> PermissionLevel.USER,
-			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
+		os.procedure(new DownProcedure<>(
+			TokensInAccount.class, VoidReducerState.class,
+			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> {
 				var tokens = d.getSubstate();
 				var state = new TokenHoldingBucket(
 					tokens.getResourceAddr(),
-					UInt384.from(tokens.getAmount()),
-					tokens.getHoldingAddr()
+					UInt384.from(tokens.getAmount())
 				);
 				return ReducerResult.incomplete(state);
 			}
 		));
 
 		// More Withdraws
-		os.createDownProcedure(new DownProcedure<>(
-			TokensParticle.class, TokenHoldingBucket.class,
-			(d, r) -> PermissionLevel.USER,
-			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
+		os.procedure(new DownProcedure<>(
+			TokensInAccount.class, TokenHoldingBucket.class,
+			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> {
 				var tokens = d.getSubstate();
 				var nextState = s.deposit(
 					tokens.getResourceAddr(),
-					tokens.getAmount(),
-					tokens.getHoldingAddr()
+					tokens.getAmount()
 				);
 				return ReducerResult.incomplete(nextState);
 			}
 		));
 
 		// Deposit
-		os.createUpProcedure(new UpProcedure<>(
-			TokenHoldingBucket.class, TokensParticle.class,
-			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> { },
-			(s, u, r) -> {
+		os.procedure(new UpProcedure<>(
+			TokenHoldingBucket.class, TokensInAccount.class,
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			(s, u, c, r) -> {
 				var nextState = s.withdraw(u.getResourceAddr(), u.getAmount());
-
-				if (s.from != null) {
-					if (!u.getHoldingAddr().equals(s.from)) {
-						var actionGuess = new TransferToken(u.getResourceAddr(), s.from, u.getHoldingAddr(), u.getAmount());
-						return ReducerResult.incomplete(nextState, actionGuess);
-					} else {
-						return ReducerResult.incomplete(nextState);
-					}
-				}
-
-				return ReducerResult.incomplete(nextState, Unknown.create());
+				return ReducerResult.incomplete(nextState);
 			}
 		));
 	}

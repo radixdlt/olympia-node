@@ -58,7 +58,7 @@ public final class NodeApplication {
 
 		try {
 			// TODO: remove use of mempoolAdd message and add to mempool synchronously
-			var txBuilder = radixEngine.construct(self, request.getActions());
+			var txBuilder = radixEngine.construct(request.getRequest());
 			var txn = txBuilder.signAndBuild(hashSigner::sign);
 			var mempoolAdd = request.completableFuture()
 				.map(f -> MempoolAdd.create(txn, f))

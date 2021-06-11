@@ -31,13 +31,11 @@ import java.text.StringCharacterIterator;
 import java.util.concurrent.TimeUnit;
 
 import static com.sleepycat.je.Durability.COMMIT_NO_SYNC;
-import static com.sleepycat.je.EnvironmentConfig.CHECKPOINTER_BYTES_INTERVAL;
 import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_CHECKPOINTER;
 import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_CLEANER;
 import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_EVICTOR;
 import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_VERIFIER;
 import static com.sleepycat.je.EnvironmentConfig.LOG_FILE_CACHE_SIZE;
-import static com.sleepycat.je.EnvironmentConfig.LOG_FILE_MAX;
 import static com.sleepycat.je.EnvironmentConfig.TREE_MAX_EMBEDDED_LN;
 
 public final class DatabaseEnvironment {
@@ -60,10 +58,8 @@ public final class DatabaseEnvironment {
 		environmentConfig.setAllowCreate(true);
 		environmentConfig.setLockTimeout(30, TimeUnit.SECONDS);
 		environmentConfig.setDurability(COMMIT_NO_SYNC);
-		environmentConfig.setConfigParam(LOG_FILE_MAX, "1073741824");
 		environmentConfig.setConfigParam(LOG_FILE_CACHE_SIZE, "256");
 		environmentConfig.setConfigParam(ENV_RUN_CHECKPOINTER, "true");
-		environmentConfig.setConfigParam(CHECKPOINTER_BYTES_INTERVAL, "250000000");
 		environmentConfig.setConfigParam(ENV_RUN_CLEANER, "true");
 		environmentConfig.setConfigParam(ENV_RUN_EVICTOR, "true");
 		environmentConfig.setConfigParam(ENV_RUN_VERIFIER, "false");

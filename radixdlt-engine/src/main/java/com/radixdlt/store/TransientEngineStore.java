@@ -5,7 +5,7 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.identifiers.REAddr;
 
 import java.util.List;
@@ -32,7 +32,12 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public <V> V reduceUpParticles(Class<? extends Particle> aClass, V v, BiFunction<V, Particle, V> biFunction) {
+	public <V> V reduceUpParticles(
+		Class<? extends Particle> aClass,
+		V v,
+		BiFunction<V, Particle, V> biFunction,
+		SubstateDeserialization substateDeserialization
+	) {
 		throw new UnsupportedOperationException("Transient store should not require reduction.");
 	}
 
@@ -48,39 +53,46 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId) {
-		if (transientStore.getSpin(substateId) == Spin.NEUTRAL) {
-			return base.loadUpParticle(txn, substateId);
+	public Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId, SubstateDeserialization deserialization) {
+		if (transientStore.getSpin(substateId).isEmpty()) {
+			return base.loadUpParticle(txn, substateId, deserialization);
 		}
 
-		return transientStore.loadUpParticle(txn, substateId);
+		return transientStore.loadUpParticle(txn, substateId, deserialization);
 	}
 
 	@Override
-	public SubstateCursor openIndexedCursor(Transaction dbTxn, Class<? extends Particle> particleClass) {
+	public SubstateCursor openIndexedCursor(
+		Transaction dbTxn,
+		Class<? extends Particle> particleClass,
+		SubstateDeserialization deserialization
+	) {
 		return SubstateCursor.concat(
-			transientStore.openIndexedCursor(particleClass),
+			transientStore.openIndexedCursor(particleClass, deserialization),
 			() -> SubstateCursor.filter(
-				base.openIndexedCursor(dbTxn, particleClass),
-				s -> transientStore.getSpin(s.getId()) != Spin.DOWN
+				base.openIndexedCursor(dbTxn, particleClass, deserialization),
+				s -> transientStore.getSpin(s.getId()).isEmpty()
 			)
 		);
 	}
 
 	@Override
-	public SubstateCursor openIndexedCursor(Class<? extends Particle> particleClass) {
+	public SubstateCursor openIndexedCursor(
+		Class<? extends Particle> particleClass,
+		SubstateDeserialization deserialization
+	) {
 		return SubstateCursor.concat(
-			transientStore.openIndexedCursor(particleClass),
+			transientStore.openIndexedCursor(particleClass, deserialization),
 			() -> SubstateCursor.filter(
-				base.openIndexedCursor(particleClass),
-				s -> transientStore.getSpin(s.getId()) != Spin.DOWN
+				base.openIndexedCursor(particleClass, deserialization),
+				s -> transientStore.getSpin(s.getId()).isEmpty()
 			)
 		);
 	}
 
 	@Override
-	public Optional<Particle> loadAddr(Transaction dbTxn, REAddr rri) {
-		return transientStore.loadAddr(dbTxn, rri)
-			.or(() -> base.loadAddr(dbTxn, rri));
+	public Optional<Particle> loadAddr(Transaction dbTxn, REAddr rri, SubstateDeserialization deserialization) {
+		return transientStore.loadAddr(dbTxn, rri, deserialization)
+			.or(() -> base.loadAddr(dbTxn, rri, deserialization));
 	}
 }

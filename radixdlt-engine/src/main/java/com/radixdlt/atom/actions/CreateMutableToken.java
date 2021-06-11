@@ -20,10 +20,12 @@ package com.radixdlt.atom.actions;
 
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxAction;
+import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
 
 public final class CreateMutableToken implements TxAction {
+	private final ECPublicKey key;
 	private final String symbol;
 	private final String name;
 	private final String description;
@@ -31,21 +33,27 @@ public final class CreateMutableToken implements TxAction {
 	private final String tokenUrl;
 
 	public CreateMutableToken(MutableTokenDefinition def) {
-		this(def.getSymbol(), def.getName(), def.getDescription(), def.getIconUrl(), def.getTokenUrl());
+		this(def.getKey(), def.getSymbol(), def.getName(), def.getDescription(), def.getIconUrl(), def.getTokenUrl());
 	}
 
 	public CreateMutableToken(
+		ECPublicKey key,
 		String symbol,
 		String name,
 		String description,
 		String iconUrl,
 		String tokenUrl
 	) {
+		this.key = key;
 		this.symbol = symbol.toLowerCase();
 		this.name = Objects.requireNonNull(name);
 		this.description = description;
 		this.iconUrl = iconUrl;
 		this.tokenUrl = tokenUrl;
+	}
+
+	public ECPublicKey getKey() {
+		return key;
 	}
 
 	public String getSymbol() {

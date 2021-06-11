@@ -24,15 +24,16 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.unique.state.UniqueParticle;
-import com.radixdlt.atomos.REAddrParticle;
+import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import org.junit.Rule;
 import org.junit.Test;
@@ -54,13 +55,17 @@ public final class UniqueTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
-	@Inject private RadixEngine<LedgerAndBFTProof> sut;
+	@Inject
+	private RadixEngine<LedgerAndBFTProof> sut;
+
+	@Inject
+	private SubstateSerialization substateSerialization;
 
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
 			new BetanetForksModule(),
-			new RadixEngineOnlyLatestForkModule(View.of(100)),
+			new RadixEngineForksLatestOnlyModule(View.of(100), false),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
@@ -76,9 +81,9 @@ public final class UniqueTest {
 
 	private Txn uniqueTxn(ECKeyPair keyPair) {
 		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
-		var rriParticle = new REAddrParticle(addr);
+		var rriParticle = new UnclaimedREAddr(addr);
 		var uniqueParticle = new UniqueParticle(addr);
-		var atomBuilder = TxLowLevelBuilder.newBuilder()
+		var atomBuilder = TxLowLevelBuilder.newBuilder(substateSerialization)
 			.virtualDown(rriParticle, "test".getBytes(StandardCharsets.UTF_8))
 			.up(uniqueParticle)
 			.end();

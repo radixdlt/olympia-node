@@ -18,33 +18,46 @@
 
 package com.radixdlt.atommodel.unique.scrypt;
 
-import com.radixdlt.atom.actions.Unknown;
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.atomos.ParticleDefinition;
-import com.radixdlt.atomos.SysCalls;
+import com.radixdlt.atomos.SubstateDefinition;
+import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.ConstraintScrypt;
+import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.UpProcedure;
 
+import java.util.Set;
+
 public class UniqueParticleConstraintScrypt implements ConstraintScrypt {
 	@Override
-	public void main(SysCalls os) {
-		os.registerParticle(
-			UniqueParticle.class,
-			ParticleDefinition.<UniqueParticle>builder().build()
+	public void main(Loader os) {
+		os.substate(
+			new SubstateDefinition<>(
+				UniqueParticle.class,
+				Set.of(SubstateTypeId.UNIQUE.id()),
+				(b, buf) -> {
+					var rri = REFieldSerialization.deserializeREAddr(buf);
+					return new UniqueParticle(rri);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.UNIQUE.id());
+					REFieldSerialization.serializeREAddr(buf, s.getREAddr());
+				}
+			)
 		);
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, UniqueParticle.class,
-			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> { },
-			(s, u, r) -> {
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			(s, u, c, r) -> {
 				if (!u.getREAddr().equals(s.getAddr())) {
 					throw new ProcedureException("Addresses don't match");
 				}
-				return ReducerResult.complete(Unknown.create());
+				return ReducerResult.complete();
 			}
 		));
 	}

@@ -34,16 +34,21 @@ import java.util.Optional;
  * High level JSON RPC client API store.
  */
 public interface ClientApiStore {
+	enum BalanceType {
+		SPENDABLE, STAKES, UNSTAKES
+	}
 
 	/**
 	 * Retrieve list of immediately spendable token balances or stakes.
 	 *
 	 * @param addr client address
-	 * @param retrieveStakes {@code true} - retrieve stakes, {@code false} - retrieve spendable balances
+	 * @param type the type of balance
 	 *
 	 * @return list of token balances
 	 */
-	Result<List<BalanceEntry>> getTokenBalances(REAddr addr, boolean retrieveStakes);
+	Result<List<BalanceEntry>> getTokenBalances(REAddr addr, BalanceType type);
+
+	long getEpoch();
 
 	Result<REAddr> parseRri(String rri);
 

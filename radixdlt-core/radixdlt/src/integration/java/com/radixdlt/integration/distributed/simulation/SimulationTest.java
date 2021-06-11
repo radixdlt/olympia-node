@@ -363,6 +363,10 @@ public class SimulationTest {
 				}
 			});
 
+			this.testModules.add(
+				RadixEngineConfig.asModule(minValidators, maxValidators, 50)
+			);
+
 			return this;
 		}
 
@@ -446,6 +450,7 @@ public class SimulationTest {
 		public Builder addRadixEngineConfigModules(Module... modules) {
 			this.modules.add(modules);
 			this.genesisModules.addAll(Arrays.asList(modules));
+			this.testModules.add(modules);
 			return this;
 		}
 
@@ -464,18 +469,19 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder addMempoolSubmissionsSteadyState(TxnGenerator txnGenerator) {
+		public Builder addMempoolSubmissionsSteadyState(Class<? extends TxnGenerator> txnGeneratorClass) {
 			NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
 			this.testModules.add(new AbstractModule() {
 				@Override
 				public void configure() {
 					var multibinder = Multibinder.newSetBinder(binder(), SimulationNetworkActor.class);
 					multibinder.addBinding().to(LocalMempoolPeriodicSubmitter.class);
+					bind(TxnGenerator.class).to(txnGeneratorClass);
 				}
 
 				@Provides
 				@Singleton
-				LocalMempoolPeriodicSubmitter mempoolSubmittor() {
+				LocalMempoolPeriodicSubmitter mempoolSubmittor(TxnGenerator txnGenerator) {
 					return new LocalMempoolPeriodicSubmitter(
 						txnGenerator,
 						nodeSelector
@@ -552,6 +558,18 @@ public class SimulationTest {
 				});
 				modules.add(new LedgerRecoveryModule());
 				modules.add(new ConsensusRecoveryModule());
+
+				// FIXME: A bit of a hack
+				testModules.add(new AbstractModule() {
+					public void configure() {
+						install(new MockedCryptoModule());
+						install(new RadixEngineModule());
+						bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
+						bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
+						bind(SystemCounters.class).toInstance(new SystemCountersImpl());
+						bind(CommittedReader.class).toInstance(CommittedReader.mocked());
+					}
+				});
 			} else {
 				modules.addAll(genesisModules);
 				modules.add(new MockedRecoveryModule());

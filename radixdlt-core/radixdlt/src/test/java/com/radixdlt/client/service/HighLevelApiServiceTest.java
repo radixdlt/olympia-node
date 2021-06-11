@@ -84,7 +84,7 @@ public class HighLevelApiServiceTest {
 		var balance2 = createBalance(OWNER_ACCOUNT, null, rri2, UInt384.NINE);
 		var balances = Result.ok(List.of(balance1, balance2));
 
-		when(clientApiStore.getTokenBalances(OWNER_ACCOUNT, false))
+		when(clientApiStore.getTokenBalances(OWNER_ACCOUNT, ClientApiStore.BalanceType.SPENDABLE))
 			.thenReturn(balances);
 
 		highLevelApiService.getTokenBalances(OWNER_ACCOUNT)
@@ -111,7 +111,7 @@ public class HighLevelApiServiceTest {
 		);
 		var balances = Result.ok(List.of(balance1, balance2, balance3));
 
-		when(clientApiStore.getTokenBalances(OWNER_ACCOUNT, true))
+		when(clientApiStore.getTokenBalances(OWNER_ACCOUNT, ClientApiStore.BalanceType.STAKES))
 			.thenReturn(balances);
 
 		highLevelApiService.getStakePositions(OWNER_ACCOUNT)
@@ -127,7 +127,7 @@ public class HighLevelApiServiceTest {
 	@Test
 	public void testGetTokenDescription() {
 		var token = REAddr.ofHashedKey(TOKEN_KEY, "fff");
-		var definition = TokenDefinitionRecord.from(TOKEN_KEY, mutableTokenDef("fff"));
+		var definition = TokenDefinitionRecord.from(TOKEN_KEY, mutableTokenDef(TOKEN_KEY, "fff"));
 
 		when(clientApiStore.parseRri(any()))
 			.thenReturn(Result.ok(token));
@@ -181,8 +181,9 @@ public class HighLevelApiServiceTest {
 		return TxHistoryEntry.create(txId, now, UInt256.ONE, "text", List.of(action));
 	}
 
-	private CreateMutableToken mutableTokenDef(String symbol) {
+	private CreateMutableToken mutableTokenDef(ECPublicKey key, String symbol) {
 		return new CreateMutableToken(
+			key,
 			symbol,
 			symbol,
 			description(symbol),

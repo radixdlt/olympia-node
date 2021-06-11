@@ -18,7 +18,8 @@
 
 package com.radixdlt.atommodel.system.scrypt;
 
-import com.radixdlt.atom.actions.Unknown;
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.HasEpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
@@ -26,15 +27,15 @@ import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
 import com.radixdlt.atommodel.system.state.ValidatorEpochData;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwned;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.ParticleDefinition;
-import com.radixdlt.atomos.Result;
-import com.radixdlt.atomos.SysCalls;
-import com.radixdlt.constraintmachine.AuthorizationException;
+import com.radixdlt.atomos.SubstateDefinition;
+import com.radixdlt.atomos.Loader;
+import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
@@ -53,10 +54,10 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Function;
 
 public class SystemConstraintScryptV2 implements ConstraintScrypt {
-	public static final int EPOCHS_LOCKED = 1; // Must go through one full epoch before being unlocked
 
 	public static final UInt256 REWARDS_PER_PROPOSAL = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
 
@@ -79,8 +80,51 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		}
 	}
 
-	public SystemConstraintScryptV2() {
-		// Nothing here right now
+	public static final class ProcessExittingStake implements ReducerState {
+		private final UpdatingEpoch updatingEpoch;
+		private final TreeSet<ExittingStake> exitting = new TreeSet<>(
+			(o1, o2) -> Arrays.compare(o1.dataKey(), o2.dataKey())
+		);
+
+		ProcessExittingStake(UpdatingEpoch updatingEpoch) {
+			this.updatingEpoch = updatingEpoch;
+		}
+
+		public ReducerState process(Iterator<ExittingStake> i) throws ProcedureException {
+			i.forEachRemaining(exitting::add);
+
+			return next();
+		}
+
+		public ReducerState unlock(TokensInAccount u) throws ProcedureException {
+			var exit = exitting.first();
+			exitting.remove(exit);
+			if (exit.getEpochUnlocked() != updatingEpoch.prevEpoch.getEpoch()) {
+				throw new ProcedureException("Stake must still be locked.");
+			}
+			var expected = exit.unlock();
+			if (!expected.equals(u)) {
+				throw new ProcedureException("Expecting next state to be " + expected + " but was " + u);
+			}
+
+			return next();
+		}
+
+		public ReducerState nextExit(ExittingStake u) throws ProcedureException {
+			var first = exitting.first();
+			var ownershipUnstake = exitting.remove(first);
+			if (!u.equals(first)) {
+				throw new ProcedureException("Exitting stake must be equivalent.");
+			}
+			if (u.getEpochUnlocked() == updatingEpoch.prevEpoch.getEpoch()) {
+				throw new ProcedureException("Expecting stake to be unlocked.");
+			}
+			return next();
+		}
+
+		public ReducerState next() {
+			return exitting.isEmpty() ? new RewardingValidators(updatingEpoch) : this;
+		}
 	}
 
 	public static final class RewardingValidators implements ReducerState {
@@ -194,29 +238,16 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			this.onDone = onDone;
 		}
 
-		ReducerState unstake(TokensParticle u) throws ProcedureException {
-			if (!u.getResourceAddr().isNativeToken()) {
-				throw new ProcedureException("Can only destake to the native token.");
-			}
-			var epochUnlocked = u.getEpochUnlocked()
-				.orElseThrow(() -> new ProcedureException("Exiting from stake must be locked."));
-
+		ReducerState exit(ExittingStake u) throws ProcedureException {
 			var firstAddr = unstaking.firstKey();
-			if (!Objects.equals(u.getHoldingAddr(), firstAddr)) {
-				throw new ProcedureException("Unstaking incorrect addr");
-			}
 			var ownershipUnstake = unstaking.remove(firstAddr);
-			var nextValidatorAndAmt = current.unstakeOwnership(ownershipUnstake);
-			this.current = nextValidatorAndAmt.getFirst();
-			var expectedAmt = nextValidatorAndAmt.getSecond();
-			if (!expectedAmt.equals(u.getAmount())) {
-				throw new ProcedureException("Invalid amount");
-			}
-
-			var expectedEpochUnlock = updatingEpoch.prevEpoch.getEpoch() + 1 + EPOCHS_LOCKED;
-			if (expectedEpochUnlock != epochUnlocked) {
-				throw new ProcedureException("Incorrect epoch unlock: " + epochUnlocked
-					+ " should be: " + expectedEpochUnlock);
+			var nextValidatorAndExit = current.unstakeOwnership(
+				firstAddr, ownershipUnstake, updatingEpoch.prevEpoch.getEpoch()
+			);
+			this.current = nextValidatorAndExit.getFirst();
+			var expectedExit = nextValidatorAndExit.getSecond();
+			if (!u.equals(expectedExit)) {
+				throw new ProcedureException("Invalid exit expected " + expectedExit + " but was " + u);
 			}
 
 			return unstaking.isEmpty() ? onDone.apply(current) : this;
@@ -236,7 +267,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			this.curStake = curStake;
 		}
 
-		ReducerState unstakes(Iterator<PreparedUnstakeOwned> preparedUnstakeIterator) {
+		ReducerState unstakes(Iterator<PreparedUnstakeOwnership> preparedUnstakeIterator) {
 			preparedUnstakeIterator.forEachRemaining(preparedUnstakeOwned ->
 				preparingUnstake
 					.computeIfAbsent(
@@ -386,7 +417,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 			var expectedUpdate = curStake.remove(k);
 			if (!stake.equals(expectedUpdate)) {
-				throw new ProcedureException("Stake amount does not match.");
+				throw new ProcedureException("Stake amount does not match Expected: " + expectedUpdate + " Actual: " + stake);
 			}
 
 			return curStake.isEmpty() ? new CreatingNextValidatorSet(updatingEpoch) : this;
@@ -396,17 +427,12 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 	private static class AllocatingSystem implements ReducerState {
 	}
 
-	private void registerGenesisTransitions(SysCalls os) {
+	private void registerGenesisTransitions(Loader os) {
 		// For Mainnet Genesis
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, EpochData.class,
-			(u, r) -> PermissionLevel.SYSTEM,
-			(u, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
-			(s, u, r) -> {
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> {
 				if (u.getEpoch() != 0) {
 					throw new ProcedureException("First epoch must be 0.");
 				}
@@ -414,15 +440,10 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				return ReducerResult.incomplete(new AllocatingSystem());
 			}
 		));
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			AllocatingSystem.class, RoundData.class,
-			(u, r) -> PermissionLevel.SYSTEM,
-			(u, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
-			(s, u, r) -> {
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> {
 				if (u.getView() != 0) {
 					throw new ProcedureException("First view must be 0.");
 				}
@@ -432,23 +453,17 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 	}
 
 
-	private void roundUpdate(SysCalls os) {
+	private void roundUpdate(Loader os) {
 		// Round update
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			RoundData.class, VoidReducerState.class,
-			(d, r) -> PermissionLevel.SUPER_USER,
-			(d, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> ReducerResult.incomplete(new RoundClosed(d.getSubstate()))
 		));
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			RoundClosed.class, RoundData.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> { },
-			(s, u, r) -> {
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> {
 				var curData = s.prev;
 				if (curData.getView() >= u.getView()) {
 					throw new ProcedureException("Next view must be greater than previous.");
@@ -457,122 +472,101 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				return ReducerResult.incomplete(new UpdateValidatorEpochData());
 			}
 		));
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			ValidatorEpochData.class, UpdateValidatorEpochData.class,
-			(d, r) -> PermissionLevel.SUPER_USER,
-			(d, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> ReducerResult.incomplete(new UpdatingValidatorEpochData(d.getSubstate()))
 		));
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			UpdatingValidatorEpochData.class, ValidatorEpochData.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
-			(s, u, r) -> {
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> {
 				s.update(u);
-				return ReducerResult.complete(Unknown.create());
+				return ReducerResult.complete();
 			}
 		));
 	}
 
-	private void epochUpdate(SysCalls os) {
+	private void epochUpdate(Loader os) {
 		// Epoch Update
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			EpochData.class, RoundClosed.class,
-			(d, r) -> PermissionLevel.SUPER_USER,
-			(d, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> ReducerResult.incomplete(new UpdatingEpoch(d.getSubstate()))
 		));
 
-		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
-			ValidatorEpochData.class, UpdatingEpoch.class,
-			r -> PermissionLevel.SUPER_USER,
-			(r, k) -> {
-				if (k.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+		os.procedure(new ShutdownAllProcedure<>(
+			ExittingStake.class, UpdatingEpoch.class,
+			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(i, s, r) -> {
-				var rewardingValidators = new RewardingValidators(s);
-				return ReducerResult.incomplete(rewardingValidators.process(i));
+				var exittingStake = new ProcessExittingStake(s);
+				return ReducerResult.incomplete(exittingStake.process(i));
 			}
 		));
+		os.procedure(new UpProcedure<>(
+			ProcessExittingStake.class, ExittingStake.class,
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> ReducerResult.incomplete(s.nextExit(u))
+		));
+		os.procedure(new UpProcedure<>(
+			ProcessExittingStake.class, TokensInAccount.class,
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> ReducerResult.incomplete(s.unlock(u))
+		));
 
-		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
-			PreparedUnstakeOwned.class, PreparingUnstake.class,
-			r -> PermissionLevel.SUPER_USER,
-			(r, k) -> {
-				if (k.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+		os.procedure(new ShutdownAllProcedure<>(
+			ValidatorEpochData.class, RewardingValidators.class,
+			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(i, s, r) -> ReducerResult.incomplete(s.process(i))
+		));
+
+		os.procedure(new ShutdownAllProcedure<>(
+			PreparedUnstakeOwnership.class, PreparingUnstake.class,
+			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(i, s, r) -> ReducerResult.incomplete(s.unstakes(i))
 		));
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			ValidatorStake.class, LoadingStake.class,
-			(d, r) -> PermissionLevel.SUPER_USER,
-			(d, r, k) -> { },
+			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> ReducerResult.incomplete(s.startUpdate(d.getSubstate()))
 		));
-		os.createUpProcedure(new UpProcedure<>(
-			Unstaking.class, TokensParticle.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, k) -> { },
-			(s, u, r) -> ReducerResult.incomplete(s.unstake(u))
+		os.procedure(new UpProcedure<>(
+			Unstaking.class, ExittingStake.class,
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> ReducerResult.incomplete(s.exit(u))
 		));
-		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
+		os.procedure(new ShutdownAllProcedure<>(
 			PreparedStake.class, PreparingStake.class,
-			r -> PermissionLevel.SUPER_USER,
-			(r, k) -> {
-				if (k.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(i, s, r) -> ReducerResult.incomplete(s.prepareStakes(i))
 		));
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			Staking.class, StakeOwnership.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, k) -> { },
-			(s, u, r) -> ReducerResult.incomplete(s.stake(u))
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> ReducerResult.incomplete(s.stake(u))
 		));
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			UpdatingValidatorStakes.class, ValidatorStake.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, k) -> { },
-			(s, u, r) -> ReducerResult.incomplete(s.updateStake(u))
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> ReducerResult.incomplete(s.updateStake(u))
 		));
 
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			CreatingNextValidatorSet.class, ValidatorEpochData.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> { },
-			(s, u, r) -> ReducerResult.incomplete(s.nextValidator(u))
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> ReducerResult.incomplete(s.nextValidator(u))
 		));
 
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			CreatingNextValidatorSet.class, EpochData.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> { },
-			(s, u, r) -> ReducerResult.incomplete(s.nextEpoch(u))
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> ReducerResult.incomplete(s.nextEpoch(u))
 		));
 
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			StartingEpochRound.class, RoundData.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> { },
-			(s, u, r) -> {
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> {
 				if (u.getView() != 0) {
 					throw new ProcedureException("Epoch must start with view 0");
 				}
@@ -583,51 +577,110 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 	}
 
 	@Override
-	public void main(SysCalls os) {
-		os.registerParticle(RoundData.class, ParticleDefinition.<RoundData>builder()
-			.staticValidation(p -> {
-				if (p.getTimestamp() < 0) {
-					return Result.error("Timestamp is less than 0");
+	public void main(Loader os) {
+		os.substate(
+			new SubstateDefinition<>(
+				RoundData.class,
+				Set.of(SubstateTypeId.ROUND_DATA.id()),
+				(b, buf) -> {
+					var view = REFieldSerialization.deserializeNonNegativeLong(buf);
+					var timestamp = REFieldSerialization.deserializeNonNegativeLong(buf);
+					return new RoundData(view, timestamp);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.ROUND_DATA.id());
+					buf.putLong(s.getView());
+					buf.putLong(s.getTimestamp());
+				},
+				p -> p.getView() == 0 && p.getTimestamp() == 0
+			)
+		);
+		os.substate(
+			new SubstateDefinition<>(
+				EpochData.class,
+				Set.of(SubstateTypeId.EPOCH_DATA.id()),
+				(b, buf) -> {
+					var epoch = REFieldSerialization.deserializeNonNegativeLong(buf);
+					return new EpochData(epoch);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.EPOCH_DATA.id());
+					buf.putLong(s.getEpoch());
 				}
-				if (p.getView() < 0) {
-					return Result.error("View is less than 0");
+			)
+		);
+		os.substate(
+			new SubstateDefinition<>(
+				ValidatorStake.class,
+				Set.of(SubstateTypeId.STAKE.id()),
+				(b, buf) -> {
+					var delegate = REFieldSerialization.deserializeKey(buf);
+					var amount = REFieldSerialization.deserializeUInt256(buf);
+					var ownership = REFieldSerialization.deserializeUInt256(buf);
+					return ValidatorStake.create(delegate, amount, ownership);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.STAKE.id());
+					REFieldSerialization.serializeKey(buf, s.getValidatorKey());
+					buf.put(s.getAmount().toByteArray());
+					buf.put(s.getTotalOwnership().toByteArray());
+				},
+				s -> s.getAmount().isZero() && s.getTotalOwnership().isZero()
+			)
+		);
+		os.substate(
+			new SubstateDefinition<>(
+				StakeOwnership.class,
+				Set.of(SubstateTypeId.STAKE_OWNERSHIP.id()),
+				(b, buf) -> {
+					var delegate = REFieldSerialization.deserializeKey(buf);
+					var owner = REFieldSerialization.deserializeREAddr(buf);
+					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
+					return new StakeOwnership(delegate, owner, amount);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.STAKE_OWNERSHIP.id());
+					REFieldSerialization.serializeKey(buf, s.getDelegateKey());
+					REFieldSerialization.serializeREAddr(buf, s.getOwner());
+					buf.put(s.getAmount().toByteArray());
 				}
-				return Result.success();
-			})
-			.virtualizeUp(p -> p.getView() == 0 && p.getTimestamp() == 0)
-			.build()
+			)
 		);
-		os.registerParticle(EpochData.class, ParticleDefinition.<EpochData>builder()
-			.staticValidation(p -> p.getEpoch() < 0 ? Result.error("Epoch is less than 0") : Result.success())
-			.build()
+		os.substate(
+			new SubstateDefinition<>(
+				ExittingStake.class,
+				Set.of(SubstateTypeId.EXITTING_STAKE.id()),
+				(b, buf) -> {
+					var epochUnlocked = REFieldSerialization.deserializeNonNegativeLong(buf);
+					var delegate = REFieldSerialization.deserializeKey(buf);
+					var owner = REFieldSerialization.deserializeREAddr(buf);
+					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
+					return new ExittingStake(delegate, owner, epochUnlocked, amount);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.EXITTING_STAKE.id());
+					buf.putLong(s.getEpochUnlocked());
+					REFieldSerialization.serializeKey(buf, s.getDelegateKey());
+					REFieldSerialization.serializeREAddr(buf, s.getOwner());
+					buf.put(s.getAmount().toByteArray());
+				}
+			)
 		);
-		os.registerParticle(
-			ValidatorStake.class,
-			ParticleDefinition.<ValidatorStake>builder()
-				.virtualizeUp(p -> p.getAmount().isZero())
-				.build()
-		);
-		os.registerParticle(
-			StakeOwnership.class,
-			ParticleDefinition.<StakeOwnership>builder()
-				.staticValidation(s -> {
-					if (s.getAmount().isZero()) {
-						return Result.error("amount must not be zero");
-					}
-					return Result.success();
-				})
-				.build()
-		);
-		os.registerParticle(
-			ValidatorEpochData.class,
-			ParticleDefinition.<ValidatorEpochData>builder()
-				.staticValidation(s -> {
-					if (s.proposalsCompleted() < 0) {
-						return Result.error("proposals completed must be >= 0");
-					}
-					return Result.success();
-				})
-				.build()
+		os.substate(
+			new SubstateDefinition<>(
+				ValidatorEpochData.class,
+				Set.of(SubstateTypeId.VALIDATOR_EPOCH_DATA.id()),
+				(b, buf) -> {
+					var key = REFieldSerialization.deserializeKey(buf);
+					var proposalsCompleted = REFieldSerialization.deserializeNonNegativeLong(buf);
+					return new ValidatorEpochData(key, proposalsCompleted);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.VALIDATOR_EPOCH_DATA.id());
+					REFieldSerialization.serializeKey(buf, s.validatorKey());
+					buf.putLong(s.proposalsCompleted());
+				}
+			)
 		);
 
 		registerGenesisTransitions(os);

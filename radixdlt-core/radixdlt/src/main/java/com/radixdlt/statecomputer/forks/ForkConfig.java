@@ -20,33 +20,60 @@ package com.radixdlt.statecomputer.forks;
 
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.ConstraintMachineConfig;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.engine.BatchVerifier;
+import com.radixdlt.engine.PostProcessedVerifier;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
 /**
  * Configuration used for hard forks
  */
 public final class ForkConfig {
-	private final ConstraintMachine constraintMachine;
+	private final String name;
+	private final REParser parser;
+	private final SubstateSerialization serialization;
+	private final ConstraintMachineConfig constraintMachineConfig;
 	private final ActionConstructors actionConstructors;
 	private final BatchVerifier<LedgerAndBFTProof> batchVerifier;
+	private final PostProcessedVerifier postProcessedVerifier;
 	private final View epochCeilingView;
 
 	public ForkConfig(
-		ConstraintMachine constraintMachine,
+		String name,
+		REParser parser,
+		SubstateSerialization serialization,
+		ConstraintMachineConfig constraintMachineConfig,
 		ActionConstructors actionConstructors,
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
+		PostProcessedVerifier postProcessedVerifier,
 		View epochCeilingView
 	) {
-		this.constraintMachine = constraintMachine;
+		this.name = name;
+		this.parser = parser;
+		this.serialization = serialization;
+		this.constraintMachineConfig = constraintMachineConfig;
 		this.actionConstructors = actionConstructors;
 		this.batchVerifier = batchVerifier;
+		this.postProcessedVerifier = postProcessedVerifier;
 		this.epochCeilingView = epochCeilingView;
 	}
 
-	public ConstraintMachine getConstraintMachine() {
-		return constraintMachine;
+	public String getName() {
+		return name;
+	}
+
+	public REParser getParser() {
+		return parser;
+	}
+
+	public SubstateSerialization getSubstateSerialization() {
+		return serialization;
+	}
+
+	public ConstraintMachineConfig getConstraintMachineConfig() {
+		return constraintMachineConfig;
 	}
 
 	public ActionConstructors getActionConstructors() {
@@ -55,6 +82,10 @@ public final class ForkConfig {
 
 	public BatchVerifier<LedgerAndBFTProof> getBatchVerifier() {
 		return batchVerifier;
+	}
+
+	public PostProcessedVerifier getPostProcessedVerifier() {
+		return postProcessedVerifier;
 	}
 
 	public View getEpochCeilingView() {

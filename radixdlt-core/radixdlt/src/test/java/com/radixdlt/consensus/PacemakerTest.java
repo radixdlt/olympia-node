@@ -40,7 +40,7 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import org.assertj.core.api.Condition;
 import org.junit.Rule;
@@ -68,7 +68,7 @@ public class PacemakerTest {
 			MempoolConfig.asModule(10, 10),
 			new BetanetForksModule(),
 			RadixEngineConfig.asModule(1, Integer.MAX_VALUE, 50),
-			new RadixEngineOnlyLatestForkModule(View.of(100L)),
+			new RadixEngineForksLatestOnlyModule(View.of(100L), false),
 			new MockedGenesisModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new AbstractModule() {

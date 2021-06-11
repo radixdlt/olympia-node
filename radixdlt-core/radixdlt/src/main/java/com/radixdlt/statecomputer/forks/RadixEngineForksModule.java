@@ -21,14 +21,6 @@ package com.radixdlt.statecomputer.forks;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.atom.ActionConstructors;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.engine.BatchVerifier;
-import com.radixdlt.statecomputer.EpochCeilingView;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.sync.CommittedReader;
 
 import java.util.Map;
 import java.util.TreeMap;
@@ -49,49 +41,4 @@ public final class RadixEngineForksModule extends AbstractModule {
 		);
 	}
 
-	@Provides
-	@Singleton
-	@EpochCeilingView
-	private View epochCeilingHighView(
-		CommittedReader committedReader, // TODO: This is a hack, remove
-		TreeMap<Long, ForkConfig> epochToForkConfig
-	) {
-		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
-		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return epochToForkConfig.floorEntry(epoch).getValue().getEpochCeilingView();
-	}
-
-	@Provides
-	@Singleton
-	private ConstraintMachine buildConstraintMachine(
-		CommittedReader committedReader, // TODO: This is a hack, remove
-		TreeMap<Long, ForkConfig> epochToForkConfig
-	) {
-		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
-		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return epochToForkConfig.floorEntry(epoch).getValue().getConstraintMachine();
-	}
-
-
-	@Provides
-	@Singleton
-	private ActionConstructors actionConstructors(
-		CommittedReader committedReader, // TODO: This is a hack, remove
-		TreeMap<Long, ForkConfig> epochToForkConfig
-	) {
-		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
-		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return epochToForkConfig.floorEntry(epoch).getValue().getActionConstructors();
-	}
-
-	@Provides
-	@Singleton
-	private BatchVerifier<LedgerAndBFTProof> batchVerifier(
-		CommittedReader committedReader, // TODO: This is a hack, remove
-		TreeMap<Long, ForkConfig> epochToForkConfig
-	) {
-		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
-		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return epochToForkConfig.floorEntry(epoch).getValue().getBatchVerifier();
-	}
 }

@@ -28,8 +28,8 @@ import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.constraintmachine.SubstateSerialization;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import org.junit.Before;
@@ -44,19 +44,20 @@ import java.util.List;
 public class SystemTest {
 	private RadixEngine<Void> engine;
 	private EngineStore<Void> store;
-	private ECPublicKey key = ECKeyPair.generateNew().getPublicKey();
+	private SubstateSerialization serialization;
 
 	@Before
 	public void setup() {
-		CMAtomOS cmAtomOS = new CMAtomOS();
+		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new SystemConstraintScryptV1());
-		ConstraintMachine cm = new ConstraintMachine.Builder()
-			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
-			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
-			.setParticleTransitionProcedures(cmAtomOS.getProcedures())
-			.build();
+		var cm = new ConstraintMachine(
+			cmAtomOS.virtualizedUpParticles(),
+			cmAtomOS.getProcedures()
+		);
+		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
+		this.serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();
-		this.engine = new RadixEngine<>(ActionConstructors.newBuilder().build(), cm, store);
+		this.engine = new RadixEngine<>(parser, serialization, ActionConstructors.newBuilder().build(), cm, store);
 	}
 
 	@Test
@@ -64,7 +65,7 @@ public class SystemTest {
 		// Arrange
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, 1, 1);
-		var atom = TxLowLevelBuilder.newBuilder()
+		var atom = TxLowLevelBuilder.newBuilder(this.serialization)
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
 			.end()
@@ -84,7 +85,7 @@ public class SystemTest {
 		// Arrange
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, 1, 1);
-		var atom = TxLowLevelBuilder.newBuilder()
+		var atom = TxLowLevelBuilder.newBuilder(this.serialization)
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
 			.end()
@@ -99,7 +100,7 @@ public class SystemTest {
 	public void executing_system_update_with_bad_epoch_should_fail() {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(-1, 1, 1);
-		var atom = TxLowLevelBuilder.newBuilder()
+		var atom = TxLowLevelBuilder.newBuilder(this.serialization)
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
 			.end()
@@ -113,7 +114,7 @@ public class SystemTest {
 	public void executing_system_update_with_bad_view_should_fail() {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, -1, 1);
-		var atom = TxLowLevelBuilder.newBuilder()
+		var atom = TxLowLevelBuilder.newBuilder(this.serialization)
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
 			.end()
@@ -127,7 +128,7 @@ public class SystemTest {
 	public void executing_system_update_with_bad_timestamp_should_fail() {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, 1, -1);
-		var txn = TxLowLevelBuilder.newBuilder()
+		var txn = TxLowLevelBuilder.newBuilder(this.serialization)
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
 			.end()
@@ -158,7 +159,7 @@ public class SystemTest {
 		// Arrange
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, 10, 1);
-		var txn = TxLowLevelBuilder.newBuilder()
+		var txn = TxLowLevelBuilder.newBuilder(this.serialization)
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
 			.end()
@@ -176,7 +177,7 @@ public class SystemTest {
 	private void preconditionFailure(long epoch, long view) {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(epoch, view, 1);
-		var txn = TxLowLevelBuilder.newBuilder()
+		var txn = TxLowLevelBuilder.newBuilder(this.serialization)
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
 			.end()

@@ -26,15 +26,17 @@ import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
-import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.atomos.REAddrParticle;
+import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -50,18 +52,23 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class TokenDefinitionTest {
 	private RadixEngine<Void> engine;
 	private EngineStore<Void> store;
+	private REParser parser;
+	private SubstateSerialization serialization;
 
 	@Before
 	public void setup() {
-		CMAtomOS cmAtomOS = new CMAtomOS();
+		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new TokensConstraintScryptV1());
-		ConstraintMachine cm = new ConstraintMachine.Builder()
-			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
-			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
-			.setParticleTransitionProcedures(cmAtomOS.getProcedures())
-			.build();
+		var cm = new ConstraintMachine(
+			cmAtomOS.virtualizedUpParticles(),
+			cmAtomOS.getProcedures()
+		);
+		this.parser = new REParser(cmAtomOS.buildSubstateDeserialization());
+		this.serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
+			parser,
+			serialization,
 			ActionConstructors.newBuilder()
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
@@ -76,8 +83,8 @@ public class TokenDefinitionTest {
 		// Arrange
 		var keyPair = ECKeyPair.generateNew();
 		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
-		var addrParticle = new REAddrParticle(addr);
-		var tokenDefinitionParticle = new TokenDefinitionParticle(
+		var addrParticle = new UnclaimedREAddr(addr);
+		var tokenDefinitionParticle = new TokenResource(
 			addr,
 			"TEST",
 			"description",
@@ -87,12 +94,12 @@ public class TokenDefinitionTest {
 		);
 
 		var holdingAddress = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
-		var tokensParticle = new TokensParticle(
+		var tokensParticle = new TokensInAccount(
 			holdingAddress,
 			UInt256.TEN,
 			addr
 		);
-		var builder = TxLowLevelBuilder.newBuilder()
+		var builder = TxLowLevelBuilder.newBuilder(serialization)
 			.virtualDown(addrParticle, "test".getBytes(StandardCharsets.UTF_8))
 			.up(tokenDefinitionParticle)
 			.up(tokensParticle)
@@ -110,8 +117,8 @@ public class TokenDefinitionTest {
 		// Arrange
 		var keyPair = ECKeyPair.generateNew();
 		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
-		var addrParticle = new REAddrParticle(addr);
-		var tokenDefinitionParticle = new TokenDefinitionParticle(
+		var addrParticle = new UnclaimedREAddr(addr);
+		var tokenDefinitionParticle = new TokenResource(
 			addr,
 			"TEST",
 			"description",
@@ -119,7 +126,7 @@ public class TokenDefinitionTest {
 			"",
 			UInt256.TEN
 		);
-		var builder = TxLowLevelBuilder.newBuilder()
+		var builder = TxLowLevelBuilder.newBuilder(serialization)
 			.virtualDown(addrParticle, "test".getBytes(StandardCharsets.UTF_8))
 			.up(tokenDefinitionParticle)
 			.end();
@@ -136,7 +143,7 @@ public class TokenDefinitionTest {
 		var keyPair = ECKeyPair.generateNew();
 		// Arrange
 		var addr = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "smthng");
-		var tokenDefinitionParticle = new TokenDefinitionParticle(
+		var tokenDefinitionParticle = new TokenResource(
 			addr,
 			"TEST",
 			"description",
@@ -144,9 +151,9 @@ public class TokenDefinitionTest {
 			"",
 			keyPair.getPublicKey()
 		);
-		var builder = TxBuilder.newBuilder(keyPair.getPublicKey())
+		var builder = TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization)
 			.toLowLevelBuilder()
-			.virtualDown(new REAddrParticle(addr), "smthng".getBytes(StandardCharsets.UTF_8))
+			.virtualDown(new UnclaimedREAddr(addr), "smthng".getBytes(StandardCharsets.UTF_8))
 			.up(tokenDefinitionParticle)
 			.end();
 		var sig = keyPair.sign(builder.hashToSign());

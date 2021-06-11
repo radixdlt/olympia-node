@@ -27,6 +27,7 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -35,7 +36,7 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import org.junit.Rule;
 import org.junit.Test;
@@ -52,11 +53,14 @@ public class ValidatorTest {
 	@Inject
 	private RadixEngine<LedgerAndBFTProof> sut;
 
+	@Inject
+	private SubstateSerialization substateSerialization;
+
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
 			new BetanetForksModule(),
-			new RadixEngineOnlyLatestForkModule(View.of(100)),
+			new RadixEngineForksLatestOnlyModule(View.of(100), false),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
@@ -75,7 +79,7 @@ public class ValidatorTest {
 		// Arrange
 		createInjector().injectMembers(this);
 		var keyPair = ECKeyPair.generateNew();
-		var builder = TxLowLevelBuilder.newBuilder()
+		var builder = TxLowLevelBuilder.newBuilder(substateSerialization)
 			.virtualDown(new ValidatorParticle(keyPair.getPublicKey(), false))
 			.up(new ValidatorParticle(keyPair.getPublicKey(), true))
 			.up(new ValidatorParticle(keyPair.getPublicKey(), true));

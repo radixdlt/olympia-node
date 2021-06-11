@@ -126,7 +126,9 @@
             <property name="processJavadoc" value="false"/>
         </module>
 
-        <module name="MethodLength"/>
+        <module name="MethodLength">
+            <property name="max" value="175"/>
+        </module>
         <!-- module name="ParameterNumber"/ -->
 
         <!-- Checks for whitespace                               -->
@@ -140,7 +142,9 @@
         <module name="ParenPad"/>
         <module name="TypecastParenPad"/>
         <module name="WhitespaceAfter"/>
-        <module name="WhitespaceAround"/>
+        <module name="WhitespaceAround">
+            <property name="allowEmptyTypes" value="true" />
+        </module>
 
         <!-- Modifier Checks                                    -->
         <!-- See http://checkstyle.sf.net/config_modifiers.html -->

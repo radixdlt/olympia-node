@@ -28,7 +28,6 @@ import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.berkeley.BalanceEntry;
-import com.radixdlt.client.store.berkeley.UnstakeEntry;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.universe.Universe;
@@ -55,12 +54,16 @@ public class HighLevelApiService {
 		this.clientApiStore = clientApiStore;
 	}
 
+	public long getEpoch() {
+		return clientApiStore.getEpoch();
+	}
+
 	public int getUniverseMagic() {
 		return universe.getMagic();
 	}
 
 	public Result<List<TokenBalance>> getTokenBalances(REAddr addr) {
-		return clientApiStore.getTokenBalances(addr, false)
+		return clientApiStore.getTokenBalances(addr, ClientApiStore.BalanceType.SPENDABLE)
 			.map(list -> list.stream().map(TokenBalance::from).collect(Collectors.toList()));
 	}
 
@@ -91,12 +94,12 @@ public class HighLevelApiService {
 	}
 
 	public Result<List<BalanceEntry>> getStakePositions(REAddr addr) {
-		return clientApiStore.getTokenBalances(addr, true);
+		return clientApiStore.getTokenBalances(addr, ClientApiStore.BalanceType.STAKES);
 	}
 
 	// Everything is immediately spendable in betanet
-	public Result<List<UnstakeEntry>> getUnstakePositions(REAddr addr) {
-		return Result.ok(List.of());
+	public Result<List<BalanceEntry>> getUnstakePositions(REAddr addr) {
+		return clientApiStore.getTokenBalances(addr, ClientApiStore.BalanceType.UNSTAKES);
 	}
 
 	private static Optional<Instant> calculateNewCursor(List<TxHistoryEntry> response) {

@@ -32,19 +32,16 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnstakeOwnership;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.identifiers.REAddr;
@@ -52,13 +49,12 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import org.junit.Rule;
 import org.junit.Test;
@@ -70,7 +66,6 @@ import org.radix.TokenIssuance;
 import java.util.Collection;
 import java.util.List;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 @RunWith(Parameterized.class)
@@ -116,7 +111,7 @@ public class UnstakingLockedTokensTest {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
 			new BetanetForksModule(),
-			new RadixEngineOnlyLatestForkModule(View.of(100)),
+			new RadixEngineForksLatestOnlyModule(View.of(100), false),
 			RadixEngineConfig.asModule(1, 10, 10),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
@@ -183,7 +178,7 @@ public class UnstakingLockedTokensTest {
 			EpochsLedgerUpdate.class,
 			e -> e.getEpochChange().map(c -> c.getEpoch() == unstakingEpoch).orElse(false)
 		);
-		var unstakeTxn = dispatchAndWaitForCommit(new UnstakeOwnership(accountAddr, self, ValidatorStake.MINIMUM_STAKE));
+		var unstakeTxn = dispatchAndWaitForCommit(new UnstakeTokens(accountAddr, self, ValidatorStake.MINIMUM_STAKE));
 
 		if (transferEpoch > unstakingEpoch) {
 			runner.runNextEventsThrough(
@@ -200,29 +195,6 @@ public class UnstakingLockedTokensTest {
 			radixEngine.construct(transferAction);
 		} else {
 			assertThatThrownBy(() -> radixEngine.construct(transferAction)).isInstanceOf(TxBuilderException.class);
-		}
-
-		// Build transaction manually which spends locked transaction
-		var txn = radixEngine.construct(txBuilder -> {
-			txBuilder.swapFungible(
-				TokensParticle.class,
-				p -> p.getResourceAddr().isNativeToken()
-					&& p.getHoldingAddr().equals(accountAddr)
-					&& p.getEpochUnlocked().isPresent(),
-				amt -> new TokensParticle(accountAddr, amt, REAddr.ofNativeToken()),
-				ValidatorStake.MINIMUM_STAKE,
-				"Not enough balance for transfer."
-			).with(amt -> new TokensParticle(otherAddr, amt, REAddr.ofNativeToken()));
-			txBuilder.end();
-		}).signAndBuild(hashSigner::sign);
-		if (shouldSucceed) {
-			dispatchAndWaitForCommit(txn);
-		} else {
-			var transferFailure = dispatchAndCheckForError(txn);
-			var ex = (MempoolRejectedException) transferFailure.getException();
-			var reException = (RadixEngineException) ex.getCause();
-			assertThat(reException).extracting("cause.errorCode")
-				.containsExactly(CMErrorCode.AUTHORIZATION_ERROR);
 		}
 	}
 }

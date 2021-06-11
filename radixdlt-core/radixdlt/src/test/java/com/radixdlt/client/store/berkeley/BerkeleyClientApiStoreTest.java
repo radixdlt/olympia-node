@@ -17,17 +17,19 @@
 package com.radixdlt.client.store.berkeley;
 
 import com.radixdlt.api.construction.TxnParser;
-import com.radixdlt.atom.TxActionListBuilder;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.client.Rri;
 import com.radixdlt.client.store.TransactionParser;
-import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.utils.UInt384;
 import org.junit.Assert;
 import org.junit.Before;
@@ -105,13 +107,13 @@ public class BerkeleyClientApiStoreTest {
 	private RadixEngine<LedgerAndBFTProof> engine;
 
 	@Inject
-	private ConstraintMachine constraintMachine;
+	private REParser parser;
 
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 0),
 			new BetanetForksModule(),
-			new RadixEngineOnlyLatestForkModule(View.of(100)),
+			new RadixEngineForksLatestOnlyModule(View.of(100), false),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
@@ -134,18 +136,18 @@ public class BerkeleyClientApiStoreTest {
 
 	@Test
 	public void tokenBalancesAreReturned() throws Exception {
-		var tokenDef = prepareMutableTokenDef(SYMBOL);
-		var tx = engine.construct(TOKEN_KEYPAIR.getPublicKey(), TxActionListBuilder.create()
-			.createMutableToken(tokenDef)
-			.mint(TOKEN, TOKEN_ACCOUNT, UInt256.EIGHT)
-			.burn(TOKEN, TOKEN_ACCOUNT, UInt256.ONE)
-			.transfer(TOKEN, TOKEN_ACCOUNT, OWNER_ACCOUNT, UInt256.FOUR)
-			.build()
+		var tokenDef = prepareMutableTokenDef(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
+		var tx = engine.construct(
+			TxnConstructionRequest.create()
+				.createMutableToken(tokenDef)
+				.mint(TOKEN, TOKEN_ACCOUNT, UInt256.EIGHT)
+				.burn(TOKEN, TOKEN_ACCOUNT, UInt256.ONE)
+				.transfer(TOKEN, TOKEN_ACCOUNT, OWNER_ACCOUNT, UInt256.FOUR)
 		).signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var clientApiStore = prepareApiStore(tx);
 
-		clientApiStore.getTokenBalances(TOKEN_ACCOUNT, false)
+		clientApiStore.getTokenBalances(TOKEN_ACCOUNT, ClientApiStore.BalanceType.SPENDABLE)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
 				assertEquals(UInt384.THREE, list.get(0).getAmount());
@@ -153,7 +155,7 @@ public class BerkeleyClientApiStoreTest {
 			})
 			.onFailureDo(() -> fail("Failure is not expected here"));
 
-		clientApiStore.getTokenBalances(OWNER_ACCOUNT, false)
+		clientApiStore.getTokenBalances(OWNER_ACCOUNT, ClientApiStore.BalanceType.SPENDABLE)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
 				assertEquals(UInt384.FOUR, list.get(0).getAmount());
@@ -164,10 +166,10 @@ public class BerkeleyClientApiStoreTest {
 
 	@Test
 	public void tokenSupplyIsCalculateProperlyForInitialTokenIssuance() throws Exception {
-		var tokenDef = prepareMutableTokenDef(SYMBOL);
+		var tokenDef = prepareMutableTokenDef(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
 		var addr = REAddr.ofHashedKey(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
 		var rri = Rri.of(SYMBOL, addr);
-		var tx = engine.construct(TOKEN_KEYPAIR.getPublicKey(), new CreateMutableToken(tokenDef))
+		var tx = engine.construct(new CreateMutableToken(tokenDef))
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var clientApiStore = prepareApiStore(tx);
@@ -179,14 +181,14 @@ public class BerkeleyClientApiStoreTest {
 
 	@Test
 	public void tokenSupplyIsCalculateProperlyAfterBurnMint() throws Exception {
-		var tokenDef = prepareMutableTokenDef(SYMBOL);
+		var tokenDef = prepareMutableTokenDef(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
 		var addr = REAddr.ofHashedKey(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
 		var rri = Rri.of(SYMBOL, addr);
-		var tx = engine.construct(TOKEN_KEYPAIR.getPublicKey(), TxActionListBuilder.create()
-			.createMutableToken(tokenDef)
-			.mint(TOKEN, TOKEN_ACCOUNT, UInt256.TEN)
-			.burn(TOKEN, TOKEN_ACCOUNT, UInt256.TWO)
-			.build()
+		var tx = engine.construct(
+			TxnConstructionRequest.create()
+				.createMutableToken(tokenDef)
+				.mint(TOKEN, TOKEN_ACCOUNT, UInt256.TEN)
+				.burn(TOKEN, TOKEN_ACCOUNT, UInt256.TWO)
 		).signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var clientApiStore = prepareApiStore(tx);
@@ -198,8 +200,8 @@ public class BerkeleyClientApiStoreTest {
 
 	@Test
 	public void mutableTokenDefinitionIsStoredAndAccessible() throws Exception {
-		var tokenDef = prepareMutableTokenDef(SYMBOL);
-		var tx = engine.construct(TOKEN_KEYPAIR.getPublicKey(), new CreateMutableToken(tokenDef))
+		var tokenDef = prepareMutableTokenDef(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
+		var tx = engine.construct(new CreateMutableToken(tokenDef))
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 		var clientApiStore = prepareApiStore(tx);
 
@@ -220,8 +222,7 @@ public class BerkeleyClientApiStoreTest {
 			"",
 			UInt256.ONE
 		);
-		var tx = engine.construct(TOKEN_KEYPAIR.getPublicKey(), createFixedToken)
-			.signAndBuild(TOKEN_KEYPAIR::sign);
+		var tx = engine.construct(createFixedToken).signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var clientApiStore = prepareApiStore(tx);
 
@@ -233,13 +234,13 @@ public class BerkeleyClientApiStoreTest {
 	@Test
 	@Ignore("Something weird going on with this test.")
 	public void transactionHistoryIsReturnedInPages() throws Exception {
-		var tokenDef = prepareMutableTokenDef(SYMBOL);
-		var tx = engine.construct(TOKEN_KEYPAIR.getPublicKey(), TxActionListBuilder.create()
-			.createMutableToken(tokenDef)
-			.mint(TOKEN, TOKEN_ACCOUNT, UInt256.TEN)
-			.transfer(TOKEN, TOKEN_ACCOUNT, OWNER_ACCOUNT, UInt256.FOUR)
-			.burn(TOKEN, TOKEN_ACCOUNT, UInt256.ONE)
-			.build()
+		var tokenDef = prepareMutableTokenDef(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
+		var tx = engine.construct(
+			TxnConstructionRequest.create()
+				.createMutableToken(tokenDef)
+				.mint(TOKEN, TOKEN_ACCOUNT, UInt256.TEN)
+				.transfer(TOKEN, TOKEN_ACCOUNT, OWNER_ACCOUNT, UInt256.FOUR)
+				.burn(TOKEN, TOKEN_ACCOUNT, UInt256.ONE)
 		).signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var clientApiStore = prepareApiStore(tx);
@@ -274,13 +275,13 @@ public class BerkeleyClientApiStoreTest {
 
 	@Test
 	public void singleTransactionIsLocatedAndReturned() throws Exception {
-		var tokenDef = prepareMutableTokenDef(SYMBOL);
-		var tx = engine.construct(TOKEN_KEYPAIR.getPublicKey(), TxActionListBuilder.create()
-			.createMutableToken(tokenDef)
-			.mint(TOKEN, TOKEN_ACCOUNT, UInt256.TEN)
-			.transfer(TOKEN, TOKEN_ACCOUNT, OWNER_ACCOUNT, UInt256.FOUR)
-			.burn(TOKEN, TOKEN_ACCOUNT, UInt256.ONE)
-			.build()
+		var tokenDef = prepareMutableTokenDef(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
+		var tx = engine.construct(
+			TxnConstructionRequest.create()
+				.createMutableToken(tokenDef)
+				.mint(TOKEN, TOKEN_ACCOUNT, UInt256.TEN)
+				.transfer(TOKEN, TOKEN_ACCOUNT, OWNER_ACCOUNT, UInt256.FOUR)
+				.burn(TOKEN, TOKEN_ACCOUNT, UInt256.ONE)
 		).signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var txMap = new HashMap<AID, Txn>();
@@ -296,13 +297,13 @@ public class BerkeleyClientApiStoreTest {
 
 	@Test
 	public void incorrectPageSizeIsRejected() throws TxBuilderException, RadixEngineException {
-		var tokenDef = prepareMutableTokenDef(SYMBOL);
-		var tx = engine.construct(TOKEN_KEYPAIR.getPublicKey(), TxActionListBuilder.create()
-			.createMutableToken(tokenDef)
-			.mint(TOKEN, TOKEN_ACCOUNT, UInt256.TEN)
-			.transfer(TOKEN, TOKEN_ACCOUNT, OWNER_ACCOUNT, UInt256.FOUR)
-			.burn(TOKEN, TOKEN_ACCOUNT, UInt256.ONE)
-			.build()
+		var tokenDef = prepareMutableTokenDef(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
+		var tx = engine.construct(
+			TxnConstructionRequest.create()
+				.createMutableToken(tokenDef)
+				.mint(TOKEN, TOKEN_ACCOUNT, UInt256.TEN)
+				.transfer(TOKEN, TOKEN_ACCOUNT, OWNER_ACCOUNT, UInt256.FOUR)
+				.burn(TOKEN, TOKEN_ACCOUNT, UInt256.ONE)
 		).signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var clientApiStore = prepareApiStore(tx);
@@ -334,7 +335,7 @@ public class BerkeleyClientApiStoreTest {
 
 		return new BerkeleyClientApiStore(
 			environment,
-			constraintMachine,
+			parser,
 			txnParser,
 			ledgerStore,
 			serialization,
@@ -349,9 +350,9 @@ public class BerkeleyClientApiStoreTest {
 		Assert.fail(failure.message());
 	}
 
-	private MutableTokenDefinition prepareMutableTokenDef(String symbol) {
+	private MutableTokenDefinition prepareMutableTokenDef(ECPublicKey key, String symbol) {
 		return new MutableTokenDefinition(
-			symbol, symbol, symbol, null, null
+			key, symbol, symbol, symbol, null, null
 		);
 	}
 

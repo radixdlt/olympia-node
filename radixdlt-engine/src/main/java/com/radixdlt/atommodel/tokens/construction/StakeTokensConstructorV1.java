@@ -24,19 +24,19 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.identifiers.REAddr;
 
 public final class StakeTokensConstructorV1 implements ActionConstructor<StakeTokens> {
 	@Override
 	public void construct(StakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.deprecatedSwapFungible(
-			TokensParticle.class,
+			TokensInAccount.class,
 			p -> p.getResourceAddr().isNativeToken()
 				&& p.getHoldingAddr().equals(action.from())
 				&& (action.amount().compareTo(TokenUnitConversions.SUB_UNITS) < 0
 				|| p.getAmount().compareTo(TokenUnitConversions.unitsToSubunits(1)) >= 0),
-			amt -> new TokensParticle(action.from(), amt, REAddr.ofNativeToken()),
+			amt -> new TokensInAccount(action.from(), amt, REAddr.ofNativeToken()),
 			action.amount(),
 			"Not enough balance for staking."
 		).with(amt -> new PreparedStake(amt, action.from(), action.to()));

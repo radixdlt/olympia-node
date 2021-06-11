@@ -18,8 +18,10 @@
 
 package com.radixdlt.atommodel.system.state;
 
+import com.radixdlt.atommodel.tokens.ResourceInBucket;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.atommodel.tokens.Bucket;
+import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -29,10 +31,12 @@ import com.radixdlt.utils.UInt384;
 
 import java.util.Objects;
 
-public final class ValidatorStake implements Particle {
+public final class ValidatorStake implements ResourceInBucket {
 	public static final UInt256 MINIMUM_STAKE = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
+	public static final int EPOCHS_LOCKED = 1; // Must go through one full epoch before being unlocked
 
 	private final UInt256 totalStake;
+
 	private final UInt256 totalOwnership;
 
 	// Bucket keys
@@ -65,6 +69,16 @@ public final class ValidatorStake implements Particle {
 		return new ValidatorStake(validatorKey, totalStake, totalOwnership);
 	}
 
+	@Override
+	public UInt256 getAmount() {
+		return this.totalStake;
+	}
+
+	@Override
+	public Bucket bucket() {
+		return new ValidatorStakeBucket(validatorKey);
+	}
+
 	public ValidatorStake addEmission(UInt256 amount) {
 		return new ValidatorStake(
 			validatorKey,
@@ -74,10 +88,6 @@ public final class ValidatorStake implements Particle {
 	}
 
 	public Pair<ValidatorStake, StakeOwnership> stake(REAddr owner, UInt256 stake) throws ProcedureException {
-		if (stake.compareTo(MINIMUM_STAKE) < 0) {
-			throw new ProcedureException("Trying to stake " + stake + " but minimum stake is " + MINIMUM_STAKE);
-		}
-
 		if (totalStake.isZero()) {
 			var nextValidatorStake = new ValidatorStake(validatorKey, stake, stake);
 			var stakeOwnership = new StakeOwnership(validatorKey, owner, stake);
@@ -94,7 +104,7 @@ public final class ValidatorStake implements Particle {
 		return Pair.of(nextValidatorStake, stakeOwnership);
 	}
 
-	public Pair<ValidatorStake, UInt256> unstakeOwnership(UInt256 unstakeOwnership) {
+	public Pair<ValidatorStake, ExittingStake> unstakeOwnership(REAddr owner, UInt256 unstakeOwnership, long curEpoch) {
 		if (totalOwnership.compareTo(unstakeOwnership) < 0) {
 			throw new IllegalStateException("Not enough ownership");
 		}
@@ -105,7 +115,9 @@ public final class ValidatorStake implements Particle {
 		}
 		var unstaked = unstaked384.getLow();
 		var nextValidatorStake = new ValidatorStake(validatorKey, totalStake.subtract(unstaked), totalOwnership.subtract(unstakeOwnership));
-		return Pair.of(nextValidatorStake, unstaked);
+		var epochUnlocked = curEpoch + EPOCHS_LOCKED;
+		var exittingStake = new ExittingStake(validatorKey, owner, epochUnlocked, unstaked);
+		return Pair.of(nextValidatorStake, exittingStake);
 	}
 
 	public ECPublicKey getValidatorKey() {
@@ -123,10 +135,6 @@ public final class ValidatorStake implements Particle {
 
 	public UInt256 getTotalOwnership() {
 		return this.totalOwnership;
-	}
-
-	public UInt256 getAmount() {
-		return this.totalStake;
 	}
 
 	@Override

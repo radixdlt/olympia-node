@@ -18,12 +18,14 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
+import com.radixdlt.engine.parser.ParsedTxn;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.utils.UInt256;
 
 import java.util.List;
 import java.util.Objects;
@@ -34,37 +36,35 @@ import java.util.stream.Stream;
  * Transaction which has been successfully parsed and state checked by radix engine
  */
 public final class REProcessedTxn {
-	private final Txn txn;
 	private final List<List<REStateUpdate>> stateUpdates;
-	private final List<REParsedAction> actions;
-	private final ConstraintMachine.ParseResult statelessResult;
+	private final ParsedTxn parsedTxn;
 
 	public REProcessedTxn(
-		Txn txn,
-		ConstraintMachine.ParseResult statelessResult,
-		List<List<REStateUpdate>> stateUpdates,
-		List<REParsedAction> actions
+		ParsedTxn parsedTxn,
+		List<List<REStateUpdate>> stateUpdates
 	) {
-		this.txn = txn;
+		this.parsedTxn = parsedTxn;
 		this.stateUpdates = stateUpdates;
-		this.actions = actions;
-		this.statelessResult = statelessResult;
+	}
+
+	public UInt256 getFeePaid() {
+		return parsedTxn.getFeePaid();
 	}
 
 	public Optional<byte[]> getMsg() {
-		return statelessResult.getMsg();
+		return parsedTxn.getMsg();
 	}
 
 	public Optional<ECPublicKey> getSignedBy() {
-		return statelessResult.getSignedBy();
+		return parsedTxn.getSignedBy();
 	}
 
-	public List<REParsedAction> getActions() {
-		return actions;
+	public AID getTxnId() {
+		return parsedTxn.txn().getId();
 	}
 
 	public Txn getTxn() {
-		return txn;
+		return parsedTxn.txn();
 	}
 
 	// FIXME: Currently a hack, better would be to put this at transaction layer for fees
@@ -82,16 +82,9 @@ public final class REProcessedTxn {
 		return stateUpdates.stream().flatMap(List::stream);
 	}
 
-	public Stream<Particle> upSubstates() {
-		return stateUpdates()
-			.filter(REStateUpdate::isBootUp)
-			.map(REStateUpdate::getSubstate)
-			.map(Substate::getParticle);
-	}
-
 	@Override
 	public int hashCode() {
-		return Objects.hash(txn, actions);
+		return Objects.hash(stateUpdates, parsedTxn);
 	}
 
 	@Override
@@ -101,12 +94,12 @@ public final class REProcessedTxn {
 		}
 
 		var other = (REProcessedTxn) o;
-		return Objects.equals(this.txn, other.txn)
-			&& Objects.equals(this.actions, other.actions);
+		return Objects.equals(this.stateUpdates, other.stateUpdates)
+			&& Objects.equals(this.parsedTxn, other.parsedTxn);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s][%s]", getClass().getSimpleName(), txn, actions);
+		return String.format("%s[%s]", getClass().getSimpleName(), parsedTxn);
 	}
 }

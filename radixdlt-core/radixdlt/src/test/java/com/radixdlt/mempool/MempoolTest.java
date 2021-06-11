@@ -26,11 +26,12 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.unique.state.UniqueParticle;
-import com.radixdlt.atomos.REAddrParticle;
+import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyPair;
@@ -47,7 +48,7 @@ import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -74,6 +75,7 @@ public class MempoolTest {
 	@Inject private RadixEngineStateComputer stateComputer;
 	@Inject private SystemCounters systemCounters;
 	@Inject private PeersView peersView;
+	@Inject private SubstateSerialization serialization;
 	@Inject @MempoolRelayInitialDelay private long initialDelay;
 	@Inject @MempoolRelayRepeatDelay private long repeatDelay;
 
@@ -81,7 +83,7 @@ public class MempoolTest {
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10, 200, 500, 10),
 			new BetanetForksModule(),
-			new RadixEngineOnlyLatestForkModule(View.of(100)),
+			new RadixEngineForksLatestOnlyModule(View.of(100), false),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
@@ -99,12 +101,12 @@ public class MempoolTest {
 		return peersView.peers().findFirst().get().bftNode();
 	}
 
-	private static Txn createTxn(ECKeyPair keyPair, int numParticles) {
-		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder();
+	private Txn createTxn(ECKeyPair keyPair, int numParticles) {
+		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder(serialization);
 		for (int i = 0; i < numParticles; i++) {
 			var symbol = "test" + (char) ('c' + i);
 			var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), symbol);
-			var rriParticle = new REAddrParticle(addr);
+			var rriParticle = new UnclaimedREAddr(addr);
 			var uniqueParticle = new UniqueParticle(addr);
 			atomBuilder
 				.virtualDown(rriParticle, symbol.getBytes(StandardCharsets.UTF_8))
@@ -115,7 +117,7 @@ public class MempoolTest {
 		return atomBuilder.sig(signature).build();
 	}
 
-	private static Txn createTxn(ECKeyPair keyPair) {
+	private Txn createTxn(ECKeyPair keyPair) {
 		return createTxn(keyPair, 1);
 	}
 

@@ -24,8 +24,8 @@ package com.radixdlt.client.serialization;
 
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.tokens.state.TokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokenResource;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.constraintmachine.Particle;
@@ -53,8 +53,8 @@ public final class Serialize {
         private static Collection<Class<?>> getClasses() {
             return Arrays.asList(
                     Particle.class,
-                    TokenDefinitionParticle.class,
-                    TokensParticle.class,
+                    TokenResource.class,
+                    TokensInAccount.class,
                     PreparedStake.class,
                     UniqueParticle.class,
                     ValidatorParticle.class,

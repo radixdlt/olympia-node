@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile.core
     environment:
-      RADIXDLT_LOG_LEVEL: debug
+      RADIXDLT_LOG_LEVEL: info
       RADIXDLT_ENABLE_CLIENT_API: "true"
       RADIXDLT_CLIENT_API_PORT: 8080
       RADIXDLT_NODE_API_PORT: 3333

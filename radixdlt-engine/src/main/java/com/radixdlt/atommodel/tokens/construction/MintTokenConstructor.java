@@ -22,11 +22,11 @@ import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 
 public final class MintTokenConstructor implements ActionConstructor<MintToken> {
 	@Override
 	public void construct(MintToken action, TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.up(new TokensParticle(action.to(), action.amount(), action.resourceAddr()));
+		txBuilder.up(new TokensInAccount(action.to(), action.amount(), action.resourceAddr()));
 	}
 }

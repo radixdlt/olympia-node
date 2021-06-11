@@ -24,30 +24,35 @@ import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
+import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.constraintmachine.TxnParseException;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.TxnIndex;
 import com.radixdlt.store.CMStore;
-import com.radixdlt.store.ReadableAddrs;
+import com.radixdlt.store.ReadableAddrsStore;
 
-import java.nio.ByteBuffer;
 import java.util.Optional;
 
 /**
  * CMStore which allows one to parse transactions given
  * the append log as the backend store.
+ * TODO: Remove this class
  */
 public final class LogCMStore implements CMStore {
 	private final TxnIndex txnIndex;
-	private final ReadableAddrs readableAddrs;
+	private final ReadableAddrsStore readableAddrs;
+	private final REParser reParser;
 
 	@Inject
 	public LogCMStore(
 		TxnIndex txnIndex,
-		ReadableAddrs readableAddrs
+		ReadableAddrsStore readableAddrs,
+		REParser reParser
 	) {
 		this.txnIndex = txnIndex;
 		this.readableAddrs = readableAddrs;
+		this.reParser = reParser;
 	}
 
 	@Override
@@ -61,40 +66,39 @@ public final class LogCMStore implements CMStore {
 	}
 
 	@Override
-	public Optional<Particle> loadAddr(Transaction tx, REAddr rri) {
-		return readableAddrs.loadAddr(tx, rri);
+	public Optional<Particle> loadAddr(Transaction tx, REAddr rri, SubstateDeserialization deserialization) {
+		return readableAddrs.loadAddr(tx, rri, deserialization);
 	}
 
 	@Override
-	public Optional<Particle> loadUpParticle(Transaction dbTxn, SubstateId substateId) {
+	public Optional<Particle> loadUpParticle(Transaction dbTxn, SubstateId substateId, SubstateDeserialization deserialization) {
 		var txnId = substateId.getTxnId();
 		return txnIndex.get(txnId)
 			.flatMap(txn -> {
-				var buf = ByteBuffer.wrap(txn.getPayload());
 				var index = substateId.getIndex().orElseThrow();
-				int cur = 0;
-				while (buf.hasRemaining()) {
-					try {
-						var i = REInstruction.readFrom(txn, cur, buf);
-						if (cur == index) {
-							if (i.getMicroOp() != REInstruction.REOp.UP) {
-								return Optional.empty();
-							}
-							Substate s = i.getData();
-							return Optional.of(s.getParticle());
-						}
-					} catch (DeserializeException e) {
-						throw new IllegalStateException("Cannot deserialize instruction@" + cur, e);
+				try {
+					var instructions = reParser.parse(txn).instructions();
+					if (index >= instructions.size()) {
+						return Optional.empty();
 					}
-					cur++;
+					var inst = instructions.get(index);
+					if (inst.getMicroOp() != REInstruction.REMicroOp.UP) {
+						return Optional.empty();
+					}
+					Substate s = inst.getData();
+					return Optional.of(s.getParticle());
+				} catch (TxnParseException e) {
+					throw new IllegalStateException("Cannot deserialize txn", e);
 				}
-
-				return Optional.empty();
 			});
 	}
 
 	@Override
-	public SubstateCursor openIndexedCursor(Transaction dbTransaction, Class<? extends Particle> particleClass) {
+	public SubstateCursor openIndexedCursor(
+		Transaction dbTransaction,
+		Class<? extends Particle> particleClass,
+		SubstateDeserialization deserialization
+	) {
 		throw new UnsupportedOperationException();
 	}
 }

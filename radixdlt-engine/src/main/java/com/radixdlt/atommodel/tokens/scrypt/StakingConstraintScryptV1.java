@@ -18,15 +18,15 @@
 
 package com.radixdlt.atommodel.tokens.scrypt;
 
-import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.UnstakeOwnership;
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.ParticleDefinition;
-import com.radixdlt.atomos.SysCalls;
+import com.radixdlt.atomos.SubstateDefinition;
+import com.radixdlt.atomos.Loader;
 import com.radixdlt.constraintmachine.AuthorizationException;
+import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
@@ -37,28 +37,40 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt384;
 
 import java.util.Objects;
+import java.util.Set;
 
 public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 	@Override
-	public void main(SysCalls os) {
-		os.registerParticle(
-			PreparedStake.class,
-			ParticleDefinition.<PreparedStake>builder()
-				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.build()
+	public void main(Loader os) {
+		os.substate(
+			new SubstateDefinition<>(
+				PreparedStake.class,
+				Set.of(SubstateTypeId.PREPARED_STAKE.id()),
+				(b, buf) -> {
+					var owner = REFieldSerialization.deserializeREAddr(buf);
+					var delegate = REFieldSerialization.deserializeKey(buf);
+					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
+					return new PreparedStake(amount, owner, delegate);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.PREPARED_STAKE.id());
+					REFieldSerialization.serializeREAddr(buf, s.getOwner());
+					REFieldSerialization.serializeKey(buf, s.getDelegateKey());
+					buf.put(s.getAmount().toByteArray());
+				}
+			)
 		);
 
 		defineStaking(os);
 	}
 
 
-	private void defineStaking(SysCalls os) {
+	private void defineStaking(Loader os) {
 		// Stake
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			VoidReducerState.class, PreparedStake.class,
-			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> { },
-			(s, u, r) -> {
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			(s, u, c, r) -> {
 				var state = new StakingConstraintScryptV2.UnaccountedStake(
 					u,
 					UInt384.from(u.getAmount())
@@ -66,10 +78,9 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 				return ReducerResult.incomplete(state);
 			}
 		));
-		os.createDownProcedure(new DownProcedure<>(
-			TokensParticle.class, StakingConstraintScryptV2.UnaccountedStake.class,
-			(d, r) -> PermissionLevel.USER,
-			(d, r, k) -> d.getSubstate().verifyWithdrawAuthorization(k, r),
+		os.procedure(new DownProcedure<>(
+			TokensInAccount.class, StakingConstraintScryptV2.UnaccountedStake.class,
+			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> {
 				if (!d.getSubstate().getResourceAddr().isNativeToken()) {
 					throw new ProcedureException("Not the same address.");
@@ -77,10 +88,7 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 				var amt = UInt384.from(d.getSubstate().getAmount());
 				var nextRemainder = s.subtract(amt);
 				if (nextRemainder.isEmpty()) {
-					// FIXME: This isn't 100% correct
-					var p = s.initialParticle();
-					var action = new StakeTokens(d.getSubstate().getHoldingAddr(), p.getDelegateKey(), p.getAmount());
-					return ReducerResult.complete(action);
+					return ReducerResult.complete();
 				}
 
 				return ReducerResult.incomplete(nextRemainder.get());
@@ -89,16 +97,17 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 
 
 		// Unstake
-		os.createDownProcedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(
 			PreparedStake.class, TokensConstraintScryptV1.UnaccountedTokens.class,
-			(d, r) -> PermissionLevel.USER,
-			(d, r, k) -> {
-				try {
-					d.getSubstate().getOwner().verifyWithdrawAuthorization(k);
-				} catch (REAddr.BucketWithdrawAuthorizationException e) {
-					throw new AuthorizationException(e.getMessage());
-				}
-			},
+			d -> new Authorization(
+				PermissionLevel.USER,
+				(r, c) -> {
+					try {
+						d.getSubstate().getOwner().verifyWithdrawAuthorization(c.key());
+					} catch (REAddr.BucketWithdrawAuthorizationException e) {
+						throw new AuthorizationException(e.getMessage());
+					}
+				}),
 			(d, s, r) -> {
 				if (!s.resourceInBucket().isNativeToken()) {
 					throw new ProcedureException("Can only destake to the native token.");
@@ -115,16 +124,12 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 
 				var nextRemainder = s.subtract(UInt384.from(d.getSubstate().getAmount()));
 				if (nextRemainder.isEmpty()) {
-					// FIXME: This isn't 100% correct
-					var p = (TokensParticle) s.initialParticle();
-					var action = new UnstakeOwnership(p.getHoldingAddr(), d.getSubstate().getDelegateKey(), p.getAmount());
-					return ReducerResult.complete(action);
+					return ReducerResult.complete();
 				}
 
 				if (nextRemainder.get() instanceof TokensConstraintScryptV1.RemainderTokens) {
 					TokensConstraintScryptV1.RemainderTokens remainderTokens = (TokensConstraintScryptV1.RemainderTokens) nextRemainder.get();
 					var stakeRemainder = new StakingConstraintScryptV2.RemainderStake(
-						remainderTokens.initialParticle(),
 						remainderTokens.amount().getLow(),
 						d.getSubstate().getOwner(),
 						d.getSubstate().getDelegateKey()
@@ -137,11 +142,10 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 		));
 
 		// For change
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			StakingConstraintScryptV2.RemainderStake.class, PreparedStake.class,
-			(u, r) -> PermissionLevel.USER,
-			(u, r, k) -> { },
-			(s, u, r) -> {
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			(s, u, c, r) -> {
 				if (!u.getAmount().equals(s.amount())) {
 					throw new ProcedureException("Remainder must be filled exactly.");
 				}
@@ -154,10 +158,7 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 					throw new ProcedureException("Owners don't match.");
 				}
 
-				// FIXME: This isn't 100% correct
-				var t = (TokensParticle) s.initialParticle();
-				var action = new UnstakeOwnership(t.getHoldingAddr(), u.getDelegateKey(), t.getAmount());
-				return ReducerResult.complete(action);
+				return ReducerResult.complete();
 			}
 		));
 	}

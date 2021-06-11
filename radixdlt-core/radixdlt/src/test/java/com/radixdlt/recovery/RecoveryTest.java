@@ -29,7 +29,7 @@ import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import org.assertj.core.api.Condition;
@@ -134,7 +134,7 @@ public class RecoveryTest {
 			new MockedGenesisModule(),
 			new CryptoModule(),
 			new BetanetForksModule(),
-			new RadixEngineOnlyLatestForkModule(View.of(100L)),
+			new RadixEngineForksLatestOnlyModule(View.of(100L), false),
 			new RadixEngineModule(),
 			new AbstractModule() {
 				@Override
@@ -173,7 +173,7 @@ public class RecoveryTest {
 
 		return Guice.createInjector(
 			new BetanetForksModule(),
-			new RadixEngineOnlyLatestForkModule(View.of(epochCeilingView)),
+			new RadixEngineForksLatestOnlyModule(View.of(epochCeilingView), false),
 			MempoolConfig.asModule(10, 10),
 			RadixEngineConfig.asModule(1, Integer.MAX_VALUE, 50),
 			new AbstractModule() {

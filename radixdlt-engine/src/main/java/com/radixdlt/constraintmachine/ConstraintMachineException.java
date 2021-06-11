@@ -20,31 +20,23 @@ package com.radixdlt.constraintmachine;
 
 public class ConstraintMachineException extends Exception {
 	private final CMErrorCode errorCode;
-	private final ConstraintMachine.CMValidationState state;
 
-	public ConstraintMachineException(CMErrorCode errorCode, ConstraintMachine.CMValidationState state, Throwable cause) {
+	public ConstraintMachineException(CMErrorCode errorCode, Throwable cause) {
 		super(errorCode.toString(), cause);
 		this.errorCode = errorCode;
-		this.state = state;
 	}
 
-	public ConstraintMachineException(CMErrorCode errorCode, ConstraintMachine.CMValidationState state) {
+	public ConstraintMachineException(CMErrorCode errorCode) {
 		super(errorCode.toString());
 		this.errorCode = errorCode;
-		this.state = state;
 	}
 
-	public ConstraintMachineException(CMErrorCode errorCode, ConstraintMachine.CMValidationState state, String message) {
+	public ConstraintMachineException(CMErrorCode errorCode, String message) {
 		super(message);
-		this.state = state;
 		this.errorCode = errorCode;
 	}
 
 	public CMErrorCode getErrorCode() {
 		return errorCode;
-	}
-
-	public ConstraintMachine.CMValidationState getState() {
-		return state;
 	}
 }

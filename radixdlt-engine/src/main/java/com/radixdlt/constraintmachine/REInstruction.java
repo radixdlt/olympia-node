@@ -19,7 +19,7 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.RESerializer;
+import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Pair;
@@ -31,89 +31,126 @@ import java.nio.ByteBuffer;
  * Unparsed Low level instruction into Radix Engine
  */
 public final class REInstruction {
-	private interface ReadData {
-		Object read(Txn txn, int i, ByteBuffer buf) throws DeserializeException;
-	}
-
-	public enum REOp {
-		UP((byte) 1, (txn, i, b) -> {
-			var p = RESerializer.deserialize(b);
-			return Substate.create(p, SubstateId.ofSubstate(txn.getId(), i));
-		}, Spin.NEUTRAL, Spin.UP),
-		VDOWN((byte) 2, (txn, i, b) -> {
-			int pos = b.position();
-			var p = RESerializer.deserialize(b);
-			int length = b.position() - pos;
-			var buf = ByteBuffer.wrap(b.array(), pos, length);
-			return Substate.create(p, SubstateId.ofVirtualSubstate(buf));
-		}, Spin.UP, Spin.DOWN),
-		VDOWNARG((byte) 3, (txn, i, b) -> {
-			int pos = b.position();
-			var p = RESerializer.deserialize(b);
-			int length = b.position() - pos;
-			var buf = ByteBuffer.wrap(b.array(), pos, length);
-			var argLength = b.get();
-			var arg = new byte[Byte.toUnsignedInt(argLength)];
-			b.get(arg);
-			return Pair.of(Substate.create(p, SubstateId.ofVirtualSubstate(buf)), arg);
-		}, Spin.UP, Spin.DOWN),
-		DOWN((byte) 4, (txn, i, b) -> SubstateId.fromBuffer(b), Spin.UP, Spin.DOWN),
-		LDOWN((byte) 5, (txn, i, b) -> {
-			var index = b.getInt();
-			if (index < 0 || index >= i) {
-				throw new DeserializeException("Bad local index: " + index);
+	public enum REMicroOp {
+		UP((byte) 1, REOp.UP) {
+			@Override
+			public Object read(Txn txn, int index, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
+				var p = d.deserialize(buf);
+				return Substate.create(p, SubstateId.ofSubstate(txn.getId(), index));
 			}
-			return SubstateId.ofSubstate(txn.getId(), index);
-		}, Spin.UP, Spin.DOWN),
-		DOWNALL((byte) 8, (txn, i, b) -> {
-			var classId = b.get();
-			return RESerializer.byteToClass(classId); // Just to check to make sure classId exists
-		}, Spin.UP, Spin.DOWN),
-		MSG((byte) 6, (txn, i, b) -> {
-			var length = Byte.toUnsignedInt(b.get());
-			var bytes = new byte[length];
-			b.get(bytes);
-			return bytes;
-		}, null, null),
-		SIG((byte) 7, (txn, i, b) -> {
-			return RESerializer.deserializeSignature(b);
-		}, null, null),
-		END((byte) 0, (txn, i, b) -> null, null, null);
+		},
+		VDOWN((byte) 2, REOp.DOWN) {
+			@Override
+			public Object read(Txn txn, int index, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
+				int pos = buf.position();
+				var p = d.deserialize(buf);
+				int length = buf.position() - pos;
+				var b = ByteBuffer.wrap(buf.array(), pos, length);
+				return Substate.create(p, SubstateId.ofVirtualSubstate(b));
+			}
+		},
+		VDOWNARG((byte) 3, REOp.DOWN) {
+			@Override
+			public Object read(Txn txn, int index, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
+				int pos = buf.position();
+				var p = d.deserialize(buf);
+				int length = buf.position() - pos;
+				var b = ByteBuffer.wrap(buf.array(), pos, length);
+				var argLength = buf.get();
+				var arg = new byte[Byte.toUnsignedInt(argLength)];
+				buf.get(arg);
+				return Pair.of(Substate.create(p, SubstateId.ofVirtualSubstate(b)), arg);
+			}
+		},
+		DOWN((byte) 4, REOp.DOWN) {
+			@Override
+			public Object read(Txn txn, int index, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
+				return SubstateId.fromBuffer(buf);
+			}
+		},
+		LDOWN((byte) 5, REOp.DOWN) {
+			@Override
+			public Object read(Txn txn, int i, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
+				var index = b.getInt();
+				if (index < 0 || index >= i) {
+					throw new DeserializeException("Bad local index: " + index);
+				}
+				return SubstateId.ofSubstate(txn.getId(), index);
+			}
+		},
+		DOWNALL((byte) 8, REOp.DOWNALL) {
+			@Override
+			public Object read(Txn txn, int i, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
+				var classId = b.get();
+				return d.byteToClass(classId); // Just to check to make sure classId exists
+			}
+		},
+		MSG((byte) 6, REOp.MSG) {
+			@Override
+			public Object read(Txn txn, int i, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
+				var length = Byte.toUnsignedInt(b.get());
+				var bytes = new byte[length];
+				b.get(bytes);
+				return bytes;
+			}
+		},
+		SIG((byte) 7, REOp.SIG) {
+			@Override
+			Object read(Txn txn, int i, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
+				return REFieldSerialization.deserializeSignature(b);
+			}
+		},
+		SYSCALL((byte) 9, REOp.SYSCALL) {
+			@Override
+			Object read(Txn txn, int i, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
+				int bufSize = Byte.toUnsignedInt(b.get());
+				// TODO: Remove buffer copy
+				var callData = new byte[bufSize];
+				b.get(callData);
+				return new CallData(callData);
+			}
+		},
+		HEADER((byte) 10, REOp.HEADER) {
+			@Override
+			Object read(Txn txn, int i, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
+				int version = b.get();
+				if (version != 0) {
+					throw new DeserializeException("Version must be 0");
+				}
+				var flags = b.get();
+				if ((flags & 0xe) != 0) {
+					throw new DeserializeException("Invalid flags");
+				}
+				return (flags & 0x1) == 1;
+			}
+		},
+		END((byte) 0, REOp.END) {
+			@Override
+			Object read(Txn txn, int i, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
+				return null;
+			}
+		};
 
-		private final ReadData readData;
-		private final Spin checkSpin;
-		private final Spin nextSpin;
+		private final REOp op;
 		private final byte opCode;
 
-		REOp(byte opCode, ReadData readData, Spin checkSpin, Spin nextSpin) {
+		REMicroOp(byte opCode, REOp op) {
 			this.opCode = opCode;
-			this.readData =  readData;
-			this.checkSpin = checkSpin;
-			this.nextSpin = nextSpin;
+			this.op = op;
 		}
 
-		public Spin getCheckSpin() {
-			return checkSpin;
+		public REOp getOp() {
+			return op;
 		}
 
-		public Spin getNextSpin() {
-			return nextSpin;
-		}
-
-		public Object readData(Txn txn, int index, ByteBuffer buf) throws DeserializeException {
-			try {
-				return readData.read(txn, index, buf);
-			} catch (BufferUnderflowException e) {
-				throw new DeserializeException("Buffer underflow @" + index, e);
-			}
-		}
+		abstract Object read(Txn txn, int i, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException;
 
 		public byte opCode() {
 			return opCode;
 		}
 
-		static REOp fromByte(byte op) throws DeserializeException {
-			for (var microOp : REOp.values()) {
+		static REMicroOp fromByte(byte op) throws DeserializeException {
+			for (var microOp : REMicroOp.values()) {
 				if (microOp.opCode == op) {
 					return microOp;
 				}
@@ -123,22 +160,22 @@ public final class REInstruction {
 		}
 	}
 
-	private final REOp operation;
+	private final REMicroOp microOp;
 	private final Object data;
 	private final byte[] array;
 	private final int offset;
 	private final int length;
 
-	private REInstruction(REOp operation, Object data, byte[] array, int offset, int length) {
-		this.operation = operation;
+	private REInstruction(REMicroOp microOp, Object data, byte[] array, int offset, int length) {
+		this.microOp = microOp;
 		this.data = data;
 		this.array = array;
 		this.offset = offset;
 		this.length = length;
 	}
 
-	public REOp getMicroOp() {
-		return operation;
+	public REMicroOp getMicroOp() {
+		return microOp;
 	}
 
 	public ByteBuffer getDataByteBuffer() {
@@ -150,23 +187,24 @@ public final class REInstruction {
 	}
 
 	public boolean isStateUpdate() {
-		return operation.checkSpin != null;
+		return microOp.op.isSubstateUpdate();
 	}
 
-	public Spin getCheckSpin() {
-		return operation.checkSpin;
-	}
-
-	public static REInstruction readFrom(Txn txn, int index, ByteBuffer buf) throws DeserializeException {
-		var microOp = REOp.fromByte(buf.get());
-		var pos = buf.position();
-		var data = microOp.readData(txn, index, buf);
-		var length = buf.position() - pos;
-		return new REInstruction(microOp, data, buf.array(), pos, length);
+	public static REInstruction readFrom(Txn txn, int index, ByteBuffer buf, SubstateDeserialization deserialization)
+		throws DeserializeException {
+		try {
+			var microOp = REMicroOp.fromByte(buf.get());
+			var pos = buf.position();
+			var data = microOp.read(txn, index, buf, deserialization);
+			var length = buf.position() - pos;
+			return new REInstruction(microOp, data, buf.array(), pos, length);
+		} catch (BufferUnderflowException e) {
+			throw new DeserializeException("Buffer underflow @" + index, e);
+		}
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s %s", operation, data);
+		return String.format("%s %s", microOp, data);
 	}
 }

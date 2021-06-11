@@ -59,7 +59,7 @@ public final class ChaosController implements Controller {
 
 	@VisibleForTesting
 	void handleMessageFlood(HttpServerExchange exchange) {
-		withBodyAsyncAndDefaultResponse(exchange, values -> {
+		withBodyAsync(exchange, values -> {
 			var update = MessageFlooderUpdate.create();
 
 			if (values.getBoolean("enabled")) {

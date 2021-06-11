@@ -33,14 +33,17 @@ import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
-import com.radixdlt.atom.actions.UnstakeOwnership;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.tokens.state.TokensParticle;
+import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
@@ -48,6 +51,7 @@ import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
@@ -69,7 +73,8 @@ import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineOnlyLatestForkModule;
+import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.EngineStore;
@@ -87,9 +92,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.radix.TokenIssuance;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
@@ -97,8 +105,21 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.radixdlt.statecomputer.transaction.TokenFeeChecker.FIXED_FEE;
+
+@RunWith(Parameterized.class)
 public class StakingUnstakingValidatorsTest {
 	private static final Logger logger = LogManager.getLogger();
+	@Parameterized.Parameters
+	public static Collection<Object[]> forksModule() {
+		return List.of(new Object[][] {
+			{new RadixEngineForksLatestOnlyModule(View.of(100), false), false},
+			{new ForkOverwritesWithShorterEpochsModule(false), false},
+			{new RadixEngineForksLatestOnlyModule(View.of(100), true), true},
+			{new ForkOverwritesWithShorterEpochsModule(true), true},
+		});
+	}
+
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
@@ -106,22 +127,27 @@ public class StakingUnstakingValidatorsTest {
 	@Genesis
 	private VerifiedTxnsAndProof genesis;
 
+	@Inject
+	private REParser reParser;
+
 	private DeterministicNetwork network;
 	private List<Supplier<Injector>> nodeCreators;
 	private List<Injector> nodes = new ArrayList<>();
 	private final ImmutableList<ECKeyPair> nodeKeys;
 	private final Module radixEngineConfiguration;
+	private final boolean payFees;
 
-	public StakingUnstakingValidatorsTest() {
+	public StakingUnstakingValidatorsTest(Module forkModule, boolean payFees) {
 		this.nodeKeys = Stream.generate(ECKeyPair::generateNew)
 			.limit(20)
 			.sorted(Comparator.comparing(k -> k.getPublicKey().euid()))
 			.collect(ImmutableList.toImmutableList());
 		this.radixEngineConfiguration = Modules.combine(
 			new BetanetForksModule(),
-			new RadixEngineOnlyLatestForkModule(View.of(100)),
+			forkModule,
 			RadixEngineConfig.asModule(1, 10, 50)
 		);
+		this.payFees = payFees;
 	}
 
 	@Before
@@ -206,6 +232,22 @@ public class StakingUnstakingValidatorsTest {
 		);
 	}
 
+	private void restartNode(int index) {
+		this.network.dropMessages(m -> m.channelId().receiverIndex() == index);
+		Injector injector = nodeCreators.get(index).get();
+		stopDatabase(this.nodes.set(index, injector));
+		withThreadCtx(injector, () -> injector.getInstance(DeterministicProcessor.class).start());
+	}
+
+	private void withThreadCtx(Injector injector, Runnable r) {
+		ThreadContext.put("bftNode", " " + injector.getInstance(Key.get(BFTNode.class, Self.class)));
+		try {
+			r.run();
+		} finally {
+			ThreadContext.remove("bftNode");
+		}
+	}
+
 	private Timed<ControlledMessage> processNext() {
 		Timed<ControlledMessage> msg = this.network.nextMessage();
 		logger.debug("Processing message {}", msg);
@@ -235,7 +277,7 @@ public class StakingUnstakingValidatorsTest {
 	 * trends to minimum.
 	 */
 	@Test
-	public void stake_unstake_transfers() {
+	public void stake_unstake_transfers_restarts() {
 		var random = new Random(12345);
 
 		for (int i = 0; i < 5000; i++) {
@@ -262,7 +304,7 @@ public class StakingUnstakingValidatorsTest {
 					break;
 				case 2:
 					var unstakeAmt = random.nextBoolean() ? UInt256.from(random.nextLong()) : amount;
-					action = new UnstakeOwnership(acct, to, unstakeAmt);
+					action = new UnstakeTokens(acct, to, unstakeAmt);
 					break;
 				case 3:
 					action = new RegisterValidator(privKey.getPublicKey());
@@ -274,10 +316,19 @@ public class StakingUnstakingValidatorsTest {
 						break;
 					}
 					continue;
+				case 5:
+					restartNode(nodeIndex);
+					continue;
 				default:
 					continue;
 			}
-			dispatcher.dispatch(NodeApplicationRequest.create(action));
+
+			var request = TxnConstructionRequest.create();
+			if (payFees) {
+				request.action(new PayFee(acct, FIXED_FEE));
+			}
+			request.action(action);
+			dispatcher.dispatch(NodeApplicationRequest.create(request));
 			this.nodes.forEach(n -> {
 				n.getInstance(new Key<EventDispatcher<MempoolRelayTrigger>>() { }).dispatch(MempoolRelayTrigger.create());
 				n.getInstance(new Key<EventDispatcher<SyncCheckTrigger>>() { }).dispatch(SyncCheckTrigger.create());
@@ -285,28 +336,39 @@ public class StakingUnstakingValidatorsTest {
 		}
 
 		var entryStore = this.nodes.get(0).getInstance(BerkeleyLedgerEntryStore.class);
-		var totalTokens = entryStore.reduceUpParticles(TokensParticle.class, UInt256.ZERO,
+		var totalTokens = entryStore.reduceUpParticles(TokensInAccount.class, UInt256.ZERO,
 			(i, p) -> {
-				var tokens = (TokensParticle) p;
+				var tokens = (TokensInAccount) p;
 				return i.add(tokens.getAmount());
-			}
+			},
+			reParser.getSubstateDeserialization()
 		);
 		logger.info("Total tokens: {}", totalTokens);
 		var totalStaked = entryStore.reduceUpParticles(ValidatorStake.class, UInt256.ZERO,
 			(i, p) -> {
 				var tokens = (ValidatorStake) p;
 				return i.add(tokens.getAmount());
-			}
+			},
+			reParser.getSubstateDeserialization()
 		);
 		logger.info("Total staked: {}", totalStaked);
 		var totalStakePrepared = entryStore.reduceUpParticles(PreparedStake.class, UInt256.ZERO,
 			(i, p) -> {
 				var tokens = (PreparedStake) p;
 				return i.add(tokens.getAmount());
-			}
+			},
+			reParser.getSubstateDeserialization()
 		);
-		logger.info("Total stake prepared: {}", totalStakePrepared);
-		logger.info("Total: {}", totalTokens.add(totalStaked).add(totalStakePrepared));
+		logger.info("Total preparing stake: {}", totalStakePrepared);
+		var totalStakeExitting = entryStore.reduceUpParticles(ExittingStake.class, UInt256.ZERO,
+			(i, p) -> {
+				var tokens = (ExittingStake) p;
+				return i.add(tokens.getAmount());
+			},
+			reParser.getSubstateDeserialization()
+		);
+		logger.info("Total exitting stake: {}", totalStakeExitting);
+		logger.info("Total: {}", totalTokens.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting));
 	}
 
 }

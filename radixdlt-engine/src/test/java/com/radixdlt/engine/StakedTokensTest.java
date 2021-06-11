@@ -19,14 +19,14 @@ package com.radixdlt.engine;
 
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.MutableTokenDefinition;
-import com.radixdlt.atom.TxActionListBuilder;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnstakeOwnership;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.tokens.construction.BurnTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
@@ -37,6 +37,7 @@ import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV1;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV1;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV2;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.engine.parser.REParser;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -69,11 +70,12 @@ public class StakedTokensTest {
 		cmAtomOS.load(new ValidatorConstraintScrypt());
 		cmAtomOS.load(new TokensConstraintScryptV1());
 		cmAtomOS.load(new StakingConstraintScryptV2());
-		final var cm = new ConstraintMachine.Builder()
-			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
-			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
-			.setParticleTransitionProcedures(cmAtomOS.getProcedures())
-			.build();
+		final var cm = new ConstraintMachine(
+			cmAtomOS.virtualizedUpParticles(),
+			cmAtomOS.getProcedures()
+		);
+		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
+		var serialization = cmAtomOS.buildSubstateSerialization();
 		var actionConstructors = ActionConstructors.newBuilder()
 			.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 			.put(RegisterValidator.class, new RegisterValidatorConstructor())
@@ -81,12 +83,13 @@ public class StakedTokensTest {
 			.put(TransferToken.class, new TransferTokensConstructorV1())
 			.put(BurnToken.class, new BurnTokenConstructor())
 			.put(StakeTokens.class, new StakeTokensConstructorV1())
-			.put(UnstakeOwnership.class, new UnstakeTokensConstructorV1())
+			.put(UnstakeTokens.class, new UnstakeTokensConstructorV1())
 			.build();
 		this.store = new InMemoryEngineStore<>();
-		this.engine = new RadixEngine<>(actionConstructors, cm, this.store);
+		this.engine = new RadixEngine<>(parser, serialization, actionConstructors, cm, this.store);
 
 		var tokDef = new MutableTokenDefinition(
+			null,
 			"xrd",
 			"Test",
 			"description",
@@ -94,11 +97,10 @@ public class StakedTokensTest {
 			null
 		);
 		var txn0 = engine.construct(
-			TxActionListBuilder.create()
+			TxnConstructionRequest.create()
 				.createMutableToken(tokDef)
 				.mint(this.tokenRri, tokenOwnerAccount, UInt256.TEN)
 				.registerAsValidator(this.validatorKeyPair.getPublicKey())
-				.build()
 		).buildWithoutSignature();
 
 		this.engine.execute(List.of(txn0), null, PermissionLevel.SYSTEM);
@@ -121,7 +123,7 @@ public class StakedTokensTest {
 		this.engine.execute(List.of(txn));
 
 		var txn2 = engine.construct(
-			new UnstakeOwnership(this.tokenOwnerAccount, this.validatorKeyPair.getPublicKey(), UInt256.TEN)
+			new UnstakeTokens(this.tokenOwnerAccount, this.validatorKeyPair.getPublicKey(), UInt256.TEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn2));
 	}
@@ -134,7 +136,7 @@ public class StakedTokensTest {
 		this.engine.execute(List.of(txn));
 
 		var txn2 = engine.construct(
-			new UnstakeOwnership(this.tokenOwnerAccount, this.validatorKeyPair.getPublicKey(), UInt256.SEVEN)
+			new UnstakeTokens(this.tokenOwnerAccount, this.validatorKeyPair.getPublicKey(), UInt256.SEVEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn2));
 	}

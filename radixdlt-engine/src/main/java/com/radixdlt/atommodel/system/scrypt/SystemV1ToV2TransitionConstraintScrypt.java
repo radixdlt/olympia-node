@@ -18,14 +18,14 @@
 
 package com.radixdlt.atommodel.system.scrypt;
 
-import com.radixdlt.atom.actions.SystemNextView;
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.system.state.SystemParticle;
-import com.radixdlt.atommodel.system.state.ValidatorEpochData;
+import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.ParticleDefinition;
-import com.radixdlt.atomos.Result;
-import com.radixdlt.atomos.SysCalls;
-import com.radixdlt.constraintmachine.AuthorizationException;
+import com.radixdlt.atomos.SubstateDefinition;
+import com.radixdlt.atomos.Loader;
+import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
@@ -35,26 +35,10 @@ import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 
+import java.util.Set;
+
 // TODO: Remove for mainnet
 public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt {
-	private Result staticCheck(SystemParticle systemParticle) {
-		if (systemParticle.getEpoch() < 0) {
-			return Result.error("Epoch is less than 0");
-		}
-
-		if (systemParticle.getTimestamp() < 0) {
-			return Result.error("Timestamp is less than 0");
-		}
-
-		if (systemParticle.getView() < 0) {
-			return Result.error("View is less than 0");
-		}
-
-		// FIXME: Need to validate view, but need additional state to do that successfully
-
-		return Result.success();
-	}
-
 	private static final class TransitionToV2 implements ReducerState {
 		private final SystemParticle sys;
 
@@ -64,35 +48,37 @@ public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt 
 	}
 
 	@Override
-	public void main(SysCalls os) {
-		os.registerParticle(SystemParticle.class, ParticleDefinition.<SystemParticle>builder()
-			.staticValidation(this::staticCheck)
-			.virtualizeUp(p -> p.getView() == 0 && p.getEpoch() == 0 && p.getTimestamp() == 0)
-			.build()
-		);
-
-		os.createDownProcedure(new DownProcedure<>(
-			SystemParticle.class, VoidReducerState.class,
-			(d, r) -> PermissionLevel.SUPER_USER,
-			(d, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
+	public void main(Loader os) {
+		os.substate(new SubstateDefinition<>(
+			SystemParticle.class,
+			Set.of(SubstateTypeId.SYSTEM.id()),
+			(b, buf) -> {
+				var epoch = REFieldSerialization.deserializeNonNegativeLong(buf);
+				var view = REFieldSerialization.deserializeNonNegativeLong(buf);
+				var timestamp = REFieldSerialization.deserializeNonNegativeLong(buf);
+				return new SystemParticle(epoch, view, timestamp);
 			},
+			(s, buf) -> {
+				buf.put(SubstateTypeId.SYSTEM.id());
+				buf.putLong(s.getEpoch());
+				buf.putLong(s.getView());
+				buf.putLong(s.getTimestamp());
+			},
+			p -> p.getView() == 0 && p.getEpoch() == 0 && p.getTimestamp() == 0
+		));
+
+		os.procedure(new DownProcedure<>(
+			SystemParticle.class, VoidReducerState.class,
+			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> ReducerResult.incomplete(new TransitionToV2(d.getSubstate()))
 		));
 
 		// Epoch update
-		os.createShutDownAllProcedure(new ShutdownAllProcedure<>(
-			ValidatorEpochData.class, TransitionToV2.class,
-			r -> PermissionLevel.SUPER_USER,
-			(r, k) -> {
-				if (k.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
+		os.procedure(new ShutdownAllProcedure<>(
+			ExittingStake.class, TransitionToV2.class,
+			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(i, s, r) -> {
-				var rewardingValidators = new SystemConstraintScryptV2.RewardingValidators(
+				var rewardingValidators = new SystemConstraintScryptV2.ProcessExittingStake(
 					new SystemConstraintScryptV2.UpdatingEpoch(s.sys)
 				);
 				return ReducerResult.incomplete(rewardingValidators.process(i));
@@ -100,15 +86,10 @@ public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt 
 		));
 
 		// Round update
-		os.createUpProcedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(
 			TransitionToV2.class, SystemParticle.class,
-			(u, r) -> PermissionLevel.SUPER_USER,
-			(u, r, pubKey) -> {
-				if (pubKey.isPresent()) {
-					throw new AuthorizationException("System update should not be signed.");
-				}
-			},
-			(s, u, r) -> {
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> {
 				var curState = s.sys;
 				if (curState.getEpoch() != u.getEpoch()) {
 					throw new ProcedureException("Cannot change epochs.");
@@ -118,12 +99,7 @@ public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt 
 					throw new ProcedureException("Next view must be greater than previous.");
 				}
 
-				return ReducerResult.complete(new SystemNextView(
-						u.getView(),
-						u.getTimestamp(),
-						null
-					)
-				);
+				return ReducerResult.complete();
 			}
 		));
 	}
