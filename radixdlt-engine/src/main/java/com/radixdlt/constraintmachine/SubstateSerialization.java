@@ -39,16 +39,18 @@ public final class SubstateSerialization {
 	}
 
 	public byte[] serialize(Particle p) {
+		var serializer = classToSerializer.get(p.getClass());
+		if (serializer == null) {
+			throw new IllegalStateException("No serializer for particle: " + p);
+		}
+
 		// TODO: Remove buf allocation
 		var buf = ByteBuffer.allocate(1024);
-		var serializer = classToSerializer.get(p.getClass());
 		serializer.serialize(p, buf);
-
 		var position = buf.position();
 		buf.rewind();
 		var bytes = new byte[position];
 		buf.get(bytes);
-
 		return bytes;
 	}
 

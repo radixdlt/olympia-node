@@ -271,6 +271,7 @@ public final class RadixEngine<M> {
 
 	public void replaceConstraintMachine(
 		ConstraintMachineConfig constraintMachineConfig,
+		SubstateSerialization serialization,
 		ActionConstructors actionToConstructorMap,
 		BatchVerifier<M> batchVerifier,
 		REParser parser,
@@ -286,6 +287,7 @@ public final class RadixEngine<M> {
 			this.batchVerifier = batchVerifier;
 			this.parser = parser;
 			this.postProcessedVerifier = postProcessedVerifier;
+			this.serialization = serialization;
 		}
 	}
 
