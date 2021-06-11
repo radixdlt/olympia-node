@@ -41,6 +41,5 @@ public class AccountControllerTest {
 		controller.configureRoutes(handler);
 
 		verify(handler).post(eq("/account"), any());
-		verify(handler).post(eq("/account/"), any());
 	}
 }

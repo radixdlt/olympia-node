@@ -41,6 +41,5 @@ public class ArchiveControllerTest {
 		controller.configureRoutes(handler);
 
 		verify(handler).post(eq("/archive"), any());
-		verify(handler).post(eq("/archive/"), any());
 	}
 }

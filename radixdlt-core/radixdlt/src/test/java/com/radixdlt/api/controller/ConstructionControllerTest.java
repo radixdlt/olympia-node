@@ -41,6 +41,5 @@ public class ConstructionControllerTest {
 		controller.configureRoutes(handler);
 
 		verify(handler).post(eq("/construction"), any());
-		verify(handler).post(eq("/construction/"), any());
 	}
 }
