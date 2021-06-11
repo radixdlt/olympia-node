@@ -81,7 +81,8 @@ public class FaucetHandler {
 
 		tokensToSend.forEach(rri -> steps.add(transfer(destination, rri)));
 
-		return submissionService.oneStepSubmit(steps, empty(), hashSigner).map(FaucetHandler::formatTxId);
+		return submissionService.oneStepSubmit(steps, empty(), hashSigner, false)
+			.map(FaucetHandler::formatTxId);
 	}
 
 	private TransactionAction transfer(REAddr destination, REAddr rri) {

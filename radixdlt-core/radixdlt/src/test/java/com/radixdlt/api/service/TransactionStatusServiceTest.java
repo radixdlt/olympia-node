@@ -34,8 +34,6 @@ import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
-import com.radixdlt.utils.UInt256;
-import org.junit.Test;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -44,6 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import static com.radixdlt.api.data.TransactionStatus.CONFIRMED;
 import static com.radixdlt.api.data.TransactionStatus.FAILED;

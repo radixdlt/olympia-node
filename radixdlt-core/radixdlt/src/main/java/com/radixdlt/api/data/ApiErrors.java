@@ -29,7 +29,6 @@ public enum ApiErrors implements Failure {
 	UNKNOWN_VALIDATOR(2508, "Validator {0} not found"),
 	INVALID_BLOB(2511, "Invalid blob {0}"),
 	INVALID_SIGNATURE_DER(2512, "Invalid signature DER {0}"),
-	INVALID_PUBLIC_KEY(2513, "Invalid public key {0}"),
 	INVALID_TX_ID(2514, "Invalid TX ID {0}"),
 	UNABLE_TO_PREPARE_TX(2515, "Unable to prepare transaction {0}"),
 	UNKNOWN_ACTION(2516, "Unknown action {0}"),

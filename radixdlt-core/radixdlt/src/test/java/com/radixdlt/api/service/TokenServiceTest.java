@@ -80,6 +80,7 @@ public class TokenServiceTest {
 
 	private CreateMutableToken mutableTokenDef(String symbol) {
 		return new CreateMutableToken(
+			TOKEN_KEY,
 			symbol,
 			symbol,
 			description(symbol),

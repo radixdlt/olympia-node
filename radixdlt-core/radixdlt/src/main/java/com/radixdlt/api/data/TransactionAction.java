@@ -146,10 +146,11 @@ public class TransactionAction {
 	}
 
 	public static TransactionAction createMutable(
-		String symbol, String name, Optional<String> description, Optional<String> iconUrl, Optional<String> tokenUrl
+		ECPublicKey signer, String symbol, String name,
+		Optional<String> description, Optional<String> iconUrl, Optional<String> tokenUrl
 	) {
 		return create(
-			ActionType.CREATE_MUTABLE, null, null, null, null, null,
+			ActionType.CREATE_MUTABLE, null, null, signer, null, null,
 			name, null, symbol, iconUrl.orElse(null), tokenUrl.orElse(null), description.orElse(null)
 		);
 	}
@@ -188,7 +189,7 @@ public class TransactionAction {
 			case CREATE_FIXED:
 				return Stream.of(new CreateFixedToken(rriValue(), from, symbol, name, description, iconUrl, tokenUrl, amount));
 			case CREATE_MUTABLE:
-				return Stream.of(new CreateMutableToken(symbol, name, description, iconUrl, tokenUrl));
+				return Stream.of(new CreateMutableToken(delegate, symbol, name, description, iconUrl, tokenUrl));
 		}
 		throw new IllegalStateException("Unsupported action type " + actionType);
 	}
