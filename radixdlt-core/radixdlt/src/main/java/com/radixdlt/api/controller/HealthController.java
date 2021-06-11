@@ -41,8 +41,7 @@ public class HealthController implements Controller {
 
 	@Override
 	public void configureRoutes(final RoutingHandler handler) {
-		handler.get("/health", this::handleHealthRequest);
-		handler.get("/health/", this::handleHealthRequest);
+		handler.get(root(), this::handleHealthRequest);
 	}
 
 	@VisibleForTesting

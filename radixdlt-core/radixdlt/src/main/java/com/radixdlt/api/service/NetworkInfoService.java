@@ -30,7 +30,7 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import java.util.EnumMap;
 
 import static com.radixdlt.api.data.NodeStatus.BOOTING;
-import static com.radixdlt.api.data.NodeStatus.NETWORK_HALTED;
+import static com.radixdlt.api.data.NodeStatus.OUT_OF_SYNC;
 import static com.radixdlt.api.data.NodeStatus.STALLED;
 import static com.radixdlt.api.data.NodeStatus.SYNCING;
 import static com.radixdlt.api.data.NodeStatus.UP;
@@ -95,7 +95,7 @@ public class NetworkInfoService {
 		}
 
 		// Ledger is not growing, either node stall or whole network is down or not reachable
-		return statistics.get(TARGET_KEY).isGrowing() ? STALLED : NETWORK_HALTED;
+		return statistics.get(TARGET_KEY).isGrowing() ? STALLED : OUT_OF_SYNC;
 	}
 
 	public EventProcessor<ScheduledStatsCollecting> updateStats() {

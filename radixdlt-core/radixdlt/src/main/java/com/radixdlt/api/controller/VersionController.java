@@ -43,7 +43,6 @@ public class VersionController implements Controller {
 	@Override
 	public void configureRoutes(final RoutingHandler handler) {
 		handler.get("/version", this::handleVersionRequest);
-		handler.get("/version/", this::handleVersionRequest);
 	}
 
 	@VisibleForTesting
