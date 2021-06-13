@@ -47,6 +47,7 @@ import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -55,6 +56,7 @@ import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
+import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -73,6 +75,7 @@ import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -101,6 +104,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -126,6 +130,9 @@ public class StakingUnstakingValidatorsTest {
 	@Inject
 	@Genesis
 	private VerifiedTxnsAndProof genesis;
+
+	@Inject
+	private TreeMap<Long, ForkConfig> epochToForkConfig;
 
 	@Inject
 	private REParser reParser;
@@ -333,6 +340,9 @@ public class StakingUnstakingValidatorsTest {
 				n.getInstance(new Key<EventDispatcher<SyncCheckTrigger>>() { }).dispatch(SyncCheckTrigger.create());
 			});
 		}
+
+		var lastEpochView = this.nodes.get(0).getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { }));
+		logger.info("EpochView: {}", lastEpochView.getLastEvent());
 
 		var entryStore = this.nodes.get(0).getInstance(BerkeleyLedgerEntryStore.class);
 		var totalTokens = entryStore.reduceUpParticles(TokensInAccount.class, UInt256.ZERO,

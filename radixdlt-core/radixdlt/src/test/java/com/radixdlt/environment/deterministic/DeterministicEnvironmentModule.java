@@ -30,9 +30,8 @@ import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
@@ -49,13 +48,15 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 		bind(Environment.class).to(ControlledSender.class);
 
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() { }, ProcessOnDispatch.class)
-			.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<EpochLocalTimeoutOccurrence>>() { });
-		bind(new TypeLiteral<DeterministicSavedLastEvent<EpochLocalTimeoutOccurrence>>() { }).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<DeterministicSavedLastEvent<EpochLocalTimeoutOccurrence>>() { })
+			.toInstance(new DeterministicSavedLastEvent<>(EpochLocalTimeoutOccurrence.class));
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() { })
+			.addBinding().toProvider(new TypeLiteral<DeterministicSavedLastEvent<EpochLocalTimeoutOccurrence>>() { });
 
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochViewUpdate>>() { }, ProcessOnDispatch.class)
-			.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { });
-		bind(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { }).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { })
+			.toInstance(new DeterministicSavedLastEvent<>(EpochViewUpdate.class));
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() { })
+			.addBinding().toProvider(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { });
 
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnRunner<?>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<RemoteEventProcessorOnRunner<?>>() { });
