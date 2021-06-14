@@ -327,7 +327,7 @@ public class StakingUnstakingValidatorsTest {
 		var totalStaked = entryStore.reduceUpParticles(ValidatorStake.class, UInt256.ZERO,
 			(i, p) -> {
 				var tokens = (ValidatorStake) p;
-				return i.add(tokens.getTotalStake());
+				return i.add(tokens.getAmount());
 			}
 		);
 		logger.info("Total staked: {}", totalStaked);

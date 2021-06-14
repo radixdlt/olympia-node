@@ -52,7 +52,7 @@ public class TransactionStatusServiceTest {
 		);
 
 		var txn = randomTxn();
-		var parsedTxn = new REProcessedTxn(txn, null, null, null);
+		var parsedTxn = new REProcessedTxn(txn, null, null);
 		var one = TxnsCommittedToLedger.create(List.of(parsedTxn));
 		transactionStatusService.atomsCommittedToLedgerEventProcessor().process(one);
 
@@ -117,7 +117,7 @@ public class TransactionStatusServiceTest {
 		var succeeded = MempoolAddSuccess.create(txnSucceeded, null);
 		transactionStatusService.mempoolAddSuccessEventProcessor().process(succeeded);
 		var txnCommitted = randomTxn();
-		var parsedTxn = new REProcessedTxn(txnCommitted, null, null, null);
+		var parsedTxn = new REProcessedTxn(txnCommitted, null, null);
 		var committed = TxnsCommittedToLedger.create(List.of(parsedTxn));
 		transactionStatusService.atomsCommittedToLedgerEventProcessor().process(committed);
 		var txnRejected = randomTxn();

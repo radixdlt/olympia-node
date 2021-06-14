@@ -197,7 +197,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				systemAction = new SystemNextEpoch(updates -> {
 					var cur = stakedValidators;
 					for (var u : updates) {
-						cur = cur.setStake(u.getValidatorKey(), u.getTotalStake());
+						cur = cur.setStake(u.getValidatorKey(), u.getAmount());
 					}
 					// FIXME: cur.toValidatorSet() may be null
 					var validatorSet = cur.toValidatorSet();

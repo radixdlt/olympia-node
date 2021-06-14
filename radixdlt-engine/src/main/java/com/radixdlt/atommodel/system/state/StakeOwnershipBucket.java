@@ -18,81 +18,57 @@
 
 package com.radixdlt.atommodel.system.state;
 
-import com.radixdlt.atommodel.tokens.ResourceInBucket;
 import com.radixdlt.atommodel.tokens.Bucket;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 
-public final class StakeOwnership implements ResourceInBucket {
-	private final UInt256 amount;
-
-	// Bucket keys
+public final class StakeOwnershipBucket implements Bucket {
 	private final REAddr owner;
 	private final ECPublicKey delegateKey;
 
-	public StakeOwnership(
+	public StakeOwnershipBucket(
 		ECPublicKey delegateKey,
-		REAddr owner,
-		UInt256 amount
+		REAddr owner
 	) {
-		if (amount.isZero()) {
-			throw new IllegalArgumentException("Stake ownership should not be zero");
-		}
 		this.delegateKey = Objects.requireNonNull(delegateKey);
 		this.owner = Objects.requireNonNull(owner);
-		this.amount = Objects.requireNonNull(amount);
 	}
 
 	@Override
-	public UInt256 getAmount() {
-		return this.amount;
+	public REAddr resourceAddr() {
+		return null;
 	}
 
-	public Bucket bucket() {
-		return new StakeOwnershipBucket(delegateKey, owner);
+	@Override
+	public REAddr getOwner() {
+		return owner;
 	}
 
-	public ECPublicKey getDelegateKey() {
+	@Override
+	public ECPublicKey getValidatorKey() {
 		return delegateKey;
 	}
 
-	public REAddr getOwner() {
-		return this.owner;
-	}
-
 	@Override
-	public String toString() {
-		return String.format("%s[%s:%s:%s]",
-			getClass().getSimpleName(),
-			amount,
-			owner,
-			delegateKey
-		);
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof StakeOwnership)) {
-			return false;
-		}
-		StakeOwnership that = (StakeOwnership) o;
-		return Objects.equals(delegateKey, that.delegateKey)
-			&& Objects.equals(owner, that.owner)
-			&& Objects.equals(amount, that.amount);
+	public Long getEpochUnlock() {
+		return null;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(
-			delegateKey,
-			owner,
-			amount
-		);
+		return Objects.hash(owner, delegateKey);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof StakeOwnershipBucket)) {
+			return false;
+		}
+
+		var other = (StakeOwnershipBucket) o;
+		return Objects.equals(this.owner, other.owner)
+			&& Objects.equals(this.delegateKey, other.delegateKey);
 	}
 }

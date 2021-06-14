@@ -17,6 +17,7 @@
 
 package com.radixdlt.client.handler;
 
+import com.radixdlt.atommodel.system.state.ValidatorStake;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
@@ -250,7 +251,9 @@ public class HighLevelApiHandler {
 			jsonObject()
 				.put("validator", ValidatorAddress.of(unstake.getDelegate()))
 				.put("amount", unstake.getAmount())
-				.put("epochsUntil", unstake.getEpochUnlocked() - curEpoch)
+				.put("epochsUntil", unstake.getEpochUnlocked().equals(0L)
+					? ValidatorStake.EPOCHS_LOCKED
+					: unstake.getEpochUnlocked() - curEpoch)
 		);
 		return jsonObject().put(ARRAY, array);
 	}

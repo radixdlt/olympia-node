@@ -18,7 +18,8 @@
 
 package com.radixdlt.atommodel.tokens.state;
 
-import com.radixdlt.atommodel.tokens.Fungible;
+import com.radixdlt.atommodel.tokens.Bucket;
+import com.radixdlt.atommodel.tokens.ResourceInBucket;
 import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -31,7 +32,7 @@ import java.util.Optional;
  *  A particle which represents an amount of transferrable fungible tokens
  *  owned by some key owner and stored in an account.
  */
-public final class TokensInAccount implements Fungible {
+public final class TokensInAccount implements ResourceInBucket {
 	private final UInt256 amount;
 
 	private final REAddr resourceAddr;
@@ -73,8 +74,18 @@ public final class TokensInAccount implements Fungible {
 		}
 	}
 
-	public ResourceInBucket resourceInBucket() {
-		return new ResourceInBucket(resourceAddr, holdingAddress, epochUnlocked);
+	@Override
+	public UInt256 getAmount() {
+		return this.amount;
+	}
+
+	@Override
+	public Bucket bucket() {
+		return new AccountBucket(resourceAddr, holdingAddress);
+	}
+
+	public DeprecatedResourceInBucket deprecatedResourceInBucket() {
+		return new DeprecatedResourceInBucket(resourceAddr, holdingAddress, epochUnlocked);
 	}
 
 	public Optional<Long> getEpochUnlocked() {
@@ -98,11 +109,6 @@ public final class TokensInAccount implements Fungible {
 			holdingAddress,
 			epochUnlocked
 		);
-	}
-
-	@Override
-	public UInt256 getAmount() {
-		return this.amount;
 	}
 
 	@Override

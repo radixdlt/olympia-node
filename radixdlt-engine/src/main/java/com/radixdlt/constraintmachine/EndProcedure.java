@@ -58,6 +58,7 @@ public class EndProcedure<S extends ReducerState> implements MethodProcedure {
 
 	@Override
 	public ReducerResult call(Object o, ReducerState reducerState, ReadableAddrs readableAddrs) throws ProcedureException {
-		return endReducer.reduce((S) reducerState, readableAddrs).map(ReducerResult::complete).orElse(ReducerResult.complete());
+		endReducer.reduce((S) reducerState, readableAddrs);
+		return ReducerResult.complete();
 	}
 }
