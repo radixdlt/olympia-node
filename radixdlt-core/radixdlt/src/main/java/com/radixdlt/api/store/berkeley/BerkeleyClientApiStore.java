@@ -26,7 +26,6 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Streams;
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.accounting.TwoActorEntry;
 import com.radixdlt.api.Rri;
@@ -125,7 +124,6 @@ import static com.radixdlt.serialization.DsonOutput.Output;
 import static com.radixdlt.serialization.SerializationUtils.restore;
 import static com.radixdlt.utils.functional.Result.wrap;
 
-@Singleton
 public class BerkeleyClientApiStore implements ClientApiStore {
 	private static final Logger log = LogManager.getLogger();
 
@@ -583,6 +581,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		log.info("Database rebuilding is finished successfully");
 	}
 
+	@Override
 	public EventProcessor<TxnsCommittedToLedger> atomsCommittedToLedgerEventProcessor() {
 		return this::newBatch;
 	}

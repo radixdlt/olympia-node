@@ -23,10 +23,22 @@ import org.apache.logging.log4j.Logger;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.EndpointConfig;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.api.data.ScheduledQueueFlush;
 import com.radixdlt.api.server.ArchiveHttpServer;
+import com.radixdlt.api.service.NetworkInfoService;
+import com.radixdlt.api.service.ScheduledCacheCleanup;
+import com.radixdlt.api.service.ScheduledStatsCollecting;
+import com.radixdlt.api.service.TransactionStatusService;
+import com.radixdlt.api.store.ClientApiStore;
+import com.radixdlt.api.store.berkeley.BerkeleyClientApiStore;
+import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
+import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 
 import java.util.List;
 
@@ -41,6 +53,8 @@ public class ArchiveApiModule extends AbstractModule {
 
 	@Override
 	public void configure() {
+		bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
+
 		endpoints.forEach(ep -> {
 			log.info("Enabling /{} endpoint", ep.name());
 			install(ep.module().get());
@@ -51,5 +65,70 @@ public class ArchiveApiModule extends AbstractModule {
 			.to(ArchiveHttpServer.class);
 
 		bind(ArchiveHttpServer.class).in(Scopes.SINGLETON);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> networkInfoService(NetworkInfoService networkInfoService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			ScheduledStatsCollecting.class,
+			networkInfoService.updateStats()
+		);
+	}
+
+	@ProvidesIntoSet
+	private EventProcessorOnRunner<?> atomsCommittedToLedgerEventProcessorBerkeleyClientApi(
+		ClientApiStore clientApiStore
+	) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			TxnsCommittedToLedger.class,
+			clientApiStore.atomsCommittedToLedgerEventProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> cacheCleanupEventProcessor(TransactionStatusService transactionStatusService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			ScheduledCacheCleanup.class,
+			transactionStatusService.cacheCleanupEventProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> atomsCommittedToLedgerTransactionStatus(TransactionStatusService transactionStatusService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			TxnsCommittedToLedger.class,
+			transactionStatusService.atomsCommittedToLedgerEventProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> mempoolAddFailureEventProcessor(TransactionStatusService transactionStatusService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			MempoolAddFailure.class,
+			transactionStatusService.mempoolAddFailureEventProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> mempoolAddSuccessEventProcessor(TransactionStatusService transactionStatusService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			MempoolAddSuccess.class,
+			transactionStatusService.mempoolAddSuccessEventProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> queueFlushProcessor(ClientApiStore clientApiStore) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			ScheduledQueueFlush.class,
+			clientApiStore.queueFlushProcessor()
+		);
 	}
 }

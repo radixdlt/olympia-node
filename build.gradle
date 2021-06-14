@@ -167,11 +167,11 @@ subprojects {
             dependency 'commons-cli:commons-cli:1.4'
             dependency 'org.xerial.snappy:snappy-java:1.1.8.4'
             dependency 'io.netty:netty-all:4.1.51.Final'
-            dependency('com.google.inject:guice:4.2.3') {
+            dependency('com.google.inject:guice:5.0.1') {
                 exclude 'com.google.guava:guava'
             }
 
-            dependency('com.google.inject.extensions:guice-grapher:4.2.3') {
+            dependency('com.google.inject.extensions:guice-grapher:5.0.1') {
                 exclude 'com.google.guava:guava'
             }
 
