@@ -53,6 +53,7 @@ public final class NodeApiModule extends AbstractModule {
 		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
 			.addBinding(Runners.NODE_API)
 			.to(NodeHttpServer.class);
+
 		bind(NodeHttpServer.class).in(Scopes.SINGLETON);
 	}
 }

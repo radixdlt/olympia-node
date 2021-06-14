@@ -19,14 +19,12 @@
 package com.radixdlt.api.server;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.qualifier.AtNode;
 import com.radixdlt.properties.RuntimeProperties;
 
 import java.util.Map;
 
-@Singleton
 public final class NodeHttpServer extends AbstractHttpServer {
 	private static final int DEFAULT_PORT = 3333;
 
