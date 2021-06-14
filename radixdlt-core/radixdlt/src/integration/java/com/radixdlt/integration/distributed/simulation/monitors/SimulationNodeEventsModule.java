@@ -36,14 +36,12 @@ import com.radixdlt.statecomputer.InvalidProposedTxn;
  * Module which manages node testing events for simulation
  */
 public final class SimulationNodeEventsModule extends AbstractModule {
-	// TODO: Cleanup and separate epoch timeouts and non-epoch timeouts
-	@ProcessOnDispatch
 	@ProvidesIntoSet
-	private EventProcessor<EpochLocalTimeoutOccurrence> epochTimeoutProcessor(
+	private EventProcessorOnDispatch<?> epochTimeoutProcessor(
 		@Self BFTNode node,
 		NodeEvents nodeEvents
 	) {
-		return nodeEvents.processor(node, EpochLocalTimeoutOccurrence.class);
+		return nodeEvents.processorOnDispatch(node, EpochLocalTimeoutOccurrence.class);
 	}
 
 	@ProcessOnDispatch

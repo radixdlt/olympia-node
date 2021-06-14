@@ -17,7 +17,7 @@
 
 package com.radixdlt.recovery;
 
-import com.google.inject.multibindings.ProvidesIntoSet;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.ledger.LedgerAccumulator;
@@ -48,7 +48,6 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
-import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.CryptoModule;
@@ -186,15 +185,10 @@ public class RecoveryTest {
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
-					bind(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { }).in(Scopes.SINGLETON);
-				}
-
-				@ProvidesIntoSet
-				private EventProcessorOnDispatch<?> lastVote(DeterministicSavedLastEvent<Vote> lastEvent) {
-					return new EventProcessorOnDispatch<>(
-						Vote.class,
-						lastEvent
-					);
+					bind(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { })
+						.toInstance(new DeterministicSavedLastEvent<>(Vote.class));
+					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() { })
+						.addBinding().toProvider(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { });
 				}
 			},
 			new PersistedNodeForTestingModule()

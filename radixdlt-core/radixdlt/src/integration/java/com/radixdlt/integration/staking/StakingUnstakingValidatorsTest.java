@@ -40,6 +40,7 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
 import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
@@ -47,18 +48,22 @@ import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
+import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
@@ -73,6 +78,7 @@ import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -101,11 +107,13 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.radixdlt.statecomputer.transaction.TokenFeeChecker.FIXED_FEE;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(Parameterized.class)
 public class StakingUnstakingValidatorsTest {
@@ -128,7 +136,7 @@ public class StakingUnstakingValidatorsTest {
 	private VerifiedTxnsAndProof genesis;
 
 	@Inject
-	private REParser reParser;
+	private TreeMap<Long, ForkConfig> epochToForkConfig;
 
 	private DeterministicNetwork network;
 	private List<Supplier<Injector>> nodeCreators;
@@ -220,6 +228,10 @@ public class StakingUnstakingValidatorsTest {
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ValidatorAddress.of(ecKeyPair.getPublicKey()));
+					bind(new TypeLiteral<DeterministicSavedLastEvent<EpochsLedgerUpdate>>() { })
+						.toInstance(new DeterministicSavedLastEvent<>(EpochsLedgerUpdate.class));
+					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() { })
+						.addBinding().toProvider(new TypeLiteral<DeterministicSavedLastEvent<EpochsLedgerUpdate>>() { });
 				}
 
 				@Provides
@@ -271,12 +283,62 @@ public class StakingUnstakingValidatorsTest {
 		}
 	}
 
+	private UInt256 totalNativeTokens() {
+		var lastEpochView = this.nodes.get(0)
+			.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { }));
+		var epoch = lastEpochView.getLastEvent() == null
+			? this.nodes.get(0).getInstance(EpochChange.class).getEpoch()
+			: lastEpochView.getLastEvent().getEpoch();
+		var forkConfig = epochToForkConfig.floorEntry(epoch).getValue();
+		var reParser = forkConfig.getParser();
+
+		var entryStore = this.nodes.get(0).getInstance(BerkeleyLedgerEntryStore.class);
+		var totalTokens = entryStore.reduceUpParticles(TokensInAccount.class, UInt256.ZERO,
+			(i, p) -> {
+				var tokens = (TokensInAccount) p;
+				return i.add(tokens.getAmount());
+			},
+			reParser.getSubstateDeserialization()
+		);
+		logger.info("Total tokens: {}", totalTokens);
+		var totalStaked = entryStore.reduceUpParticles(ValidatorStake.class, UInt256.ZERO,
+			(i, p) -> {
+				var tokens = (ValidatorStake) p;
+				return i.add(tokens.getAmount());
+			},
+			reParser.getSubstateDeserialization()
+		);
+		logger.info("Total staked: {}", totalStaked);
+		var totalStakePrepared = entryStore.reduceUpParticles(PreparedStake.class, UInt256.ZERO,
+			(i, p) -> {
+				var tokens = (PreparedStake) p;
+				return i.add(tokens.getAmount());
+			},
+			reParser.getSubstateDeserialization()
+		);
+		logger.info("Total preparing stake: {}", totalStakePrepared);
+		var totalStakeExitting = entryStore.reduceUpParticles(ExittingStake.class, UInt256.ZERO,
+			(i, p) -> {
+				var tokens = (ExittingStake) p;
+				return i.add(tokens.getAmount());
+			},
+			reParser.getSubstateDeserialization()
+		);
+		logger.info("Total exitting stake: {}", totalStakeExitting);
+		var total = totalTokens.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting);
+		logger.info("Total: {}", total);
+		return total;
+	}
+
 	/**
 	 * TODO: Figure out why if run for long enough, # of validators
 	 * trends to minimum.
 	 */
 	@Test
 	public void stake_unstake_transfers_restarts() {
+
+		var initialCount = totalNativeTokens();
+
 		var random = new Random(12345);
 
 		for (int i = 0; i < 5000; i++) {
@@ -334,40 +396,26 @@ public class StakingUnstakingValidatorsTest {
 			});
 		}
 
-		var entryStore = this.nodes.get(0).getInstance(BerkeleyLedgerEntryStore.class);
-		var totalTokens = entryStore.reduceUpParticles(TokensInAccount.class, UInt256.ZERO,
-			(i, p) -> {
-				var tokens = (TokensInAccount) p;
-				return i.add(tokens.getAmount());
-			},
-			reParser.getSubstateDeserialization()
-		);
-		logger.info("Total tokens: {}", totalTokens);
-		var totalStaked = entryStore.reduceUpParticles(ValidatorStake.class, UInt256.ZERO,
-			(i, p) -> {
-				var tokens = (ValidatorStake) p;
-				return i.add(tokens.getAmount());
-			},
-			reParser.getSubstateDeserialization()
-		);
-		logger.info("Total staked: {}", totalStaked);
-		var totalStakePrepared = entryStore.reduceUpParticles(PreparedStake.class, UInt256.ZERO,
-			(i, p) -> {
-				var tokens = (PreparedStake) p;
-				return i.add(tokens.getAmount());
-			},
-			reParser.getSubstateDeserialization()
-		);
-		logger.info("Total preparing stake: {}", totalStakePrepared);
-		var totalStakeExitting = entryStore.reduceUpParticles(ExittingStake.class, UInt256.ZERO,
-			(i, p) -> {
-				var tokens = (ExittingStake) p;
-				return i.add(tokens.getAmount());
-			},
-			reParser.getSubstateDeserialization()
-		);
-		logger.info("Total exitting stake: {}", totalStakeExitting);
-		logger.info("Total: {}", totalTokens.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting));
+		var node = this.nodes.get(0).getInstance(Key.get(BFTNode.class, Self.class));
+		logger.info("Node {}", node);
+		logger.info("Initial {}", initialCount);
+		var lastEpochView = this.nodes.get(0)
+			.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochsLedgerUpdate>>() { }));
+		var epoch = lastEpochView.getLastEvent() == null
+			? this.nodes.get(0).getInstance(EpochChange.class).getEpoch()
+			: lastEpochView.getLastEvent().getEpochChange().map(EpochChange::getEpoch)
+				.orElseGet(() -> lastEpochView.getLastEvent().getBase().getTail().getEpoch());
+
+		logger.info("Epoch {}", epoch);
+		var maxEmissions = UInt256.from(99).multiply(SystemConstraintScryptV2.REWARDS_PER_PROPOSAL).multiply(UInt256.from(epoch - 1));
+		logger.info("Max emissions {}", maxEmissions);
+
+		var finalCount = totalNativeTokens();
+
+		assertThat(finalCount).isGreaterThan(initialCount);
+		var diff = finalCount.subtract(initialCount);
+		logger.info("Difference {}", diff);
+		assertThat(diff).isLessThanOrEqualTo(maxEmissions);
 	}
 
 }

@@ -202,16 +202,17 @@ public class DispatcherModule extends AbstractModule {
 		final var timeoutOccurrenceKey = new TypeLiteral<EventProcessor<LocalTimeoutOccurrence>>() { };
 		Multibinder.newSetBinder(binder(), timeoutOccurrenceKey, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), timeoutOccurrenceKey);
-		final var epochTimeoutOccurrenceKey = new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() { };
-		Multibinder.newSetBinder(binder(), epochTimeoutOccurrenceKey, ProcessOnDispatch.class);
-		Multibinder.newSetBinder(binder(), epochTimeoutOccurrenceKey);
+		bind(new TypeLiteral<EventDispatcher<EpochLocalTimeoutOccurrence>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(EpochLocalTimeoutOccurrence.class, true)).in(Scopes.SINGLETON);
 
 		final var viewUpdateKey = new TypeLiteral<EventProcessor<ViewUpdate>>() { };
 		Multibinder.newSetBinder(binder(), viewUpdateKey, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), viewUpdateKey);
-		final var epochViewUpdateKey = new TypeLiteral<EventProcessor<EpochViewUpdate>>() { };
-		Multibinder.newSetBinder(binder(), epochViewUpdateKey, ProcessOnDispatch.class);
-		Multibinder.newSetBinder(binder(), epochViewUpdateKey);
+
+		bind(new TypeLiteral<EventDispatcher<EpochViewUpdate>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(EpochViewUpdate.class, true)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<EpochsLedgerUpdate>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(EpochsLedgerUpdate.class)).in(Scopes.SINGLETON);
 
 		final var insertUpdateKey = new TypeLiteral<EventProcessor<BFTInsertUpdate>>() { };
 		Multibinder.newSetBinder(binder(), insertUpdateKey, ProcessOnDispatch.class);
@@ -232,9 +233,6 @@ public class DispatcherModule extends AbstractModule {
 
 		final var ledgerUpdateKey = new TypeLiteral<EventProcessor<LedgerUpdate>>() { };
 		Multibinder.newSetBinder(binder(), ledgerUpdateKey, ProcessOnDispatch.class);
-
-		final var epochsLedgerUpdateKey = new TypeLiteral<EventProcessor<EpochsLedgerUpdate>>() { };
-		Multibinder.newSetBinder(binder(), epochsLedgerUpdateKey, ProcessOnDispatch.class);
 
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() { });
 	}
@@ -403,27 +401,6 @@ public class DispatcherModule extends AbstractModule {
 	}
 
 	@Provides
-	private EventDispatcher<EpochLocalTimeoutOccurrence> timeoutEventDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<EpochLocalTimeoutOccurrence>> processors,
-		Set<EventProcessor<EpochLocalTimeoutOccurrence>> asyncProcessors,
-		Environment environment
-	) {
-		if (asyncProcessors.isEmpty()) {
-			return timeout -> {
-				logger.info("LOCAL_TIMEOUT_OCCURRENCE: {}", timeout);
-				processors.forEach(e -> e.process(timeout));
-			};
-		} else {
-			var dispatcher = environment.getDispatcher(EpochLocalTimeoutOccurrence.class);
-			return timeout -> {
-				logger.info("LOCAL_TIMEOUT_OCCURRENCE: {}", timeout);
-				dispatcher.dispatch(timeout);
-				processors.forEach(e -> e.process(timeout));
-			};
-		}
-	}
-
-	@Provides
 	private RemoteEventDispatcher<GetVerticesRequest> verticesRequestDispatcher(
 		@ProcessOnDispatch Set<EventProcessor<GetVerticesRequest>> processors,
 		Environment environment,
@@ -455,40 +432,11 @@ public class DispatcherModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private EventDispatcher<EpochViewUpdate> epochViewUpdateEventDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<EpochViewUpdate>> processors,
-		Environment environment
-	) {
-		var logLimiter = RateLimiter.create(1.0);
-		var dispatcher = environment.getDispatcher(EpochViewUpdate.class);
-		return epochViewUpdate -> {
-			Level logLevel = logLimiter.tryAcquire() ? Level.DEBUG : Level.TRACE;
-			logger.log(logLevel, "NextSyncView: {}", epochViewUpdate);
-			dispatcher.dispatch(epochViewUpdate);
-			processors.forEach(e -> e.process(epochViewUpdate));
-		};
-	}
-
-	@Provides
-	@Singleton
 	private EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher(
 		@ProcessOnDispatch Set<EventProcessor<LedgerUpdate>> processors,
 		Environment environment
 	) {
 		var dispatcher = environment.getDispatcher(LedgerUpdate.class);
-		return u -> {
-			dispatcher.dispatch(u);
-			processors.forEach(e -> e.process(u));
-		};
-	}
-
-	@Provides
-	@Singleton
-	private EventDispatcher<EpochsLedgerUpdate> epochsLedgerUpdateEventDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<EpochsLedgerUpdate>> processors,
-		Environment environment
-	) {
-		var dispatcher = environment.getDispatcher(EpochsLedgerUpdate.class);
 		return u -> {
 			dispatcher.dispatch(u);
 			processors.forEach(e -> e.process(u));

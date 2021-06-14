@@ -17,17 +17,23 @@
 
 package com.radixdlt.environment.deterministic;
 
-import com.radixdlt.environment.EventProcessor;
+import com.google.inject.Provider;
+import com.radixdlt.environment.EventProcessorOnDispatch;
 
-public class DeterministicSavedLastEvent<T> implements EventProcessor<T> {
+public class DeterministicSavedLastEvent<T> implements Provider<EventProcessorOnDispatch<T>> {
 	private T t;
+	private final Class<T> eventClass;
 
-	@Override
-	public void process(T t) {
-		this.t = t;
+	public DeterministicSavedLastEvent(Class<T> eventClass) {
+		this.eventClass = eventClass;
 	}
 
 	public T getLastEvent() {
 		return t;
+	}
+
+	@Override
+	public EventProcessorOnDispatch<T> get() {
+		return new EventProcessorOnDispatch<>(eventClass, t -> this.t = t);
 	}
 }
