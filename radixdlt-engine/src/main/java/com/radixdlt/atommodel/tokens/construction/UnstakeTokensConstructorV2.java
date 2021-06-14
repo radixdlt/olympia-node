@@ -34,7 +34,7 @@ public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeToke
 
 		var ownershipAmt = action.amount()
 			.multiply(validatorStake.getTotalOwnership())
-			.divide(validatorStake.getAmount());
+			.divide(validatorStake.getTotalStake());
 
 		txBuilder.swapFungible(
 			StakeOwnership.class,

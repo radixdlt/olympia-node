@@ -18,31 +18,45 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.atom.TxAction;
+
+import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class ReducerResult {
 	private final ReducerState reducerState;
+	private final TxAction txAction;
 
-	private ReducerResult(ReducerState reducerState) {
+	private ReducerResult(ReducerState reducerState, TxAction txAction) {
 		this.reducerState = reducerState;
+		this.txAction = txAction;
 	}
 
 	public static ReducerResult incomplete(ReducerState reducerState) {
-		return new ReducerResult(reducerState);
+		return new ReducerResult(reducerState, null);
+	}
+
+	public static ReducerResult incomplete(ReducerState reducerState, TxAction txAction) {
+		return new ReducerResult(reducerState, txAction);
 	}
 
 	public static ReducerResult complete() {
-		return new ReducerResult(null);
+		return new ReducerResult(null, null);
+	}
+
+	public static ReducerResult complete(TxAction txAction) {
+		return new ReducerResult(null, txAction);
 	}
 
 	public void ifCompleteElse(
-		Runnable completeConsumer,
-		Consumer<ReducerState> incompleteConsumer
+		Consumer<Optional<TxAction>> completeConsumer,
+		BiConsumer<ReducerState, Optional<TxAction>> incompleteConsumer
 	) {
 		if (reducerState == null) {
-			completeConsumer.run();
+			completeConsumer.accept(Optional.ofNullable(txAction));
 		} else {
-			incompleteConsumer.accept(reducerState);
+			incompleteConsumer.accept(reducerState, Optional.ofNullable(txAction));
 		}
 	}
 }

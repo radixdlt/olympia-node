@@ -23,14 +23,15 @@ import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV1;
-import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV1;
+import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV2;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV2;
+import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
-import com.radixdlt.atommodel.tokens.state.PreparedStake;
+import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.CMErrorCode;
@@ -50,12 +51,12 @@ import org.junit.runners.Parameterized;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @RunWith(Parameterized.class)
-public class UnstakeTokensV1Test {
+public class ValidatorStakeTokensTest {
 
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
@@ -63,38 +64,43 @@ public class UnstakeTokensV1Test {
 			{
 				UInt256.TEN, UInt256.TEN,
 				List.of(new TokensConstraintScryptV1(), new StakingConstraintScryptV2()),
-				new StakeTokensConstructorV1(),
-				new UnstakeTokensConstructorV1()
+				new StakeTokensConstructorV1()
 			},
 			{
 				UInt256.TEN, UInt256.SIX,
 				List.of(new TokensConstraintScryptV1(), new StakingConstraintScryptV2()),
-				new StakeTokensConstructorV1(),
-				new UnstakeTokensConstructorV1()
-			}
+				new StakeTokensConstructorV1()
+			},
+			{
+				UInt256.TEN, UInt256.TEN,
+				List.of(new TokensConstraintScryptV2(), new StakingConstraintScryptV3()),
+				new StakeTokensConstructorV2()
+			},
+			{
+				UInt256.TEN, UInt256.SIX,
+				List.of(new TokensConstraintScryptV2(), new StakingConstraintScryptV3()),
+				new StakeTokensConstructorV2()
+			},
 		});
 	}
 
 	private RadixEngine<Void> engine;
 	private EngineStore<Void> store;
 	private final UInt256 startAmt;
-	private final UInt256 unstakeAmt;
+	private final UInt256 stakeAmt;
 	private final List<ConstraintScrypt> scrypts;
 	private final ActionConstructor<StakeTokens> stakeTokensConstructor;
-	private final ActionConstructor<UnstakeTokens> unstakeTokensConstructor;
 
-	public UnstakeTokensV1Test(
+	public ValidatorStakeTokensTest(
 		UInt256 startAmt,
-		UInt256 unstakeAmt,
+		UInt256 stakeAmt,
 		List<ConstraintScrypt> scrypts,
-		ActionConstructor<StakeTokens> stakeTokensConstructor,
-		ActionConstructor<UnstakeTokens> unstakeTokensConstructor
+		ActionConstructor<StakeTokens> stakeTokensConstructor
 	) {
-		this.startAmt = startAmt;
-		this.unstakeAmt = unstakeAmt;
+		this.startAmt = ValidatorStake.MINIMUM_STAKE.multiply(startAmt);
+		this.stakeAmt = ValidatorStake.MINIMUM_STAKE.multiply(stakeAmt);
 		this.scrypts = scrypts;
 		this.stakeTokensConstructor = stakeTokensConstructor;
-		this.unstakeTokensConstructor = unstakeTokensConstructor;
 	}
 
 	@Before
@@ -110,7 +116,6 @@ public class UnstakeTokensV1Test {
 		this.engine = new RadixEngine<>(
 			ActionConstructors.newBuilder()
 				.put(StakeTokens.class, stakeTokensConstructor)
-				.put(UnstakeTokens.class, unstakeTokensConstructor)
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
 				.build(),
@@ -120,10 +125,11 @@ public class UnstakeTokensV1Test {
 	}
 
 	@Test
-	public void unstake_tokens() throws Exception {
+	public void stake_tokens() throws Exception {
 		// Arrange
 		var key = ECKeyPair.generateNew();
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
+		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
 		var txn = this.engine.construct(
 			List.of(
 				new CreateMutableToken("xrd", "Name", "", "", ""),
@@ -131,21 +137,23 @@ public class UnstakeTokensV1Test {
 			)
 		).buildWithoutSignature();
 		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
-		var stake = this.engine.construct(new StakeTokens(accountAddr, key.getPublicKey(), startAmt))
-			.signAndBuild(key::sign);
-		this.engine.execute(List.of(stake));
 
 		// Act
-		var unstake = this.engine.construct(new UnstakeTokens(accountAddr, key.getPublicKey(), unstakeAmt))
+		var transfer = this.engine.construct(new StakeTokens(accountAddr, key.getPublicKey(), stakeAmt))
 			.signAndBuild(key::sign);
-		var processed = this.engine.execute(List.of(unstake));
+		var parsed = this.engine.execute(List.of(transfer));
+		var action = (StakeTokens) parsed.get(0).getActions().get(0).getTxAction();
+		assertThat(action.amount()).isEqualTo(stakeAmt);
+		assertThat(action.from()).isEqualTo(accountAddr);
+		assertThat(action.to()).isEqualTo(key.getPublicKey());
 	}
 
 	@Test
-	public void cannot_burn_stake() throws Exception {
+	public void cannot_stake_others_tokens() throws Exception {
 		// Arrange
 		var key = ECKeyPair.generateNew();
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
+		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
 		var txn = this.engine.construct(
 			List.of(
 				new CreateMutableToken("xrd", "Name", "", "", ""),
@@ -153,48 +161,13 @@ public class UnstakeTokensV1Test {
 			)
 		).buildWithoutSignature();
 		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
-		var stake = this.engine.construct(new StakeTokens(accountAddr, key.getPublicKey(), unstakeAmt))
-			.signAndBuild(key::sign);
-		this.engine.execute(List.of(stake));
-
-		// Arrange
-		var burnStake = this.engine.construct(txBuilder -> {
-			txBuilder.down(
-				PreparedStake.class,
-				d -> d.getOwner().equals(accountAddr),
-				Optional.empty(),
-				""
-			);
-			txBuilder.end();
-		}).signAndBuild(key::sign);
-
-		// Act and Assert
-		assertThatThrownBy(() -> this.engine.execute(List.of(burnStake)))
-			.isInstanceOf(RadixEngineException.class);
-	}
-
-	@Test
-	public void cannot_unstake_others_tokens() throws Exception {
-		// Arrange
-		var key = ECKeyPair.generateNew();
-		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
-		var txn = this.engine.construct(
-			List.of(
-				new CreateMutableToken("xrd", "Name", "", "", ""),
-				new MintToken(REAddr.ofNativeToken(), accountAddr, startAmt)
-			)
-		).buildWithoutSignature();
-		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
-		var stake = this.engine.construct(new StakeTokens(accountAddr, key.getPublicKey(), startAmt))
-			.signAndBuild(key::sign);
-		this.engine.execute(List.of(stake));
 
 		// Act
 		var nextKey = ECKeyPair.generateNew();
-		var unstake = this.engine.construct(new UnstakeTokens(accountAddr, key.getPublicKey(), unstakeAmt))
+		var to = REAddr.ofPubKeyAccount(nextKey.getPublicKey());
+		var transfer = this.engine.construct(new StakeTokens(accountAddr, key.getPublicKey(), stakeAmt))
 			.signAndBuild(nextKey::sign);
-
-		assertThatThrownBy(() -> this.engine.execute(List.of(unstake)))
+		assertThatThrownBy(() -> this.engine.execute(List.of(transfer)))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting("cause.errorCode")
 			.containsExactly(CMErrorCode.AUTHORIZATION_ERROR);

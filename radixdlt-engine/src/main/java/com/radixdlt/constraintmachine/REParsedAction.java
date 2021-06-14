@@ -16,16 +16,30 @@
  *
  */
 
-package com.radixdlt.atommodel.tokens;
+package com.radixdlt.constraintmachine;
 
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.atom.TxAction;
 
-// TODO: these methods are really here for client api,
-// TODO: fix to be more in line with scrypto abstractions
-public interface Bucket {
-	REAddr resourceAddr();
-	REAddr getOwner();
-	ECPublicKey getValidatorKey();
-	Long getEpochUnlock();
+import java.util.Objects;
+
+/**
+ * Action which was parsed by constraint machine from a transaction
+ */
+public final class REParsedAction {
+	private final TxAction txAction;
+
+	private REParsedAction(TxAction txAction) {
+		this.txAction = txAction;
+	}
+
+	public static REParsedAction create(
+		TxAction txAction
+	) {
+		Objects.requireNonNull(txAction);
+		return new REParsedAction(txAction);
+	}
+
+	public TxAction getTxAction() {
+		return txAction;
+	}
 }

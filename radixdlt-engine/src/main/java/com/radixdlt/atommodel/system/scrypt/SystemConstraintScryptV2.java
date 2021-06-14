@@ -18,6 +18,7 @@
 
 package com.radixdlt.atommodel.system.scrypt;
 
+import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.HasEpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
@@ -507,7 +508,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			},
 			(s, u, r) -> {
 				s.update(u);
-				return ReducerResult.complete();
+				return ReducerResult.complete(Unknown.create());
 			}
 		));
 	}
@@ -657,7 +658,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.registerParticle(
 			ValidatorStake.class,
 			ParticleDefinition.<ValidatorStake>builder()
-				.virtualizeUp(p -> p.getAmount().isZero())
+				.virtualizeUp(p -> p.getTotalStake().isZero())
 				.build()
 		);
 		os.registerParticle(

@@ -18,7 +18,6 @@
 
 package com.radixdlt.atommodel.tokens;
 
-import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
@@ -39,7 +38,6 @@ import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.math.BigInteger;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -87,13 +85,13 @@ public class BurnTokensTest {
 
 		// Act
 		var burnTxn = this.engine.construct(new BurnToken(tokenAddr, nextAccountAddr, UInt256.TEN)).signAndBuild(nextKey::sign);
-		var processed = this.engine.execute(List.of(burnTxn));
+		var parsed = this.engine.execute(List.of(burnTxn));
 
 		// Assert
-		var accounting = REResourceAccounting.compute(processed.get(0).getGroupedStateUpdates().get(0));
-		assertThat(accounting.resourceAccounting())
-			.hasSize(1)
-			.containsEntry(tokenAddr, BigInteger.valueOf(-10));
+		var action = (BurnToken) parsed.get(0).getActions().get(0).getTxAction();
+		assertThat(action.amount()).isEqualTo(UInt256.TEN);
+		assertThat(action.from()).isEqualTo(nextAccountAddr);
+		assertThat(action.resourceAddr()).isEqualTo(tokenAddr);
 	}
 
 }

@@ -18,10 +18,9 @@
 
 package com.radixdlt.atommodel.system.state;
 
-import com.radixdlt.atommodel.tokens.ResourceInBucket;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.atommodel.tokens.Bucket;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -31,12 +30,11 @@ import com.radixdlt.utils.UInt384;
 
 import java.util.Objects;
 
-public final class ValidatorStake implements ResourceInBucket {
+public final class ValidatorStake implements Particle {
 	public static final UInt256 MINIMUM_STAKE = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
 	public static final int EPOCHS_LOCKED = 1; // Must go through one full epoch before being unlocked
 
 	private final UInt256 totalStake;
-
 	private final UInt256 totalOwnership;
 
 	// Bucket keys
@@ -67,16 +65,6 @@ public final class ValidatorStake implements ResourceInBucket {
 		UInt256 totalOwnership
 	) {
 		return new ValidatorStake(validatorKey, totalStake, totalOwnership);
-	}
-
-	@Override
-	public UInt256 getAmount() {
-		return this.totalStake;
-	}
-
-	@Override
-	public Bucket bucket() {
-		return new ValidatorStakeBucket(validatorKey);
 	}
 
 	public ValidatorStake addEmission(UInt256 amount) {
@@ -135,6 +123,10 @@ public final class ValidatorStake implements ResourceInBucket {
 
 	public UInt256 getTotalOwnership() {
 		return this.totalOwnership;
+	}
+
+	public UInt256 getTotalStake() {
+		return this.totalStake;
 	}
 
 	@Override

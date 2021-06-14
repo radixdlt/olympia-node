@@ -36,7 +36,7 @@ public final class MyValidator {
 
 	public void setStake(ValidatorStake validatorStake) {
 		this.totalOwnership = validatorStake.getTotalOwnership();
-		this.totalStake = validatorStake.getAmount();
+		this.totalStake = validatorStake.getTotalStake();
 	}
 
 	public void addOwnership(REAddr delegate, UInt256 amount) {

@@ -18,6 +18,8 @@
 
 package com.radixdlt.atommodel.tokens.scrypt;
 
+import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
@@ -75,7 +77,10 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 				var amt = UInt384.from(d.getSubstate().getAmount());
 				var nextRemainder = s.subtract(amt);
 				if (nextRemainder.isEmpty()) {
-					return ReducerResult.complete();
+					// FIXME: This isn't 100% correct
+					var p = s.initialParticle();
+					var action = new StakeTokens(d.getSubstate().getHoldingAddr(), p.getDelegateKey(), p.getAmount());
+					return ReducerResult.complete(action);
 				}
 
 				return ReducerResult.incomplete(nextRemainder.get());
@@ -110,7 +115,10 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 
 				var nextRemainder = s.subtract(UInt384.from(d.getSubstate().getAmount()));
 				if (nextRemainder.isEmpty()) {
-					return ReducerResult.complete();
+					// FIXME: This isn't 100% correct
+					var p = (TokensInAccount) s.initialParticle();
+					var action = new UnstakeTokens(p.getHoldingAddr(), d.getSubstate().getDelegateKey(), p.getAmount());
+					return ReducerResult.complete(action);
 				}
 
 				if (nextRemainder.get() instanceof TokensConstraintScryptV1.RemainderTokens) {
@@ -146,7 +154,10 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 					throw new ProcedureException("Owners don't match.");
 				}
 
-				return ReducerResult.complete();
+				// FIXME: This isn't 100% correct
+				var t = (TokensInAccount) s.initialParticle();
+				var action = new UnstakeTokens(t.getHoldingAddr(), u.getDelegateKey(), t.getAmount());
+				return ReducerResult.complete(action);
 			}
 		));
 	}

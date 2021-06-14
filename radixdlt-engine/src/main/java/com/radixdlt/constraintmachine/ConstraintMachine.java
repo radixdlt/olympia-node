@@ -22,6 +22,7 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
@@ -111,6 +112,7 @@ public final class ConstraintMachine {
 		private final CMStore store;
 		private final CMStore.Transaction dbTxn;
 		private final Predicate<Particle> virtualStoreLayer;
+		private TxAction txAction;
 
 		CMValidationState(
 			Predicate<Particle> virtualStoreLayer,
@@ -416,19 +418,28 @@ public final class ConstraintMachine {
 		}
 
 		reducerResult.ifCompleteElse(
-			() -> validationState.reducerState = null,
-			nextState -> validationState.reducerState = nextState
+			txAction -> {
+				validationState.reducerState = null;
+				validationState.txAction = txAction.orElse(null);
+			},
+			(nextState, txAction) -> {
+				validationState.reducerState = nextState;
+				validationState.txAction = txAction.orElse(null);
+			}
 		);
 	}
 
 	/**
 	 * Executes transition procedures and witness validators in a particle group and validates
 	 * that the particle group is well formed.
+	 *
+	 * @return the first error found, otherwise an empty optional
 	 */
 	void statefulVerify(
 		CMValidationState validationState,
 		List<REInstruction> instructions,
-		List<List<REStateUpdate>> parsedInstructions
+		List<List<REStateUpdate>> parsedInstructions,
+		List<REParsedAction> parsedActions
 	) throws ConstraintMachineException {
 		int instIndex = 0;
 		var expectEnd = false;
@@ -523,6 +534,12 @@ public final class ConstraintMachine {
 				expectEnd = false;
 			}
 
+			if (validationState.txAction != null) {
+				var parsedAction = REParsedAction.create(validationState.txAction);
+				parsedActions.add(parsedAction);
+				validationState.txAction = null;
+			}
+
 			instIndex++;
 		}
 	}
@@ -548,9 +565,10 @@ public final class ConstraintMachine {
 			permissionLevel,
 			Optional.ofNullable(result.publicKey)
 		);
+		var parsedActions = new ArrayList<REParsedAction>();
 		var parsedInstructions = new ArrayList<List<REStateUpdate>>();
-		this.statefulVerify(validationState, result.instructions, parsedInstructions);
+		this.statefulVerify(validationState, result.instructions, parsedInstructions, parsedActions);
 
-		return new REProcessedTxn(txn, result, parsedInstructions);
+		return new REProcessedTxn(txn, result, parsedInstructions,  parsedActions);
 	}
 }

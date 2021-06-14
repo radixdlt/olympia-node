@@ -18,8 +18,7 @@
 
 package com.radixdlt.atommodel.tokens.state;
 
-import com.radixdlt.atommodel.tokens.Bucket;
-import com.radixdlt.atommodel.tokens.ResourceInBucket;
+import com.radixdlt.atommodel.tokens.Fungible;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -30,7 +29,7 @@ import java.util.Objects;
  *  A particle which represents an amount of staked fungible tokens
  *  owned by some key owner, stored in an account and staked to a delegate address.
  */
-public final class PreparedStake implements ResourceInBucket {
+public final class PreparedStake implements Fungible {
 	private final UInt256 amount;
 
 	// Bucket keys
@@ -45,16 +44,6 @@ public final class PreparedStake implements ResourceInBucket {
 		this.delegateKey = Objects.requireNonNull(delegateKey);
 		this.owner = Objects.requireNonNull(owner);
 		this.amount = Objects.requireNonNull(amount);
-	}
-
-	@Override
-	public UInt256 getAmount() {
-		return this.amount;
-	}
-
-	@Override
-	public Bucket bucket() {
-		return new PreparedStakeBucket(owner, delegateKey);
 	}
 
 	public REAddr getResourceAddr() {
@@ -77,6 +66,11 @@ public final class PreparedStake implements ResourceInBucket {
 			owner,
 			delegateKey
 		);
+	}
+
+	@Override
+	public UInt256 getAmount() {
+		return this.amount;
 	}
 
 	@Override

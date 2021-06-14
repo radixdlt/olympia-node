@@ -16,8 +16,6 @@
  */
 package com.radixdlt.client.store.berkeley;
 
-import com.radixdlt.accounting.REResourceAccounting;
-import com.radixdlt.accounting.TwoActorEntry;
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.actions.BurnToken;
@@ -169,7 +167,7 @@ public class TransactionParserTest {
 			.build()
 		).signAndBuild(tokenOwnerKeyPair::sign);
 
-		executeAndDecode(List.of(ActionType.UNKNOWN, ActionType.MINT, ActionType.TRANSFER), UInt256.FOUR, txn);
+		executeAndDecode(List.of(ActionType.UNKNOWN, ActionType.UNKNOWN, ActionType.TRANSFER), UInt256.FOUR, txn);
 	}
 
 	private void executeAndDecode(List<ActionType> expectedActions, UInt256 fee, Txn... txns) throws Exception {
@@ -182,14 +180,7 @@ public class TransactionParserTest {
 		var timestamp = Instant.ofEpochMilli(Instant.now().toEpochMilli());
 
 		list.stream()
-			.map(txn -> {
-				var actions = txn.getGroupedStateUpdates().stream()
-					.map(REResourceAccounting::compute)
-					.map(REResourceAccounting::bucketAccounting)
-					.map(TwoActorEntry::parse)
-					.collect(Collectors.toList());
-				return parser.parse(txn, actions, timestamp, addr -> addr.toString(), (k, a) -> a);
-			})
+			.map(txn -> parser.parse(txn, timestamp, addr -> addr.toString(), (k, a) -> a))
 			.forEach(entry -> entry
 				.onFailureDo(Assert::fail)
 				.onSuccess(historyEntry -> assertEquals(fee, historyEntry.getFee()))

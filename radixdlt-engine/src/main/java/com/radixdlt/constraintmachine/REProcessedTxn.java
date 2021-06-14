@@ -35,15 +35,19 @@ import java.util.stream.Stream;
 public final class REProcessedTxn {
 	private final Txn txn;
 	private final List<List<REStateUpdate>> stateUpdates;
+	// TODO: Remove this
+	private final List<REParsedAction> actions;
 	private final ConstraintMachine.ParseResult statelessResult;
 
 	public REProcessedTxn(
 		Txn txn,
 		ConstraintMachine.ParseResult statelessResult,
-		List<List<REStateUpdate>> stateUpdates
+		List<List<REStateUpdate>> stateUpdates,
+		List<REParsedAction> actions
 	) {
 		this.txn = txn;
 		this.stateUpdates = stateUpdates;
+		this.actions = actions;
 		this.statelessResult = statelessResult;
 	}
 
@@ -53,6 +57,10 @@ public final class REProcessedTxn {
 
 	public Optional<ECPublicKey> getSignedBy() {
 		return statelessResult.getSignedBy();
+	}
+
+	public List<REParsedAction> getActions() {
+		return actions;
 	}
 
 	public Txn getTxn() {
@@ -76,7 +84,7 @@ public final class REProcessedTxn {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(txn);
+		return Objects.hash(txn, actions);
 	}
 
 	@Override
@@ -86,11 +94,12 @@ public final class REProcessedTxn {
 		}
 
 		var other = (REProcessedTxn) o;
-		return Objects.equals(this.txn, other.txn);
+		return Objects.equals(this.txn, other.txn)
+			&& Objects.equals(this.actions, other.actions);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), txn);
+		return String.format("%s[%s][%s]", getClass().getSimpleName(), txn, actions);
 	}
 }

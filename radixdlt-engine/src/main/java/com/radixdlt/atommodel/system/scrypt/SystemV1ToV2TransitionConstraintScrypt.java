@@ -18,6 +18,7 @@
 
 package com.radixdlt.atommodel.system.scrypt;
 
+import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -117,7 +118,12 @@ public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt 
 					throw new ProcedureException("Next view must be greater than previous.");
 				}
 
-				return ReducerResult.complete();
+				return ReducerResult.complete(new SystemNextView(
+						u.getView(),
+						u.getTimestamp(),
+						null
+					)
+				);
 			}
 		));
 	}

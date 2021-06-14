@@ -74,15 +74,6 @@ public class BalanceEntry {
 		return createFull(owner, delegate, rri, amount, negative, epochUnlocked);
 	}
 
-
-	public static BalanceEntry resource(
-		String rri,
-		UInt384 amount,
-		boolean negative
-	) {
-		return createFull(null, null, rri, amount, negative, null);
-	}
-
 	public static BalanceEntry create(
 		REAddr owner,
 		ECPublicKey delegate,

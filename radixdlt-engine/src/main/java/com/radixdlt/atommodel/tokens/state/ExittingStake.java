@@ -18,8 +18,7 @@
 
 package com.radixdlt.atommodel.tokens.state;
 
-import com.radixdlt.atommodel.tokens.Bucket;
-import com.radixdlt.atommodel.tokens.ResourceInBucket;
+import com.radixdlt.atommodel.tokens.Fungible;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -27,7 +26,7 @@ import com.radixdlt.utils.UInt256;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public final class ExittingStake implements ResourceInBucket {
+public final class ExittingStake implements Fungible {
 	private final UInt256 amount;
 
 	// Bucket keys
@@ -67,16 +66,6 @@ public final class ExittingStake implements ResourceInBucket {
 		);
 	}
 
-	@Override
-	public UInt256 getAmount() {
-		return this.amount;
-	}
-
-	@Override
-	public Bucket bucket() {
-		return new ExittingStakeBucket(owner, delegateKey, epochUnlocked);
-	}
-
 	public ECPublicKey getDelegateKey() {
 		return delegateKey;
 	}
@@ -94,6 +83,11 @@ public final class ExittingStake implements ResourceInBucket {
 			delegateKey,
 			epochUnlocked
 		);
+	}
+
+	@Override
+	public UInt256 getAmount() {
+		return this.amount;
 	}
 
 	@Override

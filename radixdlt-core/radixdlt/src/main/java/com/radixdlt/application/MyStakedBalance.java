@@ -57,7 +57,7 @@ public final class MyStakedBalance {
 			if (validator == null) {
 				return;
 			}
-			var totalStake = validator.getAmount();
+			var totalStake = validator.getTotalStake();
 			var totalOwnership = validator.getTotalOwnership();
 			var stake = ownership.multiply(totalStake).divide(totalOwnership);
 			consumer.accept(delegate, stake);

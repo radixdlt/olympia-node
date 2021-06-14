@@ -18,7 +18,6 @@
 
 package com.radixdlt.atommodel.tokens;
 
-import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.actions.CreateMutableToken;
@@ -46,7 +45,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.math.BigInteger;
 import java.util.Collection;
 import java.util.List;
 
@@ -124,11 +122,11 @@ public final class MintTokensTest {
 
 		// Act and Assert
 		var mintTxn = this.engine.construct(new MintToken(tokenAddr, accountAddr, UInt256.TEN)).signAndBuild(key::sign);
-		var processed = this.engine.execute(List.of(mintTxn));
-		var accounting = REResourceAccounting.compute(processed.get(0).getGroupedStateUpdates().get(0));
-		assertThat(accounting.resourceAccounting())
-			.hasSize(1)
-			.containsEntry(tokenAddr, BigInteger.valueOf(10));
+		var parsed = this.engine.execute(List.of(mintTxn));
+		var action = (MintToken) parsed.get(0).getActions().get(0).getTxAction();
+		assertThat(action.amount()).isEqualTo(UInt256.TEN);
+		assertThat(action.to()).isEqualTo(accountAddr);
+		assertThat(action.resourceAddr()).isEqualTo(tokenAddr);
 	}
 
 	@Test

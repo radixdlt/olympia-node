@@ -22,14 +22,14 @@ import com.radixdlt.identifiers.REAddr;
 
 import java.util.Optional;
 
-public class DeprecatedResourceInBucket {
+public class ResourceInBucket {
 	private final REAddr resourceAddr;
 	// Bucket
 	private final REAddr holdingAddress;
 	// Bucket properties
 	private final Long epochUnlocked;
 
-	public DeprecatedResourceInBucket(REAddr resourceAddr, REAddr holdingAddress, Long epochUnlocked) {
+	public ResourceInBucket(REAddr resourceAddr, REAddr holdingAddress, Long epochUnlocked) {
 		this.resourceAddr = resourceAddr;
 		this.holdingAddress = holdingAddress;
 		this.epochUnlocked = epochUnlocked;
