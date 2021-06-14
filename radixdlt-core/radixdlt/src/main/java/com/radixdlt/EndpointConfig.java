@@ -73,7 +73,7 @@ public final class EndpointConfig {
 	private static final List<EndpointConfig> ENDPOINTS = List.of(
 		new EndpointConfig(API_ARCHIVE, false, ARCHIVE, ALL, ArchiveEndpointModule::new),
 		new EndpointConfig(API_CONSTRUCTION, false, ARCHIVE, ALL, ConstructEndpointModule::new),
-		new EndpointConfig(API_METRICS, false, ARCHIVE, ALL, MetricsEndpointModule::new),
+		new EndpointConfig(API_METRICS, false, NODE, ALL, MetricsEndpointModule::new),
 		new EndpointConfig(API_SYSTEM, false, NODE, ALL, SystemEndpointModule::new),
 		new EndpointConfig(API_ACCOUNT, false, NODE, ALL, AccountEndpointModule::new),
 		new EndpointConfig(API_VALIDATION, false, NODE, ALL, ValidationEndpointModule::new),
@@ -82,8 +82,8 @@ public final class EndpointConfig {
 		new EndpointConfig(API_CHAOS, false, NODE, DEV_ONLY, ChaosEndpointModule::new),
 		new EndpointConfig(API_HEALTH, true, NODE, ALL, HealthEndpointModule::new),
 		new EndpointConfig(API_VERSION, true, NODE, ALL, VersionEndpointModule::new)
-
 	);
+
 	private static final List<EndpointConfig> ARCHIVE_ENDPOINTS = ENDPOINTS.stream()
 		.filter(e -> e.type == ARCHIVE)
 		.collect(Collectors.toList());
@@ -111,6 +111,7 @@ public final class EndpointConfig {
 		this.environment = environment;
 		this.moduleSupplier = moduleSupplier;
 	}
+
 	public static List<EndpointConfig> enabledArchiveEndpoints(RuntimeProperties properties, UniverseType env) {
 		return ARCHIVE_ENDPOINTS.stream()
 			.filter(e -> e.isEnabled(properties))
