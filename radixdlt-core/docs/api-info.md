@@ -196,7 +196,7 @@ Second server (referred below as _NODE_) is used to serve remaining endpoints an
 | --- | --- |
 | `/archive` | ARCHIVE
 | `/construction` | ARCHIVE
-| `/metrics` | ARCHIVE
+| `/metrics` | NODE
 | `/system` | NODE
 | `/account` | NODE
 | `/validation` | NODE

@@ -23,9 +23,7 @@ import org.json.JSONObject;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
-import com.radixdlt.EndpointConfig;
-import com.radixdlt.api.qualifier.AtArchive;
-import com.radixdlt.api.qualifier.AtNode;
+import com.radixdlt.api.qualifier.Endpoints;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
@@ -49,7 +47,6 @@ import com.radixdlt.utils.Bytes;
 
 import java.util.List;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.radixdlt.api.JsonRpcUtil.fromList;
@@ -167,8 +164,7 @@ public class SystemConfigService {
 
 	@Inject
 	public SystemConfigService(
-		@AtNode List<EndpointConfig> nodeEndpoints,
-		@AtArchive List<EndpointConfig> archiveEndpoints,
+		@Endpoints List<String> enabledEndpoints,
 		@PacemakerTimeout long pacemakerTimeout,
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
 		@MempoolMaxSize int mempoolMaxSize,
@@ -193,7 +189,7 @@ public class SystemConfigService {
 
 		radixEngineConfiguration = prepareRadixEngineConfiguration(forkConfigTreeMap, minValidators, maxValidators, maxTxnsPerProposal);
 		mempoolConfiguration = prepareMempoolConfiguration(mempoolMaxSize, mempoolThrottleMs);
-		apiConfiguration = prepareApiConfiguration(nodeEndpoints, archiveEndpoints);
+		apiConfiguration = prepareApiConfiguration(enabledEndpoints);
 		bftConfiguration = prepareBftConfiguration(pacemakerTimeout, bftSyncPatienceMillis);
 		syncConfiguration = syncConfig.asJson();
 		checkpointsConfiguration = prepareCheckpointsConfiguration(genesis);
@@ -325,13 +321,10 @@ public class SystemConfigService {
 	}
 
 	@VisibleForTesting
-	static JSONObject prepareApiConfiguration(List<EndpointConfig> nodeEndpoints, List<EndpointConfig> archiveEndpoints) {
-		var list = Stream.concat(nodeEndpoints.stream(), archiveEndpoints.stream())
-			.collect(Collectors.toList());
-
+	static JSONObject prepareApiConfiguration(List<String> enabledEndpoints) {
 		return jsonObject().put(
 			"endpoints",
-			fromList(list, cfg -> "/" + cfg.name())
+			fromList(enabledEndpoints, endpoint -> "/" + endpoint)
 		);
 	}
 

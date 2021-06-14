@@ -54,6 +54,7 @@ public class ArchiveApiModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
+		bind(NetworkInfoService.class).in(Scopes.SINGLETON);
 
 		endpoints.forEach(ep -> {
 			log.info("Enabling /{} endpoint", ep.name());
@@ -65,15 +66,6 @@ public class ArchiveApiModule extends AbstractModule {
 			.to(ArchiveHttpServer.class);
 
 		bind(ArchiveHttpServer.class).in(Scopes.SINGLETON);
-	}
-
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> networkInfoService(NetworkInfoService networkInfoService) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			ScheduledStatsCollecting.class,
-			networkInfoService.updateStats()
-		);
 	}
 
 	@ProvidesIntoSet
@@ -129,6 +121,15 @@ public class ArchiveApiModule extends AbstractModule {
 			Runners.APPLICATION,
 			ScheduledQueueFlush.class,
 			clientApiStore.queueFlushProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> networkInfoService(NetworkInfoService networkInfoService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			ScheduledStatsCollecting.class,
+			networkInfoService.updateStats()
 		);
 	}
 }
