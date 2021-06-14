@@ -18,7 +18,8 @@
 package com.radixdlt.api.module;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.ProvidesIntoSet;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.controller.UniverseController;
@@ -28,7 +29,8 @@ import com.radixdlt.universe.Universe;
 
 public class UniverseEndpointModule extends AbstractModule {
 	@AtNode
-	@ProvidesIntoSet
+	@ProvidesIntoMap
+	@StringMapKey("/universe.json")
 	public Controller universeController(Universe universe) {
 		return new UniverseController(DefaultSerialization.getInstance().toJson(universe, DsonOutput.Output.API));
 	}

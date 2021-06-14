@@ -24,14 +24,14 @@ import com.radixdlt.api.Controller;
 import com.radixdlt.api.qualifier.AtArchive;
 import com.radixdlt.properties.RuntimeProperties;
 
-import java.util.Set;
+import java.util.Map;
 
 @Singleton
 public final class ArchiveHttpServer extends AbstractHttpServer {
 	private static final int DEFAULT_PORT = 8080;
 
 	@Inject
-	public ArchiveHttpServer(@AtArchive Set<Controller> controllers, RuntimeProperties properties) {
+	public ArchiveHttpServer(@AtArchive Map<String, Controller> controllers, RuntimeProperties properties) {
 		super(controllers, properties, "archive", DEFAULT_PORT);
 	}
 }

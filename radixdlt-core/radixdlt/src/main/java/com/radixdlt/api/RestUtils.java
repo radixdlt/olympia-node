@@ -58,6 +58,12 @@ public final class RestUtils {
 		respondWithCode(exchange, StatusCodes.OK, object.toString());
 	}
 
+	public static String sanitizeBaseUrl(String baseUrl) {
+		return !baseUrl.endsWith("/")
+			   ? baseUrl
+			   : baseUrl.substring(0, baseUrl.length() - 1);
+	}
+
 	private static void safeHandleBody(HttpServerExchange exchange, ThrowingConsumer<JSONObject> bodyHandler) {
 		try {
 			handleBody(exchange, bodyHandler);

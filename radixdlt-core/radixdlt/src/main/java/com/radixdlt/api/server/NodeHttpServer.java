@@ -24,14 +24,14 @@ import com.radixdlt.api.Controller;
 import com.radixdlt.api.qualifier.AtNode;
 import com.radixdlt.properties.RuntimeProperties;
 
-import java.util.Set;
+import java.util.Map;
 
 @Singleton
 public final class NodeHttpServer extends AbstractHttpServer {
 	private static final int DEFAULT_PORT = 3333;
 
 	@Inject
-	public NodeHttpServer(@AtNode Set<Controller> controllers, RuntimeProperties properties) {
+	public NodeHttpServer(@AtNode Map<String, Controller> controllers, RuntimeProperties properties) {
 		super(controllers, properties, "node", DEFAULT_PORT);
 	}
 }

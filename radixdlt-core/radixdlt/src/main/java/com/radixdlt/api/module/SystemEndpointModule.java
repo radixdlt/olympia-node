@@ -20,11 +20,10 @@ package com.radixdlt.api.module;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.controller.SystemController;
+import com.radixdlt.api.controller.JsonRpcController;
 import com.radixdlt.api.handler.SystemHandler;
 import com.radixdlt.api.qualifier.AtNode;
 import com.radixdlt.api.qualifier.System;
@@ -40,9 +39,10 @@ public class SystemEndpointModule extends AbstractModule {
 	}
 
 	@AtNode
-	@ProvidesIntoSet
+	@ProvidesIntoMap
+	@StringMapKey("/system")
 	public Controller systemController(@System JsonRpcServer jsonRpcServer) {
-		return new SystemController(jsonRpcServer);
+		return new JsonRpcController(jsonRpcServer);
 	}
 
 	@System

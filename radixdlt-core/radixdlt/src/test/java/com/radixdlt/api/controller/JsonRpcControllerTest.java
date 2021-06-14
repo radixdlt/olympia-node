@@ -30,16 +30,16 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class ValidationControllerTest {
+public class JsonRpcControllerTest {
 	private final JsonRpcServer jsonRpcServer = new JsonRpcServer(Map.of());
-	private final ValidationController controller = new ValidationController(jsonRpcServer);
+	private final JsonRpcController controller = new JsonRpcController(jsonRpcServer);
 
 	@Test
 	public void routesAreConfigured() {
 		var handler = mock(RoutingHandler.class);
 
-		controller.configureRoutes(handler);
+		controller.configureRoutes("/root/", handler);
 
-		verify(handler).post(eq("/validation"), any());
+		verify(handler).post(eq("/root"), any());
 	}
 }

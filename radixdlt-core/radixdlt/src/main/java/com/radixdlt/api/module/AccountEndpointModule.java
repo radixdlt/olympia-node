@@ -20,11 +20,10 @@ package com.radixdlt.api.module;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.controller.AccountController;
+import com.radixdlt.api.controller.JsonRpcController;
 import com.radixdlt.api.handler.AccountHandler;
 import com.radixdlt.api.qualifier.Account;
 import com.radixdlt.api.qualifier.AtNode;
@@ -34,9 +33,10 @@ import java.util.Map;
 
 public class AccountEndpointModule extends AbstractModule {
 	@AtNode
-	@ProvidesIntoSet
+	@ProvidesIntoMap
+	@StringMapKey("/account")
 	public Controller accountController(@Account JsonRpcServer jsonRpcServer) {
-		return new AccountController(jsonRpcServer);
+		return new JsonRpcController(jsonRpcServer);
 	}
 
 	@Account
