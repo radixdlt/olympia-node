@@ -23,7 +23,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.api.data.TxHistoryEntry;
-import com.radixdlt.api.service.AccountService;
+import com.radixdlt.api.service.ArchiveAccountService;
 import com.radixdlt.api.store.TokenBalance;
 import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
@@ -49,10 +49,10 @@ import static com.radixdlt.utils.functional.Tuple.tuple;
 
 @Singleton
 public class ArchiveAccountHandler {
-	private final AccountService accountService;
+	private final ArchiveAccountService accountService;
 
 	@Inject
-	public ArchiveAccountHandler(AccountService accountService) {
+	public ArchiveAccountHandler(ArchiveAccountService accountService) {
 		this.accountService = accountService;
 	}
 

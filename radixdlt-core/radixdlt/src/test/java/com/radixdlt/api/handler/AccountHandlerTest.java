@@ -20,7 +20,7 @@ package com.radixdlt.api.handler;
 import org.json.JSONObject;
 import org.junit.Test;
 
-import com.radixdlt.api.service.AccountService;
+import com.radixdlt.api.service.AccountInfoService;
 import com.radixdlt.api.service.ActionParserService;
 import com.radixdlt.api.service.SubmissionService;
 import com.radixdlt.api.store.ClientApiStore;
@@ -46,7 +46,7 @@ import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 public class AccountHandlerTest {
 	private final ClientApiStore clientApiStore = mock(ClientApiStore.class);
 	private final SubmissionService submissionService = mock(SubmissionService.class);
-	private final AccountService accountService = mock(AccountService.class);
+	private final AccountInfoService accountService = mock(AccountInfoService.class);
 	private final ActionParserService actionParserService = new ActionParserService(clientApiStore);
 
 	private final ECKeyPair keyPair = ECKeyPair.generateNew();

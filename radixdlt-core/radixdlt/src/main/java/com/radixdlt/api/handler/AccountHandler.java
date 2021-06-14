@@ -23,7 +23,7 @@ import org.json.JSONObject;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
-import com.radixdlt.api.service.AccountService;
+import com.radixdlt.api.service.AccountInfoService;
 import com.radixdlt.api.service.ActionParserService;
 import com.radixdlt.api.service.SubmissionService;
 import com.radixdlt.consensus.HashSigner;
@@ -42,14 +42,14 @@ import static com.radixdlt.utils.functional.Result.allOf;
 
 @Singleton
 public class AccountHandler {
-	private final AccountService accountService;
+	private final AccountInfoService accountService;
 	private final SubmissionService submissionService;
 	private final ActionParserService actionParserService;
 	private final HashSigner hashSigner;
 
 	@Inject
 	public AccountHandler(
-		AccountService accountService,
+		AccountInfoService accountService,
 		SubmissionService submissionService,
 		ActionParserService actionParserService,
 		@Named("RadixEngine") HashSigner hashSigner

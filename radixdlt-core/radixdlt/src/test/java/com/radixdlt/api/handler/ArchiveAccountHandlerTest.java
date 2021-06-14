@@ -22,7 +22,7 @@ import org.junit.Test;
 import com.radixdlt.api.Rri;
 import com.radixdlt.api.data.ActionEntry;
 import com.radixdlt.api.data.TxHistoryEntry;
-import com.radixdlt.api.service.AccountService;
+import com.radixdlt.api.service.ArchiveAccountService;
 import com.radixdlt.api.store.TokenBalance;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -60,7 +60,7 @@ public class ArchiveAccountHandlerTest {
 	private static final ECPublicKey V2 = ECKeyPair.generateNew().getPublicKey();
 	private static final ECPublicKey V3 = ECKeyPair.generateNew().getPublicKey();
 
-	private final AccountService accountService = mock(AccountService.class);
+	private final ArchiveAccountService accountService = mock(ArchiveAccountService.class);
 	private final ArchiveAccountHandler handler = new ArchiveAccountHandler(accountService);
 
 	@Test
