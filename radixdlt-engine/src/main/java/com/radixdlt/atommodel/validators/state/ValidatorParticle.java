@@ -18,31 +18,36 @@
 
 package com.radixdlt.atommodel.validators.state;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
+import java.util.Optional;
 
 public final class ValidatorParticle implements Particle {
 	private final ECPublicKey key;
 	private final boolean registeredForNextEpoch;
 	private final String name;
 	private final String url;
+	private final Optional<HashCode> forkVoteHash;
 
 	public ValidatorParticle(ECPublicKey key, boolean registeredForNextEpoch) {
-		this(key, registeredForNextEpoch, "", "");
+		this(key, registeredForNextEpoch, "", "", Optional.empty());
 	}
 
 	public ValidatorParticle(
 		ECPublicKey key,
 		boolean registeredForNextEpoch,
 		String name,
-		String url
+		String url,
+		Optional<HashCode> forkVoteHash
 	) {
 		this.key = Objects.requireNonNull(key);
 		this.registeredForNextEpoch = registeredForNextEpoch;
 		this.name = Objects.requireNonNull(name);
 		this.url = Objects.requireNonNull(url);
+		this.forkVoteHash = Objects.requireNonNull(forkVoteHash);
 	}
 
 	public boolean isRegisteredForNextEpoch() {
@@ -61,9 +66,13 @@ public final class ValidatorParticle implements Particle {
 		return url;
 	}
 
+	public Optional<HashCode> getForkHashVote() {
+		return forkVoteHash;
+	}
+
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.key, this.registeredForNextEpoch, this.name, this.url);
+		return Objects.hash(this.key, this.registeredForNextEpoch, this.name, this.url, this.forkVoteHash);
 	}
 
 	@Override
@@ -78,14 +87,15 @@ public final class ValidatorParticle implements Particle {
 		return Objects.equals(this.key, that.key)
 			&& this.registeredForNextEpoch == that.registeredForNextEpoch
 			&& Objects.equals(this.name, that.name)
-			&& Objects.equals(this.url, that.url);
+			&& Objects.equals(this.url, that.url)
+			&& Objects.equals(this.forkVoteHash, that.forkVoteHash);
 	}
 
 	@Override
 	public String toString() {
 		return String.format(
-			"%s[%s, %s, %s]",
-			getClass().getSimpleName(), getKey(), registeredForNextEpoch, getUrl()
+			"%s[%s, %s, %s, %s]",
+			getClass().getSimpleName(), getKey(), registeredForNextEpoch, getUrl(), forkVoteHash
 		);
 	}
 }

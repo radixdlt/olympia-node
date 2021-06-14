@@ -128,7 +128,8 @@ public class StateComputerLedgerTest {
 			View.of(5),
 			new AccumulatorState(genesisStateVersion, HashUtils.zero256()),
 			12345,
-			endOfEpoch ? BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE))) : null
+			endOfEpoch ? BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE))) : null,
+			Optional.empty()
 		);
 		this.genesis = UnverifiedVertex.createGenesis(ledgerHeader);
 		this.genesisVertex = new VerifiedVertex(genesis, hasher.hash(genesis));

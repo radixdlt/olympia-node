@@ -81,7 +81,8 @@ public class SerializerTestDataGenerator {
 				BFTValidatorSet.from(
 					ImmutableSet.<BFTValidator>builder()
 						.add(BFTValidator.from(BFTNode.random(), UInt256.from(random.nextLong())))
-						.build())
+						.build()),
+				Optional.empty()
 			)
 		);
 	}

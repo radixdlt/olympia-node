@@ -115,9 +115,9 @@ public class MyValidatorInfoServiceTest {
 		var radixEngine = (RadixEngine<LedgerAndBFTProof>) mock(RadixEngine.class);
 		var validatorInfoService = new ValidatorInfoService(radixEngine);
 
-		var particle1 = new ValidatorParticle(validator1, false, "V1", "http://v1.com");
-		var particle2 = new ValidatorParticle(validator2, false, "V2", "http://v2.com");
-		var particle3 = new ValidatorParticle(validator3, false, "V3", "http://v3.com");
+		var particle1 = new ValidatorParticle(validator1, false, "V1", "http://v1.com", Optional.empty());
+		var particle2 = new ValidatorParticle(validator2, false, "V2", "http://v2.com", Optional.empty());
+		var particle3 = new ValidatorParticle(validator3, false, "V3", "http://v3.com", Optional.empty());
 		var validators = StakedValidators.create(3, 3)
 			.add(particle1)
 			.add(particle2)

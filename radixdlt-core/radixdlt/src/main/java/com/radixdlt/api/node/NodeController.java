@@ -51,6 +51,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.forks.ForkManager;
 import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
 import com.radixdlt.utils.UInt256;
 import io.undertow.server.HttpServerExchange;
@@ -61,6 +62,8 @@ import org.json.JSONObject;
 import com.radixdlt.api.Controller;
 
 import java.math.BigDecimal;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -72,18 +75,21 @@ public final class NodeController implements Controller {
 	private final EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher;
 	private final ECPublicKey bftKey;
 	private final REAddr account;
+	private final ForkManager forkManager;
 
 	@Inject
 	public NodeController(
 		@Self REAddr account,
 		@Self ECPublicKey bftKey,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher
+		EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher,
+		ForkManager forkManager
 	) {
 		this.account = account;
 		this.bftKey = bftKey;
 		this.radixEngine = radixEngine;
 		this.nodeApplicationRequestEventDispatcher = nodeApplicationRequestEventDispatcher;
+		this.forkManager = Objects.requireNonNull(forkManager);
 	}
 
 	@Override
@@ -226,7 +232,7 @@ public final class NodeController implements Controller {
 			case "RegisterValidator": {
 				var name = paramsObject.has("name") ? paramsObject.getString("name") : null;
 				var url = paramsObject.has("url") ? paramsObject.getString("url") : null;
-				return new RegisterValidator(bftKey, name, url);
+				return new RegisterValidator(bftKey, name, url, Optional.of(forkManager.latestKnownFork().getHash()));
 			}
 			case "UnregisterValidator": {
 				var name = paramsObject.has("name") ? paramsObject.getString("name") : null;
@@ -236,7 +242,7 @@ public final class NodeController implements Controller {
 			case "UpdateValidator": {
 				var name = paramsObject.has("name") ? paramsObject.getString("name") : null;
 				var url = paramsObject.has("url") ? paramsObject.getString("url") : null;
-				return new UpdateValidator(bftKey, name, url);
+				return new UpdateValidator(bftKey, name, url, Optional.of(forkManager.latestKnownFork().getHash()));
 			}
 			default:
 				throw new IllegalArgumentException("Bad action object: " + actionObject);

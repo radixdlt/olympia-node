@@ -20,6 +20,7 @@ package com.radixdlt.consensus;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.hash.HashCode;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -67,6 +68,8 @@ public final class LedgerHeader {
 	@DsonOutput(Output.ALL)
 	private final ImmutableSet<BFTValidator> nextValidators;
 
+	private final Optional<HashCode> nextForkHash;
+
 	// TODO: Replace isEndOfEpoch with nextValidatorSet
 	@JsonCreator
 	private LedgerHeader(
@@ -74,9 +77,10 @@ public final class LedgerHeader {
 		@JsonProperty("view") long view,
 		@JsonProperty("accumulator_state") AccumulatorState accumulatorState,
 		@JsonProperty("timestamp") long timestamp,
-		@JsonProperty("next_validators") ImmutableSet<BFTValidator> nextValidators
+		@JsonProperty("next_validators") ImmutableSet<BFTValidator> nextValidators,
+		@JsonProperty("next_fork_hash") HashCode nextForkHash
 	) {
-		this(epoch, View.of(view), accumulatorState, timestamp, nextValidators);
+		this(epoch, View.of(view), accumulatorState, timestamp, nextValidators, Optional.ofNullable(nextForkHash));
 	}
 
 	private LedgerHeader(
@@ -84,13 +88,15 @@ public final class LedgerHeader {
 		View view,
 		AccumulatorState accumulatorState,
 		long timestamp,
-		ImmutableSet<BFTValidator> nextValidators
+		ImmutableSet<BFTValidator> nextValidators,
+		Optional<HashCode> nextForkHash
 	) {
 		this.epoch = epoch;
 		this.view = view;
 		this.accumulatorState = accumulatorState;
 		this.nextValidators = nextValidators;
 		this.timestamp = timestamp;
+		this.nextForkHash = Objects.requireNonNull(nextForkHash);
 	}
 
 	public JSONObject asJSONObject() {
@@ -113,18 +119,21 @@ public final class LedgerHeader {
 			json.put("nextValidators", validators);
 		}
 
+		nextForkHash.ifPresent(nfh -> json.put("next_fork_hash", nfh));
+
 		return json;
 	}
 
 
 	public static LedgerHeader mocked() {
-		return new LedgerHeader(0, View.genesis(), new AccumulatorState(0,  HashUtils.zero256()), 0, null);
+		return new LedgerHeader(0, View.genesis(), new AccumulatorState(0,  HashUtils.zero256()), 0, null, Optional.empty());
 	}
 
 	public static LedgerHeader genesis(AccumulatorState accumulatorState, BFTValidatorSet nextValidators, long timestamp) {
 		return new LedgerHeader(
 			0, View.genesis(), accumulatorState, timestamp,
-			nextValidators == null ? null : nextValidators.getValidators()
+			nextValidators == null ? null : nextValidators.getValidators(),
+			Optional.empty()
 		);
 	}
 
@@ -134,7 +143,7 @@ public final class LedgerHeader {
 		AccumulatorState accumulatorState,
 		long timestamp
 	) {
-		return new LedgerHeader(epoch, view, accumulatorState, timestamp, null);
+		return new LedgerHeader(epoch, view, accumulatorState, timestamp, null, Optional.empty());
 	}
 
 	public static LedgerHeader create(
@@ -142,9 +151,17 @@ public final class LedgerHeader {
 		View view,
 		AccumulatorState accumulatorState,
 		long timestamp,
-		BFTValidatorSet validatorSet
+		BFTValidatorSet validatorSet,
+		Optional<HashCode> nextForkHash
 	) {
-		return new LedgerHeader(epoch, view, accumulatorState, timestamp, validatorSet == null ? null : validatorSet.getValidators());
+		return new LedgerHeader(
+			epoch,
+			view,
+			accumulatorState,
+			timestamp,
+			validatorSet == null ? null : validatorSet.getValidators(),
+			nextForkHash
+		);
 	}
 
 	public LedgerHeader updateViewAndTimestamp(View view, long timestamp) {
@@ -153,7 +170,8 @@ public final class LedgerHeader {
 			view,
 			this.accumulatorState,
 			timestamp,
-			this.nextValidators
+			this.nextValidators,
+			this.nextForkHash
 		);
 	}
 
@@ -163,12 +181,22 @@ public final class LedgerHeader {
 		return this.view == null ? null : this.view.number();
 	}
 
+	@JsonProperty("next_fork_hash")
+	@DsonOutput(Output.ALL)
+	private HashCode getSerializerNextForkHash() {
+		return this.nextForkHash.isPresent() ? this.nextForkHash.get() : null;
+	}
+
 	public View getView() {
 		return view;
 	}
 
 	public Optional<BFTValidatorSet> getNextValidatorSet() {
 		return Optional.ofNullable(nextValidators).map(BFTValidatorSet::from);
+	}
+
+	public Optional<HashCode> getNextForkHash() {
+		return nextForkHash;
 	}
 
 	public AccumulatorState getAccumulatorState() {
@@ -189,7 +217,7 @@ public final class LedgerHeader {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.accumulatorState, this.timestamp, this.epoch, this.view, this.nextValidators);
+		return Objects.hash(this.accumulatorState, this.timestamp, this.epoch, this.view, this.nextValidators, this.nextForkHash);
 	}
 
 	@Override
@@ -198,20 +226,21 @@ public final class LedgerHeader {
 			return true;
 		}
 		if (o instanceof LedgerHeader) {
-			LedgerHeader other = (LedgerHeader) o;
+			final var other = (LedgerHeader) o;
 			return this.timestamp == other.timestamp
 				&& Objects.equals(this.accumulatorState, other.accumulatorState)
 				&& this.epoch == other.epoch
 				&& Objects.equals(this.view, other.view)
-				&& Objects.equals(this.nextValidators, other.nextValidators);
+				&& Objects.equals(this.nextValidators, other.nextValidators)
+				&& Objects.equals(this.nextForkHash, other.nextForkHash);
 		}
 		return false;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{accumulator=%s timestamp=%s epoch=%s view=%s nextValidators=%s}",
-			getClass().getSimpleName(), this.accumulatorState, this.timestamp, this.epoch, this.view, this.nextValidators
+		return String.format("%s{accumulator=%s timestamp=%s epoch=%s view=%s nextValidators=%s, nextForkHash=%s}",
+			getClass().getSimpleName(), this.accumulatorState, this.timestamp, this.epoch, this.view, this.nextValidators, this.nextForkHash
 		);
 	}
 }

@@ -38,7 +38,8 @@ public final class UpdateValidatorConstructor implements ActionConstructor<Updat
 				action.validatorKey(),
 				substateDown.isRegisteredForNextEpoch(),
 				action.name() == null ? substateDown.getName() : action.name(),
-				action.name() == null ? substateDown.getUrl() : action.url()
+				action.name() == null ? substateDown.getUrl() : action.url(),
+				action.forkVoteHash()
 			))
 		);
 	}

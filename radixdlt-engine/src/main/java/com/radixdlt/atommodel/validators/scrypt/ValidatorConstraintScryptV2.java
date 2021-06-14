@@ -18,6 +18,7 @@
 
 package com.radixdlt.atommodel.validators.scrypt;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.system.state.HasEpochData;
@@ -41,6 +42,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.radixdlt.atommodel.validators.state.PreparedValidatorConfigUpdate.RAKE_MAX;
@@ -95,21 +97,34 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				ValidatorParticle.class,
-				Set.of(SubstateTypeId.VALIDATOR.id()),
+				Set.of(SubstateTypeId.VALIDATOR.id(), SubstateTypeId.VALIDATOR_WITH_FORKS.id()),
 				(b, buf) -> {
-					var key = REFieldSerialization.deserializeKey(buf);
-					var isRegistered = buf.get() != 0; // isRegistered
-					var name = REFieldSerialization.deserializeString(buf);
-					var url = REFieldSerialization.deserializeUrl(buf);
-					return new ValidatorParticle(key, isRegistered, name, url);
-
+					final var key = REFieldSerialization.deserializeKey(buf);
+					final var isRegistered = buf.get() != 0; // isRegistered
+					final var name = REFieldSerialization.deserializeString(buf);
+					final var url = REFieldSerialization.deserializeUrl(buf);
+					if (b == SubstateTypeId.VALIDATOR.id()) {
+						return new ValidatorParticle(key, isRegistered, name, url, Optional.empty());
+					} else {
+						final var forkVoteHashBytes = REFieldSerialization.deserializeBytes(buf);
+						final var forkVoteHash = forkVoteHashBytes.length > 0
+							? Optional.of(HashCode.fromBytes(forkVoteHashBytes))
+							: Optional.<HashCode>empty();
+						return new ValidatorParticle(key, isRegistered, name, url, forkVoteHash);
+					}
 				},
 				(s, buf) -> {
-					buf.put(SubstateTypeId.VALIDATOR.id());
+					s.getForkHashVote().ifPresentOrElse(
+						e -> buf.put(SubstateTypeId.VALIDATOR_WITH_FORKS.id()),
+						() -> buf.put(SubstateTypeId.VALIDATOR.id())
+					);
 					REFieldSerialization.serializeKey(buf, s.getKey());
 					buf.put((byte) (s.isRegisteredForNextEpoch() ? 1 : 0)); // isRegistered
 					REFieldSerialization.serializeString(buf, s.getName());
 					REFieldSerialization.serializeString(buf, s.getUrl());
+					s.getForkHashVote().ifPresent(forkVoteHash ->
+						REFieldSerialization.serializeBytes(buf, forkVoteHash.asBytes())
+					);
 				},
 				p -> !p.isRegisteredForNextEpoch() && p.getUrl().isEmpty() && p.getName().isEmpty()
 			)

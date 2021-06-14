@@ -18,27 +18,33 @@
 
 package com.radixdlt.statecomputer.forks;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.sync.CommittedReader;
 
 /**
- * Module responsible for creating TreeMap of epochs to Fork configuration
- * for use in the RadixEngine
+ * Module responsible for creating a ForkManager for use in the RadixEngine
  */
 public final class RadixEngineForksModule extends AbstractModule {
+
 	@Provides
 	@Singleton
-	private TreeMap<Long, ForkConfig> epochToForkConfig(Map<EpochMapKey, ForkConfig> forkConfigs) {
-		return new TreeMap<>(
-			forkConfigs.entrySet()
-				.stream()
-				.collect(Collectors.toMap(e -> e.getKey().epoch(), Map.Entry::getValue))
-		);
+	private ForkManager forkManager(ImmutableList<ForkConfig> forksConfigs) {
+		return new ForkManager(forksConfigs);
 	}
 
+	@Provides
+	@Singleton
+	private ForkConfig forkConfig(
+		CommittedReader committedReader, // TODO: This is a hack, remove
+		ForkManager forkManager
+	) {
+		final var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
+		final var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
+		final var maybeEpochProof = committedReader.getEpochProof(epoch);
+		return forkManager.currentFork(epoch, maybeEpochProof);
+	}
 }
