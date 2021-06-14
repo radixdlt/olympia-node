@@ -16,14 +16,14 @@
  */
 package com.radixdlt.api.store.berkeley;
 
+import org.junit.Test;
+
+import com.radixdlt.api.Rri;
 import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.api.Rri;
-import com.radixdlt.utils.UInt384;
-import org.junit.Test;
-
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.UInt384;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;

@@ -16,15 +16,26 @@
  */
 package com.radixdlt.api.store.berkeley;
 
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.accounting.TwoActorEntry;
+import com.radixdlt.api.data.ActionEntry;
+import com.radixdlt.api.data.ActionType;
+import com.radixdlt.api.data.TxHistoryEntry;
+import com.radixdlt.api.store.TransactionParser;
 import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.MutableTokenDefinition;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.atom.actions.RegisterValidator;
+import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
@@ -42,24 +53,13 @@ import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV2;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
 import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
-import com.radixdlt.engine.parser.REParser;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import com.radixdlt.api.data.ActionType;
-
-import com.radixdlt.atom.MutableTokenDefinition;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.api.data.ActionEntry;
-import com.radixdlt.api.store.TransactionParser;
-import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;

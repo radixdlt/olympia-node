@@ -18,6 +18,12 @@
 
 package com.radixdlt.api.chaos.mempoolfiller;
 
+import org.assertj.core.api.Condition;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.radix.TokenIssuance;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -43,11 +49,6 @@ import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
-import org.assertj.core.api.Condition;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.radix.TokenIssuance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

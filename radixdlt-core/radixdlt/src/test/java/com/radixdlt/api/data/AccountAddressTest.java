@@ -18,6 +18,8 @@
 
 package com.radixdlt.api.data;
 
+import org.junit.Test;
+
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.radixdlt.crypto.ECKeyPair;
@@ -25,7 +27,6 @@ import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bytes;
-import org.junit.Test;
 
 import java.util.Map;
 
