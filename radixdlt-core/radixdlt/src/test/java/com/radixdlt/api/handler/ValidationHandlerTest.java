@@ -21,7 +21,7 @@ import org.json.JSONObject;
 import org.junit.Test;
 
 import com.radixdlt.api.data.ValidatorInfoDetails;
-import com.radixdlt.api.service.AccountService;
+import com.radixdlt.api.service.AccountInfoService;
 import com.radixdlt.api.service.ValidatorInfoService;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -45,7 +45,7 @@ public class ValidationHandlerTest {
 
 	public static final JSONObject EMPTY_REQUEST = jsonObject().put("id", "1").put("params", jsonArray());
 
-	private final AccountService accountService = mock(AccountService.class);
+	private final AccountInfoService accountService = mock(AccountInfoService.class);
 	private final ValidatorInfoService validatorInfoService = mock(ValidatorInfoService.class);
 	private final ValidationHandler handler = new ValidationHandler(accountService, validatorInfoService);
 

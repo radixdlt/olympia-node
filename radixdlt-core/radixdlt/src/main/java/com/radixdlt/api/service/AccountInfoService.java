@@ -21,12 +21,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.Rri;
-import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.api.data.TxHistoryEntry;
-import com.radixdlt.api.store.ClientApiStore;
-import com.radixdlt.api.store.ClientApiStore.BalanceType;
-import com.radixdlt.api.store.TokenBalance;
 import com.radixdlt.application.Balances;
 import com.radixdlt.application.MyStakedBalance;
 import com.radixdlt.application.MyValidator;
@@ -41,56 +36,22 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
-import com.radixdlt.utils.functional.Result;
-import com.radixdlt.utils.functional.Tuple.Tuple2;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
-import static com.radixdlt.utils.functional.Tuple.tuple;
 
-public class AccountService {
+public class AccountInfoService {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final ECPublicKey bftKey;
-	private final ClientApiStore clientApiStore;
 
 	@Inject
-	public AccountService(
-		RadixEngine<LedgerAndBFTProof> radixEngine,
-		@Self ECPublicKey bftKey,
-		ClientApiStore clientApiStore
-	) {
+	public AccountInfoService(RadixEngine<LedgerAndBFTProof> radixEngine, @Self ECPublicKey bftKey) {
 		this.radixEngine = radixEngine;
 		this.bftKey = bftKey;
-		this.clientApiStore = clientApiStore;
-	}
-
-	public Result<List<TokenBalance>> getTokenBalances(REAddr address) {
-		return clientApiStore.getTokenBalances(address, BalanceType.SPENDABLE)
-			.map(list -> list.stream().map(TokenBalance::from).collect(Collectors.toList()));
-	}
-
-	public Result<Tuple2<Optional<Instant>, List<TxHistoryEntry>>> getTransactionHistory(
-		REAddr address, int size, Optional<Instant> cursor
-	) {
-		return clientApiStore.getTransactionHistory(address, size, cursor)
-			.map(response -> tuple(calculateNewCursor(response), response));
-	}
-
-	public Result<List<BalanceEntry>> getStakePositions(REAddr address) {
-		return clientApiStore.getTokenBalances(address, BalanceType.STAKES);
-	}
-
-	public Result<List<BalanceEntry>> getUnstakePositions(REAddr address) {
-		return clientApiStore.getTokenBalances(address, BalanceType.UNSTAKES);
-	}
-
-	public long getEpoch() {
-		return clientApiStore.getEpoch();
 	}
 
 	public JSONObject getAccountInfo() {
@@ -151,11 +112,7 @@ public class AccountService {
 	}
 
 	private JSONObject constructBalanceEntry(REAddr rri, UInt384 amount) {
-		return clientApiStore.getTokenDefinition(rri)
-			.fold(
-				__ -> jsonObject().put("rri", "<unknown>").put("amount", amount),
-				definition -> jsonObject().put("rri", Rri.of(definition.getSymbol(), rri)).put("amount", amount)
-			);
+		return jsonObject().put("rri", rri.toString()).put("amount", amount);
 	}
 
 	private JSONObject constructStakeEntry(ECPublicKey publicKey, UInt256 amount) {
@@ -164,7 +121,7 @@ public class AccountService {
 
 	private static Optional<Instant> calculateNewCursor(List<TxHistoryEntry> response) {
 		return response.stream()
-			.reduce(AccountService::findLast)
+			.reduce(AccountInfoService::findLast)
 			.map(TxHistoryEntry::timestamp);
 	}
 
