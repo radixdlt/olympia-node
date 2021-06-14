@@ -70,7 +70,6 @@ Following configuration options control which APIs are enabled at the node:
   (similar requirements/setup as we have today)
 
 ### REST APIs
-
 Majority of the REST APIs are replaced with JSON-RPC counterparts. Remaining and new REST endpoints:
 
 | Path | Method | Description |
@@ -78,6 +77,7 @@ Majority of the REST APIs are replaced with JSON-RPC counterparts. Remaining and
 | /health | GET | Returns node status (see below) |
 | /version | GET | Returns detailed information about software version and build info |
 | /universe.json | GET | Get Radix Universe. Used during setup and configuration of the node but if possible looking to remove |
+| /metrics | GET | Returns metrics in the [Prometheus text format](https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format). |
 
 Node health status has following format: `{"status" : "<status>" }`, where `<status>` is one of the following:                             
  - BOOTING - node is booting and not ready to accept requests
@@ -182,3 +182,4 @@ The following configuration options control which APIs are enabled at the node:
 | api.universe.enable | `/universe.json` | Disabled
 | api.health.enable | `/health` | Enabled
 | api.version.enable | `/version` | Enabled
+| api.metrics.enable | `/metrics` | Enabled

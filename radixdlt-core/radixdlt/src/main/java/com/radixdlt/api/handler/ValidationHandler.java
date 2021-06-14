@@ -22,7 +22,7 @@ import org.json.JSONObject;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.api.data.ValidatorInfoDetails;
-import com.radixdlt.api.service.AccountService;
+import com.radixdlt.api.service.AccountInfoService;
 import com.radixdlt.api.service.ValidatorInfoService;
 
 import static com.radixdlt.api.JsonRpcUtil.fromList;
@@ -31,11 +31,11 @@ import static com.radixdlt.api.JsonRpcUtil.response;
 
 @Singleton
 public class ValidationHandler {
-	private final AccountService accountService;
+	private final AccountInfoService accountService;
 	private final ValidatorInfoService validatorInfoService;
 
 	@Inject
-	public ValidationHandler(AccountService accountService, ValidatorInfoService validatorInfoService) {
+	public ValidationHandler(AccountInfoService accountService, ValidatorInfoService validatorInfoService) {
 		this.accountService = accountService;
 		this.validatorInfoService = validatorInfoService;
 	}
