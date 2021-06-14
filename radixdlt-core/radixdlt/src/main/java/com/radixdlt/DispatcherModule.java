@@ -211,6 +211,8 @@ public class DispatcherModule extends AbstractModule {
 
 		bind(new TypeLiteral<EventDispatcher<EpochViewUpdate>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(EpochViewUpdate.class, true)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<EpochsLedgerUpdate>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(EpochsLedgerUpdate.class)).in(Scopes.SINGLETON);
 
 		final var insertUpdateKey = new TypeLiteral<EventProcessor<BFTInsertUpdate>>() { };
 		Multibinder.newSetBinder(binder(), insertUpdateKey, ProcessOnDispatch.class);
@@ -231,9 +233,6 @@ public class DispatcherModule extends AbstractModule {
 
 		final var ledgerUpdateKey = new TypeLiteral<EventProcessor<LedgerUpdate>>() { };
 		Multibinder.newSetBinder(binder(), ledgerUpdateKey, ProcessOnDispatch.class);
-
-		final var epochsLedgerUpdateKey = new TypeLiteral<EventProcessor<EpochsLedgerUpdate>>() { };
-		Multibinder.newSetBinder(binder(), epochsLedgerUpdateKey, ProcessOnDispatch.class);
 
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() { });
 	}
@@ -438,19 +437,6 @@ public class DispatcherModule extends AbstractModule {
 		Environment environment
 	) {
 		var dispatcher = environment.getDispatcher(LedgerUpdate.class);
-		return u -> {
-			dispatcher.dispatch(u);
-			processors.forEach(e -> e.process(u));
-		};
-	}
-
-	@Provides
-	@Singleton
-	private EventDispatcher<EpochsLedgerUpdate> epochsLedgerUpdateEventDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<EpochsLedgerUpdate>> processors,
-		Environment environment
-	) {
-		var dispatcher = environment.getDispatcher(EpochsLedgerUpdate.class);
 		return u -> {
 			dispatcher.dispatch(u);
 			processors.forEach(e -> e.process(u));
