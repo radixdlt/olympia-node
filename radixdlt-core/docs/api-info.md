@@ -176,10 +176,30 @@ The following configuration options control which APIs are enabled at the node:
 | --- | --- | --- |
 | api.archive.enable | `/archive` | Disabled
 | api.construction.enable | `/construction` | Disabled
+| api.metrics.enable | `/metrics` | Disabled
 | api.system.enable | `/system` | Disabled
 | api.account.enable | `/account` | Disabled
-| api.validation.enable | `/validation` endpoint | Disabled
+| api.validation.enable | `/validation` | Disabled
 | api.universe.enable | `/universe.json` | Disabled
 | api.health.enable | `/health` | Enabled
 | api.version.enable | `/version` | Enabled
-| api.metrics.enable | `/metrics` | Enabled
+
+### Endpoint Layout
+Depending on configuration we may run up to two HTTP servers.
+
+First server (referred below as _ARCHIVE_) is used to serve client API and related endpoints and by default 
+is bound to port 8080.  
+
+Second server (referred below as _NODE_) is used to serve remaining endpoints and by default is bound to prt 3333. 
+
+| Endpoint | Server 
+| --- | --- |
+| `/archive` | ARCHIVE
+| `/construction` | ARCHIVE
+| `/metrics` | ARCHIVE
+| `/system` | NODE
+| `/account` | NODE
+| `/validation` | NODE
+| `/universe.json` | NODE
+| `/health` | NODE
+| `/version` | NODE
