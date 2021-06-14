@@ -94,6 +94,9 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 			i.forEachRemaining(e -> proposalsCompleted.put(e.validatorKey(), e.proposalsCompleted()));
 			return proposalsCompleted;
 		});
+		var preparingStake = new TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>>(
+			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
+		);
 		for (var e : proposals.entrySet()) {
 			var k = e.getKey();
 			var numProposals = e.getValue();
@@ -102,8 +105,18 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 				s -> s.getValidatorKey().equals(k),
 				"Validator not found"
 			);
-			var emission = SystemConstraintScryptV2.REWARDS_PER_PROPOSAL.multiply(UInt256.from(numProposals));
-			validatorsToUpdate.put(k, currentStake.addEmission(emission));
+			var nodeEmission = SystemConstraintScryptV2.REWARDS_PER_PROPOSAL.multiply(UInt256.from(numProposals));
+			final UInt256 noneFeeEmissions;
+			if (!SystemConstraintScryptV2.CONSTANT_FEE.isZero() && nodeEmission.compareTo(SystemConstraintScryptV2.CONSTANT_FEE) >= 0) {
+				var validatorOwner = REAddr.ofPubKeyAccount(k);
+				var initStake = new TreeMap<REAddr, UInt256>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
+				initStake.put(validatorOwner, SystemConstraintScryptV2.CONSTANT_FEE);
+				preparingStake.put(k, initStake);
+				noneFeeEmissions = nodeEmission.subtract(SystemConstraintScryptV2.CONSTANT_FEE);
+			} else {
+				noneFeeEmissions = nodeEmission;
+			}
+			validatorsToUpdate.put(k, currentStake.addEmission(noneFeeEmissions));
 		}
 
 		var allPreparedUnstake = txBuilder.shutdownAll(PreparedUnstakeOwnership.class, i -> {
@@ -146,18 +159,15 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 		}
 
 		var allPreparedStake = txBuilder.shutdownAll(PreparedStake.class, i -> {
-			var map = new TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>>(
-				(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
-			);
 			i.forEachRemaining(preparedStake ->
-				map
+				preparingStake
 					.computeIfAbsent(
 						preparedStake.getDelegateKey(),
 						k -> new TreeMap<>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()))
 					)
 					.merge(preparedStake.getOwner(), preparedStake.getAmount(), UInt256::add)
 			);
-			return map;
+			return preparingStake;
 		});
 		for (var e : allPreparedStake.entrySet()) {
 			var k = e.getKey();

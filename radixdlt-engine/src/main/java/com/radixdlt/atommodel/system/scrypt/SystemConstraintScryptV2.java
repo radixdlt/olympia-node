@@ -59,6 +59,7 @@ import java.util.function.Function;
 
 public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
+	public static final UInt256 CONSTANT_FEE = UInt256.from(0);
 	public static final UInt256 REWARDS_PER_PROPOSAL = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
 
 	public static class UpdateValidatorEpochData implements ReducerState {
@@ -127,11 +128,14 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		}
 	}
 
-	public static final class RewardingValidators implements ReducerState {
+	private static final class RewardingValidators implements ReducerState {
 		private final TreeMap<ECPublicKey, ValidatorStake> curStake = new TreeMap<>(
 			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
 		);
 		private final TreeMap<ECPublicKey, Long> proposalsCompleted = new TreeMap<>(
+			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
+		);
+		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake = new TreeMap<>(
 			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
 		);
 		private final UpdatingEpoch updatingEpoch;
@@ -154,7 +158,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 		ReducerState next() {
 			if (proposalsCompleted.isEmpty()) {
-				return new PreparingUnstake(updatingEpoch, curStake);
+				return new PreparingUnstake(updatingEpoch, curStake, preparingStake);
 			}
 
 			var k = proposalsCompleted.firstKey();
@@ -162,9 +166,19 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				throw new IllegalStateException();
 			}
 			var numProposals = proposalsCompleted.remove(k);
-			var emission = SystemConstraintScryptV2.REWARDS_PER_PROPOSAL.multiply(UInt256.from(numProposals));
+			var nodeEmission = SystemConstraintScryptV2.REWARDS_PER_PROPOSAL.multiply(UInt256.from(numProposals));
+			final UInt256 noneFeeEmissions;
+			if (!CONSTANT_FEE.isZero() && nodeEmission.compareTo(CONSTANT_FEE) >= 0) {
+				var validatorOwner = REAddr.ofPubKeyAccount(k);
+				var initStake = new TreeMap<REAddr, UInt256>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
+				initStake.put(validatorOwner, CONSTANT_FEE);
+				preparingStake.put(k, initStake);
+				noneFeeEmissions = nodeEmission.subtract(CONSTANT_FEE);
+			} else {
+				noneFeeEmissions = nodeEmission;
+			}
 			return new LoadingStake(k, amt -> {
-				curStake.put(k, amt.addEmission(emission));
+				curStake.put(k, amt.addEmission(noneFeeEmissions));
 				return next();
 			});
 		}
@@ -259,12 +273,17 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingUnstake = new TreeMap<>(
 			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
 		);
-
+		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake;
 		private final TreeMap<ECPublicKey, ValidatorStake> curStake;
 
-		PreparingUnstake(UpdatingEpoch updatingEpoch, TreeMap<ECPublicKey, ValidatorStake> curStake) {
+		PreparingUnstake(
+			UpdatingEpoch updatingEpoch,
+			TreeMap<ECPublicKey, ValidatorStake> curStake,
+			TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake
+		) {
 			this.updatingEpoch = updatingEpoch;
 			this.curStake = curStake;
+			this.preparingStake = preparingStake;
 		}
 
 		ReducerState unstakes(Iterator<PreparedUnstakeOwnership> preparedUnstakeIterator) {
@@ -281,7 +300,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 		ReducerState next() {
 			if (preparingUnstake.isEmpty()) {
-				return new PreparingStake(updatingEpoch, curStake);
+				return new PreparingStake(updatingEpoch, curStake, preparingStake);
 			}
 
 			var k = preparingUnstake.firstKey();
@@ -356,12 +375,16 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 	private static final class PreparingStake implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, ValidatorStake> curStake;
-		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake = new TreeMap<>(
-			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
-		);
-		PreparingStake(UpdatingEpoch updatingEpoch, TreeMap<ECPublicKey, ValidatorStake> curStake) {
+		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake;
+
+		PreparingStake(
+			UpdatingEpoch updatingEpoch,
+			TreeMap<ECPublicKey, ValidatorStake> curStake,
+			TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake
+		) {
 			this.curStake = curStake;
 			this.updatingEpoch = updatingEpoch;
+			this.preparingStake = preparingStake;
 		}
 
 		ReducerState prepareStakes(Iterator<PreparedStake> preparedStakeIterator) {
