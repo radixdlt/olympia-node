@@ -56,10 +56,10 @@ public class ChaosControllerTest {
 	public void routesAreConfigured() {
 		final ChaosController chaosController = new ChaosController(mempool, message);
 		var handler = mock(RoutingHandler.class);
-		chaosController.configureRoutes(handler);
+		chaosController.configureRoutes("/root/", handler);
 
-		verify(handler).put(eq("/chaos/message-flooder"), any());
-		verify(handler).put(eq("/chaos/mempool-filler"), any());
+		verify(handler).put(eq("/root/message-flooder"), any());
+		verify(handler).put(eq("/root/mempool-filler"), any());
 	}
 
 	@Test

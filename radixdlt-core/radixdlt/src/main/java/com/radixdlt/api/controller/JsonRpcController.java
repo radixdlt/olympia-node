@@ -18,11 +18,23 @@
 
 package com.radixdlt.api.controller;
 
-import com.radixdlt.api.AbstractJsonRpcController;
+import com.radixdlt.api.Controller;
+import com.radixdlt.api.RestUtils;
 import com.radixdlt.api.server.JsonRpcServer;
 
-public final class SystemController extends AbstractJsonRpcController {
-	public SystemController(JsonRpcServer jsonRpcServer) {
-		super(jsonRpcServer, "/system");
+import io.undertow.server.RoutingHandler;
+
+/**
+ * Common base class for JSON RPC endpoint controllers
+ */
+public class JsonRpcController implements Controller {
+	private final JsonRpcServer jsonRpcServer;
+
+	public JsonRpcController(JsonRpcServer jsonRpcServer) {
+		this.jsonRpcServer = jsonRpcServer;
+	}
+
+	public void configureRoutes(String root, RoutingHandler handler) {
+		handler.post(RestUtils.sanitizeBaseUrl(root), jsonRpcServer);
 	}
 }

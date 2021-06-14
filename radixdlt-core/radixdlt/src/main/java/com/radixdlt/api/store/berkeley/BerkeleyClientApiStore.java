@@ -17,19 +17,6 @@
 
 package com.radixdlt.api.store.berkeley;
 
-import com.google.common.collect.Streams;
-import com.radixdlt.accounting.REResourceAccounting;
-import com.radixdlt.atommodel.system.state.EpochData;
-import com.radixdlt.atommodel.system.state.RoundData;
-import com.radixdlt.atommodel.tokens.Bucket;
-import com.radixdlt.atommodel.tokens.state.TokenResource;
-import com.radixdlt.atomos.UnclaimedREAddr;
-import com.radixdlt.accounting.TwoActorEntry;
-import com.radixdlt.constraintmachine.REStateUpdate;
-import com.radixdlt.constraintmachine.TxnParseException;
-import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.identifiers.AccountAddress;
-import com.radixdlt.identifiers.ValidatorAddress;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
@@ -57,7 +44,7 @@ import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.Bucket;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
-import com.radixdlt.atomos.REAddrParticle;
+import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.TxnParseException;
@@ -773,7 +760,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		try {
 			return parser.parse(tx).getSignedBy();
 		} catch (TxnParseException e) {
-			throw new IllegalStateException();
+			throw new IllegalStateException("Creator extraction failure", e);
 		}
 	}
 

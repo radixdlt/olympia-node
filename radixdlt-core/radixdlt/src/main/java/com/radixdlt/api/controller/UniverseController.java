@@ -34,13 +34,8 @@ public final class UniverseController implements Controller {
 	}
 
 	@Override
-	public String root() {
-		return "/universe.json";
-	}
-
-	@Override
-	public void configureRoutes(RoutingHandler handler) {
-		handler.get("/universe.json", this::handleUniverseRequest);
+	public void configureRoutes(String root, RoutingHandler handler) {
+		handler.get(root, this::handleUniverseRequest);
 	}
 
 	@VisibleForTesting

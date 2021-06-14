@@ -20,15 +20,14 @@ package com.radixdlt.api.module;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.controller.ArchiveController;
+import com.radixdlt.api.controller.JsonRpcController;
 import com.radixdlt.api.handler.ArchiveAccountHandler;
-import com.radixdlt.api.handler.ArchiveTransactionsHandler;
 import com.radixdlt.api.handler.ArchiveNetworkHandler;
 import com.radixdlt.api.handler.ArchiveTokenHandler;
+import com.radixdlt.api.handler.ArchiveTransactionsHandler;
 import com.radixdlt.api.handler.ArchiveValidationHandler;
 import com.radixdlt.api.qualifier.Archive;
 import com.radixdlt.api.qualifier.AtArchive;
@@ -38,9 +37,10 @@ import java.util.Map;
 
 public class ArchiveEndpointModule extends AbstractModule {
 	@AtArchive
-	@ProvidesIntoSet
+	@ProvidesIntoMap
+	@StringMapKey("/archive")
 	public Controller archiveController(@Archive JsonRpcServer jsonRpcServer) {
-		return new ArchiveController(jsonRpcServer);
+		return new JsonRpcController(jsonRpcServer);
 	}
 
 	@Archive

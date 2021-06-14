@@ -26,6 +26,7 @@ import io.undertow.server.RoutingHandler;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.RestUtils.respond;
+import static com.radixdlt.api.RestUtils.sanitizeBaseUrl;
 
 public class HealthController implements Controller {
 	private final NetworkInfoService networkInfoService;
@@ -35,13 +36,8 @@ public class HealthController implements Controller {
 	}
 
 	@Override
-	public String root() {
-		return "/health";
-	}
-
-	@Override
-	public void configureRoutes(final RoutingHandler handler) {
-		handler.get(root(), this::handleHealthRequest);
+	public void configureRoutes(String root, RoutingHandler handler) {
+		handler.get(sanitizeBaseUrl(root), this::handleHealthRequest);
 	}
 
 	@VisibleForTesting

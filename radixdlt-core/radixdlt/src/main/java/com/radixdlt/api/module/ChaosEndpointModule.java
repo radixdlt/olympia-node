@@ -18,7 +18,8 @@
 package com.radixdlt.api.module;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.ProvidesIntoSet;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerUpdate;
@@ -36,7 +37,8 @@ public class ChaosEndpointModule extends AbstractModule {
 	}
 
 	@AtNode
-	@ProvidesIntoSet
+	@ProvidesIntoMap
+	@StringMapKey("/chaos")
 	public Controller chaosController(
 		EventDispatcher<MempoolFillerUpdate> mempoolDispatcher,
 		EventDispatcher<MessageFlooderUpdate> messageDispatcher

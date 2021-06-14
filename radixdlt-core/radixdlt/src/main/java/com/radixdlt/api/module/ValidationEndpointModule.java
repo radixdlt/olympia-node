@@ -20,11 +20,10 @@ package com.radixdlt.api.module;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.controller.ValidationController;
+import com.radixdlt.api.controller.JsonRpcController;
 import com.radixdlt.api.handler.ValidationHandler;
 import com.radixdlt.api.qualifier.AtNode;
 import com.radixdlt.api.qualifier.Validation;
@@ -34,9 +33,10 @@ import java.util.Map;
 
 public class ValidationEndpointModule extends AbstractModule {
 	@AtNode
-	@ProvidesIntoSet
+	@ProvidesIntoMap
+	@StringMapKey("/validation")
 	public Controller validationController(@Validation JsonRpcServer jsonRpcServer) {
-		return new ValidationController(jsonRpcServer);
+		return new JsonRpcController(jsonRpcServer);
 	}
 
 	@Validation

@@ -35,6 +35,7 @@ import io.undertow.server.RoutingHandler;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.RestUtils.respond;
+import static com.radixdlt.api.RestUtils.sanitizeBaseUrl;
 import static com.radixdlt.api.RestUtils.withBody;
 
 public final class ChaosController implements Controller {
@@ -50,14 +51,10 @@ public final class ChaosController implements Controller {
 	}
 
 	@Override
-	public String root() {
-		return "/chaos";
-	}
-
-	@Override
-	public void configureRoutes(final RoutingHandler handler) {
-		handler.put("/chaos/message-flooder", this::handleMessageFlood);
-		handler.put("/chaos/mempool-filler", this::handleMempoolFill);
+	public void configureRoutes(String root, RoutingHandler handler) {
+		var sanitized = sanitizeBaseUrl(root);
+		handler.put(sanitized + "/message-flooder", this::handleMessageFlood);
+		handler.put(sanitized + "/mempool-filler", this::handleMempoolFill);
 	}
 
 	@VisibleForTesting

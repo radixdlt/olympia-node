@@ -27,6 +27,7 @@ import io.undertow.server.RoutingHandler;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.RestUtils.respond;
+import static com.radixdlt.api.RestUtils.sanitizeBaseUrl;
 
 public class VersionController implements Controller {
 	private final JSONObject versionData;
@@ -36,13 +37,8 @@ public class VersionController implements Controller {
 	}
 
 	@Override
-	public String root() {
-		return "/version";
-	}
-
-	@Override
-	public void configureRoutes(final RoutingHandler handler) {
-		handler.get("/version", this::handleVersionRequest);
+	public void configureRoutes(String root, RoutingHandler handler) {
+		handler.get(sanitizeBaseUrl(root), this::handleVersionRequest);
 	}
 
 	@VisibleForTesting

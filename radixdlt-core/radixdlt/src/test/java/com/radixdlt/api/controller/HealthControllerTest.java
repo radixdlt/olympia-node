@@ -45,7 +45,7 @@ public class HealthControllerTest {
 	public void routesAreConfigured() {
 		var handler = mock(RoutingHandler.class);
 
-		controller.configureRoutes(handler);
+		controller.configureRoutes("/health", handler);
 
 		verify(handler).get(eq("/health"), any());
 	}

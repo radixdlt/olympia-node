@@ -28,7 +28,7 @@ import com.stijndewitt.undertow.cors.AllowAll;
 import com.stijndewitt.undertow.cors.Filter;
 
 import java.util.Locale;
-import java.util.Set;
+import java.util.Map;
 import java.util.logging.Level;
 
 import io.undertow.Handlers;
@@ -43,13 +43,13 @@ import static java.util.logging.Logger.getLogger;
 public class AbstractHttpServer implements ModuleRunner {
 	private static final Logger log = LogManager.getLogger();
 
-	private final Set<Controller> controllers;
+	private final Map<String, Controller> controllers;
 	private final String name;
 	private final int port;
 
 	private Undertow server;
 
-	public AbstractHttpServer(Set<Controller> controllers, RuntimeProperties properties, String name, int defaultPort) {
+	public AbstractHttpServer(Map<String, Controller> controllers, RuntimeProperties properties, String name, int defaultPort) {
 		this.controllers = controllers;
 		this.name = name.toLowerCase(Locale.US);
 		this.port = properties.get("api." + name + ".port", defaultPort);
@@ -88,9 +88,9 @@ public class AbstractHttpServer implements ModuleRunner {
 	private HttpHandler configureRoutes() {
 		var handler = Handlers.routing(true); // add path params to query params with this flag
 
-		controllers.forEach(controller -> {
-			log.info("Configuring routes under {}", controller.root());
-			controller.configureRoutes(handler);
+		controllers.forEach((root, controller) -> {
+			log.info("Configuring routes under {}", root);
+			controller.configureRoutes(root, handler);
 		});
 
 		handler.setFallbackHandler(AbstractHttpServer::fallbackHandler);
