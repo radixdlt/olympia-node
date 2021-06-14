@@ -22,8 +22,16 @@ import com.radixdlt.counters.SystemCounters;
 
 //TODO: finish it
 public class MetricsService {
+	private final SystemCounters systemCounters;
+	private final NetworkInfoService networkInfoService;
+
 	@Inject
-	public MetricsService(SystemCounters systemCounters) {
+	public MetricsService(
+		SystemCounters systemCounters,
+		NetworkInfoService networkInfoService
+	) {
+		this.systemCounters = systemCounters;
+		this.networkInfoService = networkInfoService;
 	}
 
 	public String getMetrics() {

@@ -17,14 +17,13 @@
 
 package com.radixdlt.api.store;
 
-import com.google.inject.ImplementedBy;
 import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.api.data.ScheduledQueueFlush;
 import com.radixdlt.api.data.TxHistoryEntry;
-import com.radixdlt.api.store.berkeley.BerkeleyClientApiStore;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
 
@@ -35,12 +34,12 @@ import java.util.Optional;
 /**
  * High level JSON RPC client API store.
  */
-@ImplementedBy(BerkeleyClientApiStore.class)
 public interface ClientApiStore {
-	enum BalanceType {
-		SPENDABLE, STAKES, UNSTAKES
-	}
 
+
+	enum BalanceType {
+		SPENDABLE, STAKES, UNSTAKES;
+	}
 	/**
 	 * Retrieve list of immediately spendable token balances or stakes.
 	 *
@@ -100,4 +99,6 @@ public interface ClientApiStore {
 	Result<REAddr> parseRri(String rri);
 
 	EventProcessor<ScheduledQueueFlush> queueFlushProcessor();
+
+	EventProcessor<TxnsCommittedToLedger> atomsCommittedToLedgerEventProcessor();
 }

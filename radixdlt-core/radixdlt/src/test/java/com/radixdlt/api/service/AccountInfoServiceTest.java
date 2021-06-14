@@ -16,36 +16,15 @@
  */
 package com.radixdlt.api.service;
 
-import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
-import com.radixdlt.api.Rri;
-import com.radixdlt.api.data.ActionEntry;
-import com.radixdlt.api.data.TxHistoryEntry;
-import com.radixdlt.api.store.ClientApiStore;
-import com.radixdlt.api.store.ClientApiStore.BalanceType;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.UInt384;
-import com.radixdlt.utils.functional.Result;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import static com.radixdlt.api.data.BalanceEntry.createBalance;
 
 public class AccountInfoServiceTest {
 	private static final ECPublicKey OWNER_KEY = ECKeyPair.generateNew().getPublicKey();

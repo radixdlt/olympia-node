@@ -22,6 +22,7 @@ api.chaos.enable=$RADIXDLT_CHAOS_API_ENABLE
 api.construction.enable=$RADIXDLT_CONSTRUCT_API_ENABLE
 api.faucet.enable=$RADIXDLT_FAUCET_API_ENABLE
 api.health.enable=$RADIXDLT_HEALTH_API_ENABLE
+api.metrics.enable=$RADIXDLT_METRICS_API_ENABLE
 api.system.enable=$RADIXDLT_SYSTEM_API_ENABLE
 api.validation.enable=$RADIXDLT_VALIDATION_API_ENABLE
 api.version.enable=$RADIXDLT_VERSION_API_ENABLE
