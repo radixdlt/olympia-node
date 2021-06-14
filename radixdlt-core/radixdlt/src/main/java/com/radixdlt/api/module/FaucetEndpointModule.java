@@ -19,6 +19,7 @@ package com.radixdlt.api.module;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
@@ -44,6 +45,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class FaucetEndpointModule extends AbstractModule {
+	@Override
+	protected void configure() {
+		bind(FaucetHandler.class).in(Scopes.SINGLETON);
+	}
+
 	@AtNode
 	@ProvidesIntoMap
 	@StringMapKey("/faucet")

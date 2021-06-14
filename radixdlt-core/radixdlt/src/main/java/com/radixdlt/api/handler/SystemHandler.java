@@ -20,12 +20,10 @@ package com.radixdlt.api.handler;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.api.service.SystemConfigService;
 
 import static com.radixdlt.api.JsonRpcUtil.response;
 
-@Singleton
 public class SystemHandler {
 	private final SystemConfigService systemConfigService;
 

@@ -20,7 +20,6 @@ package com.radixdlt.api.handler;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.api.data.ValidatorInfoDetails;
 import com.radixdlt.api.service.AccountInfoService;
 import com.radixdlt.api.service.ValidatorInfoService;
@@ -29,7 +28,6 @@ import static com.radixdlt.api.JsonRpcUtil.fromList;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.JsonRpcUtil.response;
 
-@Singleton
 public class ValidationHandler {
 	private final AccountInfoService accountService;
 	private final ValidatorInfoService validatorInfoService;
