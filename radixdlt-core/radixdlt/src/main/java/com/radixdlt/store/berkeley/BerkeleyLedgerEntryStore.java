@@ -17,6 +17,7 @@
 
 package com.radixdlt.store.berkeley;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.constraintmachine.ShutdownAllIndex;
@@ -68,6 +69,7 @@ import com.sleepycat.je.SecondaryDatabase;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -97,6 +99,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	private static final String UP_PARTICLE_DB_NAME = "radix.up_particle_db";
 	private static final String PROOF_DB_NAME = "radix.proof_db";
 	private static final String EPOCH_PROOF_DB_NAME = "radix.epoch_proof_db";
+	private static final String FORK_CONFIG_DB = "radix.fork_config_db";
+	private static final String CURRENT_FORK_HASH_KEY = "current_fork_hash";
 	private static final String ATOM_LOG = "radix.ledger";
 
 	private final Serialization serialization;
@@ -115,6 +119,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 	private Database proofDatabase; // Write/Delete
 	private SecondaryDatabase epochProofDatabase;
+
+	private Database forkConfigDatabase;
 
 	private Database addrDatabase;
 
@@ -148,6 +154,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		safeClose(proofDatabase);
 
 		safeClose(vertexStoreDatabase);
+
+		safeClose(forkConfigDatabase);
 
 		if (atomLog != null) {
 			atomLog.close();
@@ -249,6 +257,24 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		ledgerAndBFTProof.vertexStoreState().ifPresent(v -> doSave(txn, v));
 	}
 
+	@Override
+	public void storeCurrentForkHash(Transaction tx, HashCode forkHash) {
+		final var txn = unwrap(tx);
+		final var key = new DatabaseEntry(CURRENT_FORK_HASH_KEY.getBytes(StandardCharsets.UTF_8));
+		final var entry = new DatabaseEntry(forkHash.asBytes());
+		forkConfigDatabase.put(txn, key, entry);
+	}
+
+	@Override
+	public Optional<HashCode> getCurrentForkHash() {
+		final var key = new DatabaseEntry(CURRENT_FORK_HASH_KEY.getBytes(StandardCharsets.UTF_8));
+		final var value = entry();
+		forkConfigDatabase.get(null, key, value, null);
+		return value.getSize() == 0
+			? Optional.empty()
+			: Optional.of(HashCode.fromBytes(value.getData()));
+	}
+
 	public Optional<SerializedVertexStoreState> loadLastVertexStoreState() {
 		return withTime(() -> {
 			try (var cursor = vertexStoreDatabase.openCursor(null, null)) {
@@ -304,6 +330,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			atomIdDatabase = env.openDatabase(null, ATOM_ID_DB_NAME, primaryConfig);
 			vertexStoreDatabase = env.openDatabase(null, VERTEX_STORE_DB_NAME, pendingConfig);
 			epochProofDatabase = env.openSecondaryDatabase(null, EPOCH_PROOF_DB_NAME, proofDatabase, buildEpochProofConfig());
+
+			forkConfigDatabase = env.openDatabase(null, FORK_CONFIG_DB, primaryConfig);
 
 			atomLog = AppendLog.openCompressed(new File(env.getHome(), ATOM_LOG).getAbsolutePath(), systemCounters);
 		} catch (Exception e) {

@@ -19,7 +19,9 @@ package com.radixdlt.atommodel;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 
@@ -54,6 +56,7 @@ public class ParticlesEqualsHashCode {
 		EqualsVerifier.forClass(cls)
 			.suppress(Warning.NONFINAL_FIELDS)
 			.withIgnoredFields(ignoredFields)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
 	}
 

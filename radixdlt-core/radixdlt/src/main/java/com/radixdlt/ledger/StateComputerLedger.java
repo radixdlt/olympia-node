@@ -40,6 +40,7 @@ import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.store.LastProof;
+
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
@@ -125,7 +126,6 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 		this.accumulator = Objects.requireNonNull(accumulator);
 		this.verifier = Objects.requireNonNull(verifier);
 
-
 		this.currentLedgerHeader = initialLedgerState;
 	}
 
@@ -148,8 +148,8 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 	@Override
 	public List<Txn> generateNextTxns(View view, List<PreparedVertex> prepared) {
 		final ImmutableList<PreparedTxn> preparedTxns = prepared.stream()
-				.flatMap(PreparedVertex::successfulCommands)
-				.collect(ImmutableList.toImmutableList());
+			.flatMap(PreparedVertex::successfulCommands)
+			.collect(ImmutableList.toImmutableList());
 		synchronized (lock) {
 			return stateComputer.getNextTxnsFromMempool(preparedTxns);
 		}

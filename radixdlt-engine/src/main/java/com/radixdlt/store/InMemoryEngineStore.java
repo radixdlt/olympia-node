@@ -17,6 +17,7 @@
 
 package com.radixdlt.store;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
@@ -44,6 +45,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	private final Object lock = new Object();
 	private final Map<SubstateId, REStateUpdate> storedParticles = new HashMap<>();
 	private final Map<REAddr, Particle> addrParticles = new HashMap<>();
+	private Optional<HashCode> currentForkHash = Optional.empty();
 
 	@Override
 	public void storeTxn(Transaction dbTxn, Txn txn, List<REStateUpdate> stateUpdates) {
@@ -69,6 +71,18 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	@Override
 	public void storeMetadata(Transaction txn, M metadata) {
 		 // No-op
+	}
+
+	@Override
+	public void storeCurrentForkHash(Transaction txn, HashCode forkHash) {
+		synchronized (lock) {
+			this.currentForkHash = Optional.of(forkHash);
+		}
+	}
+
+	@Override
+	public Optional<HashCode> getCurrentForkHash() {
+		return this.currentForkHash;
 	}
 
 	@Override

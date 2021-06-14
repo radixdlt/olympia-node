@@ -18,8 +18,10 @@
 
 package com.radixdlt.statecomputer.forks;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
@@ -99,12 +101,17 @@ import com.radixdlt.utils.UInt256;
 import java.util.Set;
 
 /**
- * The forks for betanet and the epochs at which they will occur.
+ * The forks for betanet.
  */
 public final class BetanetForksModule extends AbstractModule {
-	@ProvidesIntoMap
-	@EpochMapKey(epoch = 0L)
-	ForkConfig betanetV1() {
+
+	@Provides
+	@Singleton
+	ImmutableList<ForkConfig> forksConfig() {
+		return ImmutableList.of(betanetV1(), betanetV2(), betanetV3(), betanetV4());
+	}
+
+	public static ForkConfig betanetV1() {
 		// V1 Betanet ConstraintMachine
 		final CMAtomOS v1 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
 		v1.load(new ValidatorConstraintScryptV1()); // load before TokensConstraintScrypt due to dependency
@@ -140,6 +147,7 @@ public final class BetanetForksModule extends AbstractModule {
 
 		return new ForkConfig(
 			"betanet1",
+			ForksPredicates.atEpoch(0L),
 			parser,
 			serialization,
 			betanet1,
@@ -150,9 +158,7 @@ public final class BetanetForksModule extends AbstractModule {
 		);
 	}
 
-	@ProvidesIntoMap
-	@EpochMapKey(epoch = 45L)
-	ForkConfig betanetV2() {
+	public static ForkConfig betanetV2() {
 		// V2 Betanet ConstraintMachine
 		final CMAtomOS v2 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
 		v2.load(new ValidatorConstraintScryptV1()); // load before TokensConstraintScrypt due to dependency
@@ -189,6 +195,7 @@ public final class BetanetForksModule extends AbstractModule {
 
 		return new ForkConfig(
 			"betanet2",
+			ForksPredicates.atEpoch(45L),
 			parser,
 			serialization,
 			betanet2,
@@ -199,9 +206,7 @@ public final class BetanetForksModule extends AbstractModule {
 		);
 	}
 
-	@ProvidesIntoMap
-	@EpochMapKey(epoch = 584L)
-	ForkConfig betanetV3() {
+	public static ForkConfig betanetV3() {
 		final CMAtomOS v3 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
 		v3.load(new ValidatorConstraintScryptV1()); // load before TokensConstraintScrypt due to dependency
 		v3.load(new TokensConstraintScryptV2());
@@ -239,6 +244,7 @@ public final class BetanetForksModule extends AbstractModule {
 
 		return new ForkConfig(
 			"betanet3",
+			ForksPredicates.atEpoch(584L),
 			parser,
 			serialization,
 			betanet3,
@@ -249,10 +255,7 @@ public final class BetanetForksModule extends AbstractModule {
 		);
 	}
 
-
-	@ProvidesIntoMap
-	@EpochMapKey(epoch = 800L)
-	ForkConfig betanetV4() {
+	public static ForkConfig betanetV4() {
 		var fixedFee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(100));
 		final CMAtomOS v4 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
 		v4.load(new ValidatorConstraintScryptV2()); // load before TokensConstraintScrypt due to dependency
@@ -292,8 +295,11 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())
 			.build();
 
+		final var forkName = "betanet4";
+		final var forkHash = ForkConfig.hashOf(forkName);
 		return new ForkConfig(
-			"betanet4",
+			forkName,
+			ForksPredicates.stakeVoting(forkHash, 0.5),
 			parser,
 			serialization,
 			betanet4,

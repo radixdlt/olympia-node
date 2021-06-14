@@ -82,7 +82,7 @@ public class TxnConstructionRequest {
 	}
 
 	public TxnConstructionRequest registerAsValidator(ECPublicKey validatorKey) {
-		var action = new RegisterValidator(validatorKey, null, null);
+		var action = new RegisterValidator(validatorKey, null, null, Optional.empty());
 		actions.add(action);
 		return this;
 	}

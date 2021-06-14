@@ -1,5 +1,6 @@
 package com.radixdlt.store;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
@@ -32,6 +33,16 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	@Override
 	public void storeMetadata(Transaction txn, M metadata) {
 		// No-op
+	}
+
+	@Override
+	public void storeCurrentForkHash(Transaction txn, HashCode forkHash) {
+		transientStore.storeCurrentForkHash(txn, forkHash);
+	}
+
+	@Override
+	public Optional<HashCode> getCurrentForkHash() {
+		return transientStore.getCurrentForkHash();
 	}
 
 	@Override

@@ -84,6 +84,7 @@ import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
 import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.ForkManager;
 import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -129,9 +130,9 @@ public class StakingUnstakingValidatorsTest {
 	public static Collection<Object[]> forksModule() {
 		return List.of(new Object[][] {
 			{new RadixEngineForksLatestOnlyModule(View.of(100), false), false},
-			{new ForkOverwritesWithShorterEpochsModule(false), false},
+			{new ForkOverwritesWithShorterEpochsModule(false, 5), false},
 			{new RadixEngineForksLatestOnlyModule(View.of(100), true), true},
-			{new ForkOverwritesWithShorterEpochsModule(true), true},
+			{new ForkOverwritesWithShorterEpochsModule(true, 5), true},
 		});
 	}
 
@@ -295,19 +296,19 @@ public class StakingUnstakingValidatorsTest {
 		private final DeterministicSavedLastEvent<EpochViewUpdate> lastEpochView;
 		private final EpochChange epochChange;
 		private final BerkeleyLedgerEntryStore entryStore;
-		private final TreeMap<Long, ForkConfig> epochToForkConfig;
+		private final ForkManager forkManager;
 
 		@Inject
 		private NodeState(
 			DeterministicSavedLastEvent<EpochViewUpdate> lastEpochView,
 			EpochChange epochChange,
 			BerkeleyLedgerEntryStore entryStore,
-			TreeMap<Long, ForkConfig> epochToForkConfig
+			ForkManager forkManager
 		) {
 			this.lastEpochView = lastEpochView;
 			this.epochChange = epochChange;
 			this.entryStore = entryStore;
-			this.epochToForkConfig = epochToForkConfig;
+			this.forkManager = forkManager;
 		}
 
 		public long getEpoch() {
@@ -317,7 +318,9 @@ public class StakingUnstakingValidatorsTest {
 		}
 
 		public Map<BFTNode, Map<String, String>> getValidators() {
-			var forkConfig = epochToForkConfig.floorEntry(getEpoch()).getValue();
+			final var forkConfig = entryStore.getCurrentForkHash()
+				.flatMap(forkManager::getByHash)
+				.orElseGet(forkManager::genesisFork);
 			var reParser = forkConfig.getParser();
 			Map<BFTNode, Map<String, String>> map = entryStore.reduceUpParticles(
 				ValidatorStakeData.class,
@@ -352,7 +355,9 @@ public class StakingUnstakingValidatorsTest {
 		}
 
 		public UInt256 getTotalNativeTokens() {
-			var forkConfig = epochToForkConfig.floorEntry(getEpoch()).getValue();
+			final var forkConfig = entryStore.getCurrentForkHash()
+				.flatMap(forkManager::getByHash)
+				.orElseGet(forkManager::genesisFork);
 			var reParser = forkConfig.getParser();
 			var totalTokens = entryStore.reduceUpParticles(TokensInAccount.class, UInt256.ZERO,
 				(i, p) -> {

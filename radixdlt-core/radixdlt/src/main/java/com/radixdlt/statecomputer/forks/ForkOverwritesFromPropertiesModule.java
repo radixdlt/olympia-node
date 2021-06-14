@@ -18,6 +18,7 @@
 
 package com.radixdlt.statecomputer.forks;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -28,6 +29,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public class ForkOverwritesFromPropertiesModule extends AbstractModule {
 	private static Logger logger = LogManager.getLogger();
@@ -39,39 +41,35 @@ public class ForkOverwritesFromPropertiesModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private Map<String, Long> epochOverwrite(Map<EpochMapKey, ForkConfig> forkConfigs, RuntimeProperties properties) {
-		var overwrites = new HashMap<String, Long>();
-		forkConfigs.forEach((k, c) -> {
-			var viewOverwrite = properties.get("overwrite_forks." + c.getName() + ".epoch", "");
-			if (!viewOverwrite.isBlank()) {
-				var epoch = Long.parseLong(viewOverwrite);
-				logger.warn("Overwriting epoch of " + c.getName() + " from " + k.epoch() + " to " + epoch);
-				overwrites.put(c.getName(), epoch);
-			}
-		});
-		return overwrites;
-	}
-
-	@Provides
-	@Singleton
-	private Map<String, ForkConfig> configOverwrite(Map<EpochMapKey, ForkConfig> forkConfigs, RuntimeProperties properties) {
+	private Map<String, ForkConfig> configOverwrite(ImmutableList<ForkConfig> forkConfigs, RuntimeProperties properties) {
 		var overwrites = new HashMap<String, ForkConfig>();
-		forkConfigs.forEach((k, c) -> {
-			var viewOverwrite = properties.get("overwrite_forks." + c.getName() + ".views", "");
-			if (!viewOverwrite.isBlank()) {
-				var view = Long.parseLong(viewOverwrite);
-				logger.warn("Overwriting views of " + c.getName() + " from " + c.getEpochCeilingView() + " to " + view);
+		forkConfigs.forEach(e -> {
+			final var viewOverwrite = properties.get("overwrite_forks." + e.getName() + ".views", "");
+			final var epochOverwrite = properties.get("overwrite_forks." + e.getName() + ".epoch", "");
+			if (!viewOverwrite.isBlank() || !epochOverwrite.isBlank()) {
+				final var view = viewOverwrite.isBlank()
+					? e.getEpochCeilingView()
+					: View.of(Long.parseLong(viewOverwrite));
+
+				final var newEpoch = epochOverwrite.isBlank()
+					? Optional.<Long>empty()
+					: Optional.of(Long.parseLong(epochOverwrite));
+
+				logger.warn("Overwriting epoch of " + e.getName() + " to " + newEpoch);
+				logger.warn("Overwriting views of " + e.getName() + " to " + view);
+
 				var overwrite = new ForkConfig(
-					c.getName(),
-					c.getParser(),
-					c.getSubstateSerialization(),
-					c.getConstraintMachineConfig(),
-					c.getActionConstructors(),
-					c.getBatchVerifier(),
-					c.getPostProcessedVerifier(),
-					View.of(view)
+					e.getName(),
+					newEpoch.map(ForksPredicates::atEpoch).orElseGet(e::getExecutePredicate),
+					e.getParser(),
+					e.getSubstateSerialization(),
+					e.getConstraintMachineConfig(),
+					e.getActionConstructors(),
+					e.getBatchVerifier(),
+					e.getPostProcessedVerifier(),
+					view
 				);
-				overwrites.put(c.getName(), overwrite);
+				overwrites.put(e.getName(), overwrite);
 			}
 		});
 		return overwrites;

@@ -17,6 +17,7 @@
 
 package com.radixdlt.store;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REStateUpdate;
@@ -24,6 +25,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiFunction;
 
 /**
@@ -36,6 +38,10 @@ public interface EngineStore<M> extends SubstateStore, CMStore {
 	void storeTxn(Transaction dbTxn, Txn txn, List<REStateUpdate> instructions);
 
 	void storeMetadata(Transaction txn, M metadata);
+
+	void storeCurrentForkHash(Transaction txn, HashCode forkHash);
+
+	Optional<HashCode> getCurrentForkHash();
 
 	/**
 	 * Deterministically computes a value from a list of particles of a given type.

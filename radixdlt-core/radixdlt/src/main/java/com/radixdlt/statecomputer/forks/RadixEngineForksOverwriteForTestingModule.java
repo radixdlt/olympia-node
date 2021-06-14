@@ -18,29 +18,34 @@
 
 package com.radixdlt.statecomputer.forks;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.store.EngineStore;
 
 import java.util.Map;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 public class RadixEngineForksOverwriteForTestingModule extends AbstractModule {
+	@Provides
+	@Singleton
+	private ForkManager forkManager(
+		ImmutableList<ForkConfig> forksConfigs,
+		Map<String, ForkConfig> configOverwrite
+	) {
+		final var overwrittenForks = forksConfigs.stream()
+			.map(forkConfig -> configOverwrite.getOrDefault(forkConfig.getName(), forkConfig))
+			.collect(ImmutableList.toImmutableList());
+		return new ForkManager(overwrittenForks);
+	}
 
 	@Provides
-	private TreeMap<Long, ForkConfig> epochToForkConfig(
-		Map<String, Long> epochOverwrite,
-		Map<String, ForkConfig> configOverwrite,
-		Map<EpochMapKey, ForkConfig> forkConfigs
-	) {
-		return new TreeMap<>(
-			forkConfigs.entrySet()
-				.stream()
-				.collect(
-					Collectors.toMap(
-						e -> epochOverwrite.getOrDefault(e.getValue().getName(), e.getKey().epoch()),
-						e -> configOverwrite.getOrDefault(e.getValue().getName(), e.getValue())
-					))
-		);
+	@Singleton
+	private ForkConfig initialForkConfig(EngineStore<LedgerAndBFTProof> engineStore, ForkManager forkManager) {
+		return engineStore
+			.getCurrentForkHash()
+			.flatMap(forkManager::getByHash)
+			.orElseGet(forkManager::genesisFork);
 	}
 }

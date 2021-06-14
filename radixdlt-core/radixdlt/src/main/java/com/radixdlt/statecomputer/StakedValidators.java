@@ -20,6 +20,7 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
+import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
@@ -38,6 +39,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.function.Predicate.not;
+
 /**
  * Wrapper class for registered validators
  */
@@ -52,43 +55,75 @@ public final class StakedValidators {
 
 	private final int minValidators;
 	private final int maxValidators;
+	private final ImmutableMap<HashCode, ImmutableSet<ECPublicKey>> forksVotes;
 
 	private StakedValidators(
 		int minValidators,
 		int maxValidators,
 		Set<ValidatorParticle> validatorParticles,
-		Map<ECPublicKey, UInt256> stake
+		Map<ECPublicKey, UInt256> stake,
+		ImmutableMap<HashCode, ImmutableSet<ECPublicKey>> forksVotes
 	) {
 		this.minValidators = minValidators;
 		this.maxValidators = maxValidators;
 		this.validatorParticles = validatorParticles;
 		this.stake = stake;
+		this.forksVotes = forksVotes;
 	}
 
 	public static StakedValidators create(
 		int minValidators,
 		int maxValidators
 	) {
-		return new StakedValidators(minValidators, maxValidators, Set.of(), Map.of());
+		return new StakedValidators(minValidators, maxValidators, Set.of(), Map.of(), ImmutableMap.of());
 	}
 
 	public StakedValidators add(ValidatorParticle particle) {
-		var set = ImmutableSet.<ValidatorParticle>builder()
+		final var newValidatorParticles = ImmutableSet.<ValidatorParticle>builder()
 			.addAll(validatorParticles)
 			.add(particle)
 			.build();
 
-		return new StakedValidators(minValidators, maxValidators, set, stake);
+		final ImmutableMap<HashCode, ImmutableSet<ECPublicKey>> newForksVotes;
+		if (particle.getForkHashVote().isPresent()) {
+			final var forkVoteHash = particle.getForkHashVote().get();
+			final var existingVotes = this.forksVotes.getOrDefault(forkVoteHash, ImmutableSet.of());
+			final var newForkVotes = ImmutableSet.<ECPublicKey>builder()
+				.addAll(existingVotes)
+				.add(particle.getKey())
+				.build();
+			newForksVotes = ImmutableMap.<HashCode, ImmutableSet<ECPublicKey>>builder()
+				.putAll(
+					this.forksVotes.entrySet().stream()
+						.filter(not(e -> e.getKey().equals(forkVoteHash)))
+						.collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)))
+				.put(forkVoteHash, newForkVotes)
+				.build();
+		} else {
+			newForksVotes = this.forksVotes;
+		}
+
+		return new StakedValidators(minValidators, maxValidators, newValidatorParticles, stake, newForksVotes);
 	}
 
 	public StakedValidators remove(ValidatorParticle particle) {
+		final var newForksVotes = this.forksVotes.entrySet().stream()
+			.map(e -> {
+				final var newForkVotes = e.getValue().stream()
+					.filter(not(v -> v.equals(particle.getKey())))
+					.collect(ImmutableSet.toImmutableSet());
+				return Map.entry(e.getKey(), newForkVotes);
+			})
+			.collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+
 		return new StakedValidators(
 			minValidators,
 			maxValidators,
 			validatorParticles.stream()
 				.filter(e -> !e.equals(particle))
 				.collect(Collectors.toSet()),
-			stake
+			stake,
+			newForksVotes
 		);
 	}
 
@@ -103,7 +138,7 @@ public final class StakedValidators {
 			this.stake.entrySet().stream().filter(e -> !delegatedKey.equals(e.getKey()))
 		).collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
-		return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStake);
+		return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStake, forksVotes);
 	}
 
 
@@ -119,7 +154,7 @@ public final class StakedValidators {
 			this.stake.entrySet().stream().filter(e -> !delegatedKey.equals(e.getKey()))
 		).collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
-		return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStakedAmounts);
+		return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStakedAmounts, forksVotes);
 	}
 
 	public StakedValidators remove(ECPublicKey delegatedKey, UInt256 amount) {
@@ -139,7 +174,7 @@ public final class StakedValidators {
 			final var nextStakedAmounts = this.stake.entrySet().stream()
 				.filter(e -> !delegatedKey.equals(e.getKey()))
 				.collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-			return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStakedAmounts);
+			return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStakedAmounts, forksVotes);
 		} else if (comparison < 0) {
 			// reduce stake
 			final var nextAmount = oldAmount.subtract(amount);
@@ -147,7 +182,7 @@ public final class StakedValidators {
 				Stream.of(Maps.immutableEntry(delegatedKey, nextAmount)),
 				this.stake.entrySet().stream().filter(e -> !delegatedKey.equals(e.getKey()))
 			).collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-			return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStakedAmounts);
+			return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStakedAmounts, forksVotes);
 		} else {
 			throw new IllegalStateException("Removing stake which doesn't exist.");
 		}
@@ -174,6 +209,10 @@ public final class StakedValidators {
 		);
 	}
 
+	public ImmutableSet<ECPublicKey> getForkVotes(HashCode forkHash) {
+		return this.forksVotes.getOrDefault(forkHash, ImmutableSet.of());
+	}
+
 	public <T> List<T> map(BiFunction<ECPublicKey, ValidatorDetails, T> mapper) {
 		return validatorParticles
 			.stream()
@@ -191,7 +230,7 @@ public final class StakedValidators {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(minValidators, maxValidators, validatorParticles, stake);
+		return Objects.hash(minValidators, maxValidators, validatorParticles, stake, forksVotes);
 	}
 
 	@Override
@@ -199,11 +238,11 @@ public final class StakedValidators {
 		if (!(o instanceof StakedValidators)) {
 			return false;
 		}
-
-		var other = (StakedValidators) o;
+		final var other = (StakedValidators) o;
 		return this.minValidators == other.minValidators
 			&& this.maxValidators == other.maxValidators
 			&& Objects.equals(this.validatorParticles, other.validatorParticles)
-			&& Objects.equals(this.stake, other.stake);
+			&& Objects.equals(this.stake, other.stake)
+			&& Objects.equals(this.forksVotes, other.forksVotes);
 	}
 }

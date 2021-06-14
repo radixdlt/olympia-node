@@ -136,6 +136,10 @@ public class SimulationNodes {
 
 		<T> EventDispatcher<T> getDispatcher(Class<T> eventClass, BFTNode node);
 
+		<T> T getInstance(Class<T> clazz, BFTNode node);
+
+		<T> T getInstance(Key<T> clazz, BFTNode node);
+
 		SimulationNetwork getUnderlyingNetwork();
 
 		Map<BFTNode, SystemCounters> getSystemCounters();
@@ -210,8 +214,17 @@ public class SimulationNodes {
 
 			@Override
 			public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass, BFTNode node) {
-				int index = getNodes().indexOf(node);
-				return nodeInstances.get(index).getInstance(Environment.class).getDispatcher(eventClass);
+				return getInstance(Environment.class, node).getDispatcher(eventClass);
+			}
+
+			@Override
+			public <T> T getInstance(Class<T> clazz, BFTNode node) {
+				return nodeInstances.get(getNodes().indexOf(node)).getInstance(clazz);
+			}
+
+			@Override
+			public <T> T getInstance(Key<T> clazz, BFTNode node) {
+				return nodeInstances.get(getNodes().indexOf(node)).getInstance(clazz);
 			}
 
 			@Override

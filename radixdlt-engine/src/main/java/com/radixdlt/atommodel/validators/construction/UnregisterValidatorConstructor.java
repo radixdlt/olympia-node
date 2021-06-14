@@ -38,7 +38,8 @@ public final class UnregisterValidatorConstructor implements ActionConstructor<U
 				action.validatorKey(),
 				false,
 				action.name() == null ? substateDown.getName() : action.name(),
-				action.url() == null ? substateDown.getUrl() : action.url()
+				action.url() == null ? substateDown.getUrl() : action.url(),
+				substateDown.getForkHashVote()
 			))
 		);
 	}

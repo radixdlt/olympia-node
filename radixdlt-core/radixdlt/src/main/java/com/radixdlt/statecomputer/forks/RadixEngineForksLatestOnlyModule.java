@@ -18,19 +18,16 @@
 
 package com.radixdlt.statecomputer.forks;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.bft.View;
 
-import java.util.Comparator;
-import java.util.Map;
-import java.util.TreeMap;
-
 /**
  * For testing only, only tests the latest state computer configuration
  */
-public class RadixEngineForksLatestOnlyModule extends AbstractModule {
+public final class RadixEngineForksLatestOnlyModule extends AbstractModule {
 	private final View epochHighViewOverwrite;
 	private final boolean fees;
 
@@ -41,26 +38,26 @@ public class RadixEngineForksLatestOnlyModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private ForkConfig forkConfig(Map<EpochMapKey, ForkConfig> forkConfigs) {
-		return forkConfigs.entrySet().stream()
-			.max(Comparator.comparing(e -> e.getKey().epoch()))
-			.map(Map.Entry::getValue)
-			.map(f -> new ForkConfig(
-				f.getName(),
-				f.getParser(),
-				f.getSubstateSerialization(),
-				fees ? f.getConstraintMachineConfig() : f.getConstraintMachineConfig().metering((procedureKey, param, context) -> { }),
-				f.getActionConstructors(),
-				f.getBatchVerifier(),
-				fees ? f.getPostProcessedVerifier() : (p, t) -> { },
-				epochHighViewOverwrite
-			))
-			.orElseThrow();
+	private ForkManager forkManager(ImmutableList<ForkConfig> forksConfigs) {
+		return new ForkManager(ImmutableList.of(forksConfigs.get(forksConfigs.size() - 1)));
 	}
 
 	@Provides
 	@Singleton
-	private TreeMap<Long, ForkConfig> epochToForkConfig(ForkConfig forkConfig) {
-		return new TreeMap<>(Map.of(0L, forkConfig));
+	private ForkConfig initialForkConfig(ForkManager forkManager) {
+		final var originalForkConfig = forkManager.genesisFork();
+
+		return new ForkConfig(
+			originalForkConfig.getName(),
+			originalForkConfig.getExecutePredicate(),
+			originalForkConfig.getParser(),
+			originalForkConfig.getSubstateSerialization(),
+			fees ? originalForkConfig.getConstraintMachineConfig()
+				: originalForkConfig.getConstraintMachineConfig().metering((procedureKey, param, context) -> { }),
+			originalForkConfig.getActionConstructors(),
+			originalForkConfig.getBatchVerifier(),
+			fees ? originalForkConfig.getPostProcessedVerifier() : (p, t) -> { },
+			epochHighViewOverwrite
+		);
 	}
 }

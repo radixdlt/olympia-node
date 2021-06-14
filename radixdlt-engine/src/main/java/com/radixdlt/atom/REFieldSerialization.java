@@ -130,20 +130,27 @@ public final class REFieldSerialization {
 	}
 
 	public static void serializeString(ByteBuffer buf, String s) {
-		var sBytes = s.getBytes(RadixConstants.STANDARD_CHARSET);
-		if (sBytes.length > 255) {
-			throw new IllegalArgumentException("string cannot be greater than 255 chars");
-		}
-		var len = (byte) sBytes.length;
-		buf.put(len); // url length
-		buf.put(sBytes); // url
+		serializeBytes(buf, s.getBytes(RadixConstants.STANDARD_CHARSET));
 	}
 
 	public static String deserializeString(ByteBuffer buf) {
-		var len = Byte.toUnsignedInt(buf.get()); // url
-		var dest = new byte[len];
+		return new String(deserializeBytes(buf), RadixConstants.STANDARD_CHARSET);
+	}
+
+	public static void serializeBytes(ByteBuffer buf, byte[] bytes) {
+		if (bytes.length > 255) {
+			throw new IllegalArgumentException("bytes cannot be longer than 255");
+		}
+		final var len = (byte) bytes.length;
+		buf.put(len);
+		buf.put(bytes);
+	}
+
+	public static byte[] deserializeBytes(ByteBuffer buf) {
+		final var len = Byte.toUnsignedInt(buf.get());
+		final var dest = new byte[len];
 		buf.get(dest);
-		return new String(dest, RadixConstants.STANDARD_CHARSET);
+		return dest;
 	}
 
 	public static String deserializeUrl(ByteBuffer buf) throws DeserializeException {

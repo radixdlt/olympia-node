@@ -270,7 +270,7 @@ public final class EpochManager {
 		}
 
 		if (this.currentEpoch.getBFTConfiguration().getValidatorSet().containsNode(this.self)) {
-			log.info("EPOCH_CHANGE: broadcasting next epoch");
+			log.info("EPOCH_CHANGE: broadcasting next epoch {}", epochChange.getEpoch());
 			final ImmutableSet<BFTValidator> currentAndNextValidators =
 					ImmutableSet.<BFTValidator>builder()
 						.addAll(epochChange.getBFTConfiguration().getValidatorSet().getValidators())

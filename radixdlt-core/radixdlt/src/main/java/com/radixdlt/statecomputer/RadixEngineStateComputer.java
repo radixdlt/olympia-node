@@ -49,6 +49,7 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.ForkManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -57,7 +58,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -76,15 +76,16 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher;
 	private final EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher;
 	private final EventDispatcher<TxnsCommittedToLedger> committedDispatcher;
-	private final TreeMap<Long, ForkConfig> epochToForkConfig;
+	private final ForkManager forkManager;
 	private final SystemCounters systemCounters;
 
 	private View epochCeilingView;
 
+	private ForkConfig currentForkConfig;
+
 	@Inject
 	public RadixEngineStateComputer(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		TreeMap<Long, ForkConfig> epochToForkConfig,
 		RadixEngineMempool mempool, // TODO: Move this into radixEngine
 		@EpochCeilingView View epochCeilingView, // TODO: Move this into radixEngine
 		@MaxTxnsPerProposal int maxTxnsPerProposal, // TODO: Move this into radixEngine
@@ -93,14 +94,14 @@ public final class RadixEngineStateComputer implements StateComputer {
 		EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher,
 		EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher,
 		EventDispatcher<TxnsCommittedToLedger> committedDispatcher,
-		SystemCounters systemCounters
+		SystemCounters systemCounters,
+		ForkManager forkManager,
+		ForkConfig initialForkConfig
 	) {
 		if (epochCeilingView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
 		}
-
 		this.radixEngine = Objects.requireNonNull(radixEngine);
-		this.epochToForkConfig = epochToForkConfig;
 		this.epochCeilingView = epochCeilingView;
 		this.maxTxnsPerProposal = maxTxnsPerProposal;
 		this.mempool = Objects.requireNonNull(mempool);
@@ -110,6 +111,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.mempoolAtomsRemovedEventDispatcher = Objects.requireNonNull(mempoolAtomsRemovedEventDispatcher);
 		this.committedDispatcher = Objects.requireNonNull(committedDispatcher);
 		this.systemCounters = Objects.requireNonNull(systemCounters);
+		this.forkManager = Objects.requireNonNull(forkManager);
+		this.currentForkConfig = Objects.requireNonNull(initialForkConfig);
 	}
 
 	public static class RadixEngineTxn implements PreparedTxn {
@@ -165,6 +168,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		// TODO: only return commands which will not cause a missing dependency error
 		final List<Txn> txns = mempool.getTxns(maxTxnsPerProposal, cmds);
+
 		systemCounters.add(SystemCounters.CounterType.MEMPOOL_PROPOSED_TRANSACTION, txns.size());
 		return txns;
 	}
@@ -175,9 +179,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 		long timestamp,
 		ImmutableList.Builder<PreparedTxn> successBuilder
 	) {
-		var view = vertex.getView();
+		final var view = vertex.getView();
 		final TxAction systemAction;
-		var nextValidatorSet = new AtomicReference<BFTValidatorSet>();
+		final var nextValidatorSet = new AtomicReference<BFTValidatorSet>();
 		if (view.compareTo(epochCeilingView) < 0) {
 			systemAction = new SystemNextView(
 				view.number(),
@@ -185,7 +189,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				vertex.getProposer() != null ? vertex.getProposer().getKey() : null
 			);
 		} else {
-			var stakedValidators = branch.getComputedState(StakedValidators.class);
+			final var stakedValidators = branch.getComputedState(StakedValidators.class);
 			if (stakedValidators.toValidatorSet() == null) {
 				// FIXME: Better way to handle rare case when there isn't enough in validator set
 				systemAction = new SystemNextView(
@@ -199,7 +203,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 					for (var u : updates) {
 						cur = cur.setStake(u.getValidatorKey(), u.getAmount());
 					}
-					// FIXME: cur.toValidatorSet() may be null
+					// FIXME: resultStakedValidators.toValidatorSet() may be null
 					var validatorSet = cur.toValidatorSet();
 					if (validatorSet == null) {
 						throw new IllegalStateException();
@@ -275,14 +279,18 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		final ImmutableList.Builder<PreparedTxn> successBuilder = ImmutableList.builder();
 		final ImmutableMap.Builder<Txn, Exception> exceptionBuilder = ImmutableMap.builder();
-		final BFTValidatorSet validatorSet = this.executeSystemUpdate(transientBranch, vertex, timestamp, successBuilder);
+		final var validatorSet = this.executeSystemUpdate(transientBranch, vertex, timestamp, successBuilder);
 		// Don't execute command if changing epochs
 		if (validatorSet == null) {
 			this.executeUserCommands(transientBranch, next, successBuilder, exceptionBuilder);
 		}
 		this.radixEngine.deleteBranches();
 
-		return new StateComputerResult(successBuilder.build(), exceptionBuilder.build(), validatorSet);
+		return new StateComputerResult(
+			successBuilder.build(),
+			exceptionBuilder.build(),
+			validatorSet
+		);
 	}
 
 	private List<REProcessedTxn> commitInternal(
@@ -291,12 +299,19 @@ public final class RadixEngineStateComputer implements StateComputer {
 		var proof = verifiedTxnsAndProof.getProof();
 		var ledgerAndBFTProof = LedgerAndBFTProof.create(proof, vertexStoreState);
 
+		final var maybeNextForkConfig = this.forkManager.findNextForkConfig(
+			this.currentForkConfig,
+			this.radixEngine,
+			ledgerAndBFTProof
+		);
+
 		final List<REProcessedTxn> radixEngineTxns;
 		try {
 			radixEngineTxns = this.radixEngine.execute(
 				verifiedTxnsAndProof.getTxns(),
 				ledgerAndBFTProof,
-				PermissionLevel.SUPER_USER
+				PermissionLevel.SUPER_USER,
+				maybeNextForkConfig.map(ForkConfig::hashOf)
 			);
 		} catch (RadixEngineException e) {
 			throw new ByzantineQuorumException(
@@ -304,22 +319,19 @@ public final class RadixEngineStateComputer implements StateComputer {
 			);
 		}
 
-		// Next epoch
-		if (proof.getNextValidatorSet().isPresent()) {
-			var forkConfig = epochToForkConfig.get(proof.getEpoch() + 1);
-			if (forkConfig != null) {
-				log.info("Epoch {} Forking RadixEngine to {}", proof.getEpoch() + 1, forkConfig.getName());
-				this.radixEngine.replaceConstraintMachine(
-					forkConfig.getConstraintMachineConfig(),
-					forkConfig.getSubstateSerialization(),
-					forkConfig.getActionConstructors(),
-					forkConfig.getBatchVerifier(),
-					forkConfig.getParser(),
-					forkConfig.getPostProcessedVerifier()
-				);
-				this.epochCeilingView = forkConfig.getEpochCeilingView();
-			}
-		}
+		maybeNextForkConfig.ifPresent(nextForkConfig -> {
+			log.info("Forking constraint machine to {}", nextForkConfig.getName());
+			this.radixEngine.replaceConstraintMachine(
+				nextForkConfig.getConstraintMachineConfig(),
+				nextForkConfig.getSubstateSerialization(),
+				nextForkConfig.getActionConstructors(),
+				nextForkConfig.getBatchVerifier(),
+				nextForkConfig.getParser(),
+				nextForkConfig.getPostProcessedVerifier()
+			);
+			this.epochCeilingView = nextForkConfig.getEpochCeilingView();
+			this.currentForkConfig = nextForkConfig;
+		});
 
 		radixEngineTxns.forEach(t -> {
 			if (t.isSystemOnly()) {
