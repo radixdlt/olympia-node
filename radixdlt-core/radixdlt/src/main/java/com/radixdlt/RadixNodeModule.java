@@ -46,8 +46,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.api.data.ScheduledQueueFlush;
 import com.radixdlt.api.module.ArchiveApiModule;
 import com.radixdlt.api.module.NodeApiModule;
-import com.radixdlt.api.qualifier.AtArchive;
-import com.radixdlt.api.qualifier.AtNode;
+import com.radixdlt.api.qualifier.Endpoints;
 import com.radixdlt.api.service.ScheduledCacheCleanup;
 import com.radixdlt.api.service.ScheduledStatsCollecting;
 import com.radixdlt.application.NodeApplicationModule;
@@ -86,6 +85,8 @@ import com.radixdlt.universe.UniverseModule;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.radixdlt.EndpointConfig.enabledArchiveEndpoints;
 import static com.radixdlt.EndpointConfig.enabledNodeEndpoints;
@@ -205,7 +206,7 @@ public final class RadixNodeModule extends AbstractModule {
 		try {
 			return universeModule.universe(properties, DefaultSerialization.getInstance()).type();
 		} catch (NullPointerException e) {
-			return UniverseType.PRODUCTION;	//Assume production environment with relevant restrictions
+			return UniverseType.PRODUCTION;    //Assume production environment with relevant restrictions
 		} catch (IOException e) {
 			throw new IllegalStateException("Unable to load universe", e);
 		}
@@ -215,8 +216,11 @@ public final class RadixNodeModule extends AbstractModule {
 		var archiveEndpoints = enabledArchiveEndpoints(properties, universeType);
 		var nodeEndpoints = enabledNodeEndpoints(properties, universeType);
 
-		bind(new TypeLiteral<List<EndpointConfig>>() {}).annotatedWith(AtNode.class).toInstance(nodeEndpoints);
-		bind(new TypeLiteral<List<EndpointConfig>>() {}).annotatedWith(AtArchive.class).toInstance(archiveEndpoints);
+		var enabledEndpoints = Stream.concat(archiveEndpoints.stream(), nodeEndpoints.stream())
+			.map(EndpointConfig::name)
+			.collect(Collectors.toList());
+
+		bind(new TypeLiteral<List<String>>() {}).annotatedWith(Endpoints.class).toInstance(enabledEndpoints);
 
 		if (hasActiveEndpoints(archiveEndpoints, nodeEndpoints)) {
 			var eventBinder = Multibinder
