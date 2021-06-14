@@ -20,7 +20,6 @@ package com.radixdlt.api.handler;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.service.ArchiveAccountService;
@@ -47,7 +46,6 @@ import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.ok;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
-@Singleton
 public class ArchiveAccountHandler {
 	private final ArchiveAccountService accountService;
 
