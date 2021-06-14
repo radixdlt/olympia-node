@@ -24,7 +24,5 @@ import io.undertow.server.RoutingHandler;
  * A controller which can serve http requests
  */
 public interface Controller {
-	void configureRoutes(RoutingHandler handler);
-
-	String root();
+	void configureRoutes(String root, RoutingHandler handler);
 }

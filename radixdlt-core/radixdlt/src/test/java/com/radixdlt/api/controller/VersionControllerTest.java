@@ -38,9 +38,9 @@ public class VersionControllerTest {
 	public void routesAreConfigured() {
 		var handler = mock(RoutingHandler.class);
 
-		controller.configureRoutes(handler);
+		controller.configureRoutes("/path/", handler);
 
-		verify(handler).get(eq("/version"), any());
+		verify(handler).get(eq("/path"), any());
 	}
 
 	@Test

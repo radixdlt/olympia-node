@@ -20,11 +20,10 @@ package com.radixdlt.api.module;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.controller.ConstructionController;
+import com.radixdlt.api.controller.JsonRpcController;
 import com.radixdlt.api.handler.ConstructionHandler;
 import com.radixdlt.api.qualifier.AtArchive;
 import com.radixdlt.api.qualifier.Construction;
@@ -34,9 +33,10 @@ import java.util.Map;
 
 public class ConstructEndpointModule extends AbstractModule {
 	@AtArchive
-	@ProvidesIntoSet
+	@ProvidesIntoMap
+	@StringMapKey("/construction")
 	public Controller constructController(@Construction JsonRpcServer jsonRpcServer) {
-		return new ConstructionController(jsonRpcServer);
+		return new JsonRpcController(jsonRpcServer);
 	}
 
 	@Construction
