@@ -19,6 +19,7 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
@@ -49,15 +50,20 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.ForkManager;
+import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.TreeMap;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -76,7 +82,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher;
 	private final EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher;
 	private final EventDispatcher<TxnsCommittedToLedger> committedDispatcher;
-	private final TreeMap<Long, ForkConfig> epochToForkConfig;
+	private final ForkManager forkManager;
 	private final SystemCounters systemCounters;
 
 	private View epochCeilingView;
@@ -84,7 +90,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 	@Inject
 	public RadixEngineStateComputer(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		TreeMap<Long, ForkConfig> epochToForkConfig,
 		RadixEngineMempool mempool, // TODO: Move this into radixEngine
 		@EpochCeilingView View epochCeilingView, // TODO: Move this into radixEngine
 		@MaxTxnsPerProposal int maxTxnsPerProposal, // TODO: Move this into radixEngine
@@ -93,14 +98,14 @@ public final class RadixEngineStateComputer implements StateComputer {
 		EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher,
 		EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher,
 		EventDispatcher<TxnsCommittedToLedger> committedDispatcher,
-		SystemCounters systemCounters
+		SystemCounters systemCounters,
+		ForkManager forkManager
 	) {
 		if (epochCeilingView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
 		}
 
 		this.radixEngine = Objects.requireNonNull(radixEngine);
-		this.epochToForkConfig = epochToForkConfig;
 		this.epochCeilingView = epochCeilingView;
 		this.maxTxnsPerProposal = maxTxnsPerProposal;
 		this.mempool = Objects.requireNonNull(mempool);
@@ -110,6 +115,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.mempoolAtomsRemovedEventDispatcher = Objects.requireNonNull(mempoolAtomsRemovedEventDispatcher);
 		this.committedDispatcher = Objects.requireNonNull(committedDispatcher);
 		this.systemCounters = Objects.requireNonNull(systemCounters);
+		this.forkManager = Objects.requireNonNull(forkManager);
 	}
 
 	public static class RadixEngineTxn implements PreparedTxn {
@@ -169,15 +175,16 @@ public final class RadixEngineStateComputer implements StateComputer {
 		return txns;
 	}
 
-	private BFTValidatorSet executeSystemUpdate(
+	private Pair<BFTValidatorSet, Optional<HashCode>> executeSystemUpdate(
 		RadixEngineBranch<LedgerAndBFTProof> branch,
 		VerifiedVertex vertex,
 		long timestamp,
 		ImmutableList.Builder<PreparedTxn> successBuilder
 	) {
-		var view = vertex.getView();
+		final var view = vertex.getView();
 		final TxAction systemAction;
-		var nextValidatorSet = new AtomicReference<BFTValidatorSet>();
+		final var nextValidatorSet = new AtomicReference<BFTValidatorSet>();
+		final var nextForkHash = new AtomicReference<Optional<HashCode>>(Optional.empty());
 		if (view.compareTo(epochCeilingView) < 0) {
 			systemAction = new SystemNextView(
 				view.number(),
@@ -185,7 +192,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				vertex.getProposer() != null ? vertex.getProposer().getKey() : null
 			);
 		} else {
-			var stakedValidators = branch.getComputedState(StakedValidators.class);
+			final var stakedValidators = branch.getComputedState(StakedValidators.class);
 			if (stakedValidators.toValidatorSet() == null) {
 				// FIXME: Better way to handle rare case when there isn't enough in validator set
 				systemAction = new SystemNextView(
@@ -199,12 +206,29 @@ public final class RadixEngineStateComputer implements StateComputer {
 					for (var u : updates) {
 						cur = cur.setStake(u.getValidatorKey(), u.getAmount());
 					}
-					// FIXME: cur.toValidatorSet() may be null
-					var validatorSet = cur.toValidatorSet();
+					final var resultStakedValidators = cur;
+
+					// FIXME: resultStakedValidators.toValidatorSet() may be null
+					var validatorSet = resultStakedValidators.toValidatorSet();
 					if (validatorSet == null) {
 						throw new IllegalStateException();
 					}
 					nextValidatorSet.set(validatorSet);
+
+					final var maybeNextForkHash = forkManager.votableForksSortedByNewest()
+						.filter(forkConfig -> {
+							final var forkHash = forkConfig.getHash();
+							final var requiredPower =
+								new BigDecimal(new BigInteger(1, validatorSet.getTotalPower().toByteArray()))
+									.divide(BigDecimal.valueOf(forkConfig.getRequiredVotingStakePercentage()), RoundingMode.HALF_DOWN);
+							final var forkVotesPower = resultStakedValidators.validatorsVotesForFork(forkHash, validatorSet);
+							return forkVotesPower.compareTo(requiredPower) >= 0;
+						})
+						.map(ForkConfig::getHash)
+						.findFirst();
+
+					nextForkHash.set(maybeNextForkHash);
+
 					return validatorSet.nodes().stream()
 						.map(BFTNode::getKey)
 						.sorted(Comparator.comparing(ECPublicKey::getBytes, Arrays::compare))
@@ -231,7 +255,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		);
 		successBuilder.add(radixEngineCommand);
 
-		return nextValidatorSet.get();
+		return Pair.of(nextValidatorSet.get(), nextForkHash.get());
 	}
 
 	private void executeUserCommands(
@@ -275,14 +299,19 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		final ImmutableList.Builder<PreparedTxn> successBuilder = ImmutableList.builder();
 		final ImmutableMap.Builder<Txn, Exception> exceptionBuilder = ImmutableMap.builder();
-		final BFTValidatorSet validatorSet = this.executeSystemUpdate(transientBranch, vertex, timestamp, successBuilder);
+		final var systemUpdateExecResult = this.executeSystemUpdate(transientBranch, vertex, timestamp, successBuilder);
 		// Don't execute command if changing epochs
-		if (validatorSet == null) {
+		if (systemUpdateExecResult.firstIsNull()) {
 			this.executeUserCommands(transientBranch, next, successBuilder, exceptionBuilder);
 		}
 		this.radixEngine.deleteBranches();
 
-		return new StateComputerResult(successBuilder.build(), exceptionBuilder.build(), validatorSet);
+		return new StateComputerResult(
+			successBuilder.build(),
+			exceptionBuilder.build(),
+			systemUpdateExecResult.getFirst(),
+			systemUpdateExecResult.getSecond()
+		);
 	}
 
 	private List<REProcessedTxn> commitInternal(
@@ -306,19 +335,19 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		// Next epoch
 		if (proof.getNextValidatorSet().isPresent()) {
-			var forkConfig = epochToForkConfig.get(proof.getEpoch() + 1);
-			if (forkConfig != null) {
-				log.info("Epoch {} Forking RadixEngine to {}", proof.getEpoch() + 1, forkConfig.getName());
-				this.radixEngine.replaceConstraintMachine(
-					forkConfig.getConstraintMachineConfig(),
-					forkConfig.getSubstateSerialization(),
-					forkConfig.getActionConstructors(),
-					forkConfig.getBatchVerifier(),
-					forkConfig.getParser(),
-					forkConfig.getPostProcessedVerifier()
+			final var nextEpoch = proof.getEpoch() + 1;
+
+			// execute forks on fixed epoch (pre betanet4)
+			forkManager.forkAtExactEpoch(nextEpoch)
+				.ifPresent(fc -> executeFork(fc, nextEpoch));
+
+			// execute forks that have been voted on
+			proof.getNextForkHash().ifPresent(nextForkHash -> {
+				forkManager.getForkByHash(nextForkHash).ifPresentOrElse(
+					forkConfig -> executeFork(forkConfig, nextEpoch),
+					() -> log.error("Radix network has advanced to a never version ({}), please upgrade your software", nextForkHash)
 				);
-				this.epochCeilingView = forkConfig.getEpochCeilingView();
-			}
+			});
 		}
 
 		radixEngineTxns.forEach(t -> {
@@ -330,6 +359,19 @@ public final class RadixEngineStateComputer implements StateComputer {
 		});
 
 		return radixEngineTxns;
+	}
+
+	private void executeFork(ForkConfig forkConfig, long epoch) {
+		log.info("Epoch {} forking constraint machine", epoch);
+		this.radixEngine.replaceConstraintMachine(
+			forkConfig.getConstraintMachineConfig(),
+			forkConfig.getSubstateSerialization(),
+			forkConfig.getActionConstructors(),
+			forkConfig.getBatchVerifier(),
+			forkConfig.getParser(),
+			forkConfig.getPostProcessedVerifier()
+		);
+		this.epochCeilingView = forkConfig.getEpochCeilingView();
 	}
 
 	@Override

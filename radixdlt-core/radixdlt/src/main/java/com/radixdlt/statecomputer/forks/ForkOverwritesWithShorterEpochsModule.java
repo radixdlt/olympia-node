@@ -18,12 +18,14 @@
 
 package com.radixdlt.statecomputer.forks;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.bft.View;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -42,33 +44,24 @@ public class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private Map<String, Long> epochOverwrite(Map<EpochMapKey, ForkConfig> forkConfigs) {
-		var epoch = new AtomicLong(0);
-		return forkConfigs.entrySet().stream()
+	private Map<String, ForkConfig> configOverwrite(ImmutableList<ForkConfig> forkConfigs) {
+		final var epoch = new AtomicLong(0);
+		final var viewCeiling = new AtomicLong(INITIAL_VIEW_CEILING);
+		return forkConfigs.stream()
 			.collect(
 				Collectors.toMap(
-					e -> e.getValue().getName(),
-					e -> epoch.getAndAdd(5)
-				));
-	}
-
-	@Provides
-	@Singleton
-	private Map<String, ForkConfig> configOverwrite(Map<EpochMapKey, ForkConfig> forkConfigs) {
-		var viewCeiling = new AtomicLong(INITIAL_VIEW_CEILING);
-		return forkConfigs.entrySet().stream()
-			.collect(
-				Collectors.toMap(
-					e -> e.getValue().getName(),
+					ForkConfig::getName,
 					e -> new ForkConfig(
-						e.getValue().getName(),
-						e.getValue().getParser(),
-						e.getValue().getSubstateSerialization(),
-						fees ? e.getValue().getConstraintMachineConfig()
-							: e.getValue().getConstraintMachineConfig().metering((procedureKey, param, context) -> { }),
-						e.getValue().getActionConstructors(),
-						e.getValue().getBatchVerifier(),
-						fees ? e.getValue().getPostProcessedVerifier() : (p, t) -> { },
+						e.getName(),
+						e.getExecutedAtEpoch().isPresent() ? Optional.of(epoch.getAndAdd(5)) : Optional.empty(),
+						e.getRequiredVotingStakePercentage(),
+						e.getParser(),
+						e.getSubstateSerialization(),
+						fees ? e.getConstraintMachineConfig()
+							: e.getConstraintMachineConfig().metering((procedureKey, param, context) -> { }),
+						e.getActionConstructors(),
+						e.getBatchVerifier(),
+						fees ? e.getPostProcessedVerifier() : (p, t) -> { },
 						View.of(viewCeiling.get() % 2 == 0 ? viewCeiling.getAndIncrement() : viewCeiling.getAndDecrement())
 					)
 			));

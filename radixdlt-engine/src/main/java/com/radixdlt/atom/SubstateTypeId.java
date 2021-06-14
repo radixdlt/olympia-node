@@ -36,7 +36,8 @@ public enum SubstateTypeId {
 	EXITTING_STAKE((byte) 14),
 	VALIDATOR_NO_UPDATE((byte) 15),
 	PREPARED_VALIDATOR_UPDATE((byte) 16),
-	STAKE_V2((byte) 17);
+	STAKE_V2((byte) 17),
+	VALIDATOR_WITH_FORKS((byte) 18);
 
 	private final byte id;
 

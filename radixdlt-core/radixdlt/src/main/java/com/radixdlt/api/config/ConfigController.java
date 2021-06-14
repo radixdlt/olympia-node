@@ -27,13 +27,11 @@ import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.statecomputer.MaxTxnsPerProposal;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
-import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.ForkManager;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 import org.json.JSONArray;
 import org.json.JSONObject;
-
-import java.util.TreeMap;
 
 import static com.radixdlt.api.RestUtils.respond;
 
@@ -45,7 +43,7 @@ public class ConfigController implements Controller {
 	private final int minValidators;
 	private final int maxValidators;
 	private final int maxTxnsPerProposal;
-	private final TreeMap<Long, ForkConfig> forkConfigTreeMap;
+	private final ForkManager forkManager;
 
 	@Inject
 	public ConfigController(
@@ -56,7 +54,7 @@ public class ConfigController implements Controller {
 		@MinValidators int minValidators,
 		@MaxValidators int maxValidators,
 		@MaxTxnsPerProposal int maxTxnsPerProposal,
-		TreeMap<Long, ForkConfig> forkConfigTreeMap
+		ForkManager forkManager
 	) {
 		this.pacemakerTimeout = pacemakerTimeout;
 		this.bftSyncPatienceMillis = bftSyncPatienceMillis;
@@ -65,7 +63,7 @@ public class ConfigController implements Controller {
 		this.minValidators = minValidators;
 		this.maxValidators = maxValidators;
 		this.maxTxnsPerProposal = maxTxnsPerProposal;
-		this.forkConfigTreeMap = forkConfigTreeMap;
+		this.forkManager = forkManager;
 	}
 
 	@Override
@@ -75,11 +73,12 @@ public class ConfigController implements Controller {
 
 	void handleConfig(HttpServerExchange exchange) {
 		var forks = new JSONArray();
-		forkConfigTreeMap.forEach((e, config) -> forks.put(
+		forkManager.forksConfigs().forEach(config -> forks.put(
 			new JSONObject()
 				.put("name", config.getName())
 				.put("ceiling_view", config.getEpochCeilingView().number())
-				.put("epoch", e)
+				.put("epoch", config.getExecutedAtEpoch().orElse(0L))
+				.put("required_voting_stake_percentage", config.getRequiredVotingStakePercentage())
 		));
 
 		respond(exchange, new JSONObject()

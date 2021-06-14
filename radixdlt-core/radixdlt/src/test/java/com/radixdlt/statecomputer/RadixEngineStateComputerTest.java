@@ -87,6 +87,7 @@ import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.assertj.core.api.Condition;
 import org.junit.Before;
@@ -358,7 +359,7 @@ public class RadixEngineStateComputerTest {
 		var ledgerProof = new LedgerProof(
 			HashUtils.random256(),
 			LedgerHeader.create(0, View.of(9), new AccumulatorState(3, HashUtils.zero256()), 0,
-				BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))
+				BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE))), Optional.empty()
 			),
 			new TimestampedECDSASignatures()
 		);
@@ -381,7 +382,7 @@ public class RadixEngineStateComputerTest {
 		var ledgerProof = new LedgerProof(
 			HashUtils.random256(),
 			LedgerHeader.create(0, View.of(9), new AccumulatorState(3, HashUtils.zero256()), 0,
-				BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))
+				BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE))), Optional.empty()
 			),
 			new TimestampedECDSASignatures()
 		);

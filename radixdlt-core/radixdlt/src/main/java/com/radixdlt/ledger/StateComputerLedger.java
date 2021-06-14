@@ -19,6 +19,7 @@ package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerHeader;
@@ -60,23 +61,30 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 		private final List<PreparedTxn> preparedTxns;
 		private final Map<Txn, Exception> failedCommands;
 		private final BFTValidatorSet nextValidatorSet;
+		private final Optional<HashCode> nextForkHash;
 
 		public StateComputerResult(
 			List<PreparedTxn> preparedTxns,
 			Map<Txn, Exception> failedCommands,
-			BFTValidatorSet nextValidatorSet
+			BFTValidatorSet nextValidatorSet,
+			Optional<HashCode> nextForkHash
 		) {
 			this.preparedTxns = Objects.requireNonNull(preparedTxns);
 			this.failedCommands = Objects.requireNonNull(failedCommands);
 			this.nextValidatorSet = nextValidatorSet;
+			this.nextForkHash = Objects.requireNonNull(nextForkHash);
 		}
 
 		public StateComputerResult(List<PreparedTxn> preparedTxns, Map<Txn, Exception> failedCommands) {
-			this(preparedTxns, failedCommands, null);
+			this(preparedTxns, failedCommands, null, Optional.empty());
 		}
 
 		public Optional<BFTValidatorSet> getNextValidatorSet() {
 			return Optional.ofNullable(nextValidatorSet);
+		}
+
+		public Optional<HashCode> getNextForkHash() {
+			return nextForkHash;
 		}
 
 		public List<PreparedTxn> getSuccessfulCommands() {
@@ -216,7 +224,8 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 				vertex.getView(),
 				accumulatorState,
 				quorumTimestamp,
-				result.getNextValidatorSet().orElse(null)
+				result.getNextValidatorSet().orElse(null),
+				result.getNextForkHash()
 			);
 
 			final long localTimestamp = timeSupplier.currentTime();

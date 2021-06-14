@@ -41,7 +41,8 @@ public class RegisterValidatorConstructor implements ActionConstructor<RegisterV
 				action.validatorKey(),
 				true,
 				action.name() == null ? substateDown.getName() : action.name(),
-				action.url() == null ? substateDown.getUrl() : action.url()
+				action.url() == null ? substateDown.getUrl() : action.url(),
+				action.forkVoteHash()
 			))
 		);
 	}

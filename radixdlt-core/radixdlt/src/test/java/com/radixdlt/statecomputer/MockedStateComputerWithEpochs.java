@@ -34,6 +34,7 @@ import com.radixdlt.mempool.MempoolAdd;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -73,7 +74,8 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 			return new StateComputerResult(
 				next.stream().map(MockPrepared::new).collect(Collectors.toList()),
 				ImmutableMap.of(),
-				validatorSetMapping.apply(epoch + 1)
+				validatorSetMapping.apply(epoch + 1),
+				Optional.empty()
 			);
 		} else {
 			return stateComputer.prepare(previous, vertex, timestamp);

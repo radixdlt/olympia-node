@@ -135,6 +135,10 @@ public final class LedgerProof {
 		return ledgerHeader.getNextValidatorSet();
 	}
 
+	public Optional<HashCode> getNextForkHash() {
+		return ledgerHeader.getNextForkHash();
+	}
+
 	public long getEpoch() {
 		return ledgerHeader.getEpoch();
 	}
