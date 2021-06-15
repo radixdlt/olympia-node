@@ -6,7 +6,7 @@ This document describes reorganization and proposed changes to the whole node AP
 <details>
   <summary>Click to see detailed information about endpoints and configuration</summary>
 
-### REST APIs
+### HTTP APIs
 
  | Path | Method | Description | Comments |
  | --- | --- | --- | --- |
@@ -65,12 +65,12 @@ Following configuration options control which APIs are enabled at the node:
   - `/account` supports methods to fetch your associated account info, and a one-step method to build, sign, and submit a transaction
   - `/validation` - read-only methods which provide same information as available today via all `/node/*` endpoints
   - `/system` - read-only methods which provide same information as available today via all `/system/*` endpoints
-    
-- The `/system`, `/account` and `/validator` endpoints are expected to be protected by firewall and/or require authentication/etc. 
+
+- The `/system`, `/account` and `/validation` endpoints are expected to be protected by firewall and/or require authentication/etc. 
   (similar requirements/setup as we have today)
 
-### REST APIs
-Majority of the REST APIs are replaced with JSON-RPC counterparts. Remaining and new REST endpoints:
+### HTTP APIs
+Majority of the HTTP APIs are replaced with JSON-RPC counterparts. Remaining and new HTTP endpoints:
 
 | Path | Method | Description |
 | --- | --- | --- |
@@ -85,6 +85,8 @@ Node health status has following format: `{"status" : "<status>" }`, where `<sta
  - UP - node is in sync with consensus
  - STALLED - node is out of sync and not trying to sync with network, but network is still available.
  - OUT_OF_SYNC - node is out of sync and does not get updates from network (for example, connection to network is lost).
+
+All listed above endpoints are expected to be protected by firewall and/or require authentication/etc.
 
 ### JSON-RPC APIs
 
@@ -161,8 +163,8 @@ In order to make JSON RPC API complete, we need to support following actions whi
 | CreateFixedSupplyToken | Create fixed supply token |
 | CreateMutableSupplyToken | Create mutable supply token |
 
-### Removal of `/node` REST endpoints
-Note that all the wallet-style actions which were previously done via REST 
+### Removal of `/node` HTTP endpoints
+Note that all the wallet-style actions which were previously done via HTTP 
 under `/node` are now supported via Actions under the normal transaction 
 building flow.  Node runners can use the `account.submit_transaction_single_step` method 
 under `/account` in order to build, sign, and submit these transactions in a 

@@ -28,8 +28,8 @@ import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.api.controller.JsonRpcController;
 import com.radixdlt.api.faucet.FaucetToken;
 import com.radixdlt.api.handler.FaucetHandler;
-import com.radixdlt.api.qualifier.AtNode;
-import com.radixdlt.api.qualifier.Faucet;
+import com.radixdlt.api.qualifier.NodeServer;
+import com.radixdlt.api.qualifier.FaucetEndpoint;
 import com.radixdlt.api.server.JsonRpcServer;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
@@ -50,20 +50,20 @@ public class FaucetEndpointModule extends AbstractModule {
 		bind(FaucetHandler.class).in(Scopes.SINGLETON);
 	}
 
-	@AtNode
+	@NodeServer
 	@ProvidesIntoMap
 	@StringMapKey("/faucet")
-	public Controller faucetController(@Faucet JsonRpcServer jsonRpcServer) {
+	public Controller faucetController(@FaucetEndpoint JsonRpcServer jsonRpcServer) {
 		return new JsonRpcController(jsonRpcServer);
 	}
 
-	@Faucet
+	@FaucetEndpoint
 	@Provides
-	public JsonRpcServer jsonRpcServer(@Faucet Map<String, JsonRpcHandler> handlers) {
+	public JsonRpcServer jsonRpcServer(@FaucetEndpoint Map<String, JsonRpcHandler> handlers) {
 		return new JsonRpcServer(handlers);
 	}
 
-	@Faucet
+	@FaucetEndpoint
 	@ProvidesIntoMap
 	@StringMapKey("faucet.request_tokens")
 	public JsonRpcHandler faucetRequestTokens(FaucetHandler faucetHandler) {

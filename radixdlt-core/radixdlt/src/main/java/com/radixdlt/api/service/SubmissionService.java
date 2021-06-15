@@ -23,7 +23,7 @@ import org.apache.logging.log4j.Logger;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.api.data.PreparedTransaction;
-import com.radixdlt.api.data.TransactionAction;
+import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;

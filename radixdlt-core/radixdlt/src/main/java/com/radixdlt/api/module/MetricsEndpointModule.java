@@ -22,11 +22,11 @@ import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.controller.MetricsController;
-import com.radixdlt.api.qualifier.AtNode;
+import com.radixdlt.api.qualifier.NodeServer;
 import com.radixdlt.api.service.MetricsService;
 
 public class MetricsEndpointModule extends AbstractModule {
-	@AtNode
+	@NodeServer
 	@ProvidesIntoMap
 	@StringMapKey("/metrics")
 	public Controller metricsController(MetricsService metricsService) {

@@ -26,8 +26,8 @@ import com.radixdlt.api.Controller;
 import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.api.controller.JsonRpcController;
 import com.radixdlt.api.handler.ConstructionHandler;
-import com.radixdlt.api.qualifier.AtArchive;
-import com.radixdlt.api.qualifier.Construction;
+import com.radixdlt.api.qualifier.ArchiveServer;
+import com.radixdlt.api.qualifier.ConstructionEndpoint;
 import com.radixdlt.api.server.JsonRpcServer;
 
 import java.util.Map;
@@ -38,34 +38,34 @@ public class ConstructEndpointModule extends AbstractModule {
 		bind(ConstructionHandler.class).in(Scopes.SINGLETON);
 	}
 
-	@AtArchive
+	@ArchiveServer
 	@ProvidesIntoMap
 	@StringMapKey("/construction")
-	public Controller constructController(@Construction JsonRpcServer jsonRpcServer) {
+	public Controller constructController(@ConstructionEndpoint JsonRpcServer jsonRpcServer) {
 		return new JsonRpcController(jsonRpcServer);
 	}
 
-	@Construction
+	@ConstructionEndpoint
 	@Provides
-	public JsonRpcServer rpcServer(@Construction Map<String, JsonRpcHandler> additionalHandlers) {
+	public JsonRpcServer rpcServer(@ConstructionEndpoint Map<String, JsonRpcHandler> additionalHandlers) {
 		return new JsonRpcServer(additionalHandlers);
 	}
 
-	@Construction
+	@ConstructionEndpoint
 	@ProvidesIntoMap
 	@StringMapKey("construction.build_transaction")
 	public JsonRpcHandler constructionBuildTransaction(ConstructionHandler constructionHandler) {
 		return constructionHandler::handleConstructionBuildTransaction;
 	}
 
-	@Construction
+	@ConstructionEndpoint
 	@ProvidesIntoMap
 	@StringMapKey("construction.finalize_transaction")
 	public JsonRpcHandler constructionFinalizeTransaction(ConstructionHandler constructionHandler) {
 		return constructionHandler::handleConstructionFinalizeTransaction;
 	}
 
-	@Construction
+	@ConstructionEndpoint
 	@ProvidesIntoMap
 	@StringMapKey("construction.submit_transaction")
 	public JsonRpcHandler constructionSubmitTransaction(ConstructionHandler constructionHandler) {

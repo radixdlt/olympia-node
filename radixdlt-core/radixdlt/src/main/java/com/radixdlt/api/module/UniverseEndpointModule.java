@@ -23,12 +23,12 @@ import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.controller.UniverseController;
-import com.radixdlt.api.qualifier.AtNode;
+import com.radixdlt.api.qualifier.NodeServer;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.universe.Universe;
 
 public class UniverseEndpointModule extends AbstractModule {
-	@AtNode
+	@NodeServer
 	@ProvidesIntoMap
 	@StringMapKey("/universe.json")
 	public Controller universeController(Universe universe) {

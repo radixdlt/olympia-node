@@ -23,7 +23,7 @@ import org.json.JSONObject;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.api.data.TransactionAction;
+import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.api.faucet.FaucetToken;
 import com.radixdlt.api.service.SubmissionService;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
