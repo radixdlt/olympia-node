@@ -42,10 +42,12 @@ import static java.util.logging.Logger.getLogger;
 
 public class AbstractHttpServer implements ModuleRunner {
 	private static final Logger log = LogManager.getLogger();
+	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
 
 	private final Map<String, Controller> controllers;
 	private final String name;
 	private final int port;
+	private final String bindAddress;
 
 	private Undertow server;
 
@@ -53,6 +55,7 @@ public class AbstractHttpServer implements ModuleRunner {
 		this.controllers = controllers;
 		this.name = name.toLowerCase(Locale.US);
 		this.port = properties.get("api." + name + ".port", defaultPort);
+		this.bindAddress = properties.get("api." + name + ".bind.address", DEFAULT_BIND_ADDRESS);
 	}
 
 	private static void fallbackHandler(HttpServerExchange exchange) {
@@ -72,12 +75,12 @@ public class AbstractHttpServer implements ModuleRunner {
 	@Override
 	public void start() {
 		server = Undertow.builder()
-			.addHttpListener(port, "0.0.0.0")
+			.addHttpListener(port, bindAddress)
 			.setHandler(configureRoutes())
 			.build();
 		server.start();
 
-		log.info("Starting {} HTTP Server at {}", name.toUpperCase(Locale.US), port);
+		log.info("Starting {} HTTP Server at {}:{}", name.toUpperCase(Locale.US), bindAddress, port);
 	}
 
 	@Override

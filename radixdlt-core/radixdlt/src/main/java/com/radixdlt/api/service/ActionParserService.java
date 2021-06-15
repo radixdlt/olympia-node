@@ -22,7 +22,7 @@ import org.json.JSONObject;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.data.ActionType;
-import com.radixdlt.api.data.TransactionAction;
+import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AccountAddress;
@@ -74,8 +74,10 @@ public final class ActionParserService {
 
 	private Result<TransactionAction> parseByType(ActionType type, JSONObject element) {
 		switch (type) {
+			case UNKNOWN:
 			case MSG:
-				break;
+			default:
+				return UNSUPPORTED_ACTION.with(type).result();
 
 			case TRANSFER:
 				return allOf(
@@ -156,8 +158,6 @@ public final class ActionParserService {
 					optionalTokenUrl(element)
 				).map(TransactionAction::createMutable);
 		}
-
-		return UNSUPPORTED_ACTION.with(type).result();
 	}
 
 	private Result<ECPublicKey> pubKey(JSONObject element) {

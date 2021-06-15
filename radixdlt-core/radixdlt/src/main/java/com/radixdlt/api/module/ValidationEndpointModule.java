@@ -26,8 +26,8 @@ import com.radixdlt.api.Controller;
 import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.api.controller.JsonRpcController;
 import com.radixdlt.api.handler.ValidationHandler;
-import com.radixdlt.api.qualifier.AtNode;
-import com.radixdlt.api.qualifier.Validation;
+import com.radixdlt.api.qualifier.NodeServer;
+import com.radixdlt.api.qualifier.ValidationEndpoint;
 import com.radixdlt.api.server.JsonRpcServer;
 
 import java.util.Map;
@@ -38,34 +38,34 @@ public class ValidationEndpointModule extends AbstractModule {
 		bind(ValidationHandler.class).in(Scopes.SINGLETON);
 	}
 
-	@AtNode
+	@NodeServer
 	@ProvidesIntoMap
 	@StringMapKey("/validation")
-	public Controller validationController(@Validation JsonRpcServer jsonRpcServer) {
+	public Controller validationController(@ValidationEndpoint JsonRpcServer jsonRpcServer) {
 		return new JsonRpcController(jsonRpcServer);
 	}
 
-	@Validation
+	@ValidationEndpoint
 	@Provides
-	public JsonRpcServer rpcServer(@Validation Map<String, JsonRpcHandler> additionalHandlers) {
+	public JsonRpcServer rpcServer(@ValidationEndpoint Map<String, JsonRpcHandler> additionalHandlers) {
 		return new JsonRpcServer(additionalHandlers);
 	}
 
-	@Validation
+	@ValidationEndpoint
 	@ProvidesIntoMap
 	@StringMapKey("validation.get_node_info")
 	public JsonRpcHandler getNodeInfo(ValidationHandler validationHandler) {
 		return validationHandler::handleGetNodeInfo;
 	}
 
-	@Validation
+	@ValidationEndpoint
 	@ProvidesIntoMap
 	@StringMapKey("validation.get_current_epoch_data")
 	public JsonRpcHandler getCurrentEpochData(ValidationHandler validationHandler) {
 		return validationHandler::handleGetCurrentEpochData;
 	}
 
-	@Validation
+	@ValidationEndpoint
 	@ProvidesIntoMap
 	@StringMapKey("validation.get_next_epoch_data")
 	public JsonRpcHandler getNextEpochData(ValidationHandler validationHandler) {

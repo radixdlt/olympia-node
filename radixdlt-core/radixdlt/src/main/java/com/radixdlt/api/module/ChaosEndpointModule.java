@@ -26,7 +26,7 @@ import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.api.chaos.messageflooder.MessageFlooderModule;
 import com.radixdlt.api.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.api.controller.ChaosController;
-import com.radixdlt.api.qualifier.AtNode;
+import com.radixdlt.api.qualifier.NodeServer;
 import com.radixdlt.environment.EventDispatcher;
 
 public class ChaosEndpointModule extends AbstractModule {
@@ -36,7 +36,7 @@ public class ChaosEndpointModule extends AbstractModule {
 		install(new MempoolFillerModule());
 	}
 
-	@AtNode
+	@NodeServer
 	@ProvidesIntoMap
 	@StringMapKey("/chaos")
 	public Controller chaosController(

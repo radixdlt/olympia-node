@@ -29,7 +29,7 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Marks elements which run on Node server
+ * Used to mark list of active endpoints for injection.
  */
 @Qualifier
 @Target({ FIELD, PARAMETER, METHOD })

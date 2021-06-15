@@ -29,10 +29,10 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Marks elements related to /account endpoint
+ * Marks elements which run on Node server
  */
 @Qualifier
 @Target({ FIELD, PARAMETER, METHOD })
 @Retention(RUNTIME)
-public @interface Account {
+public @interface NodeServer {
 }

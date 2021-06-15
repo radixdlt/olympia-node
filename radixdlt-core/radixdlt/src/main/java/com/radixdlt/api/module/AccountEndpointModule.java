@@ -26,8 +26,8 @@ import com.radixdlt.api.Controller;
 import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.api.controller.JsonRpcController;
 import com.radixdlt.api.handler.AccountHandler;
-import com.radixdlt.api.qualifier.Account;
-import com.radixdlt.api.qualifier.AtNode;
+import com.radixdlt.api.qualifier.AccountEndpoint;
+import com.radixdlt.api.qualifier.NodeServer;
 import com.radixdlt.api.server.JsonRpcServer;
 
 import java.util.Map;
@@ -38,27 +38,27 @@ public class AccountEndpointModule extends AbstractModule {
 		bind(AccountHandler.class).in(Scopes.SINGLETON);
 	}
 
-	@AtNode
+	@NodeServer
 	@ProvidesIntoMap
 	@StringMapKey("/account")
-	public Controller accountController(@Account JsonRpcServer jsonRpcServer) {
+	public Controller accountController(@AccountEndpoint JsonRpcServer jsonRpcServer) {
 		return new JsonRpcController(jsonRpcServer);
 	}
 
-	@Account
+	@AccountEndpoint
 	@Provides
-	public JsonRpcServer rpcServer(@Account Map<String, JsonRpcHandler> additionalHandlers) {
+	public JsonRpcServer rpcServer(@AccountEndpoint Map<String, JsonRpcHandler> additionalHandlers) {
 		return new JsonRpcServer(additionalHandlers);
 	}
 
-	@Account
+	@AccountEndpoint
 	@ProvidesIntoMap
 	@StringMapKey("account.get_info")
 	public JsonRpcHandler accountGetInfo(AccountHandler accountHandler) {
 		return accountHandler::handleAccountGetInfo;
 	}
 
-	@Account
+	@AccountEndpoint
 	@ProvidesIntoMap
 	@StringMapKey("account.submit_transaction_single_step")
 	public JsonRpcHandler accountSubmitTransactionSingleStep(AccountHandler accountHandler) {

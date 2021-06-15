@@ -29,10 +29,10 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Marks elements related to /system endpoint
+ * Marks elements related to /account endpoint
  */
 @Qualifier
 @Target({ FIELD, PARAMETER, METHOD })
 @Retention(RUNTIME)
-public @interface System {
+public @interface AccountEndpoint {
 }

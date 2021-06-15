@@ -30,7 +30,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.api.data.PreparedTransaction;
-import com.radixdlt.api.data.TransactionAction;
+import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxLowLevelBuilder;
