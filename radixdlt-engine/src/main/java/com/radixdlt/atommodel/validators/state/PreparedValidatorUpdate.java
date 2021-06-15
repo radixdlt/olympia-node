@@ -24,7 +24,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import java.util.Objects;
 
 public final class PreparedValidatorUpdate implements Particle {
-	public static final int RAKE_PERCENTAGE_GRANULARITY = 10 * 10 * 10 * 10; // 10^4
+	public static final int RAKE_PERCENTAGE_GRANULARITY = 10 * 10; // 100 == 1.00%, 1 == 0.01%
 	public static final int RAKE_MAX = 100 * RAKE_PERCENTAGE_GRANULARITY;
 	public static final int RAKE_MIN = 0;
 

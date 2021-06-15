@@ -407,9 +407,7 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 
 		ReducerState next() {
 			if (preparingStake.isEmpty()) {
-				return curStake.isEmpty()
-					? new CreatingNextValidatorSet(updatingEpoch)
-					: new UpdatingValidatorStakes(updatingEpoch, curStake);
+				return new PreparingRakeUpdate(updatingEpoch, curStake);
 			}
 
 			var k = preparingStake.firstKey();
@@ -426,6 +424,51 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 					curStake.put(k, updated);
 					return this.next();
 				});
+			}
+		}
+	}
+
+	private static final class PreparingRakeUpdate implements ReducerState {
+		private final UpdatingEpoch updatingEpoch;
+		private final TreeMap<ECPublicKey, ValidatorStakeData> validatorsToUpdate;
+		private final TreeMap<ECPublicKey, PreparedValidatorUpdate> preparingRakeUpdates =
+			new TreeMap<>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
+
+		PreparingRakeUpdate(
+			UpdatingEpoch updatingEpoch,
+			TreeMap<ECPublicKey, ValidatorStakeData> validatorsToUpdate
+		) {
+			this.updatingEpoch = updatingEpoch;
+			this.validatorsToUpdate = validatorsToUpdate;
+		}
+
+		ReducerState prepareRakeUpdates(Iterator<PreparedValidatorUpdate> preparingRakeUpdateIterator) {
+			preparingRakeUpdateIterator.forEachRemaining(preparedRakeUpdate ->
+				preparingRakeUpdates.put(preparedRakeUpdate.getValidatorKey(), preparedRakeUpdate)
+			);
+			return next();
+		}
+
+		ReducerState next() {
+			if (preparingRakeUpdates.isEmpty()) {
+				return validatorsToUpdate.isEmpty()
+					? new CreatingNextValidatorSet(updatingEpoch)
+					: new UpdatingValidatorStakes(updatingEpoch, validatorsToUpdate);
+			}
+
+			var k = preparingRakeUpdates.firstKey();
+			var validatorUpdate = preparingRakeUpdates.remove(k);
+			if (!validatorsToUpdate.containsKey(k)) {
+				return new LoadingStake(k, validatorStake -> {
+					var updatedValidator = validatorStake.setRakePercentage(validatorUpdate.getRakePercentage());
+					validatorsToUpdate.put(k, updatedValidator);
+					return this.next();
+				});
+			} else {
+				var updatedValidator = validatorsToUpdate.get(k)
+					.setRakePercentage(validatorUpdate.getRakePercentage());
+				validatorsToUpdate.put(k, updatedValidator);
+				return this.next();
 			}
 		}
 	}
@@ -568,6 +611,11 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 			PreparedStake.class, PreparingStake.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(i, s, r) -> ReducerResult.incomplete(s.prepareStakes(i))
+		));
+		os.procedure(new ShutdownAllProcedure<>(
+			PreparedValidatorUpdate.class, PreparingRakeUpdate.class,
+			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(i, s, r) -> ReducerResult.incomplete(s.prepareRakeUpdates(i))
 		));
 		os.procedure(new UpProcedure<>(
 			Staking.class, StakeOwnership.class,

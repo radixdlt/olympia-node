@@ -37,6 +37,7 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.actions.UpdateRake;
 import com.radixdlt.atom.actions.UpdateValidator;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV1;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
@@ -67,6 +68,7 @@ import com.radixdlt.atommodel.tokens.construction.SplitTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV1;
 import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV1;
 import com.radixdlt.atommodel.validators.construction.UnregisterValidatorConstructor;
+import com.radixdlt.atommodel.validators.construction.UpdateRakeConstructor;
 import com.radixdlt.atommodel.validators.construction.UpdateValidatorConstructor;
 import com.radixdlt.atommodel.system.construction.NextViewConstructorV2;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV1;
@@ -77,6 +79,7 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
 import com.radixdlt.atommodel.unique.scrypt.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV1;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
@@ -246,7 +249,7 @@ public final class BetanetForksModule extends AbstractModule {
 	ForkConfig betanetV4() {
 		var fixedFee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(100));
 		final CMAtomOS v4 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
-		v4.load(new ValidatorConstraintScryptV1()); // load before TokensConstraintScrypt due to dependency
+		v4.load(new ValidatorConstraintScryptV2()); // load before TokensConstraintScrypt due to dependency
 		v4.load(new TokensConstraintScryptV3());
 		v4.load(new FeeConstraintScrypt());
 		v4.load(new StakingConstraintScryptV3());
@@ -278,6 +281,7 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(UnregisterValidator.class, new UnregisterValidatorConstructor())
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
 			.put(PayFee.class, new PayFeeConstructorV2())
+			.put(UpdateRake.class, new UpdateRakeConstructor())
 			.build();
 
 		return new ForkConfig(

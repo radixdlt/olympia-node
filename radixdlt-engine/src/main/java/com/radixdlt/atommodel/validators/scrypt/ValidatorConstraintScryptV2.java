@@ -127,7 +127,10 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				var key = REFieldSerialization.deserializeKey(buf);
 				return new NoValidatorUpdate(key);
 			},
-			(s, buf) -> REFieldSerialization.serializeKey(buf, s.getValidatorKey()),
+			(s, buf) -> {
+				buf.put(SubstateTypeId.VALIDATOR_NO_UPDATE.id());
+				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
+			},
 			s -> true
 		));
 
@@ -146,6 +149,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 					return new PreparedValidatorUpdate(epoch, validatorKey, rakePercentage);
 				},
 				(s, buf) -> {
+					buf.put(SubstateTypeId.PREPARED_VALIDATOR_UPDATE.id());
 					buf.putLong(s.getEpoch());
 					REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 					buf.putInt(s.getRakePercentage());

@@ -87,6 +87,10 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		return rakePercentage;
 	}
 
+	public ValidatorStakeData setRakePercentage(int rakePercentage) {
+		return new ValidatorStakeData(validatorKey, totalStake, totalOwnership, OptionalInt.of(rakePercentage));
+	}
+
 	@Override
 	public UInt256 getAmount() {
 		return this.totalStake;

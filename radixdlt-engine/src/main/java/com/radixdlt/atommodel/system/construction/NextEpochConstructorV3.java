@@ -203,6 +203,31 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 			validatorsToUpdate.put(k, curValidator);
 		}
 
+		var preparingRakeUpdates = new TreeMap<ECPublicKey, PreparedValidatorUpdate>(
+			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
+		);
+		txBuilder.shutdownAll(PreparedValidatorUpdate.class, i -> {
+			i.forEachRemaining(preparedValidatorUpdate ->
+				preparingRakeUpdates.put(preparedValidatorUpdate.getValidatorKey(), preparedValidatorUpdate)
+			);
+			return preparingRakeUpdates;
+		});
+		for (var e : preparingRakeUpdates.entrySet()) {
+			var k = e.getKey();
+			var update = e.getValue();
+			if (!validatorsToUpdate.containsKey(k)) {
+				var validatorData = txBuilder.down(
+					ValidatorStakeData.class,
+					p -> p.getValidatorKey().equals(k),
+					Optional.of(SubstateWithArg.noArg(ValidatorStakeData.create(k))),
+					"Validator not found"
+				);
+				validatorsToUpdate.put(k, validatorData);
+			}
+			var curValidator = validatorsToUpdate.get(k);
+			validatorsToUpdate.put(k, curValidator.setRakePercentage(update.getRakePercentage()));
+		}
+
 		validatorsToUpdate.forEach((k, validator) -> txBuilder.up(validator));
 		var validatorKeys = action.validators(validatorsToUpdate.values());
 		validatorKeys.forEach(k -> txBuilder.up(new ValidatorBFTData(k, 0)));

@@ -40,6 +40,7 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.actions.UpdateRake;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
@@ -380,6 +381,9 @@ public class StakingUnstakingValidatorsTest {
 				case 5:
 					restartNode(nodeIndex);
 					continue;
+				case 6:
+					action = new UpdateRake(privKey.getPublicKey(), 100); // 1.00%
+					break;
 				default:
 					continue;
 			}
