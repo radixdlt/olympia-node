@@ -18,7 +18,6 @@
 
 package com.radixdlt.atommodel.tokens.state;
 
-import com.radixdlt.atommodel.system.state.HasEpochData;
 import com.radixdlt.atommodel.tokens.Bucket;
 import com.radixdlt.constraintmachine.AuthorizationException;
 import com.radixdlt.constraintmachine.Authorization;
@@ -49,13 +48,6 @@ public final class AccountBucket implements Bucket {
 					holdingAddress.verifyWithdrawAuthorization(c.key());
 				} catch (REAddr.BucketWithdrawAuthorizationException e) {
 					throw new AuthorizationException(e.getMessage());
-				}
-
-				if (epochUnlocked != null) {
-					var system = (HasEpochData) r.loadAddr(REAddr.ofSystem()).orElseThrow();
-					if (epochUnlocked > system.getEpoch()) {
-						throw new AuthorizationException("Tokens are locked until epoch " + epochUnlocked + " current " + system.getEpoch());
-					}
 				}
 			}
 		);
