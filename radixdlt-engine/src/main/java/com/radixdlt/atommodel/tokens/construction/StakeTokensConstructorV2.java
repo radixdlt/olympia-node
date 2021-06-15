@@ -18,7 +18,6 @@
 
 package com.radixdlt.atommodel.tokens.construction;
 
-import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
@@ -32,10 +31,7 @@ public class StakeTokensConstructorV2 implements ActionConstructor<StakeTokens> 
 	public void construct(StakeTokens action, TxBuilder builder) throws TxBuilderException {
 		builder.swapFungible(
 			TokensInAccount.class,
-			p -> p.getResourceAddr().isNativeToken()
-				&& p.getHoldingAddr().equals(action.from())
-				&& (action.amount().compareTo(TokenUnitConversions.SUB_UNITS) < 0
-				|| p.getAmount().compareTo(TokenUnitConversions.unitsToSubunits(1)) >= 0),
+			p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(action.from()),
 			amt -> new TokensInAccount(action.from(), amt, REAddr.ofNativeToken()),
 			action.amount(),
 			"Not enough balance for staking."
