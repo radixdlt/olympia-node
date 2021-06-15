@@ -40,17 +40,12 @@ import org.radix.universe.system.LocalSystem;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.data.ScheduledQueueFlush;
 import com.radixdlt.api.module.ArchiveApiModule;
+import com.radixdlt.api.module.CommonApiModule;
 import com.radixdlt.api.module.NodeApiModule;
 import com.radixdlt.api.qualifier.Endpoints;
-import com.radixdlt.api.service.NetworkInfoService;
-import com.radixdlt.api.service.ScheduledCacheCleanup;
-import com.radixdlt.api.service.ScheduledStatsCollecting;
 import com.radixdlt.application.NodeApplicationModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
@@ -58,10 +53,8 @@ import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
-import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
@@ -70,11 +63,9 @@ import com.radixdlt.network.messaging.MessagingModule;
 import com.radixdlt.network.hostip.HostIpModule;
 import com.radixdlt.network.messaging.MessageCentralModule;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
-import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
 import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
@@ -225,17 +216,7 @@ public final class RadixNodeModule extends AbstractModule {
 		bind(new TypeLiteral<List<String>>() {}).annotatedWith(Endpoints.class).toInstance(enabledEndpoints);
 
 		if (hasActiveEndpoints(archiveEndpoints, nodeEndpoints)) {
-			var eventBinder = Multibinder
-				.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
-				.permitDuplicates();
-			eventBinder.addBinding().toInstance(AtomsRemovedFromMempool.class);
-			eventBinder.addBinding().toInstance(TxnsCommittedToLedger.class);
-			eventBinder.addBinding().toInstance(MempoolAddFailure.class);
-			eventBinder.addBinding().toInstance(ScheduledCacheCleanup.class);
-			eventBinder.addBinding().toInstance(ScheduledQueueFlush.class);
-			eventBinder.addBinding().toInstance(ScheduledStatsCollecting.class);
-
-			bind(NetworkInfoService.class).in(Scopes.SINGLETON);
+			install(new CommonApiModule());
 		}
 
 		if (!archiveEndpoints.isEmpty()) {

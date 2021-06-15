@@ -28,9 +28,7 @@ import com.radixdlt.EndpointConfig;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.data.ScheduledQueueFlush;
 import com.radixdlt.api.server.ArchiveHttpServer;
-import com.radixdlt.api.service.NetworkInfoService;
 import com.radixdlt.api.service.ScheduledCacheCleanup;
-import com.radixdlt.api.service.ScheduledStatsCollecting;
 import com.radixdlt.api.service.TransactionStatusService;
 import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.api.store.berkeley.BerkeleyClientApiStore;
@@ -120,15 +118,6 @@ public class ArchiveApiModule extends AbstractModule {
 			Runners.APPLICATION,
 			ScheduledQueueFlush.class,
 			clientApiStore.queueFlushProcessor()
-		);
-	}
-
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> networkInfoService(NetworkInfoService networkInfoService) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			ScheduledStatsCollecting.class,
-			networkInfoService.updateStats()
 		);
 	}
 }
