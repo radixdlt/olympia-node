@@ -54,7 +54,6 @@ public class ArchiveApiModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
-		bind(NetworkInfoService.class).in(Scopes.SINGLETON);
 
 		endpoints.forEach(ep -> {
 			log.info("Enabling /{} endpoint", ep.name());

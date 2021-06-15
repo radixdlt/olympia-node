@@ -49,8 +49,6 @@ public final class NodeApiModule extends AbstractModule {
 
 	@Override
 	public void configure() {
-		bind(NetworkInfoService.class).in(Scopes.SINGLETON);
-
 		endpoints.forEach(ep -> {
 			log.info("Enabling /{} endpoint", ep.name());
 			install(ep.module().get());

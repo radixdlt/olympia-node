@@ -52,7 +52,7 @@ public class DefaultRadixApiHistoryPaginationTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> {
 				for (int i = 0; i < 20; i++) {
-					addTransaction(client, UInt256.from(i + 10));
+					addTransaction(client, i);
 					try {
 						Thread.sleep(100);
 					} catch (InterruptedException e) {
@@ -97,15 +97,15 @@ public class DefaultRadixApiHistoryPaginationTest {
 			.collect(Collectors.toList());
 	}
 
-	private void addTransaction(RadixApi client, UInt256 amount) {
+	private void addTransaction(RadixApi client, int count) {
 		var request = TransactionRequest.createBuilder()
 			.transfer(
 				ACCOUNT_ADDRESS1,
 				ACCOUNT_ADDRESS2,
-				amount,
+				UInt256.from(count + 10),
 				"xrd_rb1qya85pwq"
 			)
-			.message("Test message")
+			.message("Test message " + count)
 			.build();
 
 		client.transaction().build(request)

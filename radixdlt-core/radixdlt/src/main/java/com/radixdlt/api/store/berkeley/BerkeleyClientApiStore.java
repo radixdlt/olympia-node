@@ -143,7 +143,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final SystemCounters systemCounters;
 	private final ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher;
 	private final StackingCollector<TxnsCommittedToLedger> txCollector = StackingCollector.create();
-	private final CompositeDisposable disposable = new CompositeDisposable();
 	private final AtomicReference<Instant> currentTimestamp = new AtomicReference<>(NOW);
 	private final AtomicLong currentEpoch = new AtomicLong(0);
 	private final AtomicLong currentRound = new AtomicLong(0);
@@ -437,7 +436,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	public void close() {
-		disposable.dispose();
 		storeCollected();
 
 		safeClose(transactionHistory);
