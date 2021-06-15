@@ -108,6 +108,12 @@ public interface P2PConfig {
 	static P2PConfig fromRuntimeProperties(RuntimeProperties properties) {
 		return new P2PConfig() {
 			@Override
+			public byte networkId() {
+				// 2 for betanet, 1 for mainnet
+				return (byte) properties.get("network.p2p.network_id", 2);
+			}
+
+			@Override
 			public ImmutableList<String> seedNodes() {
 				return Arrays.stream(properties.get("network.p2p.seed_nodes", "").split(","))
 					.map(String::trim)
@@ -169,13 +175,6 @@ public interface P2PConfig {
 			public long pingTimeout() {
 				return properties.get("network.p2p.ping_timeout", 5000);
 			}
-
-			@Override
-			public byte networkId() {
-				// 2 for betanet, 1 for mainnet
-				return (byte) properties.get("network.p2p.network_id", 2);
-			}
-
 		};
 	}
 }
