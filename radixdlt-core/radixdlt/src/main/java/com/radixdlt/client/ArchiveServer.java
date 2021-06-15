@@ -19,7 +19,6 @@
 package com.radixdlt.client;
 
 import com.google.inject.Inject;
-import com.radixdlt.ModuleRunner;
 import com.radixdlt.properties.RuntimeProperties;
 import com.stijndewitt.undertow.cors.AllowAll;
 import com.stijndewitt.undertow.cors.Filter;
@@ -34,7 +33,7 @@ import java.util.logging.Level;
 
 import static java.util.logging.Logger.getLogger;
 
-public class ArchiveServer implements ModuleRunner {
+public class ArchiveServer {
 	private static final int DEFAULT_PORT = 8080;
 	private final int port;
 	private final RpcController rpcController;
@@ -64,7 +63,6 @@ public class ArchiveServer implements ModuleRunner {
 		);
 	}
 
-	@Override
 	public void start() {
 		server = Undertow.builder()
 			.addHttpListener(port, "0.0.0.0")
@@ -73,7 +71,6 @@ public class ArchiveServer implements ModuleRunner {
 		server.start();
 	}
 
-	@Override
 	public void stop() {
 		this.server.stop();
 	}

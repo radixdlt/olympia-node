@@ -20,12 +20,10 @@ package com.radixdlt.client;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.client.handler.HighLevelApiHandler;
 import com.radixdlt.client.service.NetworkInfoService;
@@ -45,18 +43,14 @@ import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 public class ArchiveApiModule extends AbstractModule {
 	@Override
 	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
-			.addBinding(Runners.ARCHIVE_API)
-			.to(ArchiveServer.class);
 		bind(ArchiveServer.class).in(Scopes.SINGLETON);
-
-		var eventBinder = Multibinder
-			.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
-			.permitDuplicates();
 		bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
 		bind(TransactionStatusService.class).in(Scopes.SINGLETON);
 		bind(NetworkInfoService.class).in(Scopes.SINGLETON);
 
+		var eventBinder = Multibinder
+			.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
+			.permitDuplicates();
 		eventBinder.addBinding().toInstance(TxnsCommittedToLedger.class);
 		eventBinder.addBinding().toInstance(ScheduledQueueFlush.class);
 		eventBinder.addBinding().toInstance(ScheduledCacheCleanup.class);
@@ -164,7 +158,7 @@ public class ArchiveApiModule extends AbstractModule {
 		BerkeleyClientApiStore berkeleyClientApiStore
 	) {
 		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
+			Runners.ARCHIVE_API,
 			TxnsCommittedToLedger.class,
 			berkeleyClientApiStore.atomsCommittedToLedgerEventProcessor()
 		);
@@ -173,7 +167,7 @@ public class ArchiveApiModule extends AbstractModule {
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> queueFlushProcessor(ClientApiStore clientApiStore) {
 		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
+			Runners.ARCHIVE_API,
 			ScheduledQueueFlush.class,
 			clientApiStore.queueFlushProcessor()
 		);
@@ -182,7 +176,7 @@ public class ArchiveApiModule extends AbstractModule {
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> cacheCleanupEventProcessor(TransactionStatusService transactionStatusService) {
 		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
+			Runners.ARCHIVE_API,
 			ScheduledCacheCleanup.class,
 			transactionStatusService.cacheCleanupEventProcessor()
 		);
@@ -191,7 +185,7 @@ public class ArchiveApiModule extends AbstractModule {
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> networkInfoService(NetworkInfoService networkInfoService) {
 		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
+			Runners.ARCHIVE_API,
 			ScheduledStatsCollecting.class,
 			networkInfoService.updateStats()
 		);
@@ -200,7 +194,7 @@ public class ArchiveApiModule extends AbstractModule {
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> atomsCommittedToLedgerTransactionStatus(TransactionStatusService transactionStatusService) {
 		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
+			Runners.ARCHIVE_API,
 			TxnsCommittedToLedger.class,
 			transactionStatusService.atomsCommittedToLedgerEventProcessor()
 		);
@@ -209,7 +203,7 @@ public class ArchiveApiModule extends AbstractModule {
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> mempoolAddFailureEventProcessor(TransactionStatusService transactionStatusService) {
 		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
+			Runners.ARCHIVE_API,
 			MempoolAddFailure.class,
 			transactionStatusService.mempoolAddFailureEventProcessor()
 		);
@@ -218,7 +212,7 @@ public class ArchiveApiModule extends AbstractModule {
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> mempoolAddSuccessEventProcessor(TransactionStatusService transactionStatusService) {
 		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
+			Runners.ARCHIVE_API,
 			MempoolAddSuccess.class,
 			transactionStatusService.mempoolAddSuccessEventProcessor()
 		);
