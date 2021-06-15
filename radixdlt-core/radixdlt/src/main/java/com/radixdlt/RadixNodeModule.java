@@ -23,6 +23,7 @@ import org.radix.universe.system.LocalSystem;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
@@ -30,6 +31,7 @@ import com.radixdlt.api.data.ScheduledQueueFlush;
 import com.radixdlt.api.module.ArchiveApiModule;
 import com.radixdlt.api.module.NodeApiModule;
 import com.radixdlt.api.qualifier.Endpoints;
+import com.radixdlt.api.service.NetworkInfoService;
 import com.radixdlt.api.service.ScheduledCacheCleanup;
 import com.radixdlt.api.service.ScheduledStatsCollecting;
 import com.radixdlt.application.NodeApplicationModule;
@@ -220,6 +222,8 @@ public final class RadixNodeModule extends AbstractModule {
 			eventBinder.addBinding().toInstance(ScheduledCacheCleanup.class);
 			eventBinder.addBinding().toInstance(ScheduledQueueFlush.class);
 			eventBinder.addBinding().toInstance(ScheduledStatsCollecting.class);
+
+			bind(NetworkInfoService.class).in(Scopes.SINGLETON);
 		}
 
 		if (!archiveEndpoints.isEmpty()) {
