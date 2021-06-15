@@ -91,10 +91,23 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	@Override
 	public SubstateCursor openIndexedCursor(
 		Transaction dbTxn,
-		Class<? extends Particle> substateClass,
+		byte index,
 		SubstateDeserialization deserialization
 	) {
-		return openIndexedCursor(substateClass, deserialization);
+		final List<Substate> substates = new ArrayList<>();
+		synchronized (lock) {
+			for (var i : storedParticles.values()) {
+				if (!i.isBootUp()) {
+					continue;
+				}
+				if (!deserialization.classToBytes(i.getRawSubstate().getClass()).contains(index)) {
+					continue;
+				}
+				substates.add(i.getSubstate());
+			}
+		}
+
+		return SubstateCursor.wrapIterator(substates.iterator());
 	}
 
 	@Override

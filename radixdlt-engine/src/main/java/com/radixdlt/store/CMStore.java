@@ -56,7 +56,7 @@ public interface CMStore extends ReadableAddrsStore {
 
 	SubstateCursor openIndexedCursor(
 		Transaction txn,
-		Class<? extends Particle> particleClass,
+		byte index,
 		SubstateDeserialization deserialization
 	);
 }

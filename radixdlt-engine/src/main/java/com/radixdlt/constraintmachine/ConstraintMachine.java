@@ -160,13 +160,13 @@ public final class ConstraintMachine {
 			return maybeParticle.get();
 		}
 
-		public SubstateCursor shutdownAll(Class<? extends Particle> particleClass) {
+		public SubstateCursor shutdownAll(DownAllIndex index) {
 			return SubstateCursor.concat(
 				SubstateCursor.wrapIterator(localUpParticles.values().stream()
-					.filter(s -> particleClass.isInstance(s.getParticle())).iterator()
+					.filter(s -> index.test(s.getParticle())).iterator()
 				),
 				() -> SubstateCursor.filter(
-					store.openIndexedCursor(dbTxn, particleClass, deserialization),
+					store.openIndexedCursor(dbTxn, index.getIndex(), deserialization),
 					s -> !remoteDownParticles.contains(s.getId())
 				)
 			);
@@ -248,8 +248,8 @@ public final class ConstraintMachine {
 				var methodProcedure = loadProcedure(reducerState, opSignature);
 				reducerState = callProcedure(methodProcedure, callData, reducerState, readableAddrs, context);
 			} else if (inst.getMicroOp() == REInstruction.REMicroOp.DOWNALL) {
-				Class<? extends Particle> particleClass = inst.getData();
-				var substateCursor = validationState.shutdownAll(particleClass);
+				DownAllIndex index = inst.getData();
+				var substateCursor = validationState.shutdownAll(index);
 				var tmp = stateUpdates;
 				var iterator = new Iterator<Particle>() {
 					@Override
@@ -268,7 +268,7 @@ public final class ConstraintMachine {
 				};
 				try {
 					var eventId = OpSignature.ofSubstateUpdate(
-						inst.getMicroOp().getOp(), particleClass
+						inst.getMicroOp().getOp(), index.getSubstateClass()
 					);
 					var methodProcedure = loadProcedure(reducerState, eventId);
 					reducerState = callProcedure(methodProcedure, iterator, reducerState, readableAddrs, context);

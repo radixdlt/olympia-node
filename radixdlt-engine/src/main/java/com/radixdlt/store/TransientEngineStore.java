@@ -64,13 +64,13 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	@Override
 	public SubstateCursor openIndexedCursor(
 		Transaction dbTxn,
-		Class<? extends Particle> particleClass,
+		byte index,
 		SubstateDeserialization deserialization
 	) {
 		return SubstateCursor.concat(
-			transientStore.openIndexedCursor(particleClass, deserialization),
+			transientStore.openIndexedCursor(dbTxn, index, deserialization),
 			() -> SubstateCursor.filter(
-				base.openIndexedCursor(dbTxn, particleClass, deserialization),
+				base.openIndexedCursor(dbTxn, index, deserialization),
 				s -> transientStore.getSpin(s.getId()).isEmpty()
 			)
 		);

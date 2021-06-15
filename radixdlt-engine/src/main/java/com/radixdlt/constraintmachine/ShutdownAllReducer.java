@@ -21,5 +21,9 @@ package com.radixdlt.constraintmachine;
 import java.util.Iterator;
 
 public interface ShutdownAllReducer<D extends Particle, S extends ReducerState> {
-	ReducerResult reduce(Iterator<D> inputState, S reducerState, ReadableAddrs readableAddrs) throws ProcedureException;
+	ReducerResult reduce(
+		Iterator<D> inputState,
+		S reducerState,
+		ReadableAddrs readableAddrs
+	) throws ProcedureException;
 }

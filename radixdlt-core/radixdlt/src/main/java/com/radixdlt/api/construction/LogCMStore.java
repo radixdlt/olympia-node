@@ -96,7 +96,7 @@ public final class LogCMStore implements CMStore {
 	@Override
 	public SubstateCursor openIndexedCursor(
 		Transaction dbTransaction,
-		Class<? extends Particle> particleClass,
+		byte index,
 		SubstateDeserialization deserialization
 	) {
 		throw new UnsupportedOperationException();

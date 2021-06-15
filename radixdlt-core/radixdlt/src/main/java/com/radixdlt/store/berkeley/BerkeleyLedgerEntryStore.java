@@ -503,40 +503,33 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	@Override
 	public SubstateCursor openIndexedCursor(
 		Transaction wrappedDbTxn,
-		Class<? extends Particle> particleClass,
+		byte index,
 		SubstateDeserialization deserialization
 	) {
 		var dbTxn = unwrap(wrappedDbTxn);
-		var typeBytes = deserialization.classToBytes(particleClass);
-		if (typeBytes.size() == 0) {
-			return SubstateCursor.empty();
-		} else if (typeBytes.size() == 1) {
-			final byte[] indexableBytes = new byte[] {typeBytes.iterator().next()};
-			var cursor = new BerkeleySubstateCursor(dbTxn, upParticleDatabase, indexableBytes, deserialization);
-			cursor.open();
-			return cursor;
-		} else if (typeBytes.size() == 2) {
-			var iter = typeBytes.iterator();
-			final byte[] indexableBytes = new byte[] {iter.next()};
-			var cursor = new BerkeleySubstateCursor(dbTxn, upParticleDatabase, indexableBytes, deserialization);
-			cursor.open();
-			return SubstateCursor.concat(cursor, () -> {
-				final byte[] type2 = new byte[] {iter.next()};
-				var cursor2 = new BerkeleySubstateCursor(dbTxn, upParticleDatabase, type2, deserialization);
-				cursor2.open();
-				return cursor2;
-			});
-		} else {
-			throw new IllegalStateException("Cannot handle more than 2 types per class");
-		}
+		final byte[] indexableBytes = new byte[] {index};
+		var cursor = new BerkeleySubstateCursor(dbTxn, upParticleDatabase, indexableBytes, deserialization);
+		cursor.open();
+		return cursor;
 	}
 
 	@Override
 	public SubstateCursor openIndexedCursor(
 		Class<? extends Particle> particleClass,
-		SubstateDeserialization substateDeserialization
+		SubstateDeserialization deserialization
 	) {
-		return openIndexedCursor(null, particleClass, substateDeserialization);
+		var typeBytes = deserialization.classToBytes(particleClass);
+		if (typeBytes.size() == 0) {
+			return SubstateCursor.empty();
+		} else if (typeBytes.size() == 1) {
+			return openIndexedCursor(null, typeBytes.iterator().next(), deserialization);
+		} else if (typeBytes.size() == 2) {
+			var iter = typeBytes.iterator();
+			var cursor = openIndexedCursor(null, iter.next(), deserialization);
+			return SubstateCursor.concat(cursor, () -> openIndexedCursor(null, iter.next(), deserialization));
+		} else {
+			throw new IllegalStateException("Cannot handle more than 2 types per class");
+		}
 	}
 
 	@Override

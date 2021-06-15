@@ -28,7 +28,8 @@ public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> im
 	private final Supplier<Authorization> authorization;
 
 	public ShutdownAllProcedure(
-		Class<D> downClass, Class<S> reducerStateClass,
+		Class<D> downClass,
+		Class<S> reducerStateClass,
 		Supplier<Authorization> authorization,
 		ShutdownAllReducer<D, S> downReducer
 	) {
