@@ -102,18 +102,6 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 
 		uri.ifPresent(u -> log.trace("Initializing peer channel to {}", u));
 
-		// TODO(luk): why is remoteAddress() null in docker network?
-//		final var isChannelValid = socketChannel.remoteAddress() != null
-//			&& !socketChannel.remoteAddress().getAddress().isLoopbackAddress();
-
-		final var isChannelValid = true;
-
-		if (!isChannelValid) {
-			log.info("Disconnecting invalid channel {}", socketChannel.remoteAddress());
-			socketChannel.disconnect();
-			return;
-		}
-
 		final int packetLength = MAX_PACKET_LENGTH + FRAME_HEADER_LENGTH;
 		final int headerLength = FRAME_HEADER_LENGTH;
 
