@@ -27,3 +27,6 @@ api.system.enable=$RADIXDLT_SYSTEM_API_ENABLE
 api.validation.enable=$RADIXDLT_VALIDATION_API_ENABLE
 api.version.enable=$RADIXDLT_VERSION_API_ENABLE
 api.universe.enable=$RADIXDLT_UNIVERSE_API_ENABLE
+
+api.node.bind.address=$RADIXDLT_HTTP_NODE_BIND_ADDRESS
+api.archive.bind.address=$RADIXDLT_HTTP_ARCHIVE_BIND_ADDRESS
