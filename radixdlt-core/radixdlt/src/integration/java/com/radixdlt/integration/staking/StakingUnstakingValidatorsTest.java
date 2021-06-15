@@ -41,7 +41,7 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
-import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
@@ -186,7 +186,7 @@ public class StakingUnstakingValidatorsTest {
 					nodeKeys.forEach(key ->
 						Multibinder.newSetBinder(binder(), TokenIssuance.class)
 							.addBinding().toInstance(
-								TokenIssuance.of(key.getPublicKey(), ValidatorStake.MINIMUM_STAKE.multiply(UInt256.TEN))
+								TokenIssuance.of(key.getPublicKey(), ValidatorStakeData.MINIMUM_STAKE.multiply(UInt256.TEN))
 						)
 					);
 				}
@@ -301,9 +301,9 @@ public class StakingUnstakingValidatorsTest {
 			reParser.getSubstateDeserialization()
 		);
 		logger.info("Total tokens: {}", totalTokens);
-		var totalStaked = entryStore.reduceUpParticles(ValidatorStake.class, UInt256.ZERO,
+		var totalStaked = entryStore.reduceUpParticles(ValidatorStakeData.class, UInt256.ZERO,
 			(i, p) -> {
-				var tokens = (ValidatorStake) p;
+				var tokens = (ValidatorStakeData) p;
 				return i.add(tokens.getAmount());
 			},
 			reParser.getSubstateDeserialization()
@@ -352,7 +352,7 @@ public class StakingUnstakingValidatorsTest {
 			var privKey = nodeKeys.get(nodeIndex);
 			var acct = REAddr.ofPubKeyAccount(privKey.getPublicKey());
 			var to = nodeKeys.get(random.nextInt(nodeKeys.size())).getPublicKey();
-			var amount = UInt256.from(random.nextInt(10)).multiply(ValidatorStake.MINIMUM_STAKE);
+			var amount = UInt256.from(random.nextInt(10)).multiply(ValidatorStakeData.MINIMUM_STAKE);
 
 			var next = random.nextInt(10);
 			final TxAction action;

@@ -30,8 +30,9 @@ import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
 import java.util.Objects;
+import java.util.OptionalInt;
 
-public final class ValidatorStake implements ResourceInBucket {
+public final class ValidatorStakeData implements ResourceInBucket {
 	public static final UInt256 MINIMUM_STAKE = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
 	public static final int EPOCHS_LOCKED = 1; // Must go through one full epoch before being unlocked
 
@@ -39,13 +40,16 @@ public final class ValidatorStake implements ResourceInBucket {
 
 	private final UInt256 totalOwnership;
 
+	private final OptionalInt rakePercentage;
+
 	// Bucket keys
 	private final ECPublicKey validatorKey;
 
-	private ValidatorStake(
+	private ValidatorStakeData(
 		ECPublicKey validatorKey,
 		UInt256 totalStake,
-		UInt256 totalOwnership
+		UInt256 totalOwnership,
+		OptionalInt rakePercentage
 	) {
 		if (totalStake.isZero() != totalOwnership.isZero()) {
 			throw new IllegalArgumentException(
@@ -55,18 +59,32 @@ public final class ValidatorStake implements ResourceInBucket {
 		this.validatorKey = Objects.requireNonNull(validatorKey);
 		this.totalStake = totalStake;
 		this.totalOwnership = totalOwnership;
+		this.rakePercentage = rakePercentage;
 	}
 
-	public static ValidatorStake create(ECPublicKey validatorKey) {
-		return new ValidatorStake(validatorKey, UInt256.ZERO, UInt256.ZERO);
+	public static ValidatorStakeData create(ECPublicKey validatorKey) {
+		return new ValidatorStakeData(validatorKey, UInt256.ZERO, UInt256.ZERO, OptionalInt.empty());
 	}
 
-	public static ValidatorStake create(
+	public static ValidatorStakeData create(
 		ECPublicKey validatorKey,
 		UInt256 totalStake,
 		UInt256 totalOwnership
 	) {
-		return new ValidatorStake(validatorKey, totalStake, totalOwnership);
+		return new ValidatorStakeData(validatorKey, totalStake, totalOwnership, OptionalInt.empty());
+	}
+
+	public static ValidatorStakeData create(
+		ECPublicKey validatorKey,
+		UInt256 totalStake,
+		UInt256 totalOwnership,
+		int rakePercentage
+	) {
+		return new ValidatorStakeData(validatorKey, totalStake, totalOwnership, OptionalInt.of(rakePercentage));
+	}
+
+	public OptionalInt getRakePercentage() {
+		return rakePercentage;
 	}
 
 	@Override
@@ -79,17 +97,18 @@ public final class ValidatorStake implements ResourceInBucket {
 		return new ValidatorStakeBucket(validatorKey);
 	}
 
-	public ValidatorStake addEmission(UInt256 amount) {
-		return new ValidatorStake(
+	public ValidatorStakeData addEmission(UInt256 amount) {
+		return new ValidatorStakeData(
 			validatorKey,
 			this.totalStake.add(amount),
-			totalOwnership
+			totalOwnership,
+			rakePercentage
 		);
 	}
 
-	public Pair<ValidatorStake, StakeOwnership> stake(REAddr owner, UInt256 stake) throws ProcedureException {
+	public Pair<ValidatorStakeData, StakeOwnership> stake(REAddr owner, UInt256 stake) throws ProcedureException {
 		if (totalStake.isZero()) {
-			var nextValidatorStake = new ValidatorStake(validatorKey, stake, stake);
+			var nextValidatorStake = new ValidatorStakeData(validatorKey, stake, stake, rakePercentage);
 			var stakeOwnership = new StakeOwnership(validatorKey, owner, stake);
 			return Pair.of(nextValidatorStake, stakeOwnership);
 		}
@@ -100,11 +119,11 @@ public final class ValidatorStake implements ResourceInBucket {
 		}
 		var ownershipAmt = ownership384.getLow();
 		var stakeOwnership = new StakeOwnership(validatorKey, owner, ownershipAmt);
-		var nextValidatorStake = new ValidatorStake(validatorKey, totalStake.add(stake), totalOwnership.add(ownershipAmt));
+		var nextValidatorStake = new ValidatorStakeData(validatorKey, totalStake.add(stake), totalOwnership.add(ownershipAmt), rakePercentage);
 		return Pair.of(nextValidatorStake, stakeOwnership);
 	}
 
-	public Pair<ValidatorStake, ExittingStake> unstakeOwnership(REAddr owner, UInt256 unstakeOwnership, long curEpoch) {
+	public Pair<ValidatorStakeData, ExittingStake> unstakeOwnership(REAddr owner, UInt256 unstakeOwnership, long curEpoch) {
 		if (totalOwnership.compareTo(unstakeOwnership) < 0) {
 			throw new IllegalStateException("Not enough ownership");
 		}
@@ -114,7 +133,12 @@ public final class ValidatorStake implements ResourceInBucket {
 			throw new IllegalStateException("Overflow");
 		}
 		var unstaked = unstaked384.getLow();
-		var nextValidatorStake = new ValidatorStake(validatorKey, totalStake.subtract(unstaked), totalOwnership.subtract(unstakeOwnership));
+		var nextValidatorStake = new ValidatorStakeData(
+			validatorKey,
+			totalStake.subtract(unstaked),
+			totalOwnership.subtract(unstakeOwnership),
+			rakePercentage
+		);
 		var epochUnlocked = curEpoch + EPOCHS_LOCKED;
 		var exittingStake = new ExittingStake(validatorKey, owner, epochUnlocked, unstaked);
 		return Pair.of(nextValidatorStake, exittingStake);
@@ -142,13 +166,14 @@ public final class ValidatorStake implements ResourceInBucket {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof ValidatorStake)) {
+		if (!(o instanceof ValidatorStakeData)) {
 			return false;
 		}
-		var that = (ValidatorStake) o;
+		var that = (ValidatorStakeData) o;
 		return Objects.equals(validatorKey, that.validatorKey)
 			&& Objects.equals(totalOwnership, that.totalOwnership)
-			&& Objects.equals(totalStake, that.totalStake);
+			&& Objects.equals(totalStake, that.totalStake)
+			&& Objects.equals(rakePercentage, that.rakePercentage);
 	}
 
 	@Override
@@ -156,7 +181,8 @@ public final class ValidatorStake implements ResourceInBucket {
 		return Objects.hash(
 			validatorKey,
 			totalOwnership,
-			totalStake
+			totalStake,
+			rakePercentage
 		);
 	}
 }

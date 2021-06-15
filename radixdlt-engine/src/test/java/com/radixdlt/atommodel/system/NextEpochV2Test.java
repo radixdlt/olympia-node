@@ -28,7 +28,7 @@ import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.atommodel.system.construction.NextEpochConstructorV2;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
-import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV2;
@@ -116,8 +116,8 @@ public class NextEpochV2Test {
 			TxnConstructionRequest.create()
 				.action(new CreateSystem())
 				.action(new CreateMutableToken(null, "xrd", "xrd", "", "", ""))
-				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, ValidatorStake.MINIMUM_STAKE))
-				.action(new StakeTokens(accountAddr, key, ValidatorStake.MINIMUM_STAKE))
+				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, ValidatorStakeData.MINIMUM_STAKE))
+				.action(new StakeTokens(accountAddr, key, ValidatorStakeData.MINIMUM_STAKE))
 		).buildWithoutSignature();
 		sut.execute(List.of(start), null, PermissionLevel.SYSTEM);
 

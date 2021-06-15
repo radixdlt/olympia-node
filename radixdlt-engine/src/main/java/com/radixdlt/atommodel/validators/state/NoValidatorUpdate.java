@@ -16,53 +16,35 @@
  *
  */
 
-package com.radixdlt.atommodel.system.state;
+package com.radixdlt.atommodel.validators.state;
 
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
 
-public final class ValidatorEpochData implements Particle {
+public final class NoValidatorUpdate implements Particle {
 	private final ECPublicKey validatorKey;
-	private final long proposalsCompleted;
 
-	public ValidatorEpochData(
-		ECPublicKey validatorKey,
-		long proposalsCompleted
-	) {
-		this.validatorKey = validatorKey;
-		this.proposalsCompleted = proposalsCompleted;
+	public NoValidatorUpdate(ECPublicKey validatorKey) {
+		this.validatorKey = Objects.requireNonNull(validatorKey);
 	}
 
-	public ECPublicKey validatorKey() {
+	public ECPublicKey getValidatorKey() {
 		return validatorKey;
-	}
-
-	public long proposalsCompleted() {
-		return proposalsCompleted;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(validatorKey, proposalsCompleted);
+		return Objects.hash(validatorKey);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof ValidatorEpochData)) {
+		if (!(o instanceof NoValidatorUpdate)) {
 			return false;
 		}
-
-		var other = (ValidatorEpochData) o;
-		return Objects.equals(this.validatorKey, other.validatorKey)
-			&& this.proposalsCompleted == other.proposalsCompleted;
-	}
-
-	@Override
-	public String toString() {
-		return String.format(
-			"%s{validatorKey=%s proposalsCompleted=%s}", this.getClass().getSimpleName(), validatorKey, proposalsCompleted
-		);
+		var other = (NoValidatorUpdate) o;
+		return Objects.equals(this.validatorKey, other.validatorKey);
 	}
 }

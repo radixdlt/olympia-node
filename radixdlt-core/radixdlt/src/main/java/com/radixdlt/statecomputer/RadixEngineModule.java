@@ -24,7 +24,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atommodel.system.state.SystemParticle;
-import com.radixdlt.atommodel.system.state.ValidatorEpochData;
+import com.radixdlt.atommodel.system.state.ValidatorBFTData;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -188,7 +188,7 @@ public class RadixEngineModule extends AbstractModule {
 		radixEngine.addSubstateCache(systemCache, true);
 		radixEngine.addStateReducer(new SystemReducer(), true);
 
-		var validatorsCache = new SubstateCacheRegister<>(ValidatorEpochData.class, p -> true);
+		var validatorsCache = new SubstateCacheRegister<>(ValidatorBFTData.class, p -> true);
 		radixEngine.addSubstateCache(validatorsCache, true);
 		radixEngine.addStateReducer(new CurrentValidatorsReducer(), false);
 

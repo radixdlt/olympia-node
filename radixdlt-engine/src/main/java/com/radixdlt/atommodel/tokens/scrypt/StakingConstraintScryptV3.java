@@ -21,7 +21,7 @@ package com.radixdlt.atommodel.tokens.scrypt;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
-import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -165,9 +165,9 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 			TokenHoldingBucket.class, PreparedStake.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> {
-				if (u.getAmount().compareTo(ValidatorStake.MINIMUM_STAKE) < 0) {
+				if (u.getAmount().compareTo(ValidatorStakeData.MINIMUM_STAKE) < 0) {
 					throw new ProcedureException(
-						"Minimum amount to stake must be >= " + ValidatorStake.MINIMUM_STAKE
+						"Minimum amount to stake must be >= " + ValidatorStakeData.MINIMUM_STAKE
 							+ " but trying to stake " + u.getAmount()
 					);
 				}

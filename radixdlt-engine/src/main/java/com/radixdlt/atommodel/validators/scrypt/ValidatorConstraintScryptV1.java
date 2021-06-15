@@ -40,7 +40,7 @@ import java.util.Set;
 /**
  * Constraint Scrypt defining the Validator FSM.
  */
-public class ValidatorConstraintScrypt implements ConstraintScrypt {
+public class ValidatorConstraintScryptV1 implements ConstraintScrypt {
 	private static class ValidatorUpdate implements ReducerState {
 		private final ValidatorParticle prevState;
 

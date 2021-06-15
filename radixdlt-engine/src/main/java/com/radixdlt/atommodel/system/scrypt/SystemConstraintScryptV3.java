@@ -23,24 +23,25 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.HasEpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
-import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
 import com.radixdlt.atommodel.system.state.ValidatorBFTData;
+import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
+import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.atomos.Loader;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
+import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
@@ -57,7 +58,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Function;
 
-public class SystemConstraintScryptV2 implements ConstraintScrypt {
+public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 
 	public static final UInt256 CONSTANT_FEE = UInt256.from(0);
 	public static final UInt256 REWARDS_PER_PROPOSAL = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
@@ -166,19 +167,24 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				throw new IllegalStateException();
 			}
 			var numProposals = proposalsCompleted.remove(k);
-			var nodeEmission = SystemConstraintScryptV2.REWARDS_PER_PROPOSAL.multiply(UInt256.from(numProposals));
-			final UInt256 noneFeeEmissions;
-			if (!CONSTANT_FEE.isZero() && nodeEmission.compareTo(CONSTANT_FEE) >= 0) {
-				var validatorOwner = REAddr.ofPubKeyAccount(k);
-				var initStake = new TreeMap<REAddr, UInt256>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
-				initStake.put(validatorOwner, CONSTANT_FEE);
-				preparingStake.put(k, initStake);
-				noneFeeEmissions = nodeEmission.subtract(CONSTANT_FEE);
-			} else {
-				noneFeeEmissions = nodeEmission;
-			}
-			return new LoadingStake(k, amt -> {
-				curStake.put(k, amt.addEmission(noneFeeEmissions));
+			var nodeEmission = REWARDS_PER_PROPOSAL.multiply(UInt256.from(numProposals));
+
+			return new LoadingStake(k, validatorStakeData -> {
+				int rakePercentage = validatorStakeData.getRakePercentage().orElse(0);
+				final UInt256 rakedEmissions;
+				if (rakePercentage != 0 && !nodeEmission.isZero()) {
+					var rake = nodeEmission
+						.multiply(UInt256.from(rakePercentage))
+						.divide(UInt256.from(PreparedValidatorUpdate.RAKE_PERCENTAGE_GRANULARITY));
+					var validatorOwner = REAddr.ofPubKeyAccount(k);
+					var initStake = new TreeMap<REAddr, UInt256>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
+					initStake.put(validatorOwner, rake);
+					preparingStake.put(k, initStake);
+					rakedEmissions = nodeEmission.subtract(rake);
+				} else {
+					rakedEmissions = nodeEmission;
+				}
+				curStake.put(k, validatorStakeData.addEmission(rakedEmissions));
 				return next();
 			});
 		}
@@ -635,20 +641,32 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				ValidatorStakeData.class,
-				Set.of(SubstateTypeId.STAKE_V1.id()),
+				Set.of(SubstateTypeId.STAKE_V1.id(), SubstateTypeId.STAKE_V2.id()),
 				(b, buf) -> {
 					var delegate = REFieldSerialization.deserializeKey(buf);
 					var amount = REFieldSerialization.deserializeUInt256(buf);
 					var ownership = REFieldSerialization.deserializeUInt256(buf);
-					return ValidatorStakeData.create(delegate, amount, ownership);
+					if (b.equals(SubstateTypeId.STAKE_V1.id())) {
+						return ValidatorStakeData.create(delegate, amount, ownership);
+					} else {
+						var rakePercentage = REFieldSerialization.deserializeInt(buf);
+						return ValidatorStakeData.create(delegate, amount, ownership, rakePercentage);
+					}
 				},
 				(s, buf) -> {
-					buf.put(SubstateTypeId.STAKE_V1.id());
+					if (s.getRakePercentage().isEmpty()) {
+						buf.put(SubstateTypeId.STAKE_V1.id());
+					} else {
+						buf.put(SubstateTypeId.STAKE_V2.id());
+					}
 					REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 					buf.put(s.getAmount().toByteArray());
 					buf.put(s.getTotalOwnership().toByteArray());
+					if (s.getRakePercentage().isPresent()) {
+						buf.putInt(s.getRakePercentage().orElse(0));
+					}
 				},
-				s -> s.getAmount().isZero() && s.getTotalOwnership().isZero()
+				s -> s.getAmount().isZero() && s.getTotalOwnership().isZero() && s.getRakePercentage().isEmpty()
 			)
 		);
 		os.substate(

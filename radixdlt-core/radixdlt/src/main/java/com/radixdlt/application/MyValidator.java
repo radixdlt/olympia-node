@@ -18,7 +18,7 @@
 
 package com.radixdlt.application;
 
-import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
@@ -34,7 +34,7 @@ public final class MyValidator {
 	private UInt256 totalOwnership = UInt256.ZERO;
 	private final Map<REAddr, UInt256> ownership = new ConcurrentHashMap<>();
 
-	public void setStake(ValidatorStake validatorStake) {
+	public void setStake(ValidatorStakeData validatorStake) {
 		this.totalOwnership = validatorStake.getTotalOwnership();
 		this.totalStake = validatorStake.getAmount();
 	}

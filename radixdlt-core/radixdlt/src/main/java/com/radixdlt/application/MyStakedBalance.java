@@ -18,7 +18,7 @@
 
 package com.radixdlt.application;
 
-import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
 
@@ -27,16 +27,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
 public final class MyStakedBalance {
-	private final Map<ECPublicKey, ValidatorStake> validatorStakes = new ConcurrentHashMap<>();
+	private final Map<ECPublicKey, ValidatorStakeData> validatorStakes = new ConcurrentHashMap<>();
 	private final Map<ECPublicKey, UInt256> ownership = new ConcurrentHashMap<>();
 
-	public void addValidatorStake(ValidatorStake validatorStake) {
+	public void addValidatorStake(ValidatorStakeData validatorStake) {
 		if (ownership.containsKey(validatorStake.getValidatorKey())) {
 			validatorStakes.put(validatorStake.getValidatorKey(), validatorStake);
 		}
 	}
 
-	public void removeValidatorStake(ValidatorStake validatorStake) {
+	public void removeValidatorStake(ValidatorStakeData validatorStake) {
 		validatorStakes.remove(validatorStake.getValidatorKey());
 	}
 

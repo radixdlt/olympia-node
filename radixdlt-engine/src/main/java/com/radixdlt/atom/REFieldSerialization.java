@@ -74,6 +74,10 @@ public final class REFieldSerialization {
 		return type.get().parse(buf);
 	}
 
+	public static int deserializeInt(ByteBuffer buf) throws DeserializeException {
+		return buf.getInt();
+	}
+
 	public static Long deserializeNonNegativeLong(ByteBuffer buf) throws DeserializeException {
 		var l = buf.getLong();
 		if (l < 0) {

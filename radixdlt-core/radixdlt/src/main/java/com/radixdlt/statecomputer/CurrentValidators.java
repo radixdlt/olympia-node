@@ -19,7 +19,7 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atommodel.system.state.ValidatorEpochData;
+import com.radixdlt.atommodel.system.state.ValidatorBFTData;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Map;
@@ -41,18 +41,18 @@ public final class CurrentValidators {
 		return epochData.keySet();
 	}
 
-	public CurrentValidators add(ValidatorEpochData validatorEpochData) {
+	public CurrentValidators add(ValidatorBFTData validatorBFTData) {
 		var map = ImmutableMap.<ECPublicKey, Long>builder()
 			.putAll(epochData)
-			.put(validatorEpochData.validatorKey(), validatorEpochData.proposalsCompleted())
+			.put(validatorBFTData.validatorKey(), validatorBFTData.proposalsCompleted())
 			.build();
 
 		return new CurrentValidators(map);
 	}
 
-	public CurrentValidators remove(ValidatorEpochData validatorEpochData) {
+	public CurrentValidators remove(ValidatorBFTData validatorBFTData) {
 		var map = epochData.entrySet().stream()
-			.filter(v -> !v.getKey().equals(validatorEpochData.validatorKey()))
+			.filter(v -> !v.getKey().equals(validatorBFTData.validatorKey()))
 			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 		return new CurrentValidators(map);
 	}

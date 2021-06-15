@@ -33,7 +33,7 @@ import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.atommodel.system.construction.NextEpochConstructorV2;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
-import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV2;
@@ -136,9 +136,9 @@ public class UnstakeTokensV2Test {
 		ActionConstructor<StakeTokens> stakeTokensConstructor,
 		ActionConstructor<UnstakeOwnership> unstakeTokensConstructor
 	) {
-		this.stakes = stakes.stream().map(ValidatorStake.MINIMUM_STAKE::multiply).collect(Collectors.toList());
+		this.stakes = stakes.stream().map(ValidatorStakeData.MINIMUM_STAKE::multiply).collect(Collectors.toList());
 		this.totalStakes = this.stakes.stream().reduce(UInt256::add).orElseThrow();
-		this.unstakeAmt = ValidatorStake.MINIMUM_STAKE.multiply(unstakeAmt);
+		this.unstakeAmt = ValidatorStakeData.MINIMUM_STAKE.multiply(unstakeAmt);
 		this.scrypts = scrypts;
 		this.stakeTokensConstructor = stakeTokensConstructor;
 		this.unstakeTokensConstructor = unstakeTokensConstructor;

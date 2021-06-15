@@ -19,7 +19,7 @@
 package com.radixdlt.atom.actions;
 
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Collection;
@@ -28,14 +28,14 @@ import java.util.function.Function;
 
 public final class SystemNextEpoch implements TxAction {
 	private final long timestamp;
-	private final Function<Collection<ValidatorStake>, List<ECPublicKey>> nextValidators;
+	private final Function<Collection<ValidatorStakeData>, List<ECPublicKey>> nextValidators;
 
-	public SystemNextEpoch(Function<Collection<ValidatorStake>, List<ECPublicKey>> nextValidators, long timestamp) {
+	public SystemNextEpoch(Function<Collection<ValidatorStakeData>, List<ECPublicKey>> nextValidators, long timestamp) {
 		this.nextValidators = nextValidators;
 		this.timestamp = timestamp;
 	}
 
-	public List<ECPublicKey> validators(Collection<ValidatorStake> updates) {
+	public List<ECPublicKey> validators(Collection<ValidatorStakeData> updates) {
 		return nextValidators.apply(updates);
 	}
 

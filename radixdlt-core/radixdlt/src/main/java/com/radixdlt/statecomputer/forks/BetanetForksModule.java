@@ -41,9 +41,11 @@ import com.radixdlt.atom.actions.UpdateValidator;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV1;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.atommodel.system.construction.NextEpochConstructorV2;
+import com.radixdlt.atommodel.system.construction.NextEpochConstructorV3;
 import com.radixdlt.atommodel.system.construction.PayFeeConstructorV1;
 import com.radixdlt.atommodel.system.construction.PayFeeConstructorV2;
 import com.radixdlt.atommodel.system.scrypt.FeeConstraintScrypt;
+import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV3;
 import com.radixdlt.atommodel.system.scrypt.SystemV1ToV2TransitionConstraintScrypt;
 import com.radixdlt.atommodel.tokens.construction.BurnTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.CreateFixedTokenConstructor;
@@ -74,7 +76,7 @@ import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV2;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
 import com.radixdlt.atommodel.unique.scrypt.UniqueParticleConstraintScrypt;
-import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV1;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
@@ -96,7 +98,7 @@ public final class BetanetForksModule extends AbstractModule {
 	ForkConfig betanetV1() {
 		// V1 Betanet ConstraintMachine
 		final CMAtomOS v1 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
-		v1.load(new ValidatorConstraintScrypt()); // load before TokensConstraintScrypt due to dependency
+		v1.load(new ValidatorConstraintScryptV1()); // load before TokensConstraintScrypt due to dependency
 		v1.load(new TokensConstraintScryptV1());
 		v1.load(new StakingConstraintScryptV1());
 		v1.load(new UniqueParticleConstraintScrypt());
@@ -144,7 +146,7 @@ public final class BetanetForksModule extends AbstractModule {
 	ForkConfig betanetV2() {
 		// V2 Betanet ConstraintMachine
 		final CMAtomOS v2 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
-		v2.load(new ValidatorConstraintScrypt()); // load before TokensConstraintScrypt due to dependency
+		v2.load(new ValidatorConstraintScryptV1()); // load before TokensConstraintScrypt due to dependency
 		v2.load(new TokensConstraintScryptV1());
 		v2.load(new StakingConstraintScryptV2());
 		v2.load(new UniqueParticleConstraintScrypt());
@@ -192,7 +194,7 @@ public final class BetanetForksModule extends AbstractModule {
 	@EpochMapKey(epoch = 500L)
 	ForkConfig betanetV3() {
 		final CMAtomOS v3 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
-		v3.load(new ValidatorConstraintScrypt()); // load before TokensConstraintScrypt due to dependency
+		v3.load(new ValidatorConstraintScryptV1()); // load before TokensConstraintScrypt due to dependency
 		v3.load(new TokensConstraintScryptV2());
 		v3.load(new StakingConstraintScryptV3());
 		v3.load(new UniqueParticleConstraintScrypt());
@@ -244,12 +246,12 @@ public final class BetanetForksModule extends AbstractModule {
 	ForkConfig betanetV4() {
 		var fixedFee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(100));
 		final CMAtomOS v4 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
-		v4.load(new ValidatorConstraintScrypt()); // load before TokensConstraintScrypt due to dependency
+		v4.load(new ValidatorConstraintScryptV1()); // load before TokensConstraintScrypt due to dependency
 		v4.load(new TokensConstraintScryptV3());
 		v4.load(new FeeConstraintScrypt());
 		v4.load(new StakingConstraintScryptV3());
 		v4.load(new UniqueParticleConstraintScrypt());
-		v4.load(new SystemConstraintScryptV2());
+		v4.load(new SystemConstraintScryptV3());
 		v4.load(new SystemV1ToV2TransitionConstraintScrypt());
 		var betanet4 = new ConstraintMachineConfig(
 			v4.virtualizedUpParticles(),
@@ -265,7 +267,7 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 			.put(DeprecatedUnstakeTokens.class, new DeprecatedUnstakeTokensConstructor())
 			.put(MintToken.class, new MintTokenConstructor())
-			.put(SystemNextEpoch.class, new NextEpochConstructorV2())
+			.put(SystemNextEpoch.class, new NextEpochConstructorV3())
 			.put(SystemNextView.class, new NextViewConstructorV2())
 			.put(RegisterValidator.class, new RegisterValidatorConstructor())
 			.put(SplitToken.class, new SplitTokenConstructor())

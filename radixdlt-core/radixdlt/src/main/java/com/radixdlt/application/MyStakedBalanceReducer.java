@@ -20,7 +20,7 @@ package com.radixdlt.application;
 
 import com.google.inject.Inject;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
-import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
@@ -46,7 +46,7 @@ public final class MyStakedBalanceReducer implements StateReducer<MyStakedBalanc
 
 	@Override
 	public Set<Class<? extends Particle>> particleClasses() {
-		return Set.of(StakeOwnership.class, ValidatorStake.class);
+		return Set.of(StakeOwnership.class, ValidatorStakeData.class);
 	}
 
 	@Override
@@ -62,8 +62,8 @@ public final class MyStakedBalanceReducer implements StateReducer<MyStakedBalanc
 				if (d.getOwner().equals(accountAddr)) {
 					stakes.addOwnership(d.getDelegateKey(), d.getAmount());
 				}
-			} else if (p instanceof ValidatorStake) {
-				stakes.addValidatorStake((ValidatorStake) p);
+			} else if (p instanceof ValidatorStakeData) {
+				stakes.addValidatorStake((ValidatorStakeData) p);
 			}
 			return stakes;
 		};
@@ -77,8 +77,8 @@ public final class MyStakedBalanceReducer implements StateReducer<MyStakedBalanc
 				if (d.getOwner().equals(accountAddr)) {
 					balance.removeOwnership(d.getDelegateKey(), d.getAmount());
 				}
-			} else if (p instanceof ValidatorStake) {
-				balance.removeValidatorStake((ValidatorStake) p);
+			} else if (p instanceof ValidatorStakeData) {
+				balance.removeValidatorStake((ValidatorStakeData) p);
 			}
 			return balance;
 		};

@@ -18,7 +18,7 @@
 
 package com.radixdlt.statecomputer;
 
-import com.radixdlt.atommodel.system.state.ValidatorEpochData;
+import com.radixdlt.atommodel.system.state.ValidatorBFTData;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
 
@@ -34,7 +34,7 @@ public final class CurrentValidatorsReducer implements StateReducer<CurrentValid
 
 	@Override
 	public Set<Class<? extends Particle>> particleClasses() {
-		return Set.of(ValidatorEpochData.class);
+		return Set.of(ValidatorBFTData.class);
 	}
 
 	@Override
@@ -45,7 +45,7 @@ public final class CurrentValidatorsReducer implements StateReducer<CurrentValid
 	@Override
 	public BiFunction<CurrentValidators, Particle, CurrentValidators> outputReducer() {
 		return (s, p) -> {
-			var validatorEpochData = (ValidatorEpochData) p;
+			var validatorEpochData = (ValidatorBFTData) p;
 			return s.add(validatorEpochData);
 		};
 	}
@@ -53,7 +53,7 @@ public final class CurrentValidatorsReducer implements StateReducer<CurrentValid
 	@Override
 	public BiFunction<CurrentValidators, Particle, CurrentValidators> inputReducer() {
 		return (s, p) -> {
-			var validatorEpochData = (ValidatorEpochData) p;
+			var validatorEpochData = (ValidatorBFTData) p;
 			return s.remove(validatorEpochData);
 		};
 	}
