@@ -225,8 +225,8 @@ public class BytesTest {
 
 	@Test
 	public void testXor() {
-		final var b1 = new byte[] { 1, 0, 1, 1, 1, 0, 0 };
-		final var b2 = new byte[] { 0, 0, 0, 0, 1, 0, 1 };
-		assertArrayEquals(new byte[] { 1, 0, 1, 1, 0, 0, 1 }, Bytes.xor(b1, b2));
+		final var b1 = new byte[] {1, 0, 1, 1, 1, 0, 0};
+		final var b2 = new byte[] {0, 0, 0, 0, 1, 0, 1};
+		assertArrayEquals(new byte[] {1, 0, 1, 1, 0, 0, 1}, Bytes.xor(b1, b2));
 	}
 }

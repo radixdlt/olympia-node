@@ -20,24 +20,51 @@ package com.radixdlt.network.p2p.transport.handshake;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.p2p.NodeId;
 
-public final class AuthHandshakeResult {
-	private final NodeId remoteNodeId;
-	private final Secrets secrets;
+import java.util.Optional;
 
-	public static AuthHandshakeResult create(ECPublicKey remotePubKey, Secrets secrets) {
-		return new AuthHandshakeResult(NodeId.fromPublicKey(remotePubKey), secrets);
+public interface AuthHandshakeResult {
+
+	static AuthHandshakeSuccess success(ECPublicKey remotePubKey, Secrets secrets) {
+		return new AuthHandshakeSuccess(NodeId.fromPublicKey(remotePubKey), secrets);
 	}
 
-	private AuthHandshakeResult(NodeId remoteNodeId, Secrets secrets) {
-		this.remoteNodeId = remoteNodeId;
-		this.secrets = secrets;
+	static AuthHandshakeError error(String msg, Optional<NodeId> maybeNodeId) {
+		return new AuthHandshakeError(msg, maybeNodeId);
 	}
 
-	public NodeId getRemoteNodeId() {
-		return remoteNodeId;
+	final class AuthHandshakeSuccess implements AuthHandshakeResult {
+		private final NodeId remoteNodeId;
+		private final Secrets secrets;
+
+		private AuthHandshakeSuccess(NodeId remoteNodeId, Secrets secrets) {
+			this.remoteNodeId = remoteNodeId;
+			this.secrets = secrets;
+		}
+
+		public NodeId getRemoteNodeId() {
+			return remoteNodeId;
+		}
+
+		public Secrets getSecrets() {
+			return secrets;
+		}
 	}
 
-	public Secrets getSecrets() {
-		return secrets;
+	final class AuthHandshakeError implements AuthHandshakeResult {
+		private final String msg;
+		private final Optional<NodeId> maybeNodeId;
+
+		public AuthHandshakeError(String msg, Optional<NodeId> maybeNodeId) {
+			this.msg = msg;
+			this.maybeNodeId = maybeNodeId;
+		}
+
+		public String getMsg() {
+			return msg;
+		}
+
+		public Optional<NodeId> getMaybeNodeId() {
+			return maybeNodeId;
+		}
 	}
 }

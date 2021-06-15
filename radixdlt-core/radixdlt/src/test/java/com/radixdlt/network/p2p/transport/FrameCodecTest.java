@@ -20,6 +20,7 @@ package com.radixdlt.network.p2p.transport;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshaker;
 import com.radixdlt.network.p2p.transport.handshake.Secrets;
 import com.radixdlt.serialization.Serialization;
@@ -63,14 +64,14 @@ public final class FrameCodecTest {
 	}
 
 	private Pair<Secrets, Secrets> agreeSecrets(ECKeyPair nodeKey1, ECKeyPair nodeKey2) throws Exception {
-		final var handshaker1 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), nodeKey1.getPublicKey());
-		final var handshaker2 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), nodeKey2.getPublicKey());
+		final var handshaker1 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01);
+		final var handshaker2 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x01);
 
 		final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
 		final var handshaker2ResultPair = handshaker2.handleInitialMessage(initMessage);
-		final var handshaker2Result = handshaker2ResultPair.getSecond();
+		final var handshaker2Result = (AuthHandshakeSuccess) handshaker2ResultPair.getSecond();
 		final var responseMessage = handshaker2ResultPair.getFirst();
-		final var handshaker1Result = handshaker1.handleResponseMessage(responseMessage);
+		final var handshaker1Result = (AuthHandshakeSuccess) handshaker1.handleResponseMessage(responseMessage);
 
 		return Pair.of(handshaker1Result.getSecrets(), handshaker2Result.getSecrets());
 	}

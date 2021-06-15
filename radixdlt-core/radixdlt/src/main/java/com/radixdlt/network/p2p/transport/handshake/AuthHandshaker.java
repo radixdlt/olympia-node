@@ -25,8 +25,10 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
 import com.radixdlt.utils.Pair;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.agreement.ECDHBasicAgreement;
@@ -59,21 +61,26 @@ public final class AuthHandshaker {
 	private final Serialization serialization;
 	private final SecureRandom secureRandom;
 	private final ECKeyOps ecKeyOps;
-	private final ECPublicKey nodeKey;
 	private final byte[] nonce;
 	private final ECKeyPair ephemeralKey;
+	private final byte networkId;
 	private boolean isInitiator = false;
 	private Optional<byte[]> initiatePacketOpt = Optional.empty();
 	private Optional<byte[]> responsePacketOpt = Optional.empty();
 	private Optional<ECPublicKey> remotePubKeyOpt;
 
-	public AuthHandshaker(Serialization serialization, SecureRandom secureRandom, ECKeyOps ecKeyOps, ECPublicKey nodeKey) {
+	public AuthHandshaker(
+		Serialization serialization,
+		SecureRandom secureRandom,
+		ECKeyOps ecKeyOps,
+		byte networkId
+	) {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.secureRandom = Objects.requireNonNull(secureRandom);
 		this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
-		this.nodeKey = Objects.requireNonNull(nodeKey);
 		this.nonce = randomBytes(NONCE_SIZE);
 		this.ephemeralKey = ECKeyPair.generateNew();
+		this.networkId = networkId;
 	}
 
 	public byte[] initiate(ECPublicKey remotePubKey) throws PublicKeyException {
@@ -104,8 +111,9 @@ public final class AuthHandshaker {
 		final var signature = ephemeralKey.sign(messageToSign);
 		return new AuthInitiateMessage(
 			signature,
-			HashCode.fromBytes(nodeKey.getBytes()),
-			HashCode.fromBytes(nonce)
+			HashCode.fromBytes(ecKeyOps.nodePubKey().getBytes()),
+			HashCode.fromBytes(nonce),
+			networkId
 		);
 	}
 
@@ -115,6 +123,14 @@ public final class AuthHandshaker {
 		final var encryptedPayload = Arrays.copyOfRange(data, 2, data.length);
 		final var plaintext = ecKeyOps.eciesDecrypt(encryptedPayload, sizeBytes);
 		final var message = serialization.fromDson(plaintext, AuthInitiateMessage.class);
+		final var remotePubKey = ECPublicKey.fromBytes(message.getPublicKey().asBytes());
+
+		if (message.getNetworkId() != this.networkId) {
+			return Pair.of(null, AuthHandshakeResult.error(
+				"Network ID mismatch",
+				Optional.of(NodeId.fromPublicKey(remotePubKey))
+			));
+		}
 
 		final var response = new AuthResponseMessage(
 			HashCode.fromBytes(ephemeralKey.getPublicKey().getBytes()),
@@ -124,7 +140,6 @@ public final class AuthHandshaker {
 
 		final var encryptedSize = encodedResponse.length + ECIESCoder.OVERHEAD_SIZE;
 		final var sizePrefix = ByteBuffer.allocate(2).putShort((short) encryptedSize).array();
-		final var remotePubKey = ECPublicKey.fromBytes(message.getPublicKey().asBytes());
 		final var encryptedResponsePayload =
 			ECIESCoder.encrypt(remotePubKey.getEcPoint(), encodedResponse, sizePrefix);
 		final var packet = new byte[sizePrefix.length + encryptedResponsePayload.length];
@@ -141,9 +156,8 @@ public final class AuthHandshaker {
 		this.responsePacketOpt = Optional.of(packet);
 		this.remotePubKeyOpt = Optional.of(remotePubKey);
 
-		final var handshakreResult = finalizeHandshake(remoteEphemeralKey, message.getNonce());
-
-		return Pair.of(packet, handshakreResult);
+		final var handshakeResult = finalizeHandshake(remoteEphemeralKey, message.getNonce());
+		return Pair.of(packet, handshakeResult);
 	}
 
 	public AuthHandshakeResult handleResponseMessage(byte[] data) throws IOException, InvalidCipherTextException, PublicKeyException {
@@ -163,7 +177,7 @@ public final class AuthHandshaker {
 		return ECPublicKey.recoverFrom(HashCode.fromBytes(signed), signature).orElseThrow();
 	}
 
-	private AuthHandshakeResult finalizeHandshake(ECPublicKey remoteEphemeralKey, HashCode remoteNonce) {
+	private AuthHandshakeSuccess finalizeHandshake(ECPublicKey remoteEphemeralKey, HashCode remoteNonce) {
 		final var initiatePacket = initiatePacketOpt.get();
 		final var responsePacket = responsePacketOpt.get();
 		final var remotePubKey = remotePubKeyOpt.get();
@@ -194,7 +208,7 @@ public final class AuthHandshaker {
 			macSecrets.getSecond()
 		);
 
-		return AuthHandshakeResult.create(remotePubKey, secrets);
+		return AuthHandshakeResult.success(remotePubKey, secrets);
 	}
 
 	private Pair<KeccakDigest, KeccakDigest> macSecretSetup(

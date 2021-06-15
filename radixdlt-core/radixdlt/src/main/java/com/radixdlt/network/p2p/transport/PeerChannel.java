@@ -20,14 +20,16 @@ package com.radixdlt.network.p2p.transport;
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.messaging.InboundMessage;
 import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult;
+import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeError;
+import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshaker;
 import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
 import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
@@ -77,6 +79,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 
 	private final SystemCounters counters;
 	private final EventDispatcher<PeerEvent> peerEventDispatcher;
+	private final PeerControl peerControl;
 	private final Optional<RadixNodeUri> uri;
 	private final AuthHandshaker authHandshaker;
 	private final boolean isInitiator;
@@ -94,16 +97,17 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		Serialization serialization,
 		SecureRandom secureRandom,
 		ECKeyOps ecKeyOps,
-		ECPublicKey nodeKey,
 		EventDispatcher<PeerEvent> peerEventDispatcher,
+		PeerControl peerControl,
 		Optional<RadixNodeUri> uri,
 		SocketChannel nettyChannel
 	) {
 		this.counters = Objects.requireNonNull(counters);
 		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
+		this.peerControl = Objects.requireNonNull(peerControl);
 		this.uri = Objects.requireNonNull(uri);
 		uri.ifPresent(u -> this.remoteNodeId = u.getNodeId());
-		this.authHandshaker = new AuthHandshaker(serialization, secureRandom, ecKeyOps, nodeKey);
+		this.authHandshaker = new AuthHandshaker(serialization, secureRandom, ecKeyOps, config.networkId());
 		this.nettyChannel = Objects.requireNonNull(nettyChannel);
 
 		this.isInitiator = uri.isPresent();
@@ -137,17 +141,30 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		} else {
 			log.trace("Handling auth initiate message from {} [{}]", remoteNodeId, this.nettyChannel.remoteAddress());
 			final var result = this.authHandshaker.handleInitialMessage(data);
-			this.write(result.getFirst());
+			if (result.getFirst() != null) {
+				this.write(result.getFirst());
+			}
 			this.finalizeHandshake(result.getSecond());
 		}
 	}
 
 	private void finalizeHandshake(AuthHandshakeResult handshakeResult) {
-		log.trace("Finalizing auth handshake with {} [{}]", remoteNodeId, this.nettyChannel.remoteAddress());
-		this.remoteNodeId = handshakeResult.getRemoteNodeId();
-		this.frameCodec = new FrameCodec(handshakeResult.getSecrets());
-		this.state = ChannelState.ACTIVE;
-		peerEventDispatcher.dispatch(PeerConnected.create(this));
+		if (handshakeResult instanceof AuthHandshakeSuccess) {
+			final var successResult = (AuthHandshakeSuccess) handshakeResult;
+			log.trace("Finalizing successful auth handshake with {} [{}]",
+				remoteNodeId, this.nettyChannel.remoteAddress());
+			this.remoteNodeId = successResult.getRemoteNodeId();
+			this.frameCodec = new FrameCodec(successResult.getSecrets());
+			this.state = ChannelState.ACTIVE;
+			peerEventDispatcher.dispatch(PeerConnected.create(this));
+		} else {
+			final var errorResult = (AuthHandshakeError) handshakeResult;
+			log.trace("Auth handshake failed with {} [{}] because of: {}. Disconnecting and banning peer.",
+				remoteNodeId, this.nettyChannel.remoteAddress(), errorResult.getMsg());
+			errorResult.getMaybeNodeId().ifPresent(remoteNodeId ->
+				this.peerControl.banPeer(remoteNodeId, Duration.ofHours(1)));
+			this.disconnect();
+		}
 	}
 
 	private void handleMessage(byte[] buf) throws IOException {

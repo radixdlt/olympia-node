@@ -18,12 +18,12 @@
 package com.radixdlt.network.p2p.transport;
 
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.serialization.Serialization;
@@ -45,8 +45,8 @@ public final class PeerServerBootstrap {
 	private final Serialization serialization;
 	private final SecureRandom secureRandom;
 	private final ECKeyOps ecKeyOps;
-	private final ECPublicKey nodeKey;
 	private final EventDispatcher<PeerEvent> peerEventDispatcher;
+	private final Provider<PeerControl> peerControl;
 
 	@Inject
 	public PeerServerBootstrap(
@@ -55,16 +55,16 @@ public final class PeerServerBootstrap {
 		Serialization serialization,
 		SecureRandom secureRandom,
 		ECKeyOps ecKeyOps,
-		@Self ECPublicKey nodeKey,
-		EventDispatcher<PeerEvent> peerEventDispatcher
+		EventDispatcher<PeerEvent> peerEventDispatcher,
+		Provider<PeerControl> peerControl
 	) {
 		this.config = Objects.requireNonNull(config);
 		this.counters = Objects.requireNonNull(counters);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.secureRandom = Objects.requireNonNull(secureRandom);
 		this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
-		this.nodeKey = Objects.requireNonNull(nodeKey);
 		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
+		this.peerControl = Objects.requireNonNull(peerControl);
 	}
 
 	public void start() throws InterruptedException {
@@ -84,8 +84,8 @@ public final class PeerServerBootstrap {
 				serialization,
 				secureRandom,
 				ecKeyOps,
-				nodeKey,
 				peerEventDispatcher,
+				peerControl.get(),
 				Optional.empty()
 			));
 

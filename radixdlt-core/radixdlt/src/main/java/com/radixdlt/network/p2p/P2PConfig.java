@@ -95,6 +95,11 @@ public interface P2PConfig {
 	long pingTimeout();
 
 	/**
+	 * The network ID byte.
+	 */
+	byte networkId();
+
+	/**
 	 * Create a configuration from specified {@link RuntimeProperties}.
 	 *
 	 * @param properties the properties to read the configuration from
@@ -164,6 +169,13 @@ public interface P2PConfig {
 			public long pingTimeout() {
 				return properties.get("network.p2p.ping_timeout", 5000);
 			}
+
+			@Override
+			public byte networkId() {
+				// 2 for betanet, 1 for mainnet
+				return (byte) properties.get("network.p2p.network_id", 2);
+			}
+
 		};
 	}
 }

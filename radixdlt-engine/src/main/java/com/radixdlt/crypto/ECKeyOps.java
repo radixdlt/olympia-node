@@ -21,6 +21,11 @@ public interface ECKeyOps {
 	 */
 	byte[] eciesDecrypt(byte[] cipher, byte[] macData) throws InvalidCipherTextException;
 
+	/**
+	 * Returns this node's public key.
+	 */
+	ECPublicKey nodePubKey();
+
 	static ECKeyOps fromKeyPair(ECKeyPair keyPair) {
 		return new ECKeyOps() {
 			@Override
@@ -33,6 +38,11 @@ public interface ECKeyOps {
 			@Override
 			public byte[] eciesDecrypt(byte[] cipher, byte[] macData) throws InvalidCipherTextException {
 				return ECIESCoder.decrypt(new BigInteger(1, keyPair.getPrivateKey()), cipher, macData);
+			}
+
+			@Override
+			public ECPublicKey nodePubKey() {
+				return keyPair.getPublicKey();
 			}
 		};
 	}
