@@ -160,8 +160,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(new TypeLiteral<List<BFTNode>>() {
-					}).toInstance(allNodes);
+					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 				}
 
 				@ProvidesIntoSet
