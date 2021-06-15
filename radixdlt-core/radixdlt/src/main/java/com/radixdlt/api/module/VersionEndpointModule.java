@@ -24,12 +24,12 @@ import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.controller.VersionController;
-import com.radixdlt.api.qualifier.AtNode;
+import com.radixdlt.api.qualifier.NodeServer;
 
 import static org.radix.Radix.SYSTEM_VERSION_KEY;
 
 public class VersionEndpointModule extends AbstractModule {
-	@AtNode
+	@NodeServer
 	@ProvidesIntoMap
 	@StringMapKey("/version")
 	public Controller versionController(LocalSystem localSystem) {

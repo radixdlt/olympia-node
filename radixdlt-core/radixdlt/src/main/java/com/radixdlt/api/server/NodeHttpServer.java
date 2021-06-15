@@ -20,7 +20,7 @@ package com.radixdlt.api.server;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.Controller;
-import com.radixdlt.api.qualifier.AtNode;
+import com.radixdlt.api.qualifier.NodeServer;
 import com.radixdlt.properties.RuntimeProperties;
 
 import java.util.Map;
@@ -29,7 +29,7 @@ public final class NodeHttpServer extends AbstractHttpServer {
 	private static final int DEFAULT_PORT = 3333;
 
 	@Inject
-	public NodeHttpServer(@AtNode Map<String, Controller> controllers, RuntimeProperties properties) {
+	public NodeHttpServer(@NodeServer Map<String, Controller> controllers, RuntimeProperties properties) {
 		super(controllers, properties, "node", DEFAULT_PORT);
 	}
 }

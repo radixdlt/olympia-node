@@ -22,11 +22,11 @@ import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.controller.HealthController;
-import com.radixdlt.api.qualifier.AtNode;
+import com.radixdlt.api.qualifier.NodeServer;
 import com.radixdlt.api.service.NetworkInfoService;
 
 public class HealthEndpointModule extends AbstractModule {
-	@AtNode
+	@NodeServer
 	@ProvidesIntoMap
 	@StringMapKey("/health")
 	public Controller healthController(NetworkInfoService networkInfoService) {

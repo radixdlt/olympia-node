@@ -29,10 +29,10 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Marks elements related to /archive endpoint
+ * Marks elements related to /validator endpoint
  */
 @Qualifier
 @Target({ FIELD, PARAMETER, METHOD })
 @Retention(RUNTIME)
-public @interface Archive {
+public @interface ValidationEndpoint {
 }
