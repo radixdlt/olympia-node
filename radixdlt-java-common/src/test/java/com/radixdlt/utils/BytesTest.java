@@ -25,6 +25,8 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import java.math.BigInteger;
+
 public class BytesTest {
 
 	/**
@@ -200,5 +202,31 @@ public class BytesTest {
 			0, 1, 2, 3, 4, 5, 6, 7, 8, 9
 		};
 		assertArrayEquals(zeroRemoved, Bytes.trimLeadingZeros(withZero));
+	}
+
+	@Test
+	public void testBigIntegerToBytes() {
+		final var one32 = new byte[] {
+			0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 1
+		};
+		assertArrayEquals(one32, Bytes.bigIntegerToBytes(BigInteger.ONE, 32));
+
+		final var test2 = new byte[] {
+			0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, (byte) 2, (byte) 1
+		};
+		assertArrayEquals(test2, Bytes.bigIntegerToBytes(BigInteger.valueOf(513), 32));
+	}
+
+	@Test
+	public void testXor() {
+		final var b1 = new byte[] { 1, 0, 1, 1, 1, 0, 0 };
+		final var b2 = new byte[] { 0, 0, 0, 0, 1, 0, 1 };
+		assertArrayEquals(new byte[] { 1, 0, 1, 1, 0, 0, 1 }, Bytes.xor(b1, b2));
 	}
 }
