@@ -21,7 +21,6 @@ package com.radixdlt.api.server;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.Controller;
 import com.radixdlt.properties.RuntimeProperties;
 import com.stijndewitt.undertow.cors.AllowAll;
@@ -40,7 +39,7 @@ import io.undertow.util.StatusCodes;
 
 import static java.util.logging.Logger.getLogger;
 
-public class AbstractHttpServer implements ModuleRunner {
+public class AbstractHttpServer {
 	private static final Logger log = LogManager.getLogger();
 	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
 
@@ -72,7 +71,6 @@ public class AbstractHttpServer implements ModuleRunner {
 		);
 	}
 
-	@Override
 	public void start() {
 		server = Undertow.builder()
 			.addHttpListener(port, bindAddress)
@@ -83,7 +81,6 @@ public class AbstractHttpServer implements ModuleRunner {
 		log.info("Starting {} HTTP Server at {}:{}", name.toUpperCase(Locale.US), bindAddress, port);
 	}
 
-	@Override
 	public void stop() {
 		server.stop();
 	}

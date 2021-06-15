@@ -25,6 +25,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.api.server.ArchiveHttpServer;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -189,6 +190,28 @@ public final class RxEnvironmentModule extends AbstractModule {
 		addRemoteProcessorsOnRunner(remoteProcessors, rxRemoteEnvironment, runnerName, builder);
 		addScheduledEventProducersOnRunner(scheduledEventProducers, runnerName, builder);
 		return builder.build("SyncRunner " + self);
+	}
+
+	@ProvidesIntoMap
+	@StringMapKey(Runners.ARCHIVE_API)
+	@Singleton
+	public ModuleRunner archiveApiRunner(
+		@Self BFTNode self,
+		Set<EventProcessorOnRunner<?>> processors,
+		RxEnvironment rxEnvironment,
+		Set<RemoteEventProcessorOnRunner<?>> remoteProcessors,
+		RxRemoteEnvironment rxRemoteEnvironment,
+		Set<ScheduledEventProducerOnRunner<?>> scheduledEventProducers,
+		ArchiveHttpServer archiveHttpServer
+	) {
+		final var runnerName = Runners.ARCHIVE_API;
+		final var builder = ModuleRunnerImpl.builder();
+		addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
+		addRemoteProcessorsOnRunner(remoteProcessors, rxRemoteEnvironment, runnerName, builder);
+		addScheduledEventProducersOnRunner(scheduledEventProducers, runnerName, builder);
+		builder.onStart(unused -> archiveHttpServer.start());
+		// TODO: handle onStop
+		return builder.build("ArchiveApi " + self);
 	}
 
 	private static <T> void addToBuilder(

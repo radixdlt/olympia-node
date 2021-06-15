@@ -22,10 +22,8 @@ import org.apache.logging.log4j.Logger;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.EndpointConfig;
-import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.data.ScheduledQueueFlush;
 import com.radixdlt.api.server.ArchiveHttpServer;
 import com.radixdlt.api.service.NetworkInfoService;
@@ -54,17 +52,12 @@ public class ArchiveApiModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
+		bind(ArchiveHttpServer.class).in(Scopes.SINGLETON);
 
 		endpoints.forEach(ep -> {
 			log.info("Enabling /{} endpoint", ep.name());
 			install(ep.module().get());
 		});
-
-		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
-			.addBinding(Runners.ARCHIVE_API)
-			.to(ArchiveHttpServer.class);
-
-		bind(ArchiveHttpServer.class).in(Scopes.SINGLETON);
 	}
 
 	@ProvidesIntoSet
@@ -72,7 +65,7 @@ public class ArchiveApiModule extends AbstractModule {
 		ClientApiStore clientApiStore
 	) {
 		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
+			Runners.ARCHIVE_API,
 			TxnsCommittedToLedger.class,
 			clientApiStore.atomsCommittedToLedgerEventProcessor()
 		);
@@ -81,7 +74,7 @@ public class ArchiveApiModule extends AbstractModule {
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> cacheCleanupEventProcessor(TransactionStatusService transactionStatusService) {
 		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
+			Runners.ARCHIVE_API,
 			ScheduledCacheCleanup.class,
 			transactionStatusService.cacheCleanupEventProcessor()
 		);
@@ -90,7 +83,7 @@ public class ArchiveApiModule extends AbstractModule {
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> atomsCommittedToLedgerTransactionStatus(TransactionStatusService transactionStatusService) {
 		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
+			Runners.ARCHIVE_API,
 			TxnsCommittedToLedger.class,
 			transactionStatusService.atomsCommittedToLedgerEventProcessor()
 		);
@@ -99,7 +92,7 @@ public class ArchiveApiModule extends AbstractModule {
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> mempoolAddFailureEventProcessor(TransactionStatusService transactionStatusService) {
 		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
+			Runners.ARCHIVE_API,
 			MempoolAddFailure.class,
 			transactionStatusService.mempoolAddFailureEventProcessor()
 		);
@@ -108,7 +101,7 @@ public class ArchiveApiModule extends AbstractModule {
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> mempoolAddSuccessEventProcessor(TransactionStatusService transactionStatusService) {
 		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
+			Runners.ARCHIVE_API,
 			MempoolAddSuccess.class,
 			transactionStatusService.mempoolAddSuccessEventProcessor()
 		);
@@ -117,7 +110,7 @@ public class ArchiveApiModule extends AbstractModule {
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> queueFlushProcessor(ClientApiStore clientApiStore) {
 		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
+			Runners.ARCHIVE_API,
 			ScheduledQueueFlush.class,
 			clientApiStore.queueFlushProcessor()
 		);
@@ -126,7 +119,7 @@ public class ArchiveApiModule extends AbstractModule {
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> networkInfoService(NetworkInfoService networkInfoService) {
 		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
+			Runners.ARCHIVE_API,
 			ScheduledStatsCollecting.class,
 			networkInfoService.updateStats()
 		);
