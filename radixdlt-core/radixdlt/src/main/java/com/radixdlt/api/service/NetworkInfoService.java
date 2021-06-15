@@ -21,7 +21,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.api.data.NodeStatus;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.EventProcessor;
@@ -38,7 +37,6 @@ import static com.radixdlt.api.service.NetworkInfoService.ValueHolder.Type.ABSOL
 import static com.radixdlt.api.service.NetworkInfoService.ValueHolder.Type.INCREMENTAL;
 import static com.radixdlt.counters.SystemCounters.CounterType;
 
-@Singleton
 public class NetworkInfoService {
 	private static final Logger log = LogManager.getLogger();
 
@@ -53,19 +51,16 @@ public class NetworkInfoService {
 	public static final CounterType TARGET_KEY = CounterType.SYNC_TARGET_STATE_VERSION;
 
 	private final SystemCounters systemCounters;
-	private final SystemConfigService systemConfigService;
 	private final ScheduledEventDispatcher<ScheduledStatsCollecting> scheduledStatsCollecting;
 	private final EnumMap<CounterType, ValueHolder> statistics = new EnumMap<>(CounterType.class);
 
 	@Inject
 	public NetworkInfoService(
 		SystemCounters systemCounters,
-		ScheduledEventDispatcher<ScheduledStatsCollecting> scheduledStatsCollecting,
-		SystemConfigService systemConfigService
+		ScheduledEventDispatcher<ScheduledStatsCollecting> scheduledStatsCollecting
 	) {
 		this.scheduledStatsCollecting = scheduledStatsCollecting;
 		this.systemCounters = systemCounters;
-		this.systemConfigService = systemConfigService;
 
 		statistics.put(THROUGHPUT_KEY, new ValueHolder(DEFAULT_AVERAGING_FACTOR, INCREMENTAL));
 		statistics.put(DEMAND_KEY, new ValueHolder(DEFAULT_AVERAGING_FACTOR, ABSOLUTE));

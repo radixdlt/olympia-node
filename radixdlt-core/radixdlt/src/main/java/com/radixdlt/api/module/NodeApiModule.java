@@ -24,13 +24,9 @@ import org.apache.logging.log4j.Logger;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.EndpointConfig;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.server.NodeHttpServer;
-import com.radixdlt.api.service.NetworkInfoService;
-import com.radixdlt.api.service.ScheduledStatsCollecting;
-import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 
 import java.util.List;
@@ -59,14 +55,5 @@ public final class NodeApiModule extends AbstractModule {
 			.to(NodeHttpServer.class);
 
 		bind(NodeHttpServer.class).in(Scopes.SINGLETON);
-	}
-
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> networkInfoService(NetworkInfoService networkInfoService) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			ScheduledStatsCollecting.class,
-			networkInfoService.updateStats()
-		);
 	}
 }
