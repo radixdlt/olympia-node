@@ -38,7 +38,7 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateRake
 		builder.swap(
 			NoValidatorUpdate.class,
 			p -> p.getValidatorKey().equals(action.getValidatorKey()),
-			Optional.of(SubstateWithArg.noArg(new NoValidatorUpdate(action.getValidatorKey()))),
+			Optional.of(SubstateWithArg.noArg(new NoValidatorUpdate(action.getValidatorKey(), 0))),
 			"Already a validator"
 		).with(
 			substateDown -> List.of(new PreparedValidatorUpdate(

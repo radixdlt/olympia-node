@@ -25,18 +25,24 @@ import java.util.Objects;
 
 public final class NoValidatorUpdate implements Particle {
 	private final ECPublicKey validatorKey;
+	private final int curRakePercentage;
 
-	public NoValidatorUpdate(ECPublicKey validatorKey) {
+	public NoValidatorUpdate(ECPublicKey validatorKey, int curRakePercentage) {
 		this.validatorKey = Objects.requireNonNull(validatorKey);
+		this.curRakePercentage = curRakePercentage;
 	}
 
 	public ECPublicKey getValidatorKey() {
 		return validatorKey;
 	}
 
+	public int getCurRakePercentage() {
+		return curRakePercentage;
+	}
+
 	@Override
 	public int hashCode() {
-		return Objects.hash(validatorKey);
+		return Objects.hash(validatorKey, curRakePercentage);
 	}
 
 	@Override
@@ -45,6 +51,7 @@ public final class NoValidatorUpdate implements Particle {
 			return false;
 		}
 		var other = (NoValidatorUpdate) o;
-		return Objects.equals(this.validatorKey, other.validatorKey);
+		return Objects.equals(this.validatorKey, other.validatorKey)
+			&& this.curRakePercentage == other.curRakePercentage;
 	}
 }

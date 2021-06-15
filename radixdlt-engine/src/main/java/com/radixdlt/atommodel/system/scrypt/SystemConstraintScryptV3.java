@@ -31,6 +31,7 @@ import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
+import com.radixdlt.atommodel.validators.state.NoValidatorUpdate;
 import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -57,10 +58,10 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 
-	public static final UInt256 CONSTANT_FEE = UInt256.from(0);
 	public static final UInt256 REWARDS_PER_PROPOSAL = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
 
 	public static class UpdateValidatorEpochData implements ReducerState {
@@ -175,7 +176,7 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 				if (rakePercentage != 0 && !nodeEmission.isZero()) {
 					var rake = nodeEmission
 						.multiply(UInt256.from(rakePercentage))
-						.divide(UInt256.from(PreparedValidatorUpdate.RAKE_PERCENTAGE_GRANULARITY));
+						.divide(UInt256.from(PreparedValidatorUpdate.RAKE_MAX));
 					var validatorOwner = REAddr.ofPubKeyAccount(k);
 					var initStake = new TreeMap<REAddr, UInt256>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
 					initStake.put(validatorOwner, rake);
@@ -428,6 +429,28 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 		}
 	}
 
+	private static final class ResetValidatorUpdate implements ReducerState {
+		private final PreparedValidatorUpdate update;
+		private final Supplier<ReducerState> next;
+
+		ResetValidatorUpdate(PreparedValidatorUpdate update, Supplier<ReducerState> next) {
+			this.update = update;
+			this.next = next;
+		}
+
+		ReducerState reset(NoValidatorUpdate noValidatorUpdate) throws ProcedureException {
+			if (!noValidatorUpdate.getValidatorKey().equals(update.getValidatorKey())) {
+				throw new ProcedureException("Validator keys must match.");
+			}
+
+			if (noValidatorUpdate.getCurRakePercentage() != update.getRakePercentage()) {
+				throw new ProcedureException("Rake percentage must match.");
+			}
+
+			return next.get();
+		}
+	}
+
 	private static final class PreparingRakeUpdate implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, ValidatorStakeData> validatorsToUpdate;
@@ -462,13 +485,13 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 				return new LoadingStake(k, validatorStake -> {
 					var updatedValidator = validatorStake.setRakePercentage(validatorUpdate.getRakePercentage());
 					validatorsToUpdate.put(k, updatedValidator);
-					return this.next();
+					return new ResetValidatorUpdate(validatorUpdate, this::next);
 				});
 			} else {
 				var updatedValidator = validatorsToUpdate.get(k)
 					.setRakePercentage(validatorUpdate.getRakePercentage());
 				validatorsToUpdate.put(k, updatedValidator);
-				return this.next();
+				return new ResetValidatorUpdate(validatorUpdate, this::next);
 			}
 		}
 	}
@@ -616,6 +639,11 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 			PreparedValidatorUpdate.class, PreparingRakeUpdate.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(i, s, r) -> ReducerResult.incomplete(s.prepareRakeUpdates(i))
+		));
+		os.procedure(new UpProcedure<>(
+			ResetValidatorUpdate.class, NoValidatorUpdate.class,
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> ReducerResult.incomplete(s.reset(u))
 		));
 		os.procedure(new UpProcedure<>(
 			Staking.class, StakeOwnership.class,

@@ -32,6 +32,7 @@ import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
+import com.radixdlt.atommodel.validators.state.NoValidatorUpdate;
 import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.SubstateWithArg;
@@ -112,7 +113,7 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 			if (rakePercentage != 0 && !nodeEmission.isZero()) {
 				var rake = nodeEmission
 					.multiply(UInt256.from(rakePercentage))
-					.divide(UInt256.from(PreparedValidatorUpdate.RAKE_PERCENTAGE_GRANULARITY));
+					.divide(UInt256.from(PreparedValidatorUpdate.RAKE_MAX));
 				var validatorOwner = REAddr.ofPubKeyAccount(k);
 				var initStake = new TreeMap<REAddr, UInt256>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
 				initStake.put(validatorOwner, rake);
@@ -226,6 +227,7 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 			}
 			var curValidator = validatorsToUpdate.get(k);
 			validatorsToUpdate.put(k, curValidator.setRakePercentage(update.getRakePercentage()));
+			txBuilder.up(new NoValidatorUpdate(k, update.getRakePercentage()));
 		}
 
 		validatorsToUpdate.forEach((k, validator) -> txBuilder.up(validator));
