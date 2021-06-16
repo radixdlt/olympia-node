@@ -42,7 +42,7 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.network.addressbook.PeersView;
+import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
@@ -98,7 +98,7 @@ public class MempoolTest {
 	}
 
 	private BFTNode getFirstPeer() {
-		return peersView.peers().get(0);
+		return peersView.peers().findFirst().get().bftNode();
 	}
 
 	private Txn createTxn(ECKeyPair keyPair, int numParticles) {

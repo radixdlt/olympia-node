@@ -24,38 +24,24 @@ import static org.mockito.Mockito.*;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.network.messaging.MessageCentralMockProvider;
 
-import java.util.Optional;
-
+import com.radixdlt.network.p2p.NodeId;
 import org.junit.Before;
 import org.junit.Test;
 
 public class MessageCentralBFTNetworkTest {
 	private BFTNode self;
-	private AddressBook addressBook;
 	private MessageCentral messageCentral;
 	private MessageCentralBFTNetwork network;
 
 	@Before
 	public void setUp() {
 		this.self = mock(BFTNode.class);
-		this.addressBook = mock(AddressBook.class);
 		this.messageCentral = MessageCentralMockProvider.get();
-		this.network = new MessageCentralBFTNetwork(self, 0, addressBook, messageCentral);
-	}
-
-	@Test
-	public void when_send_vote_to_nonexistent__then_no_message_sent() {
-		Vote vote = mock(Vote.class);
-		BFTNode node = mock(BFTNode.class);
-		when(node.getKey()).thenReturn(mock(ECPublicKey.class));
-		network.voteDispatcher().dispatch(node, vote);
-		verify(messageCentral, never()).send(any(), any());
+		this.network = new MessageCentralBFTNetwork(self, 0, messageCentral);
 	}
 
 	@Test
@@ -64,11 +50,8 @@ public class MessageCentralBFTNetworkTest {
 		ECPublicKey leaderPk = ECKeyPair.generateNew().getPublicKey();
 		BFTNode leader = mock(BFTNode.class);
 		when(leader.getKey()).thenReturn(leaderPk);
-		PeerWithSystem peer = mock(PeerWithSystem.class);
-		when(peer.getNID()).thenReturn(leaderPk.euid());
-		when(addressBook.peer(leaderPk.euid())).thenReturn(Optional.of(peer));
 
 		network.voteDispatcher().dispatch(leader, vote);
-		verify(messageCentral, times(1)).send(eq(peer), any(ConsensusEventMessage.class));
+		verify(messageCentral, times(1)).send(eq(NodeId.fromPublicKey(leaderPk)), any(ConsensusEventMessage.class));
 	}
 }

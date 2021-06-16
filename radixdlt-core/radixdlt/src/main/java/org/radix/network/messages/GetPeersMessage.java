@@ -22,7 +22,7 @@ import com.radixdlt.serialization.SerializerId2;
 
 import java.util.Objects;
 
-@SerializerId2("network.message.get_peers")
+@SerializerId2("p2p.discovery.get_peers")
 public final class GetPeersMessage extends Message {
 
 	GetPeersMessage() {
@@ -47,7 +47,7 @@ public final class GetPeersMessage extends Message {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-		GetPeersMessage that = (GetPeersMessage) o;
+		final var that = (GetPeersMessage) o;
 		return Objects.equals(getTimestamp(), that.getTimestamp())
 				&& Objects.equals(getMagic(), that.getMagic());
 	}

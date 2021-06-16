@@ -43,7 +43,7 @@ import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.store.LastProof;
 import io.reactivex.rxjava3.core.Flowable;
 import org.junit.Test;

@@ -22,6 +22,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
+import com.radixdlt.network.p2p.NoOpPeerControl;
+import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
@@ -29,7 +31,7 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.deterministic.DeterministicEnvironmentModule;
-import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
@@ -43,7 +45,6 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
 		bind(SyncConfig.class).toInstance(SyncConfig.of(500, 10, 3000, 10, Long.MAX_VALUE));
 		bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
 
-
 		bind(Long.class).annotatedWith(PacemakerTimeout.class).toInstance(1000L);
 		bind(Double.class).annotatedWith(PacemakerRate.class).toInstance(2.0);
 		bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(6);
@@ -55,6 +56,9 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
 		// System
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 		bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+
+		// P2P
+		bind(PeerControl.class).toInstance(new NoOpPeerControl());
 
 		install(new InMemoryBFTKeyModule());
 		install(new CryptoModule());

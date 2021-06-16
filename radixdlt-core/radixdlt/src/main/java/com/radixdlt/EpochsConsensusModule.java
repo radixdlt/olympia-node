@@ -77,7 +77,7 @@ import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
-import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import java.util.Comparator;

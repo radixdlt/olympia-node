@@ -18,14 +18,10 @@
 package org.radix.serialization;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.network.transport.StaticTransportMetadata;
-import com.radixdlt.network.transport.TransportInfo;
-import com.radixdlt.network.transport.udp.UDPConstants;
 import com.radixdlt.utils.Bytes;
 import org.radix.Radix;
 import org.radix.universe.system.LocalSystem;
@@ -39,15 +35,7 @@ public class LocalSystemSerializeTest extends SerializeValue<LocalSystem> {
 	private static LocalSystem get() {
 		try {
 			ECKeyPair keyPair = ECKeyPair.fromPrivateKey(Bytes.fromHexString(Strings.repeat("deadbeef", 8)));
-			return new LocalSystem(ImmutableMap::of, keyPair.getPublicKey(), Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, ImmutableList.of(
-					TransportInfo.of(
-							UDPConstants.NAME,
-							StaticTransportMetadata.of(
-									UDPConstants.METADATA_HOST,"127.0.0.1",
-									UDPConstants.METADATA_PORT,"30000"
-							)
-					)
-			));
+			return new LocalSystem(ImmutableMap::of, keyPair.getPublicKey(), Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION);
 		} catch (PrivateKeyException | PublicKeyException e) {
 			throw new IllegalStateException("Failed to create keypair", e);
 		}

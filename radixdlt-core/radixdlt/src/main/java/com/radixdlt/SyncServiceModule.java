@@ -34,6 +34,8 @@ import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.ScheduledEventProducerOnRunner;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseSender;
 import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseSender;
@@ -99,8 +101,14 @@ public class SyncServiceModule extends AbstractModule {
 	}
 
 	@Provides
-	private InvalidSyncResponseSender invalidSyncResponseSender(SystemCounters counters) {
-		return resp -> counters.increment(CounterType.SYNC_INVALID_COMMANDS_RECEIVED);
+	private InvalidSyncResponseSender invalidSyncResponseSender(
+		SystemCounters counters,
+		PeerControl peerControl
+	) {
+		return (sender, resp) -> {
+			peerControl.banPeer(NodeId.fromPublicKey(sender.getKey()), Duration.ofMinutes(10));
+			counters.increment(CounterType.SYNC_INVALID_COMMANDS_RECEIVED);
+		};
 	}
 
 	@Provides

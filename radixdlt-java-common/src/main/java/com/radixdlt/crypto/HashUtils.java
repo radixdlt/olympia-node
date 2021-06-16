@@ -21,9 +21,11 @@ import com.google.common.hash.HashCode;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
+import org.bouncycastle.crypto.digests.KeccakDigest;
 
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Comparator;
 
 /**
@@ -111,6 +113,14 @@ public final class HashUtils {
 	 */
 	public static HashCode sha512(byte[] dataToBeHashed) {
 		return HashCode.fromBytes(shaHashHandler.hash512(dataToBeHashed));
+	}
+
+	public static byte[] kec256(byte[]... input) {
+		final var digest = new KeccakDigest(256);
+		final var output = new byte[digest.getDigestSize()];
+		Arrays.stream(input).forEach(i -> digest.update(i, 0, i.length));
+		digest.doFinal(output, 0);
+		return output;
 	}
 
 	/**

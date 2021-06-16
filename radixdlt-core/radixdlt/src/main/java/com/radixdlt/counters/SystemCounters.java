@@ -176,7 +176,6 @@ public interface SystemCounters {
 		MESSAGES_INBOUND_RECEIVED("messages.inbound.received"),
 		MESSAGES_INBOUND_PROCESSED("messages.inbound.processed"),
 		MESSAGES_INBOUND_DISCARDED("messages.inbound.discarded"),
-		MESSAGES_INBOUND_BADSIGNATURE("messages.inbound.badsignature"),
 		MESSAGES_OUTBOUND_ABORTED("messages.outbound.aborted"),
 		MESSAGES_OUTBOUND_PENDING("messages.outbound.pending"),
 		MESSAGES_OUTBOUND_PROCESSED("messages.outbound.processed"),

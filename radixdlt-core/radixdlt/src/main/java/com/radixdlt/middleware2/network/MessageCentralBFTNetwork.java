@@ -26,23 +26,18 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 
 import java.util.Objects;
 
-import java.util.Optional;
-
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.network.messaging.MessageFromPeer;
+import com.radixdlt.network.p2p.NodeId;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
 
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
 
 /**
@@ -50,11 +45,8 @@ import com.radixdlt.network.messaging.MessageCentral;
  * layer.
  */
 public final class MessageCentralBFTNetwork {
-	private static final Logger log = LogManager.getLogger();
-
 	private final BFTNode self;
 	private final int magic;
-	private final AddressBook addressBook;
 	private final MessageCentral messageCentral;
 	private final PublishSubject<ConsensusEvent> localMessages;
 
@@ -62,12 +54,10 @@ public final class MessageCentralBFTNetwork {
 	public MessageCentralBFTNetwork(
 		@Self BFTNode self,
 		@Named("magic") int magic,
-		AddressBook addressBook,
 		MessageCentral messageCentral
 	) {
 		this.magic = magic;
 		this.self = Objects.requireNonNull(self);
-		this.addressBook = Objects.requireNonNull(addressBook);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.localMessages = PublishSubject.create();
 	}
@@ -84,7 +74,7 @@ public final class MessageCentralBFTNetwork {
 		return remoteBftEvents()
 			.filter(m -> m.getMessage().getConsensusMessage() instanceof Vote)
 			.map(m -> {
-				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
+				final var node = BFTNode.create(m.getSource().getPublicKey());
 				final var msg = m.getMessage();
 				var vote = (Vote) msg.getConsensusMessage();
 				return RemoteEvent.create(node, vote);
@@ -95,7 +85,7 @@ public final class MessageCentralBFTNetwork {
 		return remoteBftEvents()
 			.filter(m -> m.getMessage().getConsensusMessage() instanceof Proposal)
 			.map(m -> {
-				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
+				final var node = BFTNode.create(m.getSource().getPublicKey());
 				final var msg = m.getMessage();
 				var proposal = (Proposal) msg.getConsensusMessage();
 				return RemoteEvent.create(node, proposal);
@@ -105,8 +95,7 @@ public final class MessageCentralBFTNetwork {
 	private Flowable<MessageFromPeer<ConsensusEventMessage>> remoteBftEvents() {
 		return this.messageCentral
 			.messagesOf(ConsensusEventMessage.class)
-			.toFlowable(BackpressureStrategy.BUFFER)
-			.filter(m -> m.getPeer().hasSystem());
+			.toFlowable(BackpressureStrategy.BUFFER);
 	}
 
 	public RemoteEventDispatcher<Proposal> proposalDispatcher() {
@@ -135,15 +124,7 @@ public final class MessageCentralBFTNetwork {
 		}
 	}
 
-	private boolean send(Message message, BFTNode recipient) {
-		Optional<PeerWithSystem> peer = this.addressBook.peer(recipient.getKey().euid());
-
-		if (!peer.isPresent()) {
-			log.error("{}: Peer {} not present", this.self, recipient);
-			return false;
-		} else {
-			this.messageCentral.send(peer.get(), message);
-			return true;
-		}
+	private void send(Message message, BFTNode recipient) {
+		this.messageCentral.send(NodeId.fromPublicKey(recipient.getKey()), message);
 	}
 }

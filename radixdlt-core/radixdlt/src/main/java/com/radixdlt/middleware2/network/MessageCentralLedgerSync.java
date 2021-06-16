@@ -21,8 +21,8 @@ import com.google.inject.name.Named;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.messaging.MessageCentral;
+import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
@@ -39,25 +39,21 @@ import javax.inject.Inject;
 public final class MessageCentralLedgerSync {
 	private final int magic;
 	private final MessageCentral messageCentral;
-	private final AddressBook addressBook;
 
 	@Inject
 	public MessageCentralLedgerSync(
 		@Named("magic") int magic,
-		AddressBook addressBook,
 		MessageCentral messageCentral
 	) {
 		this.magic = magic;
-		this.addressBook = addressBook;
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 	}
 
 	public Flowable<RemoteEvent<StatusRequest>> statusRequests() {
 		return this.messageCentral.messagesOf(StatusRequestMessage.class)
 			.toFlowable(BackpressureStrategy.BUFFER)
-			.filter(m -> m.getPeer().hasSystem())
 			.map(m -> {
-				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
+				final var node = BFTNode.create(m.getSource().getPublicKey());
 				return RemoteEvent.create(node, StatusRequest.create());
 			});
 	}
@@ -65,9 +61,8 @@ public final class MessageCentralLedgerSync {
 	public Flowable<RemoteEvent<StatusResponse>> statusResponses() {
 		return this.messageCentral.messagesOf(StatusResponseMessage.class)
 			.toFlowable(BackpressureStrategy.BUFFER)
-			.filter(m -> m.getPeer().hasSystem())
 			.map(m -> {
-				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
+				final var node = BFTNode.create(m.getSource().getPublicKey());
 				final var msg = m.getMessage();
 				return RemoteEvent.create(node, StatusResponse.create(msg.getHeader()));
 			});
@@ -76,9 +71,8 @@ public final class MessageCentralLedgerSync {
 	public Flowable<RemoteEvent<SyncRequest>> syncRequests() {
 		return this.messageCentral.messagesOf(SyncRequestMessage.class)
 			.toFlowable(BackpressureStrategy.BUFFER)
-			.filter(m -> m.getPeer().hasSystem())
 			.map(m -> {
-				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
+				final var node = BFTNode.create(m.getSource().getPublicKey());
 				final var msg = m.getMessage();
 				return RemoteEvent.create(node, SyncRequest.create(msg.getCurrentHeader()));
 			});
@@ -87,9 +81,8 @@ public final class MessageCentralLedgerSync {
 	public Flowable<RemoteEvent<SyncResponse>> syncResponses() {
 		return this.messageCentral.messagesOf(SyncResponseMessage.class)
 			.toFlowable(BackpressureStrategy.BUFFER)
-			.filter(m -> m.getPeer().hasSystem())
 			.map(m -> {
-				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
+				final var node = BFTNode.create(m.getSource().getPublicKey());
 				final var msg = m.getMessage();
 				return RemoteEvent.create(node, SyncResponse.create(msg.getCommands()));
 			});
@@ -98,9 +91,8 @@ public final class MessageCentralLedgerSync {
 	public Flowable<RemoteEvent<LedgerStatusUpdate>> ledgerStatusUpdates() {
 		return this.messageCentral.messagesOf(LedgerStatusUpdateMessage.class)
 			.toFlowable(BackpressureStrategy.BUFFER)
-			.filter(m -> m.getPeer().hasSystem())
 			.map(m -> {
-				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
+				final var node = BFTNode.create(m.getSource().getPublicKey());
 				final var header = m.getMessage().getHeader();
 				return RemoteEvent.create(node, LedgerStatusUpdate.create(header));
 			});
@@ -111,12 +103,8 @@ public final class MessageCentralLedgerSync {
 	}
 
 	private void sendSyncRequest(BFTNode node, SyncRequest syncRequest) {
-		addressBook.peer(node.getKey().euid()).ifPresent(peer -> {
-			if (peer.hasSystem()) {
-				final var msg = new SyncRequestMessage(this.magic, syncRequest.getHeader());
-				this.messageCentral.send(peer, msg);
-			}
-		});
+		final var msg = new SyncRequestMessage(this.magic, syncRequest.getHeader());
+		this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
 	}
 
 	public RemoteEventDispatcher<SyncResponse> syncResponseDispatcher() {
@@ -124,12 +112,8 @@ public final class MessageCentralLedgerSync {
 	}
 
 	private void sendSyncResponse(BFTNode node, SyncResponse syncResponse) {
-		addressBook.peer(node.getKey().euid()).ifPresent(peer -> {
-			if (peer.hasSystem()) {
-				final var msg = new SyncResponseMessage(this.magic, syncResponse.getTxnsAndProof());
-				this.messageCentral.send(peer, msg);
-			}
-		});
+		final var msg = new SyncResponseMessage(this.magic, syncResponse.getTxnsAndProof());
+		this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
 	}
 
 	public RemoteEventDispatcher<StatusRequest> statusRequestDispatcher() {
@@ -137,12 +121,8 @@ public final class MessageCentralLedgerSync {
 	}
 
 	private void sendStatusRequest(BFTNode node, StatusRequest statusRequest) {
-		addressBook.peer(node.getKey().euid()).ifPresent(peer -> {
-			if (peer.hasSystem()) {
-				final var msg = new StatusRequestMessage(this.magic);
-				this.messageCentral.send(peer, msg);
-			}
-		});
+		final var msg = new StatusRequestMessage(this.magic);
+		this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
 	}
 
 	public RemoteEventDispatcher<StatusResponse> statusResponseDispatcher() {
@@ -150,12 +130,8 @@ public final class MessageCentralLedgerSync {
 	}
 
 	private void sendStatusResponse(BFTNode node, StatusResponse statusResponse) {
-		addressBook.peer(node.getKey().euid()).ifPresent(peer -> {
-			if (peer.hasSystem()) {
-				final var msg = new StatusResponseMessage(this.magic, statusResponse.getHeader());
-				this.messageCentral.send(peer, msg);
-			}
-		});
+		final var msg = new StatusResponseMessage(this.magic, statusResponse.getHeader());
+		this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
 	}
 
 	public RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher() {
@@ -163,11 +139,7 @@ public final class MessageCentralLedgerSync {
 	}
 
 	private void sendLedgerStatusUpdate(BFTNode node, LedgerStatusUpdate ledgerStatusUpdate) {
-		addressBook.peer(node.getKey().euid()).ifPresent(peer -> {
-			if (peer.hasSystem()) {
-				final var msg = new LedgerStatusUpdateMessage(this.magic, ledgerStatusUpdate.getHeader());
-				this.messageCentral.send(peer, msg);
-			}
-		});
+		final var msg = new LedgerStatusUpdateMessage(this.magic, ledgerStatusUpdate.getHeader());
+		this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
 	}
 }

@@ -27,11 +27,7 @@ import org.radix.Radix;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.network.transport.StaticTransportMetadata;
-import com.radixdlt.network.transport.TransportInfo;
-import com.radixdlt.network.transport.tcp.TCPConstants;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
@@ -56,10 +52,9 @@ public final class LocalSystem extends RadixSystem {
 		ECPublicKey key,
 		String agent,
 		int agentVersion,
-		int protocolVersion,
-		ImmutableList<TransportInfo> supportedTransports
+		int protocolVersion
 	) {
-		super(key, agent, agentVersion, protocolVersion, supportedTransports);
+		super(key, agent, agentVersion, protocolVersion);
 		this.infoSupplier = Objects.requireNonNull(infoSupplier);
 	}
 
@@ -70,26 +65,13 @@ public final class LocalSystem extends RadixSystem {
 		return this.infoSupplier.getInfo();
 	}
 
-	public static LocalSystem create(BFTNode self, InfoSupplier infoSupplier, String host, int port) {
+	public static LocalSystem create(BFTNode self, InfoSupplier infoSupplier) {
 		return new LocalSystem(
 			infoSupplier,
 			self.getKey(),
 			Radix.AGENT,
 			Radix.AGENT_VERSION,
-			Radix.PROTOCOL_VERSION,
-			defaultTransports(host, port)
-		);
-	}
-
-	private static ImmutableList<TransportInfo> defaultTransports(String host, int port) {
-		return ImmutableList.of(
-			TransportInfo.of(
-				TCPConstants.NAME,
-				StaticTransportMetadata.of(
-					TCPConstants.METADATA_HOST, host,
-					TCPConstants.METADATA_PORT, String.valueOf(port)
-				)
-			)
+			Radix.PROTOCOL_VERSION
 		);
 	}
 }

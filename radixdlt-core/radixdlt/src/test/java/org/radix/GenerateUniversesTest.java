@@ -110,10 +110,12 @@ public class GenerateUniversesTest {
 		}
 		assertThat(err).isEmpty();
 		assertThat(out)
-			.hasLineCount(5)
+			.hasLineCount(7)
 			.containsSubsequence(
 				"RADIXDLT_VALIDATOR_0_PRIVKEY=", "\n",
+				"RADIXDLT_VALIDATOR_0_PUBKEY=", "\n",
 				"RADIXDLT_STAKER_0_PRIVKEY=", "\n",
+				"RADIXDLT_STAKER_0_PUBKEY=", "\n",
 				"RADIXDLT_UNIVERSE_TYPE=TEST", "\n",
 				"RADIXDLT_UNIVERSE_TOKEN=", "\n",
 				"RADIXDLT_UNIVERSE=", "\n"

@@ -68,4 +68,8 @@ public final class PersistedBFTKeyManager {
 	public BFTNode self() {
 		return BFTNode.create(ecKeyPair.getPublicKey());
 	}
+
+	public ECKeyPair getKeyPair() {
+		return this.ecKeyPair;
+	}
 }

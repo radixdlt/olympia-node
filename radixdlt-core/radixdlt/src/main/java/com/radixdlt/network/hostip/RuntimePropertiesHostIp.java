@@ -34,7 +34,7 @@ final class RuntimePropertiesHostIp implements HostIp {
 	private static final Logger log = LogManager.getLogger();
 
 	@VisibleForTesting
-	static final String HOST_IP_PROPERTY = "host.ip";
+	static final String HOST_IP_PROPERTY = "network.host_ip";
 
 	private final String value;
 

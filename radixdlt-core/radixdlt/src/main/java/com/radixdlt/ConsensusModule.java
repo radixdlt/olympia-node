@@ -68,7 +68,7 @@ import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
-import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import java.util.Comparator;

@@ -33,13 +33,12 @@ import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import com.radixdlt.network.addressbook.PeersView;
+import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusResponse;
@@ -155,11 +154,12 @@ public final class RemoteSyncService {
 
 		final var statusUpdate = LedgerStatusUpdate.create(header);
 
-		final var currentPeers = new ArrayList<>(this.peersView.peers());
+		final var currentPeers = this.peersView.peers().collect(Collectors.toList());
 		Collections.shuffle(currentPeers);
 
 		currentPeers.stream()
 			.limit(syncConfig.ledgerStatusUpdateMaxPeersToNotify())
+			.map(PeersView.PeerInfo::bftNode)
 			.forEach(peer -> {
 				if (this.ledgerStatusUpdateSendRateLimiter.tryAcquire()) {
 					statusUpdateDispatcher.dispatch(peer, statusUpdate);

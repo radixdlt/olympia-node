@@ -17,17 +17,17 @@
 
 package com.radixdlt.network.messaging;
 
+import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.utils.Bytes;
+
 import java.util.Arrays;
 import java.util.Objects;
 
-import com.radixdlt.network.transport.TransportInfo;
-import com.radixdlt.utils.Bytes;
-
 /**
- * A raw message received by a transport, before decoding.
+ * A raw message received from a peer, before decoding.
  */
 public final class InboundMessage {
-	private final TransportInfo source;
+	private final NodeId source;
 	private final byte[] message;
 
 	/**
@@ -37,11 +37,11 @@ public final class InboundMessage {
 	 * @param message The message received.
 	 * @return a constructed {@code InboundMessage}
 	 */
-	public static InboundMessage of(TransportInfo source, byte[] message) {
+	public static InboundMessage of(NodeId source, byte[] message) {
 		return new InboundMessage(source, message);
 	}
 
-	private InboundMessage(TransportInfo source, byte[] message) {
+	private InboundMessage(NodeId source, byte[] message) {
 		// Null checking not performed for high-frequency interface
 		this.source = source;
 		this.message = message;
@@ -52,7 +52,7 @@ public final class InboundMessage {
 	 *
 	 * @return the source of the message.
 	 */
-	public TransportInfo source() {
+	public NodeId source() {
 		return source;
 	}
 
@@ -76,7 +76,7 @@ public final class InboundMessage {
 			return true;
 		}
 		if (obj instanceof InboundMessage) {
-			InboundMessage other = (InboundMessage) obj;
+			final var other = (InboundMessage) obj;
 			return Objects.equals(this.source, other.source) && Arrays.equals(this.message, other.message);
 		}
 		return false;

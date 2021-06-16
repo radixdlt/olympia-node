@@ -43,6 +43,8 @@ import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.network.p2p.NoOpPeerControl;
+import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
@@ -51,7 +53,7 @@ import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.MockedCryptoModule;
 import com.radixdlt.MockedPersistenceStoreModule;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
-import com.radixdlt.integration.distributed.MockedAddressBookModule;
+import com.radixdlt.integration.distributed.MockedPeersViewModule;
 import com.radixdlt.statecomputer.checkpoint.RadixNativeTokenModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -514,12 +516,13 @@ public class SimulationTest {
 					bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0); // Use constant timeout for now
 					bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class).toInstance(RateLimiter.create(50.0));
 					bind(NodeEvents.class).toInstance(nodeEvents);
+					bind(PeerControl.class).toInstance(new NoOpPeerControl());
 				}
 			});
 			modules.add(new MockedSystemModule());
 			modules.add(new MockedKeyModule());
 			modules.add(new MockedCryptoModule());
-			modules.add(new MockedAddressBookModule(this.addressBookNodes));
+			modules.add(new MockedPeersViewModule(this.addressBookNodes));
 
 			// Functional
 			modules.add(new FunctionalNodeModule(

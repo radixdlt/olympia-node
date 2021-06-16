@@ -38,7 +38,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.store.LastProof;
 import java.util.Comparator;
 import java.util.LinkedList;

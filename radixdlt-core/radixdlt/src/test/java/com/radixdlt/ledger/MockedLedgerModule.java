@@ -27,7 +27,7 @@ import com.google.inject.Singleton;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.utils.TimeSupplier;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
