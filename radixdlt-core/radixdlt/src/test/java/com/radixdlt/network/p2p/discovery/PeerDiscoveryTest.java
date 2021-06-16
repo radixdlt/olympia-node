@@ -46,7 +46,7 @@ public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
 		processForCount(10);
 
 		// with 10 slots (default), max num of peers to connect is 3 (10/2 - 2)
-		assertEquals(3L, testNetworkRunner.peerManager(0).activePeers().size());
+		assertEquals(3L, testNetworkRunner.peerManager(0).activeChannels().size());
 	}
 
 }

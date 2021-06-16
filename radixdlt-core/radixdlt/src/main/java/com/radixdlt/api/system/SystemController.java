@@ -19,7 +19,7 @@
 package com.radixdlt.api.system;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.identifiers.ValidatorAddress;
+import com.radixdlt.identifiers.NodeAddress;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.serialization.DsonOutput;
@@ -37,6 +37,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 import org.radix.universe.system.LocalSystem;
 
+import static com.radixdlt.api.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.RestUtils.respond;
 
@@ -100,14 +101,17 @@ public final class SystemController implements Controller {
 		var peerArray = new JSONArray();
 		this.peersView.peers()
 			.map(peer -> {
-				var json = jsonObject().put("address", ValidatorAddress.of(peer.getNodeId().getPublicKey()));
-				peer.getUri().stream().forEach(uri -> {
-					final var port = uri.getPort();
-					final var host = uri.getHost();
-					json.put("endpoint", host + ":" + port);
+				final var peerJson = jsonObject().put("address", NodeAddress.of(peer.getNodeId().getPublicKey()));
+				final var channelsJson = jsonArray();
+				peer.getChannels().forEach(channel -> {
+					final var channelJson = jsonObject();
+					channelJson.put("type", channel.isOutbound() ? "out" : "in");
+					channelJson.put("localPort", channel.getSocketAddress().getPort());
+					channel.getUri().ifPresent(uri -> channelJson.put("uri", uri.toString()));
+					channelsJson.put(channelJson);
 				});
-
-				return json;
+				peerJson.put("channels", channelsJson);
+				return peerJson;
 			})
 			.forEach(peerArray::put);
 

@@ -51,7 +51,7 @@ import org.bouncycastle.crypto.InvalidCipherTextException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.SocketAddress;
+import java.net.InetSocketAddress;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Objects;
@@ -267,7 +267,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		return this.uri;
 	}
 
-	public SocketAddress getRemoteSocketAddress() {
-		return this.nettyChannel.remoteAddress();
+	public InetSocketAddress getRemoteSocketAddress() {
+		return (InetSocketAddress) this.nettyChannel.remoteAddress();
 	}
 }

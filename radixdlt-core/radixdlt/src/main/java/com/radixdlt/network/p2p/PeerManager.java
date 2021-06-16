@@ -193,6 +193,8 @@ public final class PeerManager {
 	}
 
 	private void disconnectOutboundPeersOverLimit(NodeId justConnectedPeer) {
+		// TODO(luk): first try to disconnect duplicated channels (inbound)
+
 		if (this.getRemainingOutboundSlots() >= 0) {
 			return; // we're good
 		}
@@ -202,7 +204,7 @@ public final class PeerManager {
 		final Comparator<PeerChannel> comparator =
 			(p1, p2) -> (int) (p1.sentMessagesRate() - p2.sentMessagesRate());
 
-		this.activePeers().stream()
+		this.activeChannels().stream()
 			// not disconnecting peer that has just connected
 			.filter(not(p -> p.getRemoteNodeId().equals(justConnectedPeer)))
 			.sorted(comparator)
@@ -249,7 +251,7 @@ public final class PeerManager {
 		}
 	}
 
-	public ImmutableSet<PeerChannel> activePeers() {
+	public ImmutableSet<PeerChannel> activeChannels() {
 		return this.activeChannels.values().stream()
 			.flatMap(Collection::stream)
 			.collect(ImmutableSet.toImmutableSet());
@@ -269,7 +271,7 @@ public final class PeerManager {
 	}
 
 	private void handlePeerBanned(PeerBanned event) {
-		this.activePeers().stream()
+		this.activeChannels().stream()
 			.filter(p -> p.getRemoteNodeId().equals(event.getNodeId()))
 			.forEach(pc -> {
 				log.info("Closing channel to peer {} because peer has been banned", pc.getRemoteNodeId());

@@ -46,8 +46,8 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
 
 		assertEquals(uriOfNode(1), channelFuture.get().getUri().get());
 
-		assertEquals(1L, testNetworkRunner.peerManager(0).activePeers().size());
-		assertEquals(1L, testNetworkRunner.peerManager(1).activePeers().size());
+		assertEquals(1L, testNetworkRunner.peerManager(0).activeChannels().size());
+		assertEquals(1L, testNetworkRunner.peerManager(1).activeChannels().size());
 	}
 
 	@Test
@@ -85,11 +85,11 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
 
 		processAll();
 
-		assertEquals(3L, testNetworkRunner.peerManager(0).activePeers().size());
-		assertEquals(1L, testNetworkRunner.peerManager(1).activePeers().size());
-		assertEquals(0L, testNetworkRunner.peerManager(2).activePeers().size()); // node2 should be disconnected
-		assertEquals(1L, testNetworkRunner.peerManager(3).activePeers().size());
-		assertEquals(1L, testNetworkRunner.peerManager(4).activePeers().size());
+		assertEquals(3L, testNetworkRunner.peerManager(0).activeChannels().size());
+		assertEquals(1L, testNetworkRunner.peerManager(1).activeChannels().size());
+		assertEquals(0L, testNetworkRunner.peerManager(2).activeChannels().size()); // node2 should be disconnected
+		assertEquals(1L, testNetworkRunner.peerManager(3).activeChannels().size());
+		assertEquals(1L, testNetworkRunner.peerManager(4).activeChannels().size());
 	}
 
 	@Test
@@ -111,8 +111,8 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
 		processAll();
 
 		assertTrue(channel1Future.isCompletedExceptionally());
-		assertEquals(0L, testNetworkRunner.peerManager(0).activePeers().size());
-		assertEquals(0L, testNetworkRunner.peerManager(3).activePeers().size());
+		assertEquals(0L, testNetworkRunner.peerManager(0).activeChannels().size());
+		assertEquals(0L, testNetworkRunner.peerManager(3).activeChannels().size());
 
 		// try inbound connection (from node1)
 
@@ -121,8 +121,8 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
 
 		processAll();
 
-		assertEquals(0L, testNetworkRunner.peerManager(0).activePeers().size());
-		assertEquals(0L, testNetworkRunner.peerManager(1).activePeers().size());
+		assertEquals(0L, testNetworkRunner.peerManager(0).activeChannels().size());
+		assertEquals(0L, testNetworkRunner.peerManager(1).activeChannels().size());
 	}
 
 	@Test
@@ -139,8 +139,8 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
 
 		// assert the connections is successful
 		assertTrue(channel1Future.isDone());
-		assertEquals(1L, testNetworkRunner.peerManager(0).activePeers().size());
-		assertEquals(1L, testNetworkRunner.peerManager(1).activePeers().size());
+		assertEquals(1L, testNetworkRunner.peerManager(0).activeChannels().size());
+		assertEquals(1L, testNetworkRunner.peerManager(1).activeChannels().size());
 
 		// ban node0 on node1
 		testNetworkRunner.getInstance(1, PeerControl.class).banPeer(uriOfNode(0).getNodeId(), Duration.ofHours(1));
@@ -148,7 +148,7 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
 		processAll();
 
 		// assert connection closed
-		assertEquals(0L, testNetworkRunner.peerManager(0).activePeers().size());
-		assertEquals(0L, testNetworkRunner.peerManager(1).activePeers().size());
+		assertEquals(0L, testNetworkRunner.peerManager(0).activeChannels().size());
+		assertEquals(0L, testNetworkRunner.peerManager(1).activeChannels().size());
 	}
 }
