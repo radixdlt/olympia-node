@@ -25,6 +25,7 @@ import com.radixdlt.atommodel.tokens.ResourceInBucket;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.atomos.UnclaimedREAddr;
+import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateSerialization;
@@ -53,6 +54,7 @@ public final class TxBuilder {
 	private final TxLowLevelBuilder lowLevelBuilder;
 	private final SubstateStore remoteSubstate;
 	private final SubstateDeserialization deserialization;
+	private final SubstateSerialization serialization;
 
 	private TxBuilder(
 		SubstateStore remoteSubstate,
@@ -62,6 +64,7 @@ public final class TxBuilder {
 		this.lowLevelBuilder = TxLowLevelBuilder.newBuilder(serialization);
 		this.remoteSubstate = remoteSubstate;
 		this.deserialization = deserialization;
+		this.serialization = serialization;
 	}
 
 	public static TxBuilder newBuilder(
@@ -235,6 +238,26 @@ public final class TxBuilder {
 				throw new IllegalStateException("Cannot down all of particle with multiple ids");
 			}
 			lowLevelBuilder.downAll(typeBytes.iterator().next());
+			return result;
+		}
+	}
+
+	public <T extends Particle, U> U shutdownAll(
+		ShutdownAllIndex index,
+		Function<Iterator<T>, U> mapper
+	) {
+		try (var cursor = createRemoteSubstateCursor(index.getSubstateClass())) {
+			var localIterator = lowLevelBuilder.localUpSubstate().stream()
+				.map(LocalSubstate::getParticle)
+				.filter(index.getSubstateClass()::isInstance)
+				.map(p -> (T) p)
+				.iterator();
+			var remoteIterator = Iterators.transform(cursor, s -> (T) s.getParticle());
+			var result = mapper.apply(Iterators.filter(
+				Iterators.concat(localIterator, remoteIterator),
+				p -> index.test(serialization.serialize(p))
+			));
+			lowLevelBuilder.downAll(index);
 			return result;
 		}
 	}

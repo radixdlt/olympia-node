@@ -19,6 +19,7 @@
 package com.radixdlt.atommodel.system.construction;
 
 import com.radixdlt.atom.ActionConstructor;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.SystemNextEpoch;
@@ -35,12 +36,15 @@ import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atommodel.validators.state.NoValidatorUpdate;
 import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
 import com.radixdlt.constraintmachine.ProcedureException;
+import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -207,7 +211,11 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 		var preparingRakeUpdates = new TreeMap<ECPublicKey, PreparedValidatorUpdate>(
 			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
 		);
-		txBuilder.shutdownAll(PreparedValidatorUpdate.class, i -> {
+		var buf = ByteBuffer.allocate(1 + Long.BYTES);
+		buf.put(SubstateTypeId.PREPARED_VALIDATOR_UPDATE.id());
+		buf.putLong(prevEpoch.getEpoch() + 1);
+		var index = new ShutdownAllIndex(buf.array(), PreparedValidatorUpdate.class);
+		txBuilder.shutdownAll(index, (Iterator<PreparedValidatorUpdate> i) -> {
 			i.forEachRemaining(preparedValidatorUpdate ->
 				preparingRakeUpdates.put(preparedValidatorUpdate.getValidatorKey(), preparedValidatorUpdate)
 			);

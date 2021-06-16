@@ -19,7 +19,7 @@ package com.radixdlt.store;
 
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.constraintmachine.DownAllIndex;
+import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
@@ -56,5 +56,5 @@ public interface CMStore extends ReadableAddrsStore {
 		SubstateDeserialization deserialization
 	);
 
-	CloseableCursor<RawSubstateBytes> openIndexedCursor(Transaction txn, DownAllIndex index);
+	CloseableCursor<RawSubstateBytes> openIndexedCursor(Transaction txn, ShutdownAllIndex index);
 }

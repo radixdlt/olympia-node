@@ -21,6 +21,7 @@ package com.radixdlt.atom;
 import com.google.common.hash.HashCode;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
@@ -152,6 +153,14 @@ public final class TxLowLevelBuilder {
 
 	public TxLowLevelBuilder downAll(Byte typeByte) {
 		instruction(REInstruction.REMicroOp.DOWNALL, new byte[] {typeByte});
+		return this;
+	}
+
+	public TxLowLevelBuilder downAll(ShutdownAllIndex index) {
+		var buf = ByteBuffer.allocate(1 + index.getIndex().length);
+		buf.put((byte) index.getIndex().length);
+		buf.put(index.getIndex());
+		instruction(REInstruction.REMicroOp.DOWNINDEX, buf.array());
 		return this;
 	}
 

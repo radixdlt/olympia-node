@@ -19,7 +19,7 @@ package com.radixdlt.store.berkeley;
 
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
-import com.radixdlt.constraintmachine.DownAllIndex;
+import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import org.apache.logging.log4j.LogManager;
@@ -497,7 +497,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	@Override
 	public CloseableCursor<RawSubstateBytes> openIndexedCursor(
 		Transaction wrappedDbTxn,
-		DownAllIndex index
+		ShutdownAllIndex index
 	) {
 		var dbTxn = unwrap(wrappedDbTxn);
 		final byte[] indexableBytes = new byte[] {index.getIndex()[0]};

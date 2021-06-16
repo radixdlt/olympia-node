@@ -47,7 +47,7 @@ import static com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate.RA
 import static com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate.RAKE_MIN;
 
 public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
-	public static final long RAKE_UPDATE_DEBOUNCE_EPOCH_LENGTH = 1;
+	public static final long RAKE_UPDATE_DEBOUNCE_EPOCH_LENGTH = 2;
 
 	private static class UpdatingValidatorInfo implements ReducerState {
 		private final ValidatorParticle prevState;

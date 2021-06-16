@@ -18,15 +18,17 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.utils.Bytes;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 
-public final class DownAllIndex {
+public final class ShutdownAllIndex {
 	private final byte[] index;
 	private final Class<? extends Particle> substateClass;
 
-	public DownAllIndex(byte[] index, Class<? extends Particle> substateClass) {
+	public ShutdownAllIndex(byte[] index, Class<? extends Particle> substateClass) {
 		this.index = index;
 		this.substateClass = substateClass;
 	}
@@ -57,8 +59,6 @@ public final class DownAllIndex {
 		return true;
 	}
 
-
-
 	public byte[] getIndex() {
 		return index;
 	}
@@ -74,12 +74,17 @@ public final class DownAllIndex {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof DownAllIndex)) {
+		if (!(o instanceof ShutdownAllIndex)) {
 			return false;
 		}
 
-		var other = (DownAllIndex) o;
+		var other = (ShutdownAllIndex) o;
 		return this.index == other.index
 			&& Objects.equals(this.substateClass, other.substateClass);
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{index=%s}", this.getClass().getSimpleName(), Bytes.toHexString(this.index));
 	}
 }

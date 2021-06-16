@@ -58,4 +58,9 @@ public final class OpSignature {
 		return Objects.equals(this.op, other.op)
 			&& Objects.equals(this.type, other.type);
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{op=%s type=%s}", this.getClass().getSimpleName(), this.op, this.type);
+	}
 }

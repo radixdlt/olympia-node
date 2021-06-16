@@ -26,6 +26,11 @@ public class ConstraintMachineException extends Exception {
 		this.errorCode = errorCode;
 	}
 
+	public ConstraintMachineException(CMErrorCode errorCode, String message, Throwable cause) {
+		super(message, cause);
+		this.errorCode = errorCode;
+	}
+
 	public ConstraintMachineException(CMErrorCode errorCode) {
 		super(errorCode.toString());
 		this.errorCode = errorCode;
