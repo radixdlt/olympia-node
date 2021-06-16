@@ -48,7 +48,7 @@ public class RandomValidatorsTest {
 			NetworkLatencies.fixed()
 		)
 		.ledgerAndEpochsAndSync(View.of(3), goodRandomEpochToNodesMapper(), syncConfig) // TODO: investigate why this fails with View.of(10)
-		.pacemakerTimeout(5000)
+		.pacemakerTimeout(3000)
 		.numNodes(numNodes, 2)
 		.addTestModules(
 			ConsensusMonitors.safety(),

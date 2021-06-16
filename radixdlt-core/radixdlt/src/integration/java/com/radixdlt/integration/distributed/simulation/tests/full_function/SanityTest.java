@@ -56,6 +56,7 @@ public class SanityTest {
 	public SanityTest(boolean fees) {
 		bftTestBuilder = SimulationTest.builder()
 			.numNodes(4)
+			.pacemakerTimeout(3000)
 			.networkModules(
 				NetworkOrdering.inOrder(),
 				NetworkLatencies.fixed()

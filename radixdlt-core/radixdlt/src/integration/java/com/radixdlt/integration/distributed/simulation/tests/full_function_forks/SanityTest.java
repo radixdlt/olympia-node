@@ -60,6 +60,7 @@ public class SanityTest {
 		logger.info("Test fees={}", fees);
 		bftTestBuilder = SimulationTest.builder()
 			.numNodes(4)
+			.pacemakerTimeout(3000)
 			.networkModules(
 				NetworkOrdering.inOrder(),
 				NetworkLatencies.fixed()
@@ -72,7 +73,7 @@ public class SanityTest {
 			.addNodeModule(MempoolConfig.asModule(1000, 10))
 			.addTestModules(
 				ConsensusMonitors.safety(),
-				ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+				ConsensusMonitors.liveness(3, TimeUnit.SECONDS),
 				ConsensusMonitors.noTimeouts(),
 				ConsensusMonitors.directParents(),
 				LedgerMonitors.consensusToLedger(),

@@ -46,6 +46,7 @@ public final class ShutdownAllIndex {
 	}
 
 	public boolean test(ByteBuffer buffer) {
+		buffer.mark();
 		if (buffer.remaining() < index.length) {
 			return false;
 		}
@@ -55,6 +56,7 @@ public final class ShutdownAllIndex {
 				return false;
 			}
 		}
+		buffer.reset();
 
 		return true;
 	}

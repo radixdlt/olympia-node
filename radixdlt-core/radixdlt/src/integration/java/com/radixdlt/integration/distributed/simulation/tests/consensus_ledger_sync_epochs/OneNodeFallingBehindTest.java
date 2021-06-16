@@ -52,7 +52,7 @@ public class OneNodeFallingBehindTest {
 			NetworkLatencies.fixed(),
 			NetworkDroppers.dropAllMessagesForOneNode(10000, 10000)
 		)
-		.pacemakerTimeout(1000)
+		.pacemakerTimeout(3000)
 		.ledgerAndEpochsAndSync(View.of(100), epoch -> IntStream.range(0, 10), syncConfig)
 		.addTestModules(
 			ConsensusMonitors.safety(),

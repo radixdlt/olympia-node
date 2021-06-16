@@ -71,7 +71,7 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
 					return mapper.apply(0L);
 				}
 			})
-			.pacemakerTimeout(1000)
+			.pacemakerTimeout(3000)
 			.ledgerAndEpochsAndSync(
 				View.of(100),
 				(unused) -> VALIDATORS.stream().mapToInt(i -> i),
