@@ -80,11 +80,10 @@ import com.radixdlt.universe.UniverseModule;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.radixdlt.EndpointConfig.enabledArchiveEndpoints;
 import static com.radixdlt.EndpointConfig.enabledNodeEndpoints;
+import static com.radixdlt.EndpointConfig.endpointStatuses;
 
 /**
  * Module which manages everything in a single node
@@ -210,12 +209,9 @@ public final class RadixNodeModule extends AbstractModule {
 	private void configureApi(UniverseType universeType) {
 		var archiveEndpoints = enabledArchiveEndpoints(properties, universeType);
 		var nodeEndpoints = enabledNodeEndpoints(properties, universeType);
+		var statuses = endpointStatuses(properties, universeType);
 
-		var enabledEndpoints = Stream.concat(archiveEndpoints.stream(), nodeEndpoints.stream())
-			.map(EndpointConfig::name)
-			.collect(Collectors.toList());
-
-		bind(new TypeLiteral<List<String>>() {}).annotatedWith(Endpoints.class).toInstance(enabledEndpoints);
+		bind(new TypeLiteral<List<EndpointStatus>>() {}).annotatedWith(Endpoints.class).toInstance(statuses);
 
 		if (hasActiveEndpoints(archiveEndpoints, nodeEndpoints)) {
 			install(new CommonApiModule());

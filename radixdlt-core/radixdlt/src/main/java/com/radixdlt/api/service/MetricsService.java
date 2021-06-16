@@ -17,11 +17,15 @@
 
 package com.radixdlt.api.service;
 
+import org.radix.Radix;
+
 import com.google.inject.Inject;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.middleware2.InfoSupplier;
 
 import java.util.List;
+import java.util.Map;
 
 //TODO: finish it
 public class MetricsService {
@@ -96,30 +100,139 @@ public class MetricsService {
 		CounterType.MESSAGES_OUTBOUND_PENDING,
 		CounterType.MESSAGES_OUTBOUND_SENT,
 		CounterType.PERSISTENCE_ATOM_LOG_WRITE_BYTES,
-		CounterType.PERSISTENCE_ATOM_LOG_WRITE_COMPRESSED
-		//CounterType.TIME_DURATION
+		CounterType.PERSISTENCE_ATOM_LOG_WRITE_COMPRESSED,
+		CounterType.TIME_DURATION
 	);
 	private static final String COUNTER = "counter";
 	private static final String COUNTER_PREFIX = "info_counters_";
 
 	private final SystemCounters systemCounters;
-	private final NetworkInfoService networkInfoService;
+	private final InfoSupplier infoSupplier;
+	private final SystemConfigService systemConfigService;
+	private final ValidatorInfoService validatorInfoService;
+	private final AccountInfoService accountInfoService;
 
 	@Inject
 	public MetricsService(
 		SystemCounters systemCounters,
-		NetworkInfoService networkInfoService
+		InfoSupplier infoSupplier,
+		SystemConfigService systemConfigService,
+		ValidatorInfoService validatorInfoService,
+		AccountInfoService accountInfoService
 	) {
 		this.systemCounters = systemCounters;
-		this.networkInfoService = networkInfoService;
+		this.infoSupplier = infoSupplier;
+		this.systemConfigService = systemConfigService;
+		this.validatorInfoService = validatorInfoService;
+		this.accountInfoService = accountInfoService;
 	}
 
 	public String getMetrics() {
 		var builder = new StringBuilder();
 
 		exportCounters(builder);
+		exportSystemInfo(builder);
 
 		return builder.append('\n').toString();
+	}
+
+	private void exportSystemInfo(StringBuilder builder) {
+		var snapshot = infoSupplier.getInfo();
+
+		appendCounter(builder, "info_configuration_pacemakermaxexponent", pacemakerMaxExponent(snapshot));
+		appendCounter(builder, "info_system_version_system_version_agent_version", agentVersion(snapshot));
+		appendCounter(builder, "info_system_version_system_version_protocol_version", protocolVersion(snapshot));
+
+		appendCounter(builder, "info_epochmanager_currentview_view", currentView(snapshot));
+		appendCounter(builder, "info_epochmanager_currentview_epoch", currentEpoch(snapshot));
+		appendCounter(builder, "total_peers", systemConfigService.getNetworkingPeersCount());
+		appendCounter(builder, "total_validators", validatorInfoService.getValidatorsCount());
+
+		appendCounterExtended(
+			builder,
+			prepareNodeInfo(),
+			"nodeinfo",
+			"Special metric used to convey information about the current node using labels. Value will always be 0.",
+			0.0
+		);
+	}
+
+	@SuppressWarnings("unchecked")
+	private Number currentView(Map<String, Map<String, Object>> snapshot) {
+		var currentView = (Map<String, Object>) snapshot.get("epochManager").get("currentView");
+		return (Number) currentView.get("view");
+	}
+
+	@SuppressWarnings("unchecked")
+	private Number currentEpoch(Map<String, Map<String, Object>> snapshot) {
+		var currentView = (Map<String, Object>) snapshot.get("epochManager").get("currentView");
+		return (Number) currentView.get("epoch");
+	}
+
+	private Number protocolVersion(Map<String, Map<String, Object>> snapshot) {
+		return (Number) snapshot.get(Radix.SYSTEM_VERSION_KEY).get("protocol_version");
+	}
+
+	private Number agentVersion(Map<String, Map<String, Object>> snapshot) {
+		return (Number) snapshot.get(Radix.SYSTEM_VERSION_KEY).get("agent_version");
+	}
+
+	private Number pacemakerMaxExponent(Map<String, Map<String, Object>> snapshot) {
+		return (Number) snapshot.get("configuration").get("pacemakerMaxExponent");
+	}
+
+	private String prepareNodeInfo() {
+		var builder = new StringBuilder("nodeinfo{");
+
+		addEndpontStatuses(builder);
+		appendField(builder, "owner_address", accountInfoService.getOwnAddress());
+		appendField(builder, "validator_registered", accountInfoService.getValidatorInfoDetails().isRegistered());
+		addBranchAndCommit(builder);
+		addValidatorAddress(builder);
+		addAccumulatorState(builder);
+		appendField(builder, "key", accountInfoService.getOwnPubKey().toHex());
+
+		return builder.append("}").toString();
+	}
+
+	private void addValidatorAddress(StringBuilder builder) {
+		var validatorAddress = accountInfoService.getValidatorAddress();
+		appendField(builder, "own_validator_address", validatorAddress);
+
+		var inSet = validatorInfoService.getAllValidators()
+			.stream()
+			.anyMatch(v -> v.getValidatorAddress().equals(validatorAddress));
+		appendField(builder, "is_in_validator_set", inSet);
+	}
+
+	private void addBranchAndCommit(StringBuilder builder) {
+		var branchAndCommit = ((String) infoSupplier.getInfo().get(Radix.SYSTEM_VERSION_KEY).get("display"))
+			.substring(5);
+
+		if (branchAndCommit.contains("-dirty")) {
+			branchAndCommit = branchAndCommit.substring(0, branchAndCommit.length() - 6);
+		}
+
+		appendField(builder, "branch_and_commit", branchAndCommit);
+	}
+
+	private void addAccumulatorState(StringBuilder builder) {
+		var accumulatorState = systemConfigService.accumulatorState();
+
+		appendField(
+			builder,
+			"version_accumulator",
+			accumulatorState.getStateVersion() + "/" + accumulatorState.getAccumulatorHash().toString()
+		);
+	}
+
+	private void addEndpontStatuses(StringBuilder builder) {
+		systemConfigService.withEndpointStatuses(status ->
+													 appendField(builder, status.name() + "_enabled", status.enabled()));
+	}
+
+	private void appendField(StringBuilder builder, String name, Object value) {
+		builder.append(name).append("=\"").append(value).append("\",");
 	}
 
 	private void exportCounters(StringBuilder builder) {
@@ -129,9 +242,19 @@ public class MetricsService {
 	private void generateCounterEntry(CounterType counterType, StringBuilder builder) {
 		var name = COUNTER_PREFIX + counterType.jsonPath().replace('.', '_');
 
+		long value = systemCounters.get(counterType);
+
+		appendCounter(builder, name, value);
+	}
+
+	private void appendCounter(StringBuilder builder, String name, Number value) {
+		appendCounterExtended(builder, name, name, name, value);
+	}
+
+	private void appendCounterExtended(StringBuilder builder, String name, String type, String help, Number value) {
 		builder
-			.append("# HELP ").append(name).append('\n')
-			.append("# TYPE ").append(name).append(' ').append(COUNTER).append('\n')
-			.append(name).append(' ').append(systemCounters.get(counterType)).append(".0\n");
+			.append("# HELP ").append(help).append('\n')
+			.append("# TYPE ").append(type).append(' ').append(COUNTER).append('\n')
+			.append(name).append(' ').append(value.doubleValue()).append('\n');
 	}
 }

@@ -35,6 +35,7 @@ import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.api.service.TransactionStatusService;
+import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.TransferToken;
@@ -69,6 +70,7 @@ import java.util.Collection;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 import static com.radixdlt.api.data.TransactionStatus.CONFIRMED;
 import static com.radixdlt.api.data.TransactionStatus.TRANSACTION_NOT_FOUND;
@@ -123,6 +125,7 @@ public class TxStatusTest {
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
+					bind(ClientApiStore.class).toInstance(mock(ClientApiStore.class));
 				}
 
 				@ProvidesIntoSet

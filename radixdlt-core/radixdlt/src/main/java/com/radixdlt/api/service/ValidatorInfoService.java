@@ -71,6 +71,10 @@ public class ValidatorInfoService {
 		return result;
 	}
 
+	public long getValidatorsCount() {
+		return radixEngine.getComputedState(StakedValidators.class).count();
+	}
+
 	public Result<ValidatorInfoDetails> getValidator(ECPublicKey validatorPublicKey) {
 		var validators = radixEngine.getComputedState(StakedValidators.class);
 

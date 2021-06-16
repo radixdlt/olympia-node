@@ -61,11 +61,11 @@ public class AccountInfoService {
 	}
 
 	public JSONObject getValidatorInfo() {
-		var validatorInfo = getValidatorDetails();
+		var validatorInfo = getValidatorInfoDetails();
 		var validatorStakes = getValidatorStakes();
 
 		return new JSONObject()
-			.put("address", ValidatorAddress.of(bftKey))
+			.put("address", getValidatorAddress())
 			.put("name", validatorInfo.getName())
 			.put("url", validatorInfo.getUrl())
 			.put("registered", validatorInfo.isRegistered())
@@ -73,7 +73,11 @@ public class AccountInfoService {
 			.put("stakes", validatorStakes.getSecond());
 	}
 
-	private ValidatorInfo getValidatorDetails() {
+	public String getValidatorAddress() {
+		return ValidatorAddress.of(bftKey);
+	}
+
+	public ValidatorInfo getValidatorInfoDetails() {
 		return radixEngine.getComputedState(ValidatorInfo.class);
 	}
 
@@ -92,8 +96,12 @@ public class AccountInfoService {
 		return Pair.of(stakeReceived.getTotalStake(), stakeFrom);
 	}
 
-	private String getOwnAddress() {
+	public String getOwnAddress() {
 		return AccountAddress.of(REAddr.ofPubKeyAccount(bftKey));
+	}
+
+	public ECPublicKey getOwnPubKey() {
+		return bftKey;
 	}
 
 	private JSONObject getOwnBalance() {
