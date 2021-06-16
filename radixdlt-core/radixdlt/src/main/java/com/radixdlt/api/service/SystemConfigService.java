@@ -23,12 +23,14 @@ import org.json.JSONObject;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
+import com.radixdlt.EndpointStatus;
 import com.radixdlt.api.qualifier.Endpoints;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.identifiers.ValidatorAddress;
+import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
@@ -47,6 +49,8 @@ import com.radixdlt.utils.Bytes;
 
 import java.util.List;
 import java.util.TreeMap;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.radixdlt.api.JsonRpcUtil.fromList;
@@ -161,10 +165,11 @@ public class SystemConfigService {
 	private final AddressBook addressBook;
 	private final PeerWithSystem localPeer;
 	private final SystemCounters systemCounters;
+	private final List<EndpointStatus> endpointStatuses;
 
 	@Inject
 	public SystemConfigService(
-		@Endpoints List<String> enabledEndpoints,
+		@Endpoints List<EndpointStatus> endpointStatuses,
 		@PacemakerTimeout long pacemakerTimeout,
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
 		@MempoolMaxSize int mempoolMaxSize,
@@ -180,16 +185,16 @@ public class SystemConfigService {
 		PeerWithSystem localPeer,
 		SystemCounters systemCounters,
 		TCPConfiguration tcpConfiguration
-
 	) {
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.addressBook = addressBook;
 		this.localPeer = localPeer;
 		this.systemCounters = systemCounters;
+		this.endpointStatuses = endpointStatuses;
 
 		radixEngineConfiguration = prepareRadixEngineConfiguration(forkConfigTreeMap, minValidators, maxValidators, maxTxnsPerProposal);
 		mempoolConfiguration = prepareMempoolConfiguration(mempoolMaxSize, mempoolThrottleMs);
-		apiConfiguration = prepareApiConfiguration(enabledEndpoints);
+		apiConfiguration = prepareApiConfiguration(endpointStatuses);
 		bftConfiguration = prepareBftConfiguration(pacemakerTimeout, bftSyncPatienceMillis);
 		syncConfiguration = syncConfig.asJson();
 		checkpointsConfiguration = prepareCheckpointsConfiguration(genesis);
@@ -260,12 +265,24 @@ public class SystemConfigService {
 		return peerArray;
 	}
 
+	public long getNetworkingPeersCount() {
+		return selfAndOthers(addressBook.recentPeers()).count();
+	}
+
 	public JSONObject getNetworkingData() {
 		return countersToJson(systemCounters, NETWORKING_COUNTERS, false);
 	}
 
 	public JSONObject getCheckpoints() {
 		return checkpointsConfiguration;
+	}
+
+	public void withEndpointStatuses(Consumer<? super EndpointStatus> consumer) {
+		endpointStatuses.forEach(consumer);
+	}
+
+	public AccumulatorState accumulatorState() {
+		return inMemorySystemInfo.getCurrentProof().getAccumulatorState();
 	}
 
 	@VisibleForTesting
@@ -321,10 +338,15 @@ public class SystemConfigService {
 	}
 
 	@VisibleForTesting
-	static JSONObject prepareApiConfiguration(List<String> enabledEndpoints) {
+	static JSONObject prepareApiConfiguration(List<EndpointStatus> statuses) {
+		var enabled = statuses.stream()
+			.filter(EndpointStatus::enabled)
+			.map(EndpointStatus::name)
+			.collect(Collectors.toList());
+
 		return jsonObject().put(
 			"endpoints",
-			fromList(enabledEndpoints, endpoint -> "/" + endpoint)
+			fromList(statuses, endpoint -> "/" + endpoint)
 		);
 	}
 

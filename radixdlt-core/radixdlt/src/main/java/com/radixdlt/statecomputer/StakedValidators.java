@@ -181,6 +181,10 @@ public final class StakedValidators {
 			.collect(Collectors.toList());
 	}
 
+	public long count() {
+		return validatorParticles.size();
+	}
+
 	public <T> Optional<T> mapSingle(ECPublicKey validatorKey, Function<ValidatorDetails, T> mapper) {
 		return validatorParticles.stream()
 			.filter(p -> p.getKey().equals(validatorKey))

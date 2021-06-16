@@ -19,6 +19,7 @@ package com.radixdlt.counters;
 
 import java.time.Instant;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -28,85 +29,87 @@ import com.google.common.collect.Maps;
  * Event counting utility class.
  */
 public final class SystemCountersImpl implements SystemCounters {
-	private final EnumMap<CounterType, AtomicLong> counters;
-	private final long start;
+	private static final List<CounterType> COUNTER_LIST = List.of(CounterType.values());
+
+	private final EnumMap<CounterType, AtomicLong> counters = new EnumMap<>(CounterType.class);
 	private final String since;
-	private final Object lock = new Object();
 
 	public SystemCountersImpl() {
 		this(System.currentTimeMillis());
 	}
 
 	public SystemCountersImpl(long startTime) {
-		this.counters = new EnumMap<>(CounterType.class);
-		// Pre-populate the map here so that there is no need to mutate the structure
-		for (CounterType ct : CounterType.values()) {
-			this.counters.put(ct, new AtomicLong(0));
-		}
-		this.start = startTime;
-		this.since = Instant.ofEpochMilli(startTime).toString();
+		COUNTER_LIST.stream()
+			.filter(counterType -> counterType != CounterType.TIME_DURATION)
+			.forEach(counterType -> counters.put(counterType, new AtomicLong(0)));
+
+		//This one is special, kinda "self ticking"
+		counters.put(CounterType.TIME_DURATION, new AtomicLong() {
+			@Override
+			public long longValue() {
+				return System.currentTimeMillis() - startTime;
+			}
+		});
+
+		since = Instant.ofEpochMilli(startTime).toString();
 	}
 
 	@Override
 	public long increment(CounterType counterType) {
-		return this.counters.get(counterType).incrementAndGet();
+		return counters.get(counterType).incrementAndGet();
 	}
 
 	@Override
 	public long add(CounterType counterType, long amount) {
-		return this.counters.get(counterType).addAndGet(amount);
+		return counters.get(counterType).addAndGet(amount);
 	}
 
 	@Override
 	public long set(CounterType counterType, long value) {
-		return this.counters.get(counterType).getAndSet(value);
+		return counters.get(counterType).getAndSet(value);
 	}
 
 	@Override
 	public long get(CounterType counterType) {
-		return this.counters.get(counterType).get();
+		return counters.get(counterType).longValue();
 	}
 
 	@Override
 	public void setAll(Map<CounterType, Long> newValues) {
 		// Note that this only prevents read tearing
 		// Lost updates are still possible
-		synchronized (this.lock) {
+		synchronized (counters) {
 			for (Map.Entry<CounterType, Long> e : newValues.entrySet()) {
-				this.counters.get(e.getKey()).set(e.getValue());
+				counters.get(e.getKey()).set(e.getValue());
 			}
 		}
 	}
 
 	@Override
 	public Map<String, Object> toMap() {
-		Map<String, Object> output = Maps.newTreeMap();
-		synchronized (this.lock) {
-			for (CounterType counter : CounterType.values()) {
-				long value = get(counter);
-				addValue(output, makePath(counter), value);
-			}
+		var output = Maps.<String, Object>newTreeMap();
+
+		synchronized (counters) {
+			COUNTER_LIST.forEach(counter -> addValue(output, makePath(counter.jsonPath()), get(counter)));
 		}
-		@SuppressWarnings("unchecked")
-		Map<String, Object> time = (Map<String, Object>) output.computeIfAbsent("time", k -> Maps.newTreeMap());
-		time.put("since", since);
-		time.put("duration", System.currentTimeMillis() - this.start);
+
+		addValue(output, makePath("time.since"), since);
+
 		return output;
 	}
 
-	private void addValue(Map<String, Object> values, String[] path, long value) {
+	@SuppressWarnings("unchecked")
+	private void addValue(Map<String, Object> values, String[] path, Object value) {
 		for (int i = 0; i < path.length - 1; ++i) {
-			@SuppressWarnings("unchecked")
 			// Needs exhaustive testing to ensure correctness.
 			// Will fail if there is a counter called foo.bar and a counter called foo.bar.baz.
-			Map<String, Object> newValues = (Map<String, Object>) values.computeIfAbsent(path[i], k -> Maps.newTreeMap());
-			values = newValues;
+			values = (Map<String, Object>) values.computeIfAbsent(path[i], k -> Maps.newTreeMap());
 		}
 		values.put(path[path.length - 1], value);
 	}
 
-	private String[] makePath(CounterType counter) {
-		return counter.jsonPath().split("\\.");
+	private String[] makePath(String jsonPath) {
+		return jsonPath.split("\\.");
 	}
 
 	@Override

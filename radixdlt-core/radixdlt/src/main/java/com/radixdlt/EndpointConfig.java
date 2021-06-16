@@ -115,14 +115,14 @@ public final class EndpointConfig {
 	public static List<EndpointConfig> enabledArchiveEndpoints(RuntimeProperties properties, UniverseType env) {
 		return ARCHIVE_ENDPOINTS.stream()
 			.filter(e -> e.isEnabled(properties))
-			.filter(e -> env != UniverseType.PRODUCTION || e.environment == ALL)
+			.filter(e -> isEnabledInEnvironment(e, env))
 			.collect(Collectors.toList());
 	}
 
 	public static List<EndpointConfig> enabledNodeEndpoints(RuntimeProperties properties, UniverseType env) {
 		return NODE_ENDPOINTS.stream()
 			.filter(e -> e.isEnabled(properties))
-			.filter(e -> env != UniverseType.PRODUCTION || e.environment == ALL)
+			.filter(e -> isEnabledInEnvironment(e, env))
 			.collect(Collectors.toList());
 	}
 
@@ -139,5 +139,19 @@ public final class EndpointConfig {
 		log.debug("Endpoint config {}, default = {}, properties = {}", name(), defaultValue, value);
 
 		return value;
+	}
+
+	public static List<EndpointStatus> endpointStatuses(RuntimeProperties properties, UniverseType env) {
+		return NODE_ENDPOINTS.stream()
+			.map(e -> EndpointStatus.create(e.name, isEnabled(e, properties, env)))
+			.collect(Collectors.toList());
+	}
+
+	private static boolean isEnabled(EndpointConfig e, RuntimeProperties properties, UniverseType env) {
+		return e.isEnabled(properties) && isEnabledInEnvironment(e, env);
+	}
+
+	private static boolean isEnabledInEnvironment(EndpointConfig e, UniverseType env) {
+		return env != UniverseType.PRODUCTION || e.environment == ALL;
 	}
 }

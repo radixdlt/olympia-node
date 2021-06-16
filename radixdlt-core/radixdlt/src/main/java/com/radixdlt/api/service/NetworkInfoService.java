@@ -17,9 +17,6 @@
 
 package com.radixdlt.api.service;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import com.google.inject.Inject;
 import com.radixdlt.api.data.NodeStatus;
 import com.radixdlt.counters.SystemCounters;
@@ -38,8 +35,6 @@ import static com.radixdlt.api.service.NetworkInfoService.ValueHolder.Type.INCRE
 import static com.radixdlt.counters.SystemCounters.CounterType;
 
 public class NetworkInfoService {
-	private static final Logger log = LogManager.getLogger();
-
 	private static final long THRESHOLD = 3;                      // Maximum difference between ledger and target
 	private static final long DEFAULT_COLLECTING_INTERVAL = 1000L; // 1 second
 	private static final long DEFAULT_AVERAGING_FACTOR = 10L;     // averaging time in multiples of collecting interval
