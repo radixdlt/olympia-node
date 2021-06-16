@@ -60,6 +60,8 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.radixdlt.atommodel.validators.state.PreparedValidatorConfigUpdate.RAKE_MAX;
+
 public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 
 	public static final UInt256 REWARDS_PER_PROPOSAL = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
@@ -172,12 +174,12 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 			var nodeEmission = REWARDS_PER_PROPOSAL.multiply(UInt256.from(numProposals));
 
 			return new LoadingStake(k, validatorStakeData -> {
-				int rakePercentage = validatorStakeData.getRakePercentage().orElse(0);
+				int rakePercentage = validatorStakeData.getRakePercentage().orElse(RAKE_MAX);
 				final UInt256 rakedEmissions;
 				if (rakePercentage != 0 && !nodeEmission.isZero()) {
 					var rake = nodeEmission
 						.multiply(UInt256.from(rakePercentage))
-						.divide(UInt256.from(PreparedValidatorConfigUpdate.RAKE_MAX));
+						.divide(UInt256.from(RAKE_MAX));
 					var validatorOwner = REAddr.ofPubKeyAccount(k);
 					var initStake = new TreeMap<REAddr, UInt256>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
 					initStake.put(validatorOwner, rake);

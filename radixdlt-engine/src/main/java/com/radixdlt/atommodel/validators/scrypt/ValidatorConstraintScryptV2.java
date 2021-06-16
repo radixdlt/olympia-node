@@ -160,7 +160,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				buf.putInt(s.getCurRakePercentage());
 			},
-			s -> s.getCurRakePercentage() == 0
+			s -> s.getCurRakePercentage() == RAKE_MAX
 		));
 
 		os.substate(

@@ -31,6 +31,8 @@ import com.radixdlt.constraintmachine.SubstateWithArg;
 import java.util.List;
 import java.util.Optional;
 
+import static com.radixdlt.atommodel.validators.state.PreparedValidatorConfigUpdate.RAKE_MAX;
+
 public final class UpdateRakeConstructor implements ActionConstructor<UpdateRake> {
 	@Override
 	public void construct(UpdateRake action, TxBuilder builder) throws TxBuilderException {
@@ -59,7 +61,7 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateRake
 			builder.swap(
 				ValidatorConfigCopy.class,
 				p -> p.getValidatorKey().equals(action.getValidatorKey()),
-				Optional.of(SubstateWithArg.noArg(new ValidatorConfigCopy(action.getValidatorKey(), 0))),
+				Optional.of(SubstateWithArg.noArg(new ValidatorConfigCopy(action.getValidatorKey(), RAKE_MAX))),
 				"Cannot find state"
 			).with(substateDown -> {
 				var isIncrease = action.getRakePercentage() > substateDown.getCurRakePercentage();
