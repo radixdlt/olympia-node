@@ -23,6 +23,7 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UpdateRake;
 import com.radixdlt.atommodel.system.state.EpochData;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.atommodel.validators.state.NoValidatorUpdate;
 import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
 import com.radixdlt.constraintmachine.SubstateWithArg;
@@ -42,7 +43,7 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateRake
 			"Already a validator"
 		).with(
 			substateDown -> List.of(new PreparedValidatorUpdate(
-				epochData.getEpoch() + 1,
+				epochData.getEpoch() + ValidatorConstraintScryptV2.RAKE_UPDATE_DEBOUNCE_EPOCH_LENGTH,
 				action.getValidatorKey(),
 				action.getRakePercentage()
 			))

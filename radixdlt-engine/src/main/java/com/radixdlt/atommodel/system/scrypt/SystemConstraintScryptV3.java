@@ -466,10 +466,15 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 			this.validatorsToUpdate = validatorsToUpdate;
 		}
 
-		ReducerState prepareRakeUpdates(ShutdownAll<PreparedValidatorUpdate> preparingRakeUpdateIterator) {
-			preparingRakeUpdateIterator.iterator().forEachRemaining(preparedRakeUpdate ->
-				preparingRakeUpdates.put(preparedRakeUpdate.getValidatorKey(), preparedRakeUpdate)
-			);
+		ReducerState prepareRakeUpdates(ShutdownAll<PreparedValidatorUpdate> shutdownAll) throws ProcedureException {
+			var iter = shutdownAll.iterator();
+			while (iter.hasNext()) {
+				var preparedRakeUpdate = iter.next();
+				if (preparedRakeUpdate.getEpoch() != updatingEpoch.prevEpoch.getEpoch() + 1) {
+					throw new ProcedureException("Invalid validator update epoch");
+				}
+				preparingRakeUpdates.put(preparedRakeUpdate.getValidatorKey(), preparedRakeUpdate);
+			}
 			return next();
 		}
 
