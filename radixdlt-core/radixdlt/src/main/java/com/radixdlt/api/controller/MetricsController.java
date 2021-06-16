@@ -28,7 +28,8 @@ import io.undertow.util.Headers;
 import static com.radixdlt.api.RestUtils.sanitizeBaseUrl;
 
 public class MetricsController implements Controller {
-	public static final String CONTENT_TYPE_TEXT_PLAIN_004 = "text/plain;version=0.0.4;charset=utf-8";
+	// 	https://prometheus.io/docs/instrumenting/exposition_formats/
+	public static final String CONTENT_TYPE_TEXT_PLAIN_004 = "text/plain; version=0.0.4;charset=utf-8";
 
 	private final MetricsService metricsService;
 
