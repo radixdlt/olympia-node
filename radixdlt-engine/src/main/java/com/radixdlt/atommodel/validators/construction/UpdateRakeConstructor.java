@@ -41,12 +41,15 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateRake
 			p -> p.getValidatorKey().equals(action.getValidatorKey()),
 			Optional.of(SubstateWithArg.noArg(new NoValidatorUpdate(action.getValidatorKey(), 0))),
 			"Already a validator"
-		).with(
-			substateDown -> List.of(new PreparedValidatorUpdate(
-				epochData.getEpoch() + ValidatorConstraintScryptV2.RAKE_UPDATE_DEBOUNCE_EPOCH_LENGTH,
+		).with(substateDown -> {
+			boolean isIncrease = action.getRakePercentage() > substateDown.getCurRakePercentage();
+			var epoch = epochData.getEpoch()
+				+ (isIncrease ? ValidatorConstraintScryptV2.RAKE_INCREASE_DEBOUNCE_EPOCH_LENGTH : 1);
+			return List.of(new PreparedValidatorUpdate(
+				epoch,
 				action.getValidatorKey(),
 				action.getRakePercentage()
-			))
-		);
+			));
+		});
 	}
 }
