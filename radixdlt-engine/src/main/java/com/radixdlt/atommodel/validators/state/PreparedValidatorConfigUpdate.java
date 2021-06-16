@@ -23,22 +23,28 @@ import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
 
-public final class PreparedValidatorUpdate implements Particle {
+public final class PreparedValidatorConfigUpdate implements Particle {
 	public static final int RAKE_PERCENTAGE_GRANULARITY = 10 * 10; // 100 == 1.00%, 1 == 0.01%
 	public static final int RAKE_MAX = 100 * RAKE_PERCENTAGE_GRANULARITY;
 	public static final int RAKE_MIN = 0;
 
 	private final long epoch;
 	private final ECPublicKey validatorKey;
-	private final int rakePercentage;
+	private final int curRakePercentage;
+	private final int nextRakePercentage;
 
-	public PreparedValidatorUpdate(long epoch, ECPublicKey validatorKey, int rakePercentage) {
-		if (rakePercentage < RAKE_MIN || rakePercentage > RAKE_MAX) {
-			throw new IllegalArgumentException("Illegal fee " + rakePercentage);
+	public PreparedValidatorConfigUpdate(long epoch, ECPublicKey validatorKey, int curRakePercentage, int nextRakePercentage) {
+		if (nextRakePercentage < RAKE_MIN || nextRakePercentage > RAKE_MAX) {
+			throw new IllegalArgumentException("Illegal fee " + nextRakePercentage);
 		}
 		this.epoch = epoch;
 		this.validatorKey = validatorKey;
-		this.rakePercentage = rakePercentage;
+		this.curRakePercentage = curRakePercentage;
+		this.nextRakePercentage = nextRakePercentage;
+	}
+
+	public ValidatorConfigCopy getCurrentConfig() {
+		return new ValidatorConfigCopy(validatorKey, curRakePercentage);
 	}
 
 	public ECPublicKey getValidatorKey() {
@@ -49,24 +55,37 @@ public final class PreparedValidatorUpdate implements Particle {
 		return epoch;
 	}
 
-	public int getRakePercentage() {
-		return rakePercentage;
+	public int getCurRakePercentage() {
+		return curRakePercentage;
+	}
+
+	public int getNextRakePercentage() {
+		return nextRakePercentage;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(epoch, validatorKey, rakePercentage);
+		return Objects.hash(epoch, validatorKey, curRakePercentage, nextRakePercentage);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof PreparedValidatorUpdate)) {
+		if (!(o instanceof PreparedValidatorConfigUpdate)) {
 			return false;
 		}
 
-		var other = (PreparedValidatorUpdate) o;
+		var other = (PreparedValidatorConfigUpdate) o;
 		return this.epoch == other.epoch
 			&& Objects.equals(this.validatorKey, other.validatorKey)
-			&& this.rakePercentage == other.rakePercentage;
+			&& this.curRakePercentage == other.curRakePercentage
+			&& this.nextRakePercentage == other.nextRakePercentage;
+	}
+
+	@Override
+	public String toString() {
+		return String.format(
+			"%s{epoch=%s cur=%s next=%s}",
+			this.getClass().getSimpleName(), epoch, curRakePercentage, nextRakePercentage
+		);
 	}
 }

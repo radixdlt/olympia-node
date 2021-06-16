@@ -33,8 +33,8 @@ import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
-import com.radixdlt.atommodel.validators.state.NoValidatorUpdate;
-import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
+import com.radixdlt.atommodel.validators.state.ValidatorConfigCopy;
+import com.radixdlt.atommodel.validators.state.PreparedValidatorConfigUpdate;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.SubstateWithArg;
@@ -117,7 +117,7 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 			if (rakePercentage != 0 && !nodeEmission.isZero()) {
 				var rake = nodeEmission
 					.multiply(UInt256.from(rakePercentage))
-					.divide(UInt256.from(PreparedValidatorUpdate.RAKE_MAX));
+					.divide(UInt256.from(PreparedValidatorConfigUpdate.RAKE_MAX));
 				var validatorOwner = REAddr.ofPubKeyAccount(k);
 				var initStake = new TreeMap<REAddr, UInt256>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
 				initStake.put(validatorOwner, rake);
@@ -208,14 +208,14 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 			validatorsToUpdate.put(k, curValidator);
 		}
 
-		var preparingRakeUpdates = new TreeMap<ECPublicKey, PreparedValidatorUpdate>(
+		var preparingRakeUpdates = new TreeMap<ECPublicKey, PreparedValidatorConfigUpdate>(
 			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
 		);
 		var buf = ByteBuffer.allocate(1 + Long.BYTES);
 		buf.put(SubstateTypeId.PREPARED_VALIDATOR_UPDATE.id());
 		buf.putLong(prevEpoch.getEpoch() + 1);
-		var index = new ShutdownAllIndex(buf.array(), PreparedValidatorUpdate.class);
-		txBuilder.shutdownAll(index, (Iterator<PreparedValidatorUpdate> i) -> {
+		var index = new ShutdownAllIndex(buf.array(), PreparedValidatorConfigUpdate.class);
+		txBuilder.shutdownAll(index, (Iterator<PreparedValidatorConfigUpdate> i) -> {
 			i.forEachRemaining(preparedValidatorUpdate ->
 				preparingRakeUpdates.put(preparedValidatorUpdate.getValidatorKey(), preparedValidatorUpdate)
 			);
@@ -234,8 +234,8 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 				validatorsToUpdate.put(k, validatorData);
 			}
 			var curValidator = validatorsToUpdate.get(k);
-			validatorsToUpdate.put(k, curValidator.setRakePercentage(update.getRakePercentage()));
-			txBuilder.up(new NoValidatorUpdate(k, update.getRakePercentage()));
+			validatorsToUpdate.put(k, curValidator.setRakePercentage(update.getNextRakePercentage()));
+			txBuilder.up(new ValidatorConfigCopy(k, update.getNextRakePercentage()));
 		}
 
 		validatorsToUpdate.forEach((k, validator) -> txBuilder.up(validator));

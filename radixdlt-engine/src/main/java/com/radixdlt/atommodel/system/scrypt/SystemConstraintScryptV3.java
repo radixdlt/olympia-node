@@ -31,8 +31,8 @@ import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
-import com.radixdlt.atommodel.validators.state.NoValidatorUpdate;
-import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
+import com.radixdlt.atommodel.validators.state.ValidatorConfigCopy;
+import com.radixdlt.atommodel.validators.state.PreparedValidatorConfigUpdate;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
@@ -177,7 +177,7 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 				if (rakePercentage != 0 && !nodeEmission.isZero()) {
 					var rake = nodeEmission
 						.multiply(UInt256.from(rakePercentage))
-						.divide(UInt256.from(PreparedValidatorUpdate.RAKE_MAX));
+						.divide(UInt256.from(PreparedValidatorConfigUpdate.RAKE_MAX));
 					var validatorOwner = REAddr.ofPubKeyAccount(k);
 					var initStake = new TreeMap<REAddr, UInt256>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
 					initStake.put(validatorOwner, rake);
@@ -431,20 +431,20 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 	}
 
 	private static final class ResetValidatorUpdate implements ReducerState {
-		private final PreparedValidatorUpdate update;
+		private final PreparedValidatorConfigUpdate update;
 		private final Supplier<ReducerState> next;
 
-		ResetValidatorUpdate(PreparedValidatorUpdate update, Supplier<ReducerState> next) {
+		ResetValidatorUpdate(PreparedValidatorConfigUpdate update, Supplier<ReducerState> next) {
 			this.update = update;
 			this.next = next;
 		}
 
-		ReducerState reset(NoValidatorUpdate noValidatorUpdate) throws ProcedureException {
-			if (!noValidatorUpdate.getValidatorKey().equals(update.getValidatorKey())) {
+		ReducerState reset(ValidatorConfigCopy validatorConfigCopy) throws ProcedureException {
+			if (!validatorConfigCopy.getValidatorKey().equals(update.getValidatorKey())) {
 				throw new ProcedureException("Validator keys must match.");
 			}
 
-			if (noValidatorUpdate.getCurRakePercentage() != update.getRakePercentage()) {
+			if (validatorConfigCopy.getCurRakePercentage() != update.getNextRakePercentage()) {
 				throw new ProcedureException("Rake percentage must match.");
 			}
 
@@ -455,7 +455,7 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 	private static final class PreparingRakeUpdate implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, ValidatorStakeData> validatorsToUpdate;
-		private final TreeMap<ECPublicKey, PreparedValidatorUpdate> preparingRakeUpdates =
+		private final TreeMap<ECPublicKey, PreparedValidatorConfigUpdate> preparingRakeUpdates =
 			new TreeMap<>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
 
 		PreparingRakeUpdate(
@@ -466,7 +466,7 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 			this.validatorsToUpdate = validatorsToUpdate;
 		}
 
-		ReducerState prepareRakeUpdates(ShutdownAll<PreparedValidatorUpdate> shutdownAll) throws ProcedureException {
+		ReducerState prepareRakeUpdates(ShutdownAll<PreparedValidatorConfigUpdate> shutdownAll) throws ProcedureException {
 			var iter = shutdownAll.iterator();
 			while (iter.hasNext()) {
 				var preparedRakeUpdate = iter.next();
@@ -489,13 +489,13 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 			var validatorUpdate = preparingRakeUpdates.remove(k);
 			if (!validatorsToUpdate.containsKey(k)) {
 				return new LoadingStake(k, validatorStake -> {
-					var updatedValidator = validatorStake.setRakePercentage(validatorUpdate.getRakePercentage());
+					var updatedValidator = validatorStake.setRakePercentage(validatorUpdate.getNextRakePercentage());
 					validatorsToUpdate.put(k, updatedValidator);
 					return new ResetValidatorUpdate(validatorUpdate, this::next);
 				});
 			} else {
 				var updatedValidator = validatorsToUpdate.get(k)
-					.setRakePercentage(validatorUpdate.getRakePercentage());
+					.setRakePercentage(validatorUpdate.getNextRakePercentage());
 				validatorsToUpdate.put(k, updatedValidator);
 				return new ResetValidatorUpdate(validatorUpdate, this::next);
 			}
@@ -642,12 +642,12 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 			(i, s, r) -> ReducerResult.incomplete(s.prepareStakes(i))
 		));
 		os.procedure(new ShutdownAllProcedure<>(
-			PreparedValidatorUpdate.class, PreparingRakeUpdate.class,
+			PreparedValidatorConfigUpdate.class, PreparingRakeUpdate.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(i, s, r) -> ReducerResult.incomplete(s.prepareRakeUpdates(i))
 		));
 		os.procedure(new UpProcedure<>(
-			ResetValidatorUpdate.class, NoValidatorUpdate.class,
+			ResetValidatorUpdate.class, ValidatorConfigCopy.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.reset(u))
 		));

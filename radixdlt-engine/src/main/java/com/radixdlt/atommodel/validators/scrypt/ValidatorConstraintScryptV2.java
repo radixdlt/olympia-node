@@ -21,8 +21,8 @@ package com.radixdlt.atommodel.validators.scrypt;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.system.state.HasEpochData;
-import com.radixdlt.atommodel.validators.state.NoValidatorUpdate;
-import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
+import com.radixdlt.atommodel.validators.state.ValidatorConfigCopy;
+import com.radixdlt.atommodel.validators.state.PreparedValidatorConfigUpdate;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
@@ -43,12 +43,12 @@ import com.radixdlt.serialization.DeserializeException;
 import java.util.Objects;
 import java.util.Set;
 
-import static com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate.RAKE_MAX;
-import static com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate.RAKE_MIN;
+import static com.radixdlt.atommodel.validators.state.PreparedValidatorConfigUpdate.RAKE_MAX;
+import static com.radixdlt.atommodel.validators.state.PreparedValidatorConfigUpdate.RAKE_MIN;
 
 public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 	public static final long RAKE_INCREASE_DEBOUNCE_EPOCH_LENGTH = 2;
-	public static final int MAX_RAKE_INCREASE = 10 * PreparedValidatorUpdate.RAKE_PERCENTAGE_GRANULARITY; // 10%
+	public static final int MAX_RAKE_INCREASE = 10 * PreparedValidatorConfigUpdate.RAKE_PERCENTAGE_GRANULARITY; // 10%
 
 	private static class UpdatingValidatorInfo implements ReducerState {
 		private final ValidatorParticle prevState;
@@ -59,18 +59,18 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 	}
 
 	private static class UpdatingValidator implements ReducerState {
-		private final NoValidatorUpdate noValidatorUpdate;
+		private final ValidatorConfigCopy validatorConfigCopy;
 
-		private UpdatingValidator(NoValidatorUpdate noValidatorUpdate) {
-			this.noValidatorUpdate = noValidatorUpdate;
+		private UpdatingValidator(ValidatorConfigCopy validatorConfigCopy) {
+			this.validatorConfigCopy = validatorConfigCopy;
 		}
 
-		void update(ReadableAddrs r, PreparedValidatorUpdate update) throws ProcedureException {
-			if (!Objects.equals(noValidatorUpdate.getValidatorKey(), update.getValidatorKey())) {
+		void update(ReadableAddrs r, PreparedValidatorConfigUpdate update) throws ProcedureException {
+			if (!Objects.equals(validatorConfigCopy.getValidatorKey(), update.getValidatorKey())) {
 				throw new ProcedureException("Must update same key");
 			}
 
-			var rakeIncrease = update.getRakePercentage() - noValidatorUpdate.getCurRakePercentage();
+			var rakeIncrease = update.getNextRakePercentage() - validatorConfigCopy.getCurRakePercentage();
 			if (rakeIncrease > MAX_RAKE_INCREASE) {
 				throw new ProcedureException("Max rake increase is " + MAX_RAKE_INCREASE + " but trying to increase " + rakeIncrease);
 			}
@@ -148,12 +148,12 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 		));
 
 		os.substate(new SubstateDefinition<>(
-			NoValidatorUpdate.class,
+			ValidatorConfigCopy.class,
 			Set.of(SubstateTypeId.VALIDATOR_NO_UPDATE.id()),
 			(b, buf) -> {
 				var key = REFieldSerialization.deserializeKey(buf);
 				var curRakePercentage = REFieldSerialization.deserializeInt(buf);
-				return new NoValidatorUpdate(key, curRakePercentage);
+				return new ValidatorConfigCopy(key, curRakePercentage);
 			},
 			(s, buf) -> {
 				buf.put(SubstateTypeId.VALIDATOR_NO_UPDATE.id());
@@ -165,29 +165,52 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 
 		os.substate(
 			new SubstateDefinition<>(
-				PreparedValidatorUpdate.class,
+				PreparedValidatorConfigUpdate.class,
 				Set.of(SubstateTypeId.PREPARED_VALIDATOR_UPDATE.id()),
 				(b, buf) -> {
 					var epoch = REFieldSerialization.deserializeNonNegativeLong(buf);
 					var validatorKey = REFieldSerialization.deserializeKey(buf);
-					var rakePercentage = REFieldSerialization.deserializeInt(buf);
-					if (rakePercentage < RAKE_MIN || rakePercentage > RAKE_MAX) {
-						throw new DeserializeException("Invalid rake percentage " + rakePercentage);
+					var curRakePercentage = REFieldSerialization.deserializeInt(buf);
+					if (curRakePercentage < RAKE_MIN || curRakePercentage > RAKE_MAX) {
+						throw new DeserializeException("Invalid cur rake percentage " + curRakePercentage);
+					}
+					var nextRakePercentage = REFieldSerialization.deserializeInt(buf);
+					if (nextRakePercentage < RAKE_MIN || nextRakePercentage > RAKE_MAX) {
+						throw new DeserializeException("Invalid rake percentage " + nextRakePercentage);
 					}
 
-					return new PreparedValidatorUpdate(epoch, validatorKey, rakePercentage);
+					return new PreparedValidatorConfigUpdate(epoch, validatorKey, curRakePercentage, nextRakePercentage);
 				},
 				(s, buf) -> {
 					buf.put(SubstateTypeId.PREPARED_VALIDATOR_UPDATE.id());
 					buf.putLong(s.getEpoch());
 					REFieldSerialization.serializeKey(buf, s.getValidatorKey());
-					buf.putInt(s.getRakePercentage());
+					buf.putInt(s.getCurRakePercentage());
+					buf.putInt(s.getNextRakePercentage());
 				}
 			)
 		);
 
 		os.procedure(new DownProcedure<>(
-			NoValidatorUpdate.class, VoidReducerState.class,
+			PreparedValidatorConfigUpdate.class, VoidReducerState.class,
+			d -> new Authorization(
+				PermissionLevel.USER,
+				(r, c) -> {
+					if (!c.key().map(d.getSubstate().getValidatorKey()::equals).orElse(false)) {
+						throw new AuthorizationException("Key does not match.");
+					}
+				}
+			),
+			(d, s, r) -> {
+				if (d.getArg().isPresent()) {
+					throw new ProcedureException("Args not allowed");
+				}
+				return ReducerResult.incomplete(new UpdatingValidator(d.getSubstate().getCurrentConfig()));
+			}
+		));
+
+		os.procedure(new DownProcedure<>(
+			ValidatorConfigCopy.class, VoidReducerState.class,
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {
@@ -205,7 +228,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 		));
 
 		os.procedure(new UpProcedure<>(
-			UpdatingValidator.class, PreparedValidatorUpdate.class,
+			UpdatingValidator.class, PreparedValidatorConfigUpdate.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> {
 				s.update(r, u);

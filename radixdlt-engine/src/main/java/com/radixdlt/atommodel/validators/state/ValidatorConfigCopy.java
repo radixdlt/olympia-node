@@ -23,11 +23,11 @@ import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
 
-public final class NoValidatorUpdate implements Particle {
+public final class ValidatorConfigCopy implements Particle {
 	private final ECPublicKey validatorKey;
 	private final int curRakePercentage;
 
-	public NoValidatorUpdate(ECPublicKey validatorKey, int curRakePercentage) {
+	public ValidatorConfigCopy(ECPublicKey validatorKey, int curRakePercentage) {
 		this.validatorKey = Objects.requireNonNull(validatorKey);
 		this.curRakePercentage = curRakePercentage;
 	}
@@ -47,10 +47,10 @@ public final class NoValidatorUpdate implements Particle {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof NoValidatorUpdate)) {
+		if (!(o instanceof ValidatorConfigCopy)) {
 			return false;
 		}
-		var other = (NoValidatorUpdate) o;
+		var other = (ValidatorConfigCopy) o;
 		return Objects.equals(this.validatorKey, other.validatorKey)
 			&& this.curRakePercentage == other.curRakePercentage;
 	}

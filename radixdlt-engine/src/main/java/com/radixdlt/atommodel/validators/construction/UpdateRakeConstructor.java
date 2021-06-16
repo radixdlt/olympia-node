@@ -24,8 +24,8 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UpdateRake;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
-import com.radixdlt.atommodel.validators.state.NoValidatorUpdate;
-import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
+import com.radixdlt.atommodel.validators.state.ValidatorConfigCopy;
+import com.radixdlt.atommodel.validators.state.PreparedValidatorConfigUpdate;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 
 import java.util.List;
@@ -36,20 +36,42 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateRake
 	public void construct(UpdateRake action, TxBuilder builder) throws TxBuilderException {
 		var epochData = builder.find(EpochData.class, p -> true).orElseThrow();
 
-		builder.swap(
-			NoValidatorUpdate.class,
-			p -> p.getValidatorKey().equals(action.getValidatorKey()),
-			Optional.of(SubstateWithArg.noArg(new NoValidatorUpdate(action.getValidatorKey(), 0))),
-			"Already a validator"
-		).with(substateDown -> {
-			boolean isIncrease = action.getRakePercentage() > substateDown.getCurRakePercentage();
-			var epoch = epochData.getEpoch()
-				+ (isIncrease ? ValidatorConstraintScryptV2.RAKE_INCREASE_DEBOUNCE_EPOCH_LENGTH : 1);
-			return List.of(new PreparedValidatorUpdate(
-				epoch,
-				action.getValidatorKey(),
-				action.getRakePercentage()
-			));
-		});
+		var updateInFlight = builder
+			.find(PreparedValidatorConfigUpdate.class, p -> p.getValidatorKey().equals(action.getValidatorKey()));
+		if (updateInFlight.isPresent()) {
+			builder.swap(
+				PreparedValidatorConfigUpdate.class,
+				p -> p.getValidatorKey().equals(action.getValidatorKey()),
+				Optional.empty(),
+				"Cannot find state"
+			).with(substateDown -> {
+				var isIncrease = action.getRakePercentage() > substateDown.getCurRakePercentage();
+				var epochDiff = isIncrease ? ValidatorConstraintScryptV2.RAKE_INCREASE_DEBOUNCE_EPOCH_LENGTH : 1;
+				var epoch = epochData.getEpoch() + epochDiff;
+				return List.of(new PreparedValidatorConfigUpdate(
+					epoch,
+					action.getValidatorKey(),
+					substateDown.getCurRakePercentage(),
+					action.getRakePercentage()
+				));
+			});
+		} else {
+			builder.swap(
+				ValidatorConfigCopy.class,
+				p -> p.getValidatorKey().equals(action.getValidatorKey()),
+				Optional.of(SubstateWithArg.noArg(new ValidatorConfigCopy(action.getValidatorKey(), 0))),
+				"Cannot find state"
+			).with(substateDown -> {
+				var isIncrease = action.getRakePercentage() > substateDown.getCurRakePercentage();
+				var epochDiff = isIncrease ? ValidatorConstraintScryptV2.RAKE_INCREASE_DEBOUNCE_EPOCH_LENGTH : 1;
+				var epoch = epochData.getEpoch() + epochDiff;
+				return List.of(new PreparedValidatorConfigUpdate(
+					epoch,
+					action.getValidatorKey(),
+					substateDown.getCurRakePercentage(),
+					action.getRakePercentage()
+				));
+			});
+		}
 	}
 }
