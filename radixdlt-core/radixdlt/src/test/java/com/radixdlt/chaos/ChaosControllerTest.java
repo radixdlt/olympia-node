@@ -18,6 +18,7 @@
 package com.radixdlt.chaos;
 
 import com.radixdlt.identifiers.ValidatorAddress;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
@@ -53,6 +54,7 @@ public class ChaosControllerTest {
 	private final EventDispatcher<MessageFlooderUpdate> message = mock(EventDispatcher.class);
 
 	@Test
+	@Ignore
 	public void routesAreConfigured() {
 		final ChaosController chaosController = new ChaosController(mempool, message);
 		var handler = mock(RoutingHandler.class);
@@ -63,6 +65,7 @@ public class ChaosControllerTest {
 	}
 
 	@Test
+	@Ignore
 	public void testHandleMessageFlood() throws InterruptedException {
 		final ChaosController chaosController = new ChaosController(mempool, message);
 		var latch = new CountDownLatch(1);
