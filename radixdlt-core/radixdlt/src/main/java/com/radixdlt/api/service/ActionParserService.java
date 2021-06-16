@@ -23,7 +23,6 @@ import org.json.JSONObject;
 import com.google.inject.Inject;
 import com.radixdlt.api.data.ActionType;
 import com.radixdlt.api.data.action.TransactionAction;
-import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
@@ -43,11 +42,11 @@ import static com.radixdlt.utils.functional.Result.allOf;
 import static java.util.Optional.ofNullable;
 
 public final class ActionParserService {
-	private final ClientApiStore clientApiStore;
+	private final RriParser rriParser;
 
 	@Inject
-	public ActionParserService(ClientApiStore clientApiStore) {
-		this.clientApiStore = clientApiStore;
+	public ActionParserService(RriParser rriParser) {
+		this.rriParser = rriParser;
 	}
 
 	public Result<List<TransactionAction>> parse(JSONArray actions) {
@@ -167,7 +166,7 @@ public final class ActionParserService {
 
 	private Result<REAddr> rri(JSONObject element) {
 		return param(element, "rri")
-			.flatMap(clientApiStore::parseRri);
+			.flatMap(rriParser::parse);
 	}
 
 	private static Result<REAddr> from(JSONObject element) {

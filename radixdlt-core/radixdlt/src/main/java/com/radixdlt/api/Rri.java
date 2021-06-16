@@ -18,15 +18,16 @@
 
 package com.radixdlt.api;
 
-import com.radixdlt.atomos.CMAtomOS;
 import org.bitcoinj.core.Bech32;
 
+import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Bits;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.functional.Result;
+import com.radixdlt.utils.functional.Tuple.Tuple2;
 
 import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DECODE;
+import static com.radixdlt.utils.functional.Tuple.tuple;
 
 /**
  * A Radix resource identifier which encodes addresses with a resource behind them in
@@ -54,7 +55,7 @@ public final class Rri {
 		return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
 	}
 
-	public static Pair<String, REAddr> parse(String rri) {
+	public static Tuple2<String, REAddr> parse(String rri) {
 		var data = Bech32.decode(rri);
 		if (!data.hrp.endsWith(RRI_HRP_SUFFIX)) {
 			throw new IllegalArgumentException("Address hrp suffix must be " + RRI_HRP_SUFFIX + "(" + rri + ")");
@@ -64,11 +65,15 @@ public final class Rri {
 			throw new IllegalArgumentException("Invalid symbol in address (" + rri + ")");
 		}
 		var addrBytes = fromBech32Data(data.data);
-		return Pair.of(symbol, REAddr.of(addrBytes));
+		return tuple(symbol, REAddr.of(addrBytes));
 	}
 
-	public static Result<Pair<String, REAddr>> parseFunctional(String rri) {
+	public static Result<Tuple2<String, REAddr>> parseFunctional(String rri) {
 		return Result.wrap(UNABLE_TO_DECODE, () -> parse(rri));
+	}
+
+	public static Result<REAddr> rriParser(String rri) {
+		return Result.wrap(UNABLE_TO_DECODE, () -> parse(rri).map((__, addr) -> addr));
 	}
 
 	public static String of(String symbol, REAddr addr) {

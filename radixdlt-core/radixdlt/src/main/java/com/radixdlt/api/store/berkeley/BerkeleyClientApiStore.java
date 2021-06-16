@@ -130,6 +130,15 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private static final String ADDRESS_BALANCE_DB = "radix.address.balance_db";
 	private static final String SUPPLY_BALANCE_DB = "radix.supply.balance_db";
 	private static final String TOKEN_DEFINITION_DB = "radix.token_definition_db";
+
+	//Make sure this array contains all listed above DB names
+	private static final String[] DB_NAMES = {
+		EXECUTED_TRANSACTIONS_DB,
+		ADDRESS_BALANCE_DB,
+		SUPPLY_BALANCE_DB,
+		TOKEN_DEFINITION_DB
+	};
+
 	private static final long DEFAULT_FLUSH_INTERVAL = 250L;
 	private static final int KEY_BUFFER_INITIAL_CAPACITY = 1024;
 	private static final int TIMESTAMP_SIZE = Long.BYTES + Integer.BYTES;
@@ -192,26 +201,19 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
 		TransactionParser transactionParser
 	) {
-		this.dbEnv = dbEnv;
-		this.parser = parser;
-		this.txnParser = txnParser;
-		this.store = store;
-		this.serialization = serialization;
-		this.systemCounters = systemCounters;
-		this.scheduledFlushEventDispatcher = scheduledFlushEventDispatcher;
-		this.transactionParser = transactionParser;
-
-		open(false);
+		this(dbEnv, parser, txnParser, store, serialization, systemCounters,
+			 scheduledFlushEventDispatcher, transactionParser, false
+		);
 	}
 
 	@Override
 	public Result<REAddr> parseRri(String rri) {
 		return Rri.parseFunctional(rri)
-			.flatMap(
-				p -> getTokenDefinition(p.getSecond())
-					.flatMap(t -> Result.ok(p.getSecond())
-						.filter(i -> t.getSymbol().equals(p.getFirst()), SYMBOL_DOES_NOT_MATCH.with(t.getSymbol())))
-			);
+			.flatMap(tuple -> tuple.map(
+				(symbol, address) -> getTokenDefinition(address)
+					.filter(t -> t.getSymbol().equals(symbol), SYMBOL_DOES_NOT_MATCH)
+					.map(__ -> address)
+			));
 	}
 
 	private UInt384 computeStakeFromOwnership(ECPublicKey delegateKey, UInt384 ownership) {
@@ -436,11 +438,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	public void close() {
 		storeCollected();
-
-		safeClose(transactionHistory);
-		safeClose(tokenDefinitions);
-		safeClose(addressBalances);
-		safeClose(supplyBalances);
+		closeAll();
 	}
 
 	private boolean sameTxId(Txn txn, TxHistoryEntry txHistoryEntry) {
@@ -526,32 +524,43 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		try {
 			// This SuppressWarnings here is valid, as ownership of the underlying
 			// resource is not changed here, the resource is just accessed.
-			@SuppressWarnings("resource")
-			var env = dbEnv.getEnvironment();
-			var uniqueConfig = createUniqueConfig();
-
-			addressBalances = env.openDatabase(null, ADDRESS_BALANCE_DB, uniqueConfig);
-			supplyBalances = env.openDatabase(null, SUPPLY_BALANCE_DB, uniqueConfig);
-			tokenDefinitions = env.openDatabase(null, TOKEN_DEFINITION_DB, uniqueConfig);
-			transactionHistory = env.openDatabase(null, EXECUTED_TRANSACTIONS_DB, uniqueConfig);
+			openAll();
 
 			if (System.getProperty("db.check_integrity", "1").equals("1")) {
 				//TODO: Implement recovery, basically should be the same as fresh DB handling
 			}
 
-			// FIXME: removing the following for now in production as it is double counting genesis transactions
 			if (isTest) {
-				if (addressBalances.count() == 0) {
+				//FIXME: still not working properly
+				if (tokenDefinitions.count() == 0) {
 					//Fresh DB, rebuild from log
 					rebuildDatabase();
 				}
 			}
 
 			scheduledFlushEventDispatcher.dispatch(ScheduledQueueFlush.create(), DEFAULT_FLUSH_INTERVAL);
-
+			log.info("Client API Store opened");
 		} catch (Exception e) {
 			throw new ClientApiStoreException("Error while opening databases", e);
 		}
+	}
+
+	private void openAll() {
+		@SuppressWarnings("resource")
+		var env = dbEnv.getEnvironment();
+		var uniqueConfig = createUniqueConfig();
+
+		addressBalances = env.openDatabase(null, ADDRESS_BALANCE_DB, uniqueConfig);
+		supplyBalances = env.openDatabase(null, SUPPLY_BALANCE_DB, uniqueConfig);
+		tokenDefinitions = env.openDatabase(null, TOKEN_DEFINITION_DB, uniqueConfig);
+		transactionHistory = env.openDatabase(null, EXECUTED_TRANSACTIONS_DB, uniqueConfig);
+	}
+
+	private void closeAll() {
+		safeClose(transactionHistory);
+		safeClose(tokenDefinitions);
+		safeClose(addressBalances);
+		safeClose(supplyBalances);
 	}
 
 	private DatabaseConfig createUniqueConfig() {
@@ -574,8 +583,26 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private void rebuildDatabase() {
 		log.info("Database rebuilding is started");
+
+		closeAll();
+		resetAll();
+		openAll();
+
 		store.forEach(txn -> txnParser.parseTxn(txn).onSuccess(this::processRETransaction));
+
 		log.info("Database rebuilding is finished successfully");
+	}
+
+	private void resetAll() {
+		var transaction = dbEnv.getEnvironment()
+			.beginTransaction(null, null);
+
+		for (var dbName : DB_NAMES) {
+			log.info("Dropping existing {}", dbName);
+			dbEnv.getEnvironment().truncateDatabase(transaction, dbName, false);
+		}
+
+		transaction.commit();
 	}
 
 	@Override
@@ -730,13 +757,13 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		var stakeOwnershipEntries = accounting.stakeOwnershipAccounting().entrySet().stream()
 			.filter(e -> !e.getValue().equals(BigInteger.ZERO))
 			.map(e -> BalanceEntry.create(
-					null,
-					e.getKey(),
-					"stake-ownership",
-					UInt384.from(e.getValue().abs().toByteArray()),
-					e.getValue().signum() == -1,
-					null,
-					txId
+				null,
+				e.getKey(),
+				"stake-ownership",
+				UInt384.from(e.getValue().abs().toByteArray()),
+				e.getValue().signum() == -1,
+				null,
+				txId
 			));
 		var resourceEntries = accounting.resourceAccounting().entrySet().stream()
 			.filter(e -> !e.getValue().equals(BigInteger.ZERO))

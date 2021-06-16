@@ -22,7 +22,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
@@ -51,12 +50,12 @@ public class ActionParserServiceTest {
 	private final REAddr from = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
 	private final REAddr to = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
 	private final REAddr rri = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "ckee");
-	private final ClientApiStore clientApiStore = mock(ClientApiStore.class);
-	private final ActionParserService actionParserService = new ActionParserService(clientApiStore);
+	private final RriParser rriParser = mock(RriParser.class);
+	private final ActionParserService actionParserService = new ActionParserService(rriParser);
 
 	@Before
 	public void setup() {
-		when(clientApiStore.parseRri(any())).thenReturn(Result.ok(rri));
+		when(rriParser.parse(any())).thenReturn(Result.ok(rri));
 	}
 
 	@Test
