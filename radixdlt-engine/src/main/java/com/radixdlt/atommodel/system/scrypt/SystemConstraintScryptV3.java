@@ -43,6 +43,7 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.ShutdownAll;
 import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
@@ -52,7 +53,6 @@ import com.radixdlt.utils.UInt256;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
@@ -93,8 +93,8 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 			this.updatingEpoch = updatingEpoch;
 		}
 
-		public ReducerState process(Iterator<ExittingStake> i) throws ProcedureException {
-			i.forEachRemaining(exitting::add);
+		public ReducerState process(ShutdownAll<ExittingStake> i) throws ProcedureException {
+			i.iterator().forEachRemaining(exitting::add);
 
 			return next();
 		}
@@ -146,9 +146,10 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 			this.updatingEpoch = updatingEpoch;
 		}
 
-		public ReducerState process(Iterator<ValidatorBFTData> i) throws ProcedureException {
-			while (i.hasNext()) {
-				var validatorEpochData = i.next();
+		public ReducerState process(ShutdownAll<ValidatorBFTData> i) throws ProcedureException {
+			var iter = i.iterator();
+			while (iter.hasNext()) {
+				var validatorEpochData = iter.next();
 				if (proposalsCompleted.containsKey(validatorEpochData.validatorKey())) {
 					throw new ProcedureException("Already inserted " + validatorEpochData.validatorKey());
 				}
@@ -293,8 +294,8 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 			this.preparingStake = preparingStake;
 		}
 
-		ReducerState unstakes(Iterator<PreparedUnstakeOwnership> preparedUnstakeIterator) {
-			preparedUnstakeIterator.forEachRemaining(preparedUnstakeOwned ->
+		ReducerState unstakes(ShutdownAll<PreparedUnstakeOwnership> preparedUnstakeIterator) {
+			preparedUnstakeIterator.iterator().forEachRemaining(preparedUnstakeOwned ->
 				preparingUnstake
 					.computeIfAbsent(
 						preparedUnstakeOwned.getDelegateKey(),
@@ -394,8 +395,8 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 			this.preparingStake = preparingStake;
 		}
 
-		ReducerState prepareStakes(Iterator<PreparedStake> preparedStakeIterator) {
-			preparedStakeIterator.forEachRemaining(preparedStake ->
+		ReducerState prepareStakes(ShutdownAll<PreparedStake> preparedStakeIterator) {
+			preparedStakeIterator.iterator().forEachRemaining(preparedStake ->
 				preparingStake
 					.computeIfAbsent(
 						preparedStake.getDelegateKey(),
@@ -465,8 +466,8 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 			this.validatorsToUpdate = validatorsToUpdate;
 		}
 
-		ReducerState prepareRakeUpdates(Iterator<PreparedValidatorUpdate> preparingRakeUpdateIterator) {
-			preparingRakeUpdateIterator.forEachRemaining(preparedRakeUpdate ->
+		ReducerState prepareRakeUpdates(ShutdownAll<PreparedValidatorUpdate> preparingRakeUpdateIterator) {
+			preparingRakeUpdateIterator.iterator().forEachRemaining(preparedRakeUpdate ->
 				preparingRakeUpdates.put(preparedRakeUpdate.getValidatorKey(), preparedRakeUpdate)
 			);
 			return next();

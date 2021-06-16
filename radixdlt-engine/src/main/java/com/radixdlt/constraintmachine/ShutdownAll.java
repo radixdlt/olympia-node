@@ -18,10 +18,18 @@
 
 package com.radixdlt.constraintmachine;
 
-public interface ShutdownAllReducer<D extends Particle, S extends ReducerState> {
-	ReducerResult reduce(
-		ShutdownAll<D> inputState,
-		S reducerState,
-		ReadableAddrs readableAddrs
-	) throws ProcedureException;
+import java.util.Iterator;
+
+public final class ShutdownAll<D extends Particle> {
+	private DownAllIndex index;
+	private final Iterator<D> iterator;
+
+	public ShutdownAll(DownAllIndex index, Iterator<D> iterator) {
+		this.index = index;
+		this.iterator = iterator;
+	}
+
+	public Iterator<D> iterator() {
+		return iterator;
+	}
 }

@@ -266,12 +266,13 @@ public final class ConstraintMachine {
 						return substate.getParticle();
 					}
 				};
+				var shutdownAllIterator = new ShutdownAll<>(index, iterator);
 				try {
 					var eventId = OpSignature.ofSubstateUpdate(
 						inst.getMicroOp().getOp(), index.getSubstateClass()
 					);
 					var methodProcedure = loadProcedure(reducerState, eventId);
-					reducerState = callProcedure(methodProcedure, iterator, reducerState, readableAddrs, context);
+					reducerState = callProcedure(methodProcedure, shutdownAllIterator, reducerState, readableAddrs, context);
 				} finally {
 					substateCursor.close();
 				}
