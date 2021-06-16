@@ -24,6 +24,7 @@ import com.google.common.collect.Iterators;
 import java.io.Closeable;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -33,9 +34,28 @@ import java.util.function.Supplier;
 public interface CloseableCursor<T> extends Iterator<T>, Closeable {
 	void close();
 
+	static <T, U> CloseableCursor<U> map(CloseableCursor<T> cursor, Function<T, U> mapper) {
+		return new CloseableCursor<>() {
+			@Override
+			public void close() {
+				cursor.close();
+			}
+
+			@Override
+			public boolean hasNext() {
+				return cursor.hasNext();
+			}
+
+			@Override
+			public U next() {
+				return mapper.apply(cursor.next());
+			}
+		};
+	}
+
 	static <T> CloseableCursor<T> filter(CloseableCursor<T> cursor, Predicate<T> substatePredicate) {
 		var iterator = Iterators.filter(cursor, substatePredicate);
-		return new CloseableCursor() {
+		return new CloseableCursor<T>() {
 			@Override
 			public void close() {
 				cursor.close();

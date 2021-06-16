@@ -24,6 +24,7 @@ import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.engine.parser.REParser;
@@ -94,11 +95,7 @@ public final class LogCMStore implements CMStore {
 	}
 
 	@Override
-	public CloseableCursor<Substate> openIndexedCursor(
-		Transaction dbTransaction,
-		byte index,
-		SubstateDeserialization deserialization
-	) {
+	public CloseableCursor<RawSubstateBytes> openIndexedCursor(Transaction dbTransaction, byte index) {
 		throw new UnsupportedOperationException();
 	}
 }

@@ -24,6 +24,7 @@ import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
@@ -166,7 +167,16 @@ public final class ConstraintMachine {
 					.filter(s -> index.test(s.getParticle())).iterator()
 				),
 				() -> CloseableCursor.filter(
-					store.openIndexedCursor(dbTxn, index.getIndex(), deserialization),
+					CloseableCursor.map(
+						store.openIndexedCursor(dbTxn, index.getIndex()),
+						r -> {
+							try {
+								var substate = deserialization.deserialize(r.getData());
+								return Substate.create(substate, SubstateId.fromBytes(r.getId()));
+							} catch (DeserializeException e) {
+								throw new IllegalStateException();
+							}
+						}),
 					s -> !remoteDownParticles.contains(s.getId())
 				)
 			);
@@ -262,7 +272,7 @@ public final class ConstraintMachine {
 						// FIXME: this is a hack
 						// FIXME: do this via shutdownAll state update rather than individually
 						var substate = substateCursor.next();
-						tmp.add(REStateUpdate.of(REOp.DOWN, substate, null, inst.getDataByteBuffer()));
+						tmp.add(REStateUpdate.of(REOp.DOWN, substate, null, inst::getDataByteBuffer));
 						return substate.getParticle();
 					}
 				};
@@ -317,7 +327,7 @@ public final class ConstraintMachine {
 				}
 
 				var op = inst.getMicroOp().getOp();
-				stateUpdates.add(REStateUpdate.of(op, substate, arg, inst.getDataByteBuffer()));
+				stateUpdates.add(REStateUpdate.of(op, substate, arg, inst::getDataByteBuffer));
 				var eventId = OpSignature.ofSubstateUpdate(op, nextParticle.getClass());
 				var methodProcedure = loadProcedure(reducerState, eventId);
 				reducerState = callProcedure(methodProcedure, o, reducerState, readableAddrs, context);

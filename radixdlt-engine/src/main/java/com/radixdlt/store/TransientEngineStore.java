@@ -6,6 +6,7 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.identifiers.REAddr;
 
@@ -63,16 +64,15 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public CloseableCursor<Substate> openIndexedCursor(
+	public CloseableCursor<RawSubstateBytes> openIndexedCursor(
 		Transaction dbTxn,
-		byte index,
-		SubstateDeserialization deserialization
+		byte index
 	) {
 		return CloseableCursor.concat(
-			transientStore.openIndexedCursor(dbTxn, index, deserialization),
+			transientStore.openIndexedCursor(dbTxn, index),
 			() -> CloseableCursor.filter(
-				base.openIndexedCursor(dbTxn, index, deserialization),
-				s -> transientStore.getSpin(s.getId()).isEmpty()
+				base.openIndexedCursor(dbTxn, index),
+				s -> transientStore.getSpin(SubstateId.fromBytes(s.getId())).isEmpty()
 			)
 		);
 	}

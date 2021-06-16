@@ -28,6 +28,7 @@ import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REOp;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.identifiers.REAddr;
 
@@ -89,21 +90,17 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	}
 
 	@Override
-	public CloseableCursor<Substate> openIndexedCursor(
-		Transaction dbTxn,
-		byte index,
-		SubstateDeserialization deserialization
-	) {
-		final List<Substate> substates = new ArrayList<>();
+	public CloseableCursor<RawSubstateBytes> openIndexedCursor(Transaction dbTxn, byte index) {
+		final List<RawSubstateBytes> substates = new ArrayList<>();
 		synchronized (lock) {
 			for (var i : storedParticles.values()) {
 				if (!i.isBootUp()) {
 					continue;
 				}
-				if (!deserialization.classToBytes(i.getRawSubstate().getClass()).contains(index)) {
+				if (i.getRawSubstateBytes().getData()[0] != index) {
 					continue;
 				}
-				substates.add(i.getSubstate());
+				substates.add(i.getRawSubstateBytes());
 			}
 		}
 
