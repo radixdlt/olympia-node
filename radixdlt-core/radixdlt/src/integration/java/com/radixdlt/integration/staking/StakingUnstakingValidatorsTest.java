@@ -51,11 +51,14 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
@@ -103,11 +106,14 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.radix.TokenIssuance;
+import org.w3c.dom.Node;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.function.Supplier;
@@ -285,51 +291,89 @@ public class StakingUnstakingValidatorsTest {
 		}
 	}
 
-	private UInt256 totalNativeTokens() {
-		var lastEpochView = this.nodes.get(0)
-			.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { }));
-		var epoch = lastEpochView.getLastEvent() == null
-			? this.nodes.get(0).getInstance(EpochChange.class).getEpoch()
-			: lastEpochView.getLastEvent().getEpoch();
-		var forkConfig = epochToForkConfig.floorEntry(epoch).getValue();
-		var reParser = forkConfig.getParser();
+	private static class NodeState {
+		private final DeterministicSavedLastEvent<EpochViewUpdate> lastEpochView;
+		private final EpochChange epochChange;
+		private final BerkeleyLedgerEntryStore entryStore;
+		private final TreeMap<Long, ForkConfig> epochToForkConfig;
 
-		var entryStore = this.nodes.get(0).getInstance(BerkeleyLedgerEntryStore.class);
-		var totalTokens = entryStore.reduceUpParticles(TokensInAccount.class, UInt256.ZERO,
-			(i, p) -> {
-				var tokens = (TokensInAccount) p;
-				return i.add(tokens.getAmount());
-			},
-			reParser.getSubstateDeserialization()
-		);
-		logger.info("Total tokens: {}", totalTokens);
-		var totalStaked = entryStore.reduceUpParticles(ValidatorStakeData.class, UInt256.ZERO,
-			(i, p) -> {
-				var tokens = (ValidatorStakeData) p;
-				return i.add(tokens.getAmount());
-			},
-			reParser.getSubstateDeserialization()
-		);
-		logger.info("Total staked: {}", totalStaked);
-		var totalStakePrepared = entryStore.reduceUpParticles(PreparedStake.class, UInt256.ZERO,
-			(i, p) -> {
-				var tokens = (PreparedStake) p;
-				return i.add(tokens.getAmount());
-			},
-			reParser.getSubstateDeserialization()
-		);
-		logger.info("Total preparing stake: {}", totalStakePrepared);
-		var totalStakeExitting = entryStore.reduceUpParticles(ExittingStake.class, UInt256.ZERO,
-			(i, p) -> {
-				var tokens = (ExittingStake) p;
-				return i.add(tokens.getAmount());
-			},
-			reParser.getSubstateDeserialization()
-		);
-		logger.info("Total exitting stake: {}", totalStakeExitting);
-		var total = totalTokens.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting);
-		logger.info("Total: {}", total);
-		return total;
+		@Inject
+		private NodeState(
+			DeterministicSavedLastEvent<EpochViewUpdate> lastEpochView,
+			EpochChange epochChange,
+			BerkeleyLedgerEntryStore entryStore,
+			TreeMap<Long, ForkConfig> epochToForkConfig
+		) {
+			this.lastEpochView = lastEpochView;
+			this.epochChange = epochChange;
+			this.entryStore = entryStore;
+			this.epochToForkConfig = epochToForkConfig;
+		}
+
+		public long getEpoch() {
+			return lastEpochView.getLastEvent() == null
+				? epochChange.getEpoch()
+				: lastEpochView.getLastEvent().getEpoch();
+		}
+
+		public Map<BFTNode, ValidatorStakeData> getValidators() {
+			var forkConfig = epochToForkConfig.floorEntry(getEpoch()).getValue();
+			var reParser = forkConfig.getParser();
+			return entryStore.reduceUpParticles(
+				ValidatorStakeData.class,
+				new HashMap<>(),
+				(i, p) -> {
+					var stakeData = (ValidatorStakeData) p;
+					i.put(BFTNode.create(stakeData.getValidatorKey()), stakeData);
+					return i;
+				},
+				reParser.getSubstateDeserialization()
+			);
+		}
+
+		public UInt256 getTotalNativeTokens() {
+			var forkConfig = epochToForkConfig.floorEntry(getEpoch()).getValue();
+			var reParser = forkConfig.getParser();
+			var totalTokens = entryStore.reduceUpParticles(TokensInAccount.class, UInt256.ZERO,
+				(i, p) -> {
+					var tokens = (TokensInAccount) p;
+					return i.add(tokens.getAmount());
+				},
+				reParser.getSubstateDeserialization()
+			);
+			logger.info("Total tokens: {}", totalTokens);
+			var totalStaked = entryStore.reduceUpParticles(ValidatorStakeData.class, UInt256.ZERO,
+				(i, p) -> {
+					var tokens = (ValidatorStakeData) p;
+					return i.add(tokens.getAmount());
+				},
+				reParser.getSubstateDeserialization()
+			);
+			logger.info("Total staked: {}", totalStaked);
+			var totalStakePrepared = entryStore.reduceUpParticles(PreparedStake.class, UInt256.ZERO,
+				(i, p) -> {
+					var tokens = (PreparedStake) p;
+					return i.add(tokens.getAmount());
+				},
+				reParser.getSubstateDeserialization()
+			);
+			logger.info("Total preparing stake: {}", totalStakePrepared);
+			var totalStakeExitting = entryStore.reduceUpParticles(ExittingStake.class, UInt256.ZERO,
+				(i, p) -> {
+					var tokens = (ExittingStake) p;
+					return i.add(tokens.getAmount());
+				},
+				reParser.getSubstateDeserialization()
+			);
+			logger.info("Total exitting stake: {}", totalStakeExitting);
+			var total = totalTokens.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting);
+			logger.info("Total: {}", total);
+			return total;
+		}
+	}
+
+	private NodeState reloadNodeState() {
+		return this.nodes.get(0).getInstance(NodeState.class);
 	}
 
 	/**
@@ -338,8 +382,7 @@ public class StakingUnstakingValidatorsTest {
 	 */
 	@Test
 	public void stake_unstake_transfers_restarts() {
-
-		var initialCount = totalNativeTokens();
+		var initialCount = reloadNodeState().getTotalNativeTokens();
 
 		var random = new Random(12345);
 
@@ -415,12 +458,15 @@ public class StakingUnstakingValidatorsTest {
 		var maxEmissions = UInt256.from(99).multiply(SystemConstraintScryptV2.REWARDS_PER_PROPOSAL).multiply(UInt256.from(epoch - 1));
 		logger.info("Max emissions {}", maxEmissions);
 
-		var finalCount = totalNativeTokens();
+		var nodeState = reloadNodeState();
+		var finalCount = nodeState.getTotalNativeTokens();
 
 		assertThat(finalCount).isGreaterThan(initialCount);
 		var diff = finalCount.subtract(initialCount);
 		logger.info("Difference {}", diff);
 		assertThat(diff).isLessThanOrEqualTo(maxEmissions);
+
+		logger.info("ValidatorStakeData: {}", nodeState.getValidators());
 	}
 
 }

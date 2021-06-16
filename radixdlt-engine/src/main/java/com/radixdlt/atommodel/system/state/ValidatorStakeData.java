@@ -37,9 +37,7 @@ public final class ValidatorStakeData implements ResourceInBucket {
 	public static final int EPOCHS_LOCKED = 1; // Must go through one full epoch before being unlocked
 
 	private final UInt256 totalStake;
-
 	private final UInt256 totalOwnership;
-
 	private final OptionalInt rakePercentage;
 
 	// Bucket keys
@@ -154,10 +152,11 @@ public final class ValidatorStakeData implements ResourceInBucket {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s]",
+		return String.format("%s{stake=%s ownership=%s rake=%s}",
 			getClass().getSimpleName(),
 			totalStake,
-			validatorKey
+			totalOwnership,
+			rakePercentage
 		);
 	}
 

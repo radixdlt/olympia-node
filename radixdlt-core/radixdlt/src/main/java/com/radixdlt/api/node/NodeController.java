@@ -20,12 +20,12 @@ package com.radixdlt.api.node;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
-import com.radixdlt.application.Balances;
+import com.radixdlt.application.MyBalances;
 import com.radixdlt.application.MyValidator;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.application.MyStakedBalance;
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.application.ValidatorInfo;
+import com.radixdlt.application.MyValidatorInfo;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.BurnToken;
@@ -95,7 +95,7 @@ public final class NodeController implements Controller {
 
 	private JSONObject getValidator() {
 		var myStakes = radixEngine.getComputedState(MyValidator.class);
-		var validatorInfo = radixEngine.getComputedState(ValidatorInfo.class);
+		var validatorInfo = radixEngine.getComputedState(MyValidatorInfo.class);
 		var stakeFrom = new JSONArray();
 		myStakes.forEach((addr, amt) -> {
 			stakeFrom.put(
@@ -114,7 +114,7 @@ public final class NodeController implements Controller {
 	}
 
 	private JSONObject getBalance() {
-		var balances = radixEngine.getComputedState(Balances.class);
+		var balances = radixEngine.getComputedState(MyBalances.class);
 		var stakedBalance = radixEngine.getComputedState(MyStakedBalance.class);
 		var stakeTo = new JSONArray();
 		stakedBalance.forEach((addr, amt) ->

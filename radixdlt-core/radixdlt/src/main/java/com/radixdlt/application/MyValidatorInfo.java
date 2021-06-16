@@ -21,12 +21,12 @@ package com.radixdlt.application;
 /**
  * Info about node as validator
  */
-public final class ValidatorInfo {
+public final class MyValidatorInfo {
 	private final String name;
 	private final String url;
 	private final boolean registered;
 
-	public ValidatorInfo(String name, String url, boolean registered) {
+	public MyValidatorInfo(String name, String url, boolean registered) {
 		this.name = name;
 		this.url = url;
 		this.registered = registered;
