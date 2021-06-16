@@ -42,10 +42,12 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.api.Rri;
 import com.radixdlt.api.module.ArchiveApiModule;
 import com.radixdlt.api.module.CommonApiModule;
 import com.radixdlt.api.module.NodeApiModule;
 import com.radixdlt.api.qualifier.Endpoints;
+import com.radixdlt.api.service.RriParser;
 import com.radixdlt.application.NodeApplicationModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
@@ -224,6 +226,10 @@ public final class RadixNodeModule extends AbstractModule {
 		}
 
 		if (!nodeEndpoints.isEmpty()) {
+			if (archiveEndpoints.isEmpty()) {
+				bind(RriParser.class).toInstance(Rri::rriParser);
+			}
+
 			install(new NodeApiModule(nodeEndpoints));
 		}
 	}

@@ -82,8 +82,12 @@ public class RriTest {
 		reAddressToRri.forEach((expected, rri) -> {
 			var pair = Rri.parse(rri);
 			var expectedAddr = REAddr.of(Bytes.fromHexString(expected.getSecond()));
-			assertThat(expected.getFirst()).isEqualTo(pair.getFirst());
-			assertThat(expectedAddr).isEqualTo(pair.getSecond());
+
+			pair.map((symbol, address) -> {
+				assertThat(expected.getFirst()).isEqualTo(symbol);
+				assertThat(expectedAddr).isEqualTo(address);
+				return null;
+			});
 		});
 	}
 

@@ -26,8 +26,8 @@ import org.junit.Test;
 
 import com.radixdlt.api.data.PreparedTransaction;
 import com.radixdlt.api.service.ActionParserService;
+import com.radixdlt.api.service.RriParser;
 import com.radixdlt.api.service.SubmissionService;
-import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -61,9 +61,9 @@ public class ConstructionHandlerTest {
 	private static final ECPublicKey V2 = ECKeyPair.generateNew().getPublicKey();
 	private static final ECPublicKey V3 = ECKeyPair.generateNew().getPublicKey();
 
-	private final ClientApiStore clientApiStore = mock(ClientApiStore.class);
+	private final RriParser rriParser = mock(RriParser.class);
 	private final SubmissionService submissionService = mock(SubmissionService.class);
-	private final ActionParserService actionParserService = new ActionParserService(clientApiStore);
+	private final ActionParserService actionParserService = new ActionParserService(rriParser);
 	private final ConstructionHandler handler = new ConstructionHandler(submissionService, actionParserService);
 
 	@Test
