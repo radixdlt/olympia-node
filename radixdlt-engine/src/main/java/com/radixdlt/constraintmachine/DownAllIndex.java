@@ -18,22 +18,48 @@
 
 package com.radixdlt.constraintmachine;
 
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Objects;
 
 public final class DownAllIndex {
-	private final byte index;
+	private final byte[] index;
 	private final Class<? extends Particle> substateClass;
 
-	public DownAllIndex(byte index, Class<? extends Particle> substateClass) {
+	public DownAllIndex(byte[] index, Class<? extends Particle> substateClass) {
 		this.index = index;
 		this.substateClass = substateClass;
 	}
 
-	public boolean test(Particle p) {
-		return substateClass.isInstance(p);
+	public boolean test(RawSubstateBytes bytes) {
+		return test(bytes.getData());
 	}
 
-	public byte getIndex() {
+	public boolean test(byte[] dataBytes) {
+		if (dataBytes.length < index.length) {
+			return false;
+		}
+
+		return Arrays.equals(dataBytes, 0, index.length, index, 0, index.length);
+	}
+
+	public boolean test(ByteBuffer buffer) {
+		if (buffer.remaining() < index.length) {
+			return false;
+		}
+
+		for (byte b : index) {
+			if (buffer.get() != b) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+
+
+	public byte[] getIndex() {
 		return index;
 	}
 

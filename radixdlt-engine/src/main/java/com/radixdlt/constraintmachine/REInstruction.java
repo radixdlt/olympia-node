@@ -82,7 +82,7 @@ public final class REInstruction {
 			@Override
 			public Object read(Txn txn, int i, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
 				var classId = b.get();
-				return new DownAllIndex(classId, d.byteToClass(classId));
+				return new DownAllIndex(new byte[] {classId}, d.byteToClass(classId));
 			}
 		},
 		MSG((byte) 6, REOp.MSG) {

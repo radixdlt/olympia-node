@@ -29,6 +29,7 @@ import com.radixdlt.store.CMStore;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,6 +39,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * An implementation of a UTXO based constraint machine which uses Radix's atom structure.
@@ -69,7 +71,7 @@ public final class ConstraintMachine {
 	}
 
 	private static final class CMValidationState {
-		private final Map<Integer, Substate> localUpParticles = new HashMap<>();
+		private final Map<Integer, Pair<Substate, Supplier<ByteBuffer>>> localUpParticles = new HashMap<>();
 		private final Set<SubstateId> remoteDownParticles = new HashSet<>();
 		private final CMStore store;
 		private final CMStore.Transaction dbTxn;
@@ -93,6 +95,7 @@ public final class ConstraintMachine {
 			return addr -> {
 				if (addr.isSystem()) {
 					return localUpParticles.values().stream()
+						.map(Pair::getFirst)
 						.map(Substate::getParticle)
 						.filter(SystemParticle.class::isInstance)
 						.findFirst()
@@ -100,6 +103,7 @@ public final class ConstraintMachine {
 						.or(() -> Optional.of(new SystemParticle(0, 0, 0))); // A bit of a hack
 				} else {
 					return localUpParticles.values().stream()
+						.map(Pair::getFirst)
 						.map(Substate::getParticle)
 						.filter(TokenResource.class::isInstance)
 						.map(TokenResource.class::cast)
@@ -119,8 +123,8 @@ public final class ConstraintMachine {
 			return store.loadUpParticle(dbTxn, substateId, deserialization);
 		}
 
-		public void bootUp(int instructionIndex, Substate substate) {
-			localUpParticles.put(instructionIndex, substate);
+		public void bootUp(int instructionIndex, Substate substate, Supplier<ByteBuffer> buffer) {
+			localUpParticles.put(instructionIndex, Pair.of(substate, buffer));
 		}
 
 		public void virtualShutdown(Substate substate) throws ConstraintMachineException {
@@ -145,7 +149,7 @@ public final class ConstraintMachine {
 				throw new ConstraintMachineException(CMErrorCode.LOCAL_NONEXISTENT);
 			}
 
-			return substate.getParticle();
+			return substate.getFirst().getParticle();
 		}
 
 		public Optional<Particle> read(SubstateId substateId) {
@@ -164,11 +168,11 @@ public final class ConstraintMachine {
 		public CloseableCursor<Substate> shutdownAll(DownAllIndex index) {
 			return CloseableCursor.concat(
 				CloseableCursor.wrapIterator(localUpParticles.values().stream()
-					.filter(s -> index.test(s.getParticle())).iterator()
+					.filter(s -> index.test(s.getSecond().get())).map(Pair::getFirst).iterator()
 				),
 				() -> CloseableCursor.filter(
 					CloseableCursor.map(
-						store.openIndexedCursor(dbTxn, index.getIndex()),
+						store.openIndexedCursor(dbTxn, index),
 						r -> {
 							try {
 								var substate = deserialization.deserialize(r.getData());
@@ -297,7 +301,7 @@ public final class ConstraintMachine {
 					arg = null;
 					nextParticle = substate.getParticle();
 					o = nextParticle;
-					validationState.bootUp(instIndex, substate);
+					validationState.bootUp(instIndex, substate, inst::getDataByteBuffer);
 				} else if (inst.getMicroOp() == REInstruction.REMicroOp.VDOWN) {
 					substate = inst.getData();
 					arg = null;
