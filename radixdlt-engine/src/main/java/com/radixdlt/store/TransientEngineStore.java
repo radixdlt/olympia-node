@@ -1,6 +1,7 @@
 package com.radixdlt.store;
 
-import com.radixdlt.atom.SubstateCursor;
+import com.radixdlt.atom.CloseableCursor;
+import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REStateUpdate;
@@ -62,14 +63,14 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public SubstateCursor openIndexedCursor(
+	public CloseableCursor<Substate> openIndexedCursor(
 		Transaction dbTxn,
 		byte index,
 		SubstateDeserialization deserialization
 	) {
-		return SubstateCursor.concat(
+		return CloseableCursor.concat(
 			transientStore.openIndexedCursor(dbTxn, index, deserialization),
-			() -> SubstateCursor.filter(
+			() -> CloseableCursor.filter(
 				base.openIndexedCursor(dbTxn, index, deserialization),
 				s -> transientStore.getSpin(s.getId()).isEmpty()
 			)
@@ -77,13 +78,13 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public SubstateCursor openIndexedCursor(
+	public CloseableCursor<Substate> openIndexedCursor(
 		Class<? extends Particle> particleClass,
 		SubstateDeserialization deserialization
 	) {
-		return SubstateCursor.concat(
+		return CloseableCursor.concat(
 			transientStore.openIndexedCursor(particleClass, deserialization),
-			() -> SubstateCursor.filter(
+			() -> CloseableCursor.filter(
 				base.openIndexedCursor(particleClass, deserialization),
 				s -> transientStore.getSpin(s.getId()).isEmpty()
 			)

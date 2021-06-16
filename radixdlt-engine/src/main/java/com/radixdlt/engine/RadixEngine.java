@@ -21,7 +21,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.Substate;
-import com.radixdlt.atom.SubstateCursor;
+import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
@@ -539,16 +539,16 @@ public final class RadixEngine<M> {
 
 				var cacheIterator = cache.cache.asMap().values().iterator();
 
-				return SubstateCursor.concat(
-					SubstateCursor.wrapIterator(cacheIterator),
-					() -> SubstateCursor.filter(
+				return CloseableCursor.concat(
+					CloseableCursor.wrapIterator(cacheIterator),
+					() -> CloseableCursor.filter(
 						engineStore.openIndexedCursor(c, parser.getSubstateDeserialization()),
 						next -> !cache.cache.asMap().containsKey(next.getId())
 					)
 				);
 			};
 
-			SubstateStore filteredStore = (c, d) -> SubstateCursor.filter(
+			SubstateStore filteredStore = (c, d) -> CloseableCursor.filter(
 				substateStore.openIndexedCursor(c, d),
 				i -> !avoid.contains(i.getId())
 			);

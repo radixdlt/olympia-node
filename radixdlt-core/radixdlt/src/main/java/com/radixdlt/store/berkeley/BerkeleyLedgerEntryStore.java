@@ -28,7 +28,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.Substate;
-import com.radixdlt.atom.SubstateCursor;
+import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
@@ -445,7 +445,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return OptionalLong.of(Longs.fromByteArray(entry.getData(), Long.BYTES));
 	}
 
-	private static class BerkeleySubstateCursor implements SubstateCursor {
+	private static class BerkeleySubstateCursor implements CloseableCursor<Substate> {
 		private final SecondaryDatabase db;
 		private final com.sleepycat.je.Transaction dbTxn;
 		private final SubstateDeserialization deserialization;
@@ -501,7 +501,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public SubstateCursor openIndexedCursor(
+	public CloseableCursor<Substate> openIndexedCursor(
 		Transaction wrappedDbTxn,
 		byte index,
 		SubstateDeserialization deserialization
@@ -514,19 +514,19 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public SubstateCursor openIndexedCursor(
+	public CloseableCursor<Substate> openIndexedCursor(
 		Class<? extends Particle> particleClass,
 		SubstateDeserialization deserialization
 	) {
 		var typeBytes = deserialization.classToBytes(particleClass);
 		if (typeBytes.size() == 0) {
-			return SubstateCursor.empty();
+			return CloseableCursor.empty();
 		} else if (typeBytes.size() == 1) {
 			return openIndexedCursor(null, typeBytes.iterator().next(), deserialization);
 		} else if (typeBytes.size() == 2) {
 			var iter = typeBytes.iterator();
 			var cursor = openIndexedCursor(null, iter.next(), deserialization);
-			return SubstateCursor.concat(cursor, () -> openIndexedCursor(null, iter.next(), deserialization));
+			return CloseableCursor.concat(cursor, () -> openIndexedCursor(null, iter.next(), deserialization));
 		} else {
 			throw new IllegalStateException("Cannot handle more than 2 types per class");
 		}

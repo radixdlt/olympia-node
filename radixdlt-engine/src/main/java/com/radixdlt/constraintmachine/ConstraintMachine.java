@@ -18,7 +18,7 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atom.Substate;
-import com.radixdlt.atom.SubstateCursor;
+import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
@@ -160,12 +160,12 @@ public final class ConstraintMachine {
 			return maybeParticle.get();
 		}
 
-		public SubstateCursor shutdownAll(DownAllIndex index) {
-			return SubstateCursor.concat(
-				SubstateCursor.wrapIterator(localUpParticles.values().stream()
+		public CloseableCursor<Substate> shutdownAll(DownAllIndex index) {
+			return CloseableCursor.concat(
+				CloseableCursor.wrapIterator(localUpParticles.values().stream()
 					.filter(s -> index.test(s.getParticle())).iterator()
 				),
-				() -> SubstateCursor.filter(
+				() -> CloseableCursor.filter(
 					store.openIndexedCursor(dbTxn, index.getIndex(), deserialization),
 					s -> !remoteDownParticles.contains(s.getId())
 				)

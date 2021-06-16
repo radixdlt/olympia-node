@@ -103,8 +103,8 @@ public final class TxBuilder {
 		lowLevelBuilder.localDown(index);
 	}
 
-	private SubstateCursor createRemoteSubstateCursor(Class<? extends Particle> particleClass) {
-		return SubstateCursor.filter(
+	private CloseableCursor<Substate> createRemoteSubstateCursor(Class<? extends Particle> particleClass) {
+		return CloseableCursor.filter(
 			remoteSubstate.openIndexedCursor(particleClass, deserialization),
 			s -> !lowLevelBuilder.remoteDownSubstate().contains(s.getId())
 		);

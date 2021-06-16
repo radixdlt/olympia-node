@@ -18,7 +18,7 @@
 package com.radixdlt.store;
 
 import com.radixdlt.atom.Substate;
-import com.radixdlt.atom.SubstateCursor;
+import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.Txn;
@@ -89,7 +89,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	}
 
 	@Override
-	public SubstateCursor openIndexedCursor(
+	public CloseableCursor<Substate> openIndexedCursor(
 		Transaction dbTxn,
 		byte index,
 		SubstateDeserialization deserialization
@@ -107,11 +107,11 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 			}
 		}
 
-		return SubstateCursor.wrapIterator(substates.iterator());
+		return CloseableCursor.wrapIterator(substates.iterator());
 	}
 
 	@Override
-	public SubstateCursor openIndexedCursor(Class<? extends Particle> substateClass, SubstateDeserialization deserialization) {
+	public CloseableCursor<Substate> openIndexedCursor(Class<? extends Particle> substateClass, SubstateDeserialization deserialization) {
 		final List<Substate> substates = new ArrayList<>();
 		synchronized (lock) {
 			for (var i : storedParticles.values()) {
@@ -122,7 +122,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 			}
 		}
 
-		return SubstateCursor.wrapIterator(substates.iterator());
+		return CloseableCursor.wrapIterator(substates.iterator());
 	}
 
 	@Override

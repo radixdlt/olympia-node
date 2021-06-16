@@ -20,7 +20,7 @@ package com.radixdlt.api.construction;
 
 import com.google.inject.Inject;
 import com.radixdlt.atom.Substate;
-import com.radixdlt.atom.SubstateCursor;
+import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
@@ -94,7 +94,7 @@ public final class LogCMStore implements CMStore {
 	}
 
 	@Override
-	public SubstateCursor openIndexedCursor(
+	public CloseableCursor<Substate> openIndexedCursor(
 		Transaction dbTransaction,
 		byte index,
 		SubstateDeserialization deserialization
