@@ -46,7 +46,7 @@ import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
-import com.radixdlt.atommodel.validators.state.PreparedValidatorConfigUpdate;
+import com.radixdlt.atommodel.validators.state.PreparedRakeUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
@@ -422,7 +422,7 @@ public class StakingUnstakingValidatorsTest {
 					restartNode(nodeIndex);
 					continue;
 				case 6:
-					action = new UpdateRake(privKey.getPublicKey(), random.nextInt(PreparedValidatorConfigUpdate.RAKE_MAX + 1));
+					action = new UpdateRake(privKey.getPublicKey(), random.nextInt(PreparedRakeUpdate.RAKE_MAX + 1));
 					break;
 				default:
 					continue;

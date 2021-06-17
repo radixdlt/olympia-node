@@ -34,9 +34,11 @@ public enum SubstateTypeId {
 	VALIDATOR_EPOCH_DATA((byte) 12),
 	PREPARED_UNSTAKE((byte) 13),
 	EXITTING_STAKE((byte) 14),
-	VALIDATOR_NO_UPDATE((byte) 15),
-	PREPARED_VALIDATOR_UPDATE((byte) 16),
-	STAKE_V2((byte) 17);
+	RAKE_COPY((byte) 15),
+	PREPARED_RAKE_UPDATE((byte) 16),
+	STAKE_V2((byte) 17),
+	NULL_VALIDATOR_UPDATE((byte) 18),
+	PREPARED_VALIDATOR_UPDATE((byte) 19);
 
 	private final byte id;
 

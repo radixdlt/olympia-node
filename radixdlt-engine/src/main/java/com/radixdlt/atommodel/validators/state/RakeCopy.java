@@ -23,11 +23,11 @@ import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
 
-public final class ValidatorConfigCopy implements Particle {
+public final class RakeCopy implements Particle {
 	private final ECPublicKey validatorKey;
 	private final int curRakePercentage;
 
-	public ValidatorConfigCopy(ECPublicKey validatorKey, int curRakePercentage) {
+	public RakeCopy(ECPublicKey validatorKey, int curRakePercentage) {
 		this.validatorKey = Objects.requireNonNull(validatorKey);
 		this.curRakePercentage = curRakePercentage;
 	}
@@ -47,10 +47,10 @@ public final class ValidatorConfigCopy implements Particle {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof ValidatorConfigCopy)) {
+		if (!(o instanceof RakeCopy)) {
 			return false;
 		}
-		var other = (ValidatorConfigCopy) o;
+		var other = (RakeCopy) o;
 		return Objects.equals(this.validatorKey, other.validatorKey)
 			&& this.curRakePercentage == other.curRakePercentage;
 	}

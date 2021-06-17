@@ -30,6 +30,7 @@ import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.OptionalInt;
 
 public final class ValidatorStakeData implements ResourceInBucket {
@@ -39,6 +40,7 @@ public final class ValidatorStakeData implements ResourceInBucket {
 	private final UInt256 totalStake;
 	private final UInt256 totalOwnership;
 	private final OptionalInt rakePercentage;
+	private final Optional<REAddr> ownerAddr;
 
 	// Bucket keys
 	private final ECPublicKey validatorKey;
@@ -47,7 +49,8 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		ECPublicKey validatorKey,
 		UInt256 totalStake,
 		UInt256 totalOwnership,
-		OptionalInt rakePercentage
+		OptionalInt rakePercentage,
+		Optional<REAddr> ownerAddr
 	) {
 		if (totalStake.isZero() != totalOwnership.isZero()) {
 			throw new IllegalArgumentException(
@@ -58,10 +61,11 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		this.totalStake = totalStake;
 		this.totalOwnership = totalOwnership;
 		this.rakePercentage = rakePercentage;
+		this.ownerAddr = ownerAddr;
 	}
 
 	public static ValidatorStakeData create(ECPublicKey validatorKey) {
-		return new ValidatorStakeData(validatorKey, UInt256.ZERO, UInt256.ZERO, OptionalInt.empty());
+		return new ValidatorStakeData(validatorKey, UInt256.ZERO, UInt256.ZERO, OptionalInt.empty(), Optional.empty());
 	}
 
 	public static ValidatorStakeData create(
@@ -69,7 +73,7 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		UInt256 totalStake,
 		UInt256 totalOwnership
 	) {
-		return new ValidatorStakeData(validatorKey, totalStake, totalOwnership, OptionalInt.empty());
+		return new ValidatorStakeData(validatorKey, totalStake, totalOwnership, OptionalInt.empty(), Optional.empty());
 	}
 
 	public static ValidatorStakeData create(
@@ -78,7 +82,11 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		UInt256 totalOwnership,
 		int rakePercentage
 	) {
-		return new ValidatorStakeData(validatorKey, totalStake, totalOwnership, OptionalInt.of(rakePercentage));
+		return new ValidatorStakeData(validatorKey, totalStake, totalOwnership, OptionalInt.of(rakePercentage), Optional.empty());
+	}
+
+	public Optional<REAddr> getOwnerAddr() {
+		return ownerAddr;
 	}
 
 	public OptionalInt getRakePercentage() {
@@ -86,7 +94,11 @@ public final class ValidatorStakeData implements ResourceInBucket {
 	}
 
 	public ValidatorStakeData setRakePercentage(int rakePercentage) {
-		return new ValidatorStakeData(validatorKey, totalStake, totalOwnership, OptionalInt.of(rakePercentage));
+		return new ValidatorStakeData(validatorKey, totalStake, totalOwnership, OptionalInt.of(rakePercentage), ownerAddr);
+	}
+
+	public ValidatorStakeData setOwnerAddr(REAddr ownerAddr) {
+		return new ValidatorStakeData(validatorKey, totalStake, totalOwnership, rakePercentage, Optional.of(ownerAddr));
 	}
 
 	@Override
@@ -104,13 +116,14 @@ public final class ValidatorStakeData implements ResourceInBucket {
 			validatorKey,
 			this.totalStake.add(amount),
 			totalOwnership,
-			rakePercentage
+			rakePercentage,
+			ownerAddr
 		);
 	}
 
 	public Pair<ValidatorStakeData, StakeOwnership> stake(REAddr owner, UInt256 stake) throws ProcedureException {
 		if (totalStake.isZero()) {
-			var nextValidatorStake = new ValidatorStakeData(validatorKey, stake, stake, rakePercentage);
+			var nextValidatorStake = new ValidatorStakeData(validatorKey, stake, stake, rakePercentage, ownerAddr);
 			var stakeOwnership = new StakeOwnership(validatorKey, owner, stake);
 			return Pair.of(nextValidatorStake, stakeOwnership);
 		}
@@ -121,7 +134,13 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		}
 		var ownershipAmt = ownership384.getLow();
 		var stakeOwnership = new StakeOwnership(validatorKey, owner, ownershipAmt);
-		var nextValidatorStake = new ValidatorStakeData(validatorKey, totalStake.add(stake), totalOwnership.add(ownershipAmt), rakePercentage);
+		var nextValidatorStake = new ValidatorStakeData(
+			validatorKey,
+			totalStake.add(stake),
+			totalOwnership.add(ownershipAmt),
+			rakePercentage,
+			ownerAddr
+		);
 		return Pair.of(nextValidatorStake, stakeOwnership);
 	}
 
@@ -139,7 +158,8 @@ public final class ValidatorStakeData implements ResourceInBucket {
 			validatorKey,
 			totalStake.subtract(unstaked),
 			totalOwnership.subtract(unstakeOwnership),
-			rakePercentage
+			rakePercentage,
+			ownerAddr
 		);
 		var epochUnlocked = curEpoch + EPOCHS_LOCKED;
 		var exittingStake = new ExittingStake(validatorKey, owner, epochUnlocked, unstaked);
@@ -176,7 +196,8 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		return Objects.equals(validatorKey, that.validatorKey)
 			&& Objects.equals(totalOwnership, that.totalOwnership)
 			&& Objects.equals(totalStake, that.totalStake)
-			&& Objects.equals(rakePercentage, that.rakePercentage);
+			&& Objects.equals(rakePercentage, that.rakePercentage)
+			&& Objects.equals(ownerAddr, that.ownerAddr);
 	}
 
 	@Override
@@ -185,7 +206,8 @@ public final class ValidatorStakeData implements ResourceInBucket {
 			validatorKey,
 			totalOwnership,
 			totalStake,
-			rakePercentage
+			rakePercentage,
+			ownerAddr
 		);
 	}
 }
