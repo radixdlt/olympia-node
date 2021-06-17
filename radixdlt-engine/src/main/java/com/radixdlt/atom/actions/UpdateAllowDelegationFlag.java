@@ -16,21 +16,25 @@
  *
  */
 
-package com.radixdlt.store;
+package com.radixdlt.atom.actions;
 
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.SubstateDeserialization;
-import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.atom.TxAction;
+import com.radixdlt.crypto.ECPublicKey;
 
-import java.util.Optional;
+public final class UpdateAllowDelegationFlag implements TxAction {
+	private final ECPublicKey validatorKey;
+	private final boolean allowDelegation;
 
-/**
- * Index into immutable substates
- */
-public interface ReadableAddrsStore {
-	Optional<Particle> loadAddr(
-		CMStore.Transaction dbTxn,
-		REAddr addr,
-		SubstateDeserialization deserialization
-	);
+	public UpdateAllowDelegationFlag(ECPublicKey validatorKey, boolean allowDelegation) {
+		this.validatorKey = validatorKey;
+		this.allowDelegation = allowDelegation;
+	}
+
+	public ECPublicKey getValidatorKey() {
+		return validatorKey;
+	}
+
+	public boolean allowDelegation() {
+		return allowDelegation;
+	}
 }

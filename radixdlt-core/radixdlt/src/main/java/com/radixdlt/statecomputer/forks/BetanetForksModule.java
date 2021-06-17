@@ -37,6 +37,7 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
 import com.radixdlt.atom.actions.UpdateRake;
 import com.radixdlt.atom.actions.UpdateValidator;
 import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
@@ -57,11 +58,13 @@ import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.system.construction.NextEpochConstructorV1;
 import com.radixdlt.atommodel.system.construction.NextViewConstructorV1;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV2;
+import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV3;
 import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV2;
 import com.radixdlt.atommodel.tokens.construction.UnstakeOwnershipConstructor;
 import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV1;
 import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV2;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
+import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV4;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
@@ -69,6 +72,7 @@ import com.radixdlt.atommodel.tokens.construction.SplitTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV1;
 import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV1;
 import com.radixdlt.atommodel.validators.construction.UnregisterValidatorConstructor;
+import com.radixdlt.atommodel.validators.construction.UpdateAllowDelegationFlagConstructor;
 import com.radixdlt.atommodel.validators.construction.UpdateRakeConstructor;
 import com.radixdlt.atommodel.validators.construction.UpdateValidatorConstructor;
 import com.radixdlt.atommodel.system.construction.NextViewConstructorV2;
@@ -254,7 +258,7 @@ public final class BetanetForksModule extends AbstractModule {
 		v4.load(new ValidatorConstraintScryptV2()); // load before TokensConstraintScrypt due to dependency
 		v4.load(new TokensConstraintScryptV3());
 		v4.load(new FeeConstraintScrypt());
-		v4.load(new StakingConstraintScryptV3());
+		v4.load(new StakingConstraintScryptV4());
 		v4.load(new UniqueParticleConstraintScrypt());
 		v4.load(new SystemConstraintScryptV3());
 		v4.load(new SystemV1ToV2TransitionConstraintScrypt());
@@ -276,7 +280,7 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(SystemNextView.class, new NextViewConstructorV2())
 			.put(RegisterValidator.class, new RegisterValidatorConstructor())
 			.put(SplitToken.class, new SplitTokenConstructor())
-			.put(StakeTokens.class, new StakeTokensConstructorV2())
+			.put(StakeTokens.class, new StakeTokensConstructorV3())
 			.put(UnstakeTokens.class, new UnstakeTokensConstructorV2())
 			.put(UnstakeOwnership.class, new UnstakeOwnershipConstructor())
 			.put(TransferToken.class, new TransferTokensConstructorV2())
@@ -285,6 +289,7 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(PayFee.class, new PayFeeConstructorV2())
 			.put(UpdateRake.class, new UpdateRakeConstructor())
 			.put(UpdateValidatorOwnerAddress.class, new UpdateValidatorOwnerConstructor())
+			.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())
 			.build();
 
 		return new ForkConfig(

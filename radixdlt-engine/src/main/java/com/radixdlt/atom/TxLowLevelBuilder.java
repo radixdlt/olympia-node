@@ -124,6 +124,28 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
+	public TxLowLevelBuilder localRead(int index) {
+		var particle = localUpParticles.get(index);
+		if (particle == null) {
+			throw new IllegalStateException("Local particle does not exist: " + index);
+		}
+		instruction(REInstruction.REMicroOp.LREAD, Ints.toByteArray(index));
+		return this;
+	}
+
+	public TxLowLevelBuilder virtualRead(Particle particle) {
+		Objects.requireNonNull(particle, "particle is required");
+		var bytes = serialization.serialize(particle);
+		instruction(REInstruction.REMicroOp.VREAD, bytes);
+		return this;
+	}
+
+	public TxLowLevelBuilder read(SubstateId substateId) {
+		instruction(REInstruction.REMicroOp.READ, substateId.asBytes());
+		this.remoteDownSubstate.add(substateId);
+		return this;
+	}
+
 	public TxLowLevelBuilder virtualDown(Particle particle, byte[] arg) {
 		Objects.requireNonNull(particle, "particle is required");
 		var bytes = serialization.serialize(particle);

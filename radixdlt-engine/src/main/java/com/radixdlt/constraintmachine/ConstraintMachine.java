@@ -91,7 +91,6 @@ public final class ConstraintMachine {
 		}
 
 		public ReadableAddrs readableAddrs() {
-			// TODO: Fix ReadableAddrs interface (remove txn)
 			return addr -> {
 				if (addr.isSystem()) {
 					return localUpParticles.values().stream()
@@ -127,7 +126,8 @@ public final class ConstraintMachine {
 			localUpParticles.put(instructionIndex, Pair.of(substate, buffer));
 		}
 
-		public void virtualShutdown(Substate substate) throws ConstraintMachineException {
+
+		public void virtualRead(Substate substate) throws ConstraintMachineException {
 			if (remoteDownParticles.contains(substate.getId())) {
 				throw new ConstraintMachineException(CMErrorCode.SUBSTATE_NOT_FOUND);
 			}
@@ -139,7 +139,10 @@ public final class ConstraintMachine {
 			if (store.isVirtualDown(dbTxn, substate.getId())) {
 				throw new ConstraintMachineException(CMErrorCode.SUBSTATE_NOT_FOUND);
 			}
+		}
 
+		public void virtualShutdown(Substate substate) throws ConstraintMachineException {
+			virtualRead(substate);
 			remoteDownParticles.add(substate.getId());
 		}
 
@@ -152,17 +155,27 @@ public final class ConstraintMachine {
 			return substate.getFirst().getParticle();
 		}
 
-		public Optional<Particle> read(SubstateId substateId) {
-			return loadUpParticle(substateId);
+		public Particle localRead(int index) throws ConstraintMachineException {
+			var substate = localUpParticles.get(index);
+			if (substate == null) {
+				throw new ConstraintMachineException(CMErrorCode.LOCAL_NONEXISTENT);
+			}
+
+			return substate.getFirst().getParticle();
+		}
+
+		public Particle read(SubstateId substateId) throws ConstraintMachineException {
+			var read = loadUpParticle(substateId);
+			if (read.isEmpty()) {
+				throw new ConstraintMachineException(CMErrorCode.SUBSTATE_NOT_FOUND);
+			}
+			return read.get();
 		}
 
 		public Particle shutdown(SubstateId substateId) throws ConstraintMachineException {
-			var maybeParticle = loadUpParticle(substateId);
-			if (maybeParticle.isEmpty()) {
-				throw new ConstraintMachineException(CMErrorCode.SUBSTATE_NOT_FOUND);
-			}
+			var substate = read(substateId);
 			remoteDownParticles.add(substateId);
-			return maybeParticle.get();
+			return substate;
 		}
 
 		public CloseableCursor<Substate> shutdownAll(ShutdownAllIndex index) {
@@ -258,6 +271,25 @@ public final class ConstraintMachine {
 					var opSignature = OpSignature.ofMethod(inst.getMicroOp().getOp(), REAddr.ofSystem());
 					var methodProcedure = loadProcedure(reducerState, opSignature);
 					reducerState = callProcedure(methodProcedure, callData, reducerState, readableAddrs, context);
+				} else if (inst.getMicroOp().getOp() == REOp.READ) {
+					final Particle nextParticle;
+					if (inst.getMicroOp() == REInstruction.REMicroOp.VREAD) {
+						Substate substate = inst.getData();
+						nextParticle = substate.getParticle();
+						validationState.virtualRead(substate);
+					} else if (inst.getMicroOp() == REInstruction.REMicroOp.READ) {
+						SubstateId substateId = inst.getData();
+						nextParticle = validationState.read(substateId);
+					} else if (inst.getMicroOp() == REInstruction.REMicroOp.LREAD) {
+						SubstateId substateId = inst.getData();
+						nextParticle = validationState.localRead(substateId.getIndex().orElseThrow());
+					} else {
+						throw new IllegalStateException("Unknown read op");
+					}
+					var eventId = OpSignature.ofSubstateUpdate(inst.getMicroOp().getOp(), nextParticle.getClass());
+					var methodProcedure = loadProcedure(reducerState, eventId);
+					reducerState = callProcedure(methodProcedure, nextParticle, reducerState, readableAddrs, context);
+					expectEnd = reducerState == null;
 				} else if (inst.getMicroOp().getOp() == REOp.DOWNALL) {
 					ShutdownAllIndex index = inst.getData();
 					var substateCursor = validationState.shutdownAll(index);

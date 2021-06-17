@@ -24,21 +24,24 @@ import com.radixdlt.atommodel.system.state.StakeOwnership;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
+import com.radixdlt.atommodel.validators.state.AllowDelegationFlag;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.atomos.Loader;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
+import com.radixdlt.constraintmachine.ReadProcedure;
 import com.radixdlt.constraintmachine.ReducerResult;
+import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 
 import java.util.Set;
 
-public class StakingConstraintScryptV3 implements ConstraintScrypt {
+public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 
 	@Override
 	public void main(Loader os) {
@@ -83,21 +86,51 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		defineStaking(os);
 	}
 
+	private static final class StakePrepare implements ReducerState {
+		private final TokenHoldingBucket tokenHoldingBucket;
+		private final AllowDelegationFlag allowDelegationFlag;
+
+		StakePrepare(TokenHoldingBucket tokenHoldingBucket, AllowDelegationFlag allowDelegationFlag) {
+			this.tokenHoldingBucket = tokenHoldingBucket;
+			this.allowDelegationFlag = allowDelegationFlag;
+		}
+
+		static StakePrepare create(TokenHoldingBucket tokenHoldingBucket, AllowDelegationFlag allowDelegationFlag) throws ProcedureException {
+			if (!allowDelegationFlag.allowsDelegation()) {
+				throw new ProcedureException("Delegation locked");
+			}
+			return new StakePrepare(tokenHoldingBucket, allowDelegationFlag);
+		}
+
+		ReducerState withdraw(PreparedStake preparedStake) throws ProcedureException {
+			if (preparedStake.getAmount().compareTo(ValidatorStakeData.MINIMUM_STAKE) < 0) {
+				throw new ProcedureException(
+					"Minimum amount to stake must be >= " + ValidatorStakeData.MINIMUM_STAKE
+						+ " but trying to stake " + preparedStake.getAmount()
+				);
+			}
+			if (!preparedStake.getDelegateKey().equals(allowDelegationFlag.getValidatorKey())) {
+				throw new ProcedureException("Not matching validator keys");
+			}
+			return tokenHoldingBucket.withdraw(preparedStake.getResourceAddr(), preparedStake.getAmount());
+		}
+	}
+
 	private void defineStaking(Loader os) {
 		// Stake
+		os.procedure(new ReadProcedure<>(
+			TokenHoldingBucket.class, AllowDelegationFlag.class,
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			(s, d, r) -> {
+				var stakePrepare = StakePrepare.create(s, d);
+				return ReducerResult.incomplete(stakePrepare);
+			}
+		));
 		os.procedure(new UpProcedure<>(
-			TokenHoldingBucket.class, PreparedStake.class,
+			StakePrepare.class, PreparedStake.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> {
-				if (u.getAmount().compareTo(ValidatorStakeData.MINIMUM_STAKE) < 0) {
-					throw new ProcedureException(
-						"Minimum amount to stake must be >= " + ValidatorStakeData.MINIMUM_STAKE
-							+ " but trying to stake " + u.getAmount()
-					);
-				}
-
-				var resourceAddr = u.bucket().resourceAddr();
-				var nextState = s.withdraw(resourceAddr, u.getAmount());
+				var nextState = s.withdraw(u);
 				return ReducerResult.incomplete(nextState);
 			}
 		));
@@ -106,31 +139,31 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		os.procedure(new DownProcedure<>(
 			StakeOwnership.class, VoidReducerState.class,
 			d -> d.getSubstate().bucket().withdrawAuthorization(),
-			(d, s, r) -> ReducerResult.incomplete(new StakeOwnershipHoldingBucket(d.getSubstate()))
+			(d, s, r) -> ReducerResult.incomplete(new com.radixdlt.atommodel.tokens.scrypt.StakeOwnershipHoldingBucket(d.getSubstate()))
 		));
 		// Additional Unstake
 		os.procedure(new DownProcedure<>(
-			StakeOwnership.class, StakeOwnershipHoldingBucket.class,
+			StakeOwnership.class, com.radixdlt.atommodel.tokens.scrypt.StakeOwnershipHoldingBucket.class,
 			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> ReducerResult.incomplete(s.depositOwnership(d.getSubstate()))
 		));
 		// Change
 		os.procedure(new UpProcedure<>(
-			StakeOwnershipHoldingBucket.class, StakeOwnership.class,
+			com.radixdlt.atommodel.tokens.scrypt.StakeOwnershipHoldingBucket.class, StakeOwnership.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.withdrawOwnership(u))
 		));
 		os.procedure(new UpProcedure<>(
-			StakeOwnershipHoldingBucket.class, PreparedUnstakeOwnership.class,
+			com.radixdlt.atommodel.tokens.scrypt.StakeOwnershipHoldingBucket.class, PreparedUnstakeOwnership.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.unstake(u))
 		));
 
 		// Deallocate Stake Holding Bucket
 		os.procedure(new EndProcedure<>(
-			StakeOwnershipHoldingBucket.class,
+			com.radixdlt.atommodel.tokens.scrypt.StakeOwnershipHoldingBucket.class,
 			s -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			StakeOwnershipHoldingBucket::destroy
+			com.radixdlt.atommodel.tokens.scrypt.StakeOwnershipHoldingBucket::destroy
 		));
 	}
 }
