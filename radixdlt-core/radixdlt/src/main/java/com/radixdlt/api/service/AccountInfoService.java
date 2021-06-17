@@ -21,11 +21,10 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.data.TxHistoryEntry;
-import com.radixdlt.application.Balances;
+import com.radixdlt.application.MyBalances;
 import com.radixdlt.application.MyStakedBalance;
 import com.radixdlt.application.MyValidator;
-import com.radixdlt.application.ValidatorInfo;
+import com.radixdlt.application.MyValidatorInfo;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
@@ -36,10 +35,6 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
@@ -77,12 +72,16 @@ public class AccountInfoService {
 		return ValidatorAddress.of(bftKey);
 	}
 
-	public ValidatorInfo getValidatorInfoDetails() {
-		return radixEngine.getComputedState(ValidatorInfo.class);
+	public MyValidatorInfo getValidatorInfoDetails() {
+		return radixEngine.getComputedState(MyValidatorInfo.class);
+	}
+
+	public MyValidator getValidatorStakeData() {
+		return radixEngine.getComputedState(MyValidator.class);
 	}
 
 	private Pair<UInt256, JSONArray> getValidatorStakes() {
-		var stakeReceived = radixEngine.getComputedState(MyValidator.class);
+		var stakeReceived = getValidatorStakeData();
 		var stakeFrom = jsonArray();
 
 		stakeReceived.forEach((address, amt) -> {
@@ -104,8 +103,12 @@ public class AccountInfoService {
 		return bftKey;
 	}
 
+	public MyBalances getMyBalances() {
+		return radixEngine.getComputedState(MyBalances.class);
+	}
+
 	private JSONObject getOwnBalance() {
-		var balances = radixEngine.getComputedState(Balances.class);
+		var balances = getMyBalances();
 		var stakedBalance = radixEngine.getComputedState(MyStakedBalance.class);
 
 		var stakesArray = jsonArray();
@@ -125,15 +128,5 @@ public class AccountInfoService {
 
 	private JSONObject constructStakeEntry(ECPublicKey publicKey, UInt256 amount) {
 		return jsonObject().put("delegate", ValidatorAddress.of(publicKey)).put("amount", amount);
-	}
-
-	private static Optional<Instant> calculateNewCursor(List<TxHistoryEntry> response) {
-		return response.stream()
-			.reduce(AccountInfoService::findLast)
-			.map(TxHistoryEntry::timestamp);
-	}
-
-	private static <T> T findLast(T first, T second) {
-		return second;
 	}
 }

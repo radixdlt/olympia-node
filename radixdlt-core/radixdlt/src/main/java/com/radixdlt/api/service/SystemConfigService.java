@@ -29,15 +29,13 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.identifiers.ValidatorAddress;
+import com.radixdlt.identifiers.NodeAddress;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.PeerWithSystem;
-import com.radixdlt.network.transport.TransportInfo;
-import com.radixdlt.network.transport.tcp.TCPConfiguration;
+import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.statecomputer.MaxTxnsPerProposal;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
@@ -51,7 +49,6 @@ import java.util.List;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.radixdlt.api.JsonRpcUtil.fromList;
 import static com.radixdlt.api.JsonRpcUtil.jsonArray;
@@ -139,7 +136,6 @@ public class SystemConfigService {
 		CounterType.MESSAGES_INBOUND_RECEIVED,
 		CounterType.MESSAGES_INBOUND_PROCESSED,
 		CounterType.MESSAGES_INBOUND_DISCARDED,
-		CounterType.MESSAGES_INBOUND_BADSIGNATURE,
 		CounterType.MESSAGES_OUTBOUND_ABORTED,
 		CounterType.MESSAGES_OUTBOUND_PENDING,
 		CounterType.MESSAGES_OUTBOUND_PROCESSED,
@@ -162,10 +158,9 @@ public class SystemConfigService {
 	private final JSONObject networkingConfiguration;
 
 	private final InMemorySystemInfo inMemorySystemInfo;
-	private final AddressBook addressBook;
-	private final PeerWithSystem localPeer;
 	private final SystemCounters systemCounters;
 	private final List<EndpointStatus> endpointStatuses;
+	private final PeersView peersView;
 
 	@Inject
 	public SystemConfigService(
@@ -181,16 +176,14 @@ public class SystemConfigService {
 		TreeMap<Long, ForkConfig> forkConfigTreeMap,
 		SyncConfig syncConfig,
 		InMemorySystemInfo inMemorySystemInfo,
-		AddressBook addressBook,
-		PeerWithSystem localPeer,
 		SystemCounters systemCounters,
-		TCPConfiguration tcpConfiguration
+		PeersView peersView,
+		P2PConfig p2PConfig
 	) {
 		this.inMemorySystemInfo = inMemorySystemInfo;
-		this.addressBook = addressBook;
-		this.localPeer = localPeer;
 		this.systemCounters = systemCounters;
 		this.endpointStatuses = endpointStatuses;
+		this.peersView = peersView;
 
 		radixEngineConfiguration = prepareRadixEngineConfiguration(forkConfigTreeMap, minValidators, maxValidators, maxTxnsPerProposal);
 		mempoolConfiguration = prepareMempoolConfiguration(mempoolMaxSize, mempoolThrottleMs);
@@ -198,7 +191,7 @@ public class SystemConfigService {
 		bftConfiguration = prepareBftConfiguration(pacemakerTimeout, bftSyncPatienceMillis);
 		syncConfiguration = syncConfig.asJson();
 		checkpointsConfiguration = prepareCheckpointsConfiguration(genesis);
-		networkingConfiguration = tcpConfiguration.asJson();
+		networkingConfiguration = prepareNetworkingConfiguration(p2PConfig);
 	}
 
 	public JSONObject getApiConfiguration() {
@@ -258,7 +251,7 @@ public class SystemConfigService {
 	public JSONArray getNetworkingPeers() {
 		var peerArray = new JSONArray();
 
-		selfAndOthers(addressBook.recentPeers())
+		peersView.peers()
 			.map(this::peerToJson)
 			.forEach(peerArray::put);
 
@@ -266,7 +259,7 @@ public class SystemConfigService {
 	}
 
 	public long getNetworkingPeersCount() {
-		return selfAndOthers(addressBook.recentPeers()).count();
+		return peersView.peers().count();
 	}
 
 	public JSONObject getNetworkingData() {
@@ -393,26 +386,35 @@ public class SystemConfigService {
 			.put("proof", genesis.getProof().asJSON());
 	}
 
-	private JSONObject peerToJson(PeerWithSystem peer) {
-		var json = jsonObject().put("address", ValidatorAddress.of(peer.getSystem().getKey()));
-
-		peer.getSystem()
-			.supportedTransports()
-			.filter(this::isTCP)
-			.forEach(t -> json.put("endpoint", getHostAndPort(t)));
-
-		return json;
+	private JSONObject prepareNetworkingConfiguration(P2PConfig p2PConfig) {
+		return jsonObject()
+			.put("defaultPort", p2PConfig.defaultPort())
+			.put("discoveryInterval", p2PConfig.discoveryInterval())
+			.put("listenAddress", p2PConfig.listenAddress())
+			.put("listenPort", p2PConfig.listenPort())
+			.put("broadcastPort", p2PConfig.broadcastPort())
+			.put("peerConnectionTimeout", p2PConfig.peerConnectionTimeout())
+			.put("maxInboundChannels", p2PConfig.maxInboundChannels())
+			.put("maxOutboundChannels", p2PConfig.maxOutboundChannels())
+			.put("channelBufferSize", p2PConfig.channelBufferSize())
+			.put("peerLivenessCheckInterval", p2PConfig.peerLivenessCheckInterval())
+			.put("pingTimeout", p2PConfig.pingTimeout())
+			.put("seedNodes", fromList(p2PConfig.seedNodes(), seedNode -> seedNode));
 	}
 
-	private String getHostAndPort(TransportInfo t) {
-		return t.metadata().get("host") + ":" + t.metadata().get("port");
-	}
+	private JSONObject peerToJson(PeersView.PeerInfo peer) {
+		var channelsJson = jsonArray();
+		var peerJson = jsonObject().put("address", NodeAddress.of(peer.getNodeId().getPublicKey()));
 
-	private boolean isTCP(TransportInfo t) {
-		return t.name().equals("TCP");
-	}
-
-	private Stream<PeerWithSystem> selfAndOthers(Stream<PeerWithSystem> others) {
-		return Stream.concat(Stream.of(localPeer), others).distinct();
+		peer.getChannels().forEach(channel -> {
+			var channelJson = jsonObject();
+			channelJson.put("type", channel.isOutbound() ? "out" : "in");
+			channelJson.put("localPort", channel.getSocketAddress().getPort());
+			channel.getUri().ifPresent(uri -> channelJson.put("uri", uri.toString()));
+			channelsJson.put(channelJson);
+		});
+		peerJson.put("channels", channelsJson);
+		return peerJson;
 	}
 }
+

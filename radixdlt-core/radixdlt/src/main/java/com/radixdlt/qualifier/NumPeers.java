@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.universe;
+package com.radixdlt.qualifier;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -28,10 +28,10 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Marker for Universe magic (network ID).
+ * Marker for number of peer configuration.
  */
 @Qualifier
 @Target({ FIELD, PARAMETER, METHOD })
 @Retention(RUNTIME)
-public @interface Magic {
+public @interface NumPeers {
 }

@@ -17,12 +17,14 @@
 
 package com.radixdlt.api.chaos.mempoolfiller;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.google.inject.name.Named;
-import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
@@ -35,12 +37,11 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineMempool;
 import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
 import com.radixdlt.utils.UInt256;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -70,7 +71,7 @@ public final class MempoolFiller {
 	@Inject
 	public MempoolFiller(
 		@Self REAddr account,
-		@Named("RadixEngine") HashSigner hashSigner,
+		@LocalSigner HashSigner hashSigner,
 		RadixEngineMempool radixEngineMempool,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,

@@ -26,6 +26,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.qualifier.Magic;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.checkpoint.Genesis;

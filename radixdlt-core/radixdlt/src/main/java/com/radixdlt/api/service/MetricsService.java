@@ -23,6 +23,7 @@ import com.google.inject.Inject;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.middleware2.InfoSupplier;
+import com.radixdlt.utils.UInt384;
 
 import java.util.List;
 import java.util.Map;
@@ -91,9 +92,21 @@ public class MetricsService {
 		CounterType.BFT_TIMED_OUT_VIEWS,
 		CounterType.BFT_TIMEOUT_QUORUMS,
 		CounterType.STARTUP_TIME_MS,
+		CounterType.LEDGER_STATE_VERSION,
+		CounterType.LEDGER_SYNC_COMMANDS_PROCESSED,
+		CounterType.LEDGER_BFT_COMMANDS_PROCESSED,
+		CounterType.MEMPOOL_COUNT,
+		CounterType.MEMPOOL_MAXCOUNT,
+		CounterType.MEMPOOL_RELAYER_SENT_COUNT,
+		CounterType.MEMPOOL_ADD_SUCCESS,
+		CounterType.MEMPOOL_PROPOSED_TRANSACTION,
+		CounterType.MEMPOOL_ERRORS_HOOK,
+		CounterType.MEMPOOL_ERRORS_CONFLICT,
+		CounterType.MEMPOOL_ERRORS_OTHER,
+		CounterType.RADIX_ENGINE_USER_TRANSACTIONS,
+		CounterType.RADIX_ENGINE_SYSTEM_TRANSACTIONS,
 		CounterType.MESSAGES_INBOUND_PROCESSED,
 		CounterType.MESSAGES_INBOUND_DISCARDED,
-		CounterType.MESSAGES_INBOUND_BADSIGNATURE,
 		CounterType.MESSAGES_INBOUND_RECEIVED,
 		CounterType.MESSAGES_OUTBOUND_PROCESSED,
 		CounterType.MESSAGES_OUTBOUND_ABORTED,
@@ -148,6 +161,9 @@ public class MetricsService {
 		appendCounter(builder, "total_peers", systemConfigService.getNetworkingPeersCount());
 		appendCounter(builder, "total_validators", validatorInfoService.getValidatorsCount());
 
+		appendCounter(builder, "balance_xrd", getXrdBalance());
+		appendCounter(builder, "validator_total_stake", getTotalStake());
+
 		appendCounterExtended(
 			builder,
 			prepareNodeInfo(),
@@ -155,6 +171,21 @@ public class MetricsService {
 			"Special metric used to convey information about the current node using labels. Value will always be 0.",
 			0.0
 		);
+	}
+
+	private UInt384 getTotalStake() {
+		return UInt384.from(accountInfoService.getValidatorStakeData().getTotalStake());
+	}
+
+	private UInt384 getXrdBalance() {
+		var nativeBalance = accountInfoService.getMyBalances()
+			.stream()
+			.filter(e -> e.getKey().isNativeToken())
+			.map(Map.Entry::getValue)
+			.findAny()
+			.orElse(UInt384.ZERO);
+
+		return nativeBalance;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -248,13 +279,17 @@ public class MetricsService {
 	}
 
 	private void appendCounter(StringBuilder builder, String name, Number value) {
-		appendCounterExtended(builder, name, name, name, value);
+		appendCounterExtended(builder, name, name, name, value.doubleValue());
 	}
 
-	private void appendCounterExtended(StringBuilder builder, String name, String type, String help, Number value) {
+	private void appendCounter(StringBuilder builder, String name, UInt384 value) {
+		appendCounterExtended(builder, name, name, name, value.toString() + ".0");
+	}
+
+	private void appendCounterExtended(StringBuilder builder, String name, String type, String help, Object value) {
 		builder
 			.append("# HELP ").append(help).append('\n')
 			.append("# TYPE ").append(type).append(' ').append(COUNTER).append('\n')
-			.append(name).append(' ').append(value.doubleValue()).append('\n');
+			.append(name).append(' ').append(value).append('\n');
 	}
 }

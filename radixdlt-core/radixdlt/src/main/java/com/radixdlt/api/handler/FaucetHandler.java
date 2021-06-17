@@ -22,7 +22,6 @@ import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.google.inject.name.Named;
 import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.api.faucet.FaucetToken;
 import com.radixdlt.api.service.SubmissionService;
@@ -32,6 +31,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
@@ -57,7 +57,7 @@ public class FaucetHandler {
 		SubmissionService submissionService,
 		@Self REAddr account,
 		@FaucetToken Set<REAddr> tokensToSend,
-		@Named("RadixEngine") HashSigner hashSigner
+		@LocalSigner HashSigner hashSigner
 	) {
 		this.submissionService = submissionService;
 		this.account = account;
