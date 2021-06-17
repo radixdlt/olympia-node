@@ -18,6 +18,9 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.utils.Longs;
+
+import java.util.Arrays;
 import java.util.Iterator;
 
 public final class ShutdownAll<D extends Particle> {
@@ -27,6 +30,22 @@ public final class ShutdownAll<D extends Particle> {
 	public ShutdownAll(ShutdownAllIndex index, Iterator<D> iterator) {
 		this.index = index;
 		this.iterator = iterator;
+	}
+
+	public void verifyPostTypePrefixEquals(long l) throws ProcedureException {
+		if (index.getPrefix().length != Long.BYTES + 1) {
+			throw new ProcedureException("Invalid shutdownAll prefix");
+		}
+		var d = Longs.fromByteArray(index.getPrefix(), 1);
+		if (d != l) {
+			throw new ProcedureException("Invalid shutdownAll prefix");
+		}
+	}
+
+	public void verifyPostTypePrefixIsEmpty() throws ProcedureException {
+		if (index.getPrefix().length != 1) {
+			throw new ProcedureException("Invalid shutdownAll prefix");
+		}
 	}
 
 	public Iterator<D> iterator() {

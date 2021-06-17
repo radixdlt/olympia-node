@@ -500,7 +500,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		ShutdownAllIndex index
 	) {
 		var dbTxn = unwrap(wrappedDbTxn);
-		final byte[] indexableBytes = new byte[] {index.getIndex()[0]};
+		final byte[] indexableBytes = new byte[] {index.getPrefix()[0]};
 		var cursor = new BerkeleySubstateCursor(dbTxn, upParticleDatabase, indexableBytes);
 		cursor.open();
 		return CloseableCursor.filter(cursor, index::test);

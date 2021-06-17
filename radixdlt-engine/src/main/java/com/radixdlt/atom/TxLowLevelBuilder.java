@@ -157,9 +157,9 @@ public final class TxLowLevelBuilder {
 	}
 
 	public TxLowLevelBuilder downAll(ShutdownAllIndex index) {
-		var buf = ByteBuffer.allocate(1 + index.getIndex().length);
-		buf.put((byte) index.getIndex().length);
-		buf.put(index.getIndex());
+		var buf = ByteBuffer.allocate(1 + index.getPrefix().length);
+		buf.put((byte) index.getPrefix().length);
+		buf.put(index.getPrefix());
 		instruction(REInstruction.REMicroOp.DOWNINDEX, buf.array());
 		return this;
 	}

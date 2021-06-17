@@ -61,7 +61,7 @@ public final class ShutdownAllIndex {
 		return true;
 	}
 
-	public byte[] getIndex() {
+	public byte[] getPrefix() {
 		return index;
 	}
 

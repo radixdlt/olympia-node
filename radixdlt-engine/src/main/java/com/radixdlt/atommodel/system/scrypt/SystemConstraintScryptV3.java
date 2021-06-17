@@ -96,8 +96,8 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 		}
 
 		public ReducerState process(ShutdownAll<ExittingStake> i) throws ProcedureException {
+			i.verifyPostTypePrefixIsEmpty();
 			i.iterator().forEachRemaining(exitting::add);
-
 			return next();
 		}
 
@@ -149,6 +149,7 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 		}
 
 		public ReducerState process(ShutdownAll<ValidatorBFTData> i) throws ProcedureException {
+			i.verifyPostTypePrefixIsEmpty();
 			var iter = i.iterator();
 			while (iter.hasNext()) {
 				var validatorEpochData = iter.next();
@@ -296,8 +297,9 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 			this.preparingStake = preparingStake;
 		}
 
-		ReducerState unstakes(ShutdownAll<PreparedUnstakeOwnership> preparedUnstakeIterator) {
-			preparedUnstakeIterator.iterator().forEachRemaining(preparedUnstakeOwned ->
+		ReducerState unstakes(ShutdownAll<PreparedUnstakeOwnership> i) throws ProcedureException {
+			i.verifyPostTypePrefixIsEmpty();
+			i.iterator().forEachRemaining(preparedUnstakeOwned ->
 				preparingUnstake
 					.computeIfAbsent(
 						preparedUnstakeOwned.getDelegateKey(),
@@ -397,8 +399,9 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 			this.preparingStake = preparingStake;
 		}
 
-		ReducerState prepareStakes(ShutdownAll<PreparedStake> preparedStakeIterator) {
-			preparedStakeIterator.iterator().forEachRemaining(preparedStake ->
+		ReducerState prepareStakes(ShutdownAll<PreparedStake> i) throws ProcedureException {
+			i.verifyPostTypePrefixIsEmpty();
+			i.iterator().forEachRemaining(preparedStake ->
 				preparingStake
 					.computeIfAbsent(
 						preparedStake.getDelegateKey(),
@@ -469,12 +472,11 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 		}
 
 		ReducerState prepareRakeUpdates(ShutdownAll<PreparedValidatorConfigUpdate> shutdownAll) throws ProcedureException {
+			var expectedEpoch = updatingEpoch.prevEpoch.getEpoch() + 1;
+			shutdownAll.verifyPostTypePrefixEquals(expectedEpoch);
 			var iter = shutdownAll.iterator();
 			while (iter.hasNext()) {
 				var preparedRakeUpdate = iter.next();
-				if (preparedRakeUpdate.getEpoch() != updatingEpoch.prevEpoch.getEpoch() + 1) {
-					throw new ProcedureException("Invalid validator update epoch");
-				}
 				preparingRakeUpdates.put(preparedRakeUpdate.getValidatorKey(), preparedRakeUpdate);
 			}
 			return next();
