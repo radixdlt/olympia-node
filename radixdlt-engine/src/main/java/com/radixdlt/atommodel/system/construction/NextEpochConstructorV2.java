@@ -139,7 +139,7 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 				var currentStake = txBuilder.down(
 					ValidatorStakeData.class,
 					p -> p.getValidatorKey().equals(k),
-					Optional.of(SubstateWithArg.noArg(ValidatorStakeData.create(k))),
+					Optional.of(SubstateWithArg.noArg(ValidatorStakeData.createV1(k))),
 					"Validator not found"
 				);
 				validatorsToUpdate.put(k, currentStake);
@@ -176,7 +176,7 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 				var currentStake = txBuilder.down(
 					ValidatorStakeData.class,
 					p -> p.getValidatorKey().equals(k),
-					Optional.of(SubstateWithArg.noArg(ValidatorStakeData.create(k))),
+					Optional.of(SubstateWithArg.noArg(ValidatorStakeData.createV1(k))),
 					"Validator not found"
 				);
 				validatorsToUpdate.put(k, currentStake);

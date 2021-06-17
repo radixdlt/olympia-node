@@ -33,6 +33,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import static com.radixdlt.atommodel.validators.state.PreparedRakeUpdate.RAKE_MAX;
+
 public final class ValidatorStakeData implements ResourceInBucket {
 	public static final UInt256 MINIMUM_STAKE = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
 	public static final int EPOCHS_LOCKED = 1; // Must go through one full epoch before being unlocked
@@ -64,11 +66,11 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		this.ownerAddr = ownerAddr;
 	}
 
-	public static ValidatorStakeData create(ECPublicKey validatorKey) {
+	public static ValidatorStakeData createV1(ECPublicKey validatorKey) {
 		return new ValidatorStakeData(validatorKey, UInt256.ZERO, UInt256.ZERO, OptionalInt.empty(), Optional.empty());
 	}
 
-	public static ValidatorStakeData create(
+	public static ValidatorStakeData createV1(
 		ECPublicKey validatorKey,
 		UInt256 totalStake,
 		UInt256 totalOwnership
@@ -76,13 +78,20 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		return new ValidatorStakeData(validatorKey, totalStake, totalOwnership, OptionalInt.empty(), Optional.empty());
 	}
 
-	public static ValidatorStakeData create(
+	public static ValidatorStakeData createV2(
 		ECPublicKey validatorKey,
 		UInt256 totalStake,
 		UInt256 totalOwnership,
-		int rakePercentage
+		int rakePercentage,
+		REAddr ownerAddress
 	) {
-		return new ValidatorStakeData(validatorKey, totalStake, totalOwnership, OptionalInt.of(rakePercentage), Optional.empty());
+		return new ValidatorStakeData(
+			validatorKey,
+			totalStake,
+			totalOwnership,
+			OptionalInt.of(rakePercentage),
+			Optional.of(ownerAddress)
+		);
 	}
 
 	public Optional<REAddr> getOwnerAddr() {
@@ -94,11 +103,23 @@ public final class ValidatorStakeData implements ResourceInBucket {
 	}
 
 	public ValidatorStakeData setRakePercentage(int rakePercentage) {
-		return new ValidatorStakeData(validatorKey, totalStake, totalOwnership, OptionalInt.of(rakePercentage), ownerAddr);
+		return new ValidatorStakeData(
+			validatorKey,
+			totalStake,
+			totalOwnership,
+			OptionalInt.of(rakePercentage),
+			Optional.of(ownerAddr.orElseGet(() -> REAddr.ofPubKeyAccount(validatorKey)))
+		);
 	}
 
 	public ValidatorStakeData setOwnerAddr(REAddr ownerAddr) {
-		return new ValidatorStakeData(validatorKey, totalStake, totalOwnership, rakePercentage, Optional.of(ownerAddr));
+		return new ValidatorStakeData(
+			validatorKey,
+			totalStake,
+			totalOwnership,
+			OptionalInt.of(rakePercentage.orElse(RAKE_MAX)),
+			Optional.of(ownerAddr)
+		);
 	}
 
 	@Override
@@ -172,11 +193,12 @@ public final class ValidatorStakeData implements ResourceInBucket {
 
 	@Override
 	public String toString() {
-		return String.format("%s{stake=%s ownership=%s rake=%s}",
+		return String.format("%s{stake=%s ownership=%s rake=%s owner=%s}",
 			getClass().getSimpleName(),
 			totalStake,
 			totalOwnership,
-			rakePercentage
+			rakePercentage,
+			ownerAddr
 		);
 	}
 

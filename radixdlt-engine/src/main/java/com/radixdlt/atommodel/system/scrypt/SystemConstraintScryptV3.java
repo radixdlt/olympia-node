@@ -354,7 +354,7 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 			}
 			var accountAddr = stakes.firstKey();
 			if (!Objects.equals(stakeOwnership.getOwner(), accountAddr)) {
-				throw new ProcedureException(stakeOwnership.getOwner() + " is not the first addr (" + accountAddr + ")");
+				throw new ProcedureException(stakeOwnership + " is not the first addr in " + stakes);
 			}
 			var stakeAmt = stakes.remove(accountAddr);
 			var nextValidatorAndOwnership = validatorStake.stake(accountAddr, stakeAmt);
@@ -810,10 +810,11 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 					var amount = REFieldSerialization.deserializeUInt256(buf);
 					var ownership = REFieldSerialization.deserializeUInt256(buf);
 					if (b.equals(SubstateTypeId.STAKE_V1.id())) {
-						return ValidatorStakeData.create(delegate, amount, ownership);
+						return ValidatorStakeData.createV1(delegate, amount, ownership);
 					} else {
 						var rakePercentage = REFieldSerialization.deserializeInt(buf);
-						return ValidatorStakeData.create(delegate, amount, ownership, rakePercentage);
+						var ownerAddress = REFieldSerialization.deserializeREAddr(buf);
+						return ValidatorStakeData.createV2(delegate, amount, ownership, rakePercentage, ownerAddress);
 					}
 				},
 				(s, buf) -> {
@@ -826,10 +827,12 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 					buf.put(s.getAmount().toByteArray());
 					buf.put(s.getTotalOwnership().toByteArray());
 					if (s.getRakePercentage().isPresent()) {
-						buf.putInt(s.getRakePercentage().orElse(0));
+						buf.putInt(s.getRakePercentage().orElseThrow());
+						REFieldSerialization.serializeREAddr(buf, s.getOwnerAddr().orElseThrow());
 					}
 				},
-				s -> s.getAmount().isZero() && s.getTotalOwnership().isZero() && s.getRakePercentage().isEmpty()
+				s -> s.getAmount().isZero() && s.getTotalOwnership().isZero()
+					&& s.getRakePercentage().isEmpty() && s.getOwnerAddr().isEmpty()
 			)
 		);
 		os.substate(
