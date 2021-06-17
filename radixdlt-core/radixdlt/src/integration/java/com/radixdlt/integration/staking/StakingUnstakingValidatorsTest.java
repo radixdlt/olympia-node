@@ -41,6 +41,7 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateRake;
+import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
@@ -423,6 +424,9 @@ public class StakingUnstakingValidatorsTest {
 					continue;
 				case 6:
 					action = new UpdateRake(privKey.getPublicKey(), random.nextInt(PreparedRakeUpdate.RAKE_MAX + 1));
+					break;
+				case 7:
+					action = new UpdateValidatorOwnerAddress(privKey.getPublicKey(), REAddr.ofPubKeyAccount(to));
 					break;
 				default:
 					continue;

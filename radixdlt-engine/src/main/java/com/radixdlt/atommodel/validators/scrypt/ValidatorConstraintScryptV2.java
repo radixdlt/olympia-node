@@ -164,64 +164,6 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 			}
 		));
 
-		os.substate(new SubstateDefinition<>(
-			NullValidatorUpdate.class,
-			Set.of(SubstateTypeId.NULL_VALIDATOR_UPDATE.id()),
-			(b, buf) -> {
-				var key = REFieldSerialization.deserializeKey(buf);
-				return new NullValidatorUpdate(key);
-			},
-			(s, buf) -> {
-				buf.put(SubstateTypeId.NULL_VALIDATOR_UPDATE.id());
-				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
-			},
-			s -> true
-		));
-
-		os.substate(new SubstateDefinition<>(
-			PreparedValidatorUpdate.class,
-			Set.of(SubstateTypeId.PREPARED_VALIDATOR_UPDATE.id()),
-			(b, buf) -> {
-				var key = REFieldSerialization.deserializeKey(buf);
-				var ownerAddr = REFieldSerialization.deserializeREAddr(buf);
-				if (!ownerAddr.isAccount()) {
-					throw new DeserializeException("Owner address must be an account");
-				}
-
-				return new PreparedValidatorUpdate(key, ownerAddr);
-			},
-			(s, buf) -> {
-				buf.put(SubstateTypeId.PREPARED_VALIDATOR_UPDATE.id());
-				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
-				REFieldSerialization.serializeREAddr(buf, s.getOwnerAddress());
-			}
-		));
-		os.procedure(new DownProcedure<>(
-			NullValidatorUpdate.class, VoidReducerState.class,
-			d -> new Authorization(
-				PermissionLevel.USER,
-				(r, c) -> {
-					if (!c.key().map(d.getSubstate().getValidatorKey()::equals).orElse(false)) {
-						throw new AuthorizationException("Key does not match.");
-					}
-				}
-			),
-			(d, s, r) -> {
-				if (d.getArg().isPresent()) {
-					throw new ProcedureException("Args not allowed");
-				}
-				return ReducerResult.incomplete(new UpdatingValidator(d.getSubstate().getValidatorKey()));
-			}
-		));
-
-		os.procedure(new UpProcedure<>(
-			UpdatingValidator.class, PreparedValidatorUpdate.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, u, c, r) -> {
-				s.update(u);
-				return ReducerResult.complete();
-			}
-		));
 
 		os.substate(new SubstateDefinition<>(
 			RakeCopy.class,
@@ -303,6 +245,86 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> {
 				s.update(r, u);
+				return ReducerResult.complete();
+			}
+		));
+
+		registerValidatorOwnerUpdates(os);
+	}
+
+	public void registerValidatorOwnerUpdates(Loader os) {
+		os.substate(new SubstateDefinition<>(
+			NullValidatorUpdate.class,
+			Set.of(SubstateTypeId.NULL_VALIDATOR_UPDATE.id()),
+			(b, buf) -> {
+				var key = REFieldSerialization.deserializeKey(buf);
+				return new NullValidatorUpdate(key);
+			},
+			(s, buf) -> {
+				buf.put(SubstateTypeId.NULL_VALIDATOR_UPDATE.id());
+				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
+			},
+			s -> true
+		));
+
+		os.substate(new SubstateDefinition<>(
+			PreparedValidatorUpdate.class,
+			Set.of(SubstateTypeId.PREPARED_VALIDATOR_UPDATE.id()),
+			(b, buf) -> {
+				var key = REFieldSerialization.deserializeKey(buf);
+				var ownerAddr = REFieldSerialization.deserializeREAddr(buf);
+				if (!ownerAddr.isAccount()) {
+					throw new DeserializeException("Owner address must be an account");
+				}
+
+				return new PreparedValidatorUpdate(key, ownerAddr);
+			},
+			(s, buf) -> {
+				buf.put(SubstateTypeId.PREPARED_VALIDATOR_UPDATE.id());
+				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
+				REFieldSerialization.serializeREAddr(buf, s.getOwnerAddress());
+			}
+		));
+		os.procedure(new DownProcedure<>(
+			PreparedValidatorUpdate.class, VoidReducerState.class,
+			d -> new Authorization(
+				PermissionLevel.USER,
+				(r, c) -> {
+					if (!c.key().map(d.getSubstate().getValidatorKey()::equals).orElse(false)) {
+						throw new AuthorizationException("Key does not match.");
+					}
+				}
+			),
+			(d, s, r) -> {
+				if (d.getArg().isPresent()) {
+					throw new ProcedureException("Args not allowed");
+				}
+				return ReducerResult.incomplete(new UpdatingValidator(d.getSubstate().getValidatorKey()));
+			}
+		));
+		os.procedure(new DownProcedure<>(
+			NullValidatorUpdate.class, VoidReducerState.class,
+			d -> new Authorization(
+				PermissionLevel.USER,
+				(r, c) -> {
+					if (!c.key().map(d.getSubstate().getValidatorKey()::equals).orElse(false)) {
+						throw new AuthorizationException("Key does not match.");
+					}
+				}
+			),
+			(d, s, r) -> {
+				if (d.getArg().isPresent()) {
+					throw new ProcedureException("Args not allowed");
+				}
+				return ReducerResult.incomplete(new UpdatingValidator(d.getSubstate().getValidatorKey()));
+			}
+		));
+
+		os.procedure(new UpProcedure<>(
+			UpdatingValidator.class, PreparedValidatorUpdate.class,
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			(s, u, c, r) -> {
+				s.update(u);
 				return ReducerResult.complete();
 			}
 		));
