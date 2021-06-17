@@ -70,7 +70,7 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageQueue;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.network.addressbook.PeersView;
+import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -204,8 +204,9 @@ public class RecoveryLivenessTest {
 
 				@Provides
 				private PeersView peersView(@Self BFTNode self) {
-					var peers = allNodes.stream().filter(n -> !self.equals(n)).collect(Collectors.toList());
-					return () -> peers;
+					return () -> allNodes.stream()
+						.filter(n -> !self.equals(n))
+						.map(PeersView.PeerInfo::fromBftNode);
 				}
 			}
 		);

@@ -22,9 +22,8 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
+import com.radixdlt.network.p2p.NodeId;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import org.apache.logging.log4j.LogManager;
@@ -33,7 +32,6 @@ import org.radix.network.messaging.Message;
 
 import javax.inject.Inject;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Network layer for the mempool
@@ -43,17 +41,14 @@ public final class MessageCentralMempool {
 
 	private final MessageCentral messageCentral;
 	private final int magic;
-	private final AddressBook addressBook;
 
 	@Inject
 	public MessageCentralMempool(
 		@Named("magic") int magic,
-		MessageCentral messageCentral,
-		AddressBook addressBook
+		MessageCentral messageCentral
 	) {
 		this.magic = magic;
 		this.messageCentral = Objects.requireNonNull(messageCentral);
-		this.addressBook = addressBook;
 	}
 
 	public RemoteEventDispatcher<MempoolAdd> mempoolAddRemoteEventDispatcher() {
@@ -63,23 +58,15 @@ public final class MessageCentralMempool {
 		};
 	}
 
-	private boolean send(Message message, BFTNode recipient) {
-		Optional<PeerWithSystem> peer = this.addressBook.peer(recipient.getKey().euid());
-
-		if (!peer.isPresent()) {
-			log.error("Peer {} not present", recipient);
-			return false;
-		} else {
-			this.messageCentral.send(peer.get(), message);
-			return true;
-		}
+	private void send(Message message, BFTNode recipient) {
+		this.messageCentral.send(NodeId.fromPublicKey(recipient.getKey()), message);
 	}
 
 	public Flowable<RemoteEvent<MempoolAdd>> mempoolComands() {
 		return messageCentral
 			.messagesOf(MempoolAddMessage.class)
 			.map(msg -> {
-				final BFTNode node = BFTNode.create(msg.getPeer().getSystem().getKey());
+				final BFTNode node = BFTNode.create(msg.getSource().getPublicKey());
 				return RemoteEvent.create(
 					node,
 					MempoolAdd.create(msg.getMessage().getTxns())

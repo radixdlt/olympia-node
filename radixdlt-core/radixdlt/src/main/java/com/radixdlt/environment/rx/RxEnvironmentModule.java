@@ -187,12 +187,32 @@ public final class RxEnvironmentModule extends AbstractModule {
 		RxRemoteEnvironment rxRemoteEnvironment,
 		Set<ScheduledEventProducerOnRunner<?>> scheduledEventProducers
 	) {
+
 		final var runnerName = Runners.SYNC;
 		final var builder = ModuleRunnerImpl.builder();
 		addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
 		addRemoteProcessorsOnRunner(remoteProcessors, rxRemoteEnvironment, runnerName, builder);
 		addScheduledEventProducersOnRunner(scheduledEventProducers, runnerName, builder);
 		return builder.build("SyncRunner " + self);
+	}
+
+	@ProvidesIntoMap
+	@StringMapKey(Runners.P2P_NETWORK)
+	@Singleton
+	public ModuleRunner p2pNetworkRunner(
+		@Self BFTNode self,
+		Set<EventProcessorOnRunner<?>> processors,
+		RxEnvironment rxEnvironment,
+		Set<RemoteEventProcessorOnRunner<?>> remoteProcessors,
+		RxRemoteEnvironment rxRemoteEnvironment,
+		Set<ScheduledEventProducerOnRunner<?>> scheduledEventProducers
+	) {
+		final var runnerName = Runners.P2P_NETWORK;
+		final var builder = ModuleRunnerImpl.builder();
+		addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
+		addRemoteProcessorsOnRunner(remoteProcessors, rxRemoteEnvironment, runnerName, builder);
+		addScheduledEventProducersOnRunner(scheduledEventProducers, runnerName, builder);
+		return builder.build("P2PNetworkRunner " + self);
 	}
 
 	private static <T> void addToBuilder(

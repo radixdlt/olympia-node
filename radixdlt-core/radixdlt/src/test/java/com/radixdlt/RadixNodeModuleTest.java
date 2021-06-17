@@ -19,24 +19,19 @@ package com.radixdlt;
 
 import org.assertj.core.util.Files;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.radix.serialization.TestSetupUtils;
-import org.radix.universe.system.LocalSystem;
 
 import com.google.inject.Guice;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
-import com.radixdlt.network.transport.tcp.TCPConstants;
 import com.radixdlt.properties.RuntimeProperties;
 
 import java.io.File;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyDouble;
-import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
@@ -56,22 +51,6 @@ public class RadixNodeModuleTest {
 		when(properties.get(eq("consensus.pacemaker_rate"), anyDouble())).thenReturn(2.0);
 		this.radixNodeModule = new RadixNodeModule(properties);
 		assertNotNull(Guice.createInjector(this.radixNodeModule));
-	}
-
-	@Test
-	@Ignore("Too many weird dependencies to hook up, need to cleanup.")
-	public void testUseCorrectBroadcastPortForLocalSystem() {
-		final var properties = createDefaultProperties();
-		when(properties.get(eq("network.tcp.broadcast_port"), anyInt())).thenReturn(30001);
-		when(properties.get(eq("network.tcp.listen_port"), anyInt())).thenReturn(30000);
-
-		this.radixNodeModule = new RadixNodeModule(properties);
-
-		final var localSystem = Guice.createInjector(this.radixNodeModule).getInstance(LocalSystem.class);
-		final var broadcastPort = localSystem.supportedTransports()
-			.findFirst().get().metadata().get(TCPConstants.METADATA_PORT);
-
-		assertEquals("30001", broadcastPort);
 	}
 
 	private RuntimeProperties createDefaultProperties() {

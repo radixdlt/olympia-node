@@ -54,7 +54,7 @@ final class NetworkQueryHostIp implements HostIp {
 	private static final Logger log = LogManager.getLogger();
 
 	@VisibleForTesting
-	static final String QUERY_URLS_PROPERTY = "host.ip.urls";
+	static final String QUERY_URLS_PROPERTY = "network.host_ip_query_urls";
 
 	@VisibleForTesting
 	static final ImmutableList<URL> DEFAULT_QUERY_URLS = ImmutableList.of(

@@ -40,7 +40,6 @@ import java.util.Optional;
  * are then forwarded to the BFT sender.
  */
 public final class BFTEventReducer implements BFTEventProcessor {
-
 	private static final Logger log = LogManager.getLogger();
 
 	private final BFTNode self;

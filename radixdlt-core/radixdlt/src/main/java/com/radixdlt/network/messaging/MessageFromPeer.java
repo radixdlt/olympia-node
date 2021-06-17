@@ -17,44 +17,42 @@
 
 package com.radixdlt.network.messaging;
 
-import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.network.p2p.NodeId;
 
 import java.util.Objects;
 
 public final class MessageFromPeer<T> {
+	private final NodeId source;
+	private final T message;
 
-    private final Peer peer;
+	public MessageFromPeer(NodeId source, T message) {
+		this.source = source;
+		this.message = message;
+	}
 
-    private final T message;
+	public NodeId getSource() {
+		return source;
+	}
 
-    public MessageFromPeer(Peer peer, T message) {
-        this.peer = peer;
-        this.message = message;
-    }
+	public T getMessage() {
+		return message;
+	}
 
-    public Peer getPeer() {
-        return peer;
-    }
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		MessageFromPeer<?> that = (MessageFromPeer<?>) o;
+		return Objects.equals(source, that.source)
+				&& Objects.equals(message, that.message);
+	}
 
-    public T getMessage() {
-        return message;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        MessageFromPeer<?> that = (MessageFromPeer<?>) o;
-        return Objects.equals(peer, that.peer)
-                && Objects.equals(message, that.message);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(peer, message);
-    }
+	@Override
+	public int hashCode() {
+		return Objects.hash(source, message);
+	}
 }

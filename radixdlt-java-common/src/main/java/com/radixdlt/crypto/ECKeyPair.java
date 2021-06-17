@@ -25,7 +25,6 @@ import com.radixdlt.crypto.encryption.EncryptedPrivateKey;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.utils.Bytes;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
 import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
@@ -181,7 +180,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 	public String toString() {
 		// Not going to print the private key here
 		return String.format("%s[%s]",
-			getClass().getSimpleName(), Bytes.toBase64String(getPublicKey().getBytes()));
+			getClass().getSimpleName(), getPublicKey().toBase64());
 	}
 
 	public static ECKeyPair fromFile(File file) throws PrivateKeyException, PublicKeyException {

@@ -21,12 +21,12 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
 
+import com.radixdlt.network.p2p.NodeId;
 import org.radix.network.messages.PeerPingMessage;
 import org.radix.network.messages.PeerPongMessage;
 import org.radix.network.messaging.Message;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.network.addressbook.Peer;
 
 /**
  * Outbound message wrapper with priority, time and destination.
@@ -51,13 +51,13 @@ public final class OutboundMessageEvent {
 
 	private final int priority;
 	private final long nanoTimeDiff;
-	private final Peer peer;
+	private final NodeId receiver;
 	private final Message message;
 
-	OutboundMessageEvent(Peer peer, Message message, long nanoTimeDiff) {
+	OutboundMessageEvent(NodeId receiver, Message message, long nanoTimeDiff) {
 		this.priority = MESSAGE_PRIORITIES.getOrDefault(message.getClass(), DEFAULT_PRIORITY);
 		this.nanoTimeDiff = nanoTimeDiff;
-		this.peer = peer;
+		this.receiver = receiver;
 		this.message = message;
 	}
 
@@ -85,8 +85,8 @@ public final class OutboundMessageEvent {
 	 *
 	 * @return the source or destination of the message.
 	 */
-	public Peer peer() {
-		return peer;
+	public NodeId receiver() {
+		return receiver;
 	}
 
 	/**
@@ -100,7 +100,7 @@ public final class OutboundMessageEvent {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.priority, this.nanoTimeDiff, this.peer, this.message);
+		return Objects.hash(this.priority, this.nanoTimeDiff, this.receiver, this.message);
 	}
 
 	@Override
@@ -112,7 +112,7 @@ public final class OutboundMessageEvent {
 			OutboundMessageEvent that = (OutboundMessageEvent) obj;
 			return this.priority == that.priority
 				&& this.nanoTimeDiff == that.nanoTimeDiff
-				&& Objects.equals(this.peer, that.peer)
+				&& Objects.equals(this.receiver, that.receiver)
 				&& Objects.equals(this.message, that.message);
 		}
 		return false;
@@ -120,7 +120,7 @@ public final class OutboundMessageEvent {
 
 	@Override
 	public String toString() {
-		return String.format("%s[priority=%s, nanoTime=%s, peer=%s, message=%s]",
-			getClass().getSimpleName(), priority, nanoTimeDiff, peer, message);
+		return String.format("%s[priority=%s, nanoTime=%s, receiver=%s, message=%s]",
+			getClass().getSimpleName(), priority, nanoTimeDiff, receiver, message);
 	}
 }

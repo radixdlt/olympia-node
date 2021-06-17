@@ -2,7 +2,6 @@ package org.radix.containers;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.network.addressbook.Peer;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
@@ -26,25 +25,24 @@ public class BasicContainerSubTypesEqualsVerifierTest {
 
         final Map<Class<?>, List<String>> ignoredFieldsByClass = Map.of(
                 Message.class, List.of("instance"),
-                Peer.class, List.of("banReason", "timestamps"),
                 LocalSystem.class, List.of("infoSupplier"));
 
         subTypes.stream()
                 .filter(clazz -> !Modifier.isAbstract(clazz.getModifiers()))
                 .forEach(clazz -> {
                     final String[] ignoredFields =
-                            ignoredFieldsByClass.entrySet().stream()
-                                    .filter(e -> e.getKey().isAssignableFrom(clazz))
-                                    .flatMap(e -> e.getValue().stream())
-                                    .toArray(String[]::new);
+                        ignoredFieldsByClass.entrySet().stream()
+                            .filter(e -> e.getKey().isAssignableFrom(clazz))
+                            .flatMap(e -> e.getValue().stream())
+                            .toArray(String[]::new);
 
                     EqualsVerifier.forClass(clazz)
-                            .withRedefinedSuperclass()
-                            .suppress(Warning.NONFINAL_FIELDS)
-                            .withIgnoredFields(ignoredFields)
-                            .usingGetClass()
-                            .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-                            .verify();
+                        .withRedefinedSuperclass()
+                        .suppress(Warning.NONFINAL_FIELDS)
+                        .withIgnoredFields(ignoredFields)
+                        .usingGetClass()
+                        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+                        .verify();
         });
     }
 

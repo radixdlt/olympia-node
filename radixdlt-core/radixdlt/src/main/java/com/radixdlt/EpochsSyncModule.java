@@ -35,7 +35,7 @@ import com.radixdlt.epochs.EpochsLocalSyncService;
 import com.radixdlt.epochs.LocalSyncServiceFactory;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
-import com.radixdlt.network.addressbook.PeersView;
+import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.sync.RemoteSyncService;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.sync.LocalSyncService;

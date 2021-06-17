@@ -44,7 +44,9 @@ import com.radixdlt.FunctionalNodeModule;
 import com.radixdlt.MockedCryptoModule;
 import com.radixdlt.MockedPersistenceStoreModule;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.network.addressbook.PeersView;
+import com.radixdlt.network.p2p.NoOpPeerControl;
+import com.radixdlt.network.p2p.PeerControl;
+import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.recovery.MockedRecoveryModule;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.integration.distributed.deterministic.configuration.NodeIndexAndWeight;
@@ -55,7 +57,7 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.sync.MockedCommittedReaderModule;
 import com.radixdlt.sync.SyncConfig;
@@ -69,7 +71,6 @@ import java.util.Random;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -185,8 +186,9 @@ public final class DeterministicTest {
 			modules.add(new AbstractModule() {
 				@Provides
 				private PeersView peersView(@Self BFTNode self) {
-					var peers = nodes.stream().filter(n -> !self.equals(n)).collect(Collectors.toList());
-					return () -> peers;
+					return () -> nodes.stream()
+						.filter(n -> !self.equals(n))
+						.map(PeersView.PeerInfo::fromBftNode);
 				}
 
 				@Provides
@@ -217,6 +219,7 @@ public final class DeterministicTest {
 					bind(Random.class).toInstance(new Random(123456));
 					bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class)
 						.toInstance(unlimitedRateLimiter());
+					bind(PeerControl.class).toInstance(new NoOpPeerControl());
 				}
 			});
 			modules.add(new MockedKeyModule());

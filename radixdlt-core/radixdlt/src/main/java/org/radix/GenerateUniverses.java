@@ -17,6 +17,7 @@
 
 package org.radix;
 
+import com.radixdlt.identifiers.NodeAddress;
 import com.radixdlt.statecomputer.forks.RadixEngineForksModule;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -440,6 +441,7 @@ public final class GenerateUniverses {
 			IntStream.range(0, keys.size()).forEach(i -> {
 				String keyname = String.format(template, i);
 				System.out.format("export RADIXDLT_%s_PRIVKEY=%s%n", keyname, Bytes.toBase64String(keys.get(i).getKeyPair().getPrivateKey()));
+				System.out.format("export RADIXDLT_%s_PUBKEY=%s%n", keyname, NodeAddress.of(keys.get(i).getKeyPair().getPublicKey()));
 			});
 		}
 

@@ -48,7 +48,7 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TypedMocks;
 

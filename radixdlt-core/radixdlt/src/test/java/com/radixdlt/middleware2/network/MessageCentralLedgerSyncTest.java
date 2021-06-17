@@ -17,7 +17,6 @@
 
 package com.radixdlt.middleware2.network;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -32,34 +31,28 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.Peer;
-import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.ledger.DtoTxnsAndProof;
 import com.radixdlt.network.messaging.MessageCentralMockProvider;
+import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
-import java.util.Optional;
 
 import io.reactivex.rxjava3.subscribers.TestSubscriber;
 import org.junit.Before;
 import org.junit.Test;
-import org.radix.universe.system.RadixSystem;
 
 public class MessageCentralLedgerSyncTest {
 	private MessageCentralLedgerSync messageCentralLedgerSync;
 	private MessageCentral messageCentral;
-	private AddressBook addressBook;
 
 	@Before
 	public void setup() {
 		this.messageCentral = MessageCentralMockProvider.get();
-		this.addressBook = mock(AddressBook.class);
-		this.messageCentralLedgerSync = new MessageCentralLedgerSync(123, addressBook, messageCentral);
+		this.messageCentralLedgerSync = new MessageCentralLedgerSync(123, messageCentral);
 	}
 
 	@Test
@@ -68,11 +61,8 @@ public class MessageCentralLedgerSyncTest {
 		ECPublicKey key = mock(ECPublicKey.class);
 		when(key.euid()).thenReturn(EUID.ONE);
 		when(node.getKey()).thenReturn(key);
-		PeerWithSystem peer = mock(PeerWithSystem.class);
-		when(peer.hasSystem()).thenReturn(true);
-		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
 		messageCentralLedgerSync.syncRequestDispatcher().dispatch(node, mock(SyncRequest.class));
-		verify(messageCentral, times(1)).send(eq(peer), argThat(msg -> msg.getMagic() == 123));
+		verify(messageCentral, times(1)).send(eq(NodeId.fromPublicKey(node.getKey())), argThat(msg -> msg.getMagic() == 123));
 	}
 
 	@Test
@@ -81,11 +71,8 @@ public class MessageCentralLedgerSyncTest {
 		ECPublicKey key = mock(ECPublicKey.class);
 		when(key.euid()).thenReturn(EUID.ONE);
 		when(node.getKey()).thenReturn(key);
-		PeerWithSystem peer = mock(PeerWithSystem.class);
-		when(peer.hasSystem()).thenReturn(true);
-		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
 		messageCentralLedgerSync.syncResponseDispatcher().dispatch(node, mock(SyncResponse.class));
-		verify(messageCentral, times(1)).send(eq(peer), argThat(msg -> msg.getMagic() == 123));
+		verify(messageCentral, times(1)).send(eq(NodeId.fromPublicKey(node.getKey())), argThat(msg -> msg.getMagic() == 123));
 	}
 
 	@Test
@@ -94,11 +81,8 @@ public class MessageCentralLedgerSyncTest {
 		ECPublicKey key = mock(ECPublicKey.class);
 		when(key.euid()).thenReturn(EUID.ONE);
 		when(node.getKey()).thenReturn(key);
-		PeerWithSystem peer = mock(PeerWithSystem.class);
-		when(peer.hasSystem()).thenReturn(true);
-		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
 		messageCentralLedgerSync.ledgerStatusUpdateDispatcher().dispatch(node, mock(LedgerStatusUpdate.class));
-		verify(messageCentral, times(1)).send(eq(peer), argThat(msg -> msg.getMagic() == 123));
+		verify(messageCentral, times(1)).send(eq(NodeId.fromPublicKey(node.getKey())), argThat(msg -> msg.getMagic() == 123));
 	}
 
 	@Test
@@ -113,7 +97,7 @@ public class MessageCentralLedgerSyncTest {
 		testObserver.awaitCount(1);
 		testObserver.assertValue(syncRequest ->
 			syncRequest.getEvent().getHeader().equals(header)
-				&& syncRequest.getOrigin().getKey().equals(peer.getSystem().getKey())
+				&& syncRequest.getOrigin().getKey().equals(peer.getPublicKey())
 		);
 	}
 
@@ -138,7 +122,7 @@ public class MessageCentralLedgerSyncTest {
 		messageCentral.send(peer, statusRequestMessage);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(statusResponse ->
-			statusResponse.getOrigin().getKey().equals(peer.getSystem().getKey()));
+			statusResponse.getOrigin().getKey().equals(peer.getPublicKey()));
 	}
 
 	@Test
@@ -153,7 +137,7 @@ public class MessageCentralLedgerSyncTest {
 		testObserver.awaitCount(1);
 		testObserver.assertValue(statusResponse ->
 			statusResponse.getEvent().getHeader().equals(header)
-				&& statusResponse.getOrigin().getKey().equals(peer.getSystem().getKey())
+				&& statusResponse.getOrigin().getKey().equals(peer.getPublicKey())
 		);
 	}
 
@@ -165,16 +149,11 @@ public class MessageCentralLedgerSyncTest {
 		final var updateMsg = mock(LedgerStatusUpdateMessage.class);
 		messageCentral.send(peer, updateMsg);
 		testObserver.awaitCount(1);
-		testObserver.assertValue(receivedMsg -> receivedMsg.getOrigin().getKey().equals(peer.getSystem().getKey()));
+		testObserver.assertValue(receivedMsg -> receivedMsg.getOrigin().getKey().equals(peer.getPublicKey()));
 	}
 
-	private Peer createPeer() {
-		final var peer = mock(Peer.class);
-		final var system = mock(RadixSystem.class);
+	private NodeId createPeer() {
 		final var key = ECKeyPair.generateNew().getPublicKey();
-		when(peer.hasSystem()).thenReturn(true);
-		when(system.getKey()).thenReturn(key);
-		when(peer.getSystem()).thenReturn(system);
-		return peer;
+		return NodeId.fromPublicKey(key);
 	}
 }

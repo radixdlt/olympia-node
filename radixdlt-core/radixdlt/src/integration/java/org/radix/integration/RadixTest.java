@@ -53,7 +53,7 @@ public class RadixTest {
 		properties = new RuntimeProperties(runtimeConfigurationJSON, null);
 
 		// Tests need this
-		properties.set("host.ip", "127.0.0.1");
+		properties.set("network.host_ip", "127.0.0.1");
 
 		if (dbLocation == null) {
 			dbLocation = folder.getRoot().getAbsolutePath();

@@ -19,13 +19,13 @@ package com.radixdlt.network.messaging;
 
 import java.util.ArrayList;
 
+import com.radixdlt.network.p2p.NodeId;
 import org.junit.Test;
 import org.radix.network.messages.PeerPingMessage;
 import org.radix.network.messages.PeerPongMessage;
 import org.radix.network.messaging.Message;
 
 import com.google.common.collect.Lists;
-import com.radixdlt.network.addressbook.Peer;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,7 +43,7 @@ public class OutboundMessageEventTest {
 
 	@Test
 	public void sensibleToString() {
-		Peer peer = mock(Peer.class);
+		NodeId peer = mock(NodeId.class);
 		Message message = mock(Message.class);
 		long nanoTimeDiff = 123456789L;
 		OutboundMessageEvent event = new OutboundMessageEvent(peer, message, nanoTimeDiff);
@@ -59,7 +59,7 @@ public class OutboundMessageEventTest {
 
 	@Test
 	public void peerPingToString() {
-		Peer peer = mock(Peer.class);
+		NodeId peer = mock(NodeId.class);
 		Message message = mock(PeerPingMessage.class);
 		long nanoTimeDiff = 123456789L;
 		OutboundMessageEvent event = new OutboundMessageEvent(peer, message, nanoTimeDiff);
@@ -75,7 +75,7 @@ public class OutboundMessageEventTest {
 
 	@Test
 	public void peerPongToString() {
-		Peer peer = mock(Peer.class);
+		NodeId peer = mock(NodeId.class);
 		Message message = mock(PeerPongMessage.class);
 		long nanoTimeDiff = 123456789L;
 		OutboundMessageEvent event = new OutboundMessageEvent(peer, message, nanoTimeDiff);
@@ -113,10 +113,9 @@ public class OutboundMessageEventTest {
 	}
 
 	private OutboundMessageEvent makeMessageEventFor(Class<? extends Message> cls) {
-		Peer peer = mock(Peer.class);
+		NodeId peer = mock(NodeId.class);
 		Message message = mock(cls);
 		long nanoTimeDiff = 123456789L;
 		return new OutboundMessageEvent(peer, message, nanoTimeDiff);
 	}
-
 }

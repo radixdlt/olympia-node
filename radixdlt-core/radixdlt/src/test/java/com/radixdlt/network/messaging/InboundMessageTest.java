@@ -17,11 +17,10 @@
 
 package com.radixdlt.network.messaging;
 
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.network.p2p.NodeId;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.radixdlt.network.transport.StaticTransportMetadata;
-import com.radixdlt.network.transport.TransportInfo;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -29,7 +28,7 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class InboundMessageTest {
 
-	private final TransportInfo transportInfo = TransportInfo.of("TEST", StaticTransportMetadata.empty());
+	private final NodeId nodeId = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
 	private final byte[] message = new byte[] {
 		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
 	};
@@ -37,7 +36,7 @@ public class InboundMessageTest {
 
 	@Before
 	public void setUp() {
-		this.inboundMessage = InboundMessage.of(this.transportInfo, this.message);
+		this.inboundMessage = InboundMessage.of(nodeId, this.message);
 	}
 
 	@Test
@@ -47,7 +46,7 @@ public class InboundMessageTest {
 
 	@Test
 	public void testSource() {
-		assertThat(inboundMessage.source()).isEqualTo(transportInfo);
+		assertThat(inboundMessage.source()).isEqualTo(nodeId);
 	}
 
 	@Test
@@ -57,7 +56,6 @@ public class InboundMessageTest {
 
 	@Test
 	public void testToString() {
-		assertThat(inboundMessage.toString()).contains("TEST"); // Transport name
 		assertThat(inboundMessage.toString()).contains("000102030405060708090a"); // Message data in hex
 	}
 }

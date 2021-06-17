@@ -23,7 +23,7 @@ import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Implementation of a {@link SimpleQueue} that provides
+ * Implementation of a {@link SimpleBlockingQueue} that provides
  * priority ordering, while respecting FIFO properties
  * within a priority class.
  *

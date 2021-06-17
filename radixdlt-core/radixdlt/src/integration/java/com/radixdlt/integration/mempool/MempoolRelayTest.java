@@ -65,7 +65,7 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.network.addressbook.PeersView;
+import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -202,9 +202,10 @@ public class MempoolRelayTest {
 				}
 
 				@Provides
-				private PeersView peersView(@Self BFTNode node) {
-					var peers = allNodes.stream().filter(n -> !node.equals(n)).collect(Collectors.toList());
-					return () -> peers;
+				private PeersView peersView(@Self BFTNode self) {
+					return () -> allNodes.stream()
+						.filter(n -> !self.equals(n))
+						.map(PeersView.PeerInfo::fromBftNode);
 				}
 			}
 		);
