@@ -65,11 +65,11 @@ public final class StakeOwnership implements ResourceInBucket {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s:%s]",
+		return String.format("%s{delegate=%s owner=%s amt=%s}",
 			getClass().getSimpleName(),
-			amount,
+			delegateKey,
 			owner,
-			delegateKey
+			amount
 		);
 	}
 

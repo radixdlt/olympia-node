@@ -24,6 +24,7 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
 import com.radixdlt.atommodel.validators.state.NullValidatorUpdate;
 import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
+import com.radixdlt.constraintmachine.SubstateWithArg;
 
 import java.util.List;
 import java.util.Optional;
@@ -50,7 +51,7 @@ public class UpdateValidatorOwnerConstructor implements ActionConstructor<Update
 			builder.swap(
 				NullValidatorUpdate.class,
 				p -> p.getValidatorKey().equals(action.getValidatorKey()),
-				Optional.empty(),
+				Optional.of(SubstateWithArg.noArg(new NullValidatorUpdate(action.getValidatorKey()))),
 				"Cannot find state"
 			).with(substateDown ->
 				List.of(new PreparedValidatorUpdate(
