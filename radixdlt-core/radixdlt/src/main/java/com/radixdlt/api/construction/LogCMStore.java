@@ -20,10 +20,12 @@ package com.radixdlt.api.construction;
 
 import com.google.inject.Inject;
 import com.radixdlt.atom.Substate;
-import com.radixdlt.atom.SubstateCursor;
+import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.engine.parser.REParser;
@@ -94,11 +96,7 @@ public final class LogCMStore implements CMStore {
 	}
 
 	@Override
-	public SubstateCursor openIndexedCursor(
-		Transaction dbTransaction,
-		Class<? extends Particle> particleClass,
-		SubstateDeserialization deserialization
-	) {
+	public CloseableCursor<RawSubstateBytes> openIndexedCursor(Transaction dbTransaction, ShutdownAllIndex index) {
 		throw new UnsupportedOperationException();
 	}
 }

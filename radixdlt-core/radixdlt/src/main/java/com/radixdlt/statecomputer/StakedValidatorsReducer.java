@@ -19,7 +19,7 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.constraintmachine.Particle;
@@ -58,7 +58,7 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 		// after ValidatorStake to get to the correct state
 		return ImmutableSet.of(
 			ValidatorParticle.class,
-			ValidatorStake.class,
+			ValidatorStakeData.class,
 			PreparedStake.class
 		);
 	}
@@ -81,7 +81,7 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 				var s = (PreparedStake) p;
 				return prev.add(s.getDelegateKey(), s.getAmount());
 			} else {
-				var s = (ValidatorStake) p;
+				var s = (ValidatorStakeData) p;
 				return prev.setStake(s.getValidatorKey(), s.getAmount());
 			}
 		};

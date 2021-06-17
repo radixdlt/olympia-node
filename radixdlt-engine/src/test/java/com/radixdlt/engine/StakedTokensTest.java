@@ -42,7 +42,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
-import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV1;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
@@ -67,7 +67,7 @@ public class StakedTokensTest {
 
 		final var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new SystemConstraintScryptV1());
-		cmAtomOS.load(new ValidatorConstraintScrypt());
+		cmAtomOS.load(new ValidatorConstraintScryptV1());
 		cmAtomOS.load(new TokensConstraintScryptV1());
 		cmAtomOS.load(new StakingConstraintScryptV2());
 		final var cm = new ConstraintMachine(

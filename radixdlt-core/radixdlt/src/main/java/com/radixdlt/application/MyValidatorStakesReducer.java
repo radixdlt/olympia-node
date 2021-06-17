@@ -20,7 +20,7 @@ package com.radixdlt.application;
 
 import com.google.inject.Inject;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
-import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
@@ -49,7 +49,7 @@ public final class MyValidatorStakesReducer implements StateReducer<MyValidator>
 
 	@Override
 	public Set<Class<? extends Particle>> particleClasses() {
-		return Set.of(StakeOwnership.class, ValidatorStake.class);
+		return Set.of(StakeOwnership.class, ValidatorStakeData.class);
 	}
 
 	@Override
@@ -65,8 +65,8 @@ public final class MyValidatorStakesReducer implements StateReducer<MyValidator>
 				if (d.getDelegateKey().equals(key)) {
 					stakes.addOwnership(d.getOwner(), d.getAmount());
 				}
-			} else if (p instanceof ValidatorStake) {
-				var d = (ValidatorStake) p;
+			} else if (p instanceof ValidatorStakeData) {
+				var d = (ValidatorStakeData) p;
 				if (d.getValidatorKey().equals(key)) {
 					stakes.setStake(d);
 				}

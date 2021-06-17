@@ -18,7 +18,6 @@
 
 package com.radixdlt.constraintmachine;
 
-import java.util.Iterator;
 import java.util.function.Supplier;
 
 public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> implements Procedure {
@@ -28,7 +27,8 @@ public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> im
 	private final Supplier<Authorization> authorization;
 
 	public ShutdownAllProcedure(
-		Class<D> downClass, Class<S> reducerStateClass,
+		Class<D> downClass,
+		Class<S> reducerStateClass,
 		Supplier<Authorization> authorization,
 		ShutdownAllReducer<D, S> downReducer
 	) {
@@ -55,6 +55,6 @@ public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> im
 		ReadableAddrs readableAddrs,
 		ExecutionContext context
 	) throws ProcedureException {
-		return downReducer.reduce((Iterator<D>) o, (S) reducerState, readableAddrs);
+		return downReducer.reduce((ShutdownAll<D>) o, (S) reducerState, readableAddrs);
 	}
 }

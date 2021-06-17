@@ -16,12 +16,31 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.application;
 
-public interface ShutdownAllReducer<D extends Particle, S extends ReducerState> {
-	ReducerResult reduce(
-		ShutdownAll<D> inputState,
-		S reducerState,
-		ReadableAddrs readableAddrs
-	) throws ProcedureException;
+/**
+ * Info about node as validator
+ */
+public final class MyValidatorInfo {
+	private final String name;
+	private final String url;
+	private final boolean registered;
+
+	public MyValidatorInfo(String name, String url, boolean registered) {
+		this.name = name;
+		this.url = url;
+		this.registered = registered;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public String getUrl() {
+		return url;
+	}
+
+	public boolean isRegistered() {
+		return registered;
+	}
 }

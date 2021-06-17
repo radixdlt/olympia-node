@@ -23,13 +23,13 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
-import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 
 public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeTokens> {
 	@Override
 	public void construct(UnstakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
-		var validatorStake = txBuilder.find(ValidatorStake.class, v -> v.getValidatorKey().equals(action.from()))
+		var validatorStake = txBuilder.find(ValidatorStakeData.class, v -> v.getValidatorKey().equals(action.from()))
 			.orElseThrow(() -> new TxBuilderException("Validator does not exist."));
 
 		var ownershipAmt = action.amount()

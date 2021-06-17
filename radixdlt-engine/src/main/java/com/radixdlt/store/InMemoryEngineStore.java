@@ -18,16 +18,18 @@
 package com.radixdlt.store;
 
 import com.radixdlt.atom.Substate;
-import com.radixdlt.atom.SubstateCursor;
+import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
+import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REOp;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.identifiers.REAddr;
 
@@ -89,16 +91,25 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	}
 
 	@Override
-	public SubstateCursor openIndexedCursor(
-		Transaction dbTxn,
-		Class<? extends Particle> substateClass,
-		SubstateDeserialization deserialization
-	) {
-		return openIndexedCursor(substateClass, deserialization);
+	public CloseableCursor<RawSubstateBytes> openIndexedCursor(Transaction dbTxn, ShutdownAllIndex index) {
+		final List<RawSubstateBytes> substates = new ArrayList<>();
+		synchronized (lock) {
+			for (var i : storedParticles.values()) {
+				if (!i.isBootUp()) {
+					continue;
+				}
+				if (!index.test(i.getRawSubstateBytes())) {
+					continue;
+				}
+				substates.add(i.getRawSubstateBytes());
+			}
+		}
+
+		return CloseableCursor.wrapIterator(substates.iterator());
 	}
 
 	@Override
-	public SubstateCursor openIndexedCursor(Class<? extends Particle> substateClass, SubstateDeserialization deserialization) {
+	public CloseableCursor<Substate> openIndexedCursor(Class<? extends Particle> substateClass, SubstateDeserialization deserialization) {
 		final List<Substate> substates = new ArrayList<>();
 		synchronized (lock) {
 			for (var i : storedParticles.values()) {
@@ -109,7 +120,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 			}
 		}
 
-		return SubstateCursor.wrapIterator(substates.iterator());
+		return CloseableCursor.wrapIterator(substates.iterator());
 	}
 
 	@Override

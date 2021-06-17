@@ -22,7 +22,7 @@ import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
-import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV1;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.CMErrorCode;
@@ -49,7 +49,7 @@ public class RegisterValidatorTest {
 	@Before
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new ValidatorConstraintScrypt());
+		cmAtomOS.load(new ValidatorConstraintScryptV1());
 		var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()

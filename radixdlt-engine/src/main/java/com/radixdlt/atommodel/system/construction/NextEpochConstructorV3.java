@@ -19,31 +19,39 @@
 package com.radixdlt.atommodel.system.construction;
 
 import com.radixdlt.atom.ActionConstructor;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.SystemNextEpoch;
-import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
+import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV3;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.HasEpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
-import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.system.state.ValidatorBFTData;
+import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
+import com.radixdlt.atommodel.validators.state.ValidatorConfigCopy;
+import com.radixdlt.atommodel.validators.state.PreparedValidatorConfigUpdate;
 import com.radixdlt.constraintmachine.ProcedureException;
+import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-public final class NextEpochConstructorV2 implements ActionConstructor<SystemNextEpoch> {
+import static com.radixdlt.atommodel.validators.state.PreparedValidatorConfigUpdate.RAKE_MAX;
+
+public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch> {
 	@Override
 	public void construct(SystemNextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
 		var epochData = txBuilder.find(EpochData.class, p -> true);
@@ -100,23 +108,27 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 		for (var e : proposals.entrySet()) {
 			var k = e.getKey();
 			var numProposals = e.getValue();
-			var currentStake = txBuilder.down(
+			var validatorStakeData = txBuilder.down(
 				ValidatorStakeData.class,
 				s -> s.getValidatorKey().equals(k),
 				"Validator not found"
 			);
-			var nodeEmission = SystemConstraintScryptV2.REWARDS_PER_PROPOSAL.multiply(UInt256.from(numProposals));
-			final UInt256 noneFeeEmissions;
-			if (!SystemConstraintScryptV2.CONSTANT_FEE.isZero() && nodeEmission.compareTo(SystemConstraintScryptV2.CONSTANT_FEE) >= 0) {
+			var nodeEmission = SystemConstraintScryptV3.REWARDS_PER_PROPOSAL.multiply(UInt256.from(numProposals));
+			int rakePercentage = validatorStakeData.getRakePercentage().orElse(RAKE_MAX);
+			final UInt256 rakedEmissions;
+			if (rakePercentage != 0 && !nodeEmission.isZero()) {
+				var rake = nodeEmission
+					.multiply(UInt256.from(rakePercentage))
+					.divide(UInt256.from(RAKE_MAX));
 				var validatorOwner = REAddr.ofPubKeyAccount(k);
 				var initStake = new TreeMap<REAddr, UInt256>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
-				initStake.put(validatorOwner, SystemConstraintScryptV2.CONSTANT_FEE);
+				initStake.put(validatorOwner, rake);
 				preparingStake.put(k, initStake);
-				noneFeeEmissions = nodeEmission.subtract(SystemConstraintScryptV2.CONSTANT_FEE);
+				rakedEmissions = nodeEmission.subtract(rake);
 			} else {
-				noneFeeEmissions = nodeEmission;
+				rakedEmissions = nodeEmission;
 			}
-			validatorsToUpdate.put(k, currentStake.addEmission(noneFeeEmissions));
+			validatorsToUpdate.put(k, validatorStakeData.addEmission(rakedEmissions));
 		}
 
 		var allPreparedUnstake = txBuilder.shutdownAll(PreparedUnstakeOwnership.class, i -> {
@@ -196,6 +208,36 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 				}
 			}
 			validatorsToUpdate.put(k, curValidator);
+		}
+
+		var preparingRakeUpdates = new TreeMap<ECPublicKey, PreparedValidatorConfigUpdate>(
+			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
+		);
+		var buf = ByteBuffer.allocate(1 + Long.BYTES);
+		buf.put(SubstateTypeId.PREPARED_VALIDATOR_UPDATE.id());
+		buf.putLong(prevEpoch.getEpoch() + 1);
+		var index = new ShutdownAllIndex(buf.array(), PreparedValidatorConfigUpdate.class);
+		txBuilder.shutdownAll(index, (Iterator<PreparedValidatorConfigUpdate> i) -> {
+			i.forEachRemaining(preparedValidatorUpdate ->
+				preparingRakeUpdates.put(preparedValidatorUpdate.getValidatorKey(), preparedValidatorUpdate)
+			);
+			return preparingRakeUpdates;
+		});
+		for (var e : preparingRakeUpdates.entrySet()) {
+			var k = e.getKey();
+			var update = e.getValue();
+			if (!validatorsToUpdate.containsKey(k)) {
+				var validatorData = txBuilder.down(
+					ValidatorStakeData.class,
+					p -> p.getValidatorKey().equals(k),
+					Optional.of(SubstateWithArg.noArg(ValidatorStakeData.create(k))),
+					"Validator not found"
+				);
+				validatorsToUpdate.put(k, validatorData);
+			}
+			var curValidator = validatorsToUpdate.get(k);
+			validatorsToUpdate.put(k, curValidator.setRakePercentage(update.getNextRakePercentage()));
+			txBuilder.up(new ValidatorConfigCopy(k, update.getNextRakePercentage()));
 		}
 
 		validatorsToUpdate.forEach((k, validator) -> txBuilder.up(validator));

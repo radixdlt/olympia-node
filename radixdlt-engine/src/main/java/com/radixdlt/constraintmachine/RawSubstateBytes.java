@@ -16,31 +16,22 @@
  *
  */
 
-package com.radixdlt.application;
+package com.radixdlt.constraintmachine;
 
-/**
- * Info about node as validator
- */
-public final class ValidatorInfo {
-	private final String name;
-	private final String url;
-	private final boolean registered;
+public final class RawSubstateBytes {
+	private final byte[] id;
+	private final byte[] data;
 
-	public ValidatorInfo(String name, String url, boolean registered) {
-		this.name = name;
-		this.url = url;
-		this.registered = registered;
+	public RawSubstateBytes(byte[] id, byte[] data) {
+		this.id = id;
+		this.data = data;
 	}
 
-	public String getName() {
-		return name;
+	public byte[] getId() {
+		return id;
 	}
 
-	public String getUrl() {
-		return url;
-	}
-
-	public boolean isRegistered() {
-		return registered;
+	public byte[] getData() {
+		return data;
 	}
 }

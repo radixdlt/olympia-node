@@ -32,14 +32,14 @@ import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.atommodel.system.construction.NextEpochConstructorV2;
 import com.radixdlt.atommodel.system.construction.NextViewConstructorV2;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
-import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV2;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
 import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
-import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV1;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.CMErrorCode;
@@ -88,7 +88,7 @@ public class NextViewV2Test {
 		cmAtomOS.load(scrypt);
 		cmAtomOS.load(new StakingConstraintScryptV3());
 		cmAtomOS.load(new TokensConstraintScryptV2());
-		cmAtomOS.load(new ValidatorConstraintScrypt());
+		cmAtomOS.load(new ValidatorConstraintScryptV1());
 		var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()
@@ -117,8 +117,8 @@ public class NextViewV2Test {
 			TxnConstructionRequest.create()
 				.action(new CreateSystem())
 				.action(new CreateMutableToken(null, "xrd", "xrd", "", "", ""))
-				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, ValidatorStake.MINIMUM_STAKE))
-				.action(new StakeTokens(accountAddr, key.getPublicKey(), ValidatorStake.MINIMUM_STAKE))
+				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, ValidatorStakeData.MINIMUM_STAKE))
+				.action(new StakeTokens(accountAddr, key.getPublicKey(), ValidatorStakeData.MINIMUM_STAKE))
 				.action(new RegisterValidator(key.getPublicKey()))
 				.action(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 0))
 		).buildWithoutSignature();

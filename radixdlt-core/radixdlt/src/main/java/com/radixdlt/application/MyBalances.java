@@ -26,15 +26,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
-public final class Balances {
+public final class MyBalances {
 	private final Map<REAddr, UInt384> balances = new HashMap<>();
 
-	public Balances add(REAddr rri, UInt256 amount) {
+	public MyBalances add(REAddr rri, UInt256 amount) {
 		balances.merge(rri, UInt384.from(amount), UInt384::add);
 		return this;
 	}
 
-	public Balances remove(REAddr rri, UInt256 amount) {
+	public MyBalances remove(REAddr rri, UInt256 amount) {
 		balances.computeIfPresent(rri, ((rriId1, uInt384) -> {
 			var bal = uInt384.subtract(amount);
 			return bal.isZero() ? null : bal;

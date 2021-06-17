@@ -74,7 +74,7 @@ public class ByzantineSyncTest {
 					return reader.ledgerUpdateEventProcessor();
 				}
 			})
-			.pacemakerTimeout(5000)
+			.pacemakerTimeout(3000)
 			.ledgerAndSync(SyncConfig.of(200L, 10, 2000L))
 			.addTestModules(
 				ConsensusMonitors.safety(),

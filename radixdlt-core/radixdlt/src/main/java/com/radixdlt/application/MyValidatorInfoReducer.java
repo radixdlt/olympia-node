@@ -19,11 +19,11 @@
 package com.radixdlt.application;
 
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.tokens.state.TokensInAccount;
+import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.StateReducer;
-import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
 import java.util.Set;
@@ -31,50 +31,48 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 /**
- * Balance reducer for local node
+ * Reduces radix engine state to validator info
  */
-public final class BalanceReducer implements StateReducer<Balances> {
-	private final REAddr addr;
+public final class MyValidatorInfoReducer implements StateReducer<MyValidatorInfo> {
+	private final ECPublicKey self;
 
 	@Inject
-	public BalanceReducer(@Self REAddr addr) {
-		this.addr = Objects.requireNonNull(addr);
+	public MyValidatorInfoReducer(@Self ECPublicKey self) {
+		this.self = Objects.requireNonNull(self);
 	}
 
 	@Override
-	public Class<Balances> stateClass() {
-		return Balances.class;
+	public Class<MyValidatorInfo> stateClass() {
+		return MyValidatorInfo.class;
 	}
 
 	@Override
 	public Set<Class<? extends Particle>> particleClasses() {
-		return Set.of(TokensInAccount.class);
+		return Set.of(ValidatorParticle.class);
 	}
 
 	@Override
-	public Supplier<Balances> initial() {
-		return Balances::new;
+	public Supplier<MyValidatorInfo> initial() {
+		return () -> new MyValidatorInfo("", "", false);
 	}
 
 	@Override
-	public BiFunction<Balances, Particle, Balances> outputReducer() {
-		return (balance, p) -> {
-			var tokens = (TokensInAccount) p;
-			if (tokens.getHoldingAddr().equals(addr)) {
-				return balance.add(tokens.getResourceAddr(), tokens.getAmount());
+	public BiFunction<MyValidatorInfo, Particle, MyValidatorInfo> outputReducer() {
+		return (i, p) -> {
+			var r = (ValidatorParticle) p;
+			if (r.getKey().equals(self)) {
+				return new MyValidatorInfo(
+					r.getName(),
+					r.getUrl(),
+					r.isRegisteredForNextEpoch()
+				);
 			}
-			return balance;
+			return i;
 		};
 	}
 
 	@Override
-	public BiFunction<Balances, Particle, Balances> inputReducer() {
-		return (balance, p) -> {
-			var tokens = (TokensInAccount) p;
-			if (tokens.getHoldingAddr().equals(addr)) {
-				return balance.remove(tokens.getResourceAddr(), tokens.getAmount());
-			}
-			return balance;
-		};
+	public BiFunction<MyValidatorInfo, Particle, MyValidatorInfo> inputReducer() {
+		return (i, r) -> i;
 	}
 }

@@ -36,7 +36,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ValidatorInfoServiceTest {
+public class MyValidatorInfoServiceTest {
 	private ECPublicKey validator1;
 	private ECPublicKey validator2;
 	private ECPublicKey validator3;

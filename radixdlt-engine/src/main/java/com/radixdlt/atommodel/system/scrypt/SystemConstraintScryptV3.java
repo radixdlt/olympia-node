@@ -23,24 +23,26 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.HasEpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
-import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
 import com.radixdlt.atommodel.system.state.ValidatorBFTData;
+import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
+import com.radixdlt.atommodel.validators.state.ValidatorConfigCopy;
+import com.radixdlt.atommodel.validators.state.PreparedValidatorConfigUpdate;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.atomos.Loader;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
+import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.ShutdownAll;
 import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 import com.radixdlt.constraintmachine.UpProcedure;
@@ -56,10 +58,12 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
-public class SystemConstraintScryptV2 implements ConstraintScrypt {
+import static com.radixdlt.atommodel.validators.state.PreparedValidatorConfigUpdate.RAKE_MAX;
 
-	public static final UInt256 CONSTANT_FEE = UInt256.from(0);
+public final class SystemConstraintScryptV3 implements ConstraintScrypt {
+
 	public static final UInt256 REWARDS_PER_PROPOSAL = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
 
 	public static class UpdateValidatorEpochData implements ReducerState {
@@ -92,8 +96,8 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		}
 
 		public ReducerState process(ShutdownAll<ExittingStake> i) throws ProcedureException {
+			i.verifyPostTypePrefixIsEmpty();
 			i.iterator().forEachRemaining(exitting::add);
-
 			return next();
 		}
 
@@ -145,6 +149,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		}
 
 		public ReducerState process(ShutdownAll<ValidatorBFTData> i) throws ProcedureException {
+			i.verifyPostTypePrefixIsEmpty();
 			var iter = i.iterator();
 			while (iter.hasNext()) {
 				var validatorEpochData = iter.next();
@@ -167,19 +172,24 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				throw new IllegalStateException();
 			}
 			var numProposals = proposalsCompleted.remove(k);
-			var nodeEmission = SystemConstraintScryptV2.REWARDS_PER_PROPOSAL.multiply(UInt256.from(numProposals));
-			final UInt256 noneFeeEmissions;
-			if (!CONSTANT_FEE.isZero() && nodeEmission.compareTo(CONSTANT_FEE) >= 0) {
-				var validatorOwner = REAddr.ofPubKeyAccount(k);
-				var initStake = new TreeMap<REAddr, UInt256>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
-				initStake.put(validatorOwner, CONSTANT_FEE);
-				preparingStake.put(k, initStake);
-				noneFeeEmissions = nodeEmission.subtract(CONSTANT_FEE);
-			} else {
-				noneFeeEmissions = nodeEmission;
-			}
-			return new LoadingStake(k, amt -> {
-				curStake.put(k, amt.addEmission(noneFeeEmissions));
+			var nodeEmission = REWARDS_PER_PROPOSAL.multiply(UInt256.from(numProposals));
+
+			return new LoadingStake(k, validatorStakeData -> {
+				int rakePercentage = validatorStakeData.getRakePercentage().orElse(RAKE_MAX);
+				final UInt256 rakedEmissions;
+				if (rakePercentage != 0 && !nodeEmission.isZero()) {
+					var rake = nodeEmission
+						.multiply(UInt256.from(rakePercentage))
+						.divide(UInt256.from(RAKE_MAX));
+					var validatorOwner = REAddr.ofPubKeyAccount(k);
+					var initStake = new TreeMap<REAddr, UInt256>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
+					initStake.put(validatorOwner, rake);
+					preparingStake.put(k, initStake);
+					rakedEmissions = nodeEmission.subtract(rake);
+				} else {
+					rakedEmissions = nodeEmission;
+				}
+				curStake.put(k, validatorStakeData.addEmission(rakedEmissions));
 				return next();
 			});
 		}
@@ -287,8 +297,9 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			this.preparingStake = preparingStake;
 		}
 
-		ReducerState unstakes(ShutdownAll<PreparedUnstakeOwnership> preparedUnstakeIterator) {
-			preparedUnstakeIterator.iterator().forEachRemaining(preparedUnstakeOwned ->
+		ReducerState unstakes(ShutdownAll<PreparedUnstakeOwnership> i) throws ProcedureException {
+			i.verifyPostTypePrefixIsEmpty();
+			i.iterator().forEachRemaining(preparedUnstakeOwned ->
 				preparingUnstake
 					.computeIfAbsent(
 						preparedUnstakeOwned.getDelegateKey(),
@@ -388,8 +399,9 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			this.preparingStake = preparingStake;
 		}
 
-		ReducerState prepareStakes(ShutdownAll<PreparedStake> preparedStakeIterator) {
-			preparedStakeIterator.iterator().forEachRemaining(preparedStake ->
+		ReducerState prepareStakes(ShutdownAll<PreparedStake> i) throws ProcedureException {
+			i.verifyPostTypePrefixIsEmpty();
+			i.iterator().forEachRemaining(preparedStake ->
 				preparingStake
 					.computeIfAbsent(
 						preparedStake.getDelegateKey(),
@@ -402,9 +414,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 
 		ReducerState next() {
 			if (preparingStake.isEmpty()) {
-				return curStake.isEmpty()
-					? new CreatingNextValidatorSet(updatingEpoch)
-					: new UpdatingValidatorStakes(updatingEpoch, curStake);
+				return new PreparingRakeUpdate(updatingEpoch, curStake);
 			}
 
 			var k = preparingStake.firstKey();
@@ -421,6 +431,77 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 					curStake.put(k, updated);
 					return this.next();
 				});
+			}
+		}
+	}
+
+	private static final class ResetValidatorUpdate implements ReducerState {
+		private final PreparedValidatorConfigUpdate update;
+		private final Supplier<ReducerState> next;
+
+		ResetValidatorUpdate(PreparedValidatorConfigUpdate update, Supplier<ReducerState> next) {
+			this.update = update;
+			this.next = next;
+		}
+
+		ReducerState reset(ValidatorConfigCopy validatorConfigCopy) throws ProcedureException {
+			if (!validatorConfigCopy.getValidatorKey().equals(update.getValidatorKey())) {
+				throw new ProcedureException("Validator keys must match.");
+			}
+
+			if (validatorConfigCopy.getCurRakePercentage() != update.getNextRakePercentage()) {
+				throw new ProcedureException("Rake percentage must match.");
+			}
+
+			return next.get();
+		}
+	}
+
+	private static final class PreparingRakeUpdate implements ReducerState {
+		private final UpdatingEpoch updatingEpoch;
+		private final TreeMap<ECPublicKey, ValidatorStakeData> validatorsToUpdate;
+		private final TreeMap<ECPublicKey, PreparedValidatorConfigUpdate> preparingRakeUpdates =
+			new TreeMap<>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
+
+		PreparingRakeUpdate(
+			UpdatingEpoch updatingEpoch,
+			TreeMap<ECPublicKey, ValidatorStakeData> validatorsToUpdate
+		) {
+			this.updatingEpoch = updatingEpoch;
+			this.validatorsToUpdate = validatorsToUpdate;
+		}
+
+		ReducerState prepareRakeUpdates(ShutdownAll<PreparedValidatorConfigUpdate> shutdownAll) throws ProcedureException {
+			var expectedEpoch = updatingEpoch.prevEpoch.getEpoch() + 1;
+			shutdownAll.verifyPostTypePrefixEquals(expectedEpoch);
+			var iter = shutdownAll.iterator();
+			while (iter.hasNext()) {
+				var preparedRakeUpdate = iter.next();
+				preparingRakeUpdates.put(preparedRakeUpdate.getValidatorKey(), preparedRakeUpdate);
+			}
+			return next();
+		}
+
+		ReducerState next() {
+			if (preparingRakeUpdates.isEmpty()) {
+				return validatorsToUpdate.isEmpty()
+					? new CreatingNextValidatorSet(updatingEpoch)
+					: new UpdatingValidatorStakes(updatingEpoch, validatorsToUpdate);
+			}
+
+			var k = preparingRakeUpdates.firstKey();
+			var validatorUpdate = preparingRakeUpdates.remove(k);
+			if (!validatorsToUpdate.containsKey(k)) {
+				return new LoadingStake(k, validatorStake -> {
+					var updatedValidator = validatorStake.setRakePercentage(validatorUpdate.getNextRakePercentage());
+					validatorsToUpdate.put(k, updatedValidator);
+					return new ResetValidatorUpdate(validatorUpdate, this::next);
+				});
+			} else {
+				var updatedValidator = validatorsToUpdate.get(k)
+					.setRakePercentage(validatorUpdate.getNextRakePercentage());
+				validatorsToUpdate.put(k, updatedValidator);
+				return new ResetValidatorUpdate(validatorUpdate, this::next);
 			}
 		}
 	}
@@ -564,6 +645,16 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(i, s, r) -> ReducerResult.incomplete(s.prepareStakes(i))
 		));
+		os.procedure(new ShutdownAllProcedure<>(
+			PreparedValidatorConfigUpdate.class, PreparingRakeUpdate.class,
+			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(i, s, r) -> ReducerResult.incomplete(s.prepareRakeUpdates(i))
+		));
+		os.procedure(new UpProcedure<>(
+			ResetValidatorUpdate.class, ValidatorConfigCopy.class,
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> ReducerResult.incomplete(s.reset(u))
+		));
 		os.procedure(new UpProcedure<>(
 			Staking.class, StakeOwnership.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
@@ -636,20 +727,32 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				ValidatorStakeData.class,
-				Set.of(SubstateTypeId.STAKE_V1.id()),
+				Set.of(SubstateTypeId.STAKE_V1.id(), SubstateTypeId.STAKE_V2.id()),
 				(b, buf) -> {
 					var delegate = REFieldSerialization.deserializeKey(buf);
 					var amount = REFieldSerialization.deserializeUInt256(buf);
 					var ownership = REFieldSerialization.deserializeUInt256(buf);
-					return ValidatorStakeData.create(delegate, amount, ownership);
+					if (b.equals(SubstateTypeId.STAKE_V1.id())) {
+						return ValidatorStakeData.create(delegate, amount, ownership);
+					} else {
+						var rakePercentage = REFieldSerialization.deserializeInt(buf);
+						return ValidatorStakeData.create(delegate, amount, ownership, rakePercentage);
+					}
 				},
 				(s, buf) -> {
-					buf.put(SubstateTypeId.STAKE_V1.id());
+					if (s.getRakePercentage().isEmpty()) {
+						buf.put(SubstateTypeId.STAKE_V1.id());
+					} else {
+						buf.put(SubstateTypeId.STAKE_V2.id());
+					}
 					REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 					buf.put(s.getAmount().toByteArray());
 					buf.put(s.getTotalOwnership().toByteArray());
+					if (s.getRakePercentage().isPresent()) {
+						buf.putInt(s.getRakePercentage().orElse(0));
+					}
 				},
-				s -> s.getAmount().isZero() && s.getTotalOwnership().isZero()
+				s -> s.getAmount().isZero() && s.getTotalOwnership().isZero() && s.getRakePercentage().isEmpty()
 			)
 		);
 		os.substate(

@@ -28,13 +28,13 @@ import java.util.NoSuchElementException;
  */
 public interface SubstateStore {
 
-	SubstateCursor openIndexedCursor(
+	CloseableCursor<Substate> openIndexedCursor(
 		Class<? extends Particle> particleClass,
 		SubstateDeserialization deserialization
 	);
 
 	static SubstateStore empty() {
-		return (c, d) -> new SubstateCursor() {
+		return (c, d) -> new CloseableCursor<>() {
 			@Override
 			public void close() {
 			}

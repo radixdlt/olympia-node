@@ -39,6 +39,7 @@ public enum CMErrorCode {
 	INVALID_INSTRUCTION_SEQUENCE("Invalid instruction sequence"),
 	NO_STATE_UPDATES("No state updates"),
 	FEE_NOT_FOUND("Fee not found"),
+	INVALID_SHUTDOWN_ALL("Invalid shutdown all"),
 	UNKNOWN_ERROR("Unknown error");
 
 	private final String description;

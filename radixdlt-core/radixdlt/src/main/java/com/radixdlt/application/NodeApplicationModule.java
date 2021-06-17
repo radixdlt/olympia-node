@@ -47,13 +47,13 @@ public final class NodeApplicationModule extends AbstractModule {
 	public void configure() {
 		bind(MempoolFiller.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?>>() { })
-			.addBinding().to(BalanceReducer.class).in(Scopes.SINGLETON);
+			.addBinding().to(MyBalanceReducer.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?>>() { })
 			.addBinding().to(MyStakedBalanceReducer.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?>>() { })
 			.addBinding().to(MyValidatorStakesReducer.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?>>() { })
-			.addBinding().to(ValidatorInfoReducer.class).in(Scopes.SINGLETON);
+			.addBinding().to(MyValidatorInfoReducer.class).in(Scopes.SINGLETON);
 
 		bind(NodeApplication.class).in(Scopes.SINGLETON);
 

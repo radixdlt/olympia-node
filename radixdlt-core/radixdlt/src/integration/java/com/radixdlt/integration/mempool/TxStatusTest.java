@@ -29,7 +29,7 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.client.service.TransactionStatusService;
 import com.radixdlt.consensus.HashSigner;
@@ -121,7 +121,7 @@ public class TxStatusTest {
 
 				@ProvidesIntoSet
 				private TokenIssuance mempoolFillerIssuance(@Self ECPublicKey self) {
-					return TokenIssuance.of(self, ValidatorStake.MINIMUM_STAKE);
+					return TokenIssuance.of(self, ValidatorStakeData.MINIMUM_STAKE);
 				}
 			}
 		);
@@ -159,7 +159,7 @@ public class TxStatusTest {
 
 		// Correct transfer
 		var transferAction = new TransferToken(REAddr.ofNativeToken(), accountAddr, otherAddr,
-			ValidatorStake.MINIMUM_STAKE);
+			ValidatorStakeData.MINIMUM_STAKE);
 		var transferDispatched = dispatchAndWaitForCommit(transferAction);
 		assertEquals(CONFIRMED, transactionStatusService.getTransactionStatus(transferDispatched.getTxn().getId()));
 

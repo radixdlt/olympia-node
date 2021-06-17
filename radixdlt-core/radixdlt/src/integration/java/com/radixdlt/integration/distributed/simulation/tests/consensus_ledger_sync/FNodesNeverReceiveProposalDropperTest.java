@@ -60,7 +60,7 @@ public class FNodesNeverReceiveProposalDropperTest {
 				NetworkLatencies.fixed(10),
 				NetworkDroppers.fNodesAllReceivedProposalsDropped()
 			)
-			.pacemakerTimeout(5000)
+			.pacemakerTimeout(3000)
 			.ledgerAndSync(SyncConfig.of(200L, 10, 200L))
 			.addTestModules(
 				ConsensusMonitors.safety(),

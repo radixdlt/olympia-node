@@ -45,6 +45,7 @@ public class IncreasingValidatorsTest {
 			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed()
 		)
+		.pacemakerTimeout(3000)
 		.numNodes(50, 2) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware pacemaker
 		.addRadixEngineConfigModules(
 			RadixEngineConfig.asModule(2, 40, 5),

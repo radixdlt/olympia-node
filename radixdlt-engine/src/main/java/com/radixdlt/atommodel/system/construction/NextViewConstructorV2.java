@@ -24,7 +24,7 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.SystemParticle;
-import com.radixdlt.atommodel.system.state.ValidatorEpochData;
+import com.radixdlt.atommodel.system.state.ValidatorBFTData;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 
 import java.util.List;
@@ -34,7 +34,7 @@ public class NextViewConstructorV2 implements ActionConstructor<SystemNextView> 
 	@Override
 	public void construct(SystemNextView action, TxBuilder txBuilder) throws TxBuilderException {
 		var validatorEpochData = txBuilder.find(
-			ValidatorEpochData.class, p -> p.validatorKey().equals(action.leader())
+			ValidatorBFTData.class, p -> p.validatorKey().equals(action.leader())
 		);
 		if (validatorEpochData.isPresent()) {
 			txBuilder.swap(
@@ -49,12 +49,12 @@ public class NextViewConstructorV2 implements ActionConstructor<SystemNextView> 
 				return List.of(new RoundData(action.view(), action.timestamp()));
 			});
 			txBuilder.swap(
-				ValidatorEpochData.class,
+				ValidatorBFTData.class,
 				p -> p.validatorKey().equals(action.leader()),
 				Optional.empty(),
 				"No validator epoch data"
 			).with(down -> List.of(
-				new ValidatorEpochData(down.validatorKey(), down.proposalsCompleted() + 1)
+				new ValidatorBFTData(down.validatorKey(), down.proposalsCompleted() + 1)
 			));
 		} else {
 			txBuilder.swap(

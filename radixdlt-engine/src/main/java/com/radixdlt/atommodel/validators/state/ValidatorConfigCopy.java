@@ -16,53 +16,42 @@
  *
  */
 
-package com.radixdlt.atommodel.system.state;
+package com.radixdlt.atommodel.validators.state;
 
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
 
-public final class ValidatorEpochData implements Particle {
+public final class ValidatorConfigCopy implements Particle {
 	private final ECPublicKey validatorKey;
-	private final long proposalsCompleted;
+	private final int curRakePercentage;
 
-	public ValidatorEpochData(
-		ECPublicKey validatorKey,
-		long proposalsCompleted
-	) {
-		this.validatorKey = validatorKey;
-		this.proposalsCompleted = proposalsCompleted;
+	public ValidatorConfigCopy(ECPublicKey validatorKey, int curRakePercentage) {
+		this.validatorKey = Objects.requireNonNull(validatorKey);
+		this.curRakePercentage = curRakePercentage;
 	}
 
-	public ECPublicKey validatorKey() {
+	public ECPublicKey getValidatorKey() {
 		return validatorKey;
 	}
 
-	public long proposalsCompleted() {
-		return proposalsCompleted;
+	public int getCurRakePercentage() {
+		return curRakePercentage;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(validatorKey, proposalsCompleted);
+		return Objects.hash(validatorKey, curRakePercentage);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof ValidatorEpochData)) {
+		if (!(o instanceof ValidatorConfigCopy)) {
 			return false;
 		}
-
-		var other = (ValidatorEpochData) o;
+		var other = (ValidatorConfigCopy) o;
 		return Objects.equals(this.validatorKey, other.validatorKey)
-			&& this.proposalsCompleted == other.proposalsCompleted;
-	}
-
-	@Override
-	public String toString() {
-		return String.format(
-			"%s{validatorKey=%s proposalsCompleted=%s}", this.getClass().getSimpleName(), validatorKey, proposalsCompleted
-		);
+			&& this.curRakePercentage == other.curRakePercentage;
 	}
 }

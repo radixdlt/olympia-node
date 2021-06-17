@@ -24,18 +24,38 @@ import com.google.common.collect.Iterators;
 import java.io.Closeable;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
  * Cursor into a substate store. Will often be a real cursor in a database so
  * cursor must be closed after use.
  */
-public interface SubstateCursor extends Iterator<Substate>, Closeable {
+public interface CloseableCursor<T> extends Iterator<T>, Closeable {
 	void close();
 
-	static SubstateCursor filter(SubstateCursor cursor, Predicate<Substate> substatePredicate) {
+	static <T, U> CloseableCursor<U> map(CloseableCursor<T> cursor, Function<T, U> mapper) {
+		return new CloseableCursor<>() {
+			@Override
+			public void close() {
+				cursor.close();
+			}
+
+			@Override
+			public boolean hasNext() {
+				return cursor.hasNext();
+			}
+
+			@Override
+			public U next() {
+				return mapper.apply(cursor.next());
+			}
+		};
+	}
+
+	static <T> CloseableCursor<T> filter(CloseableCursor<T> cursor, Predicate<T> substatePredicate) {
 		var iterator = Iterators.filter(cursor, substatePredicate);
-		return new SubstateCursor() {
+		return new CloseableCursor<T>() {
 			@Override
 			public void close() {
 				cursor.close();
@@ -47,15 +67,15 @@ public interface SubstateCursor extends Iterator<Substate>, Closeable {
 			}
 
 			@Override
-			public Substate next() {
+			public T next() {
 				return iterator.next();
 			}
 		};
 	}
 
-	static SubstateCursor concat(SubstateCursor cursor0, Supplier<SubstateCursor> supplier1) {
-		return new SubstateCursor() {
-			private SubstateCursor cursor1;
+	static <T> CloseableCursor<T> concat(CloseableCursor<T> cursor0, Supplier<CloseableCursor<T>> supplier1) {
+		return new CloseableCursor<T>() {
+			private CloseableCursor<T> cursor1;
 
 			@Override
 			public void close() {
@@ -79,7 +99,7 @@ public interface SubstateCursor extends Iterator<Substate>, Closeable {
 			}
 
 			@Override
-			public Substate next() {
+			public T next() {
 				if (cursor1 != null) {
 					return cursor1.next();
 				} else {
@@ -94,8 +114,8 @@ public interface SubstateCursor extends Iterator<Substate>, Closeable {
 	}
 
 
-	static SubstateCursor wrapIterator(Iterator<Substate> i) {
-		return new SubstateCursor() {
+	static <T> CloseableCursor<T> wrapIterator(Iterator<T> i) {
+		return new CloseableCursor<>() {
 			@Override
 			public void close() {
 			}
@@ -106,14 +126,14 @@ public interface SubstateCursor extends Iterator<Substate>, Closeable {
 			}
 
 			@Override
-			public Substate next() {
+			public T next() {
 				return i.next();
 			}
 		};
 	}
 
-	static SubstateCursor empty() {
-		return new SubstateCursor() {
+	static <T> CloseableCursor<T> empty() {
+		return new CloseableCursor<>() {
 			@Override
 			public void close() {
 			}
@@ -124,7 +144,7 @@ public interface SubstateCursor extends Iterator<Substate>, Closeable {
 			}
 
 			@Override
-			public Substate next() {
+			public T next() {
 				throw new NoSuchElementException();
 			}
 		};

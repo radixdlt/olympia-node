@@ -33,7 +33,7 @@ import com.radixdlt.atommodel.system.construction.NextEpochConstructorV2;
 import com.radixdlt.atommodel.system.construction.PayFeeConstructorV2;
 import com.radixdlt.atommodel.system.scrypt.FeeConstraintScrypt;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
-import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV2;
@@ -51,7 +51,7 @@ import com.radixdlt.client.api.ActionType;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScrypt;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV1;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.client.api.ActionEntry;
 import com.radixdlt.client.store.TransactionParser;
@@ -96,7 +96,7 @@ public class TransactionParserTest {
 	public void setup() throws Exception {
 		final var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new SystemConstraintScryptV2());
-		cmAtomOS.load(new ValidatorConstraintScrypt());
+		cmAtomOS.load(new ValidatorConstraintScryptV1());
 		cmAtomOS.load(new TokensConstraintScryptV2());
 		cmAtomOS.load(new StakingConstraintScryptV3());
 		cmAtomOS.load(new FeeConstraintScrypt());
@@ -125,7 +125,7 @@ public class TransactionParserTest {
 		var txn0 = engine.construct(
 			TxnConstructionRequest.create()
 				.createMutableToken(tokDef)
-				.mint(this.tokenRri, this.tokenOwnerAcct, ValidatorStake.MINIMUM_STAKE.multiply(UInt256.TWO))
+				.mint(this.tokenRri, this.tokenOwnerAcct, ValidatorStakeData.MINIMUM_STAKE.multiply(UInt256.TWO))
 		).buildWithoutSignature();
 		var validatorBuilder = this.engine.construct(
 			TxnConstructionRequest.create()
@@ -173,8 +173,8 @@ public class TransactionParserTest {
 			TxnConstructionRequest.create()
 				.payFee(tokenOwnerAcct, UInt256.FOUR)
 				.createMutableToken(tokDefII)
-				.mint(tokenRriII, tokenOwnerAcct, ValidatorStake.MINIMUM_STAKE.multiply(UInt256.TWO))
-				.transfer(tokenRriII, tokenOwnerAcct, otherAccount, ValidatorStake.MINIMUM_STAKE)
+				.mint(tokenRriII, tokenOwnerAcct, ValidatorStakeData.MINIMUM_STAKE.multiply(UInt256.TWO))
+				.transfer(tokenRriII, tokenOwnerAcct, otherAccount, ValidatorStakeData.MINIMUM_STAKE)
 		).signAndBuild(tokenOwnerKeyPair::sign);
 
 		executeAndDecode(List.of(ActionType.UNKNOWN, ActionType.MINT, ActionType.TRANSFER), UInt256.FOUR, txn);
@@ -207,11 +207,11 @@ public class TransactionParserTest {
 	}
 
 	private StakeTokens nativeStake() {
-		return new StakeTokens(tokenOwnerAcct, validatorKeyPair.getPublicKey(), ValidatorStake.MINIMUM_STAKE);
+		return new StakeTokens(tokenOwnerAcct, validatorKeyPair.getPublicKey(), ValidatorStakeData.MINIMUM_STAKE);
 	}
 
 	private UnstakeTokens nativeUnstake() {
-		return new UnstakeTokens(tokenOwnerAcct, validatorKeyPair.getPublicKey(), ValidatorStake.MINIMUM_STAKE);
+		return new UnstakeTokens(tokenOwnerAcct, validatorKeyPair.getPublicKey(), ValidatorStakeData.MINIMUM_STAKE);
 	}
 
 	private List<ActionType> toActionTypes(TxHistoryEntry txEntry) {

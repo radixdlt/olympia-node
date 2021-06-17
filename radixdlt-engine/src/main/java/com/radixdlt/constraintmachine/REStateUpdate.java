@@ -23,6 +23,7 @@ import com.radixdlt.atom.Substate;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 /**
  * Instruction which has been parsed and state checked by Radix Engine
@@ -31,9 +32,9 @@ public final class REStateUpdate {
 	private final REOp op;
 	private final Substate substate;
 	private final byte[] arg;
-	private final ByteBuffer stateBuf;
+	private final Supplier<ByteBuffer> stateBuf;
 
-	private REStateUpdate(REOp op, Substate substate, byte[] arg, ByteBuffer stateBuf) {
+	private REStateUpdate(REOp op, Substate substate, byte[] arg, Supplier<ByteBuffer> stateBuf) {
 		Objects.requireNonNull(op);
 		Objects.requireNonNull(substate);
 
@@ -43,12 +44,12 @@ public final class REStateUpdate {
 		this.stateBuf = stateBuf;
 	}
 
-	public static REStateUpdate of(REOp op, Substate substate, byte[] arg, ByteBuffer stateBuf) {
+	public static REStateUpdate of(REOp op, Substate substate, byte[] arg, Supplier<ByteBuffer> stateBuf) {
 		return new REStateUpdate(op, substate, arg, stateBuf);
 	}
 
 	public ByteBuffer getStateBuf() {
-		return stateBuf;
+		return stateBuf.get();
 	}
 
 	public Optional<byte[]> getArg() {
@@ -69,6 +70,14 @@ public final class REStateUpdate {
 
 	public Substate getSubstate() {
 		return substate;
+	}
+
+	public RawSubstateBytes getRawSubstateBytes() {
+		var buffer = stateBuf.get();
+		int remaining = buffer.remaining();
+		var buf = new byte[remaining];
+		buffer.get(buf);
+		return new RawSubstateBytes(substate.getId().asBytes(), buf);
 	}
 
 	public Particle getRawSubstate() {

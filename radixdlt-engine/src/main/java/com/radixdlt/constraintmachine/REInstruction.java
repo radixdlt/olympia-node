@@ -82,7 +82,19 @@ public final class REInstruction {
 			@Override
 			public Object read(Txn txn, int i, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
 				var classId = b.get();
-				return d.byteToClass(classId); // Just to check to make sure classId exists
+				return new ShutdownAllIndex(new byte[] {classId}, d.byteToClass(classId));
+			}
+		},
+		DOWNINDEX((byte) 11, REOp.DOWNALL) {
+			@Override
+			public Object read(Txn txn, int i, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
+				int indexSize = Byte.toUnsignedInt(b.get());
+				if (indexSize <= 0 || indexSize > 10) {
+					throw new DeserializeException("Bad DownIndex size " + indexSize);
+				}
+				var buf = new byte[indexSize];
+				b.get(buf);
+				return new ShutdownAllIndex(buf, d.byteToClass(buf[0]));
 			}
 		},
 		MSG((byte) 6, REOp.MSG) {

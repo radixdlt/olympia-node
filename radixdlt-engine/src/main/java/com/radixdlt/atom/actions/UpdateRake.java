@@ -19,27 +19,22 @@
 package com.radixdlt.atom.actions;
 
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.crypto.ECPublicKey;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.function.Function;
+public class UpdateRake implements TxAction {
+	private final ECPublicKey validatorKey;
+	private final int rakePercentage;
 
-public final class SystemNextEpoch implements TxAction {
-	private final long timestamp;
-	private final Function<Collection<ValidatorStakeData>, List<ECPublicKey>> nextValidators;
-
-	public SystemNextEpoch(Function<Collection<ValidatorStakeData>, List<ECPublicKey>> nextValidators, long timestamp) {
-		this.nextValidators = nextValidators;
-		this.timestamp = timestamp;
+	public UpdateRake(ECPublicKey validatorKey, int rakePercentage) {
+		this.validatorKey = validatorKey;
+		this.rakePercentage = rakePercentage;
 	}
 
-	public List<ECPublicKey> validators(Collection<ValidatorStakeData> updates) {
-		return nextValidators.apply(updates);
+	public ECPublicKey getValidatorKey() {
+		return validatorKey;
 	}
 
-	public long timestamp() {
-		return timestamp;
+	public int getRakePercentage() {
+		return rakePercentage;
 	}
 }

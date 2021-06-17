@@ -25,7 +25,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atommodel.system.state.ValidatorStake;
+import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import org.radix.StakeDelegation;
@@ -61,7 +61,7 @@ public final class MockedGenesisModule extends AbstractModule {
 		@Genesis ImmutableList<ECKeyPair> initialValidators
 	) {
 		return initialValidators.stream()
-			.map(v -> StakeDelegation.of(v.getPublicKey(), v.getPublicKey(), ValidatorStake.MINIMUM_STAKE))
+			.map(v -> StakeDelegation.of(v.getPublicKey(), v.getPublicKey(), ValidatorStakeData.MINIMUM_STAKE))
 			.collect(ImmutableList.toImmutableList());
 	}
 
@@ -73,7 +73,7 @@ public final class MockedGenesisModule extends AbstractModule {
 	) {
 		return Stream.concat(
 			tokenIssuanceSet.stream(),
-			initialValidators.stream().map(v -> TokenIssuance.of(v.getPublicKey(), ValidatorStake.MINIMUM_STAKE))
+			initialValidators.stream().map(v -> TokenIssuance.of(v.getPublicKey(), ValidatorStakeData.MINIMUM_STAKE))
 		)
 			.sorted(Comparator.comparing(t -> t.receiver().toBase64()))
 			.collect(ImmutableList.toImmutableList());
