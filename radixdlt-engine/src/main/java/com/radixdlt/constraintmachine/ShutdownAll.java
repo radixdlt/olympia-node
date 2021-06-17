@@ -20,7 +20,6 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.utils.Longs;
 
-import java.util.Arrays;
 import java.util.Iterator;
 
 public final class ShutdownAll<D extends Particle> {
