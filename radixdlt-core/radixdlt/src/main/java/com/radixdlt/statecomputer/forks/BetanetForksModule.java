@@ -103,7 +103,7 @@ public final class BetanetForksModule extends AbstractModule {
 	@Provides
 	@Singleton
 	ImmutableList<ForkConfig> forksConfig() {
-		return ImmutableList.of(betanetV1(), betanetV2(), betanetV3(), betanetV4());
+		return ImmutableList.of(betanetV1(), betanetV2(), betanetV3());
 	}
 
 	private ForkConfig betanetV1() {
