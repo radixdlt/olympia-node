@@ -17,6 +17,8 @@
 
 package com.radixdlt.api.service;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.Radix;
 
 import com.google.inject.Inject;
@@ -25,11 +27,25 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.utils.UInt384;
 
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+
+import javax.management.InstanceNotFoundException;
+import javax.management.MBeanServerConnection;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
+import javax.management.ReflectionException;
+import javax.management.openmbean.CompositeDataSupport;
+
+import static com.radixdlt.api.service.MetricsService.JmxMetric.jmxMetric;
 
 //TODO: finish it
 public class MetricsService {
+	private static final Logger log = LogManager.getLogger();
+
 	private static final List<CounterType> EXPORT_LIST = List.of(
 		CounterType.COUNT_APIDB_TOKEN_TOTAL,
 		CounterType.COUNT_APIDB_TOKEN_READ,
@@ -116,6 +132,20 @@ public class MetricsService {
 		CounterType.PERSISTENCE_ATOM_LOG_WRITE_COMPRESSED,
 		CounterType.TIME_DURATION
 	);
+
+	private static final List<JmxMetric> JMX_METRICS = List.of(
+		jmxMetric("java.lang:type=MemoryPool,name=G1 Eden Space", "Usage"),
+		jmxMetric("java.lang:type=MemoryPool,name=G1 Survivor Space", "Usage"),
+		jmxMetric("java.lang:type=MemoryPool,name=G1 Old Gen", "Usage"),
+		jmxMetric("java.lang:type=MemoryPool,name=Metaspace", "Usage"),
+		jmxMetric("java.lang:type=GarbageCollector,name=G1 Old Generation", "Usage"),
+		jmxMetric("java.lang:type=GarbageCollector,name=G1 Young Generation", "Usage"),
+		jmxMetric("java.lang:type=OperatingSystem", "SystemCpuLoad", "ProcessCpuLoad", "SystemLoadAverage"),
+		jmxMetric("java.lang:type=Threading", "ThreadCount", "DaemonThreadCount"),
+		jmxMetric("java.lang:type=Memory", "HeapMemoryUsage", "NonHeapMemoryUsage"),
+		jmxMetric("java.lang:type=ClassLoading", "LoadedClassCount")
+	);
+
 	private static final String COUNTER = "counter";
 	private static final String COUNTER_PREFIX = "info_counters_";
 
@@ -164,6 +194,8 @@ public class MetricsService {
 		appendCounter(builder, "balance_xrd", getXrdBalance());
 		appendCounter(builder, "validator_total_stake", getTotalStake());
 
+		appendJMXCounters(builder);
+
 		appendCounterExtended(
 			builder,
 			prepareNodeInfo(),
@@ -178,14 +210,12 @@ public class MetricsService {
 	}
 
 	private UInt384 getXrdBalance() {
-		var nativeBalance = accountInfoService.getMyBalances()
+		return accountInfoService.getMyBalances()
 			.stream()
 			.filter(e -> e.getKey().isNativeToken())
 			.map(Map.Entry::getValue)
 			.findAny()
 			.orElse(UInt384.ZERO);
-
-		return nativeBalance;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -278,18 +308,73 @@ public class MetricsService {
 		appendCounter(builder, name, value);
 	}
 
-	private void appendCounter(StringBuilder builder, String name, Number value) {
+	private static void appendCounter(StringBuilder builder, String name, Number value) {
 		appendCounterExtended(builder, name, name, name, value.doubleValue());
 	}
 
-	private void appendCounter(StringBuilder builder, String name, UInt384 value) {
+	private static void appendCounter(StringBuilder builder, String name, UInt384 value) {
 		appendCounterExtended(builder, name, name, name, value.toString() + ".0");
 	}
 
-	private void appendCounterExtended(StringBuilder builder, String name, String type, String help, Object value) {
+	private static void appendCounterExtended(StringBuilder builder, String name, String type, String help, Object value) {
 		builder
 			.append("# HELP ").append(help).append('\n')
 			.append("# TYPE ").append(type).append(' ').append(COUNTER).append('\n')
 			.append(name).append(' ').append(value).append('\n');
+	}
+
+	static class JmxMetric {
+		private final String objectNameString;
+		private final String[] metricAttributes;
+
+		private JmxMetric(String objectNameString, String[] metricAttributes) {
+			this.objectNameString = objectNameString;
+			this.metricAttributes = metricAttributes;
+		}
+
+		static JmxMetric jmxMetric(String objectName, String... attributes) {
+			return new JmxMetric(objectName, attributes);
+		}
+
+		void readCounter(MBeanServerConnection connection, StringBuilder builder) {
+			try {
+				var objectName = connection.queryNames(new ObjectName(objectNameString), null)
+					.iterator()
+					.next();
+
+				var attributes = connection.getAttributes(objectName, metricAttributes).asList();
+
+				for (var attribute : attributes) {
+					var name = attribute.getName();
+
+					if (name.equals("Usage")) {
+						name = objectName.getKeyProperty("name");
+					}
+
+					var outName = name.toLowerCase(Locale.US)
+						.replace('.', '_')
+						.replace(' ', '_');
+
+					// this might break if more beans are parsed
+					if (attribute.getValue() instanceof CompositeDataSupport) {
+						var cds = (CompositeDataSupport) attribute.getValue();
+
+						appendCounter(builder, outName + "_init", (Number) cds.get("init"));
+						appendCounter(builder, outName + "_max", (Number) cds.get("max"));
+						appendCounter(builder, outName + "_committed", (Number) cds.get("committed"));
+						appendCounter(builder, outName + "_used", (Number) cds.get("used"));
+					} else {
+						appendCounter(builder, outName, (Number) attribute.getValue());
+					}
+				}
+			} catch (InstanceNotFoundException | ReflectionException | IOException | MalformedObjectNameException e) {
+				log.error("Error while retrieving JMX metric " + objectNameString, e);
+			}
+		}
+	}
+
+	private void appendJMXCounters(StringBuilder builder) {
+		var connection = ManagementFactory.getPlatformMBeanServer();
+		JMX_METRICS.forEach(metric -> metric.readCounter(connection, builder));
 	}
 }
