@@ -25,6 +25,8 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atommodel.validators.state.AllowDelegationFlag;
+import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
+import com.radixdlt.atommodel.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.identifiers.REAddr;
 
 import java.util.Optional;
@@ -40,12 +42,39 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 			"Not enough balance for staking."
 		);
 
-		builder.read(
+		var flag = builder.read(
 			AllowDelegationFlag.class,
-			p -> p.allowsDelegation() && p.getValidatorKey().equals(action.to()),
+			p -> p.getValidatorKey().equals(action.to()),
 			Optional.of(new AllowDelegationFlag(action.to(), true)),
-			"Validator does not allow delegation"
+			"Could not find state"
 		);
+
+		if (!flag.allowsDelegation()) {
+			var updateInFlight = builder
+				.find(PreparedValidatorUpdate.class, p -> p.getValidatorKey().equals(action.to()));
+
+			final REAddr owner;
+			if (updateInFlight.isPresent()) {
+				var validator = builder.read(
+					PreparedValidatorUpdate.class,
+					p -> p.getValidatorKey().equals(action.to()),
+					Optional.empty(),
+					"Could not find state"
+				);
+				owner = validator.getOwnerAddress();
+			} else {
+				var validator = builder.read(
+					ValidatorOwnerCopy.class,
+					p -> p.getValidatorKey().equals(action.to()),
+					Optional.of(new ValidatorOwnerCopy(action.to(), REAddr.ofPubKeyAccount(action.to()))),
+					"Could not find state"
+				);
+				owner = validator.getOwner();
+			}
+			if (!action.from().equals(owner)) {
+				throw new TxBuilderException("Delegation flag is false and you are not the owner.");
+			}
+		}
 
 		builder.up(new PreparedStake(action.amount(), action.from(), action.to()));
 	}

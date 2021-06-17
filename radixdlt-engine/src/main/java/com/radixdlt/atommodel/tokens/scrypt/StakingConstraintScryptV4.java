@@ -25,6 +25,8 @@ import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atommodel.validators.state.AllowDelegationFlag;
+import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
+import com.radixdlt.atommodel.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
@@ -38,8 +40,11 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 
 import java.util.Set;
+import java.util.function.Predicate;
 
 public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 
@@ -50,7 +55,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 				PreparedStake.class,
 				Set.of(SubstateTypeId.PREPARED_STAKE.id()),
 				(b, buf) -> {
-					var owner = REFieldSerialization.deserializeREAddr(buf);
+					var owner = REFieldSerialization.deserializeAccountREAddr(buf);
 					var delegate = REFieldSerialization.deserializeKey(buf);
 					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					return new PreparedStake(amount, owner, delegate);
@@ -70,7 +75,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 				Set.of(SubstateTypeId.PREPARED_UNSTAKE.id()),
 				(b, buf) -> {
 					var delegate = REFieldSerialization.deserializeKey(buf);
-					var owner = REFieldSerialization.deserializeREAddr(buf);
+					var owner = REFieldSerialization.deserializeAccountREAddr(buf);
 					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					return new PreparedUnstakeOwnership(delegate, owner, amount);
 				},
@@ -86,20 +91,43 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 		defineStaking(os);
 	}
 
-	private static final class StakePrepare implements ReducerState {
+	private static final class OwnerStakePrepare implements ReducerState {
 		private final TokenHoldingBucket tokenHoldingBucket;
 		private final AllowDelegationFlag allowDelegationFlag;
 
-		StakePrepare(TokenHoldingBucket tokenHoldingBucket, AllowDelegationFlag allowDelegationFlag) {
+		OwnerStakePrepare(TokenHoldingBucket tokenHoldingBucket, AllowDelegationFlag allowDelegationFlag) {
 			this.tokenHoldingBucket = tokenHoldingBucket;
 			this.allowDelegationFlag = allowDelegationFlag;
 		}
 
-		static StakePrepare create(TokenHoldingBucket tokenHoldingBucket, AllowDelegationFlag allowDelegationFlag) throws ProcedureException {
-			if (!allowDelegationFlag.allowsDelegation()) {
-				throw new ProcedureException("Delegation locked");
+		ReducerState readOwner(ValidatorOwnerCopy ownerCopy) throws ProcedureException {
+			if (!allowDelegationFlag.getValidatorKey().equals(ownerCopy.getValidatorKey())) {
+				throw new ProcedureException("Not matchin validator keys");
 			}
-			return new StakePrepare(tokenHoldingBucket, allowDelegationFlag);
+			return new StakePrepare(tokenHoldingBucket, allowDelegationFlag.getValidatorKey(), ownerCopy.getOwner()::equals);
+		}
+
+		ReducerState readOwner(PreparedValidatorUpdate preparedValidatorUpdate) throws ProcedureException {
+			if (!allowDelegationFlag.getValidatorKey().equals(preparedValidatorUpdate.getValidatorKey())) {
+				throw new ProcedureException("Not matchin validator keys");
+			}
+			return new StakePrepare(
+				tokenHoldingBucket,
+				allowDelegationFlag.getValidatorKey(),
+				preparedValidatorUpdate.getOwnerAddress()::equals
+			);
+		}
+	}
+
+	private static final class StakePrepare implements ReducerState {
+		private final TokenHoldingBucket tokenHoldingBucket;
+		private final ECPublicKey validatorKey;
+		private final Predicate<REAddr> delegateAllowed;
+
+		StakePrepare(TokenHoldingBucket tokenHoldingBucket, ECPublicKey validatorKey, Predicate<REAddr> delegateAllowed) {
+			this.tokenHoldingBucket = tokenHoldingBucket;
+			this.validatorKey = validatorKey;
+			this.delegateAllowed = delegateAllowed;
 		}
 
 		ReducerState withdraw(PreparedStake preparedStake) throws ProcedureException {
@@ -109,9 +137,14 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 						+ " but trying to stake " + preparedStake.getAmount()
 				);
 			}
-			if (!preparedStake.getDelegateKey().equals(allowDelegationFlag.getValidatorKey())) {
+			if (!preparedStake.getDelegateKey().equals(validatorKey)) {
 				throw new ProcedureException("Not matching validator keys");
 			}
+
+			if (!delegateAllowed.test(preparedStake.getOwner())) {
+				throw new ProcedureException("Delegation not allowed");
+			}
+
 			return tokenHoldingBucket.withdraw(preparedStake.getResourceAddr(), preparedStake.getAmount());
 		}
 	}
@@ -122,8 +155,26 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 			TokenHoldingBucket.class, AllowDelegationFlag.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, d, r) -> {
-				var stakePrepare = StakePrepare.create(s, d);
-				return ReducerResult.incomplete(stakePrepare);
+				var nextState = (!d.allowsDelegation())
+					? new OwnerStakePrepare(s, d)
+					: new StakePrepare(s, d.getValidatorKey(), p -> true);
+				return ReducerResult.incomplete(nextState);
+			}
+		));
+		os.procedure(new ReadProcedure<>(
+			OwnerStakePrepare.class, ValidatorOwnerCopy.class,
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			(s, d, r) -> {
+				var nextState = s.readOwner(d);
+				return ReducerResult.incomplete(nextState);
+			}
+		));
+		os.procedure(new ReadProcedure<>(
+			OwnerStakePrepare.class, PreparedValidatorUpdate.class,
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			(s, d, r) -> {
+				var nextState = s.readOwner(d);
+				return ReducerResult.incomplete(nextState);
 			}
 		));
 		os.procedure(new UpProcedure<>(

@@ -74,6 +74,19 @@ public final class REFieldSerialization {
 		return type.get().parse(buf);
 	}
 
+	public static REAddr deserializeAccountREAddr(ByteBuffer buf) throws DeserializeException {
+		var v = buf.get(); // version
+		var type = REAddr.REAddrType.parse(v);
+		if (type.isEmpty()) {
+			throw new DeserializeException("Unknown address type " + v);
+		}
+		var addr = type.get().parse(buf);
+		if (!addr.isAccount()) {
+			throw new DeserializeException("Address is not an account" + v);
+		}
+		return addr;
+	}
+
 	public static int deserializeInt(ByteBuffer buf) throws DeserializeException {
 		return buf.getInt();
 	}

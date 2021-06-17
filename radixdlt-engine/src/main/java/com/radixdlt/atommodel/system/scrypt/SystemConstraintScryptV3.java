@@ -31,7 +31,7 @@ import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
-import com.radixdlt.atommodel.validators.state.NullValidatorUpdate;
+import com.radixdlt.atommodel.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
 import com.radixdlt.atommodel.validators.state.RakeCopy;
 import com.radixdlt.atommodel.validators.state.PreparedRakeUpdate;
@@ -514,7 +514,7 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 			this.next = next;
 		}
 
-		ReducerState reset(NullValidatorUpdate update) throws ProcedureException {
+		ReducerState reset(ValidatorOwnerCopy update) throws ProcedureException {
 			if (!validatorKey.equals(update.getValidatorKey())) {
 				throw new ProcedureException("Validator keys must match.");
 			}
@@ -727,7 +727,7 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 			(i, s, r) -> ReducerResult.incomplete(s.prepareValidatorUpdate(i))
 		));
 		os.procedure(new UpProcedure<>(
-			ResetValidatorUpdate.class, NullValidatorUpdate.class,
+			ResetValidatorUpdate.class, ValidatorOwnerCopy.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.reset(u))
 		));

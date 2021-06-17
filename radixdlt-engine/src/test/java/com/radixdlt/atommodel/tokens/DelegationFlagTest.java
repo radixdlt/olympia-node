@@ -20,11 +20,13 @@ package com.radixdlt.atommodel.tokens;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
+import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
@@ -32,6 +34,7 @@ import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV3;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV4;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
 import com.radixdlt.atommodel.validators.construction.UpdateAllowDelegationFlagConstructor;
+import com.radixdlt.atommodel.validators.construction.UpdateValidatorOwnerConstructor;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -39,7 +42,6 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
@@ -47,7 +49,6 @@ import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -128,6 +129,7 @@ public class DelegationFlagTest {
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
 				.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())
+				.put(UpdateValidatorOwnerAddress.class, new UpdateValidatorOwnerConstructor())
 				.build(),
 			cm,
 			store
@@ -136,7 +138,7 @@ public class DelegationFlagTest {
 
 
 	@Test
-	public void cannot_stake_tokens_if_delegation_flag_set_to_false() throws Exception {
+	public void cannot_construct_stake_tokens_if_delegation_flag_set_to_false() throws Exception {
 		// Arrange
 		var key = ECKeyPair.generateNew();
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
@@ -152,13 +154,11 @@ public class DelegationFlagTest {
 		this.engine.execute(List.of(update));
 
 		// Act
-		var stake = this.engine.construct(new StakeTokens(accountAddr, validatorKey.getPublicKey(), stakeAmt))
-			.signAndBuild(key::sign);
-		assertThatThrownBy(() -> this.engine.execute(List.of(stake))).isInstanceOf(RadixEngineException.class);
+		assertThatThrownBy(() -> this.engine.construct(new StakeTokens(accountAddr, validatorKey.getPublicKey(), stakeAmt))
+			.signAndBuild(key::sign)).isInstanceOf(TxBuilderException.class);
 	}
 
 	@Test
-	@Ignore
 	public void can_stake_tokens_if_delegation_flag_set_to_false_and_am_owner() throws Exception {
 		// Arrange
 		var key = ECKeyPair.generateNew();
@@ -171,6 +171,32 @@ public class DelegationFlagTest {
 		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
 		var update = this.engine.construct(new UpdateAllowDelegationFlag(key.getPublicKey(), false))
 			.signAndBuild(key::sign);
+		this.engine.execute(List.of(update));
+
+		// Act
+		var stake = this.engine.construct(new StakeTokens(accountAddr, key.getPublicKey(), stakeAmt))
+			.signAndBuild(key::sign);
+		this.engine.execute(List.of(stake));
+	}
+
+
+	@Test
+	public void can_stake_tokens_if_delegation_flag_set_to_false_and_changed_owner() throws Exception {
+		// Arrange
+		var key = ECKeyPair.generateNew();
+		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
+		var txn = this.engine.construct(
+			TxnConstructionRequest.create()
+				.action(new CreateMutableToken(null, "xrd", "Name", "", "", ""))
+				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, startAmt))
+		).buildWithoutSignature();
+		var validatorKey = ECKeyPair.generateNew();
+		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
+		var update = this.engine.construct(
+			TxnConstructionRequest.create()
+				.action(new UpdateAllowDelegationFlag(validatorKey.getPublicKey(), false))
+				.action(new UpdateValidatorOwnerAddress(validatorKey.getPublicKey(), accountAddr))
+		).signAndBuild(validatorKey::sign);
 		this.engine.execute(List.of(update));
 
 		// Act

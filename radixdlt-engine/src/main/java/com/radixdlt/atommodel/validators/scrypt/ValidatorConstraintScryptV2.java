@@ -22,7 +22,7 @@ import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.system.state.HasEpochData;
 import com.radixdlt.atommodel.validators.state.AllowDelegationFlag;
-import com.radixdlt.atommodel.validators.state.NullValidatorUpdate;
+import com.radixdlt.atommodel.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
 import com.radixdlt.atommodel.validators.state.RakeCopy;
 import com.radixdlt.atommodel.validators.state.PreparedRakeUpdate;
@@ -320,17 +320,22 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 
 	public void registerValidatorOwnerUpdates(Loader os) {
 		os.substate(new SubstateDefinition<>(
-			NullValidatorUpdate.class,
+			ValidatorOwnerCopy.class,
 			Set.of(SubstateTypeId.NULL_VALIDATOR_UPDATE.id()),
 			(b, buf) -> {
 				var key = REFieldSerialization.deserializeKey(buf);
-				return new NullValidatorUpdate(key);
+				var owner = REFieldSerialization.deserializeREAddr(buf);
+				if (!owner.isAccount()) {
+					throw new DeserializeException("Address is not an account: " + owner);
+				}
+				return new ValidatorOwnerCopy(key, owner);
 			},
 			(s, buf) -> {
 				buf.put(SubstateTypeId.NULL_VALIDATOR_UPDATE.id());
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
+				REFieldSerialization.serializeREAddr(buf, s.getOwner());
 			},
-			s -> true
+			s -> REAddr.ofPubKeyAccount(s.getValidatorKey()).equals(s.getOwner())
 		));
 
 		os.substate(new SubstateDefinition<>(
@@ -369,7 +374,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 			}
 		));
 		os.procedure(new DownProcedure<>(
-			NullValidatorUpdate.class, VoidReducerState.class,
+			ValidatorOwnerCopy.class, VoidReducerState.class,
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {

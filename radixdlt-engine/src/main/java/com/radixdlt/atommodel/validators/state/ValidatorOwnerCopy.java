@@ -20,32 +20,43 @@ package com.radixdlt.atommodel.validators.state;
 
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
 
-public final class NullValidatorUpdate implements Particle {
+public final class ValidatorOwnerCopy implements Particle {
 	private final ECPublicKey validatorKey;
+	private final REAddr owner;
 
-	public NullValidatorUpdate(ECPublicKey validatorKey) {
+	public ValidatorOwnerCopy(
+		ECPublicKey validatorKey,
+		REAddr owner
+	) {
 		this.validatorKey = validatorKey;
+		this.owner = owner;
 	}
 
 	public ECPublicKey getValidatorKey() {
 		return validatorKey;
 	}
 
+	public REAddr getOwner() {
+		return this.owner;
+	}
+
 	@Override
 	public int hashCode() {
-		return Objects.hash(validatorKey);
+		return Objects.hash(validatorKey, owner);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof NullValidatorUpdate)) {
+		if (!(o instanceof ValidatorOwnerCopy)) {
 			return false;
 		}
 
-		var other = (NullValidatorUpdate) o;
-		return Objects.equals(this.validatorKey, other.validatorKey);
+		var other = (ValidatorOwnerCopy) o;
+		return Objects.equals(this.validatorKey, other.validatorKey)
+			&& Objects.equals(this.owner, other.owner);
 	}
 }
