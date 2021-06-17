@@ -18,12 +18,17 @@
 
 package com.radixdlt.statecomputer.radixengine;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.radix.TokenIssuance;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.TxLowLevelBuilder;
@@ -37,6 +42,7 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
@@ -47,11 +53,6 @@ import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LastStoredProof;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.radix.TokenIssuance;
 
 import java.util.List;
 
@@ -93,7 +94,7 @@ public class TokenFeeTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
+					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
 

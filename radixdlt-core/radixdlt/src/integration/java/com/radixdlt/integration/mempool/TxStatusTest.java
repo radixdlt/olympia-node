@@ -30,8 +30,6 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.google.inject.name.Named;
-import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.api.service.TransactionStatusService;
@@ -40,9 +38,6 @@ import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
-import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
-import com.radixdlt.client.service.TransactionStatusService;
-import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
@@ -58,6 +53,8 @@ import com.radixdlt.integration.staking.DeterministicRunner;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.TxnsCommittedToLedger;
@@ -89,7 +86,7 @@ public class TxStatusTest {
 	public TemporaryFolder folder = new TemporaryFolder();
 
 	@Inject
-	@Named("RadixEngine")
+	@LocalSigner
 	private HashSigner hashSigner;
 	@Inject
 	@Self
@@ -123,7 +120,7 @@ public class TxStatusTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
+					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 					bind(ClientApiStore.class).toInstance(mock(ClientApiStore.class));
 				}

@@ -796,6 +796,7 @@ public final class UInt384 implements Comparable<UInt384> {
 		if (this == obj) {
 			return true;
 		}
+
 		if (obj instanceof UInt384) {
 			UInt384 other = (UInt384) obj;
 			return Objects.equals(this.high, other.high) && Objects.equals(this.low, other.low);

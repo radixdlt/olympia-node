@@ -17,29 +17,30 @@
 
 package com.radixdlt.middleware2.network;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.radix.network.messaging.Message;
+
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.google.inject.name.Named;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.p2p.NodeId;
-import io.reactivex.rxjava3.core.BackpressureStrategy;
-import io.reactivex.rxjava3.core.Flowable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.radix.network.messaging.Message;
-import com.radixdlt.universe.Magic;
+import com.radixdlt.qualifier.Magic;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
+
+import io.reactivex.rxjava3.core.BackpressureStrategy;
+import io.reactivex.rxjava3.core.Flowable;
 
 /**
  * Network interface for syncing vertices using the MessageCentral

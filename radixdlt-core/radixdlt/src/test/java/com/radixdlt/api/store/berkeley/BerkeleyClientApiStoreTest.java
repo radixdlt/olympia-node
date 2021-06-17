@@ -26,7 +26,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.Rri;
@@ -55,6 +54,7 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
@@ -122,7 +122,7 @@ public class BerkeleyClientApiStoreTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
+					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
 			}

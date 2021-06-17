@@ -17,23 +17,6 @@
 
 package com.radixdlt;
 
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.Controller;
-import com.radixdlt.api.ValidatorApiModule;
-
-import com.radixdlt.api.UniverseController;
-import com.radixdlt.api.construction.ConstructApiModule;
-import com.radixdlt.api.faucet.FaucetModule;
-import com.radixdlt.network.p2p.PeerDiscoveryModule;
-import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
-import com.radixdlt.network.p2p.P2PModule;
-import com.radixdlt.api.system.SystemApiModule;
-import com.radixdlt.statecomputer.RadixEngineConfig;
-import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
-import com.radixdlt.statecomputer.forks.RadixEngineForksModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.universe.system.LocalSystem;
@@ -61,9 +44,12 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.middleware2.InfoSupplier;
-import com.radixdlt.network.messaging.MessagingModule;
 import com.radixdlt.network.hostip.HostIpModule;
 import com.radixdlt.network.messaging.MessageCentralModule;
+import com.radixdlt.network.messaging.MessagingModule;
+import com.radixdlt.network.p2p.P2PModule;
+import com.radixdlt.network.p2p.PeerDiscoveryModule;
+import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;

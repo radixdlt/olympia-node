@@ -22,7 +22,7 @@ import org.json.JSONObject;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.api.service.NetworkInfoService;
-import com.radixdlt.universe.Magic;
+import com.radixdlt.qualifier.Magic;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.JsonRpcUtil.response;

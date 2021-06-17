@@ -30,8 +30,6 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.google.inject.name.Named;
-import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.application.NodeApplicationRequest;
@@ -41,9 +39,7 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.atommodel.system.state.ValidatorStake;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
-import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
@@ -58,6 +54,8 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.TxnsCommittedToLedger;
@@ -87,7 +85,7 @@ public class UnstakingLockedTokensTest {
 	public TemporaryFolder folder = new TemporaryFolder();
 
 	@Inject
-	@Named("RadixEngine")
+	@LocalSigner
 	private HashSigner hashSigner;
 	@Inject @Self private ECPublicKey self;
 	@Inject private DeterministicRunner runner;
@@ -122,7 +120,7 @@ public class UnstakingLockedTokensTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
+					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
 

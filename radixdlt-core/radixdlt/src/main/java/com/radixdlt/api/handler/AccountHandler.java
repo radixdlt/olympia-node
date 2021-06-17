@@ -21,12 +21,12 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.google.inject.name.Named;
 import com.radixdlt.api.service.AccountInfoService;
 import com.radixdlt.api.service.ActionParserService;
 import com.radixdlt.api.service.SubmissionService;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
@@ -50,7 +50,7 @@ public class AccountHandler {
 		AccountInfoService accountService,
 		SubmissionService submissionService,
 		ActionParserService actionParserService,
-		@Named("RadixEngine") HashSigner hashSigner
+		@LocalSigner HashSigner hashSigner
 	) {
 		this.accountService = accountService;
 		this.submissionService = submissionService;

@@ -29,7 +29,6 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -43,6 +42,7 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
@@ -78,7 +78,7 @@ public class MempoolFillerTest {
 				@Override
 				protected void configure() {
 				    install(new MempoolFillerModule());
-					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
+					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
 

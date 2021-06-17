@@ -23,10 +23,11 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.name.Named;
-import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.LatencyProvider;
+import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
+import com.radixdlt.qualifier.LatencyProviderBase;
+
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -40,7 +41,7 @@ public class SimulationNetworkModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private LatencyProvider latencyProvider(
-		@Named("base") LatencyProvider base,
+		@LatencyProviderBase LatencyProvider base,
 		Set<Predicate<MessageInTransit>> droppers
 	) {
 		return msg -> {

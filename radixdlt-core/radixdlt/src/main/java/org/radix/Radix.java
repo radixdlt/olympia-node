@@ -34,11 +34,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
-import com.radixdlt.network.addressbook.PeerManager;
 import com.radixdlt.network.p2p.transport.PeerServerBootstrap;
-import com.radixdlt.utils.MemoryLeakDetector;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.utils.MemoryLeakDetector;
 
@@ -64,8 +60,6 @@ public final class Radix {
 	public static final int PROTOCOL_VERSION = 100;
 
 	public static final int AGENT_VERSION = 2710000;
-	public static final int MAJOR_AGENT_VERSION = 2709999;
-	public static final int REFUSE_AGENT_VERSION = 2709999;
 	public static final String AGENT = "/Radix:/" + AGENT_VERSION;
 	public static final String SYSTEM_VERSION_KEY = "system_version";
 
