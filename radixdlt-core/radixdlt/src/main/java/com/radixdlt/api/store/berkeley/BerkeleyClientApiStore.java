@@ -211,7 +211,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		return Rri.parseFunctional(rri)
 			.flatMap(tuple -> tuple.map(
 				(symbol, address) -> getTokenDefinition(address)
-					.filter(t -> t.getSymbol().equals(symbol), SYMBOL_DOES_NOT_MATCH)
+					.map(TokenDefinitionRecord::getSymbol)
+					.filter(t -> !t.equals(symbol), SYMBOL_DOES_NOT_MATCH)
 					.map(__ -> address)
 			));
 	}
