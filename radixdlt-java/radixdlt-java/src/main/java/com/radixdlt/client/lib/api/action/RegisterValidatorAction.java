@@ -15,33 +15,22 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.api.data.action;
+package com.radixdlt.client.lib.api.action;
 
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.RegisterValidator;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.radixdlt.client.lib.api.ActionType;
+import com.radixdlt.client.lib.api.ValidatorAddress;
 
-import java.util.stream.Stream;
-
-class RegisterValidatorAction implements TransactionAction {
-	private final ECPublicKey delegate;
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+public class RegisterValidatorAction implements Action {
+	private final ActionType type = ActionType.REGISTER_VALIDATOR;
+	private final ValidatorAddress validator;
 	private final String name;
 	private final String url;
 
-	RegisterValidatorAction(ECPublicKey delegate, String name, String url) {
-		this.delegate = delegate;
+	public RegisterValidatorAction(ValidatorAddress validator, String name, String url) {
+		this.validator = validator;
 		this.name = name;
 		this.url = url;
-	}
-
-	@Override
-	public REAddr getFrom() {
-		return REAddr.ofPubKeyAccount(delegate);
-	}
-
-	@Override
-	public Stream<TxAction> toAction() {
-		return Stream.of(new RegisterValidator(delegate, name, url));
 	}
 }

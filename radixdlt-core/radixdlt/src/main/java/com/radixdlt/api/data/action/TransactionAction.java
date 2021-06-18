@@ -61,18 +61,19 @@ public interface TransactionAction {
 	}
 
 	static TransactionAction createFixed(
-		REAddr from, REAddr rri, String symbol, String name,
+		REAddr from, ECPublicKey signer, String symbol, String name,
 		String description, String iconUrl, String tokenUrl, UInt256 amount
 	) {
-		return new CreateFixedTokenAction(from, amount, rri, name, symbol, iconUrl, tokenUrl, description);
+		return new CreateFixedTokenAction(from, amount, REAddr.ofPubKeyAccount(signer), name,
+										  symbol, iconUrl, tokenUrl, description);
 	}
 
 	static TransactionAction createMutable(
-		ECPublicKey signer, String symbol, String name,
+		REAddr from, ECPublicKey signer, String symbol, String name,
 		Optional<String> description, Optional<String> iconUrl, Optional<String> tokenUrl
 	) {
 		return new CreateMutableTokenAction(
-			signer, name, symbol,
+			from, signer, name, symbol,
 			iconUrl.orElse(null), tokenUrl.orElse(null), description.orElse(null)
 		);
 	}

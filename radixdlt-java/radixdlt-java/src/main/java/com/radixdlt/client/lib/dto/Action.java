@@ -70,19 +70,6 @@ public class Action {
 		return new Action(type, from, to, validator, amount, rri);
 	}
 
-	//TODO: add remaining actions: register/unregister validator, create/mint/burn tokens
-	public static Action transfer(AccountAddress from, AccountAddress to, UInt256 amount, String rri) {
-		return create(ActionType.TRANSFER, from, to, null, amount, rri);
-	}
-
-	public static Action stake(AccountAddress from, ValidatorAddress validator, UInt256 amount) {
-		return create(ActionType.STAKE, from, null, validator, amount, null);
-	}
-
-	public static Action unstake(AccountAddress from, ValidatorAddress validator, UInt256 amount) {
-		return create(ActionType.UNSTAKE, from, null, validator, amount, null);
-	}
-
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {

@@ -30,5 +30,4 @@ public class Assertions {
             singleAction.getTo().orElseThrow(() -> new TestFailureException("no receiver in transaction")));
         assertEquals(ActionType.TRANSFER, singleAction.getType());
     }
-
 }

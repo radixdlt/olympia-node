@@ -15,17 +15,17 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.api.data.action;
+package com.radixdlt.client.lib.api.action;
 
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.CreateMutableToken;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.radixdlt.client.lib.api.AccountAddress;
+import com.radixdlt.client.lib.api.ActionType;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
 
-import java.util.stream.Stream;
-
-class CreateMutableTokenAction implements TransactionAction {
-	private final REAddr from;
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+public class CreateMutableTokenAction implements Action {
+	private final ActionType type = ActionType.CREATE_MUTABLE;
+	private final AccountAddress from;
 	private final ECPublicKey signer;
 	private final String name;
 	private final String symbol;
@@ -33,8 +33,9 @@ class CreateMutableTokenAction implements TransactionAction {
 	private final String tokenUrl;
 	private final String description;
 
-	CreateMutableTokenAction(
-		REAddr from, ECPublicKey signer, String name, String symbol, String iconUrl, String tokenUrl, String description
+	public CreateMutableTokenAction(
+		AccountAddress from, ECPublicKey signer, String name, String symbol,
+		String iconUrl, String tokenUrl, String description
 	) {
 		this.from = from;
 		this.signer = signer;
@@ -43,15 +44,5 @@ class CreateMutableTokenAction implements TransactionAction {
 		this.iconUrl = iconUrl;
 		this.tokenUrl = tokenUrl;
 		this.description = description;
-	}
-
-	@Override
-	public REAddr getFrom() {
-		return from;
-	}
-
-	@Override
-	public Stream<TxAction> toAction() {
-		return Stream.of(new CreateMutableToken(signer, symbol, name, description, iconUrl, tokenUrl));
 	}
 }

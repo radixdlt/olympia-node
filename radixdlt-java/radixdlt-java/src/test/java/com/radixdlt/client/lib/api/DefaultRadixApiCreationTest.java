@@ -32,6 +32,7 @@ import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import okhttp3.Call;
 import okhttp3.OkHttpClient;
@@ -53,8 +54,10 @@ public class DefaultRadixApiCreationTest {
 	private static final String BASE_URL = "http://localhost/";
 	public static final ECKeyPair KEY_PAIR1 = keyPairOf(1);
 	public static final ECKeyPair KEY_PAIR2 = keyPairOf(2);
+	public static final ECKeyPair KEY_PAIR3 = keyPairOf(3);
 	private static final AccountAddress ACCOUNT_ADDRESS1 = AccountAddress.create(KEY_PAIR1.getPublicKey());
 	private static final AccountAddress ACCOUNT_ADDRESS2 = AccountAddress.create(KEY_PAIR2.getPublicKey());
+	private static final ValidatorAddress VALIDATOR_ADDRESS = ValidatorAddress.of(KEY_PAIR3.getPublicKey());
 
 	private static final String BUILT_TRANSACTION = "{\"result\":{\"fee\":\"100000000000000000\","
 		+ "\"transaction\":{\"blob\":\"04391cb03c5195e82ee9ec92d48d8a65b6ce9c9c98b3dd80eb195d418a0"
@@ -135,6 +138,30 @@ public class DefaultRadixApiCreationTest {
 				"xrd_rb1qya85pwq"
 			)
 			.message("Test message")
+			.build();
+
+		RadixApi.connect(BASE_URL)
+			.map(RadixApi::withTrace)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> client.transaction().build(request)
+				.onFailure(failure -> fail(failure.toString()))
+				.onSuccess(builtTransactionDTO -> assertEquals(UInt256.from(100000000000000000L), builtTransactionDTO.getFee()))
+				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
+				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
+					.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
+					.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
+					.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
+						.onFailure(failure -> fail(failure.toString()))
+						.onSuccess(txDTO -> submittableTransaction.rawTxId()
+							.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))))
+			);
+	}
+
+	@Test
+	@Ignore
+	public void testRegisterValidator() {
+		var request = TransactionRequest.createBuilder()
+			.registerValidator(VALIDATOR_ADDRESS, Optional.of("MyValidator"), Optional.of("http://my.validator.url.com/"))
 			.build();
 
 		RadixApi.connect(BASE_URL)
