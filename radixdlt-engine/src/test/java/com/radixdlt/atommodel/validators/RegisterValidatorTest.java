@@ -21,10 +21,15 @@ package com.radixdlt.atommodel.validators;
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.actions.RegisterValidator;
+import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV1;
+import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV2;
+import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
 import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV1;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.SubstateSerialization;
@@ -34,22 +39,40 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
+import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import java.util.Collection;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@RunWith(Parameterized.class)
 public class RegisterValidatorTest {
+	@Parameterized.Parameters
+	public static Collection<Object[]> parameters() {
+		return List.of(
+			new Object[] { new ValidatorConstraintScryptV1() },
+			new Object[] { new ValidatorConstraintScryptV2() }
+		);
+	};
+
 	private RadixEngine<Void> engine;
 	private EngineStore<Void> store;
 	private SubstateSerialization serialization;
+	private final ConstraintScrypt constraintScrypt;
+
+	public RegisterValidatorTest(ConstraintScrypt constraintScrypt) {
+		this.constraintScrypt = constraintScrypt;
+	}
 
 	@Before
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new ValidatorConstraintScryptV1());
+		cmAtomOS.load(constraintScrypt);
 		var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()
