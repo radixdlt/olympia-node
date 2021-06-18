@@ -188,33 +188,33 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 
 		// Unstake
 		os.procedure(new DownProcedure<>(
-			StakeOwnership.class, VoidReducerState.class,
+			VoidReducerState.class, StakeOwnership.class,
 			d -> d.getSubstate().bucket().withdrawAuthorization(),
-			(d, s, r) -> ReducerResult.incomplete(new com.radixdlt.atommodel.tokens.scrypt.StakeOwnershipHoldingBucket(d.getSubstate()))
+			(d, s, r) -> ReducerResult.incomplete(new StakeOwnershipHoldingBucket(d.getSubstate()))
 		));
 		// Additional Unstake
 		os.procedure(new DownProcedure<>(
-			StakeOwnership.class, com.radixdlt.atommodel.tokens.scrypt.StakeOwnershipHoldingBucket.class,
+			StakeOwnershipHoldingBucket.class, StakeOwnership.class,
 			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> ReducerResult.incomplete(s.depositOwnership(d.getSubstate()))
 		));
 		// Change
 		os.procedure(new UpProcedure<>(
-			com.radixdlt.atommodel.tokens.scrypt.StakeOwnershipHoldingBucket.class, StakeOwnership.class,
+			StakeOwnershipHoldingBucket.class, StakeOwnership.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.withdrawOwnership(u))
 		));
 		os.procedure(new UpProcedure<>(
-			com.radixdlt.atommodel.tokens.scrypt.StakeOwnershipHoldingBucket.class, PreparedUnstakeOwnership.class,
+			StakeOwnershipHoldingBucket.class, PreparedUnstakeOwnership.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.unstake(u))
 		));
 
 		// Deallocate Stake Holding Bucket
 		os.procedure(new EndProcedure<>(
-			com.radixdlt.atommodel.tokens.scrypt.StakeOwnershipHoldingBucket.class,
+			StakeOwnershipHoldingBucket.class,
 			s -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			com.radixdlt.atommodel.tokens.scrypt.StakeOwnershipHoldingBucket::destroy
+			StakeOwnershipHoldingBucket::destroy
 		));
 	}
 }

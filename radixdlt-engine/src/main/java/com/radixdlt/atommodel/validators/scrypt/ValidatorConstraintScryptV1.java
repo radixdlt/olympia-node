@@ -75,7 +75,7 @@ public class ValidatorConstraintScryptV1 implements ConstraintScrypt {
 		);
 
 		os.procedure(new DownProcedure<>(
-			ValidatorParticle.class, VoidReducerState.class,
+			VoidReducerState.class, ValidatorParticle.class,
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {

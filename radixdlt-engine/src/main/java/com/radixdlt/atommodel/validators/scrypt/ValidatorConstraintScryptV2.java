@@ -151,7 +151,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 		);
 
 		os.procedure(new DownProcedure<>(
-			ValidatorParticle.class, VoidReducerState.class,
+			VoidReducerState.class, ValidatorParticle.class,
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {
@@ -229,7 +229,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 			}
 		));
 		os.procedure(new DownProcedure<>(
-			PreparedRakeUpdate.class, VoidReducerState.class,
+			VoidReducerState.class, PreparedRakeUpdate.class,
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {
@@ -246,7 +246,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 			}
 		));
 		os.procedure(new DownProcedure<>(
-			RakeCopy.class, VoidReducerState.class,
+			VoidReducerState.class, RakeCopy.class,
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {
@@ -291,7 +291,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 		));
 
 		os.procedure(new DownProcedure<>(
-			AllowDelegationFlag.class, VoidReducerState.class,
+			VoidReducerState.class, AllowDelegationFlag.class,
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {
@@ -357,7 +357,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 			}
 		));
 		os.procedure(new DownProcedure<>(
-			PreparedValidatorUpdate.class, VoidReducerState.class,
+			VoidReducerState.class, PreparedValidatorUpdate.class,
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {
@@ -374,7 +374,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 			}
 		));
 		os.procedure(new DownProcedure<>(
-			ValidatorOwnerCopy.class, VoidReducerState.class,
+			VoidReducerState.class, ValidatorOwnerCopy.class,
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {

@@ -27,7 +27,7 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 	private final Function<SubstateWithArg<D>, Authorization> authorization;
 
 	public DownProcedure(
-		Class<D> downClass, Class<S> reducerStateClass,
+		Class<S> reducerStateClass, Class<D> downClass,
 		Function<SubstateWithArg<D>, Authorization> authorization,
 		DownReducer<D, S> downReducer
 	) {

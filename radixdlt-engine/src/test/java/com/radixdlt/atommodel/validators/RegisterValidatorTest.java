@@ -21,9 +21,6 @@ package com.radixdlt.atommodel.validators;
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.actions.RegisterValidator;
-import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV1;
-import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV2;
-import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
 import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV1;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
@@ -39,7 +36,6 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
-import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,8 +51,8 @@ public class RegisterValidatorTest {
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
 		return List.of(
-			new Object[] { new ValidatorConstraintScryptV1() },
-			new Object[] { new ValidatorConstraintScryptV2() }
+			new Object[] {new ValidatorConstraintScryptV1()},
+			new Object[] {new ValidatorConstraintScryptV2()}
 		);
 	};
 
