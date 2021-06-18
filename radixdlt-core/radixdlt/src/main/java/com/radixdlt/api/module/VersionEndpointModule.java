@@ -17,6 +17,8 @@
 
 package com.radixdlt.api.module;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.universe.system.LocalSystem;
 
 import com.google.inject.AbstractModule;
@@ -27,13 +29,18 @@ import com.radixdlt.api.controller.VersionController;
 import com.radixdlt.api.qualifier.NodeServer;
 
 import static org.radix.Radix.SYSTEM_VERSION_KEY;
+import static org.radix.Radix.VERSION_STRING_KEY;
 
 public class VersionEndpointModule extends AbstractModule {
+	private static final Logger log = LogManager.getLogger();
+
 	@NodeServer
 	@ProvidesIntoMap
 	@StringMapKey("/version")
 	public Controller versionController(LocalSystem localSystem) {
-		var versionString = localSystem.getInfo().get(SYSTEM_VERSION_KEY).get("display").toString();
+		var versionString = (String) localSystem.getInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
+
+		log.info("Version string for /version endpoint: {}", versionString);
 		return new VersionController(versionString);
 	}
 }
