@@ -224,8 +224,17 @@ public class DispatcherModule extends AbstractModule {
 		final var verticesRequestKey = new TypeLiteral<EventProcessor<GetVerticesRequest>>() { };
 		Multibinder.newSetBinder(binder(), verticesRequestKey, ProcessOnDispatch.class);
 
-		final var viewQuorumReachedKey = new TypeLiteral<EventProcessor<ViewQuorumReached>>() { };
-		Multibinder.newSetBinder(binder(), viewQuorumReachedKey, ProcessOnDispatch.class);
+		bind(new TypeLiteral<EventDispatcher<ViewQuorumReached>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(
+				ViewQuorumReached.class,
+				v -> {
+					if (v.votingResult() instanceof ViewVotingResult.FormedTC) {
+						return CounterType.BFT_TIMEOUT_QUORUMS;
+					}
+					return CounterType.BFT_VOTE_QUORUMS;
+				},
+				false
+			));
 
 		final var ledgerUpdateKey = new TypeLiteral<EventProcessor<LedgerUpdate>>() { };
 		Multibinder.newSetBinder(binder(), ledgerUpdateKey, ProcessOnDispatch.class);
@@ -307,25 +316,6 @@ public class DispatcherModule extends AbstractModule {
 		return (timeout, ms) -> {
 			dispatcher.dispatch(timeout, ms);
 			processors.forEach(e -> e.process(timeout));
-		};
-	}
-
-	@Provides
-	@Singleton
-	private EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<ViewQuorumReached>> processors,
-		SystemCounters systemCounters
-	) {
-		return viewQuorumReached -> {
-			logger.trace("View quorum reached with result: {}", viewQuorumReached.votingResult());
-
-			if (viewQuorumReached.votingResult() instanceof ViewVotingResult.FormedTC) {
-				systemCounters.increment(CounterType.BFT_TIMEOUT_QUORUMS);
-			} else if (viewQuorumReached.votingResult() instanceof ViewVotingResult.FormedQC) {
-				systemCounters.increment(CounterType.BFT_VOTE_QUORUMS);
-			}
-
-			processors.forEach(p -> p.process(viewQuorumReached));
 		};
 	}
 
