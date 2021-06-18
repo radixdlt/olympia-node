@@ -24,6 +24,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 import org.radix.utils.IOUtils;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
@@ -45,6 +46,7 @@ import java.security.Security;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 
 public final class Radix {
@@ -62,6 +64,7 @@ public final class Radix {
 	public static final int AGENT_VERSION = 2710000;
 	public static final String AGENT = "/Radix:/" + AGENT_VERSION;
 	public static final String SYSTEM_VERSION_KEY = "system_version";
+	public static final String VERSION_STRING_KEY = "version_string";
 
 	static {
 		System.setProperty("java.net.preferIPv4Stack", "true");
@@ -96,6 +99,9 @@ public final class Radix {
 		SYSTEM_VERSION_DISPLAY = display;
 		SYSTEM_VERSION_BRANCH = branch;
 		SYSTEM_VERSION_COMMIT = commit;
+
+		map.put(VERSION_STRING_KEY, calculateVersionString(map));
+
 		SYSTEM_VERSION_INFO = Map.of(SYSTEM_VERSION_KEY, Map.copyOf(map));
 	}
 
@@ -224,5 +230,34 @@ public final class Radix {
 			}
 		}
 		return new RuntimeProperties(runtimeConfigurationJSON, args);
+	}
+
+	@VisibleForTesting
+	static String calculateVersionString(Map<String, Object> details) {
+		if (isCleanTag(details)) {
+			return lastTag(details);
+		} else {
+			var version = branchName(details) == null
+						  ? "detached-head-" + gitHash(details)
+						  : (lastTag(details) + "-" + branchName(details)).replace('/', '~');
+
+			return version + "-SNAPSHOT";
+		}
+	}
+
+	private static boolean isCleanTag(Map<String, Object> details) {
+		return Objects.equals(details.get("tag"), details.get("last_tag"));
+	}
+
+	private static String lastTag(Map<String, Object> details) {
+		return (String) details.get("last_tag");
+	}
+
+	private static String gitHash(Map<String, Object> details) {
+		return (String) details.get("build");
+	}
+
+	private static String branchName(Map<String, Object> details) {
+		return (String) details.get("branch");
 	}
 }

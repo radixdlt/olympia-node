@@ -40,6 +40,9 @@ import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeDataSupport;
 
+import static org.radix.Radix.SYSTEM_VERSION_KEY;
+import static org.radix.Radix.VERSION_STRING_KEY;
+
 import static com.radixdlt.api.service.MetricsService.JmxMetric.jmxMetric;
 
 //TODO: finish it
@@ -267,13 +270,7 @@ public class MetricsService {
 	}
 
 	private void addBranchAndCommit(StringBuilder builder) {
-		var branchAndCommit = ((String) infoSupplier.getInfo().get(Radix.SYSTEM_VERSION_KEY).get("display"))
-			.substring(5);
-
-		if (branchAndCommit.contains("-dirty")) {
-			branchAndCommit = branchAndCommit.substring(0, branchAndCommit.length() - 6);
-		}
-
+		var branchAndCommit = infoSupplier.getInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
 		appendField(builder, "branch_and_commit", branchAndCommit);
 	}
 
