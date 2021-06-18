@@ -39,6 +39,7 @@ import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateRake;
 import com.radixdlt.atom.actions.UpdateValidator;
+import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV1;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.atommodel.system.construction.NextEpochConstructorV2;
@@ -78,6 +79,7 @@ import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV2;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
 import com.radixdlt.atommodel.unique.scrypt.UniqueParticleConstraintScrypt;
+import com.radixdlt.atommodel.validators.construction.UpdateValidatorOwnerConstructor;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV1;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.atomos.CMAtomOS;
@@ -282,6 +284,7 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(UpdateValidator.class, new UpdateValidatorConstructor())
 			.put(PayFee.class, new PayFeeConstructorV2())
 			.put(UpdateRake.class, new UpdateRakeConstructor())
+			.put(UpdateValidatorOwnerAddress.class, new UpdateValidatorOwnerConstructor())
 			.build();
 
 		return new ForkConfig(

@@ -23,7 +23,7 @@ import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
 
-public final class PreparedValidatorConfigUpdate implements Particle {
+public final class PreparedRakeUpdate implements Particle {
 	public static final int RAKE_PERCENTAGE_GRANULARITY = 10 * 10; // 100 == 1.00%, 1 == 0.01%
 	public static final int RAKE_MAX = 100 * RAKE_PERCENTAGE_GRANULARITY;
 	public static final int RAKE_MIN = 0;
@@ -33,7 +33,7 @@ public final class PreparedValidatorConfigUpdate implements Particle {
 	private final int curRakePercentage;
 	private final int nextRakePercentage;
 
-	public PreparedValidatorConfigUpdate(long epoch, ECPublicKey validatorKey, int curRakePercentage, int nextRakePercentage) {
+	public PreparedRakeUpdate(long epoch, ECPublicKey validatorKey, int curRakePercentage, int nextRakePercentage) {
 		if (nextRakePercentage < RAKE_MIN || nextRakePercentage > RAKE_MAX) {
 			throw new IllegalArgumentException("Illegal fee " + nextRakePercentage);
 		}
@@ -43,8 +43,8 @@ public final class PreparedValidatorConfigUpdate implements Particle {
 		this.nextRakePercentage = nextRakePercentage;
 	}
 
-	public ValidatorConfigCopy getCurrentConfig() {
-		return new ValidatorConfigCopy(validatorKey, curRakePercentage);
+	public RakeCopy getCurrentConfig() {
+		return new RakeCopy(validatorKey, curRakePercentage);
 	}
 
 	public ECPublicKey getValidatorKey() {
@@ -70,11 +70,11 @@ public final class PreparedValidatorConfigUpdate implements Particle {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof PreparedValidatorConfigUpdate)) {
+		if (!(o instanceof PreparedRakeUpdate)) {
 			return false;
 		}
 
-		var other = (PreparedValidatorConfigUpdate) o;
+		var other = (PreparedRakeUpdate) o;
 		return this.epoch == other.epoch
 			&& Objects.equals(this.validatorKey, other.validatorKey)
 			&& this.curRakePercentage == other.curRakePercentage

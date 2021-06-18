@@ -641,7 +641,7 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 					var delegate = REFieldSerialization.deserializeKey(buf);
 					var amount = REFieldSerialization.deserializeUInt256(buf);
 					var ownership = REFieldSerialization.deserializeUInt256(buf);
-					return ValidatorStakeData.create(delegate, amount, ownership);
+					return ValidatorStakeData.createV1(delegate, amount, ownership);
 				},
 				(s, buf) -> {
 					buf.put(SubstateTypeId.STAKE_V1.id());
