@@ -437,10 +437,11 @@ public class ActionParserServiceTest {
 	@Test
 	public void createFixedTokenIsParsedCorrectly() {
 		var fromAddr = AccountAddress.of(from);
+		var signer = ECKeyPair.generateNew().getPublicKey();
 
-		var source = "[{\"type\":\"CreateFixedSupplyToken\", \"from\":\"%s\", \"rri\":\"%s\", \"symbol\":\"%s\", "
+		var source = "[{\"type\":\"CreateFixedSupplyToken\", \"from\":\"%s\", \"publicKeyOfSigner\":\"%s\", \"symbol\":\"%s\", "
 			+ "\"name\":\"%s\", \"description\":\"%s\", \"iconUrl\":\"%s\", \"tokenUrl\":\"%s\", \"supply\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, fromAddr, rri, "symbol",
+		var actions = jsonArray(String.format(source, fromAddr, signer.toHex(), "symbol",
 											  "name", "description", "http://icon.url/", "http://token.url/", UInt256.TEN
 		));
 
@@ -455,7 +456,7 @@ public class ActionParserServiceTest {
 					.ifPresentOrElse(
 						create -> {
 							assertEquals(from, create.getAccountAddr());
-							assertEquals(rri, create.getResourceAddr());
+							assertEquals(REAddr.ofPubKeyAccount(signer), create.getResourceAddr());
 							assertEquals("symbol", create.getSymbol());
 							assertEquals("name", create.getName());
 							assertEquals("description", create.getDescription());
@@ -471,9 +472,10 @@ public class ActionParserServiceTest {
 	@Test
 	public void createMutableTokenIsParsedCorrectlyWithOptionalElements() {
 		var publicKey = ECKeyPair.generateNew().getPublicKey();
-		var source = "[{\"type\":\"CreateMutableSupplyToken\", \"symbol\":\"%s\", \"name\":\"%s\", "
-			+ "\"description\":\"%s\", \"iconUrl\":\"%s\", \"tokenUrl\":\"%s\", \"signerPublicKey\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, "symbol", "name",
+		var fromAddr = AccountAddress.of(from);
+		var source = "[{\"type\":\"CreateMutableSupplyToken\", \"from\":\"%s\", \"symbol\":\"%s\", \"name\":\"%s\", "
+			+ "\"description\":\"%s\", \"iconUrl\":\"%s\", \"tokenUrl\":\"%s\", \"publicKeyOfSigner\":\"%s\"}]";
+		var actions = jsonArray(String.format(source, fromAddr, "symbol", "name",
 											  "description", "http://icon.url/", "http://token.url/", publicKey.toHex()
 		));
 
@@ -501,8 +503,9 @@ public class ActionParserServiceTest {
 	@Test
 	public void createMutableTokenIsParsedCorrectlyWithoutOptionalElements() {
 		var publicKey = ECKeyPair.generateNew().getPublicKey();
-		var source = "[{\"type\":\"CreateMutableSupplyToken\", \"symbol\":\"%s\", \"name\":\"%s\", \"signerPublicKey\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, "symbol", "name", publicKey.toHex()));
+		var fromAddr = AccountAddress.of(from);
+		var source = "[{\"type\":\"CreateMutableSupplyToken\", \"from\":\"%s\",  \"symbol\":\"%s\", \"name\":\"%s\", \"publicKeyOfSigner\":\"%s\"}]";
+		var actions = jsonArray(String.format(source, fromAddr, "symbol", "name", publicKey.toHex()));
 
 		actionParserService.parse(actions)
 			.onFailure(this::fail)

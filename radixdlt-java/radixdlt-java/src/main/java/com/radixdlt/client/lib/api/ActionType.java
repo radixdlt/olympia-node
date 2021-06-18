@@ -38,6 +38,7 @@ public enum ActionType {
 	MINT("MintTokens"),
 	REGISTER_VALIDATOR("RegisterValidator"),
 	UNREGISTER_VALIDATOR("UnregisterValidator"),
+	UPDATE_VALIDATOR("UpdateValidator"),
 	CREATE_FIXED("CreateFixedSupplyToken"),
 	CREATE_MUTABLE("CreateMutableSupplyToken"),
 	UNKNOWN("Other");

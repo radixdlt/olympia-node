@@ -15,43 +15,45 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.api.data.action;
+package com.radixdlt.client.lib.api.action;
 
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.CreateMutableToken;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.radixdlt.client.lib.api.AccountAddress;
+import com.radixdlt.client.lib.api.ActionType;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.UInt256;
 
-import java.util.stream.Stream;
-
-class CreateMutableTokenAction implements TransactionAction {
-	private final REAddr from;
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+public class CreateFixedTokenAction implements Action {
+	private final ActionType type = ActionType.CREATE_FIXED;
+	private final AccountAddress from;
 	private final ECPublicKey signer;
+	private final UInt256 amount;
+	private final String rri;
 	private final String name;
 	private final String symbol;
 	private final String iconUrl;
 	private final String tokenUrl;
 	private final String description;
 
-	CreateMutableTokenAction(
-		REAddr from, ECPublicKey signer, String name, String symbol, String iconUrl, String tokenUrl, String description
+	public CreateFixedTokenAction(
+		AccountAddress from,
+		ECPublicKey signer, UInt256 amount,
+		String rri,
+		String name,
+		String symbol,
+		String iconUrl,
+		String tokenUrl,
+		String description
 	) {
 		this.from = from;
 		this.signer = signer;
+		this.amount = amount;
+		this.rri = rri;
 		this.name = name;
 		this.symbol = symbol;
 		this.iconUrl = iconUrl;
 		this.tokenUrl = tokenUrl;
 		this.description = description;
-	}
-
-	@Override
-	public REAddr getFrom() {
-		return from;
-	}
-
-	@Override
-	public Stream<TxAction> toAction() {
-		return Stream.of(new CreateMutableToken(signer, symbol, name, description, iconUrl, tokenUrl));
 	}
 }

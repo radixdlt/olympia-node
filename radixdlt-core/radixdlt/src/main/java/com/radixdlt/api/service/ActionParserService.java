@@ -138,7 +138,7 @@ public final class ActionParserService {
 			case CREATE_FIXED:
 				return allOf(
 					from(element),
-					rri(element),
+					pubKey(element),
 					symbol(element),
 					name(element),
 					description(element),
@@ -149,6 +149,7 @@ public final class ActionParserService {
 
 			case CREATE_MUTABLE:
 				return allOf(
+					from(element),
 					pubKey(element),
 					symbol(element),
 					name(element),
@@ -160,7 +161,7 @@ public final class ActionParserService {
 	}
 
 	private Result<ECPublicKey> pubKey(JSONObject element) {
-		return param(element, "signerPublicKey")
+		return param(element, "publicKeyOfSigner")
 			.flatMap(ECPublicKey::fromHexString);
 	}
 

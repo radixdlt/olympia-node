@@ -339,7 +339,7 @@ public class SystemConfigService {
 
 		return jsonObject().put(
 			"endpoints",
-			fromList(statuses, endpoint -> "/" + endpoint)
+			fromList(enabled, endpoint -> "/" + endpoint)
 		);
 	}
 
