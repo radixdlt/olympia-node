@@ -64,6 +64,7 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.bft.View;
@@ -99,6 +100,7 @@ import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.utils.UInt256;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -232,13 +234,14 @@ public class EpochManagerTest {
 			@Provides
 			BFTConfiguration bftConfiguration(@Self BFTNode self, Hasher hasher, BFTValidatorSet validatorSet) {
 				var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-				UnverifiedVertex unverifiedVertex = UnverifiedVertex.createGenesis(
+				var unverifiedVertex = UnverifiedVertex.createGenesis(
 					LedgerHeader.genesis(accumulatorState, validatorSet, 0)
 				);
-				VerifiedVertex verifiedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
-
+				var verifiedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 				var qc = QuorumCertificate.ofGenesis(verifiedVertex, LedgerHeader.genesis(accumulatorState, validatorSet, 0));
+				var proposerElection = new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.getNode().getKey().euid()));
 				return new BFTConfiguration(
+					proposerElection,
 					validatorSet,
 					VerifiedVertexStoreState.create(HighQC.from(qc), verifiedVertex, Optional.empty(), hasher)
 				);
@@ -272,8 +275,10 @@ public class EpochManagerTest {
 			header.getAccumulatorState(),
 			header.timestamp()
 		);
-		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-		BFTConfiguration bftConfiguration = new BFTConfiguration(
+		var genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
+		var proposerElection = new WeightedRotatingLeaders(nextValidatorSet, Comparator.comparing(v -> v.getNode().getKey().euid()));
+		var bftConfiguration = new BFTConfiguration(
+			proposerElection,
 			nextValidatorSet,
 			VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty(), hasher)
 		);

@@ -601,7 +601,7 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 		// For Mainnet Genesis
 		os.procedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, EpochData.class,
-			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> { }),
 			(s, u, c, r) -> {
 				if (u.getEpoch() != 0) {
 					throw new ProcedureException("First epoch must be 0.");
@@ -612,7 +612,7 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 		));
 		os.procedure(new UpProcedure<>(
 			AllocatingSystem.class, RoundData.class,
-			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> { }),
 			(s, u, c, r) -> {
 				if (u.getView() != 0) {
 					throw new ProcedureException("First view must be 0.");

@@ -21,6 +21,7 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -33,6 +34,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -71,7 +73,8 @@ public final class EpochChangeManager {
 					Optional.empty(),
 					hasher
 				);
-			BFTConfiguration bftConfiguration = new BFTConfiguration(validatorSet, initialState);
+			var proposerElection = new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.getNode().getKey().euid()));
+			var bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, initialState);
 			return new EpochChange(header, bftConfiguration);
 		});
 

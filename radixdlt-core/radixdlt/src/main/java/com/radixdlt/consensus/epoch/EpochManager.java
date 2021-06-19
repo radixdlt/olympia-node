@@ -87,7 +87,6 @@ public final class EpochManager {
 	private final VertexStoreFactory vertexStoreFactory;
 	private final BFTSyncRequestProcessorFactory bftSyncRequestProcessorFactory;
 	private final BFTSyncFactory bftSyncFactory;
-	private final ProposerElectionFactory proposerElectionFactory;
 	private final Hasher hasher;
 	private final HashSigner signer;
 	private final PacemakerTimeoutCalculator timeoutCalculator;
@@ -125,7 +124,6 @@ public final class EpochManager {
 		VertexStoreFactory vertexStoreFactory,
 		BFTSyncFactory bftSyncFactory,
 		BFTSyncRequestProcessorFactory bftSyncRequestProcessorFactory,
-		ProposerElectionFactory proposerElectionFactory,
 		BFTFactory bftFactory,
 		SystemCounters counters,
 		Hasher hasher,
@@ -163,7 +161,6 @@ public final class EpochManager {
 		this.vertexStoreFactory = Objects.requireNonNull(vertexStoreFactory);
 		this.bftSyncFactory = Objects.requireNonNull(bftSyncFactory);
 		this.bftSyncRequestProcessorFactory = bftSyncRequestProcessorFactory;
-		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.signer = Objects.requireNonNull(signer);
 		this.timeoutCalculator = Objects.requireNonNull(timeoutCalculator);
@@ -195,7 +192,7 @@ public final class EpochManager {
 
 		// Config
 		final BFTConfiguration bftConfiguration = this.currentEpoch.getBFTConfiguration();
-		final ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
+		final ProposerElection proposerElection = bftConfiguration.getProposerElection();
 		HighQC highQC = bftConfiguration.getVertexStoreState().getHighQC();
 		View view = highQC.highestQC().getView().next();
 		final BFTNode leader = proposerElection.getProposer(view);

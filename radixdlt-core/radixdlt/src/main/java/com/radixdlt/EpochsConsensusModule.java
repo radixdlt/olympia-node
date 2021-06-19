@@ -37,7 +37,6 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
-import com.radixdlt.consensus.epoch.ProposerElectionFactory;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.epoch.VertexStoreFactory;
@@ -54,7 +53,6 @@ import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.PacemakerStateFactory;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
@@ -87,8 +85,6 @@ import java.util.Random;
  * Module which allows for consensus to have multiple epochs
  */
 public class EpochsConsensusModule extends AbstractModule {
-	private static final int ROTATING_WEIGHTED_LEADERS_CACHE_SIZE = 10;
-
 	@Override
 	protected void configure() {
 		bind(EpochManager.class).in(Scopes.SINGLETON);
@@ -232,15 +228,6 @@ public class EpochsConsensusModule extends AbstractModule {
 		BFTConfiguration initialBFTConfig
 	) {
 		return new EpochChange(proof, initialBFTConfig);
-	}
-
-	@Provides
-	private ProposerElectionFactory proposerElectionFactory() {
-		return validatorSet -> new WeightedRotatingLeaders(
-			validatorSet,
-			Comparator.comparing(v -> v.getNode().getKey().euid()),
-			ROTATING_WEIGHTED_LEADERS_CACHE_SIZE
-		);
 	}
 
 	@ProvidesIntoSet

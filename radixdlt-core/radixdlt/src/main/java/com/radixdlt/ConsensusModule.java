@@ -40,6 +40,7 @@ import com.radixdlt.consensus.bft.ViewQuorumReached;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.PacemakerReducer;
+import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.liveness.ExponentialPacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.PacemakerState;
@@ -56,12 +57,10 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.LocalEvents;
@@ -78,7 +77,6 @@ import java.util.Random;
  * Module responsible for running BFT validator logic
  */
 public final class ConsensusModule extends AbstractModule {
-	private static final int ROTATING_WEIGHTED_LEADERS_CACHE_SIZE = 10;
 
 	@Override
 	public void configure() {
@@ -138,6 +136,12 @@ public final class ConsensusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
+	public ProposerElection proposerElection(BFTConfiguration configuration) {
+		return configuration.getProposerElection();
+	}
+
+	@Provides
+	@Singleton
 	public BFTEventProcessor eventProcessor(
 		@Self BFTNode self,
 		BFTConfiguration config,
@@ -160,14 +164,6 @@ public final class ConsensusModule extends AbstractModule {
 		);
 	}
 
-	@Provides
-	private ProposerElection proposerElection(BFTConfiguration configuration) {
-		return new WeightedRotatingLeaders(
-			configuration.getValidatorSet(),
-			Comparator.comparing(v -> v.getNode().getKey().euid()),
-			ROTATING_WEIGHTED_LEADERS_CACHE_SIZE
-		);
-	}
 
 	@Provides
 	@Singleton
