@@ -31,7 +31,7 @@ import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
-import com.radixdlt.atommodel.validators.state.NullValidatorUpdate;
+import com.radixdlt.atommodel.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
 import com.radixdlt.atommodel.validators.state.RakeCopy;
 import com.radixdlt.atommodel.validators.state.PreparedRakeUpdate;
@@ -514,7 +514,7 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 			this.next = next;
 		}
 
-		ReducerState reset(NullValidatorUpdate update) throws ProcedureException {
+		ReducerState reset(ValidatorOwnerCopy update) throws ProcedureException {
 			if (!validatorKey.equals(update.getValidatorKey())) {
 				throw new ProcedureException("Validator keys must match.");
 			}
@@ -626,7 +626,7 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 	private void roundUpdate(Loader os) {
 		// Round update
 		os.procedure(new DownProcedure<>(
-			RoundData.class, VoidReducerState.class,
+			VoidReducerState.class, RoundData.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> ReducerResult.incomplete(new RoundClosed(d.getSubstate()))
 		));
@@ -643,7 +643,7 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 			}
 		));
 		os.procedure(new DownProcedure<>(
-			ValidatorBFTData.class, UpdateValidatorEpochData.class,
+			UpdateValidatorEpochData.class, ValidatorBFTData.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> ReducerResult.incomplete(new UpdatingValidatorEpochData(d.getSubstate()))
 		));
@@ -660,7 +660,7 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 	private void epochUpdate(Loader os) {
 		// Epoch Update
 		os.procedure(new DownProcedure<>(
-			EpochData.class, RoundClosed.class,
+			RoundClosed.class, EpochData.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> ReducerResult.incomplete(new UpdatingEpoch(d.getSubstate()))
 		));
@@ -696,7 +696,7 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 			(i, s, r) -> ReducerResult.incomplete(s.unstakes(i))
 		));
 		os.procedure(new DownProcedure<>(
-			ValidatorStakeData.class, LoadingStake.class,
+			LoadingStake.class, ValidatorStakeData.class,
 			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> ReducerResult.incomplete(s.startUpdate(d.getSubstate()))
 		));
@@ -727,7 +727,7 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 			(i, s, r) -> ReducerResult.incomplete(s.prepareValidatorUpdate(i))
 		));
 		os.procedure(new UpProcedure<>(
-			ResetValidatorUpdate.class, NullValidatorUpdate.class,
+			ResetValidatorUpdate.class, ValidatorOwnerCopy.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.reset(u))
 		));

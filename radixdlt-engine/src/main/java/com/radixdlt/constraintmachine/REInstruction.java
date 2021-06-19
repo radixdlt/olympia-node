@@ -39,6 +39,32 @@ public final class REInstruction {
 				return Substate.create(p, SubstateId.ofSubstate(txn.getId(), index));
 			}
 		},
+		LREAD((byte) 12, REOp.READ) {
+			@Override
+			public Object read(Txn txn, int i, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
+				var index = buf.getInt();
+				if (index < 0 || index >= i) {
+					throw new DeserializeException("Bad local index: " + index);
+				}
+				return SubstateId.ofSubstate(txn.getId(), index);
+			}
+		},
+		VREAD((byte) 13, REOp.READ) {
+			@Override
+			public Object read(Txn txn, int index, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
+				int pos = buf.position();
+				var p = d.deserialize(buf);
+				int length = buf.position() - pos;
+				var b = ByteBuffer.wrap(buf.array(), pos, length);
+				return Substate.create(p, SubstateId.ofVirtualSubstate(b));
+			}
+		},
+		READ((byte) 14, REOp.READ) {
+			@Override
+			public Object read(Txn txn, int index, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
+				return SubstateId.fromBuffer(buf);
+			}
+		},
 		VDOWN((byte) 2, REOp.DOWN) {
 			@Override
 			public Object read(Txn txn, int index, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {

@@ -96,7 +96,7 @@ public final class CMAtomOS {
 				)
 			);
 			os.procedure(new DownProcedure<>(
-				UnclaimedREAddr.class, VoidReducerState.class,
+				VoidReducerState.class, UnclaimedREAddr.class,
 				d -> {
 					final PermissionLevel permissionLevel;
 					if (d.getSubstate().getAddr().isNativeToken() || d.getSubstate().getAddr().isSystem()) {

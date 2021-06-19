@@ -106,6 +106,18 @@ public final class TxBuilder {
 		lowLevelBuilder.localDown(index);
 	}
 
+	private void read(SubstateId substateId) {
+		lowLevelBuilder.read(substateId);
+	}
+
+	private void localRead(int index) {
+		lowLevelBuilder.localRead(index);
+	}
+
+	private void virtualRead(Particle p) {
+		lowLevelBuilder.virtualRead(p);
+	}
+
 	private CloseableCursor<Substate> createRemoteSubstateCursor(Class<? extends Particle> particleClass) {
 		return CloseableCursor.filter(
 			remoteSubstate.openIndexedCursor(particleClass, deserialization),
@@ -211,6 +223,49 @@ public final class TxBuilder {
 				.or(() -> {
 					virtualParticle.ifPresent(this::virtualDown);
 					return virtualParticle.map(SubstateWithArg::getSubstate);
+				});
+
+			if (substateDown.isEmpty()) {
+				throw new TxBuilderException(errorMessage + " (Substate not found)");
+			}
+
+			return substateDown.get();
+		}
+	}
+
+	public <T extends Particle> T read(
+		Class<T> particleClass,
+		Predicate<T> particlePredicate,
+		Optional<T> virtualParticle,
+		String errorMessage
+	) throws TxBuilderException {
+		var localRead = lowLevelBuilder.localUpSubstate().stream()
+			.filter(s -> {
+				if (!particleClass.isInstance(s.getParticle())) {
+					return false;
+				}
+
+				return particlePredicate.test(particleClass.cast(s.getParticle()));
+			})
+			.peek(s -> this.localRead(s.getIndex()))
+			.map(LocalSubstate::getParticle)
+			.map(particleClass::cast)
+			.findFirst();
+
+		if (localRead.isPresent()) {
+			return localRead.get();
+		}
+
+		try (var cursor = createRemoteSubstateCursor(particleClass)) {
+			var substateDown = iteratorToStream(cursor)
+				.filter(s -> particlePredicate.test(particleClass.cast(s.getParticle())))
+				.peek(s -> this.read(s.getId()))
+				.map(Substate::getParticle)
+				.map(particleClass::cast)
+				.findFirst()
+				.or(() -> {
+					virtualParticle.ifPresent(this::virtualRead);
+					return virtualParticle;
 				});
 
 			if (substateDown.isEmpty()) {
@@ -388,6 +443,25 @@ public final class TxBuilder {
 		}
 	}
 
+	public <T extends ResourceInBucket, U extends ResourceInBucket> void downFungible(
+		Class<T> particleClass,
+		Predicate<T> particlePredicate,
+		FungibleMapper<T> remainderMapper,
+		UInt256 amount,
+		String errorMessage
+	) throws TxBuilderException {
+		// Take
+		var remainder = downFungible(
+			particleClass,
+			particlePredicate,
+			amount,
+			errorMessage
+		);
+		if (!remainder.isZero()) {
+			up(remainderMapper.map(remainder));
+		}
+	}
+
 	public <T extends ResourceInBucket, U extends ResourceInBucket> FungibleReplacer<U> swapFungible(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
@@ -397,15 +471,13 @@ public final class TxBuilder {
 	) {
 		return mapper -> {
 			// Take
-			var remainder = downFungible(
+			downFungible(
 				particleClass,
 				particlePredicate,
+				remainderMapper,
 				amount,
 				errorMessage
 			);
-			if (!remainder.isZero()) {
-				up(remainderMapper.map(remainder));
-			}
 
 			// Put
 			var substateUp = mapper.map(amount);

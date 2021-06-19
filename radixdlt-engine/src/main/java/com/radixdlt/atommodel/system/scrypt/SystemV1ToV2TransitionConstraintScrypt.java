@@ -68,7 +68,7 @@ public class SystemV1ToV2TransitionConstraintScrypt implements ConstraintScrypt 
 		));
 
 		os.procedure(new DownProcedure<>(
-			SystemParticle.class, VoidReducerState.class,
+			VoidReducerState.class, SystemParticle.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> ReducerResult.incomplete(new TransitionToV2(d.getSubstate()))
 		));

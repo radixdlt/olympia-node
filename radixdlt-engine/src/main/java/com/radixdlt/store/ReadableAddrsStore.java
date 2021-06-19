@@ -28,5 +28,9 @@ import java.util.Optional;
  * Index into immutable substates
  */
 public interface ReadableAddrsStore {
-	Optional<Particle> loadAddr(CMStore.Transaction dbTxn, REAddr addr, SubstateDeserialization deserialization);
+	Optional<Particle> loadAddr(
+		CMStore.Transaction dbTxn,
+		REAddr addr,
+		SubstateDeserialization deserialization
+	);
 }

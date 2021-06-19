@@ -310,7 +310,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		));
 
 		os.procedure(new DownProcedure<>(
-			TokensInAccount.class, VoidReducerState.class,
+			VoidReducerState.class, TokensInAccount.class,
 			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> {
 				var state = new RemainderTokens(
@@ -338,7 +338,7 @@ public final class TokensConstraintScryptV1 implements ConstraintScrypt {
 		));
 
 		os.procedure(new DownProcedure<>(
-			TokensInAccount.class, UnaccountedTokens.class,
+			UnaccountedTokens.class, TokensInAccount.class,
 			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> {
 				if (!s.resourceInBucket.resourceAddr().equals(d.getSubstate().getResourceAddr())) {

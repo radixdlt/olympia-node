@@ -22,6 +22,7 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.CallData;
 import com.radixdlt.constraintmachine.CallDataAccessException;
 import com.radixdlt.constraintmachine.REInstruction;
+import com.radixdlt.constraintmachine.REOp;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.crypto.ECDSASignature;
@@ -58,6 +59,9 @@ public final class REParser {
 				throw new TxnParseException("Header must be first");
 			}
 			this.disableResourceAllocAndDestroy = disableResourceAllocAndDestroy;
+		}
+
+		void read() {
 		}
 
 		void nextInstruction(REInstruction inst) {
@@ -126,6 +130,8 @@ public final class REParser {
 
 			if (inst.isStateUpdate()) {
 				parserState.substateUpdate();
+			} else if (inst.getMicroOp().getOp() == REOp.READ) {
+				parserState.read();
 			} else if (inst.getMicroOp() == REInstruction.REMicroOp.HEADER) {
 				parserState.header(inst.getData());
 			} else if (inst.getMicroOp() == REInstruction.REMicroOp.SYSCALL) {

@@ -33,7 +33,7 @@ import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
-import com.radixdlt.atommodel.validators.state.NullValidatorUpdate;
+import com.radixdlt.atommodel.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
 import com.radixdlt.atommodel.validators.state.RakeCopy;
 import com.radixdlt.atommodel.validators.state.PreparedRakeUpdate;
@@ -243,7 +243,7 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 			var update = e.getValue();
 			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate);
 			validatorsToUpdate.put(k, curValidator.setOwnerAddr(update.getOwnerAddress()));
-			txBuilder.up(new NullValidatorUpdate(k));
+			txBuilder.up(new ValidatorOwnerCopy(k, update.getOwnerAddress()));
 		}
 
 		validatorsToUpdate.forEach((k, validator) -> txBuilder.up(validator));

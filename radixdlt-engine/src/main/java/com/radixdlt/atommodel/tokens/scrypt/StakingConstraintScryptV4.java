@@ -24,21 +24,29 @@ import com.radixdlt.atommodel.system.state.StakeOwnership;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
+import com.radixdlt.atommodel.validators.state.AllowDelegationFlag;
+import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
+import com.radixdlt.atommodel.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.atomos.Loader;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ProcedureException;
+import com.radixdlt.constraintmachine.ReadProcedure;
 import com.radixdlt.constraintmachine.ReducerResult;
+import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 
 import java.util.Set;
+import java.util.function.Predicate;
 
-public class StakingConstraintScryptV3 implements ConstraintScrypt {
+public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 
 	@Override
 	public void main(Loader os) {
@@ -47,7 +55,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 				PreparedStake.class,
 				Set.of(SubstateTypeId.PREPARED_STAKE.id()),
 				(b, buf) -> {
-					var owner = REFieldSerialization.deserializeREAddr(buf);
+					var owner = REFieldSerialization.deserializeAccountREAddr(buf);
 					var delegate = REFieldSerialization.deserializeKey(buf);
 					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					return new PreparedStake(amount, owner, delegate);
@@ -67,7 +75,7 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 				Set.of(SubstateTypeId.PREPARED_UNSTAKE.id()),
 				(b, buf) -> {
 					var delegate = REFieldSerialization.deserializeKey(buf);
-					var owner = REFieldSerialization.deserializeREAddr(buf);
+					var owner = REFieldSerialization.deserializeAccountREAddr(buf);
 					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					return new PreparedUnstakeOwnership(delegate, owner, amount);
 				},
@@ -83,21 +91,97 @@ public class StakingConstraintScryptV3 implements ConstraintScrypt {
 		defineStaking(os);
 	}
 
+	private static final class OwnerStakePrepare implements ReducerState {
+		private final TokenHoldingBucket tokenHoldingBucket;
+		private final AllowDelegationFlag allowDelegationFlag;
+
+		OwnerStakePrepare(TokenHoldingBucket tokenHoldingBucket, AllowDelegationFlag allowDelegationFlag) {
+			this.tokenHoldingBucket = tokenHoldingBucket;
+			this.allowDelegationFlag = allowDelegationFlag;
+		}
+
+		ReducerState readOwner(ValidatorOwnerCopy ownerCopy) throws ProcedureException {
+			if (!allowDelegationFlag.getValidatorKey().equals(ownerCopy.getValidatorKey())) {
+				throw new ProcedureException("Not matchin validator keys");
+			}
+			return new StakePrepare(tokenHoldingBucket, allowDelegationFlag.getValidatorKey(), ownerCopy.getOwner()::equals);
+		}
+
+		ReducerState readOwner(PreparedValidatorUpdate preparedValidatorUpdate) throws ProcedureException {
+			if (!allowDelegationFlag.getValidatorKey().equals(preparedValidatorUpdate.getValidatorKey())) {
+				throw new ProcedureException("Not matchin validator keys");
+			}
+			return new StakePrepare(
+				tokenHoldingBucket,
+				allowDelegationFlag.getValidatorKey(),
+				preparedValidatorUpdate.getOwnerAddress()::equals
+			);
+		}
+	}
+
+	private static final class StakePrepare implements ReducerState {
+		private final TokenHoldingBucket tokenHoldingBucket;
+		private final ECPublicKey validatorKey;
+		private final Predicate<REAddr> delegateAllowed;
+
+		StakePrepare(TokenHoldingBucket tokenHoldingBucket, ECPublicKey validatorKey, Predicate<REAddr> delegateAllowed) {
+			this.tokenHoldingBucket = tokenHoldingBucket;
+			this.validatorKey = validatorKey;
+			this.delegateAllowed = delegateAllowed;
+		}
+
+		ReducerState withdraw(PreparedStake preparedStake) throws ProcedureException {
+			if (preparedStake.getAmount().compareTo(ValidatorStakeData.MINIMUM_STAKE) < 0) {
+				throw new ProcedureException(
+					"Minimum amount to stake must be >= " + ValidatorStakeData.MINIMUM_STAKE
+						+ " but trying to stake " + preparedStake.getAmount()
+				);
+			}
+			if (!preparedStake.getDelegateKey().equals(validatorKey)) {
+				throw new ProcedureException("Not matching validator keys");
+			}
+
+			if (!delegateAllowed.test(preparedStake.getOwner())) {
+				throw new ProcedureException("Delegation not allowed");
+			}
+
+			return tokenHoldingBucket.withdraw(preparedStake.getResourceAddr(), preparedStake.getAmount());
+		}
+	}
+
 	private void defineStaking(Loader os) {
 		// Stake
+		os.procedure(new ReadProcedure<>(
+			TokenHoldingBucket.class, AllowDelegationFlag.class,
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			(s, d, r) -> {
+				var nextState = (!d.allowsDelegation())
+					? new OwnerStakePrepare(s, d)
+					: new StakePrepare(s, d.getValidatorKey(), p -> true);
+				return ReducerResult.incomplete(nextState);
+			}
+		));
+		os.procedure(new ReadProcedure<>(
+			OwnerStakePrepare.class, ValidatorOwnerCopy.class,
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			(s, d, r) -> {
+				var nextState = s.readOwner(d);
+				return ReducerResult.incomplete(nextState);
+			}
+		));
+		os.procedure(new ReadProcedure<>(
+			OwnerStakePrepare.class, PreparedValidatorUpdate.class,
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			(s, d, r) -> {
+				var nextState = s.readOwner(d);
+				return ReducerResult.incomplete(nextState);
+			}
+		));
 		os.procedure(new UpProcedure<>(
-			TokenHoldingBucket.class, PreparedStake.class,
+			StakePrepare.class, PreparedStake.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> {
-				if (u.getAmount().compareTo(ValidatorStakeData.MINIMUM_STAKE) < 0) {
-					throw new ProcedureException(
-						"Minimum amount to stake must be >= " + ValidatorStakeData.MINIMUM_STAKE
-							+ " but trying to stake " + u.getAmount()
-					);
-				}
-
-				var resourceAddr = u.bucket().resourceAddr();
-				var nextState = s.withdraw(resourceAddr, u.getAmount());
+				var nextState = s.withdraw(u);
 				return ReducerResult.incomplete(nextState);
 			}
 		));

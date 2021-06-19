@@ -20,31 +20,31 @@ package com.radixdlt.constraintmachine;
 
 import java.util.function.Function;
 
-public class DownProcedure<D extends Particle, S extends ReducerState> implements Procedure {
-	private final Class<D> downClass;
+public final class ReadProcedure<D extends Particle, S extends ReducerState> implements Procedure  {
+	private final Class<D> readClass;
 	private final Class<S> reducerStateClass;
-	private final DownReducer<D, S> downReducer;
-	private final Function<SubstateWithArg<D>, Authorization> authorization;
+	private final ReadReducer<D, S> readReducer;
+	private final Function<D, Authorization> authorization;
 
-	public DownProcedure(
-		Class<S> reducerStateClass, Class<D> downClass,
-		Function<SubstateWithArg<D>, Authorization> authorization,
-		DownReducer<D, S> downReducer
+	public ReadProcedure(
+		Class<S> reducerStateClass, Class<D> readClass,
+		Function<D, Authorization> authorization,
+		ReadReducer<D, S> readReducer
 	) {
-		this.downClass = downClass;
+		this.readClass = readClass;
 		this.reducerStateClass = reducerStateClass;
-		this.downReducer = downReducer;
+		this.readReducer = readReducer;
 		this.authorization = authorization;
 	}
 
 	@Override
 	public ProcedureKey key() {
-		return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.DOWN, downClass));
+		return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.READ, readClass));
 	}
 
 	@Override
 	public Authorization authorization(Object o) {
-		return authorization.apply((SubstateWithArg<D>) o);
+		return authorization.apply((D) o);
 	}
 
 	@Override
@@ -54,6 +54,6 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 		ReadableAddrs readableAddrs,
 		ExecutionContext context
 	) throws ProcedureException {
-		return downReducer.reduce((SubstateWithArg<D>) o, (S) reducerState, readableAddrs);
+		return readReducer.reduce((S) reducerState, (D) o, readableAddrs);
 	}
 }

@@ -79,7 +79,7 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 			}
 		));
 		os.procedure(new DownProcedure<>(
-			TokensInAccount.class, StakingConstraintScryptV2.UnaccountedStake.class,
+			StakingConstraintScryptV2.UnaccountedStake.class, TokensInAccount.class,
 			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> {
 				if (!d.getSubstate().getResourceAddr().isNativeToken()) {
@@ -98,7 +98,7 @@ public final class StakingConstraintScryptV1 implements ConstraintScrypt {
 
 		// Unstake
 		os.procedure(new DownProcedure<>(
-			PreparedStake.class, TokensConstraintScryptV1.UnaccountedTokens.class,
+			TokensConstraintScryptV1.UnaccountedTokens.class, PreparedStake.class,
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {

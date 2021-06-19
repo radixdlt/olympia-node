@@ -40,6 +40,7 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
 import com.radixdlt.atom.actions.UpdateRake;
 import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
@@ -47,6 +48,7 @@ import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
+import com.radixdlt.atommodel.validators.state.AllowDelegationFlag;
 import com.radixdlt.atommodel.validators.state.PreparedRakeUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -314,19 +316,39 @@ public class StakingUnstakingValidatorsTest {
 				: lastEpochView.getLastEvent().getEpoch();
 		}
 
-		public Map<BFTNode, ValidatorStakeData> getValidators() {
+		public Map<BFTNode, Map<String, String>> getValidators() {
 			var forkConfig = epochToForkConfig.floorEntry(getEpoch()).getValue();
 			var reParser = forkConfig.getParser();
-			return entryStore.reduceUpParticles(
+			Map<BFTNode, Map<String, String>> map = entryStore.reduceUpParticles(
 				ValidatorStakeData.class,
 				new HashMap<>(),
 				(i, p) -> {
 					var stakeData = (ValidatorStakeData) p;
-					i.put(BFTNode.create(stakeData.getValidatorKey()), stakeData);
+					var data = new HashMap<String, String>();
+					data.put("stake", stakeData.getAmount().toString());
+					data.put("rake", stakeData.getRakePercentage().toString());
+					i.put(BFTNode.create(stakeData.getValidatorKey()), data);
 					return i;
 				},
 				reParser.getSubstateDeserialization()
 			);
+
+			entryStore.reduceUpParticles(
+				AllowDelegationFlag.class,
+				map,
+				(i, p) -> {
+					var flag = (AllowDelegationFlag) p;
+					var data = new HashMap<String, String>();
+					data.put("allowDelegation", Boolean.toString(flag.allowsDelegation()));
+					i.merge(BFTNode.create(flag.getValidatorKey()), data, (a, b) -> {
+						a.putAll(b);
+						return a;
+					});
+					return i;
+				},
+				reParser.getSubstateDeserialization()
+			);
+			return map;
 		}
 
 		public UInt256 getTotalNativeTokens() {
@@ -397,7 +419,7 @@ public class StakingUnstakingValidatorsTest {
 			var to = nodeKeys.get(random.nextInt(nodeKeys.size())).getPublicKey();
 			var amount = UInt256.from(random.nextInt(10)).multiply(ValidatorStakeData.MINIMUM_STAKE);
 
-			var next = random.nextInt(10);
+			var next = random.nextInt(16);
 			final TxAction action;
 			switch (next) {
 				case 0:
@@ -428,6 +450,9 @@ public class StakingUnstakingValidatorsTest {
 					break;
 				case 7:
 					action = new UpdateValidatorOwnerAddress(privKey.getPublicKey(), REAddr.ofPubKeyAccount(to));
+					break;
+				case 8:
+					action = new UpdateAllowDelegationFlag(privKey.getPublicKey(), random.nextBoolean());
 					break;
 				default:
 					continue;
@@ -467,7 +492,9 @@ public class StakingUnstakingValidatorsTest {
 		logger.info("Difference {}", diff);
 		assertThat(diff).isLessThanOrEqualTo(maxEmissions);
 
-		logger.info("ValidatorStakeData: {}", nodeState.getValidators());
+		for (var e : nodeState.getValidators().entrySet()) {
+			logger.info("{} {}", e.getKey(), e.getValue());
+		}
 	}
 
 }

@@ -16,36 +16,25 @@
  *
  */
 
-package com.radixdlt.atommodel.validators.state;
+package com.radixdlt.atom.actions;
 
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.atom.TxAction;
 import com.radixdlt.crypto.ECPublicKey;
 
-import java.util.Objects;
-
-public final class NullValidatorUpdate implements Particle {
+public final class UpdateAllowDelegationFlag implements TxAction {
 	private final ECPublicKey validatorKey;
+	private final boolean allowDelegation;
 
-	public NullValidatorUpdate(ECPublicKey validatorKey) {
+	public UpdateAllowDelegationFlag(ECPublicKey validatorKey, boolean allowDelegation) {
 		this.validatorKey = validatorKey;
+		this.allowDelegation = allowDelegation;
 	}
 
 	public ECPublicKey getValidatorKey() {
 		return validatorKey;
 	}
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(validatorKey);
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof NullValidatorUpdate)) {
-			return false;
-		}
-
-		var other = (NullValidatorUpdate) o;
-		return Objects.equals(this.validatorKey, other.validatorKey);
+	public boolean allowDelegation() {
+		return allowDelegation;
 	}
 }
