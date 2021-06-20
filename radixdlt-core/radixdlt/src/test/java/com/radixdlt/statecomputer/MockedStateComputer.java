@@ -17,6 +17,7 @@
 
 package com.radixdlt.statecomputer;
 
+import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HighQC;
@@ -50,6 +51,7 @@ public final class MockedStateComputer implements StateComputer {
 	private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
 	private final Hasher hasher;
 
+	@Inject
 	public MockedStateComputer(
 		EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
 		Hasher hasher
