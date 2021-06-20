@@ -39,6 +39,7 @@ import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.ByzantineQuorumException;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
 import com.radixdlt.mempool.MempoolAdd;
@@ -71,6 +72,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final int maxTxnsPerProposal;
 
+
+	private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
 	private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
 	private final EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher;
 	private final EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher;
@@ -93,6 +96,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher,
 		EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher,
 		EventDispatcher<TxnsCommittedToLedger> committedDispatcher,
+		EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
 		SystemCounters systemCounters
 	) {
 		if (epochCeilingView.isGenesis()) {
@@ -109,6 +113,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.invalidProposedCommandEventDispatcher = Objects.requireNonNull(invalidProposedCommandEventDispatcher);
 		this.mempoolAtomsRemovedEventDispatcher = Objects.requireNonNull(mempoolAtomsRemovedEventDispatcher);
 		this.committedDispatcher = Objects.requireNonNull(committedDispatcher);
+		this.ledgerUpdateDispatcher = Objects.requireNonNull(ledgerUpdateDispatcher);
 		this.systemCounters = Objects.requireNonNull(systemCounters);
 	}
 
@@ -333,8 +338,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	@Override
-	public void commit(VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState) {
-		var txCommitted = commitInternal(verifiedTxnsAndProof, vertexStoreState);
+	public void commit(VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
+		var txCommitted = commitInternal(txnsAndProof, vertexStoreState);
 
 		// TODO: refactor mempool to be less generic and make this more efficient
 		// TODO: Move this into engine
@@ -346,5 +351,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		committedDispatcher.dispatch(TxnsCommittedToLedger.create(txCommitted));
+		var ledgerUpdate = new LedgerUpdate(txnsAndProof);
+		ledgerUpdateDispatcher.dispatch(ledgerUpdate);
 	}
 }

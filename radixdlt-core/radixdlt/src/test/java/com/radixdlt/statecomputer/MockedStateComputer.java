@@ -21,6 +21,8 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.MockPrepared;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
@@ -33,7 +35,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class MockedStateComputer implements StateComputer {
-	public MockedStateComputer() {
+	private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
+
+	public MockedStateComputer(EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher) {
+		this.ledgerUpdateDispatcher = ledgerUpdateDispatcher;
 	}
 
 	@Override
@@ -58,7 +63,8 @@ public final class MockedStateComputer implements StateComputer {
 	}
 
 	@Override
-	public void commit(VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState) {
-		// No-op
+	public void commit(VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
+		var ledgerUpdate = new LedgerUpdate(txnsAndProof);
+		ledgerUpdateDispatcher.dispatch(ledgerUpdate);
 	}
 }

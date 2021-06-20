@@ -67,6 +67,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -150,6 +151,8 @@ public class RadixEngineStateComputerTest {
 				bind(new TypeLiteral<EventDispatcher<TxnsCommittedToLedger>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() { })
+					.toInstance(TypedMocks.rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 
 				bind(SystemCounters.class).to(SystemCountersImpl.class);

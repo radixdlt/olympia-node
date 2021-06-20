@@ -22,6 +22,8 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
 import java.util.function.Function;
@@ -31,8 +33,9 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 	@Singleton
 	private StateComputer stateComputer(
 		@EpochCeilingView View epochHighView,
-		Function<Long, BFTValidatorSet> validatorSetMapping
+		Function<Long, BFTValidatorSet> validatorSetMapping,
+		EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher
 	) {
-		return new MockedStateComputerWithEpochs(validatorSetMapping, epochHighView);
+		return new MockedStateComputerWithEpochs(validatorSetMapping, epochHighView, ledgerUpdateDispatcher);
 	}
 }

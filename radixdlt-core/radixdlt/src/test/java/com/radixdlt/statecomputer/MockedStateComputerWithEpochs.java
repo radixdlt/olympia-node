@@ -24,6 +24,8 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.MockPrepared;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
@@ -44,11 +46,12 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 
 	public MockedStateComputerWithEpochs(
 		Function<Long, BFTValidatorSet> validatorSetMapping,
-		View epochHighView
+		View epochHighView,
+		EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher
 	) {
 		this.validatorSetMapping = Objects.requireNonNull(validatorSetMapping);
 		this.epochHighView = Objects.requireNonNull(epochHighView);
-		this.stateComputer = new MockedStateComputer();
+		this.stateComputer = new MockedStateComputer(ledgerUpdateDispatcher);
 	}
 
 	@Override
@@ -82,6 +85,6 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 
 	@Override
 	public void commit(VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState) {
-		// No-op
+		this.stateComputer.commit(verifiedTxnsAndProof, vertexStoreState);
 	}
 }

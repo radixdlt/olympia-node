@@ -20,6 +20,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
@@ -159,6 +160,8 @@ public class SubmissionServiceTest {
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<MempoolAdd>>() { })
 					.toInstance(mempoolAddEventDispatcher());
+				bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() { })
+					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 
 				bind(BFTNode.class).annotatedWith(Self.class).toInstance(NODE);
 
