@@ -390,7 +390,7 @@ public class LocalSyncServiceTest {
 		this.setupSyncServiceWithState(syncState);
 
 		this.localSyncService.ledgerUpdateEventProcessor().process(
-			new LedgerUpdate(VerifiedTxnsAndProof.create(ImmutableList.of(), targetHeader))
+			new LedgerUpdate(VerifiedTxnsAndProof.create(ImmutableList.of(), targetHeader), null)
 		);
 
 		verifyNoMoreInteractions(syncRequestDispatcher);

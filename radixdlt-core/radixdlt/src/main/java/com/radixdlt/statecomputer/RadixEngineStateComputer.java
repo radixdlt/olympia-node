@@ -351,7 +351,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		committedDispatcher.dispatch(TxnsCommittedToLedger.create(txCommitted));
-		var ledgerUpdate = new LedgerUpdate(txnsAndProof);
+
+		var ledgerUpdate = new LedgerUpdate(txnsAndProof, TxnsCommittedToLedger.create(txCommitted));
 		ledgerUpdateDispatcher.dispatch(ledgerUpdate);
 	}
 }

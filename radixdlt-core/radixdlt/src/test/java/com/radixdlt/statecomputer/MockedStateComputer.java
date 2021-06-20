@@ -64,7 +64,7 @@ public final class MockedStateComputer implements StateComputer {
 
 	@Override
 	public void commit(VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
-		var ledgerUpdate = new LedgerUpdate(txnsAndProof);
+		var ledgerUpdate = new LedgerUpdate(txnsAndProof, null);
 		ledgerUpdateDispatcher.dispatch(ledgerUpdate);
 	}
 }
