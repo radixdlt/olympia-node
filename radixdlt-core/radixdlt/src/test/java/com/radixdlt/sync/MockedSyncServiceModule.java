@@ -32,7 +32,6 @@ import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.store.LastEpochProof;
@@ -73,7 +72,6 @@ public class MockedSyncServiceModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(SyncRequestTimeout.class);
 		eventBinder.addBinding().toInstance(LocalSyncRequest.class);
 		eventBinder.addBinding().toInstance(SyncLedgerUpdateTimeout.class);
-		eventBinder.addBinding().toInstance(EpochsLedgerUpdate.class);
 	}
 
 	@ProvidesIntoSet
@@ -155,7 +153,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	private EventProcessorOnRunner<?> epochsLedgerUpdateEventProcessor() {
-		return noOpProcessor(EpochsLedgerUpdate.class);
+		return noOpProcessor(LedgerUpdate.class);
 	}
 
 	@ProvidesIntoSet

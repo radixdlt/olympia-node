@@ -83,7 +83,6 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
@@ -285,10 +284,10 @@ public class EpochManagerTest {
 		LedgerProof proof = mock(LedgerProof.class);
 		when(proof.getEpoch()).thenReturn(header.getEpoch() + 1);
 		EpochChange epochChange = new EpochChange(proof, bftConfiguration);
-		EpochsLedgerUpdate epochsLedgerUpdate = new EpochsLedgerUpdate(mock(LedgerUpdate.class), epochChange);
+		var ledgerUpdate = new LedgerUpdate(mock(VerifiedTxnsAndProof.class), Optional.of(epochChange));
 
 		// Act
-		epochManager.epochsLedgerUpdateEventProcessor().process(epochsLedgerUpdate);
+		epochManager.epochsLedgerUpdateEventProcessor().process(ledgerUpdate);
 
 		// Assert
 		verify(proposalDispatcher, never()).dispatch(any(Iterable.class), argThat(p -> p.getEpoch() == epochChange.getEpoch()));

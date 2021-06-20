@@ -35,7 +35,7 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -59,14 +59,13 @@ public class SystemInfoModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(EpochLocalTimeoutOccurrence.class);
 		eventBinder.addBinding().toInstance(BFTCommittedUpdate.class);
 		eventBinder.addBinding().toInstance(BFTHighQCUpdate.class);
-		eventBinder.addBinding().toInstance(EpochsLedgerUpdate.class);
 	}
 
 	@ProvidesIntoSet
 	private EventProcessorOnRunner<?> epochsLedgerUpdateProcessor(InMemorySystemInfo inMemorySystemInfo) {
 		return new EventProcessorOnRunner<>(
 			Runners.SYSTEM_INFO,
-			EpochsLedgerUpdate.class,
+			LedgerUpdate.class,
 			inMemorySystemInfo.ledgerUpdateEventProcessor()
 		);
 	}

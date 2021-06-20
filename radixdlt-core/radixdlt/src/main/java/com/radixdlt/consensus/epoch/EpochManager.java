@@ -58,7 +58,6 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -68,6 +67,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
@@ -249,14 +249,15 @@ public final class EpochManager {
 		return this.currentEpoch.getEpoch();
 	}
 
-	public EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor() {
+	public EventProcessor<LedgerUpdate> epochsLedgerUpdateEventProcessor() {
 		return this::processLedgerUpdate;
 	}
 
-	private void processLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate) {
-		epochsLedgerUpdate.getEpochChange().ifPresentOrElse(
+	private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
+		var epochChange = (Optional<EpochChange>) ledgerUpdate.getStateComputerOutput();
+		epochChange.ifPresentOrElse(
 			this::processEpochChange,
-			() -> this.syncLedgerUpdateProcessor.process(epochsLedgerUpdate.getBase())
+			() -> this.syncLedgerUpdateProcessor.process(ledgerUpdate)
 		);
 	}
 

@@ -77,7 +77,6 @@ import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
@@ -207,8 +206,6 @@ public class DispatcherModule extends AbstractModule {
 
 		bind(new TypeLiteral<EventDispatcher<EpochViewUpdate>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(EpochViewUpdate.class, true)).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<EventDispatcher<EpochsLedgerUpdate>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(EpochsLedgerUpdate.class)).in(Scopes.SINGLETON);
 
 		final var insertUpdateKey = new TypeLiteral<EventProcessor<BFTInsertUpdate>>() { };
 		Multibinder.newSetBinder(binder(), insertUpdateKey, ProcessOnDispatch.class);

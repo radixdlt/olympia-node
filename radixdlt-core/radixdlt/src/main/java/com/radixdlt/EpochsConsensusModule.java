@@ -72,7 +72,6 @@ import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.environment.StartProcessorOnRunner;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.utils.TimeSupplier;
@@ -93,7 +92,6 @@ public class EpochsConsensusModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(EpochViewUpdate.class);
 		eventBinder.addBinding().toInstance(VertexRequestTimeout.class);
 		eventBinder.addBinding().toInstance(LedgerUpdate.class);
-		eventBinder.addBinding().toInstance(EpochsLedgerUpdate.class);
 		eventBinder.addBinding().toInstance(Epoched.class);
 	}
 
@@ -154,7 +152,7 @@ public class EpochsConsensusModule extends AbstractModule {
     private EventProcessorOnRunner<?> epochsLedgerUpdateEventProcessor(EpochManager epochManager) {
 		return new EventProcessorOnRunner<>(
 			Runners.CONSENSUS,
-			EpochsLedgerUpdate.class,
+			LedgerUpdate.class,
 			epochManager.epochsLedgerUpdateEventProcessor()
 		);
     }

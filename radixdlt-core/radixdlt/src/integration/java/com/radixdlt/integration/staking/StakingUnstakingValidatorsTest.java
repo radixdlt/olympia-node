@@ -68,10 +68,10 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
@@ -113,6 +113,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.function.Supplier;
@@ -235,10 +236,10 @@ public class StakingUnstakingValidatorsTest {
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ValidatorAddress.of(ecKeyPair.getPublicKey()));
-					bind(new TypeLiteral<DeterministicSavedLastEvent<EpochsLedgerUpdate>>() { })
-						.toInstance(new DeterministicSavedLastEvent<>(EpochsLedgerUpdate.class));
+					bind(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() { })
+						.toInstance(new DeterministicSavedLastEvent<>(LedgerUpdate.class));
 					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() { })
-						.addBinding().toProvider(new TypeLiteral<DeterministicSavedLastEvent<EpochsLedgerUpdate>>() { });
+						.addBinding().toProvider(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() { });
 				}
 
 				@Provides
@@ -474,11 +475,12 @@ public class StakingUnstakingValidatorsTest {
 		logger.info("Node {}", node);
 		logger.info("Initial {}", initialCount);
 		var lastEpochView = this.nodes.get(0)
-			.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochsLedgerUpdate>>() { }));
+			.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() { }));
 		var epoch = lastEpochView.getLastEvent() == null
 			? this.nodes.get(0).getInstance(EpochChange.class).getEpoch()
-			: lastEpochView.getLastEvent().getEpochChange().map(EpochChange::getEpoch)
-				.orElseGet(() -> lastEpochView.getLastEvent().getBase().getTail().getEpoch());
+			: ((Optional<EpochChange>) lastEpochView.getLastEvent().getStateComputerOutput())
+				.map(EpochChange::getEpoch)
+				.orElseGet(() -> lastEpochView.getLastEvent().getTail().getEpoch());
 
 		logger.info("Epoch {}", epoch);
 		var maxEmissions = UInt256.from(99).multiply(SystemConstraintScryptV2.REWARDS_PER_PROPOSAL).multiply(UInt256.from(epoch - 1));

@@ -34,6 +34,10 @@ public final class LedgerUpdate {
 		this.stateComputerOutput = stateComputerOutput;
 	}
 
+	public Object getStateComputerOutput() {
+		return stateComputerOutput;
+	}
+
 	public List<Txn> getNewTxns() {
 		return verifiedTxnsAndProof.getTxns();
 	}
