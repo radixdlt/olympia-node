@@ -18,24 +18,12 @@
 package com.radixdlt.statecomputer;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.LedgerUpdate;
+import com.google.inject.Scopes;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
-import java.util.function.Function;
-
 public class MockedStateComputerWithEpochsModule extends AbstractModule {
-	@Provides
-	@Singleton
-	private StateComputer stateComputer(
-		@EpochCeilingView View epochHighView,
-		Function<Long, BFTValidatorSet> validatorSetMapping,
-		EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher
-	) {
-		return new MockedStateComputerWithEpochs(validatorSetMapping, epochHighView, ledgerUpdateDispatcher);
+	@Override
+	protected void configure() {
+		bind(StateComputer.class).to(MockedStateComputerWithEpochs.class).in(Scopes.SINGLETON);
 	}
 }

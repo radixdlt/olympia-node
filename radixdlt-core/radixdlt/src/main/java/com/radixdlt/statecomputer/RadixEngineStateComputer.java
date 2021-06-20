@@ -25,15 +25,24 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atom.actions.SystemNextView;
+import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
@@ -58,6 +67,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -81,6 +91,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final EventDispatcher<TxnsCommittedToLedger> committedDispatcher;
 	private final TreeMap<Long, ForkConfig> epochToForkConfig;
 	private final SystemCounters systemCounters;
+	private final Hasher hasher;
 
 	private View epochCeilingView;
 
@@ -97,6 +108,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher,
 		EventDispatcher<TxnsCommittedToLedger> committedDispatcher,
 		EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
+		Hasher hasher,
 		SystemCounters systemCounters
 	) {
 		if (epochCeilingView.isGenesis()) {
@@ -114,6 +126,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.mempoolAtomsRemovedEventDispatcher = Objects.requireNonNull(mempoolAtomsRemovedEventDispatcher);
 		this.committedDispatcher = Objects.requireNonNull(committedDispatcher);
 		this.ledgerUpdateDispatcher = Objects.requireNonNull(ledgerUpdateDispatcher);
+		this.hasher = Objects.requireNonNull(hasher);
 		this.systemCounters = Objects.requireNonNull(systemCounters);
 	}
 
@@ -352,7 +365,30 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		committedDispatcher.dispatch(TxnsCommittedToLedger.create(txCommitted));
 
-		var ledgerUpdate = new LedgerUpdate(txnsAndProof, TxnsCommittedToLedger.create(txCommitted));
+		Optional<EpochChange> epochChangeOptional = txnsAndProof.getProof().getNextValidatorSet().map(validatorSet -> {
+			LedgerProof header = txnsAndProof.getProof();
+			UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(header.getRaw());
+			VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
+			LedgerHeader nextLedgerHeader = LedgerHeader.create(
+				header.getEpoch() + 1,
+				View.genesis(),
+				header.getAccumulatorState(),
+				header.timestamp()
+			);
+			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
+			final var initialState =
+				VerifiedVertexStoreState.create(
+					HighQC.from(genesisQC),
+					verifiedGenesisVertex,
+					Optional.empty(),
+					hasher
+				);
+			var proposerElection = new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.getNode().getKey().euid()));
+			var bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, initialState);
+			return new EpochChange(header, bftConfiguration);
+		});
+
+		var ledgerUpdate = new LedgerUpdate(txnsAndProof, epochChangeOptional);
 		ledgerUpdateDispatcher.dispatch(ledgerUpdate);
 	}
 }

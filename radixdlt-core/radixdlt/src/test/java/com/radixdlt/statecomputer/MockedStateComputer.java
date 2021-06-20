@@ -18,9 +18,19 @@
 package com.radixdlt.statecomputer;
 
 import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.MockPrepared;
@@ -30,15 +40,22 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
 
 import javax.annotation.Nullable;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public final class MockedStateComputer implements StateComputer {
 	private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
+	private final Hasher hasher;
 
-	public MockedStateComputer(EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher) {
+	public MockedStateComputer(
+		EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
+		Hasher hasher
+	) {
 		this.ledgerUpdateDispatcher = ledgerUpdateDispatcher;
+		this.hasher = hasher;
 	}
 
 	@Override
@@ -64,7 +81,30 @@ public final class MockedStateComputer implements StateComputer {
 
 	@Override
 	public void commit(VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
-		var ledgerUpdate = new LedgerUpdate(txnsAndProof, null);
+		Optional<EpochChange> epochChangeOptional = txnsAndProof.getProof().getNextValidatorSet().map(validatorSet -> {
+			LedgerProof header = txnsAndProof.getProof();
+			UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(header.getRaw());
+			VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
+			LedgerHeader nextLedgerHeader = LedgerHeader.create(
+				header.getEpoch() + 1,
+				View.genesis(),
+				header.getAccumulatorState(),
+				header.timestamp()
+			);
+			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
+			final var initialState =
+				VerifiedVertexStoreState.create(
+					HighQC.from(genesisQC),
+					verifiedGenesisVertex,
+					Optional.empty(),
+					hasher
+				);
+			var proposerElection = new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.getNode().getKey().euid()));
+			var bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, initialState);
+			return new EpochChange(header, bftConfiguration);
+		});
+
+		var ledgerUpdate = new LedgerUpdate(txnsAndProof, epochChangeOptional);
 		ledgerUpdateDispatcher.dispatch(ledgerUpdate);
 	}
 }
