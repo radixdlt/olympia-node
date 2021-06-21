@@ -18,6 +18,7 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.atom.Txn;
+import com.radixdlt.utils.Bytes;
 
 /**
  * Exception thrown by Radix Engine
@@ -30,7 +31,11 @@ public final class RadixEngineException extends Exception {
 		Txn txn,
 		Exception cause
 	) {
-		super(cause);
+		super("Txn: " + Bytes.toHexString(txn.getPayload()), cause);
 		this.txn = txn;
+	}
+
+	public Txn getTxn() {
+		return txn;
 	}
 }
