@@ -18,31 +18,29 @@
 package com.radixdlt.api.data.action;
 
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.UpdateRake;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.UInt256;
 
 import java.util.stream.Stream;
 
-class MintAction implements TransactionAction {
-	private final REAddr to;
-	private final UInt256 amount;
-	private final REAddr rri;
+class UpdateRakeAction implements TransactionAction {
+	private final ECPublicKey validatorKey;
+	private final int rakePercentage;
 
-	MintAction(REAddr to, UInt256 amount, REAddr rri) {
-		this.to = to;
-		this.amount = amount;
-		this.rri = rri;
+	UpdateRakeAction(ECPublicKey validatorKey, int rakePercentage) {
+		this.validatorKey = validatorKey;
+		this.rakePercentage = rakePercentage;
 	}
 
 	@Override
 	public REAddr getFrom() {
 		//FIXME: here can be other address?
-		return null;
+		return REAddr.ofPubKeyAccount(validatorKey);
 	}
 
 	@Override
 	public Stream<TxAction> toAction() {
-		return Stream.of(new MintToken(TransactionAction.rriValue(rri), to, amount));
+		return Stream.of(new UpdateRake(validatorKey, rakePercentage));
 	}
 }

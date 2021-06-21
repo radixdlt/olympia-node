@@ -390,7 +390,7 @@ public class AsyncRadixApi implements RadixApi {
 	}
 
 	static Promise<RadixApi> connect(String url, int primaryPort, int secondaryPort) {
-		return buildHttpClient().fold(Promise::failure, client-> connect(url, primaryPort, secondaryPort, client));
+		return buildHttpClient().fold(Promise::failure, client -> connect(url, primaryPort, secondaryPort, client));
 	}
 
 	static Promise<RadixApi> connect(String url, int primaryPort, int secondaryPort, HttpClient client) {

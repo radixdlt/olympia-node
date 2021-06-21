@@ -25,23 +25,24 @@ import com.radixdlt.identifiers.REAddr;
 import java.util.stream.Stream;
 
 class UpdateValidatorAction implements TransactionAction {
-	private final ECPublicKey delegate;
+	private final ECPublicKey validatorKey;
 	private final String name;
 	private final String url;
 
-	UpdateValidatorAction(ECPublicKey delegate, String name, String url) {
-		this.delegate = delegate;
+	UpdateValidatorAction(ECPublicKey validatorKey, String name, String url) {
+		this.validatorKey = validatorKey;
 		this.name = name;
 		this.url = url;
 	}
 
 	@Override
 	public REAddr getFrom() {
-		return null;
+		//FIXME: here can be other address?
+		return REAddr.ofPubKeyAccount(validatorKey);
 	}
 
 	@Override
 	public Stream<TxAction> toAction() {
-		return Stream.of(new UpdateValidator(delegate, name, url));
+		return Stream.of(new UpdateValidator(validatorKey, name, url));
 	}
 }
