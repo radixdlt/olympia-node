@@ -299,7 +299,7 @@ public final class BetanetForksModule extends AbstractModule {
 		final var forkHash = ForkConfig.hashOf(forkName);
 		return new ForkConfig(
 			forkName,
-			ForksPredicates.stakeVoting(forkHash, 0.5),
+			ForksPredicates.stakeVoting(forkHash, 0.51),
 			parser,
 			serialization,
 			betanet4,

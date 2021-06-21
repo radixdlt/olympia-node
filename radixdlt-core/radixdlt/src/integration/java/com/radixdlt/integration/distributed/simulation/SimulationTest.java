@@ -243,7 +243,7 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder numNodes(int numNodes, int numInitialValidators, int maxValidators, Iterable<UInt256> initialStakes) {
+		public Builder numNodes(int numNodes, int maxValidators, Iterable<UInt256> initialStakes) {
 			this.maxValidators = maxValidators;
 			this.nodes = Stream.generate(ECKeyPair::generateNew)
 				.limit(numNodes)
@@ -289,12 +289,8 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder numNodes(int numNodes, int numInitialValidators, Iterable<UInt256> initialStakes) {
-			return numNodes(numNodes, numInitialValidators, maxValidators, initialStakes);
-		}
-
-		public Builder numNodes(int numNodes, int numInitialValidators) {
-			return numNodes(numNodes, numInitialValidators, ImmutableList.of(UInt256.ONE));
+		public Builder numNodes(int numNodes, int maxValidators) {
+			return numNodes(numNodes, maxValidators, ImmutableList.of(UInt256.ONE));
 		}
 
 		public Builder numNodes(int numNodes) {

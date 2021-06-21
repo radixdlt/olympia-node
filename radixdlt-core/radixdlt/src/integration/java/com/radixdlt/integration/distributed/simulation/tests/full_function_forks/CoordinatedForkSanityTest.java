@@ -39,8 +39,6 @@ import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.UInt256;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
@@ -60,14 +58,14 @@ public final class CoordinatedForkSanityTest {
 
 	public CoordinatedForkSanityTest() {
 		bftTestBuilder = SimulationTest.builder()
-			.numNodes(numValidators, numValidators, numValidators, Collections.nCopies(numValidators, UInt256.ONE))
+			.numNodes(numValidators, numValidators, Collections.nCopies(numValidators, UInt256.ONE))
 			.networkModules(
 				NetworkOrdering.inOrder(),
 				NetworkLatencies.fixed()
 			)
 			.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
 			.addRadixEngineConfigModules(
-				new ForkOverwritesWithShorterEpochsModule(false, 2, ImmutableSet.of("betanet4")),
+				new ForkOverwritesWithShorterEpochsModule(false, 2, ImmutableSet.of(BetanetForksModule.betanetV4().getName())),
 				new BetanetForksModule()
 			)
 			.addNodeModule(MempoolConfig.asModule(1000, 10))
@@ -81,7 +79,6 @@ public final class CoordinatedForkSanityTest {
 				RadixEngineMonitors.noInvalidProposedCommands()
 			);
 	}
-	private static final Logger log = LogManager.getLogger();
 
 	@Test
 	public void sanity_tests_should_pass() {

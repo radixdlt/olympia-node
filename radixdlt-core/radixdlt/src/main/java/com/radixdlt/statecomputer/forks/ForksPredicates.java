@@ -36,7 +36,7 @@ public final class ForksPredicates {
 					.multiply(BigDecimal.valueOf(requiredPercentage));
 			final var forkVotes = stakedValidators.getForkVotes(forkHash);
 			final var forkVotesPower = calculateStakeVotePower(validatorSet, forkVotes);
-			return forkVotesPower.compareTo(requiredPower) > 0;
+			return forkVotesPower.compareTo(requiredPower) >= 0;
 		};
 	}
 

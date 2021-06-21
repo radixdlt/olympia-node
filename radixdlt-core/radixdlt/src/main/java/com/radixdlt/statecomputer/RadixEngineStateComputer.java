@@ -203,7 +203,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 					for (var u : updates) {
 						cur = cur.setStake(u.getValidatorKey(), u.getAmount());
 					}
-					// FIXME: resultStakedValidators.toValidatorSet() may be null
+					// FIXME: cur.toValidatorSet() may be null
 					var validatorSet = cur.toValidatorSet();
 					if (validatorSet == null) {
 						throw new IllegalStateException();
