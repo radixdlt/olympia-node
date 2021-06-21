@@ -14,11 +14,14 @@
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
-package com.radixdlt.client.lib.api;
+package com.radixdlt.client.lib.api.async;
 
 import org.junit.Ignore;
 import org.junit.Test;
 
+import com.radixdlt.client.lib.api.AccountAddress;
+import com.radixdlt.client.lib.api.NavigationCursor;
+import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.crypto.ECKeyPair;
@@ -37,7 +40,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 //TODO: move to acceptance tests
-public class DefaultRadixApiHistoryPaginationTest {
+public class AsyncRadixApiHistoryPaginationTest {
 	private static final String BASE_URL = "http://localhost/";
 	public static final ECKeyPair KEY_PAIR1 = keyPairOf(1);
 	public static final ECKeyPair KEY_PAIR2 = keyPairOf(2);
@@ -59,7 +62,8 @@ public class DefaultRadixApiHistoryPaginationTest {
 						e.printStackTrace();
 					}
 				}
-			});
+			})
+			.join();
 	}
 
 	@Test
@@ -78,10 +82,11 @@ public class DefaultRadixApiHistoryPaginationTest {
 							.onSuccess(v -> v.getCursor().ifPresentOrElse(cursorHolder::set, () -> cursorHolder.set(null)))
 							.map(TransactionHistory::getTransactions)
 							.map(this::formatTxns)
-							.onSuccess(System.out::println);
+							.onSuccess(System.out::println)
+							.join();
 					} while (cursorHolder.get() != null && !cursorHolder.get().value().isEmpty());
 				}
-			);
+			).join();
 	}
 
 	private List<String> formatTxns(List<TransactionDTO> t) {
@@ -118,7 +123,9 @@ public class DefaultRadixApiHistoryPaginationTest {
 				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 					.onFailure(failure -> fail(failure.toString()))
 					.onSuccess(txDTO -> submittableTransaction.rawTxId()
-						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))));
+						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))
+					.join()))
+			.join();
 	}
 
 	private static ECKeyPair keyPairOf(int pk) {

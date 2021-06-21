@@ -14,20 +14,17 @@
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
-package com.radixdlt.client.lib.api;
+package com.radixdlt.client.lib.api.async;
 
 import org.junit.Test;
 
 import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.functional.Result;
 
 import java.io.IOException;
+import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
 import java.util.Optional;
-
-import okhttp3.Call;
-import okhttp3.OkHttpClient;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -36,10 +33,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static com.radixdlt.client.lib.api.RadixApi.DEFAULT_PRIMARY_PORT;
-import static com.radixdlt.client.lib.api.RadixApi.DEFAULT_SECONDARY_PORT;
-
-public class DefaultRadixApiValidatorTest {
+public class AsyncRadixApiValidatorTest {
 	private static final String BASE_URL = "http://localhost/";
 
 	private static final String LIST = "{\"result\":{\"cursor\":\"vb1q0tczj5k4n5nw7lf4"
@@ -59,7 +53,7 @@ public class DefaultRadixApiValidatorTest {
 		+ "kwjdmmax5yvc046t575xfve6lgarl2ja5hhlwprmcvlcg8k98kp\",\"isExternalStakeAccepted\":true},"
 		+ "\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
 
-	private final OkHttpClient client = mock(OkHttpClient.class);
+	private final HttpClient client = mock(HttpClient.class);
 
 	@Test
 	public void testList() throws IOException {
@@ -70,7 +64,8 @@ public class DefaultRadixApiValidatorTest {
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(validatorsResponse -> assertTrue(validatorsResponse.getCursor().isPresent()))
 				.onSuccess(validatorsResponse -> assertEquals(2, validatorsResponse.getValidators().size()))
-			);
+				.join())
+			.join();
 	}
 
 	@Test
@@ -81,24 +76,26 @@ public class DefaultRadixApiValidatorTest {
 		prepareClient(LOOKUP)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(
-				client -> client.validator().lookup(address)
-					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(validatorDTO -> assertTrue(validatorDTO.isExternalStakeAccepted()))
-					.onSuccess(validatorDTO -> assertEquals(stake, validatorDTO.getTotalDelegatedStake()))
-			);
+			.onSuccess(client -> client.validator().lookup(address)
+				.onFailure(failure -> fail(failure.toString()))
+				.onSuccess(validatorDTO -> assertTrue(validatorDTO.isExternalStakeAccepted()))
+				.onSuccess(validatorDTO -> assertEquals(stake, validatorDTO.getTotalDelegatedStake()))
+				.join())
+			.join();
 	}
 
-	private Result<RadixApi> prepareClient(String responseBody) throws IOException {
-		var call = mock(Call.class);
-		var response = mock(Response.class);
-		var body = mock(ResponseBody.class);
+	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {
+		@SuppressWarnings("unchecked")
+		var response = (HttpResponse<String>) mock(HttpResponse.class);
+		var completableFuture = new CompletableFuture<HttpResponse<String>>();
 
-		when(client.newCall(any())).thenReturn(call);
-		when(call.execute()).thenReturn(response);
-		when(response.body()).thenReturn(body);
-		when(body.string()).thenReturn(responseBody);
+		when(response.body()).thenReturn(responseBody);
+		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
 
-		return DefaultRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
+		try {
+			return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
+		} finally {
+			completableFuture.completeAsync(() -> response);
+		}
 	}
 }

@@ -14,7 +14,7 @@
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
-package com.radixdlt.client.lib.api;
+package com.radixdlt.client.lib.api.sync;
 
 import org.junit.Test;
 
@@ -33,16 +33,18 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static com.radixdlt.client.lib.api.RadixApi.DEFAULT_PRIMARY_PORT;
-import static com.radixdlt.client.lib.api.RadixApi.DEFAULT_SECONDARY_PORT;
+import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_PRIMARY_PORT;
+import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_SECONDARY_PORT;
 
-public class DefaultRadixApiMempoolTest {
+public class SyncRadixApiConsensusTest {
 	private static final String BASE_URL = "http://localhost/";
 
-	private static final String CONFIGURATION = "{\"result\":{\"throttleMs\":5,\"maxSize\":10000},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
-	private static final String DATA = "{\"result\":{\"maxcount\":0,\"relayerSentCount\":0,\"count\":0,"
-		+ "\"addSuccess\":1273473,\"proposedTransaction\":0,\"errors\":{\"other\":0,\"hook\":3,\"conflict\":0}},"
+	private static final String CONFIGURATION = "{\"result\":{\"pacemakerTimeout\":3000,\"bftSyncPatienceMs\":200},"
 		+ "\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String DATA = "{\"result\":{\"stateVersion\":37736,\"voteQuorums\":18881,\"rejected\":0,"
+		+ "\"vertexStoreRebuilds\":0,\"vertexStoreForks\":1,\"sync\":{\"requestTimeouts\":0,\"requestsSent\":0},"
+		+ "\"timeout\":1,\"vertexStoreSize\":3,\"processed\":37734,\"consensusEvents\":75526,\"indirectParent\":1,"
+		+ "\"proposalsMade\":18884,\"timedOutViews\":1,\"timeoutQuorums\":1},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
 
 	private final OkHttpClient client = mock(OkHttpClient.class);
 
@@ -51,10 +53,10 @@ public class DefaultRadixApiMempoolTest {
 		prepareClient(CONFIGURATION)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.mempool().configuration()
+			.onSuccess(client -> client.consensus().configuration()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(configuration -> assertEquals(10000L, configuration.getMaxSize()))
-				.onSuccess(configuration -> assertEquals(5L, configuration.getThrottleMs()))
+				.onSuccess(configuration -> assertEquals(200L, configuration.getBftSyncPatienceMs()))
+				.onSuccess(configuration -> assertEquals(3000L, configuration.getPacemakerTimeout()))
 			);
 	}
 
@@ -64,10 +66,10 @@ public class DefaultRadixApiMempoolTest {
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(
-				client -> client.mempool().data()
+				client -> client.consensus().data()
 					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(data -> assertEquals(1273473L, data.getAddSuccess()))
-					.onSuccess(data -> assertEquals(3L, data.getErrors().getHook()))
+					.onSuccess(data -> assertEquals(37734L, data.getProcessed()))
+					.onSuccess(data -> assertEquals(37736L, data.getStateVersion()))
 			);
 	}
 
@@ -81,6 +83,6 @@ public class DefaultRadixApiMempoolTest {
 		when(response.body()).thenReturn(body);
 		when(body.string()).thenReturn(responseBody);
 
-		return DefaultRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
+		return SyncRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
 	}
 }

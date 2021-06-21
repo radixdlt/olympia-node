@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.client.lib.api;
+package com.radixdlt.client.lib.api.sync;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,6 +23,9 @@ import org.apache.logging.log4j.Logger;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.radixdlt.client.lib.api.AccountAddress;
+import com.radixdlt.client.lib.api.NavigationCursor;
+import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.dto.ApiConfiguration;
 import com.radixdlt.client.lib.dto.ApiData;
 import com.radixdlt.client.lib.dto.BuiltTransaction;
@@ -118,7 +121,7 @@ import static com.radixdlt.utils.functional.Result.fromOptional;
 
 import static java.util.Optional.ofNullable;
 
-class DefaultRadixApi implements RadixApi {
+class SyncRadixApi implements RadixApi {
 	private static final Logger log = LogManager.getLogger();
 	private static final MediaType MEDIA_TYPE = MediaType.parse("application/json");
 	private static final ObjectMapper objectMapper;
@@ -361,7 +364,7 @@ class DefaultRadixApi implements RadixApi {
 		}
 	};
 
-	private DefaultRadixApi(String baseUrl, int primaryPort, int secondaryPort, OkHttpClient client) {
+	private SyncRadixApi(String baseUrl, int primaryPort, int secondaryPort, OkHttpClient client) {
 		this.baseUrl = sanitize(baseUrl);
 		this.primaryPort = primaryPort;
 		this.secondaryPort = secondaryPort;
@@ -380,7 +383,7 @@ class DefaultRadixApi implements RadixApi {
 
 	static Result<RadixApi> connect(String url, int primaryPort, int secondaryPort, OkHttpClient client) {
 		return ofNullable(url)
-			.map(baseUrl -> Result.ok((RadixApi) new DefaultRadixApi(baseUrl, primaryPort, secondaryPort, client)))
+			.map(baseUrl -> Result.ok((RadixApi) new SyncRadixApi(baseUrl, primaryPort, secondaryPort, client)))
 			.orElseGet(BASE_URL_IS_MANDATORY::result);
 	}
 
@@ -445,7 +448,7 @@ class DefaultRadixApi implements RadixApi {
 	}
 
 	@Override
-	public DefaultRadixApi withTrace() {
+	public SyncRadixApi withTrace() {
 		doTrace = true;
 		return this;
 	}

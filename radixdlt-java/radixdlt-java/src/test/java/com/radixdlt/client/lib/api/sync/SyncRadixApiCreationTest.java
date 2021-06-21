@@ -14,12 +14,14 @@
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
-package com.radixdlt.client.lib.api;
+package com.radixdlt.client.lib.api.sync;
 
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import com.radixdlt.client.lib.api.AccountAddress;
+import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.dto.FinalizedTransaction;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
@@ -47,10 +49,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static com.radixdlt.client.lib.api.RadixApi.DEFAULT_PRIMARY_PORT;
-import static com.radixdlt.client.lib.api.RadixApi.DEFAULT_SECONDARY_PORT;
+import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_PRIMARY_PORT;
+import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_SECONDARY_PORT;
 
-public class DefaultRadixApiCreationTest {
+public class SyncRadixApiCreationTest {
 	private static final String BASE_URL = "http://localhost/";
 	public static final ECKeyPair KEY_PAIR1 = keyPairOf(1);
 	public static final ECKeyPair KEY_PAIR2 = keyPairOf(2);
@@ -210,7 +212,7 @@ public class DefaultRadixApiCreationTest {
 		when(response.body()).thenReturn(body);
 		when(body.string()).thenReturn(responseBody);
 
-		return DefaultRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
+		return SyncRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
 	}
 
 	private static ECKeyPair keyPairOf(int pk) {

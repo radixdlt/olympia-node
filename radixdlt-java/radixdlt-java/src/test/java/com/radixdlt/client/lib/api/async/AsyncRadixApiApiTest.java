@@ -14,18 +14,14 @@
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
-package com.radixdlt.client.lib.api;
+package com.radixdlt.client.lib.api.async;
 
 import org.junit.Test;
 
-import com.radixdlt.utils.functional.Result;
-
 import java.io.IOException;
-
-import okhttp3.Call;
-import okhttp3.OkHttpClient;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
+import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -34,10 +30,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static com.radixdlt.client.lib.api.RadixApi.DEFAULT_PRIMARY_PORT;
-import static com.radixdlt.client.lib.api.RadixApi.DEFAULT_SECONDARY_PORT;
-
-public class DefaultRadixApiApiTest {
+public class AsyncRadixApiApiTest {
 	private static final String BASE_URL = "http://localhost/";
 
 	private static final String CONFIGURATION = "{\"result\":{\"endpoints\":"
@@ -52,7 +45,7 @@ public class DefaultRadixApiApiTest {
 		+ "{\"total\":8,\"read\":4,\"bytes\":{\"read\":740,\"write\":740},\"write\":4}}}},"
 		+ "\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
 
-	private final OkHttpClient client = mock(OkHttpClient.class);
+	private final HttpClient client = mock(HttpClient.class);
 
 	@Test
 	public void testConfiguration() throws IOException {
@@ -61,7 +54,9 @@ public class DefaultRadixApiApiTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.api().configuration()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(configurationDTO -> assertEquals(9, configurationDTO.getEndpoints().size())));
+				.onSuccess(configurationDTO -> assertEquals(9, configurationDTO.getEndpoints().size()))
+				.join())
+			.join();
 	}
 
 	@Test
@@ -77,19 +72,22 @@ public class DefaultRadixApiApiTest {
 					.onSuccess(data -> assertEquals(4522593, data.getElapsed().getApiDb().getFlush().getTime()))
 					.onSuccess(data -> assertEquals(8121, data.getElapsed().getApiDb().getBalance().getRead()))
 					.onSuccess(data -> assertEquals(29, data.getCount().getApiDb().getQueue().getSize()))
-			);
+					.join())
+			.join();
 	}
 
-	private Result<RadixApi> prepareClient(String responseBody) throws IOException {
-		var call = mock(Call.class);
-		var response = mock(Response.class);
-		var body = mock(ResponseBody.class);
+	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {
+		@SuppressWarnings("unchecked")
+		var response = (HttpResponse<String>) mock(HttpResponse.class);
+		var completableFuture = new CompletableFuture<HttpResponse<String>>();
 
-		when(client.newCall(any())).thenReturn(call);
-		when(call.execute()).thenReturn(response);
-		when(response.body()).thenReturn(body);
-		when(body.string()).thenReturn(responseBody);
+		when(response.body()).thenReturn(responseBody);
+		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
 
-		return DefaultRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
+		try {
+			return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
+		} finally {
+			completableFuture.completeAsync(() -> response);
+		}
 	}
 }

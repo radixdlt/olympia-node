@@ -15,13 +15,34 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.client.lib.api;
+package com.radixdlt.client.lib.api.sync;
 
+import com.radixdlt.client.lib.api.AccountAddress;
+import com.radixdlt.client.lib.api.NavigationCursor;
+import com.radixdlt.client.lib.api.TransactionRequest;
+import com.radixdlt.client.lib.dto.ApiConfiguration;
+import com.radixdlt.client.lib.dto.ApiData;
 import com.radixdlt.client.lib.dto.BuiltTransaction;
+import com.radixdlt.client.lib.dto.Checkpoint;
+import com.radixdlt.client.lib.dto.ConsensusConfiguration;
+import com.radixdlt.client.lib.dto.ConsensusData;
+import com.radixdlt.client.lib.dto.EpochData;
 import com.radixdlt.client.lib.dto.FinalizedTransaction;
+import com.radixdlt.client.lib.dto.LocalAccount;
+import com.radixdlt.client.lib.dto.LocalValidatorInfo;
+import com.radixdlt.client.lib.dto.MempoolConfiguration;
+import com.radixdlt.client.lib.dto.MempoolData;
+import com.radixdlt.client.lib.dto.NetworkConfiguration;
+import com.radixdlt.client.lib.dto.NetworkData;
 import com.radixdlt.client.lib.dto.NetworkId;
+import com.radixdlt.client.lib.dto.NetworkPeers;
 import com.radixdlt.client.lib.dto.NetworkStats;
+import com.radixdlt.client.lib.dto.Proof;
+import com.radixdlt.client.lib.dto.RadixEngineConfiguration;
+import com.radixdlt.client.lib.dto.RadixEngineData;
 import com.radixdlt.client.lib.dto.StakePositions;
+import com.radixdlt.client.lib.dto.SyncConfiguration;
+import com.radixdlt.client.lib.dto.SyncData;
 import com.radixdlt.client.lib.dto.TokenBalances;
 import com.radixdlt.client.lib.dto.TokenInfo;
 import com.radixdlt.client.lib.dto.TransactionDTO;
@@ -31,24 +52,6 @@ import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponse;
-import com.radixdlt.client.lib.dto.ApiConfiguration;
-import com.radixdlt.client.lib.dto.ApiData;
-import com.radixdlt.client.lib.dto.Checkpoint;
-import com.radixdlt.client.lib.dto.ConsensusConfiguration;
-import com.radixdlt.client.lib.dto.ConsensusData;
-import com.radixdlt.client.lib.dto.EpochData;
-import com.radixdlt.client.lib.dto.LocalAccount;
-import com.radixdlt.client.lib.dto.LocalValidatorInfo;
-import com.radixdlt.client.lib.dto.MempoolConfiguration;
-import com.radixdlt.client.lib.dto.MempoolData;
-import com.radixdlt.client.lib.dto.NetworkConfiguration;
-import com.radixdlt.client.lib.dto.NetworkData;
-import com.radixdlt.client.lib.dto.NetworkPeers;
-import com.radixdlt.client.lib.dto.Proof;
-import com.radixdlt.client.lib.dto.RadixEngineConfiguration;
-import com.radixdlt.client.lib.dto.RadixEngineData;
-import com.radixdlt.client.lib.dto.SyncConfiguration;
-import com.radixdlt.client.lib.dto.SyncData;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.functional.Result;
 
@@ -64,7 +67,7 @@ public interface RadixApi {
 	}
 
 	static Result<RadixApi> connect(String baseUrl, int primaryPort, int secondaryPort) {
-		return DefaultRadixApi.connect(baseUrl, primaryPort, secondaryPort);
+		return SyncRadixApi.connect(baseUrl, primaryPort, secondaryPort);
 	}
 
 	RadixApi withTrace();
