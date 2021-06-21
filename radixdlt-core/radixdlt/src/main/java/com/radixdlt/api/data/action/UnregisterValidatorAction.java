@@ -37,7 +37,6 @@ class UnregisterValidatorAction implements TransactionAction {
 
 	@Override
 	public REAddr getFrom() {
-		//FIXME: here can be other address?
 		return REAddr.ofPubKeyAccount(validatorKey);
 	}
 
