@@ -14,7 +14,7 @@
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
-package com.radixdlt.client.lib.api;
+package com.radixdlt.client.lib.api.sync;
 
 import org.junit.Test;
 
@@ -33,46 +33,44 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static com.radixdlt.client.lib.api.RadixApi.DEFAULT_PRIMARY_PORT;
-import static com.radixdlt.client.lib.api.RadixApi.DEFAULT_SECONDARY_PORT;
+import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_PRIMARY_PORT;
+import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_SECONDARY_PORT;
 
-public class DefaultRadixApiNetworkTest {
+public class SyncRadixApiRadixEngineTest {
 	private static final String BASE_URL = "http://localhost/";
 
-	private static final String NETWORK_ID = "{\"result\":{\"networkId\":2},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
-	private static final String DEMAND = "{\"result\":{\"tps\":5},\"id\":\"5\",\"jsonrpc\":\"2.0\"}";
-	private static final String THROUGHPUT = "{\"result\":{\"tps\":8},\"id\":\"6\",\"jsonrpc\":\"2.0\"}";
+	private static final String CONFIGURATION = "{\"result\":{\"forks\":[{\"name\":\"betanet1\",\"epoch\":0,"
+		+ "\"ceilingView\":1000},{\"name\":\"betanet2\",\"epoch\":4,\"ceilingView\":1000},{\"name\":\"betanet3\","
+		+ "\"epoch\":8,\"ceilingView\":1000},{\"name\":\"betanet4\",\"epoch\":10,\"ceilingView\":10000}],"
+		+ "\"maxValidators\":100,\"minValidators\":1,\"maxTxnsPerProposal\":50},"
+		+ "\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String DATA = "{\"result\":{\"invalidProposedCommands\":0,\"systemTransactions\":207536,"
+		+ "\"userTransactions\":0},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
 
 	private final OkHttpClient client = mock(OkHttpClient.class);
 
 	@Test
-	public void testNetworkId() throws IOException {
-		prepareClient(NETWORK_ID)
+	public void testConfiguration() throws IOException {
+		prepareClient(CONFIGURATION)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.network().id()
+			.onSuccess(client -> client.radixEngine().configuration()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(networkIdDTO -> assertEquals(2, networkIdDTO.getNetworkId())));
+				.onSuccess(configuration -> assertEquals(4, configuration.getForks().size()))
+				.onSuccess(configuration -> assertEquals("betanet4", configuration.getForks().get(3).getName()))
+			);
 	}
 
 	@Test
-	public void testDemand() throws IOException {
-		prepareClient(DEMAND)
+	public void testData() throws IOException {
+		prepareClient(DATA)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.network().demand()
-				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(networkStatsDTO -> assertEquals(5L, networkStatsDTO.getTps())));
-	}
-
-	@Test
-	public void testThroughput() throws IOException {
-		prepareClient(THROUGHPUT)
-			.map(RadixApi::withTrace)
-			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.network().throughput()
-				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(networkStatsDTO -> assertEquals(8L, networkStatsDTO.getTps())));
+			.onSuccess(
+				client -> client.radixEngine().data()
+					.onFailure(failure -> fail(failure.toString()))
+					.onSuccess(data -> assertEquals(207536L, data.getSystemTransactions()))
+			);
 	}
 
 	private Result<RadixApi> prepareClient(String responseBody) throws IOException {
@@ -85,6 +83,6 @@ public class DefaultRadixApiNetworkTest {
 		when(response.body()).thenReturn(body);
 		when(body.string()).thenReturn(responseBody);
 
-		return DefaultRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
+		return SyncRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
 	}
 }

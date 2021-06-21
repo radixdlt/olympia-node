@@ -219,15 +219,28 @@ public interface Result<T> {
 	/**
 	 * Wrap call to function which may throw an exception.
 	 *
+	 * @param failure the failure to represent the error which may happen during call
 	 * @param supplier the function to call.
 	 *
 	 * @return success instance if call was successful and failure instance if function threw an exception.
 	 */
 	static <T> Result<T> wrap(Failure failure, ThrowingSupplier<T> supplier) {
+		return wrap(failure::with, supplier);
+	}
+
+	/**
+	 * Wrap call to function which may throw an exception.
+	 *
+	 * @param errorMapper the mapper which translates the exception into failure
+	 * @param supplier the function to call.
+	 *
+	 * @return success instance if call was successful and failure instance if function threw an exception.
+	 */
+	static <T> Result<T> wrap(Function<Throwable, Failure> errorMapper, ThrowingSupplier<T> supplier) {
 		try {
 			return ok(supplier.get());
 		} catch (Throwable e) {
-			return failure.with(e).result();
+			return errorMapper.apply(e).result();
 		}
 	}
 

@@ -14,11 +14,15 @@
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
-package com.radixdlt.client.lib.api;
+package com.radixdlt.client.lib.api.async;
 
 import org.junit.Ignore;
 import org.junit.Test;
 
+import com.radixdlt.client.lib.api.AccountAddress;
+import com.radixdlt.client.lib.api.NavigationCursor;
+import com.radixdlt.client.lib.api.TransactionRequest;
+import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.crypto.ECKeyPair;
@@ -36,10 +40,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
-import static com.radixdlt.client.lib.api.RadixApi.connect;
+import static com.radixdlt.client.lib.api.async.RadixApi.connect;
 
 //TODO: move to acceptance tests and repurpose to integration testing of the API's.
-public class DefaultRadixApiTest {
+public class AsyncRadixApiTest {
 	private static final String BASE_URL = "http://localhost/";
 	public static final ECKeyPair KEY_PAIR1 = keyPairOf(1);
 	public static final ECKeyPair KEY_PAIR2 = keyPairOf(2);
@@ -71,8 +75,11 @@ public class DefaultRadixApiTest {
 					.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 						.onFailure(failure -> fail(failure.toString()))
 						.onSuccess(txDTO -> submittableTransaction.rawTxId()
-							.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))))
-			);
+							.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))
+						.join())
+					.join())
+				.join())
+			.join();
 	}
 
 	@Test
@@ -90,10 +97,11 @@ public class DefaultRadixApiTest {
 							.onSuccess(v -> v.getCursor().ifPresentOrElse(cursorHolder::set, () -> cursorHolder.set(null)))
 							.map(TransactionHistory::getTransactions)
 							.map(this::formatTxns)
-							.onSuccess(System.out::println);
+							.onSuccess(System.out::println)
+							.join();
 					} while (cursorHolder.get() != null && !cursorHolder.get().value().isEmpty());
 				}
-			);
+			).join();
 	}
 
 	@Test
@@ -111,7 +119,7 @@ public class DefaultRadixApiTest {
 						e.printStackTrace();
 					}
 				}
-			});
+			}).join();
 	}
 
 	@Test
@@ -122,7 +130,8 @@ public class DefaultRadixApiTest {
 			.onSuccess(client -> client.account().stakes(ACCOUNT_ADDRESS1)
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(stakePositionsDTOS -> System.out.println("Stake positions: " + stakePositionsDTOS.toString()))
-			);
+				.join())
+			.join();
 	}
 
 	@Test
@@ -133,7 +142,8 @@ public class DefaultRadixApiTest {
 			.onSuccess(client -> client.account().unstakes(ACCOUNT_ADDRESS1)
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(unstakePositionsDTOS -> System.out.println("UnStake positions: " + unstakePositionsDTOS.toString()))
-			);
+				.join())
+			.join();
 	}
 
 	@Test
@@ -141,7 +151,8 @@ public class DefaultRadixApiTest {
 	public void makeStake() {
 		connect(BASE_URL)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> makeStake(client, UInt256.NINE));
+			.onSuccess(client -> makeStake(client, UInt256.NINE))
+			.join();
 	}
 
 	@Test
@@ -149,7 +160,8 @@ public class DefaultRadixApiTest {
 	public void makeUnStake() {
 		connect(BASE_URL)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> makeUnStake(client, UInt256.NINE));
+			.onSuccess(client -> makeUnStake(client, UInt256.NINE))
+			.join();
 	}
 
 	@Test
@@ -157,7 +169,8 @@ public class DefaultRadixApiTest {
 	public void transferUnStake() {
 		connect(BASE_URL)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> transferUnStake(client, UInt256.NINE));
+			.onSuccess(client -> transferUnStake(client, UInt256.NINE))
+			.join();
 	}
 
 	private void transferUnStake(RadixApi client, UInt256 amount) {
@@ -179,7 +192,10 @@ public class DefaultRadixApiTest {
 				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 					.onFailure(failure -> fail(failure.toString()))
 					.onSuccess(txDTO -> submittableTransaction.rawTxId()
-						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))));
+						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))
+					.join())
+				.join())
+			.join();
 	}
 
 	private List<String> formatTxns(List<TransactionDTO> t) {
@@ -208,7 +224,10 @@ public class DefaultRadixApiTest {
 				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 					.onFailure(failure -> fail(failure.toString()))
 					.onSuccess(txDTO -> submittableTransaction.rawTxId()
-						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))));
+						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))
+					.join())
+				.join())
+			.join();
 	}
 
 	private void makeUnStake(RadixApi client, UInt256 amount) {
@@ -224,7 +243,10 @@ public class DefaultRadixApiTest {
 				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 					.onFailure(failure -> fail(failure.toString()))
 					.onSuccess(txDTO -> submittableTransaction.rawTxId()
-						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))));
+						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))
+					.join())
+				.join())
+			.join();
 	}
 
 	private void addTransaction(RadixApi client, UInt256 amount) {
@@ -248,7 +270,10 @@ public class DefaultRadixApiTest {
 				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 					.onFailure(failure -> fail(failure.toString()))
 					.onSuccess(txDTO -> submittableTransaction.rawTxId()
-						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))));
+						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))
+					.join())
+				.join())
+			.join();
 	}
 
 	private static ECKeyPair keyPairOf(int pk) {

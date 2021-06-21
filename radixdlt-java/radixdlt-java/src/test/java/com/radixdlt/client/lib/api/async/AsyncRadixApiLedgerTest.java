@@ -14,18 +14,14 @@
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
-package com.radixdlt.client.lib.api;
+package com.radixdlt.client.lib.api.async;
 
 import org.junit.Test;
 
-import com.radixdlt.utils.functional.Result;
-
 import java.io.IOException;
-
-import okhttp3.Call;
-import okhttp3.OkHttpClient;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
+import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -33,10 +29,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static com.radixdlt.client.lib.api.RadixApi.DEFAULT_PRIMARY_PORT;
-import static com.radixdlt.client.lib.api.RadixApi.DEFAULT_SECONDARY_PORT;
-
-public class DefaultRadixApiLedgerTest {
+public class AsyncRadixApiLedgerTest {
 	private static final String BASE_URL = "http://localhost/";
 
 	private static final String LATEST = "{\"result\":{\"opaque\":\"885a33bf8c2f4aef73580b0cd7da796a44dbf6036d37fcaab7b525ba27fff843\","
@@ -131,7 +124,7 @@ public class DefaultRadixApiLedgerTest {
 		+ "{\"stake\":\"1000000000000000000000000\",\"address\":\"vb1q0tczj5k4n5nw7lf4prxrawja84pjtxwh68gl65hd9"
 		+ "almsg77r87zmhdqpf\"}],\"version\":0,\"timestamp\":1577836800000}}},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
 
-	private final OkHttpClient client = mock(OkHttpClient.class);
+	private final HttpClient client = mock(HttpClient.class);
 
 	@Test
 	public void testLatest() throws IOException {
@@ -144,7 +137,8 @@ public class DefaultRadixApiLedgerTest {
 				.onSuccess(proof -> assertEquals(99L, proof.getHeader().getEpoch()))
 				.onSuccess(proof -> assertEquals(903468L, proof.getHeader().getVersion()))
 				.onSuccess(proof -> assertEquals(4469L, proof.getHeader().getView()))
-			);
+				.join())
+			.join();
 	}
 
 	@Test
@@ -159,7 +153,8 @@ public class DefaultRadixApiLedgerTest {
 				.onSuccess(proof -> assertEquals(5999L, proof.getHeader().getVersion()))
 				.onSuccess(proof -> assertEquals(1000L, proof.getHeader().getView()))
 				.onSuccess(proof -> assertEquals(2, proof.getHeader().getNextValidators().size()))
-			);
+				.join())
+			.join();
 	}
 
 	@Test
@@ -171,19 +166,22 @@ public class DefaultRadixApiLedgerTest {
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(checkpoint -> assertEquals(1, checkpoint.getTxn().size()))
 				.onSuccess(checkpoint -> assertEquals(2, checkpoint.getProof().getHeader().getNextValidators().size()))
-			);
+				.join())
+			.join();
 	}
 
-	private Result<RadixApi> prepareClient(String responseBody) throws IOException {
-		var call = mock(Call.class);
-		var response = mock(Response.class);
-		var body = mock(ResponseBody.class);
+	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {
+		@SuppressWarnings("unchecked")
+		var response = (HttpResponse<String>) mock(HttpResponse.class);
+		var completableFuture = new CompletableFuture<HttpResponse<String>>();
 
-		when(client.newCall(any())).thenReturn(call);
-		when(call.execute()).thenReturn(response);
-		when(response.body()).thenReturn(body);
-		when(body.string()).thenReturn(responseBody);
+		when(response.body()).thenReturn(responseBody);
+		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
 
-		return DefaultRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
+		try {
+			return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
+		} finally {
+			completableFuture.completeAsync(() -> response);
+		}
 	}
 }

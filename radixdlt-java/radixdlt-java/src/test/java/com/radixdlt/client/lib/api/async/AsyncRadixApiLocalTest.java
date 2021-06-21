@@ -14,18 +14,16 @@
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
-package com.radixdlt.client.lib.api;
+package com.radixdlt.client.lib.api.async;
 
 import org.junit.Test;
 
-import com.radixdlt.utils.functional.Result;
+import com.radixdlt.client.lib.api.AccountAddress;
 
 import java.io.IOException;
-
-import okhttp3.Call;
-import okhttp3.OkHttpClient;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
+import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -34,11 +32,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static com.radixdlt.client.lib.api.RadixApi.DEFAULT_PRIMARY_PORT;
-import static com.radixdlt.client.lib.api.RadixApi.DEFAULT_SECONDARY_PORT;
-
 //TODO: remaining tests
-public class DefaultRadixApiLocalTest {
+public class AsyncRadixApiLocalTest {
 	private static final String BASE_URL = "http://localhost/";
 
 	private static final String ACCOUNT_INFO = "{\"result\":{\"address\":\"brx1qsptmhztqfajpa4qhden6dcseym3gu0pnjxsfmzw"
@@ -61,7 +56,7 @@ public class DefaultRadixApiLocalTest {
 	private static final String SINGLE_STEP = "";
 	private static final String CURRENT_EPOCH = "";
 
-	private final OkHttpClient client = mock(OkHttpClient.class);
+	private final HttpClient client = mock(HttpClient.class);
 
 	@Test
 	public void testAccountInfo() throws IOException {
@@ -74,7 +69,8 @@ public class DefaultRadixApiLocalTest {
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(localAccount -> assertEquals(accountAddress, localAccount.getAddress()))
 				.onSuccess(localAccount -> assertEquals(4, localAccount.getBalance().getTokens().size()))
-			);
+				.join())
+			.join();
 	}
 
 	@Test
@@ -86,7 +82,8 @@ public class DefaultRadixApiLocalTest {
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(localValidatorInfo -> assertEquals(1, localValidatorInfo.getStakes().size()))
 				.onSuccess(localValidatorInfo -> assertTrue(localValidatorInfo.isRegistered()))
-			);
+				.join())
+			.join();
 	}
 
 	@Test
@@ -97,19 +94,22 @@ public class DefaultRadixApiLocalTest {
 			.onSuccess(client -> client.local().nextEpoch()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(epochData -> assertEquals(2, epochData.getValidators().size()))
-			);
+				.join())
+			.join();
 	}
 
-	private Result<RadixApi> prepareClient(String responseBody) throws IOException {
-		var call = mock(Call.class);
-		var response = mock(Response.class);
-		var body = mock(ResponseBody.class);
+	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {
+		@SuppressWarnings("unchecked")
+		var response = (HttpResponse<String>) mock(HttpResponse.class);
+		var completableFuture = new CompletableFuture<HttpResponse<String>>();
 
-		when(client.newCall(any())).thenReturn(call);
-		when(call.execute()).thenReturn(response);
-		when(response.body()).thenReturn(body);
-		when(body.string()).thenReturn(responseBody);
+		when(response.body()).thenReturn(responseBody);
+		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
 
-		return DefaultRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
+		try {
+			return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
+		} finally {
+			completableFuture.completeAsync(() -> response);
+		}
 	}
 }

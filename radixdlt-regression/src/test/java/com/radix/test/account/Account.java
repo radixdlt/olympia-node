@@ -2,7 +2,7 @@ package com.radix.test.account;
 
 import com.radix.test.Utils;
 import com.radixdlt.client.lib.api.AccountAddress;
-import com.radixdlt.client.lib.api.RadixApi;
+import com.radixdlt.client.lib.api.sync.RadixApi;
 import com.radixdlt.client.lib.dto.Balance;
 import com.radixdlt.client.lib.dto.TokenInfo;
 import com.radixdlt.client.lib.dto.TokenBalances;

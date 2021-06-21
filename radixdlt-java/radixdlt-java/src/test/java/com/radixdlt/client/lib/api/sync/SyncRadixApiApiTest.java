@@ -14,7 +14,7 @@
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
-package com.radixdlt.client.lib.api;
+package com.radixdlt.client.lib.api.sync;
 
 import org.junit.Test;
 
@@ -28,23 +28,29 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static com.radixdlt.client.lib.api.RadixApi.DEFAULT_PRIMARY_PORT;
-import static com.radixdlt.client.lib.api.RadixApi.DEFAULT_SECONDARY_PORT;
+import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_PRIMARY_PORT;
+import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_SECONDARY_PORT;
 
-public class DefaultRadixApiConsensusTest {
+public class SyncRadixApiApiTest {
 	private static final String BASE_URL = "http://localhost/";
 
-	private static final String CONFIGURATION = "{\"result\":{\"pacemakerTimeout\":3000,\"bftSyncPatienceMs\":200},"
+	private static final String CONFIGURATION = "{\"result\":{\"endpoints\":"
+		+ "[\"/system\",\"/account\",\"/universe\",\"/faucet\",\"/chaos\","
+		+ "\"/health\",\"/version\",\"/archive\",\"/construction\"]},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String DATA = "{\"result\":{\"elapsed\":{\"apidb\":{\"balance\":"
+		+ "{\"read\":8121,\"write\":31650},\"flush\":{\"time\":4522593},\"transaction\":"
+		+ "{\"read\":0,\"write\":1340},\"token\":{\"read\":365,\"write\":1011}}},\"count\":"
+		+ "{\"apidb\":{\"flush\":{\"count\":13422},\"balance\":{\"total\":696,\"read\":349,\"bytes\":"
+		+ "{\"read\":53876,\"write\":59412},\"write\":347},\"queue\":{\"size\":29},\"transaction\":"
+		+ "{\"total\":9,\"read\":0,\"bytes\":{\"read\":0,\"write\":35483},\"write\":9},\"token\":"
+		+ "{\"total\":8,\"read\":4,\"bytes\":{\"read\":740,\"write\":740},\"write\":4}}}},"
 		+ "\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
-	private static final String DATA = "{\"result\":{\"stateVersion\":37736,\"voteQuorums\":18881,\"rejected\":0,"
-		+ "\"vertexStoreRebuilds\":0,\"vertexStoreForks\":1,\"sync\":{\"requestTimeouts\":0,\"requestsSent\":0},"
-		+ "\"timeout\":1,\"vertexStoreSize\":3,\"processed\":37734,\"consensusEvents\":75526,\"indirectParent\":1,"
-		+ "\"proposalsMade\":18884,\"timedOutViews\":1,\"timeoutQuorums\":1},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
 
 	private final OkHttpClient client = mock(OkHttpClient.class);
 
@@ -53,11 +59,9 @@ public class DefaultRadixApiConsensusTest {
 		prepareClient(CONFIGURATION)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.consensus().configuration()
+			.onSuccess(client -> client.api().configuration()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(configuration -> assertEquals(200L, configuration.getBftSyncPatienceMs()))
-				.onSuccess(configuration -> assertEquals(3000L, configuration.getPacemakerTimeout()))
-			);
+				.onSuccess(configurationDTO -> assertEquals(9, configurationDTO.getEndpoints().size())));
 	}
 
 	@Test
@@ -66,10 +70,13 @@ public class DefaultRadixApiConsensusTest {
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(
-				client -> client.consensus().data()
+				client -> client.api().data()
 					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(data -> assertEquals(37734L, data.getProcessed()))
-					.onSuccess(data -> assertEquals(37736L, data.getStateVersion()))
+					.onSuccess(data -> assertNotNull(data.getCount()))
+					.onSuccess(data -> assertNotNull(data.getElapsed()))
+					.onSuccess(data -> assertEquals(4522593, data.getElapsed().getApiDb().getFlush().getTime()))
+					.onSuccess(data -> assertEquals(8121, data.getElapsed().getApiDb().getBalance().getRead()))
+					.onSuccess(data -> assertEquals(29, data.getCount().getApiDb().getQueue().getSize()))
 			);
 	}
 
@@ -83,6 +90,6 @@ public class DefaultRadixApiConsensusTest {
 		when(response.body()).thenReturn(body);
 		when(body.string()).thenReturn(responseBody);
 
-		return DefaultRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
+		return SyncRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
 	}
 }
