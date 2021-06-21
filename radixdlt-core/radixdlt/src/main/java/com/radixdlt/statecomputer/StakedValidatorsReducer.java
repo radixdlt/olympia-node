@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
+import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
@@ -59,7 +60,8 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 		return ImmutableSet.of(
 			ValidatorParticle.class,
 			ValidatorStakeData.class,
-			PreparedStake.class
+			PreparedStake.class,
+			PreparedValidatorUpdate.class
 		);
 	}
 
@@ -80,9 +82,17 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 			} else if (p instanceof PreparedStake) { // TODO: Remove for mainnet
 				var s = (PreparedStake) p;
 				return prev.add(s.getDelegateKey(), s.getAmount());
+			} else if (p instanceof PreparedValidatorUpdate) {
+				var s = (PreparedValidatorUpdate) p;
+				return prev.setOwner(s.getValidatorKey(), s.getOwnerAddress());
 			} else {
 				var s = (ValidatorStakeData) p;
-				return prev.setStake(s.getValidatorKey(), s.getAmount());
+				if (s.getOwnerAddr().isPresent()) {
+					return prev.setOwner(s.getValidatorKey(), s.getOwnerAddr().get())
+						.setStake(s.getValidatorKey(), s.getAmount());
+				} else {
+					return prev.setStake(s.getValidatorKey(), s.getAmount());
+				}
 			}
 		};
 	}

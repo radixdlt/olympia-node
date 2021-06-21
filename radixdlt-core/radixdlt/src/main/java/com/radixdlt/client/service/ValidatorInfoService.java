@@ -22,7 +22,6 @@ import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.client.api.ValidatorInfoDetails;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.StakedValidators;
 import com.radixdlt.statecomputer.ValidatorDetails;
@@ -77,7 +76,7 @@ public class ValidatorInfoService {
 	private ValidatorInfoDetails fillDetails(ECPublicKey validatorKey, ValidatorDetails details) {
 		return ValidatorInfoDetails.create(
 			validatorKey,
-			REAddr.ofPubKeyAccount(validatorKey),
+			details.getOwner(),
 			details.getName(),
 			details.getUrl(),
 			details.getStake(),
