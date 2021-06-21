@@ -70,7 +70,7 @@ public final class TokensInAccount implements ResourceInBucket {
 
 	@Override
 	public Bucket bucket() {
-		return new AccountBucket(resourceAddr, holdingAddress, epochUnlocked);
+		return new AccountBucket(resourceAddr, holdingAddress);
 	}
 
 	public DeprecatedResourceInBucket deprecatedResourceInBucket() {
