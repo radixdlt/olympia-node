@@ -77,7 +77,7 @@ public class AWSSecrets {
 
 			var networkName = getOption(cmd, 'k').orElse(DEFAULT_NETWORK_NAME);
 			var namePrefix = getOption(cmd, 'p').orElse(DEFAULT_PREFIX);
-			var defaultKeyPassword = getOption(cmd, 's').orElse("SUEPRSECRET");
+			var defaultKeyPassword = getOption(cmd, 's').orElse("");
 			boolean enableAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("as"));
 			boolean recreateAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("rs"));
 
@@ -132,7 +132,7 @@ public class AWSSecrets {
 	}
 
 	private static String generatePassword(String password) {
-		if (password == null || password.isEmpty() || password.equals("null")) {
+		if (password == null || password.isEmpty()) {
 			//anphanumeric and special charactrers
 			int asciiOrigin = 48;	//0
 			int asciiBound = 122;	//z
