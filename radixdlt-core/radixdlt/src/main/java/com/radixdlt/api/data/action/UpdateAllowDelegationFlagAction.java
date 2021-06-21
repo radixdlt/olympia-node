@@ -18,31 +18,29 @@
 package com.radixdlt.api.data.action;
 
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.UInt256;
 
 import java.util.stream.Stream;
 
-class MintAction implements TransactionAction {
-	private final REAddr to;
-	private final UInt256 amount;
-	private final REAddr rri;
+class UpdateAllowDelegationFlagAction implements TransactionAction {
+	private final ECPublicKey validatorKey;
+	private final boolean allowDelegation;
 
-	MintAction(REAddr to, UInt256 amount, REAddr rri) {
-		this.to = to;
-		this.amount = amount;
-		this.rri = rri;
+	UpdateAllowDelegationFlagAction(ECPublicKey validatorKey, boolean allowDelegation) {
+		this.validatorKey = validatorKey;
+		this.allowDelegation = allowDelegation;
 	}
 
 	@Override
 	public REAddr getFrom() {
 		//FIXME: here can be other address?
-		return null;
+		return REAddr.ofPubKeyAccount(validatorKey);
 	}
 
 	@Override
 	public Stream<TxAction> toAction() {
-		return Stream.of(new MintToken(TransactionAction.rriValue(rri), to, amount));
+		return Stream.of(new UpdateAllowDelegationFlag(validatorKey, allowDelegation));
 	}
 }

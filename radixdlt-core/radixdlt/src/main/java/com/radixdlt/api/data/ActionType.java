@@ -37,6 +37,9 @@ public enum ActionType {
 	REGISTER_VALIDATOR("RegisterValidator"),
 	UNREGISTER_VALIDATOR("UnregisterValidator"),
 	UPDATE_VALIDATOR("UpdateValidator"),
+	UPDATE_RAKE("UpdateRake"),
+	UPDATE_OWNER("UpdateValidatorOwnerAddress"),
+	UPDATE_DELEGATION("UpdateAllowDelegationFlag"),
 	CREATE_FIXED("CreateFixedSupplyToken"),
 	CREATE_MUTABLE("CreateMutableSupplyToken"),
 	UNKNOWN("Other");

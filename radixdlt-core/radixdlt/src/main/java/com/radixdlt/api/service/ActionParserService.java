@@ -33,11 +33,14 @@ import com.radixdlt.utils.functional.Result;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static com.radixdlt.api.data.ApiErrors.INVALID_ACTION_DATA;
 import static com.radixdlt.api.data.ApiErrors.MISSING_FIELD;
 import static com.radixdlt.api.data.ApiErrors.UNSUPPORTED_ACTION;
+import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DECODE;
 import static com.radixdlt.utils.functional.Result.allOf;
+import static com.radixdlt.utils.functional.Result.wrap;
 
 import static java.util.Optional.ofNullable;
 
@@ -135,6 +138,24 @@ public final class ActionParserService {
 					optionalUrl(element)
 				).map(TransactionAction::update);
 
+			case UPDATE_RAKE:
+				return allOf(
+					validator(element),
+					percentage(element)
+				).map(TransactionAction::updateRake);
+
+			case UPDATE_DELEGATION:
+				return allOf(
+					validator(element),
+					allowDelegation(element)
+				).map(TransactionAction::updateAllowDelegation);
+
+			case UPDATE_OWNER:
+				return allOf(
+					validator(element),
+					owner(element)
+				).map(TransactionAction::updateOwnerAddress);
+
 			case CREATE_FIXED:
 				return allOf(
 					from(element),
@@ -170,8 +191,29 @@ public final class ActionParserService {
 			.flatMap(rriParser::parse);
 	}
 
+	private Result<Integer> percentage(JSONObject element) {
+		return param(element, "percentage")
+			.flatMap(parameter -> wrap(UNABLE_TO_DECODE, () -> Integer.parseInt(parameter)));
+	}
+
+	private Result<Boolean> allowDelegation(JSONObject element) {
+		return param(element, "allowDelegation")
+			.flatMap(parameter ->
+						 Stream.of("true", "false")
+							 .filter(parameter::equals)
+							 .findAny()
+							 .map(Boolean::parseBoolean)
+							 .map(Result::ok)
+							 .orElseGet(() -> UNABLE_TO_DECODE.with(parameter).result())
+			);
+	}
+
 	private static Result<REAddr> from(JSONObject element) {
 		return address(element, "from");
+	}
+
+	private static Result<REAddr> owner(JSONObject element) {
+		return address(element, "owner");
 	}
 
 	private static Result<REAddr> to(JSONObject element) {

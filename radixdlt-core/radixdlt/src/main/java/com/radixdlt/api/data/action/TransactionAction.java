@@ -48,16 +48,28 @@ public interface TransactionAction {
 		return new MintAction(to, amount, rri);
 	}
 
-	static TransactionAction register(ECPublicKey delegate, Optional<String> name, Optional<String> url) {
-		return new RegisterValidatorAction(delegate, name.orElse(null), url.orElse(null));
+	static TransactionAction register(ECPublicKey validatorKey, Optional<String> name, Optional<String> url) {
+		return new RegisterValidatorAction(validatorKey, name.orElse(null), url.orElse(null));
 	}
 
-	static TransactionAction unregister(ECPublicKey delegate, Optional<String> name, Optional<String> url) {
-		return new UnregisterValidatorAction(delegate, name.orElse(null), url.orElse(null));
+	static TransactionAction unregister(ECPublicKey validatorKey, Optional<String> name, Optional<String> url) {
+		return new UnregisterValidatorAction(validatorKey, name.orElse(null), url.orElse(null));
 	}
 
-	static TransactionAction update(ECPublicKey delegate, Optional<String> name, Optional<String> url) {
-		return new UpdateValidatorAction(delegate, name.orElse(null), url.orElse(null));
+	static TransactionAction update(ECPublicKey validatorKey, Optional<String> name, Optional<String> url) {
+		return new UpdateValidatorAction(validatorKey, name.orElse(null), url.orElse(null));
+	}
+
+	static TransactionAction updateRake(ECPublicKey validatorKey, int percentage) {
+		return new UpdateRakeAction(validatorKey, percentage);
+	}
+
+	static TransactionAction updateOwnerAddress(ECPublicKey validatorKey, REAddr ownerAddress) {
+		return new UpdateValidatorOwnerAddressAction(validatorKey, ownerAddress);
+	}
+
+	static TransactionAction updateAllowDelegation(ECPublicKey validatorKey, boolean allowDelegation) {
+		return new UpdateAllowDelegationFlagAction(validatorKey, allowDelegation);
 	}
 
 	static TransactionAction createFixed(
