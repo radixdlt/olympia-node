@@ -170,7 +170,7 @@ public class DefaultRadixApiCreationTest {
 			.onSuccess(client -> client.transaction().build(request)
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(builtTransactionDTO -> assertEquals(UInt256.from(100000000000000000L), builtTransactionDTO.getFee()))
-				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
+				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR3))
 				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
 					.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
 					.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
