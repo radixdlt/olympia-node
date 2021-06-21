@@ -212,7 +212,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			.flatMap(tuple -> tuple.map(
 				(symbol, address) -> getTokenDefinition(address)
 					.map(TokenDefinitionRecord::getSymbol)
-					.filter(t -> !t.equals(symbol), SYMBOL_DOES_NOT_MATCH)
+					.filter(symbol::equals, SYMBOL_DOES_NOT_MATCH)
 					.map(__ -> address)
 			));
 	}
