@@ -61,7 +61,7 @@ public final class ForksPredicatesTest {
 
 	@Test
 	public void test_stake_voting() {
-		final var forkHash = HashCode.fromBytes(new byte[] { 0x01 });
+		final var forkHash = HashCode.fromBytes(new byte[] {0x01});
 		final RadixEngine<LedgerAndBFTProof> radixEngine = rmock(RadixEngine.class);
 		final var node1 = BFTNode.random();
 		final var node2 = BFTNode.random();
