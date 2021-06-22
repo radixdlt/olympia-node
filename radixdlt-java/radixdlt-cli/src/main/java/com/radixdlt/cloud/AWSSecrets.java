@@ -108,7 +108,7 @@ public class AWSSecrets {
 			System.out.println("list of nodes: " + nodes);
 
 			generateAndStoreKey(networkName, namePrefix, defaultKeyPassword, awsSecretsOutputOptions, nodes);
-			if (namePrefix.equals(CORE_NODE_PREFIX)){
+			if (namePrefix.equals(CORE_NODE_PREFIX)) {
 				System.out.println("Core node. Generate staking keys");
 				generateAndStoreStakingKey(networkName, defaultKeyPassword, awsSecretsOutputOptions, nodes);
 			}
@@ -124,7 +124,7 @@ public class AWSSecrets {
 		String defaultKeyPassword,
 		AWSSecretsOutputOptions awsSecretsOutputOptions,
 		List<String> nodes
-	){
+	) {
 		generateAndStoreKey(networkName, namePrefix, defaultKeyPassword, awsSecretsOutputOptions, nodes, Boolean.FALSE);
 	}
 	private static void generateAndStoreStakingKey(
@@ -132,7 +132,7 @@ public class AWSSecrets {
 		String defaultKeyPassword,
 		AWSSecretsOutputOptions awsSecretsOutputOptions,
 		List<String> nodes
-	){
+	) {
 		generateAndStoreKey(networkName, CORE_NODE_PREFIX, defaultKeyPassword, awsSecretsOutputOptions, nodes, Boolean.TRUE);
 	}
 
