@@ -1,8 +1,8 @@
-# API Redesign Proposal
+# New API
 
 This document describes reorganization and proposed changes to the whole node API.
 
-## Current state of APIs as of May 10, 2021
+## Old APIs as of May 10, 2021
 <details>
   <summary>Click to see detailed information about endpoints and configuration</summary>
 
