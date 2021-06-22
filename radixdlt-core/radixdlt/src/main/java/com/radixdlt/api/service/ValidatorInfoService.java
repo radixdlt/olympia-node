@@ -24,8 +24,6 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.StakedValidators;
-import com.radixdlt.statecomputer.ValidatorDetails;
-import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.FunctionalUtils;
 import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Result.Mapper2;
@@ -50,8 +48,7 @@ public class ValidatorInfoService {
 		int size, Optional<ECPublicKey> cursor
 	) {
 		var validators = radixEngine.getComputedState(StakedValidators.class);
-
-		var result = validators.map(this::fillDetails);
+		var result = validators.map(ValidatorInfoDetails::create);
 		result.sort(Comparator.comparing(ValidatorInfoDetails::getTotalStake).reversed());
 
 		var paged = cursor
@@ -66,8 +63,9 @@ public class ValidatorInfoService {
 
 	public List<ValidatorInfoDetails> getAllValidators() {
 		var validators = radixEngine.getComputedState(StakedValidators.class);
-		var result = validators.map(this::fillDetails);
+		var result = validators.map(ValidatorInfoDetails::create);
 		result.sort(Comparator.comparing(ValidatorInfoDetails::getTotalStake).reversed());
+
 		return result;
 	}
 
@@ -80,19 +78,8 @@ public class ValidatorInfoService {
 
 		return Result.fromOptional(
 			UNKNOWN_VALIDATOR.with(ValidatorAddress.of(validatorPublicKey)),
-			validators.mapSingle(validatorPublicKey, details -> fillDetails(validatorPublicKey, details))
+			validators.mapSingle(validatorPublicKey, ValidatorInfoDetails::create)
 		);
 	}
 
-	private ValidatorInfoDetails fillDetails(ECPublicKey validatorKey, ValidatorDetails details) {
-		return ValidatorInfoDetails.create(
-			validatorKey,
-			details.getOwner(),
-			details.getName(),
-			details.getUrl(),
-			details.getStake(),
-			UInt256.ZERO,
-			true
-		);
-	}
 }

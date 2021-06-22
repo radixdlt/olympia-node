@@ -28,17 +28,27 @@ public final class ValidatorDetails {
 	private final String name;
 	private final String url;
 	private final UInt256 stake;
+	private final UInt256 ownerStake;
+	private final boolean allowDelegation;
 
-	private ValidatorDetails(ECPublicKey key, REAddr owner, String name, String url, UInt256 stake) {
+	private ValidatorDetails(
+		ECPublicKey key, REAddr owner, String name, String url, UInt256 stake, UInt256 ownerStake, boolean allowDelegation
+	) {
 		this.key = key;
 		this.name = name;
 		this.owner = owner;
 		this.url = url;
 		this.stake = stake;
+		this.ownerStake = ownerStake;
+		this.allowDelegation = allowDelegation;
 	}
 
-	public static ValidatorDetails fromParticle(ValidatorParticle particle, REAddr owner, UInt256 stake) {
-		return new ValidatorDetails(particle.getKey(), owner, particle.getName(), particle.getUrl(), stake);
+	public static ValidatorDetails fromParticle(
+		ValidatorParticle particle, REAddr owner, UInt256 stake, UInt256 ownerStake, boolean allowDelegation
+	) {
+		return new ValidatorDetails(
+			particle.getKey(), owner, particle.getName(), particle.getUrl(), stake, ownerStake, allowDelegation
+		);
 	}
 
 	public REAddr getOwner() {
@@ -59,5 +69,13 @@ public final class ValidatorDetails {
 
 	public UInt256 getStake() {
 		return stake;
+	}
+
+	public UInt256 getOwnerStake() {
+		return ownerStake;
+	}
+
+	public boolean allowsDelegation() {
+		return allowDelegation;
 	}
 }

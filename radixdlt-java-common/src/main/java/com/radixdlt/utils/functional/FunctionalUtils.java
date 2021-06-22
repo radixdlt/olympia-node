@@ -17,9 +17,13 @@
 
 package com.radixdlt.utils.functional;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 public interface FunctionalUtils {
 	/**
@@ -61,5 +65,36 @@ public interface FunctionalUtils {
 		}
 
 		return output;
+	}
+
+	/**
+	 * This method takes map and new entry and returns new map where existing entry with same key as new entry,
+	 * is get replaced with new entry. If no entry with same key exists, then new entry is added to resulting map.
+	 * Input map remains intact, returned map is a new map instance.
+	 *
+	 * @param newEntry the entry which will be put into new map
+	 * @param existingMap input map
+	 *
+	 * @return new map with old entry replaced with new entry
+	 */
+	static <K, V> Map<K, V> replaceEntry(Map.Entry<K, V> newEntry, Map<K, V> existingMap) {
+		return Stream.concat(
+			Stream.of(newEntry),
+			existingMap.entrySet().stream().filter(e -> !newEntry.getKey().equals(e.getKey()))
+		).collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+	}
+
+	/**
+	 * This method takes a map and returns new map with entry with specified key removed.
+	 *
+	 * @param keyToRemove the key to remove
+	 * @param existingMap input map
+	 *
+	 * @return new map with specified key removed
+	 */
+	static <K, V> Map<K, V> removeKey(K keyToRemove, Map<K, V> existingMap) {
+		return existingMap.entrySet().stream()
+			.filter(e -> !keyToRemove.equals(e.getKey()))
+			.collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 }
