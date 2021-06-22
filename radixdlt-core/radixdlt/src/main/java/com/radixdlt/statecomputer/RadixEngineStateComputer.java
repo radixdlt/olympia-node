@@ -311,7 +311,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				verifiedTxnsAndProof.getTxns(),
 				ledgerAndBFTProof,
 				PermissionLevel.SUPER_USER,
-				maybeNextForkConfig.map(ForkConfig::hashOf)
+				maybeNextForkConfig.map(ForkConfig::getHash)
 			);
 		} catch (RadixEngineException e) {
 			throw new ByzantineQuorumException(

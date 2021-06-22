@@ -123,7 +123,7 @@ public final class CoordinatedForkSanityTest {
 		final var forkManager = network.getInstance(ForkManager.class, node);
 		final var action = new UpdateValidator(
 			node.getKey(), node.getSimpleName(), "",
-			Optional.of(ForkConfig.hashOf(forkManager.latestKnownFork()))
+			Optional.of(ForkConfig.voteHash(node.getKey(), forkManager.latestKnownFork()))
 		);
 		network.getDispatcher(NodeApplicationRequest.class, node)
 			.dispatch(NodeApplicationRequest.create(action));
@@ -132,7 +132,7 @@ public final class CoordinatedForkSanityTest {
 	private void verifyCurrentFork(RunningNetwork network, ForkConfig forkConfig) {
 		network.getNodes().forEach(node -> {
 			if (!network.getInstance(new Key<EngineStore<LedgerAndBFTProof>>() {}, node).getCurrentForkHash().get()
-					.equals(ForkConfig.hashOf(forkConfig))) {
+					.equals(forkConfig.getHash())) {
 				throw new IllegalStateException("Expected the network to be at fork: " + forkConfig.getName());
 			}
 		});

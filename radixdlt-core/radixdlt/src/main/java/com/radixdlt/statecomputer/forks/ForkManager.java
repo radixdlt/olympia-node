@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.utils.Triplet;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -46,7 +47,7 @@ public final class ForkManager {
 
 	public Optional<ForkConfig> getByHash(HashCode forkHash) {
 		return this.forksConfigs.stream()
-			.filter(forkConfig -> ForkConfig.hashOf(forkConfig).equals(forkHash))
+			.filter(forkConfig -> forkConfig.getHash().equals(forkHash))
 			.findFirst();
 	}
 
@@ -71,7 +72,8 @@ public final class ForkManager {
 		return remainingForks
 			.reverse()
 			.stream()
-			.filter(forkConfig -> forkConfig.getExecutePredicate().test(radixEngine, uncommittedProof))
+			.filter(forkConfig -> forkConfig.getExecutePredicate().test(
+				Triplet.of(forkConfig, radixEngine, uncommittedProof)))
 			.findFirst();
 	}
 }

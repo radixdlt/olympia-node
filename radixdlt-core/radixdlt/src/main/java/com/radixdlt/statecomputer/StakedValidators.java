@@ -55,14 +55,14 @@ public final class StakedValidators {
 
 	private final int minValidators;
 	private final int maxValidators;
-	private final ImmutableMap<HashCode, ImmutableSet<ECPublicKey>> forksVotes;
+	private final ImmutableSet<HashCode> forksVotes;
 
 	private StakedValidators(
 		int minValidators,
 		int maxValidators,
 		Set<ValidatorParticle> validatorParticles,
 		Map<ECPublicKey, UInt256> stake,
-		ImmutableMap<HashCode, ImmutableSet<ECPublicKey>> forksVotes
+		ImmutableSet<HashCode> forksVotes
 	) {
 		this.minValidators = minValidators;
 		this.maxValidators = maxValidators;
@@ -75,7 +75,7 @@ public final class StakedValidators {
 		int minValidators,
 		int maxValidators
 	) {
-		return new StakedValidators(minValidators, maxValidators, Set.of(), Map.of(), ImmutableMap.of());
+		return new StakedValidators(minValidators, maxValidators, Set.of(), Map.of(), ImmutableSet.of());
 	}
 
 	public StakedValidators add(ValidatorParticle particle) {
@@ -84,20 +84,11 @@ public final class StakedValidators {
 			.add(particle)
 			.build();
 
-		final ImmutableMap<HashCode, ImmutableSet<ECPublicKey>> newForksVotes;
+		final ImmutableSet<HashCode> newForksVotes;
 		if (particle.getForkHashVote().isPresent()) {
-			final var forkVoteHash = particle.getForkHashVote().get();
-			final var existingVotes = this.forksVotes.getOrDefault(forkVoteHash, ImmutableSet.of());
-			final var newForkVotes = ImmutableSet.<ECPublicKey>builder()
-				.addAll(existingVotes)
-				.add(particle.getKey())
-				.build();
-			newForksVotes = ImmutableMap.<HashCode, ImmutableSet<ECPublicKey>>builder()
-				.putAll(
-					this.forksVotes.entrySet().stream()
-						.filter(not(e -> e.getKey().equals(forkVoteHash)))
-						.collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)))
-				.put(forkVoteHash, newForkVotes)
+			newForksVotes = ImmutableSet.<HashCode>builder()
+				.addAll(this.forksVotes)
+				.add(particle.getForkHashVote().get())
 				.build();
 		} else {
 			newForksVotes = this.forksVotes;
@@ -107,14 +98,15 @@ public final class StakedValidators {
 	}
 
 	public StakedValidators remove(ValidatorParticle particle) {
-		final var newForksVotes = this.forksVotes.entrySet().stream()
-			.map(e -> {
-				final var newForkVotes = e.getValue().stream()
-					.filter(not(v -> v.equals(particle.getKey())))
-					.collect(ImmutableSet.toImmutableSet());
-				return Map.entry(e.getKey(), newForkVotes);
-			})
-			.collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+		final ImmutableSet<HashCode> newForksVotes;
+		if (particle.getForkHashVote().isPresent()) {
+			final var particleForkVoteHash = particle.getForkHashVote().get();
+			newForksVotes = this.forksVotes.stream()
+				.filter(not(hash -> hash.equals(particleForkVoteHash)))
+				.collect(ImmutableSet.toImmutableSet());
+		} else {
+			newForksVotes = this.forksVotes;
+		}
 
 		return new StakedValidators(
 			minValidators,
@@ -140,7 +132,6 @@ public final class StakedValidators {
 
 		return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStake, forksVotes);
 	}
-
 
 	// TODO: Remove add/remove from mainnet
 	public StakedValidators add(ECPublicKey delegatedKey, UInt256 amount) {
@@ -209,8 +200,8 @@ public final class StakedValidators {
 		);
 	}
 
-	public ImmutableSet<ECPublicKey> getForkVotes(HashCode forkHash) {
-		return this.forksVotes.getOrDefault(forkHash, ImmutableSet.of());
+	public ImmutableSet<HashCode> getForksVotes() {
+		return this.forksVotes;
 	}
 
 	public <T> List<T> map(BiFunction<ECPublicKey, ValidatorDetails, T> mapper) {

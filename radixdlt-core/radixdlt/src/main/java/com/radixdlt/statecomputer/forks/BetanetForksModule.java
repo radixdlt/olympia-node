@@ -295,11 +295,9 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())
 			.build();
 
-		final var forkName = "betanet4";
-		final var forkHash = ForkConfig.hashOf(forkName);
 		return new ForkConfig(
-			forkName,
-			ForksPredicates.stakeVoting(forkHash, 0.51),
+			"betanet4",
+			ForksPredicates.stakeVoting(0.51),
 			parser,
 			serialization,
 			betanet4,

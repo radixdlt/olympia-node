@@ -23,21 +23,25 @@ import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.SubstateSerialization;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.PostProcessedVerifier;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.utils.Triplet;
+import org.bouncycastle.pqc.math.linearalgebra.ByteUtils;
 
 import java.nio.charset.StandardCharsets;
-import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 /**
  * Configuration used for hard forks
  */
 public final class ForkConfig {
 	private final String name;
-	private final BiPredicate<RadixEngine<LedgerAndBFTProof>, LedgerAndBFTProof> executePredicate;
+	private final Predicate<Triplet<ForkConfig, RadixEngine<LedgerAndBFTProof>, LedgerAndBFTProof>> executePredicate;
 	private final REParser parser;
 	private final SubstateSerialization serialization;
 	private final ConstraintMachineConfig constraintMachineConfig;
@@ -48,7 +52,7 @@ public final class ForkConfig {
 
 	public ForkConfig(
 		String name,
-		BiPredicate<RadixEngine<LedgerAndBFTProof>, LedgerAndBFTProof> executePredicate,
+		Predicate<Triplet<ForkConfig, RadixEngine<LedgerAndBFTProof>, LedgerAndBFTProof>> executePredicate,
 		REParser parser,
 		SubstateSerialization serialization,
 		ConstraintMachineConfig constraintMachineConfig,
@@ -72,7 +76,7 @@ public final class ForkConfig {
 		return name;
 	}
 
-	public BiPredicate<RadixEngine<LedgerAndBFTProof>, LedgerAndBFTProof> getExecutePredicate() {
+	public Predicate<Triplet<ForkConfig, RadixEngine<LedgerAndBFTProof>, LedgerAndBFTProof>> getExecutePredicate() {
 		return this.executePredicate;
 	}
 
@@ -104,11 +108,16 @@ public final class ForkConfig {
 		return epochCeilingView;
 	}
 
-	public static HashCode hashOf(ForkConfig forkConfig) {
-		return hashOf(forkConfig.getName());
+	public HashCode getHash() {
+		return HashUtils.sha256(name.getBytes(StandardCharsets.UTF_8));
 	}
 
-	public static HashCode hashOf(String forkName) {
-		return HashCode.fromBytes(forkName.getBytes(StandardCharsets.UTF_8));
+	public static HashCode voteHash(ECPublicKey publicKey, ForkConfig forkConfig) {
+		return voteHash(publicKey, forkConfig.getHash());
+	}
+
+	public static HashCode voteHash(ECPublicKey publicKey, HashCode forkHash) {
+		final var bytes = ByteUtils.concatenate(publicKey.getBytes(), forkHash.asBytes());
+		return HashUtils.sha256(bytes);
 	}
 }

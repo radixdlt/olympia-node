@@ -21,9 +21,10 @@ package com.radixdlt.statecomputer.forks;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.utils.Triplet;
 import org.junit.Test;
 
-import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -39,19 +40,19 @@ public final class ForkManagerTest {
 
 		final var fork1 = new ForkConfig(
 			"fork1",
-			predicteByUncommittedProof(fork1Proof),
+			sameUncommittedProof(fork1Proof),
 			null, null, null, null, null, null, null
 		);
 
 		final var fork2 = new ForkConfig(
 			"fork2",
-			predicteByUncommittedProof(fork2Proof),
+			sameUncommittedProof(fork2Proof),
 			null, null, null, null, null, null, null
 		);
 
 		final var fork3 = new ForkConfig(
 			"fork3",
-			predicteByUncommittedProof(fork3Proof),
+			sameUncommittedProof(fork3Proof),
 			null, null, null, null, null, null, null
 		);
 
@@ -59,9 +60,9 @@ public final class ForkManagerTest {
 
 		assertEquals(fork1, forkManager.genesisFork());
 		assertEquals(fork3, forkManager.latestKnownFork());
-		assertEquals(fork1, forkManager.getByHash(ForkConfig.hashOf(fork1)).get());
-		assertEquals(fork2, forkManager.getByHash(ForkConfig.hashOf(fork2)).get());
-		assertEquals(fork3, forkManager.getByHash(ForkConfig.hashOf(fork3)).get());
+		assertEquals(fork1, forkManager.getByHash(fork1.getHash()).get());
+		assertEquals(fork2, forkManager.getByHash(fork2.getHash()).get());
+		assertEquals(fork3, forkManager.getByHash(fork3.getHash()).get());
 
 		// if current fork is 1, then should return either 2 or 3 (depending on predicate)
 		assertTrue(forkManager.findNextForkConfig(fork1, null, fork1Proof).isEmpty());
@@ -83,19 +84,19 @@ public final class ForkManagerTest {
 	public void if_two_predicates_match__then_should_return_latest_fork() {
 		final var fork1 = new ForkConfig(
 			"fork1",
-			(a, b) -> true,
+			t -> true,
 			null, null, null, null, null, null, null
 		);
 
 		final var fork2 = new ForkConfig(
 			"fork2",
-			(a, b) -> true,
+			t -> true,
 			null, null, null, null, null, null, null
 		);
 
 		final var fork3 = new ForkConfig(
 			"fork3",
-			(a, b) -> true,
+			t -> true,
 			null, null, null, null, null, null, null
 		);
 
@@ -103,10 +104,9 @@ public final class ForkManagerTest {
 		assertEquals(fork3, forkManager.findNextForkConfig(fork1, null, null).get());
 	}
 
-	private BiPredicate<RadixEngine<LedgerAndBFTProof>, LedgerAndBFTProof> predicteByUncommittedProof(
+	private Predicate<Triplet<ForkConfig, RadixEngine<LedgerAndBFTProof>, LedgerAndBFTProof>> sameUncommittedProof(
 		LedgerAndBFTProof requiredProof
 	) {
-		return (radixEngine, uncommittedProof) -> uncommittedProof.equals(requiredProof);
+		return triplet -> triplet.getThird().equals(requiredProof);
 	}
-
 }

@@ -81,15 +81,11 @@ public class ConfigController implements Controller {
 
 	void handleConfig(HttpServerExchange exchange) {
 		final var forks = new JSONArray();
-		forkManager.forksConfigs().forEach(config -> forks.put(
-			new JSONObject()
-				.put("name", config.getName())
-				.put("hash", ForkConfig.hashOf(config).toString())
-				.put("ceiling_view", config.getEpochCeilingView().number())
-		));
+		forkManager.forksConfigs().forEach(config -> forks.put(forkConfigJson(config)));
 
-		final var currentForkHash = this.engineStore.getCurrentForkHash()
-			.orElseGet(() -> ForkConfig.hashOf(forkManager.genesisFork()));
+		final var currentFork = this.engineStore.getCurrentForkHash()
+			.flatMap(forkManager::getByHash)
+			.orElseGet(forkManager::genesisFork);
 
 		respond(exchange, new JSONObject()
 			.put("consensus", new JSONObject()
@@ -104,9 +100,16 @@ public class ConfigController implements Controller {
 				.put("min_validators", minValidators)
 				.put("max_validators", maxValidators)
 				.put("max_txns_per_proposal", maxTxnsPerProposal)
-				.put("forks", forks)
-				.put("current_fork_hash", currentForkHash.toString())
+				.put("known_forks", forks)
+				.put("current_fork", forkConfigJson(currentFork))
 			)
 		);
+	}
+
+	private JSONObject forkConfigJson(ForkConfig forkConfig) {
+		return new JSONObject()
+			.put("name", forkConfig.getName())
+			.put("hash", forkConfig.getHash().toString())
+			.put("ceiling_view", forkConfig.getEpochCeilingView().number());
 	}
 }

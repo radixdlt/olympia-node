@@ -233,7 +233,8 @@ public final class NodeController implements Controller {
 			case "RegisterValidator": {
 				var name = paramsObject.has("name") ? paramsObject.getString("name") : null;
 				var url = paramsObject.has("url") ? paramsObject.getString("url") : null;
-				return new RegisterValidator(bftKey, name, url, Optional.of(ForkConfig.hashOf(forkManager.latestKnownFork())));
+				final var forkVoteHash = ForkConfig.voteHash(bftKey, forkManager.latestKnownFork());
+				return new RegisterValidator(bftKey, name, url, Optional.of(forkVoteHash));
 			}
 			case "UnregisterValidator": {
 				var name = paramsObject.has("name") ? paramsObject.getString("name") : null;
@@ -243,7 +244,8 @@ public final class NodeController implements Controller {
 			case "UpdateValidator": {
 				var name = paramsObject.has("name") ? paramsObject.getString("name") : null;
 				var url = paramsObject.has("url") ? paramsObject.getString("url") : null;
-				return new UpdateValidator(bftKey, name, url, Optional.of(ForkConfig.hashOf(forkManager.latestKnownFork())));
+				final var forkVoteHash = ForkConfig.voteHash(bftKey, forkManager.latestKnownFork());
+				return new UpdateValidator(bftKey, name, url, Optional.of(forkVoteHash));
 			}
 			default:
 				throw new IllegalArgumentException("Bad action object: " + actionObject);
