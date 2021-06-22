@@ -67,7 +67,6 @@ def nodeNamePrefix = properties.get('nodeNamePrefix', "fullnode")
 def secretPasswordKey = properties.get('secretPasswordKey', "")
 def nodeNames = properties.get('nodeNames', "")
 
-//todo: change in ansible, change in Jenkins
 task generateNodeKey(type: Exec) {
     dependsOn compileJava
     dependsOn ':radixdlt-java-common:jar'
