@@ -30,9 +30,9 @@ Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) in all your interactions
 | Link | Description |
 | :----- | :------ |
 [radixdlt.com](https://radixdlt.com/) | Radix DLT Homepage
-[documentation](https://docs.radixdlt.com/) | Radix Knowledge Base
-[forum](https://forum.radixdlt.com/) | Radix Technical Forum
-[@radixdlt](https://twitter.com/radixdlt) | Follow Radix DLT on Twitter
+[docs.radixdlt.com](https://docs.radixdlt.com/) | Radix Technical Documentation
+[learn.radixdlt.com](https://learn.radixdlt.com/) | Radix Knowledge Base
+[discord invite](https://discord.com/invite/WkB2USt) | Radix Discord Server
 
 ## License
 
