@@ -38,11 +38,6 @@ class TransferAction implements TransactionAction {
 	}
 
 	@Override
-	public REAddr getFrom() {
-		return from;
-	}
-
-	@Override
 	public Stream<TxAction> toAction() {
 		return Stream.of(new TransferToken(TransactionAction.rriValue(rri), from, to, amount));
 	}

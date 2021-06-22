@@ -20,12 +20,10 @@ package com.radixdlt.api.data.action;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
 
 import java.util.stream.Stream;
 
 class CreateMutableTokenAction implements TransactionAction {
-	private final REAddr from;
 	private final ECPublicKey signer;
 	private final String name;
 	private final String symbol;
@@ -34,20 +32,14 @@ class CreateMutableTokenAction implements TransactionAction {
 	private final String description;
 
 	CreateMutableTokenAction(
-		REAddr from, ECPublicKey signer, String name, String symbol, String iconUrl, String tokenUrl, String description
+		ECPublicKey signer, String name, String symbol, String iconUrl, String tokenUrl, String description
 	) {
-		this.from = from;
 		this.signer = signer;
 		this.name = name;
 		this.symbol = symbol;
 		this.iconUrl = iconUrl;
 		this.tokenUrl = tokenUrl;
 		this.description = description;
-	}
-
-	@Override
-	public REAddr getFrom() {
-		return from;
 	}
 
 	@Override

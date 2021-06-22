@@ -45,7 +45,6 @@ import static org.radix.Radix.VERSION_STRING_KEY;
 
 import static com.radixdlt.api.service.MetricsService.JmxMetric.jmxMetric;
 
-//TODO: finish it
 public class MetricsService {
 	private static final Logger log = LogManager.getLogger();
 
@@ -157,6 +156,7 @@ public class MetricsService {
 	private final SystemConfigService systemConfigService;
 	private final ValidatorInfoService validatorInfoService;
 	private final AccountInfoService accountInfoService;
+	private final NetworkInfoService networkInfoService;
 
 	@Inject
 	public MetricsService(
@@ -164,13 +164,15 @@ public class MetricsService {
 		InfoSupplier infoSupplier,
 		SystemConfigService systemConfigService,
 		ValidatorInfoService validatorInfoService,
-		AccountInfoService accountInfoService
+		AccountInfoService accountInfoService,
+		NetworkInfoService networkInfoService
 	) {
 		this.systemCounters = systemCounters;
 		this.infoSupplier = infoSupplier;
 		this.systemConfigService = systemConfigService;
 		this.validatorInfoService = validatorInfoService;
 		this.accountInfoService = accountInfoService;
+		this.networkInfoService = networkInfoService;
 	}
 
 	public String getMetrics() {
@@ -254,6 +256,7 @@ public class MetricsService {
 		addBranchAndCommit(builder);
 		addValidatorAddress(builder);
 		addAccumulatorState(builder);
+		appendField(builder, "health", networkInfoService.nodeStatus().name());
 		appendField(builder, "key", accountInfoService.getOwnPubKey().toHex());
 
 		return builder.append("}").toString();

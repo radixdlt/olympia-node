@@ -36,11 +36,6 @@ class BurnAction implements TransactionAction {
 	}
 
 	@Override
-	public REAddr getFrom() {
-		return from;
-	}
-
-	@Override
 	public Stream<TxAction> toAction() {
 		return Stream.of(new BurnToken(TransactionAction.rriValue(rri), from, amount));
 	}

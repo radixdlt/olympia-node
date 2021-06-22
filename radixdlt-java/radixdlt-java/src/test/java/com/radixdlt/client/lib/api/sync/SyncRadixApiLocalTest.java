@@ -16,9 +16,17 @@
  */
 package com.radixdlt.client.lib.api.sync;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.radixdlt.client.lib.api.AccountAddress;
+import com.radixdlt.client.lib.api.TransactionRequest;
+import com.radixdlt.client.lib.api.ValidatorAddress;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.utils.Ints;
+import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
 import java.io.IOException;
@@ -29,6 +37,7 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,8 +47,14 @@ import static org.mockito.Mockito.when;
 import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_PRIMARY_PORT;
 import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_SECONDARY_PORT;
 
-//TODO: remaining tests
 public class SyncRadixApiLocalTest {
+	public static final ECKeyPair KEY_PAIR1 = keyPairOf(1);
+	public static final ECKeyPair KEY_PAIR2 = keyPairOf(2);
+	public static final ECKeyPair KEY_PAIR3 = keyPairOf(3);
+	private static final AccountAddress ACCOUNT_ADDRESS1 = AccountAddress.create(KEY_PAIR1.getPublicKey());
+	private static final AccountAddress ACCOUNT_ADDRESS2 = AccountAddress.create(KEY_PAIR2.getPublicKey());
+	private static final ValidatorAddress VALIDATOR_ADDRESS = ValidatorAddress.of(KEY_PAIR3.getPublicKey());
+
 	private static final String BASE_URL = "http://localhost/";
 
 	private static final String ACCOUNT_INFO = "{\"result\":{\"address\":\"brx1qsptmhztqfajpa4qhden6dcseym3gu0pnjxsfmzw"
@@ -101,6 +116,28 @@ public class SyncRadixApiLocalTest {
 			);
 	}
 
+	@Test
+	@Ignore //FIXME: Does not work for now as accounts don't match the address of node we're talking to
+	public void testSubmitTxSingleStep() throws IOException {
+		var request = TransactionRequest.createBuilder()
+			.transfer(
+				ACCOUNT_ADDRESS1,
+				ACCOUNT_ADDRESS2,
+				UInt256.NINE,
+				"xrd_rb1qya85pwq"
+			)
+			.message("Test message")
+			.build();
+
+		RadixApi.connect(BASE_URL)
+			.map(RadixApi::withTrace)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> client.local().submitTxSingleStep(request)
+				.onFailure(failure -> fail(failure.toString()))
+				.onSuccess(txData -> assertNotNull(txData.getTxId()))
+			);
+	}
+
 	private Result<RadixApi> prepareClient(String responseBody) throws IOException {
 		var call = mock(Call.class);
 		var response = mock(Response.class);
@@ -112,5 +149,17 @@ public class SyncRadixApiLocalTest {
 		when(body.string()).thenReturn(responseBody);
 
 		return SyncRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
+	}
+
+	private static ECKeyPair keyPairOf(int pk) {
+		var privateKey = new byte[ECKeyPair.BYTES];
+
+		Ints.copyTo(pk, privateKey, ECKeyPair.BYTES - Integer.BYTES);
+
+		try {
+			return ECKeyPair.fromPrivateKey(privateKey);
+		} catch (PrivateKeyException | PublicKeyException e) {
+			throw new IllegalArgumentException("Error while generating public key", e);
+		}
 	}
 }

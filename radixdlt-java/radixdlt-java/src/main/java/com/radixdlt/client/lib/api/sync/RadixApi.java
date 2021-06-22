@@ -113,7 +113,7 @@ public interface RadixApi {
 	interface Local {
 		Result<LocalAccount> accountInfo();
 
-		Result<TxDTO> submitTxSingleStep();
+		Result<TxDTO> submitTxSingleStep(TransactionRequest request);
 
 		Result<LocalValidatorInfo> validatorInfo();
 

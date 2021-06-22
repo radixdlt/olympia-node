@@ -55,11 +55,6 @@ class CreateFixedTokenAction implements TransactionAction {
 	}
 
 	@Override
-	public REAddr getFrom() {
-		return from;
-	}
-
-	@Override
 	public Stream<TxAction> toAction() {
 		return Stream.of(new CreateFixedToken(TransactionAction.rriValue(rri), from, symbol, name, description, iconUrl, tokenUrl, amount));
 	}

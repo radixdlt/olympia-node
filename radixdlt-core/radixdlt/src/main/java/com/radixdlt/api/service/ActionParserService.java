@@ -170,7 +170,6 @@ public final class ActionParserService {
 
 			case CREATE_MUTABLE:
 				return allOf(
-					from(element),
 					pubKey(element),
 					symbol(element),
 					name(element),

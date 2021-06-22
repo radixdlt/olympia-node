@@ -279,8 +279,11 @@ public class AsyncRadixApi implements RadixApi {
 		}
 
 		@Override
-		public Promise<TxDTO> submitTxSingleStep() {
-			return call(request(ACCOUNT_SUBMIT_SINGLE_STEP), new TypeReference<>() {});
+		public Promise<TxDTO> submitTxSingleStep(TransactionRequest request) {
+			return call(
+				request(ACCOUNT_SUBMIT_SINGLE_STEP, request.getActions(), request.getMessage()),
+				new TypeReference<>() {}
+			);
 		}
 
 		@Override

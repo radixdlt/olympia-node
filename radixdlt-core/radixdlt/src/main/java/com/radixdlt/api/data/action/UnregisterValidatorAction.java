@@ -20,7 +20,6 @@ package com.radixdlt.api.data.action;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
 
 import java.util.stream.Stream;
 
@@ -33,11 +32,6 @@ class UnregisterValidatorAction implements TransactionAction {
 		this.validatorKey = validatorKey;
 		this.name = name;
 		this.url = url;
-	}
-
-	@Override
-	public REAddr getFrom() {
-		return REAddr.ofPubKeyAccount(validatorKey);
 	}
 
 	@Override

@@ -20,7 +20,6 @@ package com.radixdlt.api.data.action;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.UpdateRake;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
 
 import java.util.stream.Stream;
 
@@ -31,11 +30,6 @@ class UpdateRakeAction implements TransactionAction {
 	UpdateRakeAction(ECPublicKey validatorKey, int rakePercentage) {
 		this.validatorKey = validatorKey;
 		this.rakePercentage = rakePercentage;
-	}
-
-	@Override
-	public REAddr getFrom() {
-		return REAddr.ofPubKeyAccount(validatorKey);
 	}
 
 	@Override

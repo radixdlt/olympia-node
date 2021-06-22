@@ -115,11 +115,11 @@ public class TransactionRequest {
 		}
 
 		public TransactionRequestBuilder createMutable(
-			AccountAddress from, ECPublicKey signer, String symbol, String name,
+			ECPublicKey signer, String symbol, String name,
 			Optional<String> description, Optional<String> iconUrl, Optional<String> tokenUrl
 		) {
 			new CreateMutableTokenAction(
-				from, signer, name, symbol,
+				signer, name, symbol,
 				iconUrl.orElse(null), tokenUrl.orElse(null), description.orElse(null)
 			);
 			return this;

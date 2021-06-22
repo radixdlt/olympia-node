@@ -34,11 +34,6 @@ class UpdateValidatorOwnerAddressAction implements TransactionAction {
 	}
 
 	@Override
-	public REAddr getFrom() {
-		return ownerAddress;
-	}
-
-	@Override
 	public Stream<TxAction> toAction() {
 		return Stream.of(new UpdateValidatorOwnerAddress(validatorKey, ownerAddress));
 	}

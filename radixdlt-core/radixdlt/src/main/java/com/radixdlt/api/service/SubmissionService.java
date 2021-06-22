@@ -132,6 +132,7 @@ public final class SubmissionService {
 		Optional<String> message, HashSigner signer, boolean disableResourceAllocAndDestroy
 	) {
 		return prepareTransaction(address, steps, message, disableResourceAllocAndDestroy)
+			.onFailure(failure -> logger.error("Error preparing transaction {}", failure))
 			.map(prepared -> buildTxn(prepared.getBlob(), signer.sign(prepared.getHashToSign())))
 			.flatMap(this::submit);
 	}

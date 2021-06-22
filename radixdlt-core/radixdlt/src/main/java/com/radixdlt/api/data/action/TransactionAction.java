@@ -76,21 +76,21 @@ public interface TransactionAction {
 		REAddr from, ECPublicKey signer, String symbol, String name,
 		String description, String iconUrl, String tokenUrl, UInt256 amount
 	) {
-		return new CreateFixedTokenAction(from, amount, REAddr.ofPubKeyAccount(signer), name,
-										  symbol, iconUrl, tokenUrl, description);
-	}
-
-	static TransactionAction createMutable(
-		REAddr from, ECPublicKey signer, String symbol, String name,
-		Optional<String> description, Optional<String> iconUrl, Optional<String> tokenUrl
-	) {
-		return new CreateMutableTokenAction(
-			from, signer, name, symbol,
-			iconUrl.orElse(null), tokenUrl.orElse(null), description.orElse(null)
+		return new CreateFixedTokenAction(
+			from, amount, REAddr.ofPubKeyAccount(signer), name,
+			symbol, iconUrl, tokenUrl, description
 		);
 	}
 
-	REAddr getFrom();
+	static TransactionAction createMutable(
+		ECPublicKey signer, String symbol, String name,
+		Optional<String> description, Optional<String> iconUrl, Optional<String> tokenUrl
+	) {
+		return new CreateMutableTokenAction(
+			signer, name, symbol,
+			iconUrl.orElse(null), tokenUrl.orElse(null), description.orElse(null)
+		);
+	}
 
 	Stream<TxAction> toAction();
 

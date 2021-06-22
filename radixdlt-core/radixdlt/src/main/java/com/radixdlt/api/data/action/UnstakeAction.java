@@ -37,11 +37,6 @@ class UnstakeAction implements TransactionAction {
 	}
 
 	@Override
-	public REAddr getFrom() {
-		return from;
-	}
-
-	@Override
 	public Stream<TxAction> toAction() {
 		return Stream.of(new UnstakeTokens(from, delegate, amount));
 	}

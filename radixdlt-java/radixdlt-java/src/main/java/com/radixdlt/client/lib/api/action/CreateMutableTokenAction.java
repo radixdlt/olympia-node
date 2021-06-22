@@ -18,14 +18,12 @@
 package com.radixdlt.client.lib.api.action;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.ActionType;
 import com.radixdlt.crypto.ECPublicKey;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class CreateMutableTokenAction implements Action {
 	private final ActionType type = ActionType.CREATE_MUTABLE;
-	private final AccountAddress from;
 	private final ECPublicKey signer;
 	private final String name;
 	private final String symbol;
@@ -34,10 +32,9 @@ public class CreateMutableTokenAction implements Action {
 	private final String description;
 
 	public CreateMutableTokenAction(
-		AccountAddress from, ECPublicKey signer, String name, String symbol,
+		ECPublicKey signer, String name, String symbol,
 		String iconUrl, String tokenUrl, String description
 	) {
-		this.from = from;
 		this.signer = signer;
 		this.name = name;
 		this.symbol = symbol;

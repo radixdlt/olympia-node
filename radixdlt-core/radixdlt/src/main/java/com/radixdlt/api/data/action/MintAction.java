@@ -36,12 +36,6 @@ class MintAction implements TransactionAction {
 	}
 
 	@Override
-	public REAddr getFrom() {
-		//FIXME: here can be other address?
-		return to;
-	}
-
-	@Override
 	public Stream<TxAction> toAction() {
 		return Stream.of(new MintToken(TransactionAction.rriValue(rri), to, amount));
 	}

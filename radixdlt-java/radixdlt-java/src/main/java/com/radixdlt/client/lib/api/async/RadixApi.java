@@ -115,7 +115,7 @@ public interface RadixApi {
 	interface Local {
 		Promise<LocalAccount> accountInfo();
 
-		Promise<TxDTO> submitTxSingleStep();
+		Promise<TxDTO> submitTxSingleStep(TransactionRequest request);
 
 		Promise<LocalValidatorInfo> validatorInfo();
 

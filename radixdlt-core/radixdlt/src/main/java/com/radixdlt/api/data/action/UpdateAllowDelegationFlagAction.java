@@ -20,7 +20,6 @@ package com.radixdlt.api.data.action;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
 
 import java.util.stream.Stream;
 
@@ -31,11 +30,6 @@ class UpdateAllowDelegationFlagAction implements TransactionAction {
 	UpdateAllowDelegationFlagAction(ECPublicKey validatorKey, boolean allowDelegation) {
 		this.validatorKey = validatorKey;
 		this.allowDelegation = allowDelegation;
-	}
-
-	@Override
-	public REAddr getFrom() {
-		return REAddr.ofPubKeyAccount(validatorKey);
 	}
 
 	@Override
