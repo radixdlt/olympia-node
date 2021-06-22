@@ -62,19 +62,18 @@ jacocoTestReport {
 def networkName = properties.get('networkName', 'testnet')
 def enableAWSSecret = properties.get('enableAWSSecret', false)
 def recreateAWSSecret = properties.get('recreateAWSSecret', false)
-def fullNodeNumber = properties.get('fullNodeNumber', 0)
+def nodeNumber = properties.get('nodeNumber', 0)
 def nodeNamePrefix = properties.get('nodeNamePrefix', "fullnode")
 def secretPasswordKey = properties.get('secretPasswordKey', "")
-def nodeNames = System.getenv('FULLNODE_NAMES') != null ? System.getenv('FULLNODE_NAMES') :''
+def nodeNames = properties.get('nodeNames', "")
 
-
+//todo: change in ansible, change in Jenkins
 task generateNodeKey(type: Exec) {
     dependsOn compileJava
     dependsOn ':radixdlt-java-common:jar'
     dependsOn ':radixdlt-engine:jar'
     dependsOn ':radixdlt-java:jar'
 
-    environment "FULLNODE_NAMES",nodeNames
     group = "Execution"
     description = "Generate Node key"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
@@ -82,7 +81,8 @@ task generateNodeKey(type: Exec) {
             "--enable-aws-secrets=${enableAWSSecret}",
             "--recreate-aws-secrets=${recreateAWSSecret}",
             "--network-name=${networkName}",
-            "--full-node-number=${fullNodeNumber}",
+            "--node-number=${nodeNumber}",
             "--node-name-prefix=${nodeNamePrefix}",
+            "--node-names=${nodeNames}",
             "--secret-password-key=${secretPasswordKey}"
 }
