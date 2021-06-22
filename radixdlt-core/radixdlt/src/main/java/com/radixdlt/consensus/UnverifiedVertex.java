@@ -129,6 +129,10 @@ public final class UnverifiedVertex {
 		return proposer;
 	}
 
+	public boolean isTimeout() {
+		return proposerTimedOut != null && proposerTimedOut;
+	}
+
 	public QuorumCertificate getQC() {
 		return qc;
 	}

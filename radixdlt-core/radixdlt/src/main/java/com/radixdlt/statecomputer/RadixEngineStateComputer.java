@@ -70,6 +70,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.LongFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -81,8 +82,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final RadixEngineMempool mempool;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final int maxTxnsPerProposal;
-
-
 	private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
 	private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
 	private final EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher;
@@ -93,10 +92,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final SystemCounters systemCounters;
 	private final Hasher hasher;
 
+	private EpochChange epochChange;
 	private View epochCeilingView;
 
 	@Inject
 	public RadixEngineStateComputer(
+		EpochChange epochChange, // TODO: Should be able to load this directly from state
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		TreeMap<Long, ForkConfig> epochToForkConfig,
 		RadixEngineMempool mempool, // TODO: Move this into radixEngine
@@ -128,6 +129,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.ledgerUpdateDispatcher = Objects.requireNonNull(ledgerUpdateDispatcher);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.systemCounters = Objects.requireNonNull(systemCounters);
+		this.epochChange = epochChange;
 	}
 
 	public static class RadixEngineTxn implements PreparedTxn {
@@ -187,12 +189,21 @@ public final class RadixEngineStateComputer implements StateComputer {
 		return txns;
 	}
 
+	private LongFunction<ECPublicKey> getValidatorMapping() {
+		return l -> epochChange.getBFTConfiguration().getProposerElection().getProposer(View.of(l)).getKey();
+	}
+
 	private BFTValidatorSet executeSystemUpdate(
 		RadixEngineBranch<LedgerAndBFTProof> branch,
 		VerifiedVertex vertex,
 		long timestamp,
 		ImmutableList.Builder<PreparedTxn> successBuilder
 	) {
+		// TODO: use this vertex to update per view timeout
+		if (vertex.isTimeout()) {
+			return null;
+		}
+
 		var view = vertex.getView();
 		final TxAction systemAction;
 		var nextValidatorSet = new AtomicReference<BFTValidatorSet>();
@@ -200,7 +211,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			systemAction = new SystemNextView(
 				view.number(),
 				timestamp,
-				vertex.getProposer() != null ? vertex.getProposer().getKey() : null
+				getValidatorMapping()
 			);
 		} else {
 			var stakedValidators = branch.getComputedState(StakedValidators.class);
@@ -209,7 +220,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				systemAction = new SystemNextView(
 					view.number(),
 					timestamp,
-					vertex.getProposer() != null ? vertex.getProposer().getKey() : null
+					getValidatorMapping()
 				);
 			} else {
 				systemAction = new SystemNextEpoch(updates -> {
@@ -387,6 +398,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 			var bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, initialState);
 			return new EpochChange(header, bftConfiguration);
 		});
+
+		epochChangeOptional.ifPresent(e -> this.epochChange = e);
 
 		var ledgerUpdate = new LedgerUpdate(txnsAndProof, epochChangeOptional);
 		ledgerUpdateDispatcher.dispatch(ledgerUpdate);

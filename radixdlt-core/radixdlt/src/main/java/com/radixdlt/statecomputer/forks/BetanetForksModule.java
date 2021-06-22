@@ -45,6 +45,7 @@ import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV1;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.atommodel.system.construction.NextEpochConstructorV2;
 import com.radixdlt.atommodel.system.construction.NextEpochConstructorV3;
+import com.radixdlt.atommodel.system.construction.NextViewConstructorV3;
 import com.radixdlt.atommodel.system.construction.PayFeeConstructorV1;
 import com.radixdlt.atommodel.system.construction.PayFeeConstructorV2;
 import com.radixdlt.atommodel.system.scrypt.FeeConstraintScrypt;
@@ -277,7 +278,7 @@ public final class BetanetForksModule extends AbstractModule {
 			.put(DeprecatedUnstakeTokens.class, new DeprecatedUnstakeTokensConstructor())
 			.put(MintToken.class, new MintTokenConstructor())
 			.put(SystemNextEpoch.class, new NextEpochConstructorV3())
-			.put(SystemNextView.class, new NextViewConstructorV2())
+			.put(SystemNextView.class, new NextViewConstructorV3())
 			.put(RegisterValidator.class, new RegisterValidatorConstructor())
 			.put(SplitToken.class, new SplitTokenConstructor())
 			.put(StakeTokens.class, new StakeTokensConstructorV3())

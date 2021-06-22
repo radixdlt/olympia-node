@@ -39,6 +39,10 @@ public final class ValidatorBFTData implements Particle {
 		return validatorKey;
 	}
 
+	public ValidatorBFTData incrementCompletedProposals() {
+		return new ValidatorBFTData(validatorKey, proposalsCompleted + 1);
+	}
+
 	public long proposalsCompleted() {
 		return proposalsCompleted;
 	}
