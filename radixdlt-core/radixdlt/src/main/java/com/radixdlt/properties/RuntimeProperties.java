@@ -35,8 +35,6 @@ public final class RuntimeProperties extends PersistedProperties {
 	private final CommandLine commandLine;
 
 	public RuntimeProperties(JSONObject commandLineConfig, String[] commandLineArguments) throws ParseException {
-		super();
-
 		CommandLineParser parser = new DefaultParser();
 		Options gnuOptions = new Options();
 
@@ -45,9 +43,9 @@ public final class RuntimeProperties extends PersistedProperties {
 			gnuOptions.addOption(clOption.getString("short"), clKey, clOption.getBoolean("has_arg"), clOption.optString("desc", ""));
 		}
 
-		this.commandLine = parser.parse(gnuOptions, commandLineArguments);
+		commandLine = parser.parse(gnuOptions, commandLineArguments);
 
-		load(this.commandLine.getOptionValue("config", "default.config"));
+		load(commandLine.getOptionValue("config", "default.config"));
 	}
 
 	@Override
@@ -69,8 +67,8 @@ public final class RuntimeProperties extends PersistedProperties {
 	public int hashCode() {
 		final int prime = 31;
 		int result = super.hashCode();
-		result = prime * result + Arrays.hashCode(this.commandLine.getArgs());
-		result = prime * result + Arrays.hashCode(this.commandLine.getOptions());
+		result = prime * result + Arrays.hashCode(commandLine.getArgs());
+		result = prime * result + Arrays.hashCode(commandLine.getOptions());
 		return result;
 	}
 
@@ -81,8 +79,8 @@ public final class RuntimeProperties extends PersistedProperties {
 		}
 		if (super.equals(obj) && obj instanceof RuntimeProperties) {
 			RuntimeProperties other = (RuntimeProperties) obj;
-			return Arrays.equals(this.commandLine.getArgs(), other.commandLine.getArgs())
-				&& Arrays.equals(this.commandLine.getOptions(), other.commandLine.getOptions());
+			return Arrays.equals(commandLine.getArgs(), other.commandLine.getArgs())
+				&& Arrays.equals(commandLine.getOptions(), other.commandLine.getOptions());
 		}
 		return false;
 	}
@@ -92,8 +90,8 @@ public final class RuntimeProperties extends PersistedProperties {
 		return String.format("%s[%s, args=%s, options=%s]",
 			getClass().getSimpleName(),
 			super.toString(),
-			Arrays.toString(this.commandLine.getArgs()),
-			Arrays.toString(this.commandLine.getOptions())
+			Arrays.toString(commandLine.getArgs()),
+			Arrays.toString(commandLine.getOptions())
 		);
 	}
 }

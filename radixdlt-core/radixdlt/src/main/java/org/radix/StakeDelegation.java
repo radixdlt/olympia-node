@@ -17,11 +17,10 @@
 
 package org.radix;
 
-import java.util.Objects;
-
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
+
+import java.util.Objects;
 
 /**
  * Represents a delegation of stake from a staker to a delegate for

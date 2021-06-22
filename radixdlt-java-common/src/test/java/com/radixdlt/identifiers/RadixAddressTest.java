@@ -17,16 +17,17 @@
 
 package com.radixdlt.identifiers;
 
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.utils.Bytes;
-import nl.jqno.equalsverifier.EqualsVerifier;
 import org.bouncycastle.util.encoders.Base64;
 import org.bouncycastle.util.encoders.DecoderException;
 import org.junit.Test;
 
-import java.util.Arrays;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.utils.Bytes;
+
 import java.util.List;
+
+import nl.jqno.equalsverifier.EqualsVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -44,17 +45,17 @@ public class RadixAddressTest {
 
 	@Test
 	public void when_an_address_is_created_with_same_string__they_should_be_equal_and_have_same_hashcode() {
-		RadixAddress address0 = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
-		RadixAddress address1 = RadixAddress.from(address0.toString());
+		var address0 = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
+		var address1 = RadixAddress.from(address0.toString());
 		assertThat(address0).isEqualTo(address1);
 		assertThat(address0).hasSameHashCodeAs(address1);
 	}
 
 	@Test
 	public void address_from_key_and_magical() throws PublicKeyException {
-		String publicKeyHexString = "033fedae769522b862ad738874b6690ad78b166c6358cf20e316008465cb5f1562";
-		ECPublicKey key = ECPublicKey.fromBytes(Bytes.fromHexString(publicKeyHexString));
-		RadixAddress address = new RadixAddress((byte) 2, key);
+		var publicKeyHexString = "033fedae769522b862ad738874b6690ad78b166c6358cf20e316008465cb5f1562";
+		var key = ECPublicKey.fromBytes(Bytes.fromHexString(publicKeyHexString));
+		var address = new RadixAddress((byte) 2, key);
 
 		// https://github.com/radixdlt/radixdlt-swift/
 		// blob/develop/Tests/TestCases/UnitTests/
@@ -68,8 +69,8 @@ public class RadixAddressTest {
 
 	@Test
 	public void createAddressFromPublicKey() throws PublicKeyException {
-		ECPublicKey publicKey = ECPublicKey.fromBytes(Base64.decode("A455PdOZNwyRWaSWFXyYYkbj7Wv9jtgCCqUYhuOHiPLC"));
-		RadixAddress address = new RadixAddress(magicByte(), publicKey);
+		var publicKey = ECPublicKey.fromBytes(Base64.decode("A455PdOZNwyRWaSWFXyYYkbj7Wv9jtgCCqUYhuOHiPLC"));
+		var address = new RadixAddress(magicByte(), publicKey);
 		assertEquals("JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ", address.toString());
 		assertEquals(address, RadixAddress.from("JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ"));
 	}
@@ -82,7 +83,7 @@ public class RadixAddressTest {
 
 	@Test
 	public void createAddressAndCheckUID() {
-		RadixAddress address = RadixAddress.from("JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ");
+		var address = RadixAddress.from("JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ");
 		assertEquals(new EUID("8cfef50ea6a767813631490f9a94f73f"), address.euid());
 	}
 
@@ -94,9 +95,7 @@ public class RadixAddressTest {
 
 	@Test
 	public void testAddresses() {
-		List<String> addresses = Arrays.asList(
-				"JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ"
-		);
+		var addresses = List.of("JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ");
 
 		addresses.forEach(RadixAddress::from);
 	}

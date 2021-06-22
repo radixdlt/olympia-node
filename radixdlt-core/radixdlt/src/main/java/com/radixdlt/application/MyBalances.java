@@ -25,6 +25,7 @@ import com.radixdlt.utils.UInt384;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 
 public final class MyBalances {
 	private final Map<REAddr, UInt384> balances = new HashMap<>();
@@ -44,5 +45,9 @@ public final class MyBalances {
 
 	public void forEach(BiConsumer<REAddr, UInt384> consumer) {
 		balances.forEach(consumer);
+	}
+
+	public Stream<Map.Entry<REAddr, UInt384>> stream() {
+		return balances.entrySet().stream();
 	}
 }

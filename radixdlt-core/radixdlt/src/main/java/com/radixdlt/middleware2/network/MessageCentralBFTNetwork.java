@@ -17,28 +17,27 @@
 
 package com.radixdlt.middleware2.network;
 
+import org.radix.network.messaging.Message;
+
 import com.google.inject.Inject;
-import com.google.inject.name.Named;
+import com.radixdlt.consensus.ConsensusEvent;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.network.messaging.MessageCentral;
+import com.radixdlt.network.messaging.MessageFromPeer;
+import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.qualifier.Magic;
 
 import java.util.Objects;
 
-import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.network.messaging.MessageFromPeer;
-import com.radixdlt.network.p2p.NodeId;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
-import org.radix.network.messaging.Message;
-
-import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.network.messaging.MessageCentral;
 
 /**
  * BFT Network sending and receiving layer used on top of the MessageCentral
@@ -53,7 +52,7 @@ public final class MessageCentralBFTNetwork {
 	@Inject
 	public MessageCentralBFTNetwork(
 		@Self BFTNode self,
-		@Named("magic") int magic,
+		@Magic int magic,
 		MessageCentral messageCentral
 	) {
 		this.magic = magic;

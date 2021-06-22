@@ -22,13 +22,11 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.google.common.io.CharStreams;
-import com.radixdlt.client.ThrowingConsumer;
 import com.radixdlt.crypto.exception.PublicKeyException;
 
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
@@ -50,22 +48,9 @@ public final class RestUtils {
 
 	public static void withBody(HttpServerExchange exchange, ThrowingConsumer<JSONObject> bodyHandler) {
 		if (exchange.isInIoThread()) {
-			exchange.dispatch(() -> handleBody(exchange, bodyHandler));
+			exchange.dispatch(() -> safeHandleBody(exchange, bodyHandler));
 		} else {
-			handleBody(exchange, bodyHandler);
-		}
-	}
-
-	public static void withBodyAsync(HttpServerExchange exchange, ThrowingConsumer<JSONObject> bodyHandler) {
-		if (exchange.isInIoThread()) {
-			exchange.dispatch(() -> handleAsync(exchange, bodyHandler));
-		} else {
-			try {
-				handleBody(exchange, bodyHandler);
-				sendStatusResponse(exchange, null);
-			} catch (Exception e) {
-				sendStatusResponse(exchange, e);
-			}
+			safeHandleBody(exchange, bodyHandler);
 		}
 	}
 
@@ -73,10 +58,19 @@ public final class RestUtils {
 		respondWithCode(exchange, StatusCodes.OK, object.toString());
 	}
 
-	private static void handleAsync(HttpServerExchange exchange, ThrowingConsumer<JSONObject> bodyHandler) {
-		CompletableFuture
-			.runAsync(() -> handleBody(exchange, bodyHandler))
-			.whenComplete((__, err) -> sendStatusResponse(exchange, err));
+	public static String sanitizeBaseUrl(String baseUrl) {
+		return !baseUrl.endsWith("/")
+			   ? baseUrl
+			   : baseUrl.substring(0, baseUrl.length() - 1);
+	}
+
+	private static void safeHandleBody(HttpServerExchange exchange, ThrowingConsumer<JSONObject> bodyHandler) {
+		try {
+			handleBody(exchange, bodyHandler);
+			sendStatusResponse(exchange, null);
+		} catch (Exception e) {
+			sendStatusResponse(exchange, e);
+		}
 	}
 
 	private static void sendStatusResponse(HttpServerExchange exchange, Throwable err) {
