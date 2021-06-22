@@ -56,10 +56,7 @@ import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 public class ConstructionHandlerTest {
 	private static final ECPublicKey PUB_KEY = ECKeyPair.generateNew().getPublicKey();
 	private static final REAddr ACCOUNT_ADDR = REAddr.ofPubKeyAccount(PUB_KEY);
-	private static final String ADDRESS = AccountAddress.of(ACCOUNT_ADDR);
-	private static final ECPublicKey V1 = ECKeyPair.generateNew().getPublicKey();
-	private static final ECPublicKey V2 = ECKeyPair.generateNew().getPublicKey();
-	private static final ECPublicKey V3 = ECKeyPair.generateNew().getPublicKey();
+	private static final String FEE_PAYER = AccountAddress.of(ACCOUNT_ADDR);
 
 	private final RriParser rriParser = mock(RriParser.class);
 	private final SubmissionService submissionService = mock(SubmissionService.class);
@@ -70,7 +67,7 @@ public class ConstructionHandlerTest {
 	public void testBuildTransactionPositional() {
 		var prepared = PreparedTransaction.create(randomBytes(), randomBytes(), UInt256.TEN);
 
-		when(submissionService.prepareTransaction(any(), any(), eq(false)))
+		when(submissionService.prepareTransaction(any(), any(), any(), eq(false)))
 			.thenReturn(Result.ok(prepared));
 
 		var actions = jsonArray()
@@ -81,6 +78,7 @@ public class ConstructionHandlerTest {
 			);
 		var params = jsonArray()
 			.put(actions)
+			.put(FEE_PAYER)
 			.put("message");
 
 		var response = handler.handleConstructionBuildTransaction(requestWith(params));
@@ -98,7 +96,7 @@ public class ConstructionHandlerTest {
 	public void testBuildTransactionNamed() {
 		var prepared = PreparedTransaction.create(randomBytes(), randomBytes(), UInt256.TEN);
 
-		when(submissionService.prepareTransaction(any(), any(), eq(false)))
+		when(submissionService.prepareTransaction(any(), any(), any(), eq(false)))
 			.thenReturn(Result.ok(prepared));
 
 		var actions = jsonArray()
@@ -109,6 +107,7 @@ public class ConstructionHandlerTest {
 			);
 		var params = jsonObject()
 			.put("actions", actions)
+			.put("feePayer", FEE_PAYER)
 			.put("message", "message");
 
 		var response = handler.handleConstructionBuildTransaction(requestWith(params));

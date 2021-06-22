@@ -222,7 +222,7 @@ public class SubmissionServiceTest {
 			)
 		);
 
-		var result = submissionService.prepareTransaction(steps, Optional.of("message"), false);
+		var result = submissionService.prepareTransaction(acct, steps, Optional.of("message"), false);
 
 		result
 			.onFailureDo(Assert::fail)
@@ -282,6 +282,6 @@ public class SubmissionServiceTest {
 			TransactionAction.transfer(ALICE_ACCT, BOB_ACCT, UInt256.FOUR, nativeToken)
 		);
 
-		return submissionService.prepareTransaction(steps, Optional.of("message"), false);
+		return submissionService.prepareTransaction(acct, steps, Optional.of("message"), false);
 	}
 }

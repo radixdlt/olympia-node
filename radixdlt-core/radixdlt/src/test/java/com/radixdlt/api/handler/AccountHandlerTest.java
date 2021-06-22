@@ -29,6 +29,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.utils.functional.Result;
 
@@ -54,7 +55,8 @@ public class AccountHandlerTest {
 	private final HashSigner hashSigner = keyPair::sign;
 
 	private final AccountHandler handler = new AccountHandler(
-		accountService, submissionService, actionParserService, hashSigner
+		accountService, submissionService, actionParserService,
+		hashSigner, REAddr.ofPubKeyAccount(keyPair.getPublicKey())
 	);
 
 	@Test
@@ -95,7 +97,7 @@ public class AccountHandlerTest {
 	public void testHandleAccountSubmitTransactionSingleStep() {
 		var aid = AID.from(HashUtils.random256().asBytes());
 
-		when(submissionService.oneStepSubmit(any(), any(), any(), eq(false)))
+		when(submissionService.oneStepSubmit(any(), any(), any(), any(), eq(false)))
 			.thenReturn(Result.ok(aid));
 
 		var actions = jsonArray()

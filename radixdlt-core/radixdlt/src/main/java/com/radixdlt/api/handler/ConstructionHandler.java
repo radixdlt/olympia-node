@@ -28,6 +28,8 @@ import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.AccountAddress;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
@@ -57,12 +59,13 @@ public class ConstructionHandler {
 	public JSONObject handleConstructionBuildTransaction(JSONObject request) {
 		return withRequiredParameters(
 			request,
-			List.of("actions"),
+			List.of("actions", "feePayer"),
 			List.of("message", "disableResourceAllocationAndDestroy"),
 			params ->
-				safeArray(params, "actions")
-					.flatMap(actions -> actionParserService.parse(actions)
+				allOf(safeArray(params, "actions"), account(params))
+					.flatMap((actions, feePayer) -> actionParserService.parse(actions)
 						.flatMap(steps -> submissionService.prepareTransaction(
+							feePayer,
 							steps,
 							optString(params, "message"),
 							params.optBoolean("disableResourceAllocationAndDestroy")))
@@ -121,5 +124,10 @@ public class ConstructionHandler {
 
 	private static JSONObject formatTxId(AID txId) {
 		return jsonObject().put("txID", txId);
+	}
+
+	private static Result<REAddr> account(JSONObject params) {
+		return safeString(params, "feePayer")
+			.flatMap(AccountAddress::parseFunctional);
 	}
 }

@@ -42,15 +42,11 @@ import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 import static com.radixdlt.api.data.ApiErrors.UNABLE_TO_PREPARE_TX;
-import static com.radixdlt.atom.actions.ActionErrors.DIFFERENT_SOURCE_ADDRESSES;
-import static com.radixdlt.atom.actions.ActionErrors.EMPTY_TRANSACTIONS_NOT_SUPPORTED;
 import static com.radixdlt.atom.actions.ActionErrors.SUBMISSION_FAILURE;
 import static com.radixdlt.atom.actions.ActionErrors.TRANSACTION_ADDRESS_DOES_NOT_MATCH;
 
@@ -69,32 +65,13 @@ public final class SubmissionService {
 	}
 
 	public Result<PreparedTransaction> prepareTransaction(
-		List<TransactionAction> steps, Optional<String> message, boolean disableResourceAllocAndDestroy
+		REAddr address, List<TransactionAction> steps, Optional<String> message, boolean disableResourceAllocAndDestroy
 	) {
-		var addresses = steps.stream()
-			.map(TransactionAction::getFrom)
-			.filter(Objects::nonNull)
-			.collect(Collectors.toSet());
-
-		if (addresses.size() != 1) {
-			return addresses.size() == 0
-				   ? EMPTY_TRANSACTIONS_NOT_SUPPORTED.result()
-				   : DIFFERENT_SOURCE_ADDRESSES.result();
-		}
-
-		var addr = addresses.iterator().next();
-
 		return Result.wrap(
 			UNABLE_TO_PREPARE_TX,
-			() -> {
-				var txnConstructionRequest = toConstructionRequest(
-					addr, steps, message, disableResourceAllocAndDestroy
-				);
-
-				return radixEngine.construct(txnConstructionRequest)
-					.buildForExternalSign()
-					.map(this::toPreparedTx);
-			}
+			() -> radixEngine.construct(toConstructionRequest(address, steps, message, disableResourceAllocAndDestroy))
+				.buildForExternalSign()
+				.map(this::toPreparedTx)
 		);
 	}
 
@@ -151,9 +128,10 @@ public final class SubmissionService {
 	}
 
 	public Result<AID> oneStepSubmit(
-		List<TransactionAction> steps, Optional<String> message, HashSigner signer, boolean disableResourceAllocAndDestroy
+		REAddr address, List<TransactionAction> steps,
+		Optional<String> message, HashSigner signer, boolean disableResourceAllocAndDestroy
 	) {
-		return prepareTransaction(steps, message, disableResourceAllocAndDestroy)
+		return prepareTransaction(address, steps, message, disableResourceAllocAndDestroy)
 			.map(prepared -> buildTxn(prepared.getBlob(), signer.sign(prepared.getHashToSign())))
 			.flatMap(this::submit);
 	}

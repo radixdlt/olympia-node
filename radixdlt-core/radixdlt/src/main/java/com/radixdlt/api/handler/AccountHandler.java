@@ -25,7 +25,9 @@ import com.radixdlt.api.service.AccountInfoService;
 import com.radixdlt.api.service.ActionParserService;
 import com.radixdlt.api.service.SubmissionService;
 import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.utils.functional.Result;
 
@@ -44,18 +46,21 @@ public class AccountHandler {
 	private final SubmissionService submissionService;
 	private final ActionParserService actionParserService;
 	private final HashSigner hashSigner;
+	private final REAddr account;
 
 	@Inject
 	public AccountHandler(
 		AccountInfoService accountService,
 		SubmissionService submissionService,
 		ActionParserService actionParserService,
-		@LocalSigner HashSigner hashSigner
+		@LocalSigner HashSigner hashSigner,
+		@Self REAddr account
 	) {
 		this.accountService = accountService;
 		this.submissionService = submissionService;
 		this.actionParserService = actionParserService;
 		this.hashSigner = hashSigner;
+		this.account = account;
 	}
 
 	public JSONObject handleAccountGetInfo(JSONObject request) {
@@ -81,7 +86,7 @@ public class AccountHandler {
 	) {
 		return actionParserService.parse(actions)
 			.flatMap(steps -> submissionService.oneStepSubmit(
-				steps, message, hashSigner, disableResourceAllocationAndDestroy
+				account, steps, message, hashSigner, disableResourceAllocationAndDestroy
 			));
 	}
 
