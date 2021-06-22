@@ -24,6 +24,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import java.security.SecureRandom;
+
 
 public class AWSSecrets {
 	private static final Boolean DEFAULT_ENABLE_AWS_SECRETS = false;
@@ -39,6 +41,7 @@ public class AWSSecrets {
 		options.addOption("h", "help", false, "Show usage information (this message)");
 		options.addOption("n", "full-node-number", true, "Number of full nodes");
 		options.addOption("p", "node-name-prefix", true, "Text prefix with which node name is numbered");
+		options.addOption("s", "secret-password-key", true, "Password to encrypt key");
 		options.addOption("as", "enable-aws-secrets", true, "Store as AWS Secrets(default: " + DEFAULT_ENABLE_AWS_SECRETS + ")");
 		options.addOption("rs", "recreate-aws-secrets", true, "Recreate AWS Secrets(default: " + DEFAULT_RECREATE_AWS_SECRETS + ")");
 		options.addOption("k", "network-name", true, "Network name(default: " + DEFAULT_NETWORK_NAME + ")");
@@ -74,6 +77,7 @@ public class AWSSecrets {
 
 			var networkName = getOption(cmd, 'k').orElse(DEFAULT_NETWORK_NAME);
 			var namePrefix = getOption(cmd, 'p').orElse(DEFAULT_PREFIX);
+			var defaultKeyPassword = getOption(cmd, 's').orElse("");
 			boolean enableAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("as"));
 			boolean recreateAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("rs"));
 
@@ -90,7 +94,7 @@ public class AWSSecrets {
 				final var passwordName = "password";
 				final var keyFileSecretName = String.format("%s/%s/%s", networkName, nodeName, keyStoreName);
 				final var passwordSecretName = String.format("%s/%s/%s", networkName, nodeName, passwordName);
-				final var password = passwordName;
+				final var password = generatePassword(defaultKeyPassword);
 				try (var capture = OutputCapture.startStdout()) {
 					var cmdArgs = new String[]{"generate-validator-key", "-k=" + keyStoreName, "-p=" + password};
 					System.out.println(Arrays.toString(cmdArgs));
@@ -127,6 +131,23 @@ public class AWSSecrets {
 		}
 	}
 
+	private static String generatePassword(String password) {
+		if (password == null || password.isEmpty()) {
+			//anphanumeric and special charactrers
+			int asciiOrigin = 48;	//0
+			int asciiBound = 122;	//z
+			int passwordLength = 8;
+			SecureRandom random = new SecureRandom();
+				return random.ints(asciiOrigin, asciiBound + 1)
+					.filter(i -> Character.isAlphabetic(i) || Character.isDigit(i))
+					.limit(passwordLength)
+					.collect(StringBuilder::new, StringBuilder::appendCodePoint,
+							 StringBuilder::append)
+					.toString();
+		} else {
+			return password;
+		}
+	}
 	private static void usage(Options options) {
 		new HelpFormatter().printHelp(AWSSecrets.class.getSimpleName(), options, true);
 	}
