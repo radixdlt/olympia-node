@@ -148,7 +148,7 @@ public class AWSSecrets {
 			var keyStoreName = String.format("%s.ks", nodeName);
 			var keyStoreSecretName = String.format("%s.ks", nodeName);
 			var passwordName = "password";
-			if (namePrefix.equals(CORE_NODE_PREFIX)){
+			if (namePrefix.equals(CORE_NODE_PREFIX)) {
 				if (isStaker) {
 					keyStoreSecretName = "staker_key";
 					passwordName = "staker_password";
