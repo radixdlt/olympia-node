@@ -72,12 +72,12 @@ public final class AccumulatorState {
 		}
 
 		AccumulatorState other = (AccumulatorState) o;
-		return this.stateVersion == other.stateVersion
-			&& Objects.equals(this.accumulatorHash, other.accumulatorHash);
+		return stateVersion == other.stateVersion
+			&& Objects.equals(accumulatorHash, other.accumulatorHash);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{version=%s hash=%s}", this.getClass().getSimpleName(), this.stateVersion, this.accumulatorHash);
+		return String.format("%s{version=%s hash=%s}", getClass().getSimpleName(), stateVersion, accumulatorHash);
 	}
 }

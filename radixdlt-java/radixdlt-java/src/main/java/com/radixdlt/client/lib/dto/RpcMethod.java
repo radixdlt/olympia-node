@@ -1,30 +1,77 @@
 package com.radixdlt.client.lib.dto;
 
+import static com.radixdlt.client.lib.dto.EndPoint.ACCOUNT;
+import static com.radixdlt.client.lib.dto.EndPoint.ARCHIVE;
+import static com.radixdlt.client.lib.dto.EndPoint.CONSTRUCTION;
+import static com.radixdlt.client.lib.dto.EndPoint.SYSTEM;
+import static com.radixdlt.client.lib.dto.EndPoint.VALIDATION;
+
 public enum RpcMethod {
-	NETWORK_ID("networkId"),
-	NATIVE_TOKEN("nativeToken"),
-	TOKEN_INFO("tokenInfo"),
-	TOKEN_BALANCES("tokenBalances"),
-	TRANSACTION_HISTORY("transactionHistory"),
-	LOOKUP_TRANSACTION("lookupTransaction"),
-	STAKE_POSITIONS("stakePositions"),
-	UNSTAKE_POSITIONS("unstakePositions"),
-	STATUS_OF_TRANSACTION("statusOfTransaction"),
-	NETWORK_TRANSACTION_THROUGHPUT("networkTransactionThroughput"),
-	NETWORK_TRANSACTION_DEMAND("networkTransactionDemand"),
-	VALIDATORS("validators"),
-	LOOKUP_VALIDATOR("lookupValidator"),
-	BUILD_TRANSACTION("buildTransaction"),
-	FINALIZE_TRANSACTION("finalizeTransaction"),
-	SUBMIT_TRANSACTION("submitTransaction");
+	TOKEN_NATIVE("tokens.get_native_token", ARCHIVE),
+	TOKEN_INFO("tokens.get_info", ARCHIVE),
+
+	ACCOUNT_BALANCES("account.get_balances", ARCHIVE),
+	ACCOUNT_HISTORY("account.get_transaction_history", ARCHIVE),
+	ACCOUNT_STAKES("account.get_stake_positions", ARCHIVE),
+	ACCOUNT_UNSTAKES("account.get_unstake_positions", ARCHIVE),
+
+	TRANSACTION_LOOKUP("transactions.lookup_transaction", ARCHIVE),
+	TRANSACTION_STATUS("transactions.get_transaction_status", ARCHIVE),
+
+	NETWORK_ID("network.get_id", ARCHIVE),
+	NETWORK_THROUGHPUT("network.get_throughput", ARCHIVE),
+	NETWORK_DEMAND("network.get_demand", ARCHIVE),
+
+	NETWORK_CONFIG("networking.get_configuration", SYSTEM),
+	NETWORK_PEERS("networking.get_peers", SYSTEM),
+	NETWORK_DATA("networking.get_data", SYSTEM),
+
+	VALIDATORS_LIST("validators.get_next_epoch_set", ARCHIVE),
+	VALIDATORS_LOOKUP("validators.lookup_validator", ARCHIVE),
+
+	CONSTRUCTION_BUILD("construction.build_transaction", CONSTRUCTION),
+	CONSTRUCTION_FINALIZE("construction.finalize_transaction", CONSTRUCTION),
+	CONSTRUCTION_SUBMIT("construction.submit_transaction", CONSTRUCTION),
+
+	API_CONFIGURATION("api.get_configuration", SYSTEM),
+	API_DATA("api.get_data", SYSTEM),
+
+	BFT_CONFIGURATION("bft.get_configuration", SYSTEM),
+	BFT_DATA("bft.get_data", SYSTEM),
+
+	MEMPOOL_CONFIGURATION("mempool.get_configuration", SYSTEM),
+	MEMPOOL_DATA("mempool.get_data", SYSTEM),
+
+	LEDGER_PROOF("ledger.get_latest_proof", SYSTEM),
+	LEDGER_EPOCH_PROOF("ledger.get_latest_epoch_proof", SYSTEM),
+	LEDGER_CHECKPOINTS("checkpoints.get_checkpoints", SYSTEM),
+
+	RADIX_ENGINE_CONFIGURATION("radix_engine.get_configuration", SYSTEM),
+	RADIX_ENGINE_DATA("radix_engine.get_data", SYSTEM),
+
+	SYNC_CONFIGURATION("sync.get_configuration", SYSTEM),
+	SYNC_DATA("sync.get_data", SYSTEM),
+
+	VALIDATION_NODE_INFO("validation.get_node_info", VALIDATION),
+	VALIDATION_CURRENT_EPOCH("validation.get_current_epoch_data", VALIDATION),
+	VALIDATION_NEXT_EPOCH("validation.get_next_epoch_data", VALIDATION),
+
+	ACCOUNT_INFO("account.get_info", ACCOUNT),
+	ACCOUNT_SUBMIT_SINGLE_STEP("account.submit_transaction_single_step", ACCOUNT);
 
 	private final String method;
+	private final EndPoint endPoint;
 
-	RpcMethod(String method) {
+	RpcMethod(String method, EndPoint endPoint) {
 		this.method = method;
+		this.endPoint = endPoint;
 	}
 
 	public String method() {
 		return method;
+	}
+
+	public EndPoint endPoint() {
+		return endPoint;
 	}
 }

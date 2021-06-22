@@ -38,13 +38,14 @@ public enum ActionType {
 	MINT("MintTokens"),
 	REGISTER_VALIDATOR("RegisterValidator"),
 	UNREGISTER_VALIDATOR("UnregisterValidator"),
+	UPDATE_VALIDATOR("UpdateValidator"),
 	CREATE_FIXED("CreateFixedSupplyToken"),
 	CREATE_MUTABLE("CreateMutableSupplyToken"),
 	UNKNOWN("Other");
 
 	private final String text;
 
-	private static final Map<String, ActionType> TO_ACTION_TYPE = Arrays.stream(ActionType.values())
+	private static final Map<String, ActionType> TO_ACTION_TYPE = Arrays.stream(values())
 		.collect(Collectors.toMap(ActionType::toJson, Function.identity()));
 
 	ActionType(String text) {

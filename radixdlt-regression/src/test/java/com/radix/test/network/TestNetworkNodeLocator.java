@@ -3,8 +3,7 @@ package com.radix.test.network;
 import com.radix.test.network.client.HttpException;
 import com.radix.test.network.client.NodeApiClient;
 import com.radixdlt.client.lib.api.AccountAddress;
-import com.radixdlt.client.lib.impl.SynchronousRadixApiClient;
-import com.radixdlt.client.lib.network.HttpClients;
+import com.radixdlt.client.lib.api.sync.RadixApi;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -115,11 +114,9 @@ public class TestNetworkNodeLocator {
      * Connects and calls the "networkId" method, making sure that there is a responsive json-rpc api
      */
     public static void pingJsonRpcEndpoint(String jsonRpcRootUrl) {
-        var networkIdDTOResult = SynchronousRadixApiClient.connect(jsonRpcRootUrl,
-            HttpClients.getSslAllTrustingClient()).flatMap(SynchronousRadixApiClient::networkId);
-        if (!networkIdDTOResult.isSuccess()) {
-            throw new HttpException("Could not connect to JSON-RPC API at " + jsonRpcRootUrl + "");
-        }
+        RadixApi.connect(jsonRpcRootUrl).flatMap(synchronousRadixApiClient -> synchronousRadixApiClient.network().id())
+            .onFailureDo(() -> {
+                throw new HttpException("Could not connect to JSON-RPC API at " + jsonRpcRootUrl + "");
+            });
     }
-
 }

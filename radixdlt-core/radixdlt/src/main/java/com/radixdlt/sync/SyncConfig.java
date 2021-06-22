@@ -17,6 +17,8 @@
 
 package com.radixdlt.sync;
 
+import org.json.JSONObject;
+
 /**
  * Configuration parameters for ledger sync.
  */
@@ -62,6 +64,16 @@ public interface SyncConfig {
 			public double maxLedgerUpdatesRate() {
 				return maxLedgerUpdatesRate;
 			}
+
+			@Override
+			public JSONObject asJson() {
+				return new JSONObject()
+					.put("syncCheckInterval", syncCheckInterval)
+					.put("syncCheckMaxPeers", syncCheckMaxPeers)
+					.put("requestTimeout", requestTimeout)
+					.put("ledgerStatusUpdateMaxPeersToNotify", ledgerStatusUpdateMaxPeersToNotify)
+					.put("maxLedgerUpdatesRate", maxLedgerUpdatesRate);
+			}
 		};
 	}
 
@@ -94,4 +106,10 @@ public interface SyncConfig {
 	 * Maximum number of LedgerStatusUpdate messages send by this node per second.
 	 */
 	double maxLedgerUpdatesRate();
+
+	/**
+	 * Represent configuration as JSON
+	 */
+
+	JSONObject asJson();
 }

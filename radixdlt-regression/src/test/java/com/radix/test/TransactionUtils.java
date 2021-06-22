@@ -47,7 +47,7 @@ public final class TransactionUtils {
     }
 
     public static TransactionStatusDTO performTxStatusRequest(Account account, AID txId) {
-        return account.statusOfTransaction(txId).fold(Utils::toTestFailureException,
+        return account.transaction().status(txId).fold(Utils::toTestFailureException,
             transactionStatusDTO -> transactionStatusDTO);
     }
 
@@ -77,10 +77,10 @@ public final class TransactionUtils {
 
     public static Result<TxDTO> performTransaction(Account account, TransactionRequest request) {
         var keyPair = account.getKeyPair();
-        return account.buildTransaction(request).flatMap(builtTransactionDTO -> {
+		return account.transaction().build(request).flatMap(builtTransactionDTO -> {
             var finalizedTransaction = builtTransactionDTO.toFinalized(keyPair);
-            return account.finalizeTransaction(finalizedTransaction)
-                    .flatMap(finalTxTdo -> account.submitTransaction(finalizedTransaction.withTxId(finalTxTdo.getTxId())));
+            return account.transaction().finalize(finalizedTransaction)
+                    .flatMap(finalTxTdo -> account.transaction().submit(finalizedTransaction.withTxId(finalTxTdo.getTxId())));
         }).onFailure(Utils::toTestFailureException);
     }
 

@@ -40,6 +40,10 @@ public class ValidatorAddress {
 		return new ValidatorAddress(publicKey);
 	}
 
+	public static ValidatorAddress of(ECPublicKey publicKey) {
+		return new ValidatorAddress(publicKey);
+	}
+
 	public ECPublicKey getAddress() {
 		return address;
 	}

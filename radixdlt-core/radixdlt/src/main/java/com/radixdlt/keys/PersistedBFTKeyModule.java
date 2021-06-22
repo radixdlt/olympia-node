@@ -20,7 +20,6 @@ package com.radixdlt.keys;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.name.Names;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -29,6 +28,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.qualifier.LocalSigner;
 
 /**
  * Configures the key to be used for signing things as a BFT validator.
@@ -36,7 +36,7 @@ import com.radixdlt.properties.RuntimeProperties;
 public final class PersistedBFTKeyModule extends AbstractModule {
 	@Override
 	public void configure() {
-		bind(HashSigner.class).annotatedWith(Names.named("RadixEngine")).to(HashSigner.class);
+		bind(HashSigner.class).annotatedWith(LocalSigner.class).to(HashSigner.class);
 	}
 
 	@Provides

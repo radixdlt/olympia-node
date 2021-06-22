@@ -17,7 +17,8 @@
 
 package com.radixdlt;
 
-import com.google.common.collect.ImmutableMap;
+import org.radix.Radix;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
@@ -31,19 +32,19 @@ import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
-import com.radixdlt.systeminfo.InMemorySystemInfo;
-import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.middleware2.InfoSupplier;
-import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
 
-import org.radix.Radix;
+import java.util.Map;
+
+import static org.radix.Radix.SYSTEM_VERSION_KEY;
 
 /**
  * Module which manages system info
@@ -53,8 +54,8 @@ public class SystemInfoModule extends AbstractModule {
 	protected void configure() {
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 		bind(InMemorySystemInfo.class).in(Scopes.SINGLETON);
-		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
-				.permitDuplicates();
+		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
+			.permitDuplicates();
 		eventBinder.addBinding().toInstance(EpochViewUpdate.class);
 		eventBinder.addBinding().toInstance(EpochLocalTimeoutOccurrence.class);
 		eventBinder.addBinding().toInstance(BFTCommittedUpdate.class);
@@ -117,38 +118,36 @@ public class SystemInfoModule extends AbstractModule {
 		@PacemakerMaxExponent int pacemakerMaxExponent
 	) {
 		return () -> {
-			EpochView currentEpochView = infoStateManager.getCurrentView();
-			EpochLocalTimeoutOccurrence timeout = infoStateManager.getLastTimeout();
-			QuorumCertificate highQC = infoStateManager.getHighestQC();
+			var currentEpochView = infoStateManager.getCurrentView();
+			var timeout = infoStateManager.getLastTimeout();
+			var highQC = infoStateManager.getHighestQC();
 
-			return ImmutableMap.of(
-				"configuration", ImmutableMap.of(
+			return Map.of(
+				"configuration", Map.of(
 					"pacemakerTimeout", pacemakerTimeout,
 					"pacemakerRate", pacemakerRate,
 					"pacemakerMaxExponent", pacemakerMaxExponent
 				),
-				"epochManager", ImmutableMap.of(
-					"highQC", highQC != null ? ImmutableMap.of(
+				"epochManager", Map.of(
+					"highQC", highQC != null ? Map.of(
 						"epoch", highQC.getProposed().getLedgerHeader().getEpoch(),
 						"view", highQC.getView().number(),
 						"vertexId", highQC.getProposed().getVertexId()
-					)
-					: ImmutableMap.of(),
-					"currentView", ImmutableMap.of(
+					) : Map.of(),
+					"currentView", Map.of(
 						"epoch", currentEpochView.getEpoch(),
 						"view", currentEpochView.getView().number()
 					),
-					"lastTimeout", timeout != null ? ImmutableMap.of(
+					"lastTimeout", timeout != null ? Map.of(
 						"epoch", timeout.getEpochView().getEpoch(),
 						"view", timeout.getEpochView().getView().number(),
 						"leader", timeout.getLeader().toString(),
 						"timeoutLengthMs", timeout.getBase().timeout().millisecondsWaitTime(),
 						"count", timeout.getBase().timeout().count()
-					)
-					: ImmutableMap.of()
+					) : Map.of()
 				),
 				"counters", counters.toMap(),
-				"system_version", Radix.systemVersionInfo()
+				SYSTEM_VERSION_KEY, Radix.systemVersionInfo().get(SYSTEM_VERSION_KEY)
 			);
 		};
 	}

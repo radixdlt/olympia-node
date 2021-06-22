@@ -190,7 +190,8 @@ public interface SystemCounters {
 		NETWORKING_RECEIVED_BYTES("networking.received_bytes"),
 
 		SIGNATURES_SIGNED("signatures.signed"),
-		SIGNATURES_VERIFIED("signatures.verified");
+		SIGNATURES_VERIFIED("signatures.verified"),
+		TIME_DURATION("time.duration");
 
 		private final String jsonPath;
 
@@ -199,7 +200,7 @@ public interface SystemCounters {
 		}
 
 		public String jsonPath() {
-			return this.jsonPath;
+			return jsonPath;
 		}
 	}
 

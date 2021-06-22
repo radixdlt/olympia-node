@@ -17,7 +17,9 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.google.inject.name.Named;
+import org.radix.network.messages.PeerPingMessage;
+import org.radix.network.messages.PeerPongMessage;
+
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
@@ -25,12 +27,12 @@ import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.liveness.Ping;
 import com.radixdlt.network.p2p.liveness.Pong;
-import io.reactivex.rxjava3.core.BackpressureStrategy;
-import io.reactivex.rxjava3.core.Flowable;
-import org.radix.network.messages.PeerPingMessage;
-import org.radix.network.messages.PeerPongMessage;
+import com.radixdlt.qualifier.Magic;
 
 import java.util.Objects;
+
+import io.reactivex.rxjava3.core.BackpressureStrategy;
+import io.reactivex.rxjava3.core.Flowable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -44,7 +46,7 @@ public final class MessageCentralPeerLiveness {
 
 	@Inject
 	public MessageCentralPeerLiveness(
-		@Named("magic") int magic,
+		@Magic int magic,
 		MessageCentral messageCentral
 	) {
 		this.magic = magic;

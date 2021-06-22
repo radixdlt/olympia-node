@@ -22,14 +22,15 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.name.Named;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
+import com.radixdlt.integration.distributed.simulation.network.LatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
-import com.radixdlt.integration.distributed.simulation.network.LatencyProvider;
+import com.radixdlt.qualifier.LatencyProviderBase;
+
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -38,7 +39,7 @@ public final class NetworkLatencies {
 	public static Module fixed(int latency) {
 		return new AbstractModule() {
 			@Provides
-			@Named("base")
+			@LatencyProviderBase
 			LatencyProvider base() {
 				return msg -> latency;
 			}
@@ -53,7 +54,7 @@ public final class NetworkLatencies {
 		return new AbstractModule() {
 			@Provides
 			@Singleton
-			@Named("base")
+			@LatencyProviderBase
 			LatencyProvider base() {
 				return new RandomLatencyProvider(minLatency, maxLatency);
 			}
@@ -64,7 +65,7 @@ public final class NetworkLatencies {
 		return new AbstractModule() {
 			@Provides
 			@Singleton
-			@Named("base")
+			@LatencyProviderBase
 			LatencyProvider base(ImmutableList<BFTNode> nodes) {
 				return msg -> {
 					if ((msg.getSender().equals(nodes.get(0)) || msg.getReceiver().equals(nodes.get(0)))
@@ -84,7 +85,7 @@ public final class NetworkLatencies {
 		return new AbstractModule() {
 			@Provides
 			@Singleton
-			@Named("base")
+			@LatencyProviderBase
 			LatencyProvider base(ImmutableList<BFTNode> nodes) {
 				Map<BFTNode, Integer> nodeLatencies = IntStream.range(0, nodes.size())
 					.boxed()

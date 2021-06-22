@@ -17,84 +17,93 @@
 
 package org.radix;
 
-import com.google.common.collect.ImmutableMap;
+import org.apache.commons.cli.ParseException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.json.JSONObject;
+import org.radix.utils.IOUtils;
+
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.ModuleRunner;
 import com.radixdlt.RadixNodeModule;
-import com.radixdlt.client.ArchiveServer;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.network.p2p.transport.PeerServerBootstrap;
-import com.radixdlt.utils.MemoryLeakDetector;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.properties.RuntimeProperties;
-
-import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.commons.cli.ParseException;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.json.JSONObject;
-import com.radixdlt.api.NodeHttpServer;
-import org.radix.utils.IOUtils;
+import com.radixdlt.utils.MemoryLeakDetector;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.security.Security;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 
 public final class Radix {
+	private static final Logger log = LogManager.getLogger();
+
 	private Radix() { }
 
 	private static final String SYSTEM_VERSION_DISPLAY;
 	private static final String SYSTEM_VERSION_BRANCH;
 	private static final String SYSTEM_VERSION_COMMIT;
-	private static final ImmutableMap<String, Object> SYSTEM_VERSION_INFO;
+	private static final Map<String, Map<String, Object>> SYSTEM_VERSION_INFO;
 
-	public static final int 	PROTOCOL_VERSION 		= 100;
+	public static final int PROTOCOL_VERSION = 100;
 
-	public static final int 	AGENT_VERSION 			= 2710000;
-	public static final int 	MAJOR_AGENT_VERSION 	= 2709999;
-	public static final int 	REFUSE_AGENT_VERSION 	= 2709999;
-	public static final String 	AGENT 					= "/Radix:/" + AGENT_VERSION;
+	public static final int AGENT_VERSION = 2710000;
+	public static final String AGENT = "/Radix:/" + AGENT_VERSION;
+	public static final String SYSTEM_VERSION_KEY = "system_version";
+	public static final String VERSION_STRING_KEY = "version_string";
 
 	static {
 		System.setProperty("java.net.preferIPv4Stack", "true");
 
-		String branch  = "unknown-branch";
-		String commit  = "unknown-commit";
-		String display = "unknown-version";
-		try (InputStream is = Radix.class.getResourceAsStream("/version.properties")) {
+		var branch = "unknown-branch";
+		var commit = "unknown-commit";
+		var display = "unknown-version";
+		var map = new HashMap<String, Object>();
+
+		try (var is = Radix.class.getResourceAsStream("/version.properties")) {
 			if (is != null) {
-				Properties p = new Properties();
+				var p = new Properties();
 				p.load(is);
-				branch  = p.getProperty("VERSION_BRANCH",  branch);
-				commit  = p.getProperty("VERSION_COMMIT",  commit);
+				branch = p.getProperty("VERSION_BRANCH", branch);
+				commit = p.getProperty("VERSION_COMMIT", commit);
 				display = p.getProperty("VERSION_DISPLAY", display);
+
+				for (var key : p.stringPropertyNames()) {
+					var mapKey = key.split("_", 2)[1].toLowerCase(Locale.US);
+					var defaultValue = "unknown-" + mapKey;
+
+					map.put(mapKey, p.getProperty(key, defaultValue));
+				}
+
+				map.put("agent_version", AGENT_VERSION);
+				map.put("protocol_version", PROTOCOL_VERSION);
 			}
 		} catch (IOException e) {
 			// Ignore exception
 		}
-		SYSTEM_VERSION_DISPLAY = display;
-		SYSTEM_VERSION_BRANCH  = branch;
-		SYSTEM_VERSION_COMMIT  = commit;
-		SYSTEM_VERSION_INFO = ImmutableMap.of("system_version",
-			ImmutableMap.of(
-				"branch",           SYSTEM_VERSION_BRANCH,
-				"commit",           SYSTEM_VERSION_COMMIT,
-				"display",          SYSTEM_VERSION_DISPLAY,
-				"agent_version",    AGENT_VERSION,
-				"protocol_version", PROTOCOL_VERSION
-			)
-		);
-	}
 
-	private static final Logger log = LogManager.getLogger();
+		SYSTEM_VERSION_DISPLAY = display;
+		SYSTEM_VERSION_BRANCH = branch;
+		SYSTEM_VERSION_COMMIT = commit;
+
+		map.put(VERSION_STRING_KEY, calculateVersionString(map));
+
+		SYSTEM_VERSION_INFO = Map.of(SYSTEM_VERSION_KEY, Map.copyOf(map));
+	}
 
 	private static final Object BC_LOCK = new Object();
 	private static boolean bcInitialised;
@@ -130,11 +139,13 @@ public final class Radix {
 	}
 
 	private static void logVersion() {
-		log.always().log("Radix distributed ledger '{}' from branch '{}' commit '{}'",
-			SYSTEM_VERSION_DISPLAY, SYSTEM_VERSION_BRANCH, SYSTEM_VERSION_COMMIT);
+		log.always().log(
+			"Radix distributed ledger '{}' from branch '{}' commit '{}'",
+			SYSTEM_VERSION_DISPLAY, SYSTEM_VERSION_BRANCH, SYSTEM_VERSION_COMMIT
+		);
 	}
 
-	public static ImmutableMap<String, Object> systemVersionInfo() {
+	public static Map<String, Map<String, Object>> systemVersionInfo() {
 		return SYSTEM_VERSION_INFO;
 	}
 
@@ -172,8 +183,10 @@ public final class Radix {
 		}
 
 		// start API services
-		final var httpServer = moduleRunners.get(Runners.NODE_API);
-		httpServer.start();
+		final var nodeServer = moduleRunners.get(Runners.NODE_API);
+		if (nodeServer != null) {
+			nodeServer.start();
+		}
 
 		final var archiveServer = moduleRunners.get(Runners.ARCHIVE_API);
 		if (archiveServer != null) {
@@ -217,5 +230,34 @@ public final class Radix {
 			}
 		}
 		return new RuntimeProperties(runtimeConfigurationJSON, args);
+	}
+
+	@VisibleForTesting
+	static String calculateVersionString(Map<String, Object> details) {
+		if (isCleanTag(details)) {
+			return lastTag(details);
+		} else {
+			var version = branchName(details) == null
+						  ? "detached-head-" + gitHash(details)
+						  : (lastTag(details) + "-" + branchName(details)).replace('/', '~');
+
+			return version + "-SNAPSHOT";
+		}
+	}
+
+	private static boolean isCleanTag(Map<String, Object> details) {
+		return Objects.equals(details.get("tag"), details.get("last_tag"));
+	}
+
+	private static String lastTag(Map<String, Object> details) {
+		return (String) details.get("last_tag");
+	}
+
+	private static String gitHash(Map<String, Object> details) {
+		return (String) details.get("build");
+	}
+
+	private static String branchName(Map<String, Object> details) {
+		return (String) details.get("branch");
 	}
 }

@@ -4,7 +4,9 @@ import com.radix.acceptance.AcceptanceTest;
 import com.radix.test.TestFailureException;
 import com.radix.test.TransactionUtils;
 import com.radix.test.Utils;
+import com.radixdlt.client.lib.api.sync.RadixApi;
 import com.radixdlt.client.lib.dto.TxDTO;
+
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import org.apache.logging.log4j.LogManager;
@@ -36,7 +38,7 @@ public class Messaging extends AcceptanceTest {
 
     @Then("my message can be read")
     public void my_message_can_be_read() {
-        var txWithMessage = getTestAccount(1).lookupTransaction(this.txWithMessage.getTxId())
+		var txWithMessage = ((RadixApi) getTestAccount(1)).transaction().lookup(this.txWithMessage.getTxId())
             .fold(Utils::toTestFailureException, transactionDTO -> transactionDTO);
         assertEquals(expectedMessage, txWithMessage.getMessage().orElseThrow(() ->
             new TestFailureException("No message found in transaction")));
