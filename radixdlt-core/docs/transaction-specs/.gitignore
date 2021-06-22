@@ -1,0 +1,10 @@
+.DS_Store
+
+# Rust
+Cargo.lock
+debug/
+target/
+.idea/
+
+# Visual Studio Code
+.vscode/
