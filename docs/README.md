@@ -6,5 +6,6 @@ For general documentation, please visit https://docs.radixdlt.com/.
 
 ## Contents
 
+- [API Specifications](./api-specs)
 - [Transaction Specifications](./transaction-specs)
 - [Logging Configuration](./logging)

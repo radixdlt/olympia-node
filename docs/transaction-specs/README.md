@@ -1,6 +1,6 @@
 # Radix Transaction Specs
 
-This repository hosts the current Radix transaction specifications.
+This folder hosts documentation on Radix transaction specifications.
 
 ## Specs
 
