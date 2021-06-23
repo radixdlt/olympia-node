@@ -29,10 +29,11 @@ import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
-import com.radixdlt.atommodel.system.construction.NextEpochConstructorV2;
+import com.radixdlt.atommodel.system.construction.NextEpochConstructorV3;
 import com.radixdlt.atommodel.system.construction.PayFeeConstructorV2;
+import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.atommodel.system.scrypt.FeeConstraintScrypt;
-import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
+import com.radixdlt.atommodel.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
@@ -95,7 +96,8 @@ public class TransactionParserTest {
 	@Before
 	public void setup() throws Exception {
 		final var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new SystemConstraintScryptV2());
+		cmAtomOS.load(new RoundUpdateConstraintScrypt(10));
+		cmAtomOS.load(new EpochUpdateConstraintScrypt(10));
 		cmAtomOS.load(new ValidatorConstraintScryptV2());
 		cmAtomOS.load(new TokensConstraintScryptV3());
 		cmAtomOS.load(new StakingConstraintScryptV4());
@@ -116,7 +118,7 @@ public class TransactionParserTest {
 			.put(PayFee.class, new PayFeeConstructorV2())
 			.put(StakeTokens.class, new StakeTokensConstructorV3())
 			.put(UnstakeTokens.class, new UnstakeTokensConstructorV2())
-			.put(SystemNextEpoch.class, new NextEpochConstructorV2())
+			.put(SystemNextEpoch.class, new NextEpochConstructorV3())
 			.put(CreateSystem.class, new CreateSystemConstructorV2())
 			.build();
 

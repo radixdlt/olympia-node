@@ -22,7 +22,6 @@ import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
-import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV1;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.atomos.CMAtomOS;
@@ -50,8 +49,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class RegisterValidatorTest {
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
-		return List.of(
-			new Object[] {new ValidatorConstraintScryptV1()},
+		return List.<Object[]>of(
 			new Object[] {new ValidatorConstraintScryptV2()}
 		);
 	};

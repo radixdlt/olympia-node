@@ -49,7 +49,6 @@ import com.radixdlt.atommodel.system.construction.PayFeeConstructorV2;
 import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.atommodel.system.scrypt.FeeConstraintScrypt;
 import com.radixdlt.atommodel.system.scrypt.RoundUpdateConstraintScrypt;
-import com.radixdlt.atommodel.system.scrypt.SystemV1ToV2TransitionConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.construction.BurnTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.CreateFixedTokenConstructor;
@@ -100,7 +99,6 @@ public final class MainnetForkRulesModule extends AbstractModule {
 			v4.load(new UniqueParticleConstraintScrypt());
 			v4.load(new RoundUpdateConstraintScrypt(maxRounds));
 			v4.load(new EpochUpdateConstraintScrypt(maxRounds));
-			v4.load(new SystemV1ToV2TransitionConstraintScrypt());
 			var betanet4 = new ConstraintMachineConfig(
 				v4.virtualizedUpParticles(),
 				v4.getProcedures(),

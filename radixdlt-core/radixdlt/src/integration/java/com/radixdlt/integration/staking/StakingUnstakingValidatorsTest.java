@@ -43,7 +43,7 @@ import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
 import com.radixdlt.atom.actions.UpdateRake;
 import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
-import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
+import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
@@ -482,7 +482,7 @@ public class StakingUnstakingValidatorsTest {
 				.orElseGet(() -> lastEpochView.getLastEvent().getTail().getEpoch());
 
 		logger.info("Epoch {}", epoch);
-		var maxEmissions = UInt256.from(maxRounds).multiply(SystemConstraintScryptV2.REWARDS_PER_PROPOSAL).multiply(UInt256.from(epoch - 1));
+		var maxEmissions = UInt256.from(maxRounds).multiply(EpochUpdateConstraintScrypt.REWARDS_PER_PROPOSAL).multiply(UInt256.from(epoch - 1));
 		logger.info("Max emissions {}", maxEmissions);
 
 		var nodeState = reloadNodeState();

@@ -28,11 +28,14 @@ import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.SystemNextEpoch;
+import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
-import com.radixdlt.atommodel.system.construction.NextEpochConstructorV2;
-import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
+import com.radixdlt.atommodel.system.construction.NextEpochConstructorV3;
+import com.radixdlt.atommodel.system.construction.NextViewConstructorV3;
+import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
+import com.radixdlt.atommodel.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
@@ -76,7 +79,8 @@ public class UnstakeTokensV2Test {
 				List.of(UInt256.TEN),
 				UInt256.TEN,
 				List.of(
-					new SystemConstraintScryptV2(),
+					new RoundUpdateConstraintScrypt(10),
+					new EpochUpdateConstraintScrypt(10),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(),
 					new ValidatorConstraintScryptV2()
@@ -88,7 +92,8 @@ public class UnstakeTokensV2Test {
 				List.of(UInt256.FIVE, UInt256.FIVE),
 				UInt256.TEN,
 				List.of(
-					new SystemConstraintScryptV2(),
+					new RoundUpdateConstraintScrypt(10),
+					new EpochUpdateConstraintScrypt(10),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(),
 					new ValidatorConstraintScryptV2()
@@ -100,7 +105,8 @@ public class UnstakeTokensV2Test {
 				List.of(UInt256.TEN),
 				UInt256.SIX,
 				List.of(
-					new SystemConstraintScryptV2(),
+					new RoundUpdateConstraintScrypt(10),
+					new EpochUpdateConstraintScrypt(10),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(),
 					new ValidatorConstraintScryptV2()
@@ -112,7 +118,8 @@ public class UnstakeTokensV2Test {
 				List.of(UInt256.FIVE, UInt256.FIVE),
 				UInt256.SIX,
 				List.of(
-					new SystemConstraintScryptV2(),
+					new RoundUpdateConstraintScrypt(10),
+					new EpochUpdateConstraintScrypt(10),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(),
 					new ValidatorConstraintScryptV2()
@@ -165,7 +172,8 @@ public class UnstakeTokensV2Test {
 			serialization,
 			ActionConstructors.newBuilder()
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
-				.put(SystemNextEpoch.class, new NextEpochConstructorV2())
+				.put(SystemNextView.class, new NextViewConstructorV3())
+				.put(SystemNextEpoch.class, new NextEpochConstructorV3())
 				.put(StakeTokens.class, stakeTokensConstructor)
 				.put(UnstakeOwnership.class, unstakeTokensConstructor)
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
@@ -249,8 +257,10 @@ public class UnstakeTokensV2Test {
 		var unstake = this.sut.construct(new UnstakeOwnership(accountAddr, key.getPublicKey(), unstakeAmt))
 			.signAndBuild(key::sign);
 		sut.execute(List.of(unstake));
-		var nextEpoch2 = sut.construct(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 1))
-			.buildWithoutSignature();
+		var request = TxnConstructionRequest.create()
+			.action(new SystemNextView(10, true, 1, u -> key.getPublicKey()))
+			.action(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 1));
+		var nextEpoch2 = sut.construct(request).buildWithoutSignature();
 		this.sut.execute(List.of(nextEpoch2), null, PermissionLevel.SUPER_USER);
 
 		// Act
