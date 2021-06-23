@@ -16,6 +16,8 @@
  */
 package com.radixdlt.api.service;
 
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,7 +43,6 @@ import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -72,7 +73,7 @@ import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -131,8 +132,9 @@ public class SubmissionServiceTest {
 
 			@Override
 			public void configure() {
-				install(new BetanetForksModule());
-				install(new RadixEngineForksLatestOnlyModule(View.of(10), false));
+				install(new BetanetForkConfigsModule());
+				install(new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10)));
+				install(new ForksModule());
 				install(RadixEngineConfig.asModule(1, 100, 50));
 				install(MempoolConfig.asModule(10, 10));
 
