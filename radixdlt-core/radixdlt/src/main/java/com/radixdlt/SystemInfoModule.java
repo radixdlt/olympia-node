@@ -40,11 +40,7 @@ import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
-import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.middleware2.InfoSupplier;
-import com.radixdlt.systeminfo.InMemorySystemInfo;
 
 import java.util.Map;
 

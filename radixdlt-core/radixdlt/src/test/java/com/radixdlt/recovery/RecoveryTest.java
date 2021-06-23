@@ -17,6 +17,7 @@
 
 package com.radixdlt.recovery;
 
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.assertj.core.api.Condition;

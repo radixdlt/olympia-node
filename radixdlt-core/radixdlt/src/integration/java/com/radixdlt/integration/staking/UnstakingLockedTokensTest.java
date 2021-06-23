@@ -44,7 +44,6 @@ import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.ECKeyPair;

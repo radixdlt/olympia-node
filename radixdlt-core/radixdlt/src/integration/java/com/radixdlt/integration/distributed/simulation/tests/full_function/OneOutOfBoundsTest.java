@@ -18,17 +18,17 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.full_function;
 
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.application.RadixEngineUniqueGenerator;
-import com.radixdlt.integration.distributed.simulation.monitors.application.ApplicationMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.sync.SyncConfig;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -64,8 +64,9 @@ public class OneOutOfBoundsTest {
 			)
 			.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
 			.addRadixEngineConfigModules(
-				new BetanetForksModule(),
-				new RadixEngineForksLatestOnlyModule(View.of(20L), fees)
+				new RadixEngineForksLatestOnlyModule(new RERulesConfig(fees, 20L)),
+				new BetanetForkConfigsModule(),
+				new ForksModule()
 			)
 			.addNodeModule(MempoolConfig.asModule(1000, 10))
 			.addTestModules(

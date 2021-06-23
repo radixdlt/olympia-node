@@ -17,6 +17,7 @@
 
 package com.radixdlt.statecomputer.checkpoint;
 
+import com.radixdlt.qualifier.Magic;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
 
@@ -31,8 +32,6 @@ import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.utils.UInt256;
-import org.radix.StakeDelegation;
-import org.radix.TokenIssuance;
 
 import java.util.Comparator;
 import java.util.List;

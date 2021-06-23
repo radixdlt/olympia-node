@@ -17,7 +17,6 @@
 
 package com.radixdlt.integration.recovery;
 
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.identifiers.ValidatorAddress;
