@@ -29,14 +29,19 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.constraintmachine.ConstraintMachineException;
+import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RadixEngineMempoolException;
 import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.functional.Result;
@@ -115,12 +120,36 @@ public final class SubmissionService {
 			var success = completableFuture.get();
 			return Result.ok(success.getTxn().getId());
 		} catch (ExecutionException e) {
-			logger.warn("Unable to fulfill submission request: " + txn.getId() + ": ", e);
-			return SUBMISSION_FAILURE.with(e.getMessage()).result();
+			var cause = lookupCause(e);
+
+			logger.warn("Unable to fulfill submission request for TxID (" + txn.getId() + ")", e);
+			return SUBMISSION_FAILURE.with(cause.getMessage()).result();
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			throw new IllegalStateException(e);
 		}
+	}
+
+	private Throwable lookupCause(Throwable e) {
+		var reportedException = e;
+
+		while (reportedException.getCause() instanceof MempoolRejectedException) {
+			reportedException = reportedException.getCause();
+		}
+
+		while (reportedException.getCause() instanceof RadixEngineException) {
+			reportedException = reportedException.getCause();
+		}
+
+		while (reportedException.getCause() instanceof ConstraintMachineException) {
+			reportedException = reportedException.getCause();
+		}
+
+		while (reportedException.getCause() instanceof ProcedureException) {
+			reportedException = reportedException.getCause();
+		}
+
+		return reportedException;
 	}
 
 	private Txn buildTxn(byte[] blob, ECDSASignature recoverable) {
