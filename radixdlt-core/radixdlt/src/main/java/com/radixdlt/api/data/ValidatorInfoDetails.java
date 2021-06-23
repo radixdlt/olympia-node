@@ -30,6 +30,7 @@ import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 import static java.util.Objects.requireNonNull;
 
+//TODO: add `registered` flag
 public class ValidatorInfoDetails {
 	private final ECPublicKey validator;
 	private final REAddr owner;
@@ -38,6 +39,7 @@ public class ValidatorInfoDetails {
 	private final UInt256 totalStake;
 	private final UInt256 ownerStake;
 	private final boolean externalStakesAllowed;
+	private final int percentage;
 
 	private ValidatorInfoDetails(
 		ECPublicKey validator,
@@ -46,7 +48,8 @@ public class ValidatorInfoDetails {
 		String infoUrl,
 		UInt256 totalStake,
 		UInt256 ownerStake,
-		boolean externalStakesAllowed
+		boolean externalStakesAllowed,
+		int percentage
 	) {
 		this.validator = validator;
 		this.owner = owner;
@@ -55,6 +58,7 @@ public class ValidatorInfoDetails {
 		this.totalStake = totalStake;
 		this.ownerStake = ownerStake;
 		this.externalStakesAllowed = externalStakesAllowed;
+		this.percentage = percentage;
 	}
 
 	public static ValidatorInfoDetails create(
@@ -64,7 +68,8 @@ public class ValidatorInfoDetails {
 		String infoUrl,
 		UInt256 totalStake,
 		UInt256 ownerStake,
-		boolean externalStakesAllowed
+		boolean externalStakesAllowed,
+		int percentage
 	) {
 		requireNonNull(validator);
 		requireNonNull(owner);
@@ -72,7 +77,9 @@ public class ValidatorInfoDetails {
 		requireNonNull(totalStake);
 		requireNonNull(ownerStake);
 
-		return new ValidatorInfoDetails(validator, owner, name, infoUrl, totalStake, ownerStake, externalStakesAllowed);
+		return new ValidatorInfoDetails(
+			validator, owner, name, infoUrl, totalStake, ownerStake, externalStakesAllowed, percentage
+		);
 	}
 
 	public static ValidatorInfoDetails create(ValidatorDetails details) {
@@ -83,10 +90,10 @@ public class ValidatorInfoDetails {
 			details.getUrl(),
 			details.getStake(),
 			details.getOwnerStake(),
-			details.allowsDelegation()
+			details.allowsDelegation(),
+			details.getPercentage()
 		);
 	}
-
 
 	public String getValidatorAddress() {
 		return ValidatorAddress.of(validator);
@@ -108,6 +115,7 @@ public class ValidatorInfoDetails {
 			.put("infoURL", infoUrl)
 			.put("totalDelegatedStake", totalStake)
 			.put("ownerDelegation", ownerStake)
+			.put("percentage", percentage)
 			.put("isExternalStakeAccepted", externalStakesAllowed);
 	}
 }

@@ -31,7 +31,7 @@ public final class UnregisterValidatorConstructor implements ActionConstructor<U
 	public void construct(UnregisterValidator action, TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.swap(
 			ValidatorParticle.class,
-			p -> p.getKey().equals(action.validatorKey()) && p.isRegisteredForNextEpoch(),
+			p -> p.getValidatorKey().equals(action.validatorKey()) && p.isRegisteredForNextEpoch(),
 			"Already unregistered."
 		).with(
 			substateDown -> List.of(new ValidatorParticle(

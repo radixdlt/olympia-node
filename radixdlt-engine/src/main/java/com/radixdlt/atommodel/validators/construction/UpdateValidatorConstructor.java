@@ -31,7 +31,7 @@ public final class UpdateValidatorConstructor implements ActionConstructor<Updat
 	public void construct(UpdateValidator action, TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.swap(
 			ValidatorParticle.class,
-			p -> p.getKey().equals(action.validatorKey()),
+			p -> p.getValidatorKey().equals(action.validatorKey()),
 			"Invalid state."
 		).with(
 			substateDown -> List.of(new ValidatorParticle(

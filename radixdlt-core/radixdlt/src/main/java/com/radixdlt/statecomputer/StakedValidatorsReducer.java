@@ -23,6 +23,7 @@ import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.validators.state.AllowDelegationFlag;
 import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
+import com.radixdlt.atommodel.validators.state.RakeCopy;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
@@ -63,7 +64,8 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 			ValidatorStakeData.class,
 			PreparedStake.class,
 			PreparedValidatorUpdate.class,
-			AllowDelegationFlag.class
+			AllowDelegationFlag.class,
+			RakeCopy.class
 		);
 	}
 
@@ -90,6 +92,9 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 			} else if (p instanceof AllowDelegationFlag) {
 				var s = (AllowDelegationFlag) p;
 				return prev.setAllowDelegationFlag(s.getValidatorKey(), s.allowsDelegation());
+			} else if (p instanceof RakeCopy) {
+				var s = (RakeCopy) p;
+				return prev.setRake(s.getValidatorKey(), s.getCurRakePercentage());
 			} else {
 				var s = (ValidatorStakeData) p;
 				if (s.getOwnerAddr().isPresent()) {

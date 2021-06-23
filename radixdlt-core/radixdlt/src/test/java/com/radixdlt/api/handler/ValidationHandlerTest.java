@@ -81,7 +81,8 @@ public class ValidationHandlerTest {
 			v1, REAddr.ofPubKeyAccount(v1),
 			name, "http://" + name + ".com",
 			stake, UInt256.ZERO,
-			true
+			true,
+			100
 		);
 	}
 }

@@ -18,6 +18,10 @@
 
 package com.radixdlt.application;
 
+import com.radixdlt.identifiers.REAddr;
+
+import java.util.Optional;
+
 /**
  * Info about node as validator
  */
@@ -25,11 +29,19 @@ public final class MyValidatorInfo {
 	private final String name;
 	private final String url;
 	private final boolean registered;
+	private final int currentRake;
+	private final boolean allowDelegation;
+	private final REAddr owner;
 
-	public MyValidatorInfo(String name, String url, boolean registered) {
+	public MyValidatorInfo(
+		String name, String url, boolean registered, int currentRake, boolean allowDelegation, REAddr owner
+	) {
 		this.name = name;
 		this.url = url;
 		this.registered = registered;
+		this.currentRake = currentRake;
+		this.allowDelegation = allowDelegation;
+		this.owner = owner;
 	}
 
 	public String getName() {
@@ -42,5 +54,33 @@ public final class MyValidatorInfo {
 
 	public boolean isRegistered() {
 		return registered;
+	}
+
+	public int getCurrentRake() {
+		return currentRake;
+	}
+
+	public boolean allowsDelegation() {
+		return allowDelegation;
+	}
+
+	public Optional<REAddr> getOwner() {
+		return Optional.ofNullable(owner);
+	}
+
+	public MyValidatorInfo withNameUrlAndRegistration(String name, String url, boolean registered) {
+		return new MyValidatorInfo(name, url, registered, currentRake, allowDelegation, owner);
+	}
+
+	public MyValidatorInfo withRake(int currentRake) {
+		return new MyValidatorInfo(name, url, registered, currentRake, allowDelegation, owner);
+	}
+
+	public MyValidatorInfo withOwner(REAddr owner) {
+		return new MyValidatorInfo(name, url, registered, currentRake, allowDelegation, owner);
+	}
+
+	public MyValidatorInfo withDelegation(boolean allowDelegation) {
+		return new MyValidatorInfo(name, url, registered, currentRake, allowDelegation, owner);
 	}
 }

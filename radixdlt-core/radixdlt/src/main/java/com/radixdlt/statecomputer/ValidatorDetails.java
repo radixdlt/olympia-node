@@ -30,9 +30,11 @@ public final class ValidatorDetails {
 	private final UInt256 stake;
 	private final UInt256 ownerStake;
 	private final boolean allowDelegation;
+	private final int percentage;
 
 	private ValidatorDetails(
-		ECPublicKey key, REAddr owner, String name, String url, UInt256 stake, UInt256 ownerStake, boolean allowDelegation
+		ECPublicKey key, REAddr owner, String name, String url, UInt256 stake,
+		UInt256 ownerStake, boolean allowDelegation, int percentage
 	) {
 		this.key = key;
 		this.name = name;
@@ -41,13 +43,16 @@ public final class ValidatorDetails {
 		this.stake = stake;
 		this.ownerStake = ownerStake;
 		this.allowDelegation = allowDelegation;
+		this.percentage = percentage;
 	}
 
 	public static ValidatorDetails fromParticle(
-		ValidatorParticle particle, REAddr owner, UInt256 stake, UInt256 ownerStake, boolean allowDelegation
+		ValidatorParticle particle, REAddr owner, UInt256 stake,
+		UInt256 ownerStake, boolean allowDelegation, int percentage
 	) {
 		return new ValidatorDetails(
-			particle.getKey(), owner, particle.getName(), particle.getUrl(), stake, ownerStake, allowDelegation
+			particle.getValidatorKey(), owner, particle.getName(), particle.getUrl(),
+			stake, ownerStake, allowDelegation, percentage
 		);
 	}
 
@@ -77,5 +82,9 @@ public final class ValidatorDetails {
 
 	public boolean allowsDelegation() {
 		return allowDelegation;
+	}
+
+	public int getPercentage() {
+		return percentage;
 	}
 }
