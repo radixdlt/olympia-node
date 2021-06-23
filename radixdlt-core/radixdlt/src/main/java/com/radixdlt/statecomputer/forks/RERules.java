@@ -23,7 +23,6 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.engine.BatchVerifier;
-import com.radixdlt.engine.PostProcessedVerifier;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
@@ -34,7 +33,6 @@ public class RERules {
 	private final ConstraintMachineConfig constraintMachineConfig;
 	private final ActionConstructors actionConstructors;
 	private final BatchVerifier<LedgerAndBFTProof> batchVerifier;
-	private final PostProcessedVerifier postProcessedVerifier;
 	private final View maxRounds;
 
 	public RERules(
@@ -44,7 +42,6 @@ public class RERules {
 		ConstraintMachineConfig constraintMachineConfig,
 		ActionConstructors actionConstructors,
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
-		PostProcessedVerifier postProcessedVerifier,
 		View maxRounds
 	) {
 		this.name = name;
@@ -53,7 +50,6 @@ public class RERules {
 		this.constraintMachineConfig = constraintMachineConfig;
 		this.actionConstructors = actionConstructors;
 		this.batchVerifier = batchVerifier;
-		this.postProcessedVerifier = postProcessedVerifier;
 		this.maxRounds = maxRounds;
 	}
 
@@ -79,10 +75,6 @@ public class RERules {
 
 	public REParser getParser() {
 		return parser;
-	}
-
-	public PostProcessedVerifier getPostProcessedVerifier() {
-		return postProcessedVerifier;
 	}
 
 	public View getMaxRounds() {

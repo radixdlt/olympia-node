@@ -36,7 +36,6 @@ import java.util.stream.Collectors;
 import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRandomRegistrator;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.statecomputer.RadixEngineConfig;
-import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
@@ -54,7 +53,6 @@ public class RandomVoteAndViewTimeoutDropperTest {
 		)
 		.addRadixEngineConfigModules(
 			RadixEngineConfig.asModule(2, 50, 5),
-			new BetanetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100)),
 			new ForksModule()
 		)

@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import com.radixdlt.integration.distributed.simulation.application.RadixEngineUniqueGenerator;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.statecomputer.RadixEngineConfig;
-import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
@@ -47,7 +46,6 @@ public class SanityTest {
 		)
 		.addRadixEngineConfigModules(
 			RadixEngineConfig.asModule(2, 50, 5),
-			new BetanetForkConfigsModule(),
 			new ForksModule(),
 			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100))
 		)

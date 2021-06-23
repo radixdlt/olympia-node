@@ -27,7 +27,6 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
-import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
@@ -145,7 +144,6 @@ public class RecoveryLivenessTest {
 		Guice.createInjector(
 			new MockedGenesisModule(),
 			new CryptoModule(),
-			new BetanetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, epochCeilingView)),
 			new ForksModule(),
 			new RadixEngineModule(),
@@ -190,7 +188,6 @@ public class RecoveryLivenessTest {
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
-			new BetanetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, epochCeilingView)),
 			new ForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),

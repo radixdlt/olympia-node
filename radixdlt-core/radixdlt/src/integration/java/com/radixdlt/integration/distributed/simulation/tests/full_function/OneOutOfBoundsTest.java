@@ -26,7 +26,6 @@ import com.radixdlt.integration.distributed.simulation.monitors.consensus.Consen
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
@@ -65,7 +64,6 @@ public class OneOutOfBoundsTest {
 			.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
 			.addRadixEngineConfigModules(
 				new RadixEngineForksLatestOnlyModule(new RERulesConfig(fees, 20L)),
-				new BetanetForkConfigsModule(),
 				new ForksModule()
 			)
 			.addNodeModule(MempoolConfig.asModule(1000, 10))

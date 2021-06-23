@@ -24,40 +24,13 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 /**
  * The forks for betanet and the epochs at which they will occur.
  */
-public final class BetanetForkConfigsModule extends AbstractModule {
+public final class MainnetForkConfigsModule extends AbstractModule {
 	@ProvidesIntoSet
-	ForkConfig betanetV1() {
+	ForkConfig mainnet() {
 		return new ForkConfig(
 			0L,
-			"betanet1",
+			"mainnet",
 			new RERulesConfig(true, 100000L)
-		);
-	}
-
-	@ProvidesIntoSet
-	ForkConfig betanetV2() {
-		return new ForkConfig(
-			45L,
-			"betanet2",
-			new RERulesConfig(true, 10000L)
-		);
-	}
-
-	@ProvidesIntoSet
-	ForkConfig betanetV3() {
-		return new ForkConfig(
-			584L,
-			"betanet3",
-			new RERulesConfig(true, 10000L)
-		);
-	}
-
-	@ProvidesIntoSet
-	ForkConfig betanetV4() {
-		return new ForkConfig(
-			1000L,
-			"betanet4",
-			new RERulesConfig(true, 10000L)
 		);
 	}
 }

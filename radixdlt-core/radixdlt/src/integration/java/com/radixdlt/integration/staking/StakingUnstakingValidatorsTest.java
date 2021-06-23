@@ -81,10 +81,10 @@ import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkRulesModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -120,7 +120,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.radixdlt.statecomputer.transaction.TokenFeeChecker.FIXED_FEE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(Parameterized.class)
@@ -158,7 +157,6 @@ public class StakingUnstakingValidatorsTest {
 			.sorted(Comparator.comparing(k -> k.getPublicKey().euid()))
 			.collect(ImmutableList.toImmutableList());
 		this.radixEngineConfiguration = Modules.combine(
-			new BetanetForkConfigsModule(),
 			new ForksModule(),
 			forkModule,
 			RadixEngineConfig.asModule(1, 10, 50)
@@ -462,7 +460,7 @@ public class StakingUnstakingValidatorsTest {
 
 			var request = TxnConstructionRequest.create();
 			if (payFees) {
-				request.action(new PayFee(acct, FIXED_FEE));
+				request.action(new PayFee(acct, MainnetForkRulesModule.FIXED_FEE));
 			}
 			request.action(action);
 			dispatcher.dispatch(NodeApplicationRequest.create(request));

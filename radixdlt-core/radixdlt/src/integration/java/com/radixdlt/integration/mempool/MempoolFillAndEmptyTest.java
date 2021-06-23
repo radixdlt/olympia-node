@@ -46,7 +46,6 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 
@@ -69,7 +68,6 @@ public final class MempoolFillAndEmptyTest {
     private Injector createInjector() {
         return Guice.createInjector(
             MempoolConfig.asModule(1000, 10),
-            new BetanetForkConfigsModule(),
             new ForksModule(),
             new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100)),
             RadixEngineConfig.asModule(1, 10, 10),

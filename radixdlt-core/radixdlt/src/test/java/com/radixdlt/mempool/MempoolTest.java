@@ -53,7 +53,6 @@ import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 
@@ -85,7 +84,6 @@ public class MempoolTest {
 		return Guice.createInjector(
 			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100)),
 			MempoolConfig.asModule(10, 10, 200, 500, 10),
-			new BetanetForkConfigsModule(),
 			new ForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),

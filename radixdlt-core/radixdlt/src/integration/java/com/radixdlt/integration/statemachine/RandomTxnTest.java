@@ -41,7 +41,6 @@ import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastStoredProof;
@@ -65,7 +64,6 @@ public class RandomTxnTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
-			new BetanetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100)),
 			new ForksModule(),
 			RadixEngineConfig.asModule(1, 10, 50),

@@ -354,8 +354,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 						rules.getSerialization(),
 						rules.getActionConstructors(),
 						rules.getBatchVerifier(),
-						rules.getParser(),
-						rules.getPostProcessedVerifier()
+						rules.getParser()
 					);
 					this.epochCeilingView = rules.getMaxRounds();
 				});

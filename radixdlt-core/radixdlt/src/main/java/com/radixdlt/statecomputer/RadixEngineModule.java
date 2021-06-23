@@ -30,7 +30,6 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.engine.PostProcessedVerifier;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
@@ -139,16 +138,6 @@ public class RadixEngineModule extends AbstractModule {
 	}
 
 	@Provides
-	PostProcessedVerifier checker(
-		CommittedReader committedReader, // TODO: This is a hack, remove
-		Forks forks
-	) {
-		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
-		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return forks.get(epoch).getPostProcessedVerifier();
-	}
-
-	@Provides
 	@Singleton
 	private RadixEngine<LedgerAndBFTProof> getRadixEngine(
 		REParser parser,
@@ -156,7 +145,6 @@ public class RadixEngineModule extends AbstractModule {
 		ConstraintMachine constraintMachine,
 		ActionConstructors actionConstructors,
 		EngineStore<LedgerAndBFTProof> engineStore,
-		PostProcessedVerifier checker,
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
 		Set<StateReducer<?>> stateReducers,
 		Set<Pair<String, StateReducer<?>>> namedStateReducers,
@@ -169,7 +157,6 @@ public class RadixEngineModule extends AbstractModule {
 			actionConstructors,
 			constraintMachine,
 			engineStore,
-			checker,
 			batchVerifier
 		);
 

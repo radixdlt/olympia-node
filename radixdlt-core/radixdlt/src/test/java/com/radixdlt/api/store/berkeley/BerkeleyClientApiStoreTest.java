@@ -16,7 +16,6 @@
  */
 package com.radixdlt.api.store.berkeley;
 
-import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Before;
@@ -115,7 +114,6 @@ public class BerkeleyClientApiStoreTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 0),
-			new BetanetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10)),
 			new ForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
