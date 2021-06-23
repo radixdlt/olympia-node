@@ -263,7 +263,7 @@ public final class BetanetForksModule extends AbstractModule {
 		v4.load(new StakingConstraintScryptV4());
 		v4.load(new UniqueParticleConstraintScrypt());
 		v4.load(new EpochUpdateConstraintScrypt());
-		v4.load(new RoundUpdateConstraintScrypt());
+		v4.load(new RoundUpdateConstraintScrypt(10000));
 		v4.load(new SystemV1ToV2TransitionConstraintScrypt());
 		var betanet4 = new ConstraintMachineConfig(
 			v4.virtualizedUpParticles(),

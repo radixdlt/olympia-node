@@ -599,7 +599,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	private void epochUpdate(Loader os) {
 		// Epoch Update
 		os.procedure(new DownProcedure<>(
-			RoundClosed.class, EpochData.class,
+			EndPrevRound.class, EpochData.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> ReducerResult.incomplete(new UpdatingEpoch(d.getSubstate()))
 		));
@@ -709,23 +709,6 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 	@Override
 	public void main(Loader os) {
-		os.substate(
-			new SubstateDefinition<>(
-				RoundData.class,
-				Set.of(SubstateTypeId.ROUND_DATA.id()),
-				(b, buf) -> {
-					var view = REFieldSerialization.deserializeNonNegativeLong(buf);
-					var timestamp = REFieldSerialization.deserializeNonNegativeLong(buf);
-					return new RoundData(view, timestamp);
-				},
-				(s, buf) -> {
-					buf.put(SubstateTypeId.ROUND_DATA.id());
-					buf.putLong(s.getView());
-					buf.putLong(s.getTimestamp());
-				},
-				p -> p.getView() == 0 && p.getTimestamp() == 0
-			)
-		);
 		os.substate(
 			new SubstateDefinition<>(
 				EpochData.class,

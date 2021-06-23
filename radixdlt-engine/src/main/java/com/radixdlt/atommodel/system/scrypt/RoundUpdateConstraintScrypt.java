@@ -40,13 +40,21 @@ import java.util.Set;
 import java.util.TreeMap;
 
 public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
+	private final long maxRounds;
+
+	public RoundUpdateConstraintScrypt(long maxRounds) {
+		this.maxRounds = maxRounds;
+	}
+
 	private static class StartValidatorBFTUpdate implements ReducerState {
+		private final long maxRounds;
 		private final long view;
 		private TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate = new TreeMap<>(
 			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
 		);
 
-		public StartValidatorBFTUpdate(long view) {
+		public StartValidatorBFTUpdate(long maxRounds, long view) {
+			this.maxRounds = maxRounds;
 			this.view = view;
 		}
 
@@ -60,52 +68,29 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 		}
 
 		public UpdatingValidatorBFTData exit() {
-			return new UpdatingValidatorBFTData(view, validatorsToUpdate);
-		}
-	}
-
-	private static class UpdatingValidatorBFTData implements ReducerState {
-		private long expectedNextView;
-		private TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate;
-
-		UpdatingValidatorBFTData(long view, TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate) {
-			this.expectedNextView = view;
-			this.validatorsToUpdate = validatorsToUpdate;
-		}
-
-		// TODO: Need to catch overflow attacks
-		// TODO: Verify doesnt go above max view
-		private void incrementViews(long count) {
-			this.expectedNextView += count;
-		}
-
-		public void update(ValidatorBFTData next) throws ProcedureException {
-			var first = validatorsToUpdate.firstKey();
-			if (!next.validatorKey().equals(first)) {
-				throw new ProcedureException("Invalid key for validator bft data update");
-			}
-			var old = validatorsToUpdate.remove(first);
-			if (old.proposalsCompleted() > next.proposalsCompleted()
-				|| old.proposalsMissed() > next.proposalsMissed()) {
-				throw new ProcedureException("Invalid data for validator bft data update");
-			}
-
-			var additionalProposalsCompleted = next.proposalsCompleted() - old.proposalsCompleted();
-			var additionalProposalsMissed = next.proposalsMissed() - old.proposalsMissed();
-
-			incrementViews(additionalProposalsCompleted);
-			incrementViews(additionalProposalsMissed);
-		}
-
-		public void update(RoundData next) throws ProcedureException {
-			if (this.expectedNextView != next.getView()) {
-				throw new ProcedureException("Expected view " + this.expectedNextView + " but was " + next.getView());
-			}
+			return new UpdatingValidatorBFTData(maxRounds, view, validatorsToUpdate);
 		}
 	}
 
 	@Override
 	public void main(Loader os) {
+		os.substate(
+			new SubstateDefinition<>(
+				RoundData.class,
+				Set.of(SubstateTypeId.ROUND_DATA.id()),
+				(b, buf) -> {
+					var view = REFieldSerialization.deserializeNonNegativeLong(buf);
+					var timestamp = REFieldSerialization.deserializeNonNegativeLong(buf);
+					return new RoundData(view, timestamp);
+				},
+				(s, buf) -> {
+					buf.put(SubstateTypeId.ROUND_DATA.id());
+					buf.putLong(s.getView());
+					buf.putLong(s.getTimestamp());
+				},
+				p -> p.getView() == 0 && p.getTimestamp() == 0
+			)
+		);
 		os.substate(
 			new SubstateDefinition<>(
 				ValidatorBFTData.class,
@@ -128,15 +113,15 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 		os.procedure(new DownProcedure<>(
 			VoidReducerState.class, RoundData.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(d, s, r) -> ReducerResult.incomplete(new RoundClosed(d.getSubstate()))
+			(d, s, r) -> ReducerResult.incomplete(new EndPrevRound(d.getSubstate()))
 		));
 
 		os.procedure(new DownProcedure<>(
-			RoundClosed.class, ValidatorBFTData.class,
+			EndPrevRound.class, ValidatorBFTData.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> {
 				var view = s.getClosedRound().getView();
-				var next = new StartValidatorBFTUpdate(view);
+				var next = new StartValidatorBFTUpdate(maxRounds, view);
 				next.beginUpdate(d.getSubstate());
 				return ReducerResult.incomplete(next);
 			}
@@ -153,22 +138,18 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> {
 				var next = s.exit();
-				next.update(u);
-				return ReducerResult.incomplete(next);
+				return ReducerResult.incomplete(next.update(u));
 			}
 		));
 
 		os.procedure(new UpProcedure<>(
 			UpdatingValidatorBFTData.class, ValidatorBFTData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, u, c, r) -> {
-				s.update(u);
-				return ReducerResult.incomplete(s);
-			}
+			(s, u, c, r) -> ReducerResult.incomplete(s.update(u))
 		));
 
 		os.procedure(new UpProcedure<>(
-			UpdatingValidatorBFTData.class, RoundData.class,
+			StartNextRound.class, RoundData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> {
 				s.update(u);
