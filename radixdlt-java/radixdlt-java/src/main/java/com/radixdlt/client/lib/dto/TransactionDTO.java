@@ -34,9 +34,9 @@ public class TransactionDTO {
 	private final TxTimestamp sentAt;
 	private final UInt256 fee;
 	private final String message;
-	private final List<ActionDTO> actions;
+	private final List<Action> actions;
 
-	private TransactionDTO(AID txID, TxTimestamp sentAt, UInt256 fee, String message, List<ActionDTO> actions) {
+	private TransactionDTO(AID txID, TxTimestamp sentAt, UInt256 fee, String message, List<Action> actions) {
 		this.txID = txID;
 		this.sentAt = sentAt;
 		this.fee = fee;
@@ -50,7 +50,7 @@ public class TransactionDTO {
 		@JsonProperty("sentAt") TxTimestamp sentAt,
 		@JsonProperty("fee") UInt256 fee,
 		@JsonProperty("message") String message,
-		@JsonProperty("actions") List<ActionDTO> actions
+		@JsonProperty("actions") List<Action> actions
 	) {
 		requireNonNull(txID);
 		requireNonNull(sentAt);
@@ -109,7 +109,7 @@ public class TransactionDTO {
 		return Optional.ofNullable(message);
 	}
 
-	public List<ActionDTO> getActions() {
+	public List<Action> getActions() {
 		return actions;
 	}
 }

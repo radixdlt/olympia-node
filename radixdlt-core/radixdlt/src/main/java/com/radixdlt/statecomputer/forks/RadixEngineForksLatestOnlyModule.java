@@ -19,48 +19,32 @@
 package com.radixdlt.statecomputer.forks;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.consensus.bft.View;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.OptionalBinder;
 
 import java.util.Comparator;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.Set;
+import java.util.function.UnaryOperator;
 
 /**
  * For testing only, only tests the latest state computer configuration
  */
 public class RadixEngineForksLatestOnlyModule extends AbstractModule {
-	private final View epochHighViewOverwrite;
-	private final boolean fees;
+	private final RERulesConfig config;
 
-	public RadixEngineForksLatestOnlyModule(View epochHighViewOverwrite, boolean fees) {
-		this.epochHighViewOverwrite = epochHighViewOverwrite;
-		this.fees = fees;
+	public RadixEngineForksLatestOnlyModule(RERulesConfig config) {
+		this.config = config;
 	}
 
-	@Provides
-	@Singleton
-	private ForkConfig forkConfig(Map<EpochMapKey, ForkConfig> forkConfigs) {
-		return forkConfigs.entrySet().stream()
-			.max(Comparator.comparing(e -> e.getKey().epoch()))
-			.map(Map.Entry::getValue)
-			.map(f -> new ForkConfig(
-				f.getName(),
-				f.getParser(),
-				f.getSubstateSerialization(),
-				fees ? f.getConstraintMachineConfig() : f.getConstraintMachineConfig().metering((procedureKey, param, context) -> { }),
-				f.getActionConstructors(),
-				f.getBatchVerifier(),
-				fees ? f.getPostProcessedVerifier() : (p, t) -> { },
-				epochHighViewOverwrite
-			))
-			.orElseThrow();
-	}
-
-	@Provides
-	@Singleton
-	private TreeMap<Long, ForkConfig> epochToForkConfig(ForkConfig forkConfig) {
-		return new TreeMap<>(Map.of(0L, forkConfig));
+	@Override
+	protected void configure() {
+		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkConfig>>>() { })
+			.setBinding()
+			.toInstance(m ->
+				Set.of(m.stream()
+					.max(Comparator.comparingLong(ForkConfig::getEpoch))
+					.map(f -> new ForkConfig(0L, f.getName(), config))
+					.orElseThrow())
+			);
 	}
 }

@@ -24,5 +24,5 @@ import org.json.JSONObject;
  * Handles Json RPC requests
  */
 public interface JsonRpcHandler {
-	JSONObject execute(JSONObject param);
+	JSONObject execute(JSONObject request);
 }

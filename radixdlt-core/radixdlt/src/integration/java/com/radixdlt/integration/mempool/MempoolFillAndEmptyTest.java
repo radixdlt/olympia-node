@@ -17,19 +17,24 @@
 
 package com.radixdlt.integration.mempool;
 
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.radix.TokenIssuance;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
+import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.api.chaos.mempoolfiller.ScheduledMempoolFill;
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
-import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
-import com.radixdlt.chaos.mempoolfiller.ScheduledMempoolFill;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
@@ -38,15 +43,12 @@ import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.radix.TokenIssuance;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -67,8 +69,9 @@ public final class MempoolFillAndEmptyTest {
     private Injector createInjector() {
         return Guice.createInjector(
             MempoolConfig.asModule(1000, 10),
-            new BetanetForksModule(),
-            new RadixEngineForksLatestOnlyModule(View.of(100), false),
+            new BetanetForkConfigsModule(),
+            new ForksModule(),
+            new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100)),
             RadixEngineConfig.asModule(1, 10, 10),
             new SingleNodeAndPeersDeterministicNetworkModule(),
             new MockedGenesisModule(),
@@ -76,7 +79,7 @@ public final class MempoolFillAndEmptyTest {
             new AbstractModule() {
                 @Override
                 protected void configure() {
-                    bindConstant().annotatedWith(Names.named("numPeers")).to(0);
+                    bindConstant().annotatedWith(NumPeers.class).to(0);
                     bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
                 }
 

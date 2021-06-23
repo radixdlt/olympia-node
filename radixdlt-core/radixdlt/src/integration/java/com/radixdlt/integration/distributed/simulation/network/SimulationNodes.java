@@ -27,11 +27,11 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
-import com.google.inject.name.Named;
 import com.google.inject.util.Modules;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
@@ -41,10 +41,9 @@ import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.integration.distributed.simulation.NodeNetworkMessagesModule;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
-
+import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.utils.Pair;
-import io.reactivex.rxjava3.core.Observable;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -52,6 +51,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import io.reactivex.rxjava3.core.Observable;
 
 import static java.util.function.Predicate.not;
 
@@ -100,7 +101,7 @@ public class SimulationNodes {
 				}
 
 				@Provides
-				@Named("RadixEngine")
+				@LocalSigner
 				HashSigner hashSigner() {
 					return self::sign;
 				}

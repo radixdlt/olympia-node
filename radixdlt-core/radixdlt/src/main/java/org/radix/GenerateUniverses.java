@@ -17,8 +17,7 @@
 
 package org.radix;
 
-import com.radixdlt.identifiers.NodeAddress;
-import com.radixdlt.statecomputer.forks.RadixEngineForksModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -40,14 +39,13 @@ import com.google.inject.Guice;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.google.inject.name.Named;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.api.Rri;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.client.Rri;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
@@ -55,11 +53,13 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.CryptoException;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.identifiers.NodeAddress;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.keys.Keys;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.qualifier.Magic;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -68,7 +68,7 @@ import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.GenesisProvider;
 import com.radixdlt.statecomputer.checkpoint.RadixNativeTokenModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.sync.CommittedReader;
@@ -290,8 +290,8 @@ public final class GenerateUniverses {
 					bind(UniverseType.class).toInstance(universeType);
 					install(new CryptoModule());
 					install(new RadixNativeTokenModule());
-					install(new BetanetForksModule());
-					install(new RadixEngineForksModule());
+					install(new BetanetForkConfigsModule());
+					install(new ForksModule());
 					install(RadixEngineConfig.asModule(1, 100, 50));
 					install(new RadixEngineModule());
 
@@ -314,7 +314,7 @@ public final class GenerateUniverses {
 				}
 
 				@Provides
-				@Named("magic")
+				@Magic
 				int magic(UniverseType universeType) {
 					return Universe.computeMagic(universeType);
 				}
@@ -562,31 +562,15 @@ public final class GenerateUniverses {
 		}
 	}
 
-	public static void writeBinaryAWSSecret(
-		Map<String, Object> awsSecret,
-		String secretName,
-		AWSSecretsOutputOptions awsSecretsOutputOptions,
-		boolean compress
-	) {
+	public static void writeBinaryAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsOutputOptions awsSecretsOutputOptions, boolean compress) {
 		writeAWSSecret(awsSecret, secretName, awsSecretsOutputOptions, compress, true);
 	}
 
-	public static void writeTextAWSSecret(
-		Map<String, Object> awsSecret,
-		String secretName,
-		AWSSecretsOutputOptions awsSecretsOutputOptions,
-		boolean compress
-	) {
+	public static void writeTextAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsOutputOptions awsSecretsOutputOptions, boolean compress) {
 		writeAWSSecret(awsSecret, secretName, awsSecretsOutputOptions, compress, false);
 	}
 
-	public static void writeAWSSecret(
-		Map<String, Object> awsSecret,
-		String secretName,
-		AWSSecretsOutputOptions awsSecretsOutputOptions,
-		boolean compress,
-		boolean binarySecret
-	) {
+	public static void writeAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsOutputOptions awsSecretsOutputOptions, boolean compress, boolean binarySecret) {
 		if (AWSSecretManager.awsSecretExists(secretName)) {
 			AWSSecretManager.updateAWSSecret(awsSecret, secretName, awsSecretsOutputOptions, compress, binarySecret);
 		} else {

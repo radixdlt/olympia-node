@@ -18,23 +18,30 @@
 
 package com.radixdlt.integration.mempool;
 
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.radix.TokenIssuance;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.google.inject.name.Named;
-import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
+import com.radixdlt.api.service.TransactionStatusService;
+import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
-import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
-import com.radixdlt.client.service.TransactionStatusService;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -47,25 +54,24 @@ import com.radixdlt.integration.staking.DeterministicRunner;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.radix.TokenIssuance;
 
 import java.util.Collection;
 import java.util.List;
 
-import static com.radixdlt.client.api.TransactionStatus.*;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+
+import static com.radixdlt.api.data.TransactionStatus.CONFIRMED;
+import static com.radixdlt.api.data.TransactionStatus.TRANSACTION_NOT_FOUND;
 
 @RunWith(Parameterized.class)
 public class TxStatusTest {
@@ -81,7 +87,7 @@ public class TxStatusTest {
 	public TemporaryFolder folder = new TemporaryFolder();
 
 	@Inject
-	@Named("RadixEngine")
+	@LocalSigner
 	private HashSigner hashSigner;
 	@Inject
 	@Self
@@ -106,8 +112,9 @@ public class TxStatusTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
-			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(100), false),
+			new BetanetForkConfigsModule(),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100)),
+			new ForksModule(),
 			RadixEngineConfig.asModule(1, 10, 10),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
@@ -115,8 +122,9 @@ public class TxStatusTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
+					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
+					bind(ClientApiStore.class).toInstance(mock(ClientApiStore.class));
 				}
 
 				@ProvidesIntoSet
@@ -162,6 +170,5 @@ public class TxStatusTest {
 			ValidatorStakeData.MINIMUM_STAKE);
 		var transferDispatched = dispatchAndWaitForCommit(transferAction);
 		assertEquals(CONFIRMED, transactionStatusService.getTransactionStatus(transferDispatched.getTxn().getId()));
-
 	}
 }

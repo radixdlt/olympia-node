@@ -22,12 +22,18 @@ import com.radixdlt.utils.functional.Failure;
 public enum CommonErrors implements Failure {
 	INVALID_VALIDATOR_ADDRESS(2509, "Invalid validator address {0}"),
 	INVALID_ACCOUNT_ADDRESS(2510, "Invalid account address {0}"),
+	INVALID_PUBLIC_KEY(2513, "Invalid public key {0}"),
 	AID_IS_NULL(1601, "AID string is 'null'"),
 	INVALID_LENGTH(1602, "AID string has incorrect length {0}"),
 	UNABLE_TO_DECODE(1603, "Unable to decode: {0}"),
 	UNABLE_TO_DESERIALIZE(1604, "Unable to deserialize: {0}"),
+	SSL_KEY_ERROR(1605, "SSL Key error: {0}"),
+	SSL_ALGORITHM_ERROR(1606, "SSL algorithm error: {0}"),
+	SSL_GENERAL_ERROR(1607, "SSL algorithm error: {0}"),
 	CANT_MAKE_RECOVERABLE(1701, "Unable to convert signature to recoverable {0}"),
-	INVALID_RADIX_ADDRESS(1702, "Invalid RadixAddress {0}");
+	INVALID_RADIX_ADDRESS(1702, "Invalid RadixAddress {0}"),
+	INVALID_UINT_VALUE(1703, "Invalid UInt256/UInt384 value {0}"),
+	UNKNOWN_ADDRESS_TYPE(1710, "Unknown address type {0}");
 
 	private final int code;
 	private final String message;

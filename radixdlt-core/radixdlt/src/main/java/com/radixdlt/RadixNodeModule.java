@@ -17,32 +17,22 @@
 
 package com.radixdlt;
 
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.Controller;
-import com.radixdlt.api.NodeApiModule;
-
-import com.radixdlt.api.UniverseController;
-import com.radixdlt.api.faucet.FaucetModule;
-import com.radixdlt.network.p2p.PeerDiscoveryModule;
-import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
-import com.radixdlt.network.p2p.P2PModule;
-import com.radixdlt.statecomputer.RadixEngineConfig;
-import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
-import com.radixdlt.statecomputer.forks.RadixEngineForksModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import com.radixdlt.mempool.MempoolConfig;
 import org.radix.universe.system.LocalSystem;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.api.Rri;
+import com.radixdlt.api.module.ArchiveApiModule;
+import com.radixdlt.api.module.CommonApiModule;
+import com.radixdlt.api.module.NodeApiModule;
+import com.radixdlt.api.qualifier.Endpoints;
+import com.radixdlt.api.service.RriParser;
 import com.radixdlt.application.NodeApplicationModule;
-import com.radixdlt.chaos.ChaosModule;
-import com.radixdlt.client.ArchiveApiModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -51,19 +41,35 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
+import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.middleware2.InfoSupplier;
-import com.radixdlt.network.messaging.MessagingModule;
 import com.radixdlt.network.hostip.HostIpModule;
 import com.radixdlt.network.messaging.MessageCentralModule;
+import com.radixdlt.network.messaging.MessagingModule;
+import com.radixdlt.network.p2p.P2PModule;
+import com.radixdlt.network.p2p.PeerDiscoveryModule;
+import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
+import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
+import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.universe.Universe.UniverseType;
 import com.radixdlt.universe.UniverseModule;
+
+import java.io.IOException;
+import java.util.List;
+
+import static com.radixdlt.EndpointConfig.enabledArchiveEndpoints;
+import static com.radixdlt.EndpointConfig.enabledNodeEndpoints;
+import static com.radixdlt.EndpointConfig.endpointStatuses;
 
 /**
  * Module which manages everything in a single node
@@ -112,29 +118,8 @@ public final class RadixNodeModule extends AbstractModule {
 
 		install(new DispatcherModule());
 
-
 		// Application
 		install(new NodeApplicationModule());
-
-		// API
-		install(new NodeApiModule());
-		if (properties.get("client_api.enable", false)) {
-			log.info("Enabling high level API");
-			install(new ArchiveApiModule());
-		}
-		if (properties.get("universe_api.enable", false)) {
-			log.info("Enabling Universe API");
-			var controllers = Multibinder.newSetBinder(binder(), Controller.class);
-			controllers.addBinding().to(UniverseController.class).in(Scopes.SINGLETON);
-		}
-		if (properties.get("faucet.enable", false)) {
-			log.info("Enabling faucet API");
-			install(new FaucetModule());
-		}
-		if (properties.get("chaos.enable", false)) {
-			log.info("Enabling chaos API");
-			install(new ChaosModule());
-		}
 
 		// Consensus
 		install(new PersistedBFTKeyModule());
@@ -157,12 +142,11 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new EpochsSyncModule());
 
 		// State Computer
-		install(new BetanetForksModule());
+		install(new ForksModule());
+		install(new BetanetForkConfigsModule());
 		if (properties.get("overwrite_forks.enable", false)) {
 			log.info("Enabling fork overwrites");
 			install(new ForkOverwritesFromPropertiesModule());
-		} else {
-			install(new RadixEngineForksModule());
 		}
 		install(new RadixEngineStateComputerModule());
 		install(new RadixEngineModule());
@@ -170,7 +154,9 @@ public final class RadixNodeModule extends AbstractModule {
 
 		// Checkpoints
 		install(new RadixEngineCheckpointModule());
-		install(new UniverseModule());
+
+		var universeModule = new UniverseModule();
+		install(universeModule);
 
 		// Storage
 		install(new DatabasePropertiesModule());
@@ -188,6 +174,47 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new P2PModule(properties));
 		install(new PeerDiscoveryModule());
 		install(new PeerLivenessMonitorModule());
+
+		// API
+		configureApi(universeType(universeModule));
+	}
+
+	private UniverseType universeType(UniverseModule universeModule) {
+		try {
+			return universeModule.universe(properties, DefaultSerialization.getInstance()).type();
+		} catch (NullPointerException e) {
+			return UniverseType.PRODUCTION;    //Assume production environment with relevant restrictions
+		} catch (IOException e) {
+			throw new IllegalStateException("Unable to load universe", e);
+		}
+	}
+
+	private void configureApi(UniverseType universeType) {
+		var archiveEndpoints = enabledArchiveEndpoints(properties, universeType);
+		var nodeEndpoints = enabledNodeEndpoints(properties, universeType);
+		var statuses = endpointStatuses(properties, universeType);
+
+		bind(new TypeLiteral<List<EndpointStatus>>() {}).annotatedWith(Endpoints.class).toInstance(statuses);
+
+		if (hasActiveEndpoints(archiveEndpoints, nodeEndpoints)) {
+			install(new CommonApiModule());
+		}
+
+		if (!archiveEndpoints.isEmpty()) {
+			install(new ArchiveApiModule(archiveEndpoints));
+		}
+
+		if (!nodeEndpoints.isEmpty()) {
+			if (archiveEndpoints.isEmpty()) {
+				bind(RriParser.class).toInstance(Rri::rriParser);
+			}
+
+			install(new NodeApiModule(nodeEndpoints));
+		}
+	}
+
+	private boolean hasActiveEndpoints(List<EndpointConfig> archiveEndpoints, List<EndpointConfig> nodeEndpoints) {
+		return !archiveEndpoints.isEmpty() || !nodeEndpoints.isEmpty();
 	}
 
 	@Provides

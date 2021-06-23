@@ -30,13 +30,10 @@ import java.util.Objects;
 public final class AccountBucket implements Bucket {
 	private final REAddr resourceAddress;
 	private final REAddr holdingAddress;
-	// TODO: Remove in mainnet
-	private final Long epochUnlocked;
 
-	public AccountBucket(REAddr resourceAddress, REAddr holdingAddress, Long epochUnlocked) {
+	public AccountBucket(REAddr resourceAddress, REAddr holdingAddress) {
 		this.resourceAddress = resourceAddress;
 		this.holdingAddress = holdingAddress;
-		this.epochUnlocked = epochUnlocked;
 	}
 
 	@Override
@@ -81,7 +78,7 @@ public final class AccountBucket implements Bucket {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(holdingAddress, resourceAddress, epochUnlocked);
+		return Objects.hash(holdingAddress, resourceAddress);
 	}
 
 	@Override
@@ -92,7 +89,6 @@ public final class AccountBucket implements Bucket {
 
 		var other = (AccountBucket) o;
 		return Objects.equals(this.holdingAddress, other.holdingAddress)
-			&& Objects.equals(this.resourceAddress, other.resourceAddress)
-			&& Objects.equals(this.epochUnlocked, other.epochUnlocked);
+			&& Objects.equals(this.resourceAddress, other.resourceAddress);
 	}
 }

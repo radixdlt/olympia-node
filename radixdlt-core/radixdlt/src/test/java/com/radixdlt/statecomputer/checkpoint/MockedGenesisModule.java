@@ -17,13 +17,15 @@
 
 package com.radixdlt.statecomputer.checkpoint;
 
+import org.radix.StakeDelegation;
+import org.radix.TokenIssuance;
+
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.name.Names;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.crypto.ECKeyPair;
@@ -44,7 +46,7 @@ public final class MockedGenesisModule extends AbstractModule {
 	@Override
 	public void configure() {
 	    install(new RadixNativeTokenModule());
-		bindConstant().annotatedWith(Names.named("magic")).to(0);
+		bindConstant().annotatedWith(Magic.class).to(0);
 		Multibinder.newSetBinder(binder(), TokenIssuance.class);
 		bind(new TypeLiteral<VerifiedTxnsAndProof>() { }).annotatedWith(Genesis.class).toProvider(GenesisProvider.class).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<List<TxAction>>() { }).annotatedWith(Genesis.class).toInstance(List.of());

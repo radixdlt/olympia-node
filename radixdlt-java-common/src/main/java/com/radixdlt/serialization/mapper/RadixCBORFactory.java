@@ -452,8 +452,8 @@ public class RadixCBORFactory extends JsonFactory
         return _nonByteTarget();
     }
 
-    private final RadixCBORGenerator _createCBORGenerator(IOContext ctxt,
-            int stdFeat, int formatFeat, ObjectCodec codec, OutputStream out) throws IOException
+    private RadixCBORGenerator _createCBORGenerator(IOContext ctxt,
+                                                    int stdFeat, int formatFeat, ObjectCodec codec, OutputStream out) throws IOException
     {
         // false -> we won't manage the stream unless explicitly directed to
     	RadixCBORGenerator gen = new RadixCBORGenerator(ctxt, stdFeat, formatFeat, _objectCodec, out);
