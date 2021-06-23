@@ -18,7 +18,6 @@
 
 package com.radixdlt.atommodel.system.scrypt;
 
-import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.ValidatorBFTData;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerState;

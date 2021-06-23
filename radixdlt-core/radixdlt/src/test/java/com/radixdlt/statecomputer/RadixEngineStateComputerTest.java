@@ -21,6 +21,7 @@ package com.radixdlt.statecomputer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
@@ -35,10 +36,12 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atom.actions.SystemNextView;
-import com.radixdlt.atommodel.system.state.SystemParticle;
+import com.radixdlt.atommodel.system.state.RoundData;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -51,6 +54,8 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -89,14 +94,20 @@ import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 import org.assertj.core.api.Condition;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class RadixEngineStateComputerTest {
+	@Rule
+	public TemporaryFolder folder = new TemporaryFolder();
+
 	@Inject
 	@Genesis
 	private VerifiedTxnsAndProof genesisTxns;
@@ -109,6 +120,9 @@ public class RadixEngineStateComputerTest {
 
 	@Inject
 	private SubstateSerialization substateSerialization;
+
+	@Inject
+	private ProposerElection proposerElection;
 
 	private Serialization serialization = DefaultSerialization.getInstance();
 	private InMemoryEngineStore<LedgerAndBFTProof> engineStore;
@@ -127,6 +141,12 @@ public class RadixEngineStateComputerTest {
 			public void configure() {
 				bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
 					.toInstance(registeredNodes);
+				var validatorSet = BFTValidatorSet.from(registeredNodes.stream().map(ECKeyPair::getPublicKey)
+					.map(BFTNode::create)
+					.map(n -> BFTValidator.from(n, UInt256.ONE)));
+
+				bind(ProposerElection.class)
+					.toInstance(new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.getNode().getKey().euid())));
 				bind(Serialization.class).toInstance(serialization);
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
 				bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(engineStore);
@@ -196,7 +216,10 @@ public class RadixEngineStateComputerTest {
 	private Txn systemUpdateTxn(long nextView, long nextEpoch) throws TxBuilderException {
 		TxBuilder builder;
 		if (nextEpoch >= 2) {
-			builder = radixEngine.construct(new SystemNextEpoch(u -> List.of(registeredNodes.get(0).getPublicKey()), 0));
+			var request = TxnConstructionRequest.create()
+				.action(new SystemNextView(10, true, 0,  v -> proposerElection.getProposer(View.of(v)).getKey()))
+				.action(new SystemNextEpoch(u -> List.of(registeredNodes.get(0).getPublicKey()), 0));
+			builder = radixEngine.construct(request);
 		} else {
 			builder = radixEngine.construct(new SystemNextView(
 				nextView,
@@ -237,7 +260,11 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void executing_epoch_high_view_should_return_next_validator_set() {
 		// Arrange
-		var unverified = UnverifiedVertex.create(mock(QuorumCertificate.class), View.of(10), List.of(), BFTNode.random());
+		var qc = mock(QuorumCertificate.class);
+		var parentHeader = mock(BFTHeader.class);
+		when(parentHeader.getView()).thenReturn(View.of(0));
+		when(qc.getProposed()).thenReturn(parentHeader);
+		var unverified = UnverifiedVertex.create(qc, View.of(11), List.of(), BFTNode.random());
 		var vertex = new VerifiedVertex(unverified, mock(HashCode.class));
 
 		// Act
@@ -260,7 +287,11 @@ public class RadixEngineStateComputerTest {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		var txn = registerCommand(keyPair);
 		BFTNode node = BFTNode.create(keyPair.getPublicKey());
-		var v = UnverifiedVertex.create(mock(QuorumCertificate.class), View.of(10), List.of(txn), BFTNode.random());
+		var qc = mock(QuorumCertificate.class);
+		var parentHeader = mock(BFTHeader.class);
+		when(parentHeader.getView()).thenReturn(View.of(0));
+		when(qc.getProposed()).thenReturn(parentHeader);
+		var v = UnverifiedVertex.create(qc, View.of(11), List.of(txn), BFTNode.random());
 		var vertex = new VerifiedVertex(v, mock(HashCode.class));
 
 		// Act
@@ -277,18 +308,18 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void preparing_system_update_from_vertex_should_fail() throws TxBuilderException {
 		// Arrange
-		var txn = radixEngine.construct(new SystemNextView(1, false, 0, i -> registeredNodes.get(0).getPublicKey()))
+		var txn = radixEngine.construct(new SystemNextView(1, false, 0, i -> proposerElection.getProposer(View.of(i)).getKey()))
 			.buildWithoutSignature();
 		var illegalTxn = TxLowLevelBuilder.newBuilder(substateSerialization)
-			.down(SubstateId.ofSubstate(txn.getId(), 1))
-			.up(new SystemParticle(1, 3, 0))
+			.down(SubstateId.ofSubstate(txn.getId(), 3))
+			.up(new RoundData(2, 0))
 			.end()
 			.build();
 		var v = UnverifiedVertex.create(
 			mock(QuorumCertificate.class),
 			View.of(1),
 			List.of(illegalTxn),
-			BFTNode.create(registeredNodes.get(0).getPublicKey())
+			proposerElection.getProposer(View.of(1))
 		);
 		var vertex = new VerifiedVertex(v, mock(HashCode.class));
 

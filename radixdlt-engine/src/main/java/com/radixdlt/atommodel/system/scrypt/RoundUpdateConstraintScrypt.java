@@ -53,7 +53,7 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
 		);
 
-		public StartValidatorBFTUpdate(long maxRounds, long view) {
+		StartValidatorBFTUpdate(long maxRounds, long view) {
 			this.maxRounds = maxRounds;
 			this.view = view;
 		}

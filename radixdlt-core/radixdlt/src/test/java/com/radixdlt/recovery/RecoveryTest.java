@@ -289,7 +289,7 @@ public class RecoveryTest {
 		assertThat(
 			restartedEpochProof.getEpoch() == epochView.getEpoch() - 1
 				|| (restartedEpochProof.getEpoch() == epochView.getEpoch()
-				&& epochView.getView().number() > epochCeilingView + 2)
+				&& epochView.getView().number() > epochCeilingView + 3)
 		).isTrue();
 	}
 
@@ -307,7 +307,7 @@ public class RecoveryTest {
 		assertThat(
 			safetyState.getLastVotedView().equals(vote.getView())
 			|| (safetyState.getLastVotedView().equals(View.genesis())
-			&& vote.getView().equals(View.of(epochCeilingView + 2)))
+			&& vote.getView().equals(View.of(epochCeilingView + 3)))
 		).isTrue();
 	}
 

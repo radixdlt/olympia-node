@@ -22,7 +22,6 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
-import java.util.OptionalLong;
 
 public final class ValidatorBFTData implements Particle {
 	private final ECPublicKey validatorKey;
