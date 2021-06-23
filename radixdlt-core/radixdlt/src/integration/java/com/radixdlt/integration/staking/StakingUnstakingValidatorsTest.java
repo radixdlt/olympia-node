@@ -326,7 +326,7 @@ public class StakingUnstakingValidatorsTest {
 					var stakeData = (ValidatorStakeData) p;
 					var data = new HashMap<String, String>();
 					data.put("stake", stakeData.getAmount().toString());
-					data.put("rake", stakeData.getRakePercentage().toString());
+					data.put("rake", Integer.toString(stakeData.getRakePercentage()));
 					i.put(BFTNode.create(stakeData.getValidatorKey()), data);
 					return i;
 				},

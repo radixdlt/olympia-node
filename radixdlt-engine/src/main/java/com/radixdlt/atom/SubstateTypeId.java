@@ -20,13 +20,11 @@ package com.radixdlt.atom;
 
 public enum SubstateTypeId {
 	UNCLAIMED_READDR((byte) 0),
-	SYSTEM((byte) 1),
 	TOKEN_DEF((byte) 2),
 	TOKENS((byte) 3),
 	PREPARED_STAKE((byte) 4),
 	VALIDATOR((byte) 5),
 	UNIQUE((byte) 6),
-	STAKE_V1((byte) 8),
 	ROUND_DATA((byte) 9),
 	EPOCH_DATA((byte) 10),
 	STAKE_OWNERSHIP((byte) 11),
@@ -35,7 +33,7 @@ public enum SubstateTypeId {
 	EXITTING_STAKE((byte) 14),
 	RAKE_COPY((byte) 15),
 	PREPARED_RAKE_UPDATE((byte) 16),
-	STAKE_V2((byte) 17),
+	STAKE((byte) 17),
 	NULL_VALIDATOR_UPDATE((byte) 18),
 	PREPARED_VALIDATOR_UPDATE((byte) 19),
 	ALLOW_DELEGATION_FLAG((byte) 20);

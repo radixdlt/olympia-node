@@ -67,7 +67,7 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 			var validatorData = txBuilder.down(
 				ValidatorStakeData.class,
 				p -> p.getValidatorKey().equals(k),
-				Optional.of(SubstateWithArg.noArg(ValidatorStakeData.createV1(k))),
+				Optional.of(SubstateWithArg.noArg(ValidatorStakeData.createVirtual(k))),
 				"Validator not found"
 			);
 			validatorsToUpdate.put(k, validatorData);
@@ -140,13 +140,13 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 				"Validator not found"
 			);
 			var nodeEmission = EpochUpdateConstraintScrypt.REWARDS_PER_PROPOSAL.multiply(UInt256.from(numProposals));
-			int rakePercentage = validatorStakeData.getRakePercentage().orElse(RAKE_MAX);
+			int rakePercentage = validatorStakeData.getRakePercentage();
 			final UInt256 rakedEmissions;
 			if (rakePercentage != 0 && !nodeEmission.isZero()) {
 				var rake = nodeEmission
 					.multiply(UInt256.from(rakePercentage))
 					.divide(UInt256.from(RAKE_MAX));
-				var validatorOwner = validatorStakeData.getOwnerAddr().orElseGet(() -> REAddr.ofPubKeyAccount(k));
+				var validatorOwner = validatorStakeData.getOwnerAddr();
 				var initStake = new TreeMap<REAddr, UInt256>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
 				initStake.put(validatorOwner, rake);
 				preparingStake.put(k, initStake);

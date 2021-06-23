@@ -162,13 +162,13 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			var nodeEmission = REWARDS_PER_PROPOSAL.multiply(UInt256.from(numProposals));
 
 			return new LoadingStake(k, validatorStakeData -> {
-				int rakePercentage = validatorStakeData.getRakePercentage().orElse(RAKE_MAX);
+				int rakePercentage = validatorStakeData.getRakePercentage();
 				final UInt256 rakedEmissions;
 				if (rakePercentage != 0 && !nodeEmission.isZero()) {
 					var rake = nodeEmission
 						.multiply(UInt256.from(rakePercentage))
 						.divide(UInt256.from(RAKE_MAX));
-					var validatorOwner = validatorStakeData.getOwnerAddr().orElseGet(() -> REAddr.ofPubKeyAccount(k));
+					var validatorOwner = validatorStakeData.getOwnerAddr();
 					var initStake = new TreeMap<REAddr, UInt256>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
 					initStake.put(validatorOwner, rake);
 					preparingStake.put(k, initStake);
@@ -739,35 +739,24 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				ValidatorStakeData.class,
-				Set.of(SubstateTypeId.STAKE_V1.id(), SubstateTypeId.STAKE_V2.id()),
+				Set.of(SubstateTypeId.STAKE.id()),
 				(b, buf) -> {
 					var delegate = REFieldSerialization.deserializeKey(buf);
 					var amount = REFieldSerialization.deserializeUInt256(buf);
 					var ownership = REFieldSerialization.deserializeUInt256(buf);
-					if (b.equals(SubstateTypeId.STAKE_V1.id())) {
-						return ValidatorStakeData.createV1(delegate, amount, ownership);
-					} else {
-						var rakePercentage = REFieldSerialization.deserializeInt(buf);
-						var ownerAddress = REFieldSerialization.deserializeREAddr(buf);
-						return ValidatorStakeData.createV2(delegate, amount, ownership, rakePercentage, ownerAddress);
-					}
+					var rakePercentage = REFieldSerialization.deserializeInt(buf);
+					var ownerAddress = REFieldSerialization.deserializeREAddr(buf);
+					return ValidatorStakeData.createV2(delegate, amount, ownership, rakePercentage, ownerAddress);
 				},
 				(s, buf) -> {
-					if (s.getRakePercentage().isEmpty()) {
-						buf.put(SubstateTypeId.STAKE_V1.id());
-					} else {
-						buf.put(SubstateTypeId.STAKE_V2.id());
-					}
+					buf.put(SubstateTypeId.STAKE.id());
 					REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 					buf.put(s.getAmount().toByteArray());
 					buf.put(s.getTotalOwnership().toByteArray());
-					if (s.getRakePercentage().isPresent()) {
-						buf.putInt(s.getRakePercentage().orElseThrow());
-						REFieldSerialization.serializeREAddr(buf, s.getOwnerAddr().orElseThrow());
-					}
+					buf.putInt(s.getRakePercentage());
+					REFieldSerialization.serializeREAddr(buf, s.getOwnerAddr());
 				},
-				s -> s.getAmount().isZero() && s.getTotalOwnership().isZero()
-					&& s.getRakePercentage().isEmpty() && s.getOwnerAddr().isEmpty()
+				s -> s.equals(ValidatorStakeData.createVirtual(s.getValidatorKey()))
 			)
 		);
 		os.substate(
