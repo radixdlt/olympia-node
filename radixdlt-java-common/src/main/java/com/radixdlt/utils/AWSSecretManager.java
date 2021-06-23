@@ -16,12 +16,15 @@ import software.amazon.awssdk.services.secretsmanager.model.SecretsManagerExcept
 import software.amazon.awssdk.services.secretsmanager.model.Tag;
 import software.amazon.awssdk.services.secretsmanager.model.UpdateSecretRequest;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 
@@ -62,6 +65,22 @@ public class AWSSecretManager {
         String secret = getValue(secretsClient, secretName);
         secretsClient.close();
         return secret;
+    }
+
+    public static void downloadPrivateKey(String secretName, String destFile, Region region) throws IOException {
+        System.out.format("About to download private key for %s %n", secretName);
+        removeBouncyCastleSecurityProvider();
+
+        SecretsManagerClient secretsClient = SecretsManagerClient.builder()
+            .region(region)
+            .build();
+        SdkBytes secret = getBinaryValue(secretsClient, secretName);
+        secretsClient.close();
+
+        uncompressData(secret, destFile);
+    }
+    public static void downloadPrivateKey(String secretName, String destFile) throws IOException {
+        downloadPrivateKey(secretName, destFile, defaultRegion);
     }
 
     public static String getSecret(String secretName) {
@@ -135,6 +154,14 @@ public class AWSSecretManager {
         GetSecretValueResponse valueResponse = secretsClient.getSecretValue(valueRequest);
         return valueResponse.secretString();
 
+    }
+    private static SdkBytes getBinaryValue(SecretsManagerClient secretsClient, String secretName) {
+        GetSecretValueRequest valueRequest = GetSecretValueRequest.builder()
+            .secretId(secretName)
+            .build();
+
+        GetSecretValueResponse valueResponse = secretsClient.getSecretValue(valueRequest);
+        return valueResponse.secretBinary();
     }
 
     private static String createNewSecret(
@@ -212,6 +239,26 @@ public class AWSSecretManager {
         bos.close();
         return compressed;
     }
+
+    private static void uncompressData(SdkBytes data, String destFile) throws IOException {
+        try {
+
+            ByteArrayInputStream bis = new ByteArrayInputStream(data.asByteArray());
+            GZIPInputStream gZIPInputStream = new GZIPInputStream(bis);
+            FileOutputStream fileOutputStream = new FileOutputStream(destFile);
+            int bytesRead;
+            byte[] buffer = new byte[1024];
+            while ((bytesRead = gZIPInputStream.read(buffer)) > 0) {
+                fileOutputStream.write(buffer, 0, bytesRead);
+            }
+            gZIPInputStream.close();
+            fileOutputStream.close();
+            System.out.format("Data decompressed successfully %n");
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+}
 
     public static void updateAWSSecret(
         Map<String, Object> awsSecret,

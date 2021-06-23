@@ -80,6 +80,7 @@ import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt256s;
+import com.sleepycat.persist.impl.SimpleFormat;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -200,8 +201,8 @@ public final class GenerateUniverses {
 				keyDetails = getValidatorKeys(validatorsCount);
 				keysDetailsWithStakeDelegation = getStakeDelegation(keyDetails, stakes);
 			} else {
-				keyDetails = getValidatorKeys(listOfValidators);
-				keysDetailsWithStakeDelegation = getStakeDelegationUsingExistingKeyList(keyDetails, stakes);
+				keyDetails = getValidatorKeys(listOfValidators, networkName);
+				keysDetailsWithStakeDelegation = getStakeDelegationUsingExistingKeyList(keyDetails, stakes, networkName);
 			}
 
 			final ImmutableList<ECKeyPair> validatorKeys = keyDetails.stream()
@@ -348,11 +349,12 @@ public final class GenerateUniverses {
 			.collect(ImmutableList.toImmutableList());
 	}
 
-	private static ImmutableList<KeyDetails> getValidatorKeys(List<String> validators) {
+	private static ImmutableList<KeyDetails> getValidatorKeys(List<String> validators, String networkName) {
 		return validators.stream()
 			.map(validator -> {
+				var keyStorePassword = getKeystorePasswordAndDownloadKeyAWS(networkName, validator, "validator");
 				var keyPath = String.format("%s.ks", validator);
-				var key = getValidatorEcKeyPair(keyPath);
+				var key = getValidatorEcKeyPair(keyPath,keyStorePassword);
 				return new KeyDetails(validator, key, keyPath);
 			})
 			.collect(ImmutableList.toImmutableList());
@@ -361,6 +363,16 @@ public final class GenerateUniverses {
 	private static ECKeyPair getValidatorEcKeyPair(String keyPath) {
 		try {
 			return Keys.readValidatorKey(keyPath);
+		} catch (CryptoException | IOException e) {
+			throw new IllegalStateException("While reading validator keys", e);
+		}
+	}
+
+	private static ECKeyPair getValidatorEcKeyPair(String keyPath, String password) {
+		//read key from AWS
+		try {
+			//overide readValidatorKey to alow passign the password
+			return Keys.readValidatorKey(keyPath, password);
 		} catch (CryptoException | IOException e) {
 			throw new IllegalStateException("While reading validator keys", e);
 		}
@@ -383,13 +395,15 @@ public final class GenerateUniverses {
 
 	private static ImmutableList<KeyDetails> getStakeDelegationUsingExistingKeyList(
 		List<KeyDetails> keyDetails,
-		List<UInt256> stakes
+		List<UInt256> stakes,
+		String networkName
 	) {
 		final Iterator<UInt256> stakesCycle = Iterators.cycle(stakes);
 		return keyDetails.stream().map(
 			keyDetail -> {
 				var stakerKeyStore = String.format("%s_staker.ks", keyDetail.getNodeName());
-				return getStakeDelegation(stakesCycle, stakerKeyStore, keyDetail);
+				var keyStorePassword = getKeystorePasswordAndDownloadKeyAWS(networkName, keyDetail.getNodeName(), "staker");
+				return getStakeDelegation(stakesCycle, stakerKeyStore, keyDetail, keyStorePassword);
 			}
 		).collect(ImmutableList.toImmutableList());
 	}
@@ -397,6 +411,21 @@ public final class GenerateUniverses {
 	private static KeyDetails getStakeDelegation(Iterator<UInt256> stakesCycle, String keyStore, KeyDetails validator) {
 		try {
 			var stakerKey = Keys.readStakerKey(keyStore);
+			var stakeDelegation = StakeDelegation.of(
+				stakerKey.getPublicKey(),
+				validator.getKeyPair().getPublicKey(),
+				stakesCycle.next()
+			);
+			validator.setStakeDelegation(stakeDelegation);
+			validator.setStakerKeyStore(keyStore);
+			return validator;
+		} catch (CryptoException | IOException e) {
+			throw new IllegalStateException("While reading staker keys", e);
+		}
+	}
+	private static KeyDetails getStakeDelegation(Iterator<UInt256> stakesCycle, String keyStore, KeyDetails validator, String keyStorePassword) {
+		try {
+			var stakerKey = Keys.readStakerKey(keyStore, keyStorePassword);
 			var stakeDelegation = StakeDelegation.of(
 				stakerKey.getPublicKey(),
 				validator.getKeyPair().getPublicKey(),
@@ -592,6 +621,27 @@ public final class GenerateUniverses {
 		} else {
 			AWSSecretManager.createAWSSecret(awsSecret, secretName, awsSecretsOutputOptions, compress, binarySecret);
 		}
+	}
+
+	//secret has the format: network/node_name/key_name e.g. betanet/betanet_us_east_1_node5/staker_key
+	//keyname: staker_key for staking, validator_key for validators, and fullnodename for fullnodes
+	private static String getKeystorePasswordAndDownloadKeyAWS(String networkName, String nodeName, String type){
+		var destFile = String.format("%s.ks", nodeName);
+		var secretName = String.format("%s/%s/%s", networkName, nodeName, nodeName);
+		if (type.equals("staker")){
+			destFile = String.format("%s_staker.ks", nodeName);
+			secretName = String.format("%s/%s/staker_key", networkName, nodeName, nodeName);
+		} else if (type.equals("validator")){
+			secretName = String.format("%s/%s/validator_key", networkName, nodeName, nodeName);
+		}
+
+		try {
+			AWSSecretManager.downloadPrivateKey(secretName, destFile);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		var passwordSecretName = String.format("%s/%s/password", networkName, nodeName);
+		return AWSSecretManager.getSecret(passwordSecretName);
 	}
 
 	private static void generateHelmFiles(

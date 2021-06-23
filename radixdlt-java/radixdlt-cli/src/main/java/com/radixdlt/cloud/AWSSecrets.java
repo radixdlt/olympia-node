@@ -88,13 +88,6 @@ public class AWSSecrets {
 			boolean enableAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("as"));
 			boolean recreateAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("rs"));
 
-			System.out.println("-------------------------");
-			System.out.println("network name " + networkName);
-			System.out.println("nameprefix " + namePrefix);
-			System.out.println("defaultKeyPassword " + defaultKeyPassword);
-			System.out.println("enableAwsSecrets " + enableAwsSecrets);
-			System.out.println("nodeCount " + nodeCount);
-
 			var awsSecretsOutputOptions = new AWSSecretsOutputOptions(enableAwsSecrets, recreateAwsSecrets, networkName);
 
 			var nodes = nodeCount > 0
@@ -102,10 +95,6 @@ public class AWSSecrets {
 								.mapToObj(counter -> String.format("%s%s", namePrefix, counter))
 								.collect(Collectors.toList())
 							: listOfNodes;
-
-			System.out.println("list of node names: " + nodeNames);
-			System.out.println("list of listOfNodes: " + listOfNodes);
-			System.out.println("list of nodes: " + nodes);
 
 			generateAndStoreKey(networkName, namePrefix, defaultKeyPassword, awsSecretsOutputOptions, nodes);
 			if (namePrefix.equals(CORE_NODE_PREFIX)) {
@@ -136,6 +125,9 @@ public class AWSSecrets {
 		generateAndStoreKey(networkName, CORE_NODE_PREFIX, defaultKeyPassword, awsSecretsOutputOptions, nodes, Boolean.TRUE);
 	}
 
+	//todo: backwards compatibility
+	// empty password
+	// change keystore password
 	private static void generateAndStoreKey(
 		String networkName,
 		String namePrefix,
