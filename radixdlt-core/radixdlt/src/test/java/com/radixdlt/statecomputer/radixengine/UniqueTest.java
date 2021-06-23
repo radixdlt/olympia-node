@@ -31,7 +31,6 @@ import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECKeyPair;
@@ -82,10 +81,8 @@ public final class UniqueTest {
 	private Txn uniqueTxn(ECKeyPair keyPair) {
 		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
 		var rriParticle = new UnclaimedREAddr(addr);
-		var uniqueParticle = new UniqueParticle(addr);
 		var atomBuilder = TxLowLevelBuilder.newBuilder(substateSerialization)
 			.virtualDown(rriParticle, "test".getBytes(StandardCharsets.UTF_8))
-			.up(uniqueParticle)
 			.end();
 		var sig = keyPair.sign(atomBuilder.hashToSign());
 		return atomBuilder.sig(sig).build();

@@ -20,8 +20,7 @@ package com.radixdlt.engine;
 
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atommodel.unique.state.UniqueParticle;
-import com.radixdlt.atommodel.unique.scrypt.UniqueParticleConstraintScrypt;
+import com.radixdlt.atommodel.unique.scrypt.MutexConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -49,7 +48,7 @@ public class UniqueTest {
 	@Before
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new UniqueParticleConstraintScrypt());
+		cmAtomOS.load(new MutexConstraintScrypt());
 		var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()
@@ -74,7 +73,6 @@ public class UniqueTest {
 		var builder = TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization)
 			.toLowLevelBuilder()
 			.virtualDown(new UnclaimedREAddr(addr), "smthng".getBytes(StandardCharsets.UTF_8))
-			.up(new UniqueParticle(addr))
 			.end();
 		var sig = keyPair.sign(builder.hashToSign());
 		var txn = builder.sig(sig).build();

@@ -62,7 +62,7 @@ import com.radixdlt.atommodel.tokens.construction.UnstakeOwnershipConstructor;
 import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV2;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV4;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
-import com.radixdlt.atommodel.unique.scrypt.UniqueParticleConstraintScrypt;
+import com.radixdlt.atommodel.unique.scrypt.MutexConstraintScrypt;
 import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
 import com.radixdlt.atommodel.validators.construction.UnregisterValidatorConstructor;
 import com.radixdlt.atommodel.validators.construction.UpdateAllowDelegationFlagConstructor;
@@ -96,7 +96,7 @@ public final class MainnetForkRulesModule extends AbstractModule {
 			v4.load(new TokensConstraintScryptV3());
 			v4.load(new FeeConstraintScrypt());
 			v4.load(new StakingConstraintScryptV4());
-			v4.load(new UniqueParticleConstraintScrypt());
+			v4.load(new MutexConstraintScrypt());
 			v4.load(new RoundUpdateConstraintScrypt(maxRounds));
 			v4.load(new EpochUpdateConstraintScrypt(maxRounds));
 			var betanet4 = new ConstraintMachineConfig(

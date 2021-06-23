@@ -38,7 +38,7 @@ import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV3;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV4;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.unique.scrypt.UniqueParticleConstraintScrypt;
+import com.radixdlt.atommodel.unique.scrypt.MutexConstraintScrypt;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -103,7 +103,7 @@ public class NextEpochV2Test {
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
 		scrypts.forEach(cmAtomOS::load);
-		cmAtomOS.load(new UniqueParticleConstraintScrypt()); // For v1 start
+		cmAtomOS.load(new MutexConstraintScrypt()); // For v1 start
 		var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()

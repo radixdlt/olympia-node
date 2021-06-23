@@ -31,7 +31,6 @@ import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -108,10 +107,8 @@ public class MempoolTest {
 			var symbol = "test" + (char) ('c' + i);
 			var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), symbol);
 			var rriParticle = new UnclaimedREAddr(addr);
-			var uniqueParticle = new UniqueParticle(addr);
 			atomBuilder
 				.virtualDown(rriParticle, symbol.getBytes(StandardCharsets.UTF_8))
-				.up(uniqueParticle)
 				.end();
 		}
 		var signature = keyPair.sign(atomBuilder.hashToSign());

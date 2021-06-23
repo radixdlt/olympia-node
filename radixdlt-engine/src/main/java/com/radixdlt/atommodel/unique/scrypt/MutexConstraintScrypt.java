@@ -16,34 +16,22 @@
  *
  */
 
-package com.radixdlt.atom;
+package com.radixdlt.atommodel.unique.scrypt;
 
-public enum SubstateTypeId {
-	UNCLAIMED_READDR((byte) 0),
-	TOKEN_DEF((byte) 2),
-	TOKENS((byte) 3),
-	PREPARED_STAKE((byte) 4),
-	VALIDATOR((byte) 5),
-	ROUND_DATA((byte) 9),
-	EPOCH_DATA((byte) 10),
-	STAKE_OWNERSHIP((byte) 11),
-	VALIDATOR_EPOCH_DATA((byte) 12),
-	PREPARED_UNSTAKE((byte) 13),
-	EXITTING_STAKE((byte) 14),
-	RAKE_COPY((byte) 15),
-	PREPARED_RAKE_UPDATE((byte) 16),
-	STAKE((byte) 17),
-	NULL_VALIDATOR_UPDATE((byte) 18),
-	PREPARED_VALIDATOR_UPDATE((byte) 19),
-	ALLOW_DELEGATION_FLAG((byte) 20);
+import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.atomos.Loader;
+import com.radixdlt.atomos.ConstraintScrypt;
+import com.radixdlt.constraintmachine.Authorization;
+import com.radixdlt.constraintmachine.EndProcedure;
+import com.radixdlt.constraintmachine.PermissionLevel;
 
-	private final byte id;
-
-	SubstateTypeId(byte id) {
-		this.id = id;
-	}
-
-	public byte id() {
-		return id;
+public class MutexConstraintScrypt implements ConstraintScrypt {
+	@Override
+	public void main(Loader os) {
+		os.procedure(new EndProcedure<>(
+			CMAtomOS.REAddrClaim.class,
+			s -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			(s, c, r) -> { }
+		));
 	}
 }
