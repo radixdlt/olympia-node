@@ -22,7 +22,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
-import com.google.inject.name.Named;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
@@ -31,6 +30,7 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 
 import java.util.List;
@@ -49,7 +49,7 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
 
     @Provides
     @Singleton
-    public PeersView peers(@Named("numPeers") int numPeers) {
+    public PeersView peers(@NumPeers int numPeers) {
         final var peers = Stream.generate(BFTNode::random)
             .limit(numPeers)
             .map(PeersView.PeerInfo::fromBftNode)

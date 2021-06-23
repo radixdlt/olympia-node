@@ -168,7 +168,7 @@ public class StakeTokensTest {
 		assertThat(accounting.bucketAccounting())
 			.hasSize(2)
 			.containsEntry(
-				new AccountBucket(REAddr.ofNativeToken(), accountAddr, null),
+				new AccountBucket(REAddr.ofNativeToken(), accountAddr),
 				new BigInteger(-1, stakeAmt.toByteArray(), 0, UInt256.BYTES)
 			)
 			.containsEntry(

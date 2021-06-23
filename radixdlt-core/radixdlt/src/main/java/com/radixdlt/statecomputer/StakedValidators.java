@@ -26,6 +26,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Comparator;
@@ -34,12 +35,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import static java.util.function.Predicate.not;
+
+import static com.radixdlt.utils.functional.FunctionalUtils.removeKey;
+import static com.radixdlt.utils.functional.FunctionalUtils.replaceEntry;
+
+import static java.util.Optional.ofNullable;
 
 /**
  * Wrapper class for registered validators
@@ -48,10 +51,13 @@ public final class StakedValidators {
 	private static final Comparator<ECPublicKey> keyOrdering = Comparator.comparing(ECPublicKey::euid);
 
 	private final Map<ECPublicKey, UInt256> stake;
+	private final Map<ECPublicKey, REAddr> owners;
+	private final Map<ECPublicKey, Boolean> delegationFlags;
 	private final Set<ValidatorParticle> validatorParticles;
 	private static final Comparator<UInt256> stakeOrdering = Comparator.reverseOrder();
 	private static final Comparator<Map.Entry<ECPublicKey, UInt256>> validatorOrdering =
-		Map.Entry.<ECPublicKey, UInt256>comparingByValue(stakeOrdering).thenComparing(Map.Entry.comparingByKey(keyOrdering));
+		Map.Entry.<ECPublicKey, UInt256>comparingByValue(stakeOrdering)
+			.thenComparing(Map.Entry.comparingByKey(keyOrdering));
 
 	private final int minValidators;
 	private final int maxValidators;
@@ -62,12 +68,16 @@ public final class StakedValidators {
 		int maxValidators,
 		Set<ValidatorParticle> validatorParticles,
 		Map<ECPublicKey, UInt256> stake,
+		Map<ECPublicKey, REAddr> owners,
+		Map<ECPublicKey, Boolean> delegationFlags,
 		ImmutableSet<HashCode> forksVotes
 	) {
 		this.minValidators = minValidators;
 		this.maxValidators = maxValidators;
 		this.validatorParticles = validatorParticles;
 		this.stake = stake;
+		this.owners = owners;
+		this.delegationFlags = delegationFlags;
 		this.forksVotes = forksVotes;
 	}
 
@@ -75,7 +85,7 @@ public final class StakedValidators {
 		int minValidators,
 		int maxValidators
 	) {
-		return new StakedValidators(minValidators, maxValidators, Set.of(), Map.of(), ImmutableSet.of());
+		return new StakedValidators(minValidators, maxValidators, Set.of(), Map.of(), Map.of(), Map.of(), ImmutableSet.of());
 	}
 
 	public StakedValidators add(ValidatorParticle particle) {
@@ -94,7 +104,7 @@ public final class StakedValidators {
 			newForksVotes = this.forksVotes;
 		}
 
-		return new StakedValidators(minValidators, maxValidators, newValidatorParticles, stake, newForksVotes);
+		return new StakedValidators(minValidators, maxValidators, newValidatorParticles, stake,  owners, delegationFlags, newForksVotes);
 	}
 
 	public StakedValidators remove(ValidatorParticle particle) {
@@ -115,22 +125,47 @@ public final class StakedValidators {
 				.filter(e -> !e.equals(particle))
 				.collect(Collectors.toSet()),
 			stake,
+			owners,
+			delegationFlags,
 			newForksVotes
 		);
 	}
 
+	public REAddr getOwner(ECPublicKey validatorKey) {
+		return ofNullable(owners.get(validatorKey))
+			.orElse(REAddr.ofPubKeyAccount(validatorKey));
+	}
+
 	public UInt256 getStake(ECPublicKey validatorKey) {
-		var s = stake.get(validatorKey);
-		return (s == null) ? UInt256.ZERO : s;
+		return ofNullable(stake.get(validatorKey))
+			.orElse(UInt256.ZERO);
+	}
+
+	public Boolean allowsDelegation(ECPublicKey validatorKey) {
+		return ofNullable(delegationFlags.get(validatorKey))
+			.orElse(Boolean.TRUE);
+	}
+
+	public UInt256 getOwnerStake(ECPublicKey key) {
+		return getOwner(key)
+			.publicKey()
+			.map(this::getStake)
+			.orElse(UInt256.ZERO);
+	}
+
+	public StakedValidators setAllowDelegationFlag(ECPublicKey validatorKey, boolean allowDelegation) {
+		var nextFlags = replaceEntry(Maps.immutableEntry(validatorKey, allowDelegation), delegationFlags);
+		return new StakedValidators(minValidators, maxValidators, validatorParticles, stake, owners, nextFlags, forksVotes);
+	}
+
+	public StakedValidators setOwner(ECPublicKey validatorKey, REAddr owner) {
+		var nextOwners = replaceEntry(Maps.immutableEntry(validatorKey, owner), owners);
+		return new StakedValidators(minValidators, maxValidators, validatorParticles, stake, nextOwners, delegationFlags, forksVotes);
 	}
 
 	public StakedValidators setStake(ECPublicKey delegatedKey, UInt256 amount) {
-		final var nextStake = Stream.concat(
-			Stream.of(Maps.immutableEntry(delegatedKey, amount)),
-			this.stake.entrySet().stream().filter(e -> !delegatedKey.equals(e.getKey()))
-		).collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-
-		return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStake, forksVotes);
+		var nextStake = replaceEntry(Maps.immutableEntry(delegatedKey, amount), stake);
+		return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStake, owners, delegationFlags, forksVotes);
 	}
 
 	// TODO: Remove add/remove from mainnet
@@ -139,13 +174,10 @@ public final class StakedValidators {
 			return this;
 		}
 
-		final var nextAmount = this.stake.getOrDefault(delegatedKey, UInt256.ZERO).add(amount);
-		final var nextStakedAmounts = Stream.concat(
-			Stream.of(Maps.immutableEntry(delegatedKey, nextAmount)),
-			this.stake.entrySet().stream().filter(e -> !delegatedKey.equals(e.getKey()))
-		).collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+		var nextAmount = stake.getOrDefault(delegatedKey, UInt256.ZERO).add(amount);
+		var nextStakedAmounts = replaceEntry(Maps.immutableEntry(delegatedKey, nextAmount), stake);
 
-		return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStakedAmounts, forksVotes);
+		return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStakedAmounts, owners, delegationFlags, forksVotes);
 	}
 
 	public StakedValidators remove(ECPublicKey delegatedKey, UInt256 amount) {
@@ -162,18 +194,15 @@ public final class StakedValidators {
 
 		if (comparison == 0) {
 			// remove stake
-			final var nextStakedAmounts = this.stake.entrySet().stream()
-				.filter(e -> !delegatedKey.equals(e.getKey()))
-				.collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-			return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStakedAmounts, forksVotes);
+			var nextStakedAmounts = removeKey(delegatedKey, stake);
+
+			return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStakedAmounts, owners, delegationFlags, forksVotes);
 		} else if (comparison < 0) {
 			// reduce stake
-			final var nextAmount = oldAmount.subtract(amount);
-			final var nextStakedAmounts = Stream.concat(
-				Stream.of(Maps.immutableEntry(delegatedKey, nextAmount)),
-				this.stake.entrySet().stream().filter(e -> !delegatedKey.equals(e.getKey()))
-			).collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-			return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStakedAmounts, forksVotes);
+			var nextAmount = oldAmount.subtract(amount);
+			var nextStakedAmounts = replaceEntry(Maps.immutableEntry(delegatedKey, nextAmount), stake);
+
+			return new StakedValidators(minValidators, maxValidators, validatorParticles, nextStakedAmounts, owners, delegationFlags, forksVotes);
 		} else {
 			throw new IllegalStateException("Removing stake which doesn't exist.");
 		}
@@ -204,24 +233,29 @@ public final class StakedValidators {
 		return this.forksVotes;
 	}
 
-	public <T> List<T> map(BiFunction<ECPublicKey, ValidatorDetails, T> mapper) {
+	public <T> List<T> map(Function<ValidatorDetails, T> mapper) {
 		return validatorParticles
 			.stream()
-			.map(p -> mapper.apply(p.getKey(), ValidatorDetails.fromParticle(p, getStake(p.getKey()))))
+			.map(this::fillDetails)
+			.map(mapper::apply)
 			.collect(Collectors.toList());
+	}
+
+	public long count() {
+		return validatorParticles.size();
 	}
 
 	public <T> Optional<T> mapSingle(ECPublicKey validatorKey, Function<ValidatorDetails, T> mapper) {
 		return validatorParticles.stream()
-			.filter(p -> p.getKey().equals(validatorKey))
+			.filter(particle -> particle.getKey().equals(validatorKey))
 			.findFirst()
-			.map(p -> ValidatorDetails.fromParticle(p, getStake(p.getKey())))
+			.map(this::fillDetails)
 			.map(mapper);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(minValidators, maxValidators, validatorParticles, stake, forksVotes);
+		return Objects.hash(minValidators, maxValidators, validatorParticles, stake, owners, delegationFlags, forksVotes);
 	}
 
 	@Override
@@ -229,11 +263,24 @@ public final class StakedValidators {
 		if (!(o instanceof StakedValidators)) {
 			return false;
 		}
+
 		final var other = (StakedValidators) o;
-		return this.minValidators == other.minValidators
-			&& this.maxValidators == other.maxValidators
-			&& Objects.equals(this.validatorParticles, other.validatorParticles)
-			&& Objects.equals(this.stake, other.stake)
-			&& Objects.equals(this.forksVotes, other.forksVotes);
+		return minValidators == other.minValidators
+			&& maxValidators == other.maxValidators
+			&& Objects.equals(validatorParticles, other.validatorParticles)
+			&& Objects.equals(stake, other.stake)
+			&& Objects.equals(owners, other.owners)
+			&& Objects.equals(delegationFlags, other.delegationFlags)
+			&& Objects.equals(forksVotes, other.forksVotes);
+	}
+
+	private ValidatorDetails fillDetails(ValidatorParticle particle) {
+		return ValidatorDetails.fromParticle(
+			particle,
+			getOwner(particle.getKey()),
+			getStake(particle.getKey()),
+			getOwnerStake(particle.getKey()),
+			allowsDelegation(particle.getKey())
+		);
 	}
 }

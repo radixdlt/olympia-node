@@ -38,7 +38,6 @@ import java.util.Arrays;
 import java.util.Collection;
 
 public final class Serialize {
-
     private static class Holder {
         static final Serialization INSTANCE = Serialization.create(createIds(getClasses()), createPolicy(getClasses()));
 

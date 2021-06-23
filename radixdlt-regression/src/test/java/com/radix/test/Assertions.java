@@ -2,7 +2,7 @@ package com.radix.test;
 
 import com.radix.test.account.Account;
 import com.radixdlt.client.lib.api.ActionType;
-import com.radixdlt.client.lib.dto.ActionDTO;
+import com.radixdlt.client.lib.dto.Action;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 
 import static org.junit.Assert.assertEquals;
@@ -21,7 +21,7 @@ public class Assertions {
                                                             TransactionDTO transactionDto) {
         assertTrue(transactionDto.getMessage().isEmpty());
         assertEquals(1, transactionDto.getActions().size());
-        ActionDTO singleAction = transactionDto.getActions().get(0);
+        Action singleAction = transactionDto.getActions().get(0);
         assertEquals(Utils.fromMajorToMinor(expectAmountMajor),
             singleAction.getAmount().orElseThrow(() -> new TestFailureException("no amount in transaction")));
         assertEquals(account1.getAddress(),
@@ -30,5 +30,4 @@ public class Assertions {
             singleAction.getTo().orElseThrow(() -> new TestFailureException("no receiver in transaction")));
         assertEquals(ActionType.TRANSFER, singleAction.getType());
     }
-
 }

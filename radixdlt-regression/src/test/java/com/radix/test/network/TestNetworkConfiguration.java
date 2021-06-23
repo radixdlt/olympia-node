@@ -25,6 +25,7 @@ public final class TestNetworkConfiguration {
         this.type = type;
     }
 
+    //TODO: probably it needs to be fixed, as we use more than one port for RPC communication
     public static TestNetworkConfiguration fromEnv() {
         try {
             var jsonRpcRootUrlString = getEnvWithDefault("RADIX_JSON_RPC_ROOT_URL", "http://localhost:8080");

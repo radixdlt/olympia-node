@@ -83,7 +83,6 @@ import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForkManager;
 import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
@@ -115,7 +114,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.TreeMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -142,9 +140,6 @@ public class StakingUnstakingValidatorsTest {
 	@Inject
 	@Genesis
 	private VerifiedTxnsAndProof genesis;
-
-	@Inject
-	private TreeMap<Long, ForkConfig> epochToForkConfig;
 
 	private DeterministicNetwork network;
 	private List<Supplier<Injector>> nodeCreators;

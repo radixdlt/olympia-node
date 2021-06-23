@@ -55,7 +55,7 @@ public class FinalizedTransaction {
 		return new FinalizedTransaction(blob, signature, publicKey, txId);
 	}
 
-	public static FinalizedTransaction create(BuiltTransactionDTO tx, ECKeyPair keyPair) {
+	public static FinalizedTransaction create(BuiltTransaction tx, ECKeyPair keyPair) {
 		requireNonNull(tx);
 		requireNonNull(keyPair);
 

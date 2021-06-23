@@ -49,6 +49,7 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.utils.Bytes;
 import com.radixdlt.statecomputer.forks.ForkManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -168,7 +169,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		// TODO: only return commands which will not cause a missing dependency error
 		final List<Txn> txns = mempool.getTxns(maxTxnsPerProposal, cmds);
-
 		systemCounters.add(SystemCounters.CounterType.MEMPOOL_PROPOSED_TRANSACTION, txns.size());
 		return txns;
 	}
@@ -315,7 +315,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 			);
 		} catch (RadixEngineException e) {
 			throw new ByzantineQuorumException(
-				String.format("Trying to commit bad atoms:\n%s", verifiedTxnsAndProof.getTxns()), e
+				String.format(
+					"Trying to commit bad txnId: %s payload: %s",
+					e.getTxn().getId(),
+					Bytes.toHexString(e.getTxn().getPayload())
+				),
+				e
 			);
 		}
 

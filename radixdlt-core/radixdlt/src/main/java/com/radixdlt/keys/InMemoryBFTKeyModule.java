@@ -19,12 +19,12 @@ package com.radixdlt.keys;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.name.Names;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.qualifier.LocalSigner;
 
 /**
  * In memory Hash signing and identity handling
@@ -32,7 +32,7 @@ import com.radixdlt.crypto.ECPublicKey;
 public final class InMemoryBFTKeyModule extends AbstractModule {
 	@Override
 	public void configure() {
-    	bind(HashSigner.class).annotatedWith(Names.named("RadixEngine")).to(HashSigner.class);
+    	bind(HashSigner.class).annotatedWith(LocalSigner.class).to(HashSigner.class);
 	}
 
 	@Provides

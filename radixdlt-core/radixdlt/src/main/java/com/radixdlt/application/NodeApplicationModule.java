@@ -25,15 +25,16 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.api.chaos.mempoolfiller.MempoolFiller;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atommodel.validators.state.ValidatorParticle;
-import com.radixdlt.chaos.mempoolfiller.MempoolFiller;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.engine.SubstateCacheRegister;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.environment.Runners;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
@@ -87,7 +88,7 @@ public final class NodeApplicationModule extends AbstractModule {
 	@Singleton
 	public EventProcessorOnRunner<?> nodeApplication(NodeApplication nodeApplication) {
 		return new EventProcessorOnRunner<>(
-			"application",
+			Runners.APPLICATION,
 			NodeApplicationRequest.class,
 			nodeApplication.requestEventProcessor()
 		);
