@@ -24,7 +24,6 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.NodeApplicationModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
@@ -36,7 +35,9 @@ import com.radixdlt.integration.distributed.simulation.application.MempoolFiller
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.sync.SyncConfig;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -62,8 +63,9 @@ public class MempoolFillTest {
 		)
 		.fullFunctionNodes(SyncConfig.of(800L, 10, 5000L))
 		.addRadixEngineConfigModules(
-			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(10L), false)
+			new BetanetForkConfigsModule(),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10)),
+			new ForksModule()
 		)
 		.addNodeModule(new AbstractModule() {
 			@Override

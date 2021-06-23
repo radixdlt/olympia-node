@@ -48,7 +48,7 @@ import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.utils.Bytes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,7 +58,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -77,15 +76,15 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher;
 	private final EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher;
 	private final EventDispatcher<TxnsCommittedToLedger> committedDispatcher;
-	private final TreeMap<Long, ForkConfig> epochToForkConfig;
 	private final SystemCounters systemCounters;
+	private final Forks forks;
 
 	private View epochCeilingView;
 
 	@Inject
 	public RadixEngineStateComputer(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		TreeMap<Long, ForkConfig> epochToForkConfig,
+		Forks forks,
 		RadixEngineMempool mempool, // TODO: Move this into radixEngine
 		@EpochCeilingView View epochCeilingView, // TODO: Move this into radixEngine
 		@MaxTxnsPerProposal int maxTxnsPerProposal, // TODO: Move this into radixEngine
@@ -101,7 +100,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		this.radixEngine = Objects.requireNonNull(radixEngine);
-		this.epochToForkConfig = epochToForkConfig;
+		this.forks = forks;
 		this.epochCeilingView = epochCeilingView;
 		this.maxTxnsPerProposal = maxTxnsPerProposal;
 		this.mempool = Objects.requireNonNull(mempool);
@@ -312,19 +311,19 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		// Next epoch
 		if (proof.getNextValidatorSet().isPresent()) {
-			var forkConfig = epochToForkConfig.get(proof.getEpoch() + 1);
-			if (forkConfig != null) {
-				log.info("Epoch {} Forking RadixEngine to {}", proof.getEpoch() + 1, forkConfig.getName());
-				this.radixEngine.replaceConstraintMachine(
-					forkConfig.getConstraintMachineConfig(),
-					forkConfig.getSubstateSerialization(),
-					forkConfig.getActionConstructors(),
-					forkConfig.getBatchVerifier(),
-					forkConfig.getParser(),
-					forkConfig.getPostProcessedVerifier()
-				);
-				this.epochCeilingView = forkConfig.getEpochCeilingView();
-			}
+			forks.ifForkGet(proof.getEpoch() + 1)
+				.ifPresent(rules -> {
+					log.info("Epoch {} Forking RadixEngine to {}", proof.getEpoch() + 1, rules.name());
+					this.radixEngine.replaceConstraintMachine(
+						rules.getConstraintMachineConfig(),
+						rules.getSerialization(),
+						rules.getActionConstructors(),
+						rules.getBatchVerifier(),
+						rules.getParser(),
+						rules.getPostProcessedVerifier()
+					);
+					this.epochCeilingView = rules.getMaxRounds();
+				});
 		}
 
 		radixEngineTxns.forEach(t -> {

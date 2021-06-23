@@ -22,7 +22,6 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerUpdate;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
@@ -33,7 +32,9 @@ import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -158,8 +159,9 @@ public class MempoolRelayTest {
 			new MockedGenesisModule(),
 			new CryptoModule(),
 			new RadixEngineModule(),
-			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(100), false),
+			new BetanetForkConfigsModule(),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100)),
+			new ForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new AbstractModule() {
 				@Override
@@ -185,8 +187,9 @@ public class MempoolRelayTest {
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
 			MempoolConfig.asModule(500, 100, 10, 10, 10),
-			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(100), false),
+			new BetanetForkConfigsModule(),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100)),
+			new ForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new PersistedNodeForTestingModule(),
 			new MempoolFillerModule(),

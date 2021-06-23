@@ -19,61 +19,51 @@
 package com.radixdlt.statecomputer.forks;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.consensus.bft.View;
+import com.google.inject.Inject;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.OptionalBinder;
 import com.radixdlt.properties.RuntimeProperties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Set;
+import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 public class ForkOverwritesFromPropertiesModule extends AbstractModule {
-	private static Logger logger = LogManager.getLogger();
+	private static final Logger logger = LogManager.getLogger();
+
+	private static class ForkOverwrite implements UnaryOperator<Set<ForkConfig>> {
+		@Inject
+		private RuntimeProperties properties;
+
+		@Override
+		public Set<ForkConfig> apply(Set<ForkConfig> forkConfigs) {
+			return forkConfigs.stream()
+				.map(c -> {
+					var epochOverwrite = properties.get("overwrite_forks." + c.getName() + ".epoch", "");
+					if (!epochOverwrite.isBlank()) {
+						var epoch = Long.parseLong(epochOverwrite);
+						logger.warn("Overwriting epoch of " + c.getName() + " from " + c.getEpoch() + " to " + epoch);
+						c = c.overrideEpoch(epoch);
+					}
+
+					var viewOverwrite = properties.get("overwrite_forks." + c.getName() + ".views", "");
+					if (!viewOverwrite.isBlank()) {
+						var view = Long.parseLong(viewOverwrite);
+						logger.warn("Overwriting views of " + c.getName() + " from " + c.getConfig().getMaxRounds() + " to " + view);
+						c = c.overrideConfig(c.getConfig().overrideMaxRounds(view));
+					}
+					return c;
+				})
+				.collect(Collectors.toSet());
+		}
+	}
 
 	@Override
 	protected void configure() {
-		install(new RadixEngineForksOverwriteForTestingModule());
-	}
-
-	@Provides
-	@Singleton
-	private Map<String, Long> epochOverwrite(Map<EpochMapKey, ForkConfig> forkConfigs, RuntimeProperties properties) {
-		var overwrites = new HashMap<String, Long>();
-		forkConfigs.forEach((k, c) -> {
-			var viewOverwrite = properties.get("overwrite_forks." + c.getName() + ".epoch", "");
-			if (!viewOverwrite.isBlank()) {
-				var epoch = Long.parseLong(viewOverwrite);
-				logger.warn("Overwriting epoch of " + c.getName() + " from " + k.epoch() + " to " + epoch);
-				overwrites.put(c.getName(), epoch);
-			}
-		});
-		return overwrites;
-	}
-
-	@Provides
-	@Singleton
-	private Map<String, ForkConfig> configOverwrite(Map<EpochMapKey, ForkConfig> forkConfigs, RuntimeProperties properties) {
-		var overwrites = new HashMap<String, ForkConfig>();
-		forkConfigs.forEach((k, c) -> {
-			var viewOverwrite = properties.get("overwrite_forks." + c.getName() + ".views", "");
-			if (!viewOverwrite.isBlank()) {
-				var view = Long.parseLong(viewOverwrite);
-				logger.warn("Overwriting views of " + c.getName() + " from " + c.getEpochCeilingView() + " to " + view);
-				var overwrite = new ForkConfig(
-					c.getName(),
-					c.getParser(),
-					c.getSubstateSerialization(),
-					c.getConstraintMachineConfig(),
-					c.getActionConstructors(),
-					c.getBatchVerifier(),
-					c.getPostProcessedVerifier(),
-					View.of(view)
-				);
-				overwrites.put(c.getName(), overwrite);
-			}
-		});
-		return overwrites;
+		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkConfig>>>() { })
+			.setBinding()
+			.to(ForkOverwrite.class);
 	}
 }

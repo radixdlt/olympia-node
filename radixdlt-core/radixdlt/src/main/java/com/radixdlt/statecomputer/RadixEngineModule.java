@@ -36,7 +36,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.engine.SubstateCacheRegister;
 import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.Pair;
@@ -44,7 +44,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Set;
-import java.util.TreeMap;
 
 /**
  * Module which manages execution of commands
@@ -65,22 +64,22 @@ public class RadixEngineModule extends AbstractModule {
 	@EpochCeilingView
 	private View epochCeilingHighView(
 		CommittedReader committedReader, // TODO: This is a hack, remove
-		TreeMap<Long, ForkConfig> epochToForkConfig
+		Forks forks
 	) {
 		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
 		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return epochToForkConfig.floorEntry(epoch).getValue().getEpochCeilingView();
+		return forks.get(epoch).getMaxRounds();
 	}
 
 	@Provides
 	@Singleton
 	private ConstraintMachineConfig buildConstraintMachineConfig(
 		CommittedReader committedReader, // TODO: This is a hack, remove
-		TreeMap<Long, ForkConfig> epochToForkConfig
+		Forks forks
 	) {
 		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
 		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return epochToForkConfig.floorEntry(epoch).getValue().getConstraintMachineConfig();
+		return forks.get(epoch).getConstraintMachineConfig();
 	}
 
 	@Provides
@@ -99,55 +98,54 @@ public class RadixEngineModule extends AbstractModule {
 	@Singleton
 	private ActionConstructors actionConstructors(
 		CommittedReader committedReader, // TODO: This is a hack, remove
-		TreeMap<Long, ForkConfig> epochToForkConfig
+		Forks forks
 	) {
 		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
 		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return epochToForkConfig.floorEntry(epoch).getValue().getActionConstructors();
+		return forks.get(epoch).getActionConstructors();
 	}
 
 	@Provides
 	@Singleton
 	private BatchVerifier<LedgerAndBFTProof> batchVerifier(
 		CommittedReader committedReader, // TODO: This is a hack, remove
-		TreeMap<Long, ForkConfig> epochToForkConfig
+		Forks forks
 	) {
 		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
 		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return epochToForkConfig.floorEntry(epoch).getValue().getBatchVerifier();
+		return forks.get(epoch).getBatchVerifier();
 	}
 
 	@Provides
 	@Singleton
 	private REParser parser(
 		CommittedReader committedReader, // TODO: This is a hack, remove
-		TreeMap<Long, ForkConfig> epochToForkConfig
+		Forks forks
 	) {
 		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
 		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return epochToForkConfig.floorEntry(epoch).getValue().getParser();
+		return forks.get(epoch).getParser();
 	}
 
 	@Provides
 	@Singleton
 	private SubstateSerialization substateSerialization(
 		CommittedReader committedReader, // TODO: This is a hack, remove
-		TreeMap<Long, ForkConfig> epochToForkConfig
+		Forks forks
 	) {
 		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
 		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return epochToForkConfig.floorEntry(epoch).getValue().getSubstateSerialization();
+		return forks.get(epoch).getSerialization();
 	}
-
 
 	@Provides
 	PostProcessedVerifier checker(
 		CommittedReader committedReader, // TODO: This is a hack, remove
-		TreeMap<Long, ForkConfig> epochToForkConfig
+		Forks forks
 	) {
 		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
 		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return epochToForkConfig.floorEntry(epoch).getValue().getPostProcessedVerifier();
+		return forks.get(epoch).getPostProcessedVerifier();
 	}
 
 	@Provides

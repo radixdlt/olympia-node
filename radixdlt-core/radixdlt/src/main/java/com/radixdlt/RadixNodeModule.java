@@ -17,6 +17,7 @@
 
 package com.radixdlt;
 
+import com.radixdlt.statecomputer.forks.ForksModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.universe.system.LocalSystem;
@@ -55,9 +56,8 @@ import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
-import com.radixdlt.statecomputer.forks.RadixEngineForksModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
@@ -144,12 +144,11 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new EpochsSyncModule());
 
 		// State Computer
-		install(new BetanetForksModule());
+		install(new ForksModule());
+		install(new BetanetForkConfigsModule());
 		if (properties.get("overwrite_forks.enable", false)) {
 			log.info("Enabling fork overwrites");
 			install(new ForkOverwritesFromPropertiesModule());
-		} else {
-			install(new RadixEngineForksModule());
 		}
 		install(new RadixEngineStateComputerModule());
 		install(new RadixEngineModule());

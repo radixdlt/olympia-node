@@ -19,26 +19,45 @@
 package com.radixdlt.statecomputer.forks;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
+import com.google.inject.multibindings.ProvidesIntoSet;
 
 /**
- * Module responsible for creating TreeMap of epochs to Fork configuration
- * for use in the RadixEngine
+ * The forks for betanet and the epochs at which they will occur.
  */
-public final class RadixEngineForksModule extends AbstractModule {
-	@Provides
-	@Singleton
-	private TreeMap<Long, ForkConfig> epochToForkConfig(Map<EpochMapKey, ForkConfig> forkConfigs) {
-		return new TreeMap<>(
-			forkConfigs.entrySet()
-				.stream()
-				.collect(Collectors.toMap(e -> e.getKey().epoch(), Map.Entry::getValue))
+public final class BetanetForkConfigsModule extends AbstractModule {
+	@ProvidesIntoSet
+	ForkConfig betanetV1() {
+		return new ForkConfig(
+			0L,
+			"betanet1",
+			new RERulesConfig(true, 100000L)
 		);
 	}
 
+	@ProvidesIntoSet
+	ForkConfig betanetV2() {
+		return new ForkConfig(
+			45L,
+			"betanet2",
+			new RERulesConfig(true, 10000L)
+		);
+	}
+
+	@ProvidesIntoSet
+	ForkConfig betanetV3() {
+		return new ForkConfig(
+			584L,
+			"betanet3",
+			new RERulesConfig(true, 10000L)
+		);
+	}
+
+	@ProvidesIntoSet
+	ForkConfig betanetV4() {
+		return new ForkConfig(
+			1000L,
+			"betanet4",
+			new RERulesConfig(true, 10000L)
+		);
+	}
 }

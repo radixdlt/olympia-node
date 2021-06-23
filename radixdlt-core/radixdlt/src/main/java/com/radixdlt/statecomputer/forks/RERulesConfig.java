@@ -18,41 +18,24 @@
 
 package com.radixdlt.statecomputer.forks;
 
-/**
- * Configuration used for hard forks
- */
-public final class ForkConfig {
-	private final long epoch;
-	private final String name;
-	private final RERulesConfig config;
+public final class RERulesConfig {
+	private final long maxRounds;
+	private final boolean fees;
 
-	public ForkConfig(
-		long epoch,
-		String name,
-		RERulesConfig config
-	) {
-		this.epoch = epoch;
-		this.name = name;
-		this.config = config;
+	public RERulesConfig(boolean fees, long maxRounds) {
+		this.fees = fees;
+		this.maxRounds = maxRounds;
 	}
 
-	public long getEpoch() {
-		return epoch;
+	public boolean includeFees() {
+		return fees;
 	}
 
-	public String getName() {
-		return name;
+	public long getMaxRounds() {
+		return maxRounds;
 	}
 
-	public RERulesConfig getConfig() {
-		return config;
-	}
-
-	public ForkConfig overrideEpoch(long epoch) {
-		return new ForkConfig(epoch, this.name, config);
-	}
-
-	public ForkConfig overrideConfig(RERulesConfig config) {
-		return new ForkConfig(this.epoch, this.name, config);
+	public RERulesConfig overrideMaxRounds(long maxRounds) {
+		return new RERulesConfig(this.fees, maxRounds);
 	}
 }

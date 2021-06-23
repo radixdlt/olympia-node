@@ -17,6 +17,8 @@
 
 package com.radixdlt.recovery;
 
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.assertj.core.api.Condition;
 import org.junit.After;
 import org.junit.Before;
@@ -42,7 +44,6 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
@@ -74,7 +75,7 @@ import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
@@ -133,8 +134,9 @@ public class RecoveryTest {
 		Guice.createInjector(
 			new MockedGenesisModule(),
 			new CryptoModule(),
-			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(100L), false),
+			new BetanetForkConfigsModule(),
+			new ForksModule(),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100L)),
 			new RadixEngineModule(),
 			new AbstractModule() {
 				@Override
@@ -172,8 +174,9 @@ public class RecoveryTest {
 		final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
 
 		return Guice.createInjector(
-			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(epochCeilingView), false),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, epochCeilingView)),
+			new BetanetForkConfigsModule(),
+			new ForksModule(),
 			MempoolConfig.asModule(10, 10),
 			RadixEngineConfig.asModule(1, Integer.MAX_VALUE, 50),
 			new AbstractModule() {

@@ -52,7 +52,6 @@ import com.radixdlt.atommodel.validators.state.AllowDelegationFlag;
 import com.radixdlt.atommodel.validators.state.PreparedRakeUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
@@ -82,9 +81,12 @@ import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
+import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
@@ -128,9 +130,9 @@ public class StakingUnstakingValidatorsTest {
 	@Parameterized.Parameters
 	public static Collection<Object[]> forksModule() {
 		return List.of(new Object[][] {
-			{new RadixEngineForksLatestOnlyModule(View.of(100), false), false},
+			{new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100)), false},
 			{new ForkOverwritesWithShorterEpochsModule(false), false},
-			{new RadixEngineForksLatestOnlyModule(View.of(100), true), true},
+			{new RadixEngineForksLatestOnlyModule(new RERulesConfig(true, 100)), true},
 			{new ForkOverwritesWithShorterEpochsModule(true), true},
 		});
 	}
@@ -158,7 +160,8 @@ public class StakingUnstakingValidatorsTest {
 			.sorted(Comparator.comparing(k -> k.getPublicKey().euid()))
 			.collect(ImmutableList.toImmutableList());
 		this.radixEngineConfiguration = Modules.combine(
-			new BetanetForksModule(),
+			new BetanetForkConfigsModule(),
+			new ForksModule(),
 			forkModule,
 			RadixEngineConfig.asModule(1, 10, 50)
 		);
@@ -295,19 +298,19 @@ public class StakingUnstakingValidatorsTest {
 		private final DeterministicSavedLastEvent<EpochViewUpdate> lastEpochView;
 		private final EpochChange epochChange;
 		private final BerkeleyLedgerEntryStore entryStore;
-		private final TreeMap<Long, ForkConfig> epochToForkConfig;
+		private final Forks forks;
 
 		@Inject
 		private NodeState(
 			DeterministicSavedLastEvent<EpochViewUpdate> lastEpochView,
 			EpochChange epochChange,
 			BerkeleyLedgerEntryStore entryStore,
-			TreeMap<Long, ForkConfig> epochToForkConfig
+			Forks forks
 		) {
 			this.lastEpochView = lastEpochView;
 			this.epochChange = epochChange;
 			this.entryStore = entryStore;
-			this.epochToForkConfig = epochToForkConfig;
+			this.forks = forks;
 		}
 
 		public long getEpoch() {
@@ -317,7 +320,7 @@ public class StakingUnstakingValidatorsTest {
 		}
 
 		public Map<BFTNode, Map<String, String>> getValidators() {
-			var forkConfig = epochToForkConfig.floorEntry(getEpoch()).getValue();
+			var forkConfig = forks.get(getEpoch());
 			var reParser = forkConfig.getParser();
 			Map<BFTNode, Map<String, String>> map = entryStore.reduceUpParticles(
 				ValidatorStakeData.class,
@@ -352,7 +355,7 @@ public class StakingUnstakingValidatorsTest {
 		}
 
 		public UInt256 getTotalNativeTokens() {
-			var forkConfig = epochToForkConfig.floorEntry(getEpoch()).getValue();
+			var forkConfig = forks.get(getEpoch());
 			var reParser = forkConfig.getParser();
 			var totalTokens = entryStore.reduceUpParticles(TokensInAccount.class, UInt256.ZERO,
 				(i, p) -> {

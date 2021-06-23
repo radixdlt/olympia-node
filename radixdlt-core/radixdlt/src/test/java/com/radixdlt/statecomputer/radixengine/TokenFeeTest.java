@@ -18,6 +18,8 @@
 
 package com.radixdlt.statecomputer.radixengine;
 
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,7 +36,6 @@ import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -47,7 +48,7 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
 import com.radixdlt.store.DatabaseLocation;
@@ -86,8 +87,9 @@ public class TokenFeeTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
-			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(100), true),
+			new BetanetForkConfigsModule(),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100)),
+			new ForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
