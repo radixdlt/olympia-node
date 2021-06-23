@@ -36,11 +36,12 @@ import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV2;
+import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV3;
 import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV2;
 import com.radixdlt.atommodel.tokens.construction.UnstakeOwnershipConstructor;
-import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
-import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
+import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV4;
+import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.CMErrorCode;
@@ -76,10 +77,11 @@ public class UnstakeTokensV2Test {
 				UInt256.TEN,
 				List.of(
 					new SystemConstraintScryptV2(),
-					new TokensConstraintScryptV2(),
-					new StakingConstraintScryptV3()
+					new TokensConstraintScryptV3(),
+					new StakingConstraintScryptV4(),
+					new ValidatorConstraintScryptV2()
 				),
-				new StakeTokensConstructorV2(),
+				new StakeTokensConstructorV3(),
 				new UnstakeOwnershipConstructor()
 			},
 			{
@@ -87,10 +89,11 @@ public class UnstakeTokensV2Test {
 				UInt256.TEN,
 				List.of(
 					new SystemConstraintScryptV2(),
-					new TokensConstraintScryptV2(),
-					new StakingConstraintScryptV3()
+					new TokensConstraintScryptV3(),
+					new StakingConstraintScryptV4(),
+					new ValidatorConstraintScryptV2()
 				),
-				new StakeTokensConstructorV2(),
+				new StakeTokensConstructorV3(),
 				new UnstakeOwnershipConstructor()
 			},
 			{
@@ -98,10 +101,11 @@ public class UnstakeTokensV2Test {
 				UInt256.SIX,
 				List.of(
 					new SystemConstraintScryptV2(),
-					new TokensConstraintScryptV2(),
-					new StakingConstraintScryptV3()
+					new TokensConstraintScryptV3(),
+					new StakingConstraintScryptV4(),
+					new ValidatorConstraintScryptV2()
 				),
-				new StakeTokensConstructorV2(),
+				new StakeTokensConstructorV3(),
 				new UnstakeOwnershipConstructor()
 			},
 			{
@@ -109,10 +113,11 @@ public class UnstakeTokensV2Test {
 				UInt256.SIX,
 				List.of(
 					new SystemConstraintScryptV2(),
-					new TokensConstraintScryptV2(),
-					new StakingConstraintScryptV3()
+					new TokensConstraintScryptV3(),
+					new StakingConstraintScryptV4(),
+					new ValidatorConstraintScryptV2()
 				),
-				new StakeTokensConstructorV2(),
+				new StakeTokensConstructorV3(),
 				new UnstakeOwnershipConstructor()
 			},
 		});

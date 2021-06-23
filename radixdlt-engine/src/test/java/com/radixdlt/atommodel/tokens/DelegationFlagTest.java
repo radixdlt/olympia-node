@@ -32,7 +32,7 @@ import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV3;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV4;
-import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
+import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atommodel.validators.construction.UpdateAllowDelegationFlagConstructor;
 import com.radixdlt.atommodel.validators.construction.UpdateValidatorOwnerConstructor;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
@@ -68,7 +68,7 @@ public class DelegationFlagTest {
 		var stakeAmounts = List.of(UInt256.TEN);
 		var scrypts = List.of(
 			Pair.of(
-				List.of(new TokensConstraintScryptV2(), new StakingConstraintScryptV4(), new ValidatorConstraintScryptV2()),
+				List.of(new TokensConstraintScryptV3(), new StakingConstraintScryptV4(), new ValidatorConstraintScryptV2()),
 				new StakeTokensConstructorV3()
 			)
 		);

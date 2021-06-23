@@ -22,20 +22,16 @@ import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.BurnToken;
-import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 
 public final class BurnTokenConstructor implements ActionConstructor<BurnToken> {
 
 	@Override
 	public void construct(BurnToken burnToken, TxBuilder txBuilder) throws TxBuilderException {
-		var epoch = txBuilder.find(SystemParticle.class, p -> true)
-			.map(SystemParticle::getEpoch).orElse(0L);
 		txBuilder.deallocateFungible(
 			TokensInAccount.class,
 			p -> p.getResourceAddr().equals(burnToken.resourceAddr())
-				&& p.getHoldingAddr().equals(burnToken.from())
-				&& p.getEpochUnlocked().map(e -> e <= epoch).orElse(true),
+				&& p.getHoldingAddr().equals(burnToken.from()),
 			amt -> new TokensInAccount(burnToken.from(), amt, burnToken.resourceAddr()),
 			burnToken.amount(),
 			"Not enough balance to for fee burn."

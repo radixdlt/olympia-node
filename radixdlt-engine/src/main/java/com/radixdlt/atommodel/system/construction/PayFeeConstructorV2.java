@@ -33,8 +33,7 @@ public class PayFeeConstructorV2 implements ActionConstructor<PayFee> {
 			.map(SystemParticle::getEpoch).orElse(0L);
 		txBuilder.payFee(
 			p -> p.getResourceAddr().isNativeToken()
-				&& p.getHoldingAddr().equals(action.from())
-				&& p.getEpochUnlocked().map(e -> e <= epoch).orElse(true),
+				&& p.getHoldingAddr().equals(action.from()),
 			amt -> new TokensInAccount(action.from(), amt, REAddr.ofNativeToken()),
 			action.amount(),
 			"Not enough balance to for fee burn."

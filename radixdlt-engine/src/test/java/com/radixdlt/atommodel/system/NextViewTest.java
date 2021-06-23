@@ -31,7 +31,7 @@ import com.radixdlt.atommodel.system.construction.NextViewConstructorV1;
 import com.radixdlt.atommodel.system.construction.NextViewConstructorV2;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV1;
 import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
-import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
+import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV4;
 import com.radixdlt.atommodel.unique.scrypt.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -68,7 +68,7 @@ public final class NextViewTest {
 					.build()
 			},
 			{
-				List.of(new SystemConstraintScryptV2(), new StakingConstraintScryptV3()),
+				List.of(new SystemConstraintScryptV2(), new StakingConstraintScryptV4()),
 				ActionConstructors.newBuilder()
 					.put(SystemNextView.class, new NextViewConstructorV2())
 					.put(CreateSystem.class, new CreateSystemConstructorV2())

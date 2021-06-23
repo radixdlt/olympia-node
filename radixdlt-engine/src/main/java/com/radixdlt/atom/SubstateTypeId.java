@@ -26,7 +26,6 @@ public enum SubstateTypeId {
 	PREPARED_STAKE((byte) 4),
 	VALIDATOR((byte) 5),
 	UNIQUE((byte) 6),
-	TOKENS_LOCKED((byte) 7),
 	STAKE_V1((byte) 8),
 	ROUND_DATA((byte) 9),
 	EPOCH_DATA((byte) 10),

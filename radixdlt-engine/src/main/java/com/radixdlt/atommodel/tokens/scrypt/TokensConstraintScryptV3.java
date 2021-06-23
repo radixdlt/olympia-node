@@ -108,7 +108,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				TokensInAccount.class,
-				Set.of(SubstateTypeId.TOKENS.id(), SubstateTypeId.TOKENS_LOCKED.id()),
+				Set.of(SubstateTypeId.TOKENS.id()),
 				(b, buf) -> {
 					var rri = REFieldSerialization.deserializeREAddr(buf);
 					var holdingAddr = REFieldSerialization.deserializeREAddr(buf);
@@ -116,23 +116,13 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 						throw new DeserializeException("Tokens must be held by holding address: " + holdingAddr);
 					}
 					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
-
-					if (b == SubstateTypeId.TOKENS.id()) {
-						return new TokensInAccount(holdingAddr, amount, rri);
-					} else {
-						var epochUnlocked = buf.getLong();
-						return new TokensInAccount(holdingAddr, amount, rri, epochUnlocked);
-					}
+					return new TokensInAccount(holdingAddr, amount, rri);
 				},
 				(s, buf) -> {
-					s.getEpochUnlocked().ifPresentOrElse(
-						e -> buf.put(SubstateTypeId.TOKENS_LOCKED.id()),
-						() -> buf.put(SubstateTypeId.TOKENS.id())
-					);
+					buf.put(SubstateTypeId.TOKENS.id());
 					REFieldSerialization.serializeREAddr(buf, s.getResourceAddr());
 					REFieldSerialization.serializeREAddr(buf, s.getHoldingAddr());
 					buf.put(s.getAmount().toByteArray());
-					s.getEpochUnlocked().ifPresent(buf::putLong);
 				}
 			)
 		);

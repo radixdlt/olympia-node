@@ -36,12 +36,13 @@ import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV2;
+import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV3;
 import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV2;
 import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV2;
-import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
-import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
+import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV4;
+import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.engine.parser.REParser;
 import org.junit.Assert;
 import org.junit.Before;
@@ -51,7 +52,6 @@ import com.radixdlt.api.data.ActionType;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV1;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.api.data.ActionEntry;
 import com.radixdlt.api.store.TransactionParser;
@@ -96,9 +96,9 @@ public class TransactionParserTest {
 	public void setup() throws Exception {
 		final var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new SystemConstraintScryptV2());
-		cmAtomOS.load(new ValidatorConstraintScryptV1());
-		cmAtomOS.load(new TokensConstraintScryptV2());
-		cmAtomOS.load(new StakingConstraintScryptV3());
+		cmAtomOS.load(new ValidatorConstraintScryptV2());
+		cmAtomOS.load(new TokensConstraintScryptV3());
+		cmAtomOS.load(new StakingConstraintScryptV4());
 		cmAtomOS.load(new FeeConstraintScrypt());
 
 		final var cm = new ConstraintMachine(
@@ -114,7 +114,7 @@ public class TransactionParserTest {
 			.put(MintToken.class, new MintTokenConstructor())
 			.put(TransferToken.class, new TransferTokensConstructorV2())
 			.put(PayFee.class, new PayFeeConstructorV2())
-			.put(StakeTokens.class, new StakeTokensConstructorV2())
+			.put(StakeTokens.class, new StakeTokensConstructorV3())
 			.put(UnstakeTokens.class, new UnstakeTokensConstructorV2())
 			.put(SystemNextEpoch.class, new NextEpochConstructorV2())
 			.put(CreateSystem.class, new CreateSystemConstructorV2())

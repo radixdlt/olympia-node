@@ -29,17 +29,18 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
-import com.radixdlt.atommodel.system.construction.NextEpochConstructorV2;
-import com.radixdlt.atommodel.system.construction.NextViewConstructorV2;
-import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
+import com.radixdlt.atommodel.system.construction.NextEpochConstructorV3;
+import com.radixdlt.atommodel.system.construction.NextViewConstructorV3;
+import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
+import com.radixdlt.atommodel.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV2;
-import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
-import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
+import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV3;
+import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV4;
+import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
-import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV1;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.CMErrorCode;
@@ -67,28 +68,34 @@ public class NextViewV2Test {
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
 		return List.of(new Object[][] {
-			{new SystemConstraintScryptV2(), new NextViewConstructorV2()}
+			{
+				List.of(
+					new EpochUpdateConstraintScrypt(10),
+					new RoundUpdateConstraintScrypt(10)
+				),
+				new NextViewConstructorV3()
+			}
 		});
 	}
 
 	private ECKeyPair key;
 	private RadixEngine<Void> sut;
 	private EngineStore<Void> store;
-	private final ConstraintScrypt scrypt;
+	private final List<ConstraintScrypt> scrypts;
 	private final ActionConstructor<SystemNextView> nextViewConstructor;
 
-	public NextViewV2Test(ConstraintScrypt scrypt, ActionConstructor<SystemNextView> nextViewConstructor) {
-		this.scrypt = scrypt;
+	public NextViewV2Test(List<ConstraintScrypt> scrypts, ActionConstructor<SystemNextView> nextViewConstructor) {
+		this.scrypts = scrypts;
 		this.nextViewConstructor = nextViewConstructor;
 	}
 
 	@Before
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(scrypt);
-		cmAtomOS.load(new StakingConstraintScryptV3());
-		cmAtomOS.load(new TokensConstraintScryptV2());
-		cmAtomOS.load(new ValidatorConstraintScryptV1());
+		scrypts.forEach(cmAtomOS::load);
+		cmAtomOS.load(new StakingConstraintScryptV4());
+		cmAtomOS.load(new TokensConstraintScryptV3());
+		cmAtomOS.load(new ValidatorConstraintScryptV2());
 		var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()
@@ -100,11 +107,11 @@ public class NextViewV2Test {
 			parser,
 			serialization,
 			ActionConstructors.newBuilder()
-				.put(SystemNextEpoch.class, new NextEpochConstructorV2())
+				.put(SystemNextEpoch.class, new NextEpochConstructorV3())
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
-				.put(StakeTokens.class, new StakeTokensConstructorV2())
+				.put(StakeTokens.class, new StakeTokensConstructorV3())
 				.put(SystemNextView.class, nextViewConstructor)
 				.put(RegisterValidator.class, new RegisterValidatorConstructor())
 				.build(),
