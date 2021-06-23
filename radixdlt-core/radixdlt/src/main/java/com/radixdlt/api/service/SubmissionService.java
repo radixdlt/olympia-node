@@ -30,7 +30,6 @@ import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.constraintmachine.ConstraintMachineException;
-import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -41,7 +40,6 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RadixEngineMempoolException;
 import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.functional.Result;
@@ -145,7 +143,7 @@ public final class SubmissionService {
 			reportedException = reportedException.getCause();
 		}
 
-		while (reportedException.getCause() instanceof ProcedureException) {
+		if (reportedException instanceof  ConstraintMachineException && reportedException.getCause() != null) {
 			reportedException = reportedException.getCause();
 		}
 
