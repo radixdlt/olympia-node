@@ -27,6 +27,7 @@ import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.forks.ForkManager;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -41,6 +42,7 @@ public final class PeerServerBootstrap {
 	private static final int BACKLOG_SIZE = 100;
 
 	private final P2PConfig config;
+	private final ForkManager forkManager;
 	private final SystemCounters counters;
 	private final Serialization serialization;
 	private final SecureRandom secureRandom;
@@ -51,6 +53,7 @@ public final class PeerServerBootstrap {
 	@Inject
 	public PeerServerBootstrap(
 		P2PConfig config,
+		ForkManager forkManager,
 		SystemCounters counters,
 		Serialization serialization,
 		SecureRandom secureRandom,
@@ -59,6 +62,7 @@ public final class PeerServerBootstrap {
 		Provider<PeerControl> peerControl
 	) {
 		this.config = Objects.requireNonNull(config);
+		this.forkManager = Objects.requireNonNull(forkManager);
 		this.counters = Objects.requireNonNull(counters);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.secureRandom = Objects.requireNonNull(secureRandom);
@@ -80,6 +84,7 @@ public final class PeerServerBootstrap {
 			.option(ChannelOption.SO_KEEPALIVE, true)
 			.childHandler(new PeerChannelInitializer(
 				config,
+				forkManager.latestKnownFork().getHash(),
 				counters,
 				serialization,
 				secureRandom,

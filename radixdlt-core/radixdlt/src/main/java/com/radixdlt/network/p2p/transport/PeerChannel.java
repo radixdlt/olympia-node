@@ -17,6 +17,7 @@
 
 package com.radixdlt.network.p2p.transport;
 
+import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
@@ -87,12 +88,14 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 
 	private ChannelState state = ChannelState.INACTIVE;
 	private NodeId remoteNodeId;
+	private HashCode remoteLatestKnownForkHash;
 	private FrameCodec frameCodec;
 
 	private final RateCalculator outMessagesStats = new RateCalculator(Duration.ofSeconds(10), 128);
 
 	public PeerChannel(
 		P2PConfig config,
+		HashCode latestKnownForkHash,
 		SystemCounters counters,
 		Serialization serialization,
 		SecureRandom secureRandom,
@@ -107,7 +110,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		this.peerControl = Objects.requireNonNull(peerControl);
 		this.uri = Objects.requireNonNull(uri);
 		uri.ifPresent(u -> this.remoteNodeId = u.getNodeId());
-		this.authHandshaker = new AuthHandshaker(serialization, secureRandom, ecKeyOps, config.networkId());
+		this.authHandshaker = new AuthHandshaker(serialization, secureRandom, ecKeyOps, config.networkId(), latestKnownForkHash);
 		this.nettyChannel = Objects.requireNonNull(nettyChannel);
 
 		this.isInitiator = uri.isPresent();
@@ -154,6 +157,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 			log.trace("Finalizing successful auth handshake with {} [{}]",
 				remoteNodeId, this.nettyChannel.remoteAddress());
 			this.remoteNodeId = successResult.getRemoteNodeId();
+			this.remoteLatestKnownForkHash = successResult.getRemoteLatestKnownForkHash();
 			this.frameCodec = new FrameCodec(successResult.getSecrets());
 			this.state = ChannelState.ACTIVE;
 			peerEventDispatcher.dispatch(PeerConnected.create(this));
@@ -253,6 +257,10 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 
 	public NodeId getRemoteNodeId() {
 		return this.remoteNodeId;
+	}
+
+	public HashCode getRemoteLatestKnownForkHash() {
+		return remoteLatestKnownForkHash;
 	}
 
 	public boolean isInbound() {

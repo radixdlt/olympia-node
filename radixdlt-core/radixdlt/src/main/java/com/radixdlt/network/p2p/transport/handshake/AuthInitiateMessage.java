@@ -51,21 +51,27 @@ public final class AuthInitiateMessage {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final byte networkId;
 
+	@JsonProperty("latestKnownForkHash")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private final HashCode latestKnownForkHash;
+
 	@JsonCreator
 	public static AuthInitiateMessage deserialize(
 		@JsonProperty("signature") ECDSASignature signature,
 		@JsonProperty("publicKey") HashCode publicKey,
 		@JsonProperty("nonce") HashCode nonce,
-		@JsonProperty("networkId") byte networkId
+		@JsonProperty("networkId") byte networkId,
+		@JsonProperty("latestKnownForkHash") HashCode latestKnownForkHash
 	) {
-		return new AuthInitiateMessage(signature, publicKey, nonce, networkId);
+		return new AuthInitiateMessage(signature, publicKey, nonce, networkId, latestKnownForkHash);
 	}
 
-	public AuthInitiateMessage(ECDSASignature signature, HashCode publicKey, HashCode nonce, byte networkId) {
+	public AuthInitiateMessage(ECDSASignature signature, HashCode publicKey, HashCode nonce, byte networkId, HashCode latestKnownForkHash) {
 		this.signature = signature;
 		this.publicKey = publicKey;
 		this.nonce = nonce;
 		this.networkId = networkId;
+		this.latestKnownForkHash = latestKnownForkHash;
 	}
 
 	public ECDSASignature getSignature() {
@@ -84,6 +90,10 @@ public final class AuthInitiateMessage {
 		return networkId;
 	}
 
+	public HashCode getLatestKnownForkHash() {
+		return latestKnownForkHash;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -96,11 +106,12 @@ public final class AuthInitiateMessage {
 		return Objects.equals(signature, that.signature)
 			&& Objects.equals(publicKey, that.publicKey)
 			&& Objects.equals(nonce, that.nonce)
-			&& networkId == that.networkId;
+			&& networkId == that.networkId
+			&& latestKnownForkHash == that.latestKnownForkHash;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(signature, publicKey, nonce, networkId);
+		return Objects.hash(signature, publicKey, nonce, networkId, latestKnownForkHash);
 	}
 }

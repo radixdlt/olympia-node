@@ -42,17 +42,23 @@ public final class AuthResponseMessage {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final HashCode nonce;
 
+	@JsonProperty("latestKnownForkHash")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private final HashCode latestKnownForkHash;
+
 	@JsonCreator
 	public static AuthResponseMessage deserialize(
 		@JsonProperty("ephemeralPublicKey") HashCode ephemeralPublicKey,
-		@JsonProperty("nonce") HashCode nonce
+		@JsonProperty("nonce") HashCode nonce,
+		@JsonProperty("latestKnownForkHash") HashCode latestKnownForkHash
 	) {
-		return new AuthResponseMessage(ephemeralPublicKey, nonce);
+		return new AuthResponseMessage(ephemeralPublicKey, nonce, latestKnownForkHash);
 	}
 
-	public AuthResponseMessage(HashCode ephemeralPublicKey, HashCode nonce) {
+	public AuthResponseMessage(HashCode ephemeralPublicKey, HashCode nonce, HashCode latestKnownForkHash) {
 		this.ephemeralPublicKey = ephemeralPublicKey;
 		this.nonce = nonce;
+		this.latestKnownForkHash = latestKnownForkHash;
 	}
 
 	public HashCode getEphemeralPublicKey() {
@@ -61,6 +67,10 @@ public final class AuthResponseMessage {
 
 	public HashCode getNonce() {
 		return nonce;
+	}
+
+	public HashCode getLatestKnownForkHash() {
+		return latestKnownForkHash;
 	}
 
 	@Override
@@ -72,11 +82,13 @@ public final class AuthResponseMessage {
 			return false;
 		}
 		final var that = (AuthResponseMessage) o;
-		return Objects.equals(ephemeralPublicKey, that.ephemeralPublicKey) && Objects.equals(nonce, that.nonce);
+		return Objects.equals(ephemeralPublicKey, that.ephemeralPublicKey)
+			&& Objects.equals(nonce, that.nonce)
+			&& Objects.equals(latestKnownForkHash, that.latestKnownForkHash);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(ephemeralPublicKey, nonce);
+		return Objects.hash(ephemeralPublicKey, nonce, latestKnownForkHash);
 	}
 }

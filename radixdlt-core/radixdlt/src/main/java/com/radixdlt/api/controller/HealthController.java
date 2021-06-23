@@ -22,6 +22,7 @@ import com.radixdlt.api.Controller;
 import com.radixdlt.api.service.ForkVoteStatusService;
 import com.radixdlt.api.service.NetworkInfoService;
 
+import com.radixdlt.api.service.PeersForksHashesInfoService;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 
@@ -32,10 +33,16 @@ import static com.radixdlt.api.RestUtils.sanitizeBaseUrl;
 public class HealthController implements Controller {
 	private final NetworkInfoService networkInfoService;
 	private final ForkVoteStatusService forkVoteStatusService;
+	private final PeersForksHashesInfoService peersForksHashesInfoService;
 
-	public HealthController(NetworkInfoService networkInfoService, ForkVoteStatusService forkVoteStatusService) {
+	public HealthController(
+		NetworkInfoService networkInfoService,
+		ForkVoteStatusService forkVoteStatusService,
+		PeersForksHashesInfoService peersForksHashesInfoService
+	) {
 		this.networkInfoService = networkInfoService;
 		this.forkVoteStatusService = forkVoteStatusService;
+		this.peersForksHashesInfoService = peersForksHashesInfoService;
 	}
 
 	@Override
@@ -48,6 +55,7 @@ public class HealthController implements Controller {
 		respond(exchange, jsonObject()
 			.put("network_status", networkInfoService.nodeStatus())
 			.put("fork_vote_status", forkVoteStatusService.forkVoteStatus())
+			.put("unknown_reported_forks_hashes", peersForksHashesInfoService.getUnknownReportedForksHashes())
 		);
 	}
 }

@@ -19,7 +19,6 @@
 package com.radixdlt.statecomputer.forks;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -29,26 +28,14 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import static java.util.function.Predicate.not;
-
 public class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
 	private static final long INITIAL_VIEW_CEILING = 10L;
 	private final boolean fees;
 	private final long epochsPerFork;
-	private final ImmutableSet<String> ignoredForksNames;
 
 	public ForkOverwritesWithShorterEpochsModule(boolean fees, long epochsPerFork) {
-		this(fees, epochsPerFork, ImmutableSet.of());
-	}
-
-	public ForkOverwritesWithShorterEpochsModule(
-		boolean fees,
-		long epochsPerFork,
-		ImmutableSet<String> ignoredForksNames
-	) {
 		this.fees = fees;
 		this.epochsPerFork = epochsPerFork;
-		this.ignoredForksNames = ignoredForksNames;
 	}
 
 	@Override
@@ -62,22 +49,21 @@ public class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
 		final var epoch = new AtomicLong(0);
 		final var viewCeiling = new AtomicLong(INITIAL_VIEW_CEILING);
 		return forkConfigs.stream()
-			.filter(not(forkConfig -> ignoredForksNames.contains(forkConfig.getName())))
 			.collect(
-				Collectors.toMap(
-					ForkConfig::getName,
-					e -> new ForkConfig(
+				Collectors.toMap(ForkConfig::getName, e -> {
+					return new ForkConfig(
 						e.getName(),
 						ForksPredicates.atEpoch(epoch.getAndAdd(epochsPerFork)),
 						e.getParser(),
 						e.getSubstateSerialization(),
 						fees ? e.getConstraintMachineConfig()
-							: e.getConstraintMachineConfig().metering((procedureKey, param, context) -> { }),
+							 : e.getConstraintMachineConfig().metering((procedureKey, param, context) -> { }),
 						e.getActionConstructors(),
 						e.getBatchVerifier(),
 						fees ? e.getPostProcessedVerifier() : (p, t) -> { },
 						View.of(viewCeiling.get() % 2 == 0 ? viewCeiling.getAndIncrement() : viewCeiling.getAndDecrement())
-					)
+					);
+				}
 			));
 	}
 }

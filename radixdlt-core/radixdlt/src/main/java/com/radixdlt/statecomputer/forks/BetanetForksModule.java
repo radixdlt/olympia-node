@@ -297,7 +297,7 @@ public final class BetanetForksModule extends AbstractModule {
 
 		return new ForkConfig(
 			"betanet4",
-			ForksPredicates.stakeVoting(0.51),
+			ForksPredicates.atEpoch(800),
 			parser,
 			serialization,
 			betanet4,

@@ -17,6 +17,7 @@
 
 package com.radixdlt.network.p2p.transport;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
@@ -48,6 +49,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 	private static final int FRAME_HEADER_LENGTH = Integer.BYTES;
 
 	private final P2PConfig config;
+	private final HashCode latestKnownForkHash;
 	private final SystemCounters counters;
 	private final Serialization serialization;
 	private final SecureRandom secureRandom;
@@ -58,6 +60,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 
 	public PeerChannelInitializer(
 		P2PConfig config,
+		HashCode latestKnownForkHash,
 		SystemCounters counters,
 		Serialization serialization,
 		SecureRandom secureRandom,
@@ -67,6 +70,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 		Optional<RadixNodeUri> uri
 	) {
 		this.config = Objects.requireNonNull(config);
+		this.latestKnownForkHash = Objects.requireNonNull(latestKnownForkHash);
 		this.counters = Objects.requireNonNull(counters);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.secureRandom = Objects.requireNonNull(secureRandom);
@@ -80,6 +84,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 	protected void initChannel(SocketChannel socketChannel) {
 		final var channel = new PeerChannel(
 			config,
+			latestKnownForkHash,
 			counters,
 			serialization,
 			secureRandom,

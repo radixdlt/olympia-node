@@ -50,6 +50,8 @@ public final class ForkConfig {
 	private final PostProcessedVerifier postProcessedVerifier;
 	private final View epochCeilingView;
 
+	private final HashCode hash;
+
 	public ForkConfig(
 		String name,
 		Predicate<Triplet<ForkConfig, RadixEngine<LedgerAndBFTProof>, LedgerAndBFTProof>> executePredicate,
@@ -70,6 +72,8 @@ public final class ForkConfig {
 		this.batchVerifier = batchVerifier;
 		this.postProcessedVerifier = postProcessedVerifier;
 		this.epochCeilingView = epochCeilingView;
+
+		this.hash = HashUtils.sha256(name.getBytes(StandardCharsets.UTF_8));
 	}
 
 	public String getName() {
@@ -109,7 +113,7 @@ public final class ForkConfig {
 	}
 
 	public HashCode getHash() {
-		return HashUtils.sha256(name.getBytes(StandardCharsets.UTF_8));
+		return hash;
 	}
 
 	public static HashCode voteHash(ECPublicKey publicKey, ForkConfig forkConfig) {

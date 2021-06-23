@@ -28,6 +28,7 @@ import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.forks.ForkManager;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -40,18 +41,20 @@ import java.util.Optional;
 @Singleton
 public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 	private final P2PConfig config;
+	private final ForkManager forkManager;
 	private final SystemCounters counters;
 	private final Serialization serialization;
 	private final SecureRandom secureRandom;
 	private final ECKeyOps ecKeyOps;
 	private final EventDispatcher<PeerEvent> peerEventDispatcher;
-	private Provider<PeerControl> peerControl;
+	private final Provider<PeerControl> peerControl;
 
 	private final NioEventLoopGroup clientWorkerGroup;
 
 	@Inject
 	public PeerOutboundBootstrapImpl(
 		P2PConfig config,
+		ForkManager forkManager,
 		SystemCounters counters,
 		Serialization serialization,
 		SecureRandom secureRandom,
@@ -60,6 +63,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 		Provider<PeerControl> peerControl
 	) {
 		this.config = Objects.requireNonNull(config);
+		this.forkManager = Objects.requireNonNull(forkManager);
 		this.counters = Objects.requireNonNull(counters);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.secureRandom = Objects.requireNonNull(secureRandom);
@@ -79,6 +83,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 			.option(ChannelOption.SO_KEEPALIVE, true)
 			.handler(new PeerChannelInitializer(
 				config,
+				forkManager.latestKnownFork().getHash(),
 				counters,
 				serialization,
 				secureRandom,
@@ -86,6 +91,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 				peerEventDispatcher,
 				peerControl.get(),
 				Optional.of(uri)
+
 			))
 			.connect(uri.getHost(), uri.getPort());
 	}

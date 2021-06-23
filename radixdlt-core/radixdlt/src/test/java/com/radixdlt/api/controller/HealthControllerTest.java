@@ -20,6 +20,9 @@ package com.radixdlt.api.controller;
 import com.radixdlt.api.service.ForkVoteStatusService;
 import static com.radixdlt.api.service.ForkVoteStatusService.ForkVoteStatus.NO_ACTION_NEEDED;
 import static com.radixdlt.api.service.ForkVoteStatusService.ForkVoteStatus.VOTE_REQUIRED;
+
+import com.radixdlt.api.service.PeersForksHashesInfoService;
+import org.json.JSONObject;
 import org.junit.Test;
 
 import com.radixdlt.api.service.NetworkInfoService;
@@ -43,7 +46,8 @@ import static com.radixdlt.api.data.NodeStatus.UP;
 public class HealthControllerTest {
 	private final NetworkInfoService networkInfoService = mock(NetworkInfoService.class);
 	private final ForkVoteStatusService forkVoteStatusService = mock(ForkVoteStatusService.class);
-	private final HealthController controller = new HealthController(networkInfoService, forkVoteStatusService);
+	private final PeersForksHashesInfoService peersForksHashesInfoService = mock(PeersForksHashesInfoService.class);
+	private final HealthController controller = new HealthController(networkInfoService, forkVoteStatusService, peersForksHashesInfoService);
 
 	@Test
 	public void routesAreConfigured() {
@@ -63,17 +67,18 @@ public class HealthControllerTest {
 		when(exchange.getResponseSender()).thenReturn(sender);
 		when(networkInfoService.nodeStatus()).thenReturn(BOOTING, SYNCING, UP, STALLED);
 		when(forkVoteStatusService.forkVoteStatus()).thenReturn(VOTE_REQUIRED, NO_ACTION_NEEDED, VOTE_REQUIRED, NO_ACTION_NEEDED);
+		when(peersForksHashesInfoService.getUnknownReportedForksHashes()).thenReturn(new JSONObject());
 
 		controller.handleHealthRequest(exchange);
-		verify(sender).send("{\"fork_vote_status\":\"VOTE_REQUIRED\",\"network_status\":\"BOOTING\"}");
+		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"VOTE_REQUIRED\",\"network_status\":\"BOOTING\"}");
 
 		controller.handleHealthRequest(exchange);
-		verify(sender).send("{\"fork_vote_status\":\"NO_ACTION_NEEDED\",\"network_status\":\"SYNCING\"}");
+		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"NO_ACTION_NEEDED\",\"network_status\":\"SYNCING\"}");
 
 		controller.handleHealthRequest(exchange);
-		verify(sender).send("{\"fork_vote_status\":\"VOTE_REQUIRED\",\"network_status\":\"UP\"}");
+		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"VOTE_REQUIRED\",\"network_status\":\"UP\"}");
 
 		controller.handleHealthRequest(exchange);
-		verify(sender).send("{\"fork_vote_status\":\"NO_ACTION_NEEDED\",\"network_status\":\"STALLED\"}");
+		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"NO_ACTION_NEEDED\",\"network_status\":\"STALLED\"}");
 	}
 }

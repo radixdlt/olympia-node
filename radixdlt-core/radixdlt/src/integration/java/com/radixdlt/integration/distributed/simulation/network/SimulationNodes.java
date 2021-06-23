@@ -186,7 +186,7 @@ public class SimulationNodes {
 			@Override
 			public Observable<EpochChange> latestEpochChanges() {
 				// Just do first instance for now
-				EpochChange initialEpoch =  nodeInstances.get(0).getInstance(EpochChange.class);
+				EpochChange initialEpoch = nodeInstances.get(0).getInstance(EpochChange.class);
 
 				Set<Observable<EpochChange>> epochChanges = nodeInstances.stream()
 					.map(i -> i.getInstance(Key.get(new TypeLiteral<Observable<EpochsLedgerUpdate>>() { })))
