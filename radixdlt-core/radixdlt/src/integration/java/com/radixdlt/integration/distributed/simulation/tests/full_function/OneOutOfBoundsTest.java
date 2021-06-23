@@ -36,6 +36,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -64,7 +65,7 @@ public class OneOutOfBoundsTest {
 			.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
 			.addRadixEngineConfigModules(
 				new BetanetForksModule(),
-				new RadixEngineForksLatestOnlyModule(View.of(10L), fees)
+				new RadixEngineForksLatestOnlyModule(View.of(20L), fees)
 			)
 			.addNodeModule(MempoolConfig.asModule(1000, 10))
 			.addTestModules(
@@ -75,10 +76,6 @@ public class OneOutOfBoundsTest {
 				RadixEngineMonitors.noInvalidProposedCommands()
 			)
 			.addMempoolSubmissionsSteadyState(RadixEngineUniqueGenerator.class);
-
-		if (!fees) {
-			bftTestBuilder.addTestModules(ApplicationMonitors.mempoolCommitted());
-		}
 	}
 
 
@@ -87,7 +84,7 @@ public class OneOutOfBoundsTest {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
 
-		final var results = simulationTest.run().awaitCompletion();
+		final var results = simulationTest.run(Duration.ofMinutes(2)).awaitCompletion();
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 }

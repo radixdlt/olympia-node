@@ -37,13 +37,8 @@ import java.util.Optional;
 import java.util.TreeMap;
 
 public class NextViewConstructorV3 implements ActionConstructor<SystemNextView> {
-	private static Logger logger = LogManager.getLogger();
 	@Override
 	public void construct(SystemNextView action, TxBuilder txBuilder) throws TxBuilderException {
-		var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorBFTData>(
-			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
-		);
-
 		var curLeader = action.leaderMapping().apply(action.view());
 		var prevRound = txBuilder.down(
 			RoundData.class,
@@ -56,21 +51,38 @@ public class NextViewConstructorV3 implements ActionConstructor<SystemNextView> 
 			throw new TxBuilderException("Next view: " + action + " isn't higher than current view: " + prevRound);
 		}
 
+		var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorBFTData>(
+			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
+		);
 		for (long view = prevRound.getView() + 1; view < action.view(); view++) {
 			var missingLeader = action.leaderMapping().apply(view);
+			if (!validatorsToUpdate.containsKey(missingLeader)) {
+				var validatorData = txBuilder.down(
+					ValidatorBFTData.class,
+					p -> p.validatorKey().equals(missingLeader),
+					"Could not find validator"
+				);
+				validatorsToUpdate.put(missingLeader, validatorData);
+			}
+			var nextData = validatorsToUpdate.get(missingLeader).incrementProposalsMissed();
+			validatorsToUpdate.put(missingLeader, nextData);
+		}
+
+		if (!validatorsToUpdate.containsKey(curLeader)) {
 			var validatorData = txBuilder.down(
 				ValidatorBFTData.class,
-				p -> p.validatorKey().equals(missingLeader),
+				p -> p.validatorKey().equals(curLeader),
 				"Could not find validator"
 			);
+			validatorsToUpdate.put(curLeader, validatorData);
+		}
+		var nextData = validatorsToUpdate.get(curLeader).incrementCompletedProposals();
+		validatorsToUpdate.put(curLeader, nextData);
+
+		for (var e : validatorsToUpdate.entrySet()) {
+			txBuilder.up(e.getValue());
 		}
 
 		txBuilder.up(new RoundData(action.view(), action.timestamp()));
-		txBuilder.swap(
-			ValidatorBFTData.class,
-			p -> p.validatorKey().equals(curLeader),
-			Optional.empty(),
-			"No validator epoch data"
-		).with(down -> List.of(down.incrementCompletedProposals()));
 	}
 }

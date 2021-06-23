@@ -49,7 +49,8 @@ import com.radixdlt.atommodel.system.construction.NextViewConstructorV3;
 import com.radixdlt.atommodel.system.construction.PayFeeConstructorV1;
 import com.radixdlt.atommodel.system.construction.PayFeeConstructorV2;
 import com.radixdlt.atommodel.system.scrypt.FeeConstraintScrypt;
-import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV3;
+import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
+import com.radixdlt.atommodel.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.atommodel.system.scrypt.SystemV1ToV2TransitionConstraintScrypt;
 import com.radixdlt.atommodel.tokens.construction.BurnTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.CreateFixedTokenConstructor;
@@ -261,7 +262,8 @@ public final class BetanetForksModule extends AbstractModule {
 		v4.load(new FeeConstraintScrypt());
 		v4.load(new StakingConstraintScryptV4());
 		v4.load(new UniqueParticleConstraintScrypt());
-		v4.load(new SystemConstraintScryptV3());
+		v4.load(new EpochUpdateConstraintScrypt());
+		v4.load(new RoundUpdateConstraintScrypt());
 		v4.load(new SystemV1ToV2TransitionConstraintScrypt());
 		var betanet4 = new ConstraintMachineConfig(
 			v4.virtualizedUpParticles(),

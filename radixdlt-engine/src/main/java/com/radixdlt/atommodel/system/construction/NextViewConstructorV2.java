@@ -55,7 +55,7 @@ public class NextViewConstructorV2 implements ActionConstructor<SystemNextView> 
 				Optional.empty(),
 				"No validator epoch data"
 			).with(down -> List.of(
-				new ValidatorBFTData(down.validatorKey(), down.proposalsCompleted() + 1)
+				new ValidatorBFTData(down.validatorKey(), down.proposalsCompleted() + 1, 0)
 			));
 		} else {
 			txBuilder.swap(

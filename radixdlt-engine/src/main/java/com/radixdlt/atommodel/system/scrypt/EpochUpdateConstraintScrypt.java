@@ -48,7 +48,6 @@ import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.ShutdownAll;
 import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 import com.radixdlt.constraintmachine.UpProcedure;
-import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -64,28 +63,9 @@ import java.util.function.Supplier;
 
 import static com.radixdlt.atommodel.validators.state.PreparedRakeUpdate.RAKE_MAX;
 
-public final class SystemConstraintScryptV3 implements ConstraintScrypt {
+public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 	public static final UInt256 REWARDS_PER_PROPOSAL = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
-
-	public static class UpdateValidatorEpochData implements ReducerState {
-	}
-
-	private static class UpdatingValidatorEpochData implements ReducerState {
-		private final ValidatorBFTData current;
-		private UpdatingValidatorEpochData(ValidatorBFTData current) {
-			this.current = current;
-		}
-
-		public void update(ValidatorBFTData next) throws ProcedureException {
-			if (!next.validatorKey().equals(current.validatorKey())) {
-				throw new ProcedureException("Must update same validator key");
-			}
-			if (current.proposalsCompleted() + 1 != next.proposalsCompleted()) {
-				throw new ProcedureException("Must only increment proposals completed");
-			}
-		}
-	}
 
 	public static final class ProcessExittingStake implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
@@ -240,12 +220,6 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 	public static final class StartingEpochRound implements ReducerState {
 	}
 
-	private static final class RoundClosed implements ReducerState {
-		private final RoundData prev;
-		private RoundClosed(RoundData prev) {
-			this.prev = prev;
-		}
-	}
 
 	private static final class Unstaking implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
@@ -622,41 +596,6 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 		));
 	}
 
-
-	private void roundUpdate(Loader os) {
-		// Round update
-		os.procedure(new DownProcedure<>(
-			VoidReducerState.class, RoundData.class,
-			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(d, s, r) -> ReducerResult.incomplete(new RoundClosed(d.getSubstate()))
-		));
-		os.procedure(new UpProcedure<>(
-			RoundClosed.class, RoundData.class,
-			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, u, c, r) -> {
-				var curData = s.prev;
-				if (curData.getView() >= u.getView()) {
-					throw new ProcedureException("Next view must be greater than previous.");
-				}
-
-				return ReducerResult.incomplete(new UpdateValidatorEpochData());
-			}
-		));
-		os.procedure(new DownProcedure<>(
-			UpdateValidatorEpochData.class, ValidatorBFTData.class,
-			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(d, s, r) -> ReducerResult.incomplete(new UpdatingValidatorEpochData(d.getSubstate()))
-		));
-		os.procedure(new UpProcedure<>(
-			UpdatingValidatorEpochData.class, ValidatorBFTData.class,
-			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, u, c, r) -> {
-				s.update(u);
-				return ReducerResult.complete();
-			}
-		));
-	}
-
 	private void epochUpdate(Loader os) {
 		// Epoch Update
 		os.procedure(new DownProcedure<>(
@@ -873,29 +812,10 @@ public final class SystemConstraintScryptV3 implements ConstraintScrypt {
 				}
 			)
 		);
-		os.substate(
-			new SubstateDefinition<>(
-				ValidatorBFTData.class,
-				Set.of(SubstateTypeId.VALIDATOR_EPOCH_DATA.id()),
-				(b, buf) -> {
-					var key = REFieldSerialization.deserializeKey(buf);
-					var proposalsCompleted = REFieldSerialization.deserializeNonNegativeLong(buf);
-					return new ValidatorBFTData(key, proposalsCompleted);
-				},
-				(s, buf) -> {
-					buf.put(SubstateTypeId.VALIDATOR_EPOCH_DATA.id());
-					REFieldSerialization.serializeKey(buf, s.validatorKey());
-					buf.putLong(s.proposalsCompleted());
-				}
-			)
-		);
 
 		registerGenesisTransitions(os);
 
 		// Epoch update
 		epochUpdate(os);
-
-		// Round update
-		roundUpdate(os);
 	}
 }

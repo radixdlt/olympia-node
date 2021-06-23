@@ -23,7 +23,7 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.SystemNextEpoch;
-import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV3;
+import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.HasEpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
@@ -43,6 +43,8 @@ import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -54,6 +56,8 @@ import java.util.TreeSet;
 import static com.radixdlt.atommodel.validators.state.PreparedRakeUpdate.RAKE_MAX;
 
 public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch> {
+	private static Logger logger = LogManager.getLogger();
+
 	private static ValidatorStakeData loadValidatorStakeData(
 		TxBuilder txBuilder,
 		ECPublicKey k,
@@ -118,7 +122,10 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 			final TreeMap<ECPublicKey, Long> proposalsCompleted = new TreeMap<>(
 				(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
 			);
-			i.forEachRemaining(e -> proposalsCompleted.put(e.validatorKey(), e.proposalsCompleted()));
+			i.forEachRemaining(e -> {
+				proposalsCompleted.put(e.validatorKey(), e.proposalsCompleted());
+				logger.info("Validator {} completed {} missed {}", e.validatorKey(), e.proposalsCompleted(), e.proposalsMissed());
+			});
 			return proposalsCompleted;
 		});
 		var preparingStake = new TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>>(
@@ -132,7 +139,7 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 				s -> s.getValidatorKey().equals(k),
 				"Validator not found"
 			);
-			var nodeEmission = SystemConstraintScryptV3.REWARDS_PER_PROPOSAL.multiply(UInt256.from(numProposals));
+			var nodeEmission = EpochUpdateConstraintScrypt.REWARDS_PER_PROPOSAL.multiply(UInt256.from(numProposals));
 			int rakePercentage = validatorStakeData.getRakePercentage().orElse(RAKE_MAX);
 			final UInt256 rakedEmissions;
 			if (rakePercentage != 0 && !nodeEmission.isZero()) {
@@ -248,7 +255,7 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 
 		validatorsToUpdate.forEach((k, validator) -> txBuilder.up(validator));
 		var validatorKeys = action.validators(validatorsToUpdate.values());
-		validatorKeys.forEach(k -> txBuilder.up(new ValidatorBFTData(k, 0)));
+		validatorKeys.forEach(k -> txBuilder.up(new ValidatorBFTData(k, 0, 0)));
 
 		txBuilder.up(new EpochData(prevEpoch.getEpoch() + 1));
 		txBuilder.up(new RoundData(0, 0));
