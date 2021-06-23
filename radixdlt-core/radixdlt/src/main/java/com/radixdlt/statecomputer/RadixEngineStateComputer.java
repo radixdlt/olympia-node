@@ -23,6 +23,7 @@ import com.google.inject.Inject;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.consensus.BFTConfiguration;
@@ -64,6 +65,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -199,31 +201,37 @@ public final class RadixEngineStateComputer implements StateComputer {
 		long timestamp,
 		ImmutableList.Builder<PreparedTxn> successBuilder
 	) {
-		// TODO: use this vertex to update per view timeout
-		if (vertex.isTimeout()) {
-			return null;
-		}
-
+		var systemActions = TxnConstructionRequest.create();
 		var view = vertex.getView();
-		final TxAction systemAction;
 		var nextValidatorSet = new AtomicReference<BFTValidatorSet>();
-		if (view.compareTo(epochCeilingView) < 0) {
-			systemAction = new SystemNextView(
+		if (view.compareTo(epochCeilingView) <= 0) {
+			systemActions.action(new SystemNextView(
 				view.number(),
+				vertex.isTimeout(),
 				timestamp,
 				getValidatorMapping()
-			);
+			));
 		} else {
 			var stakedValidators = branch.getComputedState(StakedValidators.class);
 			if (stakedValidators.toValidatorSet() == null) {
 				// FIXME: Better way to handle rare case when there isn't enough in validator set
-				systemAction = new SystemNextView(
+				systemActions.action(new SystemNextView(
 					view.number(),
+					false,
 					timestamp,
 					getValidatorMapping()
-				);
+				));
 			} else {
-				systemAction = new SystemNextEpoch(updates -> {
+				if (vertex.getParentHeader().getView().compareTo(epochCeilingView) < 0) {
+					systemActions.action(new SystemNextView(
+						epochCeilingView.number(),
+						true,
+						timestamp,
+						getValidatorMapping()
+					));
+				}
+
+				systemActions.action(new SystemNextEpoch(updates -> {
 					var cur = stakedValidators;
 					for (var u : updates) {
 						cur = cur.setStake(u.getValidatorKey(), u.getAmount());
@@ -238,7 +246,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 						.map(BFTNode::getKey)
 						.sorted(Comparator.comparing(ECPublicKey::getBytes, Arrays::compare))
 						.collect(Collectors.toList());
-				}, timestamp);
+				}, timestamp));
 			}
 		}
 
@@ -246,14 +254,14 @@ public final class RadixEngineStateComputer implements StateComputer {
 		final List<REProcessedTxn> txs;
 		try {
 			// TODO: combine construct/execute
-			systemUpdate = branch.construct(systemAction).buildWithoutSignature();
+			systemUpdate = branch.construct(systemActions).buildWithoutSignature();
 			txs = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException | TxBuilderException e) {
 			throw new IllegalStateException(
-				String.format("Failed to execute system update: %s", systemAction), e
+				String.format("Failed to execute system updates: %s", systemActions), e
 			);
 		}
-		RadixEngineTxn radixEngineCommand = new RadixEngineTxn(
+		var radixEngineCommand = new RadixEngineTxn(
 			systemUpdate,
 			txs.get(0),
 			PermissionLevel.SUPER_USER

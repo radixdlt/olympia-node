@@ -61,12 +61,20 @@ public class UpdatingValidatorBFTData implements ReducerState {
 			throw new ProcedureException("Invalid data for validator bft data update");
 		}
 
+		if (old.proposalsCompleted() == next.proposalsCompleted() && old.proposalsMissed() == next.proposalsMissed()) {
+			throw new ProcedureException("No update to Validator BFT data");
+		}
+
 		var additionalProposalsCompleted = next.proposalsCompleted() - old.proposalsCompleted();
 		var additionalProposalsMissed = next.proposalsMissed() - old.proposalsMissed();
 
 		incrementViews(additionalProposalsCompleted);
 		incrementViews(additionalProposalsMissed);
 
-		return validatorsToUpdate.isEmpty() ? new StartNextRound(this.expectedNextView) : this;
+		if (!validatorsToUpdate.isEmpty()) {
+			return this;
+		}
+
+		return new StartNextRound(this.expectedNextView);
 	}
 }

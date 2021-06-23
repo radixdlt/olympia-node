@@ -39,7 +39,6 @@ import java.util.TreeMap;
 public class NextViewConstructorV3 implements ActionConstructor<SystemNextView> {
 	@Override
 	public void construct(SystemNextView action, TxBuilder txBuilder) throws TxBuilderException {
-		var curLeader = action.leaderMapping().apply(action.view());
 		var prevRound = txBuilder.down(
 			RoundData.class,
 			p -> true,
@@ -68,6 +67,7 @@ public class NextViewConstructorV3 implements ActionConstructor<SystemNextView> 
 			validatorsToUpdate.put(missingLeader, nextData);
 		}
 
+		var curLeader = action.leaderMapping().apply(action.view());
 		if (!validatorsToUpdate.containsKey(curLeader)) {
 			var validatorData = txBuilder.down(
 				ValidatorBFTData.class,
@@ -76,7 +76,9 @@ public class NextViewConstructorV3 implements ActionConstructor<SystemNextView> 
 			);
 			validatorsToUpdate.put(curLeader, validatorData);
 		}
-		var nextData = validatorsToUpdate.get(curLeader).incrementCompletedProposals();
+		var nextData = action.isTimeout()
+			? validatorsToUpdate.get(curLeader).incrementProposalsMissed()
+			: validatorsToUpdate.get(curLeader).incrementCompletedProposals();
 		validatorsToUpdate.put(curLeader, nextData);
 
 		for (var e : validatorsToUpdate.entrySet()) {

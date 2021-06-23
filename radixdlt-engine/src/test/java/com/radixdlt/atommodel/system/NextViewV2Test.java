@@ -128,7 +128,7 @@ public class NextViewV2Test {
 	@Test
 	public void system_update_should_succeed() throws Exception {
 		// Arrange
-		var txn = sut.construct(new SystemNextView(1, 1, i -> key.getPublicKey()))
+		var txn = sut.construct(new SystemNextView(1, false, 1, i -> key.getPublicKey()))
 			.buildWithoutSignature();
 
 		// Act and Assert
@@ -139,7 +139,7 @@ public class NextViewV2Test {
 	public void including_sigs_in_system_update_should_fail() throws Exception {
 		// Arrange
 		var keyPair = ECKeyPair.generateNew();
-		var txn = sut.construct(new SystemNextView(1, 1, i -> key.getPublicKey()))
+		var txn = sut.construct(new SystemNextView(1, false, 1, i -> key.getPublicKey()))
 			.signAndBuild(keyPair::sign);
 
 		// Act and Assert

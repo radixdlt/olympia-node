@@ -66,6 +66,11 @@ import static com.radixdlt.atommodel.validators.state.PreparedRakeUpdate.RAKE_MA
 public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 	public static final UInt256 REWARDS_PER_PROPOSAL = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
+	private final long maxRounds;
+
+	public EpochUpdateConstraintScrypt(long maxRounds) {
+		this.maxRounds = maxRounds;
+	}
 
 	public static final class ProcessExittingStake implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
@@ -601,7 +606,15 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		os.procedure(new DownProcedure<>(
 			EndPrevRound.class, EpochData.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(d, s, r) -> ReducerResult.incomplete(new UpdatingEpoch(d.getSubstate()))
+			(d, s, r) -> {
+				// TODO: Should move this authorization instead of checking epoch > 0
+				if (d.getSubstate().getEpoch() > 0 && s.getClosedRound().getView() != maxRounds) {
+					throw new ProcedureException("Must execute epoch update on end of round " + maxRounds
+						+ " but is " + s.getClosedRound().getView());
+				}
+
+				return ReducerResult.incomplete(new UpdatingEpoch(d.getSubstate()));
+			}
 		));
 
 		os.procedure(new ShutdownAllProcedure<>(

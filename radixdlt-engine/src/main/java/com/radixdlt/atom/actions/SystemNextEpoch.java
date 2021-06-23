@@ -25,12 +25,16 @@ import com.radixdlt.crypto.ECPublicKey;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.LongFunction;
 
 public final class SystemNextEpoch implements TxAction {
 	private final long timestamp;
 	private final Function<Collection<ValidatorStakeData>, List<ECPublicKey>> nextValidators;
 
-	public SystemNextEpoch(Function<Collection<ValidatorStakeData>, List<ECPublicKey>> nextValidators, long timestamp) {
+	public SystemNextEpoch(
+		Function<Collection<ValidatorStakeData>, List<ECPublicKey>> nextValidators,
+		long timestamp
+	) {
 		this.nextValidators = nextValidators;
 		this.timestamp = timestamp;
 	}

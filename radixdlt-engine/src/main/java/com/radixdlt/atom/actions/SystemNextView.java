@@ -25,13 +25,19 @@ import java.util.function.LongFunction;
 
 public final class SystemNextView implements TxAction {
 	private final long view;
+	private final boolean isTimeout;
 	private final long timestamp;
 	private final LongFunction<ECPublicKey> leaderMapping;
 
-	public SystemNextView(long view, long timestamp, LongFunction<ECPublicKey> leaderMapping) {
+	public SystemNextView(long view, boolean isTimeout, long timestamp, LongFunction<ECPublicKey> leaderMapping) {
 		this.view = view;
+		this.isTimeout = isTimeout;
 		this.timestamp = timestamp;
 		this.leaderMapping = leaderMapping;
+	}
+
+	public boolean isTimeout() {
+		return isTimeout;
 	}
 
 	public long view() {

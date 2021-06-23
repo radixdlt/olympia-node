@@ -135,4 +135,9 @@ public class TxnConstructionRequest {
 	public List<TxAction> getActions() {
 		return actions;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{actions=%s}", this.getClass().getSimpleName(), actions);
+	}
 }
