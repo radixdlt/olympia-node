@@ -18,13 +18,25 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.google.inject.multibindings.MapKey;
+import java.util.Optional;
+import java.util.TreeMap;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+public final class Forks {
+	private final TreeMap<Long, RERules> forks;
 
-@MapKey(unwrapValue = false)
-@Retention(RetentionPolicy.RUNTIME)
-public @interface EpochMapKey {
-	long epoch();
+	public Forks(TreeMap<Long, RERules> forks) {
+		if (forks.isEmpty() || forks.get(0L) == null) {
+			throw new IllegalArgumentException();
+		}
+
+		this.forks = forks;
+	}
+
+	public RERules get(long epoch) {
+		return this.forks.floorEntry(epoch).getValue();
+	}
+
+	public Optional<RERules> ifForkGet(long epoch) {
+		return Optional.ofNullable(this.forks.get(epoch));
+	}
 }

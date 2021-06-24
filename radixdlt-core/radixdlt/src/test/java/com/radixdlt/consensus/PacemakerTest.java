@@ -17,6 +17,8 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.assertj.core.api.Condition;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,7 +31,6 @@ import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
@@ -41,7 +42,7 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 
@@ -66,9 +67,10 @@ public class PacemakerTest {
 	private Injector createRunner() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
-			new BetanetForksModule(),
+			new BetanetForkConfigsModule(),
 			RadixEngineConfig.asModule(1, Integer.MAX_VALUE, 50),
-			new RadixEngineForksLatestOnlyModule(View.of(100L), false),
+			new ForksModule(),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100L)),
 			new MockedGenesisModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new AbstractModule() {

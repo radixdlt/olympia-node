@@ -354,7 +354,7 @@ public class SystemConfigService {
 		forkConfigTreeMap.forEach((e, config) -> forks.put(
 			jsonObject()
 				.put("name", config.getName())
-				.put("ceilingView", config.getEpochCeilingView().number())
+				.put("maxRounds", config.getConfig().getMaxRounds())
 				.put("epoch", e)
 		));
 

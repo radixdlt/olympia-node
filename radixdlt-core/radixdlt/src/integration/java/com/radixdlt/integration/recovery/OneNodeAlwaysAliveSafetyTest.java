@@ -17,7 +17,6 @@
 
 package com.radixdlt.integration.recovery;
 
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
@@ -27,7 +26,9 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -141,8 +142,9 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 		Guice.createInjector(
 			new MockedGenesisModule(),
-			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(10), false),
+			new BetanetForkConfigsModule(),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10)),
+			new ForksModule(),
 			new RadixEngineModule(),
 			RadixEngineConfig.asModule(1, 10, 50),
 			new CryptoModule(),
@@ -203,8 +205,9 @@ public class OneNodeAlwaysAliveSafetyTest {
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
-			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(88), false),
+			new BetanetForkConfigsModule(),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 88)),
+			new ForksModule(),
 			RadixEngineConfig.asModule(1, 10, 50),
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {

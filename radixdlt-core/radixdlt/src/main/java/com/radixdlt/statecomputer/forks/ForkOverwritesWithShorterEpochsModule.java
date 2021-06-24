@@ -19,12 +19,13 @@
 package com.radixdlt.statecomputer.forks;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.consensus.bft.View;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.OptionalBinder;
 
-import java.util.Map;
+import java.util.Comparator;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 public class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
@@ -37,40 +38,23 @@ public class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		install(new RadixEngineForksOverwriteForTestingModule());
-	}
-
-	@Provides
-	@Singleton
-	private Map<String, Long> epochOverwrite(Map<EpochMapKey, ForkConfig> forkConfigs) {
 		var epoch = new AtomicLong(0);
-		return forkConfigs.entrySet().stream()
-			.collect(
-				Collectors.toMap(
-					e -> e.getValue().getName(),
-					e -> epoch.getAndAdd(5)
-				));
-	}
-
-	@Provides
-	@Singleton
-	private Map<String, ForkConfig> configOverwrite(Map<EpochMapKey, ForkConfig> forkConfigs) {
 		var viewCeiling = new AtomicLong(INITIAL_VIEW_CEILING);
-		return forkConfigs.entrySet().stream()
-			.collect(
-				Collectors.toMap(
-					e -> e.getValue().getName(),
-					e -> new ForkConfig(
-						e.getValue().getName(),
-						e.getValue().getParser(),
-						e.getValue().getSubstateSerialization(),
-						fees ? e.getValue().getConstraintMachineConfig()
-							: e.getValue().getConstraintMachineConfig().metering((procedureKey, param, context) -> { }),
-						e.getValue().getActionConstructors(),
-						e.getValue().getBatchVerifier(),
-						fees ? e.getValue().getPostProcessedVerifier() : (p, t) -> { },
-						View.of(viewCeiling.get() % 2 == 0 ? viewCeiling.getAndIncrement() : viewCeiling.getAndDecrement())
-					)
-			));
+
+		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkConfig>>>() { })
+			.setBinding()
+			.toInstance(s ->
+				s.stream()
+					.sorted(Comparator.comparingLong(ForkConfig::getEpoch))
+					.map(c -> new ForkConfig(
+						epoch.getAndAdd(5),
+						c.getName(),
+						new RERulesConfig(
+							fees,
+							viewCeiling.get() % 2 == 0 ? viewCeiling.getAndIncrement() : viewCeiling.getAndDecrement()
+						)
+					))
+					.collect(Collectors.toSet())
+			);
 	}
 }

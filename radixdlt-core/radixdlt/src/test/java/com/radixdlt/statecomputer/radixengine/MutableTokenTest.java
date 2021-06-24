@@ -18,6 +18,8 @@
 
 package com.radixdlt.statecomputer.radixengine;
 
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -33,7 +35,6 @@ import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -43,7 +44,7 @@ import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastStoredProof;
@@ -76,8 +77,9 @@ public class MutableTokenTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
-			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(100), false),
+			new BetanetForkConfigsModule(),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100)),
+			new ForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),

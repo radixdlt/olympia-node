@@ -18,6 +18,8 @@
 
 package com.radixdlt.integration.staking;
 
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -42,7 +44,6 @@ import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -60,7 +61,7 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 
@@ -111,8 +112,9 @@ public class UnstakingLockedTokensTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
-			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(100), false),
+			new BetanetForkConfigsModule(),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100)),
+			new ForksModule(),
 			RadixEngineConfig.asModule(1, 10, 10),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),

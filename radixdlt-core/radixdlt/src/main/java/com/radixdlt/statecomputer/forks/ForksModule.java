@@ -19,32 +19,44 @@
 package com.radixdlt.statecomputer.forks;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
 
-import java.util.Comparator;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
-/**
- * For testing only, only tests the latest state computer configuration
- */
-public class RadixEngineForksLatestOnlyModule extends AbstractModule {
-	private final RERulesConfig config;
-
-	public RadixEngineForksLatestOnlyModule(RERulesConfig config) {
-		this.config = config;
-	}
-
+public final class ForksModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkConfig>>>() { })
-			.setBinding()
-			.toInstance(m ->
-				Set.of(m.stream()
-					.max(Comparator.comparingLong(ForkConfig::getEpoch))
-					.map(f -> new ForkConfig(0L, f.getName(), config))
-					.orElseThrow())
-			);
+		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkConfig>>>() { });
+		install(new BetanetForkTxnRulesModule());
+	}
+
+	@Provides
+	@Singleton
+	private Forks forks(
+		Set<ForkConfig> forkConfigs,
+		Optional<UnaryOperator<Set<ForkConfig>>> transformer,
+		Map<String, Function<RERulesConfig, RERules>> rules
+	) {
+		var transformed = transformer.map(o -> o.apply(forkConfigs))
+			.orElse(forkConfigs);
+
+		var map = new TreeMap<>(
+			transformed.stream()
+				.collect(Collectors.toMap(
+					ForkConfig::getEpoch,
+					e -> rules.get(e.getName()).apply(e.getConfig())
+				))
+		);
+
+		return new Forks(map);
 	}
 }
