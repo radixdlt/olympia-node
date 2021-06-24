@@ -21,7 +21,6 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
-import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.engine.parser.ParsedTxn;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
@@ -69,8 +68,7 @@ public final class REProcessedTxn {
 
 	// FIXME: Currently a hack, better would be to put this at transaction layer for fees
 	public boolean isSystemOnly() {
-		return stateUpdates().anyMatch(i -> i.getSubstate().getParticle() instanceof SystemParticle)
-			|| stateUpdates().anyMatch(i -> i.getSubstate().getParticle() instanceof RoundData)
+		return stateUpdates().anyMatch(i -> i.getSubstate().getParticle() instanceof RoundData)
 			|| stateUpdates().anyMatch(i -> i.getSubstate().getParticle() instanceof EpochData);
 	}
 

@@ -16,19 +16,11 @@
  *
  */
 
-package com.radixdlt.atom.actions;
+package com.radixdlt.atommodel.validators.scrypt;
 
-import com.radixdlt.atom.TxAction;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
 
-public final class RegisterValidator implements TxAction {
-	private final ECPublicKey validatorKey;
-
-	public RegisterValidator(ECPublicKey validatorKey) {
-		this.validatorKey = validatorKey;
-	}
-
-	public ECPublicKey validatorKey() {
-		return validatorKey;
-	}
+public interface ValidatorData extends Particle {
+	ECPublicKey getValidatorKey();
 }

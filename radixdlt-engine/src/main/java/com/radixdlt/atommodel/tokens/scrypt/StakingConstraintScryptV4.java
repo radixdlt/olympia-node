@@ -25,7 +25,7 @@ import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atommodel.validators.state.AllowDelegationFlag;
-import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
+import com.radixdlt.atommodel.validators.state.PreparedOwnerUpdate;
 import com.radixdlt.atommodel.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
@@ -43,7 +43,6 @@ import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 
-import java.util.Set;
 import java.util.function.Predicate;
 
 public final class StakingConstraintScryptV4 implements ConstraintScrypt {
@@ -53,15 +52,14 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				PreparedStake.class,
-				Set.of(SubstateTypeId.PREPARED_STAKE.id()),
-				(b, buf) -> {
+				SubstateTypeId.PREPARED_STAKE.id(),
+				buf -> {
 					var owner = REFieldSerialization.deserializeAccountREAddr(buf);
 					var delegate = REFieldSerialization.deserializeKey(buf);
 					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					return new PreparedStake(amount, owner, delegate);
 				},
 				(s, buf) -> {
-					buf.put(SubstateTypeId.PREPARED_STAKE.id());
 					REFieldSerialization.serializeREAddr(buf, s.getOwner());
 					REFieldSerialization.serializeKey(buf, s.getDelegateKey());
 					buf.put(s.getAmount().toByteArray());
@@ -72,15 +70,14 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				PreparedUnstakeOwnership.class,
-				Set.of(SubstateTypeId.PREPARED_UNSTAKE.id()),
-				(b, buf) -> {
+				SubstateTypeId.PREPARED_UNSTAKE.id(),
+				buf -> {
 					var delegate = REFieldSerialization.deserializeKey(buf);
 					var owner = REFieldSerialization.deserializeAccountREAddr(buf);
 					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					return new PreparedUnstakeOwnership(delegate, owner, amount);
 				},
 				(s, buf) -> {
-					buf.put(SubstateTypeId.PREPARED_UNSTAKE.id());
 					REFieldSerialization.serializeKey(buf, s.getDelegateKey());
 					REFieldSerialization.serializeREAddr(buf, s.getOwner());
 					buf.put(s.getAmount().toByteArray());
@@ -107,14 +104,14 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 			return new StakePrepare(tokenHoldingBucket, allowDelegationFlag.getValidatorKey(), ownerCopy.getOwner()::equals);
 		}
 
-		ReducerState readOwner(PreparedValidatorUpdate preparedValidatorUpdate) throws ProcedureException {
-			if (!allowDelegationFlag.getValidatorKey().equals(preparedValidatorUpdate.getValidatorKey())) {
+		ReducerState readOwner(PreparedOwnerUpdate preparedOwnerUpdate) throws ProcedureException {
+			if (!allowDelegationFlag.getValidatorKey().equals(preparedOwnerUpdate.getValidatorKey())) {
 				throw new ProcedureException("Not matchin validator keys");
 			}
 			return new StakePrepare(
 				tokenHoldingBucket,
 				allowDelegationFlag.getValidatorKey(),
-				preparedValidatorUpdate.getOwnerAddress()::equals
+				preparedOwnerUpdate.getOwnerAddress()::equals
 			);
 		}
 	}
@@ -170,7 +167,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 			}
 		));
 		os.procedure(new ReadProcedure<>(
-			OwnerStakePrepare.class, PreparedValidatorUpdate.class,
+			OwnerStakePrepare.class, PreparedOwnerUpdate.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, d, r) -> {
 				var nextState = s.readOwner(d);

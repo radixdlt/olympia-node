@@ -16,36 +16,20 @@
  *
  */
 
-package com.radixdlt.atommodel.system.state;
+package com.radixdlt.atommodel.validators.state;
 
-import com.radixdlt.atommodel.tokens.Bucket;
-import com.radixdlt.constraintmachine.Authorization;
-import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorData;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
 
-public final class ValidatorStakeBucket implements Bucket {
+public final class PreparedRegisteredUpdate implements ValidatorData {
 	private final ECPublicKey validatorKey;
+	private final boolean isRegistered;
 
-	public ValidatorStakeBucket(ECPublicKey validatorKey) {
+	public PreparedRegisteredUpdate(ECPublicKey validatorKey, boolean isRegistered) {
 		this.validatorKey = validatorKey;
-	}
-
-	@Override
-	public Authorization withdrawAuthorization() {
-		return new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { });
-	}
-
-	@Override
-	public REAddr resourceAddr() {
-		return REAddr.ofNativeToken();
-	}
-
-	@Override
-	public REAddr getOwner() {
-		return null;
+		this.isRegistered = isRegistered;
 	}
 
 	@Override
@@ -53,23 +37,23 @@ public final class ValidatorStakeBucket implements Bucket {
 		return validatorKey;
 	}
 
-	@Override
-	public Long getEpochUnlock() {
-		return null;
+	public boolean isRegistered() {
+		return isRegistered;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(validatorKey);
+		return Objects.hash(validatorKey, isRegistered);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof ValidatorStakeBucket)) {
+		if (!(o instanceof PreparedRegisteredUpdate)) {
 			return false;
 		}
 
-		var other = (ValidatorStakeBucket) o;
-		return Objects.equals(this.validatorKey, other.validatorKey);
+		var other = (PreparedRegisteredUpdate) o;
+		return Objects.equals(this.validatorKey, other.validatorKey)
+			&& this.isRegistered == other.isRegistered;
 	}
 }

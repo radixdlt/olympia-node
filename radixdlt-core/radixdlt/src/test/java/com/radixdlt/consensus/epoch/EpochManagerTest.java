@@ -99,7 +99,6 @@ import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.utils.UInt256;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -238,7 +237,7 @@ public class EpochManagerTest {
 				);
 				var verifiedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 				var qc = QuorumCertificate.ofGenesis(verifiedVertex, LedgerHeader.genesis(accumulatorState, validatorSet, 0));
-				var proposerElection = new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.getNode().getKey().euid()));
+				var proposerElection = new WeightedRotatingLeaders(validatorSet);
 				return new BFTConfiguration(
 					proposerElection,
 					validatorSet,
@@ -275,7 +274,7 @@ public class EpochManagerTest {
 			header.timestamp()
 		);
 		var genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-		var proposerElection = new WeightedRotatingLeaders(nextValidatorSet, Comparator.comparing(v -> v.getNode().getKey().euid()));
+		var proposerElection = new WeightedRotatingLeaders(nextValidatorSet);
 		var bftConfiguration = new BFTConfiguration(
 			proposerElection,
 			nextValidatorSet,

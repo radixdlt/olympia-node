@@ -42,7 +42,6 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 
@@ -67,10 +66,9 @@ public class PacemakerTest {
 	private Injector createRunner() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
-			new BetanetForkConfigsModule(),
 			RadixEngineConfig.asModule(1, Integer.MAX_VALUE, 50),
 			new ForksModule(),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100L)),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100L, 2)),
 			new MockedGenesisModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new AbstractModule() {

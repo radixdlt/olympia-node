@@ -354,8 +354,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 						rules.getSerialization(),
 						rules.getActionConstructors(),
 						rules.getBatchVerifier(),
-						rules.getParser(),
-						rules.getPostProcessedVerifier()
+						rules.getParser()
 					);
 					this.epochCeilingView = rules.getMaxRounds();
 				});
@@ -406,7 +405,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 					Optional.empty(),
 					hasher
 				);
-			var proposerElection = new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.getNode().getKey().euid()));
+			var proposerElection = new WeightedRotatingLeaders(validatorSet);
 			var bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, initialState);
 			return new EpochChange(header, bftConfiguration);
 		});

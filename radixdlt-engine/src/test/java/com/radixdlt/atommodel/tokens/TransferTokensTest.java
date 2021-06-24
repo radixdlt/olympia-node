@@ -27,10 +27,8 @@ import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV1;
 import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV2;
-import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
-import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
+import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.state.AccountBucket;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -61,10 +59,8 @@ public class TransferTokensTest {
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
 		return List.of(new Object[][] {
-			{UInt256.TEN, UInt256.TEN, new TokensConstraintScryptV1(), new TransferTokensConstructorV1()},
-			{UInt256.TEN, UInt256.SIX, new TokensConstraintScryptV1(), new TransferTokensConstructorV1()},
-			{UInt256.TEN, UInt256.TEN, new TokensConstraintScryptV2(), new TransferTokensConstructorV2()},
-			{UInt256.TEN, UInt256.SIX, new TokensConstraintScryptV2(), new TransferTokensConstructorV2()},
+			{UInt256.TEN, UInt256.TEN, new TokensConstraintScryptV3(), new TransferTokensConstructorV2()},
+			{UInt256.TEN, UInt256.SIX, new TokensConstraintScryptV3(), new TransferTokensConstructorV2()},
 		});
 	}
 

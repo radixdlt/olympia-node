@@ -20,44 +20,42 @@ package com.radixdlt.atommodel.validators.state;
 
 import com.radixdlt.atommodel.validators.scrypt.ValidatorData;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
 
-public final class ValidatorOwnerCopy implements ValidatorData {
+public final class ValidatorRegisteredCopy implements ValidatorData {
 	private final ECPublicKey validatorKey;
-	private final REAddr owner;
+	private final boolean isRegistered;
 
-	public ValidatorOwnerCopy(
+	public ValidatorRegisteredCopy(
 		ECPublicKey validatorKey,
-		REAddr owner
+		boolean isRegistered
 	) {
 		this.validatorKey = validatorKey;
-		this.owner = owner;
+		this.isRegistered = isRegistered;
 	}
 
-	@Override
 	public ECPublicKey getValidatorKey() {
 		return validatorKey;
 	}
 
-	public REAddr getOwner() {
-		return this.owner;
+	public boolean isRegistered() {
+		return isRegistered;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(validatorKey, owner);
+		return Objects.hash(validatorKey, isRegistered);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof ValidatorOwnerCopy)) {
+		if (!(o instanceof ValidatorRegisteredCopy)) {
 			return false;
 		}
 
-		var other = (ValidatorOwnerCopy) o;
+		var other = (ValidatorRegisteredCopy) o;
 		return Objects.equals(this.validatorKey, other.validatorKey)
-			&& Objects.equals(this.owner, other.owner);
+			&& this.isRegistered == other.isRegistered;
 	}
 }

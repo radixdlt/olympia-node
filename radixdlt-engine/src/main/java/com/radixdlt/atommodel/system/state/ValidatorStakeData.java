@@ -30,8 +30,6 @@ import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
 import java.util.Objects;
-import java.util.Optional;
-import java.util.OptionalInt;
 
 import static com.radixdlt.atommodel.validators.state.PreparedRakeUpdate.RAKE_MAX;
 
@@ -41,8 +39,9 @@ public final class ValidatorStakeData implements ResourceInBucket {
 
 	private final UInt256 totalStake;
 	private final UInt256 totalOwnership;
-	private final OptionalInt rakePercentage;
-	private final Optional<REAddr> ownerAddr;
+	private final int rakePercentage;
+	private final REAddr ownerAddr;
+	private final boolean isRegistered;
 
 	// Bucket keys
 	private final ECPublicKey validatorKey;
@@ -51,8 +50,9 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		ECPublicKey validatorKey,
 		UInt256 totalStake,
 		UInt256 totalOwnership,
-		OptionalInt rakePercentage,
-		Optional<REAddr> ownerAddr
+		int rakePercentage,
+		REAddr ownerAddr,
+		boolean isRegistered
 	) {
 		if (totalStake.isZero() != totalOwnership.isZero()) {
 			throw new IllegalArgumentException(
@@ -64,42 +64,52 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		this.totalOwnership = totalOwnership;
 		this.rakePercentage = rakePercentage;
 		this.ownerAddr = ownerAddr;
+		this.isRegistered = isRegistered;
 	}
 
-	public static ValidatorStakeData createV1(ECPublicKey validatorKey) {
-		return new ValidatorStakeData(validatorKey, UInt256.ZERO, UInt256.ZERO, OptionalInt.empty(), Optional.empty());
+	public static ValidatorStakeData createVirtual(ECPublicKey validatorKey) {
+		return new ValidatorStakeData(validatorKey, UInt256.ZERO, UInt256.ZERO, RAKE_MAX, REAddr.ofPubKeyAccount(validatorKey), false);
 	}
 
-	public static ValidatorStakeData createV1(
-		ECPublicKey validatorKey,
-		UInt256 totalStake,
-		UInt256 totalOwnership
-	) {
-		return new ValidatorStakeData(validatorKey, totalStake, totalOwnership, OptionalInt.empty(), Optional.empty());
-	}
-
-	public static ValidatorStakeData createV2(
+	public static ValidatorStakeData create(
 		ECPublicKey validatorKey,
 		UInt256 totalStake,
 		UInt256 totalOwnership,
 		int rakePercentage,
-		REAddr ownerAddress
+		REAddr ownerAddress,
+		boolean isRegistered
 	) {
 		return new ValidatorStakeData(
 			validatorKey,
 			totalStake,
 			totalOwnership,
-			OptionalInt.of(rakePercentage),
-			Optional.of(ownerAddress)
+			rakePercentage,
+			ownerAddress,
+			isRegistered
 		);
 	}
 
-	public Optional<REAddr> getOwnerAddr() {
+	public boolean isRegistered() {
+		return isRegistered;
+	}
+
+	public REAddr getOwnerAddr() {
 		return ownerAddr;
 	}
 
-	public OptionalInt getRakePercentage() {
+	public int getRakePercentage() {
 		return rakePercentage;
+	}
+
+	public ValidatorStakeData setRegistered(boolean isRegistered) {
+		return new ValidatorStakeData(
+			validatorKey,
+			totalStake,
+			totalOwnership,
+			rakePercentage,
+			ownerAddr,
+			isRegistered
+		);
 	}
 
 	public ValidatorStakeData setRakePercentage(int rakePercentage) {
@@ -107,8 +117,9 @@ public final class ValidatorStakeData implements ResourceInBucket {
 			validatorKey,
 			totalStake,
 			totalOwnership,
-			OptionalInt.of(rakePercentage),
-			Optional.of(ownerAddr.orElseGet(() -> REAddr.ofPubKeyAccount(validatorKey)))
+			rakePercentage,
+			ownerAddr,
+			isRegistered
 		);
 	}
 
@@ -117,8 +128,9 @@ public final class ValidatorStakeData implements ResourceInBucket {
 			validatorKey,
 			totalStake,
 			totalOwnership,
-			OptionalInt.of(rakePercentage.orElse(RAKE_MAX)),
-			Optional.of(ownerAddr)
+			rakePercentage,
+			ownerAddr,
+			isRegistered
 		);
 	}
 
@@ -129,7 +141,7 @@ public final class ValidatorStakeData implements ResourceInBucket {
 
 	@Override
 	public Bucket bucket() {
-		return new ValidatorStakeBucket(validatorKey);
+		return new StakeBucket(validatorKey);
 	}
 
 	public ValidatorStakeData addEmission(UInt256 amount) {
@@ -138,13 +150,14 @@ public final class ValidatorStakeData implements ResourceInBucket {
 			this.totalStake.add(amount),
 			totalOwnership,
 			rakePercentage,
-			ownerAddr
+			ownerAddr,
+			isRegistered
 		);
 	}
 
 	public Pair<ValidatorStakeData, StakeOwnership> stake(REAddr owner, UInt256 stake) throws ProcedureException {
 		if (totalStake.isZero()) {
-			var nextValidatorStake = new ValidatorStakeData(validatorKey, stake, stake, rakePercentage, ownerAddr);
+			var nextValidatorStake = new ValidatorStakeData(validatorKey, stake, stake, rakePercentage, ownerAddr, isRegistered);
 			var stakeOwnership = new StakeOwnership(validatorKey, owner, stake);
 			return Pair.of(nextValidatorStake, stakeOwnership);
 		}
@@ -160,7 +173,8 @@ public final class ValidatorStakeData implements ResourceInBucket {
 			totalStake.add(stake),
 			totalOwnership.add(ownershipAmt),
 			rakePercentage,
-			ownerAddr
+			ownerAddr,
+			isRegistered
 		);
 		return Pair.of(nextValidatorStake, stakeOwnership);
 	}
@@ -180,7 +194,8 @@ public final class ValidatorStakeData implements ResourceInBucket {
 			totalStake.subtract(unstaked),
 			totalOwnership.subtract(unstakeOwnership),
 			rakePercentage,
-			ownerAddr
+			ownerAddr,
+			isRegistered
 		);
 		var epochUnlocked = curEpoch + EPOCHS_LOCKED;
 		var exittingStake = new ExittingStake(validatorKey, owner, epochUnlocked, unstaked);
@@ -219,7 +234,8 @@ public final class ValidatorStakeData implements ResourceInBucket {
 			&& Objects.equals(totalOwnership, that.totalOwnership)
 			&& Objects.equals(totalStake, that.totalStake)
 			&& Objects.equals(rakePercentage, that.rakePercentage)
-			&& Objects.equals(ownerAddr, that.ownerAddr);
+			&& Objects.equals(ownerAddr, that.ownerAddr)
+			&& this.isRegistered == that.isRegistered;
 	}
 
 	@Override
@@ -229,7 +245,8 @@ public final class ValidatorStakeData implements ResourceInBucket {
 			totalOwnership,
 			totalStake,
 			rakePercentage,
-			ownerAddr
+			ownerAddr,
+			isRegistered
 		);
 	}
 }

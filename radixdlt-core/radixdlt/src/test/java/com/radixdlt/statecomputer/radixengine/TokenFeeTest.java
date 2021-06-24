@@ -19,6 +19,7 @@
 package com.radixdlt.statecomputer.radixengine;
 
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkRulesModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Before;
 import org.junit.Rule;
@@ -48,9 +49,7 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LastStoredProof;
@@ -87,8 +86,7 @@ public class TokenFeeTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
-			new BetanetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100)),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
 			new ForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
@@ -116,7 +114,7 @@ public class TokenFeeTest {
 	@Test
 	public void when_validating_atom_with_particles__result_has_no_error() throws Exception {
 		var account = REAddr.ofPubKeyAccount(ecKeyPair.getPublicKey());
-		var atom = sut.construct(new PayFee(account, TokenFeeChecker.FIXED_FEE))
+		var atom = sut.construct(new PayFee(account, MainnetForkRulesModule.FIXED_FEE))
 			.mutex(ecKeyPair.getPublicKey(), "test").signAndBuild(ecKeyPair::sign);
 
 		sut.execute(List.of(atom));
@@ -132,7 +130,7 @@ public class TokenFeeTest {
 	@Test
 	public void when_validating_atom_with_fee_and_no_change__result_has_no_error() throws Exception {
 		var account = REAddr.ofPubKeyAccount(ecKeyPair.getPublicKey());
-		var txn = sut.construct(new PayFee(account, TokenFeeChecker.FIXED_FEE))
+		var txn = sut.construct(new PayFee(account, MainnetForkRulesModule.FIXED_FEE))
 			.signAndBuild(ecKeyPair::sign);
 
 		sut.execute(List.of(txn));

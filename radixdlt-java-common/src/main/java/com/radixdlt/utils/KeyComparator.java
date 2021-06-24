@@ -16,19 +16,19 @@
  *
  */
 
-package com.radixdlt.atom.actions;
+package com.radixdlt.utils;
 
-import com.radixdlt.atom.TxAction;
 import com.radixdlt.crypto.ECPublicKey;
 
-public final class RegisterValidator implements TxAction {
-	private final ECPublicKey validatorKey;
+import java.util.Arrays;
+import java.util.Comparator;
 
-	public RegisterValidator(ECPublicKey validatorKey) {
-		this.validatorKey = validatorKey;
+public final class KeyComparator {
+	private KeyComparator() {
+		throw new IllegalStateException("Cannot instantiate.");
 	}
 
-	public ECPublicKey validatorKey() {
-		return validatorKey;
+	public static Comparator<ECPublicKey> instance() {
+		return (o1, o2) -> Arrays.compare(o1.getCompressedBytes(), o2.getCompressedBytes());
 	}
 }

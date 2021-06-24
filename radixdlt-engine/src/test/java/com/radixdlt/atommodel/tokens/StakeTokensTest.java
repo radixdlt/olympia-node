@@ -28,14 +28,9 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV1;
-import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV2;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV3;
-import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV2;
-import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV4;
-import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
-import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
+import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.state.AccountBucket;
 import com.radixdlt.atommodel.tokens.state.PreparedStakeBucket;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
@@ -75,15 +70,7 @@ public class StakeTokensTest {
 		var stakeAmounts = List.of(UInt256.TEN, UInt256.SIX);
 		var scrypts = List.of(
 			Pair.of(
-				List.of(new TokensConstraintScryptV1(), new StakingConstraintScryptV2()),
-				new StakeTokensConstructorV1()
-			),
-			Pair.of(
-				List.of(new TokensConstraintScryptV2(), new StakingConstraintScryptV3()),
-				new StakeTokensConstructorV2()
-			),
-			Pair.of(
-				List.of(new TokensConstraintScryptV2(), new StakingConstraintScryptV4(), new ValidatorConstraintScryptV2()),
+				List.of(new TokensConstraintScryptV3(), new StakingConstraintScryptV4(), new ValidatorConstraintScryptV2(2)),
 				new StakeTokensConstructorV3()
 			)
 		);

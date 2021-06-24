@@ -31,7 +31,7 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.atom.actions.UpdateValidator;
+import com.radixdlt.atom.actions.UpdateValidatorMetadata;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
@@ -196,8 +196,8 @@ public class ActionParserServiceTest {
 		var key = ECKeyPair.generateNew().getPublicKey();
 		var validatorAddr = ValidatorAddress.of(key);
 
-		var source = "[{\"type\":\"RegisterValidator\", \"validator\":\"%s\", \"name\":\"%s\", \"url\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, validatorAddr, "validator 1", "http://localhost/"));
+		var source = "[{\"type\":\"RegisterValidator\", \"validator\":\"%s\"}]";
+		var actions = jsonArray(String.format(source, validatorAddr));
 
 		actionParserService.parse(actions)
 			.onFailure(this::fail)
@@ -209,8 +209,6 @@ public class ActionParserServiceTest {
 					.map(RegisterValidator.class::cast)
 					.ifPresentOrElse(
 						register -> {
-							assertEquals("validator 1", register.name());
-							assertEquals("http://localhost/", register.url());
 							assertEquals(key, register.validatorKey());
 						},
 						Assert::fail
@@ -223,8 +221,8 @@ public class ActionParserServiceTest {
 		var key = ECKeyPair.generateNew().getPublicKey();
 		var validatorAddr = ValidatorAddress.of(key);
 
-		var source = "[{\"type\":\"RegisterValidator\", \"validator\":\"%s\", \"url\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, validatorAddr, "http://localhost/"));
+		var source = "[{\"type\":\"RegisterValidator\", \"validator\":\"%s\"}]";
+		var actions = jsonArray(String.format(source, validatorAddr));
 
 		actionParserService.parse(actions)
 			.onFailure(this::fail)
@@ -236,8 +234,6 @@ public class ActionParserServiceTest {
 					.map(RegisterValidator.class::cast)
 					.ifPresentOrElse(
 						register -> {
-							assertNull(register.name());
-							assertEquals("http://localhost/", register.url());
 							assertEquals(key, register.validatorKey());
 						},
 						Assert::fail
@@ -263,8 +259,6 @@ public class ActionParserServiceTest {
 					.map(RegisterValidator.class::cast)
 					.ifPresentOrElse(
 						register -> {
-							assertNull(register.name());
-							assertNull(register.url());
 							assertEquals(key, register.validatorKey());
 						},
 						Assert::fail
@@ -286,8 +280,8 @@ public class ActionParserServiceTest {
 				assertEquals(1, parsed.size());
 
 				parsed.get(0).toAction().findAny()
-					.filter(UpdateValidator.class::isInstance)
-					.map(UpdateValidator.class::cast)
+					.filter(UpdateValidatorMetadata.class::isInstance)
+					.map(UpdateValidatorMetadata.class::cast)
 					.ifPresentOrElse(
 						register -> {
 							assertEquals("validator 1", register.name());
@@ -313,8 +307,8 @@ public class ActionParserServiceTest {
 				assertEquals(1, parsed.size());
 
 				parsed.get(0).toAction().findAny()
-					.filter(UpdateValidator.class::isInstance)
-					.map(UpdateValidator.class::cast)
+					.filter(UpdateValidatorMetadata.class::isInstance)
+					.map(UpdateValidatorMetadata.class::cast)
 					.ifPresentOrElse(
 						register -> {
 							assertNull(register.name());
@@ -340,8 +334,8 @@ public class ActionParserServiceTest {
 				assertEquals(1, parsed.size());
 
 				parsed.get(0).toAction().findAny()
-					.filter(UpdateValidator.class::isInstance)
-					.map(UpdateValidator.class::cast)
+					.filter(UpdateValidatorMetadata.class::isInstance)
+					.map(UpdateValidatorMetadata.class::cast)
 					.ifPresentOrElse(
 						register -> {
 							assertNull(register.name());
@@ -358,8 +352,8 @@ public class ActionParserServiceTest {
 		var key = ECKeyPair.generateNew().getPublicKey();
 		var validatorAddr = ValidatorAddress.of(key);
 
-		var source = "[{\"type\":\"UnregisterValidator\", \"validator\":\"%s\", \"name\":\"%s\", \"url\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, validatorAddr, "validator 1", "http://localhost/"));
+		var source = "[{\"type\":\"UnregisterValidator\", \"validator\":\"%s\"}]";
+		var actions = jsonArray(String.format(source, validatorAddr));
 
 		actionParserService.parse(actions)
 			.onFailure(this::fail)
@@ -371,8 +365,6 @@ public class ActionParserServiceTest {
 					.map(UnregisterValidator.class::cast)
 					.ifPresentOrElse(
 						register -> {
-							assertEquals("validator 1", register.name());
-							assertEquals("http://localhost/", register.url());
 							assertEquals(key, register.validatorKey());
 						},
 						Assert::fail
@@ -385,8 +377,8 @@ public class ActionParserServiceTest {
 		var key = ECKeyPair.generateNew().getPublicKey();
 		var validatorAddr = ValidatorAddress.of(key);
 
-		var source = "[{\"type\":\"UnregisterValidator\", \"validator\":\"%s\", \"url\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, validatorAddr, "http://localhost/"));
+		var source = "[{\"type\":\"UnregisterValidator\", \"validator\":\"%s\"}]";
+		var actions = jsonArray(String.format(source, validatorAddr));
 
 		actionParserService.parse(actions)
 			.onFailure(this::fail)
@@ -398,8 +390,6 @@ public class ActionParserServiceTest {
 					.map(UnregisterValidator.class::cast)
 					.ifPresentOrElse(
 						register -> {
-							assertNull(register.name());
-							assertEquals("http://localhost/", register.url());
 							assertEquals(key, register.validatorKey());
 						},
 						Assert::fail
@@ -425,8 +415,6 @@ public class ActionParserServiceTest {
 					.map(UnregisterValidator.class::cast)
 					.ifPresentOrElse(
 						register -> {
-							assertNull(register.name());
-							assertNull(register.url());
 							assertEquals(key, register.validatorKey());
 						},
 						Assert::fail

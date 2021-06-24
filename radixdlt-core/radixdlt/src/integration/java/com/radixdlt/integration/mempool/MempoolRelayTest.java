@@ -32,13 +32,13 @@ import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
-import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.utils.KeyComparator;
 import org.apache.logging.log4j.ThreadContext;
 import org.junit.After;
 import org.junit.Before;
@@ -130,7 +130,7 @@ public class MempoolRelayTest {
 
 		final var nodeKeys = Stream.generate(ECKeyPair::generateNew)
 			.limit(numNodes)
-			.sorted(Comparator.comparing(k -> k.getPublicKey().euid()))
+			.sorted(Comparator.comparing(ECKeyPair::getPublicKey, KeyComparator.instance()))
 			.collect(ImmutableList.toImmutableList());
 
 		final var bftNodes = nodeKeys.stream()
@@ -159,8 +159,7 @@ public class MempoolRelayTest {
 			new MockedGenesisModule(),
 			new CryptoModule(),
 			new RadixEngineModule(),
-			new BetanetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100)),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
 			new ForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new AbstractModule() {
@@ -187,8 +186,7 @@ public class MempoolRelayTest {
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
 			MempoolConfig.asModule(500, 100, 10, 10, 10),
-			new BetanetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100)),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
 			new ForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new PersistedNodeForTestingModule(),

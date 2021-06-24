@@ -40,7 +40,6 @@ import com.radixdlt.api.store.TransactionParser;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
-import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.Bucket;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atomos.UnclaimedREAddr;
@@ -723,11 +722,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					tokenResource.isMutable()
 				);
 				storeTokenDefinition(record);
-			} else if (substate instanceof SystemParticle) {
-				var s = (SystemParticle) substate;
-				currentTimestamp.set(s.asInstant());
-				currentEpoch.set(s.getEpoch());
-				currentRound.set(s.getView());
 			} else if (substate instanceof RoundData) {
 				var d = (RoundData) substate;
 				currentTimestamp.set(d.asInstant());

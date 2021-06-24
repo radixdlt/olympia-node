@@ -21,7 +21,6 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserializer;
 import com.radixdlt.constraintmachine.SubstateSerializer;
 
-import java.util.Set;
 import java.util.function.Predicate;
 
 /**
@@ -32,19 +31,19 @@ import java.util.function.Predicate;
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class SubstateDefinition<T extends Particle> {
 	private final Class<T> substateClass;
-	private final Set<Byte> typeBytes;
+	private final byte typeByte;
 	private final SubstateDeserializer<T> deserializer;
 	private final SubstateSerializer<T> serializer;
 	private final Predicate<T> virtualized; // may be null
 
 	public SubstateDefinition(
 		Class<T> substateClass,
-		Set<Byte> typeBytes,
+		byte typeByte,
 		SubstateDeserializer<T> deserializer,
 		SubstateSerializer<T> serializer
 	) {
 		this.substateClass = substateClass;
-		this.typeBytes = typeBytes;
+		this.typeByte = typeByte;
 		this.deserializer = deserializer;
 		this.serializer = serializer;
 		this.virtualized = s -> false;
@@ -52,20 +51,20 @@ public final class SubstateDefinition<T extends Particle> {
 
 	public SubstateDefinition(
 		Class<T> substateClass,
-		Set<Byte> typeBytes,
+		byte typeByte,
 		SubstateDeserializer<T> deserializer,
 		SubstateSerializer<T> serializer,
 		Predicate<T> virtualized
 	) {
 		this.substateClass = substateClass;
-		this.typeBytes = typeBytes;
+		this.typeByte = typeByte;
 		this.deserializer = deserializer;
 		this.serializer = serializer;
 		this.virtualized = virtualized;
 	}
 
-	public Set<Byte> getTypeBytes() {
-		return typeBytes;
+	public byte getTypeByte() {
+		return typeByte;
 	}
 
 	public Class<T> getSubstateClass() {

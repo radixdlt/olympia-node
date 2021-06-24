@@ -23,12 +23,12 @@ import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
 
-public class UpdateValidator implements TxAction {
+public class UpdateValidatorMetadata implements TxAction {
 	private final ECPublicKey validatorKey;
 	private final String name;
 	private final String url;
 
-	public UpdateValidator(
+	public UpdateValidatorMetadata(
 		ECPublicKey validatorKey,
 		String name,
 		String url

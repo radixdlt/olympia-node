@@ -27,10 +27,14 @@ import java.util.stream.Collectors;
 
 public final class SubstateSerialization {
 	private final Map<Class<? extends Particle>, SubstateSerializer<Particle>> classToSerializer;
+	private final Map<Class<? extends Particle>, Byte> classToTypeByte;
+
 
 	public SubstateSerialization(
 		Collection<SubstateDefinition<? extends Particle>> definitions
 	) {
+		this.classToTypeByte = definitions.stream()
+			.collect(Collectors.toMap(SubstateDefinition::getSubstateClass, SubstateDefinition::getTypeByte));
 		this.classToSerializer = definitions.stream()
 			.collect(Collectors.toMap(
 				SubstateDefinition::getSubstateClass,
@@ -46,6 +50,7 @@ public final class SubstateSerialization {
 
 		// TODO: Remove buf allocation
 		var buf = ByteBuffer.allocate(1024);
+		buf.put(classToTypeByte.get(p.getClass()));
 		serializer.serialize(p, buf);
 		var position = buf.position();
 		buf.rewind();

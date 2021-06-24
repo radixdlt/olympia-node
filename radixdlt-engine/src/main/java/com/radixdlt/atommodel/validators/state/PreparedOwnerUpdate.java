@@ -18,40 +18,43 @@
 
 package com.radixdlt.atommodel.validators.state;
 
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorData;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
 
-public final class RakeCopy implements Particle {
+public final class PreparedOwnerUpdate implements ValidatorData {
 	private final ECPublicKey validatorKey;
-	private final int curRakePercentage;
+	private final REAddr ownerAddress;
 
-	public RakeCopy(ECPublicKey validatorKey, int curRakePercentage) {
-		this.validatorKey = Objects.requireNonNull(validatorKey);
-		this.curRakePercentage = curRakePercentage;
+	public PreparedOwnerUpdate(ECPublicKey validatorKey, REAddr ownerAddress) {
+		this.validatorKey = validatorKey;
+		this.ownerAddress = ownerAddress;
 	}
 
+	@Override
 	public ECPublicKey getValidatorKey() {
 		return validatorKey;
 	}
 
-	public int getCurRakePercentage() {
-		return curRakePercentage;
+	public REAddr getOwnerAddress() {
+		return ownerAddress;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(validatorKey, curRakePercentage);
+		return Objects.hash(validatorKey, ownerAddress);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof RakeCopy)) {
+		if (!(o instanceof PreparedOwnerUpdate)) {
 			return false;
 		}
-		var other = (RakeCopy) o;
+
+		var other = (PreparedOwnerUpdate) o;
 		return Objects.equals(this.validatorKey, other.validatorKey)
-			&& this.curRakePercentage == other.curRakePercentage;
+			&& Objects.equals(this.ownerAddress, other.ownerAddress);
 	}
 }

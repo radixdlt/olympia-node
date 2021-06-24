@@ -36,8 +36,8 @@ import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
+import com.radixdlt.utils.KeyComparator;
 import io.reactivex.rxjava3.schedulers.Timed;
 import org.junit.Test;
 
@@ -97,7 +97,7 @@ public class PacemakerViewUpdateRaceConditionTest {
 					final List<BFTNode> sortedValidators =
 						validatorSet.getValidators().stream()
 							.map(BFTValidator::getNode)
-							.sorted(Comparator.<BFTNode, EUID>comparing(n -> n.getKey().euid()).reversed())
+							.sorted(Comparator.comparing(BFTNode::getKey, KeyComparator.instance().reversed()))
 							.collect(Collectors.toList());
 					return view -> sortedValidators.get(((int) view.number() - 1) % sortedValidators.size());
 				}

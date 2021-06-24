@@ -31,7 +31,6 @@ import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -53,7 +52,6 @@ import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 
@@ -83,9 +81,8 @@ public class MempoolTest {
 
 	private Injector getInjector() {
 		return Guice.createInjector(
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100)),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
 			MempoolConfig.asModule(10, 10, 200, 500, 10),
-			new BetanetForkConfigsModule(),
 			new ForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
@@ -110,10 +107,8 @@ public class MempoolTest {
 			var symbol = "test" + (char) ('c' + i);
 			var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), symbol);
 			var rriParticle = new UnclaimedREAddr(addr);
-			var uniqueParticle = new UniqueParticle(addr);
 			atomBuilder
 				.virtualDown(rriParticle, symbol.getBytes(StandardCharsets.UTF_8))
-				.up(uniqueParticle)
 				.end();
 		}
 		var signature = keyPair.sign(atomBuilder.hashToSign());

@@ -23,7 +23,6 @@ import com.radixdlt.atommodel.tokens.ResourceInBucket;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  *  A particle which represents an amount of transferrable fungible tokens
@@ -37,9 +36,6 @@ public final class TokensInAccount implements ResourceInBucket {
 	// Bucket
 	private final REAddr holdingAddress;
 
-	// Bucket properties
-	private final Long epochUnlocked;
-
 	public TokensInAccount(
 		REAddr holdingAddress,
 		UInt256 amount,
@@ -48,19 +44,6 @@ public final class TokensInAccount implements ResourceInBucket {
 		this.holdingAddress = Objects.requireNonNull(holdingAddress);
 		this.resourceAddr = Objects.requireNonNull(resourceAddr);
 		this.amount = Objects.requireNonNull(amount);
-		this.epochUnlocked = null;
-	}
-
-	public TokensInAccount(
-		REAddr holdingAddress,
-		UInt256 amount,
-		REAddr resourceAddr,
-		Long epochUnlocked
-	) {
-		this.holdingAddress = Objects.requireNonNull(holdingAddress);
-		this.resourceAddr = Objects.requireNonNull(resourceAddr);
-		this.amount = Objects.requireNonNull(amount);
-		this.epochUnlocked = epochUnlocked;
 	}
 
 	@Override
@@ -73,14 +56,6 @@ public final class TokensInAccount implements ResourceInBucket {
 		return new AccountBucket(resourceAddr, holdingAddress);
 	}
 
-	public DeprecatedResourceInBucket deprecatedResourceInBucket() {
-		return new DeprecatedResourceInBucket(resourceAddr, holdingAddress, epochUnlocked);
-	}
-
-	public Optional<Long> getEpochUnlocked() {
-		return Optional.ofNullable(epochUnlocked);
-	}
-
 	public REAddr getHoldingAddr() {
 		return this.holdingAddress;
 	}
@@ -91,12 +66,11 @@ public final class TokensInAccount implements ResourceInBucket {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s:%s:%s]",
+		return String.format("%s[%s:%s:%s]",
 			getClass().getSimpleName(),
 			resourceAddr,
 			amount,
-			holdingAddress,
-			epochUnlocked
+			holdingAddress
 		);
 	}
 
@@ -111,12 +85,11 @@ public final class TokensInAccount implements ResourceInBucket {
 		TokensInAccount that = (TokensInAccount) o;
 		return Objects.equals(holdingAddress, that.holdingAddress)
 			&& Objects.equals(resourceAddr, that.resourceAddr)
-			&& Objects.equals(epochUnlocked, that.epochUnlocked)
 			&& Objects.equals(amount, that.amount);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(holdingAddress, resourceAddr, epochUnlocked, amount);
+		return Objects.hash(holdingAddress, resourceAddr, amount);
 	}
 }

@@ -76,7 +76,6 @@ import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
@@ -141,9 +140,8 @@ public class RecoveryTest {
 		Guice.createInjector(
 			new MockedGenesisModule(),
 			new CryptoModule(),
-			new BetanetForkConfigsModule(),
 			new ForksModule(),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100L)),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100L, 2)),
 			new RadixEngineModule(),
 			new AbstractModule() {
 				@Override
@@ -178,8 +176,7 @@ public class RecoveryTest {
 		final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
 
 		return Guice.createInjector(
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, epochCeilingView)),
-			new BetanetForkConfigsModule(),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, epochCeilingView, 2)),
 			new ForksModule(),
 			MempoolConfig.asModule(10, 10),
 			RadixEngineConfig.asModule(1, Integer.MAX_VALUE, 50),

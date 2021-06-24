@@ -16,19 +16,22 @@
  *
  */
 
-package com.radixdlt.atom.actions;
+package com.radixdlt.atommodel.unique.scrypt;
 
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.atomos.Loader;
+import com.radixdlt.atomos.ConstraintScrypt;
+import com.radixdlt.constraintmachine.Authorization;
+import com.radixdlt.constraintmachine.EndProcedure;
+import com.radixdlt.constraintmachine.PermissionLevel;
 
-public final class RegisterValidator implements TxAction {
-	private final ECPublicKey validatorKey;
-
-	public RegisterValidator(ECPublicKey validatorKey) {
-		this.validatorKey = validatorKey;
-	}
-
-	public ECPublicKey validatorKey() {
-		return validatorKey;
+public class MutexConstraintScrypt implements ConstraintScrypt {
+	@Override
+	public void main(Loader os) {
+		os.procedure(new EndProcedure<>(
+			CMAtomOS.REAddrClaim.class,
+			s -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			(s, c, r) -> { }
+		));
 	}
 }

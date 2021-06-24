@@ -22,8 +22,9 @@ import com.google.inject.Inject;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.validators.state.AllowDelegationFlag;
-import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
-import com.radixdlt.atommodel.validators.state.ValidatorParticle;
+import com.radixdlt.atommodel.validators.state.PreparedOwnerUpdate;
+import com.radixdlt.atommodel.validators.state.PreparedRegisteredUpdate;
+import com.radixdlt.atommodel.validators.state.ValidatorMetaData;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
 
@@ -59,11 +60,12 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 		// as there is a bit of a hack in that PreparedStake must be loaded
 		// after ValidatorStake to get to the correct state
 		return ImmutableSet.of(
-			ValidatorParticle.class,
 			ValidatorStakeData.class,
+			PreparedRegisteredUpdate.class,
 			PreparedStake.class,
-			PreparedValidatorUpdate.class,
-			AllowDelegationFlag.class
+			PreparedOwnerUpdate.class,
+			AllowDelegationFlag.class,
+			ValidatorMetaData.class
 		);
 	}
 
@@ -75,29 +77,26 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 	@Override
 	public BiFunction<StakedValidators, Particle, StakedValidators> outputReducer() {
 		return (prev, p) -> {
-			if (p instanceof ValidatorParticle) {
-				var v = (ValidatorParticle) p;
-				if (v.isRegisteredForNextEpoch()) {
-					return prev.add(v);
-				}
-				return prev;
+			if (p instanceof PreparedRegisteredUpdate) {
+				var v = (PreparedRegisteredUpdate) p;
+				return v.isRegistered() ? prev.add(v.getValidatorKey()) : prev.remove(v.getValidatorKey());
+			} else if (p instanceof ValidatorMetaData) {
+				var s = (ValidatorMetaData) p;
+				return prev.set(s);
 			} else if (p instanceof PreparedStake) { // TODO: Remove for mainnet
 				var s = (PreparedStake) p;
 				return prev.add(s.getDelegateKey(), s.getAmount());
-			} else if (p instanceof PreparedValidatorUpdate) {
-				var s = (PreparedValidatorUpdate) p;
+			} else if (p instanceof PreparedOwnerUpdate) {
+				var s = (PreparedOwnerUpdate) p;
 				return prev.setOwner(s.getValidatorKey(), s.getOwnerAddress());
 			} else if (p instanceof AllowDelegationFlag) {
 				var s = (AllowDelegationFlag) p;
 				return prev.setAllowDelegationFlag(s.getValidatorKey(), s.allowsDelegation());
 			} else {
 				var s = (ValidatorStakeData) p;
-				if (s.getOwnerAddr().isPresent()) {
-					return prev.setOwner(s.getValidatorKey(), s.getOwnerAddr().get())
-						.setStake(s.getValidatorKey(), s.getAmount());
-				} else {
-					return prev.setStake(s.getValidatorKey(), s.getAmount());
-				}
+				return prev.setOwner(s.getValidatorKey(), s.getOwnerAddr())
+					.setStake(s.getValidatorKey(), s.getAmount())
+					.setRegistered(s.getValidatorKey(), s.isRegistered());
 			}
 		};
 	}
@@ -105,12 +104,7 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 	@Override
 	public BiFunction<StakedValidators, Particle, StakedValidators> inputReducer() {
 		return (prev, p) -> {
-			if (p instanceof ValidatorParticle) {
-				var v = (ValidatorParticle) p;
-				if (v.isRegisteredForNextEpoch()) {
-					return prev.remove(v);
-				}
-			} else if (p instanceof PreparedStake) { // TODO: Remove for mainnet
+			if (p instanceof PreparedStake) { // TODO: Remove for mainnet
 				var s = (PreparedStake) p;
 				return prev.remove(s.getDelegateKey(), s.getAmount());
 			}

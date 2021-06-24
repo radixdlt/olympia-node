@@ -29,7 +29,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.ledger.DtoTxnsAndProof;
@@ -59,7 +58,6 @@ public class MessageCentralLedgerSyncTest {
 	public void when_send_sync_request__then_magic_should_be_same_as_universe() {
 		BFTNode node = mock(BFTNode.class);
 		ECPublicKey key = mock(ECPublicKey.class);
-		when(key.euid()).thenReturn(EUID.ONE);
 		when(node.getKey()).thenReturn(key);
 		messageCentralLedgerSync.syncRequestDispatcher().dispatch(node, mock(SyncRequest.class));
 		verify(messageCentral, times(1)).send(eq(NodeId.fromPublicKey(node.getKey())), argThat(msg -> msg.getMagic() == 123));
@@ -69,7 +67,6 @@ public class MessageCentralLedgerSyncTest {
 	public void when_send_sync_response__then_magic_should_be_same_as_universe() {
 		BFTNode node = mock(BFTNode.class);
 		ECPublicKey key = mock(ECPublicKey.class);
-		when(key.euid()).thenReturn(EUID.ONE);
 		when(node.getKey()).thenReturn(key);
 		messageCentralLedgerSync.syncResponseDispatcher().dispatch(node, mock(SyncResponse.class));
 		verify(messageCentral, times(1)).send(eq(NodeId.fromPublicKey(node.getKey())), argThat(msg -> msg.getMagic() == 123));
@@ -79,7 +76,6 @@ public class MessageCentralLedgerSyncTest {
 	public void when_send_ledger_status_update__then_magic_should_be_same_as_universe() {
 		BFTNode node = mock(BFTNode.class);
 		ECPublicKey key = mock(ECPublicKey.class);
-		when(key.euid()).thenReturn(EUID.ONE);
 		when(node.getKey()).thenReturn(key);
 		messageCentralLedgerSync.ledgerStatusUpdateDispatcher().dispatch(node, mock(LedgerStatusUpdate.class));
 		verify(messageCentral, times(1)).send(eq(NodeId.fromPublicKey(node.getKey())), argThat(msg -> msg.getMagic() == 123));

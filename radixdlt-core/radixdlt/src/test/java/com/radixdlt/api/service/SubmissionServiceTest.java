@@ -78,7 +78,6 @@ import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
-import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -87,7 +86,6 @@ import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -138,8 +136,7 @@ public class SubmissionServiceTest {
 
 			@Override
 			public void configure() {
-				install(new BetanetForkConfigsModule());
-				install(new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10)));
+				install(new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10, 2)));
 				install(new ForksModule());
 				install(RadixEngineConfig.asModule(1, 100, 50));
 				install(MempoolConfig.asModule(10, 10));
@@ -149,8 +146,7 @@ public class SubmissionServiceTest {
 				var validatorSet = BFTValidatorSet.from(registeredNodes.stream().map(ECKeyPair::getPublicKey)
 					.map(BFTNode::create)
 					.map(n -> BFTValidator.from(n, UInt256.ONE)));
-				bind(ProposerElection.class)
-					.toInstance(new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.getNode().getKey().euid())));
+				bind(ProposerElection.class).toInstance(new WeightedRotatingLeaders(validatorSet));
 				bind(Serialization.class).toInstance(serialization);
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
 				bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(engineStore);

@@ -79,13 +79,12 @@ public final class CMAtomOS {
 			os.substate(
 				new SubstateDefinition<>(
 					UnclaimedREAddr.class,
-					Set.of(SubstateTypeId.UNCLAIMED_READDR.id()),
-					(b, buf) -> {
+					SubstateTypeId.UNCLAIMED_READDR.id(),
+					buf -> {
 						var rri = REFieldSerialization.deserializeREAddr(buf);
 						return new UnclaimedREAddr(rri);
 					},
 					(s, buf) -> {
-						buf.put(SubstateTypeId.UNCLAIMED_READDR.id());
 						var rri = s.getAddr();
 						REFieldSerialization.serializeREAddr(buf, rri);
 					},

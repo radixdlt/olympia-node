@@ -16,21 +16,42 @@
  *
  */
 
-package com.radixdlt.atom.actions;
+package com.radixdlt.atommodel.validators.state;
 
-import com.radixdlt.atom.TxAction;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
 
-public final class UnregisterValidator implements TxAction {
+public final class ValidatorRakeCopy implements Particle {
 	private final ECPublicKey validatorKey;
+	private final int curRakePercentage;
 
-	public UnregisterValidator(ECPublicKey validatorKey) {
+	public ValidatorRakeCopy(ECPublicKey validatorKey, int curRakePercentage) {
 		this.validatorKey = Objects.requireNonNull(validatorKey);
+		this.curRakePercentage = curRakePercentage;
 	}
 
-	public ECPublicKey validatorKey() {
+	public ECPublicKey getValidatorKey() {
 		return validatorKey;
+	}
+
+	public int getCurRakePercentage() {
+		return curRakePercentage;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(validatorKey, curRakePercentage);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof ValidatorRakeCopy)) {
+			return false;
+		}
+		var other = (ValidatorRakeCopy) o;
+		return Objects.equals(this.validatorKey, other.validatorKey)
+			&& this.curRakePercentage == other.curRakePercentage;
 	}
 }

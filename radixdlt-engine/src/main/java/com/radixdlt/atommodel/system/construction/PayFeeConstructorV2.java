@@ -22,19 +22,15 @@ import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.PayFee;
-import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.identifiers.REAddr;
 
 public class PayFeeConstructorV2 implements ActionConstructor<PayFee> {
 	@Override
 	public void construct(PayFee action, TxBuilder txBuilder) throws TxBuilderException {
-		var epoch = txBuilder.find(SystemParticle.class, p -> true)
-			.map(SystemParticle::getEpoch).orElse(0L);
 		txBuilder.payFee(
 			p -> p.getResourceAddr().isNativeToken()
-				&& p.getHoldingAddr().equals(action.from())
-				&& p.getEpochUnlocked().map(e -> e <= epoch).orElse(true),
+				&& p.getHoldingAddr().equals(action.from()),
 			amt -> new TokensInAccount(action.from(), amt, REAddr.ofNativeToken()),
 			action.amount(),
 			"Not enough balance to for fee burn."

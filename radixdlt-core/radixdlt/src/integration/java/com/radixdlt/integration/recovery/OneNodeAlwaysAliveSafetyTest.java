@@ -27,13 +27,13 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
-import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.utils.KeyComparator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -125,7 +125,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 	public OneNodeAlwaysAliveSafetyTest(int numNodes) {
 		this.nodeKeys = Stream.generate(ECKeyPair::generateNew).limit(numNodes)
-			.sorted(Comparator.comparing(n -> n.getPublicKey().euid())) // Sort this so that it matches order of proposers
+			.sorted(Comparator.comparing(ECKeyPair::getPublicKey, KeyComparator.instance()))
 			.collect(Collectors.toList());
 	}
 
@@ -143,8 +143,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 		Guice.createInjector(
 			new MockedGenesisModule(),
-			new BetanetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10)),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10, 2)),
 			new ForksModule(),
 			new RadixEngineModule(),
 			RadixEngineConfig.asModule(1, 10, 50),
@@ -206,8 +205,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
-			new BetanetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 88)),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 88, 2)),
 			new ForksModule(),
 			RadixEngineConfig.asModule(1, 10, 50),
 			new PersistedNodeForTestingModule(),

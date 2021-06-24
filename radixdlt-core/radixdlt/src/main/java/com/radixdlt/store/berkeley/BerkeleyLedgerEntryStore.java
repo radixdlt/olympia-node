@@ -18,7 +18,6 @@
 package com.radixdlt.store.berkeley;
 
 import com.radixdlt.atommodel.system.state.EpochData;
-import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
@@ -527,18 +526,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		Class<? extends Particle> particleClass,
 		SubstateDeserialization deserialization
 	) {
-		var typeBytes = deserialization.classToBytes(particleClass);
-		if (typeBytes.size() == 0) {
-			return CloseableCursor.empty();
-		} else if (typeBytes.size() == 1) {
-			return openIndexedCursorInternal(typeBytes.iterator().next(), deserialization);
-		} else if (typeBytes.size() == 2) {
-			var iter = typeBytes.iterator();
-			var cursor = openIndexedCursorInternal(iter.next(), deserialization);
-			return CloseableCursor.concat(cursor, () -> openIndexedCursorInternal(iter.next(), deserialization));
-		} else {
-			throw new IllegalStateException("Cannot handle more than 2 types per class");
-		}
+		var typeByte = deserialization.classToByte(particleClass);
+		return openIndexedCursorInternal(typeByte, deserialization);
 	}
 
 	@Override
@@ -548,23 +537,21 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		BiFunction<V, Particle, V> outputReducer,
 		SubstateDeserialization substateDeserialization
 	) {
-		var typeBytes = substateDeserialization.classToBytes(particleClass);
+		var typeByte = substateDeserialization.classToByte(particleClass);
 		V v = initial;
-		for (Byte indexableByte : typeBytes) {
-			try (var particleCursor = upParticleDatabase.openCursor(null, null)) {
-				var index = entry(new byte[] {indexableByte});
-				var value = entry();
-				var status = particleCursor.getSearchKey(index, null, value, null);
-				while (status == SUCCESS) {
-					Particle particle;
-					try {
-						particle = substateDeserialization.deserialize(value.getData());
-					} catch (DeserializeException e) {
-						throw new IllegalStateException();
-					}
-					v = outputReducer.apply(v, particle);
-					status = particleCursor.getNextDup(index, null, value, null);
+		try (var particleCursor = upParticleDatabase.openCursor(null, null)) {
+			var index = entry(new byte[] {typeByte});
+			var value = entry();
+			var status = particleCursor.getSearchKey(index, null, value, null);
+			while (status == SUCCESS) {
+				Particle particle;
+				try {
+					particle = substateDeserialization.deserialize(value.getData());
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
 				}
+				v = outputReducer.apply(v, particle);
+				status = particleCursor.getNextDup(index, null, value, null);
 			}
 		}
 
@@ -633,10 +620,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				var buf2 = stateUpdate.getStateBuf();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
 				addrDatabase.putNoOverwrite(txn, new DatabaseEntry(addr.getBytes()), value);
-			} else if (stateUpdate.getRawSubstate() instanceof SystemParticle) {
-				var buf2 = stateUpdate.getStateBuf();
-				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
-				addrDatabase.put(txn, new DatabaseEntry(REAddr.ofSystem().getBytes()), value);
 			} else if (stateUpdate.getRawSubstate() instanceof EpochData) {
 				var buf2 = stateUpdate.getStateBuf();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());

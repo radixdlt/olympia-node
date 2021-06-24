@@ -16,44 +16,60 @@
  *
  */
 
-package com.radixdlt.atommodel.validators.state;
+package com.radixdlt.atommodel.system.state;
 
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.atommodel.tokens.Bucket;
+import com.radixdlt.constraintmachine.Authorization;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
 
-public final class PreparedValidatorUpdate implements Particle {
+public final class StakeBucket implements Bucket {
 	private final ECPublicKey validatorKey;
-	private final REAddr ownerAddress;
 
-	public PreparedValidatorUpdate(ECPublicKey validatorKey, REAddr ownerAddress) {
+	public StakeBucket(ECPublicKey validatorKey) {
 		this.validatorKey = validatorKey;
-		this.ownerAddress = ownerAddress;
 	}
 
+	@Override
+	public Authorization withdrawAuthorization() {
+		return new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { });
+	}
+
+	@Override
+	public REAddr resourceAddr() {
+		return REAddr.ofNativeToken();
+	}
+
+	@Override
+	public REAddr getOwner() {
+		return null;
+	}
+
+	@Override
 	public ECPublicKey getValidatorKey() {
 		return validatorKey;
 	}
 
-	public REAddr getOwnerAddress() {
-		return ownerAddress;
+	@Override
+	public Long getEpochUnlock() {
+		return null;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(validatorKey, ownerAddress);
+		return Objects.hash(validatorKey);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof PreparedValidatorUpdate)) {
+		if (!(o instanceof StakeBucket)) {
 			return false;
 		}
 
-		var other = (PreparedValidatorUpdate) o;
-		return Objects.equals(this.validatorKey, other.validatorKey)
-			&& Objects.equals(this.ownerAddress, other.ownerAddress);
+		var other = (StakeBucket) o;
+		return Objects.equals(this.validatorKey, other.validatorKey);
 	}
 }

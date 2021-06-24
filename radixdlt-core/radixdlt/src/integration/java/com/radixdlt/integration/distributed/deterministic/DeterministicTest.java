@@ -39,7 +39,6 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.FunctionalNodeModule;
 import com.radixdlt.MockedCryptoModule;
 import com.radixdlt.MockedPersistenceStoreModule;
@@ -57,6 +56,7 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.sync.MockedCommittedReaderModule;
@@ -65,7 +65,6 @@ import com.radixdlt.utils.UInt256;
 
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.io.PrintStream;
-import java.util.Comparator;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.Function;
@@ -119,8 +118,9 @@ public final class DeterministicTest {
 		public Builder numNodes(int numNodes) {
 			this.nodes = Stream.generate(ECKeyPair::generateNew)
 				.limit(numNodes)
-				.sorted(Comparator.<ECKeyPair, EUID>comparing(k -> k.getPublicKey().euid()).reversed())
-				.map(kp -> BFTNode.create(kp.getPublicKey()))
+				.map(ECKeyPair::getPublicKey)
+				.sorted(KeyComparator.instance().reversed())
+				.map(BFTNode::create)
 				.collect(ImmutableList.toImmutableList());
 			return this;
 		}

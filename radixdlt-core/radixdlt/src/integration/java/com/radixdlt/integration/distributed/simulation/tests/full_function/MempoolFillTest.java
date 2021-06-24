@@ -35,7 +35,6 @@ import com.radixdlt.integration.distributed.simulation.application.MempoolFiller
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
@@ -63,8 +62,7 @@ public class MempoolFillTest {
 		)
 		.fullFunctionNodes(SyncConfig.of(800L, 10, 5000L))
 		.addRadixEngineConfigModules(
-			new BetanetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10)),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10, 2)),
 			new ForksModule()
 		)
 		.addNodeModule(new AbstractModule() {

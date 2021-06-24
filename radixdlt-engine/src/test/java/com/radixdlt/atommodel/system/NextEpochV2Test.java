@@ -25,17 +25,22 @@ import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.SystemNextEpoch;
+import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
-import com.radixdlt.atommodel.system.construction.NextEpochConstructorV2;
-import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
+import com.radixdlt.atommodel.system.construction.NextEpochConstructorV3;
+import com.radixdlt.atommodel.system.construction.NextViewConstructorV3;
+import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
+import com.radixdlt.atommodel.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV2;
-import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV3;
-import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
+import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV3;
+import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV4;
+import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.unique.scrypt.UniqueParticleConstraintScrypt;
+import com.radixdlt.atommodel.unique.scrypt.MutexConstraintScrypt;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -63,16 +68,20 @@ public class NextEpochV2Test {
 		return List.of(new Object[][] {
 			{
 				List.of(
-					new SystemConstraintScryptV2(),
-					new StakingConstraintScryptV3(),
-					new TokensConstraintScryptV2()
+					new RoundUpdateConstraintScrypt(10),
+					new EpochUpdateConstraintScrypt(10),
+					new StakingConstraintScryptV4(),
+					new TokensConstraintScryptV3(),
+					new ValidatorConstraintScryptV2(2),
+					new ValidatorRegisterConstraintScrypt()
 				),
 				ActionConstructors.newBuilder()
-					.put(SystemNextEpoch.class, new NextEpochConstructorV2())
+					.put(SystemNextView.class, new NextViewConstructorV3())
+					.put(SystemNextEpoch.class, new NextEpochConstructorV3())
 					.put(CreateSystem.class, new CreateSystemConstructorV2())
 					.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 					.put(MintToken.class, new MintTokenConstructor())
-					.put(StakeTokens.class, new StakeTokensConstructorV2())
+					.put(StakeTokens.class, new StakeTokensConstructorV3())
 					.build()
 			}
 		});
@@ -96,7 +105,7 @@ public class NextEpochV2Test {
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
 		scrypts.forEach(cmAtomOS::load);
-		cmAtomOS.load(new UniqueParticleConstraintScrypt()); // For v1 start
+		cmAtomOS.load(new MutexConstraintScrypt()); // For v1 start
 		var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()
@@ -121,8 +130,11 @@ public class NextEpochV2Test {
 		).buildWithoutSignature();
 		sut.execute(List.of(start), null, PermissionLevel.SYSTEM);
 
+		var request = TxnConstructionRequest.create()
+			.action(new SystemNextEpoch(u -> List.of(key), 1));
+
 		// Act
-		var txn = sut.construct(new SystemNextEpoch(u -> List.of(key), 1))
+		var txn = sut.construct(request)
 			.buildWithoutSignature();
 		this.sut.execute(List.of(txn), null, PermissionLevel.SUPER_USER);
 

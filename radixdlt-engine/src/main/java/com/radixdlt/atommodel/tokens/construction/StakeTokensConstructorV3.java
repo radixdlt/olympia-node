@@ -25,7 +25,7 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atommodel.validators.state.AllowDelegationFlag;
-import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
+import com.radixdlt.atommodel.validators.state.PreparedOwnerUpdate;
 import com.radixdlt.atommodel.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.identifiers.REAddr;
 
@@ -45,18 +45,18 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 		var flag = builder.read(
 			AllowDelegationFlag.class,
 			p -> p.getValidatorKey().equals(action.to()),
-			Optional.of(new AllowDelegationFlag(action.to(), true)),
+			Optional.of(new AllowDelegationFlag(action.to(), false)),
 			"Could not find state"
 		);
 
 		if (!flag.allowsDelegation()) {
 			var updateInFlight = builder
-				.find(PreparedValidatorUpdate.class, p -> p.getValidatorKey().equals(action.to()));
+				.find(PreparedOwnerUpdate.class, p -> p.getValidatorKey().equals(action.to()));
 
 			final REAddr owner;
 			if (updateInFlight.isPresent()) {
 				var validator = builder.read(
-					PreparedValidatorUpdate.class,
+					PreparedOwnerUpdate.class,
 					p -> p.getValidatorKey().equals(action.to()),
 					Optional.empty(),
 					"Could not find state"
