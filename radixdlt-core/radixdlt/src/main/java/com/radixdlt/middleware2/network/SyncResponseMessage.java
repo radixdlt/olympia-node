@@ -38,12 +38,10 @@ public final class SyncResponseMessage extends Message {
 
 	SyncResponseMessage() {
 		// Serializer only
-		super(0);
 		this.commands = null;
 	}
 
-	public SyncResponseMessage(int magic, DtoTxnsAndProof commands) {
-		super(magic);
+	public SyncResponseMessage(DtoTxnsAndProof commands) {
 		this.commands = commands;
 	}
 
@@ -66,12 +64,11 @@ public final class SyncResponseMessage extends Message {
 		}
 		SyncResponseMessage that = (SyncResponseMessage) o;
 		return Objects.equals(commands, that.commands)
-				&& Objects.equals(getTimestamp(), that.getTimestamp())
-				&& Objects.equals(getMagic(), that.getMagic());
+				&& Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(commands, getTimestamp(), getMagic());
+		return Objects.hash(commands, getTimestamp());
 	}
 }

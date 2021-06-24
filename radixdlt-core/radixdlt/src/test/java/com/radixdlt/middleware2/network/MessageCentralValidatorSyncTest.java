@@ -62,7 +62,7 @@ public class MessageCentralValidatorSyncTest {
 		when(self.getKey()).thenReturn(pubKey);
 		this.messageCentral = MessageCentralMockProvider.get();
 		this.hasher = new RandomHasher();
-		this.sync = new MessageCentralValidatorSync(0, messageCentral, hasher);
+		this.sync = new MessageCentralValidatorSync(messageCentral, hasher);
 	}
 
 	@Test
@@ -104,8 +104,8 @@ public class MessageCentralValidatorSyncTest {
 
 		final var peer = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
 		TestSubscriber<GetVerticesRequest> testObserver = sync.requests().map(RemoteEvent::getEvent).test();
-		messageCentral.send(peer, new GetVerticesRequestMessage(0, vertexId0, 1));
-		messageCentral.send(peer, new GetVerticesRequestMessage(0, vertexId1, 1));
+		messageCentral.send(peer, new GetVerticesRequestMessage(vertexId0, 1));
+		messageCentral.send(peer, new GetVerticesRequestMessage(vertexId1, 1));
 
 		testObserver.awaitCount(2);
 		testObserver.assertValueAt(0, v -> v.getVertexId().equals(vertexId0));

@@ -38,12 +38,10 @@ public final class StatusResponseMessage extends Message {
 
 	StatusResponseMessage() {
 		// Serializer only
-		super(0);
 		this.header = null;
 	}
 
-	public StatusResponseMessage(int magic, LedgerProof header) {
-		super(magic);
+	public StatusResponseMessage(LedgerProof header) {
 		this.header = header;
 	}
 
@@ -66,12 +64,11 @@ public final class StatusResponseMessage extends Message {
 		}
 		StatusResponseMessage that = (StatusResponseMessage) o;
 		return Objects.equals(header, that.header)
-			&& Objects.equals(getTimestamp(), that.getTimestamp())
-			&& Objects.equals(getMagic(), that.getMagic());
+			&& Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(header, getTimestamp(), getMagic());
+		return Objects.hash(header, getTimestamp());
 	}
 }

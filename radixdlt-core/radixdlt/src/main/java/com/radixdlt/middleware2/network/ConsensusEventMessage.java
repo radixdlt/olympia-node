@@ -45,25 +45,16 @@ public final class ConsensusEventMessage extends Message {
 
 	ConsensusEventMessage() {
 		// Serializer only
-		super(0);
 		this.proposal = null;
 		this.vote = null;
 	}
 
-	ConsensusEventMessage(int magic) {
-		super(magic);
-		this.proposal = null;
-		this.vote = null;
-	}
-
-	ConsensusEventMessage(int magic, Proposal proposal) {
-		super(magic);
+	ConsensusEventMessage(Proposal proposal) {
 		this.proposal = proposal;
 		this.vote = null;
 	}
 
-	ConsensusEventMessage(int magic, Vote vote) {
-		super(magic);
+	ConsensusEventMessage(Vote vote) {
 		this.proposal = null;
 		this.vote = vote;
 	}
@@ -104,12 +95,11 @@ public final class ConsensusEventMessage extends Message {
 		ConsensusEventMessage that = (ConsensusEventMessage) o;
 		return Objects.equals(proposal, that.proposal)
 				&& Objects.equals(vote, that.vote)
-				&& Objects.equals(getTimestamp(), that.getTimestamp())
-				&& Objects.equals(getMagic(), that.getMagic());
+				&& Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(proposal, vote, getTimestamp(), getMagic());
+		return Objects.hash(proposal, vote, getTimestamp());
 	}
 }

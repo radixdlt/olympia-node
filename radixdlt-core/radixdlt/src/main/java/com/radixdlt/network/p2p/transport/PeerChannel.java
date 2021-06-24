@@ -93,6 +93,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 
 	public PeerChannel(
 		P2PConfig config,
+		int magic,
 		SystemCounters counters,
 		Serialization serialization,
 		SecureRandom secureRandom,
@@ -107,7 +108,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		this.peerControl = Objects.requireNonNull(peerControl);
 		this.uri = Objects.requireNonNull(uri);
 		uri.ifPresent(u -> this.remoteNodeId = u.getNodeId());
-		this.authHandshaker = new AuthHandshaker(serialization, secureRandom, ecKeyOps, config.networkId());
+		this.authHandshaker = new AuthHandshaker(serialization, secureRandom, ecKeyOps, magic);
 		this.nettyChannel = Objects.requireNonNull(nettyChannel);
 
 		this.isInitiator = uri.isPresent();

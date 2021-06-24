@@ -95,11 +95,6 @@ public interface P2PConfig {
 	long pingTimeout();
 
 	/**
-	 * The network ID byte.
-	 */
-	byte networkId();
-
-	/**
 	 * Create a configuration from specified {@link RuntimeProperties}.
 	 *
 	 * @param properties the properties to read the configuration from
@@ -107,12 +102,6 @@ public interface P2PConfig {
 	 */
 	static P2PConfig fromRuntimeProperties(RuntimeProperties properties) {
 		return new P2PConfig() {
-			@Override
-			public byte networkId() {
-				// 2 for betanet, 1 for mainnet
-				return (byte) properties.get("network.p2p.network_id", 2);
-			}
-
 			@Override
 			public ImmutableList<String> seedNodes() {
 				return Arrays.stream(properties.get("network.p2p.seed_nodes", "").split(","))

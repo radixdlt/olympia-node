@@ -30,7 +30,6 @@ import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageFromPeer;
 import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.qualifier.Magic;
 
 import java.util.Objects;
 
@@ -45,17 +44,14 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
  */
 public final class MessageCentralBFTNetwork {
 	private final BFTNode self;
-	private final int magic;
 	private final MessageCentral messageCentral;
 	private final PublishSubject<ConsensusEvent> localMessages;
 
 	@Inject
 	public MessageCentralBFTNetwork(
 		@Self BFTNode self,
-		@Magic int magic,
 		MessageCentral messageCentral
 	) {
-		this.magic = magic;
 		this.self = Objects.requireNonNull(self);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.localMessages = PublishSubject.create();
@@ -105,7 +101,7 @@ public final class MessageCentralBFTNetwork {
 		if (this.self.equals(receiver)) {
 			this.localMessages.onNext(proposal);
 		} else {
-			ConsensusEventMessage message = new ConsensusEventMessage(this.magic, proposal);
+			ConsensusEventMessage message = new ConsensusEventMessage(proposal);
 			send(message, receiver);
 		}
 	}
@@ -118,7 +114,7 @@ public final class MessageCentralBFTNetwork {
 		if (this.self.equals(receiver)) {
 			this.localMessages.onNext(vote);
 		} else {
-			ConsensusEventMessage message = new ConsensusEventMessage(this.magic, vote);
+			ConsensusEventMessage message = new ConsensusEventMessage(vote);
 			send(message, receiver);
 		}
 	}

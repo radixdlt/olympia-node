@@ -40,13 +40,11 @@ public final class GetVerticesRequestMessage extends Message {
 
 	GetVerticesRequestMessage() {
 		// Serializer only
-		super(0);
 		this.vertexId = null;
 		this.count = 0;
 	}
 
-	GetVerticesRequestMessage(int magic, HashCode vertexId, int count) {
-		super(magic);
+	GetVerticesRequestMessage(HashCode vertexId, int count) {
 		this.vertexId = Objects.requireNonNull(vertexId);
 		this.count = count;
 	}
@@ -75,12 +73,11 @@ public final class GetVerticesRequestMessage extends Message {
 		GetVerticesRequestMessage that = (GetVerticesRequestMessage) o;
 		return count == that.count
 				&& Objects.equals(vertexId, that.vertexId)
-				&& Objects.equals(getTimestamp(), that.getTimestamp())
-				&& Objects.equals(getMagic(), that.getMagic());
+				&& Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(vertexId, count, getTimestamp(), getMagic());
+		return Objects.hash(vertexId, count, getTimestamp());
 	}
 }

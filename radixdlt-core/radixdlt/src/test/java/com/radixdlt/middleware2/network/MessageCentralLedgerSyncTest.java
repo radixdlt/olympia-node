@@ -17,24 +17,17 @@
 
 package com.radixdlt.middleware2.network;
 
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.ledger.DtoTxnsAndProof;
 import com.radixdlt.network.messaging.MessageCentralMockProvider;
 import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
@@ -51,34 +44,7 @@ public class MessageCentralLedgerSyncTest {
 	@Before
 	public void setup() {
 		this.messageCentral = MessageCentralMockProvider.get();
-		this.messageCentralLedgerSync = new MessageCentralLedgerSync(123, messageCentral);
-	}
-
-	@Test
-	public void when_send_sync_request__then_magic_should_be_same_as_universe() {
-		BFTNode node = mock(BFTNode.class);
-		ECPublicKey key = mock(ECPublicKey.class);
-		when(node.getKey()).thenReturn(key);
-		messageCentralLedgerSync.syncRequestDispatcher().dispatch(node, mock(SyncRequest.class));
-		verify(messageCentral, times(1)).send(eq(NodeId.fromPublicKey(node.getKey())), argThat(msg -> msg.getMagic() == 123));
-	}
-
-	@Test
-	public void when_send_sync_response__then_magic_should_be_same_as_universe() {
-		BFTNode node = mock(BFTNode.class);
-		ECPublicKey key = mock(ECPublicKey.class);
-		when(node.getKey()).thenReturn(key);
-		messageCentralLedgerSync.syncResponseDispatcher().dispatch(node, mock(SyncResponse.class));
-		verify(messageCentral, times(1)).send(eq(NodeId.fromPublicKey(node.getKey())), argThat(msg -> msg.getMagic() == 123));
-	}
-
-	@Test
-	public void when_send_ledger_status_update__then_magic_should_be_same_as_universe() {
-		BFTNode node = mock(BFTNode.class);
-		ECPublicKey key = mock(ECPublicKey.class);
-		when(node.getKey()).thenReturn(key);
-		messageCentralLedgerSync.ledgerStatusUpdateDispatcher().dispatch(node, mock(LedgerStatusUpdate.class));
-		verify(messageCentral, times(1)).send(eq(NodeId.fromPublicKey(node.getKey())), argThat(msg -> msg.getMagic() == 123));
+		this.messageCentralLedgerSync = new MessageCentralLedgerSync(messageCentral);
 	}
 
 	@Test

@@ -22,7 +22,6 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.qualifier.Magic;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
@@ -39,15 +38,10 @@ import javax.inject.Inject;
  * Network interface for syncing committed state using the MessageCentral
  */
 public final class MessageCentralLedgerSync {
-	private final int magic;
 	private final MessageCentral messageCentral;
 
 	@Inject
-	public MessageCentralLedgerSync(
-		@Magic int magic,
-		MessageCentral messageCentral
-	) {
-		this.magic = magic;
+	public MessageCentralLedgerSync(MessageCentral messageCentral) {
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 	}
 
@@ -105,7 +99,7 @@ public final class MessageCentralLedgerSync {
 	}
 
 	private void sendSyncRequest(BFTNode node, SyncRequest syncRequest) {
-		final var msg = new SyncRequestMessage(this.magic, syncRequest.getHeader());
+		final var msg = new SyncRequestMessage(syncRequest.getHeader());
 		this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
 	}
 
@@ -114,7 +108,7 @@ public final class MessageCentralLedgerSync {
 	}
 
 	private void sendSyncResponse(BFTNode node, SyncResponse syncResponse) {
-		final var msg = new SyncResponseMessage(this.magic, syncResponse.getTxnsAndProof());
+		final var msg = new SyncResponseMessage(syncResponse.getTxnsAndProof());
 		this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
 	}
 
@@ -123,7 +117,7 @@ public final class MessageCentralLedgerSync {
 	}
 
 	private void sendStatusRequest(BFTNode node, StatusRequest statusRequest) {
-		final var msg = new StatusRequestMessage(this.magic);
+		final var msg = new StatusRequestMessage();
 		this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
 	}
 
@@ -132,7 +126,7 @@ public final class MessageCentralLedgerSync {
 	}
 
 	private void sendStatusResponse(BFTNode node, StatusResponse statusResponse) {
-		final var msg = new StatusResponseMessage(this.magic, statusResponse.getHeader());
+		final var msg = new StatusResponseMessage(statusResponse.getHeader());
 		this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
 	}
 
@@ -141,7 +135,7 @@ public final class MessageCentralLedgerSync {
 	}
 
 	private void sendLedgerStatusUpdate(BFTNode node, LedgerStatusUpdate ledgerStatusUpdate) {
-		final var msg = new LedgerStatusUpdateMessage(this.magic, ledgerStatusUpdate.getHeader());
+		final var msg = new LedgerStatusUpdateMessage(ledgerStatusUpdate.getHeader());
 		this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
 	}
 }

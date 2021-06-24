@@ -35,7 +35,7 @@ public class ConsensusEventMessageTest {
 	@Test
 	public void sensibleToStringProposal() {
 		Proposal m = mock(Proposal.class);
-		ConsensusEventMessage msg1 = new ConsensusEventMessage(0, m);
+		ConsensusEventMessage msg1 = new ConsensusEventMessage(m);
 		String s1 = msg1.toString();
 
 		assertThat(s1)
@@ -48,7 +48,7 @@ public class ConsensusEventMessageTest {
 	@Test
 	public void sensibleToStringVote() {
 		Vote m = mock(Vote.class);
-		ConsensusEventMessage msg1 = new ConsensusEventMessage(0, m);
+		ConsensusEventMessage msg1 = new ConsensusEventMessage(m);
 		String s1 = msg1.toString();
 		assertThat(s1)
 			.contains(ConsensusEventMessage.class.getSimpleName())

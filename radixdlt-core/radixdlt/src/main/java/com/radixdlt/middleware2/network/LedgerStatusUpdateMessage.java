@@ -38,12 +38,10 @@ public final class LedgerStatusUpdateMessage extends Message {
 
 	LedgerStatusUpdateMessage() {
 		// Serializer only
-		super(0);
 		this.header = null;
 	}
 
-	public LedgerStatusUpdateMessage(int magic, LedgerProof header) {
-		super(magic);
+	public LedgerStatusUpdateMessage(LedgerProof header) {
 		this.header = header;
 	}
 
@@ -66,12 +64,11 @@ public final class LedgerStatusUpdateMessage extends Message {
 		}
 		LedgerStatusUpdateMessage that = (LedgerStatusUpdateMessage) o;
 		return Objects.equals(header, that.header)
-			&& Objects.equals(getTimestamp(), that.getTimestamp())
-			&& Objects.equals(getMagic(), that.getMagic());
+			&& Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(header, getTimestamp(), getMagic());
+		return Objects.hash(header, getTimestamp());
 	}
 }

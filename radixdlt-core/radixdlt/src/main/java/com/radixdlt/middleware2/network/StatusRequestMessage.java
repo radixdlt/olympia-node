@@ -28,15 +28,6 @@ import java.util.Objects;
 @SerializerId2("message.sync.status_request")
 public final class StatusRequestMessage extends Message {
 
-	StatusRequestMessage() {
-		// Serializer only
-		super(0);
-	}
-
-	public StatusRequestMessage(int magic) {
-		super(magic);
-	}
-
 	@Override
 	public String toString() {
 		return String.format("%s", getClass().getSimpleName());
@@ -51,12 +42,11 @@ public final class StatusRequestMessage extends Message {
 			return false;
 		}
 		StatusRequestMessage that = (StatusRequestMessage) o;
-		return Objects.equals(getTimestamp(), that.getTimestamp())
-			&& Objects.equals(getMagic(), that.getMagic());
+		return Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(getTimestamp(), getMagic());
+		return Objects.hash(getTimestamp());
 	}
 }

@@ -32,7 +32,7 @@ public class GetVerticesResponseMessageTest {
 	@Test
 	public void sensibleToString() {
 		UnverifiedVertex genesisVertex = mock(UnverifiedVertex.class);
-		GetVerticesResponseMessage msg1 = new GetVerticesResponseMessage(0, ImmutableList.of(genesisVertex));
+		GetVerticesResponseMessage msg1 = new GetVerticesResponseMessage(ImmutableList.of(genesisVertex));
 		String s1 = msg1.toString();
 		assertThat(s1)
 			.contains(GetVerticesResponseMessage.class.getSimpleName())

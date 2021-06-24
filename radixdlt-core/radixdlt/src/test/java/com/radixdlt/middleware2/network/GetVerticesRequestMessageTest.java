@@ -29,7 +29,7 @@ public class GetVerticesRequestMessageTest {
 	@Test
 	public void sensibleToString() {
 		HashCode vertexId = HashUtils.random256();
-		GetVerticesRequestMessage msg1 = new GetVerticesRequestMessage(0, vertexId, 1);
+		GetVerticesRequestMessage msg1 = new GetVerticesRequestMessage(vertexId, 1);
 		String s1 = msg1.toString();
 		assertThat(s1)
 			.contains(GetVerticesRequestMessage.class.getSimpleName())

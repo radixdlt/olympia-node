@@ -17,8 +17,6 @@
 
 package com.radixdlt.middleware2.network;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
 
 import com.google.common.collect.ImmutableList;
@@ -33,7 +31,6 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.qualifier.Magic;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -46,19 +43,11 @@ import io.reactivex.rxjava3.core.Flowable;
  * Network interface for syncing vertices using the MessageCentral
  */
 public class MessageCentralValidatorSync {
-	private static final Logger log = LogManager.getLogger();
-
-	private final int magic;
 	private final MessageCentral messageCentral;
 	private final Hasher hasher;
 
 	@Inject
-	public MessageCentralValidatorSync(
-		@Magic int magic,
-		MessageCentral messageCentral,
-		Hasher hasher
-	) {
-		this.magic = magic;
+	public MessageCentralValidatorSync(MessageCentral messageCentral, Hasher hasher) {
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.hasher = Objects.requireNonNull(hasher);
 	}
@@ -77,7 +66,7 @@ public class MessageCentralValidatorSync {
 
 	private void sendGetVerticesRequest(BFTNode node, GetVerticesRequest request) {
 		final GetVerticesRequestMessage vertexRequest =
-			new GetVerticesRequestMessage(this.magic, request.getVertexId(), request.getCount());
+			new GetVerticesRequestMessage(request.getVertexId(), request.getCount());
 		this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), vertexRequest);
 	}
 
@@ -85,14 +74,14 @@ public class MessageCentralValidatorSync {
 		var rawVertices = response.getVertices().stream()
 			.map(VerifiedVertex::toSerializable)
 			.collect(Collectors.toList());
-		var msg = new GetVerticesResponseMessage(this.magic, rawVertices);
+		var msg = new GetVerticesResponseMessage(rawVertices);
 		this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
 	}
 
 	public void sendGetVerticesErrorResponse(BFTNode node, GetVerticesErrorResponse response) {
 		var request = response.request();
-		var requestMsg = new GetVerticesRequestMessage(this.magic, request.getVertexId(), request.getCount());
-		var msg = new GetVerticesErrorResponseMessage(this.magic, response.highQC(), requestMsg);
+		var requestMsg = new GetVerticesRequestMessage(request.getVertexId(), request.getCount());
+		var msg = new GetVerticesErrorResponseMessage(response.highQC(), requestMsg);
 		this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
 	}
 

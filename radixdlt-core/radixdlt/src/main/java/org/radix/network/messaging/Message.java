@@ -41,25 +41,16 @@ public abstract class Message extends BasicContainer {
 
 	private long instance = Message.instances.incrementAndGet();
 
-	@JsonProperty("magic")
-	@DsonOutput(value = Output.HASH, include = false)
-	private int magic;
-
 	@JsonProperty("timestamp")
 	@DsonOutput(value = {Output.API, Output.PERSIST})
 	private final long timestamp;
 
-	protected Message(int magic) {
-		this(magic, Time.currentTimestamp());
+	protected Message() {
+		this(Time.currentTimestamp());
 	}
 
-	protected Message(int magic, long timestamp) {
-		this.magic = magic;
+	protected Message(long timestamp) {
 		this.timestamp = timestamp;
-	}
-
-	public final int getMagic() {
-		return this.magic;
 	}
 
 	public long getTimestamp() {

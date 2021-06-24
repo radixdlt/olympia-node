@@ -39,12 +39,10 @@ public final class GetVerticesResponseMessage extends Message {
 
 	GetVerticesResponseMessage() {
 		// Serializer only
-		super(0);
 		this.vertices = null;
 	}
 
-	GetVerticesResponseMessage(int magic, List<UnverifiedVertex> vertices) {
-		super(magic);
+	GetVerticesResponseMessage(List<UnverifiedVertex> vertices) {
 		this.vertices = Objects.requireNonNull(vertices);
 	}
 
@@ -67,12 +65,11 @@ public final class GetVerticesResponseMessage extends Message {
 		}
 		GetVerticesResponseMessage that = (GetVerticesResponseMessage) o;
 		return Objects.equals(vertices, that.vertices)
-				&& Objects.equals(getTimestamp(), that.getTimestamp())
-				&& Objects.equals(getMagic(), that.getMagic());
+				&& Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(vertices, getTimestamp(), getMagic());
+		return Objects.hash(vertices, getTimestamp());
 	}
 }

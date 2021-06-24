@@ -37,12 +37,10 @@ public final class GetVerticesErrorResponseMessage extends Message {
 
 	GetVerticesErrorResponseMessage() {
 		// Serializer only
-		super(0);
 		this.highQC = null;
 	}
 
-	GetVerticesErrorResponseMessage(int magic, HighQC highQC, GetVerticesRequestMessage request) {
-		super(magic);
+	GetVerticesErrorResponseMessage(HighQC highQC, GetVerticesRequestMessage request) {
 		this.highQC = Objects.requireNonNull(highQC);
 		this.request = Objects.requireNonNull(request);
 	}
@@ -71,12 +69,11 @@ public final class GetVerticesErrorResponseMessage extends Message {
 		GetVerticesErrorResponseMessage that = (GetVerticesErrorResponseMessage) o;
 		return Objects.equals(this.highQC, that.highQC)
 				&& Objects.equals(this.request, that.request)
-				&& Objects.equals(getTimestamp(), that.getTimestamp())
-				&& Objects.equals(getMagic(), that.getMagic());
+				&& Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.highQC, this.request, getTimestamp(), getMagic());
+		return Objects.hash(this.highQC, this.request, getTimestamp());
 	}
 }

@@ -63,7 +63,7 @@ public final class AuthHandshaker {
 	private final ECKeyOps ecKeyOps;
 	private final byte[] nonce;
 	private final ECKeyPair ephemeralKey;
-	private final byte networkId;
+	private final int magic;
 	private boolean isInitiator = false;
 	private Optional<byte[]> initiatePacketOpt = Optional.empty();
 	private Optional<byte[]> responsePacketOpt = Optional.empty();
@@ -73,17 +73,17 @@ public final class AuthHandshaker {
 		Serialization serialization,
 		SecureRandom secureRandom,
 		ECKeyOps ecKeyOps,
-		byte networkId
+		int magic
 	) {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.secureRandom = Objects.requireNonNull(secureRandom);
 		this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
 		this.nonce = randomBytes(NONCE_SIZE);
 		this.ephemeralKey = ECKeyPair.generateNew();
-		this.networkId = networkId;
+		this.magic = magic;
 	}
 
-	public byte[] initiate(ECPublicKey remotePubKey) throws PublicKeyException {
+	public byte[] initiate(ECPublicKey remotePubKey) {
 		final var message = createAuthInitiateMessage(remotePubKey);
 		final var encoded = serialization.toDson(message, DsonOutput.Output.WIRE);
 		final var padding = randomBytes(secureRandom.nextInt(MAX_PADDING - MIN_PADDING) + MIN_PADDING);
@@ -113,7 +113,7 @@ public final class AuthHandshaker {
 			signature,
 			HashCode.fromBytes(ecKeyOps.nodePubKey().getBytes()),
 			HashCode.fromBytes(nonce),
-			networkId
+			magic
 		);
 	}
 
@@ -125,7 +125,7 @@ public final class AuthHandshaker {
 		final var message = serialization.fromDson(plaintext, AuthInitiateMessage.class);
 		final var remotePubKey = ECPublicKey.fromBytes(message.getPublicKey().asBytes());
 
-		if (message.getNetworkId() != this.networkId) {
+		if (message.getMagic() != this.magic) {
 			return Pair.of(null, AuthHandshakeResult.error(
 				"Network ID mismatch",
 				Optional.of(NodeId.fromPublicKey(remotePubKey))
