@@ -320,23 +320,18 @@ public class StakingUnstakingValidatorsTest {
 			var forkConfig = epochToForkConfig.floorEntry(getEpoch()).getValue();
 			var reParser = forkConfig.getParser();
 			Map<BFTNode, Map<String, String>> map = entryStore.reduceUpParticles(
-				ValidatorStakeData.class,
-				new HashMap<>(),
-				(i, p) -> {
+				new HashMap<>(), (i, p) -> {
 					var stakeData = (ValidatorStakeData) p;
 					var data = new HashMap<String, String>();
 					data.put("stake", stakeData.getAmount().toString());
 					data.put("rake", stakeData.getRakePercentage().toString());
 					i.put(BFTNode.create(stakeData.getValidatorKey()), data);
 					return i;
-				},
-				reParser.getSubstateDeserialization()
+				}, reParser.getSubstateDeserialization(), ValidatorStakeData.class
 			);
 
 			entryStore.reduceUpParticles(
-				AllowDelegationFlag.class,
-				map,
-				(i, p) -> {
+				map, (i, p) -> {
 					var flag = (AllowDelegationFlag) p;
 					var data = new HashMap<String, String>();
 					data.put("allowDelegation", Boolean.toString(flag.allowsDelegation()));
@@ -345,8 +340,7 @@ public class StakingUnstakingValidatorsTest {
 						return a;
 					});
 					return i;
-				},
-				reParser.getSubstateDeserialization()
+				}, reParser.getSubstateDeserialization(), AllowDelegationFlag.class
 			);
 			return map;
 		}
@@ -354,36 +348,28 @@ public class StakingUnstakingValidatorsTest {
 		public UInt256 getTotalNativeTokens() {
 			var forkConfig = epochToForkConfig.floorEntry(getEpoch()).getValue();
 			var reParser = forkConfig.getParser();
-			var totalTokens = entryStore.reduceUpParticles(TokensInAccount.class, UInt256.ZERO,
-				(i, p) -> {
-					var tokens = (TokensInAccount) p;
-					return i.add(tokens.getAmount());
-				},
-				reParser.getSubstateDeserialization()
+			var totalTokens = entryStore.reduceUpParticles(UInt256.ZERO, (i, p) -> {
+				var tokens = (TokensInAccount) p;
+				return i.add(tokens.getAmount());
+			}, reParser.getSubstateDeserialization(), TokensInAccount.class
 			);
 			logger.info("Total tokens: {}", totalTokens);
-			var totalStaked = entryStore.reduceUpParticles(ValidatorStakeData.class, UInt256.ZERO,
-				(i, p) -> {
-					var tokens = (ValidatorStakeData) p;
-					return i.add(tokens.getAmount());
-				},
-				reParser.getSubstateDeserialization()
+			var totalStaked = entryStore.reduceUpParticles(UInt256.ZERO, (i, p) -> {
+				var tokens = (ValidatorStakeData) p;
+				return i.add(tokens.getAmount());
+			}, reParser.getSubstateDeserialization(), ValidatorStakeData.class
 			);
 			logger.info("Total staked: {}", totalStaked);
-			var totalStakePrepared = entryStore.reduceUpParticles(PreparedStake.class, UInt256.ZERO,
-				(i, p) -> {
-					var tokens = (PreparedStake) p;
-					return i.add(tokens.getAmount());
-				},
-				reParser.getSubstateDeserialization()
+			var totalStakePrepared = entryStore.reduceUpParticles(UInt256.ZERO, (i, p) -> {
+				var tokens = (PreparedStake) p;
+				return i.add(tokens.getAmount());
+			}, reParser.getSubstateDeserialization(), PreparedStake.class
 			);
 			logger.info("Total preparing stake: {}", totalStakePrepared);
-			var totalStakeExitting = entryStore.reduceUpParticles(ExittingStake.class, UInt256.ZERO,
-				(i, p) -> {
-					var tokens = (ExittingStake) p;
-					return i.add(tokens.getAmount());
-				},
-				reParser.getSubstateDeserialization()
+			var totalStakeExitting = entryStore.reduceUpParticles(UInt256.ZERO, (i, p) -> {
+				var tokens = (ExittingStake) p;
+				return i.add(tokens.getAmount());
+			}, reParser.getSubstateDeserialization(), ExittingStake.class
 			);
 			logger.info("Total exitting stake: {}", totalStakeExitting);
 			var total = totalTokens.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting);

@@ -70,7 +70,7 @@ public class AccountInfoService {
 				.map(AccountAddress::of)
 				.orElse(AccountAddress.of(REAddr.ofPubKeyAccount(bftKey))))
 			.put("percentage", validatorInfo.getCurrentRake())
-			.put("allowsDelegation", validatorInfo.allowsDelegation());
+			.put("allowDelegation", validatorInfo.allowsDelegation());
 	}
 
 	public String getValidatorAddress() {

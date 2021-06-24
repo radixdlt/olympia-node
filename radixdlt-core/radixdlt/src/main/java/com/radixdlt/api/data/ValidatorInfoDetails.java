@@ -39,6 +39,7 @@ public class ValidatorInfoDetails {
 	private final UInt256 totalStake;
 	private final UInt256 ownerStake;
 	private final boolean externalStakesAllowed;
+	private final boolean registered;
 	private final int percentage;
 
 	private ValidatorInfoDetails(
@@ -49,6 +50,7 @@ public class ValidatorInfoDetails {
 		UInt256 totalStake,
 		UInt256 ownerStake,
 		boolean externalStakesAllowed,
+		boolean registered,
 		int percentage
 	) {
 		this.validator = validator;
@@ -58,6 +60,7 @@ public class ValidatorInfoDetails {
 		this.totalStake = totalStake;
 		this.ownerStake = ownerStake;
 		this.externalStakesAllowed = externalStakesAllowed;
+		this.registered = registered;
 		this.percentage = percentage;
 	}
 
@@ -69,16 +72,16 @@ public class ValidatorInfoDetails {
 		UInt256 totalStake,
 		UInt256 ownerStake,
 		boolean externalStakesAllowed,
+		boolean registered,
 		int percentage
 	) {
 		requireNonNull(validator);
 		requireNonNull(owner);
-		requireNonNull(name);
 		requireNonNull(totalStake);
 		requireNonNull(ownerStake);
 
 		return new ValidatorInfoDetails(
-			validator, owner, name, infoUrl, totalStake, ownerStake, externalStakesAllowed, percentage
+			validator, owner, name, infoUrl, totalStake, ownerStake, externalStakesAllowed, registered, percentage
 		);
 	}
 
@@ -91,6 +94,7 @@ public class ValidatorInfoDetails {
 			details.getStake(),
 			details.getOwnerStake(),
 			details.allowsDelegation(),
+			details.registered(),
 			details.getPercentage()
 		);
 	}
@@ -111,11 +115,12 @@ public class ValidatorInfoDetails {
 		return jsonObject()
 			.put("address", getValidatorAddress())
 			.put("ownerAddress", AccountAddress.of(owner))
-			.put("name", name)
-			.put("infoURL", infoUrl)
+			.putOpt("name", name)
+			.putOpt("infoURL", infoUrl)
 			.put("totalDelegatedStake", totalStake)
 			.put("ownerDelegation", ownerStake)
 			.put("percentage", percentage)
+			.put("registered", registered)
 			.put("isExternalStakeAccepted", externalStakesAllowed);
 	}
 }

@@ -73,9 +73,12 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.store.berkeley.BerkeleyTransaction.wrap;
@@ -543,27 +546,32 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 	@Override
 	public <V> V reduceUpParticles(
-		Class<? extends Particle> particleClass,
 		V initial,
 		BiFunction<V, Particle, V> outputReducer,
-		SubstateDeserialization substateDeserialization
+		SubstateDeserialization substateDeserialization,
+		Class<? extends Particle>... particleClass
 	) {
-		var typeBytes = substateDeserialization.classToBytes(particleClass);
+		var typeBytes = Stream.of(particleClass)
+			.map(substateDeserialization::classToBytes)
+			.flatMap(Set::stream)
+			.collect(Collectors.toSet());
+
 		V v = initial;
-		for (Byte indexableByte : typeBytes) {
+
+		for (var indexableByte : typeBytes) {
 			try (var particleCursor = upParticleDatabase.openCursor(null, null)) {
 				var index = entry(new byte[] {indexableByte});
 				var value = entry();
 				var status = particleCursor.getSearchKey(index, null, value, null);
+
 				while (status == SUCCESS) {
-					Particle particle;
 					try {
-						particle = substateDeserialization.deserialize(value.getData());
+						var particle = substateDeserialization.deserialize(value.getData());
+						v = outputReducer.apply(v, particle);
+						status = particleCursor.getNextDup(index, null, value, null);
 					} catch (DeserializeException e) {
 						throw new IllegalStateException();
 					}
-					v = outputReducer.apply(v, particle);
-					status = particleCursor.getNextDup(index, null, value, null);
 				}
 			}
 		}

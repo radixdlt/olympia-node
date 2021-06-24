@@ -32,7 +32,9 @@ public class ValidatorDTO {
 	private final String infoURL;
 	private final UInt256 totalDelegatedStake;
 	private final UInt256 ownerDelegation;
+	private final long percentage;
 	private final boolean isExternalStakeAccepted;
+	private final boolean registered;
 
 	private ValidatorDTO(
 		String address,
@@ -41,7 +43,9 @@ public class ValidatorDTO {
 		String infoURL,
 		UInt256 totalDelegatedStake,
 		UInt256 ownerDelegation,
-		boolean isExternalStakeAccepted
+		long percentage,
+		boolean isExternalStakeAccepted,
+		boolean registered
 	) {
 		this.address = address;
 		this.ownerAddress = ownerAddress;
@@ -49,7 +53,9 @@ public class ValidatorDTO {
 		this.infoURL = infoURL;
 		this.totalDelegatedStake = totalDelegatedStake;
 		this.ownerDelegation = ownerDelegation;
+		this.percentage = percentage;
 		this.isExternalStakeAccepted = isExternalStakeAccepted;
+		this.registered = registered;
 	}
 
 	@JsonCreator
@@ -60,17 +66,19 @@ public class ValidatorDTO {
 		@JsonProperty(value = "infoURL", required = true) String infoURL,
 		@JsonProperty(value = "totalDelegatedStake", required = true) UInt256 totalDelegatedStake,
 		@JsonProperty(value = "ownerDelegation", required = true) UInt256 ownerDelegation,
-		@JsonProperty(value = "isExternalStakeAccepted", required = true) boolean isExternalStakeAccepted
-
+		@JsonProperty(value = "percentage", required = true) long percentage,
+		@JsonProperty(value = "isExternalStakeAccepted", required = true) boolean isExternalStakeAccepted,
+		@JsonProperty(value = "registered", required = true) boolean registered
 	) {
 		requireNonNull(address);
 		requireNonNull(ownerAddress);
-		requireNonNull(name);
-		requireNonNull(infoURL);
 		requireNonNull(totalDelegatedStake);
 		requireNonNull(ownerDelegation);
 
-		return new ValidatorDTO(address, ownerAddress, name, infoURL, totalDelegatedStake, ownerDelegation, isExternalStakeAccepted);
+		return new ValidatorDTO(
+			address, ownerAddress, name, infoURL, totalDelegatedStake,
+			ownerDelegation, percentage, isExternalStakeAccepted, registered
+		);
 	}
 
 	@Override
@@ -85,17 +93,22 @@ public class ValidatorDTO {
 
 		var that = (ValidatorDTO) o;
 		return isExternalStakeAccepted == that.isExternalStakeAccepted
+			&& registered == that.registered
 			&& address.equals(that.address)
 			&& ownerAddress.equals(that.ownerAddress)
 			&& name.equals(that.name)
 			&& infoURL.equals(that.infoURL)
 			&& totalDelegatedStake.equals(that.totalDelegatedStake)
+			&& percentage == that.percentage
 			&& ownerDelegation.equals(that.ownerDelegation);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(address, ownerAddress, name, infoURL, totalDelegatedStake, ownerDelegation, isExternalStakeAccepted);
+		return Objects.hash(
+			address, ownerAddress, name, infoURL, totalDelegatedStake,
+			ownerDelegation, percentage, isExternalStakeAccepted, registered
+		);
 	}
 
 	@Override
@@ -107,7 +120,9 @@ public class ValidatorDTO {
 			+ ", infoURL='" + infoURL + '\''
 			+ ", totalDelegatedStake=" + totalDelegatedStake
 			+ ", ownerDelegation=" + ownerDelegation
+			+ ", percentage=" + percentage
 			+ ", isExternalStakeAccepted=" + isExternalStakeAccepted
+			+ ", registered=" + registered
 			+ ')';
 	}
 
@@ -137,5 +152,13 @@ public class ValidatorDTO {
 
 	public boolean isExternalStakeAccepted() {
 		return isExternalStakeAccepted;
+	}
+
+	public long getPercentage() {
+		return percentage;
+	}
+
+	public boolean isRegistered() {
+		return registered;
 	}
 }
