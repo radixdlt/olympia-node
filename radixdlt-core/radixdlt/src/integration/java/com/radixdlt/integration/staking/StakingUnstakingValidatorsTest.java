@@ -115,7 +115,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -474,19 +473,11 @@ public class StakingUnstakingValidatorsTest {
 		var node = this.nodes.get(0).getInstance(Key.get(BFTNode.class, Self.class));
 		logger.info("Node {}", node);
 		logger.info("Initial {}", initialCount);
-		var lastEpochView = this.nodes.get(0)
-			.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() { }));
-		var epoch = lastEpochView.getLastEvent() == null
-			? this.nodes.get(0).getInstance(EpochChange.class).getEpoch()
-			: ((Optional<EpochChange>) lastEpochView.getLastEvent().getStateComputerOutput())
-				.map(EpochChange::getEpoch)
-				.orElseGet(() -> lastEpochView.getLastEvent().getTail().getEpoch());
-
+		var nodeState = reloadNodeState();
+		var epoch = nodeState.getEpoch();
 		logger.info("Epoch {}", epoch);
 		var maxEmissions = UInt256.from(maxRounds).multiply(EpochUpdateConstraintScrypt.REWARDS_PER_PROPOSAL).multiply(UInt256.from(epoch - 1));
 		logger.info("Max emissions {}", maxEmissions);
-
-		var nodeState = reloadNodeState();
 		var finalCount = nodeState.getTotalNativeTokens();
 
 		assertThat(finalCount).isGreaterThan(initialCount);
