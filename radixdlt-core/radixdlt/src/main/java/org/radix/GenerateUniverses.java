@@ -18,6 +18,7 @@
 package org.radix;
 
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.universe.Network;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -36,7 +37,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.CryptoModule;
@@ -59,7 +59,6 @@ import com.radixdlt.keys.Keys;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.qualifier.Magic;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -68,12 +67,10 @@ import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.GenesisProvider;
 import com.radixdlt.statecomputer.checkpoint.RadixNativeTokenModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.universe.Universe;
-import com.radixdlt.universe.Universe.UniverseType;
 import com.radixdlt.utils.AWSSecretManager;
 import com.radixdlt.utils.AWSSecretsOutputOptions;
 import com.radixdlt.utils.Bytes;
@@ -105,7 +102,6 @@ public final class GenerateUniverses {
 
 	private static final BigDecimal SUB_UNITS_BIG_DECIMAL
 		= new BigDecimal(UInt256s.toBigInteger(TokenDefinitionUtils.SUB_UNITS));
-	private static final String DEFAULT_UNIVERSE = UniverseType.DEVELOPMENT.toString().toLowerCase();
 	private static final String DEFAULT_TIMESTAMP = String.valueOf(Instant.parse("2020-01-01T00:00:00.00Z").getEpochSecond());
 	private static final String VALIDATOR_TEMPLATE = "validator%s.ks";
 	private static final String STAKER_TEMPLATE = "staker%s.ks";
@@ -130,7 +126,7 @@ public final class GenerateUniverses {
 		options.addOption("m", "amount-issuance",   true, "Amount to issue pub key");
 		options.addOption("j", "no-json-output",         false, "Suppress JSON output");
 		options.addOption("p", "include-private-keys",   false, "Include validator and staking private keys in output");
-		options.addOption("t", "universe-type",          true,  "Specify universe type (default: " + DEFAULT_UNIVERSE + ")");
+		options.addOption("t", "universe-type",          true,  "Specify universe type (default: " + Network.TESTNET + ")");
 		options.addOption("T", "universe-timestamp",     true,  "Specify universe timestamp (default: " + DEFAULT_TIMESTAMP + ")");
 		options.addOption("v", "validator-count",        true,  "Specify number of validators to generate (required)");
 		options.addOption("hc", "helm-configuration", true, "Generates Helm values for validators(default: " + DEFAULT_HELM_OUTPUT + ")");
@@ -168,7 +164,7 @@ public final class GenerateUniverses {
 			);
 
 			final ImmutableList<UInt256> stakes = ImmutableList.of(unitsToSubunits(DEFAULT_STAKE));
-			final UniverseType universeType = parseUniverseType(getOption(cmd, 't').orElse(DEFAULT_UNIVERSE));
+			final Network network = getOption(cmd, 't').map(Integer::parseInt).map(Network::ofId).orElse(Network.TESTNET);
 			final long timestampSeconds = Long.parseLong(getOption(cmd, 'T').orElse(DEFAULT_TIMESTAMP));
 			final int validatorsCount = cmd.getOptionValue("v") != null ? Integer.parseInt(cmd.getOptionValue("v")) : 0;
 			final String listOfValidatorsEnv = Optional
@@ -209,7 +205,7 @@ public final class GenerateUniverses {
 				.collect(ImmutableList.toImmutableList());
 
 			final ImmutableList.Builder<TokenIssuance> tokenIssuancesBuilder = ImmutableList.builder();
-			if (universeType == UniverseType.DEVELOPMENT && cmd.hasOption("i")) {
+			if (network != Network.MAINNET && cmd.hasOption("i")) {
 				tokenIssuancesBuilder.add(
 					TokenIssuance.of(pubkeyOf(1), DEFAULT_ISSUANCE),
 					TokenIssuance.of(pubkeyOf(2), DEFAULT_ISSUANCE),
@@ -262,7 +258,7 @@ public final class GenerateUniverses {
 				));
 			});
 
-			if (universeType == UniverseType.DEVELOPMENT) {
+			if (network != Network.MAINNET) {
 				// Issue tokens to initial validators for now to support application services
 				// FIXME: Remove this
 				validatorKeys
@@ -287,7 +283,6 @@ public final class GenerateUniverses {
 			RadixUniverseBuilder radixUniverseBuilder = Guice.createInjector(new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(UniverseType.class).toInstance(universeType);
 					install(new CryptoModule());
 					install(new RadixNativeTokenModule());
 					install(new ForksModule());
@@ -310,12 +305,7 @@ public final class GenerateUniverses {
 						.toInstance(stakeDelegations);
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() {}).annotatedWith(Genesis.class)
 						.toInstance(validatorKeys);
-				}
-
-				@Provides
-				@Magic
-				int magic(UniverseType universeType) {
-					return Universe.computeMagic(universeType);
+					bind(Network.class).toInstance(network);
 				}
 			}).getInstance(RadixUniverseBuilder.class);
 
@@ -325,7 +315,7 @@ public final class GenerateUniverses {
 				outputNumberedKeys("VALIDATOR_%s", keysDetailsWithStakeDelegation, helmUniverseOutput, awsSecretsOutputOptions);
 				outputNumberedKeys("STAKER_%s", keysDetailsWithStakeDelegation, helmUniverseOutput, awsSecretsOutputOptions);
 			}
-			outputUniverse(suppressCborOutput, suppressJsonOutput, universeType, universe, helmUniverseOutput, awsSecretsOutputOptions);
+			outputUniverse(suppressCborOutput, suppressJsonOutput, network, universe, helmUniverseOutput, awsSecretsOutputOptions);
 		} catch (ParseException e) {
 			System.err.println(e.getMessage());
 			usage(options);
@@ -482,23 +472,20 @@ public final class GenerateUniverses {
 	private static void outputUniverse(
 		boolean suppressDson,
 		boolean suppressJson,
-		UniverseType type,
+		Network network,
 		Universe u,
 		HelmUniverseOutput helmUniverseOutput,
 		AWSSecretsOutputOptions awsSecretsOutputOptions
 	) {
 		final Serialization serialization = DefaultSerialization.getInstance();
 		if (!suppressDson) {
-			byte[] universeBytes = serialization.toDson(u, Output.WIRE);
 			var xrd = Rri.of("xrd", REAddr.ofNativeToken());
 			if (isStdOutput(helmUniverseOutput, awsSecretsOutputOptions)) {
-				System.out.format("export RADIXDLT_UNIVERSE_TYPE=%s%n", type);
 				System.out.format("export RADIXDLT_UNIVERSE_TOKEN=%s%n", xrd);
-				System.out.format("export RADIXDLT_UNIVERSE=%s%n", Bytes.toBase64String(universeBytes));
 			} else if (isHelmOrAwsOutuput(helmUniverseOutput, awsSecretsOutputOptions)) {
 				Map<String, Map<String, Object>> config = new HashMap<>();
 				Map<String, Object> universe = new HashMap<>();
-				universe.put("type", type);
+				universe.put("networkId", network.getId());
 				universe.put("token", xrd);
 
 				JSONObject universeJson = new JSONObject(serialization.toJson(u, Output.WIRE));
@@ -529,10 +516,6 @@ public final class GenerateUniverses {
 	private static void usage(Options options) {
 		HelpFormatter formatter = new HelpFormatter();
 		formatter.printHelp(GenerateUniverses.class.getSimpleName(), options, true);
-	}
-
-	private static UniverseType parseUniverseType(String type) {
-		return UniverseType.valueOf(type.toUpperCase());
 	}
 
 	private static Optional<String> getOption(CommandLine cmd, char opt) {

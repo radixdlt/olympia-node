@@ -17,7 +17,6 @@
 
 package com.radixdlt.statecomputer.checkpoint;
 
-import com.radixdlt.qualifier.Magic;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
 
@@ -45,7 +44,6 @@ public final class MockedGenesisModule extends AbstractModule {
 	@Override
 	public void configure() {
 	    install(new RadixNativeTokenModule());
-		bindConstant().annotatedWith(Magic.class).to(0);
 		Multibinder.newSetBinder(binder(), TokenIssuance.class);
 		bind(new TypeLiteral<VerifiedTxnsAndProof>() { }).annotatedWith(Genesis.class).toProvider(GenesisProvider.class).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<List<TxAction>>() { }).annotatedWith(Genesis.class).toInstance(List.of());

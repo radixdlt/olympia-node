@@ -50,7 +50,7 @@ public abstract class RadixTest {
 		doAnswer(invocation -> invocation.getArgument(1)).when(properties).get(any(), any());
 
 		universe = mock(Universe.class);
-		when(universe.getMagic()).thenReturn(2);
+		when(universe.getNetworkId()).thenReturn(2);
 
 		ntpService = mock(NtpService.class);
 		when(ntpService.getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());

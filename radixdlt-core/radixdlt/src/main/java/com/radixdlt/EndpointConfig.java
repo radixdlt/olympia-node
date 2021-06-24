@@ -17,6 +17,7 @@
 
 package com.radixdlt;
 
+import com.radixdlt.universe.Network;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -33,7 +34,6 @@ import com.radixdlt.api.module.UniverseEndpointModule;
 import com.radixdlt.api.module.ValidationEndpointModule;
 import com.radixdlt.api.module.VersionEndpointModule;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.universe.Universe.UniverseType;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -112,17 +112,17 @@ public final class EndpointConfig {
 		this.moduleSupplier = moduleSupplier;
 	}
 
-	public static List<EndpointConfig> enabledArchiveEndpoints(RuntimeProperties properties, UniverseType env) {
+	public static List<EndpointConfig> enabledArchiveEndpoints(RuntimeProperties properties, Network network) {
 		return ARCHIVE_ENDPOINTS.stream()
 			.filter(e -> e.isEnabled(properties))
-			.filter(e -> isEnabledInEnvironment(e, env))
+			.filter(e -> isEnabledInEnvironment(e, network))
 			.collect(Collectors.toList());
 	}
 
-	public static List<EndpointConfig> enabledNodeEndpoints(RuntimeProperties properties, UniverseType env) {
+	public static List<EndpointConfig> enabledNodeEndpoints(RuntimeProperties properties, Network network) {
 		return NODE_ENDPOINTS.stream()
 			.filter(e -> e.isEnabled(properties))
-			.filter(e -> isEnabledInEnvironment(e, env))
+			.filter(e -> isEnabledInEnvironment(e, network))
 			.collect(Collectors.toList());
 	}
 
@@ -141,17 +141,17 @@ public final class EndpointConfig {
 		return value;
 	}
 
-	public static List<EndpointStatus> endpointStatuses(RuntimeProperties properties, UniverseType env) {
+	public static List<EndpointStatus> endpointStatuses(RuntimeProperties properties, Network network) {
 		return NODE_ENDPOINTS.stream()
-			.map(e -> EndpointStatus.create(e.name, isEnabled(e, properties, env)))
+			.map(e -> EndpointStatus.create(e.name, isEnabled(e, properties, network)))
 			.collect(Collectors.toList());
 	}
 
-	private static boolean isEnabled(EndpointConfig e, RuntimeProperties properties, UniverseType env) {
-		return e.isEnabled(properties) && isEnabledInEnvironment(e, env);
+	private static boolean isEnabled(EndpointConfig e, RuntimeProperties properties, Network network) {
+		return e.isEnabled(properties) && isEnabledInEnvironment(e, network);
 	}
 
-	private static boolean isEnabledInEnvironment(EndpointConfig e, UniverseType env) {
-		return env != UniverseType.PRODUCTION || e.environment == ALL;
+	private static boolean isEnabledInEnvironment(EndpointConfig e, Network network) {
+		return network != Network.MAINNET || e.environment == ALL;
 	}
 }

@@ -21,27 +21,28 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.universe.Network;
 import com.radixdlt.universe.Universe;
 
 import java.util.Objects;
 
 public final class RadixUniverseBuilder {
-	private final Universe.UniverseType type;
+	private final Network networkId;
 	private final Provider<VerifiedTxnsAndProof> genesisProvider;
 
 	@Inject
 	public RadixUniverseBuilder(
-		Universe.UniverseType type,
+		Network networkId,
 		Provider<VerifiedTxnsAndProof> genesisProvider
 	) {
-		this.type = type;
+		this.networkId = networkId;
 		this.genesisProvider = Objects.requireNonNull(genesisProvider);
 	}
 
 	public Universe build() {
 		final var genesis = genesisProvider.get();
 		return Universe.newBuilder()
-			.type(this.type)
+			.networkId(this.networkId)
 			.setTxnsAndProof(genesis)
 			.build();
 	}

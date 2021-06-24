@@ -39,7 +39,7 @@ public class Universe {
 	 * Universe builder.
 	 */
 	public static class Builder {
-		private UniverseType type;
+		private Network networkId;
 		private List<Txn> txns;
 		private LedgerProof proof;
 
@@ -47,15 +47,8 @@ public class Universe {
 			// Nothing to do here
 		}
 
-		/**
-		 * Sets the type of the universe, one of {@link UniverseType}.
-		 *
-		 * @param type The type of the universe.
-		 *
-		 * @return A reference to {@code this} to allow method chaining.
-		 */
-		public Builder type(UniverseType type) {
-			this.type = requireNonNull(type);
+		public Builder networkId(Network networkId) {
+			this.networkId = requireNonNull(networkId);
 			return this;
 		}
 
@@ -80,7 +73,7 @@ public class Universe {
 		 * @return The freshly build universe object.
 		 */
 		public Universe build() {
-			require(this.type, "Universe type");
+			require(this.networkId, "Universe type");
 			return new Universe(this);
 		}
 
@@ -100,29 +93,12 @@ public class Universe {
 		return new Builder();
 	}
 
-	/**
-	 * Computes universe magic number from specified parameters.
-	 *
-	 * @param type universe type to use when calculating universe magic
-	 *
-	 * @return The universe magic
-	 */
-	public static int computeMagic(UniverseType type) {
-		return type.ordinal();
-	}
-
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	public enum UniverseType {
-		PRODUCTION,
-		TEST,
-		DEVELOPMENT
-	}
-
-	private UniverseType type;
+	private Network networkId;
 
 	@JsonProperty("genesis")
 	@DsonOutput(Output.ALL)
@@ -137,7 +113,7 @@ public class Universe {
 	}
 
 	private Universe(Builder builder) {
-		this.type = builder.type;
+		this.networkId = builder.networkId;
 		this.proof = builder.proof;
 		this.genesis = builder.txns == null
 			? List.of()
@@ -147,10 +123,10 @@ public class Universe {
 	/**
 	 * Magic identifier for Universe.
 	 */
-	@JsonProperty("magic")
+	@JsonProperty("networkId")
 	@DsonOutput(value = Output.HASH, include = false)
-	public int getMagic() {
-		return computeMagic(type);
+	public int getNetworkId() {
+		return networkId.getId();
 	}
 
 	/**
@@ -159,24 +135,5 @@ public class Universe {
 	public VerifiedTxnsAndProof getGenesis() {
 		var txns = genesis.stream().map(Txn::create).collect(Collectors.toList());
 		return VerifiedTxnsAndProof.create(txns, proof);
-	}
-
-	/**
-	 * Get universe's type.
-	 */
-	public UniverseType type() {
-		return type;
-	}
-
-	// Type - 1 getter, 1 setter
-	@JsonProperty("type")
-	@DsonOutput(Output.ALL)
-	private int getJsonType() {
-		return this.type.ordinal();
-	}
-
-	@JsonProperty("type")
-	private void setJsonType(int type) {
-		this.type = UniverseType.values()[type];
 	}
 }
