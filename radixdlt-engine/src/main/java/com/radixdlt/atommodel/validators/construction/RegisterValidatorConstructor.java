@@ -33,7 +33,7 @@ public class RegisterValidatorConstructor implements ActionConstructor<RegisterV
 	public void construct(RegisterValidator action, TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.swap(
 			ValidatorParticle.class,
-			p -> p.getKey().equals(action.validatorKey()) && !p.isRegisteredForNextEpoch(),
+			p -> p.getValidatorKey().equals(action.validatorKey()) && !p.isRegisteredForNextEpoch(),
 			Optional.of(SubstateWithArg.noArg(new ValidatorParticle(action.validatorKey(), false))),
 			"Already a validator"
 		).with(

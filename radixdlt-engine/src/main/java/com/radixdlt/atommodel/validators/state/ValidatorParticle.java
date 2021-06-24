@@ -23,23 +23,23 @@ import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
 
-public final class ValidatorParticle implements Particle {
-	private final ECPublicKey key;
+public final class ValidatorParticle implements Particle, ValidatorState {
+	private final ECPublicKey validatorKey;
 	private final boolean registeredForNextEpoch;
 	private final String name;
 	private final String url;
 
-	public ValidatorParticle(ECPublicKey key, boolean registeredForNextEpoch) {
-		this(key, registeredForNextEpoch, "", "");
+	public ValidatorParticle(ECPublicKey validatorKey, boolean registeredForNextEpoch) {
+		this(validatorKey, registeredForNextEpoch, "", "");
 	}
 
 	public ValidatorParticle(
-		ECPublicKey key,
+		ECPublicKey validatorKey,
 		boolean registeredForNextEpoch,
 		String name,
 		String url
 	) {
-		this.key = Objects.requireNonNull(key);
+		this.validatorKey = Objects.requireNonNull(validatorKey);
 		this.registeredForNextEpoch = registeredForNextEpoch;
 		this.name = Objects.requireNonNull(name);
 		this.url = Objects.requireNonNull(url);
@@ -49,8 +49,9 @@ public final class ValidatorParticle implements Particle {
 		return registeredForNextEpoch;
 	}
 
-	public ECPublicKey getKey() {
-		return key;
+	@Override
+	public ECPublicKey getValidatorKey() {
+		return validatorKey;
 	}
 
 	public String getName() {
@@ -63,7 +64,7 @@ public final class ValidatorParticle implements Particle {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.key, this.registeredForNextEpoch, this.name, this.url);
+		return Objects.hash(this.validatorKey, this.registeredForNextEpoch, this.name, this.url);
 	}
 
 	@Override
@@ -75,7 +76,7 @@ public final class ValidatorParticle implements Particle {
 			return false;
 		}
 		final var that = (ValidatorParticle) obj;
-		return Objects.equals(this.key, that.key)
+		return Objects.equals(this.validatorKey, that.validatorKey)
 			&& this.registeredForNextEpoch == that.registeredForNextEpoch
 			&& Objects.equals(this.name, that.name)
 			&& Objects.equals(this.url, that.url);
@@ -85,7 +86,7 @@ public final class ValidatorParticle implements Particle {
 	public String toString() {
 		return String.format(
 			"%s[%s, %s, %s]",
-			getClass().getSimpleName(), getKey(), registeredForNextEpoch, getUrl()
+			getClass().getSimpleName(), getValidatorKey(), registeredForNextEpoch, getUrl()
 		);
 	}
 }

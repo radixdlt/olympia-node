@@ -73,7 +73,7 @@ public final class NodeApplicationModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	private SubstateCacheRegister<?> registeredValidator(@Self ECPublicKey self) {
-		return new SubstateCacheRegister<>(ValidatorParticle.class, p -> p.getKey().equals(self));
+		return new SubstateCacheRegister<>(ValidatorParticle.class, p -> p.getValidatorKey().equals(self));
 	}
 
 	@ProvidesIntoSet

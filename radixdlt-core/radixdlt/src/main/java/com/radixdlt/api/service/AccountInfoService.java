@@ -65,7 +65,12 @@ public class AccountInfoService {
 			.put("url", validatorInfo.getUrl())
 			.put("registered", validatorInfo.isRegistered())
 			.put("totalStake", validatorStakes.getFirst())
-			.put("stakes", validatorStakes.getSecond());
+			.put("stakes", validatorStakes.getSecond())
+			.put("owner", validatorInfo.getOwner()
+				.map(AccountAddress::of)
+				.orElse(AccountAddress.of(REAddr.ofPubKeyAccount(bftKey))))
+			.put("percentage", validatorInfo.getCurrentRake())
+			.put("allowDelegation", validatorInfo.allowsDelegation());
 	}
 
 	public String getValidatorAddress() {

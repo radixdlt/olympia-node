@@ -24,7 +24,7 @@ import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
 
-public final class ValidatorOwnerCopy implements Particle {
+public final class ValidatorOwnerCopy implements Particle, ValidatorState {
 	private final ECPublicKey validatorKey;
 	private final REAddr owner;
 
@@ -36,6 +36,7 @@ public final class ValidatorOwnerCopy implements Particle {
 		this.owner = owner;
 	}
 
+	@Override
 	public ECPublicKey getValidatorKey() {
 		return validatorKey;
 	}

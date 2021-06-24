@@ -15,10 +15,12 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.api.service.reducer;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Inject;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.validators.state.AllowDelegationFlag;
@@ -33,25 +35,14 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 /**
- * Reduces particles to Registered Validators
+ * Reduces particles to all validators
  */
-public final class StakedValidatorsReducer implements StateReducer<StakedValidators> {
-
-	private final int minValidators;
-	private final int maxValidators;
-
-	@Inject
-	public StakedValidatorsReducer(
-		@MinValidators int minValidators,
-		@MaxValidators int maxValidators
-	) {
-		this.minValidators = minValidators;
-		this.maxValidators = maxValidators;
-	}
+public final class AllValidatorsReducer implements StateReducer<AllValidators> {
+	private final Logger logger = LogManager.getLogger();
 
 	@Override
-	public Class<StakedValidators> stateClass() {
-		return StakedValidators.class;
+	public Class<AllValidators> stateClass() {
+		return AllValidators.class;
 	}
 
 	@Override
@@ -70,19 +61,19 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 	}
 
 	@Override
-	public Supplier<StakedValidators> initial() {
-		return () -> StakedValidators.create(minValidators, maxValidators);
+	public Supplier<AllValidators> initial() {
+		return AllValidators::create;
 	}
 
 	@Override
-	public BiFunction<StakedValidators, Particle, StakedValidators> outputReducer() {
+	public BiFunction<AllValidators, Particle, AllValidators> outputReducer() {
 		return (prev, p) -> {
+
+			logger.info("Reducing {}", p.getClass().getSimpleName());
+
 			if (p instanceof ValidatorParticle) {
 				var v = (ValidatorParticle) p;
-				if (v.isRegisteredForNextEpoch()) {
-					return prev.add(v);
-				}
-				return prev;
+				return prev.add(v);
 			} else if (p instanceof PreparedStake) { // TODO: Remove for mainnet
 				var s = (PreparedStake) p;
 				return prev.add(s.getDelegateKey(), s.getAmount());
@@ -108,13 +99,11 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 	}
 
 	@Override
-	public BiFunction<StakedValidators, Particle, StakedValidators> inputReducer() {
+	public BiFunction<AllValidators, Particle, AllValidators> inputReducer() {
 		return (prev, p) -> {
 			if (p instanceof ValidatorParticle) {
 				var v = (ValidatorParticle) p;
-				if (v.isRegisteredForNextEpoch()) {
-					return prev.remove(v);
-				}
+				return prev.remove(v);
 			} else if (p instanceof PreparedStake) { // TODO: Remove for mainnet
 				var s = (PreparedStake) p;
 				return prev.remove(s.getDelegateKey(), s.getAmount());

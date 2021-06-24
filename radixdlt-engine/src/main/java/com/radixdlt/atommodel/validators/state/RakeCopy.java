@@ -23,7 +23,7 @@ import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
 
-public final class RakeCopy implements Particle {
+public final class RakeCopy implements Particle, ValidatorState {
 	private final ECPublicKey validatorKey;
 	private final int curRakePercentage;
 
@@ -32,6 +32,7 @@ public final class RakeCopy implements Particle {
 		this.curRakePercentage = curRakePercentage;
 	}
 
+	@Override
 	public ECPublicKey getValidatorKey() {
 		return validatorKey;
 	}
