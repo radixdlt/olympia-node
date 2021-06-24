@@ -32,8 +32,8 @@ import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atommodel.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
-import com.radixdlt.atommodel.validators.state.RakeCopy;
+import com.radixdlt.atommodel.validators.state.PreparedOwnerUpdate;
+import com.radixdlt.atommodel.validators.state.ValidatorRakeCopy;
 import com.radixdlt.atommodel.validators.state.PreparedRakeUpdate;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -425,7 +425,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.next = next;
 		}
 
-		ReducerState reset(RakeCopy rakeCopy) throws ProcedureException {
+		ReducerState reset(ValidatorRakeCopy rakeCopy) throws ProcedureException {
 			if (!rakeCopy.getValidatorKey().equals(update.getValidatorKey())) {
 				throw new ProcedureException("Validator keys must match.");
 			}
@@ -505,7 +505,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	private static final class PreparingValidatorUpdate implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, ValidatorStakeData> validatorsToUpdate;
-		private final TreeMap<ECPublicKey, PreparedValidatorUpdate> preparingValidatorUpdates =
+		private final TreeMap<ECPublicKey, PreparedOwnerUpdate> preparingValidatorUpdates =
 			new TreeMap<>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
 
 		PreparingValidatorUpdate(
@@ -516,7 +516,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.validatorsToUpdate = validatorsToUpdate;
 		}
 
-		ReducerState prepareValidatorUpdate(ShutdownAll<PreparedValidatorUpdate> shutdownAll) throws ProcedureException {
+		ReducerState prepareValidatorUpdate(ShutdownAll<PreparedOwnerUpdate> shutdownAll) throws ProcedureException {
 			shutdownAll.verifyPostTypePrefixIsEmpty();
 			var iter = shutdownAll.iterator();
 			while (iter.hasNext()) {
@@ -668,13 +668,13 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			(i, s, r) -> ReducerResult.incomplete(s.prepareRakeUpdates(i))
 		));
 		os.procedure(new UpProcedure<>(
-			ResetRakeUpdate.class, RakeCopy.class,
+			ResetRakeUpdate.class, ValidatorRakeCopy.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.reset(u))
 		));
 
 		os.procedure(new ShutdownAllProcedure<>(
-			PreparedValidatorUpdate.class, PreparingValidatorUpdate.class,
+			PreparedOwnerUpdate.class, PreparingValidatorUpdate.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(i, s, r) -> ReducerResult.incomplete(s.prepareValidatorUpdate(i))
 		));

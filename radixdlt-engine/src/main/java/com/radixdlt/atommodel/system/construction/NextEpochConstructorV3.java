@@ -25,17 +25,15 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.atommodel.system.state.EpochData;
-import com.radixdlt.atommodel.system.state.HasEpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
-import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.system.state.ValidatorBFTData;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atommodel.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
-import com.radixdlt.atommodel.validators.state.RakeCopy;
+import com.radixdlt.atommodel.validators.state.PreparedOwnerUpdate;
+import com.radixdlt.atommodel.validators.state.ValidatorRakeCopy;
 import com.radixdlt.atommodel.validators.state.PreparedRakeUpdate;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ShutdownAllIndex;
@@ -77,28 +75,18 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 
 	@Override
 	public void construct(SystemNextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
-		var epochData = txBuilder.find(EpochData.class, p -> true);
-		final HasEpochData prevEpoch;
-		if (epochData.isPresent()) {
-			txBuilder.down(
-				RoundData.class,
-				p -> true,
-				Optional.empty(),
-				"No round data available"
-			);
-			prevEpoch = txBuilder.down(
-				EpochData.class,
-				p -> true,
-				Optional.of(SubstateWithArg.noArg(new EpochData(0))),
-				"No epoch data available"
-			);
-		} else {
-			prevEpoch = txBuilder.down(
-				SystemParticle.class,
-				p -> true,
-				"No epoch data available"
-			);
-		}
+		txBuilder.down(
+			RoundData.class,
+			p -> true,
+			Optional.empty(),
+			"No round data available"
+		);
+		var prevEpoch = txBuilder.down(
+			EpochData.class,
+			p -> true,
+			Optional.of(SubstateWithArg.noArg(new EpochData(0))),
+			"No epoch data available"
+		);
 
 		var exitting = txBuilder.shutdownAll(ExittingStake.class, i -> {
 			final TreeSet<ExittingStake> exit = new TreeSet<>(
@@ -235,13 +223,13 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 			var update = e.getValue();
 			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate);
 			validatorsToUpdate.put(k, curValidator.setRakePercentage(update.getNextRakePercentage()));
-			txBuilder.up(new RakeCopy(k, update.getNextRakePercentage()));
+			txBuilder.up(new ValidatorRakeCopy(k, update.getNextRakePercentage()));
 		}
 
-		var preparingUpdates = new TreeMap<ECPublicKey, PreparedValidatorUpdate>(
+		var preparingUpdates = new TreeMap<ECPublicKey, PreparedOwnerUpdate>(
 			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
 		);
-		txBuilder.shutdownAll(PreparedValidatorUpdate.class, i -> {
+		txBuilder.shutdownAll(PreparedOwnerUpdate.class, i -> {
 			i.forEachRemaining(update -> preparingUpdates.put(update.getValidatorKey(), update));
 			return preparingUpdates;
 		});

@@ -22,7 +22,7 @@ import com.google.inject.Inject;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.validators.state.AllowDelegationFlag;
-import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
+import com.radixdlt.atommodel.validators.state.PreparedOwnerUpdate;
 import com.radixdlt.atommodel.validators.state.ValidatorData;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
@@ -62,7 +62,7 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 			ValidatorData.class,
 			ValidatorStakeData.class,
 			PreparedStake.class,
-			PreparedValidatorUpdate.class,
+			PreparedOwnerUpdate.class,
 			AllowDelegationFlag.class
 		);
 	}
@@ -84,8 +84,8 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 			} else if (p instanceof PreparedStake) { // TODO: Remove for mainnet
 				var s = (PreparedStake) p;
 				return prev.add(s.getDelegateKey(), s.getAmount());
-			} else if (p instanceof PreparedValidatorUpdate) {
-				var s = (PreparedValidatorUpdate) p;
+			} else if (p instanceof PreparedOwnerUpdate) {
+				var s = (PreparedOwnerUpdate) p;
 				return prev.setOwner(s.getValidatorKey(), s.getOwnerAddress());
 			} else if (p instanceof AllowDelegationFlag) {
 				var s = (AllowDelegationFlag) p;

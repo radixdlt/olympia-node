@@ -23,7 +23,7 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
 import com.radixdlt.atommodel.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
+import com.radixdlt.atommodel.validators.state.PreparedOwnerUpdate;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.identifiers.REAddr;
 
@@ -34,16 +34,16 @@ public class UpdateValidatorOwnerConstructor implements ActionConstructor<Update
 	@Override
 	public void construct(UpdateValidatorOwnerAddress action, TxBuilder builder) throws TxBuilderException {
 		var updateInFlight = builder
-			.find(PreparedValidatorUpdate.class, p -> p.getValidatorKey().equals(action.getValidatorKey()));
+			.find(PreparedOwnerUpdate.class, p -> p.getValidatorKey().equals(action.getValidatorKey()));
 
 		if (updateInFlight.isPresent()) {
 			builder.swap(
-				PreparedValidatorUpdate.class,
+				PreparedOwnerUpdate.class,
 				p -> p.getValidatorKey().equals(action.getValidatorKey()),
 				Optional.empty(),
 				"Cannot find state"
 			).with(substateDown ->
-				List.of(new PreparedValidatorUpdate(
+				List.of(new PreparedOwnerUpdate(
 					action.getValidatorKey(),
 					action.getOwnerAddress()
 				))
@@ -57,7 +57,7 @@ public class UpdateValidatorOwnerConstructor implements ActionConstructor<Update
 				)),
 				"Cannot find state"
 			).with(substateDown ->
-				List.of(new PreparedValidatorUpdate(
+				List.of(new PreparedOwnerUpdate(
 					action.getValidatorKey(),
 					action.getOwnerAddress()
 				))

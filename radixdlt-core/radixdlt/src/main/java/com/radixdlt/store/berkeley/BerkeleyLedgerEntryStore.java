@@ -18,7 +18,6 @@
 package com.radixdlt.store.berkeley;
 
 import com.radixdlt.atommodel.system.state.EpochData;
-import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
@@ -633,10 +632,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				var buf2 = stateUpdate.getStateBuf();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
 				addrDatabase.putNoOverwrite(txn, new DatabaseEntry(addr.getBytes()), value);
-			} else if (stateUpdate.getRawSubstate() instanceof SystemParticle) {
-				var buf2 = stateUpdate.getStateBuf();
-				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
-				addrDatabase.put(txn, new DatabaseEntry(REAddr.ofSystem().getBytes()), value);
 			} else if (stateUpdate.getRawSubstate() instanceof EpochData) {
 				var buf2 = stateUpdate.getStateBuf();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());

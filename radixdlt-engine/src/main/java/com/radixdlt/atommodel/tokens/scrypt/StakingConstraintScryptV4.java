@@ -25,7 +25,7 @@ import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atommodel.validators.state.AllowDelegationFlag;
-import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
+import com.radixdlt.atommodel.validators.state.PreparedOwnerUpdate;
 import com.radixdlt.atommodel.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
@@ -107,14 +107,14 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 			return new StakePrepare(tokenHoldingBucket, allowDelegationFlag.getValidatorKey(), ownerCopy.getOwner()::equals);
 		}
 
-		ReducerState readOwner(PreparedValidatorUpdate preparedValidatorUpdate) throws ProcedureException {
-			if (!allowDelegationFlag.getValidatorKey().equals(preparedValidatorUpdate.getValidatorKey())) {
+		ReducerState readOwner(PreparedOwnerUpdate preparedOwnerUpdate) throws ProcedureException {
+			if (!allowDelegationFlag.getValidatorKey().equals(preparedOwnerUpdate.getValidatorKey())) {
 				throw new ProcedureException("Not matchin validator keys");
 			}
 			return new StakePrepare(
 				tokenHoldingBucket,
 				allowDelegationFlag.getValidatorKey(),
-				preparedValidatorUpdate.getOwnerAddress()::equals
+				preparedOwnerUpdate.getOwnerAddress()::equals
 			);
 		}
 	}
@@ -170,7 +170,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 			}
 		));
 		os.procedure(new ReadProcedure<>(
-			OwnerStakePrepare.class, PreparedValidatorUpdate.class,
+			OwnerStakePrepare.class, PreparedOwnerUpdate.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, d, r) -> {
 				var nextState = s.readOwner(d);

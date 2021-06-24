@@ -119,7 +119,7 @@ public final class ValidatorStakeData implements ResourceInBucket {
 
 	@Override
 	public Bucket bucket() {
-		return new ValidatorStakeBucket(validatorKey);
+		return new StakeBucket(validatorKey);
 	}
 
 	public ValidatorStakeData addEmission(UInt256 amount) {

@@ -43,8 +43,8 @@ public final class PreparedRakeUpdate implements Particle {
 		this.nextRakePercentage = nextRakePercentage;
 	}
 
-	public RakeCopy getCurrentConfig() {
-		return new RakeCopy(validatorKey, curRakePercentage);
+	public ValidatorRakeCopy getCurrentConfig() {
+		return new ValidatorRakeCopy(validatorKey, curRakePercentage);
 	}
 
 	public ECPublicKey getValidatorKey() {

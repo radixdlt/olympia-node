@@ -24,7 +24,7 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UpdateRake;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
-import com.radixdlt.atommodel.validators.state.RakeCopy;
+import com.radixdlt.atommodel.validators.state.ValidatorRakeCopy;
 import com.radixdlt.atommodel.validators.state.PreparedRakeUpdate;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 
@@ -59,9 +59,9 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateRake
 			});
 		} else {
 			builder.swap(
-				RakeCopy.class,
+				ValidatorRakeCopy.class,
 				p -> p.getValidatorKey().equals(action.getValidatorKey()),
-				Optional.of(SubstateWithArg.noArg(new RakeCopy(action.getValidatorKey(), RAKE_MAX))),
+				Optional.of(SubstateWithArg.noArg(new ValidatorRakeCopy(action.getValidatorKey(), RAKE_MAX))),
 				"Cannot find state"
 			).with(substateDown -> {
 				var isIncrease = action.getRakePercentage() > substateDown.getCurRakePercentage();
