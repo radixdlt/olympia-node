@@ -27,6 +27,7 @@ import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.RadixNodeUri;
+import com.radixdlt.qualifier.Magic;
 import com.radixdlt.serialization.Serialization;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelOption;
@@ -40,6 +41,7 @@ import java.util.Optional;
 @Singleton
 public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 	private final P2PConfig config;
+	private final int magic;
 	private final SystemCounters counters;
 	private final Serialization serialization;
 	private final SecureRandom secureRandom;
@@ -52,6 +54,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 	@Inject
 	public PeerOutboundBootstrapImpl(
 		P2PConfig config,
+		@Magic int magic,
 		SystemCounters counters,
 		Serialization serialization,
 		SecureRandom secureRandom,
@@ -60,6 +63,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 		Provider<PeerControl> peerControl
 	) {
 		this.config = Objects.requireNonNull(config);
+		this.magic = magic;
 		this.counters = Objects.requireNonNull(counters);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.secureRandom = Objects.requireNonNull(secureRandom);
@@ -79,6 +83,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 			.option(ChannelOption.SO_KEEPALIVE, true)
 			.handler(new PeerChannelInitializer(
 				config,
+				magic,
 				counters,
 				serialization,
 				secureRandom,

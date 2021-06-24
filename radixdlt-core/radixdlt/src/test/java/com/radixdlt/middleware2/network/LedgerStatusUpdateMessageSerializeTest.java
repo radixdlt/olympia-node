@@ -29,7 +29,7 @@ public class LedgerStatusUpdateMessageSerializeTest extends SerializeMessageObje
 
 	private static LedgerStatusUpdateMessage get() {
 		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-		return new LedgerStatusUpdateMessage(1234, LedgerProof.genesis(accumulatorState, null, 0));
+		return new LedgerStatusUpdateMessage(LedgerProof.genesis(accumulatorState, null, 0));
 	}
 
 }

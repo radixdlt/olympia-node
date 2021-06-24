@@ -25,15 +25,6 @@ import java.util.Objects;
 @SerializerId2("p2p.discovery.get_peers")
 public final class GetPeersMessage extends Message {
 
-	GetPeersMessage() {
-		// Serializer only
-		super(0);
-	}
-
-	public GetPeersMessage(int magic) {
-		super(magic);
-	}
-
 	@Override
 	public String toString() {
 		return getClass().getSimpleName();
@@ -48,12 +39,11 @@ public final class GetPeersMessage extends Message {
 			return false;
 		}
 		final var that = (GetPeersMessage) o;
-		return Objects.equals(getTimestamp(), that.getTimestamp())
-				&& Objects.equals(getMagic(), that.getMagic());
+		return Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(getTimestamp(), getMagic());
+		return Objects.hash(getTimestamp());
 	}
 }

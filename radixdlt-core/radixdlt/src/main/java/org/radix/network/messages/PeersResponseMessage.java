@@ -34,19 +34,11 @@ public final class PeersResponseMessage extends Message {
 	@DsonOutput(Output.ALL)
 	private final ImmutableSet<RadixNodeUri> peers;
 
-	// For serializer
-	private PeersResponseMessage() {
-		super(0);
-		peers = ImmutableSet.of();
+	public PeersResponseMessage() {
+		this(ImmutableSet.of());
 	}
 
-	public PeersResponseMessage(int magic) {
-		this(magic, ImmutableSet.of());
-	}
-
-	public PeersResponseMessage(int magic, ImmutableSet<RadixNodeUri> peers) {
-		super(magic);
-
+	public PeersResponseMessage(ImmutableSet<RadixNodeUri> peers) {
 		this.peers = peers;
 	}
 
@@ -69,12 +61,11 @@ public final class PeersResponseMessage extends Message {
 		}
 		final var that = (PeersResponseMessage) o;
 		return Objects.equals(peers, that.peers)
-			&& Objects.equals(getTimestamp(), that.getTimestamp())
-			&& Objects.equals(getMagic(), that.getMagic());
+			&& Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(peers, getTimestamp(), getMagic());
+		return Objects.hash(peers, getTimestamp());
 	}
 }

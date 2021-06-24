@@ -56,6 +56,7 @@ final class MockP2PNetwork {
 
 		final var clientChannel = new PeerChannel(
 			clientPeer.injector.getInstance(P2PConfig.class),
+			1,
 			clientPeer.injector.getInstance(SystemCounters.class),
 			clientPeer.injector.getInstance(Serialization.class),
 			new SecureRandom(),
@@ -68,6 +69,7 @@ final class MockP2PNetwork {
 
 		final var serverChannel = new PeerChannel(
 			serverPeer.injector.getInstance(P2PConfig.class),
+			1,
 			serverPeer.injector.getInstance(SystemCounters.class),
 			serverPeer.injector.getInstance(Serialization.class),
 			new SecureRandom(),

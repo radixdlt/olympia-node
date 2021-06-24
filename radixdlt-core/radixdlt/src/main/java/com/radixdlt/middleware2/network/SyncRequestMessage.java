@@ -38,12 +38,10 @@ public final class SyncRequestMessage extends Message {
 
 	SyncRequestMessage() {
 		// Serializer only
-		super(0);
 		this.currentHeader = null;
 	}
 
-	public SyncRequestMessage(int magic, DtoLedgerProof currentHeader) {
-		super(magic);
+	public SyncRequestMessage(DtoLedgerProof currentHeader) {
 		this.currentHeader = currentHeader;
 	}
 
@@ -66,12 +64,11 @@ public final class SyncRequestMessage extends Message {
 		}
 		SyncRequestMessage that = (SyncRequestMessage) o;
 		return Objects.equals(currentHeader, that.currentHeader)
-			&& Objects.equals(getTimestamp(), that.getTimestamp())
-			&& Objects.equals(getMagic(), that.getMagic());
+			&& Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(currentHeader, getTimestamp(), getMagic());
+		return Objects.hash(currentHeader, getTimestamp());
 	}
 }

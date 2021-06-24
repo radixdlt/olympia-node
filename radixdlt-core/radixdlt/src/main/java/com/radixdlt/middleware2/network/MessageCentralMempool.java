@@ -17,8 +17,6 @@
 
 package com.radixdlt.middleware2.network;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
 
 import com.radixdlt.consensus.bft.BFTNode;
@@ -27,7 +25,6 @@ import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.qualifier.Magic;
 
 import java.util.Objects;
 
@@ -39,23 +36,16 @@ import javax.inject.Inject;
  * Network layer for the mempool
  */
 public final class MessageCentralMempool {
-	private static final Logger log = LogManager.getLogger();
-
 	private final MessageCentral messageCentral;
-	private final int magic;
 
 	@Inject
-	public MessageCentralMempool(
-		@Magic int magic,
-		MessageCentral messageCentral
-	) {
-		this.magic = magic;
+	public MessageCentralMempool(MessageCentral messageCentral) {
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 	}
 
 	public RemoteEventDispatcher<MempoolAdd> mempoolAddRemoteEventDispatcher() {
 		return (receiver, msg) -> {
-			MempoolAddMessage message = new MempoolAddMessage(this.magic, msg.getTxns());
+			MempoolAddMessage message = new MempoolAddMessage(msg.getTxns());
 			this.send(message, receiver);
 		};
 	}

@@ -48,6 +48,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 	private static final int FRAME_HEADER_LENGTH = Integer.BYTES;
 
 	private final P2PConfig config;
+	private final int magic;
 	private final SystemCounters counters;
 	private final Serialization serialization;
 	private final SecureRandom secureRandom;
@@ -58,6 +59,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 
 	public PeerChannelInitializer(
 		P2PConfig config,
+		int magic,
 		SystemCounters counters,
 		Serialization serialization,
 		SecureRandom secureRandom,
@@ -67,6 +69,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 		Optional<RadixNodeUri> uri
 	) {
 		this.config = Objects.requireNonNull(config);
+		this.magic = magic;
 		this.counters = Objects.requireNonNull(counters);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.secureRandom = Objects.requireNonNull(secureRandom);
@@ -80,6 +83,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 	protected void initChannel(SocketChannel socketChannel) {
 		final var channel = new PeerChannel(
 			config,
+			magic,
 			counters,
 			serialization,
 			secureRandom,

@@ -30,6 +30,6 @@ public class PeersResponseMessageSerializeTest extends SerializeMessageObject<Pe
 	private static PeersResponseMessage get() {
 		final var pubKey = ECKeyPair.generateNew().getPublicKey();
 		final var uri = RadixNodeUri.fromPubKeyAndAddress(pubKey, "127.0.0.1", 30000);
-		return new PeersResponseMessage(1, ImmutableSet.of(uri));
+		return new PeersResponseMessage(ImmutableSet.of(uri));
 	}
 }
