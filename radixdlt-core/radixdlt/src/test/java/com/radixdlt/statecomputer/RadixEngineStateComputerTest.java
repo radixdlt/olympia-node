@@ -93,7 +93,6 @@ import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 import org.assertj.core.api.Condition;
@@ -144,8 +143,7 @@ public class RadixEngineStateComputerTest {
 					.map(BFTNode::create)
 					.map(n -> BFTValidator.from(n, UInt256.ONE)));
 
-				bind(ProposerElection.class)
-					.toInstance(new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.getNode().getKey().euid())));
+				bind(ProposerElection.class).toInstance(new WeightedRotatingLeaders(validatorSet));
 				bind(Serialization.class).toInstance(serialization);
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
 				bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(engineStore);

@@ -33,6 +33,7 @@ import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.utils.KeyComparator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -124,7 +125,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 	public OneNodeAlwaysAliveSafetyTest(int numNodes) {
 		this.nodeKeys = Stream.generate(ECKeyPair::generateNew).limit(numNodes)
-			.sorted(Comparator.comparing(n -> n.getPublicKey().euid())) // Sort this so that it matches order of proposers
+			.sorted(Comparator.comparing(ECKeyPair::getPublicKey, KeyComparator.instance()))
 			.collect(Collectors.toList());
 	}
 

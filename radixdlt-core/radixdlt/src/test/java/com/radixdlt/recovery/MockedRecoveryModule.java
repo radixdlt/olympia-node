@@ -40,7 +40,6 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 
-import java.util.Comparator;
 import java.util.Optional;
 
 /**
@@ -84,7 +83,7 @@ public class MockedRecoveryModule extends AbstractModule {
 			proof.timestamp()
 		);
 		var genesisQC = QuorumCertificate.ofGenesis(verifiedGenesis, nextLedgerHeader);
-		var proposerElection = new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.getNode().getKey().euid()));
+		var proposerElection = new WeightedRotatingLeaders(validatorSet);
 		return new BFTConfiguration(
 			proposerElection,
 			validatorSet,

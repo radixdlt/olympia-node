@@ -94,6 +94,7 @@ import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.schedulers.Timed;
 import org.apache.logging.log4j.LogManager;
@@ -154,7 +155,7 @@ public class StakingUnstakingValidatorsTest {
 	public StakingUnstakingValidatorsTest(Module forkModule, boolean payFees, long maxRounds) {
 		this.nodeKeys = Stream.generate(ECKeyPair::generateNew)
 			.limit(20)
-			.sorted(Comparator.comparing(k -> k.getPublicKey().euid()))
+			.sorted(Comparator.comparing(ECKeyPair::getPublicKey, KeyComparator.instance()))
 			.collect(ImmutableList.toImmutableList());
 		this.radixEngineConfiguration = Modules.combine(
 			new ForksModule(),

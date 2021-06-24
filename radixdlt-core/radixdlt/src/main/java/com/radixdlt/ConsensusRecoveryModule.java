@@ -32,7 +32,6 @@ import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.store.LastEpochProof;
 
-import java.util.Comparator;
 import java.util.Optional;
 
 /**
@@ -59,11 +58,7 @@ public class ConsensusRecoveryModule extends AbstractModule {
 		BFTValidatorSet validatorSet,
 		VerifiedVertexStoreState vertexStoreState
 	) {
-		var proposerElection = new WeightedRotatingLeaders(
-			validatorSet,
-			Comparator.comparing(v -> v.getNode().getKey().euid())
-		);
-
+		var proposerElection = new WeightedRotatingLeaders(validatorSet);
 		return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
 	}
 

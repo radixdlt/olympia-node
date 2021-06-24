@@ -30,8 +30,11 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
+
 import java.util.Comparator;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -45,16 +48,18 @@ public class WeightedRotatingLeadersTest {
 	private ImmutableList<BFTValidator> validatorsInOrder;
 
 	private void setUp(int validatorSetSize, int sizeOfCache) {
-		this.validatorsInOrder = Stream.generate(() -> mock(BFTNode.class))
+		this.validatorsInOrder = Stream.generate(() -> ECKeyPair.generateNew().getPublicKey())
 			.limit(validatorSetSize)
+			.map(BFTNode::create)
 			.map(node -> BFTValidator.from(node, UInt256.ONE))
+			.sorted(Comparator.comparing(v -> v.getNode().getKey(), KeyComparator.instance()))
 			.collect(ImmutableList.toImmutableList());
 
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(validatorsInOrder);
 		this.weightedRotatingLeaders =
-			new WeightedRotatingLeaders(validatorSet, Comparator.comparingInt(validatorsInOrder::indexOf), sizeOfCache);
+			new WeightedRotatingLeaders(validatorSet, sizeOfCache);
 		this.weightedRotatingLeaders2 =
-			new WeightedRotatingLeaders(validatorSet, Comparator.comparingInt(validatorsInOrder::indexOf), sizeOfCache);
+			new WeightedRotatingLeaders(validatorSet, sizeOfCache);
 	}
 
 	@Test
@@ -131,8 +136,7 @@ public class WeightedRotatingLeadersTest {
 			.collect(ImmutableList.toImmutableList());
 
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(validatorsInOrder);
-		Comparator<BFTValidator> validatorComparator = Comparator.comparing(BFTValidator::getPower); //good enough to avoid compiler warning
-		this.weightedRotatingLeaders = new WeightedRotatingLeaders(validatorSet, validatorComparator, sizeOfCache);
+		this.weightedRotatingLeaders = new WeightedRotatingLeaders(validatorSet, sizeOfCache);
 
 		Map<BFTNode, UInt256> proposerCounts = Stream.iterate(View.of(0), View::next)
 			.limit(sumOfPower)

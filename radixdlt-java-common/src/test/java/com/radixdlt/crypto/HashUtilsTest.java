@@ -161,16 +161,6 @@ public class HashUtilsTest {
 	}
 
 	@Test
-	public void test_hash_of_publickey() throws Exception {
-		String publicKeyHex = "03" + deadbeefString();
-		byte[] publicKeyBytes = Bytes.fromHexString(publicKeyHex);
-		ECPublicKey publicKey = ECPublicKey.fromBytes(publicKeyBytes);
-		String expectedEUIDHex = "cbed388efef3a09bee696ad1b30d49a0";
-		assertEquals(expectedEUIDHex, publicKey.euid().toString());
-		assertEquals(expectedEUIDHex, Bytes.toHexString(HashUtils.sha256(publicKeyBytes).asBytes()).substring(0, 32));
-	}
-
-	@Test
 	public void birthday_attack_test() {
 		// 32-bit hashes + 300000 hashes will have a collision 99.997% of the time.
 		// Practically high enough to catch any issues we have with hash collisions

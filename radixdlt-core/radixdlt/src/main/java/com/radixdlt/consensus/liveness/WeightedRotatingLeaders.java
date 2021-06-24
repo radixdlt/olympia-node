@@ -51,19 +51,17 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 	private final Comparator<Entry<BFTValidator, UInt384>> weightsComparator;
 	private final CachingNextLeaderComputer nextLeaderComputer;
 
-	public WeightedRotatingLeaders(BFTValidatorSet validatorSet, Comparator<BFTValidator> comparator) {
-		this.validatorSet = validatorSet;
-		this.weightsComparator = Comparator
-			.comparing(Entry<BFTValidator, UInt384>::getValue)
-			.thenComparing(Entry::getKey, comparator);
-		this.nextLeaderComputer = new CachingNextLeaderComputer(validatorSet, weightsComparator, DEFAULT_CACHE_SIZE);
+	public WeightedRotatingLeaders(BFTValidatorSet validatorSet) {
+		this(validatorSet, DEFAULT_CACHE_SIZE);
 	}
 
-	public WeightedRotatingLeaders(BFTValidatorSet validatorSet, Comparator<BFTValidator> comparator, int cacheSize) {
+	public WeightedRotatingLeaders(BFTValidatorSet validatorSet, int cacheSize) {
 		this.validatorSet = validatorSet;
 		this.weightsComparator = Comparator
 			.comparing(Entry<BFTValidator, UInt384>::getValue)
-			.thenComparing(Entry::getKey, comparator);
+			.thenComparing(
+				(o1, o2) -> Arrays.compare(o1.getKey().getNode().getKey().getCompressedBytes(), o2.getKey().getNode().getKey().getCompressedBytes())
+			);
 		this.nextLeaderComputer = new CachingNextLeaderComputer(validatorSet, weightsComparator, cacheSize);
 	}
 

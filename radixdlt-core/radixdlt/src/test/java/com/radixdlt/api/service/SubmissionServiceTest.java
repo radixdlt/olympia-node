@@ -86,7 +86,6 @@ import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -147,8 +146,7 @@ public class SubmissionServiceTest {
 				var validatorSet = BFTValidatorSet.from(registeredNodes.stream().map(ECKeyPair::getPublicKey)
 					.map(BFTNode::create)
 					.map(n -> BFTValidator.from(n, UInt256.ONE)));
-				bind(ProposerElection.class)
-					.toInstance(new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.getNode().getKey().euid())));
+				bind(ProposerElection.class).toInstance(new WeightedRotatingLeaders(validatorSet));
 				bind(Serialization.class).toInstance(serialization);
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
 				bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(engineStore);

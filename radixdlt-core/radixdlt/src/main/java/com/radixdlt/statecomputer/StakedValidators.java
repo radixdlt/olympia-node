@@ -26,6 +26,7 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Comparator;
@@ -46,8 +47,6 @@ import static java.util.Optional.ofNullable;
  * Wrapper class for registered validators
  */
 public final class StakedValidators {
-	private static final Comparator<ECPublicKey> keyOrdering = Comparator.comparing(ECPublicKey::euid);
-
 	private final Map<ECPublicKey, ValidatorMetaData> metadata;
 	private final Map<ECPublicKey, UInt256> stake;
 	private final Map<ECPublicKey, REAddr> owners;
@@ -56,7 +55,7 @@ public final class StakedValidators {
 	private static final Comparator<UInt256> stakeOrdering = Comparator.reverseOrder();
 	private static final Comparator<Map.Entry<ECPublicKey, UInt256>> validatorOrdering =
 		Map.Entry.<ECPublicKey, UInt256>comparingByValue(stakeOrdering)
-			.thenComparing(Map.Entry.comparingByKey(keyOrdering));
+			.thenComparing(Map.Entry.comparingByKey(KeyComparator.instance()));
 
 	private final int minValidators;
 	private final int maxValidators;
