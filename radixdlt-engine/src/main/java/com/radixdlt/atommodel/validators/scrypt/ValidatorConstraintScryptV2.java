@@ -26,7 +26,7 @@ import com.radixdlt.atommodel.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.atommodel.validators.state.PreparedOwnerUpdate;
 import com.radixdlt.atommodel.validators.state.ValidatorRakeCopy;
 import com.radixdlt.atommodel.validators.state.PreparedRakeUpdate;
-import com.radixdlt.atommodel.validators.state.ValidatorData;
+import com.radixdlt.atommodel.validators.state.ValidatorMetaData;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
@@ -59,9 +59,9 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 	}
 
 	private static class UpdatingValidatorInfo implements ReducerState {
-		private final ValidatorData prevState;
+		private final ValidatorMetaData prevState;
 
-		private UpdatingValidatorInfo(ValidatorData prevState) {
+		private UpdatingValidatorInfo(ValidatorMetaData prevState) {
 			this.prevState = prevState;
 		}
 	}
@@ -129,32 +129,33 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 		}
 	}
 
+
+
 	@Override
 	public void main(Loader os) {
+
 		os.substate(
 			new SubstateDefinition<>(
-				ValidatorData.class,
-				Set.of(SubstateTypeId.VALIDATOR_DATA.id()),
+				ValidatorMetaData.class,
+				Set.of(SubstateTypeId.VALIDATOR_META_DATA.id()),
 				(b, buf) -> {
 					var key = REFieldSerialization.deserializeKey(buf);
-					var isRegistered = buf.get() != 0; // isRegistered
 					var name = REFieldSerialization.deserializeString(buf);
 					var url = REFieldSerialization.deserializeUrl(buf);
-					return new ValidatorData(key, isRegistered, name, url);
+					return new ValidatorMetaData(key, name, url);
 				},
 				(s, buf) -> {
-					buf.put(SubstateTypeId.VALIDATOR_DATA.id());
+					buf.put(SubstateTypeId.VALIDATOR_META_DATA.id());
 					REFieldSerialization.serializeKey(buf, s.getKey());
-					buf.put((byte) (s.isRegisteredForNextEpoch() ? 1 : 0)); // isRegistered
 					REFieldSerialization.serializeString(buf, s.getName());
 					REFieldSerialization.serializeString(buf, s.getUrl());
 				},
-				p -> !p.isRegisteredForNextEpoch() && p.getUrl().isEmpty() && p.getName().isEmpty()
+				p -> p.getUrl().isEmpty() && p.getName().isEmpty()
 			)
 		);
 
 		os.procedure(new DownProcedure<>(
-			VoidReducerState.class, ValidatorData.class,
+			VoidReducerState.class, ValidatorMetaData.class,
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {
@@ -172,7 +173,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 		));
 
 		os.procedure(new UpProcedure<>(
-			UpdatingValidatorInfo.class, ValidatorData.class,
+			UpdatingValidatorInfo.class, ValidatorMetaData.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> {
 				if (!Objects.equals(s.prevState.getKey(), u.getKey())) {

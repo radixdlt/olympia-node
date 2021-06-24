@@ -27,7 +27,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFiller;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
-import com.radixdlt.atommodel.validators.state.ValidatorData;
+import com.radixdlt.atommodel.validators.state.ValidatorMetaData;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.StateReducer;
@@ -73,7 +73,7 @@ public final class NodeApplicationModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	private SubstateCacheRegister<?> registeredValidator(@Self ECPublicKey self) {
-		return new SubstateCacheRegister<>(ValidatorData.class, p -> p.getKey().equals(self));
+		return new SubstateCacheRegister<>(ValidatorMetaData.class, p -> p.getKey().equals(self));
 	}
 
 	@ProvidesIntoSet

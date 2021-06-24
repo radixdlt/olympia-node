@@ -82,13 +82,13 @@ public class TxnConstructionRequest {
 	}
 
 	public TxnConstructionRequest registerAsValidator(ECPublicKey validatorKey) {
-		var action = new RegisterValidator(validatorKey, null, null);
+		var action = new RegisterValidator(validatorKey);
 		actions.add(action);
 		return this;
 	}
 
 	public TxnConstructionRequest unregisterAsValidator(ECPublicKey validatorKey) {
-		var action = new UnregisterValidator(validatorKey, null, null);
+		var action = new UnregisterValidator(validatorKey);
 		actions.add(action);
 		return this;
 	}

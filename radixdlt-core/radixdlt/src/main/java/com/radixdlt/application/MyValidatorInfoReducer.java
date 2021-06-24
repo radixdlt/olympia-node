@@ -19,7 +19,8 @@
 package com.radixdlt.application;
 
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.validators.state.ValidatorData;
+import com.radixdlt.atommodel.validators.state.PreparedRegisteredUpdate;
+import com.radixdlt.atommodel.validators.state.ValidatorMetaData;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
@@ -48,7 +49,10 @@ public final class MyValidatorInfoReducer implements StateReducer<MyValidatorInf
 
 	@Override
 	public Set<Class<? extends Particle>> particleClasses() {
-		return Set.of(ValidatorData.class);
+		return Set.of(
+			ValidatorMetaData.class,
+			PreparedRegisteredUpdate.class
+		);
 	}
 
 	@Override
@@ -59,13 +63,24 @@ public final class MyValidatorInfoReducer implements StateReducer<MyValidatorInf
 	@Override
 	public BiFunction<MyValidatorInfo, Particle, MyValidatorInfo> outputReducer() {
 		return (i, p) -> {
-			var r = (ValidatorData) p;
-			if (r.getKey().equals(self)) {
-				return new MyValidatorInfo(
-					r.getName(),
-					r.getUrl(),
-					r.isRegisteredForNextEpoch()
-				);
+			if (p instanceof ValidatorMetaData) {
+				var r = (ValidatorMetaData) p;
+				if (r.getKey().equals(self)) {
+					return new MyValidatorInfo(
+						r.getName(),
+						r.getUrl(),
+						i.isRegistered()
+					);
+				}
+			} else {
+				var r = (PreparedRegisteredUpdate) p;
+				if (r.getValidatorKey().equals(self)) {
+					return new MyValidatorInfo(
+						i.getName(),
+						i.getUrl(),
+						r.isRegistered()
+					);
+				}
 			}
 			return i;
 		};

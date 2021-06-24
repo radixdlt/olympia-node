@@ -21,36 +21,14 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.crypto.ECPublicKey;
 
-import java.util.Objects;
-
 public final class RegisterValidator implements TxAction {
 	private final ECPublicKey validatorKey;
-	private final String name;
-	private final String url;
 
 	public RegisterValidator(ECPublicKey validatorKey) {
-		this(validatorKey, null, null);
-	}
-
-	public RegisterValidator(
-		ECPublicKey validatorKey,
-		String name,
-		String url
-	) {
-		this.validatorKey = Objects.requireNonNull(validatorKey);
-		this.name = name;
-		this.url = url;
+		this.validatorKey = validatorKey;
 	}
 
 	public ECPublicKey validatorKey() {
 		return validatorKey;
-	}
-
-	public String name() {
-		return name;
-	}
-
-	public String url() {
-		return url;
 	}
 }

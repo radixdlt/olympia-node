@@ -18,7 +18,7 @@
 package com.radixdlt.api.data.action;
 
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.UpdateValidator;
+import com.radixdlt.atom.actions.UpdateValidatorMetadata;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.stream.Stream;
@@ -36,6 +36,6 @@ class UpdateValidatorAction implements TransactionAction {
 
 	@Override
 	public Stream<TxAction> toAction() {
-		return Stream.of(new UpdateValidator(validatorKey, name, url));
+		return Stream.of(new UpdateValidatorMetadata(validatorKey, name, url));
 	}
 }

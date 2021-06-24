@@ -438,7 +438,7 @@ public class StakingUnstakingValidatorsTest {
 				case 4:
 					// Only unregister once in a while
 					if (random.nextInt(10) == 0) {
-						action = new UnregisterValidator(privKey.getPublicKey(), null, null);
+						action = new UnregisterValidator(privKey.getPublicKey());
 						break;
 					}
 					continue;

@@ -23,30 +23,23 @@ import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
 
-public final class ValidatorData implements Particle {
+public final class ValidatorMetaData implements Particle {
 	private final ECPublicKey key;
-	private final boolean registeredForNextEpoch;
 	private final String name;
 	private final String url;
 
-	public ValidatorData(ECPublicKey key, boolean registeredForNextEpoch) {
-		this(key, registeredForNextEpoch, "", "");
+	public ValidatorMetaData(ECPublicKey key) {
+		this(key, "", "");
 	}
 
-	public ValidatorData(
+	public ValidatorMetaData(
 		ECPublicKey key,
-		boolean registeredForNextEpoch,
 		String name,
 		String url
 	) {
 		this.key = Objects.requireNonNull(key);
-		this.registeredForNextEpoch = registeredForNextEpoch;
 		this.name = Objects.requireNonNull(name);
 		this.url = Objects.requireNonNull(url);
-	}
-
-	public boolean isRegisteredForNextEpoch() {
-		return registeredForNextEpoch;
 	}
 
 	public ECPublicKey getKey() {
@@ -63,7 +56,7 @@ public final class ValidatorData implements Particle {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.key, this.registeredForNextEpoch, this.name, this.url);
+		return Objects.hash(this.key, this.name, this.url);
 	}
 
 	@Override
@@ -71,12 +64,11 @@ public final class ValidatorData implements Particle {
 		if (this == obj) {
 			return true;
 		}
-		if (!(obj instanceof ValidatorData)) {
+		if (!(obj instanceof ValidatorMetaData)) {
 			return false;
 		}
-		final var that = (ValidatorData) obj;
+		final var that = (ValidatorMetaData) obj;
 		return Objects.equals(this.key, that.key)
-			&& this.registeredForNextEpoch == that.registeredForNextEpoch
 			&& Objects.equals(this.name, that.name)
 			&& Objects.equals(this.url, that.url);
 	}
@@ -84,8 +76,8 @@ public final class ValidatorData implements Particle {
 	@Override
 	public String toString() {
 		return String.format(
-			"%s[%s, %s, %s]",
-			getClass().getSimpleName(), getKey(), registeredForNextEpoch, getUrl()
+			"%s[%s, %s]",
+			getClass().getSimpleName(), getKey(), getUrl()
 		);
 	}
 }

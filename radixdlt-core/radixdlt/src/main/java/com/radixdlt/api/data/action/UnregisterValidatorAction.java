@@ -25,17 +25,13 @@ import java.util.stream.Stream;
 
 class UnregisterValidatorAction implements TransactionAction {
 	private final ECPublicKey validatorKey;
-	private final String name;
-	private final String url;
 
-	UnregisterValidatorAction(ECPublicKey validatorKey, String name, String url) {
+	UnregisterValidatorAction(ECPublicKey validatorKey) {
 		this.validatorKey = validatorKey;
-		this.name = name;
-		this.url = url;
 	}
 
 	@Override
 	public Stream<TxAction> toAction() {
-		return Stream.of(new UnregisterValidator(validatorKey, name, url));
+		return Stream.of(new UnregisterValidator(validatorKey));
 	}
 }

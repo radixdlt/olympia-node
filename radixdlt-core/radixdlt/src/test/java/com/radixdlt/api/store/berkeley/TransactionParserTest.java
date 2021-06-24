@@ -46,6 +46,7 @@ import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
 import com.radixdlt.atommodel.validators.construction.UpdateAllowDelegationFlagConstructor;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.engine.parser.REParser;
 import org.junit.Assert;
 import org.junit.Before;
@@ -104,6 +105,7 @@ public class TransactionParserTest {
 		cmAtomOS.load(new TokensConstraintScryptV3());
 		cmAtomOS.load(new StakingConstraintScryptV4());
 		cmAtomOS.load(new FeeConstraintScrypt());
+		cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
 
 		final var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),

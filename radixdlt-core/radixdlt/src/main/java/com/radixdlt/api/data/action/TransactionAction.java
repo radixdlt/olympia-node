@@ -48,12 +48,12 @@ public interface TransactionAction {
 		return new MintAction(to, amount, rri);
 	}
 
-	static TransactionAction register(ECPublicKey validatorKey, Optional<String> name, Optional<String> url) {
-		return new RegisterValidatorAction(validatorKey, name.orElse(null), url.orElse(null));
+	static TransactionAction register(ECPublicKey validatorKey) {
+		return new RegisterValidatorAction(validatorKey);
 	}
 
-	static TransactionAction unregister(ECPublicKey validatorKey, Optional<String> name, Optional<String> url) {
-		return new UnregisterValidatorAction(validatorKey, name.orElse(null), url.orElse(null));
+	static TransactionAction unregister(ECPublicKey validatorKey) {
+		return new UnregisterValidatorAction(validatorKey);
 	}
 
 	static TransactionAction update(ECPublicKey validatorKey, Optional<String> name, Optional<String> url) {

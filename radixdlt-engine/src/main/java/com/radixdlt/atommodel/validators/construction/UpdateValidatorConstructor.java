@@ -21,22 +21,21 @@ package com.radixdlt.atommodel.validators.construction;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.UpdateValidator;
-import com.radixdlt.atommodel.validators.state.ValidatorData;
+import com.radixdlt.atom.actions.UpdateValidatorMetadata;
+import com.radixdlt.atommodel.validators.state.ValidatorMetaData;
 
 import java.util.List;
 
-public final class UpdateValidatorConstructor implements ActionConstructor<UpdateValidator> {
+public final class UpdateValidatorConstructor implements ActionConstructor<UpdateValidatorMetadata> {
 	@Override
-	public void construct(UpdateValidator action, TxBuilder txBuilder) throws TxBuilderException {
+	public void construct(UpdateValidatorMetadata action, TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.swap(
-			ValidatorData.class,
+			ValidatorMetaData.class,
 			p -> p.getKey().equals(action.validatorKey()),
 			"Invalid state."
 		).with(
-			substateDown -> List.of(new ValidatorData(
+			substateDown -> List.of(new ValidatorMetaData(
 				action.validatorKey(),
-				substateDown.isRegisteredForNextEpoch(),
 				action.name() == null ? substateDown.getName() : action.name(),
 				action.name() == null ? substateDown.getUrl() : action.url()
 			))

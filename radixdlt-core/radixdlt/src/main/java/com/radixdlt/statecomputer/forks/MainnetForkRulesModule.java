@@ -40,7 +40,7 @@ import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
 import com.radixdlt.atom.actions.UpdateRake;
-import com.radixdlt.atom.actions.UpdateValidator;
+import com.radixdlt.atom.actions.UpdateValidatorMetadata;
 import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.atommodel.system.construction.NextEpochConstructorV3;
@@ -70,6 +70,7 @@ import com.radixdlt.atommodel.validators.construction.UpdateRakeConstructor;
 import com.radixdlt.atommodel.validators.construction.UpdateValidatorConstructor;
 import com.radixdlt.atommodel.validators.construction.UpdateValidatorOwnerConstructor;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
@@ -93,7 +94,8 @@ public final class MainnetForkRulesModule extends AbstractModule {
 			var rakeIncreaseDebouncerEpochLength = config.getRakeIncreaseDebouncerEpochLength();
 
 			final CMAtomOS v4 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
-			v4.load(new ValidatorConstraintScryptV2(rakeIncreaseDebouncerEpochLength)); // load before TokensConstraintScrypt due to dependency
+			v4.load(new ValidatorConstraintScryptV2(rakeIncreaseDebouncerEpochLength));
+			v4.load(new ValidatorRegisterConstraintScrypt());
 			v4.load(new TokensConstraintScryptV3());
 			v4.load(new FeeConstraintScrypt());
 			v4.load(new StakingConstraintScryptV4());
@@ -123,7 +125,7 @@ public final class MainnetForkRulesModule extends AbstractModule {
 				.put(UnstakeOwnership.class, new UnstakeOwnershipConstructor())
 				.put(TransferToken.class, new TransferTokensConstructorV2())
 				.put(UnregisterValidator.class, new UnregisterValidatorConstructor())
-				.put(UpdateValidator.class, new UpdateValidatorConstructor())
+				.put(UpdateValidatorMetadata.class, new UpdateValidatorConstructor())
 				.put(PayFee.class, new PayFeeConstructorV2())
 				.put(UpdateRake.class, new UpdateRakeConstructor(rakeIncreaseDebouncerEpochLength))
 				.put(UpdateValidatorOwnerAddress.class, new UpdateValidatorOwnerConstructor())

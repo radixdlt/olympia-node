@@ -25,17 +25,13 @@ import java.util.stream.Stream;
 
 class RegisterValidatorAction implements TransactionAction {
 	private final ECPublicKey validatorKey;
-	private final String name;
-	private final String url;
 
-	RegisterValidatorAction(ECPublicKey validatorKey, String name, String url) {
+	RegisterValidatorAction(ECPublicKey validatorKey) {
 		this.validatorKey = validatorKey;
-		this.name = name;
-		this.url = url;
 	}
 
 	@Override
 	public Stream<TxAction> toAction() {
-		return Stream.of(new RegisterValidator(validatorKey, name, url));
+		return Stream.of(new RegisterValidator(validatorKey));
 	}
 }

@@ -25,28 +25,12 @@ import java.util.Objects;
 
 public final class UnregisterValidator implements TxAction {
 	private final ECPublicKey validatorKey;
-	private final String name;
-	private final String url;
 
-	public UnregisterValidator(
-		ECPublicKey validatorKey,
-		String name,
-		String url
-	) {
+	public UnregisterValidator(ECPublicKey validatorKey) {
 		this.validatorKey = Objects.requireNonNull(validatorKey);
-		this.name = name;
-		this.url = url;
 	}
 
 	public ECPublicKey validatorKey() {
 		return validatorKey;
-	}
-
-	public String name() {
-		return name;
-	}
-
-	public String url() {
-		return url;
 	}
 }

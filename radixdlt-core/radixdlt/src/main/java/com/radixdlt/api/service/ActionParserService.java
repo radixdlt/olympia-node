@@ -119,16 +119,12 @@ public final class ActionParserService {
 
 			case REGISTER_VALIDATOR:
 				return allOf(
-					validator(element),
-					optionalName(element),
-					optionalUrl(element)
+					validator(element)
 				).map(TransactionAction::register);
 
 			case UNREGISTER_VALIDATOR:
 				return allOf(
-					validator(element),
-					optionalName(element),
-					optionalUrl(element)
+					validator(element)
 				).map(TransactionAction::unregister);
 
 			case UPDATE_VALIDATOR:
