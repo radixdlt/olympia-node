@@ -153,7 +153,7 @@ public class RadixEngineStateComputerTest {
 
 				install(MempoolConfig.asModule(10, 10));
 				install(new ForksModule());
-				install(new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10)));
+				install(new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10, 2)));
 				install(RadixEngineConfig.asModule(1, 100, 50));
 
 				// HACK

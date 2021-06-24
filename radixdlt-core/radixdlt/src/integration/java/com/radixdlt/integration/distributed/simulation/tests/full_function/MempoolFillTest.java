@@ -62,7 +62,7 @@ public class MempoolFillTest {
 		)
 		.fullFunctionNodes(SyncConfig.of(800L, 10, 5000L))
 		.addRadixEngineConfigModules(
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10)),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10, 2)),
 			new ForksModule()
 		)
 		.addNodeModule(new AbstractModule() {

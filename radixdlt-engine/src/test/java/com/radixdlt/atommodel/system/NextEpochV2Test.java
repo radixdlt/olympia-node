@@ -71,7 +71,7 @@ public class NextEpochV2Test {
 					new EpochUpdateConstraintScrypt(10),
 					new StakingConstraintScryptV4(),
 					new TokensConstraintScryptV3(),
-					new ValidatorConstraintScryptV2()
+					new ValidatorConstraintScryptV2(2)
 				),
 				ActionConstructors.newBuilder()
 					.put(SystemNextView.class, new NextViewConstructorV3())

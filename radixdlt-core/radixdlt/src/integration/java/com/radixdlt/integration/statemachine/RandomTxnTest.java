@@ -64,7 +64,7 @@ public class RandomTxnTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100)),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
 			new ForksModule(),
 			RadixEngineConfig.asModule(1, 10, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),

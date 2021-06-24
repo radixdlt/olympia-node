@@ -100,7 +100,7 @@ public class TransactionParserTest {
 		final var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new RoundUpdateConstraintScrypt(10));
 		cmAtomOS.load(new EpochUpdateConstraintScrypt(10));
-		cmAtomOS.load(new ValidatorConstraintScryptV2());
+		cmAtomOS.load(new ValidatorConstraintScryptV2(2));
 		cmAtomOS.load(new TokensConstraintScryptV3());
 		cmAtomOS.load(new StakingConstraintScryptV4());
 		cmAtomOS.load(new FeeConstraintScrypt());

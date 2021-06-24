@@ -21,10 +21,16 @@ package com.radixdlt.statecomputer.forks;
 public final class RERulesConfig {
 	private final long maxRounds;
 	private final boolean fees;
+	private final long rakeIncreaseDebouncerEpochLength;
 
-	public RERulesConfig(boolean fees, long maxRounds) {
+	public RERulesConfig(boolean fees, long maxRounds, long rakeIncreaseDebouncerEpochLength) {
 		this.fees = fees;
 		this.maxRounds = maxRounds;
+		this.rakeIncreaseDebouncerEpochLength = rakeIncreaseDebouncerEpochLength;
+	}
+
+	public long getRakeIncreaseDebouncerEpochLength() {
+		return rakeIncreaseDebouncerEpochLength;
 	}
 
 	public boolean includeFees() {
@@ -36,6 +42,6 @@ public final class RERulesConfig {
 	}
 
 	public RERulesConfig overrideMaxRounds(long maxRounds) {
-		return new RERulesConfig(this.fees, maxRounds);
+		return new RERulesConfig(this.fees, maxRounds, this.rakeIncreaseDebouncerEpochLength);
 	}
 }

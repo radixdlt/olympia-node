@@ -47,7 +47,7 @@ public class SanityTest {
 		.addRadixEngineConfigModules(
 			RadixEngineConfig.asModule(2, 50, 5),
 			new ForksModule(),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100))
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2))
 		)
 		.ledgerAndRadixEngineWithEpochHighView()
 		.addTestModules(

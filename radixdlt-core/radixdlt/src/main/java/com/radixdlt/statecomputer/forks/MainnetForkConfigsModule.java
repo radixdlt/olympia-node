@@ -25,12 +25,15 @@ import com.google.inject.multibindings.ProvidesIntoSet;
  * The forks for betanet and the epochs at which they will occur.
  */
 public final class MainnetForkConfigsModule extends AbstractModule {
+	private static final long TWO_WEEKS_WORTH_OF_ROUNDS = 1_500_000;
+	private static final long TWO_WEEKS_WORTH_OF_EPOCHS = 150;
+
 	@ProvidesIntoSet
 	ForkConfig mainnet() {
 		return new ForkConfig(
 			0L,
 			"mainnet",
-			new RERulesConfig(true, 100000L)
+			new RERulesConfig(true, TWO_WEEKS_WORTH_OF_ROUNDS, TWO_WEEKS_WORTH_OF_EPOCHS)
 		);
 	}
 }

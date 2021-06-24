@@ -48,7 +48,7 @@ public class RandomValidatorsTest {
 		)
 		.addRadixEngineConfigModules(
 			RadixEngineConfig.asModule(2, 50, 5),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100)),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
 			new ForksModule()
 		)
 		.ledgerAndRadixEngineWithEpochHighView()

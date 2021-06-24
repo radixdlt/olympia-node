@@ -129,10 +129,10 @@ public class StakingUnstakingValidatorsTest {
 	@Parameterized.Parameters
 	public static Collection<Object[]> forksModule() {
 		return List.of(new Object[][] {
-			{new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100)), false, 100},
-			{new ForkOverwritesWithShorterEpochsModule(new RERulesConfig(false, 10)), false, 10},
-			{new RadixEngineForksLatestOnlyModule(new RERulesConfig(true, 100)), true, 100},
-			{new ForkOverwritesWithShorterEpochsModule(new RERulesConfig(true, 10)), true, 10},
+			{new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)), false, 100},
+			{new ForkOverwritesWithShorterEpochsModule(new RERulesConfig(false, 10, 2)), false, 10},
+			{new RadixEngineForksLatestOnlyModule(new RERulesConfig(true, 100, 2)), true, 100},
+			{new ForkOverwritesWithShorterEpochsModule(new RERulesConfig(true, 10, 2)), true, 10},
 		});
 	}
 

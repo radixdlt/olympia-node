@@ -63,7 +63,7 @@ public class SanityTest {
 			)
 			.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
 			.addRadixEngineConfigModules(
-				new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10)),
+				new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10, 2)),
 				new ForksModule()
 			)
 			.addNodeModule(MempoolConfig.asModule(1000, 10))

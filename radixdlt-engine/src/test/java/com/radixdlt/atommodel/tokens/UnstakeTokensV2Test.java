@@ -83,7 +83,7 @@ public class UnstakeTokensV2Test {
 					new EpochUpdateConstraintScrypt(10),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(),
-					new ValidatorConstraintScryptV2()
+					new ValidatorConstraintScryptV2(2)
 				),
 				new StakeTokensConstructorV3(),
 				new UnstakeOwnershipConstructor()
@@ -96,7 +96,7 @@ public class UnstakeTokensV2Test {
 					new EpochUpdateConstraintScrypt(10),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(),
-					new ValidatorConstraintScryptV2()
+					new ValidatorConstraintScryptV2(2)
 				),
 				new StakeTokensConstructorV3(),
 				new UnstakeOwnershipConstructor()
@@ -109,7 +109,7 @@ public class UnstakeTokensV2Test {
 					new EpochUpdateConstraintScrypt(10),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(),
-					new ValidatorConstraintScryptV2()
+					new ValidatorConstraintScryptV2(2)
 				),
 				new StakeTokensConstructorV3(),
 				new UnstakeOwnershipConstructor()
@@ -122,7 +122,7 @@ public class UnstakeTokensV2Test {
 					new EpochUpdateConstraintScrypt(10),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(),
-					new ValidatorConstraintScryptV2()
+					new ValidatorConstraintScryptV2(2)
 				),
 				new StakeTokensConstructorV3(),
 				new UnstakeOwnershipConstructor()

@@ -51,8 +51,12 @@ import static com.radixdlt.atommodel.validators.state.PreparedRakeUpdate.RAKE_MA
 import static com.radixdlt.atommodel.validators.state.PreparedRakeUpdate.RAKE_MIN;
 
 public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
-	public static final long RAKE_INCREASE_DEBOUNCE_EPOCH_LENGTH = 2;
 	public static final int MAX_RAKE_INCREASE = 10 * PreparedRakeUpdate.RAKE_PERCENTAGE_GRANULARITY; // 10%
+	private final long rakeIncreaseDebounceEpochLength;
+
+	public ValidatorConstraintScryptV2(long rakeIncreaseDebounceEpochLength) {
+		this.rakeIncreaseDebounceEpochLength = rakeIncreaseDebounceEpochLength;
+	}
 
 	private static class UpdatingValidatorInfo implements ReducerState {
 		private final ValidatorData prevState;
@@ -93,7 +97,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 		}
 	}
 
-	private static class UpdatingRake implements ReducerState {
+	private class UpdatingRake implements ReducerState {
 		private final ValidatorRakeCopy rakeCopy;
 
 		private UpdatingRake(ValidatorRakeCopy rakeCopy) {
@@ -112,8 +116,8 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 
 			var system = (HasEpochData) r.loadAddr(REAddr.ofSystem()).orElseThrow();
 			if (rakeIncrease > 0) {
-				var expectedEpoch = system.getEpoch() + RAKE_INCREASE_DEBOUNCE_EPOCH_LENGTH;
-				if (update.getEpoch() != expectedEpoch) {
+				var expectedEpoch = system.getEpoch() + rakeIncreaseDebounceEpochLength;
+				if (update.getEpoch() < expectedEpoch) {
 					throw new ProcedureException("Increasing rake requires epoch delay to " + expectedEpoch + " but was " + update.getEpoch());
 				}
 			} else {

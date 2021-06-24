@@ -68,7 +68,7 @@ public class MempoolFillerTest {
 
 	private Injector getInjector() {
 		return Guice.createInjector(
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100)),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
 			MempoolConfig.asModule(10, 10),
 			new ForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),

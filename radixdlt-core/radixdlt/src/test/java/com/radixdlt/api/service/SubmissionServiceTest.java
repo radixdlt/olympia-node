@@ -137,7 +137,7 @@ public class SubmissionServiceTest {
 
 			@Override
 			public void configure() {
-				install(new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10)));
+				install(new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10, 2)));
 				install(new ForksModule());
 				install(RadixEngineConfig.asModule(1, 100, 50));
 				install(MempoolConfig.asModule(10, 10));

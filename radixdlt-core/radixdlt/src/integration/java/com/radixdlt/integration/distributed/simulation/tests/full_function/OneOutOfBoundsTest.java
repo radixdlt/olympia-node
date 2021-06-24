@@ -63,7 +63,7 @@ public class OneOutOfBoundsTest {
 			)
 			.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
 			.addRadixEngineConfigModules(
-				new RadixEngineForksLatestOnlyModule(new RERulesConfig(fees, 20L)),
+				new RadixEngineForksLatestOnlyModule(new RERulesConfig(fees, 20L, 2)),
 				new ForksModule()
 			)
 			.addNodeModule(MempoolConfig.asModule(1000, 10))

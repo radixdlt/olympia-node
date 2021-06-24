@@ -50,7 +50,7 @@ public class RegisterValidatorTest {
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
 		return List.<Object[]>of(
-			new Object[] {new ValidatorConstraintScryptV2()}
+			new Object[] {new ValidatorConstraintScryptV2(2)}
 		);
 	};
 

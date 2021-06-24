@@ -144,7 +144,7 @@ public class RecoveryLivenessTest {
 		Guice.createInjector(
 			new MockedGenesisModule(),
 			new CryptoModule(),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, epochCeilingView)),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, epochCeilingView, 2)),
 			new ForksModule(),
 			new RadixEngineModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
@@ -188,7 +188,7 @@ public class RecoveryLivenessTest {
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, epochCeilingView)),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, epochCeilingView, 2)),
 			new ForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new PersistedNodeForTestingModule(),

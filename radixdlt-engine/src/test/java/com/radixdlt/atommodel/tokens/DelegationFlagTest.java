@@ -68,7 +68,7 @@ public class DelegationFlagTest {
 		var stakeAmounts = List.of(UInt256.TEN);
 		var scrypts = List.of(
 			Pair.of(
-				List.of(new TokensConstraintScryptV3(), new StakingConstraintScryptV4(), new ValidatorConstraintScryptV2()),
+				List.of(new TokensConstraintScryptV3(), new StakingConstraintScryptV4(), new ValidatorConstraintScryptV2(2)),
 				new StakeTokensConstructorV3()
 			)
 		);

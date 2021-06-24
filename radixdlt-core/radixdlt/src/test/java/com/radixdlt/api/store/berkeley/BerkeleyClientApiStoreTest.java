@@ -114,7 +114,7 @@ public class BerkeleyClientApiStoreTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 0),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10)),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10, 2)),
 			new ForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),

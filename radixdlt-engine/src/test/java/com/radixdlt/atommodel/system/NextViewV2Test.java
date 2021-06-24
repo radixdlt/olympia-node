@@ -95,7 +95,7 @@ public class NextViewV2Test {
 		scrypts.forEach(cmAtomOS::load);
 		cmAtomOS.load(new StakingConstraintScryptV4());
 		cmAtomOS.load(new TokensConstraintScryptV3());
-		cmAtomOS.load(new ValidatorConstraintScryptV2());
+		cmAtomOS.load(new ValidatorConstraintScryptV2(2));
 		var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()

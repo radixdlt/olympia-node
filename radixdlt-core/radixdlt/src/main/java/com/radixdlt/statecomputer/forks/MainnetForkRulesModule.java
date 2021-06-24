@@ -90,9 +90,10 @@ public final class MainnetForkRulesModule extends AbstractModule {
 		return config -> {
 			var maxRounds = config.getMaxRounds();
 			var fees = config.includeFees();
+			var rakeIncreaseDebouncerEpochLength = config.getRakeIncreaseDebouncerEpochLength();
 
 			final CMAtomOS v4 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
-			v4.load(new ValidatorConstraintScryptV2()); // load before TokensConstraintScrypt due to dependency
+			v4.load(new ValidatorConstraintScryptV2(rakeIncreaseDebouncerEpochLength)); // load before TokensConstraintScrypt due to dependency
 			v4.load(new TokensConstraintScryptV3());
 			v4.load(new FeeConstraintScrypt());
 			v4.load(new StakingConstraintScryptV4());
@@ -124,7 +125,7 @@ public final class MainnetForkRulesModule extends AbstractModule {
 				.put(UnregisterValidator.class, new UnregisterValidatorConstructor())
 				.put(UpdateValidator.class, new UpdateValidatorConstructor())
 				.put(PayFee.class, new PayFeeConstructorV2())
-				.put(UpdateRake.class, new UpdateRakeConstructor())
+				.put(UpdateRake.class, new UpdateRakeConstructor(rakeIncreaseDebouncerEpochLength))
 				.put(UpdateValidatorOwnerAddress.class, new UpdateValidatorOwnerConstructor())
 				.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())
 				.build();
