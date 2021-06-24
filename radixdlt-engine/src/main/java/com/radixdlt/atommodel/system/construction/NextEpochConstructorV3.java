@@ -43,6 +43,7 @@ import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -85,9 +86,7 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 		BiFunction<ValidatorStakeData, T, ValidatorStakeData> updater,
 		Function<T, U> copy
 	) throws TxBuilderException {
-		var preparing = new TreeMap<ECPublicKey, T>(
-			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
-		);
+		var preparing = new TreeMap<ECPublicKey, T>(KeyComparator.instance());
 		txBuilder.shutdownAll(preparedClass, i -> {
 			i.forEachRemaining(update -> preparing.put(update.getValidatorKey(), update));
 			return preparing;
@@ -131,22 +130,16 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 			}
 		}
 
-		var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorStakeData>(
-			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
-		);
+		var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorStakeData>(KeyComparator.instance());
 		var proposals = txBuilder.shutdownAll(ValidatorBFTData.class, i -> {
-			final TreeMap<ECPublicKey, Long> proposalsCompleted = new TreeMap<>(
-				(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
-			);
+			final TreeMap<ECPublicKey, Long> proposalsCompleted = new TreeMap<>(KeyComparator.instance());
 			i.forEachRemaining(e -> {
 				proposalsCompleted.put(e.validatorKey(), e.proposalsCompleted());
 				logger.info("Validator {} completed {} missed {}", e.validatorKey(), e.proposalsCompleted(), e.proposalsMissed());
 			});
 			return proposalsCompleted;
 		});
-		var preparingStake = new TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>>(
-			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
-		);
+		var preparingStake = new TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>>(KeyComparator.instance());
 		for (var e : proposals.entrySet()) {
 			var k = e.getKey();
 			var numProposals = e.getValue();
@@ -174,9 +167,7 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 		}
 
 		var allPreparedUnstake = txBuilder.shutdownAll(PreparedUnstakeOwnership.class, i -> {
-			var map = new TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>>(
-				(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
-			);
+			var map = new TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>>(KeyComparator.instance());
 			i.forEachRemaining(preparedStake ->
 				map
 					.computeIfAbsent(
@@ -233,9 +224,7 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 			validatorsToUpdate.put(k, curValidator);
 		}
 
-		var preparingRakeUpdates = new TreeMap<ECPublicKey, PreparedRakeUpdate>(
-			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
-		);
+		var preparingRakeUpdates = new TreeMap<ECPublicKey, PreparedRakeUpdate>(KeyComparator.instance());
 		var buf = ByteBuffer.allocate(1 + Long.BYTES);
 		buf.put(SubstateTypeId.PREPARED_RAKE_UPDATE.id());
 		buf.putLong(prevEpoch.getEpoch() + 1);

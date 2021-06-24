@@ -52,6 +52,7 @@ import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Arrays;
@@ -122,15 +123,9 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	}
 
 	private static final class RewardingValidators implements ReducerState {
-		private final TreeMap<ECPublicKey, ValidatorStakeData> curStake = new TreeMap<>(
-			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
-		);
-		private final TreeMap<ECPublicKey, Long> proposalsCompleted = new TreeMap<>(
-			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
-		);
-		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake = new TreeMap<>(
-			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
-		);
+		private final TreeMap<ECPublicKey, ValidatorStakeData> curStake = new TreeMap<>(KeyComparator.instance());
+		private final TreeMap<ECPublicKey, Long> proposalsCompleted = new TreeMap<>(KeyComparator.instance());
+		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake = new TreeMap<>(KeyComparator.instance());
 		private final UpdatingEpoch updatingEpoch;
 
 		RewardingValidators(UpdatingEpoch updatingEpoch) {
@@ -264,9 +259,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 	private static final class PreparingUnstake implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
-		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingUnstake = new TreeMap<>(
-			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
-		);
+		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingUnstake = new TreeMap<>(KeyComparator.instance());
 		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake;
 		private final TreeMap<ECPublicKey, ValidatorStakeData> curStake;
 
@@ -448,8 +441,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	private static final class PreparingRakeUpdate implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, ValidatorStakeData> validatorsToUpdate;
-		private final TreeMap<ECPublicKey, PreparedRakeUpdate> preparingRakeUpdates =
-			new TreeMap<>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
+		private final TreeMap<ECPublicKey, PreparedRakeUpdate> preparingRakeUpdates = new TreeMap<>(KeyComparator.instance());
 
 		PreparingRakeUpdate(
 			UpdatingEpoch updatingEpoch,
@@ -513,8 +505,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	private static final class PreparingOwnerUpdate implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, ValidatorStakeData> validatorsToUpdate;
-		private final TreeMap<ECPublicKey, PreparedOwnerUpdate> preparingValidatorUpdates =
-			new TreeMap<>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
+		private final TreeMap<ECPublicKey, PreparedOwnerUpdate> preparingValidatorUpdates = new TreeMap<>(KeyComparator.instance());
 
 		PreparingOwnerUpdate(
 			UpdatingEpoch updatingEpoch,
@@ -581,8 +572,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	private static final class PreparingRegisteredUpdate implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, ValidatorStakeData> validatorsToUpdate;
-		private final TreeMap<ECPublicKey, PreparedRegisteredUpdate> preparingRegisteredUpdates =
-			new TreeMap<>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
+		private final TreeMap<ECPublicKey, PreparedRegisteredUpdate> preparingRegisteredUpdates = new TreeMap<>(KeyComparator.instance());
 
 		PreparingRegisteredUpdate(
 			UpdatingEpoch updatingEpoch,
