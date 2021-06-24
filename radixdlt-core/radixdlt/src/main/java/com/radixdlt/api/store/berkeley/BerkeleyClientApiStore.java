@@ -419,6 +419,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				addrFromKey(key)
 					.filter(addr::equals, Failure.failure(0, "Ignored"))
 					.flatMap(__ -> restore(serialization, data.getData(), TxHistoryEntry.class))
+					.onFailure(f -> log.error(f))
 					.onSuccess(list::add);
 
 				status = readTxHistory(() -> cursor.getPrev(key, data, null), data);
@@ -730,7 +731,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				currentRound.set(s.getView());
 			} else if (substate instanceof RoundData) {
 				var d = (RoundData) substate;
-				currentTimestamp.set(d.asInstant());
+				if (d.getTimestamp() > 0) {
+					currentTimestamp.set(d.asInstant());
+				}
 				currentRound.set(d.getView());
 			} else if (substate instanceof EpochData) {
 				var d = (EpochData) substate;
