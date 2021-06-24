@@ -42,15 +42,6 @@ public class RadixSystemSerializeTest extends SerializeMessageObject<RadixSystem
 	}
 
 	@Test
-	public void sensibleToString() {
-		ECKeyPair key = ECKeyPair.generateNew();
-		RadixSystem system = new RadixSystem(
-			key.getPublicKey(), Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION);
-
-		assertEquals(key.getPublicKey().euid().toString(), system.toString());
-	}
-
-	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(RadixSystem.class)
 			.suppress(Warning.NONFINAL_FIELDS)

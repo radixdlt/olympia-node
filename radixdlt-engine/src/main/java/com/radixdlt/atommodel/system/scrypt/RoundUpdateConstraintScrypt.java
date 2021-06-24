@@ -34,8 +34,8 @@ import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.utils.KeyComparator;
 
-import java.util.Arrays;
 import java.util.TreeMap;
 
 public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
@@ -48,9 +48,7 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 	private static class StartValidatorBFTUpdate implements ReducerState {
 		private final long maxRounds;
 		private final long view;
-		private TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate = new TreeMap<>(
-			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
-		);
+		private TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate = new TreeMap<>(KeyComparator.instance());
 
 		StartValidatorBFTUpdate(long maxRounds, long view) {
 			this.maxRounds = maxRounds;

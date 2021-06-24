@@ -26,8 +26,8 @@ import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.ValidatorBFTData;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.utils.KeyComparator;
 
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.TreeMap;
 
@@ -45,9 +45,7 @@ public class NextViewConstructorV3 implements ActionConstructor<SystemNextView> 
 			throw new TxBuilderException("Next view: " + action + " isn't higher than current view: " + prevRound);
 		}
 
-		var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorBFTData>(
-			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
-		);
+		var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorBFTData>(KeyComparator.instance());
 		for (long view = prevRound.getView() + 1; view < action.view(); view++) {
 			var missingLeader = action.leaderMapping().apply(view);
 			if (!validatorsToUpdate.containsKey(missingLeader)) {
