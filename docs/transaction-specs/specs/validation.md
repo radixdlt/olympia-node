@@ -200,6 +200,8 @@ Transaction fee is paid by spending tokens and making a system call. Any subsequ
 
 In addition, the transaction fee `SYSCALL` can occur **once only**.
 
+Effectively, for non-`DOWN` instructions, fee payment (`SYSCALL`) has to be the first instruction after `HEADER` flags.
+
 Example transaction structure:
 ```
 HEADER(0, 1)
