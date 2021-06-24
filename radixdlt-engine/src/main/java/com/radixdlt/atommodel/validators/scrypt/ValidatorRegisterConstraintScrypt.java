@@ -35,9 +35,6 @@ import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.serialization.DeserializeException;
-
-import java.util.Set;
 
 public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 	private static class UpdatingRegistered implements ReducerState {
@@ -58,17 +55,13 @@ public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 	public void main(Loader os) {
 		os.substate(new SubstateDefinition<>(
 			ValidatorRegisteredCopy.class,
-			Set.of(SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id()),
-			(b, buf) -> {
+			SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id(),
+			buf -> {
 				var key = REFieldSerialization.deserializeKey(buf);
-				var flag = buf.get();
-				if (!(flag == 0 || flag == 1)) {
-					throw new DeserializeException("Invalid flag");
-				}
-				return new ValidatorRegisteredCopy(key, flag == 1);
+				var flag = REFieldSerialization.deserializeBoolean(buf);
+				return new ValidatorRegisteredCopy(key, flag);
 			},
 			(s, buf) -> {
-				buf.put(SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id());
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				buf.put((byte) (s.isRegistered() ? 1 : 0));
 			},
@@ -77,17 +70,13 @@ public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 
 		os.substate(new SubstateDefinition<>(
 			PreparedRegisteredUpdate.class,
-			Set.of(SubstateTypeId.PREPARED_REGISTERED_FLAG_UPDATE.id()),
-			(b, buf) -> {
+			SubstateTypeId.PREPARED_REGISTERED_FLAG_UPDATE.id(),
+			buf -> {
 				var key = REFieldSerialization.deserializeKey(buf);
-				var flag = buf.get();
-				if (!(flag == 0 || flag == 1)) {
-					throw new DeserializeException("Invalid flag");
-				}
-				return new PreparedRegisteredUpdate(key, flag == 1);
+				var flag = REFieldSerialization.deserializeBoolean(buf);
+				return new PreparedRegisteredUpdate(key, flag);
 			},
 			(s, buf) -> {
-				buf.put(SubstateTypeId.PREPARED_REGISTERED_FLAG_UPDATE.id());
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				buf.put((byte) (s.isRegistered() ? 1 : 0));
 			},

@@ -36,7 +36,6 @@ import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Arrays;
-import java.util.Set;
 import java.util.TreeMap;
 
 public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
@@ -77,14 +76,13 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				RoundData.class,
-				Set.of(SubstateTypeId.ROUND_DATA.id()),
-				(b, buf) -> {
+				SubstateTypeId.ROUND_DATA.id(),
+				buf -> {
 					var view = REFieldSerialization.deserializeNonNegativeLong(buf);
 					var timestamp = REFieldSerialization.deserializeNonNegativeLong(buf);
 					return new RoundData(view, timestamp);
 				},
 				(s, buf) -> {
-					buf.put(SubstateTypeId.ROUND_DATA.id());
 					buf.putLong(s.getView());
 					buf.putLong(s.getTimestamp());
 				},
@@ -94,15 +92,14 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				ValidatorBFTData.class,
-				Set.of(SubstateTypeId.VALIDATOR_BFT_DATA.id()),
-				(b, buf) -> {
+				SubstateTypeId.VALIDATOR_BFT_DATA.id(),
+				buf -> {
 					var key = REFieldSerialization.deserializeKey(buf);
 					var proposalsCompleted = REFieldSerialization.deserializeNonNegativeLong(buf);
 					var proposalsMissed = REFieldSerialization.deserializeNonNegativeLong(buf);
 					return new ValidatorBFTData(key, proposalsCompleted, proposalsMissed);
 				},
 				(s, buf) -> {
-					buf.put(SubstateTypeId.VALIDATOR_BFT_DATA.id());
 					REFieldSerialization.serializeKey(buf, s.validatorKey());
 					buf.putLong(s.proposalsCompleted());
 					buf.putLong(s.proposalsMissed());

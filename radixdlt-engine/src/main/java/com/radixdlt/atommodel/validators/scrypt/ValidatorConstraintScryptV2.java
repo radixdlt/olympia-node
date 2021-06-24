@@ -45,7 +45,6 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 
 import java.util.Objects;
-import java.util.Set;
 
 import static com.radixdlt.atommodel.validators.state.PreparedRakeUpdate.RAKE_MAX;
 import static com.radixdlt.atommodel.validators.state.PreparedRakeUpdate.RAKE_MIN;
@@ -137,15 +136,14 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				ValidatorMetaData.class,
-				Set.of(SubstateTypeId.VALIDATOR_META_DATA.id()),
-				(b, buf) -> {
+				SubstateTypeId.VALIDATOR_META_DATA.id(),
+				buf -> {
 					var key = REFieldSerialization.deserializeKey(buf);
 					var name = REFieldSerialization.deserializeString(buf);
 					var url = REFieldSerialization.deserializeUrl(buf);
 					return new ValidatorMetaData(key, name, url);
 				},
 				(s, buf) -> {
-					buf.put(SubstateTypeId.VALIDATOR_META_DATA.id());
 					REFieldSerialization.serializeKey(buf, s.getKey());
 					REFieldSerialization.serializeString(buf, s.getName());
 					REFieldSerialization.serializeString(buf, s.getUrl());
@@ -193,14 +191,13 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 	public void registerRakeUpdates(Loader os) {
 		os.substate(new SubstateDefinition<>(
 			ValidatorRakeCopy.class,
-			Set.of(SubstateTypeId.VALIDATOR_RAKE_COPY.id()),
-			(b, buf) -> {
+			SubstateTypeId.VALIDATOR_RAKE_COPY.id(),
+			buf -> {
 				var key = REFieldSerialization.deserializeKey(buf);
 				var curRakePercentage = REFieldSerialization.deserializeInt(buf);
 				return new ValidatorRakeCopy(key, curRakePercentage);
 			},
 			(s, buf) -> {
-				buf.put(SubstateTypeId.VALIDATOR_RAKE_COPY.id());
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				buf.putInt(s.getCurRakePercentage());
 			},
@@ -209,8 +206,8 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 
 		os.substate(new SubstateDefinition<>(
 			PreparedRakeUpdate.class,
-			Set.of(SubstateTypeId.PREPARED_RAKE_UPDATE.id()),
-			(b, buf) -> {
+			SubstateTypeId.PREPARED_RAKE_UPDATE.id(),
+			buf -> {
 				var epoch = REFieldSerialization.deserializeNonNegativeLong(buf);
 				var validatorKey = REFieldSerialization.deserializeKey(buf);
 				var curRakePercentage = REFieldSerialization.deserializeInt(buf);
@@ -225,7 +222,6 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				return new PreparedRakeUpdate(epoch, validatorKey, curRakePercentage, nextRakePercentage);
 			},
 			(s, buf) -> {
-				buf.put(SubstateTypeId.PREPARED_RAKE_UPDATE.id());
 				buf.putLong(s.getEpoch());
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				buf.putInt(s.getCurRakePercentage());
@@ -277,17 +273,13 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 
 		os.substate(new SubstateDefinition<>(
 			AllowDelegationFlag.class,
-			Set.of(SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG.id()),
-			(b, buf) -> {
+			SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG.id(),
+			buf -> {
 				var key = REFieldSerialization.deserializeKey(buf);
-				var flag = buf.get();
-				if (!(flag == 0 || flag == 1)) {
-					throw new DeserializeException("Invalid flag");
-				}
-				return new AllowDelegationFlag(key, flag == 1);
+				var flag = REFieldSerialization.deserializeBoolean(buf);
+				return new AllowDelegationFlag(key, flag);
 			},
 			(s, buf) -> {
-				buf.put(SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG.id());
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				buf.put((byte) (s.allowsDelegation() ? 1 : 0));
 			},
@@ -325,8 +317,8 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 	public void registerValidatorOwnerUpdates(Loader os) {
 		os.substate(new SubstateDefinition<>(
 			ValidatorOwnerCopy.class,
-			Set.of(SubstateTypeId.VALIDATOR_OWNER_COPY.id()),
-			(b, buf) -> {
+			SubstateTypeId.VALIDATOR_OWNER_COPY.id(),
+			buf -> {
 				var key = REFieldSerialization.deserializeKey(buf);
 				var owner = REFieldSerialization.deserializeREAddr(buf);
 				if (!owner.isAccount()) {
@@ -335,7 +327,6 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				return new ValidatorOwnerCopy(key, owner);
 			},
 			(s, buf) -> {
-				buf.put(SubstateTypeId.VALIDATOR_OWNER_COPY.id());
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				REFieldSerialization.serializeREAddr(buf, s.getOwner());
 			},
@@ -344,8 +335,8 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 
 		os.substate(new SubstateDefinition<>(
 			PreparedOwnerUpdate.class,
-			Set.of(SubstateTypeId.PREPARED_VALIDATOR_OWNER_UPDATE.id()),
-			(b, buf) -> {
+			SubstateTypeId.PREPARED_VALIDATOR_OWNER_UPDATE.id(),
+			buf -> {
 				var key = REFieldSerialization.deserializeKey(buf);
 				var ownerAddr = REFieldSerialization.deserializeREAddr(buf);
 				if (!ownerAddr.isAccount()) {
@@ -355,7 +346,6 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				return new PreparedOwnerUpdate(key, ownerAddr);
 			},
 			(s, buf) -> {
-				buf.put(SubstateTypeId.PREPARED_VALIDATOR_OWNER_UPDATE.id());
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				REFieldSerialization.serializeREAddr(buf, s.getOwnerAddress());
 			}

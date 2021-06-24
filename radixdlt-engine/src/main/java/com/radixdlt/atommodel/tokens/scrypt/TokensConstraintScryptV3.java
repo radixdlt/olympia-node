@@ -41,8 +41,6 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
-import java.util.Set;
-
 public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 	@Override
 	public void main(Loader os) {
@@ -55,8 +53,8 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				TokenResource.class,
-				Set.of(SubstateTypeId.TOKEN_DEF.id()),
-				(b, buf) -> {
+				SubstateTypeId.TOKEN_DEF.id(),
+				buf -> {
 					var rri = REFieldSerialization.deserializeREAddr(buf);
 					var type = buf.get();
 					final UInt256 supply;
@@ -80,7 +78,6 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 					return new TokenResource(rri, name, description, iconUrl, url, supply, minter);
 				},
 				(s, buf) -> {
-					buf.put(SubstateTypeId.TOKEN_DEF.id());
 					REFieldSerialization.serializeREAddr(buf, s.getAddr());
 					s.getSupply().ifPresentOrElse(
 						i -> {
@@ -108,8 +105,8 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				TokensInAccount.class,
-				Set.of(SubstateTypeId.TOKENS.id()),
-				(b, buf) -> {
+				SubstateTypeId.TOKENS.id(),
+				buf -> {
 					var rri = REFieldSerialization.deserializeREAddr(buf);
 					var holdingAddr = REFieldSerialization.deserializeREAddr(buf);
 					if (!holdingAddr.isAccount()) {
@@ -119,7 +116,6 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 					return new TokensInAccount(holdingAddr, amount, rri);
 				},
 				(s, buf) -> {
-					buf.put(SubstateTypeId.TOKENS.id());
 					REFieldSerialization.serializeREAddr(buf, s.getResourceAddr());
 					REFieldSerialization.serializeREAddr(buf, s.getHoldingAddr());
 					buf.put(s.getAmount().toByteArray());

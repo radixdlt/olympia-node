@@ -43,7 +43,6 @@ import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 
-import java.util.Set;
 import java.util.function.Predicate;
 
 public final class StakingConstraintScryptV4 implements ConstraintScrypt {
@@ -53,15 +52,14 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				PreparedStake.class,
-				Set.of(SubstateTypeId.PREPARED_STAKE.id()),
-				(b, buf) -> {
+				SubstateTypeId.PREPARED_STAKE.id(),
+				buf -> {
 					var owner = REFieldSerialization.deserializeAccountREAddr(buf);
 					var delegate = REFieldSerialization.deserializeKey(buf);
 					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					return new PreparedStake(amount, owner, delegate);
 				},
 				(s, buf) -> {
-					buf.put(SubstateTypeId.PREPARED_STAKE.id());
 					REFieldSerialization.serializeREAddr(buf, s.getOwner());
 					REFieldSerialization.serializeKey(buf, s.getDelegateKey());
 					buf.put(s.getAmount().toByteArray());
@@ -72,15 +70,14 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				PreparedUnstakeOwnership.class,
-				Set.of(SubstateTypeId.PREPARED_UNSTAKE.id()),
-				(b, buf) -> {
+				SubstateTypeId.PREPARED_UNSTAKE.id(),
+				buf -> {
 					var delegate = REFieldSerialization.deserializeKey(buf);
 					var owner = REFieldSerialization.deserializeAccountREAddr(buf);
 					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					return new PreparedUnstakeOwnership(delegate, owner, amount);
 				},
 				(s, buf) -> {
-					buf.put(SubstateTypeId.PREPARED_UNSTAKE.id());
 					REFieldSerialization.serializeKey(buf, s.getDelegateKey());
 					REFieldSerialization.serializeREAddr(buf, s.getOwner());
 					buf.put(s.getAmount().toByteArray());

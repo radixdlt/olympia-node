@@ -813,13 +813,12 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				EpochData.class,
-				Set.of(SubstateTypeId.EPOCH_DATA.id()),
-				(b, buf) -> {
+				SubstateTypeId.EPOCH_DATA.id(),
+				buf -> {
 					var epoch = REFieldSerialization.deserializeNonNegativeLong(buf);
 					return new EpochData(epoch);
 				},
 				(s, buf) -> {
-					buf.put(SubstateTypeId.EPOCH_DATA.id());
 					buf.putLong(s.getEpoch());
 				}
 			)
@@ -827,8 +826,8 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				ValidatorStakeData.class,
-				Set.of(SubstateTypeId.VALIDATOR_STAKE_DATA.id()),
-				(b, buf) -> {
+				SubstateTypeId.VALIDATOR_STAKE_DATA.id(),
+				buf -> {
 					var isRegistered = REFieldSerialization.deserializeBoolean(buf);
 					var amount = REFieldSerialization.deserializeUInt256(buf);
 					var delegate = REFieldSerialization.deserializeKey(buf);
@@ -838,7 +837,6 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					return ValidatorStakeData.create(delegate, amount, ownership, rakePercentage, ownerAddress, isRegistered);
 				},
 				(s, buf) -> {
-					buf.put(SubstateTypeId.VALIDATOR_STAKE_DATA.id());
 					REFieldSerialization.serializeBoolean(buf, s.isRegistered());
 					buf.put(s.getAmount().toByteArray());
 					REFieldSerialization.serializeKey(buf, s.getValidatorKey());
@@ -852,15 +850,14 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				StakeOwnership.class,
-				Set.of(SubstateTypeId.STAKE_OWNERSHIP.id()),
-				(b, buf) -> {
+				SubstateTypeId.STAKE_OWNERSHIP.id(),
+				buf -> {
 					var delegate = REFieldSerialization.deserializeKey(buf);
 					var owner = REFieldSerialization.deserializeREAddr(buf);
 					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					return new StakeOwnership(delegate, owner, amount);
 				},
 				(s, buf) -> {
-					buf.put(SubstateTypeId.STAKE_OWNERSHIP.id());
 					REFieldSerialization.serializeKey(buf, s.getDelegateKey());
 					REFieldSerialization.serializeREAddr(buf, s.getOwner());
 					buf.put(s.getAmount().toByteArray());
@@ -870,8 +867,8 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				ExittingStake.class,
-				Set.of(SubstateTypeId.EXITTING_STAKE.id()),
-				(b, buf) -> {
+				SubstateTypeId.EXITTING_STAKE.id(),
+				buf -> {
 					var epochUnlocked = REFieldSerialization.deserializeNonNegativeLong(buf);
 					var delegate = REFieldSerialization.deserializeKey(buf);
 					var owner = REFieldSerialization.deserializeREAddr(buf);
@@ -879,7 +876,6 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					return new ExittingStake(delegate, owner, epochUnlocked, amount);
 				},
 				(s, buf) -> {
-					buf.put(SubstateTypeId.EXITTING_STAKE.id());
 					buf.putLong(s.getEpochUnlocked());
 					REFieldSerialization.serializeKey(buf, s.getDelegateKey());
 					REFieldSerialization.serializeREAddr(buf, s.getOwner());
