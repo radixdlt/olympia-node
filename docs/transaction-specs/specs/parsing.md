@@ -143,16 +143,16 @@ Currently, we have the following types:
 
 #### `TOKEN_DEF` (`0x03`)
 
-| **Name**      | **Type**  | **Description**                                               |
-|---------------|-----------|---------------------------------------------------------------|
-| `resource`    | `address` | The resource address                                          |
-| `type`        | `u8`      | The resource type (allowed values: `0x00`, `0x01` and `0x02`) |
-| `supply`      | `u256`    | (If `type == 0x02`) The max token supply                      |
-| `minter`      | `address` | (If `type == 0x01`) The token minter address                  |
-| `name`        | `string`  | The token name                                                |
-| `description` | `string`  | The token description                                         |
-| `url`         | `string`  | An URL                                                        |
-| `icon_url`    | `string`  | An URL to an icon                                             |
+| **Name**      | **Type**     | **Description**                                               |
+|---------------|--------------|---------------------------------------------------------------|
+| `resource`    | `address`    | The resource address                                          |
+| `type`        | `u8`         | The resource type (allowed values: `0x00`, `0x01` and `0x02`) |
+| `supply`      | `u256`       | (If `type == 0x02`) The max token supply                      |
+| `minter`      | `public_key` | (If `type == 0x01`) The token minter public key               |
+| `name`        | `string`     | The token name                                                |
+| `description` | `string`     | The token description                                         |
+| `url`         | `string`     | An URL                                                        |
+| `icon_url`    | `string`     | An URL to an icon                                             |
 
 #### `TOKENS` (`0x04`)
 

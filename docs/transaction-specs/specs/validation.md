@@ -72,6 +72,8 @@ Instructions are organized into groups, by splitting with `END` instruction.
 
 Each instruction group must contain at least one state update instruction, which can be `UP`, `VDOWN`, `VDOWNARG`, `DOWN`, `LDOWN`, `DOWNALL` and `DOWNINDEX`.
 
+Each transaction must include at least one instruction group and incomplete instruction group is not allowed (not ended).
+
 ## Stateful Validation
 
 After a transaction passes the stateless validation, it's validated against the ledger state, which consists of:
