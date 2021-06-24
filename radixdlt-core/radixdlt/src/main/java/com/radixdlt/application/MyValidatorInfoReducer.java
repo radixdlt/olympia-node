@@ -19,7 +19,7 @@
 package com.radixdlt.application;
 
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.validators.state.ValidatorParticle;
+import com.radixdlt.atommodel.validators.state.ValidatorData;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
@@ -48,7 +48,7 @@ public final class MyValidatorInfoReducer implements StateReducer<MyValidatorInf
 
 	@Override
 	public Set<Class<? extends Particle>> particleClasses() {
-		return Set.of(ValidatorParticle.class);
+		return Set.of(ValidatorData.class);
 	}
 
 	@Override
@@ -59,7 +59,7 @@ public final class MyValidatorInfoReducer implements StateReducer<MyValidatorInf
 	@Override
 	public BiFunction<MyValidatorInfo, Particle, MyValidatorInfo> outputReducer() {
 		return (i, p) -> {
-			var r = (ValidatorParticle) p;
+			var r = (ValidatorData) p;
 			if (r.getKey().equals(self)) {
 				return new MyValidatorInfo(
 					r.getName(),

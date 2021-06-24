@@ -739,7 +739,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				ValidatorStakeData.class,
-				Set.of(SubstateTypeId.STAKE.id()),
+				Set.of(SubstateTypeId.VALIDATOR_STAKE_DATA.id()),
 				(b, buf) -> {
 					var delegate = REFieldSerialization.deserializeKey(buf);
 					var amount = REFieldSerialization.deserializeUInt256(buf);
@@ -749,7 +749,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					return ValidatorStakeData.createV2(delegate, amount, ownership, rakePercentage, ownerAddress);
 				},
 				(s, buf) -> {
-					buf.put(SubstateTypeId.STAKE.id());
+					buf.put(SubstateTypeId.VALIDATOR_STAKE_DATA.id());
 					REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 					buf.put(s.getAmount().toByteArray());
 					buf.put(s.getTotalOwnership().toByteArray());

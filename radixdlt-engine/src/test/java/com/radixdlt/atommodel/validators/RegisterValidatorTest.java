@@ -23,7 +23,7 @@ import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
-import com.radixdlt.atommodel.validators.state.ValidatorParticle;
+import com.radixdlt.atommodel.validators.state.ValidatorData;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.CMErrorCode;
@@ -115,8 +115,8 @@ public class RegisterValidatorTest {
 		// Arrange
 		var key = ECKeyPair.generateNew();
 		var builder = TxLowLevelBuilder.newBuilder(serialization)
-			.virtualDown(new ValidatorParticle(key.getPublicKey(), false))
-			.up(new ValidatorParticle(ECKeyPair.generateNew().getPublicKey(), true))
+			.virtualDown(new ValidatorData(key.getPublicKey(), false))
+			.up(new ValidatorData(ECKeyPair.generateNew().getPublicKey(), true))
 			.end();
 		var sig = key.sign(builder.hashToSign().asBytes());
 		var txn = builder.sig(sig).build();

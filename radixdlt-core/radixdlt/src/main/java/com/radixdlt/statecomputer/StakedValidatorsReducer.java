@@ -23,7 +23,7 @@ import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.validators.state.AllowDelegationFlag;
 import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
-import com.radixdlt.atommodel.validators.state.ValidatorParticle;
+import com.radixdlt.atommodel.validators.state.ValidatorData;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
 
@@ -59,7 +59,7 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 		// as there is a bit of a hack in that PreparedStake must be loaded
 		// after ValidatorStake to get to the correct state
 		return ImmutableSet.of(
-			ValidatorParticle.class,
+			ValidatorData.class,
 			ValidatorStakeData.class,
 			PreparedStake.class,
 			PreparedValidatorUpdate.class,
@@ -75,8 +75,8 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 	@Override
 	public BiFunction<StakedValidators, Particle, StakedValidators> outputReducer() {
 		return (prev, p) -> {
-			if (p instanceof ValidatorParticle) {
-				var v = (ValidatorParticle) p;
+			if (p instanceof ValidatorData) {
+				var v = (ValidatorData) p;
 				if (v.isRegisteredForNextEpoch()) {
 					return prev.add(v);
 				}
@@ -101,8 +101,8 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 	@Override
 	public BiFunction<StakedValidators, Particle, StakedValidators> inputReducer() {
 		return (prev, p) -> {
-			if (p instanceof ValidatorParticle) {
-				var v = (ValidatorParticle) p;
+			if (p instanceof ValidatorData) {
+				var v = (ValidatorData) p;
 				if (v.isRegisteredForNextEpoch()) {
 					return prev.remove(v);
 				}

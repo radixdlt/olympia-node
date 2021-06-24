@@ -28,6 +28,7 @@ import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.atommodel.system.construction.NextEpochConstructorV3;
 import com.radixdlt.atommodel.system.construction.PayFeeConstructorV2;
@@ -43,6 +44,7 @@ import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV2;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV4;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
+import com.radixdlt.atommodel.validators.construction.UpdateAllowDelegationFlagConstructor;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.engine.parser.REParser;
 import org.junit.Assert;
@@ -120,6 +122,7 @@ public class TransactionParserTest {
 			.put(UnstakeTokens.class, new UnstakeTokensConstructorV2())
 			.put(SystemNextEpoch.class, new NextEpochConstructorV3())
 			.put(CreateSystem.class, new CreateSystemConstructorV2())
+			.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())
 			.build();
 
 		engine = new RadixEngine<>(parser, substateSerialization, actionConstructors, cm, store);
@@ -132,6 +135,7 @@ public class TransactionParserTest {
 		var validatorBuilder = this.engine.construct(
 			TxnConstructionRequest.create()
 				.action(new RegisterValidator(this.validatorKeyPair.getPublicKey()))
+				.action(new UpdateAllowDelegationFlag(this.validatorKeyPair.getPublicKey(), true))
 				.action(new CreateSystem())
 		);
 		var txn1 = validatorBuilder.buildWithoutSignature();

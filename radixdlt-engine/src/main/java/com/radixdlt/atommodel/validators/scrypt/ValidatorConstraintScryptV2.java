@@ -26,7 +26,7 @@ import com.radixdlt.atommodel.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
 import com.radixdlt.atommodel.validators.state.RakeCopy;
 import com.radixdlt.atommodel.validators.state.PreparedRakeUpdate;
-import com.radixdlt.atommodel.validators.state.ValidatorParticle;
+import com.radixdlt.atommodel.validators.state.ValidatorData;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
@@ -55,9 +55,9 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 	public static final int MAX_RAKE_INCREASE = 10 * PreparedRakeUpdate.RAKE_PERCENTAGE_GRANULARITY; // 10%
 
 	private static class UpdatingValidatorInfo implements ReducerState {
-		private final ValidatorParticle prevState;
+		private final ValidatorData prevState;
 
-		private UpdatingValidatorInfo(ValidatorParticle prevState) {
+		private UpdatingValidatorInfo(ValidatorData prevState) {
 			this.prevState = prevState;
 		}
 	}
@@ -129,18 +129,17 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 	public void main(Loader os) {
 		os.substate(
 			new SubstateDefinition<>(
-				ValidatorParticle.class,
-				Set.of(SubstateTypeId.VALIDATOR.id()),
+				ValidatorData.class,
+				Set.of(SubstateTypeId.VALIDATOR_DATA.id()),
 				(b, buf) -> {
 					var key = REFieldSerialization.deserializeKey(buf);
 					var isRegistered = buf.get() != 0; // isRegistered
 					var name = REFieldSerialization.deserializeString(buf);
 					var url = REFieldSerialization.deserializeUrl(buf);
-					return new ValidatorParticle(key, isRegistered, name, url);
-
+					return new ValidatorData(key, isRegistered, name, url);
 				},
 				(s, buf) -> {
-					buf.put(SubstateTypeId.VALIDATOR.id());
+					buf.put(SubstateTypeId.VALIDATOR_DATA.id());
 					REFieldSerialization.serializeKey(buf, s.getKey());
 					buf.put((byte) (s.isRegisteredForNextEpoch() ? 1 : 0)); // isRegistered
 					REFieldSerialization.serializeString(buf, s.getName());
@@ -151,7 +150,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 		);
 
 		os.procedure(new DownProcedure<>(
-			VoidReducerState.class, ValidatorParticle.class,
+			VoidReducerState.class, ValidatorData.class,
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {
@@ -169,7 +168,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 		));
 
 		os.procedure(new UpProcedure<>(
-			UpdatingValidatorInfo.class, ValidatorParticle.class,
+			UpdatingValidatorInfo.class, ValidatorData.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> {
 				if (!Objects.equals(s.prevState.getKey(), u.getKey())) {
@@ -189,14 +188,14 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 	public void registerRakeUpdates(Loader os) {
 		os.substate(new SubstateDefinition<>(
 			RakeCopy.class,
-			Set.of(SubstateTypeId.RAKE_COPY.id()),
+			Set.of(SubstateTypeId.VALIDATOR_RAKE_COPY.id()),
 			(b, buf) -> {
 				var key = REFieldSerialization.deserializeKey(buf);
 				var curRakePercentage = REFieldSerialization.deserializeInt(buf);
 				return new RakeCopy(key, curRakePercentage);
 			},
 			(s, buf) -> {
-				buf.put(SubstateTypeId.RAKE_COPY.id());
+				buf.put(SubstateTypeId.VALIDATOR_RAKE_COPY.id());
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				buf.putInt(s.getCurRakePercentage());
 			},
@@ -273,7 +272,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 
 		os.substate(new SubstateDefinition<>(
 			AllowDelegationFlag.class,
-			Set.of(SubstateTypeId.ALLOW_DELEGATION_FLAG.id()),
+			Set.of(SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG.id()),
 			(b, buf) -> {
 				var key = REFieldSerialization.deserializeKey(buf);
 				var flag = buf.get();
@@ -283,11 +282,11 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				return new AllowDelegationFlag(key, flag == 1);
 			},
 			(s, buf) -> {
-				buf.put(SubstateTypeId.ALLOW_DELEGATION_FLAG.id());
+				buf.put(SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG.id());
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				buf.put((byte) (s.allowsDelegation() ? 1 : 0));
 			},
-			s -> s.allowsDelegation() // TODO: for mainnet default to false
+			s -> !s.allowsDelegation()
 		));
 
 		os.procedure(new DownProcedure<>(
@@ -321,7 +320,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 	public void registerValidatorOwnerUpdates(Loader os) {
 		os.substate(new SubstateDefinition<>(
 			ValidatorOwnerCopy.class,
-			Set.of(SubstateTypeId.NULL_VALIDATOR_UPDATE.id()),
+			Set.of(SubstateTypeId.VALIDATOR_OWNER_COPY.id()),
 			(b, buf) -> {
 				var key = REFieldSerialization.deserializeKey(buf);
 				var owner = REFieldSerialization.deserializeREAddr(buf);
@@ -331,7 +330,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				return new ValidatorOwnerCopy(key, owner);
 			},
 			(s, buf) -> {
-				buf.put(SubstateTypeId.NULL_VALIDATOR_UPDATE.id());
+				buf.put(SubstateTypeId.VALIDATOR_OWNER_COPY.id());
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				REFieldSerialization.serializeREAddr(buf, s.getOwner());
 			},
@@ -340,7 +339,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 
 		os.substate(new SubstateDefinition<>(
 			PreparedValidatorUpdate.class,
-			Set.of(SubstateTypeId.PREPARED_VALIDATOR_UPDATE.id()),
+			Set.of(SubstateTypeId.PREPARED_VALIDATOR_OWNER_UPDATE.id()),
 			(b, buf) -> {
 				var key = REFieldSerialization.deserializeKey(buf);
 				var ownerAddr = REFieldSerialization.deserializeREAddr(buf);
@@ -351,7 +350,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				return new PreparedValidatorUpdate(key, ownerAddr);
 			},
 			(s, buf) -> {
-				buf.put(SubstateTypeId.PREPARED_VALIDATOR_UPDATE.id());
+				buf.put(SubstateTypeId.PREPARED_VALIDATOR_OWNER_UPDATE.id());
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				REFieldSerialization.serializeREAddr(buf, s.getOwnerAddress());
 			}

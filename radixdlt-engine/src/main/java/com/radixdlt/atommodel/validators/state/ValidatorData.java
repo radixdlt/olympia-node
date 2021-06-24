@@ -23,17 +23,17 @@ import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
 
-public final class ValidatorParticle implements Particle {
+public final class ValidatorData implements Particle {
 	private final ECPublicKey key;
 	private final boolean registeredForNextEpoch;
 	private final String name;
 	private final String url;
 
-	public ValidatorParticle(ECPublicKey key, boolean registeredForNextEpoch) {
+	public ValidatorData(ECPublicKey key, boolean registeredForNextEpoch) {
 		this(key, registeredForNextEpoch, "", "");
 	}
 
-	public ValidatorParticle(
+	public ValidatorData(
 		ECPublicKey key,
 		boolean registeredForNextEpoch,
 		String name,
@@ -71,10 +71,10 @@ public final class ValidatorParticle implements Particle {
 		if (this == obj) {
 			return true;
 		}
-		if (!(obj instanceof ValidatorParticle)) {
+		if (!(obj instanceof ValidatorData)) {
 			return false;
 		}
-		final var that = (ValidatorParticle) obj;
+		final var that = (ValidatorData) obj;
 		return Objects.equals(this.key, that.key)
 			&& this.registeredForNextEpoch == that.registeredForNextEpoch
 			&& Objects.equals(this.name, that.name)

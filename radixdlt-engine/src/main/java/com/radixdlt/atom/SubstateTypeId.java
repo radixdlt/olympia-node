@@ -19,23 +19,23 @@
 package com.radixdlt.atom;
 
 public enum SubstateTypeId {
-	UNCLAIMED_READDR((byte) 0),
-	TOKEN_DEF((byte) 2),
-	TOKENS((byte) 3),
-	PREPARED_STAKE((byte) 4),
-	VALIDATOR((byte) 5),
-	ROUND_DATA((byte) 9),
-	EPOCH_DATA((byte) 10),
-	STAKE_OWNERSHIP((byte) 11),
-	VALIDATOR_EPOCH_DATA((byte) 12),
-	PREPARED_UNSTAKE((byte) 13),
-	EXITTING_STAKE((byte) 14),
-	RAKE_COPY((byte) 15),
-	PREPARED_RAKE_UPDATE((byte) 16),
-	STAKE((byte) 17),
-	NULL_VALIDATOR_UPDATE((byte) 18),
-	PREPARED_VALIDATOR_UPDATE((byte) 19),
-	ALLOW_DELEGATION_FLAG((byte) 20);
+	UNCLAIMED_READDR((byte) 0x0),
+	ROUND_DATA((byte) 0x1),
+	EPOCH_DATA((byte) 0x2),
+	TOKEN_DEF((byte) 0x3),
+	TOKENS((byte) 0x4),
+	PREPARED_STAKE((byte) 0x5),
+	STAKE_OWNERSHIP((byte) 0x6),
+	PREPARED_UNSTAKE((byte) 0x7),
+	EXITTING_STAKE((byte) 0x8),
+	VALIDATOR_DATA((byte) 0x9),
+	VALIDATOR_STAKE_DATA((byte) 0xa),
+	VALIDATOR_BFT_DATA((byte) 0xb),
+	VALIDATOR_ALLOW_DELEGATION_FLAG((byte) 0xc),
+	VALIDATOR_RAKE_COPY((byte) 0xd),
+	PREPARED_RAKE_UPDATE((byte) 0xe),
+	VALIDATOR_OWNER_COPY((byte) 0xf),
+	PREPARED_VALIDATOR_OWNER_UPDATE((byte) 0x10);
 
 	private final byte id;
 

@@ -94,7 +94,7 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				ValidatorBFTData.class,
-				Set.of(SubstateTypeId.VALIDATOR_EPOCH_DATA.id()),
+				Set.of(SubstateTypeId.VALIDATOR_BFT_DATA.id()),
 				(b, buf) -> {
 					var key = REFieldSerialization.deserializeKey(buf);
 					var proposalsCompleted = REFieldSerialization.deserializeNonNegativeLong(buf);
@@ -102,7 +102,7 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 					return new ValidatorBFTData(key, proposalsCompleted, proposalsMissed);
 				},
 				(s, buf) -> {
-					buf.put(SubstateTypeId.VALIDATOR_EPOCH_DATA.id());
+					buf.put(SubstateTypeId.VALIDATOR_BFT_DATA.id());
 					REFieldSerialization.serializeKey(buf, s.validatorKey());
 					buf.putLong(s.proposalsCompleted());
 					buf.putLong(s.proposalsMissed());

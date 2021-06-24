@@ -30,7 +30,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atommodel.validators.state.ValidatorParticle;
+import com.radixdlt.atommodel.validators.state.ValidatorData;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -81,9 +81,9 @@ public class ValidatorTest {
 		createInjector().injectMembers(this);
 		var keyPair = ECKeyPair.generateNew();
 		var builder = TxLowLevelBuilder.newBuilder(substateSerialization)
-			.virtualDown(new ValidatorParticle(keyPair.getPublicKey(), false))
-			.up(new ValidatorParticle(keyPair.getPublicKey(), true))
-			.up(new ValidatorParticle(keyPair.getPublicKey(), true));
+			.virtualDown(new ValidatorData(keyPair.getPublicKey(), false))
+			.up(new ValidatorData(keyPair.getPublicKey(), true))
+			.up(new ValidatorData(keyPair.getPublicKey(), true));
 		var sig = keyPair.sign(builder.hashToSign());
 		var txn = builder.sig(sig).build();
 

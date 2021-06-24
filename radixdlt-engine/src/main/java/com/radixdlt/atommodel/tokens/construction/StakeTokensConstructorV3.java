@@ -45,7 +45,7 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 		var flag = builder.read(
 			AllowDelegationFlag.class,
 			p -> p.getValidatorKey().equals(action.to()),
-			Optional.of(new AllowDelegationFlag(action.to(), true)),
+			Optional.of(new AllowDelegationFlag(action.to(), false)),
 			"Could not find state"
 		);
 
