@@ -30,7 +30,6 @@ import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageFromPeer;
 import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.qualifier.Magic;
 
 import java.util.Objects;
 

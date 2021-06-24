@@ -41,7 +41,7 @@ public class MessageCentralBFTNetworkTest {
 	public void setUp() {
 		this.self = mock(BFTNode.class);
 		this.messageCentral = MessageCentralMockProvider.get();
-		this.network = new MessageCentralBFTNetwork(self, 0, messageCentral);
+		this.network = new MessageCentralBFTNetwork(self, messageCentral);
 	}
 
 	@Test
