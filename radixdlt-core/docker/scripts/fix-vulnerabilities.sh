@@ -20,12 +20,6 @@ apt remove -y cpp cpp-9
 #C routines CVE-2021-27218 CVE-2021-27219 CVE-2021-28153
 apt remove -y libglib2.0-0 libglib2.0-bin libglib2.0-data
 
-#CVE-2020-36221 - 36230
-apt remove -y libldap-common
-
-#Remove sqlite CVE-2020-9794
-apt remove -y libsqlite3-0
-
 #CVE-2013-7445 and others (neded to compile drivers)
 apt remove -y linux-libc-dev
 
