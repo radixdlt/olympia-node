@@ -390,9 +390,7 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void committing_epoch_change_with_different_validator_signed_should_fail() throws Exception {
 		// Arrange
-		var keyPair = ECKeyPair.generateNew();
-		var cmd0 = systemUpdateCommand(0, 2);
-		var cmd1 = registerCommand(keyPair);
+		var cmd1 = systemUpdateCommand(0, 2);
 		var ledgerProof = new LedgerProof(
 			HashUtils.random256(),
 			LedgerHeader.create(0, View.of(9), new AccumulatorState(3, HashUtils.zero256()), 0,
@@ -401,7 +399,7 @@ public class RadixEngineStateComputerTest {
 			new TimestampedECDSASignatures()
 		);
 		var commandsAndProof = VerifiedTxnsAndProof.create(
-			ImmutableList.of(cmd1, cmd0),
+			ImmutableList.of(cmd1),
 			ledgerProof
 		);
 

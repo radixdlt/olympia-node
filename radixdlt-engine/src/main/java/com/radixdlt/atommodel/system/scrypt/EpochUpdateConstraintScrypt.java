@@ -31,10 +31,12 @@ import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
+import com.radixdlt.atommodel.validators.state.PreparedRegisteredUpdate;
 import com.radixdlt.atommodel.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.atommodel.validators.state.PreparedOwnerUpdate;
 import com.radixdlt.atommodel.validators.state.ValidatorRakeCopy;
 import com.radixdlt.atommodel.validators.state.PreparedRakeUpdate;
+import com.radixdlt.atommodel.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
@@ -363,6 +365,11 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			}
 			return onDone.apply(stake);
 		}
+
+		@Override
+		public String toString() {
+			return String.format("%s{onDone: %s}", this.getClass().getSimpleName(), onDone);
+		}
 	}
 
 	private static final class PreparingStake implements ReducerState {
@@ -465,7 +472,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 		ReducerState next() {
 			if (preparingRakeUpdates.isEmpty()) {
-				return new PreparingValidatorUpdate(updatingEpoch, validatorsToUpdate);
+				return new PreparingOwnerUpdate(updatingEpoch, validatorsToUpdate);
 			}
 
 			var k = preparingRakeUpdates.firstKey();
@@ -484,11 +491,12 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			}
 		}
 	}
-	private static final class ResetValidatorUpdate implements ReducerState {
+
+	private static final class ResetOwnerUpdate implements ReducerState {
 		private final ECPublicKey validatorKey;
 		private final Supplier<ReducerState> next;
 
-		ResetValidatorUpdate(ECPublicKey validatorKey, Supplier<ReducerState> next) {
+		ResetOwnerUpdate(ECPublicKey validatorKey, Supplier<ReducerState> next) {
 			this.validatorKey = validatorKey;
 			this.next = next;
 		}
@@ -502,13 +510,13 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		}
 	}
 
-	private static final class PreparingValidatorUpdate implements ReducerState {
+	private static final class PreparingOwnerUpdate implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, ValidatorStakeData> validatorsToUpdate;
 		private final TreeMap<ECPublicKey, PreparedOwnerUpdate> preparingValidatorUpdates =
 			new TreeMap<>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
 
-		PreparingValidatorUpdate(
+		PreparingOwnerUpdate(
 			UpdatingEpoch updatingEpoch,
 			TreeMap<ECPublicKey, ValidatorStakeData> validatorsToUpdate
 		) {
@@ -528,9 +536,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 		ReducerState next() {
 			if (preparingValidatorUpdates.isEmpty()) {
-				return validatorsToUpdate.isEmpty()
-					? new CreatingNextValidatorSet(updatingEpoch)
-					: new UpdatingValidatorStakes(updatingEpoch, validatorsToUpdate);
+				return new PreparingRegisteredUpdate(updatingEpoch, validatorsToUpdate);
 			}
 
 			var k = preparingValidatorUpdates.firstKey();
@@ -539,13 +545,83 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 				return new LoadingStake(k, validatorStake -> {
 					var updatedValidator = validatorStake.setOwnerAddr(validatorUpdate.getOwnerAddress());
 					validatorsToUpdate.put(k, updatedValidator);
-					return new ResetValidatorUpdate(k, this::next);
+					return new ResetOwnerUpdate(k, this::next);
 				});
 			} else {
 				var updatedValidator = validatorsToUpdate.get(k)
 					.setOwnerAddr(validatorUpdate.getOwnerAddress());
 				validatorsToUpdate.put(k, updatedValidator);
-				return new ResetValidatorUpdate(k, this::next);
+				return new ResetOwnerUpdate(k, this::next);
+			}
+		}
+	}
+
+	private static final class ResetRegisteredUpdate implements ReducerState {
+		private final PreparedRegisteredUpdate update;
+		private final Supplier<ReducerState> next;
+
+		ResetRegisteredUpdate(PreparedRegisteredUpdate update, Supplier<ReducerState> next) {
+			this.update = update;
+			this.next = next;
+		}
+
+		ReducerState reset(ValidatorRegisteredCopy registeredCopy) throws ProcedureException {
+			if (!registeredCopy.getValidatorKey().equals(update.getValidatorKey())) {
+				throw new ProcedureException("Validator keys must match.");
+			}
+
+			if (registeredCopy.isRegistered() != update.isRegistered()) {
+				throw new ProcedureException("Registered flags must match.");
+			}
+
+			return next.get();
+		}
+	}
+
+	private static final class PreparingRegisteredUpdate implements ReducerState {
+		private final UpdatingEpoch updatingEpoch;
+		private final TreeMap<ECPublicKey, ValidatorStakeData> validatorsToUpdate;
+		private final TreeMap<ECPublicKey, PreparedRegisteredUpdate> preparingRegisteredUpdates =
+			new TreeMap<>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
+
+		PreparingRegisteredUpdate(
+			UpdatingEpoch updatingEpoch,
+			TreeMap<ECPublicKey, ValidatorStakeData> validatorsToUpdate
+		) {
+			this.updatingEpoch = updatingEpoch;
+			this.validatorsToUpdate = validatorsToUpdate;
+		}
+
+		ReducerState prepareRegisterUpdates(ShutdownAll<PreparedRegisteredUpdate> shutdownAll) throws ProcedureException {
+			shutdownAll.verifyPostTypePrefixIsEmpty();
+			var iter = shutdownAll.iterator();
+			while (iter.hasNext()) {
+				var preparedRegisteredUpdate = iter.next();
+				preparingRegisteredUpdates.put(preparedRegisteredUpdate.getValidatorKey(), preparedRegisteredUpdate);
+			}
+			return next();
+		}
+
+		ReducerState next() {
+			if (preparingRegisteredUpdates.isEmpty()) {
+				return validatorsToUpdate.isEmpty()
+					? new CreatingNextValidatorSet(updatingEpoch)
+					: new UpdatingValidatorStakes(updatingEpoch, validatorsToUpdate);
+			}
+
+			var k = preparingRegisteredUpdates.firstKey();
+			var validatorUpdate = preparingRegisteredUpdates.remove(k);
+			if (!validatorsToUpdate.containsKey(k)) {
+				return new LoadingStake(k, validatorStake -> {
+					var updatedValidator = validatorStake.setRegistered(validatorUpdate.isRegistered());
+					validatorsToUpdate.put(k, updatedValidator);
+					return new ResetRegisteredUpdate(validatorUpdate, this::next);
+				});
+			} else {
+				var updatedValidator = validatorsToUpdate.get(k)
+					.setRegistered(validatorUpdate.isRegistered());
+				validatorsToUpdate.put(k, updatedValidator);
+				return new ResetRegisteredUpdate(validatorUpdate, this::next);
 			}
 		}
 	}
@@ -674,15 +750,27 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		));
 
 		os.procedure(new ShutdownAllProcedure<>(
-			PreparedOwnerUpdate.class, PreparingValidatorUpdate.class,
+			PreparedOwnerUpdate.class, PreparingOwnerUpdate.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(i, s, r) -> ReducerResult.incomplete(s.prepareValidatorUpdate(i))
 		));
 		os.procedure(new UpProcedure<>(
-			ResetValidatorUpdate.class, ValidatorOwnerCopy.class,
+			ResetOwnerUpdate.class, ValidatorOwnerCopy.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.reset(u))
 		));
+
+		os.procedure(new ShutdownAllProcedure<>(
+			PreparedRegisteredUpdate.class, PreparingRegisteredUpdate.class,
+			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(i, s, r) -> ReducerResult.incomplete(s.prepareRegisterUpdates(i))
+		));
+		os.procedure(new UpProcedure<>(
+			ResetRegisteredUpdate.class, ValidatorRegisteredCopy.class,
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> ReducerResult.incomplete(s.reset(u))
+		));
+
 
 		os.procedure(new UpProcedure<>(
 			Staking.class, StakeOwnership.class,
@@ -741,17 +829,19 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 				ValidatorStakeData.class,
 				Set.of(SubstateTypeId.VALIDATOR_STAKE_DATA.id()),
 				(b, buf) -> {
-					var delegate = REFieldSerialization.deserializeKey(buf);
+					var isRegistered = REFieldSerialization.deserializeBoolean(buf);
 					var amount = REFieldSerialization.deserializeUInt256(buf);
+					var delegate = REFieldSerialization.deserializeKey(buf);
 					var ownership = REFieldSerialization.deserializeUInt256(buf);
 					var rakePercentage = REFieldSerialization.deserializeInt(buf);
 					var ownerAddress = REFieldSerialization.deserializeREAddr(buf);
-					return ValidatorStakeData.createV2(delegate, amount, ownership, rakePercentage, ownerAddress);
+					return ValidatorStakeData.create(delegate, amount, ownership, rakePercentage, ownerAddress, isRegistered);
 				},
 				(s, buf) -> {
 					buf.put(SubstateTypeId.VALIDATOR_STAKE_DATA.id());
-					REFieldSerialization.serializeKey(buf, s.getValidatorKey());
+					REFieldSerialization.serializeBoolean(buf, s.isRegistered());
 					buf.put(s.getAmount().toByteArray());
+					REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 					buf.put(s.getTotalOwnership().toByteArray());
 					buf.putInt(s.getRakePercentage());
 					REFieldSerialization.serializeREAddr(buf, s.getOwnerAddr());

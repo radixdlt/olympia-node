@@ -45,6 +45,7 @@ import com.radixdlt.atommodel.tokens.construction.UnstakeOwnershipConstructor;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV4;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.CMErrorCode;
@@ -83,7 +84,8 @@ public class UnstakeTokensV2Test {
 					new EpochUpdateConstraintScrypt(10),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(),
-					new ValidatorConstraintScryptV2(2)
+					new ValidatorConstraintScryptV2(2),
+					new ValidatorRegisterConstraintScrypt()
 				),
 				new StakeTokensConstructorV3(),
 				new UnstakeOwnershipConstructor()
@@ -96,7 +98,8 @@ public class UnstakeTokensV2Test {
 					new EpochUpdateConstraintScrypt(10),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(),
-					new ValidatorConstraintScryptV2(2)
+					new ValidatorConstraintScryptV2(2),
+					new ValidatorRegisterConstraintScrypt()
 				),
 				new StakeTokensConstructorV3(),
 				new UnstakeOwnershipConstructor()
@@ -109,7 +112,8 @@ public class UnstakeTokensV2Test {
 					new EpochUpdateConstraintScrypt(10),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(),
-					new ValidatorConstraintScryptV2(2)
+					new ValidatorConstraintScryptV2(2),
+					new ValidatorRegisterConstraintScrypt()
 				),
 				new StakeTokensConstructorV3(),
 				new UnstakeOwnershipConstructor()
@@ -122,7 +126,8 @@ public class UnstakeTokensV2Test {
 					new EpochUpdateConstraintScrypt(10),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(),
-					new ValidatorConstraintScryptV2(2)
+					new ValidatorConstraintScryptV2(2),
+					new ValidatorRegisterConstraintScrypt()
 				),
 				new StakeTokensConstructorV3(),
 				new UnstakeOwnershipConstructor()

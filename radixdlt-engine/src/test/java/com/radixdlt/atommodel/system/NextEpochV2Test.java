@@ -40,6 +40,7 @@ import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.unique.scrypt.MutexConstraintScrypt;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -71,7 +72,8 @@ public class NextEpochV2Test {
 					new EpochUpdateConstraintScrypt(10),
 					new StakingConstraintScryptV4(),
 					new TokensConstraintScryptV3(),
-					new ValidatorConstraintScryptV2(2)
+					new ValidatorConstraintScryptV2(2),
+					new ValidatorRegisterConstraintScrypt()
 				),
 				ActionConstructors.newBuilder()
 					.put(SystemNextView.class, new NextViewConstructorV3())

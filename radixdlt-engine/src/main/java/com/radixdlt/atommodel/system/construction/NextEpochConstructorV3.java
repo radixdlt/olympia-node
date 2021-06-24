@@ -31,10 +31,13 @@ import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorData;
+import com.radixdlt.atommodel.validators.state.PreparedRegisteredUpdate;
 import com.radixdlt.atommodel.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.atommodel.validators.state.PreparedOwnerUpdate;
 import com.radixdlt.atommodel.validators.state.ValidatorRakeCopy;
 import com.radixdlt.atommodel.validators.state.PreparedRakeUpdate;
+import com.radixdlt.atommodel.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.SubstateWithArg;
@@ -50,6 +53,8 @@ import java.util.Iterator;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import static com.radixdlt.atommodel.validators.state.PreparedRakeUpdate.RAKE_MAX;
 
@@ -71,6 +76,29 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 			validatorsToUpdate.put(k, validatorData);
 		}
 		return validatorsToUpdate.get(k);
+	}
+
+	private static <T extends ValidatorData, U extends ValidatorData> void prepare(
+		TxBuilder txBuilder,
+		TreeMap<ECPublicKey, ValidatorStakeData> validatorsToUpdate,
+		Class<T> preparedClass,
+		BiFunction<ValidatorStakeData, T, ValidatorStakeData> updater,
+		Function<T, U> copy
+	) throws TxBuilderException {
+		var preparing = new TreeMap<ECPublicKey, T>(
+			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
+		);
+		txBuilder.shutdownAll(preparedClass, i -> {
+			i.forEachRemaining(update -> preparing.put(update.getValidatorKey(), update));
+			return preparing;
+		});
+		for (var e : preparing.entrySet()) {
+			var k = e.getKey();
+			var update = e.getValue();
+			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate);
+			validatorsToUpdate.put(k, updater.apply(curValidator, update));
+			txBuilder.up(copy.apply(update));
+		}
 	}
 
 	@Override
@@ -226,20 +254,25 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 			txBuilder.up(new ValidatorRakeCopy(k, update.getNextRakePercentage()));
 		}
 
-		var preparingUpdates = new TreeMap<ECPublicKey, PreparedOwnerUpdate>(
-			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
+
+		// Update owners
+		prepare(
+			txBuilder,
+			validatorsToUpdate,
+			PreparedOwnerUpdate.class,
+			(v, u) -> v.setOwnerAddr(u.getOwnerAddress()),
+			u -> new ValidatorOwnerCopy(u.getValidatorKey(), u.getOwnerAddress())
 		);
-		txBuilder.shutdownAll(PreparedOwnerUpdate.class, i -> {
-			i.forEachRemaining(update -> preparingUpdates.put(update.getValidatorKey(), update));
-			return preparingUpdates;
-		});
-		for (var e : preparingUpdates.entrySet()) {
-			var k = e.getKey();
-			var update = e.getValue();
-			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate);
-			validatorsToUpdate.put(k, curValidator.setOwnerAddr(update.getOwnerAddress()));
-			txBuilder.up(new ValidatorOwnerCopy(k, update.getOwnerAddress()));
-		}
+
+		// Update registered flag
+		prepare(
+			txBuilder,
+			validatorsToUpdate,
+			PreparedRegisteredUpdate.class,
+			(v, u) -> v.setRegistered(u.isRegistered()),
+			u -> new ValidatorRegisteredCopy(u.getValidatorKey(), u.isRegistered())
+		);
+
 
 		validatorsToUpdate.forEach((k, validator) -> txBuilder.up(validator));
 		var validatorKeys = action.validators(validatorsToUpdate.values());
@@ -248,4 +281,5 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 		txBuilder.up(new EpochData(prevEpoch.getEpoch() + 1));
 		txBuilder.up(new RoundData(0, 0));
 	}
+
 }

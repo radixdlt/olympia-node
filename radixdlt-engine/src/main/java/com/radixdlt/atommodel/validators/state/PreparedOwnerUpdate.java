@@ -18,13 +18,13 @@
 
 package com.radixdlt.atommodel.validators.state;
 
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorData;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
 
-public final class PreparedOwnerUpdate implements Particle {
+public final class PreparedOwnerUpdate implements ValidatorData {
 	private final ECPublicKey validatorKey;
 	private final REAddr ownerAddress;
 
@@ -33,6 +33,7 @@ public final class PreparedOwnerUpdate implements Particle {
 		this.ownerAddress = ownerAddress;
 	}
 
+	@Override
 	public ECPublicKey getValidatorKey() {
 		return validatorKey;
 	}

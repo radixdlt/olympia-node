@@ -91,6 +91,32 @@ public final class StakedValidators {
 		return new StakedValidators(minValidators, maxValidators, registered, stake, owners, delegationFlags, nextMetadata);
 	}
 
+	public StakedValidators setRegistered(ECPublicKey validatorKey, boolean isRegistered) {
+		if (registered.contains(validatorKey) == isRegistered) {
+			return this;
+		}
+		if (!isRegistered) {
+			return new StakedValidators(
+				minValidators,
+				maxValidators,
+				registered.stream()
+					.filter(e -> !e.equals(validatorKey))
+					.collect(Collectors.toSet()),
+				stake,
+				owners,
+				delegationFlags,
+				metadata
+			);
+		} else {
+			var set = ImmutableSet.<ECPublicKey>builder()
+				.addAll(registered)
+				.add(validatorKey)
+				.build();
+
+			return new StakedValidators(minValidators, maxValidators, set, stake, owners, delegationFlags, metadata);
+		}
+	}
+
 	public StakedValidators add(ECPublicKey validatorKey) {
 		var set = ImmutableSet.<ECPublicKey>builder()
 			.addAll(registered)

@@ -18,12 +18,12 @@
 
 package com.radixdlt.atommodel.validators.state;
 
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorData;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
 
-public final class PreparedRegisteredUpdate implements Particle {
+public final class PreparedRegisteredUpdate implements ValidatorData {
 	private final ECPublicKey validatorKey;
 	private final boolean isRegistered;
 
@@ -32,6 +32,7 @@ public final class PreparedRegisteredUpdate implements Particle {
 		this.isRegistered = isRegistered;
 	}
 
+	@Override
 	public ECPublicKey getValidatorKey() {
 		return validatorKey;
 	}

@@ -379,7 +379,7 @@ public final class ConstraintMachine {
 			} catch (MissingProcedureException e) {
 				throw new ConstraintMachineException(
 					CMErrorCode.MISSING_PROCEDURE,
-					"Instruction: " + inst.toString(),
+					"ReducerState: " + reducerState + " Instruction: " + inst.toString(),
 					e
 				);
 			}

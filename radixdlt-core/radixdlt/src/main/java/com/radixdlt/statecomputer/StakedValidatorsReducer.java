@@ -95,7 +95,8 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 			} else {
 				var s = (ValidatorStakeData) p;
 				return prev.setOwner(s.getValidatorKey(), s.getOwnerAddr())
-					.setStake(s.getValidatorKey(), s.getAmount());
+					.setStake(s.getValidatorKey(), s.getAmount())
+					.setRegistered(s.getValidatorKey(), s.isRegistered());
 			}
 		};
 	}
