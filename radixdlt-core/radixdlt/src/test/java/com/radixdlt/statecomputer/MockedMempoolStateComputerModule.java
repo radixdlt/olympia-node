@@ -27,6 +27,8 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.MockPrepared;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -67,7 +69,11 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private StateComputerLedger.StateComputer stateComputer(Mempool<Txn> mempool, SystemCounters counters) {
+	private StateComputerLedger.StateComputer stateComputer(
+		Mempool<Txn> mempool,
+		EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
+		SystemCounters counters
+	) {
 		return new StateComputerLedger.StateComputer() {
 			@Override
 			public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
@@ -102,6 +108,9 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 			public void commit(VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
 				mempool.committed(txnsAndProof.getTxns());
 				counters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
+
+				var ledgerUpdate = new LedgerUpdate(txnsAndProof, null);
+				ledgerUpdateDispatcher.dispatch(ledgerUpdate);
 			}
 		};
 	}

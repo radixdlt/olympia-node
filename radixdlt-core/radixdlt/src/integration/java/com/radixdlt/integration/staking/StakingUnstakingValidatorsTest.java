@@ -67,10 +67,10 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
@@ -82,7 +82,6 @@ import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.BetanetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksModule;
@@ -115,8 +114,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
-import java.util.TreeMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -127,13 +126,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RunWith(Parameterized.class)
 public class StakingUnstakingValidatorsTest {
 	private static final Logger logger = LogManager.getLogger();
+
 	@Parameterized.Parameters
 	public static Collection<Object[]> forksModule() {
 		return List.of(new Object[][] {
-			{new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100)), false},
-			{new ForkOverwritesWithShorterEpochsModule(false), false},
-			{new RadixEngineForksLatestOnlyModule(new RERulesConfig(true, 100)), true},
-			{new ForkOverwritesWithShorterEpochsModule(true), true},
+			{new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100)), false, 100},
+			{new ForkOverwritesWithShorterEpochsModule(new RERulesConfig(false, 10)), false, 10},
+			{new RadixEngineForksLatestOnlyModule(new RERulesConfig(true, 100)), true, 100},
+			{new ForkOverwritesWithShorterEpochsModule(new RERulesConfig(true, 10)), true, 10},
 		});
 	}
 
@@ -144,17 +144,15 @@ public class StakingUnstakingValidatorsTest {
 	@Genesis
 	private VerifiedTxnsAndProof genesis;
 
-	@Inject
-	private TreeMap<Long, ForkConfig> epochToForkConfig;
-
 	private DeterministicNetwork network;
 	private List<Supplier<Injector>> nodeCreators;
 	private List<Injector> nodes = new ArrayList<>();
 	private final ImmutableList<ECKeyPair> nodeKeys;
 	private final Module radixEngineConfiguration;
 	private final boolean payFees;
+	private final long maxRounds;
 
-	public StakingUnstakingValidatorsTest(Module forkModule, boolean payFees) {
+	public StakingUnstakingValidatorsTest(Module forkModule, boolean payFees, long maxRounds) {
 		this.nodeKeys = Stream.generate(ECKeyPair::generateNew)
 			.limit(20)
 			.sorted(Comparator.comparing(k -> k.getPublicKey().euid()))
@@ -166,6 +164,7 @@ public class StakingUnstakingValidatorsTest {
 			RadixEngineConfig.asModule(1, 10, 50)
 		);
 		this.payFees = payFees;
+		this.maxRounds = maxRounds;
 	}
 
 	@Before
@@ -238,10 +237,10 @@ public class StakingUnstakingValidatorsTest {
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ValidatorAddress.of(ecKeyPair.getPublicKey()));
-					bind(new TypeLiteral<DeterministicSavedLastEvent<EpochsLedgerUpdate>>() { })
-						.toInstance(new DeterministicSavedLastEvent<>(EpochsLedgerUpdate.class));
+					bind(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() { })
+						.toInstance(new DeterministicSavedLastEvent<>(LedgerUpdate.class));
 					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() { })
-						.addBinding().toProvider(new TypeLiteral<DeterministicSavedLastEvent<EpochsLedgerUpdate>>() { });
+						.addBinding().toProvider(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() { });
 				}
 
 				@Provides
@@ -477,14 +476,15 @@ public class StakingUnstakingValidatorsTest {
 		logger.info("Node {}", node);
 		logger.info("Initial {}", initialCount);
 		var lastEpochView = this.nodes.get(0)
-			.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochsLedgerUpdate>>() { }));
+			.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() { }));
 		var epoch = lastEpochView.getLastEvent() == null
 			? this.nodes.get(0).getInstance(EpochChange.class).getEpoch()
-			: lastEpochView.getLastEvent().getEpochChange().map(EpochChange::getEpoch)
-				.orElseGet(() -> lastEpochView.getLastEvent().getBase().getTail().getEpoch());
+			: ((Optional<EpochChange>) lastEpochView.getLastEvent().getStateComputerOutput())
+				.map(EpochChange::getEpoch)
+				.orElseGet(() -> lastEpochView.getLastEvent().getTail().getEpoch());
 
 		logger.info("Epoch {}", epoch);
-		var maxEmissions = UInt256.from(99).multiply(SystemConstraintScryptV2.REWARDS_PER_PROPOSAL).multiply(UInt256.from(epoch - 1));
+		var maxEmissions = UInt256.from(maxRounds).multiply(SystemConstraintScryptV2.REWARDS_PER_PROPOSAL).multiply(UInt256.from(epoch - 1));
 		logger.info("Max emissions {}", maxEmissions);
 
 		var nodeState = reloadNodeState();

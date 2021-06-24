@@ -19,21 +19,30 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.liveness.ProposerElection;
+
 import java.util.Objects;
 
 /**
  * Configuration for a bft instance which should be shared by all validators in the bft.
  */
 public final class BFTConfiguration {
+	private final ProposerElection proposerElection;
 	private final BFTValidatorSet validatorSet;
 	private final VerifiedVertexStoreState vertexStoreState;
 
 	public BFTConfiguration(
+		ProposerElection proposerElection,
 		BFTValidatorSet validatorSet,
 		VerifiedVertexStoreState vertexStoreState
 	) {
+		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.vertexStoreState = Objects.requireNonNull(vertexStoreState);
+	}
+
+	public ProposerElection getProposerElection() {
+		return proposerElection;
 	}
 
 	public BFTValidatorSet getValidatorSet() {
@@ -47,6 +56,7 @@ public final class BFTConfiguration {
 	@Override
 	public int hashCode() {
 		return Objects.hash(
+			this.proposerElection,
 			this.validatorSet,
 			this.vertexStoreState
 		);
@@ -57,7 +67,8 @@ public final class BFTConfiguration {
 		if (obj instanceof BFTConfiguration) {
 			BFTConfiguration that = (BFTConfiguration) obj;
 			return Objects.equals(this.validatorSet, that.validatorSet)
-				&& Objects.equals(this.vertexStoreState, that.vertexStoreState);
+				&& Objects.equals(this.vertexStoreState, that.vertexStoreState)
+				&& Objects.equals(this.proposerElection, that.proposerElection);
 		}
 		return false;
 	}

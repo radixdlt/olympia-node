@@ -33,8 +33,9 @@ import java.util.Optional;
 public class NextViewConstructorV2 implements ActionConstructor<SystemNextView> {
 	@Override
 	public void construct(SystemNextView action, TxBuilder txBuilder) throws TxBuilderException {
+		var curLeader = action.leaderMapping().apply(action.view());
 		var validatorEpochData = txBuilder.find(
-			ValidatorBFTData.class, p -> p.validatorKey().equals(action.leader())
+			ValidatorBFTData.class, p -> p.validatorKey().equals(curLeader)
 		);
 		if (validatorEpochData.isPresent()) {
 			txBuilder.swap(
@@ -50,11 +51,11 @@ public class NextViewConstructorV2 implements ActionConstructor<SystemNextView> 
 			});
 			txBuilder.swap(
 				ValidatorBFTData.class,
-				p -> p.validatorKey().equals(action.leader()),
+				p -> p.validatorKey().equals(curLeader),
 				Optional.empty(),
 				"No validator epoch data"
 			).with(down -> List.of(
-				new ValidatorBFTData(down.validatorKey(), down.proposalsCompleted() + 1)
+				new ValidatorBFTData(down.validatorKey(), down.proposalsCompleted() + 1, 0)
 			));
 		} else {
 			txBuilder.swap(

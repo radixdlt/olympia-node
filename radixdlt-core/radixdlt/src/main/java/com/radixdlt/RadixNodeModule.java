@@ -138,8 +138,6 @@ public final class RadixNodeModule extends AbstractModule {
 
 		// Epochs - Consensus
 		install(new EpochsConsensusModule());
-		// Epochs - Ledger
-		install(new EpochsLedgerUpdateModule());
 		// Epochs - Sync
 		install(new EpochsSyncModule());
 

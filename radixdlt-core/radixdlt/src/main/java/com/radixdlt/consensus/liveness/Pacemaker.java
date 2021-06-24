@@ -235,13 +235,13 @@ public final class Pacemaker {
 			viewUpdate.getCurrentView(),
 			viewUpdate.getLeader()
 		);
-		final var verifiedVertex = new VerifiedVertex(proposedVertex, hasher.hash(proposedVertex));
-		this.timeoutVoteVertexId = Optional.of(verifiedVertex.getId());
+		final var blankVertex = new VerifiedVertex(proposedVertex, hasher.hash(proposedVertex));
+		this.timeoutVoteVertexId = Optional.of(blankVertex.getId());
 
 		// TODO: reimplement in async way
-		this.vertexStore.getPreparedVertex(verifiedVertex.getId()).ifPresentOrElse(
+		this.vertexStore.getPreparedVertex(blankVertex.getId()).ifPresentOrElse(
 			this::createAndSendTimeoutVote, // if vertex is already there, send the vote immediately
-			() -> maybeInsertVertex(verifiedVertex) // otherwise insert and wait for async bft update msg
+			() -> maybeInsertVertex(blankVertex) // otherwise insert and wait for async bft update msg
 		);
 	}
 

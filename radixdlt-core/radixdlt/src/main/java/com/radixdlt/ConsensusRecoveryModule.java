@@ -21,19 +21,18 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.store.LastEpochProof;
+
+import java.util.Comparator;
 import java.util.Optional;
 
 /**
@@ -43,12 +42,13 @@ public class ConsensusRecoveryModule extends AbstractModule {
 	@Provides
 	private ViewUpdate view(
 		VerifiedVertexStoreState vertexStoreState,
-		ProposerElection proposerElection
+		BFTConfiguration configuration
 	) {
-		HighQC highQC = vertexStoreState.getHighQC();
-		View view = highQC.highestQC().getView().next();
-		final BFTNode leader = proposerElection.getProposer(view);
-		final BFTNode nextLeader = proposerElection.getProposer(view.next());
+		var highQC = vertexStoreState.getHighQC();
+		var view = highQC.highestQC().getView().next();
+		var proposerElection = configuration.getProposerElection();
+		var leader = proposerElection.getProposer(view);
+		var nextLeader = proposerElection.getProposer(view.next());
 
 		return ViewUpdate.create(view, highQC, leader, nextLeader);
 	}
@@ -59,7 +59,12 @@ public class ConsensusRecoveryModule extends AbstractModule {
 		BFTValidatorSet validatorSet,
 		VerifiedVertexStoreState vertexStoreState
 	) {
-		return new BFTConfiguration(validatorSet, vertexStoreState);
+		var proposerElection = new WeightedRotatingLeaders(
+			validatorSet,
+			Comparator.comparing(v -> v.getNode().getKey().euid())
+		);
+
+		return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
 	}
 
 	@Provides

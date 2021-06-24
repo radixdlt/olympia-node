@@ -26,17 +26,32 @@ import java.util.Objects;
 public final class ValidatorBFTData implements Particle {
 	private final ECPublicKey validatorKey;
 	private final long proposalsCompleted;
+	private final long proposalsMissed;
 
 	public ValidatorBFTData(
 		ECPublicKey validatorKey,
-		long proposalsCompleted
+		long proposalsCompleted,
+		long proposalsMissed
 	) {
 		this.validatorKey = validatorKey;
 		this.proposalsCompleted = proposalsCompleted;
+		this.proposalsMissed = proposalsMissed;
+	}
+
+	public long proposalsMissed() {
+		return proposalsMissed;
 	}
 
 	public ECPublicKey validatorKey() {
 		return validatorKey;
+	}
+
+	public ValidatorBFTData incrementCompletedProposals() {
+		return new ValidatorBFTData(validatorKey, proposalsCompleted + 1, proposalsMissed);
+	}
+
+	public ValidatorBFTData incrementProposalsMissed() {
+		return new ValidatorBFTData(validatorKey, proposalsCompleted, proposalsMissed + 1);
 	}
 
 	public long proposalsCompleted() {
@@ -45,7 +60,7 @@ public final class ValidatorBFTData implements Particle {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(validatorKey, proposalsCompleted);
+		return Objects.hash(validatorKey, proposalsCompleted, proposalsMissed);
 	}
 
 	@Override
@@ -56,7 +71,8 @@ public final class ValidatorBFTData implements Particle {
 
 		var other = (ValidatorBFTData) o;
 		return Objects.equals(this.validatorKey, other.validatorKey)
-			&& this.proposalsCompleted == other.proposalsCompleted;
+			&& this.proposalsCompleted == other.proposalsCompleted
+			&& Objects.equals(this.proposalsMissed, other.proposalsMissed);
 	}
 
 	@Override

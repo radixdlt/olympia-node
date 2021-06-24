@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.recovery;
 
+import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
@@ -229,9 +230,8 @@ public class OneNodeAlwaysAliveSafetyTest {
 				}
 
 				@ProvidesIntoSet
-				@ProcessOnDispatch
-				private EventProcessor<ViewQuorumReached> viewQuorumReachedEventProcessor(@Self BFTNode node) {
-					return nodeEvents.processor(node, ViewQuorumReached.class);
+				private EventProcessorOnDispatch<?> viewQuorumReachedEventProcessor(@Self BFTNode node) {
+					return nodeEvents.processorOnDispatch(node, ViewQuorumReached.class);
 				}
 			}
 		);

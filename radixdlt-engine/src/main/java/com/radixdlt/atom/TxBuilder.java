@@ -290,7 +290,7 @@ public final class TxBuilder {
 			var result = mapper.apply(Iterators.concat(localIterator, remoteIterator));
 			var typeBytes = deserialization.classToBytes(particleClass);
 			if (typeBytes.size() != 1) {
-				throw new IllegalStateException("Cannot down all of particle with multiple ids");
+				throw new IllegalStateException("Cannot down all of particle with multiple ids: " + particleClass);
 			}
 			lowLevelBuilder.downAll(typeBytes.iterator().next());
 			return result;

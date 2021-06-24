@@ -200,7 +200,7 @@ public final class NextEpochConstructorV2 implements ActionConstructor<SystemNex
 
 		validatorsToUpdate.forEach((k, validator) -> txBuilder.up(validator));
 		var validatorKeys = action.validators(validatorsToUpdate.values());
-		validatorKeys.forEach(k -> txBuilder.up(new ValidatorBFTData(k, 0)));
+		validatorKeys.forEach(k -> txBuilder.up(new ValidatorBFTData(k, 0, 0)));
 
 		txBuilder.up(new EpochData(prevEpoch.getEpoch() + 1));
 		txBuilder.up(new RoundData(0, 0));

@@ -44,13 +44,14 @@ import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
@@ -67,6 +68,7 @@ import com.radixdlt.store.DatabaseLocation;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
@@ -170,23 +172,23 @@ public class UnstakingLockedTokensTest {
 
 		if (stakingEpoch > 1) {
 			runner.runNextEventsThrough(
-				EpochsLedgerUpdate.class,
-				e -> e.getEpochChange().map(c -> c.getEpoch() == stakingEpoch).orElse(false)
+				LedgerUpdate.class,
+				e -> ((Optional<EpochChange>) e.getStateComputerOutput()).map(c -> c.getEpoch() == stakingEpoch).orElse(false)
 			);
 		}
 
 		var accountAddr = REAddr.ofPubKeyAccount(self);
 		var stakeTxn = dispatchAndWaitForCommit(new StakeTokens(accountAddr, self, ValidatorStakeData.MINIMUM_STAKE));
 		runner.runNextEventsThrough(
-			EpochsLedgerUpdate.class,
-			e -> e.getEpochChange().map(c -> c.getEpoch() == unstakingEpoch).orElse(false)
+			LedgerUpdate.class,
+			e -> ((Optional<EpochChange>) e.getStateComputerOutput()).map(c -> c.getEpoch() == unstakingEpoch).orElse(false)
 		);
 		var unstakeTxn = dispatchAndWaitForCommit(new UnstakeTokens(accountAddr, self, ValidatorStakeData.MINIMUM_STAKE));
 
 		if (transferEpoch > unstakingEpoch) {
 			runner.runNextEventsThrough(
-				EpochsLedgerUpdate.class,
-				e -> e.getEpochChange().map(c -> c.getEpoch() == transferEpoch).orElse(false)
+				LedgerUpdate.class,
+				e -> ((Optional<EpochChange>) e.getStateComputerOutput()).map(c -> c.getEpoch() == transferEpoch).orElse(false)
 			);
 		}
 

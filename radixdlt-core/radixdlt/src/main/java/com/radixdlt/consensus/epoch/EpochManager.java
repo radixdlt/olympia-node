@@ -58,7 +58,6 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -68,6 +67,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
@@ -87,7 +87,6 @@ public final class EpochManager {
 	private final VertexStoreFactory vertexStoreFactory;
 	private final BFTSyncRequestProcessorFactory bftSyncRequestProcessorFactory;
 	private final BFTSyncFactory bftSyncFactory;
-	private final ProposerElectionFactory proposerElectionFactory;
 	private final Hasher hasher;
 	private final HashSigner signer;
 	private final PacemakerTimeoutCalculator timeoutCalculator;
@@ -125,7 +124,6 @@ public final class EpochManager {
 		VertexStoreFactory vertexStoreFactory,
 		BFTSyncFactory bftSyncFactory,
 		BFTSyncRequestProcessorFactory bftSyncRequestProcessorFactory,
-		ProposerElectionFactory proposerElectionFactory,
 		BFTFactory bftFactory,
 		SystemCounters counters,
 		Hasher hasher,
@@ -163,7 +161,6 @@ public final class EpochManager {
 		this.vertexStoreFactory = Objects.requireNonNull(vertexStoreFactory);
 		this.bftSyncFactory = Objects.requireNonNull(bftSyncFactory);
 		this.bftSyncRequestProcessorFactory = bftSyncRequestProcessorFactory;
-		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.signer = Objects.requireNonNull(signer);
 		this.timeoutCalculator = Objects.requireNonNull(timeoutCalculator);
@@ -195,7 +192,7 @@ public final class EpochManager {
 
 		// Config
 		final BFTConfiguration bftConfiguration = this.currentEpoch.getBFTConfiguration();
-		final ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
+		final ProposerElection proposerElection = bftConfiguration.getProposerElection();
 		HighQC highQC = bftConfiguration.getVertexStoreState().getHighQC();
 		View view = highQC.highestQC().getView().next();
 		final BFTNode leader = proposerElection.getProposer(view);
@@ -252,14 +249,15 @@ public final class EpochManager {
 		return this.currentEpoch.getEpoch();
 	}
 
-	public EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor() {
+	public EventProcessor<LedgerUpdate> epochsLedgerUpdateEventProcessor() {
 		return this::processLedgerUpdate;
 	}
 
-	private void processLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate) {
-		epochsLedgerUpdate.getEpochChange().ifPresentOrElse(
+	private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
+		var epochChange = (Optional<EpochChange>) ledgerUpdate.getStateComputerOutput();
+		epochChange.ifPresentOrElse(
 			this::processEpochChange,
-			() -> this.syncLedgerUpdateProcessor.process(epochsLedgerUpdate.getBase())
+			() -> this.syncLedgerUpdateProcessor.process(ledgerUpdate)
 		);
 	}
 

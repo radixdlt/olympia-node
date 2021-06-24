@@ -27,9 +27,15 @@ import java.util.Optional;
 
 public final class LedgerUpdate {
 	private final VerifiedTxnsAndProof verifiedTxnsAndProof;
+	private final Object stateComputerOutput;
 
-	public LedgerUpdate(VerifiedTxnsAndProof verifiedTxnsAndProof) {
+	public LedgerUpdate(VerifiedTxnsAndProof verifiedTxnsAndProof, Object stateComputerOutput) {
 		this.verifiedTxnsAndProof = Objects.requireNonNull(verifiedTxnsAndProof);
+		this.stateComputerOutput = stateComputerOutput;
+	}
+
+	public Object getStateComputerOutput() {
+		return stateComputerOutput;
 	}
 
 	public List<Txn> getNewTxns() {
@@ -51,7 +57,7 @@ public final class LedgerUpdate {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(verifiedTxnsAndProof);
+		return Objects.hash(verifiedTxnsAndProof, stateComputerOutput);
 	}
 
 	@Override
@@ -61,6 +67,7 @@ public final class LedgerUpdate {
 		}
 
 		LedgerUpdate other = (LedgerUpdate) o;
-		return Objects.equals(other.verifiedTxnsAndProof, this.verifiedTxnsAndProof);
+		return Objects.equals(other.verifiedTxnsAndProof, this.verifiedTxnsAndProof)
+			&& Objects.equals(other.stateComputerOutput, this.stateComputerOutput);
 	}
 }

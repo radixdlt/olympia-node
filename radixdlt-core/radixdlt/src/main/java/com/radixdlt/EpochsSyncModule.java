@@ -30,11 +30,11 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.environment.Runners;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.epochs.EpochsLocalSyncService;
 import com.radixdlt.epochs.LocalSyncServiceFactory;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.sync.RemoteSyncService;
 import com.radixdlt.sync.SyncConfig;
@@ -71,7 +71,6 @@ public class EpochsSyncModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(SyncRequestTimeout.class);
 		eventBinder.addBinding().toInstance(LocalSyncRequest.class);
 		eventBinder.addBinding().toInstance(SyncLedgerUpdateTimeout.class);
-		eventBinder.addBinding().toInstance(EpochsLedgerUpdate.class);
 	}
 
 	@ProvidesIntoSet
@@ -80,7 +79,7 @@ public class EpochsSyncModule extends AbstractModule {
 	) {
 		return new EventProcessorOnRunner<>(
 			Runners.SYNC,
-			EpochsLedgerUpdate.class,
+			LedgerUpdate.class,
 			epochsLocalSyncService.epochsLedgerUpdateEventProcessor()
 		);
 	}
@@ -91,8 +90,8 @@ public class EpochsSyncModule extends AbstractModule {
 	) {
 		return new EventProcessorOnRunner<>(
 			Runners.SYNC,
-			EpochsLedgerUpdate.class,
-			update -> remoteSyncService.ledgerUpdateEventProcessor().process(update.getBase())
+			LedgerUpdate.class,
+			update -> remoteSyncService.ledgerUpdateEventProcessor().process(update)
 		);
 	}
 

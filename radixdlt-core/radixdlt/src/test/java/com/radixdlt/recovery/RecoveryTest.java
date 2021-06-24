@@ -17,6 +17,7 @@
 
 package com.radixdlt.recovery;
 
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.assertj.core.api.Condition;
@@ -103,9 +104,13 @@ public class RecoveryTest {
 
 	@Parameters
 	public static Collection<Object[]> parameters() {
-		return List.of(new Object[][]{
-			{10L}, {1000000L}
-		});
+		return List.of(
+			new Object[]{10L, 80},
+			new Object[]{10L, 90},
+			new Object[]{10L, 100},
+			new Object[]{10L, 500},
+			new Object[]{1000000L, 100}
+		);
 	}
 
 	@Rule
@@ -115,13 +120,15 @@ public class RecoveryTest {
 	private Injector currentInjector;
 	private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
 	private final long epochCeilingView;
+	private final int processForCount;
 
 	@Inject
 	@Genesis
 	private VerifiedTxnsAndProof genesisTxns;
 
-	public RecoveryTest(long epochCeilingView) {
+	public RecoveryTest(long epochCeilingView, int processForCount) {
 		this.epochCeilingView = epochCeilingView;
+		this.processForCount = processForCount;
 		this.network = new DeterministicNetwork(
 			List.of(BFTNode.create(ecKeyPair.getPublicKey())),
 			MessageSelector.firstSelector(),
@@ -161,12 +168,9 @@ public class RecoveryTest {
 	@After
 	public void teardown() {
 		if (this.currentInjector != null) {
-			var ledgerStore = this.currentInjector.getInstance(BerkeleyLedgerEntryStore.class);
-			ledgerStore.close();
-			var safetyStore = this.currentInjector.getInstance(PersistentSafetyStateStore.class);
-			safetyStore.close();
-			var dbEnv = this.currentInjector.getInstance(DatabaseEnvironment.class);
-			dbEnv.stop();
+			this.currentInjector.getInstance(BerkeleyLedgerEntryStore.class).close();
+			this.currentInjector.getInstance(PersistentSafetyStateStore.class).close();
+			this.currentInjector.getInstance(DatabaseEnvironment.class).stop();
 		}
 	}
 
@@ -219,6 +223,9 @@ public class RecoveryTest {
 
 	private void restartNode() {
 		this.network.dropMessages(m -> m.channelId().receiverIndex() == 0 && m.channelId().senderIndex() == 0);
+		this.currentInjector.getInstance(BerkeleyLedgerEntryStore.class).close();
+		this.currentInjector.getInstance(PersistentSafetyStateStore.class).close();
+		this.currentInjector.getInstance(DatabaseEnvironment.class).stop();
 		this.currentInjector = createRunner(ecKeyPair);
 		var processor = currentInjector.getInstance(DeterministicProcessor.class);
 		processor.start();
@@ -235,7 +242,7 @@ public class RecoveryTest {
 	@Test
 	public void on_reboot_should_load_same_computed_state() {
 		// Arrange
-		processForCount(100);
+		processForCount(processForCount);
 		var radixEngine = getRadixEngine();
 		var epochView = radixEngine.getComputedState(EpochView.class);
 
@@ -251,7 +258,7 @@ public class RecoveryTest {
 	@Test
 	public void on_reboot_should_load_same_last_header() {
 		// Arrange
-		processForCount(100);
+		processForCount(processForCount);
 		var reader = getCommittedReader();
 		Optional<LedgerProof> proof = reader.getLastProof();
 
@@ -267,8 +274,8 @@ public class RecoveryTest {
 	@Test
 	public void on_reboot_should_load_same_last_epoch_header() {
 		// Arrange
-		processForCount(100);
-		EpochView epochView = getLastEpochView();
+		processForCount(processForCount);
+		var epochView = getLastEpochView();
 
 		// Act
 		restartNode();
@@ -279,13 +286,17 @@ public class RecoveryTest {
 		);
 
 		assertThat(restartedEpochProof.isEndOfEpoch()).isTrue();
-		assertThat(restartedEpochProof.getEpoch()).isEqualTo(epochView.getEpoch() - 1);
+		assertThat(
+			restartedEpochProof.getEpoch() == epochView.getEpoch() - 1
+				|| (restartedEpochProof.getEpoch() == epochView.getEpoch()
+				&& epochView.getView().number() > epochCeilingView + 3)
+		).isTrue();
 	}
 
 	@Test
 	public void on_reboot_should_load_same_last_vote() {
 		// Arrange
-		processForCount(100);
+		processForCount(processForCount);
 		Vote vote = getLastVote();
 
 		// Act
@@ -293,13 +304,17 @@ public class RecoveryTest {
 
 		// Assert
 		SafetyState safetyState = currentInjector.getInstance(SafetyState.class);
-		assertThat(safetyState.getLastVotedView()).isEqualTo(vote.getView());
+		assertThat(
+			safetyState.getLastVotedView().equals(vote.getView())
+			|| (safetyState.getLastVotedView().equals(View.genesis())
+			&& vote.getView().equals(View.of(epochCeilingView + 3)))
+		).isTrue();
 	}
 
 	@Test
 	public void on_reboot_should_only_emit_pacemaker_events() {
 		// Arrange
-		processForCount(100);
+		processForCount(processForCount);
 
 		// Act
 		restartNode();

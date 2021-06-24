@@ -64,6 +64,7 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.bft.View;
@@ -82,7 +83,6 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
@@ -99,6 +99,7 @@ import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.utils.UInt256;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -232,13 +233,14 @@ public class EpochManagerTest {
 			@Provides
 			BFTConfiguration bftConfiguration(@Self BFTNode self, Hasher hasher, BFTValidatorSet validatorSet) {
 				var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-				UnverifiedVertex unverifiedVertex = UnverifiedVertex.createGenesis(
+				var unverifiedVertex = UnverifiedVertex.createGenesis(
 					LedgerHeader.genesis(accumulatorState, validatorSet, 0)
 				);
-				VerifiedVertex verifiedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
-
+				var verifiedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 				var qc = QuorumCertificate.ofGenesis(verifiedVertex, LedgerHeader.genesis(accumulatorState, validatorSet, 0));
+				var proposerElection = new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.getNode().getKey().euid()));
 				return new BFTConfiguration(
+					proposerElection,
 					validatorSet,
 					VerifiedVertexStoreState.create(HighQC.from(qc), verifiedVertex, Optional.empty(), hasher)
 				);
@@ -272,18 +274,20 @@ public class EpochManagerTest {
 			header.getAccumulatorState(),
 			header.timestamp()
 		);
-		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-		BFTConfiguration bftConfiguration = new BFTConfiguration(
+		var genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
+		var proposerElection = new WeightedRotatingLeaders(nextValidatorSet, Comparator.comparing(v -> v.getNode().getKey().euid()));
+		var bftConfiguration = new BFTConfiguration(
+			proposerElection,
 			nextValidatorSet,
 			VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty(), hasher)
 		);
 		LedgerProof proof = mock(LedgerProof.class);
 		when(proof.getEpoch()).thenReturn(header.getEpoch() + 1);
 		EpochChange epochChange = new EpochChange(proof, bftConfiguration);
-		EpochsLedgerUpdate epochsLedgerUpdate = new EpochsLedgerUpdate(mock(LedgerUpdate.class), epochChange);
+		var ledgerUpdate = new LedgerUpdate(mock(VerifiedTxnsAndProof.class), Optional.of(epochChange));
 
 		// Act
-		epochManager.epochsLedgerUpdateEventProcessor().process(epochsLedgerUpdate);
+		epochManager.epochsLedgerUpdateEventProcessor().process(ledgerUpdate);
 
 		// Assert
 		verify(proposalDispatcher, never()).dispatch(any(Iterable.class), argThat(p -> p.getEpoch() == epochChange.getEpoch()));

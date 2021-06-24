@@ -29,18 +29,15 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 public class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
-	private static final long INITIAL_VIEW_CEILING = 10L;
-	private final boolean fees;
+	private final RERulesConfig config;
 
-	public ForkOverwritesWithShorterEpochsModule(boolean fees) {
-		this.fees = fees;
+	public ForkOverwritesWithShorterEpochsModule(RERulesConfig config) {
+		this.config = config;
 	}
 
 	@Override
 	protected void configure() {
 		var epoch = new AtomicLong(0);
-		var viewCeiling = new AtomicLong(INITIAL_VIEW_CEILING);
-
 		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkConfig>>>() { })
 			.setBinding()
 			.toInstance(s ->
@@ -49,10 +46,7 @@ public class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
 					.map(c -> new ForkConfig(
 						epoch.getAndAdd(5),
 						c.getName(),
-						new RERulesConfig(
-							fees,
-							viewCeiling.get() % 2 == 0 ? viewCeiling.getAndIncrement() : viewCeiling.getAndDecrement()
-						)
+						config
 					))
 					.collect(Collectors.toSet())
 			);

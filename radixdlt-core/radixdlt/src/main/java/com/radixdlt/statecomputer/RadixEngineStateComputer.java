@@ -20,25 +20,35 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atom.actions.SystemNextView;
+import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.ByzantineQuorumException;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
 import com.radixdlt.mempool.MempoolAdd;
@@ -58,7 +68,9 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.LongFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -70,19 +82,22 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final RadixEngineMempool mempool;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final int maxTxnsPerProposal;
-
+	private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
 	private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
 	private final EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher;
 	private final EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher;
 	private final EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher;
 	private final EventDispatcher<TxnsCommittedToLedger> committedDispatcher;
 	private final SystemCounters systemCounters;
+	private final Hasher hasher;
 	private final Forks forks;
 
+	private ProposerElection proposerElection;
 	private View epochCeilingView;
 
 	@Inject
 	public RadixEngineStateComputer(
+		ProposerElection proposerElection, // TODO: Should be able to load this directly from state
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		Forks forks,
 		RadixEngineMempool mempool, // TODO: Move this into radixEngine
@@ -93,6 +108,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 		EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher,
 		EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher,
 		EventDispatcher<TxnsCommittedToLedger> committedDispatcher,
+		EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
+		Hasher hasher,
 		SystemCounters systemCounters
 	) {
 		if (epochCeilingView.isGenesis()) {
@@ -109,7 +126,10 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.invalidProposedCommandEventDispatcher = Objects.requireNonNull(invalidProposedCommandEventDispatcher);
 		this.mempoolAtomsRemovedEventDispatcher = Objects.requireNonNull(mempoolAtomsRemovedEventDispatcher);
 		this.committedDispatcher = Objects.requireNonNull(committedDispatcher);
+		this.ledgerUpdateDispatcher = Objects.requireNonNull(ledgerUpdateDispatcher);
+		this.hasher = Objects.requireNonNull(hasher);
 		this.systemCounters = Objects.requireNonNull(systemCounters);
+		this.proposerElection = proposerElection;
 	}
 
 	public static class RadixEngineTxn implements PreparedTxn {
@@ -169,32 +189,47 @@ public final class RadixEngineStateComputer implements StateComputer {
 		return txns;
 	}
 
+	private LongFunction<ECPublicKey> getValidatorMapping() {
+		return l -> proposerElection.getProposer(View.of(l)).getKey();
+	}
+
 	private BFTValidatorSet executeSystemUpdate(
 		RadixEngineBranch<LedgerAndBFTProof> branch,
 		VerifiedVertex vertex,
 		long timestamp,
 		ImmutableList.Builder<PreparedTxn> successBuilder
 	) {
+		var systemActions = TxnConstructionRequest.create();
 		var view = vertex.getView();
-		final TxAction systemAction;
 		var nextValidatorSet = new AtomicReference<BFTValidatorSet>();
-		if (view.compareTo(epochCeilingView) < 0) {
-			systemAction = new SystemNextView(
+		if (view.compareTo(epochCeilingView) <= 0) {
+			systemActions.action(new SystemNextView(
 				view.number(),
+				vertex.isTimeout(),
 				timestamp,
-				vertex.getProposer() != null ? vertex.getProposer().getKey() : null
-			);
+				getValidatorMapping()
+			));
 		} else {
 			var stakedValidators = branch.getComputedState(StakedValidators.class);
 			if (stakedValidators.toValidatorSet() == null) {
 				// FIXME: Better way to handle rare case when there isn't enough in validator set
-				systemAction = new SystemNextView(
+				systemActions.action(new SystemNextView(
 					view.number(),
+					false,
 					timestamp,
-					vertex.getProposer() != null ? vertex.getProposer().getKey() : null
-				);
+					getValidatorMapping()
+				));
 			} else {
-				systemAction = new SystemNextEpoch(updates -> {
+				if (vertex.getParentHeader().getView().compareTo(epochCeilingView) < 0) {
+					systemActions.action(new SystemNextView(
+						epochCeilingView.number(),
+						true,
+						timestamp,
+						getValidatorMapping()
+					));
+				}
+
+				systemActions.action(new SystemNextEpoch(updates -> {
 					var cur = stakedValidators;
 					for (var u : updates) {
 						cur = cur.setStake(u.getValidatorKey(), u.getAmount());
@@ -209,7 +244,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 						.map(BFTNode::getKey)
 						.sorted(Comparator.comparing(ECPublicKey::getBytes, Arrays::compare))
 						.collect(Collectors.toList());
-				}, timestamp);
+				}, timestamp));
 			}
 		}
 
@@ -217,14 +252,14 @@ public final class RadixEngineStateComputer implements StateComputer {
 		final List<REProcessedTxn> txs;
 		try {
 			// TODO: combine construct/execute
-			systemUpdate = branch.construct(systemAction).buildWithoutSignature();
+			systemUpdate = branch.construct(systemActions).buildWithoutSignature();
 			txs = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException | TxBuilderException e) {
 			throw new IllegalStateException(
-				String.format("Failed to execute system update: %s", systemAction), e
+				String.format("Failed to execute system updates: %s", systemActions), e
 			);
 		}
-		RadixEngineTxn radixEngineCommand = new RadixEngineTxn(
+		var radixEngineCommand = new RadixEngineTxn(
 			systemUpdate,
 			txs.get(0),
 			PermissionLevel.SUPER_USER
@@ -338,8 +373,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	@Override
-	public void commit(VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState) {
-		var txCommitted = commitInternal(verifiedTxnsAndProof, vertexStoreState);
+	public void commit(VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
+		var txCommitted = commitInternal(txnsAndProof, vertexStoreState);
 
 		// TODO: refactor mempool to be less generic and make this more efficient
 		// TODO: Move this into engine
@@ -351,5 +386,34 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		committedDispatcher.dispatch(TxnsCommittedToLedger.create(txCommitted));
+
+		Optional<EpochChange> epochChangeOptional = txnsAndProof.getProof().getNextValidatorSet().map(validatorSet -> {
+			var header = txnsAndProof.getProof();
+			// TODO: Move vertex stuff somewhere else
+			var genesisVertex = UnverifiedVertex.createGenesis(header.getRaw());
+			var verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
+			var nextLedgerHeader = LedgerHeader.create(
+				header.getEpoch() + 1,
+				View.genesis(),
+				header.getAccumulatorState(),
+				header.timestamp()
+			);
+			var genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
+			final var initialState =
+				VerifiedVertexStoreState.create(
+					HighQC.from(genesisQC),
+					verifiedGenesisVertex,
+					Optional.empty(),
+					hasher
+				);
+			var proposerElection = new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.getNode().getKey().euid()));
+			var bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, initialState);
+			return new EpochChange(header, bftConfiguration);
+		});
+
+		epochChangeOptional.ifPresent(e -> this.proposerElection = e.getBFTConfiguration().getProposerElection());
+
+		var ledgerUpdate = new LedgerUpdate(txnsAndProof, epochChangeOptional);
+		ledgerUpdateDispatcher.dispatch(ledgerUpdate);
 	}
 }

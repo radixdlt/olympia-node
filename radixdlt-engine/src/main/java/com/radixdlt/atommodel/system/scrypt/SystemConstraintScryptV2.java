@@ -697,12 +697,14 @@ public class SystemConstraintScryptV2 implements ConstraintScrypt {
 				(b, buf) -> {
 					var key = REFieldSerialization.deserializeKey(buf);
 					var proposalsCompleted = REFieldSerialization.deserializeNonNegativeLong(buf);
-					return new ValidatorBFTData(key, proposalsCompleted);
+					var proposalsMissed = REFieldSerialization.deserializeNonNegativeLong(buf);
+					return new ValidatorBFTData(key, proposalsCompleted, proposalsMissed);
 				},
 				(s, buf) -> {
 					buf.put(SubstateTypeId.VALIDATOR_EPOCH_DATA.id());
 					REFieldSerialization.serializeKey(buf, s.validatorKey());
 					buf.putLong(s.proposalsCompleted());
+					buf.putLong(s.proposalsMissed());
 				}
 			)
 		);

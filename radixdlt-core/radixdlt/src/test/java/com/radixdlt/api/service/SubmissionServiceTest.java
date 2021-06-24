@@ -16,6 +16,11 @@
  */
 package com.radixdlt.api.service;
 
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Assert;
@@ -82,6 +87,7 @@ import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -140,6 +146,11 @@ public class SubmissionServiceTest {
 
 				bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
 					.toInstance(registeredNodes);
+				var validatorSet = BFTValidatorSet.from(registeredNodes.stream().map(ECKeyPair::getPublicKey)
+					.map(BFTNode::create)
+					.map(n -> BFTValidator.from(n, UInt256.ONE)));
+				bind(ProposerElection.class)
+					.toInstance(new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.getNode().getKey().euid())));
 				bind(Serialization.class).toInstance(serialization);
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
 				bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(engineStore);
@@ -160,6 +171,8 @@ public class SubmissionServiceTest {
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<MempoolAdd>>() { })
 					.toInstance(mempoolAddEventDispatcher());
+				bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() { })
+					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 
 				bind(BFTNode.class).annotatedWith(Self.class).toInstance(NODE);
 
