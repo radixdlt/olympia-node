@@ -122,33 +122,40 @@ Currently, we have the following types:
 
 ### Substate Schema
 
+Substates are serialized and deserialized based on the following protocol:
+- The first byte indicates the substate type
+- The following bytes are the fields based on the order they appear on the tables below.
+
 #### `UNCLAIMED_READDR` (`0x00`)
 
-| **Name**  | **Type**  | **Description**        |
-|-----------|-----------|------------------------|
-| `address` | `address` | A Radix Engine address |
+| **Name**   | **Type**  | **Description**        |
+|------------|-----------|------------------------|
+| `reserved` | `u8`      | Reserved, always `0`   |
+| `address`  | `address` | A Radix Engine address |
 
 #### `ROUND_DATA` (`0x01`)
 
-| **Name**    | **Type** | **Description**   |
-|-------------|----------|-------------------|
-| `view`      | `u64`    | The new view      |
-| `timestamp` | `u64`    | The new timestamp |
+| **Name**    | **Type** | **Description**      |
+|-------------|----------|----------------------|
+| `reserved`  | `u8`     | Reserved, always `0` |
+| `view`      | `u64`    | The new view         |
+| `timestamp` | `u64`    | The new timestamp    |
 
 #### `EPOCH_DATA` (`0x02`)
 
-| **Name** | **Type** | **Description** |
-|----------|----------|-----------------|
-| `epoch`  | `u64`    | The new epoch   |
+| **Name**   | **Type** | **Description**      |
+|------------|----------|----------------------|
+| `reserved` | `u8`     | Reserved, always `0` |
+| `epoch`    | `u64`    | The new epoch        |
 
 #### `TOKEN_DEF` (`0x03`)
 
 | **Name**      | **Type**     | **Description**                                               |
 |---------------|--------------|---------------------------------------------------------------|
-| `resource`    | `address`    | The resource address                                          |
 | `type`        | `u8`         | The resource type (allowed values: `0x00`, `0x01` and `0x02`) |
 | `supply`      | `u256`       | (If `type == 0x02`) The max token supply                      |
 | `minter`      | `public_key` | (If `type == 0x01`) The token minter public key               |
+| `resource`    | `address`    | The resource address                                          |
 | `name`        | `string`     | The token name                                                |
 | `description` | `string`     | The token description                                         |
 | `url`         | `string`     | An URL                                                        |
@@ -158,6 +165,7 @@ Currently, we have the following types:
 
 | **Name**   | **Type**  | **Description**      |
 |------------|-----------|----------------------|
+| `reserved` | `u8`      | Reserved, always `0` |
 | `resource` | `address` | The resource address |
 | `owner`    | `address` | The owner address    |
 | `amount`   | `u256`    | The amount           |
@@ -166,6 +174,7 @@ Currently, we have the following types:
 
 | **Name**    | **Type**     | **Description**          |
 |-------------|--------------|--------------------------|
+| `reserved`  | `u8`         | Reserved, always `0`     |
 | `owner`     | `address`    | The owner address        |
 | `validator` | `public_key` | The validator public key |
 | `amount`    | `u256`       | The stake amount         |
@@ -174,6 +183,7 @@ Currently, we have the following types:
 
 | **Name**    | **Type**     | **Description**          |
 |-------------|--------------|--------------------------|
+| `reserved`  | `u8`         | Reserved, always `0`     |
 | `validator` | `public_key` | The validator public key |
 | `owner`     | `address`    | The stake owner          |
 | `amount`    | `u256`       | The stake amount         |
@@ -182,6 +192,7 @@ Currently, we have the following types:
 
 | **Name**    | **Type**     | **Description**          |
 |-------------|--------------|--------------------------|
+| `reserved`  | `u8`         | Reserved, always `0`     |
 | `validator` | `public_key` | The validator public key |
 | `owner`     | `u256`       | The owner                |
 | `amount`    | `u256`       | The stake amount         |
@@ -190,6 +201,7 @@ Currently, we have the following types:
 
 | **Name**         | **Type**     | **Description**          |
 |------------------|--------------|--------------------------|
+| `reserved`       | `u8`         | Reserved, always `0`     |
 | `epoch_unlocked` | `u64`        | The unlocking epoch      |
 | `validator`      | `public_key` | The validator public key |
 | `owner`          | `u256`       | The owner                |
@@ -199,6 +211,7 @@ Currently, we have the following types:
 
 | **Name**    | **Type**     | **Description**                 |
 |-------------|--------------|---------------------------------|
+| `reserved`  | `u8`         | Reserved, always `0`            |
 | `validator` | `public_key` | The validator public key        |
 | `name`      | `string`     | The validator name              |
 | `url`       | `string`     | A link to the validator website |
@@ -207,6 +220,7 @@ Currently, we have the following types:
 
 | **Name**          | **Type**     | **Description**                      |
 |-------------------|--------------|--------------------------------------|
+| `reserved`        | `u8`         | Reserved, always `0`                 |
 | `is_registered`   | `bool`       | Whether this validator is registered |
 | `amount`          | `u256`       | Total stake                          |
 | `validator`       | `public_key` | Validator public key                 |
@@ -218,6 +232,7 @@ Currently, we have the following types:
 
 | **Name**              | **Type**     | **Description**              |
 |-----------------------|--------------|------------------------------|
+| `reserved`            | `u8`         | Reserved, always `0`         |
 | `validator`           | `public_key` | Validator public key         |
 | `proposals_completed` | `u64`        | Number of proposal completed |
 | `proposals_missed`    | `u64`        | Number of proposal missed    |
@@ -226,6 +241,7 @@ Currently, we have the following types:
 
 | **Name**                | **Type**     | **Description**               |
 |-------------------------|--------------|-------------------------------|
+| `reserved`              | `u8`         | Reserved, always `0`          |
 | `validator`             | `public_key` | Validator public key          |
 | `is_delegation_allowed` | `bool`       | Whether delegation is allowed |
 
@@ -233,6 +249,7 @@ Currently, we have the following types:
 
 | **Name**        | **Type**     | **Description**                             |
 |-----------------|--------------|---------------------------------------------|
+| `reserved`      | `u8`         | Reserved, always `0`                        |
 | `validator`     | `public_key` | Validator public key                        |
 | `is_registered` | `bool`       | Whether this validator is registered active |
 
@@ -240,6 +257,7 @@ Currently, we have the following types:
 
 | **Name**        | **Type**     | **Description**                                |
 |-----------------|--------------|------------------------------------------------|
+| `reserved`      | `u8`         | Reserved, always `0`                           |
 | `validator`     | `public_key` | Validator public key                           |
 | `is_registered` | `bool`       | Whether this validator is registered as active |
 
@@ -247,6 +265,7 @@ Currently, we have the following types:
 
 | **Name**          | **Type**     | **Description**           |
 |-------------------|--------------|---------------------------|
+| `reserved`        | `u8`         | Reserved, always `0`      |
 | `validator`       | `public_key` | Validator public key      |
 | `rake_percentage` | `u32`        | Validator rake percentage |
 
@@ -254,6 +273,7 @@ Currently, we have the following types:
 
 | **Name**                  | **Type**     | **Description**         |
 |---------------------------|--------------|-------------------------|
+| `reserved`                | `u8`         | Reserved, always `0`    |
 | `epoch`                   | `u64`        | Epoch                   |
 | `validator`               | `public_key` | Validator public key    |
 | `current_rake_percentage` | `u32`        | Current rake percentage |
@@ -263,6 +283,7 @@ Currently, we have the following types:
 
 | **Name**    | **Type**     | **Description**         |
 |-------------|--------------|-------------------------|
+| `reserved`  | `u8`         | Reserved, always `0`    |
 | `validator` | `public_key` | Validator public key    |
 | `owner`     | `address`    | Validator owner address |
 
@@ -270,6 +291,7 @@ Currently, we have the following types:
 
 | **Name**    | **Type**     | **Description**         |
 |-------------|--------------|-------------------------|
+| `reserved`  | `u8`         | Reserved, always `0`    |
 | `validator` | `public_key` | Validator public key    |
 | `owner`     | `address`    | Validator owner address |
 
