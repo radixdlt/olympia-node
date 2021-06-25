@@ -106,8 +106,12 @@ public final class GenesisBuilder {
 			for (var u : updates) {
 				cur = cur.setStake(u.getValidatorKey(), u.getAmount());
 			}
+			var validatorSet = cur.toValidatorSet();
+			if (validatorSet == null) {
+				throw new IllegalStateException("No validator set created in genesis.");
+			}
 			// FIXME: cur.toValidatorSet() may be null
-			genesisValidatorSet.set(cur.toValidatorSet());
+			genesisValidatorSet.set(validatorSet);
 			return genesisValidatorSet.get().nodes().stream()
 				.map(BFTNode::getKey)
 				.sorted(Comparator.comparing(ECPublicKey::getBytes, Arrays::compare))
