@@ -17,6 +17,7 @@
 
 package com.radixdlt.api.store.berkeley;
 
+import com.radixdlt.networks.Addressing;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
@@ -53,9 +54,7 @@ import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.AccountAddresses;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddresses;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -156,8 +155,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final TxnParser txnParser;
 	private final TransactionParser transactionParser;
 	private final REParser parser;
-	private final AccountAddresses accountAddresses;
-	private final ValidatorAddresses validatorAddresses;
+	private final Addressing addressing;
 
 	private Database transactionHistory;
 	private Database tokenDefinitions;
@@ -178,8 +176,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
 		TransactionParser transactionParser,
 		boolean isTest,
-		AccountAddresses accountAddresses,
-		ValidatorAddresses validatorAddresses
+		Addressing addressing
 	) {
 		this.dbEnv = dbEnv;
 		this.parser = parser;
@@ -189,8 +186,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		this.systemCounters = systemCounters;
 		this.scheduledFlushEventDispatcher = scheduledFlushEventDispatcher;
 		this.transactionParser = transactionParser;
-		this.accountAddresses = accountAddresses;
-		this.validatorAddresses = validatorAddresses;
+		this.addressing = addressing;
 
 		open(isTest);
 	}
@@ -205,12 +201,10 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		SystemCounters systemCounters,
 		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
 		TransactionParser transactionParser,
-		AccountAddresses accountAddresses,
-		ValidatorAddresses validatorAddresses
+		Addressing addressing
 	) {
 		this(dbEnv, parser, txnParser, store, serialization, systemCounters,
-			 scheduledFlushEventDispatcher, transactionParser, false, accountAddresses,
-			validatorAddresses
+			 scheduledFlushEventDispatcher, transactionParser, false, addressing
 		);
 	}
 
@@ -659,10 +653,10 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				var bucketJson = new JSONObject();
 				bucketJson.put("type", b.getClass().getSimpleName());
 				if (b.getOwner() != null) {
-					bucketJson.put("owner", accountAddresses.of(b.getOwner()));
+					bucketJson.put("owner", addressing.forAccounts().of(b.getOwner()));
 				}
 				if (b.getValidatorKey() != null) {
-					bucketJson.put("validator", validatorAddresses.of(b.getValidatorKey()));
+					bucketJson.put("validator", addressing.forValidators().of(b.getValidatorKey()));
 				}
 				bucketJson.put("delta", i.toString());
 				bucketJson.put("asset", b.resourceAddr() == null ? "stake_ownership" : getRriOrFail(b.resourceAddr()));

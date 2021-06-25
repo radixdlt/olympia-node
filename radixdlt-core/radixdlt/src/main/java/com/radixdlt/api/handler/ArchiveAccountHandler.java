@@ -17,6 +17,7 @@
 
 package com.radixdlt.api.handler;
 
+import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
@@ -24,9 +25,7 @@ import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.service.ArchiveAccountService;
 import com.radixdlt.api.store.TokenBalance;
-import com.radixdlt.identifiers.AccountAddresses;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddresses;
 import com.radixdlt.utils.functional.Result;
 
 import java.time.Instant;
@@ -48,25 +47,22 @@ import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class ArchiveAccountHandler {
 	private final ArchiveAccountService accountService;
-	private final AccountAddresses accountAddresses;
-	private final ValidatorAddresses validatorAddresses;
+	private final Addressing addressing;
 
 	@Inject
 	public ArchiveAccountHandler(
 		ArchiveAccountService accountService,
-		AccountAddresses accountAddresses,
-		ValidatorAddresses validatorAddresses
+		Addressing addressing
 	) {
 		this.accountService = accountService;
-		this.accountAddresses = accountAddresses;
-		this.validatorAddresses = validatorAddresses;
+		this.addressing = addressing;
 	}
 
 	public JSONObject handleAccountGetBalances(JSONObject request) {
 		return withRequiredStringParameter(
 			request,
 			"address",
-			address -> accountAddresses.parseFunctional(address)
+			address -> addressing.forAccounts().parseFunctional(address)
 				.flatMap(key -> accountService.getTokenBalances(key).map(v -> tuple(key, v)))
 				.map(tuple -> tuple.map(this::formatTokenBalances))
 		);
@@ -87,7 +83,7 @@ public class ArchiveAccountHandler {
 		return withRequiredStringParameter(
 			request,
 			"address",
-			address -> accountAddresses.parseFunctional(address)
+			address -> addressing.forAccounts().parseFunctional(address)
 				.flatMap(accountService::getStakePositions)
 				.map(this::formatStakePositions)
 		);
@@ -97,7 +93,7 @@ public class ArchiveAccountHandler {
 		return withRequiredStringParameter(
 			request,
 			"address",
-			address -> accountAddresses.parseFunctional(address)
+			address -> addressing.forAccounts().parseFunctional(address)
 				.flatMap(accountService::getUnstakePositions)
 				.map(positions -> formatUnstakePositions(positions, accountService.getEpoch()))
 		);
@@ -110,7 +106,7 @@ public class ArchiveAccountHandler {
 	private JSONObject formatUnstakePositions(List<BalanceEntry> balances, long curEpoch) {
 		var array = fromList(balances, unstake ->
 			jsonObject()
-				.put("validator", validatorAddresses.of(unstake.getDelegate()))
+				.put("validator", addressing.forValidators().of(unstake.getDelegate()))
 				.put("amount", unstake.getAmount())
 				.put("epochsUntil", unstake.getEpochUnlocked() - curEpoch)
 				.put("withdrawTxID", unstake.getTxId())
@@ -120,14 +116,14 @@ public class ArchiveAccountHandler {
 
 	private JSONObject formatTokenBalances(REAddr address, List<TokenBalance> balances) {
 		return jsonObject()
-			.put("owner", accountAddresses.of(address))
+			.put("owner", addressing.forAccounts().of(address))
 			.put("tokenBalances", fromList(balances, TokenBalance::asJson));
 	}
 
 	private JSONObject formatStakePositions(List<BalanceEntry> balances) {
 		var array = fromList(balances, balance ->
 			jsonObject()
-				.put("validator", validatorAddresses.of(balance.getDelegate()))
+				.put("validator", addressing.forValidators().of(balance.getDelegate()))
 				.put("amount", balance.getAmount())
 		);
 
@@ -179,6 +175,6 @@ public class ArchiveAccountHandler {
 	}
 
 	private Result<REAddr> parseAddress(JSONObject params) {
-		return accountAddresses.parseFunctional(params.getString("address"));
+		return addressing.forAccounts().parseFunctional(params.getString("address"));
 	}
 }

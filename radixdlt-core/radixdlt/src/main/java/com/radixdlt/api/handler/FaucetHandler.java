@@ -29,7 +29,7 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.AccountAddresses;
+import com.radixdlt.identifiers.AccountAddressing;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.utils.UInt256;
@@ -51,7 +51,7 @@ public class FaucetHandler {
 	private final REAddr account;
 	private final Set<REAddr> tokensToSend;
 	private final HashSigner hashSigner;
-	private final AccountAddresses accountAddresses;
+	private final AccountAddressing accountAddresses;
 
 	@Inject
 	public FaucetHandler(
@@ -59,7 +59,7 @@ public class FaucetHandler {
 		@Self REAddr account,
 		@FaucetToken Set<REAddr> tokensToSend,
 		@LocalSigner HashSigner hashSigner,
-		AccountAddresses accountAddresses
+		AccountAddressing accountAddresses
 	) {
 		this.submissionService = submissionService;
 		this.account = account;

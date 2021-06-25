@@ -35,8 +35,6 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
-import com.radixdlt.identifiers.AccountAddresses;
-import com.radixdlt.identifiers.ValidatorAddresses;
 import com.radixdlt.keys.PersistedBFTKeyModule;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
@@ -138,16 +136,6 @@ public final class RadixNodeModule extends AbstractModule {
 		}
 	}
 
-	public String accountHrp(int networkId) {
-		return Network.ofId(networkId).map(Network::getAccountHrp)
-			.orElse("tdx" + networkId);
-	}
-
-	public String validatorHrp(int networkId) {
-		return Network.ofId(networkId).map(Network::getValidatorHrp)
-			.orElse("vt" + networkId);
-	}
-
 	@Override
 	protected void configure() {
 		if (this.networkId <= 0) {
@@ -156,8 +144,6 @@ public final class RadixNodeModule extends AbstractModule {
 
 		bindConstant().annotatedWith(NetworkId.class).to(networkId);
 		bind(Txn.class).annotatedWith(Genesis.class).toInstance(loadGenesis(networkId));
-		bind(AccountAddresses.class).toInstance(new AccountAddresses(accountHrp(networkId)));
-		bind(ValidatorAddresses.class).toInstance(new ValidatorAddresses(validatorHrp(networkId)));
 		bind(RuntimeProperties.class).toInstance(properties);
 
 		// Consensus configuration

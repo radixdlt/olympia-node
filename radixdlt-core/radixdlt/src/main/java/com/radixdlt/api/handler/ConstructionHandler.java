@@ -17,6 +17,7 @@
 
 package com.radixdlt.api.handler;
 
+import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
@@ -28,7 +29,6 @@ import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.AccountAddresses;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.functional.Result;
 
@@ -49,17 +49,17 @@ import static com.radixdlt.utils.functional.Result.wrap;
 public class ConstructionHandler {
 	private final SubmissionService submissionService;
 	private final ActionParserService actionParserService;
-	private final AccountAddresses accountAddresses;
+	private final Addressing addressing;
 
 	@Inject
 	public ConstructionHandler(
 		SubmissionService submissionService,
 		ActionParserService actionParserService,
-		AccountAddresses accountAddresses
+		Addressing addressing
 	) {
 		this.submissionService = submissionService;
 		this.actionParserService = actionParserService;
-		this.accountAddresses = accountAddresses;
+		this.addressing = addressing;
 	}
 
 	public JSONObject handleConstructionBuildTransaction(JSONObject request) {
@@ -134,6 +134,6 @@ public class ConstructionHandler {
 
 	private Result<REAddr> account(JSONObject params) {
 		return safeString(params, "feePayer")
-			.flatMap(accountAddresses::parseFunctional);
+			.flatMap(addressing.forAccounts()::parseFunctional);
 	}
 }

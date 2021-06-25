@@ -16,7 +16,7 @@
  */
 package com.radixdlt.api.handler;
 
-import com.radixdlt.identifiers.AccountAddresses;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import org.json.JSONObject;
 import org.junit.Test;
@@ -26,7 +26,6 @@ import com.radixdlt.api.service.ValidatorInfoService;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddresses;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
@@ -50,10 +49,9 @@ public class ArchiveValidationHandlerTest {
 	private static final ECPublicKey V2 = ECKeyPair.generateNew().getPublicKey();
 	private static final ECPublicKey V3 = ECKeyPair.generateNew().getPublicKey();
 
-	private final AccountAddresses accountAddresses = new AccountAddresses(Network.LOCALNET.getAccountHrp());
-	private final ValidatorAddresses validatorAddresses = new ValidatorAddresses(Network.LOCALNET.getValidatorHrp());
+	private final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
 	private final ValidatorInfoService validatorInfoService = mock(ValidatorInfoService.class);
-	private final ArchiveValidationHandler handler = new ArchiveValidationHandler(validatorInfoService, accountAddresses, validatorAddresses);
+	private final ArchiveValidationHandler handler = new ArchiveValidationHandler(validatorInfoService, addressing);
 
 	@Test
 	public void testValidatorsPositional() {
@@ -79,7 +77,7 @@ public class ArchiveValidationHandlerTest {
 		assertTrue(result.has("cursor"));
 
 		var cursor = result.getString("cursor");
-		assertEquals(cursor, key.map(validatorAddresses::of).map(Objects::toString).orElseThrow());
+		assertEquals(cursor, key.map(addressing.forValidators()::of).map(Objects::toString).orElseThrow());
 
 		assertTrue(result.has("validators"));
 		var list = result.getJSONArray("validators");
@@ -119,7 +117,7 @@ public class ArchiveValidationHandlerTest {
 		assertTrue(result.has("cursor"));
 
 		var cursor = result.getString("cursor");
-		assertEquals(cursor, key.map(validatorAddresses::of).map(Objects::toString).orElseThrow());
+		assertEquals(cursor, key.map(addressing.forValidators()::of).map(Objects::toString).orElseThrow());
 
 		assertTrue(result.has("validators"));
 		var list = result.getJSONArray("validators");
@@ -140,7 +138,7 @@ public class ArchiveValidationHandlerTest {
 		when(validatorInfoService.getValidator(eq(V1)))
 			.thenReturn(Result.ok(createValidator(V1, "v1", UInt256.FIVE)));
 
-		var params = jsonArray().put(validatorAddresses.of(V1));
+		var params = jsonArray().put(addressing.forValidators().of(V1));
 		var response = handler.handleValidatorsLookupValidator(requestWith(params));
 
 		assertNotNull(response);
@@ -160,7 +158,7 @@ public class ArchiveValidationHandlerTest {
 		when(validatorInfoService.getValidator(eq(V1)))
 			.thenReturn(Result.ok(createValidator(V1, "v1", UInt256.FIVE)));
 
-		var params = jsonObject().put("validatorAddress", validatorAddresses.of(V1));
+		var params = jsonObject().put("validatorAddress", addressing.forValidators().of(V1));
 		var response = handler.handleValidatorsLookupValidator(requestWith(params));
 
 		assertNotNull(response);

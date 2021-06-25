@@ -27,6 +27,8 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bits;
 import com.radixdlt.utils.functional.Result;
 
+import java.util.Objects;
+
 import static com.radixdlt.identifiers.CommonErrors.INVALID_VALIDATOR_ADDRESS;
 
 /**
@@ -36,10 +38,15 @@ import static com.radixdlt.identifiers.CommonErrors.INVALID_VALIDATOR_ADDRESS;
  * The data part is a conversion of the 33 byte compressed EC public key to Base32
  * similar to specification described in BIP_0173 for converting witness programs.
  */
-public final class ValidatorAddresses {
+public final class ValidatorAddressing {
 	private final String hrp;
-	public ValidatorAddresses(String hrp) {
+	private ValidatorAddressing(String hrp) {
 		this.hrp = hrp;
+	}
+
+	public static ValidatorAddressing bech32(String hrp) {
+		Objects.requireNonNull(hrp);
+		return new ValidatorAddressing(hrp);
 	}
 
 	private static byte[] toBech32Data(byte[] bytes) {

@@ -25,6 +25,8 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bits;
 import com.radixdlt.utils.functional.Result;
 
+import java.util.Objects;
+
 import static com.radixdlt.identifiers.CommonErrors.INVALID_ACCOUNT_ADDRESS;
 
 /**
@@ -36,11 +38,16 @@ import static com.radixdlt.identifiers.CommonErrors.INVALID_ACCOUNT_ADDRESS;
  * {@link com.radixdlt.identifiers.REAddr} to Base32 similar to specification described
  * in BIP_0173 for converting witness programs.
  */
-public final class AccountAddresses {
+public final class AccountAddressing {
 	private final String hrp;
 
-	public AccountAddresses(String hrp) {
+	private AccountAddressing(String hrp) {
 		this.hrp = hrp;
+	}
+
+	public static AccountAddressing bech32(String hrp) {
+		Objects.requireNonNull(hrp);
+		return new AccountAddressing(hrp);
 	}
 
 	private static byte[] toBech32Data(byte[] bytes) {

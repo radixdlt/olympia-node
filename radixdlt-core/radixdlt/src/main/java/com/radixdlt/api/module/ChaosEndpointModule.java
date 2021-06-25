@@ -28,7 +28,7 @@ import com.radixdlt.api.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.api.controller.ChaosController;
 import com.radixdlt.api.qualifier.NodeServer;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.identifiers.ValidatorAddresses;
+import com.radixdlt.networks.Addressing;
 
 public class ChaosEndpointModule extends AbstractModule {
 	@Override
@@ -43,8 +43,8 @@ public class ChaosEndpointModule extends AbstractModule {
 	public Controller chaosController(
 		EventDispatcher<MempoolFillerUpdate> mempoolDispatcher,
 		EventDispatcher<MessageFlooderUpdate> messageDispatcher,
-		ValidatorAddresses validatorAddresses
+		Addressing addressing
 	) {
-		return new ChaosController(mempoolDispatcher, messageDispatcher, validatorAddresses);
+		return new ChaosController(mempoolDispatcher, messageDispatcher, addressing);
 	}
 }

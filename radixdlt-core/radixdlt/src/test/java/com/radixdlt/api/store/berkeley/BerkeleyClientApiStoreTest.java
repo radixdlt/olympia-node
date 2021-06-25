@@ -16,7 +16,7 @@
  */
 package com.radixdlt.api.store.berkeley;
 
-import com.radixdlt.identifiers.ValidatorAddresses;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.networks.Network;
@@ -54,7 +54,6 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.AccountAddresses;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.qualifier.NumPeers;
@@ -92,8 +91,7 @@ public class BerkeleyClientApiStoreTest {
 	private static final REAddr OWNER_ACCOUNT = REAddr.ofPubKeyAccount(OWNER_KEYPAIR.getPublicKey());
 	private static final ECKeyPair TOKEN_KEYPAIR = ECKeyPair.generateNew();
 	private static final REAddr TOKEN_ACCOUNT = REAddr.ofPubKeyAccount(TOKEN_KEYPAIR.getPublicKey());
-	private static final AccountAddresses accountAddresses = new AccountAddresses(Network.LOCALNET.getAccountHrp());
-	private static final ValidatorAddresses validatorAddresses = new ValidatorAddresses(Network.LOCALNET.getValidatorHrp());
+	private static final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
 
 	private static final String SYMBOL = "cfee";
 	private static final REAddr TOKEN = REAddr.ofHashedKey(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
@@ -266,8 +264,8 @@ public class BerkeleyClientApiStoreTest {
 
 				assertEquals(ActionType.TRANSFER, action.getType());
 				assertEquals(UInt256.FOUR, action.getAmount());
-				assertEquals(accountAddresses.of(TOKEN_ACCOUNT), action.getFrom());
-				assertEquals(accountAddresses.of(REAddr.ofPubKeyAccount(OWNER_KEYPAIR.getPublicKey())), action.getTo());
+				assertEquals(addressing.forAccounts().of(TOKEN_ACCOUNT), action.getFrom());
+				assertEquals(addressing.forAccounts().of(REAddr.ofPubKeyAccount(OWNER_KEYPAIR.getPublicKey())), action.getTo());
 
 				newCursor.set(entry.timestamp());
 			});
@@ -345,10 +343,9 @@ public class BerkeleyClientApiStoreTest {
 			serialization,
 			mock(SystemCounters.class),
 			mock(ScheduledEventDispatcher.class),
-			new TransactionParser(accountAddresses, validatorAddresses),
+			new TransactionParser(addressing),
 			true,
-			accountAddresses,
-			validatorAddresses
+			addressing
 		);
 	}
 

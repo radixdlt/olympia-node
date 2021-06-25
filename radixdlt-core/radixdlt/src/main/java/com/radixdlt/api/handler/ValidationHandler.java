@@ -17,8 +17,7 @@
 
 package com.radixdlt.api.handler;
 
-import com.radixdlt.identifiers.AccountAddresses;
-import com.radixdlt.identifiers.ValidatorAddresses;
+import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
@@ -32,20 +31,17 @@ import static com.radixdlt.api.JsonRpcUtil.response;
 public class ValidationHandler {
 	private final AccountInfoService accountService;
 	private final ValidatorInfoService validatorInfoService;
-	private final AccountAddresses accountAddresses;
-	private final ValidatorAddresses validatorAddresses;
+	private final Addressing addressing;
 
 	@Inject
 	public ValidationHandler(
 		AccountInfoService accountService,
 		ValidatorInfoService validatorInfoService,
-		AccountAddresses accountAddresses,
-		ValidatorAddresses validatorAddresses
+		Addressing addressing
 	) {
 		this.accountService = accountService;
 		this.validatorInfoService = validatorInfoService;
-		this.accountAddresses = accountAddresses;
-		this.validatorAddresses = validatorAddresses;
+		this.addressing = addressing;
 	}
 
 	public JSONObject handleGetNodeInfo(JSONObject request) {
@@ -55,7 +51,7 @@ public class ValidationHandler {
 	public JSONObject handleGetNextEpochData(JSONObject request) {
 		return response(request, jsonObject().put(
 			"validators",
-			fromList(validatorInfoService.getAllValidators(), d -> d.asJson(accountAddresses, validatorAddresses))
+			fromList(validatorInfoService.getAllValidators(), d -> d.asJson(addressing))
 		));
 	}
 

@@ -23,7 +23,7 @@ import org.junit.Test;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.AccountAddresses;
+import com.radixdlt.identifiers.AccountAddressing;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bytes;
@@ -33,8 +33,8 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class AccountAddressesTest {
-	private final AccountAddresses accountAddresses = new AccountAddresses("brx");
+public class AccountAddressingTest {
+	private final AccountAddressing accountAddresses = AccountAddressing.bech32("brx");
 	private final BiMap<String, String> privateKeyToAccountAddress = HashBiMap.create(
 		Map.of(
 			"00", "brx1qsps28kdn4epn0c9ej2rcmwfz5a4jdhq2ez03x7h6jefvr4fnwnrtqqjqllv9",

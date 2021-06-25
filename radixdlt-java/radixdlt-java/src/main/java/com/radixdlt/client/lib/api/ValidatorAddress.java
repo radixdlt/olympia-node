@@ -21,13 +21,13 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.ValidatorAddresses;
+import com.radixdlt.identifiers.ValidatorAddressing;
 import com.radixdlt.serialization.DeserializeException;
 
 import java.util.Objects;
 
 public class ValidatorAddress {
-	private static final ValidatorAddresses validatorAddresses = new ValidatorAddresses("vb"); // This needs to come from somewhere else
+	private static final ValidatorAddressing validatorAddresses = ValidatorAddressing.bech32("vb"); // This needs to come from somewhere else
 
 	@JsonIgnore
 	private final ECPublicKey address;

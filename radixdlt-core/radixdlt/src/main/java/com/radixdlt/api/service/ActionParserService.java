@@ -17,6 +17,7 @@
 
 package com.radixdlt.api.service;
 
+import com.radixdlt.networks.Addressing;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -24,9 +25,7 @@ import com.google.inject.Inject;
 import com.radixdlt.api.data.ActionType;
 import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.AccountAddresses;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddresses;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
@@ -46,18 +45,15 @@ import static java.util.Optional.ofNullable;
 
 public final class ActionParserService {
 	private final RriParser rriParser;
-	private final AccountAddresses accountAddresses;
-	private final ValidatorAddresses validatorAddresses;
+	private final Addressing addressing;
 
 	@Inject
 	public ActionParserService(
 		RriParser rriParser,
-		AccountAddresses accountAddresses,
-		ValidatorAddresses validatorAddresses
+		Addressing addressing
 	) {
 		this.rriParser = rriParser;
-		this.accountAddresses = accountAddresses;
-		this.validatorAddresses = validatorAddresses;
+		this.addressing = addressing;
 	}
 
 	public Result<List<TransactionAction>> parse(JSONArray actions) {
@@ -225,7 +221,7 @@ public final class ActionParserService {
 
 	private Result<ECPublicKey> validator(JSONObject element) {
 		return param(element, "validator")
-			.flatMap(validatorAddresses::fromString);
+			.flatMap(addressing.forValidators()::fromString);
 	}
 
 	private static Result<UInt256> amount(JSONObject element) {
@@ -288,7 +284,7 @@ public final class ActionParserService {
 
 	private Result<REAddr> address(JSONObject element, String name) {
 		return param(element, name)
-			.flatMap(accountAddresses::parseFunctional);
+			.flatMap(addressing.forAccounts()::parseFunctional);
 	}
 
 	private static Result<String> param(JSONObject params, String name) {

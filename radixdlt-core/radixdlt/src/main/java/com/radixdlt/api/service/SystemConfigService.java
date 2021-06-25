@@ -18,6 +18,7 @@
 
 package com.radixdlt.api.service;
 
+import com.radixdlt.networks.Addressing;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -161,6 +162,7 @@ public class SystemConfigService {
 	private final SystemCounters systemCounters;
 	private final List<EndpointStatus> endpointStatuses;
 	private final PeersView peersView;
+	private final Addressing addressing;
 
 	@Inject
 	public SystemConfigService(
@@ -178,7 +180,8 @@ public class SystemConfigService {
 		InMemorySystemInfo inMemorySystemInfo,
 		SystemCounters systemCounters,
 		PeersView peersView,
-		P2PConfig p2PConfig
+		P2PConfig p2PConfig,
+		Addressing addressing
 	) {
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.systemCounters = systemCounters;
@@ -192,6 +195,7 @@ public class SystemConfigService {
 		syncConfiguration = syncConfig.asJson();
 		checkpointsConfiguration = prepareCheckpointsConfiguration(genesis);
 		networkingConfiguration = prepareNetworkingConfiguration(p2PConfig);
+		this.addressing = addressing;
 	}
 
 	public JSONObject getApiConfiguration() {
@@ -220,12 +224,12 @@ public class SystemConfigService {
 
 	public JSONObject getLatestProof() {
 		var proof = inMemorySystemInfo.getCurrentProof();
-		return proof == null ? new JSONObject() : proof.asJSON();
+		return proof == null ? new JSONObject() : proof.asJSON(addressing);
 	}
 
 	public JSONObject getLatestEpochProof() {
 		var proof = inMemorySystemInfo.getEpochProof();
-		return proof == null ? new JSONObject() : proof.asJSON();
+		return proof == null ? new JSONObject() : proof.asJSON(addressing);
 	}
 
 	public JSONObject getRadixEngineConfiguration() {
@@ -380,10 +384,10 @@ public class SystemConfigService {
 	}
 
 	@VisibleForTesting
-	static JSONObject prepareCheckpointsConfiguration(VerifiedTxnsAndProof genesis) {
+	JSONObject prepareCheckpointsConfiguration(VerifiedTxnsAndProof genesis) {
 		return jsonObject()
 			.put("txn", fromList(genesis.getTxns(), txn -> Bytes.toHexString(txn.getPayload())))
-			.put("proof", genesis.getProof().asJSON());
+			.put("proof", genesis.getProof().asJSON(addressing));
 	}
 
 	private JSONObject prepareNetworkingConfiguration(P2PConfig p2PConfig) {

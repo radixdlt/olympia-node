@@ -28,9 +28,8 @@ import com.radixdlt.atommodel.tokens.state.AccountBucket;
 import com.radixdlt.atommodel.tokens.state.ExittingOwnershipBucket;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.AccountAddresses;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddresses;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
@@ -44,24 +43,19 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class TransactionParser {
-	private final AccountAddresses accountAddresses;
-	private final ValidatorAddresses validatorAddresses;
+	private final Addressing addressing;
 
 	@Inject
-	public TransactionParser(
-		AccountAddresses accountAddresses,
-		ValidatorAddresses validatorAddresses
-	) {
-		this.accountAddresses = accountAddresses;
-		this.validatorAddresses = validatorAddresses;
+	public TransactionParser(Addressing addressing) {
+		this.addressing = addressing;
 	}
 
 	private String bucketToString(Bucket bucket) {
 		if (bucket.getValidatorKey() != null && !(bucket instanceof ExittingOwnershipBucket)) {
-			return validatorAddresses.of(bucket.getValidatorKey());
+			return addressing.forValidators().of(bucket.getValidatorKey());
 		}
 
-		return accountAddresses.of(bucket.getOwner());
+		return addressing.forAccounts().of(bucket.getOwner());
 	}
 
 	private ActionEntry mapToActionEntry(

@@ -17,6 +17,7 @@
  */
 package com.radixdlt.api.controller;
 
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -27,7 +28,6 @@ import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.api.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.identifiers.ValidatorAddresses;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -53,12 +53,12 @@ import static org.mockito.Mockito.when;
 public class ChaosControllerTest {
 	private final EventDispatcher<MempoolFillerUpdate> mempool = mock(EventDispatcher.class);
 	private final EventDispatcher<MessageFlooderUpdate> message = mock(EventDispatcher.class);
-	private final ValidatorAddresses validatorAddresses = new ValidatorAddresses(Network.LOCALNET.getValidatorHrp());
+	private final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
 
 	@Test
 	@Ignore
 	public void routesAreConfigured() {
-		final ChaosController chaosController = new ChaosController(mempool, message, validatorAddresses);
+		final ChaosController chaosController = new ChaosController(mempool, message, addressing);
 		var handler = mock(RoutingHandler.class);
 		chaosController.configureRoutes("/root/", handler);
 
@@ -69,11 +69,11 @@ public class ChaosControllerTest {
 	@Test
 	@Ignore
 	public void testHandleMessageFlood() throws InterruptedException {
-		final ChaosController chaosController = new ChaosController(mempool, message, validatorAddresses);
+		final ChaosController chaosController = new ChaosController(mempool, message, addressing);
 		var latch = new CountDownLatch(1);
 		var arg = new AtomicReference<String>();
 
-		var nodeAddress = validatorAddresses.of(ECKeyPair.generateNew().getPublicKey());
+		var nodeAddress = addressing.forValidators().of(ECKeyPair.generateNew().getPublicKey());
 		var exchange = createExchange(
 			"{ \"enabled\" : true, \"data\" : { \"nodeAddress\" : \""
 				+ nodeAddress

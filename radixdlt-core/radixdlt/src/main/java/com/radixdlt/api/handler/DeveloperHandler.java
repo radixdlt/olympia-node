@@ -22,6 +22,7 @@ import com.google.inject.Inject;
 import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.api.service.ActionParserService;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.functional.Result;
@@ -35,17 +36,19 @@ import static com.radixdlt.api.data.ApiErrors.UNABLE_TO_PREPARE_TX;
 import static com.radixdlt.utils.functional.Result.allOf;
 
 public final class DeveloperHandler {
-
+	private final Addressing addressing;
 	private final ActionParserService actionParserService;
 	private final GenesisBuilder genesisBuilder;
 
 	@Inject
 	public DeveloperHandler(
 		ActionParserService actionParserService,
-		GenesisBuilder genesisBuilder
+		GenesisBuilder genesisBuilder,
+		Addressing addressing
 	) {
 		this.actionParserService = actionParserService;
 		this.genesisBuilder = genesisBuilder;
+		this.addressing = addressing;
 	}
 
 	private Result<VerifiedTxnsAndProof> build(List<TransactionAction> steps) {
@@ -76,7 +79,7 @@ public final class DeveloperHandler {
 							var o = jsonObject();
 							var txns = jsonArray();
 							p.getTxns().forEach(txn -> txns.put(Bytes.toHexString(txn.getPayload())));
-							var proof = p.getProof().asJSON();
+							var proof = p.getProof().asJSON(addressing);
 
 							return o.put("txns", txns).put("proof", proof);
 						}))

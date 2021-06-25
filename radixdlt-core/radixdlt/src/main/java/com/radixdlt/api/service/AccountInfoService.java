@@ -17,6 +17,7 @@
 
 package com.radixdlt.api.service;
 
+import com.radixdlt.networks.Addressing;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -28,9 +29,7 @@ import com.radixdlt.application.MyValidatorInfo;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.AccountAddresses;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddresses;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
@@ -42,20 +41,17 @@ import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 public class AccountInfoService {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final ECPublicKey bftKey;
-	private final AccountAddresses accountAddresses;
-	private final ValidatorAddresses validatorAddresses;
+	private final Addressing addressing;
 
 	@Inject
 	public AccountInfoService(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		@Self ECPublicKey bftKey,
-		AccountAddresses accountAddresses,
-		ValidatorAddresses validatorAddresses
+		Addressing addressing
 	) {
 		this.radixEngine = radixEngine;
 		this.bftKey = bftKey;
-		this.accountAddresses = accountAddresses;
-		this.validatorAddresses = validatorAddresses;
+		this.addressing = addressing;
 	}
 
 	public JSONObject getAccountInfo() {
@@ -78,7 +74,7 @@ public class AccountInfoService {
 	}
 
 	public String getValidatorAddress() {
-		return validatorAddresses.of(bftKey);
+		return addressing.forValidators().of(bftKey);
 	}
 
 	public MyValidatorInfo getValidatorInfoDetails() {
@@ -96,7 +92,7 @@ public class AccountInfoService {
 		stakeReceived.forEach((address, amt) -> {
 			stakeFrom.put(
 				jsonObject()
-					.put("delegator", accountAddresses.of(address))
+					.put("delegator", addressing.forAccounts().of(address))
 					.put("amount", amt)
 			);
 		});
@@ -105,7 +101,7 @@ public class AccountInfoService {
 	}
 
 	public String getOwnAddress() {
-		return accountAddresses.of(REAddr.ofPubKeyAccount(bftKey));
+		return addressing.forAccounts().of(REAddr.ofPubKeyAccount(bftKey));
 	}
 
 	public ECPublicKey getOwnPubKey() {
@@ -136,6 +132,6 @@ public class AccountInfoService {
 	}
 
 	private JSONObject constructStakeEntry(ECPublicKey publicKey, UInt256 amount) {
-		return jsonObject().put("delegate", validatorAddresses.of(publicKey)).put("amount", amount);
+		return jsonObject().put("delegate", addressing.forValidators().of(publicKey)).put("amount", amount);
 	}
 }

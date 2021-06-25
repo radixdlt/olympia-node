@@ -22,13 +22,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -98,7 +97,7 @@ public final class LedgerHeader {
 		this.timestamp = timestamp;
 	}
 
-	public static LedgerHeader fromJSONObject(JSONObject json) throws DeserializeException {
+	public static LedgerHeader fromJSONObject(Addressing addressing, JSONObject json) throws DeserializeException {
 		var epoch = json.getLong("epoch");
 		var view = json.getLong("view");
 		var version = json.getLong("version");
@@ -112,13 +111,9 @@ public final class LedgerHeader {
 			var nextValidatorsJson = json.getJSONArray("nextValidators");
 			for (int i = 0; i < nextValidatorsJson.length(); i++) {
 				var validatorJson = nextValidatorsJson.getJSONObject(i);
-				try {
-					var key = ECPublicKey.fromHex(validatorJson.getString("address"));
-					var stake = UInt256.from(validatorJson.getString("stake"));
-					builder.add(BFTValidator.from(BFTNode.create(key), stake));
-				} catch (PublicKeyException e) {
-					throw new DeserializeException(e.getMessage());
-				}
+				var key = addressing.forValidators().parse(validatorJson.getString("address"));
+				var stake = UInt256.from(validatorJson.getString("stake"));
+				builder.add(BFTValidator.from(BFTNode.create(key), stake));
 			}
 			nextValidators = builder.build();
 		} else {
@@ -129,7 +124,7 @@ public final class LedgerHeader {
 		return new LedgerHeader(epoch, view, accumulatorState, timestamp, nextValidators);
 	}
 
-	public JSONObject asJSONObject() {
+	public JSONObject asJSONObject(Addressing addressing) {
 		var json = new JSONObject()
 			.put("epoch", epoch)
 			.put("view", view.number())
@@ -140,7 +135,7 @@ public final class LedgerHeader {
 		if (nextValidators != null) {
 			var validators = new JSONArray();
 			for (var v : nextValidators) {
-				var validatorAddress = v.getNode().getKey().toHex();
+				var validatorAddress = addressing.forValidators().of(v.getNode().getKey());
 				validators.put(new JSONObject()
 					.put("address", validatorAddress)
 					.put("stake", v.getPower())

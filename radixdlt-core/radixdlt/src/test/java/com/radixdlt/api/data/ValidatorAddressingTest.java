@@ -23,7 +23,7 @@ import org.junit.Test;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.ValidatorAddresses;
+import com.radixdlt.identifiers.ValidatorAddressing;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bytes;
 
@@ -32,8 +32,8 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class ValidatorAddressesTest {
-	private final ValidatorAddresses validatorAddresses = new ValidatorAddresses("vb");
+public class ValidatorAddressingTest {
+	private final ValidatorAddressing validatorAddresses = ValidatorAddressing.bech32("vb");
 	private final BiMap<String, String> privateKeyToValidatorId = HashBiMap.create(
 		Map.of(
 			"00", "vb1qvz3anvawgvm7pwvjs7xmjg48dvndczkgnufh475k2tqa2vm5c6cq9u3702",

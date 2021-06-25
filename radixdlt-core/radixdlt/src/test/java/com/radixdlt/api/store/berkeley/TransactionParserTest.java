@@ -48,8 +48,7 @@ import com.radixdlt.atommodel.validators.construction.UpdateAllowDelegationFlagC
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.identifiers.AccountAddresses;
-import com.radixdlt.identifiers.ValidatorAddresses;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import org.junit.Assert;
 import org.junit.Before;
@@ -94,12 +93,11 @@ public class TransactionParserTest {
 	private final MutableTokenDefinition tokDefII = new MutableTokenDefinition(
 		tokenOwnerKeyPair.getPublicKey(), "tst", "Test2", "description2", null, null
 	);
-	private final AccountAddresses accountAddresses = new AccountAddresses(Network.LOCALNET.getAccountHrp());
-	private final ValidatorAddresses validatorAddresses = new ValidatorAddresses(Network.LOCALNET.getValidatorHrp());
+	private final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
 
 	private RadixEngine<Void> engine;
 
-	private final TransactionParser parser = new TransactionParser(accountAddresses, validatorAddresses);
+	private final TransactionParser parser = new TransactionParser(addressing);
 
 	@Before
 	public void setup() throws Exception {
