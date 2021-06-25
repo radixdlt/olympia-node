@@ -48,16 +48,16 @@ public class SyncRadixApiHistoryPaginationTest {
 	private static final AccountAddress ACCOUNT_ADDRESS2 = AccountAddress.create(KEY_PAIR2.getPublicKey());
 
 	@Test
-	@Ignore
+//	@Ignore
 	public void testAddManyTransactions() {
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> {
-				for (int i = 0; i < 20; i++) {
+				for (int i = 0; i < 2000; i++) {
 					addTransaction(client, i);
 					try {
-						Thread.sleep(100);
+						Thread.sleep(50);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -66,7 +66,7 @@ public class SyncRadixApiHistoryPaginationTest {
 	}
 
 	@Test
-	@Ignore
+//	@Ignore
 	public void testTransactionHistoryInPages() {
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
@@ -75,7 +75,7 @@ public class SyncRadixApiHistoryPaginationTest {
 				client -> {
 					var cursorHolder = new AtomicReference<NavigationCursor>();
 					do {
-						client.account().history(ACCOUNT_ADDRESS1, 5, Optional.ofNullable(cursorHolder.get()))
+						client.account().history(ACCOUNT_ADDRESS1, 50, Optional.ofNullable(cursorHolder.get()))
 							.onFailure(failure -> fail(failure.toString()))
 							.onSuccess(v -> v.getCursor().ifPresent(System.out::println))
 							.onSuccess(v -> v.getCursor().ifPresentOrElse(cursorHolder::set, () -> cursorHolder.set(null)))
@@ -102,7 +102,7 @@ public class SyncRadixApiHistoryPaginationTest {
 	}
 
 	private void addTransaction(RadixApi client, int count) {
-		var request = TransactionRequest.createBuilder()
+		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
 			.transfer(
 				ACCOUNT_ADDRESS1,
 				ACCOUNT_ADDRESS2,

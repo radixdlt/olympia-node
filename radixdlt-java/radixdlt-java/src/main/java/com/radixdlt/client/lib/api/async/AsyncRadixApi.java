@@ -198,7 +198,7 @@ public class AsyncRadixApi implements RadixApi {
 		@Override
 		public Promise<BuiltTransaction> build(TransactionRequest request) {
 			return call(
-				request(CONSTRUCTION_BUILD, request.getActions(), request.getMessage()),
+				request(CONSTRUCTION_BUILD, request.getActions(), request.getFeePayer(), request.getMessage()),
 				new TypeReference<>() {}
 			);
 		}

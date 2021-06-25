@@ -120,7 +120,7 @@ public class SyncRadixApiLocalTest {
 	@Test
 	@Ignore //FIXME: Does not work for now as accounts don't match the address of node we're talking to
 	public void testSubmitTxSingleStep() throws IOException {
-		var request = TransactionRequest.createBuilder()
+		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
 			.transfer(
 				ACCOUNT_ADDRESS1,
 				ACCOUNT_ADDRESS2,

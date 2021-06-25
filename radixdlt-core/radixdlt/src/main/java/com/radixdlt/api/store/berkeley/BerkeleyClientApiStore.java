@@ -418,8 +418,10 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			do {
 				addrFromKey(key)
 					.filter(addr::equals, Failure.failure(0, "Ignored"))
-					.flatMap(__ -> restore(serialization, data.getData(), TxHistoryEntry.class))
-					.onFailure(f -> log.error(f))
+					.flatMap(
+						__ -> restore(serialization, data.getData(), TxHistoryEntry.class)
+							.onFailure(log::error)
+					)
 					.onSuccess(list::add);
 
 				status = readTxHistory(() -> cursor.getPrev(key, data, null), data);
