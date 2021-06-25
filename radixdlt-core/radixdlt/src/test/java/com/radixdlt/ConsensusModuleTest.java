@@ -223,7 +223,7 @@ public class ConsensusModuleTest {
 		);
 		var unsyncedQC = new QuorumCertificate(
 			voteData,
-			new TimestampedECDSASignatures(Map.of(bftNode, TimestampedECDSASignature.from(0, UInt256.ONE, zeroSignature())))
+			new TimestampedECDSASignatures(Map.of(bftNode, TimestampedECDSASignature.from(0, zeroSignature())))
 		);
 
 		return Pair.of(unsyncedQC, verifiedVertex);

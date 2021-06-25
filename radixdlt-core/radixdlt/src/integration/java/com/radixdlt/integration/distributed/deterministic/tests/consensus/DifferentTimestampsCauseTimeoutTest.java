@@ -43,7 +43,6 @@ import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.UInt256;
 
 public class DifferentTimestampsCauseTimeoutTest {
 	@Test
@@ -194,9 +193,8 @@ public class DifferentTimestampsCauseTimeoutTest {
 
 	private TimestampedECDSASignature mutateTimestampedSignature(TimestampedECDSASignature signature, int destination) {
 		long timestamp = signature.timestamp();
-		UInt256 weight = signature.weight();
 		ECDSASignature sig = signature.signature();
 
-		return TimestampedECDSASignature.from(timestamp + destination, weight, sig);
+		return TimestampedECDSASignature.from(timestamp + destination, sig);
 	}
 }
