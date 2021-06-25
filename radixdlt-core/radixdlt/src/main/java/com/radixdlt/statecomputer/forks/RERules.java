@@ -26,7 +26,7 @@ import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
-public class RERules {
+public final class RERules {
 	private final String name;
 	private final REParser parser;
 	private final SubstateSerialization serialization;

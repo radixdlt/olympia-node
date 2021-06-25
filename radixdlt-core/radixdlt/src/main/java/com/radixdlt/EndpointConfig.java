@@ -18,6 +18,7 @@
 package com.radixdlt;
 
 import com.radixdlt.universe.Network;
+import com.radixdlt.api.module.DeveloperEndpointModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -70,6 +71,7 @@ public final class EndpointConfig {
 	private static final String API_HEALTH = "health";
 	private static final String API_VERSION = "version";
 	private static final String API_METRICS = "metrics";
+	private static final String API_DEVELOPER = "developer";
 	private static final List<EndpointConfig> ENDPOINTS = List.of(
 		new EndpointConfig(API_ARCHIVE, false, ARCHIVE, ALL, ArchiveEndpointModule::new),
 		new EndpointConfig(API_CONSTRUCTION, false, ARCHIVE, ALL, ConstructEndpointModule::new),
@@ -81,7 +83,8 @@ public final class EndpointConfig {
 		new EndpointConfig(API_FAUCET, false, NODE, DEV_ONLY, FaucetEndpointModule::new),
 		new EndpointConfig(API_CHAOS, false, NODE, DEV_ONLY, ChaosEndpointModule::new),
 		new EndpointConfig(API_HEALTH, true, NODE, ALL, HealthEndpointModule::new),
-		new EndpointConfig(API_VERSION, true, NODE, ALL, VersionEndpointModule::new)
+		new EndpointConfig(API_VERSION, true, NODE, ALL, VersionEndpointModule::new),
+		new EndpointConfig(API_DEVELOPER, true, NODE, ALL, DeveloperEndpointModule::new)
 	);
 
 	private static final List<EndpointConfig> ARCHIVE_ENDPOINTS = ENDPOINTS.stream()

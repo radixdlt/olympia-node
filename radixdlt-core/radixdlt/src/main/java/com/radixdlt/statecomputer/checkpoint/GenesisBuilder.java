@@ -38,7 +38,6 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.StakedValidators;
 import com.radixdlt.statecomputer.StakedValidatorsReducer;
@@ -56,12 +55,10 @@ public final class GenesisBuilder {
 	private static final String RADIX_TOKEN_URL = "https://tokens.radixdlt.com/";
 
 	private final LedgerAccumulator ledgerAccumulator;
-	private final RERules rules;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 
 	@Inject
 	public GenesisBuilder(RERules rules, LedgerAccumulator ledgerAccumulator) {
-		this.rules = rules;
 		this.ledgerAccumulator = ledgerAccumulator;
 		var cmConfig = rules.getConstraintMachineConfig();
 		var cm = new ConstraintMachine(
@@ -80,7 +77,7 @@ public final class GenesisBuilder {
 		radixEngine.addStateReducer(new StakedValidatorsReducer(0, 100), true);
 	}
 
-	public VerifiedTxnsAndProof build(List<TxAction> actions) throws TxBuilderException, RadixEngineException {
+	public Txn build(List<TxAction> actions) throws TxBuilderException, RadixEngineException {
 		var timestamp = 0L;
 		var txnConstructionRequest = TxnConstructionRequest.create();
 		txnConstructionRequest.action(new CreateSystem());
@@ -98,7 +95,7 @@ public final class GenesisBuilder {
 		var tempTxn = Txn.create(radixEngine.construct(txnConstructionRequest).buildForExternalSign().getFirst());
 		var branch = radixEngine.transientBranch();
 
-		var processed = branch.execute(List.of(tempTxn), PermissionLevel.SYSTEM);
+		branch.execute(List.of(tempTxn), PermissionLevel.SYSTEM);
 		var stakedValidators = branch.getComputedState(StakedValidators.class);
 		var genesisValidatorSet = new AtomicReference<BFTValidatorSet>();
 		txnConstructionRequest.action(new SystemNextEpoch(updates -> {
@@ -115,25 +112,12 @@ public final class GenesisBuilder {
 		}, timestamp));
 
 		radixEngine.deleteBranches();
-		var txn = radixEngine.construct(txnConstructionRequest).buildWithoutSignature();
-
-		var init = new AccumulatorState(0, HashUtils.zero256());
-		var accumulatorState = ledgerAccumulator.accumulate(init, txn.getId().asHashCode());
-		var genesisProof = LedgerProof.genesis(
-			accumulatorState,
-			genesisValidatorSet.get(),
-			timestamp
-		);
-		if (!genesisProof.isEndOfEpoch()) {
-			throw new IllegalStateException("Genesis must be end of epoch");
-		}
-
-		return VerifiedTxnsAndProof.create(List.of(txn), genesisProof);
+		return radixEngine.construct(txnConstructionRequest).buildWithoutSignature();
 	}
 
 	public LedgerProof generateGenesisProof(Txn txn) throws RadixEngineException {
 		var branch = radixEngine.transientBranch();
-		var processed = branch.execute(List.of(txn), PermissionLevel.SYSTEM);
+		branch.execute(List.of(txn), PermissionLevel.SYSTEM);
 		var stakedValidators = branch.getComputedState(StakedValidators.class);
 		var genesisValidatorSet = stakedValidators.toValidatorSet();
 		radixEngine.deleteBranches();

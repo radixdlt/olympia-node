@@ -25,30 +25,34 @@ import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.TxnParseException;
-import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.Objects;
 
 public final class TxnParser {
 	private final LogCMStore logCMStore;
-	private final REParser parser;
-	private final ConstraintMachine constraintMachine;
+	private final RERules rules;
 
 	@Inject
 	public TxnParser(
-		REParser parser,
-		ConstraintMachine constraintMachine,
+		RERules rules,
 		LogCMStore logCMStore
 	) {
-		this.parser = parser;
-		this.constraintMachine = Objects.requireNonNull(constraintMachine);
+		this.rules = rules;
 		this.logCMStore = Objects.requireNonNull(logCMStore);
 	}
 
 	public REProcessedTxn parse(Txn txn) throws TxnParseException, ConstraintMachineException {
+		var parser = rules.getParser();
 		var parsedTxn = parser.parse(txn);
-		var stateUpdates = constraintMachine.verify(
+		var cmConfig = rules.getConstraintMachineConfig();
+		var cm = new ConstraintMachine(
+			cmConfig.getVirtualStoreLayer(),
+			cmConfig.getProcedures(),
+			cmConfig.getMetering()
+		);
+		var stateUpdates = cm.verify(
 			logCMStore.createTransaction(),
 			parser.getSubstateDeserialization(),
 			logCMStore,
