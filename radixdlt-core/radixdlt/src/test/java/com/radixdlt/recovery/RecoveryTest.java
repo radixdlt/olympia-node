@@ -18,6 +18,7 @@
 package com.radixdlt.recovery;
 
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.assertj.core.api.Condition;
@@ -149,8 +150,8 @@ public class RecoveryTest {
 					bind(CommittedReader.class).toInstance(CommittedReader.mocked());
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
-						.toInstance(ImmutableList.of(ecKeyPair));
+					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
+						.toInstance(ImmutableList.of(ecKeyPair.getPublicKey()));
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bindConstant().annotatedWith(MaxValidators.class).to(100);
 					bindConstant().annotatedWith(MinValidators.class).to(1);

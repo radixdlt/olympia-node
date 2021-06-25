@@ -25,6 +25,7 @@ import com.google.inject.Singleton;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -60,7 +61,7 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
     @Provides
     @Singleton
     @Genesis
-    public ImmutableList<ECKeyPair> genesisValidators(@Self ECKeyPair self) {
+    public ImmutableList<ECPublicKey> genesisValidators(@Self ECPublicKey self) {
         return ImmutableList.of(self);
     }
 

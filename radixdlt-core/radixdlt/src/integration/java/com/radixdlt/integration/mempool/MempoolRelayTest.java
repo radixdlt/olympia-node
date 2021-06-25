@@ -22,6 +22,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
@@ -154,7 +155,10 @@ public class MempoolRelayTest {
 
 	private void injectGenesisAtomToThis(ImmutableList<ECKeyPair> nodeKeys) {
 		/* Using injector to create a valid genesis atoms using the modules, and inject it to this instance */
-		final var validatorsKeys = this.validators.stream().map(nodeKeys::get).collect(ImmutableList.toImmutableList());
+		final var validatorsKeys = this.validators.stream()
+			.map(nodeKeys::get)
+			.map(ECKeyPair::getPublicKey)
+			.collect(ImmutableList.toImmutableList());
 		Guice.createInjector(
 			new MockedGenesisModule(),
 			new CryptoModule(),
@@ -166,7 +170,7 @@ public class MempoolRelayTest {
 				@Override
 				public void configure() {
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class).toInstance(validatorsKeys);
+					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class).toInstance(validatorsKeys);
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 					bind(CommittedReader.class).toInstance(CommittedReader.mocked());

@@ -25,7 +25,7 @@ import com.radixdlt.application.NodeApplicationModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
@@ -75,8 +75,8 @@ public class MempoolFillTest {
 		})
 		.addGenesisConfigModule(new AbstractModule() {
 			@ProvidesIntoSet
-			private TokenIssuance mempoolFillerIssuance(@Genesis ImmutableList<ECKeyPair> validators) {
-				return TokenIssuance.of(validators.get(0).getPublicKey(), TokenUnitConversions.unitsToSubunits(10000000000L));
+			private TokenIssuance mempoolFillerIssuance(@Genesis ImmutableList<ECPublicKey> validators) {
+				return TokenIssuance.of(validators.get(0), TokenUnitConversions.unitsToSubunits(10000000000L));
 			}
 		})
 		.addTestModules(

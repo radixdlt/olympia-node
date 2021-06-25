@@ -30,7 +30,6 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import com.google.common.collect.ImmutableList;
@@ -54,11 +53,15 @@ import com.radixdlt.statecomputer.checkpoint.GenesisProvider;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.UInt256;
+import org.json.JSONObject;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.security.Security;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -68,23 +71,16 @@ public final class GenerateUniverses {
 	private static final String DEFAULT_TIMESTAMP = String.valueOf(Instant.parse("2020-01-01T00:00:00.00Z").getEpochSecond());
 	private static final UInt256 DEFAULT_ISSUANCE = UInt256.from("1000000000000000000000000000").multiply(TokenDefinitionUtils.SUB_UNITS);
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		Security.insertProviderAt(new BouncyCastleProvider(), 1);
 
 		Options options = new Options();
 		options.addOption("h", "help",                   false, "Show usage information (this message)");
-		options.addOption("t", "universe-timestamp",     true,  "Specify universe timestamp (default: " + DEFAULT_TIMESTAMP + ")");
+		options.addOption("p", "public-keys",        true,  "Specify validator keys");
 		options.addOption("v", "validator-count",        true,  "Specify number of validators to generate");
 
 		CommandLineParser parser = new DefaultParser();
-		CommandLine cmd;
-		try {
-			cmd = parser.parse(options, args);
-		} catch (ParseException e) {
-			System.err.println(e.getMessage());
-			usage(options);
-			return;
-		}
+		CommandLine cmd = parser.parse(options, args);
 		if (!cmd.getArgList().isEmpty()) {
 			System.err.println("Extra arguments: " + String.join(" ", cmd.getArgList()));
 			usage(options);
@@ -97,7 +93,15 @@ public final class GenerateUniverses {
 		}
 
 		final int validatorsCount = cmd.getOptionValue("v") != null ? Integer.parseInt(cmd.getOptionValue("v")) : 0;
-		var validatorKeys = Stream.generate(ECKeyPair::generateNew).limit(validatorsCount).collect(ImmutableList.toImmutableList());
+		var generatedValidatorKeys = Stream.generate(ECKeyPair::generateNew).limit(validatorsCount).collect(Collectors.toList());
+
+		var validatorKeys = new ArrayList<ECPublicKey>();
+		if (cmd.getOptionValue("p") != null) {
+			var hexKeys = cmd.getOptionValue("p").split(",");
+			for (var hexKey : hexKeys) {
+				validatorKeys.add(ECPublicKey.fromHex(hexKey));
+			}
+		}
 
 		final ImmutableList.Builder<TokenIssuance> tokenIssuancesBuilder = ImmutableList.builder();
 		tokenIssuancesBuilder.add(
@@ -108,12 +112,16 @@ public final class GenerateUniverses {
 			TokenIssuance.of(pubkeyOf(5), DEFAULT_ISSUANCE)
 		);
 
+		var allValidatorKeysBuilder = ImmutableList.<ECPublicKey>builder().addAll(validatorKeys);
+		generatedValidatorKeys.stream().map(ECKeyPair::getPublicKey).forEach(allValidatorKeysBuilder::add);
+		var allValidatorKeys = allValidatorKeysBuilder.build();
+
 		var additionalActions = new ArrayList<TxAction>();
 		// Issue tokens to initial validators for now to support application services
-		validatorKeys.forEach(kp -> {
-			var tokenIssuance = TokenIssuance.of(kp.getPublicKey(), DEFAULT_ISSUANCE);
+		allValidatorKeys.forEach(pk -> {
+			var tokenIssuance = TokenIssuance.of(pk, DEFAULT_ISSUANCE);
 			tokenIssuancesBuilder.add(tokenIssuance);
-			additionalActions.add(new StakeTokens(REAddr.ofPubKeyAccount(kp.getPublicKey()), kp.getPublicKey(), DEFAULT_ISSUANCE));
+			additionalActions.add(new StakeTokens(REAddr.ofPubKeyAccount(pk), pk, DEFAULT_ISSUANCE));
 		});
 
 		var genesisProvider = Guice.createInjector(new AbstractModule() {
@@ -136,17 +144,23 @@ public final class GenerateUniverses {
 					.toInstance(tokenIssuancesBuilder.build());
 				bind(new TypeLiteral<ImmutableList<StakeDelegation>>() {}).annotatedWith(Genesis.class)
 					.toInstance(ImmutableList.of());
-				bind(new TypeLiteral<ImmutableList<ECKeyPair>>() {}).annotatedWith(Genesis.class)
-					.toInstance(validatorKeys);
+				bind(new TypeLiteral<ImmutableList<ECPublicKey>>() {}).annotatedWith(Genesis.class)
+					.toInstance(allValidatorKeys);
 			}
 		}).getInstance(GenesisProvider.class);
 
 		var genesis = genesisProvider.get().getTxns().get(0);
-		IntStream.range(0, validatorKeys.size()).forEach(i -> {
-			System.out.format("export RADIXDLT_VALIDATOR_%s_PRIVKEY=%s%n", i, Bytes.toBase64String(validatorKeys.get(i).getPrivateKey()));
-			System.out.format("export RADIXDLT_VALIDATOR_%s_PUBKEY=%s%n", i, NodeAddress.of(validatorKeys.get(i).getPublicKey()));
+		IntStream.range(0, generatedValidatorKeys.size()).forEach(i -> {
+			System.out.format("export RADIXDLT_VALIDATOR_%s_PRIVKEY=%s%n", i, Bytes.toBase64String(generatedValidatorKeys.get(i).getPrivateKey()));
+			System.out.format("export RADIXDLT_VALIDATOR_%s_PUBKEY=%s%n", i, NodeAddress.of(generatedValidatorKeys.get(i).getPublicKey()));
 		});
-		System.out.format("export RADIXDLT_GENESIS_TXN=%s%n", Bytes.toHexString(genesis.getPayload()));
+		if (validatorsCount > 0) {
+			System.out.format("export RADIXDLT_GENESIS_TXN=%s%n", Bytes.toHexString(genesis.getPayload()));
+		} else {
+			var writer = new BufferedWriter(new FileWriter("genesis.json"));
+			writer.write(new JSONObject().put("genesis", Bytes.toHexString(genesis.getPayload())).toString());
+			writer.close();
+		}
 	}
 
 	private static ECPublicKey pubkeyOf(int pk) {
