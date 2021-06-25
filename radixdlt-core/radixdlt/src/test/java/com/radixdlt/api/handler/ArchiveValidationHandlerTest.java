@@ -17,7 +17,7 @@
 package com.radixdlt.api.handler;
 
 import com.radixdlt.identifiers.AccountAddresses;
-import com.radixdlt.universe.Network;
+import com.radixdlt.networks.Network;
 import org.json.JSONObject;
 import org.junit.Test;
 

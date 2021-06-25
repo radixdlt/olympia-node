@@ -27,7 +27,7 @@ import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.RadixNodeUri;
-import com.radixdlt.qualifier.NetworkId;
+import com.radixdlt.networks.NetworkId;
 import com.radixdlt.serialization.Serialization;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelOption;

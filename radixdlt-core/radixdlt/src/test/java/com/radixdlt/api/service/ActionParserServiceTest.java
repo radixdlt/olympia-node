@@ -17,7 +17,7 @@
 
 package com.radixdlt.api.service;
 
-import com.radixdlt.universe.Network;
+import com.radixdlt.networks.Network;
 import org.json.JSONArray;
 import org.junit.Assert;
 import org.junit.Before;

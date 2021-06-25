@@ -18,7 +18,7 @@ package com.radixdlt.api.store.berkeley;
 
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.universe.Network;
+import com.radixdlt.networks.Network;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;

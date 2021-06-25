@@ -16,7 +16,7 @@
  *
  */
 
-package com.radixdlt.universe;
+package com.radixdlt.networks;
 
 import com.radixdlt.atom.Txn;
 

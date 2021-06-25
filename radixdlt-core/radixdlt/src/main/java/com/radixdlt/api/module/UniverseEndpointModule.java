@@ -24,7 +24,7 @@ import com.radixdlt.api.Controller;
 import com.radixdlt.api.controller.UniverseController;
 import com.radixdlt.api.qualifier.NodeServer;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.qualifier.NetworkId;
+import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import org.json.JSONObject;
 

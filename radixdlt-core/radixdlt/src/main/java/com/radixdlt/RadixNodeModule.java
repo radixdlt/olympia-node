@@ -47,6 +47,8 @@ import com.radixdlt.network.messaging.MessagingModule;
 import com.radixdlt.network.p2p.P2PModule;
 import com.radixdlt.network.p2p.PeerDiscoveryModule;
 import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.qualifier.NetworkId;
 import com.radixdlt.statecomputer.RadixEngineConfig;

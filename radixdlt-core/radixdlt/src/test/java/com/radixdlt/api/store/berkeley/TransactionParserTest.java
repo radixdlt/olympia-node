@@ -49,7 +49,7 @@ import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.AccountAddresses;
-import com.radixdlt.universe.Network;
+import com.radixdlt.networks.Network;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
