@@ -48,7 +48,7 @@ public class SyncRadixApiHistoryPaginationTest {
 	private static final AccountAddress ACCOUNT_ADDRESS2 = AccountAddress.create(KEY_PAIR2.getPublicKey());
 
 	@Test
-//	@Ignore
+	@Ignore
 	public void testAddManyTransactions() {
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
@@ -66,7 +66,7 @@ public class SyncRadixApiHistoryPaginationTest {
 	}
 
 	@Test
-//	@Ignore
+	@Ignore
 	public void testTransactionHistoryInPages() {
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
