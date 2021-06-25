@@ -127,7 +127,7 @@ public final class TimestampedECDSASignatures {
 		var weightedTimes = new ArrayList<Pair<Long, UInt256>>();
 
 		for (var ts : this.nodeToTimestampedSignature.values()) {
-			var weight = ts.weight();
+			var weight = UInt256.ONE;
 			totalPower = totalPower.add(weight);
 			weightedTimes.add(Pair.of(ts.timestamp(), weight));
 		}
