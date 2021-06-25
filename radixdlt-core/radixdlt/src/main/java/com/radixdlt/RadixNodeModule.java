@@ -29,11 +29,9 @@ import com.radixdlt.api.qualifier.Endpoints;
 import com.radixdlt.api.service.RriParser;
 import com.radixdlt.application.NodeApplicationModule;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
@@ -42,7 +40,6 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
-import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.network.hostip.HostIpModule;
 import com.radixdlt.network.messaging.MessageCentralModule;
 import com.radixdlt.network.messaging.MessagingModule;
@@ -66,7 +63,6 @@ import com.radixdlt.universe.Network;
 import com.radixdlt.utils.Bytes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.radix.universe.system.LocalSystem;
 
 import java.util.List;
 
@@ -224,11 +220,5 @@ public final class RadixNodeModule extends AbstractModule {
 
 	private boolean hasActiveEndpoints(List<EndpointConfig> archiveEndpoints, List<EndpointConfig> nodeEndpoints) {
 		return !archiveEndpoints.isEmpty() || !nodeEndpoints.isEmpty();
-	}
-
-	@Provides
-	@Singleton
-	LocalSystem localSystem(@Self BFTNode self, InfoSupplier infoSupplier) {
-		return LocalSystem.create(self, infoSupplier);
 	}
 }

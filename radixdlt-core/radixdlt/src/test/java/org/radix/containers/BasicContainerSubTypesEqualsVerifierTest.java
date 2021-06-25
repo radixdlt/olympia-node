@@ -6,7 +6,6 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 import org.radix.network.messaging.Message;
-import org.radix.universe.system.LocalSystem;
 import org.reflections.Reflections;
 
 import java.lang.reflect.Modifier;
@@ -24,8 +23,7 @@ public class BasicContainerSubTypesEqualsVerifierTest {
         subTypes.addAll(findSubTypesInPkg("com.radixdlt"));
 
         final Map<Class<?>, List<String>> ignoredFieldsByClass = Map.of(
-                Message.class, List.of("instance"),
-                LocalSystem.class, List.of("infoSupplier"));
+                Message.class, List.of("instance"));
 
         subTypes.stream()
                 .filter(clazz -> !Modifier.isAbstract(clazz.getModifiers()))

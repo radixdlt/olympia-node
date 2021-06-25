@@ -17,16 +17,13 @@
 
 package org.radix.serialization;
 
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import org.junit.BeforeClass;
 import org.mockito.stubbing.Answer;
 import org.radix.time.NtpService;
-import org.radix.universe.system.LocalSystem;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -37,7 +34,6 @@ public abstract class RadixTest {
 	private static Serialization serialization;
 	private static NtpService ntpService;
 	private static RuntimeProperties properties;
-	private static LocalSystem localSystem;
 	private static ECKeyPair ecKeyPair;
 
 	@BeforeClass
@@ -53,8 +49,6 @@ public abstract class RadixTest {
 		serialization = DefaultSerialization.getInstance();
 
 		ecKeyPair = ECKeyPair.generateNew();
-
-		localSystem = LocalSystem.create(BFTNode.create(ecKeyPair.getPublicKey()), ImmutableMap::of);
 	}
 
 	public static Serialization getSerialization() {
@@ -67,10 +61,6 @@ public abstract class RadixTest {
 
 	public static RuntimeProperties getProperties() {
 		return properties;
-	}
-
-	public static LocalSystem getLocalSystem() {
-		return localSystem;
 	}
 
 	public static ECKeyPair getKeyPair() {

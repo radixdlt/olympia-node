@@ -47,7 +47,6 @@ import com.radixdlt.utils.RandomHasher;
 import io.reactivex.rxjava3.subscribers.TestSubscriber;
 import org.junit.Before;
 import org.junit.Test;
-import org.radix.universe.system.RadixSystem;
 
 public class MessageCentralValidatorSyncTest {
 	private BFTNode self;
@@ -97,8 +96,6 @@ public class MessageCentralValidatorSyncTest {
 
 	@Test
 	public void when_subscribed_to_rpc_requests__then_should_receive_requests() {
-		RadixSystem system = mock(RadixSystem.class);
-		when(system.getKey()).thenReturn(ECKeyPair.generateNew().getPublicKey());
 		HashCode vertexId0 = mock(HashCode.class);
 		HashCode vertexId1 = mock(HashCode.class);
 
