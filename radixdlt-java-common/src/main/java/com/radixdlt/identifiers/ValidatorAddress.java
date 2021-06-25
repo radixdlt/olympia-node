@@ -33,8 +33,6 @@ import static com.radixdlt.identifiers.CommonErrors.INVALID_VALIDATOR_ADDRESS;
  * Bech-32 encoding/decoding of validators. Validators are represented as 33-byte
  * compressed EC Public Keys.
  * <p>
- * The human-readable part is "vr" for mainnet, "vb" for betanet.
- * <p>
  * The data part is a conversion of the 33 byte compressed EC public key to Base32
  * similar to specification described in BIP_0173 for converting witness programs.
  */

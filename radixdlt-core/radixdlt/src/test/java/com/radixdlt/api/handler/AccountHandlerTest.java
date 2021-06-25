@@ -17,6 +17,8 @@
 
 package com.radixdlt.api.handler;
 
+import com.radixdlt.identifiers.AccountAddresses;
+import com.radixdlt.universe.Network;
 import org.json.JSONObject;
 import org.junit.Test;
 
@@ -48,7 +50,8 @@ public class AccountHandlerTest {
 	private final RriParser rriParser = mock(RriParser.class);
 	private final SubmissionService submissionService = mock(SubmissionService.class);
 	private final AccountInfoService accountService = mock(AccountInfoService.class);
-	private final ActionParserService actionParserService = new ActionParserService(rriParser);
+	private final AccountAddresses accountAddresses = new AccountAddresses(Network.LOCALNET.getAccountHrp());
+	private final ActionParserService actionParserService = new ActionParserService(rriParser, accountAddresses);
 
 	private final ECKeyPair keyPair = ECKeyPair.generateNew();
 	private final ECPublicKey bftKey = keyPair.getPublicKey();

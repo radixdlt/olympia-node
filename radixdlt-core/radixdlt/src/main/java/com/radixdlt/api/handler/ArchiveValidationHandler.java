@@ -17,6 +17,7 @@
 
 package com.radixdlt.api.handler;
 
+import com.radixdlt.identifiers.AccountAddresses;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
@@ -43,10 +44,12 @@ import static com.radixdlt.utils.functional.Result.ok;
 @Singleton
 public class ArchiveValidationHandler {
 	private final ValidatorInfoService validatorInfoService;
+	private final AccountAddresses accountAddresses;
 
 	@Inject
-	public ArchiveValidationHandler(ValidatorInfoService validatorInfoService) {
+	public ArchiveValidationHandler(ValidatorInfoService validatorInfoService, AccountAddresses accountAddresses) {
 		this.validatorInfoService = validatorInfoService;
+		this.accountAddresses = accountAddresses;
 	}
 
 	public JSONObject handleValidatorsGetNextEpochSet(JSONObject request) {
@@ -57,7 +60,7 @@ public class ArchiveValidationHandler {
 			params -> allOf(parseSize(params), ok(parseAddressCursor(params)))
 				.flatMap((size, cursor) ->
 							 validatorInfoService.getValidators(size, cursor)
-								 .map(ArchiveValidationHandler::formatValidatorResponse))
+								 .map(this::formatValidatorResponse))
 		);
 	}
 
@@ -67,7 +70,7 @@ public class ArchiveValidationHandler {
 			"validatorAddress",
 			address -> ValidatorAddress.fromString(address)
 				.flatMap(validatorInfoService::getValidator)
-				.map(ValidatorInfoDetails::asJson)
+				.map(d -> d.asJson(accountAddresses))
 		);
 	}
 
@@ -75,10 +78,10 @@ public class ArchiveValidationHandler {
 	// internal processing
 	//-----------------------------------------------------------------------------------------------------
 
-	private static JSONObject formatValidatorResponse(Optional<ECPublicKey> cursor, List<ValidatorInfoDetails> transactions) {
+	private JSONObject formatValidatorResponse(Optional<ECPublicKey> cursor, List<ValidatorInfoDetails> transactions) {
 		return jsonObject()
 			.put("cursor", cursor.map(ValidatorAddress::of).orElse(""))
-			.put("validators", fromList(transactions, ValidatorInfoDetails::asJson));
+			.put("validators", fromList(transactions, d -> d.asJson(accountAddresses)));
 	}
 
 	private static Optional<ECPublicKey> parseAddressCursor(JSONObject params) {

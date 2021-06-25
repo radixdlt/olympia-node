@@ -17,7 +17,7 @@
 
 package com.radixdlt.api.data;
 
-import com.radixdlt.identifiers.AccountAddress;
+import com.radixdlt.identifiers.AccountAddresses;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -100,10 +100,10 @@ public class ValidatorInfoDetails {
 		return totalStake;
 	}
 
-	public JSONObject asJson() {
+	public JSONObject asJson(AccountAddresses accountAddresses) {
 		return jsonObject()
 			.put("address", getValidatorAddress())
-			.put("ownerAddress", AccountAddress.of(owner))
+			.put("ownerAddress", accountAddresses.of(owner))
 			.put("name", name)
 			.put("infoURL", infoUrl)
 			.put("totalDelegatedStake", totalStake)

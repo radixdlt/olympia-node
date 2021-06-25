@@ -53,7 +53,7 @@ import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.AccountAddress;
+import com.radixdlt.identifiers.AccountAddresses;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.serialization.Serialization;
@@ -156,6 +156,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final TxnParser txnParser;
 	private final TransactionParser transactionParser;
 	private final REParser parser;
+	private final AccountAddresses accountAddresses;
 
 	private Database transactionHistory;
 	private Database tokenDefinitions;
@@ -175,7 +176,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		SystemCounters systemCounters,
 		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
 		TransactionParser transactionParser,
-		boolean isTest
+		boolean isTest,
+		AccountAddresses accountAddresses
 	) {
 		this.dbEnv = dbEnv;
 		this.parser = parser;
@@ -185,6 +187,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		this.systemCounters = systemCounters;
 		this.scheduledFlushEventDispatcher = scheduledFlushEventDispatcher;
 		this.transactionParser = transactionParser;
+		this.accountAddresses = accountAddresses;
 
 		open(isTest);
 	}
@@ -198,10 +201,11 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		Serialization serialization,
 		SystemCounters systemCounters,
 		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
-		TransactionParser transactionParser
+		TransactionParser transactionParser,
+		AccountAddresses accountAddresses
 	) {
 		this(dbEnv, parser, txnParser, store, serialization, systemCounters,
-			 scheduledFlushEventDispatcher, transactionParser, false
+			 scheduledFlushEventDispatcher, transactionParser, false, accountAddresses
 		);
 	}
 
@@ -650,7 +654,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				var bucketJson = new JSONObject();
 				bucketJson.put("type", b.getClass().getSimpleName());
 				if (b.getOwner() != null) {
-					bucketJson.put("owner", AccountAddress.of(b.getOwner()));
+					bucketJson.put("owner", accountAddresses.of(b.getOwner()));
 				}
 				if (b.getValidatorKey() != null) {
 					bucketJson.put("validator", ValidatorAddress.of(b.getValidatorKey()));

@@ -27,7 +27,7 @@ import com.radixdlt.api.store.TokenBalance;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.AccountAddress;
+import com.radixdlt.identifiers.AccountAddresses;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.utils.UInt256;
@@ -55,13 +55,14 @@ import static com.radixdlt.utils.functional.Tuple.tuple;
 public class ArchiveAccountHandlerTest {
 	private static final ECPublicKey PUB_KEY = ECKeyPair.generateNew().getPublicKey();
 	private static final REAddr ACCOUNT_ADDRESS = REAddr.ofPubKeyAccount(PUB_KEY);
-	private static final String ADDRESS = AccountAddress.of(ACCOUNT_ADDRESS);
+	private static final AccountAddresses accountAddresses = new AccountAddresses("ldx");
+	private static final String ADDRESS = accountAddresses.of(ACCOUNT_ADDRESS);
 	private static final ECPublicKey V1 = ECKeyPair.generateNew().getPublicKey();
 	private static final ECPublicKey V2 = ECKeyPair.generateNew().getPublicKey();
 	private static final ECPublicKey V3 = ECKeyPair.generateNew().getPublicKey();
 
 	private final ArchiveAccountService accountService = mock(ArchiveAccountService.class);
-	private final ArchiveAccountHandler handler = new ArchiveAccountHandler(accountService);
+	private final ArchiveAccountHandler handler = new ArchiveAccountHandler(accountService, accountAddresses);
 
 	@Test
 	public void testTokenBalancePositional() {

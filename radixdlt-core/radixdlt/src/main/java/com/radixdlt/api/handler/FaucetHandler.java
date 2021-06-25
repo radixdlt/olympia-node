@@ -29,7 +29,7 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.AccountAddress;
+import com.radixdlt.identifiers.AccountAddresses;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.utils.UInt256;
@@ -51,29 +51,32 @@ public class FaucetHandler {
 	private final REAddr account;
 	private final Set<REAddr> tokensToSend;
 	private final HashSigner hashSigner;
+	private final AccountAddresses accountAddresses;
 
 	@Inject
 	public FaucetHandler(
 		SubmissionService submissionService,
 		@Self REAddr account,
 		@FaucetToken Set<REAddr> tokensToSend,
-		@LocalSigner HashSigner hashSigner
+		@LocalSigner HashSigner hashSigner,
+		AccountAddresses accountAddresses
 	) {
 		this.submissionService = submissionService;
 		this.account = account;
 		this.tokensToSend = tokensToSend;
 		this.hashSigner = hashSigner;
+		this.accountAddresses = accountAddresses;
 	}
 
 	public JSONObject requestTokens(JSONObject request) {
 		return withRequiredStringParameter(
 			request, "address",
-			address -> AccountAddress.parseFunctional(address).flatMap(this::sendTokens)
+			address -> accountAddresses.parseFunctional(address).flatMap(this::sendTokens)
 		);
 	}
 
 	private Result<JSONObject> sendTokens(REAddr destination) {
-		logger.info("Sending {} {} to {}", AMOUNT, tokensToSend, AccountAddress.of(destination));
+		logger.info("Sending {} {} to {}", AMOUNT, tokensToSend, accountAddresses.of(destination));
 
 		var steps = new ArrayList<TransactionAction>();
 

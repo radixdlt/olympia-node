@@ -17,6 +17,7 @@
 
 package com.radixdlt.api.service;
 
+import com.radixdlt.universe.Network;
 import org.json.JSONArray;
 import org.junit.Assert;
 import org.junit.Before;
@@ -33,7 +34,7 @@ import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateValidatorMetadata;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.AccountAddress;
+import com.radixdlt.identifiers.AccountAddresses;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.utils.UInt256;
@@ -51,7 +52,8 @@ public class ActionParserServiceTest {
 	private final REAddr to = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
 	private final REAddr rri = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "ckee");
 	private final RriParser rriParser = mock(RriParser.class);
-	private final ActionParserService actionParserService = new ActionParserService(rriParser);
+	private final AccountAddresses accountAddresses = new AccountAddresses(Network.LOCALNET.getAccountHrp());
+	private final ActionParserService actionParserService = new ActionParserService(rriParser, accountAddresses);
 
 	@Before
 	public void setup() {
@@ -60,8 +62,8 @@ public class ActionParserServiceTest {
 
 	@Test
 	public void transferActionIsParsedCorrectly() {
-		var fromAddr = AccountAddress.of(from);
-		var toAddr = AccountAddress.of(to);
+		var fromAddr = accountAddresses.of(from);
+		var toAddr = accountAddresses.of(to);
 		var source = "[{\"type\":\"TokenTransfer\", \"from\":\"%s\", \"to\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, fromAddr, toAddr, UInt256.SIX, rri));
 
@@ -89,7 +91,7 @@ public class ActionParserServiceTest {
 	public void stakeActionIsParsedCorrectly() {
 		var key = ECKeyPair.generateNew().getPublicKey();
 		var validatorAddr = ValidatorAddress.of(key);
-		var fromAddr = AccountAddress.of(from);
+		var fromAddr = accountAddresses.of(from);
 		var source = "[{\"type\":\"StakeTokens\", \"from\":\"%s\", \"validator\":\"%s\", \"amount\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, fromAddr, validatorAddr, UInt256.NINE));
 
@@ -116,7 +118,7 @@ public class ActionParserServiceTest {
 	public void unstakeActionIsParsedCorrectly() {
 		var key = ECKeyPair.generateNew().getPublicKey();
 		var validatorAddr = ValidatorAddress.of(key);
-		var accountAddr = AccountAddress.of(from);
+		var accountAddr = accountAddresses.of(from);
 		var source = "[{\"type\":\"UnstakeTokens\", \"from\":\"%s\", \"validator\":\"%s\", \"amount\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, accountAddr, validatorAddr, UInt256.EIGHT));
 
@@ -141,7 +143,7 @@ public class ActionParserServiceTest {
 
 	@Test
 	public void mintTokensIsParsedCorrectly() {
-		var toAccount = AccountAddress.of(to);
+		var toAccount = accountAddresses.of(to);
 
 		var source = "[{\"type\":\"MintTokens\", \"to\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, toAccount, UInt256.NINE, rri));
@@ -167,7 +169,7 @@ public class ActionParserServiceTest {
 
 	@Test
 	public void burnTokensIsParsedCorrectly() {
-		var fromAddr = AccountAddress.of(from);
+		var fromAddr = accountAddresses.of(from);
 
 		var source = "[{\"type\":\"BurnTokens\", \"from\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, fromAddr, UInt256.FIVE, rri));
@@ -424,7 +426,7 @@ public class ActionParserServiceTest {
 
 	@Test
 	public void createFixedTokenIsParsedCorrectly() {
-		var fromAddr = AccountAddress.of(from);
+		var fromAddr = accountAddresses.of(from);
 		var signer = ECKeyPair.generateNew().getPublicKey();
 
 		var source = "[{\"type\":\"CreateFixedSupplyToken\", \"from\":\"%s\", \"publicKeyOfSigner\":\"%s\", \"symbol\":\"%s\", "
@@ -460,7 +462,7 @@ public class ActionParserServiceTest {
 	@Test
 	public void createMutableTokenIsParsedCorrectlyWithOptionalElements() {
 		var publicKey = ECKeyPair.generateNew().getPublicKey();
-		var fromAddr = AccountAddress.of(from);
+		var fromAddr = accountAddresses.of(from);
 		var source = "[{\"type\":\"CreateMutableSupplyToken\", \"from\":\"%s\", \"symbol\":\"%s\", \"name\":\"%s\", "
 			+ "\"description\":\"%s\", \"iconUrl\":\"%s\", \"tokenUrl\":\"%s\", \"publicKeyOfSigner\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, fromAddr, "symbol", "name",
@@ -491,7 +493,7 @@ public class ActionParserServiceTest {
 	@Test
 	public void createMutableTokenIsParsedCorrectlyWithoutOptionalElements() {
 		var publicKey = ECKeyPair.generateNew().getPublicKey();
-		var fromAddr = AccountAddress.of(from);
+		var fromAddr = accountAddresses.of(from);
 		var source = "[{\"type\":\"CreateMutableSupplyToken\", \"from\":\"%s\",  \"symbol\":\"%s\", \"name\":\"%s\", \"publicKeyOfSigner\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, fromAddr, "symbol", "name", publicKey.toHex()));
 

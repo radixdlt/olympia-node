@@ -23,14 +23,20 @@ import com.radixdlt.atom.Txn;
 import java.util.Optional;
 
 public enum Network {
-	MAINNET(1),
-	TESTNET(2),
-	LOCALNET(99);
+	MAINNET(1, "rdx"),
+	TESTNET(2, "tdx"),
+	LOCALNET(99, "ldx");
 
 	private final int id;
+	private final String accountHrp;
 
-	Network(int id) {
+	Network(int id, String accountHrp) {
 		this.id = id;
+		this.accountHrp = accountHrp;
+	}
+
+	public String getAccountHrp() {
+		return accountHrp;
 	}
 
 	public int getId() {

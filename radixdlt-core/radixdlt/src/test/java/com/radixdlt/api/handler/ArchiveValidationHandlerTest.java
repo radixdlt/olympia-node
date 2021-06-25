@@ -16,6 +16,8 @@
  */
 package com.radixdlt.api.handler;
 
+import com.radixdlt.identifiers.AccountAddresses;
+import com.radixdlt.universe.Network;
 import org.json.JSONObject;
 import org.junit.Test;
 
@@ -48,8 +50,9 @@ public class ArchiveValidationHandlerTest {
 	private static final ECPublicKey V2 = ECKeyPair.generateNew().getPublicKey();
 	private static final ECPublicKey V3 = ECKeyPair.generateNew().getPublicKey();
 
+	private final AccountAddresses accountAddresses = new AccountAddresses(Network.LOCALNET.getAccountHrp());
 	private final ValidatorInfoService validatorInfoService = mock(ValidatorInfoService.class);
-	private final ArchiveValidationHandler handler = new ArchiveValidationHandler(validatorInfoService);
+	private final ArchiveValidationHandler handler = new ArchiveValidationHandler(validatorInfoService, accountAddresses);
 
 	@Test
 	public void testValidatorsPositional() {

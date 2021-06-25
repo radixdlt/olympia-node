@@ -24,7 +24,7 @@ import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.service.ArchiveAccountService;
 import com.radixdlt.api.store.TokenBalance;
-import com.radixdlt.identifiers.AccountAddress;
+import com.radixdlt.identifiers.AccountAddresses;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.utils.functional.Result;
@@ -48,19 +48,24 @@ import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class ArchiveAccountHandler {
 	private final ArchiveAccountService accountService;
+	private final AccountAddresses accountAddresses;
 
 	@Inject
-	public ArchiveAccountHandler(ArchiveAccountService accountService) {
+	public ArchiveAccountHandler(
+		ArchiveAccountService accountService,
+		AccountAddresses accountAddresses
+	) {
 		this.accountService = accountService;
+		this.accountAddresses = accountAddresses;
 	}
 
 	public JSONObject handleAccountGetBalances(JSONObject request) {
 		return withRequiredStringParameter(
 			request,
 			"address",
-			address -> AccountAddress.parseFunctional(address)
+			address -> accountAddresses.parseFunctional(address)
 				.flatMap(key -> accountService.getTokenBalances(key).map(v -> tuple(key, v)))
-				.map(tuple -> tuple.map(ArchiveAccountHandler::formatTokenBalances))
+				.map(tuple -> tuple.map(this::formatTokenBalances))
 		);
 	}
 
@@ -79,7 +84,7 @@ public class ArchiveAccountHandler {
 		return withRequiredStringParameter(
 			request,
 			"address",
-			address -> AccountAddress.parseFunctional(address)
+			address -> accountAddresses.parseFunctional(address)
 				.flatMap(accountService::getStakePositions)
 				.map(this::formatStakePositions)
 		);
@@ -89,7 +94,7 @@ public class ArchiveAccountHandler {
 		return withRequiredStringParameter(
 			request,
 			"address",
-			address -> AccountAddress.parseFunctional(address)
+			address -> accountAddresses.parseFunctional(address)
 				.flatMap(accountService::getUnstakePositions)
 				.map(positions -> formatUnstakePositions(positions, accountService.getEpoch()))
 		);
@@ -110,9 +115,9 @@ public class ArchiveAccountHandler {
 		return jsonObject().put(ARRAY, array);
 	}
 
-	private static JSONObject formatTokenBalances(REAddr address, List<TokenBalance> balances) {
+	private JSONObject formatTokenBalances(REAddr address, List<TokenBalance> balances) {
 		return jsonObject()
-			.put("owner", AccountAddress.of(address))
+			.put("owner", accountAddresses.of(address))
 			.put("tokenBalances", fromList(balances, TokenBalance::asJson));
 	}
 
@@ -170,7 +175,7 @@ public class ArchiveAccountHandler {
 			.filter(value -> value > 0, INVALID_PAGE_SIZE);
 	}
 
-	private static Result<REAddr> parseAddress(JSONObject params) {
-		return AccountAddress.parseFunctional(params.getString("address"));
+	private Result<REAddr> parseAddress(JSONObject params) {
+		return accountAddresses.parseFunctional(params.getString("address"));
 	}
 }

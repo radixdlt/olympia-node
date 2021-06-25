@@ -18,6 +18,7 @@ package com.radixdlt.api.store.berkeley;
 
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.universe.Network;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -52,7 +53,7 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.AccountAddress;
+import com.radixdlt.identifiers.AccountAddresses;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.qualifier.NumPeers;
@@ -90,6 +91,7 @@ public class BerkeleyClientApiStoreTest {
 	private static final REAddr OWNER_ACCOUNT = REAddr.ofPubKeyAccount(OWNER_KEYPAIR.getPublicKey());
 	private static final ECKeyPair TOKEN_KEYPAIR = ECKeyPair.generateNew();
 	private static final REAddr TOKEN_ACCOUNT = REAddr.ofPubKeyAccount(TOKEN_KEYPAIR.getPublicKey());
+	private static final AccountAddresses accountAddresses = new AccountAddresses(Network.LOCALNET.getAccountHrp());
 
 	private static final String SYMBOL = "cfee";
 	private static final REAddr TOKEN = REAddr.ofHashedKey(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
@@ -262,8 +264,8 @@ public class BerkeleyClientApiStoreTest {
 
 				assertEquals(ActionType.TRANSFER, action.getType());
 				assertEquals(UInt256.FOUR, action.getAmount());
-				assertEquals(AccountAddress.of(TOKEN_ACCOUNT), action.getFrom());
-				assertEquals(AccountAddress.of(REAddr.ofPubKeyAccount(OWNER_KEYPAIR.getPublicKey())), action.getTo());
+				assertEquals(accountAddresses.of(TOKEN_ACCOUNT), action.getFrom());
+				assertEquals(accountAddresses.of(REAddr.ofPubKeyAccount(OWNER_KEYPAIR.getPublicKey())), action.getTo());
 
 				newCursor.set(entry.timestamp());
 			});
@@ -341,8 +343,9 @@ public class BerkeleyClientApiStoreTest {
 			serialization,
 			mock(SystemCounters.class),
 			mock(ScheduledEventDispatcher.class),
-			new TransactionParser(),
-			true
+			new TransactionParser(accountAddresses),
+			true,
+			accountAddresses
 		);
 	}
 

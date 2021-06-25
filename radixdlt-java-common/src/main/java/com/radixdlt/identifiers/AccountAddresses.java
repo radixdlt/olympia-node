@@ -36,11 +36,11 @@ import static com.radixdlt.identifiers.CommonErrors.INVALID_ACCOUNT_ADDRESS;
  * {@link com.radixdlt.identifiers.REAddr} to Base32 similar to specification described
  * in BIP_0173 for converting witness programs.
  */
-public final class AccountAddress {
-	private static final String ACCOUNT_HRP = "brx"; // "rdx" for mainnet
+public final class AccountAddresses {
+	private final String hrp;
 
-	private AccountAddress() {
-		throw new IllegalStateException("Cannot instantiate.");
+	public AccountAddresses(String hrp) {
+		this.hrp = hrp;
 	}
 
 	private static byte[] toBech32Data(byte[] bytes) {
@@ -51,12 +51,12 @@ public final class AccountAddress {
 		return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
 	}
 
-	public static String of(REAddr addr) {
+	public String of(REAddr addr) {
 		var convert = toBech32Data(addr.getBytes());
-		return Bech32.encode(ACCOUNT_HRP, convert);
+		return Bech32.encode(hrp, convert);
 	}
 
-	public static REAddr parse(String v) throws DeserializeException {
+	public REAddr parse(String v) throws DeserializeException {
 		Bech32.Bech32Data bech32Data;
 		try {
 			bech32Data = Bech32.decode(v);
@@ -64,8 +64,8 @@ public final class AccountAddress {
 			throw new DeserializeException("Could not decode string: " + v, e);
 		}
 
-		if (!bech32Data.hrp.equals(ACCOUNT_HRP)) {
-			throw new DeserializeException("hrp must be " + ACCOUNT_HRP + " but was " + bech32Data.hrp);
+		if (!bech32Data.hrp.equals(hrp)) {
+			throw new DeserializeException("hrp must be " + hrp + " but was " + bech32Data.hrp);
 		}
 
 		try {
@@ -76,7 +76,7 @@ public final class AccountAddress {
 		}
 	}
 
-	public static Result<REAddr> parseFunctional(String addr) {
+	public Result<REAddr> parseFunctional(String addr) {
 		return Result.wrap(INVALID_ACCOUNT_ADDRESS, () -> parse(addr));
 	}
 }

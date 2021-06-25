@@ -17,6 +17,8 @@
 
 package com.radixdlt.api.handler;
 
+import com.radixdlt.identifiers.AccountAddresses;
+import com.radixdlt.universe.Network;
 import org.json.JSONObject;
 import org.junit.Test;
 
@@ -47,7 +49,8 @@ public class ValidationHandlerTest {
 
 	private final AccountInfoService accountService = mock(AccountInfoService.class);
 	private final ValidatorInfoService validatorInfoService = mock(ValidatorInfoService.class);
-	private final ValidationHandler handler = new ValidationHandler(accountService, validatorInfoService);
+	private final AccountAddresses accountAddresses = new AccountAddresses(Network.LOCALNET.getAccountHrp());
+	private final ValidationHandler handler = new ValidationHandler(accountService, validatorInfoService, accountAddresses);
 
 	@Test
 	public void testHandleGetNodeInfo() {

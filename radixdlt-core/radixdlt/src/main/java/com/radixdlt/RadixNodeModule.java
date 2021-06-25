@@ -35,6 +35,7 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
+import com.radixdlt.identifiers.AccountAddresses;
 import com.radixdlt.keys.PersistedBFTKeyModule;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
@@ -136,10 +137,20 @@ public final class RadixNodeModule extends AbstractModule {
 		}
 	}
 
+	public String accountHrp(int networkId) {
+		return Network.ofId(networkId).map(Network::getAccountHrp)
+			.orElse("tdx" + networkId);
+	}
+
 	@Override
 	protected void configure() {
+		if (this.networkId <= 0) {
+			throw new IllegalStateException("Illegal networkId " + networkId);
+		}
+
 		bindConstant().annotatedWith(NetworkId.class).to(networkId);
 		bind(Txn.class).annotatedWith(Genesis.class).toInstance(loadGenesis(networkId));
+		bind(AccountAddresses.class).toInstance(new AccountAddresses(accountHrp(networkId)));
 		bind(RuntimeProperties.class).toInstance(properties);
 
 		// Consensus configuration

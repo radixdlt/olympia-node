@@ -16,6 +16,7 @@
  */
 package com.radixdlt.api.handler;
 
+import com.radixdlt.universe.Network;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1OutputStream;
@@ -33,7 +34,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.AccountAddress;
+import com.radixdlt.identifiers.AccountAddresses;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.utils.UInt256;
@@ -56,12 +57,13 @@ import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 public class ConstructionHandlerTest {
 	private static final ECPublicKey PUB_KEY = ECKeyPair.generateNew().getPublicKey();
 	private static final REAddr ACCOUNT_ADDR = REAddr.ofPubKeyAccount(PUB_KEY);
-	private static final String FEE_PAYER = AccountAddress.of(ACCOUNT_ADDR);
+	private static final AccountAddresses accountAddresses = new AccountAddresses(Network.LOCALNET.getAccountHrp());
+	private static final String FEE_PAYER = accountAddresses.of(ACCOUNT_ADDR);
 
 	private final RriParser rriParser = mock(RriParser.class);
 	private final SubmissionService submissionService = mock(SubmissionService.class);
-	private final ActionParserService actionParserService = new ActionParserService(rriParser);
-	private final ConstructionHandler handler = new ConstructionHandler(submissionService, actionParserService);
+	private final ActionParserService actionParserService = new ActionParserService(rriParser, accountAddresses);
+	private final ConstructionHandler handler = new ConstructionHandler(submissionService, actionParserService, accountAddresses);
 
 	@Test
 	public void testBuildTransactionPositional() {
