@@ -456,7 +456,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			var expectedEpoch = updatingEpoch.prevEpoch.getEpoch() + 1;
 			var expectedPrefix = new byte[Long.BYTES + 1];
 			Longs.copyTo(expectedEpoch, expectedPrefix, 1);
-			shutdownAll.verifyPostTypePrefixEquals(Longs.toByteArray(expectedEpoch));
+			shutdownAll.verifyPostTypePrefixEquals(expectedPrefix);
 			var iter = shutdownAll.iterator();
 			while (iter.hasNext()) {
 				var preparedRakeUpdate = iter.next();

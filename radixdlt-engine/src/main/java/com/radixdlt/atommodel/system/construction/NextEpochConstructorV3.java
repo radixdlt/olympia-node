@@ -225,8 +225,9 @@ public class NextEpochConstructorV3 implements ActionConstructor<NextEpoch> {
 		}
 
 		var preparingRakeUpdates = new TreeMap<ECPublicKey, PreparedRakeUpdate>(KeyComparator.instance());
-		var buf = ByteBuffer.allocate(1 + Long.BYTES);
+		var buf = ByteBuffer.allocate(2 + Long.BYTES);
 		buf.put(SubstateTypeId.PREPARED_RAKE_UPDATE.id());
+		buf.put((byte) 0);
 		buf.putLong(prevEpoch.getEpoch() + 1);
 		var index = new ShutdownAllIndex(buf.array(), PreparedRakeUpdate.class);
 		txBuilder.shutdownAll(index, (Iterator<PreparedRakeUpdate> i) -> {
