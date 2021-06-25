@@ -57,11 +57,13 @@ public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 			ValidatorRegisteredCopy.class,
 			SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id(),
 			buf -> {
+				REFieldSerialization.deserializeReservedByte(buf);
 				var key = REFieldSerialization.deserializeKey(buf);
 				var flag = REFieldSerialization.deserializeBoolean(buf);
 				return new ValidatorRegisteredCopy(key, flag);
 			},
 			(s, buf) -> {
+				REFieldSerialization.serializeReservedByte(buf);
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				buf.put((byte) (s.isRegistered() ? 1 : 0));
 			},
@@ -72,11 +74,13 @@ public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 			PreparedRegisteredUpdate.class,
 			SubstateTypeId.PREPARED_REGISTERED_FLAG_UPDATE.id(),
 			buf -> {
+				REFieldSerialization.deserializeReservedByte(buf);
 				var key = REFieldSerialization.deserializeKey(buf);
 				var flag = REFieldSerialization.deserializeBoolean(buf);
 				return new PreparedRegisteredUpdate(key, flag);
 			},
 			(s, buf) -> {
+				REFieldSerialization.serializeReservedByte(buf);
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				buf.put((byte) (s.isRegistered() ? 1 : 0));
 			},
