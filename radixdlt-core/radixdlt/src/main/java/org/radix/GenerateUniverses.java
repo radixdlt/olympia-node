@@ -495,10 +495,10 @@ public final class GenerateUniverses {
 				.map(v -> v.get("host"))
 				.map(String.class::cast)
 				.collect(Collectors.toList());
-
-			if (awsSecretsOutputOptions.getEnableAwsSecrets()) {
-				generateValidatorsAWSSecrets(validators, VALIDATOR_PREFIX, template, awsSecretsOutputOptions, false);
-			}
+			//todo: remove saving keys
+//			if (awsSecretsOutputOptions.getEnableAwsSecrets()) {
+//				generateValidatorsAWSSecrets(validators, VALIDATOR_PREFIX, template, awsSecretsOutputOptions, false);
+//			}
 			if (helmUniverseOutput.getOutputHelmValues()) {
 				generateHelmFiles(validators, VALIDATOR_PREFIX, template, nodeNames, helmUniverseOutput);
 			}
