@@ -58,7 +58,11 @@ public final class GenesisBuilder {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 
 	@Inject
-	public GenesisBuilder(RERules rules, LedgerAccumulator ledgerAccumulator) {
+	public GenesisBuilder(
+		RERules rules,
+		LedgerAccumulator ledgerAccumulator,
+		StakedValidatorsReducer reducer
+	) {
 		this.ledgerAccumulator = ledgerAccumulator;
 		var cmConfig = rules.getConstraintMachineConfig();
 		var cm = new ConstraintMachine(
@@ -74,7 +78,7 @@ public final class GenesisBuilder {
 			new InMemoryEngineStore<>(),
 			rules.getBatchVerifier()
 		);
-		radixEngine.addStateReducer(new StakedValidatorsReducer(0, 100), true);
+		radixEngine.addStateReducer(reducer, true);
 	}
 
 	public Txn build(List<TxAction> actions) throws TxBuilderException, RadixEngineException {
