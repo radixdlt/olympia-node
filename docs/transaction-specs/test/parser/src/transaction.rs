@@ -3,16 +3,7 @@ extern crate bytebuffer;
 use bytebuffer::ByteBuffer;
 use std::fmt;
 
-use crate::substates::ExitingStake;
-use crate::substates::PreparedStake;
-use crate::substates::PreparedUnstake;
-use crate::substates::REAddress;
-use crate::substates::StakeShare;
-use crate::substates::Substate;
-use crate::substates::TokenDefinition;
-use crate::substates::Tokens;
-use crate::substates::Unique;
-use crate::substates::Validator;
+use crate::substates::*;
 use crate::types::Bytes;
 use crate::types::Signature;
 use crate::types::SubstateId;
@@ -43,6 +34,14 @@ pub enum Instruction {
 
     SIG(Signature),
 
+    DOWNINDEX(Bytes),
+
+    LREAD(u32),
+
+    VREAD(Box<dyn Substate>),
+
+    READ(SubstateId),
+
     END,
 }
 
@@ -51,7 +50,9 @@ impl Transaction {
         let mut instructions = Vec::new();
         let mut buffer = ByteBuffer::from_bytes(&bytes[..]);
         while buffer.get_rpos() < buffer.get_wpos() {
-            instructions.push(Instruction::from_buffer(&mut buffer))
+            let inst = Instruction::from_buffer(&mut buffer);
+            // println!("{:?}", inst);
+            instructions.push(inst);
         }
         Self { instructions }
     }
@@ -82,6 +83,10 @@ impl Instruction {
             0x08 => Self::DOWNALL(buffer.read_u8()),
             0x09 => Self::SYSCALL(Bytes::from_buffer(buffer)),
             0x0A => Self::HEADER(buffer.read_u8(), buffer.read_u8()),
+            0x0B => Self::DOWNINDEX(Bytes::from_buffer(buffer)),
+            0x0C => Self::LREAD(buffer.read_u32()),
+            0x0D => Self::VREAD(Self::read_substate(buffer)),
+            0x0E => Self::READ(SubstateId::from_buffer(buffer)),
             _ => panic!("Unexpected opcode: {}", t),
         }
     }
@@ -90,14 +95,16 @@ impl Instruction {
         let t = buffer.read_u8();
         match t {
             0x00 => Box::new(REAddress::from_buffer(buffer)),
-            0x02 => Box::new(TokenDefinition::from_buffer(buffer)),
-            0x03 => Box::new(Tokens::from_buffer(buffer)),
-            0x04 => Box::new(PreparedStake::from_buffer(buffer)),
-            0x05 => Box::new(Validator::from_buffer(buffer)),
-            0x06 => Box::new(Unique::from_buffer(buffer)),
-            0x0B => Box::new(StakeShare::from_buffer(buffer)),
-            0x0D => Box::new(PreparedUnstake::from_buffer(buffer)),
-            0x0E => Box::new(ExitingStake::from_buffer(buffer)),
+            0x03 => Box::new(TokenDefinition::from_buffer(buffer)),
+            0x04 => Box::new(Tokens::from_buffer(buffer)),
+            0x05 => Box::new(PreparedStake::from_buffer(buffer)),
+            0x06 => Box::new(StakeOwnership::from_buffer(buffer)),
+            0x07 => Box::new(PreparedUnstake::from_buffer(buffer)),
+            0x08 => Box::new(ExitingStake::from_buffer(buffer)),
+            0x0C => Box::new(ValidatorAllowDelegationFlag::from_buffer(buffer)),
+            0x0D => Box::new(ValidatorRegisteredFlagCopy::from_buffer(buffer)),
+            0x0E => Box::new(PreparedRegisteredFlagUpdate::from_buffer(buffer)),
+            0x11 => Box::new(ValidatorOwnerCopy::from_buffer(buffer)),
             _ => panic!("Unsupported substate type: {}", t),
         }
     }
@@ -109,16 +116,16 @@ mod tests {
     use std::fs;
 
     #[test]
-    fn transaction_fee() {
-        let contents = fs::read_to_string("../samples/transaction_fee.txt").unwrap();
+    fn token_create() {
+        let contents = fs::read_to_string("../samples/token_create.txt").unwrap();
         let raw = hex::decode(contents).unwrap();
         let tx = Transaction::from_bytes(raw);
         println!("{:?}", tx)
     }
 
     #[test]
-    fn token_create() {
-        let contents = fs::read_to_string("../samples/token_create.txt").unwrap();
+    fn token_mint() {
+        let contents = fs::read_to_string("../samples/token_mint.txt").unwrap();
         let raw = hex::decode(contents).unwrap();
         let tx = Transaction::from_bytes(raw);
         println!("{:?}", tx)
