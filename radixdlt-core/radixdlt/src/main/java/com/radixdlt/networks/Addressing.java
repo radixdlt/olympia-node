@@ -18,7 +18,7 @@
 
 package com.radixdlt.networks;
 
-import com.google.inject.Inject;
+import com.radixdlt.api.ResourceAddressing;
 import com.radixdlt.identifiers.AccountAddressing;
 import com.radixdlt.identifiers.ValidatorAddressing;
 
@@ -34,31 +34,46 @@ public final class Addressing {
 			.orElse("vt" + networkId);
 	}
 
-	private final ValidatorAddressing validatorAddresses;
-	private final AccountAddressing accountAddresses;
+	public static String resourceHrpSuffix(int networkId) {
+		return Network.ofId(networkId).map(Network::getResourceHrpSuffix)
+			.orElse("rt" + networkId);
+	}
 
-	private Addressing(ValidatorAddressing validatorAddresses, AccountAddressing accountAddresses) {
-		this.validatorAddresses = validatorAddresses;
-		this.accountAddresses = accountAddresses;
+	private final ValidatorAddressing validatorAddressing;
+	private final AccountAddressing accountAddressing;
+	private final ResourceAddressing resourceAddressing;
+
+	private Addressing(
+		ValidatorAddressing validatorAddressing,
+		AccountAddressing accountAddressing,
+		ResourceAddressing resourceAddressing
+	) {
+		this.validatorAddressing = validatorAddressing;
+		this.accountAddressing = accountAddressing;
+		this.resourceAddressing = resourceAddressing;
 	}
 
 	public static Addressing ofNetwork(Network network) {
 		return ofNetworkId(network.getId());
 	}
 
-	@Inject
-	public static Addressing ofNetworkId(@NetworkId int networkId) {
+	public static Addressing ofNetworkId(int networkId) {
 		return new Addressing(
 			ValidatorAddressing.bech32(validatorHrp(networkId)),
-			AccountAddressing.bech32(accountHrp(networkId))
+			AccountAddressing.bech32(accountHrp(networkId)),
+			ResourceAddressing.bech32(resourceHrpSuffix(networkId))
 		);
 	}
 
 	public ValidatorAddressing forValidators() {
-		return validatorAddresses;
+		return validatorAddressing;
 	}
 
 	public AccountAddressing forAccounts() {
-		return accountAddresses;
+		return accountAddressing;
+	}
+
+	public ResourceAddressing forResources() {
+		return resourceAddressing;
 	}
 }

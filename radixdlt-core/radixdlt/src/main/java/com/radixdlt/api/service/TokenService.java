@@ -18,25 +18,27 @@
 package com.radixdlt.api.service;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.Rri;
 import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.api.store.TokenDefinitionRecord;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Result;
 
 public class TokenService {
 	private final ClientApiStore clientApiStore;
+	private final Addressing addressing;
 
 	@Inject
-	public TokenService(ClientApiStore clientApiStore) {
+	public TokenService(ClientApiStore clientApiStore, Addressing addressing) {
 		this.clientApiStore = clientApiStore;
+		this.addressing = addressing;
 	}
 
 	public Result<TokenDefinitionRecord> getNativeTokenDescription() {
 		REAddr rri = REAddr.ofNativeToken();
 
 		return clientApiStore.getTokenDefinition(rri)
-			.flatMap(definition -> withSupply(Rri.of(definition.getSymbol(), rri), definition));
+			.flatMap(definition -> withSupply(addressing.forResources().of(definition.getSymbol(), rri), definition));
 	}
 
 	public Result<TokenDefinitionRecord> getTokenDescription(String rri) {

@@ -32,7 +32,6 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.api.Rri;
 import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.api.data.ActionType;
 import com.radixdlt.api.store.ClientApiStore.BalanceType;
@@ -172,7 +171,7 @@ public class BerkeleyClientApiStoreTest {
 	public void tokenSupplyIsCalculateProperlyForInitialTokenIssuance() throws Exception {
 		var tokenDef = prepareMutableTokenDef(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
 		var addr = REAddr.ofHashedKey(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
-		var rri = Rri.of(SYMBOL, addr);
+		var rri = addressing.forResources().of(SYMBOL, addr);
 		var tx = engine.construct(new CreateMutableToken(tokenDef))
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
@@ -187,7 +186,7 @@ public class BerkeleyClientApiStoreTest {
 	public void tokenSupplyIsCalculateProperlyAfterBurnMint() throws Exception {
 		var tokenDef = prepareMutableTokenDef(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
 		var addr = REAddr.ofHashedKey(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
-		var rri = Rri.of(SYMBOL, addr);
+		var rri = addressing.forResources().of(SYMBOL, addr);
 		var tx = engine.construct(
 			TxnConstructionRequest.create()
 				.createMutableToken(tokenDef)

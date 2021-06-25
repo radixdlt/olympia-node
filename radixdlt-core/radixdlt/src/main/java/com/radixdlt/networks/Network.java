@@ -23,18 +23,20 @@ import com.radixdlt.atom.Txn;
 import java.util.Optional;
 
 public enum Network {
-	MAINNET(1, "rdx", "vr"),
-	TESTNET(2, "tdx", "vb"),
-	LOCALNET(99, "ldx", "vl");
+	MAINNET(1, "rdx", "vr", "_rr"),
+	TESTNET(2, "tdx", "vb", "_rt"),
+	LOCALNET(99, "ldx", "vl", "_rl");
 
 	private final int id;
 	private final String accountHrp;
 	private final String validatorHrp;
+	private final String resourceHrpSuffix;
 
-	Network(int id, String accountHrp, String validatorHrp) {
+	Network(int id, String accountHrp, String validatorHrp, String resourceHrpSuffix) {
 		this.id = id;
 		this.accountHrp = accountHrp;
 		this.validatorHrp = validatorHrp;
+		this.resourceHrpSuffix = resourceHrpSuffix;
 	}
 
 	public String getAccountHrp() {
@@ -43,6 +45,10 @@ public enum Network {
 
 	public String getValidatorHrp() {
 		return validatorHrp;
+	}
+
+	public String getResourceHrpSuffix() {
+		return resourceHrpSuffix;
 	}
 
 	public int getId() {

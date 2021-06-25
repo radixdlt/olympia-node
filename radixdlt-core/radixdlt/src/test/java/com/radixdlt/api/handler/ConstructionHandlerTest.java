@@ -28,7 +28,6 @@ import org.junit.Test;
 
 import com.radixdlt.api.data.PreparedTransaction;
 import com.radixdlt.api.service.ActionParserService;
-import com.radixdlt.api.service.RriParser;
 import com.radixdlt.api.service.SubmissionService;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
@@ -59,9 +58,8 @@ public class ConstructionHandlerTest {
 	private static final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
 	private static final String FEE_PAYER = addressing.forAccounts().of(ACCOUNT_ADDR);
 
-	private final RriParser rriParser = mock(RriParser.class);
 	private final SubmissionService submissionService = mock(SubmissionService.class);
-	private final ActionParserService actionParserService = new ActionParserService(rriParser, addressing);
+	private final ActionParserService actionParserService = new ActionParserService(addressing);
 	private final ConstructionHandler handler = new ConstructionHandler(submissionService, actionParserService, addressing);
 
 	@Test

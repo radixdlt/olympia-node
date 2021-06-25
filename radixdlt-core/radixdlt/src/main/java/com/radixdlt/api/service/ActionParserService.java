@@ -44,15 +44,10 @@ import static com.radixdlt.utils.functional.Result.wrap;
 import static java.util.Optional.ofNullable;
 
 public final class ActionParserService {
-	private final RriParser rriParser;
 	private final Addressing addressing;
 
 	@Inject
-	public ActionParserService(
-		RriParser rriParser,
-		Addressing addressing
-	) {
-		this.rriParser = rriParser;
+	public ActionParserService(Addressing addressing) {
 		this.addressing = addressing;
 	}
 
@@ -186,8 +181,9 @@ public final class ActionParserService {
 	}
 
 	private Result<REAddr> rri(JSONObject element) {
+		// TODO: Need to verify symbol matches
 		return param(element, "rri")
-			.flatMap(rriParser::parse);
+			.flatMap(p -> addressing.forResources().parseFunctional(p).map(t -> t.map((__, addr) -> addr)));
 	}
 
 	private Result<Integer> percentage(JSONObject element) {

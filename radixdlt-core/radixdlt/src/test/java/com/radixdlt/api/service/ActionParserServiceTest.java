@@ -21,7 +21,6 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import org.json.JSONArray;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 import com.radixdlt.atom.actions.BurnToken;
@@ -38,33 +37,23 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Failure;
-import com.radixdlt.utils.functional.Result;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class ActionParserServiceTest {
 	private final REAddr from = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
 	private final REAddr to = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
 	private final REAddr rri = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "ckee");
-	private final RriParser rriParser = mock(RriParser.class);
 	private final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
-	private final ActionParserService actionParserService = new ActionParserService(rriParser, addressing);
-
-	@Before
-	public void setup() {
-		when(rriParser.parse(any())).thenReturn(Result.ok(rri));
-	}
+	private final ActionParserService actionParserService = new ActionParserService(addressing);
 
 	@Test
 	public void transferActionIsParsedCorrectly() {
 		var fromAddr = addressing.forAccounts().of(from);
 		var toAddr = addressing.forAccounts().of(to);
 		var source = "[{\"type\":\"TokenTransfer\", \"from\":\"%s\", \"to\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, fromAddr, toAddr, UInt256.SIX, rri));
+		var actions = jsonArray(String.format(source, fromAddr, toAddr, UInt256.SIX, addressing.forResources().of("ckee", rri)));
 
 		actionParserService.parse(actions)
 			.onFailure(this::fail)
@@ -145,7 +134,7 @@ public class ActionParserServiceTest {
 		var toAccount = addressing.forAccounts().of(to);
 
 		var source = "[{\"type\":\"MintTokens\", \"to\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, toAccount, UInt256.NINE, rri));
+		var actions = jsonArray(String.format(source, toAccount, UInt256.NINE, addressing.forResources().of("ckee", rri)));
 
 		actionParserService.parse(actions)
 			.onFailure(this::fail)
@@ -171,7 +160,7 @@ public class ActionParserServiceTest {
 		var fromAddr = addressing.forAccounts().of(from);
 
 		var source = "[{\"type\":\"BurnTokens\", \"from\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, fromAddr, UInt256.FIVE, rri));
+		var actions = jsonArray(String.format(source, fromAddr, UInt256.FIVE, addressing.forResources().of("ckee", rri)));
 
 		actionParserService.parse(actions)
 			.onFailure(this::fail)

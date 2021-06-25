@@ -16,11 +16,12 @@
  */
 package com.radixdlt.api.service;
 
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.radixdlt.api.Rri;
 import com.radixdlt.api.data.ActionEntry;
 import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.store.ClientApiStore;
@@ -50,6 +51,7 @@ public class ArchiveAccountServiceTest {
 	private static final REAddr OWNER_ACCOUNT = REAddr.ofPubKeyAccount(OWNER_KEY);
 	private static final ECPublicKey TOKEN_KEY = ECKeyPair.generateNew().getPublicKey();
 
+	private final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
 	private final ClientApiStore clientApiStore = mock(ClientApiStore.class);
 	private final ArchiveAccountService archiveService = new ArchiveAccountService(clientApiStore);
 
@@ -57,9 +59,9 @@ public class ArchiveAccountServiceTest {
 	public void testGetTokenBalancesForFunds() {
 		var address = TOKEN_KEY;
 		var address1 = REAddr.ofHashedKey(address, "fff");
-		var rri1 = Rri.of("fff", address1);
+		var rri1 = addressing.forResources().of("fff", address1);
 		var address2 = REAddr.ofHashedKey(address, "rar");
-		var rri2 = Rri.of("rar", address2);
+		var rri2 = addressing.forResources().of("rar", address2);
 		var balance1 = createBalance(OWNER_ACCOUNT, null, rri1, UInt384.FIVE);
 		var balance2 = createBalance(OWNER_ACCOUNT, null, rri2, UInt384.NINE);
 		var balances = Result.ok(List.of(balance1, balance2));
@@ -81,13 +83,13 @@ public class ArchiveAccountServiceTest {
 	public void testGetTokenBalancesForStakes() {
 		var address = TOKEN_KEY;
 		var address1 = REAddr.ofHashedKey(address, "fff");
-		var rri1 = Rri.of("fff", address1);
+		var rri1 = addressing.forResources().of("fff", address1);
 		var address2 = REAddr.ofHashedKey(address, "rar");
-		var rri2 = Rri.of("rar", address2);
+		var rri2 = addressing.forResources().of("rar", address2);
 		var balance1 = createBalance(OWNER_ACCOUNT, null, rri1, UInt384.FIVE);
 		var balance2 = createBalance(OWNER_ACCOUNT, null, rri2, UInt384.NINE);
 		var balance3 = createBalance(OWNER_ACCOUNT, null,
-									 Rri.of("xrd", REAddr.ofNativeToken()), UInt384.TWO
+									 addressing.forResources().of("xrd", REAddr.ofNativeToken()), UInt384.TWO
 		);
 		var balances = Result.ok(List.of(balance1, balance2, balance3));
 

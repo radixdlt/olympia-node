@@ -16,10 +16,11 @@
  */
 package com.radixdlt.api.service;
 
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.radixdlt.api.Rri;
 import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.api.store.TokenDefinitionRecord;
 import com.radixdlt.atom.actions.CreateMutableToken;
@@ -41,7 +42,8 @@ public class TokenServiceTest {
 	private static final ECPublicKey TOKEN_KEY = ECKeyPair.generateNew().getPublicKey();
 
 	private final ClientApiStore clientApiStore = mock(ClientApiStore.class);
-	private final TokenService tokenService = new TokenService(clientApiStore);
+	private final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
+	private final TokenService tokenService = new TokenService(clientApiStore, addressing);
 
 	@Test
 	public void testGetNativeTokenDescription() {
@@ -71,7 +73,7 @@ public class TokenServiceTest {
 		when(clientApiStore.getTokenSupply(any()))
 			.thenReturn(Result.ok(UInt384.NINE));
 
-		var rri = Rri.of("fff", token);
+		var rri = addressing.forResources().of("fff", token);
 		tokenService.getTokenDescription(rri)
 			.onSuccess(description -> assertEquals(token, description.addr()))
 			.onSuccess(description -> assertEquals(UInt384.NINE, description.currentSupply()))

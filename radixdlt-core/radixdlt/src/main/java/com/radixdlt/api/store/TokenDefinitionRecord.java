@@ -19,8 +19,8 @@ package com.radixdlt.api.store;
 
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.api.Rri;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.UInt384;
 import org.json.JSONObject;
 
@@ -167,10 +167,10 @@ public class TokenDefinitionRecord {
 		);
 	}
 
-	public JSONObject asJson() {
+	public JSONObject asJson(Addressing addressing) {
 		return jsonObject()
 			.put("name", name)
-			.put("rri", Rri.of(symbol, addr))
+			.put("rri", addressing.forResources().of(symbol, addr))
 			.put("symbol", symbol)
 			.put("description", description)
 			.put("currentSupply", currentSupply)
@@ -196,8 +196,8 @@ public class TokenDefinitionRecord {
 		return addr;
 	}
 
-	public String rri() {
-		return Rri.of(symbol, addr);
+	public String rri(Addressing addressing) {
+		return addressing.forResources().of(symbol, addr);
 	}
 
 	public UInt384 currentSupply() {

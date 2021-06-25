@@ -187,6 +187,7 @@ public class SystemConfigService {
 		this.systemCounters = systemCounters;
 		this.endpointStatuses = endpointStatuses;
 		this.peersView = peersView;
+		this.addressing = addressing;
 
 		radixEngineConfiguration = prepareRadixEngineConfiguration(forkConfigTreeMap, minValidators, maxValidators, maxTxnsPerProposal);
 		mempoolConfiguration = prepareMempoolConfiguration(mempoolMaxSize, mempoolThrottleMs);
@@ -195,7 +196,6 @@ public class SystemConfigService {
 		syncConfiguration = syncConfig.asJson();
 		checkpointsConfiguration = prepareCheckpointsConfiguration(genesis);
 		networkingConfiguration = prepareNetworkingConfiguration(p2PConfig);
-		this.addressing = addressing;
 	}
 
 	public JSONObject getApiConfiguration() {

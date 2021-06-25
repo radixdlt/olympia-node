@@ -22,7 +22,7 @@ import org.junit.Test;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.radixdlt.api.Rri;
+import com.radixdlt.api.ResourceAddressing;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -34,7 +34,8 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class RriTest {
+public class ResourceAddressingTest {
+	private final ResourceAddressing resourceAddressing = ResourceAddressing.bech32("_rb");
 	private final BiMap<Pair<String, String>, String> reAddressToRri = HashBiMap.create(
 		Map.of(
 			Pair.of("xrd", "01"), "xrd_rb1qya85pwq",
@@ -72,7 +73,7 @@ public class RriTest {
 	public void test_rri_serialization() {
 		reAddressToRri.forEach((pair, expected) -> {
 			var reAddr = REAddr.of(Bytes.fromHexString(pair.getSecond()));
-			var rri = Rri.of(pair.getFirst(), reAddr);
+			var rri = resourceAddressing.of(pair.getFirst(), reAddr);
 			assertThat(expected).isEqualTo(rri);
 		});
 	}
@@ -80,7 +81,7 @@ public class RriTest {
 	@Test
 	public void test_rri_deserialization() {
 		reAddressToRri.forEach((expected, rri) -> {
-			var pair = Rri.parse(rri);
+			var pair = resourceAddressing.parse(rri);
 			var expectedAddr = REAddr.of(Bytes.fromHexString(expected.getSecond()));
 
 			pair.map((symbol, address) -> {
@@ -94,7 +95,7 @@ public class RriTest {
 	@Test
 	public void test_invalid_rris() {
 		for (var e : invalidRris.entrySet()) {
-			assertThatThrownBy(() -> Rri.parse(e.getKey()), e.getValue()).isInstanceOf(IllegalArgumentException.class);
+			assertThatThrownBy(() -> resourceAddressing.parse(e.getKey()), e.getValue()).isInstanceOf(IllegalArgumentException.class);
 		}
 	}
 
@@ -109,14 +110,14 @@ public class RriTest {
 
 	private String rriFromPKAndName(int privateKey, String name) {
 		var reAddr = REAddr.ofHashedKey(publicKeyOfPrivateKey(privateKey), name);
-		return Rri.of(name, reAddr);
+		return resourceAddressing.of(name, reAddr);
 	}
 
 	@Test
 	public void test_system_rris() {
 		var systemTokenREAddr = REAddr.ofNativeToken();
 		for (var e : systemRris.entrySet()) {
-			var rri = Rri.of(e.getKey(), systemTokenREAddr);
+			var rri = resourceAddressing.of(e.getKey(), systemTokenREAddr);
 			assertThat(rri).isEqualTo(e.getValue());
 		}
 	}

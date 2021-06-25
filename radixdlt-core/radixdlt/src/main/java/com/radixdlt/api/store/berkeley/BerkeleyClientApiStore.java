@@ -29,7 +29,6 @@ import com.google.common.collect.Streams;
 import com.google.inject.Inject;
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.accounting.TwoActorEntry;
-import com.radixdlt.api.Rri;
 import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.api.data.ScheduledQueueFlush;
@@ -210,7 +209,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	@Override
 	public Result<REAddr> parseRri(String rri) {
-		return Rri.parseFunctional(rri)
+		return addressing.forResources().parseFunctional(rri)
 			.flatMap(tuple -> tuple.map(
 				(symbol, address) -> getTokenDefinition(address)
 					.map(TokenDefinitionRecord::getSymbol)
@@ -329,7 +328,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private String getRriOrFail(REAddr addr) {
 		try {
-			return rriCache.get(addr, () -> getTokenDefinition(addr).toOptional().orElseThrow().rri());
+			return rriCache.get(addr, () -> getTokenDefinition(addr).toOptional().orElseThrow().rri(addressing));
 		} catch (ExecutionException e) {
 			log.error("Unable to find rri of token at address {}", addr);
 			throw new IllegalStateException(e);
@@ -810,7 +809,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		);
 
 		if (status != OperationStatus.SUCCESS) {
-			log.error("Error {} while storing token definition {}", status, tokenDefinition.asJson());
+			log.error("Error {} while storing token definition {}", status, tokenDefinition.asJson(addressing));
 		}
 	}
 

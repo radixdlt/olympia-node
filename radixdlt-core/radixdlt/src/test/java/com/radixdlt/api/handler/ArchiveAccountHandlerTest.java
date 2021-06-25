@@ -21,7 +21,6 @@ import com.radixdlt.networks.Network;
 import org.json.JSONObject;
 import org.junit.Test;
 
-import com.radixdlt.api.Rri;
 import com.radixdlt.api.data.ActionEntry;
 import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.service.ArchiveAccountService;
@@ -69,9 +68,9 @@ public class ArchiveAccountHandlerTest {
 		var address1 = REAddr.ofHashedKey(PUB_KEY, "xyz");
 		var address2 = REAddr.ofHashedKey(PUB_KEY, "yzs");
 		var address3 = REAddr.ofHashedKey(PUB_KEY, "zxy");
-		var balance1 = TokenBalance.create(Rri.of("xyz", address1), UInt384.TWO);
-		var balance2 = TokenBalance.create(Rri.of("yzs", address2), UInt384.FIVE);
-		var balance3 = TokenBalance.create(Rri.of("zxy", address3), UInt384.EIGHT);
+		var balance1 = TokenBalance.create(addressing.forResources().of("xyz", address1), UInt384.TWO);
+		var balance2 = TokenBalance.create(addressing.forResources().of("yzs", address2), UInt384.FIVE);
+		var balance3 = TokenBalance.create(addressing.forResources().of("zxy", address3), UInt384.EIGHT);
 
 		when(accountService.getTokenBalances(any(REAddr.class)))
 			.thenReturn(Result.ok(List.of(balance1, balance2, balance3)));
@@ -96,9 +95,9 @@ public class ArchiveAccountHandlerTest {
 		var address1 = REAddr.ofHashedKey(PUB_KEY, "xyz");
 		var address2 = REAddr.ofHashedKey(PUB_KEY, "yzs");
 		var address3 = REAddr.ofHashedKey(PUB_KEY, "zxy");
-		var balance1 = TokenBalance.create(Rri.of("xyz", address1), UInt384.TWO);
-		var balance2 = TokenBalance.create(Rri.of("yzs", address2), UInt384.FIVE);
-		var balance3 = TokenBalance.create(Rri.of("zxy", address3), UInt384.EIGHT);
+		var balance1 = TokenBalance.create(addressing.forResources().of("xyz", address1), UInt384.TWO);
+		var balance2 = TokenBalance.create(addressing.forResources().of("yzs", address2), UInt384.FIVE);
+		var balance3 = TokenBalance.create(addressing.forResources().of("zxy", address3), UInt384.EIGHT);
 
 		when(accountService.getTokenBalances(any(REAddr.class)))
 			.thenReturn(Result.ok(List.of(balance1, balance2, balance3)));

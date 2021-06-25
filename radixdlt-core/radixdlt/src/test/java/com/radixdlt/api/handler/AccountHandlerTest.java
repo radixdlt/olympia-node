@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import com.radixdlt.api.service.AccountInfoService;
 import com.radixdlt.api.service.ActionParserService;
-import com.radixdlt.api.service.RriParser;
 import com.radixdlt.api.service.SubmissionService;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.crypto.ECKeyPair;
@@ -46,11 +45,10 @@ import static com.radixdlt.api.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 public class AccountHandlerTest {
-	private final RriParser rriParser = mock(RriParser.class);
 	private final SubmissionService submissionService = mock(SubmissionService.class);
 	private final AccountInfoService accountService = mock(AccountInfoService.class);
 	private final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
-	private final ActionParserService actionParserService = new ActionParserService(rriParser, addressing);
+	private final ActionParserService actionParserService = new ActionParserService(addressing);
 
 	private final ECKeyPair keyPair = ECKeyPair.generateNew();
 	private final ECPublicKey bftKey = keyPair.getPublicKey();

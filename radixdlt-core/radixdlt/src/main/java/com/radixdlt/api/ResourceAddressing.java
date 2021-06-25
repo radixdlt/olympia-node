@@ -40,11 +40,15 @@ import static com.radixdlt.utils.functional.Tuple.tuple;
  * {@link com.radixdlt.identifiers.REAddr} to Base32 similar to specification described
  * in BIP_0173 for converting witness programs.
  */
-public final class Rri {
-	private static final String RRI_HRP_SUFFIX = "_rb";
+public final class ResourceAddressing {
+	private final String hrpSuffix;
 
-	private Rri() {
-		throw new IllegalStateException("Cannot instantiate.");
+	private ResourceAddressing(String hrpSuffix) {
+		this.hrpSuffix = hrpSuffix;
+	}
+
+	public static ResourceAddressing bech32(String hrpSuffix) {
+		return new ResourceAddressing(hrpSuffix);
 	}
 
 	private static byte[] toBech32Data(byte[] bytes) {
@@ -55,12 +59,12 @@ public final class Rri {
 		return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
 	}
 
-	public static Tuple2<String, REAddr> parse(String rri) {
+	public Tuple2<String, REAddr> parse(String rri) {
 		var data = Bech32.decode(rri);
-		if (!data.hrp.endsWith(RRI_HRP_SUFFIX)) {
-			throw new IllegalArgumentException("Address hrp suffix must be " + RRI_HRP_SUFFIX + "(" + rri + ")");
+		if (!data.hrp.endsWith(hrpSuffix)) {
+			throw new IllegalArgumentException("Address hrp suffix must be " + hrpSuffix + "(" + rri + ")");
 		}
-		var symbol = data.hrp.substring(0, data.hrp.length() - RRI_HRP_SUFFIX.length());
+		var symbol = data.hrp.substring(0, data.hrp.length() - hrpSuffix.length());
 		if (!CMAtomOS.NAME_PATTERN.matcher(symbol).matches()) {
 			throw new IllegalArgumentException("Invalid symbol in address (" + rri + ")");
 		}
@@ -68,17 +72,17 @@ public final class Rri {
 		return tuple(symbol, REAddr.of(addrBytes));
 	}
 
-	public static Result<Tuple2<String, REAddr>> parseFunctional(String rri) {
+	public Result<Tuple2<String, REAddr>> parseFunctional(String rri) {
 		return Result.wrap(UNABLE_TO_DECODE, () -> parse(rri));
 	}
 
-	public static Result<REAddr> rriParser(String rri) {
+	public Result<REAddr> parseToAddr(String rri) {
 		return Result.wrap(UNABLE_TO_DECODE, () -> parse(rri).map((__, addr) -> addr));
 	}
 
-	public static String of(String symbol, REAddr addr) {
+	public String of(String symbol, REAddr addr) {
 		var addrBytes = addr.getBytes();
 		var bech32Data = toBech32Data(addrBytes);
-		return Bech32.encode(symbol + RRI_HRP_SUFFIX, bech32Data);
+		return Bech32.encode(symbol + hrpSuffix, bech32Data);
 	}
 }

@@ -17,6 +17,7 @@
 
 package com.radixdlt.api.handler;
 
+import com.radixdlt.networks.Addressing;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
@@ -29,7 +30,6 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.AccountAddressing;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.utils.UInt256;
@@ -51,7 +51,7 @@ public class FaucetHandler {
 	private final REAddr account;
 	private final Set<REAddr> tokensToSend;
 	private final HashSigner hashSigner;
-	private final AccountAddressing accountAddresses;
+	private final Addressing addressing;
 
 	@Inject
 	public FaucetHandler(
@@ -59,24 +59,24 @@ public class FaucetHandler {
 		@Self REAddr account,
 		@FaucetToken Set<REAddr> tokensToSend,
 		@LocalSigner HashSigner hashSigner,
-		AccountAddressing accountAddresses
+		Addressing addressing
 	) {
 		this.submissionService = submissionService;
 		this.account = account;
 		this.tokensToSend = tokensToSend;
 		this.hashSigner = hashSigner;
-		this.accountAddresses = accountAddresses;
+		this.addressing = addressing;
 	}
 
 	public JSONObject requestTokens(JSONObject request) {
 		return withRequiredStringParameter(
 			request, "address",
-			address -> accountAddresses.parseFunctional(address).flatMap(this::sendTokens)
+			address -> addressing.forAccounts().parseFunctional(address).flatMap(this::sendTokens)
 		);
 	}
 
 	private Result<JSONObject> sendTokens(REAddr destination) {
-		logger.info("Sending {} {} to {}", AMOUNT, tokensToSend, accountAddresses.of(destination));
+		logger.info("Sending {} {} to {}", AMOUNT, tokensToSend, addressing.forAccounts().of(destination));
 
 		var steps = new ArrayList<TransactionAction>();
 
