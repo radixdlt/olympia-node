@@ -22,6 +22,8 @@ import com.google.inject.Singleton;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERules;
@@ -43,7 +45,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.identifiers.NodeAddress;
+import com.radixdlt.identifiers.NodeAddressing;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
@@ -152,7 +154,7 @@ public final class GenerateUniverses {
 		var genesis = genesisProvider.get().getTxns().get(0);
 		IntStream.range(0, generatedValidatorKeys.size()).forEach(i -> {
 			System.out.format("export RADIXDLT_VALIDATOR_%s_PRIVKEY=%s%n", i, Bytes.toBase64String(generatedValidatorKeys.get(i).getPrivateKey()));
-			System.out.format("export RADIXDLT_VALIDATOR_%s_PUBKEY=%s%n", i, NodeAddress.of(generatedValidatorKeys.get(i).getPublicKey()));
+			System.out.format("export RADIXDLT_VALIDATOR_%s_PUBKEY=%s%n", i, Addressing.ofNetwork(Network.LOCALNET).forNodes().of(generatedValidatorKeys.get(i).getPublicKey()));
 		});
 		if (validatorsCount > 0) {
 			System.out.format("export RADIXDLT_GENESIS_TXN=%s%n", Bytes.toHexString(genesis.getPayload()));

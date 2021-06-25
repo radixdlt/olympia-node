@@ -22,8 +22,11 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bits;
+import com.radixdlt.utils.Pair;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
+
+import java.util.Objects;
 
 /**
  * Bech-32 encoding/decoding of a node addresses.
@@ -34,11 +37,20 @@ import org.bitcoinj.core.Bech32;
  * {@link REAddr} to Base32 similar to specification described
  * in BIP_0173 for converting witness programs.
  */
-public final class NodeAddress {
-	private static final String NODE_HRP = "brn"; // "rdx" for mainnet
+public final class NodeAddressing {
+	private final String hrp;
 
-	private NodeAddress() {
-		throw new IllegalStateException("Cannot instantiate.");
+	private NodeAddressing(String hrp) {
+		this.hrp = hrp;
+	}
+
+	public static NodeAddressing bech32(String hrp) {
+		Objects.requireNonNull(hrp);
+		return new NodeAddressing(hrp);
+	}
+
+	public String getHrp() {
+		return hrp;
 	}
 
 	private static byte[] toBech32Data(byte[] bytes) {
@@ -49,12 +61,17 @@ public final class NodeAddress {
 		return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
 	}
 
-	public static String of(ECPublicKey publicKey) {
+	public String of(ECPublicKey publicKey) {
 		var convert = toBech32Data(publicKey.getCompressedBytes());
-		return Bech32.encode(NODE_HRP, convert);
+		return Bech32.encode(hrp, convert);
 	}
 
-	public static ECPublicKey parse(String v) throws DeserializeException {
+	public static String of(String hrp, ECPublicKey publicKey) {
+		var convert = toBech32Data(publicKey.getCompressedBytes());
+		return Bech32.encode(hrp, convert);
+	}
+
+	public ECPublicKey parse(String v) throws DeserializeException {
 		Bech32.Bech32Data bech32Data;
 		try {
 			bech32Data = Bech32.decode(v);
@@ -62,13 +79,29 @@ public final class NodeAddress {
 			throw new DeserializeException("Could not decode string: " + v, e);
 		}
 
-		if (!bech32Data.hrp.equals(NODE_HRP)) {
-			throw new DeserializeException("hrp must be " + NODE_HRP + " but was " + bech32Data.hrp);
+		if (!bech32Data.hrp.equals(hrp)) {
+			throw new DeserializeException("hrp must be " + hrp + " but was " + bech32Data.hrp);
 		}
 
 		try {
 			var pubKeyBytes = fromBech32Data(bech32Data.data);
 			return ECPublicKey.fromBytes(pubKeyBytes);
+		} catch (IllegalArgumentException | PublicKeyException e) {
+			throw new DeserializeException("Invalid address", e);
+		}
+	}
+
+	public static Pair<String, ECPublicKey> parseWithHrp(String v) throws DeserializeException {
+		Bech32.Bech32Data bech32Data;
+		try {
+			bech32Data = Bech32.decode(v);
+		} catch (AddressFormatException e) {
+			throw new DeserializeException("Could not decode string: " + v, e);
+		}
+
+		try {
+			var pubKeyBytes = fromBech32Data(bech32Data.data);
+			return Pair.of(bech32Data.hrp, ECPublicKey.fromBytes(pubKeyBytes));
 		} catch (IllegalArgumentException | PublicKeyException e) {
 			throw new DeserializeException("Invalid address", e);
 		}

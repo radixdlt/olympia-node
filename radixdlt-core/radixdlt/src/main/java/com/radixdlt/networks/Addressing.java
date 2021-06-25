@@ -20,37 +20,46 @@ package com.radixdlt.networks;
 
 import com.radixdlt.api.ResourceAddressing;
 import com.radixdlt.identifiers.AccountAddressing;
+import com.radixdlt.identifiers.NodeAddressing;
 import com.radixdlt.identifiers.ValidatorAddressing;
 
 public final class Addressing {
 
 	public static String accountHrp(int networkId) {
 		return Network.ofId(networkId).map(Network::getAccountHrp)
-			.orElse("tdx" + networkId);
+			.orElse(Network.STOKENET.getNodeHrp() + networkId);
 	}
 
 	public static String validatorHrp(int networkId) {
 		return Network.ofId(networkId).map(Network::getValidatorHrp)
-			.orElse("vt" + networkId);
+			.orElse(Network.STOKENET.getNodeHrp() + networkId);
 	}
 
 	public static String resourceHrpSuffix(int networkId) {
 		return Network.ofId(networkId).map(Network::getResourceHrpSuffix)
-			.orElse("rt" + networkId);
+			.orElse(Network.STOKENET.getNodeHrp() + networkId);
+	}
+
+	public static String nodeHrp(int networkId) {
+		return Network.ofId(networkId).map(Network::getNodeHrp)
+			.orElse(Network.STOKENET.getNodeHrp() + networkId);
 	}
 
 	private final ValidatorAddressing validatorAddressing;
 	private final AccountAddressing accountAddressing;
 	private final ResourceAddressing resourceAddressing;
+	private final NodeAddressing nodeAddressing;
 
 	private Addressing(
 		ValidatorAddressing validatorAddressing,
 		AccountAddressing accountAddressing,
-		ResourceAddressing resourceAddressing
+		ResourceAddressing resourceAddressing,
+		NodeAddressing nodeAddressing
 	) {
 		this.validatorAddressing = validatorAddressing;
 		this.accountAddressing = accountAddressing;
 		this.resourceAddressing = resourceAddressing;
+		this.nodeAddressing = nodeAddressing;
 	}
 
 	public static Addressing ofNetwork(Network network) {
@@ -61,7 +70,8 @@ public final class Addressing {
 		return new Addressing(
 			ValidatorAddressing.bech32(validatorHrp(networkId)),
 			AccountAddressing.bech32(accountHrp(networkId)),
-			ResourceAddressing.bech32(resourceHrpSuffix(networkId))
+			ResourceAddressing.bech32(resourceHrpSuffix(networkId)),
+			NodeAddressing.bech32(nodeHrp(networkId))
 		);
 	}
 
@@ -75,5 +85,9 @@ public final class Addressing {
 
 	public ResourceAddressing forResources() {
 		return resourceAddressing;
+	}
+
+	public NodeAddressing forNodes() {
+		return nodeAddressing;
 	}
 }

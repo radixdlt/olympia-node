@@ -30,7 +30,6 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.identifiers.NodeAddress;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolMaxSize;
@@ -408,7 +407,7 @@ public class SystemConfigService {
 
 	private JSONObject peerToJson(PeersView.PeerInfo peer) {
 		var channelsJson = jsonArray();
-		var peerJson = jsonObject().put("address", NodeAddress.of(peer.getNodeId().getPublicKey()));
+		var peerJson = jsonObject().put("address", addressing.forNodes().of(peer.getNodeId().getPublicKey()));
 
 		peer.getChannels().forEach(channel -> {
 			var channelJson = jsonObject();

@@ -20,7 +20,8 @@ package com.radixdlt.network.p2p;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.NodeAddress;
+import com.radixdlt.identifiers.NodeAddressing;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.DeserializeException;
 
 import java.net.URI;
@@ -31,6 +32,7 @@ import java.util.Objects;
 public final class RadixNodeUri {
 	private final String host;
 	private final int port;
+	private final String networkNodeHrp;
 	private final NodeId nodeId;
 
 	@JsonCreator
@@ -38,25 +40,24 @@ public final class RadixNodeUri {
 		return fromUri(new URI(new String(uri)));
 	}
 
-	public static RadixNodeUri fromPubKeyAndAddress(ECPublicKey publicKey, String host, int port) {
-		return new RadixNodeUri(host, port, NodeId.fromPublicKey(publicKey));
+	public static RadixNodeUri fromPubKeyAndAddress(int networkId, ECPublicKey publicKey, String host, int port) {
+		var hrp = Addressing.ofNetworkId(networkId).forNodes().getHrp();
+		return new RadixNodeUri(host, port, hrp, NodeId.fromPublicKey(publicKey));
 	}
 
 	public static RadixNodeUri fromUri(URI uri) throws DeserializeException {
-		return new RadixNodeUri(uri.getHost(), uri.getPort(), extractNodeId(uri));
+		var hrpAndKey = NodeAddressing.parseWithHrp(uri.getUserInfo());
+		return new RadixNodeUri(uri.getHost(), uri.getPort(), hrpAndKey.getFirst(), NodeId.fromPublicKey(hrpAndKey.getSecond()));
 	}
 
-	private RadixNodeUri(String host, int port, NodeId nodeId) {
+	private RadixNodeUri(String host, int port, String networkNodeHrp, NodeId nodeId) {
 		if (port <= 0) {
 			throw new RuntimeException("Port must be a positive integer");
 		}
 		this.host = Objects.requireNonNull(host);
 		this.port = port;
+		this.networkNodeHrp = networkNodeHrp;
 		this.nodeId = Objects.requireNonNull(nodeId);
-	}
-
-	private static NodeId extractNodeId(URI uri) throws DeserializeException {
-		return NodeId.fromPublicKey(NodeAddress.parse(uri.getUserInfo()));
 	}
 
 	public String getHost() {
@@ -77,7 +78,7 @@ public final class RadixNodeUri {
 	}
 
 	private String getUriString() {
-		return String.format("radix://%s@%s:%s", NodeAddress.of(nodeId.getPublicKey()), host, port);
+		return String.format("radix://%s@%s:%s", NodeAddressing.of(networkNodeHrp, nodeId.getPublicKey()), host, port);
 	}
 
 	@Override
