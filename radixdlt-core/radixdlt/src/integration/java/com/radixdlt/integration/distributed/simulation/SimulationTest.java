@@ -54,7 +54,6 @@ import com.radixdlt.MockedCryptoModule;
 import com.radixdlt.MockedPersistenceStoreModule;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.integration.distributed.MockedPeersViewModule;
-import com.radixdlt.statecomputer.checkpoint.RadixNativeTokenModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
@@ -550,11 +549,8 @@ public class SimulationTest {
 				modules.add(new AbstractModule() {
 					@Override
 					protected void configure() {
-						install(new RadixNativeTokenModule());
 						bind(VerifiedTxnsAndProof.class).annotatedWith(Genesis.class).toInstance(genesis);
 					}
-
-
 				});
 				modules.add(new LedgerRecoveryModule());
 				modules.add(new ConsensusRecoveryModule());

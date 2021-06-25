@@ -17,7 +17,14 @@
 
 package org.radix;
 
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.universe.Network;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -27,6 +34,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.util.Strings;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.json.JSONObject;
 import org.radix.universe.output.HelmUniverseOutput;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -36,16 +44,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
-import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.CryptoModule;
-import com.radixdlt.api.Rri;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.CryptoException;
@@ -56,16 +60,9 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.keys.Keys;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
-import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.GenesisProvider;
-import com.radixdlt.statecomputer.checkpoint.RadixNativeTokenModule;
-import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.InMemoryEngineStore;
-import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.AWSSecretManager;
 import com.radixdlt.utils.AWSSecretsOutputOptions;
 import com.radixdlt.utils.Bytes;
@@ -266,24 +263,21 @@ public final class GenerateUniverses {
 
 			final long timestamp = TimeUnit.SECONDS.toMillis(timestampSeconds);
 
-			var genesis = Guice.createInjector(new AbstractModule() {
+			var genesisProvider = Guice.createInjector(new AbstractModule() {
+				@Provides
+				@Singleton
+				RERules reRules(Forks forks) {
+					return forks.get(0);
+				}
+
 				@Override
 				protected void configure() {
 					install(new CryptoModule());
-					install(new RadixNativeTokenModule());
 					install(new ForksModule());
 					install(RadixEngineConfig.asModule(1, 100, 50));
-					install(new RadixEngineModule());
-
-					// TODO: This is a hack
-					// Mocked just to get epoch
-					bind(CommittedReader.class).toInstance(CommittedReader.mocked());
-
 					bind(new TypeLiteral<List<TxAction>>() {}).annotatedWith(Genesis.class).toInstance(additionalActions);
-					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() {}).toInstance(new InMemoryEngineStore<>());
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(new TypeLiteral<VerifiedTxnsAndProof>() {}).toProvider(GenesisProvider.class).in(Scopes.SINGLETON);
 					bindConstant().annotatedWith(Genesis.class).to(timestamp);
 					bind(new TypeLiteral<ImmutableList<TokenIssuance>>() {}).annotatedWith(Genesis.class)
 						.toInstance(tokenIssuancesBuilder.build());
@@ -292,7 +286,9 @@ public final class GenerateUniverses {
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() {}).annotatedWith(Genesis.class)
 						.toInstance(validatorKeys);
 				}
-			}).getInstance(VerifiedTxnsAndProof.class);
+			}).getInstance(GenesisProvider.class);
+
+			var genesis = genesisProvider.get().getTxns().get(0);
 
 			if (outputPrivateKeys) {
 				outputNumberedKeys("VALIDATOR_%s", keysDetailsWithStakeDelegation, helmUniverseOutput, awsSecretsOutputOptions);
@@ -456,23 +452,18 @@ public final class GenerateUniverses {
 		boolean suppressDson,
 		boolean suppressJson,
 		int networkId,
-		VerifiedTxnsAndProof genesis,
+		Txn genesis,
 		HelmUniverseOutput helmUniverseOutput,
 		AWSSecretsOutputOptions awsSecretsOutputOptions
 	) {
 		if (!suppressDson) {
-			var xrd = Rri.of("xrd", REAddr.ofNativeToken());
 			if (isStdOutput(helmUniverseOutput, awsSecretsOutputOptions)) {
-				System.out.format("export RADIXDLT_UNIVERSE_TOKEN=%s%n", xrd);
-				System.out.format("export RADIXDLT_GENESIS_TXN=%s%n", Bytes.toHexString(genesis.getTxns().get(0).getPayload()));
+				System.out.format("export RADIXDLT_GENESIS_TXN=%s%n", Bytes.toHexString(genesis.getPayload()));
 			} else if (isHelmOrAwsOutuput(helmUniverseOutput, awsSecretsOutputOptions)) {
 				Map<String, Map<String, Object>> config = new HashMap<>();
 				Map<String, Object> universe = new HashMap<>();
 				universe.put("networkId", networkId);
-				universe.put("token", xrd);
-
-				universe.put("value", genesis.toJSON().toString());
-
+				universe.put("value", new JSONObject().put("genesis", Bytes.toHexString(genesis.getPayload())));
 				config.put("universe", universe);
 
 				if (helmUniverseOutput.getOutputHelmValues()) {
@@ -486,7 +477,7 @@ public final class GenerateUniverses {
 			}
 		}
 		if (!suppressJson) {
-			System.out.println(genesis.toJSON().toString(4));
+			System.out.println(new JSONObject().put("genesis", Bytes.toHexString(genesis.getPayload())));
 		}
 	}
 

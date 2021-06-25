@@ -87,7 +87,7 @@ public final class MainnetForkRulesModule extends AbstractModule {
 
 	@ProvidesIntoMap
 	@StringMapKey("mainnet")
-	Function<RERulesConfig, RERules> betanetV4() {
+	Function<RERulesConfig, RERules> mainnet() {
 		return config -> {
 			var maxRounds = config.getMaxRounds();
 			var fees = config.includeFees();
