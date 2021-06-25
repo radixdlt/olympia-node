@@ -17,8 +17,6 @@
 
 package com.radixdlt;
 
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.universe.Universe;
 import org.assertj.core.util.Files;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -52,10 +50,7 @@ public class RadixNodeModuleTest {
 		final var properties = createDefaultProperties();
 		when(properties.get(eq("consensus.pacemaker_rate"), anyDouble())).thenReturn(2.0);
 		when(properties.get(eq("consensus.pacemaker_rate"), anyDouble())).thenReturn(2.0);
-		final var universe = mock(Universe.class);
-		when(universe.getNetworkId()).thenReturn(1);
-		when(universe.getGenesis()).thenReturn(mock(VerifiedTxnsAndProof.class));
-		this.radixNodeModule = new RadixNodeModule(properties, universe);
+		this.radixNodeModule = new RadixNodeModule(1, properties);
 		assertNotNull(Guice.createInjector(this.radixNodeModule));
 	}
 

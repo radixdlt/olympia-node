@@ -17,16 +17,6 @@
 
 package com.radixdlt;
 
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.qualifier.NetworkId;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.universe.Network;
-import com.radixdlt.universe.Universe;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.radix.universe.system.LocalSystem;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -46,6 +36,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
@@ -57,20 +48,30 @@ import com.radixdlt.network.p2p.P2PModule;
 import com.radixdlt.network.p2p.PeerDiscoveryModule;
 import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.qualifier.NetworkId;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.universe.Network;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.json.JSONObject;
+import org.radix.universe.system.LocalSystem;
+import org.radix.utils.IOUtils;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
-import static com.radixdlt.EndpointConfig.enabledArchiveEndpoints;
-import static com.radixdlt.EndpointConfig.enabledNodeEndpoints;
-import static com.radixdlt.EndpointConfig.endpointStatuses;
+import static com.radixdlt.EndpointConfig.*;
 
 /**
  * Module which manages everything in a single node
@@ -79,21 +80,37 @@ public final class RadixNodeModule extends AbstractModule {
 	private static final Logger log = LogManager.getLogger();
 
 	private final RuntimeProperties properties;
-	private final Universe universe;
+	private final int networkId;
 
-	public RadixNodeModule(RuntimeProperties properties, Universe universe) {
+	public RadixNodeModule(int networkId, RuntimeProperties properties) {
+		this.networkId = networkId;
 		this.properties = properties;
-		this.universe = universe;
+	}
+
+	@Provides
+	@Genesis
+	@Singleton
+	VerifiedTxnsAndProof genesis(@NetworkId int networkId) {
+		Optional<String> genesisFileName = Optional.ofNullable(properties.get("network.genesis_file"));
+		var network = Network.ofId(networkId);
+		if (genesisFileName.isPresent() && network.isPresent()) {
+			throw new IllegalStateException("Cannot provide genesis file for well-known networks.");
+		}
+
+		return genesisFileName.map(filename -> {
+			try {
+				try (var universeInput = new FileInputStream(filename)) {
+					return VerifiedTxnsAndProof.fromJSON(new JSONObject(IOUtils.toString(universeInput)));
+				}
+			} catch (IOException e) {
+				throw new IllegalStateException(e);
+			}
+		}).orElseThrow();
 	}
 
 	@Override
 	protected void configure() {
-
-		var network = Network.ofId(universe.getNetworkId());
-		bind(VerifiedTxnsAndProof.class).annotatedWith(Genesis.class).toInstance(universe.getGenesis());
-		bindConstant().annotatedWith(NetworkId.class).to(network.getId());
-		bind(Universe.class).toInstance(universe);
-
+		bindConstant().annotatedWith(NetworkId.class).to(networkId);
 
 		bind(RuntimeProperties.class).toInstance(properties);
 
@@ -182,13 +199,13 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new PeerLivenessMonitorModule());
 
 		// API
-		configureApi(network);
+		configureApi();
 	}
 
-	private void configureApi(Network network) {
-		var archiveEndpoints = enabledArchiveEndpoints(properties, network);
-		var nodeEndpoints = enabledNodeEndpoints(properties, network);
-		var statuses = endpointStatuses(properties, network);
+	private void configureApi() {
+		var archiveEndpoints = enabledArchiveEndpoints(properties, networkId);
+		var nodeEndpoints = enabledNodeEndpoints(properties, networkId);
+		var statuses = endpointStatuses(properties, networkId);
 
 		bind(new TypeLiteral<List<EndpointStatus>>() {}).annotatedWith(Endpoints.class).toInstance(statuses);
 

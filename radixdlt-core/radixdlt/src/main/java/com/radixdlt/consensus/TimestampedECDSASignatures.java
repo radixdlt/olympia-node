@@ -19,9 +19,12 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -32,6 +35,7 @@ import com.radixdlt.utils.UInt256;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Map;
@@ -69,12 +73,25 @@ public final class TimestampedECDSASignatures {
 		return new TimestampedECDSASignatures(signaturesByNode);
 	}
 
+	public static TimestampedECDSASignatures fromJSON(JSONArray json) throws DeserializeException {
+		var builder = ImmutableMap.<BFTNode, TimestampedECDSASignature>builder();
+		for (int i = 0; i < json.length(); i++) {
+			var signatureJson = json.getJSONObject(i);
+			var key = ValidatorAddress.parse(signatureJson.getString("address"));
+			var bytes = Bytes.fromHexString(signatureJson.getString("signature"));
+			var signature = REFieldSerialization.deserializeSignature(ByteBuffer.wrap(bytes));
+			var timestamp = signatureJson.getLong("timestamp");
+			builder.put(BFTNode.create(key), TimestampedECDSASignature.from(timestamp, signature));
+		}
+		return new TimestampedECDSASignatures(builder.build());
+	}
+
 	public JSONArray asJSON() {
 		var json = new JSONArray();
 		nodeToTimestampedSignature.forEach((node, sig) -> {
 			var obj = new JSONObject()
 				.put("address", ValidatorAddress.of(node.getKey()))
-				.put("signature", sig.signature().toHexString())
+				.put("signature", Bytes.toHexString(REFieldSerialization.serializeSignature(sig.signature())))
 				.put("timestamp", sig.timestamp());
 			json.put(obj);
 		});

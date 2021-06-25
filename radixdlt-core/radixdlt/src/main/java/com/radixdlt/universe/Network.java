@@ -18,9 +18,12 @@
 
 package com.radixdlt.universe;
 
+import java.util.Optional;
+
 public enum Network {
 	MAINNET(1),
-	TESTNET(2);
+	TESTNET(2),
+	LOCALNET(99);
 
 	private final int id;
 
@@ -32,13 +35,13 @@ public enum Network {
 		return id;
 	}
 
-	public static Network ofId(int id) {
+	public static Optional<Network> ofId(int id) {
 		for (var network : Network.values()) {
 			if (network.id == id) {
-				return network;
+				return Optional.of(network);
 			}
 		}
 
-		throw new IllegalArgumentException("Unknown network id: " + id);
+		return Optional.empty();
 	}
 }

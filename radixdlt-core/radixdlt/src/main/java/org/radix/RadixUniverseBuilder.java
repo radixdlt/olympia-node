@@ -21,18 +21,18 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.universe.Network;
+import com.radixdlt.qualifier.NetworkId;
 import com.radixdlt.universe.Universe;
 
 import java.util.Objects;
 
 public final class RadixUniverseBuilder {
-	private final Network networkId;
+	private final int networkId;
 	private final Provider<VerifiedTxnsAndProof> genesisProvider;
 
 	@Inject
 	public RadixUniverseBuilder(
-		Network networkId,
+		@NetworkId int networkId,
 		Provider<VerifiedTxnsAndProof> genesisProvider
 	) {
 		this.networkId = networkId;
@@ -41,9 +41,6 @@ public final class RadixUniverseBuilder {
 
 	public Universe build() {
 		final var genesis = genesisProvider.get();
-		return Universe.newBuilder()
-			.networkId(this.networkId)
-			.setTxnsAndProof(genesis)
-			.build();
+		return new Universe(networkId, genesis);
 	}
 }

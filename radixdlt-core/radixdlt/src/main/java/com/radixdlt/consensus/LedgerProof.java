@@ -27,6 +27,7 @@ import com.radixdlt.crypto.HashUtils;
 import com.google.common.hash.HashCode;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -73,6 +74,13 @@ public final class LedgerProof {
 		this.opaque = Objects.requireNonNull(opaque);
 		this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
 		this.signatures = Objects.requireNonNull(signatures);
+	}
+
+	public static LedgerProof fromJSON(JSONObject jsonObject) throws DeserializeException {
+		var opaque = HashCode.fromBytes(Bytes.fromHexString(jsonObject.getString("opaque")));
+		var header = LedgerHeader.fromJSONObject(jsonObject.getJSONObject("header"));
+		var sigs = TimestampedECDSASignatures.fromJSON(jsonObject.getJSONArray("sigs"));
+		return new LedgerProof(opaque, header, sigs);
 	}
 
 	public JSONObject asJSON() {

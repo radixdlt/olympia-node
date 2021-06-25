@@ -17,6 +17,7 @@
 
 package org.radix;
 
+import com.radixdlt.qualifier.NetworkId;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.universe.Network;
 import org.apache.commons.cli.CommandLine;
@@ -126,14 +127,13 @@ public final class GenerateUniverses {
 		options.addOption("m", "amount-issuance",   true, "Amount to issue pub key");
 		options.addOption("j", "no-json-output",         false, "Suppress JSON output");
 		options.addOption("p", "include-private-keys",   false, "Include validator and staking private keys in output");
-		options.addOption("t", "universe-type",          true,  "Specify universe type (default: " + Network.TESTNET + ")");
+		options.addOption("n", "network-id",          true,  "Specify network id (default: " + Network.LOCALNET.getId() + ")");
 		options.addOption("T", "universe-timestamp",     true,  "Specify universe timestamp (default: " + DEFAULT_TIMESTAMP + ")");
 		options.addOption("v", "validator-count",        true,  "Specify number of validators to generate (required)");
 		options.addOption("hc", "helm-configuration", true, "Generates Helm values for validators(default: " + DEFAULT_HELM_OUTPUT + ")");
 		options.addOption("d", "helm-output-directory", true, "Output dir to add Helm values files(default: " + DEFAULT_HELM_VALUES_OUTPUT_DIRECTORY + ")");
 		options.addOption("as", "enable-aws-secrets", true, "Store as AWS Secrets(default: " + DEFAULT_ENABLE_AWS_SECRETS + ")");
 		options.addOption("rs", "recreate-aws-secrets", true, "Recreate AWS Secrets(default: " + DEFAULT_RECREATE_AWS_SECRETS + ")");
-		options.addOption("n", "network-name", true, "Network name(default: " + DEFAULT_NETWORK_NAME + ")");
 
 		CommandLineParser parser = new DefaultParser();
 		try {
@@ -158,13 +158,12 @@ public final class GenerateUniverses {
 			final HelmUniverseOutput helmUniverseOutput = new HelmUniverseOutput(outputHelmValues, helmValuesPath);
 			final boolean enableAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("as"));
 			final boolean recreateAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("rs"));
-			final String networkName = getOption(cmd, 'n').orElse(DEFAULT_NETWORK_NAME);
+			final int networkId = getOption(cmd, 'n').map(Integer::parseInt).orElse(Network.LOCALNET.getId());
 			final AWSSecretsOutputOptions awsSecretsOutputOptions = new AWSSecretsOutputOptions(
-				enableAwsSecrets, recreateAwsSecrets, networkName
+				enableAwsSecrets, recreateAwsSecrets, "Network" + networkId
 			);
 
 			final ImmutableList<UInt256> stakes = ImmutableList.of(unitsToSubunits(DEFAULT_STAKE));
-			final Network network = getOption(cmd, 't').map(Integer::parseInt).map(Network::ofId).orElse(Network.TESTNET);
 			final long timestampSeconds = Long.parseLong(getOption(cmd, 'T').orElse(DEFAULT_TIMESTAMP));
 			final int validatorsCount = cmd.getOptionValue("v") != null ? Integer.parseInt(cmd.getOptionValue("v")) : 0;
 			final String listOfValidatorsEnv = Optional
@@ -205,7 +204,7 @@ public final class GenerateUniverses {
 				.collect(ImmutableList.toImmutableList());
 
 			final ImmutableList.Builder<TokenIssuance> tokenIssuancesBuilder = ImmutableList.builder();
-			if (network != Network.MAINNET && cmd.hasOption("i")) {
+			if (networkId != Network.MAINNET.getId() && cmd.hasOption("i")) {
 				tokenIssuancesBuilder.add(
 					TokenIssuance.of(pubkeyOf(1), DEFAULT_ISSUANCE),
 					TokenIssuance.of(pubkeyOf(2), DEFAULT_ISSUANCE),
@@ -258,7 +257,7 @@ public final class GenerateUniverses {
 				));
 			});
 
-			if (network != Network.MAINNET) {
+			if (networkId != Network.MAINNET.getId()) {
 				// Issue tokens to initial validators for now to support application services
 				// FIXME: Remove this
 				validatorKeys
@@ -305,7 +304,7 @@ public final class GenerateUniverses {
 						.toInstance(stakeDelegations);
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() {}).annotatedWith(Genesis.class)
 						.toInstance(validatorKeys);
-					bind(Network.class).toInstance(network);
+					bindConstant().annotatedWith(NetworkId.class).to(networkId);
 				}
 			}).getInstance(RadixUniverseBuilder.class);
 
@@ -315,7 +314,7 @@ public final class GenerateUniverses {
 				outputNumberedKeys("VALIDATOR_%s", keysDetailsWithStakeDelegation, helmUniverseOutput, awsSecretsOutputOptions);
 				outputNumberedKeys("STAKER_%s", keysDetailsWithStakeDelegation, helmUniverseOutput, awsSecretsOutputOptions);
 			}
-			outputUniverse(suppressCborOutput, suppressJsonOutput, network, universe, helmUniverseOutput, awsSecretsOutputOptions);
+			outputUniverse(suppressCborOutput, suppressJsonOutput, networkId, universe, helmUniverseOutput, awsSecretsOutputOptions);
 		} catch (ParseException e) {
 			System.err.println(e.getMessage());
 			usage(options);
@@ -472,7 +471,7 @@ public final class GenerateUniverses {
 	private static void outputUniverse(
 		boolean suppressDson,
 		boolean suppressJson,
-		Network network,
+		int networkId,
 		Universe u,
 		HelmUniverseOutput helmUniverseOutput,
 		AWSSecretsOutputOptions awsSecretsOutputOptions
@@ -485,7 +484,7 @@ public final class GenerateUniverses {
 			} else if (isHelmOrAwsOutuput(helmUniverseOutput, awsSecretsOutputOptions)) {
 				Map<String, Map<String, Object>> config = new HashMap<>();
 				Map<String, Object> universe = new HashMap<>();
-				universe.put("networkId", network.getId());
+				universe.put("networkId", networkId);
 				universe.put("token", xrd);
 
 				JSONObject universeJson = new JSONObject(serialization.toJson(u, Output.WIRE));

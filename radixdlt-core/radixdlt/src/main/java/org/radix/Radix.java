@@ -18,8 +18,10 @@
 package org.radix;
 
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.universe.Network;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 import org.apache.commons.cli.ParseException;
@@ -156,34 +158,9 @@ public final class Radix {
 		return SYSTEM_VERSION_INFO;
 	}
 
-	private static Universe loadFromString(String universeString, Serialization serialization) throws DeserializeException {
-		var bytes = Bytes.fromBase64String(universeString);
-		return serialization.fromDson(bytes, Universe.class);
-	}
-
-	private static Universe loadFromFile(RuntimeProperties properties, Serialization serialization) throws IOException {
-		var universeFileName = properties.get("universe.location", ".//universe.json");
-		try (var universeInput = new FileInputStream(universeFileName)) {
-			return serialization.fromJson(IOUtils.toString(universeInput), Universe.class);
-		}
-	}
-
-	private static Universe universe(RuntimeProperties properties, Serialization serialization) {
-		var universeString = properties.get("universe");
-		try {
-			return Strings.isNotBlank(universeString)
-				? loadFromString(universeString, serialization)
-				: loadFromFile(properties, serialization);
-		} catch (IOException e) {
-			throw new IllegalStateException(e);
-		}
-	}
-
 	public static void start(RuntimeProperties properties) {
-		var universe = universe(properties, DefaultSerialization.getInstance());
-
 		long start = System.currentTimeMillis();
-		Injector injector = Guice.createInjector(new RadixNodeModule(properties, universe));
+		Injector injector = Guice.createInjector(new RadixNodeModule(2, properties));
 
 		final Map<String, ModuleRunner> moduleRunners = injector.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { }));
 

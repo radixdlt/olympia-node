@@ -20,18 +20,22 @@ package com.radixdlt.consensus;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.UInt256;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -91,6 +95,33 @@ public final class LedgerHeader {
 		this.accumulatorState = accumulatorState;
 		this.nextValidators = nextValidators;
 		this.timestamp = timestamp;
+	}
+
+	public static LedgerHeader fromJSONObject(JSONObject json) throws DeserializeException {
+		var epoch = json.getLong("epoch");
+		var view = json.getLong("view");
+		var version = json.getLong("version");
+		var accumulatorHash = Bytes.fromHexString(json.getString("accumulator"));
+		var accumulatorState = new AccumulatorState(version, HashCode.fromBytes(accumulatorHash));
+		var timestamp = json.getLong("timestamp");
+
+		final ImmutableSet<BFTValidator> nextValidators;
+		if (json.has("nextValidators")) {
+			var builder = ImmutableSet.<BFTValidator>builder();
+			var nextValidatorsJson = json.getJSONArray("nextValidators");
+			for (int i = 0; i < nextValidatorsJson.length(); i++) {
+				var validatorJson = nextValidatorsJson.getJSONObject(i);
+				var key = ValidatorAddress.parse(validatorJson.getString("address"));
+				var stake = UInt256.from(validatorJson.getString("stake"));
+				builder.add(BFTValidator.from(BFTNode.create(key), stake));
+			}
+			nextValidators = builder.build();
+		} else {
+			nextValidators = null;
+		}
+
+
+		return new LedgerHeader(epoch, view, accumulatorState, timestamp, nextValidators);
 	}
 
 	public JSONObject asJSONObject() {

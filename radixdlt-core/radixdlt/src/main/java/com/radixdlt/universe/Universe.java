@@ -17,123 +17,51 @@
 
 package com.radixdlt.universe;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.utils.Bytes;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
 
-import static java.util.Objects.requireNonNull;
+public final class Universe {
+	private final int networkId;
+	private final VerifiedTxnsAndProof genesis;
 
-//TODO: cleanup and refactor this
-@SerializerId2("radix.universe")
-public class Universe {
-	/**
-	 * Universe builder.
-	 */
-	public static class Builder {
-		private Network networkId;
-		private List<Txn> txns;
-		private LedgerProof proof;
-
-		private Builder() {
-			// Nothing to do here
-		}
-
-		public Builder networkId(Network networkId) {
-			this.networkId = requireNonNull(networkId);
-			return this;
-		}
-
-		/**
-		 * Adds an atom to the genesis atom list.
-		 *
-		 * @param genesisTxns The atoms to add to the genesis atom list.
-		 *
-		 * @return A reference to {@code this} to allow method chaining.
-		 */
-		public Builder setTxnsAndProof(VerifiedTxnsAndProof genesisTxns) {
-			requireNonNull(genesisTxns);
-			this.txns = genesisTxns.getTxns();
-			this.proof = genesisTxns.getProof();
-
-			return this;
-		}
-
-		/**
-		 * Validate and build a universe from the specified data.
-		 *
-		 * @return The freshly build universe object.
-		 */
-		public Universe build() {
-			require(this.networkId, "Universe type");
-			return new Universe(this);
-		}
-
-		private void require(Object item, String what) {
-			if (item == null) {
-				throw new IllegalStateException(what + " must be specified");
-			}
-		}
+	public Universe(int networkId, VerifiedTxnsAndProof genesis) {
+		this.networkId = networkId;
+		this.genesis = genesis;
 	}
 
-	/**
-	 * Construct a new {@link Builder}.
-	 *
-	 * @return The freshly constructed builder.
-	 */
-	public static Builder newBuilder() {
-		return new Builder();
-	}
-
-	// Placeholder for the serializer ID
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(Output.ALL)
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
-
-	private Network networkId;
-
-	@JsonProperty("genesis")
-	@DsonOutput(Output.ALL)
-	private List<byte[]> genesis;
-
-	@JsonProperty("proof")
-	@DsonOutput(Output.ALL)
-	private LedgerProof proof;
-
-	Universe() {
-		// No-arg constructor for serializer
-	}
-
-	private Universe(Builder builder) {
-		this.networkId = builder.networkId;
-		this.proof = builder.proof;
-		this.genesis = builder.txns == null
-			? List.of()
-			: builder.txns.stream().map(Txn::getPayload).collect(Collectors.toList());
-	}
-
-	/**
-	 * Magic identifier for Universe.
-	 */
-	@JsonProperty("networkId")
-	@DsonOutput(value = Output.HASH, include = false)
 	public int getNetworkId() {
-		return networkId.getId();
+		return networkId;
 	}
 
-	/**
-	 * Gets this Universe's immutable Genesis collection.
-	 */
 	public VerifiedTxnsAndProof getGenesis() {
-		var txns = genesis.stream().map(Txn::create).collect(Collectors.toList());
-		return VerifiedTxnsAndProof.create(txns, proof);
+		return genesis;
+	}
+
+	public JSONObject asJSON() {
+		var txns = new JSONArray();
+		genesis.getTxns().forEach(txn -> txns.put(Bytes.toHexString(txn.getPayload())));
+		return new JSONObject()
+			.put("networkId", networkId)
+			.put("proof", genesis.getProof().asJSON())
+			.put("txns", txns);
+	}
+
+	public static Universe fromJSON(JSONObject jsonObject) throws DeserializeException {
+		var networkId = jsonObject.getInt("networkId");
+		var txnArray = jsonObject.getJSONArray("txns");
+		var txns = new ArrayList<Txn>();
+		for (int i = 0; i < txnArray.length(); i++) {
+			var txn = Txn.create(Bytes.fromHexString(txnArray.getString(i)));
+			txns.add(txn);
+		}
+		var proof = LedgerProof.fromJSON(jsonObject.getJSONObject("proof"));
+		return new Universe(networkId, VerifiedTxnsAndProof.create(txns, proof));
 	}
 }

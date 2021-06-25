@@ -112,17 +112,17 @@ public final class EndpointConfig {
 		this.moduleSupplier = moduleSupplier;
 	}
 
-	public static List<EndpointConfig> enabledArchiveEndpoints(RuntimeProperties properties, Network network) {
+	public static List<EndpointConfig> enabledArchiveEndpoints(RuntimeProperties properties, int networkId) {
 		return ARCHIVE_ENDPOINTS.stream()
 			.filter(e -> e.isEnabled(properties))
-			.filter(e -> isEnabledInEnvironment(e, network))
+			.filter(e -> isEnabledInEnvironment(e, networkId))
 			.collect(Collectors.toList());
 	}
 
-	public static List<EndpointConfig> enabledNodeEndpoints(RuntimeProperties properties, Network network) {
+	public static List<EndpointConfig> enabledNodeEndpoints(RuntimeProperties properties, int networkId) {
 		return NODE_ENDPOINTS.stream()
 			.filter(e -> e.isEnabled(properties))
-			.filter(e -> isEnabledInEnvironment(e, network))
+			.filter(e -> isEnabledInEnvironment(e, networkId))
 			.collect(Collectors.toList());
 	}
 
@@ -141,17 +141,17 @@ public final class EndpointConfig {
 		return value;
 	}
 
-	public static List<EndpointStatus> endpointStatuses(RuntimeProperties properties, Network network) {
+	public static List<EndpointStatus> endpointStatuses(RuntimeProperties properties, int networkId) {
 		return NODE_ENDPOINTS.stream()
-			.map(e -> EndpointStatus.create(e.name, isEnabled(e, properties, network)))
+			.map(e -> EndpointStatus.create(e.name, isEnabled(e, properties, networkId)))
 			.collect(Collectors.toList());
 	}
 
-	private static boolean isEnabled(EndpointConfig e, RuntimeProperties properties, Network network) {
-		return e.isEnabled(properties) && isEnabledInEnvironment(e, network);
+	private static boolean isEnabled(EndpointConfig e, RuntimeProperties properties, int networkId) {
+		return e.isEnabled(properties) && isEnabledInEnvironment(e, networkId);
 	}
 
-	private static boolean isEnabledInEnvironment(EndpointConfig e, Network network) {
-		return network != Network.MAINNET || e.environment == ALL;
+	private static boolean isEnabledInEnvironment(EndpointConfig e, int networkId) {
+		return networkId != Network.MAINNET.getId() || e.environment == ALL;
 	}
 }
