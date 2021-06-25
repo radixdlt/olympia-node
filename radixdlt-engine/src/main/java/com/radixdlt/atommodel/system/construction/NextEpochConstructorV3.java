@@ -75,13 +75,14 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 	public void construct(SystemNextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
 		var epochData = txBuilder.find(EpochData.class, p -> true);
 		final HasEpochData prevEpoch;
+		final long timestamp;
 		if (epochData.isPresent()) {
-			txBuilder.down(
+			timestamp = txBuilder.down(
 				RoundData.class,
 				p -> true,
 				Optional.empty(),
 				"No round data available"
-			);
+			).getTimestamp();
 			prevEpoch = txBuilder.down(
 				EpochData.class,
 				p -> true,
@@ -89,11 +90,13 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 				"No epoch data available"
 			);
 		} else {
-			prevEpoch = txBuilder.down(
+			var systemParticle = txBuilder.down(
 				SystemParticle.class,
 				p -> true,
 				"No epoch data available"
 			);
+			timestamp = systemParticle.getTimestamp();
+			prevEpoch = systemParticle;
 		}
 
 		var exitting = txBuilder.shutdownAll(ExittingStake.class, i -> {
@@ -251,6 +254,6 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 		validatorKeys.forEach(k -> txBuilder.up(new ValidatorBFTData(k, 0)));
 
 		txBuilder.up(new EpochData(prevEpoch.getEpoch() + 1));
-		txBuilder.up(new RoundData(0, 0));
+		txBuilder.up(new RoundData(0, timestamp));
 	}
 }

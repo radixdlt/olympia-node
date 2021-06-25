@@ -103,7 +103,7 @@ public class AsyncRadixApiHistoryPaginationTest {
 	}
 
 	private void addTransaction(RadixApi client, int count) {
-		var request = TransactionRequest.createBuilder()
+		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
 			.transfer(
 				ACCOUNT_ADDRESS1,
 				ACCOUNT_ADDRESS2,
