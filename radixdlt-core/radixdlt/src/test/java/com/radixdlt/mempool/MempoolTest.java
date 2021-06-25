@@ -236,8 +236,8 @@ public class MempoolTest {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		var txn = createTxn(keyPair);
 		var proof = mock(LedgerProof.class);
-		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.getTxns().size(), HashUtils.random256()));
-		when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size());
+		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.getTxns().size() + 1, HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size() + 1);
 		var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn), proof);
 		stateComputer.commit(commandsAndProof, null);
 
@@ -261,8 +261,8 @@ public class MempoolTest {
 		// Act
 		var txn2 = createTxn(keyPair, 1);
 		var proof = mock(LedgerProof.class);
-		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.getTxns().size(), HashUtils.random256()));
-		when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size());
+		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.getTxns().size() + 1, HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size() + 1);
 		var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn2), proof);
 		stateComputer.commit(commandsAndProof, null);
 
@@ -284,8 +284,8 @@ public class MempoolTest {
 		// Act
 		var txn3 = createTxn(keyPair, 1);
 		var proof = mock(LedgerProof.class);
-		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.getTxns().size(), HashUtils.random256()));
-		when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size());
+		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.getTxns().size() + 1, HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size() + 1);
 		var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn3), proof);
 		stateComputer.commit(commandsAndProof, null);
 

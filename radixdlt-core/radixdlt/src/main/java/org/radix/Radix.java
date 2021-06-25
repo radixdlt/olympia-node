@@ -17,17 +17,9 @@
 
 package org.radix;
 
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.universe.Network;
-import com.radixdlt.universe.Universe;
-import com.radixdlt.utils.Bytes;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.util.Strings;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 import org.radix.utils.IOUtils;
@@ -47,7 +39,6 @@ import com.radixdlt.network.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.utils.MemoryLeakDetector;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
@@ -160,7 +151,7 @@ public final class Radix {
 
 	public static void start(RuntimeProperties properties) {
 		long start = System.currentTimeMillis();
-		Injector injector = Guice.createInjector(new RadixNodeModule(2, properties));
+		Injector injector = Guice.createInjector(new RadixNodeModule(properties));
 
 		final Map<String, ModuleRunner> moduleRunners = injector.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { }));
 

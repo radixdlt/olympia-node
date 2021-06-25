@@ -18,6 +18,8 @@
 
 package com.radixdlt.universe;
 
+import com.radixdlt.atom.Txn;
+
 import java.util.Optional;
 
 public enum Network {
@@ -33,6 +35,10 @@ public enum Network {
 
 	public int getId() {
 		return id;
+	}
+
+	public Optional<Txn> genesisTxn() {
+		return Optional.empty();
 	}
 
 	public static Optional<Network> ofId(int id) {

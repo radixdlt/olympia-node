@@ -36,6 +36,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.fees.NativeToken;
@@ -145,7 +146,12 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 				for (var u : updates) {
 					cur = cur.setStake(u.getValidatorKey(), u.getAmount());
 				}
+
 				// FIXME: cur.toValidatorSet() may be null
+				var validatorSet = cur.toValidatorSet();
+				if (validatorSet == null) {
+					throw new IllegalStateException("No validator set for genesis");
+				}
 				genesisValidatorSet.set(cur.toValidatorSet());
 				return genesisValidatorSet.get().nodes().stream()
 					.map(BFTNode::getKey)
@@ -155,7 +161,8 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 			radixEngine.deleteBranches();
 			var txn = radixEngine.construct(genesisTxnConstruction).buildWithoutSignature();
 
-			var accumulatorState = new AccumulatorState(0, txn.getId().asHashCode());
+			var init = new AccumulatorState(0, HashUtils.zero256());
+			var accumulatorState = ledgerAccumulator.accumulate(init, txn.getId().asHashCode());
 			var genesisProof = LedgerProof.genesis(
 				accumulatorState,
 				genesisValidatorSet.get(),

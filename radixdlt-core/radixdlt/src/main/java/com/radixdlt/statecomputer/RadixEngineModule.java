@@ -35,6 +35,7 @@ import com.radixdlt.engine.StateReducer;
 import com.radixdlt.engine.SubstateCacheRegister;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.Pair;
@@ -56,6 +57,16 @@ public class RadixEngineModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<SubstateCacheRegister<?>>() { });
 	}
 
+	@Provides
+	@Singleton
+	private RERules rules(
+		CommittedReader committedReader, // TODO: This is a hack, remove
+		Forks forks
+	) {
+		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
+		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
+		return forks.get(epoch);
+	}
 
 	@Provides
 	@Singleton
