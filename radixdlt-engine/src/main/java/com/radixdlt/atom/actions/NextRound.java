@@ -19,30 +19,41 @@
 package com.radixdlt.atom.actions;
 
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.crypto.ECPublicKey;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.function.Function;
+import java.util.function.LongFunction;
 
-public final class SystemNextEpoch implements TxAction {
+public final class NextRound implements TxAction {
+	private final long view;
+	private final boolean isTimeout;
 	private final long timestamp;
-	private final Function<Collection<ValidatorStakeData>, List<ECPublicKey>> nextValidators;
+	private final LongFunction<ECPublicKey> leaderMapping;
 
-	public SystemNextEpoch(
-		Function<Collection<ValidatorStakeData>, List<ECPublicKey>> nextValidators,
-		long timestamp
-	) {
-		this.nextValidators = nextValidators;
+	public NextRound(long view, boolean isTimeout, long timestamp, LongFunction<ECPublicKey> leaderMapping) {
+		this.view = view;
+		this.isTimeout = isTimeout;
 		this.timestamp = timestamp;
+		this.leaderMapping = leaderMapping;
 	}
 
-	public List<ECPublicKey> validators(Collection<ValidatorStakeData> updates) {
-		return nextValidators.apply(updates);
+	public boolean isTimeout() {
+		return isTimeout;
+	}
+
+	public long view() {
+		return view;
 	}
 
 	public long timestamp() {
 		return timestamp;
+	}
+
+	public LongFunction<ECPublicKey> leaderMapping() {
+		return leaderMapping;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{view=%s}", this.getClass().getSimpleName(), view);
 	}
 }

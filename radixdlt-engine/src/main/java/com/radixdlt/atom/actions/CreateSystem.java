@@ -21,4 +21,12 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.TxAction;
 
 public final class CreateSystem implements TxAction {
+	private final long timestamp;
+	public CreateSystem(long timestamp) {
+		this.timestamp = timestamp;
+	}
+
+	public long getTimestamp() {
+		return timestamp;
+	}
 }

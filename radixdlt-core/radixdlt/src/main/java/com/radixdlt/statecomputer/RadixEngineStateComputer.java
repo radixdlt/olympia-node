@@ -23,8 +23,8 @@ import com.google.inject.Inject;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.SystemNextEpoch;
-import com.radixdlt.atom.actions.SystemNextView;
+import com.radixdlt.atom.actions.NextEpoch;
+import com.radixdlt.atom.actions.NextRound;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
@@ -203,7 +203,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		var view = vertex.getView();
 		var nextValidatorSet = new AtomicReference<BFTValidatorSet>();
 		if (view.compareTo(epochCeilingView) <= 0) {
-			systemActions.action(new SystemNextView(
+			systemActions.action(new NextRound(
 				view.number(),
 				vertex.isTimeout(),
 				timestamp,
@@ -213,7 +213,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			var stakedValidators = branch.getComputedState(StakedValidators.class);
 			if (stakedValidators.toValidatorSet() == null) {
 				// FIXME: Better way to handle rare case when there isn't enough in validator set
-				systemActions.action(new SystemNextView(
+				systemActions.action(new NextRound(
 					view.number(),
 					false,
 					timestamp,
@@ -221,7 +221,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				));
 			} else {
 				if (vertex.getParentHeader().getView().compareTo(epochCeilingView) < 0) {
-					systemActions.action(new SystemNextView(
+					systemActions.action(new NextRound(
 						epochCeilingView.number(),
 						true,
 						timestamp,
@@ -229,7 +229,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 					));
 				}
 
-				systemActions.action(new SystemNextEpoch(updates -> {
+				systemActions.action(new NextEpoch(updates -> {
 					var cur = stakedValidators;
 					for (var u : updates) {
 						cur = cur.setStake(u.getValidatorKey(), u.getAmount());

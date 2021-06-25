@@ -83,8 +83,7 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 				(s, buf) -> {
 					buf.putLong(s.getView());
 					buf.putLong(s.getTimestamp());
-				},
-				p -> p.getView() == 0 && p.getTimestamp() == 0
+				}
 			)
 		);
 		os.substate(

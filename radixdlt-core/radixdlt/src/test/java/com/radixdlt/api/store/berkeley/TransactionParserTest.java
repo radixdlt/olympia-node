@@ -25,7 +25,7 @@ import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.atom.actions.RegisterValidator;
-import com.radixdlt.atom.actions.SystemNextEpoch;
+import com.radixdlt.atom.actions.NextEpoch;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
@@ -122,7 +122,7 @@ public class TransactionParserTest {
 			.put(PayFee.class, new PayFeeConstructorV2())
 			.put(StakeTokens.class, new StakeTokensConstructorV3())
 			.put(UnstakeTokens.class, new UnstakeTokensConstructorV2())
-			.put(SystemNextEpoch.class, new NextEpochConstructorV3())
+			.put(NextEpoch.class, new NextEpochConstructorV3())
 			.put(CreateSystem.class, new CreateSystemConstructorV2())
 			.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())
 			.build();
@@ -138,7 +138,7 @@ public class TransactionParserTest {
 			TxnConstructionRequest.create()
 				.action(new RegisterValidator(this.validatorKeyPair.getPublicKey()))
 				.action(new UpdateAllowDelegationFlag(this.validatorKeyPair.getPublicKey(), true))
-				.action(new CreateSystem())
+				.action(new CreateSystem(System.currentTimeMillis()))
 		);
 		var txn1 = validatorBuilder.buildWithoutSignature();
 
@@ -161,7 +161,7 @@ public class TransactionParserTest {
 	public void unstakeIsParsedCorrectly() throws Exception {
 		var txn1 = engine.construct(nativeStake()).signAndBuild(tokenOwnerKeyPair::sign);
 		engine.execute(List.of(txn1));
-		var nextEpoch = engine.construct(new SystemNextEpoch(s -> List.of(validatorKeyPair.getPublicKey()), 0))
+		var nextEpoch = engine.construct(new NextEpoch(s -> List.of(validatorKeyPair.getPublicKey()), 0))
 			.buildWithoutSignature();
 		engine.execute(List.of(nextEpoch), null, PermissionLevel.SYSTEM);
 

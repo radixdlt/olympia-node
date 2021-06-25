@@ -25,7 +25,7 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateSystem;
-import com.radixdlt.atom.actions.SystemNextEpoch;
+import com.radixdlt.atom.actions.NextEpoch;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -77,10 +77,9 @@ public final class GenesisBuilder {
 		radixEngine.addStateReducer(new StakedValidatorsReducer(0, 100), true);
 	}
 
-	public Txn build(List<TxAction> actions) throws TxBuilderException, RadixEngineException {
-		var timestamp = 0L;
+	public Txn build(long timestamp, List<TxAction> actions) throws TxBuilderException, RadixEngineException {
 		var txnConstructionRequest = TxnConstructionRequest.create();
-		txnConstructionRequest.action(new CreateSystem());
+		txnConstructionRequest.action(new CreateSystem(timestamp));
 
 		var tokenDef = new MutableTokenDefinition(
 			null,
@@ -98,7 +97,7 @@ public final class GenesisBuilder {
 		branch.execute(List.of(tempTxn), PermissionLevel.SYSTEM);
 		var stakedValidators = branch.getComputedState(StakedValidators.class);
 		var genesisValidatorSet = new AtomicReference<BFTValidatorSet>();
-		txnConstructionRequest.action(new SystemNextEpoch(updates -> {
+		txnConstructionRequest.action(new NextEpoch(updates -> {
 			var cur = stakedValidators;
 			for (var u : updates) {
 				cur = cur.setStake(u.getValidatorKey(), u.getAmount());

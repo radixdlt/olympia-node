@@ -48,16 +48,19 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 	private final ImmutableList<StakeDelegation> stakeDelegations;
 	private final List<TxAction> additionalActions;
 	private final GenesisBuilder genesisBuilder;
+	private final long timestamp;
 
 	@Inject
 	public GenesisProvider(
 		GenesisBuilder genesisBuilder,
+		@Genesis long timestamp,
 		@Genesis ImmutableList<TokenIssuance> tokenIssuances,
 		@Genesis ImmutableList<StakeDelegation> stakeDelegations,
 		@Genesis ImmutableList<ECKeyPair> validatorKeys, // TODO: Remove private keys, replace with public keys
 		@Genesis List<TxAction> additionalActions
 	) {
 		this.genesisBuilder = genesisBuilder;
+		this.timestamp = timestamp;
 		this.tokenIssuances = tokenIssuances;
 		this.validatorKeys = validatorKeys;
 		this.stakeDelegations = stakeDelegations;
@@ -91,7 +94,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 			}
 
 			actions.addAll(additionalActions);
-			var genesis = genesisBuilder.build(actions);
+			var genesis = genesisBuilder.build(timestamp, actions);
 			var proof = genesisBuilder.generateGenesisProof(genesis);
 			return VerifiedTxnsAndProof.create(List.of(genesis), proof);
 		} catch (TxBuilderException | RadixEngineException e) {

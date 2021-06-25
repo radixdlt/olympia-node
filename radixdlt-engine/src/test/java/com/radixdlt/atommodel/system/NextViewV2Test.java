@@ -26,8 +26,8 @@ import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.SystemNextEpoch;
-import com.radixdlt.atom.actions.SystemNextView;
+import com.radixdlt.atom.actions.NextEpoch;
+import com.radixdlt.atom.actions.NextRound;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.atommodel.system.construction.NextEpochConstructorV3;
 import com.radixdlt.atommodel.system.construction.NextViewConstructorV3;
@@ -83,9 +83,9 @@ public class NextViewV2Test {
 	private RadixEngine<Void> sut;
 	private EngineStore<Void> store;
 	private final List<ConstraintScrypt> scrypts;
-	private final ActionConstructor<SystemNextView> nextViewConstructor;
+	private final ActionConstructor<NextRound> nextViewConstructor;
 
-	public NextViewV2Test(List<ConstraintScrypt> scrypts, ActionConstructor<SystemNextView> nextViewConstructor) {
+	public NextViewV2Test(List<ConstraintScrypt> scrypts, ActionConstructor<NextRound> nextViewConstructor) {
 		this.scrypts = scrypts;
 		this.nextViewConstructor = nextViewConstructor;
 	}
@@ -109,12 +109,12 @@ public class NextViewV2Test {
 			parser,
 			serialization,
 			ActionConstructors.newBuilder()
-				.put(SystemNextEpoch.class, new NextEpochConstructorV3())
+				.put(NextEpoch.class, new NextEpochConstructorV3())
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
 				.put(StakeTokens.class, new StakeTokensConstructorV3())
-				.put(SystemNextView.class, nextViewConstructor)
+				.put(NextRound.class, nextViewConstructor)
 				.put(RegisterValidator.class, new RegisterValidatorConstructor())
 				.build(),
 			cm,
@@ -124,12 +124,12 @@ public class NextViewV2Test {
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var txn = this.sut.construct(
 			TxnConstructionRequest.create()
-				.action(new CreateSystem())
+				.action(new CreateSystem(0))
 				.action(new CreateMutableToken(null, "xrd", "xrd", "", "", ""))
 				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, ValidatorStakeData.MINIMUM_STAKE))
 				.action(new StakeTokens(accountAddr, key.getPublicKey(), ValidatorStakeData.MINIMUM_STAKE))
 				.action(new RegisterValidator(key.getPublicKey()))
-				.action(new SystemNextEpoch(u -> List.of(key.getPublicKey()), 0))
+				.action(new NextEpoch(u -> List.of(key.getPublicKey()), 0))
 		).buildWithoutSignature();
 		this.sut.execute(List.of(txn), null, PermissionLevel.SYSTEM);
 	}
@@ -137,7 +137,7 @@ public class NextViewV2Test {
 	@Test
 	public void system_update_should_succeed() throws Exception {
 		// Arrange
-		var txn = sut.construct(new SystemNextView(1, false, 1, i -> key.getPublicKey()))
+		var txn = sut.construct(new NextRound(1, false, 1, i -> key.getPublicKey()))
 			.buildWithoutSignature();
 
 		// Act and Assert
@@ -148,7 +148,7 @@ public class NextViewV2Test {
 	public void including_sigs_in_system_update_should_fail() throws Exception {
 		// Arrange
 		var keyPair = ECKeyPair.generateNew();
-		var txn = sut.construct(new SystemNextView(1, false, 1, i -> key.getPublicKey()))
+		var txn = sut.construct(new NextRound(1, false, 1, i -> key.getPublicKey()))
 			.signAndBuild(keyPair::sign);
 
 		// Act and Assert

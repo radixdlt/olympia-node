@@ -54,7 +54,7 @@ public final class DeveloperHandler {
 			UNABLE_TO_PREPARE_TX,
 			() -> {
 				try {
-					var txn = genesisBuilder.build(actions);
+					var txn = genesisBuilder.build(System.currentTimeMillis(), actions);
 					var proof = genesisBuilder.generateGenesisProof(txn);
 					return VerifiedTxnsAndProof.create(List.of(txn), proof);
 				} catch (Exception e) {

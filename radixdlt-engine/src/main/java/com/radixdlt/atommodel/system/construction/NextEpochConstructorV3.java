@@ -22,7 +22,7 @@ import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.SystemNextEpoch;
+import com.radixdlt.atom.actions.NextEpoch;
 import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
@@ -59,7 +59,7 @@ import java.util.function.Function;
 
 import static com.radixdlt.atommodel.validators.state.PreparedRakeUpdate.RAKE_MAX;
 
-public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch> {
+public class NextEpochConstructorV3 implements ActionConstructor<NextEpoch> {
 	private static Logger logger = LogManager.getLogger();
 
 	private static ValidatorStakeData loadValidatorStakeData(
@@ -101,8 +101,8 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 	}
 
 	@Override
-	public void construct(SystemNextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.down(
+	public void construct(NextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
+		var closedRound = txBuilder.down(
 			RoundData.class,
 			p -> true,
 			Optional.empty(),
@@ -268,7 +268,7 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 		validatorKeys.forEach(k -> txBuilder.up(new ValidatorBFTData(k, 0, 0)));
 
 		txBuilder.up(new EpochData(prevEpoch.getEpoch() + 1));
-		txBuilder.up(new RoundData(0, 0));
+		txBuilder.up(new RoundData(0, closedRound.getTimestamp()));
 	}
 
 }

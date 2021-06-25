@@ -38,8 +38,8 @@ import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.RegisterValidator;
-import com.radixdlt.atom.actions.SystemNextEpoch;
-import com.radixdlt.atom.actions.SystemNextView;
+import com.radixdlt.atom.actions.NextEpoch;
+import com.radixdlt.atom.actions.NextRound;
 import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
@@ -213,11 +213,11 @@ public class RadixEngineStateComputerTest {
 		TxBuilder builder;
 		if (nextEpoch >= 2) {
 			var request = TxnConstructionRequest.create()
-				.action(new SystemNextView(10, true, 0,  v -> proposerElection.getProposer(View.of(v)).getKey()))
-				.action(new SystemNextEpoch(u -> List.of(registeredNodes.get(0).getPublicKey()), 0));
+				.action(new NextRound(10, true, 0, v -> proposerElection.getProposer(View.of(v)).getKey()))
+				.action(new NextEpoch(u -> List.of(registeredNodes.get(0).getPublicKey()), 0));
 			builder = radixEngine.construct(request);
 		} else {
-			builder = radixEngine.construct(new SystemNextView(
+			builder = radixEngine.construct(new NextRound(
 				nextView,
 				false,
 				0,
@@ -304,7 +304,7 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void preparing_system_update_from_vertex_should_fail() throws TxBuilderException {
 		// Arrange
-		var txn = radixEngine.construct(new SystemNextView(1, false, 0, i -> proposerElection.getProposer(View.of(i)).getKey()))
+		var txn = radixEngine.construct(new NextRound(1, false, 0, i -> proposerElection.getProposer(View.of(i)).getKey()))
 			.buildWithoutSignature();
 		var illegalTxn = TxLowLevelBuilder.newBuilder(rules.getSerialization())
 			.down(SubstateId.ofSubstate(txn.getId(), 3))
