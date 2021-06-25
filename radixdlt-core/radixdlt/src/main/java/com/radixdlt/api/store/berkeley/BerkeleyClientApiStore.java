@@ -386,17 +386,19 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			return INVALID_PAGE_SIZE.with(size).result();
 		}
 
-		var instant = ptr.orElse(Instant.EPOCH);
+		var instant = ptr.orElse(Instant.MAX);
 		var key = asTxnHistoryKey(addr, instant);
 		var data = entry();
 
 		try (var cursor = transactionHistory.openCursor(null, null)) {
-			var status = readTxHistory(() -> cursor.getSearchKey(key, data, null), data);
+			var status = readTxHistory(() -> cursor.getSearchKeyRange(key, data, null), data);
 
 			//When searching with no cursor, exact navigation (cursor.getSearchKey) may fail,
 			//because there is no exact match. Nevertheless, cursor is positioned to correct location,
 			//so we just need get previous record.
 			if (status != OperationStatus.SUCCESS) {
+				log.debug("Skipping first record");
+
 				status = readTxHistory(() -> cursor.getPrev(key, data, null), data);
 
 				if (status != OperationStatus.SUCCESS) {
@@ -414,19 +416,30 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			}
 
 			var list = new ArrayList<TxHistoryEntry>();
+			var rangeStarted = false;
+			var skipped = 0;
 
 			do {
-				addrFromKey(key)
-					.filter(addr::equals, Failure.failure(0, "Ignored"))
-					.flatMap(
-						__ -> restore(serialization, data.getData(), TxHistoryEntry.class)
-							.onFailure(log::error)
-					)
-					.onSuccess(list::add);
+				REAddr reAddr = addrFromKey(key).fold(__ -> REAddr.ofSystem(), v -> v);
+
+				if (reAddr.equals(addr)) {
+					restore(serialization, data.getData(), TxHistoryEntry.class).onSuccess(list::add);
+					rangeStarted = true;
+				} else {
+					if (rangeStarted) {
+						break;
+					} else {
+						skipped++;
+					}
+				}
 
 				status = readTxHistory(() -> cursor.getPrev(key, data, null), data);
 			}
 			while (status == OperationStatus.SUCCESS && list.size() < size);
+
+			if (skipped > 1) {
+				log.debug("Skipped {} records for cursor {}", skipped, ptr);
+			}
 
 			return Result.ok(list);
 		}
