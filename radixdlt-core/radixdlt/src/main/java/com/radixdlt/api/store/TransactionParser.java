@@ -30,7 +30,7 @@ import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AccountAddresses;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddress;
+import com.radixdlt.identifiers.ValidatorAddresses;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
@@ -44,17 +44,21 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class TransactionParser {
-
 	private final AccountAddresses accountAddresses;
+	private final ValidatorAddresses validatorAddresses;
 
 	@Inject
-	public TransactionParser(AccountAddresses accountAddresses) {
+	public TransactionParser(
+		AccountAddresses accountAddresses,
+		ValidatorAddresses validatorAddresses
+	) {
 		this.accountAddresses = accountAddresses;
+		this.validatorAddresses = validatorAddresses;
 	}
 
 	private String bucketToString(Bucket bucket) {
 		if (bucket.getValidatorKey() != null && !(bucket instanceof ExittingOwnershipBucket)) {
-			return ValidatorAddress.of(bucket.getValidatorKey());
+			return validatorAddresses.of(bucket.getValidatorKey());
 		}
 
 		return accountAddresses.of(bucket.getOwner());

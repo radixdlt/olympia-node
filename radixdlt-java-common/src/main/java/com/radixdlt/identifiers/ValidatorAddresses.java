@@ -36,11 +36,10 @@ import static com.radixdlt.identifiers.CommonErrors.INVALID_VALIDATOR_ADDRESS;
  * The data part is a conversion of the 33 byte compressed EC public key to Base32
  * similar to specification described in BIP_0173 for converting witness programs.
  */
-public final class ValidatorAddress {
-	private static final String VALIDATOR_HRP = "vb"; // "vr" for mainnet
-
-	private ValidatorAddress() {
-		throw new IllegalStateException();
+public final class ValidatorAddresses {
+	private final String hrp;
+	public ValidatorAddresses(String hrp) {
+		this.hrp = hrp;
 	}
 
 	private static byte[] toBech32Data(byte[] bytes) {
@@ -51,13 +50,13 @@ public final class ValidatorAddress {
 		return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
 	}
 
-	public static String of(ECPublicKey key) {
+	public String of(ECPublicKey key) {
 		var bytes = key.getCompressedBytes();
 		var convert = toBech32Data(bytes);
-		return Bech32.encode(VALIDATOR_HRP, convert);
+		return Bech32.encode(hrp, convert);
 	}
 
-	public static ECPublicKey parse(String v) throws DeserializeException {
+	public ECPublicKey parse(String v) throws DeserializeException {
 		Bech32.Bech32Data bech32Data;
 		try {
 			bech32Data = Bech32.decode(v);
@@ -65,7 +64,7 @@ public final class ValidatorAddress {
 			throw new DeserializeException("Could not decode string: " + v, e);
 		}
 
-		if (!bech32Data.hrp.equals(VALIDATOR_HRP)) {
+		if (!bech32Data.hrp.equals(hrp)) {
 			throw new DeserializeException("hrp must be vb but was " + bech32Data.hrp);
 		}
 		var keyBytes = fromBech32Data(bech32Data.data);
@@ -76,7 +75,7 @@ public final class ValidatorAddress {
 		}
 	}
 
-	public static Result<ECPublicKey> fromString(String input) {
+	public Result<ECPublicKey> fromString(String input) {
 		return Result.wrap(INVALID_VALIDATOR_ADDRESS, () -> parse(input));
 	}
 }

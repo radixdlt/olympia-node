@@ -30,7 +30,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.AccountAddresses;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddress;
+import com.radixdlt.identifiers.ValidatorAddresses;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
@@ -43,16 +43,19 @@ public class AccountInfoService {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final ECPublicKey bftKey;
 	private final AccountAddresses accountAddresses;
+	private final ValidatorAddresses validatorAddresses;
 
 	@Inject
 	public AccountInfoService(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		@Self ECPublicKey bftKey,
-		AccountAddresses accountAddresses
+		AccountAddresses accountAddresses,
+		ValidatorAddresses validatorAddresses
 	) {
 		this.radixEngine = radixEngine;
 		this.bftKey = bftKey;
 		this.accountAddresses = accountAddresses;
+		this.validatorAddresses = validatorAddresses;
 	}
 
 	public JSONObject getAccountInfo() {
@@ -75,7 +78,7 @@ public class AccountInfoService {
 	}
 
 	public String getValidatorAddress() {
-		return ValidatorAddress.of(bftKey);
+		return validatorAddresses.of(bftKey);
 	}
 
 	public MyValidatorInfo getValidatorInfoDetails() {
@@ -133,6 +136,6 @@ public class AccountInfoService {
 	}
 
 	private JSONObject constructStakeEntry(ECPublicKey publicKey, UInt256 amount) {
-		return jsonObject().put("delegate", ValidatorAddress.of(publicKey)).put("amount", amount);
+		return jsonObject().put("delegate", validatorAddresses.of(publicKey)).put("amount", amount);
 	}
 }

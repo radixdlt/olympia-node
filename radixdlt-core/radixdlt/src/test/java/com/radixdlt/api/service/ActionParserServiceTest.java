@@ -36,7 +36,7 @@ import com.radixdlt.atom.actions.UpdateValidatorMetadata;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.AccountAddresses;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddress;
+import com.radixdlt.identifiers.ValidatorAddresses;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
@@ -53,7 +53,8 @@ public class ActionParserServiceTest {
 	private final REAddr rri = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "ckee");
 	private final RriParser rriParser = mock(RriParser.class);
 	private final AccountAddresses accountAddresses = new AccountAddresses(Network.LOCALNET.getAccountHrp());
-	private final ActionParserService actionParserService = new ActionParserService(rriParser, accountAddresses);
+	private final ValidatorAddresses validatorAddresses = new ValidatorAddresses(Network.LOCALNET.getValidatorHrp());
+	private final ActionParserService actionParserService = new ActionParserService(rriParser, accountAddresses, validatorAddresses);
 
 	@Before
 	public void setup() {
@@ -90,7 +91,7 @@ public class ActionParserServiceTest {
 	@Test
 	public void stakeActionIsParsedCorrectly() {
 		var key = ECKeyPair.generateNew().getPublicKey();
-		var validatorAddr = ValidatorAddress.of(key);
+		var validatorAddr = validatorAddresses.of(key);
 		var fromAddr = accountAddresses.of(from);
 		var source = "[{\"type\":\"StakeTokens\", \"from\":\"%s\", \"validator\":\"%s\", \"amount\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, fromAddr, validatorAddr, UInt256.NINE));
@@ -117,7 +118,7 @@ public class ActionParserServiceTest {
 	@Test
 	public void unstakeActionIsParsedCorrectly() {
 		var key = ECKeyPair.generateNew().getPublicKey();
-		var validatorAddr = ValidatorAddress.of(key);
+		var validatorAddr = validatorAddresses.of(key);
 		var accountAddr = accountAddresses.of(from);
 		var source = "[{\"type\":\"UnstakeTokens\", \"from\":\"%s\", \"validator\":\"%s\", \"amount\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, accountAddr, validatorAddr, UInt256.EIGHT));
@@ -196,7 +197,7 @@ public class ActionParserServiceTest {
 	@Test
 	public void registerValidatorIsParsedCorrectlyWithUrlAndName() {
 		var key = ECKeyPair.generateNew().getPublicKey();
-		var validatorAddr = ValidatorAddress.of(key);
+		var validatorAddr = validatorAddresses.of(key);
 
 		var source = "[{\"type\":\"RegisterValidator\", \"validator\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
@@ -221,7 +222,7 @@ public class ActionParserServiceTest {
 	@Test
 	public void registerValidatorIsParsedCorrectlyWithUrl() {
 		var key = ECKeyPair.generateNew().getPublicKey();
-		var validatorAddr = ValidatorAddress.of(key);
+		var validatorAddr = validatorAddresses.of(key);
 
 		var source = "[{\"type\":\"RegisterValidator\", \"validator\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
@@ -246,7 +247,7 @@ public class ActionParserServiceTest {
 	@Test
 	public void registerValidatorIsParsedCorrectly() {
 		var key = ECKeyPair.generateNew().getPublicKey();
-		var validatorAddr = ValidatorAddress.of(key);
+		var validatorAddr = validatorAddresses.of(key);
 
 		var source = "[{\"type\":\"RegisterValidator\", \"validator\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
@@ -271,7 +272,7 @@ public class ActionParserServiceTest {
 	@Test
 	public void updateValidatorIsParsedCorrectlyWithUrlAndName() {
 		var key = ECKeyPair.generateNew().getPublicKey();
-		var validatorAddr = ValidatorAddress.of(key);
+		var validatorAddr = validatorAddresses.of(key);
 
 		var source = "[{\"type\":\"UpdateValidator\", \"validator\":\"%s\", \"name\":\"%s\", \"url\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr, "validator 1", "http://localhost/"));
@@ -298,7 +299,7 @@ public class ActionParserServiceTest {
 	@Test
 	public void updateValidatorIsParsedCorrectlyWithUrl() {
 		var key = ECKeyPair.generateNew().getPublicKey();
-		var validatorAddr = ValidatorAddress.of(key);
+		var validatorAddr = validatorAddresses.of(key);
 
 		var source = "[{\"type\":\"UpdateValidator\", \"validator\":\"%s\", \"url\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr, "http://localhost/"));
@@ -325,7 +326,7 @@ public class ActionParserServiceTest {
 	@Test
 	public void updateValidatorIsParsedCorrectly() {
 		var key = ECKeyPair.generateNew().getPublicKey();
-		var validatorAddr = ValidatorAddress.of(key);
+		var validatorAddr = validatorAddresses.of(key);
 
 		var source = "[{\"type\":\"UpdateValidator\", \"validator\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
@@ -352,7 +353,7 @@ public class ActionParserServiceTest {
 	@Test
 	public void unregisterValidatorIsParsedCorrectlyWithUrlAndName() {
 		var key = ECKeyPair.generateNew().getPublicKey();
-		var validatorAddr = ValidatorAddress.of(key);
+		var validatorAddr = validatorAddresses.of(key);
 
 		var source = "[{\"type\":\"UnregisterValidator\", \"validator\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
@@ -377,7 +378,7 @@ public class ActionParserServiceTest {
 	@Test
 	public void unregisterValidatorIsParsedCorrectlyWithUrl() {
 		var key = ECKeyPair.generateNew().getPublicKey();
-		var validatorAddr = ValidatorAddress.of(key);
+		var validatorAddr = validatorAddresses.of(key);
 
 		var source = "[{\"type\":\"UnregisterValidator\", \"validator\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
@@ -402,7 +403,7 @@ public class ActionParserServiceTest {
 	@Test
 	public void unregisterValidatorIsParsedCorrectly() {
 		var key = ECKeyPair.generateNew().getPublicKey();
-		var validatorAddr = ValidatorAddress.of(key);
+		var validatorAddr = validatorAddresses.of(key);
 
 		var source = "[{\"type\":\"UnregisterValidator\", \"validator\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));

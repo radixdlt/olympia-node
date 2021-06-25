@@ -32,7 +32,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddress;
+import com.radixdlt.identifiers.ValidatorAddresses;
 import com.radixdlt.utils.functional.Result;
 
 import static org.junit.Assert.assertEquals;
@@ -51,7 +51,8 @@ public class AccountHandlerTest {
 	private final SubmissionService submissionService = mock(SubmissionService.class);
 	private final AccountInfoService accountService = mock(AccountInfoService.class);
 	private final AccountAddresses accountAddresses = new AccountAddresses(Network.LOCALNET.getAccountHrp());
-	private final ActionParserService actionParserService = new ActionParserService(rriParser, accountAddresses);
+	private final ValidatorAddresses validatorAddresses = new ValidatorAddresses(Network.LOCALNET.getValidatorHrp());
+	private final ActionParserService actionParserService = new ActionParserService(rriParser, accountAddresses, validatorAddresses);
 
 	private final ECKeyPair keyPair = ECKeyPair.generateNew();
 	private final ECPublicKey bftKey = keyPair.getPublicKey();
@@ -107,7 +108,7 @@ public class AccountHandlerTest {
 			.put(
 				jsonObject()
 					.put("type", "RegisterValidator")
-					.put("validator", ValidatorAddress.of(bftKey))
+					.put("validator", validatorAddresses.of(bftKey))
 			);
 		var params = jsonArray()
 			.put(actions)

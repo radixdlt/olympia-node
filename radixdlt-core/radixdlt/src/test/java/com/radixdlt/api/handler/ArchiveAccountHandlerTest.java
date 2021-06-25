@@ -29,7 +29,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.AccountAddresses;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddress;
+import com.radixdlt.identifiers.ValidatorAddresses;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
@@ -56,13 +56,14 @@ public class ArchiveAccountHandlerTest {
 	private static final ECPublicKey PUB_KEY = ECKeyPair.generateNew().getPublicKey();
 	private static final REAddr ACCOUNT_ADDRESS = REAddr.ofPubKeyAccount(PUB_KEY);
 	private static final AccountAddresses accountAddresses = new AccountAddresses("ldx");
+	private static final ValidatorAddresses validatorAddresses = new ValidatorAddresses("vl");
 	private static final String ADDRESS = accountAddresses.of(ACCOUNT_ADDRESS);
 	private static final ECPublicKey V1 = ECKeyPair.generateNew().getPublicKey();
 	private static final ECPublicKey V2 = ECKeyPair.generateNew().getPublicKey();
 	private static final ECPublicKey V3 = ECKeyPair.generateNew().getPublicKey();
 
 	private final ArchiveAccountService accountService = mock(ArchiveAccountService.class);
-	private final ArchiveAccountHandler handler = new ArchiveAccountHandler(accountService, accountAddresses);
+	private final ArchiveAccountHandler handler = new ArchiveAccountHandler(accountService, accountAddresses, validatorAddresses);
 
 	@Test
 	public void testTokenBalancePositional() {
@@ -135,13 +136,13 @@ public class ArchiveAccountHandlerTest {
 
 		assertEquals(3, list.length());
 		assertEquals(UInt384.TWO, list.getJSONObject(0).get("amount"));
-		assertEquals(ValidatorAddress.of(balance1.getDelegate()), list.getJSONObject(0).get("validator"));
+		assertEquals(validatorAddresses.of(balance1.getDelegate()), list.getJSONObject(0).get("validator"));
 
 		assertEquals(UInt384.FIVE, list.getJSONObject(1).get("amount"));
-		assertEquals(ValidatorAddress.of(balance2.getDelegate()), list.getJSONObject(1).get("validator"));
+		assertEquals(validatorAddresses.of(balance2.getDelegate()), list.getJSONObject(1).get("validator"));
 
 		assertEquals(UInt384.EIGHT, list.getJSONObject(2).get("amount"));
-		assertEquals(ValidatorAddress.of(balance3.getDelegate()), list.getJSONObject(2).get("validator"));
+		assertEquals(validatorAddresses.of(balance3.getDelegate()), list.getJSONObject(2).get("validator"));
 	}
 
 	@Test
@@ -161,13 +162,13 @@ public class ArchiveAccountHandlerTest {
 
 		assertEquals(3, list.length());
 		assertEquals(UInt384.TWO, list.getJSONObject(0).get("amount"));
-		assertEquals(ValidatorAddress.of(balance1.getDelegate()), list.getJSONObject(0).get("validator"));
+		assertEquals(validatorAddresses.of(balance1.getDelegate()), list.getJSONObject(0).get("validator"));
 
 		assertEquals(UInt384.FIVE, list.getJSONObject(1).get("amount"));
-		assertEquals(ValidatorAddress.of(balance2.getDelegate()), list.getJSONObject(1).get("validator"));
+		assertEquals(validatorAddresses.of(balance2.getDelegate()), list.getJSONObject(1).get("validator"));
 
 		assertEquals(UInt384.EIGHT, list.getJSONObject(2).get("amount"));
-		assertEquals(ValidatorAddress.of(balance3.getDelegate()), list.getJSONObject(2).get("validator"));
+		assertEquals(validatorAddresses.of(balance3.getDelegate()), list.getJSONObject(2).get("validator"));
 	}
 
 	@Test

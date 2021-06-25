@@ -28,7 +28,7 @@ import com.radixdlt.api.service.ValidatorInfoService;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddress;
+import com.radixdlt.identifiers.ValidatorAddresses;
 import com.radixdlt.utils.UInt256;
 
 import static org.junit.Assert.assertEquals;
@@ -50,12 +50,18 @@ public class ValidationHandlerTest {
 	private final AccountInfoService accountService = mock(AccountInfoService.class);
 	private final ValidatorInfoService validatorInfoService = mock(ValidatorInfoService.class);
 	private final AccountAddresses accountAddresses = new AccountAddresses(Network.LOCALNET.getAccountHrp());
-	private final ValidationHandler handler = new ValidationHandler(accountService, validatorInfoService, accountAddresses);
+	private final ValidatorAddresses validatorAddresses = new ValidatorAddresses(Network.LOCALNET.getValidatorHrp());
+	private final ValidationHandler handler = new ValidationHandler(
+		accountService,
+		validatorInfoService,
+		accountAddresses,
+		validatorAddresses
+	);
 
 	@Test
 	public void testHandleGetNodeInfo() {
 		var validatorInfo = jsonObject()
-			.put("address", ValidatorAddress.of(V1))
+			.put("address", validatorAddresses.of(V1))
 			.put("name", "validator 1")
 			.put("url", "https://validator1.com/")
 			.put("registered", true)
@@ -71,7 +77,7 @@ public class ValidationHandlerTest {
 
 		var result = response.getJSONObject("result");
 
-		assertEquals(ValidatorAddress.of(V1), result.get("address"));
+		assertEquals(validatorAddresses.of(V1), result.get("address"));
 		assertEquals("validator 1", result.get("name"));
 		assertEquals(true, result.get("registered"));
 		assertEquals(UInt256.FIVE, result.get("totalStake"));

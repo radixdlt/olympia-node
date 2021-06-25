@@ -24,7 +24,7 @@ import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.api.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.identifiers.ValidatorAddress;
+import com.radixdlt.identifiers.ValidatorAddresses;
 import com.radixdlt.serialization.DeserializeException;
 
 import java.util.concurrent.CompletableFuture;
@@ -41,13 +41,16 @@ import static com.radixdlt.api.RestUtils.withBody;
 public final class ChaosController implements Controller {
 	private final EventDispatcher<MempoolFillerUpdate> mempoolDispatcher;
 	private final EventDispatcher<MessageFlooderUpdate> messageDispatcher;
+	private final ValidatorAddresses validatorAddresses;
 
 	public ChaosController(
 		EventDispatcher<MempoolFillerUpdate> mempoolDispatcher,
-		EventDispatcher<MessageFlooderUpdate> messageDispatcher
+		EventDispatcher<MessageFlooderUpdate> messageDispatcher,
+		ValidatorAddresses validatorAddresses
 	) {
 		this.mempoolDispatcher = mempoolDispatcher;
 		this.messageDispatcher = messageDispatcher;
+		this.validatorAddresses = validatorAddresses;
 	}
 
 	@Override
@@ -104,9 +107,9 @@ public final class ChaosController implements Controller {
 		});
 	}
 
-	private static BFTNode createNodeByKey(final String nodeAddress) {
+	private BFTNode createNodeByKey(final String nodeAddress) {
 		try {
-			return BFTNode.create(ValidatorAddress.parse(nodeAddress));
+			return BFTNode.create(validatorAddresses.parse(nodeAddress));
 		} catch (DeserializeException e) {
 			throw new IllegalArgumentException();
 		}

@@ -26,7 +26,7 @@ import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AccountAddresses;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddress;
+import com.radixdlt.identifiers.ValidatorAddresses;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
@@ -47,11 +47,17 @@ import static java.util.Optional.ofNullable;
 public final class ActionParserService {
 	private final RriParser rriParser;
 	private final AccountAddresses accountAddresses;
+	private final ValidatorAddresses validatorAddresses;
 
 	@Inject
-	public ActionParserService(RriParser rriParser, AccountAddresses accountAddresses) {
+	public ActionParserService(
+		RriParser rriParser,
+		AccountAddresses accountAddresses,
+		ValidatorAddresses validatorAddresses
+	) {
 		this.rriParser = rriParser;
 		this.accountAddresses = accountAddresses;
+		this.validatorAddresses = validatorAddresses;
 	}
 
 	public Result<List<TransactionAction>> parse(JSONArray actions) {
@@ -217,9 +223,9 @@ public final class ActionParserService {
 		return address(element, "to");
 	}
 
-	private static Result<ECPublicKey> validator(JSONObject element) {
+	private Result<ECPublicKey> validator(JSONObject element) {
 		return param(element, "validator")
-			.flatMap(ValidatorAddress::fromString);
+			.flatMap(validatorAddresses::fromString);
 	}
 
 	private static Result<UInt256> amount(JSONObject element) {

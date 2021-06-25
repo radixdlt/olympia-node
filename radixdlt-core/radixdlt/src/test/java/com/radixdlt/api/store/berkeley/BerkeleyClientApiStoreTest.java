@@ -16,6 +16,7 @@
  */
 package com.radixdlt.api.store.berkeley;
 
+import com.radixdlt.identifiers.ValidatorAddresses;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.networks.Network;
@@ -92,6 +93,7 @@ public class BerkeleyClientApiStoreTest {
 	private static final ECKeyPair TOKEN_KEYPAIR = ECKeyPair.generateNew();
 	private static final REAddr TOKEN_ACCOUNT = REAddr.ofPubKeyAccount(TOKEN_KEYPAIR.getPublicKey());
 	private static final AccountAddresses accountAddresses = new AccountAddresses(Network.LOCALNET.getAccountHrp());
+	private static final ValidatorAddresses validatorAddresses = new ValidatorAddresses(Network.LOCALNET.getValidatorHrp());
 
 	private static final String SYMBOL = "cfee";
 	private static final REAddr TOKEN = REAddr.ofHashedKey(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
@@ -343,9 +345,10 @@ public class BerkeleyClientApiStoreTest {
 			serialization,
 			mock(SystemCounters.class),
 			mock(ScheduledEventDispatcher.class),
-			new TransactionParser(accountAddresses),
+			new TransactionParser(accountAddresses, validatorAddresses),
 			true,
-			accountAddresses
+			accountAddresses,
+			validatorAddresses
 		);
 	}
 

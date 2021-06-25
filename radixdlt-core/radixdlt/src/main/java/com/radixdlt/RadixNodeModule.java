@@ -36,6 +36,7 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.identifiers.AccountAddresses;
+import com.radixdlt.identifiers.ValidatorAddresses;
 import com.radixdlt.keys.PersistedBFTKeyModule;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
@@ -50,7 +51,6 @@ import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.qualifier.NetworkId;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
@@ -62,7 +62,6 @@ import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
-import com.radixdlt.universe.Network;
 import com.radixdlt.utils.Bytes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -144,6 +143,11 @@ public final class RadixNodeModule extends AbstractModule {
 			.orElse("tdx" + networkId);
 	}
 
+	public String validatorHrp(int networkId) {
+		return Network.ofId(networkId).map(Network::getValidatorHrp)
+			.orElse("vt" + networkId);
+	}
+
 	@Override
 	protected void configure() {
 		if (this.networkId <= 0) {
@@ -153,6 +157,7 @@ public final class RadixNodeModule extends AbstractModule {
 		bindConstant().annotatedWith(NetworkId.class).to(networkId);
 		bind(Txn.class).annotatedWith(Genesis.class).toInstance(loadGenesis(networkId));
 		bind(AccountAddresses.class).toInstance(new AccountAddresses(accountHrp(networkId)));
+		bind(ValidatorAddresses.class).toInstance(new ValidatorAddresses(validatorHrp(networkId)));
 		bind(RuntimeProperties.class).toInstance(properties);
 
 		// Consensus configuration

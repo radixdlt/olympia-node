@@ -22,7 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.identifiers.ValidatorAddress;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
@@ -111,9 +112,13 @@ public final class LedgerHeader {
 			var nextValidatorsJson = json.getJSONArray("nextValidators");
 			for (int i = 0; i < nextValidatorsJson.length(); i++) {
 				var validatorJson = nextValidatorsJson.getJSONObject(i);
-				var key = ValidatorAddress.parse(validatorJson.getString("address"));
-				var stake = UInt256.from(validatorJson.getString("stake"));
-				builder.add(BFTValidator.from(BFTNode.create(key), stake));
+				try {
+					var key = ECPublicKey.fromHex(validatorJson.getString("address"));
+					var stake = UInt256.from(validatorJson.getString("stake"));
+					builder.add(BFTValidator.from(BFTNode.create(key), stake));
+				} catch (PublicKeyException e) {
+					throw new DeserializeException(e.getMessage());
+				}
 			}
 			nextValidators = builder.build();
 		} else {
@@ -135,7 +140,7 @@ public final class LedgerHeader {
 		if (nextValidators != null) {
 			var validators = new JSONArray();
 			for (var v : nextValidators) {
-				var validatorAddress = ValidatorAddress.of(v.getNode().getKey());
+				var validatorAddress = v.getNode().getKey().toHex();
 				validators.put(new JSONObject()
 					.put("address", validatorAddress)
 					.put("stake", v.getPower())

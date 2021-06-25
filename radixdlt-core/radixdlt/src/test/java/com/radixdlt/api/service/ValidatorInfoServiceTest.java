@@ -16,6 +16,7 @@
  */
 package com.radixdlt.api.service;
 
+import com.radixdlt.identifiers.ValidatorAddresses;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -105,7 +106,7 @@ public class ValidatorInfoServiceTest {
 	@SuppressWarnings("unchecked")
 	private ValidatorInfoService setUpService() {
 		var radixEngine = (RadixEngine<LedgerAndBFTProof>) mock(RadixEngine.class);
-		var validatorInfoService = new ValidatorInfoService(radixEngine);
+		var validatorInfoService = new ValidatorInfoService(radixEngine, new ValidatorAddresses("vb"));
 		var validators = StakedValidators.create(3, 3)
 			.add(validator1)
 			.add(validator2)

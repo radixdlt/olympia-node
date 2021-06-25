@@ -25,7 +25,7 @@ import com.google.inject.Singleton;
 import com.radixdlt.api.data.ValidatorInfoDetails;
 import com.radixdlt.api.service.ValidatorInfoService;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.ValidatorAddress;
+import com.radixdlt.identifiers.ValidatorAddresses;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
@@ -45,11 +45,17 @@ import static com.radixdlt.utils.functional.Result.ok;
 public class ArchiveValidationHandler {
 	private final ValidatorInfoService validatorInfoService;
 	private final AccountAddresses accountAddresses;
+	private final ValidatorAddresses validatorAddresses;
 
 	@Inject
-	public ArchiveValidationHandler(ValidatorInfoService validatorInfoService, AccountAddresses accountAddresses) {
+	public ArchiveValidationHandler(
+		ValidatorInfoService validatorInfoService,
+		AccountAddresses accountAddresses,
+		ValidatorAddresses validatorAddresses
+	) {
 		this.validatorInfoService = validatorInfoService;
 		this.accountAddresses = accountAddresses;
+		this.validatorAddresses = validatorAddresses;
 	}
 
 	public JSONObject handleValidatorsGetNextEpochSet(JSONObject request) {
@@ -68,9 +74,9 @@ public class ArchiveValidationHandler {
 		return withRequiredStringParameter(
 			request,
 			"validatorAddress",
-			address -> ValidatorAddress.fromString(address)
+			address -> validatorAddresses.fromString(address)
 				.flatMap(validatorInfoService::getValidator)
-				.map(d -> d.asJson(accountAddresses))
+				.map(d -> d.asJson(accountAddresses, validatorAddresses))
 		);
 	}
 
@@ -80,18 +86,18 @@ public class ArchiveValidationHandler {
 
 	private JSONObject formatValidatorResponse(Optional<ECPublicKey> cursor, List<ValidatorInfoDetails> transactions) {
 		return jsonObject()
-			.put("cursor", cursor.map(ValidatorAddress::of).orElse(""))
-			.put("validators", fromList(transactions, d -> d.asJson(accountAddresses)));
+			.put("cursor", cursor.map(validatorAddresses::of).orElse(""))
+			.put("validators", fromList(transactions, d -> d.asJson(accountAddresses, validatorAddresses)));
 	}
 
-	private static Optional<ECPublicKey> parseAddressCursor(JSONObject params) {
+	private Optional<ECPublicKey> parseAddressCursor(JSONObject params) {
 		return safeString(params, "cursor")
 			.toOptional()
-			.flatMap(ArchiveValidationHandler::parsePublicKey);
+			.flatMap(this::parsePublicKey);
 	}
 
-	private static Optional<ECPublicKey> parsePublicKey(String address) {
-		return ValidatorAddress.fromString(address).toOptional();
+	private Optional<ECPublicKey> parsePublicKey(String address) {
+		return validatorAddresses.fromString(address).toOptional();
 	}
 
 	private static Result<Integer> parseSize(JSONObject params) {

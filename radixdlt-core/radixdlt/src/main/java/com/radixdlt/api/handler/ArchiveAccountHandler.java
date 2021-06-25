@@ -26,7 +26,7 @@ import com.radixdlt.api.service.ArchiveAccountService;
 import com.radixdlt.api.store.TokenBalance;
 import com.radixdlt.identifiers.AccountAddresses;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddress;
+import com.radixdlt.identifiers.ValidatorAddresses;
 import com.radixdlt.utils.functional.Result;
 
 import java.time.Instant;
@@ -49,14 +49,17 @@ import static com.radixdlt.utils.functional.Tuple.tuple;
 public class ArchiveAccountHandler {
 	private final ArchiveAccountService accountService;
 	private final AccountAddresses accountAddresses;
+	private final ValidatorAddresses validatorAddresses;
 
 	@Inject
 	public ArchiveAccountHandler(
 		ArchiveAccountService accountService,
-		AccountAddresses accountAddresses
+		AccountAddresses accountAddresses,
+		ValidatorAddresses validatorAddresses
 	) {
 		this.accountService = accountService;
 		this.accountAddresses = accountAddresses;
+		this.validatorAddresses = validatorAddresses;
 	}
 
 	public JSONObject handleAccountGetBalances(JSONObject request) {
@@ -104,10 +107,10 @@ public class ArchiveAccountHandler {
 	// internal processing
 	//-----------------------------------------------------------------------------------------------------
 
-	private static JSONObject formatUnstakePositions(List<BalanceEntry> balances, long curEpoch) {
+	private JSONObject formatUnstakePositions(List<BalanceEntry> balances, long curEpoch) {
 		var array = fromList(balances, unstake ->
 			jsonObject()
-				.put("validator", ValidatorAddress.of(unstake.getDelegate()))
+				.put("validator", validatorAddresses.of(unstake.getDelegate()))
 				.put("amount", unstake.getAmount())
 				.put("epochsUntil", unstake.getEpochUnlocked() - curEpoch)
 				.put("withdrawTxID", unstake.getTxId())
@@ -124,7 +127,7 @@ public class ArchiveAccountHandler {
 	private JSONObject formatStakePositions(List<BalanceEntry> balances) {
 		var array = fromList(balances, balance ->
 			jsonObject()
-				.put("validator", ValidatorAddress.of(balance.getDelegate()))
+				.put("validator", validatorAddresses.of(balance.getDelegate()))
 				.put("amount", balance.getAmount())
 		);
 

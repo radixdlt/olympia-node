@@ -36,7 +36,7 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.AccountAddresses;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddress;
+import com.radixdlt.identifiers.ValidatorAddresses;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
@@ -58,11 +58,12 @@ public class ConstructionHandlerTest {
 	private static final ECPublicKey PUB_KEY = ECKeyPair.generateNew().getPublicKey();
 	private static final REAddr ACCOUNT_ADDR = REAddr.ofPubKeyAccount(PUB_KEY);
 	private static final AccountAddresses accountAddresses = new AccountAddresses(Network.LOCALNET.getAccountHrp());
+	private static final ValidatorAddresses validatorAddresses = new ValidatorAddresses(Network.LOCALNET.getValidatorHrp());
 	private static final String FEE_PAYER = accountAddresses.of(ACCOUNT_ADDR);
 
 	private final RriParser rriParser = mock(RriParser.class);
 	private final SubmissionService submissionService = mock(SubmissionService.class);
-	private final ActionParserService actionParserService = new ActionParserService(rriParser, accountAddresses);
+	private final ActionParserService actionParserService = new ActionParserService(rriParser, accountAddresses, validatorAddresses);
 	private final ConstructionHandler handler = new ConstructionHandler(submissionService, actionParserService, accountAddresses);
 
 	@Test
@@ -76,7 +77,7 @@ public class ConstructionHandlerTest {
 			.put(
 				jsonObject()
 					.put("type", "RegisterValidator")
-					.put("validator", ValidatorAddress.of(PUB_KEY))
+					.put("validator", validatorAddresses.of(PUB_KEY))
 			);
 		var params = jsonArray()
 			.put(actions)
@@ -105,7 +106,7 @@ public class ConstructionHandlerTest {
 			.put(
 				jsonObject()
 					.put("type", "RegisterValidator")
-					.put("validator", ValidatorAddress.of(PUB_KEY))
+					.put("validator", validatorAddresses.of(PUB_KEY))
 			);
 		var params = jsonObject()
 			.put("actions", actions)
