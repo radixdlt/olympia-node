@@ -10,7 +10,7 @@ testData = DataPool()
 
 def get_existing_entity(client, entity):
     for key, value in testData.__class__.__dict__.items():
-        datapoolEntities = ['accounts']
+        datapoolEntities = ['accounts','validators']
 
         if key == entity and key in datapoolEntities:
             if len(value) != 0:
@@ -19,6 +19,18 @@ def get_existing_entity(client, entity):
 
 def get_transaction_history(client, payload, name):
     archive_endpoint = endpoints.get_archive_endpoint()
+    with client.request("POST",
+                        archive_endpoint,
+                        name=name,
+                        data=json.dumps(payload),
+                        headers=post_headers(),
+                        catch_response=True, verify=False) as response:
+        if response.status_code != 200:
+            logOnError(response)
+
+
+def build_stake_transactions(client, payload, name):
+    archive_endpoint = endpoints.get_construction_endpoint()
     with client.request("POST",
                         archive_endpoint,
                         name=name,
