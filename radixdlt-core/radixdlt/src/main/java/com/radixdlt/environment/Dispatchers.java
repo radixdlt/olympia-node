@@ -24,12 +24,14 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.networks.Addressing;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -53,18 +55,21 @@ public final class Dispatchers {
 		@Inject
 		private Set<EventProcessorOnDispatch<?>> onDispatchProcessors;
 
+		@Inject
+		private Addressing addressing;
+
 		private final Class<T> c;
 		private final Function<T, SystemCounters.CounterType> counterTypeMapper;
-		private final boolean enableLogging;
+		private final BiFunction<T, Addressing, String> message;
 
 		DispatcherProvider(
 			Class<T> c,
 			@Nullable Function<T, SystemCounters.CounterType> counterTypeMapper,
-			boolean enableLogging
+			BiFunction<T, Addressing, String> message
 		) {
 			this.c = c;
 			this.counterTypeMapper = counterTypeMapper;
-			this.enableLogging = enableLogging;
+			this.message = message;
 		}
 
 		@Override
@@ -80,9 +85,9 @@ public final class Dispatchers {
 				if (counterTypeMapper != null) {
 					systemCounters.increment(counterTypeMapper.apply(e));
 				}
-				if (enableLogging) {
+				if (message != null) {
 					Level logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
-					logger.log(logLevel, "{}", e);
+					logger.log(logLevel, "{}", message.apply(e, addressing));
 				}
 			};
 		}
@@ -166,19 +171,26 @@ public final class Dispatchers {
 	}
 
 	public static <T> Provider<EventDispatcher<T>> dispatcherProvider(Class<T> c) {
-		return new DispatcherProvider<>(c, null, false);
+		return new DispatcherProvider<>(c, null, null);
+	}
+
+	public static <T> Provider<EventDispatcher<T>> dispatcherProvider(
+		Class<T> c,
+		Function<T, SystemCounters.CounterType> counterTypeMapper
+	) {
+		return new DispatcherProvider<>(c, counterTypeMapper, null);
 	}
 
 	public static <T> Provider<EventDispatcher<T>> dispatcherProvider(
 		Class<T> c,
 		Function<T, SystemCounters.CounterType> counterTypeMapper,
-		boolean enableLogging
+		BiFunction<T, Addressing, String> message
 	) {
-		return new DispatcherProvider<>(c, counterTypeMapper, enableLogging);
+		return new DispatcherProvider<>(c, counterTypeMapper, message);
 	}
 
-	public static <T> Provider<EventDispatcher<T>> dispatcherProvider(Class<T> c, boolean enableLogging) {
-		return new DispatcherProvider<>(c, null, enableLogging);
+	public static <T> Provider<EventDispatcher<T>> dispatcherProvider(Class<T> c, BiFunction<T, Addressing, String> message) {
+		return new DispatcherProvider<>(c, null, message);
 	}
 
 	public static <T> Provider<ScheduledEventDispatcher<T>> scheduledDispatcherProvider(Class<T> c) {

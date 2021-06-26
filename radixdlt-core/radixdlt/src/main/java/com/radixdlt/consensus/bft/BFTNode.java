@@ -20,8 +20,6 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.networks.Network;
 
 import java.util.Objects;
 
@@ -40,17 +38,17 @@ public final class BFTNode {
 		this.simpleName = Objects.requireNonNull(simpleName);
 	}
 
-	public static BFTNode create(Addressing addressing, ECPublicKey key) {
-		var shortenedAddress = addressing.forNodes().of(key).substring(0, 10);
+	public static BFTNode create(ECPublicKey key) {
+		var shortenedAddress = key.toHex().substring(0, 10);
 		return new BFTNode(key, shortenedAddress);
 	}
 
-	public static BFTNode fromPublicKeyBytes(Addressing addressing, byte[] key) throws PublicKeyException {
-		return create(addressing, ECPublicKey.fromBytes(key));
+	public static BFTNode fromPublicKeyBytes(byte[] key) throws PublicKeyException {
+		return create(ECPublicKey.fromBytes(key));
 	}
 
 	public static BFTNode random() {
-		return create(Addressing.ofNetwork(Network.LOCALNET), ECKeyPair.generateNew().getPublicKey());
+		return create(ECKeyPair.generateNew().getPublicKey());
 	}
 
 	public ECPublicKey getKey() {

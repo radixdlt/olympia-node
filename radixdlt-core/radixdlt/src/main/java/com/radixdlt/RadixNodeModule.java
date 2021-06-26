@@ -141,8 +141,9 @@ public final class RadixNodeModule extends AbstractModule {
 			throw new IllegalStateException("Illegal networkId " + networkId);
 		}
 
+		var addressing = Addressing.ofNetworkId(networkId);
+		bind(Addressing.class).toInstance(addressing);
 		bindConstant().annotatedWith(NetworkId.class).to(networkId);
-		bind(Addressing.class).toInstance(Addressing.ofNetworkId(networkId));
 		bind(Txn.class).annotatedWith(Genesis.class).toInstance(loadGenesis(networkId));
 		bind(RuntimeProperties.class).toInstance(properties);
 
