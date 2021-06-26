@@ -23,9 +23,9 @@ import com.radixdlt.atom.Txn;
 import java.util.Optional;
 
 public enum Network {
-	MAINNET(1, "rdx", "vr", "_rr", "rdn"),
-	STOKENET(2, "tdx", "vt", "_rt", "trn"),
-	LOCALNET(99, "ddx", "vd", "_rd", "drn");
+	MAINNET(1, "rdx", "rv", "_rr", "rn"),
+	STOKENET(2, "tdx", "tv", "_tr", "tn"),
+	LOCALNET(99, "ddx", "dv", "_dr", "dn");
 
 	private final int id;
 	private final String accountHrp;
