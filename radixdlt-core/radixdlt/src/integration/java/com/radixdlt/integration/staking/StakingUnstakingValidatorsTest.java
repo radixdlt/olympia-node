@@ -53,7 +53,6 @@ import com.radixdlt.atommodel.validators.state.PreparedRakeUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -115,6 +114,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -292,28 +292,30 @@ public class StakingUnstakingValidatorsTest {
 	}
 
 	private static class NodeState {
-		private final DeterministicSavedLastEvent<EpochViewUpdate> lastEpochView;
+		private final DeterministicSavedLastEvent<LedgerUpdate> lastLedgerUpdate;
 		private final EpochChange epochChange;
 		private final BerkeleyLedgerEntryStore entryStore;
 		private final Forks forks;
 
 		@Inject
 		private NodeState(
-			DeterministicSavedLastEvent<EpochViewUpdate> lastEpochView,
+			DeterministicSavedLastEvent<LedgerUpdate> lastLedgerUpdate,
 			EpochChange epochChange,
 			BerkeleyLedgerEntryStore entryStore,
 			Forks forks
 		) {
-			this.lastEpochView = lastEpochView;
+			this.lastLedgerUpdate = lastLedgerUpdate;
 			this.epochChange = epochChange;
 			this.entryStore = entryStore;
 			this.forks = forks;
 		}
 
 		public long getEpoch() {
-			return lastEpochView.getLastEvent() == null
-				? epochChange.getEpoch()
-				: lastEpochView.getLastEvent().getEpoch();
+			if (lastLedgerUpdate.getLastEvent() == null) {
+				return epochChange.getEpoch();
+			}
+			var epochChange = (Optional<EpochChange>) lastLedgerUpdate.getLastEvent().getStateComputerOutput();
+			return epochChange.map(EpochChange::getEpoch).orElse(lastLedgerUpdate.getLastEvent().getTail().getEpoch());
 		}
 
 		public Map<BFTNode, Map<String, String>> getValidators() {
