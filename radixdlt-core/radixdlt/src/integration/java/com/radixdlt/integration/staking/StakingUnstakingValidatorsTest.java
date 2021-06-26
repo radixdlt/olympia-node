@@ -368,7 +368,7 @@ public class StakingUnstakingValidatorsTest {
 				},
 				reParser.getSubstateDeserialization()
 			);
-			logger.info("Total tokens: {}", totalTokens);
+			logger.info("Total tokens: {}", Amount.ofSubunits(totalTokens));
 			var totalStaked = entryStore.reduceUpParticles(ValidatorStakeData.class, UInt256.ZERO,
 				(i, p) -> {
 					var tokens = (ValidatorStakeData) p;
@@ -376,7 +376,7 @@ public class StakingUnstakingValidatorsTest {
 				},
 				reParser.getSubstateDeserialization()
 			);
-			logger.info("Total staked: {}", totalStaked);
+			logger.info("Total staked: {}", Amount.ofSubunits(totalStaked));
 			var totalStakePrepared = entryStore.reduceUpParticles(PreparedStake.class, UInt256.ZERO,
 				(i, p) -> {
 					var tokens = (PreparedStake) p;
@@ -384,7 +384,7 @@ public class StakingUnstakingValidatorsTest {
 				},
 				reParser.getSubstateDeserialization()
 			);
-			logger.info("Total preparing stake: {}", totalStakePrepared);
+			logger.info("Total preparing stake: {}", Amount.ofSubunits(totalStakePrepared));
 			var totalStakeExitting = entryStore.reduceUpParticles(ExittingStake.class, UInt256.ZERO,
 				(i, p) -> {
 					var tokens = (ExittingStake) p;
@@ -392,9 +392,9 @@ public class StakingUnstakingValidatorsTest {
 				},
 				reParser.getSubstateDeserialization()
 			);
-			logger.info("Total exitting stake: {}", totalStakeExitting);
+			logger.info("Total exitting stake: {}", Amount.ofSubunits(totalStakeExitting));
 			var total = totalTokens.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting);
-			logger.info("Total: {}", total);
+			logger.info("Total: {}", Amount.ofSubunits(total));
 			return total;
 		}
 	}
@@ -479,17 +479,17 @@ public class StakingUnstakingValidatorsTest {
 
 		var node = this.nodes.get(0).getInstance(Key.get(BFTNode.class, Self.class));
 		logger.info("Node {}", node);
-		logger.info("Initial {}", initialCount);
+		logger.info("Initial {}", Amount.ofSubunits(initialCount));
 		var nodeState = reloadNodeState();
 		var epoch = nodeState.getEpoch();
 		logger.info("Epoch {}", epoch);
 		var maxEmissions = UInt256.from(maxRounds).multiply(REWARDS_PER_PROPOSAL.toSubunits()).multiply(UInt256.from(epoch - 1));
-		logger.info("Max emissions {}", maxEmissions);
+		logger.info("Max emissions {}", Amount.ofSubunits(maxEmissions));
 		var finalCount = nodeState.getTotalNativeTokens();
 
 		assertThat(finalCount).isGreaterThan(initialCount);
 		var diff = finalCount.subtract(initialCount);
-		logger.info("Difference {}", diff);
+		logger.info("Difference {}", Amount.ofSubunits(diff));
 		assertThat(diff).isLessThanOrEqualTo(maxEmissions);
 
 		for (var e : nodeState.getValidators().entrySet()) {

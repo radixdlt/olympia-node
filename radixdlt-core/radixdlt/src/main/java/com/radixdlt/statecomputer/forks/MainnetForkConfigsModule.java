@@ -26,21 +26,34 @@ import com.radixdlt.atommodel.tokens.Amount;
  * The forks for betanet and the epochs at which they will occur.
  */
 public final class MainnetForkConfigsModule extends AbstractModule {
-	private static final long TWO_WEEKS_WORTH_OF_ROUNDS = 1_500_000;
-	private static final long TWO_WEEKS_WORTH_OF_EPOCHS = 150;
+	@ProvidesIntoSet
+	ForkConfig olympiaFirstEpoch() {
+		return new ForkConfig(
+			0L,
+			"olympia-first-epoch",
+			RERulesVersion.OLYMPIA_V1,
+			new RERulesConfig(
+				true,
+				1_500_000, // Two weeks worth of rounds for first epoch
+				150, // Two weeks worth of epochs
+				Amount.ofTokens(100), // Minimum stake
+				Amount.ofTokens(0)   // No rewards for epoch 1 where it will only be radix foundation nodes
+			)
+		);
+	}
 
 	@ProvidesIntoSet
 	ForkConfig olympia() {
 		return new ForkConfig(
-			0L,
+			2L,
 			"olympia",
 			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
 				true,
-				TWO_WEEKS_WORTH_OF_ROUNDS,
-				TWO_WEEKS_WORTH_OF_EPOCHS,
+				10_000,
+				150, // Two weeks worth of epochs
 				Amount.ofTokens(100), // Minimum stake
-				Amount.ofTokens(0)   // No rewards for epoch 1 where it will only be radix foundation nodes
+				Amount.ofTokens(10) // Rewards
 			)
 		);
 	}

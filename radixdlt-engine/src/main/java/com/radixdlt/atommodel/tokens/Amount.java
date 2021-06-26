@@ -20,6 +20,10 @@ package com.radixdlt.atommodel.tokens;
 
 import com.radixdlt.utils.UInt256;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.RoundingMode;
+
 public final class Amount {
 	private final UInt256 subunits;
 
@@ -31,7 +35,23 @@ public final class Amount {
 		return new Amount(UInt256.from(units).multiply(TokenUtils.SUB_UNITS));
 	}
 
+	public static Amount ofSubunits(UInt256 subunits) {
+		return new Amount(subunits);
+	}
+
 	public UInt256 toSubunits() {
 		return subunits;
+	}
+
+	public Amount times(long i) {
+		return new Amount(subunits.multiply(UInt256.from(i)));
+	}
+
+	@Override
+	public String toString() {
+		var i = new BigInteger(1, subunits.toByteArray());
+		var d = new BigDecimal(i);
+		var amt = d.divide(new BigDecimal(10).pow(TokenUtils.SUB_UNITS_POW_10), 10, RoundingMode.DOWN);
+		return amt.toPlainString();
 	}
 }
