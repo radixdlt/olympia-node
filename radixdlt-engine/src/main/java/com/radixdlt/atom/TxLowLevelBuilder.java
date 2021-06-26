@@ -60,7 +60,7 @@ public final class TxLowLevelBuilder {
 		try {
 			blobStream.write(blob);
 		} catch (IOException e) {
-			throw new IllegalStateException("Unable to write data.");
+			throw new IllegalStateException("Unable to write data.", e);
 		}
 		// TODO: Cleanup null serialization, but works for now as only used for client side signing
 		return new TxLowLevelBuilder(null, blobStream);
@@ -81,7 +81,7 @@ public final class TxLowLevelBuilder {
 	// TODO: Remove array copies
 	private byte[] varLengthData(byte[] bytes) {
 		if (bytes.length > 255) {
-			throw new IllegalArgumentException();
+			throw new IllegalArgumentException("Data length is " + bytes.length + " but must be <= " + 255);
 		}
 		var data = new byte[1 + bytes.length];
 		System.arraycopy(bytes, 0, data, 1, bytes.length);
@@ -94,7 +94,7 @@ public final class TxLowLevelBuilder {
 		try {
 			blobStream.write(data);
 		} catch (IOException e) {
-			throw new IllegalStateException("Unable to write data.");
+			throw new IllegalStateException("Unable to write data.", e);
 		}
 		this.instructionIndex++;
 	}
