@@ -30,10 +30,11 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 	private static final long TWO_WEEKS_WORTH_OF_EPOCHS = 150;
 
 	@ProvidesIntoSet
-	ForkConfig mainnet() {
+	ForkConfig olympia() {
 		return new ForkConfig(
 			0L,
-			"mainnet",
+			"olympia",
+			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
 				true,
 				TWO_WEEKS_WORTH_OF_ROUNDS,

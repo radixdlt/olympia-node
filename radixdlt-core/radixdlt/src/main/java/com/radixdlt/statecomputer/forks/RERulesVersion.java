@@ -18,9 +18,6 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
@@ -28,12 +25,12 @@ import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.DeprecatedUnstakeTokens;
 import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.NextEpoch;
+import com.radixdlt.atom.actions.NextRound;
 import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.SplitToken;
 import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.NextEpoch;
-import com.radixdlt.atom.actions.NextRound;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeOwnership;
@@ -80,15 +77,11 @@ import com.radixdlt.statecomputer.EpochProofVerifierV2;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Set;
-import java.util.function.Function;
 
-public final class MainnetForkRulesModule extends AbstractModule {
-	public static final UInt256 FIXED_FEE = UInt256.TEN.pow(TokenUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(100));
-
-	@ProvidesIntoMap
-	@StringMapKey("mainnet")
-	Function<RERulesConfig, RERules> mainnet() {
-		return config -> {
+public enum RERulesVersion {
+	OLYMPIA_V1 {
+		@Override
+		public RERules create(RERulesConfig config) {
 			var maxRounds = config.getMaxRounds();
 			var fees = config.includeFees();
 			var rakeIncreaseDebouncerEpochLength = config.getRakeIncreaseDebouncerEpochLength();
@@ -141,6 +134,10 @@ public final class MainnetForkRulesModule extends AbstractModule {
 				new EpochProofVerifierV2(),
 				View.of(maxRounds)
 			);
-		};
-	}
+		}
+	};
+
+	public static final UInt256 FIXED_FEE = com.radixdlt.utils.UInt256.TEN.pow(TokenUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(100));
+
+	public abstract RERules create(RERulesConfig config);
 }

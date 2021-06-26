@@ -43,7 +43,7 @@ public class RadixEngineForksLatestOnlyModule extends AbstractModule {
 			.toInstance(m ->
 				Set.of(m.stream()
 					.max(Comparator.comparingLong(ForkConfig::getEpoch))
-					.map(f -> new ForkConfig(0L, f.getName(), config))
+					.map(f -> new ForkConfig(0L, f.getName(), f.getVersion(), config))
 					.orElseThrow())
 			);
 	}

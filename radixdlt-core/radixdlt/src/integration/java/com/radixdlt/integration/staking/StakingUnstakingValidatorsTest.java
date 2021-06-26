@@ -85,7 +85,7 @@ import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkRulesModule;
+import com.radixdlt.statecomputer.forks.RERulesVersion;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -467,7 +467,7 @@ public class StakingUnstakingValidatorsTest {
 
 			var request = TxnConstructionRequest.create();
 			if (payFees) {
-				request.action(new PayFee(acct, MainnetForkRulesModule.FIXED_FEE));
+				request.action(new PayFee(acct, RERulesVersion.FIXED_FEE));
 			}
 			request.action(action);
 			dispatcher.dispatch(NodeApplicationRequest.create(request));

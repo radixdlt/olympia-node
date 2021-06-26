@@ -46,6 +46,7 @@ public class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
 					.map(c -> new ForkConfig(
 						epoch.getAndAdd(5),
 						c.getName(),
+						c.getVersion(),
 						config
 					))
 					.collect(Collectors.toSet())
