@@ -76,7 +76,7 @@ def transfer_tokens_method(client, from_account, to_account):
         "type": "TokenTransfer",
         "from": str(from_account["wallet_address"]),
         "to": str(to_account["wallet_address"]),
-        "amount": "11000000000000000000",
+        "amount": "1100000000000000000",
         "rri": "xrd_rb1qya85pwq"
     }
     build_txn_payload["params"]["actions"].append(action_tokentransfer_transaction)
