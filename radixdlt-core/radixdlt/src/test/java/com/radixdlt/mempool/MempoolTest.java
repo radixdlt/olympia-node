@@ -101,9 +101,9 @@ public class MempoolTest {
 		return peersView.peers().findFirst().get().bftNode();
 	}
 
-	private Txn createTxn(ECKeyPair keyPair, int numParticles) {
+	private Txn createTxn(ECKeyPair keyPair, int numMutexes) {
 		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder(rules.getSerialization());
-		for (int i = 0; i < numParticles; i++) {
+		for (int i = 0; i < numMutexes; i++) {
 			var symbol = "test" + (char) ('c' + i);
 			var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), symbol);
 			var rriParticle = new UnclaimedREAddr(addr);

@@ -18,8 +18,6 @@
 
 package com.radixdlt.constraintmachine.exceptions;
 
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
-
 public class NotEnoughFeesException extends AuthorizationException {
 	public NotEnoughFeesException() {
 		super("Not enough fees.");
