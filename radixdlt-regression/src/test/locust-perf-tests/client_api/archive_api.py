@@ -60,28 +60,12 @@ def stake_tokens_method(client, from_account, to_validator):
     }
     build_txn_payload["params"]["actions"].append(action_stake_transaction)
     build_txn_payload["params"]["feePayer"] = str(from_account["wallet_address"])
-    build_response = construction_endpoint_request(client, build_txn_payload, "build_stake_tokens")
-    signed_hash_hex = Signatory.sign(build_response["result"]["transaction"]["hashOfBlobToSign"],
-                                     from_account).hex()
-    finalise_txn_payload = RequestData.finalise_transaction()
-    blob = {
-        "blob": build_response["result"]["transaction"]["blob"]
-    }
-    finalise_txn_payload["params"].append(blob)
-    finalise_txn_payload["params"].append(signed_hash_hex)
-    finalise_txn_payload["params"].append(from_account["public_key"])
-    finalise_response = construction_endpoint_request(client, finalise_txn_payload,
-                                                      "finalise_stake_tokens")
-    submit_trx_payload = RequestData.submit_transaction()
-    blob = {
-        "blob": build_response["result"]["transaction"]["blob"]
-    }
-    submit_trx_payload["params"].append(blob)
-    submit_trx_payload["params"].append(signed_hash_hex)
-    submit_trx_payload["params"].append(from_account["public_key"])
-    submit_trx_payload["params"].append(finalise_response["result"]["txID"])
-    finalise_response = construction_endpoint_request(client, submit_trx_payload,
-                                                      "submit_stake_tokens")
+    build_response = construction_endpoint_request(client, build_txn_payload,
+                                                   f"build_stake_tokens_from-{from_account['wallet_address']}_to- {to_validator}")
+    build_response, finalise_response, signed_hash_hex = finalize_transaction_method(build_txn_payload, client,
+                                                                                     from_account, build_response)
+    finalise_response = submit_transaction_method(build_response, client, finalise_response, from_account,
+                                                  signed_hash_hex)
     print(
         f" Txn {finalise_response['result']['txID']} successfully staked by wallet {from_account['wallet_address']} to validator {to_validator}")
 
@@ -97,16 +81,20 @@ def transfer_tokens_method(client, from_account, to_account):
     }
     build_txn_payload["params"]["actions"].append(action_tokentransfer_transaction)
     build_txn_payload["params"]["feePayer"] = str(from_account["wallet_address"])
+    build_response = construction_endpoint_request(client, build_txn_payload,
+                                                   f"build_transfer_tokens_from-{from_account['wallet_address']}"
+                                                   f"to-{to_account['wallet_address']}")
+
     build_response, finalise_response, signed_hash_hex = finalize_transaction_method(build_txn_payload, client,
-                                                                                     from_account)
+                                                                                     from_account, build_response)
     finalise_response = submit_transaction_method(build_response, client, finalise_response, from_account,
-                                                  signed_hash_hex, to_account)
+                                                  signed_hash_hex)
     print(
         f" Txn {finalise_response['result']['txID']} successfully transferred tokens from  wallet {from_account['wallet_address']} to  {to_account['wallet_address']}")
     return finalise_response['result']['txID']
 
 
-def submit_transaction_method(build_response, client, finalise_response, from_account, signed_hash_hex, to_account):
+def submit_transaction_method(build_response, client, finalise_response, from_account, signed_hash_hex):
     submit_trx_payload = RequestData.submit_transaction()
     blob = {
         "blob": build_response["result"]["transaction"]["blob"]
@@ -116,11 +104,10 @@ def submit_transaction_method(build_response, client, finalise_response, from_ac
     submit_trx_payload["params"].append(from_account["public_key"])
     submit_trx_payload["params"].append(finalise_response["result"]["txID"])
     return construction_endpoint_request(client, submit_trx_payload,
-                                         "submit_stake_tokens")
+                                         "submit_transaction")
 
 
-def finalize_transaction_method(build_txn_payload, client, from_account):
-    build_response = construction_endpoint_request(client, build_txn_payload, "build_stake_tokens")
+def finalize_transaction_method(build_txn_payload, client, from_account, build_response):
     signed_hash_hex = Signatory.sign(build_response["result"]["transaction"]["hashOfBlobToSign"],
                                      from_account).hex()
     finalise_txn_payload = RequestData.finalise_transaction()
@@ -131,5 +118,5 @@ def finalize_transaction_method(build_txn_payload, client, from_account):
     finalise_txn_payload["params"].append(signed_hash_hex)
     finalise_txn_payload["params"].append(from_account["public_key"])
     finalise_response = construction_endpoint_request(client, finalise_txn_payload,
-                                                      "finalise_stake_tokens")
+                                                      "finalise_transaction")
     return build_response, finalise_response, signed_hash_hex
