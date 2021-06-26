@@ -233,8 +233,8 @@ public class DispatcherModule extends AbstractModule {
 				false
 			));
 
-		final var ledgerUpdateKey = new TypeLiteral<EventProcessor<LedgerUpdate>>() { };
-		Multibinder.newSetBinder(binder(), ledgerUpdateKey, ProcessOnDispatch.class);
+		bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(LedgerUpdate.class)).in(Scopes.SINGLETON);
 
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() { });
 
@@ -450,16 +450,4 @@ public class DispatcherModule extends AbstractModule {
 		};
 	}
 
-	@Provides
-	@Singleton
-	private EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<LedgerUpdate>> processors,
-		Environment environment
-	) {
-		var dispatcher = environment.getDispatcher(LedgerUpdate.class);
-		return u -> {
-			dispatcher.dispatch(u);
-			processors.forEach(e -> e.process(u));
-		};
-	}
 }
