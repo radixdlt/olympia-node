@@ -47,6 +47,18 @@ public final class RERulesConfig {
 		this.minimumCompletedProposalsPercentage = minimumCompletedProposalsPercentage;
 	}
 
+	public static RERulesConfig testingDefault() {
+		return new RERulesConfig(
+			false,
+			10,
+			1,
+			Amount.ofTokens(10),
+			1,
+			Amount.ofTokens(10),
+			9800
+		);
+	}
+
 	public Amount getMinimumStake() {
 		return minimumStake;
 	}
@@ -73,6 +85,18 @@ public final class RERulesConfig {
 
 	public int getMinimumCompletedProposalsPercentage() {
 		return minimumCompletedProposalsPercentage;
+	}
+
+	public RERulesConfig overrideFees(boolean fees) {
+		return new RERulesConfig(
+			fees,
+			this.maxRounds,
+			this.rakeIncreaseDebouncerEpochLength,
+			this.minimumStake,
+			this.unstakingEpochDelay,
+			this.rewardsPerProposal,
+			this.minimumCompletedProposalsPercentage
+		);
 	}
 
 	public RERulesConfig overrideMaxRounds(long maxRounds) {

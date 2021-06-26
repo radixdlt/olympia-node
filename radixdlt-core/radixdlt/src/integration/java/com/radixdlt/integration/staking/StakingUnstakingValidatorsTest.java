@@ -28,6 +28,7 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.util.Modules;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
@@ -75,6 +76,7 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.statecomputer.InvalidProposedTxn;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
@@ -126,20 +128,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class StakingUnstakingValidatorsTest {
 	private static final Logger logger = LogManager.getLogger();
 	private static final Amount REWARDS_PER_PROPOSAL = Amount.ofTokens(10);
-	private static final RERulesConfig config1 = new RERulesConfig(
-		false, 100, 2, Amount.ofTokens(10), 1, REWARDS_PER_PROPOSAL, 9800
-	);
-	private static final RERulesConfig config2 = new RERulesConfig(
-		false, 10, 2, Amount.ofTokens(10), 1, REWARDS_PER_PROPOSAL, 9800
-	);
+	private static final RERulesConfig config = RERulesConfig.testingDefault();
 
 	@Parameterized.Parameters
 	public static Collection<Object[]> forksModule() {
 		return List.of(new Object[][] {
-			{new RadixEngineForksLatestOnlyModule(config1), false, 100},
-			{new ForkOverwritesWithShorterEpochsModule(config2), false, 10},
-			{new RadixEngineForksLatestOnlyModule(config1), true, 100},
-			{new ForkOverwritesWithShorterEpochsModule(config2), true, 10},
+			{new RadixEngineForksLatestOnlyModule(config.overrideMaxRounds(100)), false, 100},
+			{new ForkOverwritesWithShorterEpochsModule(config), false, 10},
+			{new RadixEngineForksLatestOnlyModule(config.overrideMaxRounds(100).overrideFees(true)), true, 100},
+			{new ForkOverwritesWithShorterEpochsModule(config.overrideFees(true)), true, 10},
 		});
 	}
 
@@ -247,6 +244,18 @@ public class StakingUnstakingValidatorsTest {
 						.addBinding().toProvider(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() { });
 				}
 
+				/*
+				@ProvidesIntoSet
+				EventProcessorOnDispatch<?> failOnEvent() {
+					return new EventProcessorOnDispatch<>(
+						InvalidProposedTxn.class,
+						i -> {
+							throw new IllegalStateException("Invalid proposed transaction occurred: " + i, i.getException().getCause());
+						}
+					);
+				}
+				 */
+
 				@Provides
 				private PeersView peersView(@Self BFTNode self) {
 					return () -> allNodes.stream()
@@ -297,6 +306,7 @@ public class StakingUnstakingValidatorsTest {
 	}
 
 	private static class NodeState {
+		private final String self;
 		private final DeterministicSavedLastEvent<LedgerUpdate> lastLedgerUpdate;
 		private final EpochChange epochChange;
 		private final BerkeleyLedgerEntryStore entryStore;
@@ -304,15 +314,21 @@ public class StakingUnstakingValidatorsTest {
 
 		@Inject
 		private NodeState(
+			@Self String self,
 			DeterministicSavedLastEvent<LedgerUpdate> lastLedgerUpdate,
 			EpochChange epochChange,
 			BerkeleyLedgerEntryStore entryStore,
 			Forks forks
 		) {
+			this.self = self;
 			this.lastLedgerUpdate = lastLedgerUpdate;
 			this.epochChange = epochChange;
 			this.entryStore = entryStore;
 			this.forks = forks;
+		}
+
+		public String getSelf() {
+			return self;
 		}
 
 		public long getEpoch() {
@@ -477,10 +493,9 @@ public class StakingUnstakingValidatorsTest {
 			});
 		}
 
-		var node = this.nodes.get(0).getInstance(Key.get(BFTNode.class, Self.class));
-		logger.info("Node {}", node);
-		logger.info("Initial {}", Amount.ofSubunits(initialCount));
 		var nodeState = reloadNodeState();
+		logger.info("Node {}", nodeState.getSelf());
+		logger.info("Initial {}", Amount.ofSubunits(initialCount));
 		var epoch = nodeState.getEpoch();
 		logger.info("Epoch {}", epoch);
 		var maxEmissions = UInt256.from(maxRounds).multiply(REWARDS_PER_PROPOSAL.toSubunits()).multiply(UInt256.from(epoch - 1));
