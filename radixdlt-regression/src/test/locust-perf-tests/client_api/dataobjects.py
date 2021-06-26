@@ -22,3 +22,23 @@ class RequestData():
             },
             "id": 0
         }
+
+    @staticmethod
+    def finalise_transaction():
+        return {
+            "method": "construction.finalize_transaction",
+            "params": [
+
+            ],
+            "id": 0
+        }
+
+    @staticmethod
+    def submit_transaction():
+        return {
+            "method": "construction.submit_transaction",
+            "params": [
+
+            ],
+            "id": 0
+        }
