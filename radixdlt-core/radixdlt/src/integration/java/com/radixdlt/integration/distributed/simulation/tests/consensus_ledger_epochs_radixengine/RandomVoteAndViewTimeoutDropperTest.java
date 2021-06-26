@@ -54,7 +54,14 @@ public class RandomVoteAndViewTimeoutDropperTest {
 		)
 		.addRadixEngineConfigModules(
 			RadixEngineConfig.asModule(2, 50, 5),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2, Amount.ofTokens(10))),
+			new RadixEngineForksLatestOnlyModule(
+				new RERulesConfig(
+					false,
+					100,
+					2,
+					Amount.ofTokens(10),
+					Amount.ofTokens(10)
+				)),
 			new ForksModule()
 		)
 		.ledgerAndRadixEngineWithEpochHighView()

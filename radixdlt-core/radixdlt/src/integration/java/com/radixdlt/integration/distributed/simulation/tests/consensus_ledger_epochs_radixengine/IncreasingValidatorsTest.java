@@ -50,7 +50,14 @@ public class IncreasingValidatorsTest {
 		.numNodes(50, 2) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware pacemaker
 		.addRadixEngineConfigModules(
 			RadixEngineConfig.asModule(2, 40, 5),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2, Amount.ofTokens(10))),
+			new RadixEngineForksLatestOnlyModule(
+				new RERulesConfig(
+					false,
+					100,
+					2,
+					Amount.ofTokens(10),
+					Amount.ofTokens(10)
+				)),
 			new ForksModule()
 		)
 		.ledgerAndRadixEngineWithEpochHighView()

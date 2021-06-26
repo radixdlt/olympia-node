@@ -69,7 +69,9 @@ public class PacemakerTest {
 			MempoolConfig.asModule(10, 10),
 			RadixEngineConfig.asModule(1, Integer.MAX_VALUE, 50),
 			new ForksModule(),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100L, 2, Amount.ofTokens(10))),
+			new RadixEngineForksLatestOnlyModule(
+				new RERulesConfig(
+					false, 100L, 2, Amount.ofTokens(10), Amount.ofTokens(10))),
 			new MockedGenesisModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new AbstractModule() {

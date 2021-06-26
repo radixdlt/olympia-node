@@ -142,7 +142,14 @@ public class RecoveryTest {
 			new MockedGenesisModule(),
 			new CryptoModule(),
 			new ForksModule(),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100L, 2, Amount.ofTokens(10))),
+			new RadixEngineForksLatestOnlyModule(
+				new RERulesConfig(
+					false,
+					100L,
+					2,
+					Amount.ofTokens(10),
+					Amount.ofTokens(10)
+				)),
 			new RadixEngineModule(),
 			new AbstractModule() {
 				@Override
@@ -177,7 +184,14 @@ public class RecoveryTest {
 		final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
 
 		return Guice.createInjector(
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, epochCeilingView, 2, Amount.ofTokens(10))),
+			new RadixEngineForksLatestOnlyModule(
+				new RERulesConfig(
+					false,
+					epochCeilingView,
+					2,
+					Amount.ofTokens(10),
+					Amount.ofTokens(10)
+				)),
 			new ForksModule(),
 			MempoolConfig.asModule(10, 10),
 			RadixEngineConfig.asModule(1, Integer.MAX_VALUE, 50),

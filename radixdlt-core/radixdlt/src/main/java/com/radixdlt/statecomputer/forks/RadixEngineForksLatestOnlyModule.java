@@ -21,6 +21,7 @@ package com.radixdlt.statecomputer.forks;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
+import com.radixdlt.atommodel.tokens.Amount;
 
 import java.util.Comparator;
 import java.util.Set;
@@ -34,6 +35,18 @@ public class RadixEngineForksLatestOnlyModule extends AbstractModule {
 
 	public RadixEngineForksLatestOnlyModule(RERulesConfig config) {
 		this.config = config;
+	}
+
+	public RadixEngineForksLatestOnlyModule() {
+		this(
+			new RERulesConfig(
+				false,
+				10,
+				2,
+				Amount.ofTokens(10),
+				Amount.ofTokens(10)
+			)
+		);
 	}
 
 	@Override

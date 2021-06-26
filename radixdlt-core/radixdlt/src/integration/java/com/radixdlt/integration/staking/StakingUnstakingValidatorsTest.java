@@ -43,7 +43,6 @@ import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
 import com.radixdlt.atom.actions.UpdateRake;
 import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
-import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.Amount;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
@@ -126,21 +125,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RunWith(Parameterized.class)
 public class StakingUnstakingValidatorsTest {
 	private static final Logger logger = LogManager.getLogger();
+	private static final Amount REWARDS_PER_PROPOSAL = Amount.ofTokens(10);
 
 	@Parameterized.Parameters
 	public static Collection<Object[]> forksModule() {
 		return List.of(new Object[][] {
 			{new RadixEngineForksLatestOnlyModule(
-				new RERulesConfig(false, 100, 2, Amount.ofTokens(10))
+				new RERulesConfig(false, 100, 2, Amount.ofTokens(10), REWARDS_PER_PROPOSAL)
 			), false, 100},
 			{new ForkOverwritesWithShorterEpochsModule(
-				new RERulesConfig(false, 10, 2, Amount.ofTokens(10))
+				new RERulesConfig(false, 10, 2, Amount.ofTokens(10), REWARDS_PER_PROPOSAL)
 			), false, 10},
 			{new RadixEngineForksLatestOnlyModule(
-				new RERulesConfig(true, 100, 2, Amount.ofTokens(10))
+				new RERulesConfig(true, 100, 2, Amount.ofTokens(10), REWARDS_PER_PROPOSAL)
 			), true, 100},
 			{new ForkOverwritesWithShorterEpochsModule(
-				new RERulesConfig(true, 10, 2, Amount.ofTokens(10))
+				new RERulesConfig(true, 10, 2, Amount.ofTokens(10), REWARDS_PER_PROPOSAL)
 			), true, 10},
 		});
 	}
@@ -483,7 +483,7 @@ public class StakingUnstakingValidatorsTest {
 		var nodeState = reloadNodeState();
 		var epoch = nodeState.getEpoch();
 		logger.info("Epoch {}", epoch);
-		var maxEmissions = UInt256.from(maxRounds).multiply(EpochUpdateConstraintScrypt.REWARDS_PER_PROPOSAL).multiply(UInt256.from(epoch - 1));
+		var maxEmissions = UInt256.from(maxRounds).multiply(REWARDS_PER_PROPOSAL.toSubunits()).multiply(UInt256.from(epoch - 1));
 		logger.info("Max emissions {}", maxEmissions);
 		var finalCount = nodeState.getTotalNativeTokens();
 

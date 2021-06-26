@@ -74,7 +74,7 @@ public class StakeTokensTest {
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScryptV2(2)
 				),
-				new StakeTokensConstructorV3()
+				new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits())
 			)
 		);
 

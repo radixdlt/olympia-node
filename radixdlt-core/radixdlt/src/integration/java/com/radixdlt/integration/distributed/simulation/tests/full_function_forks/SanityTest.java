@@ -69,7 +69,14 @@ public class SanityTest {
 			)
 			.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
 			.addRadixEngineConfigModules(
-				new ForkOverwritesWithShorterEpochsModule(new RERulesConfig(fees, 10, 2, Amount.ofTokens(10))),
+				new ForkOverwritesWithShorterEpochsModule(
+					new RERulesConfig(
+						fees,
+						10,
+						2,
+						Amount.ofTokens(10),
+						Amount.ofTokens(10)
+					)),
 				new ForksModule()
 			)
 			.addNodeModule(MempoolConfig.asModule(1000, 10))

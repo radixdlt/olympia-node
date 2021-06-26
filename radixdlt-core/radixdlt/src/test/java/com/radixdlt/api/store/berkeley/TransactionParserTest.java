@@ -103,7 +103,7 @@ public class TransactionParserTest {
 	public void setup() throws Exception {
 		final var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new RoundUpdateConstraintScrypt(10));
-		cmAtomOS.load(new EpochUpdateConstraintScrypt(10));
+		cmAtomOS.load(new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits()));
 		cmAtomOS.load(new ValidatorConstraintScryptV2(2));
 		cmAtomOS.load(new TokensConstraintScryptV3());
 		cmAtomOS.load(new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()));
@@ -123,9 +123,9 @@ public class TransactionParserTest {
 			.put(MintToken.class, new MintTokenConstructor())
 			.put(TransferToken.class, new TransferTokensConstructorV2())
 			.put(PayFee.class, new PayFeeConstructorV2())
-			.put(StakeTokens.class, new StakeTokensConstructorV3())
+			.put(StakeTokens.class, new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()))
 			.put(UnstakeTokens.class, new UnstakeTokensConstructorV2())
-			.put(NextEpoch.class, new NextEpochConstructorV3())
+			.put(NextEpoch.class, new NextEpochConstructorV3(Amount.ofTokens(10).toSubunits()))
 			.put(CreateSystem.class, new CreateSystemConstructorV2())
 			.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())
 			.build();

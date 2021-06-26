@@ -26,7 +26,6 @@ import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
 import com.radixdlt.atommodel.system.state.ValidatorBFTData;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
-import com.radixdlt.atommodel.tokens.TokenUtils;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
@@ -68,15 +67,15 @@ import java.util.function.Supplier;
 import static com.radixdlt.atommodel.validators.state.PreparedRakeUpdate.RAKE_MAX;
 
 public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
-
-	public static final UInt256 REWARDS_PER_PROPOSAL = TokenUtils.SUB_UNITS.multiply(UInt256.TEN);
 	private final long maxRounds;
+	private final UInt256 rewardsPerProposal;
 
-	public EpochUpdateConstraintScrypt(long maxRounds) {
+	public EpochUpdateConstraintScrypt(long maxRounds, UInt256 rewardsPerProposal) {
 		this.maxRounds = maxRounds;
+		this.rewardsPerProposal = rewardsPerProposal;
 	}
 
-	public static final class ProcessExittingStake implements ReducerState {
+	public final class ProcessExittingStake implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeSet<ExittingStake> exitting = new TreeSet<>(
 			(o1, o2) -> Arrays.compare(o1.dataKey(), o2.dataKey())
@@ -123,7 +122,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		}
 	}
 
-	private static final class RewardingValidators implements ReducerState {
+	private final class RewardingValidators implements ReducerState {
 		private final TreeMap<ECPublicKey, ValidatorStakeData> curStake = new TreeMap<>(KeyComparator.instance());
 		private final TreeMap<ECPublicKey, Long> proposalsCompleted = new TreeMap<>(KeyComparator.instance());
 		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake = new TreeMap<>(KeyComparator.instance());
@@ -157,7 +156,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 				throw new IllegalStateException();
 			}
 			var numProposals = proposalsCompleted.remove(k);
-			var nodeEmission = REWARDS_PER_PROPOSAL.multiply(UInt256.from(numProposals));
+			var nodeEmission = rewardsPerProposal.multiply(UInt256.from(numProposals));
 
 			return new LoadingStake(k, validatorStakeData -> {
 				int rakePercentage = validatorStakeData.getRakePercentage();

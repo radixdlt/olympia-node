@@ -39,7 +39,8 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 				true,
 				TWO_WEEKS_WORTH_OF_ROUNDS,
 				TWO_WEEKS_WORTH_OF_EPOCHS,
-				Amount.ofTokens(100)
+				Amount.ofTokens(100), // Minimum stake
+				Amount.ofTokens(0)   // No rewards for epoch 1 where it will only be radix foundation nodes
 			)
 		);
 	}

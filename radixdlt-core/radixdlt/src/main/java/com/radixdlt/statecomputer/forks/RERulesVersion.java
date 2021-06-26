@@ -94,7 +94,7 @@ public enum RERulesVersion {
 			v4.load(new StakingConstraintScryptV4(config.getMinimumStake().toSubunits()));
 			v4.load(new MutexConstraintScrypt());
 			v4.load(new RoundUpdateConstraintScrypt(maxRounds));
-			v4.load(new EpochUpdateConstraintScrypt(maxRounds));
+			v4.load(new EpochUpdateConstraintScrypt(maxRounds, config.getRewardsPerProposal().toSubunits()));
 			var betanet4 = new ConstraintMachineConfig(
 				v4.virtualizedUpParticles(),
 				v4.getProcedures(),
@@ -109,11 +109,11 @@ public enum RERulesVersion {
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(DeprecatedUnstakeTokens.class, new DeprecatedUnstakeTokensConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
-				.put(NextEpoch.class, new NextEpochConstructorV3())
+				.put(NextEpoch.class, new NextEpochConstructorV3(config.getRewardsPerProposal().toSubunits()))
 				.put(NextRound.class, new NextViewConstructorV3())
 				.put(RegisterValidator.class, new RegisterValidatorConstructor())
 				.put(SplitToken.class, new SplitTokenConstructor())
-				.put(StakeTokens.class, new StakeTokensConstructorV3())
+				.put(StakeTokens.class, new StakeTokensConstructorV3(config.getMinimumStake().toSubunits()))
 				.put(UnstakeTokens.class, new UnstakeTokensConstructorV2())
 				.put(UnstakeOwnership.class, new UnstakeOwnershipConstructor())
 				.put(TransferToken.class, new TransferTokensConstructorV2())

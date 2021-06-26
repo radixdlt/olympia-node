@@ -23,7 +23,6 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.NextEpoch;
-import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.ValidatorBFTData;
@@ -61,6 +60,11 @@ import static com.radixdlt.atommodel.validators.state.PreparedRakeUpdate.RAKE_MA
 
 public class NextEpochConstructorV3 implements ActionConstructor<NextEpoch> {
 	private static Logger logger = LogManager.getLogger();
+	private final UInt256 rewardsPerProposal;
+
+	public NextEpochConstructorV3(UInt256 rewardsPerProposal) {
+		this.rewardsPerProposal = rewardsPerProposal;
+	}
 
 	private static ValidatorStakeData loadValidatorStakeData(
 		TxBuilder txBuilder,
@@ -148,7 +152,7 @@ public class NextEpochConstructorV3 implements ActionConstructor<NextEpoch> {
 				s -> s.getValidatorKey().equals(k),
 				"Validator not found"
 			);
-			var nodeEmission = EpochUpdateConstraintScrypt.REWARDS_PER_PROPOSAL.multiply(UInt256.from(numProposals));
+			var nodeEmission = rewardsPerProposal.multiply(UInt256.from(numProposals));
 			int rakePercentage = validatorStakeData.getRakePercentage();
 			final UInt256 rakedEmissions;
 			if (rakePercentage != 0 && !nodeEmission.isZero()) {
