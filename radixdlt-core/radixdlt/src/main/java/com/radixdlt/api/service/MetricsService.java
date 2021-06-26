@@ -188,9 +188,6 @@ public class MetricsService {
 		var snapshot = infoSupplier.getInfo();
 
 		appendCounter(builder, "info_configuration_pacemakermaxexponent", pacemakerMaxExponent(snapshot));
-		appendCounter(builder, "info_system_version_system_version_agent_version", agentVersion(snapshot));
-		appendCounter(builder, "info_system_version_system_version_protocol_version", protocolVersion(snapshot));
-
 		appendCounter(builder, "info_epochmanager_currentview_view", currentView(snapshot));
 		appendCounter(builder, "info_epochmanager_currentview_epoch", currentEpoch(snapshot));
 		appendCounter(builder, "total_peers", systemConfigService.getNetworkingPeersCount());
@@ -233,14 +230,6 @@ public class MetricsService {
 	private Number currentEpoch(Map<String, Map<String, Object>> snapshot) {
 		var currentView = (Map<String, Object>) snapshot.get("epochManager").get("currentView");
 		return (Number) currentView.get("epoch");
-	}
-
-	private Number protocolVersion(Map<String, Map<String, Object>> snapshot) {
-		return (Number) snapshot.get(Radix.SYSTEM_VERSION_KEY).get("protocol_version");
-	}
-
-	private Number agentVersion(Map<String, Map<String, Object>> snapshot) {
-		return (Number) snapshot.get(Radix.SYSTEM_VERSION_KEY).get("agent_version");
 	}
 
 	private Number pacemakerMaxExponent(Map<String, Map<String, Object>> snapshot) {

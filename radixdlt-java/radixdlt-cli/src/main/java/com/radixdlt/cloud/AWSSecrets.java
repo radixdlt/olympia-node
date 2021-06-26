@@ -15,15 +15,13 @@ import com.radixdlt.crypto.RadixKeyStore;
 import com.radixdlt.crypto.exception.KeyStoreException;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.identifiers.NodeAddress;
 import com.radixdlt.utils.AWSSecretManager;
 import com.radixdlt.utils.AWSSecretsOutputOptions;
-import com.radixdlt.utils.functional.Failure;
-import com.radixdlt.utils.functional.Result;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.Security;
 import java.util.Arrays;
@@ -107,6 +105,7 @@ public class AWSSecrets {
 							.collect(Collectors.toList())
 						: listOfNodes;
 
+			System.out.println("name prefix " + namePrefix);
 			generateAndStoreKey(networkName, namePrefix, defaultKeyPassword, awsSecretsOutputOptions, nodes);
 			if (namePrefix.equals(CORE_NODE_PREFIX)) {
 				System.out.println("Core node. Generate staking keys");
@@ -137,9 +136,6 @@ public class AWSSecrets {
 		generateAndStoreKey(networkName, CORE_NODE_PREFIX, defaultKeyPassword, awsSecretsOutputOptions, nodes, Boolean.TRUE);
 	}
 
-	//todo: backwards compatibility
-	// empty password
-	// change keystore password
 	private static void generateAndStoreKey(
 		String networkName,
 		String namePrefix,
@@ -152,19 +148,21 @@ public class AWSSecrets {
 			var keyStoreName = String.format("%s.ks", nodeName);
 			var keyStoreSecretName = String.format("%s.ks", nodeName);
 			var passwordName = "password";
+			var publicKeyFileSecretName = String.format("%s/%s/public_key", networkName, nodeName);
 			if (namePrefix.equals(CORE_NODE_PREFIX)) {
 				if (isStaker) {
 					keyStoreSecretName = "staker_key";
 					passwordName = "staker_password";
 					keyStoreName = String.format("%s_stake.ks", nodeName);
+					publicKeyFileSecretName = String.format("%s/%s/staker_public_key", networkName, nodeName);
 				} else {
 					keyStoreSecretName = "validator_key";
 					passwordName = "validator_password";
+					publicKeyFileSecretName = String.format("%s/%s/validator_public_key", networkName, nodeName);
 				}
 			}
 
 			final var keyFileSecretName = String.format("%s/%s/%s", networkName, nodeName, keyStoreSecretName);
-			final var publicKeyFileSecretName = String.format("%s/%s/public_key", networkName, nodeName);
 			final var passwordSecretName = String.format("%s/%s/%s", networkName, nodeName, passwordName);
 			final var password = generatePassword(defaultKeyPassword);
 			try (var capture = OutputCapture.startStdout()) {
@@ -181,16 +179,14 @@ public class AWSSecrets {
 				}
 
 				var keyFilePath = Paths.get(keyStoreName);
-				//get public key and push to AWS: bip31 and hex versions. Check keygen
 				var keystoreFile = new File(keyFilePath.toString());
-
 				var keyFileAwsSecret = new HashMap<String, Object>();
 				var publicKeyFileAwsSecret = new HashMap<String, Object>();
 				try {
 					var data = Files.readAllBytes(keyFilePath);
 					keyFileAwsSecret.put("key", data);
-					var pubKey = returnPublicKey(keystoreFile, password, keyStoreName);
-					publicKeyFileAwsSecret.put("base64", pubKey.toBase64());
+					var pubKey = returnPublicKey(keystoreFile, password);
+					publicKeyFileAwsSecret.put("bech32", NodeAddress.of(pubKey));
 					publicKeyFileAwsSecret.put("hex", pubKey.toHex());
 				} catch (IOException e) {
 					throw new IllegalStateException("While reading validator keys", e);
@@ -207,14 +203,14 @@ public class AWSSecrets {
 		}
 	}
 
-	private static ECPublicKey returnPublicKey(File keystoreFile, String password, String keypairName) {
+	private static ECPublicKey returnPublicKey(File keystoreFile, String password) {
 		if (!keystoreFile.exists() || !keystoreFile.canRead()) {
 			System.out.format("keystore file %s does not exist or is not accessible\n", keystoreFile.toString());
 			System.exit(1);
 		}
 		ECKeyPair keyPair = null;
 		try {
-			keyPair = RadixKeyStore.fromFile(keystoreFile, password.toCharArray(), false)
+			keyPair = RadixKeyStore.fromFile(keystoreFile, password.toCharArray(), true)
 				.readKeyPair(KEYPAIR_NAME, false);
 		} catch (KeyStoreException e) {
 			e.printStackTrace();

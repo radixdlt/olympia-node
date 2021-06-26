@@ -22,6 +22,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.identifiers.NodeAddress;
 import com.radixdlt.network.messaging.InboundMessage;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
@@ -205,6 +206,15 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) {
+		log.info("Channel closed {} at state {} [initiator ?= {}, remoteNodeId = {}, nodeAddress = {}, uri = {}]",
+			ctx.channel().remoteAddress(),
+			this.state,
+			this.isInitiator,
+			this.remoteNodeId,
+			NodeAddress.of(this.remoteNodeId.getPublicKey()),
+			this.uri
+		);
+
 		final var prevState = this.state;
 		this.state = ChannelState.INACTIVE;
 		this.inboundMessageSink.onComplete();
@@ -216,7 +226,16 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-		log.info("Channel {} closed with exception: {}", ctx.channel().remoteAddress(), cause.getMessage());
+		log.warn("Exception on channel {} at state {} [initiator ?= {}, remoteNodeId = {}, nodeAddress = {}, uri = {}]: {}",
+			ctx.channel().remoteAddress(),
+			this.state,
+			this.isInitiator,
+			this.remoteNodeId,
+			NodeAddress.of(this.remoteNodeId.getPublicKey()),
+			this.uri,
+			cause.getMessage()
+		);
+
 		ctx.close();
 	}
 

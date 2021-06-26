@@ -63,37 +63,12 @@ public final class Keys {
 
 	/**
 	 * Read an {@link ECKeyPair} from the specified {@link RadixKeyStore}, using key pair name and environment variables
-	 * specific to staker. If keystore or key pair don't exists, they are created.
-	 *
-	 * @param keyStore Key store path.
-	 * @param keyStorePassword Key store password.
-	 */
-	public static ECKeyPair readStakerKey(String keyStore, String keyStorePassword) throws IOException, CryptoException {
-		var keyStorePasswordChar = passwordToCharArray(keyStorePassword);
-		var keyPassword = readPassword("RADIX_STAKER_KEY_PASSWORD");
-		return readKeyPassword(keyStore, "wallet", keyStorePasswordChar, keyPassword, true);
-	}
-
-	/**
-	 * Read an {@link ECKeyPair} from the specified {@link RadixKeyStore}, using key pair name and environment variables
 	 * specific to validator. If keystore or key pair don't exists, they are created.
 	 *
 	 * @param keyStore Key store path.
 	 */
 	public static ECKeyPair readValidatorKey(String keyStore) throws IOException, CryptoException {
 		return readKey(keyStore, "node", "RADIX_VALIDATOR_KEYSTORE_PASSWORD", "RADIX_VALIDATOR_KEY_PASSWORD", true);
-	}
-	/**
-	 * Read an {@link ECKeyPair} from the specified {@link RadixKeyStore}, using key pair name and environment variables
-	 * specific to validator. If keystore or key pair don't exists, they are created.
-	 *
-	 * @param keyStore Key store path.
-	 * @param keyStorePassword Key store password.
-	 */
-	public static ECKeyPair readValidatorKey(String keyStore, String keyStorePassword) throws IOException, CryptoException {
-		var keyStorePasswordChar = passwordToCharArray(keyStorePassword);
-		var keyPassword = readPassword("RADIX_VALIDATOR_KEY_PASSWORD");
-		return readKeyPassword(keyStore, "node", keyStorePasswordChar, keyPassword, true);
 	}
 
 	/**
@@ -120,31 +95,8 @@ public final class Keys {
 	) throws IOException, CryptoException {
 		var keyPassword = readPassword(keyPasswordEnv);
 		var keyStorePassword = readPassword(keyStorePasswordEnv);
-		return readKeyPassword(keyStorePath, keyName, keyStorePassword, keyPassword, create);
-	}
-	/**
-	 * Read an {@link ECKeyPair} from the specified {@link RadixKeyStore},
-	 * using the specified key pair name and environment variables for passwords.
-	 * <p>
-	 * If the specified key store does not exist, then it will be created,
-	 * if possible and {@code create} parameter is set to {@code true}.
-	 *
-	 * @param keyStorePath The path to the {@link RadixKeyStore}
-	 * @param keyName The name of the key within the key store to read
-	 * @param keyStorePassword The variable holding the keystore password. This variable is read and used
-	 * as the password for accessing the key store overall.  If the variable does not exist, no password is used.
-	 * @param keyPassword The variable holding the key password.  This variable is read and used as
-	 * the password for accessing the key within the store.  If the variable does not exist, no password is used.
-	 * @param create If set to {@code true}, then keystore file and keypair will be created if not exists.
-	 *
-	 * @return The key read from the key store
-	 */
-	private static ECKeyPair readKeyPassword(
-		String keyStorePath, String keyName,
-		char[] keyStorePassword, char[] keyPassword,
-		boolean create
-	) throws IOException, CryptoException {
-		try (var ks = RadixKeyStore.fromFile(new File(keyStorePath), keyPassword, create)) {
+
+		try (var ks = RadixKeyStore.fromFile(new File(keyStorePath), keyStorePassword, create)) {
 			return ks.readKeyPair(keyName, create);
 		} finally {
 			reset(keyPassword, keyStorePassword);
@@ -154,8 +106,5 @@ public final class Keys {
 	private static char[] readPassword(String envVar) {
 		var envValue = System.getenv(envVar);
 		return envValue == null ? null : envValue.toCharArray();
-	}
-	private static char[] passwordToCharArray(String text) {
-		return text == null ? null : text.toCharArray();
 	}
 }
