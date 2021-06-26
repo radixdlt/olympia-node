@@ -157,9 +157,9 @@ public final class GenerateUniverses {
 		if (validatorsCount > 0) {
 			System.out.format("export RADIXDLT_GENESIS_TXN=%s%n", Bytes.toHexString(genesis.getPayload()));
 		} else {
-			var writer = new BufferedWriter(new FileWriter("genesis.json"));
-			writer.write(new JSONObject().put("genesis", Bytes.toHexString(genesis.getPayload())).toString());
-			writer.close();
+			try (var writer = new BufferedWriter(new FileWriter("genesis.json"))) {
+				writer.write(new JSONObject().put("genesis", Bytes.toHexString(genesis.getPayload())).toString());
+			}
 		}
 	}
 
