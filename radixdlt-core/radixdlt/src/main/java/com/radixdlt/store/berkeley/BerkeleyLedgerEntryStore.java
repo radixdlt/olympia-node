@@ -17,7 +17,6 @@
 
 package com.radixdlt.store.berkeley;
 
-import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;

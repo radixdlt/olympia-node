@@ -86,6 +86,7 @@ public final class ConstraintMachine {
 		private final CMStore.Transaction dbTxn;
 		private final Predicate<Particle> virtualStoreLayer;
 		private final SubstateDeserialization deserialization;
+		private int bootupCount = 0;
 
 		CMValidationState(
 			SubstateDeserialization deserialization,
@@ -120,10 +121,10 @@ public final class ConstraintMachine {
 			return store.loadUpParticle(dbTxn, substateId, deserialization);
 		}
 
-		public void bootUp(int instructionIndex, Substate substate, Supplier<ByteBuffer> buffer) {
-			localUpParticles.put(instructionIndex, Pair.of(substate, buffer));
+		public void bootUp(Substate substate, Supplier<ByteBuffer> buffer) {
+			localUpParticles.put(bootupCount, Pair.of(substate, buffer));
+			bootupCount++;
 		}
-
 
 		public void virtualRead(Substate substate) throws SubstateNotFoundException, InvalidVirtualSubstateException {
 			if (remoteDownParticles.contains(substate.getId())) {
@@ -323,7 +324,7 @@ public final class ConstraintMachine {
 						arg = null;
 						nextParticle = substate.getParticle();
 						o = nextParticle;
-						validationState.bootUp(instIndex, substate, inst::getDataByteBuffer);
+						validationState.bootUp(substate, inst::getDataByteBuffer);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.VDOWN) {
 						substate = inst.getData();
 						arg = null;
