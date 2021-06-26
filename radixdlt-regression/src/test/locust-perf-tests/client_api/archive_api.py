@@ -5,21 +5,21 @@ from client_api import endpoints
 from client_api.datapool import DataPool
 from helpers import post_headers, logOnError
 
-testData = DataPool()
+with open('client_api/data.json', "r") as f:
+    data = json.load(f)
+
+testData = DataPool(data)
 
 
 def get_existing_entity(client, entity):
-    for key, value in testData.__class__.__dict__.items():
-        datapoolEntities = ['accounts', 'validators']
 
-        if key == entity and key in datapoolEntities:
-            if len(value) != 0:
-                return value[randint(0, len(value) - 1)]
+    return testData[entity][randint(0, len(testData[entity]) - 1)]
+
 
 
 def archive_endpoint_request(client, payload, name):
     archive_endpoint = endpoints.get_archive_endpoint()
-    return post_rpc_request(client, name, payload,archive_endpoint)
+    return post_rpc_request(client, name, payload, archive_endpoint)
 
 
 def post_rpc_request(client, name, payload, endpoint):
@@ -37,5 +37,4 @@ def post_rpc_request(client, name, payload, endpoint):
 
 def construction_endpoint_request(client, payload, name):
     construction_endpoint = endpoints.get_construction_endpoint()
-    return post_rpc_request(client,name,payload,construction_endpoint)
-
+    return post_rpc_request(client, name, payload, construction_endpoint)
