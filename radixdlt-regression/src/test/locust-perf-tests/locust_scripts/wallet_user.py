@@ -23,8 +23,10 @@ class UserBehavior(SequentialTaskSet):
     @task()
     def transfer_token(self):
         from_account = get_existing_entity("accounts")
-        to_account = None
 
-        while from_account["private_key"] == to_account["private_key"]:
+        while True:
             to_account = get_existing_entity("accounts")
+            if from_account["private_key"] != to_account["private_key"]:
+                break
+
         transfer_tokens_method(self.client, from_account, to_account)
