@@ -1,0 +1,12 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+bech32  = "==1.2.0"
+boto3 = "==1.17.101"
+locust = "==1.5.3"
+
+[requires]
+python_version = "3.7.6"
