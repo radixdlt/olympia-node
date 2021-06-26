@@ -22,6 +22,6 @@ import com.radixdlt.identifiers.REAddr;
 
 import java.util.Optional;
 
-public interface ReadableAddrs {
+public interface ImmutableAddrs {
 	Optional<Particle> loadAddr(REAddr addr);
 }

@@ -54,9 +54,9 @@ public final class UpProcedure<S extends ReducerState, U extends Particle> imple
 	public ReducerResult call(
 		Object o,
 		ReducerState reducerState,
-		ReadableAddrs readableAddrs,
+		ImmutableAddrs immutableAddrs,
 		ExecutionContext context
 	) throws ProcedureException {
-		return upReducer.reduce((S) reducerState, (U) o, context, readableAddrs);
+		return upReducer.reduce((S) reducerState, (U) o, context, immutableAddrs);
 	}
 }

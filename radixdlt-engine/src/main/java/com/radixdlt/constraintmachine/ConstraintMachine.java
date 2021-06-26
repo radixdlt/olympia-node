@@ -20,7 +20,6 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
@@ -100,27 +99,17 @@ public final class ConstraintMachine {
 			this.store = store;
 		}
 
-		public ReadableAddrs readableAddrs() {
-			return addr -> {
-				if (addr.isSystem()) {
-					return localUpParticles.values().stream()
-						.map(Pair::getFirst)
-						.map(Substate::getParticle)
-						.filter(EpochData.class::isInstance)
-						.findFirst()
-						.or(() -> store.loadAddr(dbTxn, addr, deserialization));
-				} else {
-					return localUpParticles.values().stream()
-						.map(Pair::getFirst)
-						.map(Substate::getParticle)
-						.filter(TokenResource.class::isInstance)
-						.map(TokenResource.class::cast)
-						.filter(p -> p.getAddr().equals(addr))
-						.findFirst()
-						.map(Particle.class::cast)
-						.or(() -> store.loadAddr(dbTxn, addr, deserialization));
-				}
-			};
+		public ImmutableAddrs readableAddrs() {
+			return addr ->
+				localUpParticles.values().stream()
+					.map(Pair::getFirst)
+					.map(Substate::getParticle)
+					.filter(TokenResource.class::isInstance)
+					.map(TokenResource.class::cast)
+					.filter(p -> p.getAddr().equals(addr))
+					.findFirst()
+					.map(Particle.class::cast)
+					.or(() -> store.loadAddr(dbTxn, addr, deserialization));
 		}
 
 		public Optional<Particle> loadUpParticle(SubstateId substateId) {
@@ -227,7 +216,7 @@ public final class ConstraintMachine {
 		Procedure procedure,
 		Object procedureParam,
 		ReducerState reducerState,
-		ReadableAddrs readableAddrs,
+		ImmutableAddrs immutableAddrs,
 		ExecutionContext context
 	) throws SignedSystemException, InvalidPermissionException, AuthorizationException, ProcedureException {
 		// System permissions don't require additional authorization
@@ -239,10 +228,10 @@ public final class ConstraintMachine {
 				this.metering.onUserInstruction(procedure.key(), procedureParam, context);
 			}
 
-			authorization.authorizer().verify(readableAddrs, context);
+			authorization.authorizer().verify(immutableAddrs, context);
 		}
 
-		return procedure.call(procedureParam, reducerState, readableAddrs, context).state();
+		return procedure.call(procedureParam, reducerState, immutableAddrs, context).state();
 	}
 
 	private static class MissingExpectedEndException extends Exception {

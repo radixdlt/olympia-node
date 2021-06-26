@@ -53,9 +53,9 @@ public final class ReadProcedure<D extends Particle, S extends ReducerState> imp
 	public ReducerResult call(
 		Object o,
 		ReducerState reducerState,
-		ReadableAddrs readableAddrs,
+		ImmutableAddrs immutableAddrs,
 		ExecutionContext context
 	) throws ProcedureException {
-		return readReducer.reduce((S) reducerState, (D) o, readableAddrs);
+		return readReducer.reduce((S) reducerState, (D) o, immutableAddrs);
 	}
 }

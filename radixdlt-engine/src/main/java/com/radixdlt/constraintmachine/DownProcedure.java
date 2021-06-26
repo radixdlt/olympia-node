@@ -53,9 +53,9 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 	public ReducerResult call(
 		Object o,
 		ReducerState reducerState,
-		ReadableAddrs readableAddrs,
+		ImmutableAddrs immutableAddrs,
 		ExecutionContext context
 	) throws ProcedureException {
-		return downReducer.reduce((SubstateWithArg<D>) o, (S) reducerState, readableAddrs);
+		return downReducer.reduce((SubstateWithArg<D>) o, (S) reducerState, immutableAddrs);
 	}
 }

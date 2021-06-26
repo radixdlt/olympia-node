@@ -56,8 +56,6 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 					if (p instanceof TokenResource) {
 						var tokenDef = (TokenResource) p;
 						addrParticles.put(tokenDef.getAddr(), p);
-					} else if (p instanceof EpochData) {
-						addrParticles.put(REAddr.ofSystem(), p);
 					}
 				});
 		}
