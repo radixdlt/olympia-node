@@ -17,6 +17,7 @@
 
 package com.radixdlt.mempool;
 
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERules;
 import org.junit.Ignore;
@@ -237,6 +238,7 @@ public class MempoolTest {
 		var proof = mock(LedgerProof.class);
 		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.getTxns().size() + 1, HashUtils.random256()));
 		when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size() + 1);
+		when(proof.getView()).thenReturn(View.of(1));
 		var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn), proof);
 		stateComputer.commit(commandsAndProof, null);
 
@@ -262,6 +264,7 @@ public class MempoolTest {
 		var proof = mock(LedgerProof.class);
 		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.getTxns().size() + 1, HashUtils.random256()));
 		when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size() + 1);
+		when(proof.getView()).thenReturn(View.of(1));
 		var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn2), proof);
 		stateComputer.commit(commandsAndProof, null);
 
@@ -285,6 +288,7 @@ public class MempoolTest {
 		var proof = mock(LedgerProof.class);
 		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.getTxns().size() + 1, HashUtils.random256()));
 		when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size() + 1);
+		when(proof.getView()).thenReturn(View.of(1));
 		var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn3), proof);
 		stateComputer.commit(commandsAndProof, null);
 
