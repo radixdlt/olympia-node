@@ -140,7 +140,7 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.dispatcherProvider(
 				InvalidProposedTxn.class,
 				v -> CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS,
-				(i, a) -> String.format("%s{%s}", i.getClass().getSimpleName(), a.forValidators().of(i.getProposer()))
+				(i, a) -> String.format("%s{%s}", i.getClass().getSimpleName(), a.forValidators().of(i.getProposer()).substring(0, 10))
 			)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(new TypeLiteral<Epoched<ScheduledLocalTimeout>>() { }))
@@ -195,11 +195,12 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<EventDispatcher<EpochLocalTimeoutOccurrence>>() { }).toProvider(
 			Dispatchers.dispatcherProvider(
 				EpochLocalTimeoutOccurrence.class,
-				(t, a) -> String.format("Timeout{epoch=%s round=%s leader=%s nextLeader=%s}",
+				(t, a) -> String.format("Timeout{epoch=%s round=%s leader=%s nextLeader=%s count=%s}",
 					t.getEpochView().getEpoch(),
 					t.getEpochView().getView().number(),
-					a.forValidators().of(t.getLeader().getKey()),
-					a.forValidators().of(t.getNextLeader().getKey())
+					a.forValidators().of(t.getLeader().getKey()).substring(0, 10),
+					a.forValidators().of(t.getNextLeader().getKey()).substring(0, 10),
+					t.getBase().timeout().count()
 				)
 			)).in(Scopes.SINGLETON);
 
@@ -213,8 +214,8 @@ public class DispatcherModule extends AbstractModule {
 				(u, a) -> String.format("NextRnd{epoch=%s round=%s leader=%s nextLeader=%s}",
 					u.getEpoch(),
 					u.getEpochView().getView().number(),
-					a.forValidators().of(u.getViewUpdate().getLeader().getKey()),
-					a.forValidators().of(u.getViewUpdate().getNextLeader().getKey())
+					a.forValidators().of(u.getViewUpdate().getLeader().getKey()).substring(0, 10),
+					a.forValidators().of(u.getViewUpdate().getNextLeader().getKey()).substring(0, 10)
 				)
 			)).in(Scopes.SINGLETON);
 

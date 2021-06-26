@@ -146,6 +146,9 @@ public final class P2PTestNetworkRunner {
 						bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(nodeKey);
 						bind(ECPublicKey.class).annotatedWith(Self.class).toInstance(nodeKey.getPublicKey());
 						bind(BFTNode.class).annotatedWith(Self.class).toInstance(BFTNode.create(nodeKey.getPublicKey()));
+						bind(String.class).annotatedWith(Self.class).toInstance(
+							Addressing.ofNetwork(Network.LOCALNET).forValidators().of(nodeKey.getPublicKey()).substring(0, 10)
+						);
 						bind(ECKeyOps.class).toInstance(ECKeyOps.fromKeyPair(nodeKey));
 						bind(ControlledSenderFactory.class).toInstance(network::createSender);
 						bind(RuntimeProperties.class).toInstance(properties);

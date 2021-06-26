@@ -46,6 +46,8 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.network.p2p.NoOpPeerControl;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.recovery.MockedRecoveryModule;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.integration.distributed.deterministic.configuration.NodeIndexAndWeight;
@@ -210,6 +212,7 @@ public final class DeterministicTest {
 			modules.add(new AbstractModule() {
 				@Override
 				public void configure() {
+					bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
 					bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(50);
 					bindConstant().annotatedWith(PacemakerTimeout.class).to(pacemakerTimeout);
 					bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
