@@ -9,11 +9,21 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import com.radixdlt.cli.OutputCapture;
 import com.radixdlt.cli.RadixCLI;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.RadixKeyStore;
+import com.radixdlt.crypto.exception.KeyStoreException;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.utils.AWSSecretManager;
 import com.radixdlt.utils.AWSSecretsOutputOptions;
+import com.radixdlt.utils.functional.Failure;
+import com.radixdlt.utils.functional.Result;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.Security;
 import java.util.Arrays;
@@ -33,6 +43,7 @@ public class AWSSecrets {
 	private static final String DEFAULT_NETWORK_NAME = "testnet";
 	private static final String FULLNODE_PREFIX = "fullnode";
 	private static final String CORE_NODE_PREFIX = "node";
+	public static final String KEYPAIR_NAME = "node";
 
 	private AWSSecrets() {
 	}
@@ -91,10 +102,10 @@ public class AWSSecrets {
 			var awsSecretsOutputOptions = new AWSSecretsOutputOptions(enableAwsSecrets, recreateAwsSecrets, networkName);
 
 			var nodes = nodeCount > 0
-							? IntStream.range(0, nodeCount)
-								.mapToObj(counter -> String.format("%s%s", namePrefix, counter))
-								.collect(Collectors.toList())
-							: listOfNodes;
+						? IntStream.range(0, nodeCount)
+							.mapToObj(counter -> String.format("%s%s", namePrefix, counter))
+							.collect(Collectors.toList())
+						: listOfNodes;
 
 			generateAndStoreKey(networkName, namePrefix, defaultKeyPassword, awsSecretsOutputOptions, nodes);
 			if (namePrefix.equals(CORE_NODE_PREFIX)) {
@@ -116,6 +127,7 @@ public class AWSSecrets {
 	) {
 		generateAndStoreKey(networkName, namePrefix, defaultKeyPassword, awsSecretsOutputOptions, nodes, Boolean.FALSE);
 	}
+
 	private static void generateAndStoreStakingKey(
 		String networkName,
 		String defaultKeyPassword,
@@ -144,7 +156,7 @@ public class AWSSecrets {
 				if (isStaker) {
 					keyStoreSecretName = "staker_key";
 					passwordName = "staker_password";
-					keyStoreName = String.format("%s-stake.ks", nodeName);
+					keyStoreName = String.format("%s_stake.ks", nodeName);
 				} else {
 					keyStoreSecretName = "validator_key";
 					passwordName = "validator_password";
@@ -152,6 +164,7 @@ public class AWSSecrets {
 			}
 
 			final var keyFileSecretName = String.format("%s/%s/%s", networkName, nodeName, keyStoreSecretName);
+			final var publicKeyFileSecretName = String.format("%s/%s/public_key", networkName, nodeName);
 			final var passwordSecretName = String.format("%s/%s/%s", networkName, nodeName, passwordName);
 			final var password = generatePassword(defaultKeyPassword);
 			try (var capture = OutputCapture.startStdout()) {
@@ -168,10 +181,17 @@ public class AWSSecrets {
 				}
 
 				var keyFilePath = Paths.get(keyStoreName);
+				//get public key and push to AWS: bip31 and hex versions. Check keygen
+				var keystoreFile = new File(keyFilePath.toString());
+
 				var keyFileAwsSecret = new HashMap<String, Object>();
+				var publicKeyFileAwsSecret = new HashMap<String, Object>();
 				try {
 					var data = Files.readAllBytes(keyFilePath);
 					keyFileAwsSecret.put("key", data);
+					var pubKey = returnPublicKey(keystoreFile, password, keyStoreName);
+					publicKeyFileAwsSecret.put("base64", pubKey.toBase64());
+					publicKeyFileAwsSecret.put("hex", pubKey.toHex());
 				} catch (IOException e) {
 					throw new IllegalStateException("While reading validator keys", e);
 				}
@@ -180,29 +200,53 @@ public class AWSSecrets {
 
 				writeBinaryAWSSecret(keyFileAwsSecret, keyFileSecretName, awsSecretsOutputOptions, false, true);
 				writeBinaryAWSSecret(keyPasswordAwsSecret, passwordSecretName, awsSecretsOutputOptions, false, false);
+				writeBinaryAWSSecret(publicKeyFileAwsSecret, publicKeyFileSecretName, awsSecretsOutputOptions, false, false);
 			} catch (Exception e) {
 				System.out.println(e);
 			}
 		}
 	}
 
+	private static ECPublicKey returnPublicKey(File keystoreFile, String password, String keypairName) {
+		if (!keystoreFile.exists() || !keystoreFile.canRead()) {
+			System.out.format("keystore file %s does not exist or is not accessible\n", keystoreFile.toString());
+			System.exit(1);
+		}
+		ECKeyPair keyPair = null;
+		try {
+			keyPair = RadixKeyStore.fromFile(keystoreFile, password.toCharArray(), false)
+				.readKeyPair(KEYPAIR_NAME, false);
+		} catch (KeyStoreException e) {
+			e.printStackTrace();
+		} catch (PrivateKeyException e) {
+			e.printStackTrace();
+		} catch (PublicKeyException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return keyPair.getPublicKey();
+	}
+
 	private static String generatePassword(String password) {
 		if (password == null || password.isEmpty()) {
 			//anphanumeric and special charactrers
-			int asciiOrigin = 48;	//0
-			int asciiBound = 122;	//z
+			int asciiOrigin = 48;    //0
+			int asciiBound = 122;    //z
 			int passwordLength = 8;
 			SecureRandom random = new SecureRandom();
-				return random.ints(asciiOrigin, asciiBound + 1)
-					.filter(i -> Character.isAlphabetic(i) || Character.isDigit(i))
-					.limit(passwordLength)
-					.collect(StringBuilder::new, StringBuilder::appendCodePoint,
-							 StringBuilder::append)
-					.toString();
+			return random.ints(asciiOrigin, asciiBound + 1)
+				.filter(i -> Character.isAlphabetic(i) || Character.isDigit(i))
+				.limit(passwordLength)
+				.collect(StringBuilder::new, StringBuilder::appendCodePoint,
+						 StringBuilder::append
+				)
+				.toString();
 		} else {
 			return password;
 		}
 	}
+
 	private static void usage(Options options) {
 		new HelpFormatter().printHelp(AWSSecrets.class.getSimpleName(), options, true);
 	}
@@ -219,7 +263,7 @@ public class AWSSecrets {
 			System.out.println("Secret " + secretName + " not stored in AWS");
 			return;
 		}
-		if (!canBeUpdated(awsSecretsOutputOptions)) {
+		if (AWSSecretManager.awsSecretExists(secretName) && !canBeUpdated(awsSecretsOutputOptions)) {
 			System.out.println("Secret " + secretName + " cannot be updated");
 			return;
 		}
