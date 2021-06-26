@@ -69,7 +69,7 @@ public class NextEpochV2Test {
 			{
 				List.of(
 					new RoundUpdateConstraintScrypt(10),
-					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 1),
+					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new TokensConstraintScryptV3(),
 					new ValidatorConstraintScryptV2(2),
@@ -77,7 +77,7 @@ public class NextEpochV2Test {
 				),
 				ActionConstructors.newBuilder()
 					.put(NextRound.class, new NextViewConstructorV3())
-					.put(NextEpoch.class, new NextEpochConstructorV3(Amount.ofTokens(10).toSubunits(), 1))
+					.put(NextEpoch.class, new NextEpochConstructorV3(Amount.ofTokens(10).toSubunits(), 9800, 1))
 					.put(CreateSystem.class, new CreateSystemConstructorV2())
 					.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 					.put(MintToken.class, new MintTokenConstructor())

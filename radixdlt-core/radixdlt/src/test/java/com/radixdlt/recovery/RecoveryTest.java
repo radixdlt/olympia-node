@@ -149,7 +149,8 @@ public class RecoveryTest {
 					2,
 					Amount.ofTokens(10),
 					1,
-					Amount.ofTokens(10)
+					Amount.ofTokens(10),
+					9800
 				)),
 			new RadixEngineModule(),
 			new AbstractModule() {
@@ -192,7 +193,8 @@ public class RecoveryTest {
 					2,
 					Amount.ofTokens(10),
 					1,
-					Amount.ofTokens(10)
+					Amount.ofTokens(10),
+					9800
 				)),
 			new ForksModule(),
 			MempoolConfig.asModule(10, 10),

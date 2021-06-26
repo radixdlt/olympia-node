@@ -62,10 +62,16 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 	private static Logger logger = LogManager.getLogger();
 	private final UInt256 rewardsPerProposal;
 	private final long unstakingEpochDelay;
+	private final long minimumCompletedProposalsPercentage;
 
-	public NextEpochConstructorV3(UInt256 rewardsPerProposal, long unstakingEpochDelay) {
+	public NextEpochConstructorV3(
+		UInt256 rewardsPerProposal,
+		long minimumCompletedProposalsPercentage,
+		long unstakingEpochDelay
+	) {
 		this.rewardsPerProposal = rewardsPerProposal;
 		this.unstakingEpochDelay = unstakingEpochDelay;
+		this.minimumCompletedProposalsPercentage = minimumCompletedProposalsPercentage;
 	}
 
 	private static ValidatorStakeData loadValidatorStakeData(
@@ -137,37 +143,52 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		}
 
 		var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorStakeData>(KeyComparator.instance());
-		var proposals = txBuilder.shutdownAll(ValidatorBFTData.class, i -> {
-			final TreeMap<ECPublicKey, Long> proposalsCompleted = new TreeMap<>(KeyComparator.instance());
+		var validatorBFTData = txBuilder.shutdownAll(ValidatorBFTData.class, i -> {
+			final TreeMap<ECPublicKey, ValidatorBFTData> proposalsCompleted = new TreeMap<>(KeyComparator.instance());
 			i.forEachRemaining(e -> {
-				proposalsCompleted.put(e.validatorKey(), e.proposalsCompleted());
+				proposalsCompleted.put(e.validatorKey(), e);
 				logger.info("Validator {} completed {} missed {}", e.validatorKey(), e.proposalsCompleted(), e.proposalsMissed());
 			});
 			return proposalsCompleted;
 		});
 		var preparingStake = new TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>>(KeyComparator.instance());
-		for (var e : proposals.entrySet()) {
+		for (var e : validatorBFTData.entrySet()) {
 			var k = e.getKey();
-			var numProposals = e.getValue();
+			var bftData = e.getValue();
+			if (bftData.proposalsCompleted() + bftData.proposalsMissed() == 0) {
+				continue;
+			}
+			var percentageCompleted = bftData.proposalsCompleted() * 10000
+				/ (bftData.proposalsCompleted() + bftData.proposalsMissed());
+
+			// Didn't pass threshold, no rewards!
+			if (percentageCompleted < minimumCompletedProposalsPercentage) {
+				continue;
+			}
+
+			var nodeRewards = rewardsPerProposal.multiply(UInt256.from(bftData.proposalsCompleted()));
+			if (nodeRewards.isZero()) {
+				continue;
+			}
+
 			var validatorStakeData = txBuilder.down(
 				ValidatorStakeData.class,
 				s -> s.getValidatorKey().equals(k),
 				"Validator not found"
 			);
-			var nodeEmission = rewardsPerProposal.multiply(UInt256.from(numProposals));
 			int rakePercentage = validatorStakeData.getRakePercentage();
 			final UInt256 rakedEmissions;
-			if (rakePercentage != 0 && !nodeEmission.isZero()) {
-				var rake = nodeEmission
+			if (rakePercentage != 0) {
+				var rake = nodeRewards
 					.multiply(UInt256.from(rakePercentage))
 					.divide(UInt256.from(RAKE_MAX));
 				var validatorOwner = validatorStakeData.getOwnerAddr();
 				var initStake = new TreeMap<REAddr, UInt256>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
 				initStake.put(validatorOwner, rake);
 				preparingStake.put(k, initStake);
-				rakedEmissions = nodeEmission.subtract(rake);
+				rakedEmissions = nodeRewards.subtract(rake);
 			} else {
-				rakedEmissions = nodeEmission;
+				rakedEmissions = nodeRewards;
 			}
 			validatorsToUpdate.put(k, validatorStakeData.addEmission(rakedEmissions));
 		}

@@ -97,6 +97,7 @@ public enum RERulesVersion {
 			v4.load(new EpochUpdateConstraintScrypt(
 				maxRounds,
 				config.getRewardsPerProposal().toSubunits(),
+				config.getMinimumCompletedProposalsPercentage(),
 				config.getUnstakingEpochDelay()
 			));
 			var betanet4 = new ConstraintMachineConfig(
@@ -115,8 +116,9 @@ public enum RERulesVersion {
 				.put(MintToken.class, new MintTokenConstructor())
 				.put(NextEpoch.class, new NextEpochConstructorV3(
 					config.getRewardsPerProposal().toSubunits(),
-					config.getUnstakingEpochDelay())
-				)
+					config.getMinimumCompletedProposalsPercentage(),
+					config.getUnstakingEpochDelay()
+				))
 				.put(NextRound.class, new NextViewConstructorV3())
 				.put(RegisterValidator.class, new RegisterValidatorConstructor())
 				.put(SplitToken.class, new SplitTokenConstructor())

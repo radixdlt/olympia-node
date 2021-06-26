@@ -80,7 +80,7 @@ public class UnstakeTokensV2Test {
 				10,
 				List.of(
 					new RoundUpdateConstraintScrypt(10),
-					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 1),
+					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScryptV2(2),
@@ -94,7 +94,7 @@ public class UnstakeTokensV2Test {
 				10,
 				List.of(
 					new RoundUpdateConstraintScrypt(10),
-					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 1),
+					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScryptV2(2),
@@ -108,7 +108,7 @@ public class UnstakeTokensV2Test {
 				6,
 				List.of(
 					new RoundUpdateConstraintScrypt(10),
-					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 1),
+					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScryptV2(2),
@@ -122,7 +122,7 @@ public class UnstakeTokensV2Test {
 				6,
 				List.of(
 					new RoundUpdateConstraintScrypt(10),
-					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 1),
+					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScryptV2(2),
@@ -177,7 +177,7 @@ public class UnstakeTokensV2Test {
 			ActionConstructors.newBuilder()
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.put(NextRound.class, new NextViewConstructorV3())
-				.put(NextEpoch.class, new NextEpochConstructorV3(Amount.ofTokens(10).toSubunits(), 1))
+				.put(NextEpoch.class, new NextEpochConstructorV3(Amount.ofTokens(10).toSubunits(), 9800, 1))
 				.put(StakeTokens.class, stakeTokensConstructor)
 				.put(UnstakeOwnership.class, unstakeTokensConstructor)
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())

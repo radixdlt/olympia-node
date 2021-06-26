@@ -126,22 +126,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class StakingUnstakingValidatorsTest {
 	private static final Logger logger = LogManager.getLogger();
 	private static final Amount REWARDS_PER_PROPOSAL = Amount.ofTokens(10);
+	private static final RERulesConfig config1 = new RERulesConfig(
+		false, 100, 2, Amount.ofTokens(10), 1, REWARDS_PER_PROPOSAL, 9800
+	);
+	private static final RERulesConfig config2 = new RERulesConfig(
+		false, 10, 2, Amount.ofTokens(10), 1, REWARDS_PER_PROPOSAL, 9800
+	);
 
 	@Parameterized.Parameters
 	public static Collection<Object[]> forksModule() {
 		return List.of(new Object[][] {
-			{new RadixEngineForksLatestOnlyModule(
-				new RERulesConfig(false, 100, 2, Amount.ofTokens(10), 1, REWARDS_PER_PROPOSAL)
-			), false, 100},
-			{new ForkOverwritesWithShorterEpochsModule(
-				new RERulesConfig(false, 10, 2, Amount.ofTokens(10), 1, REWARDS_PER_PROPOSAL)
-			), false, 10},
-			{new RadixEngineForksLatestOnlyModule(
-				new RERulesConfig(true, 100, 2, Amount.ofTokens(10), 1, REWARDS_PER_PROPOSAL)
-			), true, 100},
-			{new ForkOverwritesWithShorterEpochsModule(
-				new RERulesConfig(true, 10, 2, Amount.ofTokens(10), 1, REWARDS_PER_PROPOSAL)
-			), true, 10},
+			{new RadixEngineForksLatestOnlyModule(config1), false, 100},
+			{new ForkOverwritesWithShorterEpochsModule(config2), false, 10},
+			{new RadixEngineForksLatestOnlyModule(config1), true, 100},
+			{new ForkOverwritesWithShorterEpochsModule(config2), true, 10},
 		});
 	}
 
