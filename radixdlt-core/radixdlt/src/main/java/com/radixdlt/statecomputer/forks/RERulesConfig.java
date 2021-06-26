@@ -25,6 +25,7 @@ public final class RERulesConfig {
 	private final boolean fees;
 	private final long rakeIncreaseDebouncerEpochLength;
 	private final Amount minimumStake;
+	private final long unstakingEpochDelay;
 	private final Amount rewardsPerProposal;
 
 	public RERulesConfig(
@@ -32,12 +33,14 @@ public final class RERulesConfig {
 		long maxRounds,
 		long rakeIncreaseDebouncerEpochLength,
 		Amount minimumStake,
+		long unstakingEpochDelay,
 		Amount rewardsPerProposal
 	) {
 		this.fees = fees;
 		this.maxRounds = maxRounds;
 		this.rakeIncreaseDebouncerEpochLength = rakeIncreaseDebouncerEpochLength;
 		this.minimumStake = minimumStake;
+		this.unstakingEpochDelay = unstakingEpochDelay;
 		this.rewardsPerProposal = rewardsPerProposal;
 	}
 
@@ -61,7 +64,18 @@ public final class RERulesConfig {
 		return rewardsPerProposal;
 	}
 
+	public long getUnstakingEpochDelay() {
+		return unstakingEpochDelay;
+	}
+
 	public RERulesConfig overrideMaxRounds(long maxRounds) {
-		return new RERulesConfig(this.fees, maxRounds, this.rakeIncreaseDebouncerEpochLength, this.minimumStake, this.rewardsPerProposal);
+		return new RERulesConfig(
+			this.fees,
+			maxRounds,
+			this.rakeIncreaseDebouncerEpochLength,
+			this.minimumStake,
+			this.unstakingEpochDelay,
+			this.rewardsPerProposal
+		);
 	}
 }

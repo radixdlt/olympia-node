@@ -18,11 +18,9 @@
 
 package com.radixdlt.statecomputer.radixengine;
 
-import com.radixdlt.atommodel.tokens.Amount;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesVersion;
 import com.radixdlt.statecomputer.forks.RERules;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -87,14 +85,7 @@ public class TokenFeeTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
-			new RadixEngineForksLatestOnlyModule(
-				new RERulesConfig(
-					false,
-					100,
-					2,
-					Amount.ofTokens(10),
-					Amount.ofTokens(10)
-				)),
+			new RadixEngineForksLatestOnlyModule(),
 			new ForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),

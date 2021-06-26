@@ -148,6 +148,7 @@ public class RecoveryTest {
 					100L,
 					2,
 					Amount.ofTokens(10),
+					1,
 					Amount.ofTokens(10)
 				)),
 			new RadixEngineModule(),
@@ -190,6 +191,7 @@ public class RecoveryTest {
 					epochCeilingView,
 					2,
 					Amount.ofTokens(10),
+					1,
 					Amount.ofTokens(10)
 				)),
 			new ForksModule(),

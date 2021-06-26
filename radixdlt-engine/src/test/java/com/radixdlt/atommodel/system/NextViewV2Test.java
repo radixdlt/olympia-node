@@ -71,7 +71,7 @@ public class NextViewV2Test {
 		return List.of(new Object[][] {
 			{
 				List.of(
-					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits()),
+					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 1),
 					new RoundUpdateConstraintScrypt(10)
 				),
 				new NextViewConstructorV3()
@@ -109,7 +109,7 @@ public class NextViewV2Test {
 			parser,
 			serialization,
 			ActionConstructors.newBuilder()
-				.put(NextEpoch.class, new NextEpochConstructorV3(Amount.ofTokens(10).toSubunits()))
+				.put(NextEpoch.class, new NextEpochConstructorV3(Amount.ofTokens(10).toSubunits(), 1))
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())

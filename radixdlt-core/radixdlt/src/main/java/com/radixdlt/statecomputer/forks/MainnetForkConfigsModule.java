@@ -37,6 +37,7 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 				1_500_000, // Two weeks worth of rounds for first epoch
 				150, // Two weeks worth of epochs
 				Amount.ofTokens(100), // Minimum stake
+				150, // Two weeks worth of epochs
 				Amount.ofTokens(0)   // No rewards for epoch 1 where it will only be radix foundation nodes
 			)
 		);
@@ -53,6 +54,7 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 				10_000,
 				150, // Two weeks worth of epochs
 				Amount.ofTokens(100), // Minimum stake
+				150, // Two weeks worth of epochs
 				Amount.ofTokens(10) // Rewards
 			)
 		);

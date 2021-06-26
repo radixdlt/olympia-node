@@ -75,6 +75,7 @@ public class SanityTest {
 						10,
 						2,
 						Amount.ofTokens(10),
+						1,
 						Amount.ofTokens(10)
 					)),
 				new ForksModule()

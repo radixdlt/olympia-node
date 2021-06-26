@@ -131,16 +131,16 @@ public class StakingUnstakingValidatorsTest {
 	public static Collection<Object[]> forksModule() {
 		return List.of(new Object[][] {
 			{new RadixEngineForksLatestOnlyModule(
-				new RERulesConfig(false, 100, 2, Amount.ofTokens(10), REWARDS_PER_PROPOSAL)
+				new RERulesConfig(false, 100, 2, Amount.ofTokens(10), 1, REWARDS_PER_PROPOSAL)
 			), false, 100},
 			{new ForkOverwritesWithShorterEpochsModule(
-				new RERulesConfig(false, 10, 2, Amount.ofTokens(10), REWARDS_PER_PROPOSAL)
+				new RERulesConfig(false, 10, 2, Amount.ofTokens(10), 1, REWARDS_PER_PROPOSAL)
 			), false, 10},
 			{new RadixEngineForksLatestOnlyModule(
-				new RERulesConfig(true, 100, 2, Amount.ofTokens(10), REWARDS_PER_PROPOSAL)
+				new RERulesConfig(true, 100, 2, Amount.ofTokens(10), 1, REWARDS_PER_PROPOSAL)
 			), true, 100},
 			{new ForkOverwritesWithShorterEpochsModule(
-				new RERulesConfig(true, 10, 2, Amount.ofTokens(10), REWARDS_PER_PROPOSAL)
+				new RERulesConfig(true, 10, 2, Amount.ofTokens(10), 1, REWARDS_PER_PROPOSAL)
 			), true, 10},
 		});
 	}

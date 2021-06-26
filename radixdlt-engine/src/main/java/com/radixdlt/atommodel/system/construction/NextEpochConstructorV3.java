@@ -58,12 +58,14 @@ import java.util.function.Function;
 
 import static com.radixdlt.atommodel.validators.state.PreparedRakeUpdate.RAKE_MAX;
 
-public class NextEpochConstructorV3 implements ActionConstructor<NextEpoch> {
+public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch> {
 	private static Logger logger = LogManager.getLogger();
 	private final UInt256 rewardsPerProposal;
+	private final long unstakingEpochDelay;
 
-	public NextEpochConstructorV3(UInt256 rewardsPerProposal) {
+	public NextEpochConstructorV3(UInt256 rewardsPerProposal, long unstakingEpochDelay) {
 		this.rewardsPerProposal = rewardsPerProposal;
+		this.unstakingEpochDelay = unstakingEpochDelay;
 	}
 
 	private static ValidatorStakeData loadValidatorStakeData(
@@ -189,7 +191,8 @@ public class NextEpochConstructorV3 implements ActionConstructor<NextEpoch> {
 			for (var entry : unstakes.entrySet()) {
 				var addr = entry.getKey();
 				var amt = entry.getValue();
-				var nextStakeAndAmt = curValidator.unstakeOwnership(addr, amt, prevEpoch.getEpoch());
+				var epochUnlocked = prevEpoch.getEpoch() + unstakingEpochDelay;
+				var nextStakeAndAmt = curValidator.unstakeOwnership(addr, amt, epochUnlocked);
 				curValidator = nextStakeAndAmt.getFirst();
 				var exittingStake = nextStakeAndAmt.getSecond();
 				txBuilder.up(exittingStake);

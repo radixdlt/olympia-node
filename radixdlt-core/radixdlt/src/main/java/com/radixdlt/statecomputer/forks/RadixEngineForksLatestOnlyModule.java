@@ -44,6 +44,7 @@ public class RadixEngineForksLatestOnlyModule extends AbstractModule {
 				10,
 				2,
 				Amount.ofTokens(10),
+				1,
 				Amount.ofTokens(10)
 			)
 		);

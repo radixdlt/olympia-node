@@ -152,6 +152,7 @@ public class RecoveryLivenessTest {
 					epochCeilingView,
 					2,
 					Amount.ofTokens(10),
+					1,
 					Amount.ofTokens(10)
 				)),
 			new ForksModule(),
@@ -204,6 +205,7 @@ public class RecoveryLivenessTest {
 					epochCeilingView,
 					2,
 					Amount.ofTokens(10),
+					1,
 					Amount.ofTokens(10)
 				)),
 			new ForksModule(),

@@ -41,7 +41,6 @@ import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.NextEpoch;
 import com.radixdlt.atom.actions.NextRound;
 import com.radixdlt.atommodel.system.state.RoundData;
-import com.radixdlt.atommodel.tokens.Amount;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -87,7 +86,6 @@ import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERules;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -153,14 +151,7 @@ public class RadixEngineStateComputerTest {
 
 				install(MempoolConfig.asModule(10, 10));
 				install(new ForksModule());
-				install(new RadixEngineForksLatestOnlyModule(
-					new RERulesConfig(
-						false,
-						10,
-						2,
-						Amount.ofTokens(10),
-						Amount.ofTokens(10)
-					)));
+				install(new RadixEngineForksLatestOnlyModule());
 				install(RadixEngineConfig.asModule(1, 100, 50));
 
 				// HACK

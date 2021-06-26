@@ -144,14 +144,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 		Guice.createInjector(
 			new MockedGenesisModule(),
-			new RadixEngineForksLatestOnlyModule(
-				new RERulesConfig(
-					false,
-					10,
-					2,
-					Amount.ofTokens(10),
-					Amount.ofTokens(10)
-				)),
+			new RadixEngineForksLatestOnlyModule(),
 			new ForksModule(),
 			new RadixEngineModule(),
 			RadixEngineConfig.asModule(1, 10, 50),
@@ -219,6 +212,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 					88,
 					2,
 					Amount.ofTokens(10),
+					1,
 					Amount.ofTokens(10)
 				)),
 			new ForksModule(),

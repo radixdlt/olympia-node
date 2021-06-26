@@ -69,10 +69,12 @@ import static com.radixdlt.atommodel.validators.state.PreparedRakeUpdate.RAKE_MA
 public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	private final long maxRounds;
 	private final UInt256 rewardsPerProposal;
+	private final long unstakingEpochDelay;
 
-	public EpochUpdateConstraintScrypt(long maxRounds, UInt256 rewardsPerProposal) {
+	public EpochUpdateConstraintScrypt(long maxRounds, UInt256 rewardsPerProposal, long unstakingEpochDelay) {
 		this.maxRounds = maxRounds;
 		this.rewardsPerProposal = rewardsPerProposal;
+		this.unstakingEpochDelay = unstakingEpochDelay;
 	}
 
 	public final class ProcessExittingStake implements ReducerState {
@@ -223,7 +225,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	}
 
 
-	private static final class Unstaking implements ReducerState {
+	private final class Unstaking implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<REAddr, UInt256> unstaking;
 		private final Function<ValidatorStakeData, ReducerState> onDone;
@@ -244,8 +246,9 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		ReducerState exit(ExittingStake u) throws ProcedureException {
 			var firstAddr = unstaking.firstKey();
 			var ownershipUnstake = unstaking.remove(firstAddr);
+			var epochUnlocked = updatingEpoch.prevEpoch.getEpoch() + unstakingEpochDelay;
 			var nextValidatorAndExit = current.unstakeOwnership(
-				firstAddr, ownershipUnstake, updatingEpoch.prevEpoch.getEpoch()
+				firstAddr, ownershipUnstake, epochUnlocked
 			);
 			this.current = nextValidatorAndExit.getFirst();
 			var expectedExit = nextValidatorAndExit.getSecond();
@@ -257,7 +260,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		}
 	}
 
-	private static final class PreparingUnstake implements ReducerState {
+	private final class PreparingUnstake implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingUnstake = new TreeMap<>(KeyComparator.instance());
 		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake;
