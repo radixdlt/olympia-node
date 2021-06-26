@@ -52,3 +52,4 @@ class UserBehavior(SequentialTaskSet):
 
         finalise_response = archive_api.construction_endpoint_request(self.client, submit_trx_payload,
                                                                       "submit_stake_tokens")
+        print(f" Txn {finalise_response['result']['txID']} successfully staked by wallet {from_account['wallet_address']} to validator {to_validator}")
