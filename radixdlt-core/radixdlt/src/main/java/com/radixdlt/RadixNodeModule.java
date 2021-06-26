@@ -112,15 +112,16 @@ public final class RadixNodeModule extends AbstractModule {
 		var genesisTxnHex = properties.get("network.genesis_txn");
 		var genesisFile = properties.get("network.genesis_file");
 		var network = Network.ofId(networkId);
-		if (network.flatMap(Network::genesisTxn).isPresent()) {
+		var networkGenesis = network.flatMap(Network::genesisTxn);
+		if (networkGenesis.isPresent()) {
 			if (Strings.isNotBlank(genesisTxnHex)) {
-				throw new IllegalStateException("Cannot provide genesis txn for well-known network " + network.get());
+				throw new IllegalStateException("Cannot provide genesis txn for well-known network " + network.orElseThrow());
 			}
 
 			if (Strings.isNotBlank(genesisFile)) {
-				throw new IllegalStateException("Cannot provide genesis file for well-known network " + network.get());
+				throw new IllegalStateException("Cannot provide genesis file for well-known network " + network.orElseThrow());
 			}
-			return network.flatMap(Network::genesisTxn).get();
+			return networkGenesis.get();
 		} else {
 			var genesisCount = 0;
 			genesisCount += Strings.isNotBlank(genesisTxnHex) ? 1 : 0;
