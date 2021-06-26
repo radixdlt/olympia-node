@@ -16,14 +16,18 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.constraintmachine.exceptions;
 
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+public class TxnParseException extends Exception {
+	public TxnParseException(String message, Throwable cause) {
+		super(message, cause);
+	}
 
-public interface ShutdownAllReducer<D extends Particle, S extends ReducerState> {
-	ReducerResult reduce(
-		ShutdownAll<D> inputState,
-		S reducerState,
-		ReadableAddrs readableAddrs
-	) throws ProcedureException;
+	public TxnParseException(Throwable cause) {
+		super(cause);
+	}
+
+	public TxnParseException(String message) {
+		super(message);
+	}
 }

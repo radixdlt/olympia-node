@@ -21,7 +21,7 @@ package com.radixdlt.atommodel.system.state;
 import com.radixdlt.atommodel.tokens.ResourceInBucket;
 import com.radixdlt.atommodel.tokens.Bucket;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
-import com.radixdlt.constraintmachine.ProcedureException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Pair;

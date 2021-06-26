@@ -18,6 +18,8 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+
 import java.util.function.Function;
 
 public final class UpProcedure<S extends ReducerState, U extends Particle> implements Procedure {

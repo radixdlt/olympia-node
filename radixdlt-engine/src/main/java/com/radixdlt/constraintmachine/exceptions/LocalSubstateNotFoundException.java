@@ -16,17 +16,10 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.constraintmachine.exceptions;
 
-import com.radixdlt.identifiers.REAddr;
-
-public final class InvalidResourceException extends ProcedureException {
-	private final REAddr expected;
-	private final REAddr actual;
-
-	public InvalidResourceException(REAddr expected, REAddr actual) {
-		super("Expected resource " + expected + " but was " + actual);
-		this.expected = expected;
-		this.actual = actual;
+public class LocalSubstateNotFoundException extends Exception {
+	public LocalSubstateNotFoundException(int index) {
+		super("Local substate with index " + index + " not found");
 	}
 }

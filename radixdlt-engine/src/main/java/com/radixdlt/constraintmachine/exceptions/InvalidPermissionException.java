@@ -16,14 +16,12 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.constraintmachine.exceptions;
 
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.constraintmachine.PermissionLevel;
 
-public interface ShutdownAllReducer<D extends Particle, S extends ReducerState> {
-	ReducerResult reduce(
-		ShutdownAll<D> inputState,
-		S reducerState,
-		ReadableAddrs readableAddrs
-	) throws ProcedureException;
+public class InvalidPermissionException extends Exception {
+	public InvalidPermissionException(PermissionLevel required, PermissionLevel actual) {
+		super("Required: " + required + " Actual: " + actual);
+	}
 }

@@ -22,6 +22,16 @@ import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
+import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
+import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
+import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
+import com.radixdlt.constraintmachine.exceptions.InvalidVirtualSubstateException;
+import com.radixdlt.constraintmachine.exceptions.LocalSubstateNotFoundException;
+import com.radixdlt.constraintmachine.exceptions.MissingProcedureException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
+import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
+import com.radixdlt.constraintmachine.exceptions.TxnParseException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
@@ -126,52 +136,52 @@ public final class ConstraintMachine {
 		}
 
 
-		public void virtualRead(Substate substate) throws ConstraintMachineException {
+		public void virtualRead(Substate substate) throws SubstateNotFoundException, InvalidVirtualSubstateException {
 			if (remoteDownParticles.contains(substate.getId())) {
-				throw new ConstraintMachineException(CMErrorCode.SUBSTATE_NOT_FOUND);
+				throw new SubstateNotFoundException(substate.getId());
 			}
 
 			if (!virtualStoreLayer.test(substate.getParticle())) {
-				throw new ConstraintMachineException(CMErrorCode.INVALID_PARTICLE);
+				throw new InvalidVirtualSubstateException(substate.getParticle());
 			}
 
 			if (store.isVirtualDown(dbTxn, substate.getId())) {
-				throw new ConstraintMachineException(CMErrorCode.SUBSTATE_NOT_FOUND);
+				throw new SubstateNotFoundException(substate.getId());
 			}
 		}
 
-		public void virtualShutdown(Substate substate) throws ConstraintMachineException {
+		public void virtualShutdown(Substate substate) throws SubstateNotFoundException, InvalidVirtualSubstateException {
 			virtualRead(substate);
 			remoteDownParticles.add(substate.getId());
 		}
 
-		public Particle localShutdown(int index) throws ConstraintMachineException {
+		public Particle localShutdown(int index) throws LocalSubstateNotFoundException {
 			var substate = localUpParticles.remove(index);
 			if (substate == null) {
-				throw new ConstraintMachineException(CMErrorCode.LOCAL_NONEXISTENT);
+				throw new LocalSubstateNotFoundException(index);
 			}
 
 			return substate.getFirst().getParticle();
 		}
 
-		public Particle localRead(int index) throws ConstraintMachineException {
+		public Particle localRead(int index) throws LocalSubstateNotFoundException {
 			var substate = localUpParticles.get(index);
 			if (substate == null) {
-				throw new ConstraintMachineException(CMErrorCode.LOCAL_NONEXISTENT);
+				throw new LocalSubstateNotFoundException(index);
 			}
 
 			return substate.getFirst().getParticle();
 		}
 
-		public Particle read(SubstateId substateId) throws ConstraintMachineException {
+		public Particle read(SubstateId substateId) throws SubstateNotFoundException {
 			var read = loadUpParticle(substateId);
 			if (read.isEmpty()) {
-				throw new ConstraintMachineException(CMErrorCode.SUBSTATE_NOT_FOUND);
+				throw new SubstateNotFoundException(substateId);
 			}
 			return read.get();
 		}
 
-		public Particle shutdown(SubstateId substateId) throws ConstraintMachineException {
+		public Particle shutdown(SubstateId substateId) throws SubstateNotFoundException {
 			var substate = read(substateId);
 			remoteDownParticles.add(substateId);
 			return substate;
@@ -219,28 +229,23 @@ public final class ConstraintMachine {
 		ReducerState reducerState,
 		ReadableAddrs readableAddrs,
 		ExecutionContext context
-	) throws ConstraintMachineException {
+	) throws SignedSystemException, InvalidPermissionException, AuthorizationException, ProcedureException {
 		// System permissions don't require additional authorization
 		var authorization = procedure.authorization(procedureParam);
 		var requiredLevel = authorization.permissionLevel();
 		context.verifyPermissionLevel(requiredLevel);
-		try {
-			if (context.permissionLevel() != PermissionLevel.SYSTEM) {
-				if (requiredLevel == PermissionLevel.USER) {
-					this.metering.onUserInstruction(procedure.key(), procedureParam, context);
-				}
-
-				authorization.authorizer().verify(readableAddrs, context);
+		if (context.permissionLevel() != PermissionLevel.SYSTEM) {
+			if (requiredLevel == PermissionLevel.USER) {
+				this.metering.onUserInstruction(procedure.key(), procedureParam, context);
 			}
 
-			return procedure.call(procedureParam, reducerState, readableAddrs, context).state();
-		} catch (AuthorizationException e) {
-			throw new ConstraintMachineException(CMErrorCode.AUTHORIZATION_ERROR, e);
-		} catch (ProcedureException e) {
-			throw new ConstraintMachineException(CMErrorCode.PROCEDURE_ERROR, e);
-		} catch (Exception e) {
-			throw new ConstraintMachineException(CMErrorCode.UNKNOWN_ERROR, e);
+			authorization.authorizer().verify(readableAddrs, context);
 		}
+
+		return procedure.call(procedureParam, reducerState, readableAddrs, context).state();
+	}
+
+	private static class MissingExpectedEndException extends Exception {
 	}
 
 	/**
@@ -260,11 +265,11 @@ public final class ConstraintMachine {
 		var stateUpdates = new ArrayList<REStateUpdate>();
 
 		for (REInstruction inst : instructions) {
-			if (expectEnd && inst.getMicroOp() != REInstruction.REMicroOp.END) {
-				throw new ConstraintMachineException(CMErrorCode.MISSING_PARTICLE_GROUP);
-			}
-
 			try {
+				if (expectEnd && inst.getMicroOp() != REInstruction.REMicroOp.END) {
+					throw new MissingExpectedEndException();
+				}
+
 				if (inst.getMicroOp() == REInstruction.REMicroOp.SYSCALL) {
 					CallData callData = inst.getData();
 					var opSignature = OpSignature.ofMethod(inst.getMicroOp().getOp(), REAddr.ofSystem());
@@ -355,7 +360,7 @@ public final class ConstraintMachine {
 						arg = null;
 						o = SubstateWithArg.noArg(nextParticle);
 					} else {
-						throw new ConstraintMachineException(CMErrorCode.UNKNOWN_OP);
+						throw new IllegalStateException("Unhandled op: " + inst.getMicroOp());
 					}
 
 					var op = inst.getMicroOp().getOp();
@@ -376,12 +381,8 @@ public final class ConstraintMachine {
 
 					expectEnd = false;
 				}
-			} catch (MissingProcedureException e) {
-				throw new ConstraintMachineException(
-					CMErrorCode.MISSING_PROCEDURE,
-					"ReducerState: " + reducerState + " Instruction: " + inst.toString(),
-					e
-				);
+			} catch (Exception e) {
+				throw new ConstraintMachineException(instIndex, inst, reducerState, e);
 			}
 
 			instIndex++;

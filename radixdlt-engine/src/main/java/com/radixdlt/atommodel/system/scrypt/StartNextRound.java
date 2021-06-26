@@ -19,7 +19,7 @@
 package com.radixdlt.atommodel.system.scrypt;
 
 import com.radixdlt.atommodel.system.state.RoundData;
-import com.radixdlt.constraintmachine.ProcedureException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerState;
 
 public class StartNextRound implements ReducerState {

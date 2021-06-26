@@ -18,6 +18,8 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+
 import java.util.function.Supplier;
 
 public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> implements Procedure {

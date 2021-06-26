@@ -16,14 +16,13 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.constraintmachine.exceptions;
 
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.constraintmachine.REInstruction;
+import com.radixdlt.constraintmachine.ReducerState;
 
-public interface ShutdownAllReducer<D extends Particle, S extends ReducerState> {
-	ReducerResult reduce(
-		ShutdownAll<D> inputState,
-		S reducerState,
-		ReadableAddrs readableAddrs
-	) throws ProcedureException;
+public final class ConstraintMachineException extends Exception {
+	public ConstraintMachineException(int instIndex, REInstruction instruction, ReducerState reducerState, Throwable cause) {
+		super("index=" + instIndex + " instruction=" + instruction + " reducerState=" + reducerState, cause);
+	}
 }

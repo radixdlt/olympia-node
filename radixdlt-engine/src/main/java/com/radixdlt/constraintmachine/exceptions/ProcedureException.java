@@ -16,10 +16,14 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.constraintmachine.exceptions;
 
-public class AuthorizationException extends Exception {
-	public AuthorizationException(String msg) {
+public class ProcedureException extends Exception {
+	public ProcedureException(Throwable cause) {
+		super(cause);
+	}
+
+	public ProcedureException(String msg) {
 		super(msg);
 	}
 }

@@ -18,6 +18,8 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.constraintmachine.exceptions.CallDataAccessException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.identifiers.REAddr;
 
 import java.util.function.Supplier;

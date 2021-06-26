@@ -27,11 +27,8 @@ import com.radixdlt.utils.Bytes;
 public final class RadixEngineException extends Exception {
 	private final Txn txn;
 
-	public RadixEngineException(
-		Txn txn,
-		Exception cause
-	) {
-		super("Txn: " + Bytes.toHexString(txn.getPayload()), cause);
+	public RadixEngineException(Txn txn, Exception cause) {
+		super("txnId=" + txn.getId() + " txn=" + Bytes.toHexString(txn.getPayload()), cause);
 		this.txn = txn;
 	}
 

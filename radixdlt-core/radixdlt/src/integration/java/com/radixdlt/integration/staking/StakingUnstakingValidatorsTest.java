@@ -244,17 +244,15 @@ public class StakingUnstakingValidatorsTest {
 						.addBinding().toProvider(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() { });
 				}
 
-				/*
 				@ProvidesIntoSet
 				EventProcessorOnDispatch<?> failOnEvent() {
 					return new EventProcessorOnDispatch<>(
 						InvalidProposedTxn.class,
 						i -> {
-							throw new IllegalStateException("Invalid proposed transaction occurred: " + i, i.getException().getCause());
+							throw new IllegalStateException("Invalid proposed transaction occurred: " + i, i.getException());
 						}
 					);
 				}
-				 */
 
 				@Provides
 				private PeersView peersView(@Self BFTNode self) {

@@ -16,18 +16,12 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.constraintmachine.exceptions;
 
-public class TxnParseException extends Exception {
-	public TxnParseException(String message, Throwable cause) {
-		super(message, cause);
-	}
+import com.radixdlt.constraintmachine.Particle;
 
-	public TxnParseException(Throwable cause) {
-		super(cause);
-	}
-
-	public TxnParseException(String message) {
-		super(message);
+public class InvalidVirtualSubstateException extends Exception {
+	public InvalidVirtualSubstateException(Particle particle) {
+		super(particle + " is not a valid virtual substate.");
 	}
 }

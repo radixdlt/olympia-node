@@ -28,7 +28,7 @@ import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.constraintmachine.AuthorizationException;
+import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;

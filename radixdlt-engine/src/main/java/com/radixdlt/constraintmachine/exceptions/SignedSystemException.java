@@ -16,12 +16,10 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.constraintmachine.exceptions;
 
-public class MissingProcedureException extends Exception {
-	public MissingProcedureException(
-		ProcedureKey key
-	) {
-		super("Missing: " + key);
+public final class SignedSystemException extends Exception {
+	public SignedSystemException() {
+		super("System updates should not be signed.");
 	}
 }

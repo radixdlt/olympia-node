@@ -20,11 +20,11 @@ package com.radixdlt.engine.parser;
 
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.CallData;
-import com.radixdlt.constraintmachine.CallDataAccessException;
+import com.radixdlt.constraintmachine.exceptions.CallDataAccessException;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.REOp;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
-import com.radixdlt.constraintmachine.TxnParseException;
+import com.radixdlt.constraintmachine.exceptions.TxnParseException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;

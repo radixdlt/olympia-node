@@ -17,6 +17,8 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
+
 /**
  * Validates whether a specific transition procedure is permissible
  */

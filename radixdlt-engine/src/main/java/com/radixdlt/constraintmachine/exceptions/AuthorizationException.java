@@ -16,14 +16,10 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.constraintmachine.exceptions;
 
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-
-public interface ShutdownAllReducer<D extends Particle, S extends ReducerState> {
-	ReducerResult reduce(
-		ShutdownAll<D> inputState,
-		S reducerState,
-		ReadableAddrs readableAddrs
-	) throws ProcedureException;
+public class AuthorizationException extends Exception {
+	public AuthorizationException(String msg) {
+		super(msg);
+	}
 }

@@ -18,6 +18,10 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
+import com.radixdlt.constraintmachine.exceptions.NotEnoughFeesException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
 
@@ -65,19 +69,13 @@ public final class ExecutionContext {
 		return level;
 	}
 
-	public void verifyPermissionLevel(PermissionLevel requiredLevel) throws ConstraintMachineException {
+	public void verifyPermissionLevel(PermissionLevel requiredLevel) throws SignedSystemException, InvalidPermissionException {
 		if (this.level.compareTo(requiredLevel) < 0) {
-			throw new ConstraintMachineException(
-				CMErrorCode.PERMISSION_LEVEL_ERROR,
-				"Required: " + requiredLevel + " Current: " + this.level
-			);
+			throw new InvalidPermissionException(requiredLevel, level);
 		}
 
 		if (requiredLevel.compareTo(PermissionLevel.SUPER_USER) >= 0 && key.isPresent()) {
-			throw new ConstraintMachineException(
-				CMErrorCode.AUTHORIZATION_ERROR,
-				"System updates should not be signed."
-			);
+			throw new SignedSystemException();
 		}
 	}
 }

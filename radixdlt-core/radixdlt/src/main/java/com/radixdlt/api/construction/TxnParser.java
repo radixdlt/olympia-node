@@ -21,10 +21,10 @@ package com.radixdlt.api.construction;
 import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.ConstraintMachineException;
+import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.constraintmachine.TxnParseException;
+import com.radixdlt.constraintmachine.exceptions.TxnParseException;
 import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.utils.functional.Result;
 

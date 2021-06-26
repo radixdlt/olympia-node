@@ -34,7 +34,7 @@ import com.radixdlt.api.server.JsonRpcServer;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.REInstruction;
-import com.radixdlt.constraintmachine.TxnParseException;
+import com.radixdlt.constraintmachine.exceptions.TxnParseException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;

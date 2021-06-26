@@ -19,7 +19,7 @@
 package com.radixdlt.atommodel.system.state;
 
 import com.radixdlt.atommodel.tokens.Bucket;
-import com.radixdlt.constraintmachine.AuthorizationException;
+import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECPublicKey;
