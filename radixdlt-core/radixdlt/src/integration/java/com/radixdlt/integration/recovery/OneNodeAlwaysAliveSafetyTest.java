@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.recovery;
 
+import com.radixdlt.atommodel.tokens.Amount;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
@@ -143,7 +144,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 		Guice.createInjector(
 			new MockedGenesisModule(),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10, 2)),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10, 2, Amount.ofTokens(10))),
 			new ForksModule(),
 			new RadixEngineModule(),
 			RadixEngineConfig.asModule(1, 10, 50),
@@ -205,7 +206,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 88, 2)),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 88, 2, Amount.ofTokens(10))),
 			new ForksModule(),
 			RadixEngineConfig.asModule(1, 10, 50),
 			new PersistedNodeForTestingModule(),

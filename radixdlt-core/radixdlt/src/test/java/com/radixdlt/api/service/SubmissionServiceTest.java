@@ -16,6 +16,7 @@
  */
 package com.radixdlt.api.service;
 
+import com.radixdlt.atommodel.tokens.Amount;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -137,7 +138,7 @@ public class SubmissionServiceTest {
 
 			@Override
 			public void configure() {
-				install(new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10, 2)));
+				install(new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10, 2, Amount.ofTokens(10))));
 				install(new ForksModule());
 				install(RadixEngineConfig.asModule(1, 100, 50));
 				install(MempoolConfig.asModule(10, 10));

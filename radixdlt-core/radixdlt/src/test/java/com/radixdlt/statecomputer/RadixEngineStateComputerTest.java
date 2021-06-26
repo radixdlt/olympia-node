@@ -41,6 +41,7 @@ import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.NextEpoch;
 import com.radixdlt.atom.actions.NextRound;
 import com.radixdlt.atommodel.system.state.RoundData;
+import com.radixdlt.atommodel.tokens.Amount;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -152,7 +153,7 @@ public class RadixEngineStateComputerTest {
 
 				install(MempoolConfig.asModule(10, 10));
 				install(new ForksModule());
-				install(new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10, 2)));
+				install(new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10, 2, Amount.ofTokens(10))));
 				install(RadixEngineConfig.asModule(1, 100, 50));
 
 				// HACK

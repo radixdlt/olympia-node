@@ -49,7 +49,7 @@ import com.radixdlt.atommodel.system.construction.PayFeeConstructorV2;
 import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.atommodel.system.scrypt.FeeConstraintScrypt;
 import com.radixdlt.atommodel.system.scrypt.RoundUpdateConstraintScrypt;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atommodel.tokens.TokenUtils;
 import com.radixdlt.atommodel.tokens.construction.BurnTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.CreateFixedTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
@@ -83,7 +83,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 public final class MainnetForkRulesModule extends AbstractModule {
-	public static final UInt256 FIXED_FEE = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(100));
+	public static final UInt256 FIXED_FEE = UInt256.TEN.pow(TokenUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(100));
 
 	@ProvidesIntoMap
 	@StringMapKey("mainnet")
@@ -93,12 +93,12 @@ public final class MainnetForkRulesModule extends AbstractModule {
 			var fees = config.includeFees();
 			var rakeIncreaseDebouncerEpochLength = config.getRakeIncreaseDebouncerEpochLength();
 
-			final CMAtomOS v4 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
+			final CMAtomOS v4 = new CMAtomOS(Set.of("xrd"));
 			v4.load(new ValidatorConstraintScryptV2(rakeIncreaseDebouncerEpochLength));
 			v4.load(new ValidatorRegisterConstraintScrypt());
 			v4.load(new TokensConstraintScryptV3());
 			v4.load(new FeeConstraintScrypt());
-			v4.load(new StakingConstraintScryptV4());
+			v4.load(new StakingConstraintScryptV4(config.getMinimumStake().toSubunits()));
 			v4.load(new MutexConstraintScrypt());
 			v4.load(new RoundUpdateConstraintScrypt(maxRounds));
 			v4.load(new EpochUpdateConstraintScrypt(maxRounds));

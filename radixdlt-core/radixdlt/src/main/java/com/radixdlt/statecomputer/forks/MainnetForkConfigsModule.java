@@ -20,6 +20,7 @@ package com.radixdlt.statecomputer.forks;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.atommodel.tokens.Amount;
 
 /**
  * The forks for betanet and the epochs at which they will occur.
@@ -33,7 +34,12 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 		return new ForkConfig(
 			0L,
 			"mainnet",
-			new RERulesConfig(true, TWO_WEEKS_WORTH_OF_ROUNDS, TWO_WEEKS_WORTH_OF_EPOCHS)
+			new RERulesConfig(
+				true,
+				TWO_WEEKS_WORTH_OF_ROUNDS,
+				TWO_WEEKS_WORTH_OF_EPOCHS,
+				Amount.ofTokens(100)
+			)
 		);
 	}
 }

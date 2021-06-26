@@ -18,6 +18,7 @@
 
 package com.radixdlt.api.chaos.mempoolfiller;
 
+import com.radixdlt.atommodel.tokens.Amount;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.assertj.core.api.Condition;
@@ -68,7 +69,7 @@ public class MempoolFillerTest {
 
 	private Injector getInjector() {
 		return Guice.createInjector(
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2, Amount.ofTokens(10))),
 			MempoolConfig.asModule(10, 10),
 			new ForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),

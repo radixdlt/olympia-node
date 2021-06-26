@@ -22,6 +22,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.atommodel.tokens.Amount;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.ledger.LedgerAccumulator;
@@ -162,7 +163,7 @@ public class MempoolRelayTest {
 			new MockedGenesisModule(),
 			new CryptoModule(),
 			new RadixEngineModule(),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2, Amount.ofTokens(10))),
 			new ForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new AbstractModule() {
@@ -189,7 +190,7 @@ public class MempoolRelayTest {
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
 			MempoolConfig.asModule(500, 100, 10, 10, 10),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2, Amount.ofTokens(10))),
 			new ForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new PersistedNodeForTestingModule(),

@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.mempool;
 
+import com.radixdlt.atommodel.tokens.Amount;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Rule;
@@ -69,7 +70,7 @@ public final class MempoolFillAndEmptyTest {
         return Guice.createInjector(
             MempoolConfig.asModule(1000, 10),
             new ForksModule(),
-            new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
+            new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2, Amount.ofTokens(10))),
             RadixEngineConfig.asModule(1, 10, 10),
             new SingleNodeAndPeersDeterministicNetworkModule(),
             new MockedGenesisModule(),

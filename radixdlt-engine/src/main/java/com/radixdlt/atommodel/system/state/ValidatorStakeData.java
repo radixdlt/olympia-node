@@ -19,7 +19,6 @@
 package com.radixdlt.atommodel.system.state;
 
 import com.radixdlt.atommodel.tokens.ResourceInBucket;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.Bucket;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.constraintmachine.ProcedureException;
@@ -34,7 +33,6 @@ import java.util.Objects;
 import static com.radixdlt.atommodel.validators.state.PreparedRakeUpdate.RAKE_MAX;
 
 public final class ValidatorStakeData implements ResourceInBucket {
-	public static final UInt256 MINIMUM_STAKE = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
 	public static final int EPOCHS_LOCKED = 1; // Must go through one full epoch before being unlocked
 
 	private final UInt256 totalStake;

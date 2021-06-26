@@ -45,6 +45,7 @@ import com.radixdlt.atom.actions.UpdateRake;
 import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
 import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
+import com.radixdlt.atommodel.tokens.Amount;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
@@ -129,10 +130,18 @@ public class StakingUnstakingValidatorsTest {
 	@Parameterized.Parameters
 	public static Collection<Object[]> forksModule() {
 		return List.of(new Object[][] {
-			{new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)), false, 100},
-			{new ForkOverwritesWithShorterEpochsModule(new RERulesConfig(false, 10, 2)), false, 10},
-			{new RadixEngineForksLatestOnlyModule(new RERulesConfig(true, 100, 2)), true, 100},
-			{new ForkOverwritesWithShorterEpochsModule(new RERulesConfig(true, 10, 2)), true, 10},
+			{new RadixEngineForksLatestOnlyModule(
+				new RERulesConfig(false, 100, 2, Amount.ofTokens(10))
+			), false, 100},
+			{new ForkOverwritesWithShorterEpochsModule(
+				new RERulesConfig(false, 10, 2, Amount.ofTokens(10))
+			), false, 10},
+			{new RadixEngineForksLatestOnlyModule(
+				new RERulesConfig(true, 100, 2, Amount.ofTokens(10))
+			), true, 100},
+			{new ForkOverwritesWithShorterEpochsModule(
+				new RERulesConfig(true, 10, 2, Amount.ofTokens(10))
+			), true, 10},
 		});
 	}
 
@@ -193,9 +202,7 @@ public class StakingUnstakingValidatorsTest {
 
 					nodeKeys.forEach(key ->
 						Multibinder.newSetBinder(binder(), TokenIssuance.class)
-							.addBinding().toInstance(
-								TokenIssuance.of(key.getPublicKey(), ValidatorStakeData.MINIMUM_STAKE.multiply(UInt256.TEN))
-						)
+							.addBinding().toInstance(TokenIssuance.of(key.getPublicKey(), Amount.ofTokens(10 * 10).toSubunits()))
 					);
 				}
 			}
@@ -417,7 +424,7 @@ public class StakingUnstakingValidatorsTest {
 			var privKey = nodeKeys.get(nodeIndex);
 			var acct = REAddr.ofPubKeyAccount(privKey.getPublicKey());
 			var to = nodeKeys.get(random.nextInt(nodeKeys.size())).getPublicKey();
-			var amount = UInt256.from(random.nextInt(10)).multiply(ValidatorStakeData.MINIMUM_STAKE);
+			var amount = Amount.ofTokens(random.nextInt(10) * 10).toSubunits();
 
 			var next = random.nextInt(16);
 			final TxAction action;

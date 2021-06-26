@@ -18,15 +18,28 @@
 
 package com.radixdlt.statecomputer.forks;
 
+import com.radixdlt.atommodel.tokens.Amount;
+
 public final class RERulesConfig {
 	private final long maxRounds;
 	private final boolean fees;
 	private final long rakeIncreaseDebouncerEpochLength;
+	private final Amount minimumStake;
 
-	public RERulesConfig(boolean fees, long maxRounds, long rakeIncreaseDebouncerEpochLength) {
+	public RERulesConfig(
+		boolean fees,
+		long maxRounds,
+		long rakeIncreaseDebouncerEpochLength,
+		Amount minimumStake
+	) {
 		this.fees = fees;
 		this.maxRounds = maxRounds;
 		this.rakeIncreaseDebouncerEpochLength = rakeIncreaseDebouncerEpochLength;
+		this.minimumStake = minimumStake;
+	}
+
+	public Amount getMinimumStake() {
+		return minimumStake;
 	}
 
 	public long getRakeIncreaseDebouncerEpochLength() {
@@ -42,6 +55,6 @@ public final class RERulesConfig {
 	}
 
 	public RERulesConfig overrideMaxRounds(long maxRounds) {
-		return new RERulesConfig(this.fees, maxRounds, this.rakeIncreaseDebouncerEpochLength);
+		return new RERulesConfig(this.fees, maxRounds, this.rakeIncreaseDebouncerEpochLength, this.minimumStake);
 	}
 }

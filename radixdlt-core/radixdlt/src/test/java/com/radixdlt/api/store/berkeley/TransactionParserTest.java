@@ -35,7 +35,7 @@ import com.radixdlt.atommodel.system.construction.PayFeeConstructorV2;
 import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.atommodel.system.scrypt.FeeConstraintScrypt;
 import com.radixdlt.atommodel.system.scrypt.RoundUpdateConstraintScrypt;
-import com.radixdlt.atommodel.system.state.ValidatorStakeData;
+import com.radixdlt.atommodel.tokens.Amount;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV3;
@@ -106,7 +106,7 @@ public class TransactionParserTest {
 		cmAtomOS.load(new EpochUpdateConstraintScrypt(10));
 		cmAtomOS.load(new ValidatorConstraintScryptV2(2));
 		cmAtomOS.load(new TokensConstraintScryptV3());
-		cmAtomOS.load(new StakingConstraintScryptV4());
+		cmAtomOS.load(new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()));
 		cmAtomOS.load(new FeeConstraintScrypt());
 		cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
 
@@ -135,7 +135,7 @@ public class TransactionParserTest {
 		var txn0 = engine.construct(
 			TxnConstructionRequest.create()
 				.createMutableToken(tokDef)
-				.mint(this.tokenRri, this.tokenOwnerAcct, ValidatorStakeData.MINIMUM_STAKE.multiply(UInt256.TWO))
+				.mint(this.tokenRri, this.tokenOwnerAcct, Amount.ofTokens(10 * 2).toSubunits())
 		).buildWithoutSignature();
 		var validatorBuilder = this.engine.construct(
 			TxnConstructionRequest.create()
@@ -184,8 +184,8 @@ public class TransactionParserTest {
 			TxnConstructionRequest.create()
 				.payFee(tokenOwnerAcct, UInt256.FOUR)
 				.createMutableToken(tokDefII)
-				.mint(tokenRriII, tokenOwnerAcct, ValidatorStakeData.MINIMUM_STAKE.multiply(UInt256.TWO))
-				.transfer(tokenRriII, tokenOwnerAcct, otherAccount, ValidatorStakeData.MINIMUM_STAKE)
+				.mint(tokenRriII, tokenOwnerAcct, Amount.ofTokens(10 * 2).toSubunits())
+				.transfer(tokenRriII, tokenOwnerAcct, otherAccount, Amount.ofTokens(10).toSubunits())
 		).signAndBuild(tokenOwnerKeyPair::sign);
 
 		executeAndDecode(List.of(ActionType.UNKNOWN, ActionType.MINT, ActionType.TRANSFER), UInt256.FOUR, txn);
@@ -218,11 +218,11 @@ public class TransactionParserTest {
 	}
 
 	private StakeTokens nativeStake() {
-		return new StakeTokens(tokenOwnerAcct, validatorKeyPair.getPublicKey(), ValidatorStakeData.MINIMUM_STAKE);
+		return new StakeTokens(tokenOwnerAcct, validatorKeyPair.getPublicKey(), Amount.ofTokens(10).toSubunits());
 	}
 
 	private UnstakeTokens nativeUnstake() {
-		return new UnstakeTokens(tokenOwnerAcct, validatorKeyPair.getPublicKey(), ValidatorStakeData.MINIMUM_STAKE);
+		return new UnstakeTokens(tokenOwnerAcct, validatorKeyPair.getPublicKey(), Amount.ofTokens(10).toSubunits());
 	}
 
 	private List<ActionType> toActionTypes(TxHistoryEntry txEntry) {

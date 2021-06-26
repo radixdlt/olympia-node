@@ -20,6 +20,7 @@ package org.radix;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atommodel.tokens.Amount;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.networks.Addressing;
@@ -40,12 +41,11 @@ import com.google.inject.Guice;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atommodel.tokens.TokenUtils;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.identifiers.NodeAddressing;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
@@ -71,7 +71,7 @@ public final class GenerateUniverses {
 	private GenerateUniverses() { }
 
 	private static final String DEFAULT_TIMESTAMP = String.valueOf(Instant.parse("2020-01-01T00:00:00.00Z").getEpochSecond());
-	private static final UInt256 DEFAULT_ISSUANCE = UInt256.from("1000000000000000000000000000").multiply(TokenDefinitionUtils.SUB_UNITS);
+	private static final UInt256 DEFAULT_ISSUANCE = Amount.ofTokens(1000000000).toSubunits(); // 1 Billion!
 
 	public static void main(String[] args) throws Exception {
 		Security.insertProviderAt(new BouncyCastleProvider(), 1);

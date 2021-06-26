@@ -26,7 +26,6 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.NextEpoch;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -87,7 +86,7 @@ public final class GenesisBuilder {
 
 		var tokenDef = new MutableTokenDefinition(
 			null,
-			TokenDefinitionUtils.getNativeTokenShortCode(),
+			"xrd",
 			"Rads",
 			"Radix Tokens",
 			RADIX_ICON_URL,

@@ -26,7 +26,7 @@ import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
 import com.radixdlt.atommodel.system.state.ValidatorBFTData;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atommodel.tokens.TokenUtils;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
@@ -69,7 +69,7 @@ import static com.radixdlt.atommodel.validators.state.PreparedRakeUpdate.RAKE_MA
 
 public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
-	public static final UInt256 REWARDS_PER_PROPOSAL = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
+	public static final UInt256 REWARDS_PER_PROPOSAL = TokenUtils.SUB_UNITS.multiply(UInt256.TEN);
 	private final long maxRounds;
 
 	public EpochUpdateConstraintScrypt(long maxRounds) {
