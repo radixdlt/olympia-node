@@ -251,7 +251,7 @@ public final class BetanetForksModule extends AbstractModule {
 
 
 	@ProvidesIntoMap
-	@EpochMapKey(epoch = 800L)
+	@EpochMapKey(epoch = 860L)
 	ForkConfig betanetV4() {
 		var fixedFee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(100));
 		final CMAtomOS v4 = new CMAtomOS(Set.of(TokenDefinitionUtils.getNativeTokenShortCode()));
