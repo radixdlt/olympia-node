@@ -61,7 +61,7 @@ def stake_tokens_method(client, from_account, to_validator):
     build_txn_payload["params"]["actions"].append(action_stake_transaction)
     build_txn_payload["params"]["feePayer"] = str(from_account["wallet_address"])
     build_response = construction_endpoint_request(client, build_txn_payload,
-                                                   f"build_stake_tokens_from-{from_account['wallet_address']}_to- {to_validator}")
+                                                   f"build_stake_tokens")
     build_response, finalise_response, signed_hash_hex = finalize_transaction_method(build_txn_payload, client,
                                                                                      from_account, build_response)
     finalise_response = submit_transaction_method(build_response, client, finalise_response, from_account,
@@ -82,8 +82,7 @@ def transfer_tokens_method(client, from_account, to_account):
     build_txn_payload["params"]["actions"].append(action_tokentransfer_transaction)
     build_txn_payload["params"]["feePayer"] = str(from_account["wallet_address"])
     build_response = construction_endpoint_request(client, build_txn_payload,
-                                                   f"build_transfer_tokens_from-{from_account['wallet_address']}"
-                                                   f"to-{to_account['wallet_address']}")
+                                                   f"build_transfer_tokens")
 
     build_response, finalise_response, signed_hash_hex = finalize_transaction_method(build_txn_payload, client,
                                                                                      from_account, build_response)
