@@ -67,7 +67,7 @@ public final class GenesisBuilder {
 		var cm = new ConstraintMachine(
 			cmConfig.getVirtualStoreLayer(),
 			cmConfig.getProcedures(),
-			cmConfig.getMetering()
+			cmConfig.getMeter()
 		);
 		this.radixEngine = new RadixEngine<>(
 			rules.getParser(),

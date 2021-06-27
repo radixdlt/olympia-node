@@ -39,6 +39,8 @@ public class FixedFeeMeter implements Meter {
 
 	@Override
 	public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws AuthorizationException {
+		context.chargeOneTimeTransactionFee(txn -> fixedFee);
+
 		if (procedureKey.opSignature().op() == REOp.SYSCALL) {
 			return;
 		}
@@ -55,11 +57,12 @@ public class FixedFeeMeter implements Meter {
 			}
 		}
 
-		context.verifyHasReserve(fixedFee);
+		context.payOffLoan();
 	}
 
 	@Override
-	public void onSuperUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) {
+	public void onSuperUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws AuthorizationException {
+		context.payOffLoan();
 	}
 
 	@Override

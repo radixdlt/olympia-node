@@ -102,7 +102,7 @@ public class RadixEngineModule extends AbstractModule {
 		var cm = new ConstraintMachine(
 			cmConfig.getVirtualStoreLayer(),
 			cmConfig.getProcedures(),
-			cmConfig.getMetering()
+			cmConfig.getMeter()
 		);
 		var radixEngine = new RadixEngine<>(
 			rules.getParser(),

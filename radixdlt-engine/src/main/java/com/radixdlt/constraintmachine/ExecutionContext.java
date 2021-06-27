@@ -18,11 +18,15 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.scrypt.Tokens;
+import com.radixdlt.atommodel.tokens.scrypt.TokenHoldingBucket;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
+import com.radixdlt.constraintmachine.exceptions.ExecutionContextDestroyException;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.constraintmachine.exceptions.InvalidResourceException;
 import com.radixdlt.constraintmachine.exceptions.NotEnoughFeesException;
+import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
 import com.radixdlt.crypto.ECPublicKey;
@@ -30,22 +34,29 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Optional;
+import java.util.function.Function;
 
 public final class ExecutionContext {
+	private final Txn txn;
 	private final PermissionLevel level;
+	private final TokenHoldingBucket reserve;
 	private ECPublicKey key;
 	private boolean disableResourceAllocAndDestroy;
-	private UInt256 feeReserve;
+	private UInt256 systemLoan;
 	private int sigsLeft;
+	private boolean chargedOneTimeFee = false;
 
 	public ExecutionContext(
+		Txn txn,
 		PermissionLevel level,
-		UInt256 feeReserve,
-		int sigsLeft
+		int sigsLeft,
+		UInt256 systemLoan
 	) {
+		this.txn = txn;
 		this.level = level;
-		this.feeReserve = feeReserve;
 		this.sigsLeft = sigsLeft;
+		this.systemLoan = systemLoan;
+		this.reserve = new TokenHoldingBucket(Tokens.create(REAddr.ofNativeToken(), systemLoan));
 	}
 
 	public void resetSigs(int sigs) {
@@ -64,17 +75,36 @@ public final class ExecutionContext {
 	}
 
 	public void depositFeeReserve(Tokens tokens) throws InvalidResourceException {
-		if (!tokens.getResourceAddr().isNativeToken()) {
-			throw new InvalidResourceException(REAddr.ofNativeToken(), tokens.getResourceAddr());
-		}
-
-		this.feeReserve = this.feeReserve.add(tokens.getAmount().getLow());
+		reserve.deposit(tokens);
 	}
 
-	public void verifyHasReserve(UInt256 amount) throws NotEnoughFeesException {
-		if (feeReserve.compareTo(amount) < 0) {
-			throw new NotEnoughFeesException();
+	public void chargeOneTimeTransactionFee(Function<Txn, UInt256> feeComputer) throws NotEnoughFeesException {
+		if (chargedOneTimeFee) {
+			return;
 		}
+
+		var fee = feeComputer.apply(txn);
+		charge(fee);
+		chargedOneTimeFee = true;
+	}
+
+	public void charge(UInt256 amount) throws NotEnoughFeesException {
+		try {
+			reserve.withdraw(REAddr.ofNativeToken(), amount);
+		} catch (InvalidResourceException e) {
+			throw new IllegalStateException("Should not get here", e);
+		} catch (NotEnoughResourcesException e) {
+			throw new NotEnoughFeesException(e);
+		}
+	}
+
+	public void payOffLoan() throws NotEnoughFeesException {
+		if (systemLoan.isZero()) {
+			return;
+		}
+
+		charge(systemLoan);
+		systemLoan = UInt256.ZERO;
 	}
 
 	public void verifyCanAllocAndDestroyResources() throws ProcedureException {
@@ -106,6 +136,14 @@ public final class ExecutionContext {
 
 		if (requiredLevel.compareTo(PermissionLevel.SUPER_USER) >= 0 && key != null) {
 			throw new SignedSystemException();
+		}
+	}
+
+	public void destroy() throws NotEnoughFeesException, ExecutionContextDestroyException {
+		payOffLoan();
+
+		if (!reserve.isEmpty()) {
+			throw new ExecutionContextDestroyException(reserve);
 		}
 	}
 }

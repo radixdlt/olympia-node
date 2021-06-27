@@ -36,7 +36,7 @@ public final class Meters {
 			}
 
 			@Override
-			public void onSuperUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) {
+			public void onSuperUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws AuthorizationException {
 				m0.onSuperUserProcedure(procedureKey, param, context);
 				m1.onSuperUserProcedure(procedureKey, param, context);
 			}

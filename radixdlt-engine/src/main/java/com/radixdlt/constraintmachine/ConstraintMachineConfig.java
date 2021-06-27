@@ -45,7 +45,7 @@ public final class ConstraintMachineConfig {
 		return procedures;
 	}
 
-	public Meter getMetering() {
+	public Meter getMeter() {
 		return metering;
 	}
 

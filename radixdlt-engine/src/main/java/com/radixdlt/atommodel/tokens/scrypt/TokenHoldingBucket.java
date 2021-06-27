@@ -31,7 +31,7 @@ import com.radixdlt.utils.UInt256;
 public final class TokenHoldingBucket implements ReducerState {
 	private Tokens tokens;
 
-	TokenHoldingBucket(Tokens tokens) {
+	public TokenHoldingBucket(Tokens tokens) {
 		this.tokens = tokens;
 	}
 

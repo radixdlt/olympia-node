@@ -93,4 +93,9 @@ public final class Tokens {
 		return Objects.equals(this.amount, other.amount)
 			&& Objects.equals(this.resourceAddr, other.resourceAddr);
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{resource=%s tokens=%s}", this.getClass().getSimpleName(), this.resourceAddr, this.amount);
+	}
 }

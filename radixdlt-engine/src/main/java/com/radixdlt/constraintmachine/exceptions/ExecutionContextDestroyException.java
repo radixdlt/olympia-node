@@ -18,12 +18,10 @@
 
 package com.radixdlt.constraintmachine.exceptions;
 
-public class AuthorizationException extends Exception {
-	public AuthorizationException(String msg) {
-		super(msg);
-	}
+import com.radixdlt.atommodel.tokens.scrypt.TokenHoldingBucket;
 
-	public AuthorizationException(String msg, Exception cause) {
-		super(msg, cause);
+public class ExecutionContextDestroyException extends Exception {
+	public ExecutionContextDestroyException(TokenHoldingBucket reserve) {
+		super("Reserve not empty: " + reserve);
 	}
 }

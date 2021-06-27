@@ -28,8 +28,10 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.atommodel.tokens.Amount;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.ExecutionContext;
+import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -45,7 +47,6 @@ import com.radixdlt.store.EngineStore;
 
 import com.radixdlt.store.TransientEngineStore;
 import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -279,7 +280,7 @@ public final class RadixEngine<M> {
 			this.constraintMachine = new ConstraintMachine(
 				constraintMachineConfig.getVirtualStoreLayer(),
 				constraintMachineConfig.getProcedures(),
-				constraintMachineConfig.getMetering()
+				constraintMachineConfig.getMeter()
 			);
 			this.actionConstructors = actionToConstructorMap;
 			this.batchVerifier = batchVerifier;
@@ -394,8 +395,7 @@ public final class RadixEngine<M> {
 	}
 
 	private REProcessedTxn verify(CMStore.Transaction dbTransaction, Txn txn, ExecutionContext context)
-		throws TxnParseException, ConstraintMachineException {
-
+		throws AuthorizationException, TxnParseException, ConstraintMachineException {
 
 		var parsedTxn = parser.parse(txn);
 		parsedTxn.getSignedBy().ifPresent(context::setKey);
@@ -467,13 +467,13 @@ public final class RadixEngine<M> {
 
 		for (int i = 0; i < txns.size(); i++) {
 			var txn = txns.get(i);
-			var context = new ExecutionContext(permissionLevel, UInt256.ZERO, sigsLeft);
+			var context = new ExecutionContext(txn, permissionLevel, sigsLeft, Amount.ofTokens(200).toSubunits());
 
 			final REProcessedTxn parsedTxn;
 			// TODO: combine verification and storage
 			try {
 				parsedTxn = this.verify(dbTransaction, txn, context);
-			} catch (TxnParseException | ConstraintMachineException e) {
+			} catch (TxnParseException | AuthorizationException | ConstraintMachineException e) {
 				throw new RadixEngineException(i, txns.size(), txn, e);
 			}
 			// Carry sigs left to the next transaction

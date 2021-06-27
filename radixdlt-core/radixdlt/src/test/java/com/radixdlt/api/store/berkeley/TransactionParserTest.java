@@ -47,6 +47,7 @@ import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstruct
 import com.radixdlt.atommodel.validators.construction.UpdateAllowDelegationFlagConstructor;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorRegisterConstraintScrypt;
+import com.radixdlt.constraintmachine.meter.FixedFeeMeter;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
@@ -112,7 +113,8 @@ public class TransactionParserTest {
 
 		final var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
-			cmAtomOS.getProcedures()
+			cmAtomOS.getProcedures(),
+			FixedFeeMeter.create(UInt256.FOUR)
 		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		var substateSerialization = cmAtomOS.buildSubstateSerialization();
@@ -152,17 +154,21 @@ public class TransactionParserTest {
 	public void stakeIsParsedCorrectly() throws Exception {
 		var txn = engine.construct(
 			TxnConstructionRequest.create()
-				.action(new PayFee(tokenOwnerAcct, UInt256.TWO))
+				.action(new PayFee(tokenOwnerAcct, UInt256.FOUR))
 				.action(nativeStake())
 		)
 			.signAndBuild(tokenOwnerKeyPair::sign);
 
-		executeAndDecode(List.of(ActionType.STAKE), UInt256.TWO, txn);
+		executeAndDecode(List.of(ActionType.STAKE), UInt256.FOUR, txn);
 	}
 
 	@Test
 	public void unstakeIsParsedCorrectly() throws Exception {
-		var txn1 = engine.construct(nativeStake()).signAndBuild(tokenOwnerKeyPair::sign);
+		var txn1 = engine.construct(
+			TxnConstructionRequest.create()
+				.action(new PayFee(tokenOwnerAcct, UInt256.FOUR))
+				.action(nativeStake())
+		).signAndBuild(tokenOwnerKeyPair::sign);
 		engine.execute(List.of(txn1));
 		var nextEpoch = engine.construct(new NextEpoch(s -> List.of(validatorKeyPair.getPublicKey()), 0))
 			.buildWithoutSignature();

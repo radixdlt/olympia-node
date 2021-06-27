@@ -86,7 +86,7 @@ public class TokenFeeTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
-			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
+			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideFees(true)),
 			new ForksModule(),
 			RadixEngineConfig.asModule(1, 100),
 			new SingleNodeAndPeersDeterministicNetworkModule(),

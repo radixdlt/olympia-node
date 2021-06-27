@@ -98,7 +98,7 @@ public final class ConstraintMachine {
 			this.store = store;
 		}
 
-		public ImmutableAddrs readableAddrs() {
+		public ImmutableAddrs immutableAddrs() {
 			return addr ->
 				localUpParticles.values().stream()
 					.map(Pair::getFirst)
@@ -250,7 +250,7 @@ public final class ConstraintMachine {
 		int instIndex = 0;
 		var expectEnd = false;
 		ReducerState reducerState = null;
-		var readableAddrs = validationState.readableAddrs();
+		var readableAddrs = validationState.immutableAddrs();
 		var groupedStateUpdates = new ArrayList<List<REStateUpdate>>();
 		var stateUpdates = new ArrayList<REStateUpdate>();
 
@@ -378,6 +378,12 @@ public final class ConstraintMachine {
 			}
 
 			instIndex++;
+		}
+
+		try {
+			context.destroy();
+		} catch (Exception e) {
+			throw new ConstraintMachineException(instIndex, null, reducerState, e);
 		}
 
 		return groupedStateUpdates;

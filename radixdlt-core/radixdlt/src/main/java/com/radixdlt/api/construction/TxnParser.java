@@ -20,6 +20,7 @@ package com.radixdlt.api.construction;
 
 import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atommodel.tokens.Amount;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
@@ -27,7 +28,6 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.exceptions.TxnParseException;
 import com.radixdlt.statecomputer.forks.RERules;
-import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.Objects;
@@ -52,12 +52,13 @@ public final class TxnParser {
 		var cm = new ConstraintMachine(
 			cmConfig.getVirtualStoreLayer(),
 			cmConfig.getProcedures(),
-			cmConfig.getMetering()
+			cmConfig.getMeter()
 		);
 		var context = new ExecutionContext(
+			txn,
 			PermissionLevel.SYSTEM,
-			UInt256.ZERO,
-			1
+			1,
+			Amount.ofTokens(100).toSubunits()
 		);
 
 		var stateUpdates = cm.verify(

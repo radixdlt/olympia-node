@@ -19,7 +19,7 @@
 package com.radixdlt.constraintmachine.exceptions;
 
 public class NotEnoughFeesException extends AuthorizationException {
-	public NotEnoughFeesException() {
-		super("Not enough fees.");
+	public NotEnoughFeesException(NotEnoughResourcesException cause) {
+		super("Charging " + cause.getRequest() + " but fee reserve only contains " + cause.getAmount(), cause);
 	}
 }
