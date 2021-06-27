@@ -27,58 +27,45 @@ import com.radixdlt.constraintmachine.ImmutableAddrs;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.UInt384;
 
 public final class TokenHoldingBucket implements ReducerState {
-	private final REAddr resourceAddr;
-	private UInt384 amount;
+	private Tokens tokens;
 
-	TokenHoldingBucket(
-		REAddr resourceAddr,
-		UInt384 amount
-	) {
-		this.resourceAddr = resourceAddr;
-		this.amount = amount;
+	TokenHoldingBucket(Tokens tokens) {
+		this.tokens = tokens;
 	}
 
 	public boolean isEmpty() {
-		return amount.isZero();
+		return tokens.isZero();
 	}
 
 	public REAddr getResourceAddr() {
-		return resourceAddr;
+		return tokens.getResourceAddr();
 	}
 
-	public void deposit(REAddr resourceAddr, UInt256 amountToAdd) throws InvalidResourceException {
-		if (!this.resourceAddr.equals(resourceAddr)) {
-			throw new InvalidResourceException(resourceAddr, this.resourceAddr);
-		}
-
-		this.amount = UInt384.from(amountToAdd).add(amount);
+	public void deposit(Tokens tokens) throws InvalidResourceException {
+		this.tokens = this.tokens.merge(tokens);
 	}
 
-	public void withdraw(REAddr resourceAddr, UInt256 amountToWithdraw) throws InvalidResourceException, NotEnoughResourcesException {
-		if (!this.resourceAddr.equals(resourceAddr)) {
-			throw new InvalidResourceException(resourceAddr, this.resourceAddr);
+	public Tokens withdraw(REAddr resourceAddr, UInt256 amountToWithdraw) throws InvalidResourceException, NotEnoughResourcesException {
+		if (!this.tokens.getResourceAddr().equals(resourceAddr)) {
+			throw new InvalidResourceException(resourceAddr, this.tokens.getResourceAddr());
 		}
 
 		if (amountToWithdraw.isZero()) {
-			return;
+			return Tokens.zero(resourceAddr);
 		}
 
-		var withdraw384 = UInt384.from(amountToWithdraw);
-		if (amount.compareTo(withdraw384) < 0) {
-			throw new NotEnoughResourcesException(amountToWithdraw, amount.getLow());
-		}
-
-		this.amount = this.amount.subtract(withdraw384);
+		var p = this.tokens.split(amountToWithdraw);
+		this.tokens = p.getSecond();
+		return p.getFirst();
 	}
 
 	public void destroy(ExecutionContext c, ImmutableAddrs r) throws ProcedureException {
-		if (!amount.isZero()) {
+		if (!tokens.isZero()) {
 			c.verifyCanAllocAndDestroyResources();
 
-			var p = r.loadAddr(resourceAddr);
+			var p = r.loadAddr(tokens.getResourceAddr());
 			if (p.isEmpty()) {
 				throw new ProcedureException("Token does not exist.");
 			}
@@ -95,6 +82,6 @@ public final class TokenHoldingBucket implements ReducerState {
 
 	@Override
 	public String toString() {
-		return String.format("%s{resource=%s amount=%s}", this.getClass().getSimpleName(), resourceAddr, amount);
+		return String.format("%s{tokens=%s}", this.getClass().getSimpleName(), tokens);
 	}
 }

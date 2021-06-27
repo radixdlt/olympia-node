@@ -39,7 +39,6 @@ import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.UInt384;
 
 public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 	@Override
@@ -209,11 +208,8 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 			VoidReducerState.class, TokensInAccount.class,
 			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> {
-				var tokens = d.getSubstate();
-				var state = new TokenHoldingBucket(
-					tokens.getResourceAddr(),
-					UInt384.from(tokens.getAmount())
-				);
+				var tokensInAccount = d.getSubstate();
+				var state = new TokenHoldingBucket(tokensInAccount.toTokens());
 				return ReducerResult.incomplete(state);
 			}
 		));
@@ -223,11 +219,8 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 			TokenHoldingBucket.class, TokensInAccount.class,
 			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> {
-				var tokens = d.getSubstate();
-				s.deposit(
-					tokens.getResourceAddr(),
-					tokens.getAmount()
-				);
+				var tokensInAccount = d.getSubstate();
+				s.deposit(tokensInAccount.toTokens());
 				return ReducerResult.incomplete(s);
 			}
 		));

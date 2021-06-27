@@ -20,6 +20,7 @@ package com.radixdlt.atommodel.tokens.state;
 
 import com.radixdlt.atommodel.tokens.Bucket;
 import com.radixdlt.atommodel.tokens.ResourceInBucket;
+import com.radixdlt.atommodel.tokens.scrypt.Tokens;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
@@ -29,12 +30,9 @@ import java.util.Objects;
  *  owned by some key owner and stored in an account.
  */
 public final class TokensInAccount implements ResourceInBucket {
-	private final UInt256 amount;
-
-	private final REAddr resourceAddr;
-
-	// Bucket
 	private final REAddr holdingAddress;
+	private final REAddr resourceAddr;
+	private final UInt256 amount;
 
 	public TokensInAccount(
 		REAddr holdingAddress,
@@ -44,6 +42,10 @@ public final class TokensInAccount implements ResourceInBucket {
 		this.holdingAddress = Objects.requireNonNull(holdingAddress);
 		this.resourceAddr = Objects.requireNonNull(resourceAddr);
 		this.amount = Objects.requireNonNull(amount);
+	}
+
+	public Tokens toTokens() {
+		return Tokens.create(resourceAddr, amount);
 	}
 
 	@Override

@@ -18,12 +18,15 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.atommodel.tokens.scrypt.Tokens;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
+import com.radixdlt.constraintmachine.exceptions.InvalidResourceException;
 import com.radixdlt.constraintmachine.exceptions.NotEnoughFeesException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Optional;
@@ -60,8 +63,12 @@ public final class ExecutionContext {
 		return sigsLeft;
 	}
 
-	public void depositFeeReserve(UInt256 fee) {
-		this.feeReserve = this.feeReserve.add(fee);
+	public void depositFeeReserve(Tokens tokens) throws InvalidResourceException {
+		if (!tokens.getResourceAddr().isNativeToken()) {
+			throw new InvalidResourceException(REAddr.ofNativeToken(), tokens.getResourceAddr());
+		}
+
+		this.feeReserve = this.feeReserve.add(tokens.getAmount().getLow());
 	}
 
 	public void verifyHasReserve(UInt256 amount) throws NotEnoughFeesException {
