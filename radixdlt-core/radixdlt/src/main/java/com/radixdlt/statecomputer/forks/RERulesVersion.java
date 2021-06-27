@@ -23,7 +23,6 @@ import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
-import com.radixdlt.atom.actions.DeprecatedUnstakeTokens;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.NextEpoch;
 import com.radixdlt.atom.actions.NextRound;
@@ -50,7 +49,6 @@ import com.radixdlt.atommodel.tokens.TokenUtils;
 import com.radixdlt.atommodel.tokens.construction.BurnTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.CreateFixedTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.DeprecatedUnstakeTokensConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.SplitTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV3;
@@ -119,7 +117,6 @@ public enum RERulesVersion {
 				.put(BurnToken.class, new BurnTokenConstructor())
 				.put(CreateFixedToken.class, new CreateFixedTokenConstructor())
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
-				.put(DeprecatedUnstakeTokens.class, new DeprecatedUnstakeTokensConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
 				.put(NextEpoch.class, new NextEpochConstructorV3(
 					config.getRewardsPerProposal().toSubunits(),
