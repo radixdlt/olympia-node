@@ -93,7 +93,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	private ProposerElection proposerElection;
 	private View epochCeilingView;
-	private OptionalInt maxTxnsPerProposal;
+	private OptionalInt maxSigsPerRound;
 
 	@Inject
 	public RadixEngineStateComputer(
@@ -102,7 +102,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		Forks forks,
 		RadixEngineMempool mempool, // TODO: Move this into radixEngine
 		@EpochCeilingView View epochCeilingView, // TODO: Move this into radixEngine
-		@MaxTxnsPerProposal OptionalInt maxTxnsPerProposal, // TODO: Move this into radixEngine
+		@MaxSigsPerRound OptionalInt maxSigsPerRound, // TODO: Move this into radixEngine
 		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
 		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher,
 		EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher,
@@ -119,7 +119,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.forks = forks;
 		this.epochCeilingView = epochCeilingView;
-		this.maxTxnsPerProposal = maxTxnsPerProposal;
+		this.maxSigsPerRound = maxSigsPerRound;
 		this.mempool = Objects.requireNonNull(mempool);
 		this.mempoolAddSuccessEventDispatcher = Objects.requireNonNull(mempoolAddedCommandEventDispatcher);
 		this.mempoolAddFailureEventDispatcher = Objects.requireNonNull(mempoolAddFailureEventDispatcher);
@@ -184,7 +184,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			.collect(Collectors.toList());
 
 		// TODO: only return commands which will not cause a missing dependency error
-		final List<Txn> txns = mempool.getTxns(maxTxnsPerProposal.orElse(50), cmds);
+		final List<Txn> txns = mempool.getTxns(maxSigsPerRound.orElse(50), cmds);
 		systemCounters.add(SystemCounters.CounterType.MEMPOOL_PROPOSED_TRANSACTION, txns.size());
 		return txns;
 	}
@@ -277,12 +277,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 		ImmutableMap.Builder<Txn, Exception> errorBuilder
 	) {
 		// TODO: This check should probably be done before getting into state computer
-		this.maxTxnsPerProposal.ifPresent(max -> {
+		this.maxSigsPerRound.ifPresent(max -> {
 			if (nextTxns.size() > max) {
 				log.warn("{} proposing {} txns when limit is {}", proposer, nextTxns.size(), max);
 			}
 		});
-		var numToProcess = Integer.min(nextTxns.size(), this.maxTxnsPerProposal.orElse(Integer.MAX_VALUE));
+		var numToProcess = Integer.min(nextTxns.size(), this.maxSigsPerRound.orElse(Integer.MAX_VALUE));
 		for (int i = 0; i < numToProcess; i++) {
 			var txn = nextTxns.get(i);
 			final List<REProcessedTxn> parsed;
@@ -359,7 +359,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 						rules.getParser()
 					);
 					this.epochCeilingView = rules.getMaxRounds();
-					this.maxTxnsPerProposal = rules.getMaxTxnsPerRound();
+					this.maxSigsPerRound = rules.getMaxSigsPerRound();
 				});
 		}
 

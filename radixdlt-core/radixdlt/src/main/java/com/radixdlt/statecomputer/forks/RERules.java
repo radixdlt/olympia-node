@@ -36,7 +36,7 @@ public final class RERules {
 	private final ActionConstructors actionConstructors;
 	private final BatchVerifier<LedgerAndBFTProof> batchVerifier;
 	private final View maxRounds;
-	private final OptionalInt maxTxnsPerRound;
+	private final OptionalInt maxSigsPerRound;
 
 	public RERules(
 		String name,
@@ -46,7 +46,7 @@ public final class RERules {
 		ActionConstructors actionConstructors,
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
 		View maxRounds,
-		OptionalInt maxTxnsPerRound
+		OptionalInt maxSigsPerRound
 	) {
 		this.name = name;
 		this.parser = parser;
@@ -55,7 +55,7 @@ public final class RERules {
 		this.actionConstructors = actionConstructors;
 		this.batchVerifier = batchVerifier;
 		this.maxRounds = maxRounds;
-		this.maxTxnsPerRound = maxTxnsPerRound;
+		this.maxSigsPerRound = maxSigsPerRound;
 	}
 
 	public String name() {
@@ -86,7 +86,7 @@ public final class RERules {
 		return maxRounds;
 	}
 
-	public OptionalInt getMaxTxnsPerRound() {
-		return maxTxnsPerRound;
+	public OptionalInt getMaxSigsPerRound() {
+		return maxSigsPerRound;
 	}
 }

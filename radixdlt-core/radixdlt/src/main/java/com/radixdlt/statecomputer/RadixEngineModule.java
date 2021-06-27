@@ -75,9 +75,9 @@ public class RadixEngineModule extends AbstractModule {
 	// TODO: Remove
 	@Provides
 	@Singleton
-	@MaxTxnsPerProposal
-	private OptionalInt maxTxnsPerProposal(RERules rules) {
-		return rules.getMaxTxnsPerRound();
+	@MaxSigsPerRound
+	private OptionalInt maxSigsPerRound(RERules rules) {
+		return rules.getMaxSigsPerRound();
 	}
 
 	// TODO: Remove
