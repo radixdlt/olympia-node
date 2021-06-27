@@ -16,8 +16,12 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.constraintmachine.exceptions;
 
-public interface UpReducer<S extends ReducerState, O extends Particle> {
-	ReducerResult reduce(S reducerState, O up, ExecutionContext context, ImmutableAddrs immutableAddrs) throws Exception;
+import com.radixdlt.utils.UInt256;
+
+public class MinimumStakeException extends Exception {
+	public MinimumStakeException(UInt256 minimum, UInt256 actual) {
+		super("Minimum amount to stake must be >= " + minimum + " but trying to stake " + actual);
+	}
 }

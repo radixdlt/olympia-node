@@ -16,8 +16,10 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.constraintmachine.exceptions;
 
-public interface UpReducer<S extends ReducerState, O extends Particle> {
-	ReducerResult reduce(S reducerState, O up, ExecutionContext context, ImmutableAddrs immutableAddrs) throws Exception;
+public class InvalidDelegationException extends Exception {
+	public InvalidDelegationException() {
+		super("Delegation not allowed by owner.");
+	}
 }

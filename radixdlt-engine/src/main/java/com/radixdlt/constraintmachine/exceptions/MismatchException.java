@@ -16,8 +16,10 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.constraintmachine.exceptions;
 
-public interface UpReducer<S extends ReducerState, O extends Particle> {
-	ReducerResult reduce(S reducerState, O up, ExecutionContext context, ImmutableAddrs immutableAddrs) throws Exception;
+public class MismatchException extends Exception {
+	public MismatchException(String msg) {
+		super(msg);
+	}
 }

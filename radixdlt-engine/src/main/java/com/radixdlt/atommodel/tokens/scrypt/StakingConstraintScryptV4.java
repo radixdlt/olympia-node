@@ -33,6 +33,11 @@ import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.exceptions.InvalidDelegationException;
+import com.radixdlt.constraintmachine.exceptions.InvalidResourceException;
+import com.radixdlt.constraintmachine.exceptions.MinimumStakeException;
+import com.radixdlt.constraintmachine.exceptions.MismatchException;
+import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ReadProcedure;
 import com.radixdlt.constraintmachine.ReducerResult;
@@ -136,19 +141,18 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 			this.delegateAllowed = delegateAllowed;
 		}
 
-		ReducerState withdraw(PreparedStake preparedStake) throws ProcedureException {
+		ReducerState withdrawTo(PreparedStake preparedStake) throws MinimumStakeException, NotEnoughResourcesException,
+			InvalidResourceException, InvalidDelegationException, MismatchException {
+
 			if (preparedStake.getAmount().compareTo(minimumStake) < 0) {
-				throw new ProcedureException(
-					"Minimum amount to stake must be >= " + minimumStake
-						+ " but trying to stake " + preparedStake.getAmount()
-				);
+				throw new MinimumStakeException(minimumStake, preparedStake.getAmount());
 			}
 			if (!preparedStake.getDelegateKey().equals(validatorKey)) {
-				throw new ProcedureException("Not matching validator keys");
+				throw new MismatchException("Not matching validator keys");
 			}
 
 			if (!delegateAllowed.test(preparedStake.getOwner())) {
-				throw new ProcedureException("Delegation not allowed");
+				throw new InvalidDelegationException();
 			}
 
 			return tokenHoldingBucket.withdraw(preparedStake.getResourceAddr(), preparedStake.getAmount());
@@ -187,7 +191,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 			StakePrepare.class, PreparedStake.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> {
-				var nextState = s.withdraw(u);
+				var nextState = s.withdrawTo(u);
 				return ReducerResult.incomplete(nextState);
 			}
 		));

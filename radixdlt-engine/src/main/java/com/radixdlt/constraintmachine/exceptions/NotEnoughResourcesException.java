@@ -20,7 +20,7 @@ package com.radixdlt.constraintmachine.exceptions;
 
 import com.radixdlt.utils.UInt256;
 
-public class NotEnoughResourcesException extends ProcedureException {
+public class NotEnoughResourcesException extends Exception {
 	public NotEnoughResourcesException(UInt256 request, UInt256 actual) {
 		super("WithdrawAmt: " + request + " ActualAmt: " + actual);
 	}

@@ -29,7 +29,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
-public class TokenHoldingBucket implements ReducerState {
+public final class TokenHoldingBucket implements ReducerState {
 	private final REAddr resourceAddr;
 	private final UInt384 amount;
 
@@ -49,7 +49,7 @@ public class TokenHoldingBucket implements ReducerState {
 		return resourceAddr;
 	}
 
-	public TokenHoldingBucket deposit(REAddr resourceAddr, UInt256 amountToAdd) throws ProcedureException {
+	public TokenHoldingBucket deposit(REAddr resourceAddr, UInt256 amountToAdd) throws InvalidResourceException {
 		if (!this.resourceAddr.equals(resourceAddr)) {
 			throw new InvalidResourceException(resourceAddr, this.resourceAddr);
 		}
@@ -57,9 +57,13 @@ public class TokenHoldingBucket implements ReducerState {
 		return new TokenHoldingBucket(this.resourceAddr, UInt384.from(amountToAdd).add(amount));
 	}
 
-	public TokenHoldingBucket withdraw(REAddr resourceAddr, UInt256 amountToWithdraw) throws ProcedureException {
+	public TokenHoldingBucket withdraw(REAddr resourceAddr, UInt256 amountToWithdraw) throws InvalidResourceException, NotEnoughResourcesException {
 		if (!this.resourceAddr.equals(resourceAddr)) {
 			throw new InvalidResourceException(resourceAddr, this.resourceAddr);
+		}
+
+		if (amountToWithdraw.isZero()) {
+			return this;
 		}
 
 		var withdraw384 = UInt384.from(amountToWithdraw);

@@ -56,6 +56,10 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 		ImmutableAddrs immutableAddrs,
 		ExecutionContext context
 	) throws ProcedureException {
-		return downReducer.reduce((SubstateWithArg<D>) o, (S) reducerState, immutableAddrs);
+		try {
+			return downReducer.reduce((SubstateWithArg<D>) o, (S) reducerState, immutableAddrs);
+		} catch (Exception e) {
+			throw new ProcedureException(e);
+		}
 	}
 }

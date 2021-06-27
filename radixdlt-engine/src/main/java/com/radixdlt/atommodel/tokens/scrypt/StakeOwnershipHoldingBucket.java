@@ -21,6 +21,7 @@ package com.radixdlt.atommodel.tokens.scrypt;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.constraintmachine.ExecutionContext;
+import com.radixdlt.constraintmachine.exceptions.MismatchException;
 import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ImmutableAddrs;
@@ -50,12 +51,12 @@ public class StakeOwnershipHoldingBucket implements ReducerState {
 		this.shareAmount = amount;
 	}
 
-	public StakeOwnershipHoldingBucket withdrawOwnership(StakeOwnership stakeOwnership) throws ProcedureException {
+	public StakeOwnershipHoldingBucket withdrawOwnership(StakeOwnership stakeOwnership) throws NotEnoughResourcesException, MismatchException {
 		if (!delegate.equals(stakeOwnership.getDelegateKey())) {
-			throw new ProcedureException("Shares must be from same delegate");
+			throw new MismatchException("Shares must be from same delegate");
 		}
 		if (!stakeOwnership.getOwner().equals(accountAddr)) {
-			throw new ProcedureException("Shares must be for same account");
+			throw new MismatchException("Shares must be for same account");
 		}
 		var withdraw384 = UInt384.from(stakeOwnership.getAmount());
 		if (shareAmount.compareTo(withdraw384) < 0) {
@@ -65,19 +66,19 @@ public class StakeOwnershipHoldingBucket implements ReducerState {
 		return new StakeOwnershipHoldingBucket(delegate, accountAddr, shareAmount.subtract(withdraw384));
 	}
 
-	public StakeOwnershipHoldingBucket depositOwnership(StakeOwnership stakeOwnership) throws ProcedureException {
+	public StakeOwnershipHoldingBucket depositOwnership(StakeOwnership stakeOwnership) throws MismatchException {
 		if (!delegate.equals(stakeOwnership.getDelegateKey())) {
-			throw new ProcedureException("Shares must be from same delegate");
+			throw new MismatchException("Shares must be from same delegate");
 		}
 		if (!stakeOwnership.getOwner().equals(accountAddr)) {
-			throw new ProcedureException("Shares must be for same account");
+			throw new MismatchException("Shares must be for same account");
 		}
 		return new StakeOwnershipHoldingBucket(delegate, accountAddr, UInt384.from(stakeOwnership.getAmount()).add(shareAmount));
 	}
 
-	public StakeOwnershipHoldingBucket unstake(PreparedUnstakeOwnership u) throws ProcedureException {
+	public StakeOwnershipHoldingBucket unstake(PreparedUnstakeOwnership u) throws NotEnoughResourcesException, MismatchException {
 		if (!Objects.equals(accountAddr, u.getOwner())) {
-			throw new ProcedureException("Must unstake to self");
+			throw new MismatchException("Must unstake to self");
 		}
 
 		var unstakeAmount = UInt384.from(u.getAmount());
