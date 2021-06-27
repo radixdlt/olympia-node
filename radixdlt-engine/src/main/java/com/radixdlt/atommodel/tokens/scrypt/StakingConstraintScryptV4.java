@@ -144,6 +144,8 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 		ReducerState withdrawTo(PreparedStake preparedStake) throws MinimumStakeException, NotEnoughResourcesException,
 			InvalidResourceException, InvalidDelegationException, MismatchException {
 
+			tokenHoldingBucket.withdraw(preparedStake.getResourceAddr(), preparedStake.getAmount());
+
 			if (preparedStake.getAmount().compareTo(minimumStake) < 0) {
 				throw new MinimumStakeException(minimumStake, preparedStake.getAmount());
 			}
@@ -155,7 +157,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 				throw new InvalidDelegationException();
 			}
 
-			return tokenHoldingBucket.withdraw(preparedStake.getResourceAddr(), preparedStake.getAmount());
+			return tokenHoldingBucket;
 		}
 	}
 

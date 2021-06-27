@@ -224,11 +224,11 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 			d -> d.getSubstate().bucket().withdrawAuthorization(),
 			(d, s, r) -> {
 				var tokens = d.getSubstate();
-				var nextState = s.deposit(
+				s.deposit(
 					tokens.getResourceAddr(),
 					tokens.getAmount()
 				);
-				return ReducerResult.incomplete(nextState);
+				return ReducerResult.incomplete(s);
 			}
 		));
 
@@ -237,8 +237,8 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 			TokenHoldingBucket.class, TokensInAccount.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> {
-				var nextState = s.withdraw(u.getResourceAddr(), u.getAmount());
-				return ReducerResult.incomplete(nextState);
+				s.withdraw(u.getResourceAddr(), u.getAmount());
+				return ReducerResult.incomplete(s);
 			}
 		));
 	}

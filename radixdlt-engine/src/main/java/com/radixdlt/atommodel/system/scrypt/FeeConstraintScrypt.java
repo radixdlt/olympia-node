@@ -42,9 +42,9 @@ public final class FeeConstraintScrypt implements ConstraintScrypt {
 					}
 
 					var amt = d.getUInt256(1);
-					var nextState = s.withdraw(REAddr.ofNativeToken(), amt);
+					s.withdraw(REAddr.ofNativeToken(), amt);
 					c.depositFeeReserve(amt);
-					return ReducerResult.incomplete(nextState);
+					return ReducerResult.incomplete(s);
 				}
 			)
 		);
