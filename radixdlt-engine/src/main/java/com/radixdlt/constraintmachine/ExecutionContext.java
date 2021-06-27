@@ -18,6 +18,7 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.constraintmachine.exceptions.NotEnoughFeesException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
@@ -29,20 +30,34 @@ import java.util.Optional;
 
 public final class ExecutionContext {
 	private final PermissionLevel level;
-	private final Optional<ECPublicKey> key;
-	private final boolean disableResourceAllocAndDestroy;
+	private ECPublicKey key;
+	private boolean disableResourceAllocAndDestroy;
 	private UInt256 feeReserve;
+	private int sigsLeft;
 
 	public ExecutionContext(
 		PermissionLevel level,
-		Optional<ECPublicKey> key,
 		UInt256 feeReserve,
-		boolean disableResourceAllocAndDestroy
+		int sigsLeft
 	) {
 		this.level = level;
-		this.key = key;
-		this.disableResourceAllocAndDestroy = disableResourceAllocAndDestroy;
 		this.feeReserve = feeReserve;
+		this.sigsLeft = sigsLeft;
+	}
+
+	public void resetSigs(int sigs) {
+		this.sigsLeft = sigs;
+	}
+
+	public void sig() throws AuthorizationException {
+		if (this.sigsLeft == 0) {
+			throw new AuthorizationException("Used up all signatures allowed");
+		}
+		this.sigsLeft--;
+	}
+
+	public int sigsLeft() {
+		return sigsLeft;
 	}
 
 	public void depositFeeReserve(UInt256 fee) {
@@ -61,8 +76,16 @@ public final class ExecutionContext {
 		}
 	}
 
+	public void setDisableResourceAllocAndDestroy(boolean disableResourceAllocAndDestroy) {
+		this.disableResourceAllocAndDestroy = disableResourceAllocAndDestroy;
+	}
+
+	public void setKey(ECPublicKey key) {
+		this.key = key;
+	}
+
 	public Optional<ECPublicKey> key() {
-		return key;
+		return Optional.ofNullable(key);
 	}
 
 	public PermissionLevel permissionLevel() {
@@ -74,7 +97,7 @@ public final class ExecutionContext {
 			throw new InvalidPermissionException(requiredLevel, level);
 		}
 
-		if (requiredLevel.compareTo(PermissionLevel.SUPER_USER) >= 0 && key.isPresent()) {
+		if (requiredLevel.compareTo(PermissionLevel.SUPER_USER) >= 0 && key != null) {
 			throw new SignedSystemException();
 		}
 	}

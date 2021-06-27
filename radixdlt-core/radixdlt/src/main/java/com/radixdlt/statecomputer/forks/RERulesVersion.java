@@ -71,7 +71,10 @@ import com.radixdlt.atommodel.validators.scrypt.ValidatorRegisterConstraintScryp
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
-import com.radixdlt.constraintmachine.metering.FixedFeeMetering;
+import com.radixdlt.constraintmachine.meter.Meter;
+import com.radixdlt.constraintmachine.meter.Meters;
+import com.radixdlt.constraintmachine.meter.FixedFeeMeter;
+import com.radixdlt.constraintmachine.meter.SigsPerRoundMeter;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.EpochProofVerifierV2;
 import com.radixdlt.utils.UInt256;
@@ -100,10 +103,14 @@ public enum RERulesVersion {
 				config.getMinimumCompletedProposalsPercentage(),
 				config.getUnstakingEpochDelay()
 			));
+			var meter = Meters.combine(
+				config.getMaxSigsPerRound().stream().<Meter>mapToObj(SigsPerRoundMeter::create).findAny().orElse(Meter.EMPTY),
+				FixedFeeMeter.create(fees ? FIXED_FEE : UInt256.ZERO)
+			);
 			var betanet4 = new ConstraintMachineConfig(
 				v4.virtualizedUpParticles(),
 				v4.getProcedures(),
-				fees ? new FixedFeeMetering(FIXED_FEE) : (procedureKey, param, context) -> { }
+				meter
 			);
 			var parser = new REParser(v4.buildSubstateDeserialization());
 			var serialization = v4.buildSubstateSerialization();
@@ -141,7 +148,8 @@ public enum RERulesVersion {
 				betanet4,
 				actionConstructors,
 				new EpochProofVerifierV2(),
-				View.of(maxRounds)
+				View.of(maxRounds),
+				config.getMaxSigsPerRound()
 			);
 		}
 	};

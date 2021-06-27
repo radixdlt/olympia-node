@@ -24,6 +24,7 @@ import com.google.inject.multibindings.OptionalBinder;
 import com.radixdlt.atommodel.tokens.Amount;
 
 import java.util.Comparator;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 
@@ -41,6 +42,7 @@ public class RadixEngineForksLatestOnlyModule extends AbstractModule {
 		this(
 			new RERulesConfig(
 				false,
+				OptionalInt.of(10),
 				10,
 				2,
 				Amount.ofTokens(10),

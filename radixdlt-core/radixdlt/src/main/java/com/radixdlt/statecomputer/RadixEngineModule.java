@@ -38,6 +38,7 @@ import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.OptionalInt;
 import java.util.Set;
 
 /**
@@ -69,6 +70,14 @@ public class RadixEngineModule extends AbstractModule {
 	@Singleton
 	private REParser parser(RERules rules) {
 		return rules.getParser();
+	}
+
+	// TODO: Remove
+	@Provides
+	@Singleton
+	@MaxTxnsPerProposal
+	private OptionalInt maxTxnsPerProposal(RERules rules) {
+		return rules.getMaxTxnsPerRound();
 	}
 
 	// TODO: Remove

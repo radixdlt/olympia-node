@@ -47,7 +47,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.ByzantineQuorumException;
+import com.radixdlt.ledger.CommittedBadTxnException;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
@@ -59,7 +59,6 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.utils.Bytes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -69,6 +68,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongFunction;
 import java.util.stream.Collectors;
@@ -81,7 +81,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	private final RadixEngineMempool mempool;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final int maxTxnsPerProposal;
 	private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
 	private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
 	private final EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher;
@@ -94,6 +93,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	private ProposerElection proposerElection;
 	private View epochCeilingView;
+	private OptionalInt maxTxnsPerProposal;
 
 	@Inject
 	public RadixEngineStateComputer(
@@ -102,7 +102,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		Forks forks,
 		RadixEngineMempool mempool, // TODO: Move this into radixEngine
 		@EpochCeilingView View epochCeilingView, // TODO: Move this into radixEngine
-		@MaxTxnsPerProposal int maxTxnsPerProposal, // TODO: Move this into radixEngine
+		@MaxTxnsPerProposal OptionalInt maxTxnsPerProposal, // TODO: Move this into radixEngine
 		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
 		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher,
 		EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher,
@@ -184,7 +184,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			.collect(Collectors.toList());
 
 		// TODO: only return commands which will not cause a missing dependency error
-		final List<Txn> txns = mempool.getTxns(maxTxnsPerProposal, cmds);
+		final List<Txn> txns = mempool.getTxns(maxTxnsPerProposal.orElse(50), cmds);
 		systemCounters.add(SystemCounters.CounterType.MEMPOOL_PROPOSED_TRANSACTION, txns.size());
 		return txns;
 	}
@@ -335,14 +335,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				PermissionLevel.SUPER_USER
 			);
 		} catch (RadixEngineException e) {
-			throw new ByzantineQuorumException(
-				String.format(
-					"Trying to commit bad txnId: %s payload: %s",
-					e.getTxn().getId(),
-					Bytes.toHexString(e.getTxn().getPayload())
-				),
-				e
-			);
+			throw new CommittedBadTxnException(verifiedTxnsAndProof, e);
 		}
 
 		// Next epoch
@@ -358,6 +351,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 						rules.getParser()
 					);
 					this.epochCeilingView = rules.getMaxRounds();
+					this.maxTxnsPerProposal = rules.getMaxTxnsPerRound();
 				});
 		}
 

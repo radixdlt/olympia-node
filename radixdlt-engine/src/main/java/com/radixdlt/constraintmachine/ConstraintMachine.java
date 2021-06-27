@@ -31,12 +31,11 @@ import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
 import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
 import com.radixdlt.constraintmachine.exceptions.TxnParseException;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.constraintmachine.meter.Meter;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.UInt256;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -45,6 +44,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -58,25 +58,23 @@ import java.util.function.Supplier;
 public final class ConstraintMachine {
 	private final Predicate<Particle> virtualStoreLayer;
 	private final Procedures procedures;
-	private final Metering metering;
+	private final Meter metering;
 
 	public ConstraintMachine(
 		Predicate<Particle> virtualStoreLayer,
 		Procedures procedures
 	) {
-		this.virtualStoreLayer = virtualStoreLayer;
-		this.procedures = procedures;
-		this.metering = (k, param, context) -> { };
+		this(virtualStoreLayer, procedures, Meter.EMPTY);
 	}
 
 	public ConstraintMachine(
 		Predicate<Particle> virtualStoreLayer,
 		Procedures procedures,
-		Metering metering
+		Meter metering
 	) {
-		this.virtualStoreLayer = virtualStoreLayer;
-		this.procedures = procedures;
-		this.metering = metering;
+		this.virtualStoreLayer = Objects.requireNonNull(virtualStoreLayer);
+		this.procedures = Objects.requireNonNull(procedures);
+		this.metering = Objects.requireNonNull(metering);
 	}
 
 	private static final class CMValidationState {
@@ -226,7 +224,9 @@ public final class ConstraintMachine {
 		context.verifyPermissionLevel(requiredLevel);
 		if (context.permissionLevel() != PermissionLevel.SYSTEM) {
 			if (requiredLevel == PermissionLevel.USER) {
-				this.metering.onUserInstruction(procedure.key(), procedureParam, context);
+				this.metering.onUserProcedure(procedure.key(), procedureParam, context);
+			} else if (requiredLevel == PermissionLevel.SUPER_USER) {
+				this.metering.onSuperUserProcedure(procedure.key(), procedureParam, context);
 			}
 
 			authorization.authorizer().verify(immutableAddrs, context);
@@ -370,6 +370,8 @@ public final class ConstraintMachine {
 					}
 
 					expectEnd = false;
+				} else if (inst.getMicroOp() == REInstruction.REMicroOp.SIG) {
+					metering.onSigInstruction(context);
 				}
 			} catch (Exception e) {
 				throw new ConstraintMachineException(instIndex, inst, reducerState, e);
@@ -391,13 +393,10 @@ public final class ConstraintMachine {
 		CMStore.Transaction dbTxn,
 		SubstateDeserialization deserialization,
 		CMStore cmStore,
-		PermissionLevel permissionLevel,
-		List<REInstruction> instructions,
-		Optional<ECPublicKey> signature,
-		boolean disableResourceAllocAndDestroy
+		ExecutionContext context,
+		List<REInstruction> instructions
 	) throws TxnParseException, ConstraintMachineException {
 		var validationState = new CMValidationState(deserialization, virtualStoreLayer, dbTxn, cmStore);
-		var context = new ExecutionContext(permissionLevel, signature, UInt256.ZERO, disableResourceAllocAndDestroy);
 		return this.statefulVerify(context, validationState, instructions);
 	}
 }

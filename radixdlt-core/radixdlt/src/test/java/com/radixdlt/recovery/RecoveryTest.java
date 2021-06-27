@@ -89,6 +89,7 @@ import com.radixdlt.sync.CommittedReader;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.stream.Stream;
 
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -145,6 +146,7 @@ public class RecoveryTest {
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
 					false,
+					OptionalInt.of(50),
 					100L,
 					2,
 					Amount.ofTokens(10),
@@ -189,6 +191,7 @@ public class RecoveryTest {
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
 					false,
+					OptionalInt.of(50),
 					epochCeilingView,
 					2,
 					Amount.ofTokens(10),
@@ -198,7 +201,7 @@ public class RecoveryTest {
 				)),
 			new ForksModule(),
 			MempoolConfig.asModule(10, 10),
-			RadixEngineConfig.asModule(1, Integer.MAX_VALUE, 50),
+			RadixEngineConfig.asModule(1, Integer.MAX_VALUE),
 			new AbstractModule() {
 				@Override
 				protected void configure() {

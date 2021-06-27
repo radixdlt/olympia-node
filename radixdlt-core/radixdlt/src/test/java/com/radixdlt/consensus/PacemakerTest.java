@@ -65,7 +65,7 @@ public class PacemakerTest {
 	private Injector createRunner() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
-			RadixEngineConfig.asModule(1, Integer.MAX_VALUE, 50),
+			RadixEngineConfig.asModule(1, Integer.MAX_VALUE),
 			new ForksModule(),
 			new RadixEngineForksLatestOnlyModule(),
 			new MockedGenesisModule(),

@@ -16,14 +16,16 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.ledger;
 
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
+import com.radixdlt.engine.RadixEngineException;
 
-public interface Metering {
-	void onUserInstruction(
-		ProcedureKey procedureKey,
-		Object param,
-		ExecutionContext context
-	) throws AuthorizationException;
+public class CommittedBadTxnException extends ByzantineQuorumException {
+	public CommittedBadTxnException(VerifiedTxnsAndProof txnsAndProof, RadixEngineException cause) {
+		super("epoch=" + txnsAndProof.getProof().getEpoch() + " version=" + versionWithIssue(txnsAndProof, cause), cause);
+	}
+
+	private static long versionWithIssue(VerifiedTxnsAndProof txnsAndProof, RadixEngineException cause) {
+		return txnsAndProof.getProof().getStateVersion() - txnsAndProof.getTxns().size() + cause.getTxnIndex();
+	}
 }

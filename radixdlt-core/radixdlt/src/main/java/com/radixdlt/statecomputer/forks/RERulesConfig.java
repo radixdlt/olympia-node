@@ -20,8 +20,11 @@ package com.radixdlt.statecomputer.forks;
 
 import com.radixdlt.atommodel.tokens.Amount;
 
+import java.util.OptionalInt;
+
 public final class RERulesConfig {
 	private final long maxRounds;
+	private final OptionalInt maxSigsPerRound;
 	private final boolean fees;
 	private final long rakeIncreaseDebouncerEpochLength;
 	private final Amount minimumStake;
@@ -31,6 +34,7 @@ public final class RERulesConfig {
 
 	public RERulesConfig(
 		boolean fees,
+		OptionalInt maxSigsPerRound,
 		long maxRounds,
 		long rakeIncreaseDebouncerEpochLength,
 		Amount minimumStake,
@@ -39,6 +43,7 @@ public final class RERulesConfig {
 		int minimumCompletedProposalsPercentage
 	) {
 		this.fees = fees;
+		this.maxSigsPerRound = maxSigsPerRound;
 		this.maxRounds = maxRounds;
 		this.rakeIncreaseDebouncerEpochLength = rakeIncreaseDebouncerEpochLength;
 		this.minimumStake = minimumStake;
@@ -50,6 +55,7 @@ public final class RERulesConfig {
 	public static RERulesConfig testingDefault() {
 		return new RERulesConfig(
 			false,
+			OptionalInt.of(2),
 			10,
 			1,
 			Amount.ofTokens(10),
@@ -57,6 +63,10 @@ public final class RERulesConfig {
 			Amount.ofTokens(10),
 			9800
 		);
+	}
+
+	public OptionalInt getMaxSigsPerRound() {
+		return maxSigsPerRound;
 	}
 
 	public Amount getMinimumStake() {
@@ -87,9 +97,36 @@ public final class RERulesConfig {
 		return minimumCompletedProposalsPercentage;
 	}
 
+	public RERulesConfig overrideMaxSigsPerRound(int maxSigsPerRound) {
+		return new RERulesConfig(
+			this.fees,
+			OptionalInt.of(maxSigsPerRound),
+			this.maxRounds,
+			this.rakeIncreaseDebouncerEpochLength,
+			this.minimumStake,
+			this.unstakingEpochDelay,
+			this.rewardsPerProposal,
+			this.minimumCompletedProposalsPercentage
+		);
+	}
+
+	public RERulesConfig removeSigsPerRoundLimit() {
+		return new RERulesConfig(
+			this.fees,
+			OptionalInt.empty(),
+			this.maxRounds,
+			this.rakeIncreaseDebouncerEpochLength,
+			this.minimumStake,
+			this.unstakingEpochDelay,
+			this.rewardsPerProposal,
+			this.minimumCompletedProposalsPercentage
+		);
+	}
+
 	public RERulesConfig overrideFees(boolean fees) {
 		return new RERulesConfig(
 			fees,
+			this.maxSigsPerRound,
 			this.maxRounds,
 			this.rakeIncreaseDebouncerEpochLength,
 			this.minimumStake,
@@ -102,6 +139,7 @@ public final class RERulesConfig {
 	public RERulesConfig overrideMaxRounds(long maxRounds) {
 		return new RERulesConfig(
 			this.fees,
+			this.maxSigsPerRound,
 			maxRounds,
 			this.rakeIncreaseDebouncerEpochLength,
 			this.minimumStake,

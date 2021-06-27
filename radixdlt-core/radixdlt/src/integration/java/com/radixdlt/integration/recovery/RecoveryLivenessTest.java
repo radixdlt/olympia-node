@@ -86,6 +86,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -149,6 +150,7 @@ public class RecoveryLivenessTest {
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
 					false,
+					OptionalInt.of(50),
 					epochCeilingView,
 					2,
 					Amount.ofTokens(10),
@@ -158,7 +160,7 @@ public class RecoveryLivenessTest {
 				)),
 			new ForksModule(),
 			new RadixEngineModule(),
-			RadixEngineConfig.asModule(1, 100, 50),
+			RadixEngineConfig.asModule(1, 100),
 			new AbstractModule() {
 				@Override
 				public void configure() {
@@ -203,6 +205,7 @@ public class RecoveryLivenessTest {
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
 					false,
+					OptionalInt.of(50),
 					epochCeilingView,
 					2,
 					Amount.ofTokens(10),
@@ -211,7 +214,7 @@ public class RecoveryLivenessTest {
 					9800
 				)),
 			new ForksModule(),
-			RadixEngineConfig.asModule(1, 100, 50),
+			RadixEngineConfig.asModule(1, 100),
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {
 				@Override

@@ -18,17 +18,19 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.constraintmachine.meter.Meter;
+
 import java.util.function.Predicate;
 
 public final class ConstraintMachineConfig {
 	private final Predicate<Particle> virtualStoreLayer;
 	private final Procedures procedures;
-	private final Metering metering;
+	private final Meter metering;
 
 	public ConstraintMachineConfig(
 		Predicate<Particle> virtualStoreLayer,
 		Procedures procedures,
-		Metering metering
+		Meter metering
 	) {
 		this.virtualStoreLayer = virtualStoreLayer;
 		this.procedures = procedures;
@@ -43,11 +45,11 @@ public final class ConstraintMachineConfig {
 		return procedures;
 	}
 
-	public Metering getMetering() {
+	public Meter getMetering() {
 		return metering;
 	}
 
-	public ConstraintMachineConfig metering(Metering metering) {
+	public ConstraintMachineConfig metering(Meter metering) {
 		return new ConstraintMachineConfig(
 			virtualStoreLayer, procedures, metering
 		);

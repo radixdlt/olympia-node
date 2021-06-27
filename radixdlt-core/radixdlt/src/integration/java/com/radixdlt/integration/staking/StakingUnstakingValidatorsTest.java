@@ -128,7 +128,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class StakingUnstakingValidatorsTest {
 	private static final Logger logger = LogManager.getLogger();
 	private static final Amount REWARDS_PER_PROPOSAL = Amount.ofTokens(10);
-	private static final RERulesConfig config = RERulesConfig.testingDefault();
+	private static final RERulesConfig config = RERulesConfig.testingDefault().overrideMaxSigsPerRound(2);
 
 	@Parameterized.Parameters
 	public static Collection<Object[]> forksModule() {
@@ -163,7 +163,7 @@ public class StakingUnstakingValidatorsTest {
 		this.radixEngineConfiguration = Modules.combine(
 			new ForksModule(),
 			forkModule,
-			RadixEngineConfig.asModule(1, 10, 50)
+			RadixEngineConfig.asModule(1, 10)
 		);
 		this.payFees = payFees;
 		this.maxRounds = maxRounds;

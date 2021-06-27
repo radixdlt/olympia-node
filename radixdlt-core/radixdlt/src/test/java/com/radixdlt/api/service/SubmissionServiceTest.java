@@ -138,7 +138,7 @@ public class SubmissionServiceTest {
 			public void configure() {
 				install(new RadixEngineForksLatestOnlyModule());
 				install(new ForksModule());
-				install(RadixEngineConfig.asModule(1, 100, 50));
+				install(RadixEngineConfig.asModule(1, 100));
 				install(MempoolConfig.asModule(10, 10));
 
 				bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)

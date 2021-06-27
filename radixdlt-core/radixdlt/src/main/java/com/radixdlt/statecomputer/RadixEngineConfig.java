@@ -28,13 +28,12 @@ public final class RadixEngineConfig {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
 
-	public static Module asModule(int minValidators, int maxValidators, int maxTxnsPerProposal) {
+	public static Module asModule(int minValidators, int maxValidators) {
 		return new AbstractModule() {
 			@Override
 			protected void configure() {
 				bindConstant().annotatedWith(MinValidators.class).to(minValidators);
 				bindConstant().annotatedWith(MaxValidators.class).to(maxValidators);
-				bindConstant().annotatedWith(MaxTxnsPerProposal.class).to(maxTxnsPerProposal);
 			}
 		};
 	}

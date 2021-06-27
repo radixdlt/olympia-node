@@ -22,6 +22,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.atommodel.tokens.Amount;
 
+import java.util.OptionalInt;
+
 /**
  * The forks for betanet and the epochs at which they will occur.
  */
@@ -34,6 +36,7 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
 				true,
+				OptionalInt.of(50), // 50 Txns per round
 				1_500_000, // Two weeks worth of rounds for first epoch
 				150, // Two weeks worth of epochs
 				Amount.ofTokens(100), // Minimum stake
@@ -52,6 +55,7 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
 				true,
+				OptionalInt.of(50), // 50 Txns per round
 				10_000,
 				150, // Two weeks worth of epochs
 				Amount.ofTokens(100), // Minimum stake
