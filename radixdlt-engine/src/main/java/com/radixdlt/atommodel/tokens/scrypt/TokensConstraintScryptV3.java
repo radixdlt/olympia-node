@@ -108,18 +108,18 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				SubstateTypeId.TOKENS.id(),
 				buf -> {
 					REFieldSerialization.deserializeReservedByte(buf);
-					var rri = REFieldSerialization.deserializeREAddr(buf);
 					var holdingAddr = REFieldSerialization.deserializeREAddr(buf);
 					if (!holdingAddr.isAccount()) {
 						throw new DeserializeException("Tokens must be held by holding address: " + holdingAddr);
 					}
+					var rri = REFieldSerialization.deserializeREAddr(buf);
 					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					return new TokensInAccount(holdingAddr, amount, rri);
 				},
 				(s, buf) -> {
 					REFieldSerialization.serializeReservedByte(buf);
-					REFieldSerialization.serializeREAddr(buf, s.getResourceAddr());
 					REFieldSerialization.serializeREAddr(buf, s.getHoldingAddr());
+					REFieldSerialization.serializeREAddr(buf, s.getResourceAddr());
 					buf.put(s.getAmount().toByteArray());
 				}
 			)
