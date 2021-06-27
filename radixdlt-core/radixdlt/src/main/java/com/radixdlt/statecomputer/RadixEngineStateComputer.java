@@ -276,7 +276,15 @@ public final class RadixEngineStateComputer implements StateComputer {
 		ImmutableList.Builder<PreparedTxn> successBuilder,
 		ImmutableMap.Builder<Txn, Exception> errorBuilder
 	) {
-		nextTxns.forEach(txn -> {
+		// TODO: This check should probably be done before getting into state computer
+		this.maxTxnsPerProposal.ifPresent(max -> {
+			if (nextTxns.size() > max) {
+				log.warn("{} proposing {} txns when limit is {}", proposer, nextTxns.size(), max);
+			}
+		});
+		var numToProcess = Integer.min(nextTxns.size(), this.maxTxnsPerProposal.orElse(Integer.MAX_VALUE));
+		for (int i = 0; i < numToProcess; i++) {
+			var txn = nextTxns.get(i);
 			final List<REProcessedTxn> parsed;
 			try {
 				parsed = branch.execute(List.of(txn));
@@ -288,7 +296,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 			var radixEngineCommand = new RadixEngineTxn(txn, parsed.get(0), PermissionLevel.USER);
 			successBuilder.add(radixEngineCommand);
-		});
+		}
 	}
 
 	@Override
