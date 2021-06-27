@@ -82,7 +82,6 @@ public class ByzantineSyncTest {
 			.addTestModules(
 				ConsensusMonitors.safety(),
 				ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
-				ConsensusMonitors.noTimeouts(),
 				ConsensusMonitors.directParents(),
 				LedgerMonitors.consensusToLedger(),
 				LedgerMonitors.ordered()
