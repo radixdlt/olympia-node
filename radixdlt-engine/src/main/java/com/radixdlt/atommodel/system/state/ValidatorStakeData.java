@@ -193,7 +193,7 @@ public final class ValidatorStakeData implements ResourceInBucket {
 			ownerAddr,
 			isRegistered
 		);
-		var exittingStake = new ExittingStake(validatorKey, owner, epochUnlocked, unstaked);
+		var exittingStake = new ExittingStake(epochUnlocked, validatorKey, owner, unstaked);
 		return Pair.of(nextValidatorStake, exittingStake);
 	}
 

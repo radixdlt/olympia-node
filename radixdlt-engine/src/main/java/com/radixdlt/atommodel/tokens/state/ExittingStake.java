@@ -36,9 +36,9 @@ public final class ExittingStake implements ResourceInBucket {
 	private final long epochUnlocked;
 
 	public ExittingStake(
+		long epochUnlocked,
 		ECPublicKey delegateKey,
 		REAddr owner,
-		long epochUnlocked,
 		UInt256 amount
 	) {
 		this.delegateKey = Objects.requireNonNull(delegateKey);

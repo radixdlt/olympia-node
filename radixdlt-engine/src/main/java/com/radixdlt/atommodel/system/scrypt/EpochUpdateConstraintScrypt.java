@@ -94,16 +94,19 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.updatingEpoch = updatingEpoch;
 		}
 
-		public ReducerState process(ShutdownAll<ExittingStake> i) throws ProcedureException {
-			i.verifyPostTypePrefixIsEmpty();
-			i.iterator().forEachRemaining(exitting::add);
+		public ReducerState process(ShutdownAll<ExittingStake> shutdownAll) throws ProcedureException {
+			var expectedEpoch = updatingEpoch.prevEpoch.getEpoch() + 1;
+			var expectedPrefix = new byte[Long.BYTES + 1];
+			Longs.copyTo(expectedEpoch, expectedPrefix, 1);
+			shutdownAll.verifyPostTypePrefixEquals(expectedPrefix);
+			shutdownAll.iterator().forEachRemaining(exitting::add);
 			return next();
 		}
 
 		public ReducerState unlock(TokensInAccount u) throws ProcedureException {
 			var exit = exitting.first();
 			exitting.remove(exit);
-			if (exit.getEpochUnlocked() != updatingEpoch.prevEpoch.getEpoch()) {
+			if (exit.getEpochUnlocked() != updatingEpoch.prevEpoch.getEpoch() + 1) {
 				throw new ProcedureException("Stake must still be locked.");
 			}
 			var expected = exit.unlock();
@@ -111,18 +114,6 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 				throw new ProcedureException("Expecting next state to be " + expected + " but was " + u);
 			}
 
-			return next();
-		}
-
-		public ReducerState nextExit(ExittingStake u) throws ProcedureException {
-			var first = exitting.first();
-			var ownershipUnstake = exitting.remove(first);
-			if (!u.equals(first)) {
-				throw new ProcedureException("Exitting stake must be equivalent.");
-			}
-			if (u.getEpochUnlocked() == updatingEpoch.prevEpoch.getEpoch()) {
-				throw new ProcedureException("Expecting stake to be unlocked.");
-			}
 			return next();
 		}
 
@@ -268,7 +259,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		ReducerState exit(ExittingStake u) throws ProcedureException {
 			var firstAddr = unstaking.firstKey();
 			var ownershipUnstake = unstaking.remove(firstAddr);
-			var epochUnlocked = updatingEpoch.prevEpoch.getEpoch() + unstakingEpochDelay;
+			var epochUnlocked = updatingEpoch.prevEpoch.getEpoch() + unstakingEpochDelay + 1;
 			var nextValidatorAndExit = current.unstakeOwnership(
 				firstAddr, ownershipUnstake, epochUnlocked
 			);
@@ -719,11 +710,6 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			}
 		));
 		os.procedure(new UpProcedure<>(
-			ProcessExittingStake.class, ExittingStake.class,
-			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, u, c, r) -> ReducerResult.incomplete(s.nextExit(u))
-		));
-		os.procedure(new UpProcedure<>(
 			ProcessExittingStake.class, TokensInAccount.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.unlock(u))
@@ -897,7 +883,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					var delegate = REFieldSerialization.deserializeKey(buf);
 					var owner = REFieldSerialization.deserializeREAddr(buf);
 					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
-					return new ExittingStake(delegate, owner, epochUnlocked, amount);
+					return new ExittingStake(epochUnlocked, delegate, owner, amount);
 				},
 				(s, buf) -> {
 					REFieldSerialization.serializeReservedByte(buf);
