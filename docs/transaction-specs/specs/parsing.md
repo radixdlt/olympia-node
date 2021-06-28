@@ -8,7 +8,7 @@ In this documentation, we describe the structure of Radix transaction. If you'd 
 
 This section explains how values of primitive types are read and written.
 
-Unless otherwise specified, the order of bytes is alway [big endian](https://en.wikipedia.org/wiki/Endianness). 
+Unless otherwise specified, the order of bytes is always [big endian](https://en.wikipedia.org/wiki/Endianness). 
 
 ### Boolean
 
@@ -70,9 +70,12 @@ Currently, there are 4 types of addresses:
 - `0x03 + public_key` - An account address
 
 At api/user level, addresses are wrapped into user-friendly identifiers:
-- Account addresses are encoded as `bech32("xrd", address)` for mainnet and `bech32("brx", address)` for testnet
-- Validator addresses are encoded as `bech32("vr", public_key)` for mainnet and `bech32("vb", public_key)` for testnet
-- Resource addresses are encoded as `bench32(symbol + "_rr", address)` for mainnet and `bench32(symbol + "_rb", address)` for testnet
+
+| **Type**  | **Mainnet**                       | **Testnet**                       | **Devnet**                        |
+|-----------|-----------------------------------|-----------------------------------|-----------------------------------|
+| Account   | `bech32("rdx", address)`          | `bech32("tdx", address)`          | `bech32("ddx", address)`          |
+| Validator | `bech32("rv", public_key)`        | `bech32("tv", public_key)`        | `bech32("dv", public_key)`        |
+| Resource  | `bech32(symbol + "_rr", address)` | `bech32(symbol + "_tr", address)` | `bech32(symbol + "_dr", address)` |
 
 Bech32 encoding is specified [here](https://en.bitcoin.it/wiki/Bech32).
 
