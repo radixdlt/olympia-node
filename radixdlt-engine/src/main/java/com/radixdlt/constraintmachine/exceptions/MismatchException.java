@@ -18,7 +18,14 @@
 
 package com.radixdlt.constraintmachine.exceptions;
 
+import com.radixdlt.constraintmachine.Particle;
+
 public class MismatchException extends Exception {
+
+	public MismatchException(Particle expected, Particle actual) {
+		super("Expected substate " + expected + " but was " + actual);
+	}
+
 	public MismatchException(String msg) {
 		super(msg);
 	}
