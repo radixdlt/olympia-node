@@ -36,30 +36,22 @@ public class FeeReserveCompleteConstructor implements ActionConstructor<FeeReser
 	@Override
 	public void construct(FeeReserveComplete action, TxBuilder builder) throws TxBuilderException {
 		var feeReserve = Optional.ofNullable(builder.getFeeReserve()).orElse(UInt256.ZERO);
-		var sigSize = 1 + 64 + 1;
-		int curSize = builder.toLowLevelBuilder().size() + sigSize;
+		int curSize = builder.toLowLevelBuilder().size() + signatureInstructionSize();
 		var expectedFee1 = costPerByte.multiply(UInt256.from(curSize));
 		if (feeReserve.compareTo(expectedFee1) < 0) {
 			throw new FeeReserveCompleteException(feeReserve, expectedFee1);
 		}
 
 		if (feeReserve.compareTo(expectedFee1) == 0) {
-			// Don't add END inst
+			// Fees all accounted for, no need to add END
 			return;
 		}
 
-		// TODO: Clean this up
-		var syscallSize = 0;
-		syscallSize++; // REInstruction
-		syscallSize++; // size
-		syscallSize++; // syscall id
-		syscallSize += UInt256.BYTES;
-
-		var endSize = 1;
-		var expectedSizeWithNoReturn = curSize + syscallSize + endSize;
+		// TODO: Figure out cleaner way to do this which isn't so fragile
+		var expectedSizeWithNoReturn = curSize + syscallInstructionSize() + endInstructionSize();
 		var expectedFee = costPerByte.multiply(UInt256.from(expectedSizeWithNoReturn));
 		if (!expectedFee.equals(feeReserve)) {
-			var expectedSizeWithReturn = expectedSizeWithNoReturn + getReturnedSubstateSize();
+			var expectedSizeWithReturn = expectedSizeWithNoReturn + returnedSubstateInstructionSize();
 			expectedFee = costPerByte.multiply(UInt256.from(expectedSizeWithReturn));
 		}
 		if (feeReserve.compareTo(expectedFee) < 0) {
@@ -70,7 +62,24 @@ public class FeeReserveCompleteConstructor implements ActionConstructor<FeeReser
 		builder.end();
 	}
 
-	private static int getReturnedSubstateSize() {
+	private static int endInstructionSize() {
+		return 1;
+	}
+
+	private static int signatureInstructionSize() {
+		return 1 + 32 + 32 + 1;
+	}
+
+	private static int syscallInstructionSize() {
+		var syscallSize = 0;
+		syscallSize++; // REInstruction
+		syscallSize++; // size
+		syscallSize++; // syscall id
+		syscallSize += UInt256.BYTES;
+		return syscallSize;
+	}
+
+	private static int returnedSubstateInstructionSize() {
 		var returnSubstateSize = 0;
 		returnSubstateSize++; // REInstruction
 		returnSubstateSize++; // Substate typeId
