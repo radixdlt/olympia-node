@@ -41,7 +41,7 @@ public class UpdateValidatorOwnerConstructor implements ActionConstructor<Update
 				PreparedOwnerUpdate.class,
 				p -> p.getValidatorKey().equals(action.getValidatorKey()),
 				Optional.empty(),
-				"Cannot find state"
+				() -> new TxBuilderException("Cannot find state")
 			).with(substateDown ->
 				List.of(new PreparedOwnerUpdate(
 					action.getValidatorKey(),
@@ -55,7 +55,7 @@ public class UpdateValidatorOwnerConstructor implements ActionConstructor<Update
 				Optional.of(SubstateWithArg.noArg(
 					new ValidatorOwnerCopy(action.getValidatorKey(), REAddr.ofPubKeyAccount(action.getValidatorKey()))
 				)),
-				"Cannot find state"
+				() -> new TxBuilderException("Cannot find state")
 			).with(substateDown ->
 				List.of(new PreparedOwnerUpdate(
 					action.getValidatorKey(),

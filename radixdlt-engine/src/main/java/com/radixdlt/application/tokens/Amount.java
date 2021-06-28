@@ -31,6 +31,14 @@ public final class Amount {
 		this.subunits = subunits;
 	}
 
+	public static Amount zero() {
+		return new Amount(UInt256.ZERO);
+	}
+
+	public static Amount ofMicroTokens(long units) {
+		return new Amount(UInt256.from(units).multiply(UInt256.TEN.pow(TokenUtils.SUB_UNITS_POW_10 - 6)));
+	}
+
 	public static Amount ofTokens(long units) {
 		return new Amount(UInt256.from(units).multiply(TokenUtils.SUB_UNITS));
 	}

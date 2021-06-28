@@ -23,13 +23,12 @@ import com.radixdlt.application.system.construction.FeeReserveCompleteConstructo
 import com.radixdlt.application.system.construction.FeeReservePutConstructor;
 import com.radixdlt.application.system.scrypt.FeeConstraintScrypt;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.application.tokens.TokenUtils;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.application.tokens.construction.MintTokenConstructor;
 import com.radixdlt.application.tokens.construction.TransferTokensConstructorV2;
 import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.application.tokens.state.AccountBucket;
-import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.FeeReserveComplete;
@@ -66,11 +65,9 @@ public class TxnSizeFeeTest {
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
 		return List.of(
-			new Object[] { UInt256.ONE },
-			new Object[] { UInt256.TWO },
-			new Object[] {
-				UInt256.TWO.multiply(UInt256.TEN.pow(TokenUtils.SUB_UNITS_POW_10 - 4)) // 0.0002
-			}
+			new Object[] {UInt256.ONE},
+			new Object[] {UInt256.TWO},
+			new Object[] {Amount.ofMicroTokens(2).toSubunits()}
 		);
 	}
 
@@ -100,7 +97,7 @@ public class TxnSizeFeeTest {
 		this.engine = new RadixEngine<>(
 			parser,
 			serialization,
-			ActionConstructors.newBuilder()
+			REConstructor.newBuilder()
 				.put(TransferToken.class, new TransferTokensConstructorV2())
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())

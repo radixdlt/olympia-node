@@ -27,7 +27,7 @@ import com.radixdlt.application.tokens.construction.MintTokenConstructor;
 import com.radixdlt.application.tokens.construction.TransferTokensConstructorV2;
 import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.application.tokens.state.AccountBucket;
-import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.FeeReserveTake;
@@ -38,7 +38,6 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.exceptions.DefaultedSystemLoanException;
-import com.radixdlt.constraintmachine.exceptions.DepletedFeeReserveException;
 import com.radixdlt.constraintmachine.exceptions.ExecutionContextDestroyException;
 import com.radixdlt.constraintmachine.meter.FixedFeeMeter;
 import com.radixdlt.crypto.ECKeyPair;
@@ -79,7 +78,7 @@ public class FixedFeeTest {
 		this.engine = new RadixEngine<>(
 			parser,
 			serialization,
-			ActionConstructors.newBuilder()
+			REConstructor.newBuilder()
 				.put(TransferToken.class, new TransferTokensConstructorV2())
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())

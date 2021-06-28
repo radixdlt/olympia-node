@@ -18,7 +18,7 @@
 
 package com.radixdlt.application.validators;
 
-import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.application.validators.construction.RegisterValidatorConstructor;
@@ -63,7 +63,7 @@ public class RegisterValidatorTest {
 		this.engine = new RadixEngine<>(
 			parser,
 			serialization,
-			ActionConstructors.newBuilder()
+			REConstructor.newBuilder()
 				.put(RegisterValidator.class, new RegisterValidatorConstructor())
 				.build(),
 			cm,

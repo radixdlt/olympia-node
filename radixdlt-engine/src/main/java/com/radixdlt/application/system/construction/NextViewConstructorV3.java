@@ -37,7 +37,7 @@ public class NextViewConstructorV3 implements ActionConstructor<NextRound> {
 			RoundData.class,
 			p -> true,
 			Optional.empty(),
-			"No round state available."
+			() -> new TxBuilderException("No round state available.")
 		);
 
 		if (action.view() <= prevRound.getView()) {
@@ -51,7 +51,7 @@ public class NextViewConstructorV3 implements ActionConstructor<NextRound> {
 				var validatorData = txBuilder.down(
 					ValidatorBFTData.class,
 					p -> p.validatorKey().equals(missingLeader),
-					"Could not find validator"
+					() -> new TxBuilderException("Could not find validator")
 				);
 				validatorsToUpdate.put(missingLeader, validatorData);
 			}
@@ -64,7 +64,7 @@ public class NextViewConstructorV3 implements ActionConstructor<NextRound> {
 			var validatorData = txBuilder.down(
 				ValidatorBFTData.class,
 				p -> p.validatorKey().equals(curLeader),
-				"Could not find validator"
+				() -> new TxBuilderException("Could not find validator")
 			);
 			validatorsToUpdate.put(curLeader, validatorData);
 		}

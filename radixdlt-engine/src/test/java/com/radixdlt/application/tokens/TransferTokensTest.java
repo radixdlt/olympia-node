@@ -20,7 +20,7 @@ package com.radixdlt.application.tokens;
 
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
@@ -96,7 +96,7 @@ public class TransferTokensTest {
 		this.engine = new RadixEngine<>(
 			parser,
 			serialization,
-			ActionConstructors.newBuilder()
+			REConstructor.newBuilder()
 				.put(TransferToken.class, transferTokensConstructor)
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())

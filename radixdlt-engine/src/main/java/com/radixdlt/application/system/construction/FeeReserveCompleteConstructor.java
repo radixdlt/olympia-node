@@ -25,6 +25,8 @@ import com.radixdlt.atom.actions.FeeReserveComplete;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
 
+import java.util.Optional;
+
 public class FeeReserveCompleteConstructor implements ActionConstructor<FeeReserveComplete> {
 	private final UInt256 costPerByte;
 	public FeeReserveCompleteConstructor(UInt256 costPerByte) {
@@ -33,15 +35,12 @@ public class FeeReserveCompleteConstructor implements ActionConstructor<FeeReser
 
 	@Override
 	public void construct(FeeReserveComplete action, TxBuilder builder) throws TxBuilderException {
-		var feeReserve = builder.getFeeReserve();
-		if (feeReserve == null) {
-			throw new TxBuilderException("No fee paid.");
-		}
+		var feeReserve = Optional.ofNullable(builder.getFeeReserve()).orElse(UInt256.ZERO);
 		var sigSize = 1 + 64 + 1;
 		int curSize = builder.toLowLevelBuilder().size() + sigSize;
 		var expectedFee1 = costPerByte.multiply(UInt256.from(curSize));
 		if (feeReserve.compareTo(expectedFee1) < 0) {
-			throw new TxBuilderException("Fee reserve " + feeReserve + " is not enough to cover fees " + expectedFee1);
+			throw new FeeReserveCompleteException(feeReserve, expectedFee1);
 		}
 
 		if (feeReserve.compareTo(expectedFee1) == 0) {
@@ -55,23 +54,30 @@ public class FeeReserveCompleteConstructor implements ActionConstructor<FeeReser
 		syscallSize++; // size
 		syscallSize++; // syscall id
 		syscallSize += UInt256.BYTES;
+
+		var endSize = 1;
+		var expectedSizeWithNoReturn = curSize + syscallSize + endSize;
+		var expectedFee = costPerByte.multiply(UInt256.from(expectedSizeWithNoReturn));
+		if (!expectedFee.equals(feeReserve)) {
+			var expectedSizeWithReturn = expectedSizeWithNoReturn + getReturnedSubstateSize();
+			expectedFee = costPerByte.multiply(UInt256.from(expectedSizeWithReturn));
+		}
+		if (feeReserve.compareTo(expectedFee) < 0) {
+			throw new FeeReserveCompleteException(feeReserve, expectedFee);
+		}
+		var leftover = feeReserve.subtract(expectedFee);
+		builder.takeFeeReserve(action.to(), leftover);
+		builder.end();
+	}
+
+	private static int getReturnedSubstateSize() {
 		var returnSubstateSize = 0;
 		returnSubstateSize++; // REInstruction
 		returnSubstateSize++; // Substate typeId
 		returnSubstateSize++; // Reserved
-		returnSubstateSize += ECPublicKey.COMPRESSED_BYTES + 1; // REAddr
-		returnSubstateSize++; // Native token
-		returnSubstateSize += UInt256.BYTES;
-
-		var endSize = 1;
-		var expectedTotalSize = curSize + syscallSize + returnSubstateSize + endSize;
-		var expectedFee2 = costPerByte.multiply(UInt256.from(expectedTotalSize));
-		if (feeReserve.compareTo(expectedFee2) < 0) {
-			throw new TxBuilderException("Not enough fees to construct.");
-		}
-
-		var leftover = feeReserve.subtract(expectedFee2);
-		builder.takeFeeReserve(action.to(), leftover);
-		builder.end();
+		returnSubstateSize += ECPublicKey.COMPRESSED_BYTES + 1; // PubKey addr
+		returnSubstateSize++; // Native token addr
+		returnSubstateSize += UInt256.BYTES; // amount
+		return returnSubstateSize;
 	}
 }

@@ -33,7 +33,7 @@ public class UnstakeOwnershipConstructor implements ActionConstructor<UnstakeOwn
 			p -> p.getOwner().equals(action.accountAddr()) && p.getDelegateKey().equals(action.from()),
 			amt -> new StakeOwnership(action.from(), action.accountAddr(), amt),
 			action.amount(),
-			"Not enough staked"
+			() -> new TxBuilderException("Not enough staked")
 		).with(amt -> new PreparedUnstakeOwnership(action.from(), action.accountAddr(), amt));
 		txBuilder.end();
 	}

@@ -34,7 +34,7 @@ public final class BurnTokenConstructor implements ActionConstructor<BurnToken> 
 				&& p.getHoldingAddr().equals(burnToken.from()),
 			amt -> new TokensInAccount(burnToken.from(), amt, burnToken.resourceAddr()),
 			burnToken.amount(),
-			"Not enough balance to for fee burn."
+			() -> new TxBuilderException("Not enough balance to for fee burn.")
 		);
 		txBuilder.end();
 	}

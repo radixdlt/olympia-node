@@ -19,7 +19,7 @@
 package com.radixdlt.application.system;
 
 import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
@@ -107,7 +107,7 @@ public class NextViewV2Test {
 		this.sut = new RadixEngine<>(
 			parser,
 			serialization,
-			ActionConstructors.newBuilder()
+			REConstructor.newBuilder()
 				.put(NextEpoch.class, new NextEpochConstructorV3(Amount.ofTokens(10).toSubunits(), 9800, 1))
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())

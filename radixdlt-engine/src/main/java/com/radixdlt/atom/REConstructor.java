@@ -19,17 +19,21 @@
 package com.radixdlt.atom;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.utils.UInt256;
 
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Set of action to constructors mapper
  */
-public final class ActionConstructors {
+public final class REConstructor {
 	private final Map<Class<? extends TxAction>, ActionConstructor<?>> constructors;
+	private final UInt256 perByteFee;
 
-	private ActionConstructors(Map<Class<? extends TxAction>, ActionConstructor<?>> constructors) {
+	private REConstructor(Map<Class<? extends TxAction>, ActionConstructor<?>> constructors, UInt256 perByteFee) {
 		this.constructors = constructors;
+		this.perByteFee = perByteFee;
 	}
 
 	public static Builder newBuilder() {
@@ -38,7 +42,14 @@ public final class ActionConstructors {
 
 	public static class Builder {
 		private ImmutableMap.Builder<Class<? extends TxAction>, ActionConstructor<?>> mapBuilder = ImmutableMap.builder();
+		private UInt256 perByteFee;
+
 		private Builder() {
+		}
+
+		public Builder perByteFee(UInt256 perByteFee) {
+			this.perByteFee = perByteFee;
+			return this;
 		}
 
 		public <T extends TxAction> Builder put(Class<T> actionClass, ActionConstructor<T> constructor) {
@@ -46,9 +57,13 @@ public final class ActionConstructors {
 			return this;
 		}
 
-		public ActionConstructors build() {
-			return new ActionConstructors(mapBuilder.build());
+		public REConstructor build() {
+			return new REConstructor(mapBuilder.build(), perByteFee);
 		}
+	}
+
+	public Optional<UInt256> getPerByteFee() {
+		return Optional.ofNullable(perByteFee);
 	}
 
 	public <T extends TxAction> void construct(T action, TxBuilder txBuilder) throws TxBuilderException {

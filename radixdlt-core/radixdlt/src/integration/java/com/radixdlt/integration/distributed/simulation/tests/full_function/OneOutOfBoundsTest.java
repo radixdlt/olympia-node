@@ -31,6 +31,7 @@ import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.utils.UInt256;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -49,13 +50,13 @@ public class OneOutOfBoundsTest {
 	@Parameterized.Parameters
 	public static Collection<Object[]> fees() {
 		return List.of(new Object[][] {
-			{true}, {false},
+			{UInt256.ONE}, {UInt256.ZERO},
 		});
 	}
 
 	private final SimulationTest.Builder bftTestBuilder;
 
-	public OneOutOfBoundsTest(boolean fees) {
+	public OneOutOfBoundsTest(UInt256 perByteFee) {
 		bftTestBuilder = SimulationTest.builder()
 			.numNodes(4)
 			.pacemakerTimeout(3000)
@@ -67,7 +68,7 @@ public class OneOutOfBoundsTest {
 			.addRadixEngineConfigModules(
 				new RadixEngineForksLatestOnlyModule(
 					new RERulesConfig(
-						fees,
+						Amount.ofSubunits(perByteFee),
 						OptionalInt.of(5),
 						20L,
 						2,

@@ -149,7 +149,7 @@ public class RecoveryLivenessTest {
 			new CryptoModule(),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
-					false,
+					Amount.zero(),
 					OptionalInt.of(50),
 					epochCeilingView,
 					2,
@@ -204,7 +204,7 @@ public class RecoveryLivenessTest {
 			MempoolConfig.asModule(10, 10),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
-					false,
+					Amount.zero(),
 					OptionalInt.of(50),
 					epochCeilingView,
 					2,

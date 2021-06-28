@@ -39,14 +39,14 @@ public class RegisterValidatorConstructor implements ActionConstructor<RegisterV
 				PreparedRegisteredUpdate.class,
 				p -> p.getValidatorKey().equals(action.validatorKey()),
 				Optional.empty(),
-				"Cannot find state"
+				() -> new TxBuilderException("Cannot find state")
 			).with(substateDown -> List.of(new PreparedRegisteredUpdate(action.validatorKey(), true)));
 		} else {
 			txBuilder.swap(
 				ValidatorRegisteredCopy.class,
 				p -> p.getValidatorKey().equals(action.validatorKey()),
 				Optional.of(SubstateWithArg.noArg(new ValidatorRegisteredCopy(action.validatorKey(), false))),
-				"Cannot find state"
+				() -> new TxBuilderException("Cannot find state")
 
 			).with(substateDown -> List.of(new PreparedRegisteredUpdate(action.validatorKey(), true)));
 		}

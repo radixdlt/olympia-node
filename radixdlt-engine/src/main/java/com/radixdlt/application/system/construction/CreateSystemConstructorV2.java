@@ -39,7 +39,7 @@ public class CreateSystemConstructorV2 implements ActionConstructor<CreateSystem
 			UnclaimedREAddr.class,
 			addr -> addr.getAddr().isSystem(),
 			Optional.of(SubstateWithArg.noArg(sysAddr)),
-			"No system address"
+			() -> new TxBuilderException("No system address")
 		).with(i -> List.of(new EpochData(0), new RoundData(0, action.getTimestamp())));
 		builder.end();
 	}

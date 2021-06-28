@@ -32,7 +32,7 @@ public final class UpdateValidatorConstructor implements ActionConstructor<Updat
 		txBuilder.swap(
 			ValidatorMetaData.class,
 			p -> p.getKey().equals(action.validatorKey()),
-			"Invalid state."
+			() -> new TxBuilderException("Invalid state.")
 		).with(
 			substateDown -> List.of(new ValidatorMetaData(
 				action.validatorKey(),

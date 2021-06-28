@@ -18,7 +18,7 @@ package com.radixdlt.api.store.berkeley;
 
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.accounting.TwoActorEntry;
-import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
@@ -119,7 +119,7 @@ public class TransactionParserTest {
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		var substateSerialization = cmAtomOS.buildSubstateSerialization();
 
-		var actionConstructors = ActionConstructors.newBuilder()
+		var actionConstructors = REConstructor.newBuilder()
 			.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 			.put(RegisterValidator.class, new RegisterValidatorConstructor())
 			.put(MintToken.class, new MintTokenConstructor())

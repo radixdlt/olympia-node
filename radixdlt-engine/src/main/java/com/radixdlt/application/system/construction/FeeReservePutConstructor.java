@@ -28,12 +28,16 @@ import com.radixdlt.identifiers.REAddr;
 public class FeeReservePutConstructor implements ActionConstructor<FeeReservePut> {
 	@Override
 	public void construct(FeeReservePut action, TxBuilder txBuilder) throws TxBuilderException {
+		if (action.amount().isZero()) {
+			return;
+		}
+
 		txBuilder.putFeeReserve(
 			p -> p.getResourceAddr().isNativeToken()
 				&& p.getHoldingAddr().equals(action.from()),
 			amt -> new TokensInAccount(action.from(), amt, REAddr.ofNativeToken()),
 			action.amount(),
-			"Not enough balance to for fee burn."
+			FeeReserveNotEnoughBalanceException::new
 		);
 		txBuilder.end();
 	}

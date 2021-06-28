@@ -33,7 +33,7 @@ public class TransferTokensConstructorV2 implements ActionConstructor<TransferTo
 				&& p.getHoldingAddr().equals(action.from()),
 			amt -> new TokensInAccount(action.from(), amt, action.resourceAddr()),
 			action.amount(),
-			"Not enough balance for transfer."
+			() -> new TxBuilderException("Not enough balance for transfer.")
 		).with(amt -> new TokensInAccount(action.to(), action.amount(), action.resourceAddr()));
 		txBuilder.end();
 	}

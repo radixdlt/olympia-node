@@ -48,14 +48,14 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateRake
 				PreparedRakeUpdate.class,
 				p -> p.getValidatorKey().equals(action.getValidatorKey()),
 				Optional.empty(),
-				"Cannot find state"
+				() -> new TxBuilderException("Cannot find state")
 			).getCurRakePercentage();
 		} else {
 			curRakePercentage = builder.down(
 				ValidatorRakeCopy.class,
 				p -> p.getValidatorKey().equals(action.getValidatorKey()),
 				Optional.of(SubstateWithArg.noArg(new ValidatorRakeCopy(action.getValidatorKey(), RAKE_MAX))),
-				"Cannot find state"
+				() -> new TxBuilderException("Cannot find state")
 			).getCurRakePercentage();
 		}
 

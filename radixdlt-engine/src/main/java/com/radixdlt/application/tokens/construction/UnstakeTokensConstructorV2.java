@@ -41,7 +41,7 @@ public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeToke
 			p -> p.getOwner().equals(action.accountAddr()) && p.getDelegateKey().equals(action.from()),
 			amt -> new StakeOwnership(action.from(), action.accountAddr(), amt),
 			ownershipAmt,
-			"Not enough staked"
+			() -> new TxBuilderException("Not enough staked")
 		).with(amt -> new PreparedUnstakeOwnership(action.from(), action.accountAddr(), amt));
 		txBuilder.end();
 	}

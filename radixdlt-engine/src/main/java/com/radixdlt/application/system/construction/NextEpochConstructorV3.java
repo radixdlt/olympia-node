@@ -84,7 +84,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 				ValidatorStakeData.class,
 				p -> p.getValidatorKey().equals(k),
 				Optional.of(SubstateWithArg.noArg(ValidatorStakeData.createVirtual(k))),
-				"Validator not found"
+				() -> new TxBuilderException("Validator not found")
 			);
 			validatorsToUpdate.put(k, validatorData);
 		}
@@ -118,13 +118,13 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 			RoundData.class,
 			p -> true,
 			Optional.empty(),
-			"No round data available"
+			() -> new TxBuilderException("No round data available")
 		);
 		var closingEpoch = txBuilder.down(
 			EpochData.class,
 			p -> true,
 			Optional.empty(),
-			"No epoch data available"
+			() -> new TxBuilderException("No epoch data available")
 		);
 
 		var unlockedStateIndexBuf = ByteBuffer.allocate(2 + Long.BYTES);
@@ -175,7 +175,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 			var validatorStakeData = txBuilder.down(
 				ValidatorStakeData.class,
 				s -> s.getValidatorKey().equals(k),
-				"Validator not found"
+				() -> new TxBuilderException("Validator not found")
 			);
 			int rakePercentage = validatorStakeData.getRakePercentage();
 			final UInt256 rakedEmissions;

@@ -51,7 +51,7 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 			p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(action.from()),
 			amt -> new TokensInAccount(action.from(), amt, REAddr.ofNativeToken()),
 			action.amount(),
-			"Not enough balance for staking."
+			() -> new TxBuilderException("Not enough balance for staking.")
 		);
 
 		var flag = builder.read(

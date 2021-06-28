@@ -38,7 +38,7 @@ public final class CreateFixedTokenConstructor implements ActionConstructor<Crea
 			UnclaimedREAddr.class,
 			p -> p.getAddr().equals(action.getResourceAddr()),
 			Optional.of(SubstateWithArg.withArg(addrParticle, action.getSymbol().getBytes(StandardCharsets.UTF_8))),
-			"RRI not available"
+			() -> new TxBuilderException("RRI not available")
 		);
 		txBuilder.up(new TokenResource(
 			action.getResourceAddr(),

@@ -18,7 +18,7 @@
 
 package com.radixdlt.engine;
 
-import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.application.unique.scrypt.MutexConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
@@ -56,7 +56,7 @@ public class UniqueTest {
 		this.parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		this.serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();
-		this.engine = new RadixEngine<>(parser, serialization, ActionConstructors.newBuilder().build(), cm, store);
+		this.engine = new RadixEngine<>(parser, serialization, REConstructor.newBuilder().build(), cm, store);
 	}
 
 	@Test

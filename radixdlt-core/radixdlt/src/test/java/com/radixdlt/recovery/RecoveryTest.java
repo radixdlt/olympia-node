@@ -145,7 +145,7 @@ public class RecoveryTest {
 			new ForksModule(),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
-					false,
+					Amount.ofTokens(0),
 					OptionalInt.of(50),
 					100L,
 					2,
@@ -190,7 +190,7 @@ public class RecoveryTest {
 		return Guice.createInjector(
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
-					false,
+					Amount.ofTokens(0),
 					OptionalInt.of(50),
 					epochCeilingView,
 					2,

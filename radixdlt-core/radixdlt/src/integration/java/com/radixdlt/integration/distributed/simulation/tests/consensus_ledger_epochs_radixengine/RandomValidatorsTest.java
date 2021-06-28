@@ -53,7 +53,7 @@ public class RandomValidatorsTest {
 			RadixEngineConfig.asModule(2, 50),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
-					false,
+					Amount.ofTokens(0),
 					OptionalInt.of(5),
 					100,
 					2,

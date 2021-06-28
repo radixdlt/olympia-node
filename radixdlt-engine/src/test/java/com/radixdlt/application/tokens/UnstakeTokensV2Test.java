@@ -19,7 +19,7 @@
 package com.radixdlt.application.tokens;
 
 import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxnConstructionRequest;
@@ -173,7 +173,7 @@ public class UnstakeTokensV2Test {
 		this.sut = new RadixEngine<>(
 			parser,
 			serialization,
-			ActionConstructors.newBuilder()
+			REConstructor.newBuilder()
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.put(NextRound.class, new NextViewConstructorV3())
 				.put(NextEpoch.class, new NextEpochConstructorV3(Amount.ofTokens(10).toSubunits(), 9800, 1))

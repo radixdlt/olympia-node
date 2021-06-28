@@ -18,7 +18,7 @@
 
 package com.radixdlt.application.tokens;
 
-import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.actions.CreateMutableToken;
@@ -69,7 +69,7 @@ public class TokenDefinitionTest {
 		this.engine = new RadixEngine<>(
 			parser,
 			serialization,
-			ActionConstructors.newBuilder()
+			REConstructor.newBuilder()
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
 				.build(),

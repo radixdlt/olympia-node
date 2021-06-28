@@ -40,12 +40,22 @@ public class TxnConstructionRequest {
 	private final List<TxAction> actions = new ArrayList<>();
 	private byte[] msg = null;
 	private Set<SubstateId> toAvoid;
+	private REAddr feePayer;
 
 	private TxnConstructionRequest() {
 	}
 
 	public static TxnConstructionRequest create() {
 		return new TxnConstructionRequest();
+	}
+
+	public TxnConstructionRequest feePayer(REAddr feePayer) {
+		this.feePayer = feePayer;
+		return this;
+	}
+
+	public Optional<REAddr> getFeePayer() {
+		return Optional.ofNullable(feePayer);
 	}
 
 	public Optional<byte[]> getMsg() {

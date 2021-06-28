@@ -36,7 +36,6 @@ import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
@@ -86,7 +85,6 @@ import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.RERulesVersion;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -130,18 +128,19 @@ public class StakingUnstakingValidatorsTest {
 	private static final Logger logger = LogManager.getLogger();
 	private static final Amount REWARDS_PER_PROPOSAL = Amount.ofTokens(10);
 	private static final RERulesConfig config = RERulesConfig.testingDefault().overrideMaxSigsPerRound(2);
+	private static final Amount PER_BYTE_FEE = Amount.ofMicroTokens(2);
 
 	@Parameterized.Parameters
 	public static Collection<Object[]> forksModule() {
 		return List.of(new Object[][] {
-			{new RadixEngineForksLatestOnlyModule(config.overrideMaxRounds(100)), false, 100, null},
-			{new ForkOverwritesWithShorterEpochsModule(config), false, 10, null},
+			{new RadixEngineForksLatestOnlyModule(config.overrideMaxRounds(100)), 100, null},
+			{new ForkOverwritesWithShorterEpochsModule(config), 10, null},
 			{
-				new ForkOverwritesWithShorterEpochsModule(config), false, 10,
+				new ForkOverwritesWithShorterEpochsModule(config), 10,
 				new ForkOverwritesWithShorterEpochsModule(config.removeSigsPerRoundLimit())
 			},
-			{new RadixEngineForksLatestOnlyModule(config.overrideMaxRounds(100).overrideFees(true)), true, 100, null},
-			{new ForkOverwritesWithShorterEpochsModule(config.overrideFees(true)), true, 10, null},
+			{new RadixEngineForksLatestOnlyModule(config.overrideMaxRounds(100).overridePerByteFee(PER_BYTE_FEE)), 100, null},
+			{new ForkOverwritesWithShorterEpochsModule(config.overridePerByteFee(PER_BYTE_FEE)), 10, null},
 		});
 	}
 
@@ -158,10 +157,9 @@ public class StakingUnstakingValidatorsTest {
 	private final ImmutableList<ECKeyPair> nodeKeys;
 	private final Module radixEngineConfiguration;
 	private final Module byzantineModule;
-	private final boolean payFees;
 	private final long maxRounds;
 
-	public StakingUnstakingValidatorsTest(Module forkModule, boolean payFees, long maxRounds, Module byzantineModule) {
+	public StakingUnstakingValidatorsTest(Module forkModule, long maxRounds, Module byzantineModule) {
 		this.nodeKeys = Stream.generate(ECKeyPair::generateNew)
 			.limit(20)
 			.sorted(Comparator.comparing(ECKeyPair::getPublicKey, KeyComparator.instance()))
@@ -171,7 +169,6 @@ public class StakingUnstakingValidatorsTest {
 			forkModule,
 			RadixEngineConfig.asModule(1, 10)
 		);
-		this.payFees = payFees;
 		this.maxRounds = maxRounds;
 		this.byzantineModule = byzantineModule;
 	}
@@ -489,11 +486,7 @@ public class StakingUnstakingValidatorsTest {
 					continue;
 			}
 
-			var request = TxnConstructionRequest.create();
-			if (payFees) {
-				request.action(new FeeReservePut(acct, RERulesVersion.FIXED_FEE));
-			}
-			request.action(action);
+			var request = TxnConstructionRequest.create().action(action);
 			dispatcher.dispatch(NodeApplicationRequest.create(request));
 			this.nodes.forEach(n -> {
 				n.getInstance(new Key<EventDispatcher<MempoolRelayTrigger>>() { }).dispatch(MempoolRelayTrigger.create());

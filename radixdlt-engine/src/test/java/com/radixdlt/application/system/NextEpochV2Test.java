@@ -18,7 +18,7 @@
 
 package com.radixdlt.application.system;
 
-import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
@@ -75,7 +75,7 @@ public class NextEpochV2Test {
 					new ValidatorConstraintScryptV2(2),
 					new ValidatorRegisterConstraintScrypt()
 				),
-				ActionConstructors.newBuilder()
+				REConstructor.newBuilder()
 					.put(NextRound.class, new NextViewConstructorV3())
 					.put(NextEpoch.class, new NextEpochConstructorV3(Amount.ofTokens(10).toSubunits(), 9800, 1))
 					.put(CreateSystem.class, new CreateSystemConstructorV2())
@@ -91,11 +91,11 @@ public class NextEpochV2Test {
 	private EngineStore<Void> store;
 	private REParser parser;
 	private final List<ConstraintScrypt> scrypts;
-	private final ActionConstructors constructors;
+	private final REConstructor constructors;
 
 	public NextEpochV2Test(
 		List<ConstraintScrypt> scrypts,
-		ActionConstructors constructors
+		REConstructor constructors
 	) {
 		this.scrypts = scrypts;
 		this.constructors = constructors;
