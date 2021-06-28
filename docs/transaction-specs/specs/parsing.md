@@ -256,11 +256,12 @@ Substates are serialized and deserialized based on the following protocol:
 
 #### `PREPARED_REGISTERED_FLAG_UPDATE` (`0x0E`)
 
-| **Name**        | **Type**     | **Description**                                |
-|-----------------|--------------|------------------------------------------------|
-| `reserved`      | `u8`         | Reserved, always `0`                           |
-| `validator`     | `public_key` | Validator public key                           |
-| `is_registered` | `bool`       | Whether this validator is registered as active |
+| **Name**         | **Type**     | **Description**                                |
+|------------------|--------------|------------------------------------------------|
+| `reserved`       | `u8`         | Reserved, always `0`                           |
+| `validator`      | `public_key` | Validator public key                           |
+| `is_registered`  | `bool`       | Whether this validator is registered as active |
+| `fork_vote_hash` | `bytes`      | Validator's latest fork vote                   |
 
 #### `VALIDATOR_RAKE_COPY` (`0x0F`)
 
