@@ -18,7 +18,7 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.radixdlt.atommodel.tokens.Amount;
+import com.radixdlt.application.tokens.Amount;
 
 import java.util.OptionalInt;
 

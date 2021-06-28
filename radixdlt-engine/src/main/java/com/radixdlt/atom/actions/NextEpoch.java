@@ -19,7 +19,7 @@
 package com.radixdlt.atom.actions;
 
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atommodel.system.state.ValidatorStakeData;
+import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Collection;

@@ -28,7 +28,7 @@ import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.PayFee;
+import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.engine.RadixEngine;
@@ -85,7 +85,7 @@ public final class SubmissionService {
 		if (disableResourceAllocAndDestroy) {
 			txnConstructionRequest.disableResourceAllocAndDestroy();
 		}
-		txnConstructionRequest.action(new PayFee(addr, RERulesVersion.FIXED_FEE));
+		txnConstructionRequest.action(new FeeReservePut(addr, RERulesVersion.FIXED_FEE));
 		steps.stream().flatMap(TransactionAction::toAction).forEach(txnConstructionRequest::action);
 		message.map(t -> t.getBytes(RadixConstants.STANDARD_CHARSET)).ifPresent(txnConstructionRequest::msg);
 		return txnConstructionRequest;

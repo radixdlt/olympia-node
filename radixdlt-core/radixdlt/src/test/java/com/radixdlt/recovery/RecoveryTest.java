@@ -17,7 +17,7 @@
 
 package com.radixdlt.recovery;
 
-import com.radixdlt.atommodel.tokens.Amount;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.statecomputer.forks.ForksModule;

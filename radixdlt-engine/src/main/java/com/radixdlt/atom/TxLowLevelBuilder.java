@@ -19,6 +19,7 @@
 package com.radixdlt.atom;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.ShutdownAllIndex;
@@ -191,10 +192,10 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
-	public TxLowLevelBuilder payFee(UInt256 amount) {
+	public TxLowLevelBuilder syscall(Syscall syscall, UInt256 amount) {
 		var data = new byte[2 + UInt256.BYTES];
 		data[0] = UInt256.BYTES + 1;
-		data[1] = 0;
+		data[1] = syscall.id();
 		amount.toByteArray(data, 2);
 		instruction(REInstruction.REMicroOp.SYSCALL, data);
 		return this;

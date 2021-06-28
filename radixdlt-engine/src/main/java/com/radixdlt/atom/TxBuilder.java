@@ -21,8 +21,9 @@ package com.radixdlt.atom;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
-import com.radixdlt.atommodel.tokens.ResourceInBucket;
-import com.radixdlt.atommodel.tokens.state.TokensInAccount;
+import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.Particle;
@@ -420,7 +421,7 @@ public final class TxBuilder {
 		};
 	}
 
-	public <T extends ResourceInBucket> void payFee(
+	public <T extends ResourceInBucket> void putFeeReserve(
 		Predicate<TokensInAccount> particlePredicate,
 		FungibleMapper<T> remainderMapper,
 		UInt256 amount,
@@ -433,10 +434,18 @@ public final class TxBuilder {
 			amount,
 			errorMessage
 		);
-		lowLevelBuilder.payFee(amount);
+		lowLevelBuilder.syscall(Syscall.FEE_RESERVE_PUT, amount);
 		if (!remainder.isZero()) {
 			up(remainderMapper.map(remainder));
 		}
+	}
+
+	public void takeFeeReserve(
+		REAddr addr,
+		UInt256 amount
+	) {
+		lowLevelBuilder.syscall(Syscall.FEE_RESERVE_TAKE, amount);
+		up(new TokensInAccount(addr, amount, REAddr.ofNativeToken()));
 	}
 
 	public <T extends ResourceInBucket, U extends ResourceInBucket> void downFungible(

@@ -18,7 +18,7 @@
 
 package com.radixdlt.constraintmachine.meter;
 
-import com.radixdlt.atommodel.tokens.state.TokensInAccount;
+import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.ProcedureKey;
@@ -26,7 +26,7 @@ import com.radixdlt.constraintmachine.REOp;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.utils.UInt256;
 
-public class FixedFeeMeter implements Meter {
+public final class FixedFeeMeter implements Meter {
 	private final UInt256 fixedFee;
 
 	private FixedFeeMeter(UInt256 fixedFee) {
@@ -66,6 +66,7 @@ public class FixedFeeMeter implements Meter {
 	}
 
 	@Override
-	public void onSigInstruction(ExecutionContext context) throws AuthorizationException {
+	public void onSigInstruction(ExecutionContext context) {
+		// No-op
 	}
 }

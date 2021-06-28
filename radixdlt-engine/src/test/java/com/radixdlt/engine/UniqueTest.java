@@ -20,7 +20,7 @@ package com.radixdlt.engine;
 
 import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atommodel.unique.scrypt.MutexConstraintScrypt;
+import com.radixdlt.application.unique.scrypt.MutexConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.constraintmachine.ConstraintMachine;

@@ -18,8 +18,8 @@
 
 package com.radixdlt.accounting;
 
-import com.radixdlt.atommodel.tokens.Bucket;
-import com.radixdlt.atommodel.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.Bucket;
+import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;

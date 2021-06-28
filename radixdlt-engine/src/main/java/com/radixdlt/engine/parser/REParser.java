@@ -19,6 +19,7 @@
 package com.radixdlt.engine.parser;
 
 import com.radixdlt.atom.Txn;
+import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.constraintmachine.CallData;
 import com.radixdlt.constraintmachine.exceptions.CallDataAccessException;
 import com.radixdlt.constraintmachine.REInstruction;
@@ -155,15 +156,31 @@ public final class REParser {
 			} else if (inst.getMicroOp() == REInstruction.REMicroOp.SYSCALL) {
 				try {
 					CallData callData = inst.getData();
-					// TODO: Need to rethink how stateless verification occurs here
-					// TODO: Along with FeeConstraintScrypt.java
-					if (callData.get(0) != 0) {
-						throw new TxnParseException("Invalid call data type: " + callData.get(0));
+					byte id = callData.get(0);
+					var syscall = Syscall.of(id).orElseThrow(() -> new TxnParseException("Invalid call data type: " + id));
+
+					switch (syscall) {
+						case FEE_RESERVE_PUT:
+							if (feePaid != null) {
+								throw new TxnParseException("Should only pay fees once.");
+							}
+							feePaid = callData.getUInt256(1);
+							break;
+						case FEE_RESERVE_TAKE:
+							if (feePaid == null) {
+								throw new TxnParseException("No fees paid");
+							}
+							var takeAmount = callData.getUInt256(1);
+							if (takeAmount.compareTo(feePaid) > 0) {
+								throw new TxnParseException("Trying to take more fees than paid");
+							}
+							feePaid = feePaid.subtract(takeAmount);
+							break;
+						// TODO: Need to rethink how stateless verification occurs here
+						// TODO: Along with FeeConstraintScrypt.java
+						default:
+							throw new TxnParseException("Invalid call data type: " + id);
 					}
-					if (feePaid != null) {
-						throw new TxnParseException("Should only pay fees once.");
-					}
-					feePaid = callData.getUInt256(1);
 				} catch (CallDataAccessException e) {
 					throw new TxnParseException(e);
 				}

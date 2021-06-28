@@ -18,7 +18,7 @@
 package com.radixdlt.integration.recovery;
 
 import com.google.inject.Provides;
-import com.radixdlt.atommodel.tokens.Amount;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.ledger.LedgerAccumulator;

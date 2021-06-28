@@ -36,7 +36,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atom.actions.PayFee;
+import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -114,7 +114,7 @@ public class TokenFeeTest {
 	@Test
 	public void when_validating_atom_with_particles__result_has_no_error() throws Exception {
 		var account = REAddr.ofPubKeyAccount(ecKeyPair.getPublicKey());
-		var atom = sut.construct(new PayFee(account, RERulesVersion.FIXED_FEE))
+		var atom = sut.construct(new FeeReservePut(account, RERulesVersion.FIXED_FEE))
 			.mutex(ecKeyPair.getPublicKey(), "test").signAndBuild(ecKeyPair::sign);
 
 		sut.execute(List.of(atom));
@@ -130,7 +130,7 @@ public class TokenFeeTest {
 	@Test
 	public void when_validating_atom_with_fee_and_no_change__result_has_no_error() throws Exception {
 		var account = REAddr.ofPubKeyAccount(ecKeyPair.getPublicKey());
-		var txn = sut.construct(new PayFee(account, RERulesVersion.FIXED_FEE))
+		var txn = sut.construct(new FeeReservePut(account, RERulesVersion.FIXED_FEE))
 			.signAndBuild(ecKeyPair::sign);
 
 		sut.execute(List.of(txn));

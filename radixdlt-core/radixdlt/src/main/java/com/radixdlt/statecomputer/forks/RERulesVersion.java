@@ -26,7 +26,7 @@ import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.NextEpoch;
 import com.radixdlt.atom.actions.NextRound;
-import com.radixdlt.atom.actions.PayFee;
+import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.SplitToken;
 import com.radixdlt.atom.actions.StakeTokens;
@@ -38,34 +38,34 @@ import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
 import com.radixdlt.atom.actions.UpdateRake;
 import com.radixdlt.atom.actions.UpdateValidatorMetadata;
 import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
-import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
-import com.radixdlt.atommodel.system.construction.NextEpochConstructorV3;
-import com.radixdlt.atommodel.system.construction.NextViewConstructorV3;
-import com.radixdlt.atommodel.system.construction.PayFeeConstructorV2;
-import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
-import com.radixdlt.atommodel.system.scrypt.FeeConstraintScrypt;
-import com.radixdlt.atommodel.system.scrypt.RoundUpdateConstraintScrypt;
-import com.radixdlt.atommodel.tokens.TokenUtils;
-import com.radixdlt.atommodel.tokens.construction.BurnTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.CreateFixedTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.SplitTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV3;
-import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV2;
-import com.radixdlt.atommodel.tokens.construction.UnstakeOwnershipConstructor;
-import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV2;
-import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV4;
-import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
-import com.radixdlt.atommodel.unique.scrypt.MutexConstraintScrypt;
-import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
-import com.radixdlt.atommodel.validators.construction.UnregisterValidatorConstructor;
-import com.radixdlt.atommodel.validators.construction.UpdateAllowDelegationFlagConstructor;
-import com.radixdlt.atommodel.validators.construction.UpdateRakeConstructor;
-import com.radixdlt.atommodel.validators.construction.UpdateValidatorConstructor;
-import com.radixdlt.atommodel.validators.construction.UpdateValidatorOwnerConstructor;
-import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
-import com.radixdlt.atommodel.validators.scrypt.ValidatorRegisterConstraintScrypt;
+import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
+import com.radixdlt.application.system.construction.NextEpochConstructorV3;
+import com.radixdlt.application.system.construction.NextViewConstructorV3;
+import com.radixdlt.application.system.construction.FeeReservePutConstructor;
+import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
+import com.radixdlt.application.system.scrypt.FeeConstraintScrypt;
+import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
+import com.radixdlt.application.tokens.TokenUtils;
+import com.radixdlt.application.tokens.construction.BurnTokenConstructor;
+import com.radixdlt.application.tokens.construction.CreateFixedTokenConstructor;
+import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
+import com.radixdlt.application.tokens.construction.MintTokenConstructor;
+import com.radixdlt.application.tokens.construction.SplitTokenConstructor;
+import com.radixdlt.application.tokens.construction.StakeTokensConstructorV3;
+import com.radixdlt.application.tokens.construction.TransferTokensConstructorV2;
+import com.radixdlt.application.tokens.construction.UnstakeOwnershipConstructor;
+import com.radixdlt.application.tokens.construction.UnstakeTokensConstructorV2;
+import com.radixdlt.application.tokens.scrypt.StakingConstraintScryptV4;
+import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
+import com.radixdlt.application.unique.scrypt.MutexConstraintScrypt;
+import com.radixdlt.application.validators.construction.RegisterValidatorConstructor;
+import com.radixdlt.application.validators.construction.UnregisterValidatorConstructor;
+import com.radixdlt.application.validators.construction.UpdateAllowDelegationFlagConstructor;
+import com.radixdlt.application.validators.construction.UpdateRakeConstructor;
+import com.radixdlt.application.validators.construction.UpdateValidatorConstructor;
+import com.radixdlt.application.validators.construction.UpdateValidatorOwnerConstructor;
+import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
+import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
@@ -132,7 +132,7 @@ public enum RERulesVersion {
 				.put(TransferToken.class, new TransferTokensConstructorV2())
 				.put(UnregisterValidator.class, new UnregisterValidatorConstructor())
 				.put(UpdateValidatorMetadata.class, new UpdateValidatorConstructor())
-				.put(PayFee.class, new PayFeeConstructorV2())
+				.put(FeeReservePut.class, new FeeReservePutConstructor())
 				.put(UpdateRake.class, new UpdateRakeConstructor(rakeIncreaseDebouncerEpochLength))
 				.put(UpdateValidatorOwnerAddress.class, new UpdateValidatorOwnerConstructor())
 				.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())

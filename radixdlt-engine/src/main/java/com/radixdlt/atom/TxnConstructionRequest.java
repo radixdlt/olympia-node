@@ -21,7 +21,7 @@ package com.radixdlt.atom;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.PayFee;
+import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.SplitToken;
 import com.radixdlt.atom.actions.TransferToken;
@@ -112,7 +112,7 @@ public class TxnConstructionRequest {
 	}
 
 	public TxnConstructionRequest payFee(REAddr from, UInt256 amount) {
-		var action = new PayFee(from, amount);
+		var action = new FeeReservePut(from, amount);
 		actions.add(action);
 		return this;
 	}

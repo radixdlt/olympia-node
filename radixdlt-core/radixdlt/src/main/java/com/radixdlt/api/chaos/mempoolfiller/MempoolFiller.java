@@ -26,7 +26,7 @@ import com.google.inject.Inject;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.PayFee;
+import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
@@ -123,7 +123,7 @@ public final class MempoolFiller {
 
 			var shuttingDown = radixEngineMempool.getShuttingDownSubstates();
 			var txnConstructionRequest = TxnConstructionRequest.create()
-				.action(new PayFee(account, RERulesVersion.FIXED_FEE))
+				.action(new FeeReservePut(account, RERulesVersion.FIXED_FEE))
 				.splitNative(REAddr.ofNativeToken(), account, RERulesVersion.FIXED_FEE.multiply(UInt256.TWO))
 				.avoidSubstates(shuttingDown);
 

@@ -19,13 +19,13 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.tokens.scrypt.Tokens;
-import com.radixdlt.atommodel.tokens.scrypt.TokenHoldingBucket;
+import com.radixdlt.application.tokens.scrypt.Tokens;
+import com.radixdlt.application.tokens.scrypt.TokenHoldingBucket;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ExecutionContextDestroyException;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.constraintmachine.exceptions.InvalidResourceException;
-import com.radixdlt.constraintmachine.exceptions.NotEnoughFeesException;
+import com.radixdlt.constraintmachine.exceptions.DepletedFeeReserveException;
 import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
@@ -74,11 +74,15 @@ public final class ExecutionContext {
 		return sigsLeft;
 	}
 
+	public Tokens withdrawFeeReserve(UInt256 amount) throws InvalidResourceException, NotEnoughResourcesException {
+		return reserve.withdraw(REAddr.ofNativeToken(), amount);
+	}
+
 	public void depositFeeReserve(Tokens tokens) throws InvalidResourceException {
 		reserve.deposit(tokens);
 	}
 
-	public void chargeOneTimeTransactionFee(Function<Txn, UInt256> feeComputer) throws NotEnoughFeesException {
+	public void chargeOneTimeTransactionFee(Function<Txn, UInt256> feeComputer) throws DepletedFeeReserveException {
 		if (chargedOneTimeFee) {
 			return;
 		}
@@ -88,17 +92,17 @@ public final class ExecutionContext {
 		chargedOneTimeFee = true;
 	}
 
-	public void charge(UInt256 amount) throws NotEnoughFeesException {
+	public void charge(UInt256 amount) throws DepletedFeeReserveException {
 		try {
 			reserve.withdraw(REAddr.ofNativeToken(), amount);
 		} catch (InvalidResourceException e) {
 			throw new IllegalStateException("Should not get here", e);
 		} catch (NotEnoughResourcesException e) {
-			throw new NotEnoughFeesException(e);
+			throw new DepletedFeeReserveException(e);
 		}
 	}
 
-	public void payOffLoan() throws NotEnoughFeesException {
+	public void payOffLoan() throws DepletedFeeReserveException {
 		if (systemLoan.isZero()) {
 			return;
 		}
@@ -139,7 +143,7 @@ public final class ExecutionContext {
 		}
 	}
 
-	public void destroy() throws NotEnoughFeesException, ExecutionContextDestroyException {
+	public void destroy() throws DepletedFeeReserveException, ExecutionContextDestroyException {
 		payOffLoan();
 
 		if (!reserve.isEmpty()) {
