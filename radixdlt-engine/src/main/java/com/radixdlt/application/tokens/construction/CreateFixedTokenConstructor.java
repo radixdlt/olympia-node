@@ -40,13 +40,12 @@ public final class CreateFixedTokenConstructor implements ActionConstructor<Crea
 			Optional.of(SubstateWithArg.withArg(addrParticle, action.getSymbol().getBytes(StandardCharsets.UTF_8))),
 			() -> new TxBuilderException("RRI not available")
 		);
-		txBuilder.up(new TokenResource(
+		txBuilder.up(TokenResource.createFixedSupplyResource(
 			action.getResourceAddr(),
 			action.getName(),
 			action.getDescription(),
 			action.getIconUrl(),
-			action.getTokenUrl(),
-			action.getSupply()
+			action.getTokenUrl()
 		));
 		txBuilder.up(new TokensInAccount(action.getAccountAddr(), action.getSupply(), action.getResourceAddr()));
 		txBuilder.end();
