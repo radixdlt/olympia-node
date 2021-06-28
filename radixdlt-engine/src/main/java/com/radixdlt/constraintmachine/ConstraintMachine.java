@@ -26,6 +26,7 @@ import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.constraintmachine.exceptions.InvalidVirtualSubstateException;
 import com.radixdlt.constraintmachine.exceptions.LocalSubstateNotFoundException;
+import com.radixdlt.constraintmachine.exceptions.MeterException;
 import com.radixdlt.constraintmachine.exceptions.MissingProcedureException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
@@ -217,16 +218,20 @@ public final class ConstraintMachine {
 		ReducerState reducerState,
 		ImmutableAddrs immutableAddrs,
 		ExecutionContext context
-	) throws SignedSystemException, InvalidPermissionException, AuthorizationException, ProcedureException {
+	) throws SignedSystemException, InvalidPermissionException, AuthorizationException, MeterException, ProcedureException {
 		// System permissions don't require additional authorization
 		var authorization = procedure.authorization(procedureParam);
 		var requiredLevel = authorization.permissionLevel();
 		context.verifyPermissionLevel(requiredLevel);
 		if (context.permissionLevel() != PermissionLevel.SYSTEM) {
-			if (requiredLevel == PermissionLevel.USER) {
-				this.metering.onUserProcedure(procedure.key(), procedureParam, context);
-			} else if (requiredLevel == PermissionLevel.SUPER_USER) {
-				this.metering.onSuperUserProcedure(procedure.key(), procedureParam, context);
+			try {
+				if (requiredLevel == PermissionLevel.USER) {
+					this.metering.onUserProcedure(procedure.key(), procedureParam, context);
+				} else if (requiredLevel == PermissionLevel.SUPER_USER) {
+					this.metering.onSuperUserProcedure(procedure.key(), procedureParam, context);
+				}
+			} catch (Exception e) {
+				throw new MeterException(e);
 			}
 
 			authorization.authorizer().verify(immutableAddrs, context);

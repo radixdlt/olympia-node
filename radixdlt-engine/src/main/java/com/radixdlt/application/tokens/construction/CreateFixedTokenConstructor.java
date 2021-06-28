@@ -49,5 +49,6 @@ public final class CreateFixedTokenConstructor implements ActionConstructor<Crea
 			action.getSupply()
 		));
 		txBuilder.up(new TokensInAccount(action.getAccountAddr(), action.getSupply(), action.getResourceAddr()));
+		txBuilder.end();
 	}
 }

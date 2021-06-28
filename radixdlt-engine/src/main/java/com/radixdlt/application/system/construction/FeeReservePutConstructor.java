@@ -35,5 +35,6 @@ public class FeeReservePutConstructor implements ActionConstructor<FeeReservePut
 			action.amount(),
 			"Not enough balance to for fee burn."
 		);
+		txBuilder.end();
 	}
 }

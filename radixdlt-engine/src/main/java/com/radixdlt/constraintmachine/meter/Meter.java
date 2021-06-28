@@ -27,13 +27,13 @@ public interface Meter {
 		ProcedureKey procedureKey,
 		Object param,
 		ExecutionContext context
-	) throws AuthorizationException;
+	) throws Exception;
 
 	void onSuperUserProcedure(
 		ProcedureKey procedureKey,
 		Object param,
 		ExecutionContext context
-	) throws AuthorizationException;
+	) throws Exception;
 
 	void onSigInstruction(ExecutionContext context) throws AuthorizationException;
 

@@ -22,10 +22,12 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.application.tokens.scrypt.Tokens;
 import com.radixdlt.application.tokens.scrypt.TokenHoldingBucket;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
+import com.radixdlt.constraintmachine.exceptions.DefaultedSystemLoanException;
 import com.radixdlt.constraintmachine.exceptions.ExecutionContextDestroyException;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.constraintmachine.exceptions.InvalidResourceException;
 import com.radixdlt.constraintmachine.exceptions.DepletedFeeReserveException;
+import com.radixdlt.constraintmachine.exceptions.MultipleFeeReserveDepositException;
 import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
@@ -42,6 +44,7 @@ public final class ExecutionContext {
 	private final TokenHoldingBucket reserve;
 	private ECPublicKey key;
 	private boolean disableResourceAllocAndDestroy;
+	private UInt256 feeDeposit;
 	private UInt256 systemLoan;
 	private int sigsLeft;
 	private boolean chargedOneTimeFee = false;
@@ -78,8 +81,12 @@ public final class ExecutionContext {
 		return reserve.withdraw(REAddr.ofNativeToken(), amount);
 	}
 
-	public void depositFeeReserve(Tokens tokens) throws InvalidResourceException {
+	public void depositFeeReserve(Tokens tokens) throws InvalidResourceException, MultipleFeeReserveDepositException {
+		if (feeDeposit != null) {
+			throw new MultipleFeeReserveDepositException();
+		}
 		reserve.deposit(tokens);
+		feeDeposit = tokens.getAmount().getLow();
 	}
 
 	public void chargeOneTimeTransactionFee(Function<Txn, UInt256> feeComputer) throws DepletedFeeReserveException {
@@ -102,12 +109,16 @@ public final class ExecutionContext {
 		}
 	}
 
-	public void payOffLoan() throws DepletedFeeReserveException {
+	public void payOffLoan() throws DefaultedSystemLoanException {
 		if (systemLoan.isZero()) {
 			return;
 		}
 
-		charge(systemLoan);
+		try {
+			charge(systemLoan);
+		} catch (DepletedFeeReserveException e) {
+			throw new DefaultedSystemLoanException(e, feeDeposit);
+		}
 		systemLoan = UInt256.ZERO;
 	}
 
@@ -143,7 +154,7 @@ public final class ExecutionContext {
 		}
 	}
 
-	public void destroy() throws DepletedFeeReserveException, ExecutionContextDestroyException {
+	public void destroy() throws DefaultedSystemLoanException, ExecutionContextDestroyException {
 		payOffLoan();
 
 		if (!reserve.isEmpty()) {

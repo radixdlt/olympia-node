@@ -40,5 +40,6 @@ public final class UpdateValidatorConstructor implements ActionConstructor<Updat
 				action.name() == null ? substateDown.getUrl() : action.url()
 			))
 		);
+		txBuilder.end();
 	}
 }

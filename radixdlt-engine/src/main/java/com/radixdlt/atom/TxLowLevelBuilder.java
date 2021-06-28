@@ -207,6 +207,10 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
+	public int size() {
+		return blobStream.size();
+	}
+
 	public byte[] blob() {
 		return blobStream.toByteArray();
 	}

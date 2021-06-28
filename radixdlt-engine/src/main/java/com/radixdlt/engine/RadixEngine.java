@@ -578,7 +578,6 @@ public final class RadixEngine<M> {
 				}
 				for (var action : request.getActions()) {
 					this.actionConstructors.construct(action, txBuilder);
-					txBuilder.end();
 				}
 				request.getMsg().ifPresent(txBuilder::message);
 			},

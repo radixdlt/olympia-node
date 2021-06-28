@@ -35,5 +35,6 @@ public class UnstakeOwnershipConstructor implements ActionConstructor<UnstakeOwn
 			action.amount(),
 			"Not enough staked"
 		).with(amt -> new PreparedUnstakeOwnership(action.from(), action.accountAddr(), amt));
+		txBuilder.end();
 	}
 }

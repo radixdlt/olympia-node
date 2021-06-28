@@ -28,5 +28,6 @@ public final class MintTokenConstructor implements ActionConstructor<MintToken> 
 	@Override
 	public void construct(MintToken action, TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.up(new TokensInAccount(action.to(), action.amount(), action.resourceAddr()));
+		txBuilder.end();
 	}
 }

@@ -78,5 +78,6 @@ public class NextViewConstructorV3 implements ActionConstructor<NextRound> {
 		}
 
 		txBuilder.up(new RoundData(action.view(), action.timestamp()));
+		txBuilder.end();
 	}
 }

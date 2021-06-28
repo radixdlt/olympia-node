@@ -20,25 +20,11 @@ package com.radixdlt.constraintmachine.exceptions;
 
 import com.radixdlt.utils.UInt256;
 
-public class DepletedFeeReserveException extends AuthorizationException {
-	private final UInt256 charge;
-	private final UInt256 reserveAmount;
+import java.util.Optional;
 
-	public DepletedFeeReserveException(NotEnoughResourcesException cause) {
-		super("Charging " + cause.getRequest() + " but fee reserve only contains " + cause.getAmount());
-		this.charge = cause.getRequest();
-		this.reserveAmount = cause.getAmount();
-	}
-
-	public UInt256 getCharge() {
-		return charge;
-	}
-
-	public UInt256 getReserveAmount() {
-		return reserveAmount;
-	}
-
-	public UInt256 getMissingAmount() {
-		return charge.subtract(reserveAmount);
+public class DefaultedSystemLoanException extends Exception {
+	public DefaultedSystemLoanException(DepletedFeeReserveException cause, UInt256 feeDeposited) {
+		super("Reserve fee deposit " + feeDeposited + " not enough to cover basic txn fee of "
+			+ Optional.ofNullable(feeDeposited).orElse(UInt256.ZERO).add(cause.getMissingAmount()));
 	}
 }

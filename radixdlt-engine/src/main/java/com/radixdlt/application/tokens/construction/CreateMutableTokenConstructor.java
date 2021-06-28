@@ -50,5 +50,6 @@ public final class CreateMutableTokenConstructor implements ActionConstructor<Cr
 			action.getTokenUrl(),
 			action.getKey()
 		));
+		txBuilder.end();
 	}
 }

@@ -37,6 +37,7 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.exceptions.DefaultedSystemLoanException;
 import com.radixdlt.constraintmachine.exceptions.DepletedFeeReserveException;
 import com.radixdlt.constraintmachine.exceptions.ExecutionContextDestroyException;
 import com.radixdlt.constraintmachine.meter.FixedFeeMeter;
@@ -56,7 +57,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class FeeTest {
+public class FixedFeeTest {
 	private RadixEngine<Void> engine;
 	private EngineStore<Void> store;
 	private final ECKeyPair key = ECKeyPair.generateNew();
@@ -143,7 +144,7 @@ public class FeeTest {
 
 		// Act
 		assertThatThrownBy(() -> this.engine.execute(List.of(transfer)))
-			.hasRootCauseInstanceOf(DepletedFeeReserveException.class);
+			.hasRootCauseInstanceOf(DefaultedSystemLoanException.class);
 	}
 
 	@Test

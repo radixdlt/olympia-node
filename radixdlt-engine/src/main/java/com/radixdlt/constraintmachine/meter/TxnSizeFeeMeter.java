@@ -25,20 +25,20 @@ import com.radixdlt.constraintmachine.REOp;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.utils.UInt256;
 
-public final class FixedFeeMeter implements Meter {
-	private final UInt256 fixedFee;
+public class TxnSizeFeeMeter implements Meter {
+	private final UInt256 feePerByte;
 
-	private FixedFeeMeter(UInt256 fixedFee) {
-		this.fixedFee = fixedFee;
+	private TxnSizeFeeMeter(UInt256 feePerByte) {
+		this.feePerByte = feePerByte;
 	}
 
-	public static FixedFeeMeter create(UInt256 fixedFee) {
-		return new FixedFeeMeter(fixedFee);
+	public static TxnSizeFeeMeter create(UInt256 feePerByte) {
+		return new TxnSizeFeeMeter(feePerByte);
 	}
 
 	@Override
 	public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws Exception {
-		context.chargeOneTimeTransactionFee(txn -> fixedFee);
+		context.chargeOneTimeTransactionFee(txn -> UInt256.from(txn.getPayload().length).multiply(feePerByte));
 
 		if (procedureKey.opSignature().op() == REOp.SYSCALL) {
 			return;

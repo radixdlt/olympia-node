@@ -96,6 +96,6 @@ public final class Tokens {
 
 	@Override
 	public String toString() {
-		return String.format("%s{resource=%s tokens=%s}", this.getClass().getSimpleName(), this.resourceAddr, this.amount);
+		return String.format("%s{resource=%s amount=%s}", this.getClass().getSimpleName(), this.resourceAddr, this.amount);
 	}
 }

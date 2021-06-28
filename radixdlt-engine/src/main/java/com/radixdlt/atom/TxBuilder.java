@@ -55,6 +55,7 @@ public final class TxBuilder {
 	private final SubstateStore remoteSubstate;
 	private final SubstateDeserialization deserialization;
 	private final SubstateSerialization serialization;
+	private UInt256 feeReserve;
 
 	private TxBuilder(
 		SubstateStore remoteSubstate,
@@ -421,6 +422,10 @@ public final class TxBuilder {
 		};
 	}
 
+	public UInt256 getFeeReserve() {
+		return feeReserve;
+	}
+
 	public <T extends ResourceInBucket> void putFeeReserve(
 		Predicate<TokensInAccount> particlePredicate,
 		FungibleMapper<T> remainderMapper,
@@ -438,6 +443,7 @@ public final class TxBuilder {
 		if (!remainder.isZero()) {
 			up(remainderMapper.map(remainder));
 		}
+		this.feeReserve = amount;
 	}
 
 	public void takeFeeReserve(

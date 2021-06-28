@@ -69,5 +69,6 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateRake
 			curRakePercentage,
 			action.getRakePercentage()
 		));
+		builder.end();
 	}
 }

@@ -116,6 +116,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 					return new TokensInAccount(holdingAddr, amount, rri);
 				},
 				(s, buf) -> {
+					var p = buf.position();
 					REFieldSerialization.serializeReservedByte(buf);
 					REFieldSerialization.serializeREAddr(buf, s.getHoldingAddr());
 					REFieldSerialization.serializeREAddr(buf, s.getResourceAddr());

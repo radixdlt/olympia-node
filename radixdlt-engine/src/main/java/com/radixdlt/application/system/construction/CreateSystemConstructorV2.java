@@ -41,5 +41,6 @@ public class CreateSystemConstructorV2 implements ActionConstructor<CreateSystem
 			Optional.of(SubstateWithArg.noArg(sysAddr)),
 			"No system address"
 		).with(i -> List.of(new EpochData(0), new RoundData(0, action.getTimestamp())));
+		builder.end();
 	}
 }

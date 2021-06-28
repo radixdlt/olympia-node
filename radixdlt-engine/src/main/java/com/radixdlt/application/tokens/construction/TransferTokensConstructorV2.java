@@ -35,5 +35,6 @@ public class TransferTokensConstructorV2 implements ActionConstructor<TransferTo
 			action.amount(),
 			"Not enough balance for transfer."
 		).with(amt -> new TokensInAccount(action.to(), action.amount(), action.resourceAddr()));
+		txBuilder.end();
 	}
 }

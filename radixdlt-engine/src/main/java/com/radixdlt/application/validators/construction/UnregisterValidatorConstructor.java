@@ -50,5 +50,6 @@ public final class UnregisterValidatorConstructor implements ActionConstructor<U
 
 			).with(substateDown -> List.of(new PreparedRegisteredUpdate(action.validatorKey(), false)));
 		}
+		txBuilder.end();
 	}
 }

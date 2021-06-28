@@ -299,6 +299,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 
 		txBuilder.up(new EpochData(closingEpoch.getEpoch() + 1));
 		txBuilder.up(new RoundData(0, closedRound.getTimestamp()));
+		txBuilder.end();
 	}
 
 }

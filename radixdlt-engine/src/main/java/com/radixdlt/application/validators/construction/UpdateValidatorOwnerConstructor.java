@@ -63,5 +63,6 @@ public class UpdateValidatorOwnerConstructor implements ActionConstructor<Update
 				))
 			);
 		}
+		builder.end();
 	}
 }

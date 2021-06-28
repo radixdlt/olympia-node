@@ -36,5 +36,6 @@ public final class BurnTokenConstructor implements ActionConstructor<BurnToken> 
 			burnToken.amount(),
 			"Not enough balance to for fee burn."
 		);
+		txBuilder.end();
 	}
 }

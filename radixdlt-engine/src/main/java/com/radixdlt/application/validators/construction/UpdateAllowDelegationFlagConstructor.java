@@ -42,5 +42,6 @@ public class UpdateAllowDelegationFlagConstructor implements ActionConstructor<U
 				action.allowDelegation()
 			))
 		);
+		builder.end();
 	}
 }

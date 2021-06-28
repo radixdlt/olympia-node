@@ -89,5 +89,6 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 		}
 
 		builder.up(new PreparedStake(action.amount(), action.from(), action.to()));
+		builder.end();
 	}
 }

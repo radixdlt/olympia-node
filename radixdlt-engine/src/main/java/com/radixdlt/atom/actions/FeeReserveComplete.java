@@ -16,17 +16,22 @@
  *
  */
 
-package com.radixdlt.application.system.construction;
+package com.radixdlt.atom.actions;
 
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.FeeReserveTake;
+import com.radixdlt.atom.TxAction;
+import com.radixdlt.identifiers.REAddr;
 
-public class FeeReserveTakeConstructor implements ActionConstructor<FeeReserveTake> {
-	@Override
-	public void construct(FeeReserveTake action, TxBuilder builder) throws TxBuilderException {
-		builder.takeFeeReserve(action.to(), action.amount());
-		builder.end();
+public class FeeReserveComplete implements TxAction {
+	private final REAddr to;
+
+	public FeeReserveComplete(REAddr to) {
+		if (!to.isAccount()) {
+			throw new IllegalArgumentException("Address must be an account");
+		}
+		this.to = to;
+	}
+
+	public REAddr to() {
+		return to;
 	}
 }

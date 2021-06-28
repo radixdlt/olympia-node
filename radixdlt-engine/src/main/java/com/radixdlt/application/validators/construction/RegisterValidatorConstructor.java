@@ -50,5 +50,6 @@ public class RegisterValidatorConstructor implements ActionConstructor<RegisterV
 
 			).with(substateDown -> List.of(new PreparedRegisteredUpdate(action.validatorKey(), true)));
 		}
+		txBuilder.end();
 	}
 }
