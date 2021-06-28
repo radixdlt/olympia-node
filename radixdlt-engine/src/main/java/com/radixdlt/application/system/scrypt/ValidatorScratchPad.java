@@ -29,15 +29,15 @@ import com.radixdlt.utils.UInt384;
 
 public final class ValidatorScratchPad {
 	private final ECPublicKey validatorKey;
-	private UInt256 totalStake;
-	private UInt256 totalOwnership;
+	private UInt384 totalStake;
+	private UInt384 totalOwnership;
 	private int rakePercentage;
 	private REAddr ownerAddr;
 	private boolean isRegistered;
 
 	public ValidatorScratchPad(ValidatorStakeData validatorStakeData) {
-		this.totalStake = validatorStakeData.getTotalStake();
-		this.totalOwnership = validatorStakeData.getTotalOwnership();
+		this.totalStake = UInt384.from(validatorStakeData.getTotalStake());
+		this.totalOwnership = UInt384.from(validatorStakeData.getTotalOwnership());
 		this.rakePercentage = validatorStakeData.getRakePercentage();
 		this.ownerAddr = validatorStakeData.getOwnerAddr();
 		this.isRegistered = validatorStakeData.isRegistered();
@@ -69,37 +69,41 @@ public final class ValidatorScratchPad {
 	}
 
 	public void addEmission(UInt256 amount) {
-		this.totalStake = this.totalStake.add(amount);
+		this.totalStake = verifyNoOverflow(this.totalStake.add(amount));
 	}
 
-	private static UInt256 toSafeLow(UInt384 i) {
+	private static UInt384 verifyNoOverflow(UInt384 i) {
 		if (!i.getHigh().isZero()) {
 			throw new IllegalStateException("Unexpected overflow occurred " + i);
 		}
-		return i.getLow();
+		return i;
+	}
+
+	private static UInt256 toSafeLow(UInt384 i) {
+		return verifyNoOverflow(i).getLow();
 	}
 
 	public StakeOwnership stake(REAddr owner, UInt256 stake) throws ProcedureException {
 		if (totalStake.isZero()) {
-			this.totalStake = stake;
-			this.totalOwnership = stake;
-			return new StakeOwnership(validatorKey, owner, stake);
+			this.totalStake = UInt384.from(stake);
+			this.totalOwnership = this.totalStake;
+			return new StakeOwnership(validatorKey, owner, this.totalOwnership.getLow());
 		}
 
-		var ownership384 = UInt384.from(totalOwnership).multiply(stake).divide(totalStake);
+		var ownership384 = totalOwnership.multiply(stake).divide(totalStake);
 		var ownershipAmt = toSafeLow(ownership384);
-		var stakeOwnership = new StakeOwnership(validatorKey, owner, ownershipAmt);
-		this.totalStake = this.totalStake.add(stake);
-		this.totalOwnership = this.totalOwnership.add(ownershipAmt);
-		return stakeOwnership;
+		this.totalStake = verifyNoOverflow(this.totalStake.add(stake));
+		this.totalOwnership = verifyNoOverflow(this.totalOwnership.add(ownershipAmt));
+
+		return new StakeOwnership(validatorKey, owner, ownershipAmt);
 	}
 
 	public ExittingStake unstakeOwnership(REAddr owner, UInt256 unstakeOwnership, long epochUnlocked) {
-		if (totalOwnership.compareTo(unstakeOwnership) < 0) {
+		if (totalOwnership.getLow().compareTo(unstakeOwnership) < 0) {
 			throw new IllegalStateException("Not enough ownership");
 		}
 
-		var unstaked384 = UInt384.from(totalStake).multiply(unstakeOwnership).divide(totalOwnership);
+		var unstaked384 = totalStake.multiply(unstakeOwnership).divide(totalOwnership);
 		var unstaked = toSafeLow(unstaked384);
 		this.totalStake = this.totalStake.subtract(unstaked);
 		this.totalOwnership = this.totalOwnership.subtract(unstakeOwnership);
@@ -109,8 +113,8 @@ public final class ValidatorScratchPad {
 	public ValidatorStakeData toSubstate() {
 		return ValidatorStakeData.create(
 			validatorKey,
-			totalStake,
-			totalOwnership,
+			totalStake.getLow(),
+			totalOwnership.getLow(),
 			rakePercentage,
 			ownerAddr,
 			isRegistered
