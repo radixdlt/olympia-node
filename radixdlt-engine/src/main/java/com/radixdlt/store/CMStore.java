@@ -30,31 +30,12 @@ import java.util.Optional;
  * Read only store interface for Constraint Machine validation
  */
 public interface CMStore extends ReadableAddrsStore {
-	/**
-	 * Hack for atomic transaction, better to implement
-	 * whole function in single interface in future.
-	 */
-	interface Transaction {
-		default void commit() {
-		}
-
-		default void abort() {
-		}
-
-		default <T> T unwrap() {
-			return null;
-		}
-	}
-
-	Transaction createTransaction();
-
-	boolean isVirtualDown(Transaction txn, SubstateId substateId);
+	boolean isVirtualDown(SubstateId substateId);
 
 	Optional<Particle> loadUpParticle(
-		Transaction txn,
 		SubstateId substateId,
 		SubstateDeserialization deserialization
 	);
 
-	CloseableCursor<RawSubstateBytes> openIndexedCursor(Transaction txn, ShutdownAllIndex index);
+	CloseableCursor<RawSubstateBytes> openIndexedCursor(ShutdownAllIndex index);
 }

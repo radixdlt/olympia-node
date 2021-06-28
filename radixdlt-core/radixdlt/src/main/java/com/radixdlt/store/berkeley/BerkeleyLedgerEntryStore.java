@@ -20,6 +20,7 @@ package com.radixdlt.store.berkeley;
 import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.store.ReadableAddrsStore;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -83,7 +84,7 @@ import static com.sleepycat.je.OperationStatus.NOTFOUND;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
 @Singleton
-public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTProof>, TxnIndex,
+public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTProof>, ReadableAddrsStore, TxnIndex,
 	CommittedReader, PersistentVertexStore {
 	private static final Logger log = LogManager.getLogger();
 
@@ -729,6 +730,11 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		} finally {
 			addTime(startTime, CounterType.ELAPSED_BDB_LEDGER_ENTRIES, CounterType.COUNT_BDB_LEDGER_ENTRIES);
 		}
+	}
+
+	@Override
+	public Optional<Particle> loadAddr(REAddr addr, SubstateDeserialization deserialization) {
+		return loadAddr(null, addr, deserialization);
 	}
 
 	@Override

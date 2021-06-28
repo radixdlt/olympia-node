@@ -58,22 +58,17 @@ public final class LogCMStore implements CMStore {
 	}
 
 	@Override
-	public Transaction createTransaction() {
-		return null;
-	}
-
-	@Override
-	public boolean isVirtualDown(Transaction dbTxn, SubstateId substateId) {
+	public boolean isVirtualDown(SubstateId substateId) {
 		return false;
 	}
 
 	@Override
-	public Optional<Particle> loadAddr(Transaction tx, REAddr rri, SubstateDeserialization deserialization) {
-		return readableAddrs.loadAddr(tx, rri, deserialization);
+	public Optional<Particle> loadAddr(REAddr rri, SubstateDeserialization deserialization) {
+		return readableAddrs.loadAddr(rri, deserialization);
 	}
 
 	@Override
-	public Optional<Particle> loadUpParticle(Transaction dbTxn, SubstateId substateId, SubstateDeserialization deserialization) {
+	public Optional<Particle> loadUpParticle(SubstateId substateId, SubstateDeserialization deserialization) {
 		var txnId = substateId.getTxnId();
 		return txnIndex.get(txnId)
 			.flatMap(txn -> {
@@ -96,7 +91,7 @@ public final class LogCMStore implements CMStore {
 	}
 
 	@Override
-	public CloseableCursor<RawSubstateBytes> openIndexedCursor(Transaction dbTransaction, ShutdownAllIndex index) {
+	public CloseableCursor<RawSubstateBytes> openIndexedCursor(ShutdownAllIndex index) {
 		throw new UnsupportedOperationException();
 	}
 }
