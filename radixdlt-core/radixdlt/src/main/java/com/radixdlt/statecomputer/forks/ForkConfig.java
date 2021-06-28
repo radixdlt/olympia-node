@@ -34,6 +34,7 @@ import java.util.function.Predicate;
  */
 public final class ForkConfig {
 	private final String name;
+	private final long minEpoch;
 	private final Predicate<Triplet<ForkConfig, RadixEngine<LedgerAndBFTProof>, LedgerAndBFTProof>> executePredicate;
 	private final RERules reRules;
 
@@ -41,10 +42,12 @@ public final class ForkConfig {
 
 	public ForkConfig(
 		String name,
+		long minEpoch,
 		Predicate<Triplet<ForkConfig, RadixEngine<LedgerAndBFTProof>, LedgerAndBFTProof>> executePredicate,
 		RERules reRules
 	) {
 		this.name = name;
+		this.minEpoch = minEpoch;
 		this.executePredicate = executePredicate;
 		this.reRules = reRules;
 
@@ -65,6 +68,10 @@ public final class ForkConfig {
 
 	public RERules getEngineRules() {
 		return reRules;
+	}
+
+	public long getMinEpoch() {
+		return minEpoch;
 	}
 
 	public static HashCode voteHash(ECPublicKey publicKey, ForkConfig forkConfig) {

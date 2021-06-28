@@ -43,7 +43,9 @@ public class ForkOverwritesFromPropertiesModule extends AbstractModule {
 					if (!epochOverwrite.isBlank()) {
 						var epoch = Long.parseLong(epochOverwrite);
 						logger.warn("Overwriting epoch of " + c.getName() + " to " + epoch);
-						c = c.withExecutePredicate(ForksPredicates.atEpoch(epoch));
+						c = c
+							.withMinEpoch(epoch)
+							.withExecutePredicate(ForksPredicates.atEpoch(epoch));
 					}
 
 					var viewOverwrite = properties.get("overwrite_forks." + c.getName() + ".views", "");

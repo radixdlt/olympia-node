@@ -333,11 +333,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 		var proof = verifiedTxnsAndProof.getProof();
 		var ledgerAndBFTProof = LedgerAndBFTProof.create(proof, vertexStoreState);
 
-		final var maybeNextForkConfig = this.forkManager.findNextForkConfig(
-			this.currentForkConfig,
-			this.radixEngine,
-			ledgerAndBFTProof
-		);
+		final var maybeNextForkConfig = proof.getNextValidatorSet().isPresent()
+			? forkManager.findNextForkConfig(currentForkConfig, radixEngine, ledgerAndBFTProof)
+			: Optional.<ForkConfig>empty(); /* forks only happen at epoch boundary */
 
 		final List<REProcessedTxn> radixEngineTxns;
 		try {

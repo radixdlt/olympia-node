@@ -355,7 +355,7 @@ public class SystemConfigService {
 		int maxTxnsPerProposal
 	) {
 		final var knownForks = jsonArray();
-		forkManager.forksConfigs().forEach(config -> knownForks.put(forkConfigJson(config)));
+		forkManager.forkConfigs().forEach(config -> knownForks.put(forkConfigJson(config)));
 
 		final var currentFork = engineStore.getCurrentForkHash()
 			.flatMap(forkManager::getByHash)
@@ -373,6 +373,7 @@ public class SystemConfigService {
 		return new JSONObject()
 			.put("name", forkConfig.getName())
 			.put("hash", forkConfig.getHash().toString())
+			.put("minEpoch", forkConfig.getMinEpoch())
 			.put("maxRounds", forkConfig.getEngineRules().getMaxRounds().number());
 	}
 

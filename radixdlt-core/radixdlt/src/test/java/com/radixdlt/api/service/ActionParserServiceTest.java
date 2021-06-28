@@ -64,7 +64,7 @@ public class ActionParserServiceTest {
 
 		final var reRules = mock(RERules.class);
 		when(reRules.getMaxRounds()).thenReturn(View.of(10L));
-		final var forkConfig = new ForkConfig("fork1", null, reRules);
+		final var forkConfig = new ForkConfig("fork1", 0L, null, reRules);
 		when(forkManager.latestKnownFork()).thenReturn(forkConfig);
 	}
 

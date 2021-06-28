@@ -13,17 +13,20 @@ import java.util.function.Predicate;
  */
 public final class ForkBuilder {
 	private final String name;
+	private final long minEpoch;
 	private final Predicate<Triplet<ForkConfig, RadixEngine<LedgerAndBFTProof>, LedgerAndBFTProof>> executePredicate;
 	private final Function<RERulesConfig, RERules> reRulesFactory;
 	private final RERulesConfig reRulesConfig;
 
 	public ForkBuilder(
 		String name,
+		long minEpoch,
 		Predicate<Triplet<ForkConfig, RadixEngine<LedgerAndBFTProof>, LedgerAndBFTProof>> executePredicate,
 		Function<RERulesConfig, RERules> reRulesFactory,
 		RERulesConfig reRulesConfig
 	) {
 		this.name = name;
+		this.minEpoch = minEpoch;
 		this.executePredicate = executePredicate;
 		this.reRulesFactory = reRulesFactory;
 		this.reRulesConfig = reRulesConfig;
@@ -44,15 +47,23 @@ public final class ForkBuilder {
 		return reRulesFactory;
 	}
 
+	public long getMinEpoch() {
+		return minEpoch;
+	}
+
 	public ForkBuilder withEngineRules(RERulesConfig newEngineRules) {
-		return new ForkBuilder(name, executePredicate, reRulesFactory, newEngineRules);
+		return new ForkBuilder(name, minEpoch, executePredicate, reRulesFactory, newEngineRules);
+	}
+
+	public ForkBuilder withMinEpoch(long newMinEpoch) {
+		return new ForkBuilder(name, newMinEpoch, executePredicate, reRulesFactory, reRulesConfig);
 	}
 
 	public ForkBuilder withExecutePredicate(Predicate<Triplet<ForkConfig, RadixEngine<LedgerAndBFTProof>, LedgerAndBFTProof>> newExecutePredicate) {
-		return new ForkBuilder(name, newExecutePredicate, reRulesFactory, reRulesConfig);
+		return new ForkBuilder(name, minEpoch, newExecutePredicate, reRulesFactory, reRulesConfig);
 	}
 
 	public ForkConfig build() {
-		return new ForkConfig(name, executePredicate, reRulesFactory.apply(reRulesConfig));
+		return new ForkConfig(name, minEpoch, executePredicate, reRulesFactory.apply(reRulesConfig));
 	}
 }

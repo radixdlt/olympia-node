@@ -23,57 +23,74 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Triplet;
-
 import java.util.Objects;
 import java.util.Optional;
 
 public final class ForkManager {
-	private final ImmutableList<ForkConfig> forksConfigs;
+	private final ImmutableList<ForkConfig> forkConfigs;
 
-	public ForkManager(ImmutableList<ForkConfig> forksConfigs) {
-		if (Objects.requireNonNull(forksConfigs).isEmpty()) {
+	public ForkManager(ImmutableList<ForkConfig> forkConfigs) {
+		if (Objects.requireNonNull(forkConfigs).isEmpty()) {
 			throw new IllegalArgumentException("At least one fork config is required");
 		}
-		this.forksConfigs = forksConfigs;
+
+		if (!sanityCheckMinEpochs(forkConfigs)) {
+			throw new IllegalArgumentException("Forks min epochs should be strictly increasing");
+		}
+
+		this.forkConfigs = forkConfigs;
+	}
+
+	private static boolean sanityCheckMinEpochs(ImmutableList<ForkConfig> forkConfigs) {
+		ForkConfig prev = null;
+		for (var i = forkConfigs.iterator(); i.hasNext();) {
+			final var el = i.next();
+			if (prev != null && prev.getMinEpoch() >= el.getMinEpoch()) {
+				return false;
+			}
+			prev = el;
+		}
+		return true;
 	}
 
 	public ForkConfig latestKnownFork() {
-		return forksConfigs.get(forksConfigs.size() - 1);
+		return forkConfigs.get(forkConfigs.size() - 1);
 	}
 
-	public ImmutableList<ForkConfig> forksConfigs() {
-		return this.forksConfigs;
+	public ImmutableList<ForkConfig> forkConfigs() {
+		return this.forkConfigs;
 	}
 
 	public Optional<ForkConfig> getByHash(HashCode forkHash) {
-		return this.forksConfigs.stream()
+		return this.forkConfigs.stream()
 				.filter(forkConfig -> forkConfig.getHash().equals(forkHash))
 				.findFirst();
 	}
 
 	public ForkConfig genesisFork() {
-		return this.forksConfigs.get(0);
+		return this.forkConfigs.get(0);
 	}
 
 	public Optional<ForkConfig> findNextForkConfig(
-			ForkConfig currentForkConfig,
-			RadixEngine<LedgerAndBFTProof> radixEngine,
-			LedgerAndBFTProof uncommittedProof
+		ForkConfig currentForkConfig,
+		RadixEngine<LedgerAndBFTProof> radixEngine,
+		LedgerAndBFTProof uncommittedProof
 	) {
-		final var currentForkIndex = this.forksConfigs.indexOf(currentForkConfig);
+		final var currentForkIndex = this.forkConfigs.indexOf(currentForkConfig);
 		if (currentForkIndex < 0) {
 			return Optional.empty();
 		}
 
-		final var remainingForks = this.forksConfigs.subList(
-				currentForkIndex + 1,
-				this.forksConfigs.size()
+		final var remainingForks = this.forkConfigs.subList(
+			currentForkIndex + 1,
+			this.forkConfigs.size()
 		);
 		return remainingForks
-				.reverse()
-				.stream()
-				.filter(forkConfig -> forkConfig.getExecutePredicate().test(
-						Triplet.of(forkConfig, radixEngine, uncommittedProof)))
-				.findFirst();
+			.reverse()
+			.stream()
+			.filter(forkConfig -> uncommittedProof.getProof().getEpoch() + 1 >= forkConfig.getMinEpoch())
+			.filter(forkConfig -> forkConfig.getExecutePredicate().test(
+				Triplet.of(forkConfig, radixEngine, uncommittedProof)))
+			.findFirst();
 	}
 }

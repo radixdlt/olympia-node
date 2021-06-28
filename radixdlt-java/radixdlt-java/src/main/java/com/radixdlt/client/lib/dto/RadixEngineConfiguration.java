@@ -24,13 +24,21 @@ import java.util.List;
 import java.util.Objects;
 
 public class RadixEngineConfiguration {
-	private final List<ForkConfig> forks;
+	private final List<ForkConfig> knownForks;
+	private final ForkConfig currentFork;
 	private final long maxValidators;
 	private final long minValidators;
 	private final long maxTxnsPerProposal;
 
-	private RadixEngineConfiguration(List<ForkConfig> forks, long maxValidators, long minValidators, long maxTxnsPerProposal) {
-		this.forks = forks;
+	private RadixEngineConfiguration(
+		List<ForkConfig> knownForks,
+		ForkConfig currentFork,
+		long maxValidators,
+		long minValidators,
+		long maxTxnsPerProposal
+	) {
+		this.knownForks = knownForks;
+		this.currentFork = currentFork;
 		this.maxValidators = maxValidators;
 		this.minValidators = minValidators;
 		this.maxTxnsPerProposal = maxTxnsPerProposal;
@@ -38,12 +46,13 @@ public class RadixEngineConfiguration {
 
 	@JsonCreator
 	public static RadixEngineConfiguration create(
-		@JsonProperty(value = "forks", required = true) List<ForkConfig> forks,
+		@JsonProperty(value = "known_forks", required = true) List<ForkConfig> knownForks,
+		@JsonProperty(value = "current_fork", required = true) ForkConfig currentFork,
 		@JsonProperty(value = "maxValidators", required = true) long maxValidators,
 		@JsonProperty(value = "minValidators", required = true) long minValidators,
 		@JsonProperty(value = "maxTxnsPerProposal", required = true) long maxTxnsPerProposal
 	) {
-		return new RadixEngineConfiguration(forks, maxValidators, minValidators, maxTxnsPerProposal);
+		return new RadixEngineConfiguration(knownForks, currentFork, maxValidators, minValidators, maxTxnsPerProposal);
 	}
 
 	@Override
@@ -60,24 +69,30 @@ public class RadixEngineConfiguration {
 		return maxValidators == that.maxValidators
 			&& minValidators == that.minValidators
 			&& maxTxnsPerProposal == that.maxTxnsPerProposal
-			&& forks.equals(that.forks);
+			&& Objects.equals(knownForks, that.knownForks)
+			&& Objects.equals(currentFork, that.currentFork);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(forks, maxValidators, minValidators, maxTxnsPerProposal);
+		return Objects.hash(knownForks, currentFork, maxValidators, minValidators, maxTxnsPerProposal);
 	}
 
 	@Override
 	public String toString() {
-		return "{forks:" + forks
+		return "{knownForks:" + knownForks
+			+ ", currentFork:" + currentFork
 			+ ", maxValidators:" + maxValidators
 			+ ", minValidators:" + minValidators
 			+ ", maxTxnsPerProposal:" + maxTxnsPerProposal + '}';
 	}
 
-	public List<ForkConfig> getForks() {
-		return forks;
+	public List<ForkConfig> getKnownForks() {
+		return knownForks;
+	}
+
+	public ForkConfig getCurrentFork() {
+		return currentFork;
 	}
 
 	public long getMaxValidators() {

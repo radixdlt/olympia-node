@@ -39,9 +39,13 @@ public class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
 		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<ImmutableList<ForkBuilder>>>() { })
 			.setBinding()
 			.toInstance(s -> s.stream()
-				.map(c -> c
-					.withExecutePredicate(ForksPredicates.atEpoch(epoch.getAndAdd(5)))
-					.withEngineRules(config))
+				.map(fork -> {
+					final var forkEpoch = epoch.getAndAdd(5);
+					return fork
+						.withMinEpoch(forkEpoch)
+						.withExecutePredicate(ForksPredicates.atEpoch(forkEpoch))
+						.withEngineRules(config);
+				})
 				.collect(ImmutableList.toImmutableList())
 			);
 	}

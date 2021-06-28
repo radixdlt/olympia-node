@@ -19,28 +19,28 @@
 package com.radixdlt.statecomputer.forks;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Triplet;
 import org.junit.Test;
-
 import java.util.function.Predicate;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public final class ForkManagerTest {
 
 	@Test
 	public void fork_manager_should_correctly_manage_forks() {
-		final var fork1Proof = mock(LedgerAndBFTProof.class);
-		final var fork2Proof = mock(LedgerAndBFTProof.class);
-		final var fork3Proof = mock(LedgerAndBFTProof.class);
+		final var fork1Proof = proofAtEpoch(10L);
+		final var fork2Proof = proofAtEpoch(10L);
+		final var fork3Proof = proofAtEpoch(10L);
 
-		final var fork1 = new ForkConfig("fork1", sameUncommittedProof(fork1Proof), null);
-		final var fork2 = new ForkConfig("fork2", sameUncommittedProof(fork2Proof), null);
-		final var fork3 = new ForkConfig("fork3", sameUncommittedProof(fork3Proof), null);
+		final var fork1 = new ForkConfig("fork1", 0L, sameUncommittedProof(fork1Proof), null);
+		final var fork2 = new ForkConfig("fork2", 1L, sameUncommittedProof(fork2Proof), null);
+		final var fork3 = new ForkConfig("fork3", 2L, sameUncommittedProof(fork3Proof), null);
 
 		final var forkManager = new ForkManager(ImmutableList.of(fork1, fork2, fork3));
 
@@ -68,12 +68,38 @@ public final class ForkManagerTest {
 
 	@Test
 	public void if_two_predicates_match__then_should_return_latest_fork() {
-		final var fork1 = new ForkConfig("fork1", t -> true, null);
-		final var fork2 = new ForkConfig("fork2", t -> true, null);
-		final var fork3 = new ForkConfig("fork3", t -> true, null);
+		final var fork1 = new ForkConfig("fork1", 0L, t -> true, null);
+		final var fork2 = new ForkConfig("fork2", 1L, t -> true, null);
+		final var fork3 = new ForkConfig("fork3", 2L, t -> true, null);
 
 		final var forkManager = new ForkManager(ImmutableList.of(fork1, fork2, fork3));
-		assertEquals(fork3, forkManager.findNextForkConfig(fork1, null, null).get());
+		assertEquals(fork3, forkManager.findNextForkConfig(fork1, null, proofAtEpoch(10L)).get());
+	}
+
+	@Test
+	public void should_not_return_fork_at_later_epoch__even_if_predicates_match() {
+		final var fork1 = new ForkConfig("fork1", 0L, t -> true, null);
+		final var fork2 = new ForkConfig("fork2", 10L, t -> true, null);
+
+		final var forkManager = new ForkManager(ImmutableList.of(fork1, fork2));
+		assertTrue(forkManager.findNextForkConfig(fork1, null, proofAtEpoch(8L)).isEmpty());
+	}
+
+	@Test
+	public void should_return_next_fork_if_next_epoch_matches() {
+		final var fork1 = new ForkConfig("fork1", 0L, t -> true, null);
+		final var fork2 = new ForkConfig("fork2", 10L, t -> true, null);
+
+		final var forkManager = new ForkManager(ImmutableList.of(fork1, fork2));
+		assertEquals(fork2, forkManager.findNextForkConfig(fork1, null, proofAtEpoch(9L)).get());
+	}
+
+	private LedgerAndBFTProof proofAtEpoch(long epoch) {
+		final var ledgerAndBftProof = mock(LedgerAndBFTProof.class);
+		final var proof = mock(LedgerProof.class);
+		when(proof.getEpoch()).thenReturn(epoch);
+		when(ledgerAndBftProof.getProof()).thenReturn(proof);
+		return ledgerAndBftProof;
 	}
 
 	private Predicate<Triplet<ForkConfig, RadixEngine<LedgerAndBFTProof>, LedgerAndBFTProof>> sameUncommittedProof(

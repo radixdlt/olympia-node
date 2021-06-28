@@ -39,8 +39,8 @@ public final class ForkManagerModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private ForkManager forkManager(
-			ImmutableList<ForkBuilder> forkBuilders,
-			Optional<UnaryOperator<ImmutableList<ForkBuilder>>> transformer
+		ImmutableList<ForkBuilder> forkBuilders,
+		Optional<UnaryOperator<ImmutableList<ForkBuilder>>> transformer
 	) {
 		final var transformed = transformer.map(o -> o.apply(forkBuilders))
 			.orElse(forkBuilders);

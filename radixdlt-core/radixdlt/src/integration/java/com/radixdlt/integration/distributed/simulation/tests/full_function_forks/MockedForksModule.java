@@ -23,6 +23,7 @@ public final class MockedForksModule extends AbstractModule {
 	ImmutableList<ForkBuilder> forksConfig() {
 		final var baseForkBuilder = new ForkBuilder(
 			"fork1",
+			0L,
 			ForksPredicates.atEpoch(0L),
 			MainnetEngineRules.mainnetGenesis,
 			new RERulesConfig(false, epochCeilingView.number(), 0L)
@@ -33,22 +34,24 @@ public final class MockedForksModule extends AbstractModule {
 			copyOfAtEpoch(baseForkBuilder, "fork1", 0),
 			copyOfAtEpoch(baseForkBuilder, "fork2", 5),
 			copyOfAtEpoch(baseForkBuilder, "fork3", 10),
-			copyOfWithVoting(baseForkBuilder, "fork4", 0.51)
+			copyOfWithVoting(baseForkBuilder, "fork4", 0.51, 20L)
 		);
 	}
 
 	private ForkBuilder copyOfAtEpoch(ForkBuilder original, String name, long epoch) {
 		return new ForkBuilder(
 			name,
+			epoch,
 			ForksPredicates.atEpoch(epoch),
 			original.getEngineRulesFactory(),
 			original.getEngineRulesConfig()
 		);
 	}
 
-	private ForkBuilder copyOfWithVoting(ForkBuilder original, String name, double required) {
+	private ForkBuilder copyOfWithVoting(ForkBuilder original, String name, double required, long minEpoch) {
 		return new ForkBuilder(
 			name,
+			minEpoch,
 			ForksPredicates.stakeVoting(required),
 			original.getEngineRulesFactory(),
 			original.getEngineRulesConfig()

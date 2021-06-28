@@ -40,6 +40,7 @@ public class RadixEngineForksLatestOnlyModule extends AbstractModule {
 			.setBinding()
 			.toInstance(m -> {
 				final var latestFork = m.get(m.size() - 1)
+					.withMinEpoch(0L)
 					.withExecutePredicate(ForksPredicates.atEpoch(0L))
 					.withEngineRules(config);
 				return ImmutableList.of(latestFork);

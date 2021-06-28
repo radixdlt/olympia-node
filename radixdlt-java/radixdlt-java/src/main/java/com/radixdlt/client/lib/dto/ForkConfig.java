@@ -24,22 +24,25 @@ import java.util.Objects;
 
 public class ForkConfig {
 	private final String name;
-	private final long epoch;
-	private final long ceilingView;
+	private final String hash;
+	private final long minEpoch;
+	private final long maxRounds;
 
-	private ForkConfig(String name, long epoch, long ceilingView) {
+	private ForkConfig(String name, String hash, long minEpoch, long maxRounds) {
 		this.name = name;
-		this.epoch = epoch;
-		this.ceilingView = ceilingView;
+		this.hash = hash;
+		this.minEpoch = minEpoch;
+		this.maxRounds = maxRounds;
 	}
 
 	@JsonCreator
 	public static ForkConfig create(
 		@JsonProperty(value = "name", required = true) String name,
-		@JsonProperty(value = "epoch", required = true) long epoch,
-		@JsonProperty(value = "ceilingView", required = true) long ceilingView
+		@JsonProperty(value = "hash", required = true) String hash,
+		@JsonProperty(value = "minEpoch", required = true) long minEpoch,
+		@JsonProperty(value = "maxRounds", required = true) long maxRounds
 	) {
-		return new ForkConfig(name, epoch, ceilingView);
+		return new ForkConfig(name, hash, minEpoch, maxRounds);
 	}
 
 	@Override
@@ -53,28 +56,31 @@ public class ForkConfig {
 		}
 
 		var that = (ForkConfig) o;
-		return epoch == that.epoch && ceilingView == that.ceilingView && name.equals(that.name);
+		return minEpoch == that.minEpoch
+			&& maxRounds == that.maxRounds
+			&& Objects.equals(name, that.name)
+			&& Objects.equals(hash, that.hash);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(name, epoch, ceilingView);
+		return Objects.hash(name, hash, minEpoch, maxRounds);
 	}
 
 	@Override
 	public String toString() {
-		return "{name:'" + name + '\'' + ", epoch:" + epoch + ", ceilingView:" + ceilingView + '}';
+		return "{name:'" + name + '\'' + ", minEpoch:" + minEpoch + ", maxRounds:" + maxRounds + '}';
 	}
 
 	public String getName() {
 		return name;
 	}
 
-	public long getEpoch() {
-		return epoch;
+	public long getMinEpoch() {
+		return minEpoch;
 	}
 
-	public long getCeilingView() {
-		return ceilingView;
+	public long getMaxRounds() {
+		return maxRounds;
 	}
 }

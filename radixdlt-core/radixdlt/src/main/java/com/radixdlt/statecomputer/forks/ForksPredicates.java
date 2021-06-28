@@ -42,10 +42,6 @@ public final class ForksPredicates {
 			final var radixEngine = triplet.getSecond();
 			final var uncommittedProof = triplet.getThird();
 
-			if (!uncommittedProof.getProof().getNextValidatorSet().isPresent()) {
-				return false;
-			}
-
 			final var validatorSet = uncommittedProof.getProof().getNextValidatorSet().get();
 			final var stakedValidators = radixEngine.getComputedState(StakedValidators.class);
 			final var forksVotes = stakedValidators.getForksVotes();
@@ -76,10 +72,6 @@ public final class ForksPredicates {
 	public static Predicate<Triplet<ForkConfig, RadixEngine<LedgerAndBFTProof>, LedgerAndBFTProof>> atEpoch(long epoch) {
 		return triplet -> {
 			final var uncommittedProof = triplet.getThird();
-			if (!uncommittedProof.getProof().getNextValidatorSet().isPresent()) {
-				return false;
-			}
-
 			final var nextEpoch = uncommittedProof.getProof().getEpoch() + 1;
 			return nextEpoch >= epoch;
 		};

@@ -51,7 +51,7 @@ public class ForkVoteStatusService {
 	}
 
 	public ForkVoteStatus forkVoteStatus() {
-		if (forkManager.forksConfigs().size() == 1) {
+		if (forkManager.forkConfigs().size() == 1) {
 			// no known forks other than the "genesis" fork
 			return ForkVoteStatus.NO_ACTION_NEEDED;
 		}

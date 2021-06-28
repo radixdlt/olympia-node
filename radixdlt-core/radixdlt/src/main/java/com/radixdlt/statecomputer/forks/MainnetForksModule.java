@@ -35,6 +35,7 @@ public final class MainnetForksModule extends AbstractModule {
 	ForkBuilder mainnetGenesis() {
 		return new ForkBuilder(
 			"mainnet",
+			0L,
 			ForksPredicates.atEpoch(0L),
 			MainnetEngineRules.mainnetGenesis,
 			new RERulesConfig(true, TWO_WEEKS_WORTH_OF_ROUNDS, TWO_WEEKS_WORTH_OF_EPOCHS)

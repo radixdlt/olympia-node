@@ -32,9 +32,10 @@ import static org.mockito.Mockito.when;
 public class AsyncRadixApiRadixEngineTest {
 	private static final String BASE_URL = "http://localhost/";
 
-	private static final String CONFIGURATION = "{\"result\":{\"forks\":[{\"name\":\"betanet1\",\"epoch\":0,"
-		+ "\"ceilingView\":1000},{\"name\":\"betanet2\",\"epoch\":4,\"ceilingView\":1000},{\"name\":\"betanet3\","
-		+ "\"epoch\":8,\"ceilingView\":1000},{\"name\":\"betanet4\",\"epoch\":10,\"ceilingView\":10000}],"
+	private static final String CONFIGURATION = "{\"result\":{\"current_fork\":{\"name\":\"betanet1\",\"hash\":\"abcd\",\"minEpoch\":0,"
+		+ "\"maxRounds\":1000},\"known_forks\":[{\"name\":\"betanet1\",\"hash\":\"abcd\",\"minEpoch\":0,"
+		+ "\"maxRounds\":1000},{\"name\":\"betanet2\",\"hash\":\"cde\",\"minEpoch\":4,\"maxRounds\":1000},{\"name\":\"betanet3\",\"hash\":\"xyz\","
+		+ "\"minEpoch\":8,\"maxRounds\":1000},{\"name\":\"betanet4\",\"hash\":\"www\",\"minEpoch\":10,\"maxRounds\":10000}],"
 		+ "\"maxValidators\":100,\"minValidators\":1,\"maxTxnsPerProposal\":50},"
 		+ "\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
 	private static final String DATA = "{\"result\":{\"invalidProposedCommands\":0,\"systemTransactions\":207536,"
@@ -49,8 +50,8 @@ public class AsyncRadixApiRadixEngineTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.radixEngine().configuration()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(configuration -> assertEquals(4, configuration.getForks().size()))
-				.onSuccess(configuration -> assertEquals("betanet4", configuration.getForks().get(3).getName()))
+				.onSuccess(configuration -> assertEquals(4, configuration.getKnownForks().size()))
+				.onSuccess(configuration -> assertEquals("betanet4", configuration.getKnownForks().get(3).getName()))
 				.join())
 			.join();
 	}

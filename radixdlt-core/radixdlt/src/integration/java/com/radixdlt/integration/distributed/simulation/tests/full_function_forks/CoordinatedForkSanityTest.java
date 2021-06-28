@@ -22,6 +22,7 @@ import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
@@ -50,6 +51,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public final class CoordinatedForkSanityTest {
 	private final Builder bftTestBuilder;
@@ -89,7 +91,7 @@ public final class CoordinatedForkSanityTest {
 		final var halfOfTheNodes = nodes.subList(0, nodes.size() / 2);
 		final var oneMoreNode = nodes.get(nodes.size() / 2);
 
-		final var forks = network.getInstance(ForkManager.class, nodes.get(0)).forksConfigs();
+		final var forks = network.getInstance(ForkManager.class, nodes.get(0)).forkConfigs();
 
 		final var firstError = new AtomicReference<String>();
 		final Consumer<String> reportError = err -> {
@@ -97,8 +99,12 @@ public final class CoordinatedForkSanityTest {
 				firstError.set(err);
 			}
 		};
+
+		final var latestEpochChange = new AtomicReference<EpochChange>();
 		final var testErrorsDisposable = network.latestEpochChanges()
 			.subscribe(epochChange -> {
+				latestEpochChange.set(epochChange);
+
 				// just a sanity check that all validators have the same power (this test depends on this assumption)
 				final var validatorSet = epochChange.getBFTConfiguration().getValidatorSet();
 				final var validatorPower = validatorSet.getValidators().iterator().next().getPower();
@@ -125,10 +131,15 @@ public final class CoordinatedForkSanityTest {
 
 					// one more node votes in epoch 12
 					updateValidatorWithLatestFork(network, oneMoreNode);
-				} else if (epochChange.getEpoch() == 14L) {
-					// verify that at epoch 14 we've successfully switched to the fork with voting (idx 3)
+				} else if (epochChange.getEpoch() == 19L) {
+					// still no change at epoch 19 (min epoch is 20)
+					if (!verifyCurrentFork(network, forks.get(2))) {
+						reportError.accept("Expected to be at a different fork (2) at epoch 19");
+					}
+				} else if (epochChange.getEpoch() == 21L) {
+					// verify that at epoch 21 we've successfully switched to the fork with voting (idx 3)
 					if (!verifyCurrentFork(network, forks.get(3))) {
-						reportError.accept("Expected to be at a different fork (3) at epoch 13");
+						reportError.accept("Expected to be at a different fork (3) at epoch 20");
 					}
 				}
 			});
@@ -139,6 +150,9 @@ public final class CoordinatedForkSanityTest {
 			Assert.fail(firstError.get());
 		}
 		testErrorsDisposable.dispose();
+
+		// make sure that at least 20 epochs have passed (fork min epoch)
+		assertTrue(latestEpochChange.get().getEpoch() > 20);
 
 		// verify that at the end of test all nodes are at fork idx 3
 		if (!verifyCurrentFork(network, forks.get(3))) {
