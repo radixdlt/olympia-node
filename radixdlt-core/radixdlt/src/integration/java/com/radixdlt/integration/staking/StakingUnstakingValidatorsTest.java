@@ -96,7 +96,9 @@ import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
+
 import io.reactivex.rxjava3.schedulers.Timed;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -132,7 +134,7 @@ public class StakingUnstakingValidatorsTest {
 
 	@Parameterized.Parameters
 	public static Collection<Object[]> forksModule() {
-		return List.of(new Object[][] {
+		return List.of(new Object[][]{
 			{new RadixEngineForksLatestOnlyModule(config.overrideMaxRounds(100)), 100, null},
 			{new ForkOverwritesWithShorterEpochsModule(config), 10, null},
 			{
@@ -194,14 +196,14 @@ public class StakingUnstakingValidatorsTest {
 				public void configure() {
 					bind(CommittedReader.class).toInstance(CommittedReader.mocked());
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
+					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() {}).toInstance(new InMemoryEngineStore<>());
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
+					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() {}).annotatedWith(Genesis.class)
 						.toInstance(nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
 
 					nodeKeys.forEach(key ->
-						Multibinder.newSetBinder(binder(), TokenIssuance.class)
-							.addBinding().toInstance(TokenIssuance.of(key.getPublicKey(), Amount.ofTokens(10 * 10).toSubunits()))
+										 Multibinder.newSetBinder(binder(), TokenIssuance.class)
+											 .addBinding().toInstance(TokenIssuance.of(key.getPublicKey(), Amount.ofTokens(10 * 10).toSubunits()))
 					);
 				}
 			}
@@ -229,8 +231,8 @@ public class StakingUnstakingValidatorsTest {
 
 	private Injector createRunner(boolean byzantine, ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		var reConfig = byzantine && byzantineModule != null
-			? Modules.override(this.radixEngineConfiguration).with(byzantineModule)
-			: this.radixEngineConfiguration;
+					   ? Modules.override(this.radixEngineConfiguration).with(byzantineModule)
+					   : this.radixEngineConfiguration;
 
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
@@ -241,14 +243,14 @@ public class StakingUnstakingValidatorsTest {
 				protected void configure() {
 					bind(VerifiedTxnsAndProof.class).annotatedWith(Genesis.class).toInstance(genesis);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
-					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
+					bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
-					bind(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() { })
+					bind(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() {})
 						.toInstance(new DeterministicSavedLastEvent<>(LedgerUpdate.class));
-					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() { })
-						.addBinding().toProvider(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() { });
+					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() {})
+						.addBinding().toProvider(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() {});
 				}
 
 				@ProvidesIntoSet
@@ -348,9 +350,7 @@ public class StakingUnstakingValidatorsTest {
 			var forkConfig = forks.get(getEpoch());
 			var reParser = forkConfig.getParser();
 			Map<BFTNode, Map<String, String>> map = entryStore.reduceUpParticles(
-				ValidatorStakeData.class,
-				new HashMap<>(),
-				(i, p) -> {
+				new HashMap<>(), (i, p) -> {
 					var stakeData = (ValidatorStakeData) p;
 					var data = new HashMap<String, String>();
 					data.put("stake", stakeData.getAmount().toString());
@@ -358,13 +358,12 @@ public class StakingUnstakingValidatorsTest {
 					i.put(BFTNode.create(stakeData.getValidatorKey()), data);
 					return i;
 				},
-				reParser.getSubstateDeserialization()
+				reParser.getSubstateDeserialization(),
+				ValidatorStakeData.class
 			);
 
 			entryStore.reduceUpParticles(
-				AllowDelegationFlag.class,
-				map,
-				(i, p) -> {
+				map, (i, p) -> {
 					var flag = (AllowDelegationFlag) p;
 					var data = new HashMap<String, String>();
 					data.put("allowDelegation", Boolean.toString(flag.allowsDelegation()));
@@ -374,7 +373,8 @@ public class StakingUnstakingValidatorsTest {
 					});
 					return i;
 				},
-				reParser.getSubstateDeserialization()
+				reParser.getSubstateDeserialization(),
+				AllowDelegationFlag.class
 			);
 			return map;
 		}
@@ -382,36 +382,44 @@ public class StakingUnstakingValidatorsTest {
 		public UInt256 getTotalNativeTokens() {
 			var forkConfig = forks.get(getEpoch());
 			var reParser = forkConfig.getParser();
-			var totalTokens = entryStore.reduceUpParticles(TokensInAccount.class, UInt256.ZERO,
+			var totalTokens = entryStore.reduceUpParticles(
+				UInt256.ZERO,
 				(i, p) -> {
 					var tokens = (TokensInAccount) p;
 					return i.add(tokens.getAmount());
 				},
-				reParser.getSubstateDeserialization()
-			);
+				reParser.getSubstateDeserialization(),
+				TokensInAccount.class,
+				);
 			logger.info("Total tokens: {}", Amount.ofSubunits(totalTokens));
-			var totalStaked = entryStore.reduceUpParticles(ValidatorStakeData.class, UInt256.ZERO,
+			var totalStaked = entryStore.reduceUpParticles(
+				UInt256.ZERO,
 				(i, p) -> {
 					var tokens = (ValidatorStakeData) p;
 					return i.add(tokens.getAmount());
 				},
-				reParser.getSubstateDeserialization()
+				reParser.getSubstateDeserialization(),
+				ValidatorStakeData.class
 			);
 			logger.info("Total staked: {}", Amount.ofSubunits(totalStaked));
-			var totalStakePrepared = entryStore.reduceUpParticles(PreparedStake.class, UInt256.ZERO,
+			var totalStakePrepared = entryStore.reduceUpParticles(
+				UInt256.ZERO,
 				(i, p) -> {
 					var tokens = (PreparedStake) p;
 					return i.add(tokens.getAmount());
 				},
-				reParser.getSubstateDeserialization()
+				reParser.getSubstateDeserialization(),
+				PreparedStake.class
 			);
 			logger.info("Total preparing stake: {}", Amount.ofSubunits(totalStakePrepared));
-			var totalStakeExitting = entryStore.reduceUpParticles(ExittingStake.class, UInt256.ZERO,
+			var totalStakeExitting = entryStore.reduceUpParticles(
+				UInt256.ZERO,
 				(i, p) -> {
 					var tokens = (ExittingStake) p;
 					return i.add(tokens.getAmount());
 				},
-				reParser.getSubstateDeserialization()
+				reParser.getSubstateDeserialization(),
+				ExittingStake.class
 			);
 			logger.info("Total exitting stake: {}", Amount.ofSubunits(totalStakeExitting));
 			var total = totalTokens.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting);
@@ -439,7 +447,7 @@ public class StakingUnstakingValidatorsTest {
 
 			var nodeIndex = random.nextInt(nodeKeys.size());
 			var dispatcher = this.nodes.get(nodeIndex).getInstance(
-				Key.get(new TypeLiteral<EventDispatcher<NodeApplicationRequest>>() { })
+				Key.get(new TypeLiteral<EventDispatcher<NodeApplicationRequest>>() {})
 			);
 
 			var privKey = nodeKeys.get(nodeIndex);
@@ -489,8 +497,8 @@ public class StakingUnstakingValidatorsTest {
 			var request = TxnConstructionRequest.create().action(action);
 			dispatcher.dispatch(NodeApplicationRequest.create(request));
 			this.nodes.forEach(n -> {
-				n.getInstance(new Key<EventDispatcher<MempoolRelayTrigger>>() { }).dispatch(MempoolRelayTrigger.create());
-				n.getInstance(new Key<EventDispatcher<SyncCheckTrigger>>() { }).dispatch(SyncCheckTrigger.create());
+				n.getInstance(new Key<EventDispatcher<MempoolRelayTrigger>>() {}).dispatch(MempoolRelayTrigger.create());
+				n.getInstance(new Key<EventDispatcher<SyncCheckTrigger>>() {}).dispatch(SyncCheckTrigger.create());
 			});
 		}
 

@@ -206,7 +206,7 @@ public class SyncRadixApiAccountTest {
 	}
 
 	private void transferUnStake(RadixApi client, UInt256 amount) {
-		var request = TransactionRequest.createBuilder()
+		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS2)
 			.transfer(
 				ACCOUNT_ADDRESS2,
 				ACCOUNT_ADDRESS1,
@@ -228,7 +228,7 @@ public class SyncRadixApiAccountTest {
 	}
 
 	private void makeStake(RadixApi client, UInt256 amount) {
-		var request = TransactionRequest.createBuilder()
+		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
 			.stake(ACCOUNT_ADDRESS1, ValidatorAddress.of(KEY_PAIR2.getPublicKey()), amount)
 			.build();
 
@@ -244,7 +244,7 @@ public class SyncRadixApiAccountTest {
 	}
 
 	private void makeUnStake(RadixApi client, UInt256 amount) {
-		var request = TransactionRequest.createBuilder()
+		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
 			.unstake(ACCOUNT_ADDRESS1, ValidatorAddress.of(KEY_PAIR2.getPublicKey()), amount)
 			.build();
 

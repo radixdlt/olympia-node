@@ -37,6 +37,8 @@ public class ValidatorInfoDetails {
 	private final UInt256 totalStake;
 	private final UInt256 ownerStake;
 	private final boolean externalStakesAllowed;
+	private final boolean registered;
+	private final int percentage;
 
 	private ValidatorInfoDetails(
 		ECPublicKey validator,
@@ -45,7 +47,9 @@ public class ValidatorInfoDetails {
 		String infoUrl,
 		UInt256 totalStake,
 		UInt256 ownerStake,
-		boolean externalStakesAllowed
+		boolean externalStakesAllowed,
+		boolean registered,
+		int percentage
 	) {
 		this.validator = validator;
 		this.owner = owner;
@@ -54,6 +58,8 @@ public class ValidatorInfoDetails {
 		this.totalStake = totalStake;
 		this.ownerStake = ownerStake;
 		this.externalStakesAllowed = externalStakesAllowed;
+		this.registered = registered;
+		this.percentage = percentage;
 	}
 
 	public static ValidatorInfoDetails create(
@@ -63,7 +69,9 @@ public class ValidatorInfoDetails {
 		String infoUrl,
 		UInt256 totalStake,
 		UInt256 ownerStake,
-		boolean externalStakesAllowed
+		boolean externalStakesAllowed,
+		boolean registered,
+		int percentage
 	) {
 		requireNonNull(validator);
 		requireNonNull(owner);
@@ -71,7 +79,9 @@ public class ValidatorInfoDetails {
 		requireNonNull(totalStake);
 		requireNonNull(ownerStake);
 
-		return new ValidatorInfoDetails(validator, owner, name, infoUrl, totalStake, ownerStake, externalStakesAllowed);
+		return new ValidatorInfoDetails(
+			validator, owner, name, infoUrl, totalStake, ownerStake, externalStakesAllowed, registered, percentage
+		);
 	}
 
 	public static ValidatorInfoDetails create(ValidatorDetails details) {
@@ -82,10 +92,11 @@ public class ValidatorInfoDetails {
 			details.getUrl(),
 			details.getStake(),
 			details.getOwnerStake(),
-			details.allowsDelegation()
+			details.allowsDelegation(),
+			details.registered(),
+			details.getPercentage()
 		);
 	}
-
 
 	public String getValidatorAddress(Addressing addressing) {
 		return addressing.forValidators().of(validator);
@@ -95,8 +106,40 @@ public class ValidatorInfoDetails {
 		return validator;
 	}
 
+	public REAddr getOwner() {
+		return owner;
+	}
+
 	public UInt256 getTotalStake() {
 		return totalStake;
+	}
+
+	public ECPublicKey getValidator() {
+		return validator;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public String getInfoUrl() {
+		return infoUrl;
+	}
+
+	public UInt256 getOwnerStake() {
+		return ownerStake;
+	}
+
+	public boolean isExternalStakesAllowed() {
+		return externalStakesAllowed;
+	}
+
+	public boolean isRegistered() {
+		return registered;
+	}
+
+	public int getPercentage() {
+		return percentage;
 	}
 
 	public JSONObject asJson(Addressing addressing) {
@@ -107,6 +150,8 @@ public class ValidatorInfoDetails {
 			.put("infoURL", infoUrl)
 			.put("totalDelegatedStake", totalStake)
 			.put("ownerDelegation", ownerStake)
+			.put("percentage", percentage)
+			.put("registered", registered)
 			.put("isExternalStakeAccepted", externalStakesAllowed);
 	}
 }
