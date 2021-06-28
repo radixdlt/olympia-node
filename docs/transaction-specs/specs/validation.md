@@ -30,7 +30,7 @@ If no violation is found, a list of parsed instructions, an optional message dat
 - `MSG`: 
    * Can appear **at most once** per transaction.
 - `LDOWN` and `LREAD`:
-   * The `index` operand must be less than the index of the current instruction.
+   * The `index` operand must be less than the number of `UP` instructions before this instruction.
 - `DOWNALL`:
    * The `class_id` operand must be one of the supported substate type.
 - `DOWNINDEX`:
@@ -109,6 +109,7 @@ Validation state is the internal state of the constraint machine, which includes
 | `resource_mint_burn_disabled` | A flag indicates if resource allocation and deallocation is disabled, ***immutable*** |
 | `current_instruction`         | The current instruction                                                               |
 | `current_index`               | The index of the current instruction                                                  |
+| `up_instruction_count`        | The number of `UP` instruction processed so far                                       |
 | `reducer_state`               | The current reducer state                                                             |
 | `end_expected`                | A flag indicates if an `END` instruction is expected                                  |
 | `local_up_substates`          | A map of substates created locally, keyed off the substate index                      |
@@ -194,7 +195,7 @@ Constraint machine executes transaction instructions sequentially, based on the 
 
 ![Validation Flow](./validation_flow.png)
 
-1. Load the next instruction and update `current_instruction` and `current_index`
+1. Load the next instruction and update `current_instruction`, `current_index` and `up_instruction_count`
 1. If `end_expected == true`
    * If `current_instruction != END`
       * Abort

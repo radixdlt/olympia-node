@@ -82,13 +82,15 @@ A substate is an object that is stored in the ledger state, which can be viewed 
 
 ### Substate ID
 
-For physical substate, the ID is the concatenation of transaction ID and instruction index (where the substate is defined).
+For physical substate, the ID is the concatenation of transaction ID and substate index (where the substate is defined).
 
 ```
 +--------------+--------------+
 | tx_id (hash) | index (u32)  |
 +--------------+--------------+
 ```
+
+Note that substate index is the number of the `UP` instruction in the transaction (e.g., if `index == 1`, it means the substate is created by the 2nd `UP` instruction)
 
 For virtual substate, the ID is the hash of the serialization.
 
