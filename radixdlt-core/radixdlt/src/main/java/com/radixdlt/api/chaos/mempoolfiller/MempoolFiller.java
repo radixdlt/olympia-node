@@ -17,6 +17,7 @@
 
 package com.radixdlt.api.chaos.mempoolfiller;
 
+import com.radixdlt.statecomputer.forks.MainnetEngineRules;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,7 +41,6 @@ import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineMempool;
-import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
 import com.radixdlt.utils.UInt256;
 
 import java.util.ArrayList;
@@ -123,8 +123,8 @@ public final class MempoolFiller {
 
 			var shuttingDown = radixEngineMempool.getShuttingDownSubstates();
 			var txnConstructionRequest = TxnConstructionRequest.create()
-				.action(new PayFee(account, TokenFeeChecker.FIXED_FEE))
-				.splitNative(REAddr.ofNativeToken(), account, TokenFeeChecker.FIXED_FEE.multiply(UInt256.TWO))
+				.action(new PayFee(account, MainnetEngineRules.FIXED_FEE))
+				.splitNative(REAddr.ofNativeToken(), account, MainnetEngineRules.FIXED_FEE.multiply(UInt256.TWO))
 				.avoidSubstates(shuttingDown);
 
 			var txns = new ArrayList<Txn>();

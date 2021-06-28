@@ -17,8 +17,10 @@
 
 package com.radixdlt.api.handler;
 
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForkManager;
+import com.radixdlt.statecomputer.forks.RERules;
 import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
@@ -65,9 +67,10 @@ public class AccountHandlerTest {
 
 	@Before
 	public void setup() {
-		when(forkManager.latestKnownFork()).thenReturn(
-			new ForkConfig("fork1", null, null, null, null, null, null, null, null)
-		);
+		final var reRules = mock(RERules.class);
+		when(reRules.getMaxRounds()).thenReturn(View.of(10L));
+		final var forkConfig = new ForkConfig("fork1", null, reRules);
+		when(forkManager.latestKnownFork()).thenReturn(forkConfig);
 	}
 
 	@Test

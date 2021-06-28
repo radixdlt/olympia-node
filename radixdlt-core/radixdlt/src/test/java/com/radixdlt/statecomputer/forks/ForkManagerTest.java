@@ -38,23 +38,9 @@ public final class ForkManagerTest {
 		final var fork2Proof = mock(LedgerAndBFTProof.class);
 		final var fork3Proof = mock(LedgerAndBFTProof.class);
 
-		final var fork1 = new ForkConfig(
-			"fork1",
-			sameUncommittedProof(fork1Proof),
-			null, null, null, null, null, null, null
-		);
-
-		final var fork2 = new ForkConfig(
-			"fork2",
-			sameUncommittedProof(fork2Proof),
-			null, null, null, null, null, null, null
-		);
-
-		final var fork3 = new ForkConfig(
-			"fork3",
-			sameUncommittedProof(fork3Proof),
-			null, null, null, null, null, null, null
-		);
+		final var fork1 = new ForkConfig("fork1", sameUncommittedProof(fork1Proof), null);
+		final var fork2 = new ForkConfig("fork2", sameUncommittedProof(fork2Proof), null);
+		final var fork3 = new ForkConfig("fork3", sameUncommittedProof(fork3Proof), null);
 
 		final var forkManager = new ForkManager(ImmutableList.of(fork1, fork2, fork3));
 
@@ -82,23 +68,9 @@ public final class ForkManagerTest {
 
 	@Test
 	public void if_two_predicates_match__then_should_return_latest_fork() {
-		final var fork1 = new ForkConfig(
-			"fork1",
-			t -> true,
-			null, null, null, null, null, null, null
-		);
-
-		final var fork2 = new ForkConfig(
-			"fork2",
-			t -> true,
-			null, null, null, null, null, null, null
-		);
-
-		final var fork3 = new ForkConfig(
-			"fork3",
-			t -> true,
-			null, null, null, null, null, null, null
-		);
+		final var fork1 = new ForkConfig("fork1", t -> true, null);
+		final var fork2 = new ForkConfig("fork2", t -> true, null);
+		final var fork3 = new ForkConfig("fork3", t -> true, null);
 
 		final var forkManager = new ForkManager(ImmutableList.of(fork1, fork2, fork3));
 		assertEquals(fork3, forkManager.findNextForkConfig(fork1, null, null).get());

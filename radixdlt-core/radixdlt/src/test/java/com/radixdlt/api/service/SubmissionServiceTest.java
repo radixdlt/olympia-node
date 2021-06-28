@@ -16,6 +16,14 @@
  */
 package com.radixdlt.api.service;
 
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.statecomputer.forks.ForkManagerModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,7 +49,6 @@ import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -72,7 +79,6 @@ import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -131,13 +137,18 @@ public class SubmissionServiceTest {
 
 			@Override
 			public void configure() {
-				install(new BetanetForksModule());
-				install(new RadixEngineForksLatestOnlyModule(View.of(10), false));
+				install(new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10, 2)));
+				install(new ForkManagerModule());
+				install(new MainnetForksModule());
 				install(RadixEngineConfig.asModule(1, 100, 50));
 				install(MempoolConfig.asModule(10, 10));
 
 				bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
 					.toInstance(registeredNodes);
+				var validatorSet = BFTValidatorSet.from(registeredNodes.stream().map(ECKeyPair::getPublicKey)
+					.map(BFTNode::create)
+					.map(n -> BFTValidator.from(n, UInt256.ONE)));
+				bind(ProposerElection.class).toInstance(new WeightedRotatingLeaders(validatorSet));
 				bind(Serialization.class).toInstance(serialization);
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
 				bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(engineStore);
@@ -158,6 +169,8 @@ public class SubmissionServiceTest {
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<MempoolAdd>>() { })
 					.toInstance(mempoolAddEventDispatcher());
+				bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() { })
+					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 
 				bind(BFTNode.class).annotatedWith(Self.class).toInstance(NODE);
 

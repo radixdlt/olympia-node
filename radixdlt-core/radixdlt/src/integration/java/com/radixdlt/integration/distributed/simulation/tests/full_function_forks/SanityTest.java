@@ -28,7 +28,9 @@ import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.application.RadixEngineUniqueGenerator;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.ForkManagerModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.sync.SyncConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -67,8 +69,9 @@ public class SanityTest {
 			)
 			.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
 			.addRadixEngineConfigModules(
-				new ForkOverwritesWithShorterEpochsModule(fees, 5),
-				new BetanetForksModule()
+				new ForkOverwritesWithShorterEpochsModule(new RERulesConfig(fees, 10, 2)),
+				new ForkManagerModule(),
+				new MainnetForksModule()
 			)
 			.addNodeModule(MempoolConfig.asModule(1000, 10))
 			.addTestModules(

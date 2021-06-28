@@ -47,9 +47,9 @@ public final class AuthInitiateMessage {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final HashCode nonce;
 
-	@JsonProperty("networkId")
+	@JsonProperty("magic")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final byte networkId;
+	private final int magic;
 
 	@JsonProperty("latestKnownForkHash")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -60,17 +60,17 @@ public final class AuthInitiateMessage {
 		@JsonProperty("signature") ECDSASignature signature,
 		@JsonProperty("publicKey") HashCode publicKey,
 		@JsonProperty("nonce") HashCode nonce,
-		@JsonProperty("networkId") byte networkId,
+		@JsonProperty("magic") int magic,
 		@JsonProperty("latestKnownForkHash") HashCode latestKnownForkHash
 	) {
-		return new AuthInitiateMessage(signature, publicKey, nonce, networkId, latestKnownForkHash);
+		return new AuthInitiateMessage(signature, publicKey, nonce, magic, latestKnownForkHash);
 	}
 
-	public AuthInitiateMessage(ECDSASignature signature, HashCode publicKey, HashCode nonce, byte networkId, HashCode latestKnownForkHash) {
+	public AuthInitiateMessage(ECDSASignature signature, HashCode publicKey, HashCode nonce, int magic, HashCode latestKnownForkHash) {
 		this.signature = signature;
 		this.publicKey = publicKey;
 		this.nonce = nonce;
-		this.networkId = networkId;
+		this.magic = magic;
 		this.latestKnownForkHash = latestKnownForkHash;
 	}
 
@@ -86,8 +86,8 @@ public final class AuthInitiateMessage {
 		return nonce;
 	}
 
-	public byte getNetworkId() {
-		return networkId;
+	public int getMagic() {
+		return magic;
 	}
 
 	public HashCode getLatestKnownForkHash() {
@@ -106,12 +106,13 @@ public final class AuthInitiateMessage {
 		return Objects.equals(signature, that.signature)
 			&& Objects.equals(publicKey, that.publicKey)
 			&& Objects.equals(nonce, that.nonce)
-			&& networkId == that.networkId
+			&& magic == that.magic
 			&& latestKnownForkHash == that.latestKnownForkHash;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(signature, publicKey, nonce, networkId, latestKnownForkHash);
+		return Objects.hash(signature, publicKey, nonce, magic, latestKnownForkHash);
 	}
 }
+

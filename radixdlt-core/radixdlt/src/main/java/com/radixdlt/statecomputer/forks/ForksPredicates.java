@@ -56,8 +56,9 @@ public final class ForksPredicates {
 
 			final var forkVotesPower = validatorSet.getValidators().stream()
 				.map(validator -> {
-					final var voteHash = ForkConfig.voteHash(validator.getNode().getKey(), forkConfig);
-					if (forksVotes.contains(voteHash)) {
+					final var key = validator.getNode().getKey();
+					final var expectedVoteHash = ForkConfig.voteHash(key, forkConfig);
+					if (forksVotes.containsKey(key) && forksVotes.get(key).equals(expectedVoteHash)) {
 						return validator.getPower();
 					} else {
 						return UInt256.ZERO;

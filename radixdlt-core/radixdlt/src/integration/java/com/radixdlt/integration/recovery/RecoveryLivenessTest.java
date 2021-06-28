@@ -27,11 +27,14 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.ForkManagerModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.utils.KeyComparator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -123,7 +126,7 @@ public class RecoveryLivenessTest {
 	public RecoveryLivenessTest(int numNodes, long epochCeilingView) {
 		this.nodeKeys = Stream.generate(ECKeyPair::generateNew)
 			.limit(numNodes)
-			.sorted(Comparator.comparing(k -> k.getPublicKey().euid()))
+			.sorted(Comparator.comparing(ECKeyPair::getPublicKey, KeyComparator.instance()))
 			.collect(ImmutableList.toImmutableList());
 		this.epochCeilingView = epochCeilingView;
 	}
@@ -143,8 +146,9 @@ public class RecoveryLivenessTest {
 		Guice.createInjector(
 			new MockedGenesisModule(),
 			new CryptoModule(),
-			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(epochCeilingView), false),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, epochCeilingView, 2)),
+			new ForkManagerModule(),
+			new MainnetForksModule(),
 			new RadixEngineModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new AbstractModule() {
@@ -187,8 +191,9 @@ public class RecoveryLivenessTest {
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
-			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(epochCeilingView), false),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, epochCeilingView, 2)),
+			new ForkManagerModule(),
+			new MainnetForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {

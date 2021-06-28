@@ -47,8 +47,8 @@ public final class ForkManager {
 
 	public Optional<ForkConfig> getByHash(HashCode forkHash) {
 		return this.forksConfigs.stream()
-			.filter(forkConfig -> forkConfig.getHash().equals(forkHash))
-			.findFirst();
+				.filter(forkConfig -> forkConfig.getHash().equals(forkHash))
+				.findFirst();
 	}
 
 	public ForkConfig genesisFork() {
@@ -56,9 +56,9 @@ public final class ForkManager {
 	}
 
 	public Optional<ForkConfig> findNextForkConfig(
-		ForkConfig currentForkConfig,
-		RadixEngine<LedgerAndBFTProof> radixEngine,
-		LedgerAndBFTProof uncommittedProof
+			ForkConfig currentForkConfig,
+			RadixEngine<LedgerAndBFTProof> radixEngine,
+			LedgerAndBFTProof uncommittedProof
 	) {
 		final var currentForkIndex = this.forksConfigs.indexOf(currentForkConfig);
 		if (currentForkIndex < 0) {
@@ -66,14 +66,14 @@ public final class ForkManager {
 		}
 
 		final var remainingForks = this.forksConfigs.subList(
-			currentForkIndex + 1,
-			this.forksConfigs.size()
+				currentForkIndex + 1,
+				this.forksConfigs.size()
 		);
 		return remainingForks
-			.reverse()
-			.stream()
-			.filter(forkConfig -> forkConfig.getExecutePredicate().test(
-				Triplet.of(forkConfig, radixEngine, uncommittedProof)))
-			.findFirst();
+				.reverse()
+				.stream()
+				.filter(forkConfig -> forkConfig.getExecutePredicate().test(
+						Triplet.of(forkConfig, radixEngine, uncommittedProof)))
+				.findFirst();
 	}
 }

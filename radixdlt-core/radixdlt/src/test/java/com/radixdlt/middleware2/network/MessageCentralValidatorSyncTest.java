@@ -39,7 +39,6 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageCentralMockProvider;
 
@@ -59,13 +58,11 @@ public class MessageCentralValidatorSyncTest {
 	@Before
 	public void setUp() {
 		this.self = mock(BFTNode.class);
-		EUID selfEUID = mock(EUID.class);
 		ECPublicKey pubKey = mock(ECPublicKey.class);
-		when(pubKey.euid()).thenReturn(selfEUID);
 		when(self.getKey()).thenReturn(pubKey);
 		this.messageCentral = MessageCentralMockProvider.get();
 		this.hasher = new RandomHasher();
-		this.sync = new MessageCentralValidatorSync(0, messageCentral, hasher);
+		this.sync = new MessageCentralValidatorSync(messageCentral, hasher);
 	}
 
 	@Test
@@ -76,7 +73,6 @@ public class MessageCentralValidatorSyncTest {
 
 		BFTNode node = mock(BFTNode.class);
 		ECPublicKey ecPublicKey = mock(ECPublicKey.class);
-		when(ecPublicKey.euid()).thenReturn(mock(EUID.class));
 		when(node.getKey()).thenReturn(ecPublicKey);
 
 		sync.verticesResponseDispatcher().dispatch(node, new GetVerticesResponse(vertices));
@@ -91,7 +87,6 @@ public class MessageCentralValidatorSyncTest {
 		when(highQC.highestCommittedQC()).thenReturn(qc);
 		BFTNode node = mock(BFTNode.class);
 		ECPublicKey ecPublicKey = mock(ECPublicKey.class);
-		when(ecPublicKey.euid()).thenReturn(mock(EUID.class));
 		when(node.getKey()).thenReturn(ecPublicKey);
 		final var request = new GetVerticesRequest(HashUtils.random256(), 3);
 
@@ -109,8 +104,8 @@ public class MessageCentralValidatorSyncTest {
 
 		final var peer = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
 		TestSubscriber<GetVerticesRequest> testObserver = sync.requests().map(RemoteEvent::getEvent).test();
-		messageCentral.send(peer, new GetVerticesRequestMessage(0, vertexId0, 1));
-		messageCentral.send(peer, new GetVerticesRequestMessage(0, vertexId1, 1));
+		messageCentral.send(peer, new GetVerticesRequestMessage(vertexId0, 1));
+		messageCentral.send(peer, new GetVerticesRequestMessage(vertexId1, 1));
 
 		testObserver.awaitCount(2);
 		testObserver.assertValueAt(0, v -> v.getVertexId().equals(vertexId0));

@@ -19,7 +19,7 @@ package com.radixdlt.integration.distributed.simulation.tests.full_function_fork
 
 import com.google.inject.Key;
 import com.radixdlt.application.NodeApplicationRequest;
-import com.radixdlt.atom.actions.UpdateValidator;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
@@ -34,7 +34,7 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForkManager;
-import com.radixdlt.statecomputer.forks.RadixEngineForksModule;
+import com.radixdlt.statecomputer.forks.ForkManagerModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.UInt256;
@@ -65,8 +65,8 @@ public final class CoordinatedForkSanityTest {
 			)
 			.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
 			.addRadixEngineConfigModules(
-				new MockedForksModule(View.of(numValidators * 2 + 1)),
-				new RadixEngineForksModule()
+				new MockedForksModule(View.of(numValidators * 2)),
+				new ForkManagerModule()
 			)
 			.addNodeModule(MempoolConfig.asModule(1000, 10))
 			.addTestModules(
@@ -150,12 +150,10 @@ public final class CoordinatedForkSanityTest {
 
 	private void updateValidatorWithLatestFork(RunningNetwork network, BFTNode node) {
 		final var forkManager = network.getInstance(ForkManager.class, node);
-		final var action = new UpdateValidator(
-			node.getKey(), node.getSimpleName(), "",
-			Optional.of(ForkConfig.voteHash(node.getKey(), forkManager.latestKnownFork()))
-		);
+		final var forkVoteHash = Optional.of(ForkConfig.voteHash(node.getKey(), forkManager.latestKnownFork()));
+		final var txRequest = TxnConstructionRequest.create().registerAsValidator(node.getKey(), forkVoteHash);
 		network.getDispatcher(NodeApplicationRequest.class, node)
-			.dispatch(NodeApplicationRequest.create(action));
+			.dispatch(NodeApplicationRequest.create(txRequest));
 	}
 
 	private boolean verifyCurrentFork(RunningNetwork network, ForkConfig forkConfig) {

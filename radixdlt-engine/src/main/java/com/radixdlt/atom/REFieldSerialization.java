@@ -61,6 +61,18 @@ public final class REFieldSerialization {
 		return ECDSASignature.deserialize(rArray, sArray, v);
 	}
 
+	public static void serializeBoolean(ByteBuffer buf, boolean bool) {
+		buf.put((byte) (bool ? 1 : 0));
+	}
+
+	public static boolean deserializeBoolean(ByteBuffer buf) throws DeserializeException {
+		var flag = buf.get();
+		if (!(flag == 0 || flag == 1)) {
+			throw new DeserializeException("Invalid flag");
+		}
+		return flag == 1;
+	}
+
 	public static void serializeREAddr(ByteBuffer buf, REAddr rri) {
 		buf.put(rri.getBytes());
 	}

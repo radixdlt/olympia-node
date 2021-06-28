@@ -22,6 +22,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.LocalSyncService;
 import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
@@ -36,6 +37,8 @@ import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.Optional;
 
 /**
  * Manages the syncing service across epochs
@@ -61,12 +64,13 @@ public class EpochsLocalSyncService {
 		this.localSyncServiceFactory = localSyncServiceFactory;
 	}
 
-	public EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor() {
+	public EventProcessor<LedgerUpdate> epochsLedgerUpdateEventProcessor() {
 		return this::processLedgerUpdate;
 	}
 
-	private void processLedgerUpdate(EpochsLedgerUpdate ledgerUpdate) {
-		ledgerUpdate.getEpochChange().ifPresentOrElse(
+	private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
+		var epochChangeMaybe = (Optional<EpochChange>) ledgerUpdate.getStateComputerOutput();
+		epochChangeMaybe.ifPresent(
 			epochChange -> {
 				// epoch has changed, replace localSyncService (keep current state) and proceed
 				this.currentEpoch = epochChange;
@@ -77,14 +81,9 @@ public class EpochsLocalSyncService {
 					),
 					this.localSyncService.getSyncState()
 				);
-
-				this.localSyncService.ledgerUpdateEventProcessor().process(ledgerUpdate.getBase());
-			},
-			() -> {
-				// epoch hasn't changed, all good, proceed
-				this.localSyncService.ledgerUpdateEventProcessor().process(ledgerUpdate.getBase());
 			}
 		);
+		this.localSyncService.ledgerUpdateEventProcessor().process(ledgerUpdate);
 	}
 
 	public EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor() {

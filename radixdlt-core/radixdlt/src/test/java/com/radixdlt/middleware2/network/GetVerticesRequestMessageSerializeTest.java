@@ -26,6 +26,6 @@ public class GetVerticesRequestMessageSerializeTest extends SerializeMessageObje
 	}
 
 	private static GetVerticesRequestMessage get() {
-		return new GetVerticesRequestMessage(1234, HashUtils.random256(), 1);
+		return new GetVerticesRequestMessage(HashUtils.random256(), 1);
 	}
 }

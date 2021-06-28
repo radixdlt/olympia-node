@@ -29,7 +29,7 @@ import com.radixdlt.api.service.NetworkInfoService;
 import com.radixdlt.api.service.PeersForksHashesInfoService;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.network.p2p.PeerEvent;
 
 public class HealthEndpointModule extends AbstractModule {
@@ -54,11 +54,11 @@ public class HealthEndpointModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> epochsLedgerUpdateEventProcessorOnRunner(PeersForksHashesInfoService peersForksHashesInfoService) {
+	public EventProcessorOnRunner<?> ledgerUpdateEventProcessorOnRunner(PeersForksHashesInfoService peersForksHashesInfoService) {
 		return new EventProcessorOnRunner<>(
 			Runners.NODE_API,
-			EpochsLedgerUpdate.class,
-			peersForksHashesInfoService.epochsLedgerUpdateEventProcessor()
+			LedgerUpdate.class,
+			peersForksHashesInfoService.ledgerUpdateEventProcessor()
 		);
 	}
 }

@@ -123,19 +123,15 @@ public final class ActionParserService {
 
 			case REGISTER_VALIDATOR:
 				return allOf(
-					validator(element),
-					optionalName(element),
-					optionalUrl(element)
-				).map((validatorKey, name, url) -> {
+					validator(element)
+				).map(validatorKey -> {
 					final var forkVoteHash = ForkConfig.voteHash(validatorKey, forkManager.latestKnownFork());
-					return TransactionAction.register(validatorKey, name, url, Optional.of(forkVoteHash));
+					return TransactionAction.register(validatorKey, Optional.of(forkVoteHash));
 				});
 
 			case UNREGISTER_VALIDATOR:
 				return allOf(
-					validator(element),
-					optionalName(element),
-					optionalUrl(element)
+					validator(element)
 				).map(TransactionAction::unregister);
 
 			case UPDATE_VALIDATOR:
@@ -304,3 +300,4 @@ public final class ActionParserService {
 			.orElseGet(() -> MISSING_FIELD.with(name).result());
 	}
 }
+

@@ -19,7 +19,7 @@ package com.radixdlt.api.data.action;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.UpdateValidator;
+import com.radixdlt.atom.actions.UpdateValidatorMetadata;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Optional;
@@ -40,6 +40,7 @@ class UpdateValidatorAction implements TransactionAction {
 
 	@Override
 	public Stream<TxAction> toAction() {
-		return Stream.of(new UpdateValidator(validatorKey, name, url, forkVoteHash));
+		return Stream.of(new UpdateValidatorMetadata(validatorKey, name, url, forkVoteHash));
 	}
 }
+

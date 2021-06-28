@@ -30,7 +30,7 @@ public class GetVerticesResponseMessageSerializeTest extends SerializeMessageObj
 	private static GetVerticesResponseMessage get() {
 		LedgerHeader ledgerHeader = LedgerHeader.mocked();
 		UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(ledgerHeader);
-		return new GetVerticesResponseMessage(1234, ImmutableList.of(genesisVertex));
+		return new GetVerticesResponseMessage(ImmutableList.of(genesisVertex));
 	}
 
 }

@@ -25,15 +25,6 @@ import java.util.Objects;
 @SerializerId2("p2p.liveness.ping")
 public final class PeerPingMessage extends Message {
 
-	PeerPingMessage() {
-		// for serializer
-		super(0);
-	}
-
-	public PeerPingMessage(int magic) {
-		super(magic);
-	}
-
 	@Override
 	public String toString() {
 		return String.format("%s[]", getClass().getSimpleName());
@@ -48,12 +39,11 @@ public final class PeerPingMessage extends Message {
 			return false;
 		}
 		final var that = (PeerPingMessage) o;
-		return Objects.equals(getTimestamp(), that.getTimestamp())
-			&& Objects.equals(getMagic(), that.getMagic());
+		return Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(getTimestamp(), getMagic());
+		return Objects.hash(getTimestamp());
 	}
 }

@@ -28,8 +28,8 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.identifiers.ValidatorAddress;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.ForkManager;
@@ -38,6 +38,7 @@ import org.json.JSONObject;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import static java.util.function.Predicate.not;
 
@@ -102,9 +103,12 @@ public final class PeersForksHashesInfoService {
 			.build();
 	}
 
-	public EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor() {
-		return epochsLedgerUpdate -> epochsLedgerUpdate.getEpochChange()
-			.ifPresent(epochChange -> this.currentValidatorSet = epochChange.getBFTConfiguration().getValidatorSet());
+	public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
+		return ledgerUpdate -> {
+			final var maybeEpochChange = (Optional<EpochChange>) ledgerUpdate.getStateComputerOutput();
+			maybeEpochChange
+				.ifPresent(epochChange -> this.currentValidatorSet = epochChange.getBFTConfiguration().getValidatorSet());
+		};
 	}
 
 	public JSONObject getUnknownReportedForksHashes() {

@@ -27,7 +27,6 @@ import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.discovery.GetPeers;
 import com.radixdlt.network.p2p.discovery.PeersResponse;
-import com.radixdlt.qualifier.Magic;
 
 import java.util.Objects;
 
@@ -41,15 +40,10 @@ import javax.inject.Singleton;
  */
 @Singleton
 public final class MessageCentralPeerDiscovery {
-	private final int magic;
 	private final MessageCentral messageCentral;
 
 	@Inject
-	public MessageCentralPeerDiscovery(
-		@Magic int magic,
-		MessageCentral messageCentral
-	) {
-		this.magic = magic;
+	public MessageCentralPeerDiscovery(MessageCentral messageCentral) {
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 	}
 
@@ -76,7 +70,7 @@ public final class MessageCentralPeerDiscovery {
 	}
 
 	private void sendGetPeers(BFTNode node, GetPeers getPeers) {
-		final var msg = new GetPeersMessage(this.magic);
+		final var msg = new GetPeersMessage();
 		this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
 	}
 
@@ -85,7 +79,7 @@ public final class MessageCentralPeerDiscovery {
 	}
 
 	private void sendPeersResponse(BFTNode node, PeersResponse peersResponse) {
-		final var msg = new PeersResponseMessage(this.magic, peersResponse.getPeers());
+		final var msg = new PeersResponseMessage(peersResponse.getPeers());
 		this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
 	}
 }

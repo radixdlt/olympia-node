@@ -18,6 +18,7 @@
 
 package com.radixdlt.atom;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
@@ -81,14 +82,14 @@ public class TxnConstructionRequest {
 		return this;
 	}
 
-	public TxnConstructionRequest registerAsValidator(ECPublicKey validatorKey) {
-		var action = new RegisterValidator(validatorKey, null, null, Optional.empty());
+	public TxnConstructionRequest registerAsValidator(ECPublicKey validatorKey, Optional<HashCode> forkVoteHash) {
+		var action = new RegisterValidator(validatorKey, forkVoteHash);
 		actions.add(action);
 		return this;
 	}
 
 	public TxnConstructionRequest unregisterAsValidator(ECPublicKey validatorKey) {
-		var action = new UnregisterValidator(validatorKey, null, null);
+		var action = new UnregisterValidator(validatorKey);
 		actions.add(action);
 		return this;
 	}
@@ -134,5 +135,10 @@ public class TxnConstructionRequest {
 
 	public List<TxAction> getActions() {
 		return actions;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{actions=%s}", this.getClass().getSimpleName(), actions);
 	}
 }

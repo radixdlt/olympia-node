@@ -17,6 +17,8 @@
 
 package org.radix;
 
+import com.radixdlt.statecomputer.forks.ForkManagerModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -67,8 +69,6 @@ import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.GenesisProvider;
 import com.radixdlt.statecomputer.checkpoint.RadixNativeTokenModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineForksModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.sync.CommittedReader;
@@ -290,8 +290,8 @@ public final class GenerateUniverses {
 					bind(UniverseType.class).toInstance(universeType);
 					install(new CryptoModule());
 					install(new RadixNativeTokenModule());
-					install(new BetanetForksModule());
-					install(new RadixEngineForksModule());
+					install(new ForkManagerModule());
+					install(new MainnetForksModule());
 					install(RadixEngineConfig.asModule(1, 100, 50));
 					install(new RadixEngineModule());
 

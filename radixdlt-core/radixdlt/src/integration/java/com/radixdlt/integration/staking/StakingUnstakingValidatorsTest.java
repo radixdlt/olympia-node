@@ -43,7 +43,7 @@ import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
 import com.radixdlt.atom.actions.UpdateRake;
 import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
-import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV2;
+import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
@@ -52,9 +52,7 @@ import com.radixdlt.atommodel.validators.state.AllowDelegationFlag;
 import com.radixdlt.atommodel.validators.state.PreparedRakeUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -68,10 +66,10 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
@@ -82,9 +80,12 @@ import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
 import com.radixdlt.statecomputer.forks.ForkManager;
 import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
+import com.radixdlt.statecomputer.forks.ForkManagerModule;
+import com.radixdlt.statecomputer.forks.MainnetEngineRules;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
@@ -93,6 +94,7 @@ import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.schedulers.Timed;
 import org.apache.logging.log4j.LogManager;
@@ -113,24 +115,24 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static com.radixdlt.statecomputer.transaction.TokenFeeChecker.FIXED_FEE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(Parameterized.class)
 public class StakingUnstakingValidatorsTest {
 	private static final Logger logger = LogManager.getLogger();
+
 	@Parameterized.Parameters
 	public static Collection<Object[]> forksModule() {
 		return List.of(new Object[][] {
-			{new RadixEngineForksLatestOnlyModule(View.of(100), false), false},
-			{new ForkOverwritesWithShorterEpochsModule(false, 5), false},
-			{new RadixEngineForksLatestOnlyModule(View.of(100), true), true},
-			{new ForkOverwritesWithShorterEpochsModule(true, 5), true},
+			{new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)), false, 100},
+			{new ForkOverwritesWithShorterEpochsModule(new RERulesConfig(false, 10, 2)), false, 10},
+			{new RadixEngineForksLatestOnlyModule(new RERulesConfig(true, 100, 2)), true, 100},
+			{new ForkOverwritesWithShorterEpochsModule(new RERulesConfig(true, 10, 2)), true, 10},
 		});
 	}
 
@@ -147,18 +149,21 @@ public class StakingUnstakingValidatorsTest {
 	private final ImmutableList<ECKeyPair> nodeKeys;
 	private final Module radixEngineConfiguration;
 	private final boolean payFees;
+	private final long maxRounds;
 
-	public StakingUnstakingValidatorsTest(Module forkModule, boolean payFees) {
+	public StakingUnstakingValidatorsTest(Module forkModifierModule, boolean payFees, long maxRounds) {
 		this.nodeKeys = Stream.generate(ECKeyPair::generateNew)
 			.limit(20)
-			.sorted(Comparator.comparing(k -> k.getPublicKey().euid()))
+			.sorted(Comparator.comparing(ECKeyPair::getPublicKey, KeyComparator.instance()))
 			.collect(ImmutableList.toImmutableList());
 		this.radixEngineConfiguration = Modules.combine(
-			new BetanetForksModule(),
-			forkModule,
+			new ForkManagerModule(),
+			new MainnetForksModule(),
+			forkModifierModule,
 			RadixEngineConfig.asModule(1, 10, 50)
 		);
 		this.payFees = payFees;
+		this.maxRounds = maxRounds;
 	}
 
 	@Before
@@ -231,10 +236,10 @@ public class StakingUnstakingValidatorsTest {
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ValidatorAddress.of(ecKeyPair.getPublicKey()));
-					bind(new TypeLiteral<DeterministicSavedLastEvent<EpochsLedgerUpdate>>() { })
-						.toInstance(new DeterministicSavedLastEvent<>(EpochsLedgerUpdate.class));
+					bind(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() { })
+						.toInstance(new DeterministicSavedLastEvent<>(LedgerUpdate.class));
 					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() { })
-						.addBinding().toProvider(new TypeLiteral<DeterministicSavedLastEvent<EpochsLedgerUpdate>>() { });
+						.addBinding().toProvider(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() { });
 				}
 
 				@Provides
@@ -288,35 +293,37 @@ public class StakingUnstakingValidatorsTest {
 	}
 
 	private static class NodeState {
-		private final DeterministicSavedLastEvent<EpochViewUpdate> lastEpochView;
+		private final DeterministicSavedLastEvent<LedgerUpdate> lastLedgerUpdate;
 		private final EpochChange epochChange;
 		private final BerkeleyLedgerEntryStore entryStore;
 		private final ForkManager forkManager;
 
 		@Inject
 		private NodeState(
-			DeterministicSavedLastEvent<EpochViewUpdate> lastEpochView,
+			DeterministicSavedLastEvent<LedgerUpdate> lastLedgerUpdate,
 			EpochChange epochChange,
 			BerkeleyLedgerEntryStore entryStore,
 			ForkManager forkManager
 		) {
-			this.lastEpochView = lastEpochView;
+			this.lastLedgerUpdate = lastLedgerUpdate;
 			this.epochChange = epochChange;
 			this.entryStore = entryStore;
 			this.forkManager = forkManager;
 		}
 
 		public long getEpoch() {
-			return lastEpochView.getLastEvent() == null
-				? epochChange.getEpoch()
-				: lastEpochView.getLastEvent().getEpoch();
+			if (lastLedgerUpdate.getLastEvent() == null) {
+				return epochChange.getEpoch();
+			}
+			var epochChange = (Optional<EpochChange>) lastLedgerUpdate.getLastEvent().getStateComputerOutput();
+			return epochChange.map(EpochChange::getEpoch).orElse(lastLedgerUpdate.getLastEvent().getTail().getEpoch());
 		}
 
 		public Map<BFTNode, Map<String, String>> getValidators() {
 			final var forkConfig = entryStore.getCurrentForkHash()
 				.flatMap(forkManager::getByHash)
 				.orElseGet(forkManager::genesisFork);
-			var reParser = forkConfig.getParser();
+			var reParser = forkConfig.getEngineRules().getParser();
 			Map<BFTNode, Map<String, String>> map = entryStore.reduceUpParticles(
 				ValidatorStakeData.class,
 				new HashMap<>(),
@@ -324,7 +331,7 @@ public class StakingUnstakingValidatorsTest {
 					var stakeData = (ValidatorStakeData) p;
 					var data = new HashMap<String, String>();
 					data.put("stake", stakeData.getAmount().toString());
-					data.put("rake", stakeData.getRakePercentage().toString());
+					data.put("rake", Integer.toString(stakeData.getRakePercentage()));
 					i.put(BFTNode.create(stakeData.getValidatorKey()), data);
 					return i;
 				},
@@ -353,7 +360,7 @@ public class StakingUnstakingValidatorsTest {
 			final var forkConfig = entryStore.getCurrentForkHash()
 				.flatMap(forkManager::getByHash)
 				.orElseGet(forkManager::genesisFork);
-			var reParser = forkConfig.getParser();
+			var reParser = forkConfig.getEngineRules().getParser();
 			var totalTokens = entryStore.reduceUpParticles(TokensInAccount.class, UInt256.ZERO,
 				(i, p) -> {
 					var tokens = (TokensInAccount) p;
@@ -433,12 +440,12 @@ public class StakingUnstakingValidatorsTest {
 					action = new UnstakeTokens(acct, to, unstakeAmt);
 					break;
 				case 3:
-					action = new RegisterValidator(privKey.getPublicKey());
+					action = new RegisterValidator(privKey.getPublicKey(), Optional.empty());
 					break;
 				case 4:
 					// Only unregister once in a while
 					if (random.nextInt(10) == 0) {
-						action = new UnregisterValidator(privKey.getPublicKey(), null, null);
+						action = new UnregisterValidator(privKey.getPublicKey());
 						break;
 					}
 					continue;
@@ -460,7 +467,7 @@ public class StakingUnstakingValidatorsTest {
 
 			var request = TxnConstructionRequest.create();
 			if (payFees) {
-				request.action(new PayFee(acct, FIXED_FEE));
+				request.action(new PayFee(acct, MainnetEngineRules.FIXED_FEE));
 			}
 			request.action(action);
 			dispatcher.dispatch(NodeApplicationRequest.create(request));
@@ -473,18 +480,11 @@ public class StakingUnstakingValidatorsTest {
 		var node = this.nodes.get(0).getInstance(Key.get(BFTNode.class, Self.class));
 		logger.info("Node {}", node);
 		logger.info("Initial {}", initialCount);
-		var lastEpochView = this.nodes.get(0)
-			.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochsLedgerUpdate>>() { }));
-		var epoch = lastEpochView.getLastEvent() == null
-			? this.nodes.get(0).getInstance(EpochChange.class).getEpoch()
-			: lastEpochView.getLastEvent().getEpochChange().map(EpochChange::getEpoch)
-				.orElseGet(() -> lastEpochView.getLastEvent().getBase().getTail().getEpoch());
-
-		logger.info("Epoch {}", epoch);
-		var maxEmissions = UInt256.from(99).multiply(SystemConstraintScryptV2.REWARDS_PER_PROPOSAL).multiply(UInt256.from(epoch - 1));
-		logger.info("Max emissions {}", maxEmissions);
-
 		var nodeState = reloadNodeState();
+		var epoch = nodeState.getEpoch();
+		logger.info("Epoch {}", epoch);
+		var maxEmissions = UInt256.from(maxRounds).multiply(EpochUpdateConstraintScrypt.REWARDS_PER_PROPOSAL).multiply(UInt256.from(epoch - 1));
+		logger.info("Max emissions {}", maxEmissions);
 		var finalCount = nodeState.getTotalNativeTokens();
 
 		assertThat(finalCount).isGreaterThan(initialCount);

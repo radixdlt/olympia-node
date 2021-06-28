@@ -23,8 +23,7 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UpdateRake;
 import com.radixdlt.atommodel.system.state.EpochData;
-import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
-import com.radixdlt.atommodel.validators.state.RakeCopy;
+import com.radixdlt.atommodel.validators.state.ValidatorRakeCopy;
 import com.radixdlt.atommodel.validators.state.PreparedRakeUpdate;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 
@@ -34,6 +33,12 @@ import java.util.Optional;
 import static com.radixdlt.atommodel.validators.state.PreparedRakeUpdate.RAKE_MAX;
 
 public final class UpdateRakeConstructor implements ActionConstructor<UpdateRake> {
+	private final long rakeIncreaseDebounceEpochLength;
+
+	public UpdateRakeConstructor(long rakeIncreaseDebounceEpochLength) {
+		this.rakeIncreaseDebounceEpochLength = rakeIncreaseDebounceEpochLength;
+	}
+
 	@Override
 	public void construct(UpdateRake action, TxBuilder builder) throws TxBuilderException {
 		var epochData = builder.find(EpochData.class, p -> true).orElseThrow();
@@ -48,7 +53,7 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateRake
 				"Cannot find state"
 			).with(substateDown -> {
 				var isIncrease = action.getRakePercentage() > substateDown.getCurRakePercentage();
-				var epochDiff = isIncrease ? ValidatorConstraintScryptV2.RAKE_INCREASE_DEBOUNCE_EPOCH_LENGTH : 1;
+				var epochDiff = isIncrease ? rakeIncreaseDebounceEpochLength : 1;
 				var epoch = epochData.getEpoch() + epochDiff;
 				return List.of(new PreparedRakeUpdate(
 					epoch,
@@ -59,13 +64,13 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateRake
 			});
 		} else {
 			builder.swap(
-				RakeCopy.class,
+				ValidatorRakeCopy.class,
 				p -> p.getValidatorKey().equals(action.getValidatorKey()),
-				Optional.of(SubstateWithArg.noArg(new RakeCopy(action.getValidatorKey(), RAKE_MAX))),
+				Optional.of(SubstateWithArg.noArg(new ValidatorRakeCopy(action.getValidatorKey(), RAKE_MAX))),
 				"Cannot find state"
 			).with(substateDown -> {
 				var isIncrease = action.getRakePercentage() > substateDown.getCurRakePercentage();
-				var epochDiff = isIncrease ? ValidatorConstraintScryptV2.RAKE_INCREASE_DEBOUNCE_EPOCH_LENGTH : 1;
+				var epochDiff = isIncrease ? rakeIncreaseDebounceEpochLength : 1;
 				var epoch = epochData.getEpoch() + epochDiff;
 				return List.of(new PreparedRakeUpdate(
 					epoch,

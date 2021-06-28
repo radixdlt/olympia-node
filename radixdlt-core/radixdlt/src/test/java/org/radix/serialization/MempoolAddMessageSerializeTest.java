@@ -29,6 +29,6 @@ public class MempoolAddMessageSerializeTest extends SerializeMessageObject<Mempo
 
 	private static MempoolAddMessage get() {
 		final var txn = Txn.create(new byte[]{0, 1});
-		return new MempoolAddMessage(1, List.of(txn));
+		return new MempoolAddMessage(List.of(txn));
 	}
 }

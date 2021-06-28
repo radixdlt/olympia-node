@@ -22,25 +22,33 @@ import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UnregisterValidator;
-import com.radixdlt.atommodel.validators.state.ValidatorParticle;
+import com.radixdlt.atommodel.validators.state.PreparedRegisteredUpdate;
+import com.radixdlt.atommodel.validators.state.ValidatorRegisteredCopy;
+import com.radixdlt.constraintmachine.SubstateWithArg;
 
 import java.util.List;
+import java.util.Optional;
 
 public final class UnregisterValidatorConstructor implements ActionConstructor<UnregisterValidator> {
 	@Override
 	public void construct(UnregisterValidator action, TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.swap(
-			ValidatorParticle.class,
-			p -> p.getKey().equals(action.validatorKey()) && p.isRegisteredForNextEpoch(),
-			"Already unregistered."
-		).with(
-			substateDown -> List.of(new ValidatorParticle(
-				action.validatorKey(),
-				false,
-				action.name() == null ? substateDown.getName() : action.name(),
-				action.url() == null ? substateDown.getUrl() : action.url(),
-				substateDown.getForkHashVote()
-			))
-		);
+		var updateInFlight = txBuilder
+			.find(PreparedRegisteredUpdate.class, p -> p.getValidatorKey().equals(action.validatorKey()));
+		if (updateInFlight.isPresent()) {
+			txBuilder.swap(
+				PreparedRegisteredUpdate.class,
+				p -> p.getValidatorKey().equals(action.validatorKey()),
+				Optional.empty(),
+				"Cannot find state"
+			).with(substateDown -> List.of(new PreparedRegisteredUpdate(action.validatorKey(), false, Optional.empty())));
+		} else {
+			txBuilder.swap(
+				ValidatorRegisteredCopy.class,
+				p -> p.getValidatorKey().equals(action.validatorKey()),
+				Optional.of(SubstateWithArg.noArg(new ValidatorRegisteredCopy(action.validatorKey(), false))),
+				"Cannot find state"
+
+			).with(substateDown -> List.of(new PreparedRegisteredUpdate(action.validatorKey(), false, Optional.empty())));
+		}
 	}
 }

@@ -17,7 +17,7 @@
 
 package com.radixdlt.integration.recovery;
 
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
@@ -27,11 +27,14 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.ForkManagerModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.utils.KeyComparator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -123,7 +126,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 	public OneNodeAlwaysAliveSafetyTest(int numNodes) {
 		this.nodeKeys = Stream.generate(ECKeyPair::generateNew).limit(numNodes)
-			.sorted(Comparator.comparing(n -> n.getPublicKey().euid())) // Sort this so that it matches order of proposers
+			.sorted(Comparator.comparing(ECKeyPair::getPublicKey, KeyComparator.instance()))
 			.collect(Collectors.toList());
 	}
 
@@ -141,8 +144,9 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 		Guice.createInjector(
 			new MockedGenesisModule(),
-			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(10), false),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10, 2)),
+			new ForkManagerModule(),
+			new MainnetForksModule(),
 			new RadixEngineModule(),
 			RadixEngineConfig.asModule(1, 10, 50),
 			new CryptoModule(),
@@ -203,8 +207,9 @@ public class OneNodeAlwaysAliveSafetyTest {
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
-			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(88), false),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 88, 2)),
+			new ForkManagerModule(),
+			new MainnetForksModule(),
 			RadixEngineConfig.asModule(1, 10, 50),
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {
@@ -226,9 +231,8 @@ public class OneNodeAlwaysAliveSafetyTest {
 				}
 
 				@ProvidesIntoSet
-				@ProcessOnDispatch
-				private EventProcessor<ViewQuorumReached> viewQuorumReachedEventProcessor(@Self BFTNode node) {
-					return nodeEvents.processor(node, ViewQuorumReached.class);
+				private EventProcessorOnDispatch<?> viewQuorumReachedEventProcessor(@Self BFTNode node) {
+					return nodeEvents.processorOnDispatch(node, ViewQuorumReached.class);
 				}
 			}
 		);

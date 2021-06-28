@@ -20,50 +20,29 @@ package com.radixdlt.statecomputer.forks;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.consensus.bft.View;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.OptionalBinder;
 
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
+import java.util.function.UnaryOperator;
 
 public class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
-	private static final long INITIAL_VIEW_CEILING = 10L;
-	private final boolean fees;
-	private final long epochsPerFork;
+	private final RERulesConfig config;
 
-	public ForkOverwritesWithShorterEpochsModule(boolean fees, long epochsPerFork) {
-		this.fees = fees;
-		this.epochsPerFork = epochsPerFork;
+	public ForkOverwritesWithShorterEpochsModule(RERulesConfig config) {
+		this.config = config;
 	}
 
 	@Override
 	protected void configure() {
-		install(new RadixEngineForksOverwriteForTestingModule());
-	}
-
-	@Provides
-	@Singleton
-	private Map<String, ForkConfig> configOverwrite(ImmutableList<ForkConfig> forkConfigs) {
-		final var epoch = new AtomicLong(0);
-		final var viewCeiling = new AtomicLong(INITIAL_VIEW_CEILING);
-		return forkConfigs.stream()
-			.collect(
-				Collectors.toMap(ForkConfig::getName, e -> {
-					return new ForkConfig(
-						e.getName(),
-						ForksPredicates.atEpoch(epoch.getAndAdd(epochsPerFork)),
-						e.getParser(),
-						e.getSubstateSerialization(),
-						fees ? e.getConstraintMachineConfig()
-							 : e.getConstraintMachineConfig().metering((procedureKey, param, context) -> { }),
-						e.getActionConstructors(),
-						e.getBatchVerifier(),
-						fees ? e.getPostProcessedVerifier() : (p, t) -> { },
-						View.of(viewCeiling.get() % 2 == 0 ? viewCeiling.getAndIncrement() : viewCeiling.getAndDecrement())
-					);
-				}
-			));
+		var epoch = new AtomicLong(0);
+		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<ImmutableList<ForkBuilder>>>() { })
+			.setBinding()
+			.toInstance(s -> s.stream()
+				.map(c -> c
+					.withExecutePredicate(ForksPredicates.atEpoch(epoch.getAndAdd(5)))
+					.withEngineRules(config))
+				.collect(ImmutableList.toImmutableList())
+			);
 	}
 }

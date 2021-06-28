@@ -19,7 +19,6 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
@@ -31,7 +30,9 @@ import java.util.concurrent.TimeUnit;
 import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRandomRegistrator;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.statecomputer.RadixEngineConfig;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.ForkManagerModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -48,8 +49,9 @@ public class RandomValidatorsTest {
 		)
 		.addRadixEngineConfigModules(
 			RadixEngineConfig.asModule(2, 50, 5),
-			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(10), false)
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
+			new ForkManagerModule(),
+			new MainnetForksModule()
 		)
 		.ledgerAndRadixEngineWithEpochHighView()
 		.addTestModules(

@@ -38,12 +38,10 @@ public final class MempoolAddMessage extends Message {
 
 	MempoolAddMessage() {
 		// Serializer only
-		super(0);
 		this.txns = null;
 	}
 
-	public MempoolAddMessage(int magic, List<Txn> txns) {
-		super(magic);
+	public MempoolAddMessage(List<Txn> txns) {
 		this.txns = txns.stream().map(Txn::getPayload).collect(Collectors.toList());
 	}
 
@@ -66,12 +64,11 @@ public final class MempoolAddMessage extends Message {
 		}
 		MempoolAddMessage that = (MempoolAddMessage) o;
 		return Objects.equals(getTxns(), that.getTxns())
-				&& Objects.equals(getTimestamp(), that.getTimestamp())
-				&& Objects.equals(getMagic(), that.getMagic());
+				&& Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(getTxns(), getTimestamp(), getMagic());
+		return Objects.hash(getTxns(), getTimestamp());
 	}
 }

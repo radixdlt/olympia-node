@@ -511,6 +511,6 @@ class SyncRadixApi implements RadixApi {
 				   ? primaryPort
 				   : secondaryPort;
 
-		return trace(baseUrl + ":" + port + endPoint.path());
+		return baseUrl + ":" + port + endPoint.path();
 	}
 }

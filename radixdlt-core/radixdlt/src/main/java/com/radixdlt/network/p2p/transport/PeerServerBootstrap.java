@@ -26,6 +26,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.qualifier.Magic;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.forks.ForkManager;
 import io.netty.bootstrap.ServerBootstrap;
@@ -42,6 +43,7 @@ public final class PeerServerBootstrap {
 	private static final int BACKLOG_SIZE = 100;
 
 	private final P2PConfig config;
+	private final int magic;
 	private final ForkManager forkManager;
 	private final SystemCounters counters;
 	private final Serialization serialization;
@@ -53,6 +55,7 @@ public final class PeerServerBootstrap {
 	@Inject
 	public PeerServerBootstrap(
 		P2PConfig config,
+		@Magic int magic,
 		ForkManager forkManager,
 		SystemCounters counters,
 		Serialization serialization,
@@ -62,6 +65,7 @@ public final class PeerServerBootstrap {
 		Provider<PeerControl> peerControl
 	) {
 		this.config = Objects.requireNonNull(config);
+		this.magic = magic;
 		this.forkManager = Objects.requireNonNull(forkManager);
 		this.counters = Objects.requireNonNull(counters);
 		this.serialization = Objects.requireNonNull(serialization);
@@ -84,6 +88,7 @@ public final class PeerServerBootstrap {
 			.option(ChannelOption.SO_KEEPALIVE, true)
 			.childHandler(new PeerChannelInitializer(
 				config,
+				magic,
 				forkManager.latestKnownFork().getHash(),
 				counters,
 				serialization,
@@ -97,3 +102,4 @@ public final class PeerServerBootstrap {
 		serverBootstrap.bind(config.listenAddress(), config.listenPort()).sync();
 	}
 }
+

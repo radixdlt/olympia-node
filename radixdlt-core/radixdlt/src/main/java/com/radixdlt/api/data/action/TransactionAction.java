@@ -49,12 +49,12 @@ public interface TransactionAction {
 		return new MintAction(to, amount, rri);
 	}
 
-	static TransactionAction register(ECPublicKey validatorKey, Optional<String> name, Optional<String> url, Optional<HashCode> forkVoteHash) {
-		return new RegisterValidatorAction(validatorKey, name.orElse(null), url.orElse(null), forkVoteHash);
+	static TransactionAction register(ECPublicKey validatorKey, Optional<HashCode> forkVoteHash) {
+		return new RegisterValidatorAction(validatorKey, forkVoteHash);
 	}
 
-	static TransactionAction unregister(ECPublicKey validatorKey, Optional<String> name, Optional<String> url) {
-		return new UnregisterValidatorAction(validatorKey, name.orElse(null), url.orElse(null));
+	static TransactionAction unregister(ECPublicKey validatorKey) {
+		return new UnregisterValidatorAction(validatorKey);
 	}
 
 	static TransactionAction update(ECPublicKey validatorKey, Optional<String> name, Optional<String> url, Optional<HashCode> forkVoteHash) {
@@ -99,3 +99,4 @@ public interface TransactionAction {
 		return ofNullable(rri).orElseThrow(() -> new IllegalStateException("Attempt to transfer with missing RRI"));
 	}
 }
+

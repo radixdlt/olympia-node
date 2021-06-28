@@ -18,6 +18,9 @@
 
 package com.radixdlt.statecomputer.radixengine;
 
+import com.radixdlt.statecomputer.forks.ForkManagerModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -29,9 +32,7 @@ import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.unique.state.UniqueParticle;
 import com.radixdlt.atomos.UnclaimedREAddr;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -42,7 +43,6 @@ import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 
@@ -64,8 +64,9 @@ public final class UniqueTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
-			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(100), false),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
+			new ForkManagerModule(),
+			new MainnetForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
@@ -82,10 +83,8 @@ public final class UniqueTest {
 	private Txn uniqueTxn(ECKeyPair keyPair) {
 		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
 		var rriParticle = new UnclaimedREAddr(addr);
-		var uniqueParticle = new UniqueParticle(addr);
 		var atomBuilder = TxLowLevelBuilder.newBuilder(substateSerialization)
 			.virtualDown(rriParticle, "test".getBytes(StandardCharsets.UTF_8))
-			.up(uniqueParticle)
 			.end();
 		var sig = keyPair.sign(atomBuilder.hashToSign());
 		return atomBuilder.sig(sig).build();

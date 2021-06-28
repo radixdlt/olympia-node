@@ -57,6 +57,7 @@ import com.radixdlt.consensus.bft.ViewQuorumReached;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
@@ -121,13 +122,13 @@ public class ConsensusModuleTest {
 	@Before
 	public void setup() {
 		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(accumulatorState, null, 0));
-		VerifiedVertex hashedGenesis = new VerifiedVertex(genesis, HashUtils.zero256());
-		QuorumCertificate qc = QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(accumulatorState, null, 0));
-		BFTValidatorSet validatorSet = BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)));
-		VerifiedVertexStoreState vertexStoreState =
-			VerifiedVertexStoreState.create(HighQC.from(qc), hashedGenesis, Optional.empty(), hasher);
-		this.bftConfiguration = new BFTConfiguration(validatorSet, vertexStoreState);
+		var genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(accumulatorState, null, 0));
+		var hashedGenesis = new VerifiedVertex(genesis, HashUtils.zero256());
+		var qc = QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(accumulatorState, null, 0));
+		var validatorSet = BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)));
+		var vertexStoreState = VerifiedVertexStoreState.create(HighQC.from(qc), hashedGenesis, Optional.empty(), hasher);
+		var proposerElection = new WeightedRotatingLeaders(validatorSet);
+		this.bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
 		this.ecKeyPair = ECKeyPair.generateNew();
 		this.requestSender = rmock(RemoteEventDispatcher.class);
 		this.responseSender = rmock(RemoteEventDispatcher.class);

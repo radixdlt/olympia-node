@@ -18,12 +18,13 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.StakedValidators;
@@ -34,6 +35,7 @@ import static com.radixdlt.statecomputer.forks.ForksPredicates.stakeVoting;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.radixdlt.utils.TypedMocks.rmock;
@@ -64,7 +66,7 @@ public final class ForksPredicatesTest {
 
 	@Test
 	public void test_stake_voting() {
-		final var forkConfig = new ForkConfig("fork1", null, null, null, null, null, null, null, null);
+		final var forkConfig = new ForkConfig("fork1", null, null);
 		final RadixEngine<LedgerAndBFTProof> radixEngine = rmock(RadixEngine.class);
 		final var node1 = BFTNode.random();
 		final var node2 = BFTNode.random();
@@ -114,7 +116,7 @@ public final class ForksPredicatesTest {
 
 		// no votes
 		when(stakedValidators.getForksVotes()).thenReturn(
-			ImmutableSet.of()
+			ImmutableMap.of()
 		);
 		assertFalse(stakeVoting(0.001).test(Triplet.of(forkConfig, radixEngine, proofWithValidatorSet(validatorSet))));
 		assertFalse(stakeVoting(0.1).test(Triplet.of(forkConfig, radixEngine, proofWithValidatorSet(validatorSet))));
@@ -136,9 +138,9 @@ public final class ForksPredicatesTest {
 		return proof;
 	}
 
-	private ImmutableSet<HashCode> votesOf(ForkConfig forkConfig, BFTNode... nodes) {
+	private ImmutableMap<ECPublicKey, HashCode> votesOf(ForkConfig forkConfig, BFTNode... nodes) {
 		return Arrays.stream(nodes)
-			.map(node -> ForkConfig.voteHash(node.getKey(), forkConfig))
-			.collect(ImmutableSet.toImmutableSet());
+			.map(node -> Map.entry(node.getKey(), ForkConfig.voteHash(node.getKey(), forkConfig)))
+			.collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 }

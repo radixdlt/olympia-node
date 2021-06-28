@@ -20,26 +20,23 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.utils.Pair;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class SubstateDeserialization {
 	private final Map<Byte, SubstateDefinition<? extends Particle>> byteToDeserializer;
-	private final Map<Class<? extends Particle>, Set<Byte>> classToTypeBytes;
+	private final Map<Class<? extends Particle>, Byte> classToTypeByte;
 
 	public SubstateDeserialization(
 		Collection<SubstateDefinition<? extends Particle>> definitions
 	) {
 		this.byteToDeserializer = definitions.stream()
-			.flatMap(d -> d.getTypeBytes().stream().map(b -> Pair.of(b, d)))
-			.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
-		this.classToTypeBytes = definitions.stream()
-			.collect(Collectors.toMap(SubstateDefinition::getSubstateClass, SubstateDefinition::getTypeBytes));
+			.collect(Collectors.toMap(SubstateDefinition::getTypeByte, d -> d));
+		this.classToTypeByte = definitions.stream()
+			.collect(Collectors.toMap(SubstateDefinition::getSubstateClass, SubstateDefinition::getTypeByte));
 	}
 
 	public Class<? extends Particle> byteToClass(Byte typeByte) throws DeserializeException {
@@ -50,12 +47,12 @@ public final class SubstateDeserialization {
 		return definition.getSubstateClass();
 	}
 
-	public Set<Byte> classToBytes(Class<? extends Particle> substateClass) {
-		var typeBytes = classToTypeBytes.get(substateClass);
-		if (typeBytes == null) {
-			return Set.of();
+	public byte classToByte(Class<? extends Particle> substateClass) {
+		var b = classToTypeByte.get(substateClass);
+		if (b == null) {
+			throw new IllegalStateException();
 		}
-		return typeBytes;
+		return b;
 	}
 
 	public Particle deserialize(byte[] b) throws DeserializeException {
@@ -69,6 +66,6 @@ public final class SubstateDeserialization {
 			throw new DeserializeException("Unknown byte type: " + typeByte);
 		}
 
-		return deserializer.getDeserializer().deserialize(typeByte, buf);
+		return deserializer.getDeserializer().deserialize(buf);
 	}
 }

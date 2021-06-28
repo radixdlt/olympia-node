@@ -17,6 +17,7 @@
 
 package com.radixdlt.api.service;
 
+import com.radixdlt.statecomputer.forks.MainnetEngineRules;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,7 +38,6 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.functional.Result;
 
@@ -85,7 +85,7 @@ public final class SubmissionService {
 		if (disableResourceAllocAndDestroy) {
 			txnConstructionRequest.disableResourceAllocAndDestroy();
 		}
-		txnConstructionRequest.action(new PayFee(addr, TokenFeeChecker.FIXED_FEE));
+		txnConstructionRequest.action(new PayFee(addr, MainnetEngineRules.FIXED_FEE));
 		steps.stream().flatMap(TransactionAction::toAction).forEach(txnConstructionRequest::action);
 		message.map(t -> t.getBytes(RadixConstants.STANDARD_CHARSET)).ifPresent(txnConstructionRequest::msg);
 		return txnConstructionRequest;
@@ -138,6 +138,6 @@ public final class SubmissionService {
 	}
 
 	private PreparedTransaction toPreparedTx(byte[] first, HashCode second) {
-		return PreparedTransaction.create(first, second.asBytes(), TokenFeeChecker.FIXED_FEE);
+		return PreparedTransaction.create(first, second.asBytes(), MainnetEngineRules.FIXED_FEE);
 	}
 }

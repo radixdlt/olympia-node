@@ -59,7 +59,8 @@ public class ForkVoteStatusService {
 		final var stakedValidators = radixEngine.getComputedState(StakedValidators.class);
 		final var latestKnownForkHash = forkManager.latestKnownFork().getHash();
 		final var forkVoteHash = ForkConfig.voteHash(self.getKey(), latestKnownForkHash);
-		if (stakedValidators.getForksVotes().contains(forkVoteHash)) {
+		if (stakedValidators.getForksVotes().containsKey(self.getKey())
+			&& stakedValidators.getForksVotes().get(self.getKey()).equals(forkVoteHash)) {
 			return ForkVoteStatus.NO_ACTION_NEEDED;
 		} else {
 			return ForkVoteStatus.VOTE_REQUIRED;

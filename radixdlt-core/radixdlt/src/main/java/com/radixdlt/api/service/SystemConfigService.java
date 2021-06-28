@@ -373,7 +373,7 @@ public class SystemConfigService {
 		return new JSONObject()
 			.put("name", forkConfig.getName())
 			.put("hash", forkConfig.getHash().toString())
-			.put("ceiling_view", forkConfig.getEpochCeilingView().number());
+			.put("maxRounds", forkConfig.getEngineRules().getMaxRounds().number());
 	}
 
 	@VisibleForTesting

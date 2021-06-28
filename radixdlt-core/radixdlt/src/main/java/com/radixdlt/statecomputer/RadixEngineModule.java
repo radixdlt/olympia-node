@@ -23,13 +23,11 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.atom.ActionConstructors;
-import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.system.state.ValidatorBFTData;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.engine.PostProcessedVerifier;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
@@ -60,13 +58,13 @@ public class RadixEngineModule extends AbstractModule {
 	@Singleton
 	@EpochCeilingView
 	private View epochCeilingHighView(ForkConfig forkConfig) {
-		return forkConfig.getEpochCeilingView();
+		return forkConfig.getEngineRules().getMaxRounds();
 	}
 
 	@Provides
 	@Singleton
 	private ConstraintMachineConfig buildConstraintMachineConfig(ForkConfig forkConfig) {
-		return forkConfig.getConstraintMachineConfig();
+		return forkConfig.getEngineRules().getConstraintMachineConfig();
 	}
 
 	@Provides
@@ -84,31 +82,25 @@ public class RadixEngineModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private ActionConstructors actionConstructors(ForkConfig forkConfig) {
-		return forkConfig.getActionConstructors();
+		return forkConfig.getEngineRules().getActionConstructors();
 	}
 
 	@Provides
 	@Singleton
 	private BatchVerifier<LedgerAndBFTProof> batchVerifier(ForkConfig forkConfig) {
-		return forkConfig.getBatchVerifier();
+		return forkConfig.getEngineRules().getBatchVerifier();
 	}
 
 	@Provides
 	@Singleton
 	private REParser parser(ForkConfig forkConfig) {
-		return forkConfig.getParser();
+		return forkConfig.getEngineRules().getParser();
 	}
 
 	@Provides
 	@Singleton
 	private SubstateSerialization substateSerialization(ForkConfig forkConfig) {
-		return forkConfig.getSubstateSerialization();
-	}
-
-
-	@Provides
-	PostProcessedVerifier checker(ForkConfig forkConfig) {
-		return forkConfig.getPostProcessedVerifier();
+		return forkConfig.getEngineRules().getSerialization();
 	}
 
 	@Provides
@@ -119,7 +111,6 @@ public class RadixEngineModule extends AbstractModule {
 		ConstraintMachine constraintMachine,
 		ActionConstructors actionConstructors,
 		EngineStore<LedgerAndBFTProof> engineStore,
-		PostProcessedVerifier checker,
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
 		Set<StateReducer<?>> stateReducers,
 		Set<Pair<String, StateReducer<?>>> namedStateReducers,
@@ -132,7 +123,6 @@ public class RadixEngineModule extends AbstractModule {
 			actionConstructors,
 			constraintMachine,
 			engineStore,
-			checker,
 			batchVerifier
 		);
 
@@ -144,9 +134,6 @@ public class RadixEngineModule extends AbstractModule {
 		//   .build();
 
 		radixEngine.addStateReducer(stakedValidatorsReducer, true);
-
-		var systemCache = new SubstateCacheRegister<>(SystemParticle.class, p -> true);
-		radixEngine.addSubstateCache(systemCache, true);
 		radixEngine.addStateReducer(new SystemReducer(), true);
 
 		var validatorsCache = new SubstateCacheRegister<>(ValidatorBFTData.class, p -> true);

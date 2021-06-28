@@ -27,7 +27,6 @@ import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.liveness.Ping;
 import com.radixdlt.network.p2p.liveness.Pong;
-import com.radixdlt.qualifier.Magic;
 
 import java.util.Objects;
 
@@ -41,15 +40,10 @@ import javax.inject.Singleton;
  */
 @Singleton
 public final class MessageCentralPeerLiveness {
-	private final int magic;
 	private final MessageCentral messageCentral;
 
 	@Inject
-	public MessageCentralPeerLiveness(
-		@Magic int magic,
-		MessageCentral messageCentral
-	) {
-		this.magic = magic;
+	public MessageCentralPeerLiveness(MessageCentral messageCentral) {
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 	}
 
@@ -76,7 +70,7 @@ public final class MessageCentralPeerLiveness {
 	}
 
 	private void sendPing(BFTNode node, Ping ping) {
-		final var msg = new PeerPingMessage(this.magic);
+		final var msg = new PeerPingMessage();
 		this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
 	}
 
@@ -85,7 +79,7 @@ public final class MessageCentralPeerLiveness {
 	}
 
 	private void sendPong(BFTNode node, Pong pong) {
-		final var msg = new PeerPongMessage(this.magic);
+		final var msg = new PeerPongMessage();
 		this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
 	}
 }

@@ -18,12 +18,16 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.MockPrepared;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
@@ -42,13 +46,16 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 	private final View epochHighView;
 	private final MockedStateComputer stateComputer;
 
+	@Inject
 	public MockedStateComputerWithEpochs(
+		@EpochCeilingView View epochHighView,
 		Function<Long, BFTValidatorSet> validatorSetMapping,
-		View epochHighView
+		EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
+		Hasher hasher
 	) {
 		this.validatorSetMapping = Objects.requireNonNull(validatorSetMapping);
 		this.epochHighView = Objects.requireNonNull(epochHighView);
-		this.stateComputer = new MockedStateComputer();
+		this.stateComputer = new MockedStateComputer(ledgerUpdateDispatcher, hasher);
 	}
 
 	@Override
@@ -82,6 +89,6 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 
 	@Override
 	public void commit(VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState) {
-		// No-op
+		this.stateComputer.commit(verifiedTxnsAndProof, vertexStoreState);
 	}
 }

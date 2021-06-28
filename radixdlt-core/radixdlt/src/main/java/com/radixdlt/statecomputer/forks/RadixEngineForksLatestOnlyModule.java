@@ -20,44 +20,29 @@ package com.radixdlt.statecomputer.forks;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.consensus.bft.View;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.OptionalBinder;
+import java.util.function.UnaryOperator;
 
 /**
  * For testing only, only tests the latest state computer configuration
  */
-public final class RadixEngineForksLatestOnlyModule extends AbstractModule {
-	private final View epochHighViewOverwrite;
-	private final boolean fees;
+public class RadixEngineForksLatestOnlyModule extends AbstractModule {
+	private final RERulesConfig config;
 
-	public RadixEngineForksLatestOnlyModule(View epochHighViewOverwrite, boolean fees) {
-		this.epochHighViewOverwrite = epochHighViewOverwrite;
-		this.fees = fees;
+	public RadixEngineForksLatestOnlyModule(RERulesConfig config) {
+		this.config = config;
 	}
 
-	@Provides
-	@Singleton
-	private ForkManager forkManager(ImmutableList<ForkConfig> forksConfigs) {
-		return new ForkManager(ImmutableList.of(forksConfigs.get(forksConfigs.size() - 1)));
-	}
-
-	@Provides
-	@Singleton
-	private ForkConfig initialForkConfig(ForkManager forkManager) {
-		final var originalForkConfig = forkManager.genesisFork();
-
-		return new ForkConfig(
-			originalForkConfig.getName(),
-			originalForkConfig.getExecutePredicate(),
-			originalForkConfig.getParser(),
-			originalForkConfig.getSubstateSerialization(),
-			fees ? originalForkConfig.getConstraintMachineConfig()
-				: originalForkConfig.getConstraintMachineConfig().metering((procedureKey, param, context) -> { }),
-			originalForkConfig.getActionConstructors(),
-			originalForkConfig.getBatchVerifier(),
-			fees ? originalForkConfig.getPostProcessedVerifier() : (p, t) -> { },
-			epochHighViewOverwrite
-		);
+	@Override
+	protected void configure() {
+		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<ImmutableList<ForkBuilder>>>() { })
+			.setBinding()
+			.toInstance(m -> {
+				final var latestFork = m.get(m.size() - 1)
+					.withExecutePredicate(ForksPredicates.atEpoch(0L))
+					.withEngineRules(config);
+				return ImmutableList.of(latestFork);
+			});
 	}
 }

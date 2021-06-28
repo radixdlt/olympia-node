@@ -19,7 +19,6 @@ package com.radixdlt.api.service;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.radixdlt.atommodel.validators.state.ValidatorParticle;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.engine.RadixEngine;
@@ -107,14 +106,10 @@ public class ValidatorInfoServiceTest {
 	private ValidatorInfoService setUpService() {
 		var radixEngine = (RadixEngine<LedgerAndBFTProof>) mock(RadixEngine.class);
 		var validatorInfoService = new ValidatorInfoService(radixEngine);
-
-		var particle1 = new ValidatorParticle(validator1, false, "V1", "http://v1.com", Optional.empty());
-		var particle2 = new ValidatorParticle(validator2, false, "V2", "http://v2.com", Optional.empty());
-		var particle3 = new ValidatorParticle(validator3, false, "V3", "http://v3.com", Optional.empty());
 		var validators = StakedValidators.create(3, 3)
-			.add(particle1)
-			.add(particle2)
-			.add(particle3)
+			.add(validator1, Optional.empty())
+			.add(validator2, Optional.empty())
+			.add(validator3, Optional.empty())
 			.setStake(validator1, UInt256.FIVE)
 			.setStake(validator2, UInt256.EIGHT)
 			.setStake(validator3, UInt256.TEN);

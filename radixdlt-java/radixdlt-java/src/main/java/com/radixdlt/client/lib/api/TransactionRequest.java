@@ -19,6 +19,7 @@ package com.radixdlt.client.lib.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 //import com.radixdlt.client.lib.dto.Action;
+import com.google.common.hash.HashCode;
 import com.radixdlt.client.lib.api.action.Action;
 import com.radixdlt.client.lib.api.action.BurnAction;
 import com.radixdlt.client.lib.api.action.CreateFixedTokenAction;
@@ -101,8 +102,13 @@ public class TransactionRequest {
 			return this;
 		}
 
-		public TransactionRequestBuilder updateValidator(ValidatorAddress delegate, Optional<String> name, Optional<String> url) {
-			actions.add(new UpdateValidatorAction(delegate, name.orElse(null), url.orElse(null)));
+		public TransactionRequestBuilder updateValidator(
+			ValidatorAddress delegate,
+			Optional<String> name,
+			Optional<String> url,
+			Optional<HashCode> forkVoteHash
+		) {
+			actions.add(new UpdateValidatorAction(delegate, name.orElse(null), url.orElse(null), forkVoteHash.orElse(null)));
 			return this;
 		}
 

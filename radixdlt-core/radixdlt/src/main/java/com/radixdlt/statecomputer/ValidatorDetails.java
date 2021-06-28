@@ -17,7 +17,7 @@
 
 package com.radixdlt.statecomputer;
 
-import com.radixdlt.atommodel.validators.state.ValidatorParticle;
+import com.radixdlt.atommodel.validators.state.ValidatorMetaData;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -44,7 +44,7 @@ public final class ValidatorDetails {
 	}
 
 	public static ValidatorDetails fromParticle(
-		ValidatorParticle particle, REAddr owner, UInt256 stake, UInt256 ownerStake, boolean allowDelegation
+		ValidatorMetaData particle, REAddr owner, UInt256 stake, UInt256 ownerStake, boolean allowDelegation
 	) {
 		return new ValidatorDetails(
 			particle.getKey(), owner, particle.getName(), particle.getUrl(), stake, ownerStake, allowDelegation

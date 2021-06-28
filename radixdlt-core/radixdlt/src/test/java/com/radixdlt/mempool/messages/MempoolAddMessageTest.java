@@ -35,7 +35,7 @@ public class MempoolAddMessageTest {
 
 	@Before
 	public void setUp() {
-		this.message = new MempoolAddMessage(12345, List.of(Txn.create(new byte[0])));
+		this.message = new MempoolAddMessage(List.of(Txn.create(new byte[0])));
 	}
 
 	@Test

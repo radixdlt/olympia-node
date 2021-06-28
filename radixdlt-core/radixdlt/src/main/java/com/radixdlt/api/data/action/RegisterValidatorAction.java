@@ -27,19 +27,16 @@ import java.util.stream.Stream;
 
 class RegisterValidatorAction implements TransactionAction {
 	private final ECPublicKey validatorKey;
-	private final String name;
-	private final String url;
 	private final Optional<HashCode> forkVoteHash;
 
-	RegisterValidatorAction(ECPublicKey validatorKey, String name, String url, Optional<HashCode> forkVoteHash) {
+	RegisterValidatorAction(ECPublicKey validatorKey, Optional<HashCode> forkVoteHash) {
 		this.validatorKey = validatorKey;
-		this.name = name;
-		this.url = url;
 		this.forkVoteHash = forkVoteHash;
 	}
 
 	@Override
 	public Stream<TxAction> toAction() {
-		return Stream.of(new RegisterValidator(validatorKey, name, url, forkVoteHash));
+		return Stream.of(new RegisterValidator(validatorKey, forkVoteHash));
 	}
 }
+

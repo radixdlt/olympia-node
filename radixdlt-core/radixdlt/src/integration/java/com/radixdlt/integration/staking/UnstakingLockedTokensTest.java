@@ -18,6 +18,9 @@
 
 package com.radixdlt.integration.staking;
 
+import com.radixdlt.statecomputer.forks.ForkManagerModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -42,14 +45,14 @@ import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
@@ -60,12 +63,12 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
@@ -111,8 +114,9 @@ public class UnstakingLockedTokensTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
-			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(100), false),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
+			new ForkManagerModule(),
+			new MainnetForksModule(),
 			RadixEngineConfig.asModule(1, 10, 10),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
@@ -168,23 +172,23 @@ public class UnstakingLockedTokensTest {
 
 		if (stakingEpoch > 1) {
 			runner.runNextEventsThrough(
-				EpochsLedgerUpdate.class,
-				e -> e.getEpochChange().map(c -> c.getEpoch() == stakingEpoch).orElse(false)
+				LedgerUpdate.class,
+				e -> ((Optional<EpochChange>) e.getStateComputerOutput()).map(c -> c.getEpoch() == stakingEpoch).orElse(false)
 			);
 		}
 
 		var accountAddr = REAddr.ofPubKeyAccount(self);
 		var stakeTxn = dispatchAndWaitForCommit(new StakeTokens(accountAddr, self, ValidatorStakeData.MINIMUM_STAKE));
 		runner.runNextEventsThrough(
-			EpochsLedgerUpdate.class,
-			e -> e.getEpochChange().map(c -> c.getEpoch() == unstakingEpoch).orElse(false)
+			LedgerUpdate.class,
+			e -> ((Optional<EpochChange>) e.getStateComputerOutput()).map(c -> c.getEpoch() == unstakingEpoch).orElse(false)
 		);
 		var unstakeTxn = dispatchAndWaitForCommit(new UnstakeTokens(accountAddr, self, ValidatorStakeData.MINIMUM_STAKE));
 
 		if (transferEpoch > unstakingEpoch) {
 			runner.runNextEventsThrough(
-				EpochsLedgerUpdate.class,
-				e -> e.getEpochChange().map(c -> c.getEpoch() == transferEpoch).orElse(false)
+				LedgerUpdate.class,
+				e -> ((Optional<EpochChange>) e.getStateComputerOutput()).map(c -> c.getEpoch() == transferEpoch).orElse(false)
 			);
 		}
 

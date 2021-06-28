@@ -24,7 +24,6 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.state.EpochData;
-import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.REStateUpdate;
@@ -59,8 +58,6 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 					if (p instanceof TokenResource) {
 						var tokenDef = (TokenResource) p;
 						addrParticles.put(tokenDef.getAddr(), p);
-					} else if (p instanceof SystemParticle) {
-						addrParticles.put(REAddr.ofSystem(), p);
 					} else if (p instanceof EpochData) {
 						addrParticles.put(REAddr.ofSystem(), p);
 					}

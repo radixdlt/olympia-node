@@ -133,10 +133,6 @@ public final class FunctionalNodeModule extends AbstractModule {
 					install(new RadixEngineCheckpointModule());
 				}
 			}
-
-			if (hasEpochs) {
-				install(new EpochsLedgerUpdateModule());
-			}
 		}
 	}
 }

@@ -20,7 +20,7 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atommodel.system.state.SystemParticle;
+import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -96,10 +96,9 @@ public final class ConstraintMachine {
 					return localUpParticles.values().stream()
 						.map(Pair::getFirst)
 						.map(Substate::getParticle)
-						.filter(SystemParticle.class::isInstance)
+						.filter(EpochData.class::isInstance)
 						.findFirst()
-						.or(() -> store.loadAddr(dbTxn, addr, deserialization))
-						.or(() -> Optional.of(new SystemParticle(0, 0, 0))); // A bit of a hack
+						.or(() -> store.loadAddr(dbTxn, addr, deserialization));
 				} else {
 					return localUpParticles.values().stream()
 						.map(Pair::getFirst)
@@ -380,7 +379,7 @@ public final class ConstraintMachine {
 			} catch (MissingProcedureException e) {
 				throw new ConstraintMachineException(
 					CMErrorCode.MISSING_PROCEDURE,
-					"Instruction: " + inst.toString(),
+					"ReducerState: " + reducerState + " Instruction: " + inst.toString(),
 					e
 				);
 			}

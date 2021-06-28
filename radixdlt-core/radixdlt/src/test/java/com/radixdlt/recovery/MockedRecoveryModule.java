@@ -33,6 +33,7 @@ import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;
@@ -81,8 +82,10 @@ public class MockedRecoveryModule extends AbstractModule {
 			proof.getAccumulatorState(),
 			proof.timestamp()
 		);
-		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesis, nextLedgerHeader);
+		var genesisQC = QuorumCertificate.ofGenesis(verifiedGenesis, nextLedgerHeader);
+		var proposerElection = new WeightedRotatingLeaders(validatorSet);
 		return new BFTConfiguration(
+			proposerElection,
 			validatorSet,
 			VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesis, Optional.empty(), hasher)
 		);

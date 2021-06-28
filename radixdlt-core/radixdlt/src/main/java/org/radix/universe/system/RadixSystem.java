@@ -72,20 +72,8 @@ public class RadixSystem extends BasicContainer {
 		return this.agent;
 	}
 
-	public int getAgentVersion() {
-		return this.agentVersion;
-	}
-
-	public int getProtocolVersion() {
-		return this.protocolVersion;
-	}
-
 	public ECPublicKey getKey() {
 		return key;
-	}
-
-	public EUID getNID() {
-		return this.key == null ? EUID.ZERO : this.key.euid();
 	}
 
 	// Property "agent" - 1 getter, 1 setter
@@ -124,16 +112,9 @@ public class RadixSystem extends BasicContainer {
 		}
 	}
 
-	// Property "nid" - 1 getter
-	@JsonProperty("nid")
-	@DsonOutput(Output.ALL)
-	EUID getJsonNid() {
-		return this.key == null ? null : this.key.euid();
-	}
-
 	@Override
 	public String toString() {
-		return key == null ? "null" : key.euid().toString();
+		return key == null ? "null" : Hex.toHexString(key.getCompressedBytes());
 	}
 
 	@Override

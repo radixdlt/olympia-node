@@ -19,16 +19,9 @@
 package com.radixdlt.statecomputer.forks;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.atom.ActionConstructors;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.constraintmachine.ConstraintMachineConfig;
-import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.engine.BatchVerifier;
-import com.radixdlt.engine.PostProcessedVerifier;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Triplet;
 import org.bouncycastle.pqc.math.linearalgebra.ByteUtils;
@@ -42,36 +35,18 @@ import java.util.function.Predicate;
 public final class ForkConfig {
 	private final String name;
 	private final Predicate<Triplet<ForkConfig, RadixEngine<LedgerAndBFTProof>, LedgerAndBFTProof>> executePredicate;
-	private final REParser parser;
-	private final SubstateSerialization serialization;
-	private final ConstraintMachineConfig constraintMachineConfig;
-	private final ActionConstructors actionConstructors;
-	private final BatchVerifier<LedgerAndBFTProof> batchVerifier;
-	private final PostProcessedVerifier postProcessedVerifier;
-	private final View epochCeilingView;
+	private final RERules reRules;
 
 	private final HashCode hash;
 
 	public ForkConfig(
 		String name,
 		Predicate<Triplet<ForkConfig, RadixEngine<LedgerAndBFTProof>, LedgerAndBFTProof>> executePredicate,
-		REParser parser,
-		SubstateSerialization serialization,
-		ConstraintMachineConfig constraintMachineConfig,
-		ActionConstructors actionConstructors,
-		BatchVerifier<LedgerAndBFTProof> batchVerifier,
-		PostProcessedVerifier postProcessedVerifier,
-		View epochCeilingView
+		RERules reRules
 	) {
 		this.name = name;
 		this.executePredicate = executePredicate;
-		this.parser = parser;
-		this.serialization = serialization;
-		this.constraintMachineConfig = constraintMachineConfig;
-		this.actionConstructors = actionConstructors;
-		this.batchVerifier = batchVerifier;
-		this.postProcessedVerifier = postProcessedVerifier;
-		this.epochCeilingView = epochCeilingView;
+		this.reRules = reRules;
 
 		this.hash = HashUtils.sha256(name.getBytes(StandardCharsets.UTF_8));
 	}
@@ -84,36 +59,12 @@ public final class ForkConfig {
 		return this.executePredicate;
 	}
 
-	public REParser getParser() {
-		return parser;
-	}
-
-	public SubstateSerialization getSubstateSerialization() {
-		return serialization;
-	}
-
-	public ConstraintMachineConfig getConstraintMachineConfig() {
-		return constraintMachineConfig;
-	}
-
-	public ActionConstructors getActionConstructors() {
-		return actionConstructors;
-	}
-
-	public BatchVerifier<LedgerAndBFTProof> getBatchVerifier() {
-		return batchVerifier;
-	}
-
-	public PostProcessedVerifier getPostProcessedVerifier() {
-		return postProcessedVerifier;
-	}
-
-	public View getEpochCeilingView() {
-		return epochCeilingView;
-	}
-
 	public HashCode getHash() {
 		return hash;
+	}
+
+	public RERules getEngineRules() {
+		return reRules;
 	}
 
 	public static HashCode voteHash(ECPublicKey publicKey, ForkConfig forkConfig) {

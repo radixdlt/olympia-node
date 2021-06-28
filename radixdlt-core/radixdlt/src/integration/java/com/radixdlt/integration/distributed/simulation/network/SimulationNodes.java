@@ -39,7 +39,6 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.integration.distributed.simulation.NodeNetworkMessagesModule;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.qualifier.LocalSigner;
@@ -48,6 +47,7 @@ import com.radixdlt.utils.Pair;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -189,8 +189,12 @@ public class SimulationNodes {
 				EpochChange initialEpoch = nodeInstances.get(0).getInstance(EpochChange.class);
 
 				Set<Observable<EpochChange>> epochChanges = nodeInstances.stream()
-					.map(i -> i.getInstance(Key.get(new TypeLiteral<Observable<EpochsLedgerUpdate>>() { })))
-					.map(o -> o.filter(u -> u.getEpochChange().isPresent()).map(u -> u.getEpochChange().get()))
+					.map(i -> i.getInstance(Key.get(new TypeLiteral<Observable<LedgerUpdate>>() { })))
+					.map(o -> o
+						.map(u -> (Optional<EpochChange>) u.getStateComputerOutput())
+						.filter(u -> u.isPresent())
+						.map(u -> u.get())
+					)
 					.collect(Collectors.toSet());
 
 				return Observable.just(initialEpoch).concatWith(

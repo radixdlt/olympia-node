@@ -45,6 +45,10 @@ public final class VerifiedVertex {
 		return vertex.getProposer();
 	}
 
+	public boolean isTimeout() {
+		return vertex.isTimeout();
+	}
+
 	public UnverifiedVertex toSerializable() {
 		return vertex;
 	}

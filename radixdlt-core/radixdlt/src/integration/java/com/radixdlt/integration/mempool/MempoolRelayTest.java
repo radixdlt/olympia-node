@@ -22,7 +22,6 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerUpdate;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
@@ -33,11 +32,14 @@ import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
+import com.radixdlt.statecomputer.forks.ForkManagerModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.utils.KeyComparator;
 import org.apache.logging.log4j.ThreadContext;
 import org.junit.After;
 import org.junit.Before;
@@ -129,7 +131,7 @@ public class MempoolRelayTest {
 
 		final var nodeKeys = Stream.generate(ECKeyPair::generateNew)
 			.limit(numNodes)
-			.sorted(Comparator.comparing(k -> k.getPublicKey().euid()))
+			.sorted(Comparator.comparing(ECKeyPair::getPublicKey, KeyComparator.instance()))
 			.collect(ImmutableList.toImmutableList());
 
 		final var bftNodes = nodeKeys.stream()
@@ -158,8 +160,9 @@ public class MempoolRelayTest {
 			new MockedGenesisModule(),
 			new CryptoModule(),
 			new RadixEngineModule(),
-			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(100), false),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
+			new ForkManagerModule(),
+			new MainnetForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new AbstractModule() {
 				@Override
@@ -185,8 +188,9 @@ public class MempoolRelayTest {
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
 			MempoolConfig.asModule(500, 100, 10, 10, 10),
-			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(100), false),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
+			new ForkManagerModule(),
+			new MainnetForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new PersistedNodeForTestingModule(),
 			new MempoolFillerModule(),

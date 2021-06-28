@@ -32,7 +32,7 @@ import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV3;
 import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV4;
-import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV2;
+import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atommodel.validators.construction.UpdateAllowDelegationFlagConstructor;
 import com.radixdlt.atommodel.validators.construction.UpdateValidatorOwnerConstructor;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
@@ -68,7 +68,7 @@ public class DelegationFlagTest {
 		var stakeAmounts = List.of(UInt256.TEN);
 		var scrypts = List.of(
 			Pair.of(
-				List.of(new TokensConstraintScryptV2(), new StakingConstraintScryptV4(), new ValidatorConstraintScryptV2()),
+				List.of(new TokensConstraintScryptV3(), new StakingConstraintScryptV4(), new ValidatorConstraintScryptV2(2)),
 				new StakeTokensConstructorV3()
 			)
 		);
@@ -136,7 +136,6 @@ public class DelegationFlagTest {
 		);
 	}
 
-
 	@Test
 	public void cannot_construct_stake_tokens_if_delegation_flag_set_to_false() throws Exception {
 		// Arrange
@@ -149,9 +148,6 @@ public class DelegationFlagTest {
 		).buildWithoutSignature();
 		var validatorKey = ECKeyPair.generateNew();
 		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
-		var update = this.engine.construct(new UpdateAllowDelegationFlag(validatorKey.getPublicKey(), false))
-			.signAndBuild(validatorKey::sign);
-		this.engine.execute(List.of(update));
 
 		// Act
 		assertThatThrownBy(() -> this.engine.construct(new StakeTokens(accountAddr, validatorKey.getPublicKey(), stakeAmt))
@@ -169,9 +165,6 @@ public class DelegationFlagTest {
 				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, startAmt))
 		).buildWithoutSignature();
 		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
-		var update = this.engine.construct(new UpdateAllowDelegationFlag(key.getPublicKey(), false))
-			.signAndBuild(key::sign);
-		this.engine.execute(List.of(update));
 
 		// Act
 		var stake = this.engine.construct(new StakeTokens(accountAddr, key.getPublicKey(), stakeAmt))
@@ -194,7 +187,6 @@ public class DelegationFlagTest {
 		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
 		var update = this.engine.construct(
 			TxnConstructionRequest.create()
-				.action(new UpdateAllowDelegationFlag(validatorKey.getPublicKey(), false))
 				.action(new UpdateValidatorOwnerAddress(validatorKey.getPublicKey(), accountAddr))
 		).signAndBuild(validatorKey::sign);
 		this.engine.execute(List.of(update));

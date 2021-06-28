@@ -30,12 +30,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class PeersResponseMessageTest extends SerializeMessageObject<PeersResponseMessage> {
 
 	public PeersResponseMessageTest() {
-		super(PeersResponseMessage.class, () -> new PeersResponseMessage(1));
+		super(PeersResponseMessage.class, () -> new PeersResponseMessage());
 	}
 
 	@Test
 	public void sensibleToString() {
-		String s = new PeersResponseMessage(1, ImmutableSet.of()).toString();
+		String s = new PeersResponseMessage(ImmutableSet.of()).toString();
 
 		assertThat(s).contains(PeersResponseMessage.class.getSimpleName());
 	}

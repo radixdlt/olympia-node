@@ -29,6 +29,7 @@ import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.SystemNextEpoch;
+import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -51,6 +52,7 @@ import org.radix.TokenIssuance;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -120,7 +122,8 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 
 			// Initial validator registration
 			for (var validatorKey : validatorKeys) {
-				genesisTxnConstruction.registerAsValidator(validatorKey.getPublicKey());
+				genesisTxnConstruction.registerAsValidator(validatorKey.getPublicKey(), Optional.empty());
+				genesisTxnConstruction.action(new UpdateAllowDelegationFlag(validatorKey.getPublicKey(), true));
 			}
 
 			// Initial stakes

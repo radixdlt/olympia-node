@@ -22,11 +22,11 @@ import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
-import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV1;
 import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
-import com.radixdlt.atommodel.validators.state.ValidatorParticle;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorRegisterConstraintScrypt;
+import com.radixdlt.atommodel.validators.state.PreparedRegisteredUpdate;
+import com.radixdlt.atommodel.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.SubstateSerialization;
@@ -38,37 +38,22 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@RunWith(Parameterized.class)
 public class RegisterValidatorTest {
-	@Parameterized.Parameters
-	public static Collection<Object[]> parameters() {
-		return List.of(
-			new Object[] {new ValidatorConstraintScryptV1()},
-			new Object[] {new ValidatorConstraintScryptV2()}
-		);
-	};
-
 	private RadixEngine<Void> engine;
 	private EngineStore<Void> store;
 	private SubstateSerialization serialization;
-	private final ConstraintScrypt constraintScrypt;
-
-	public RegisterValidatorTest(ConstraintScrypt constraintScrypt) {
-		this.constraintScrypt = constraintScrypt;
-	}
 
 	@Before
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(constraintScrypt);
+		cmAtomOS.load(new ValidatorConstraintScryptV2(2));
+		cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
 		var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()
@@ -93,7 +78,7 @@ public class RegisterValidatorTest {
 		var key = ECKeyPair.generateNew();
 
 		// Act and Assert
-		var registerTxn = this.engine.construct(new RegisterValidator(key.getPublicKey()))
+		var registerTxn = this.engine.construct(new RegisterValidator(key.getPublicKey(), Optional.empty()))
 			.signAndBuild(key::sign);
 		this.engine.execute(List.of(registerTxn));
 	}
@@ -104,7 +89,7 @@ public class RegisterValidatorTest {
 		var key = ECKeyPair.generateNew();
 
 		// Act and Assert
-		var registerTxn = this.engine.construct(new RegisterValidator(ECKeyPair.generateNew().getPublicKey()))
+		var registerTxn = this.engine.construct(new RegisterValidator(ECKeyPair.generateNew().getPublicKey(), Optional.empty()))
 			.signAndBuild(key::sign);
 		assertThatThrownBy(() -> this.engine.execute(List.of(registerTxn)))
 			.isInstanceOf(RadixEngineException.class)
@@ -117,8 +102,8 @@ public class RegisterValidatorTest {
 		// Arrange
 		var key = ECKeyPair.generateNew();
 		var builder = TxLowLevelBuilder.newBuilder(serialization)
-			.virtualDown(new ValidatorParticle(key.getPublicKey(), false))
-			.up(new ValidatorParticle(ECKeyPair.generateNew().getPublicKey(), true))
+			.virtualDown(new ValidatorRegisteredCopy(key.getPublicKey(), false))
+			.up(new PreparedRegisteredUpdate(ECKeyPair.generateNew().getPublicKey(), true, Optional.empty()))
 			.end();
 		var sig = key.sign(builder.hashToSign().asBytes());
 		var txn = builder.sig(sig).build();

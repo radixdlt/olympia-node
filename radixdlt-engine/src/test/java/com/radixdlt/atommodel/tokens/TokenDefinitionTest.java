@@ -25,7 +25,7 @@ import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
-import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV1;
+import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
@@ -58,7 +58,7 @@ public class TokenDefinitionTest {
 	@Before
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new TokensConstraintScryptV1());
+		cmAtomOS.load(new TokensConstraintScryptV3());
 		var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()

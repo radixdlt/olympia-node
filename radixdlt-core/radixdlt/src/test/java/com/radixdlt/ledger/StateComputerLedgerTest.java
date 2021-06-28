@@ -42,7 +42,6 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.counters.SystemCounters;
@@ -66,7 +65,6 @@ public class StateComputerLedgerTest {
 	private Mempool mempool;
 	private StateComputer stateComputer;
 	private StateComputerLedger sut;
-	private EventDispatcher<LedgerUpdate> ledgerUpdateSender;
 	private LedgerProof currentLedgerHeader;
 	private SystemCounters counters;
 	private Comparator<LedgerProof> headerComparator;
@@ -96,7 +94,6 @@ public class StateComputerLedgerTest {
 		// No type check issues with mocking generic here
 		this.stateComputer = mock(StateComputer.class);
 		this.counters = mock(SystemCounters.class);
-		this.ledgerUpdateSender = TypedMocks.rmock(EventDispatcher.class);
 		this.headerComparator = TypedMocks.rmock(Comparator.class);
 
 		this.accumulator = new SimpleLedgerAccumulatorAndVerifier(hasher);
@@ -115,7 +112,6 @@ public class StateComputerLedgerTest {
 			currentLedgerHeader,
 			headerComparator,
 			stateComputer,
-			ledgerUpdateSender,
 			accumulator,
 			accumulatorVerifier,
 			counters
@@ -141,7 +137,6 @@ public class StateComputerLedgerTest {
 			currentLedgerHeader,
 			headerComparator,
 			stateComputer,
-			ledgerUpdateSender,
 			accumulator,
 			accumulatorVerifier,
 			counters
@@ -236,6 +231,5 @@ public class StateComputerLedgerTest {
 		// Assert
 		verify(stateComputer, never()).commit(any(), any());
 		verify(mempool, never()).committed(any());
-		verify(ledgerUpdateSender, never()).dispatch(any());
 	}
 }

@@ -30,7 +30,10 @@ public final class SystemNextEpoch implements TxAction {
 	private final long timestamp;
 	private final Function<Collection<ValidatorStakeData>, List<ECPublicKey>> nextValidators;
 
-	public SystemNextEpoch(Function<Collection<ValidatorStakeData>, List<ECPublicKey>> nextValidators, long timestamp) {
+	public SystemNextEpoch(
+		Function<Collection<ValidatorStakeData>, List<ECPublicKey>> nextValidators,
+		long timestamp
+	) {
 		this.nextValidators = nextValidators;
 		this.timestamp = timestamp;
 	}

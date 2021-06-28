@@ -23,26 +23,30 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.SystemNextEpoch;
-import com.radixdlt.atommodel.system.scrypt.SystemConstraintScryptV3;
+import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.atommodel.system.state.EpochData;
-import com.radixdlt.atommodel.system.state.HasEpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
-import com.radixdlt.atommodel.system.state.SystemParticle;
 import com.radixdlt.atommodel.system.state.ValidatorBFTData;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
+import com.radixdlt.atommodel.validators.scrypt.ValidatorData;
+import com.radixdlt.atommodel.validators.state.PreparedRegisteredUpdate;
 import com.radixdlt.atommodel.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.atommodel.validators.state.PreparedValidatorUpdate;
-import com.radixdlt.atommodel.validators.state.RakeCopy;
+import com.radixdlt.atommodel.validators.state.PreparedOwnerUpdate;
+import com.radixdlt.atommodel.validators.state.ValidatorRakeCopy;
 import com.radixdlt.atommodel.validators.state.PreparedRakeUpdate;
+import com.radixdlt.atommodel.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.constraintmachine.ProcedureException;
 import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -50,10 +54,14 @@ import java.util.Iterator;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import static com.radixdlt.atommodel.validators.state.PreparedRakeUpdate.RAKE_MAX;
 
 public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch> {
+	private static Logger logger = LogManager.getLogger();
+
 	private static ValidatorStakeData loadValidatorStakeData(
 		TxBuilder txBuilder,
 		ECPublicKey k,
@@ -63,7 +71,7 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 			var validatorData = txBuilder.down(
 				ValidatorStakeData.class,
 				p -> p.getValidatorKey().equals(k),
-				Optional.of(SubstateWithArg.noArg(ValidatorStakeData.createV1(k))),
+				Optional.of(SubstateWithArg.noArg(ValidatorStakeData.createVirtual(k))),
 				"Validator not found"
 			);
 			validatorsToUpdate.put(k, validatorData);
@@ -71,30 +79,41 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 		return validatorsToUpdate.get(k);
 	}
 
+	private static <T extends ValidatorData, U extends ValidatorData> void prepare(
+		TxBuilder txBuilder,
+		TreeMap<ECPublicKey, ValidatorStakeData> validatorsToUpdate,
+		Class<T> preparedClass,
+		BiFunction<ValidatorStakeData, T, ValidatorStakeData> updater,
+		Function<T, U> copy
+	) throws TxBuilderException {
+		var preparing = new TreeMap<ECPublicKey, T>(KeyComparator.instance());
+		txBuilder.shutdownAll(preparedClass, i -> {
+			i.forEachRemaining(update -> preparing.put(update.getValidatorKey(), update));
+			return preparing;
+		});
+		for (var e : preparing.entrySet()) {
+			var k = e.getKey();
+			var update = e.getValue();
+			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate);
+			validatorsToUpdate.put(k, updater.apply(curValidator, update));
+			txBuilder.up(copy.apply(update));
+		}
+	}
+
 	@Override
 	public void construct(SystemNextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
-		var epochData = txBuilder.find(EpochData.class, p -> true);
-		final HasEpochData prevEpoch;
-		if (epochData.isPresent()) {
-			txBuilder.down(
-				RoundData.class,
-				p -> true,
-				Optional.empty(),
-				"No round data available"
-			);
-			prevEpoch = txBuilder.down(
-				EpochData.class,
-				p -> true,
-				Optional.of(SubstateWithArg.noArg(new EpochData(0))),
-				"No epoch data available"
-			);
-		} else {
-			prevEpoch = txBuilder.down(
-				SystemParticle.class,
-				p -> true,
-				"No epoch data available"
-			);
-		}
+		txBuilder.down(
+			RoundData.class,
+			p -> true,
+			Optional.empty(),
+			"No round data available"
+		);
+		var prevEpoch = txBuilder.down(
+			EpochData.class,
+			p -> true,
+			Optional.of(SubstateWithArg.noArg(new EpochData(0))),
+			"No epoch data available"
+		);
 
 		var exitting = txBuilder.shutdownAll(ExittingStake.class, i -> {
 			final TreeSet<ExittingStake> exit = new TreeSet<>(
@@ -111,19 +130,16 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 			}
 		}
 
-		var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorStakeData>(
-			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
-		);
+		var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorStakeData>(KeyComparator.instance());
 		var proposals = txBuilder.shutdownAll(ValidatorBFTData.class, i -> {
-			final TreeMap<ECPublicKey, Long> proposalsCompleted = new TreeMap<>(
-				(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
-			);
-			i.forEachRemaining(e -> proposalsCompleted.put(e.validatorKey(), e.proposalsCompleted()));
+			final TreeMap<ECPublicKey, Long> proposalsCompleted = new TreeMap<>(KeyComparator.instance());
+			i.forEachRemaining(e -> {
+				proposalsCompleted.put(e.validatorKey(), e.proposalsCompleted());
+				logger.info("Validator {} completed {} missed {}", e.validatorKey(), e.proposalsCompleted(), e.proposalsMissed());
+			});
 			return proposalsCompleted;
 		});
-		var preparingStake = new TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>>(
-			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
-		);
+		var preparingStake = new TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>>(KeyComparator.instance());
 		for (var e : proposals.entrySet()) {
 			var k = e.getKey();
 			var numProposals = e.getValue();
@@ -132,14 +148,14 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 				s -> s.getValidatorKey().equals(k),
 				"Validator not found"
 			);
-			var nodeEmission = SystemConstraintScryptV3.REWARDS_PER_PROPOSAL.multiply(UInt256.from(numProposals));
-			int rakePercentage = validatorStakeData.getRakePercentage().orElse(RAKE_MAX);
+			var nodeEmission = EpochUpdateConstraintScrypt.REWARDS_PER_PROPOSAL.multiply(UInt256.from(numProposals));
+			int rakePercentage = validatorStakeData.getRakePercentage();
 			final UInt256 rakedEmissions;
 			if (rakePercentage != 0 && !nodeEmission.isZero()) {
 				var rake = nodeEmission
 					.multiply(UInt256.from(rakePercentage))
 					.divide(UInt256.from(RAKE_MAX));
-				var validatorOwner = validatorStakeData.getOwnerAddr().orElseGet(() -> REAddr.ofPubKeyAccount(k));
+				var validatorOwner = validatorStakeData.getOwnerAddr();
 				var initStake = new TreeMap<REAddr, UInt256>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
 				initStake.put(validatorOwner, rake);
 				preparingStake.put(k, initStake);
@@ -151,9 +167,7 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 		}
 
 		var allPreparedUnstake = txBuilder.shutdownAll(PreparedUnstakeOwnership.class, i -> {
-			var map = new TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>>(
-				(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
-			);
+			var map = new TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>>(KeyComparator.instance());
 			i.forEachRemaining(preparedStake ->
 				map
 					.computeIfAbsent(
@@ -210,9 +224,7 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 			validatorsToUpdate.put(k, curValidator);
 		}
 
-		var preparingRakeUpdates = new TreeMap<ECPublicKey, PreparedRakeUpdate>(
-			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
-		);
+		var preparingRakeUpdates = new TreeMap<ECPublicKey, PreparedRakeUpdate>(KeyComparator.instance());
 		var buf = ByteBuffer.allocate(1 + Long.BYTES);
 		buf.put(SubstateTypeId.PREPARED_RAKE_UPDATE.id());
 		buf.putLong(prevEpoch.getEpoch() + 1);
@@ -228,29 +240,35 @@ public class NextEpochConstructorV3 implements ActionConstructor<SystemNextEpoch
 			var update = e.getValue();
 			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate);
 			validatorsToUpdate.put(k, curValidator.setRakePercentage(update.getNextRakePercentage()));
-			txBuilder.up(new RakeCopy(k, update.getNextRakePercentage()));
+			txBuilder.up(new ValidatorRakeCopy(k, update.getNextRakePercentage()));
 		}
 
-		var preparingUpdates = new TreeMap<ECPublicKey, PreparedValidatorUpdate>(
-			(o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes())
+
+		// Update owners
+		prepare(
+			txBuilder,
+			validatorsToUpdate,
+			PreparedOwnerUpdate.class,
+			(v, u) -> v.setOwnerAddr(u.getOwnerAddress()),
+			u -> new ValidatorOwnerCopy(u.getValidatorKey(), u.getOwnerAddress())
 		);
-		txBuilder.shutdownAll(PreparedValidatorUpdate.class, i -> {
-			i.forEachRemaining(update -> preparingUpdates.put(update.getValidatorKey(), update));
-			return preparingUpdates;
-		});
-		for (var e : preparingUpdates.entrySet()) {
-			var k = e.getKey();
-			var update = e.getValue();
-			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate);
-			validatorsToUpdate.put(k, curValidator.setOwnerAddr(update.getOwnerAddress()));
-			txBuilder.up(new ValidatorOwnerCopy(k, update.getOwnerAddress()));
-		}
+
+		// Update registered flag
+		prepare(
+			txBuilder,
+			validatorsToUpdate,
+			PreparedRegisteredUpdate.class,
+			(v, u) -> v.setRegistered(u.isRegistered()),
+			u -> new ValidatorRegisteredCopy(u.getValidatorKey(), u.isRegistered())
+		);
+
 
 		validatorsToUpdate.forEach((k, validator) -> txBuilder.up(validator));
 		var validatorKeys = action.validators(validatorsToUpdate.values());
-		validatorKeys.forEach(k -> txBuilder.up(new ValidatorBFTData(k, 0)));
+		validatorKeys.forEach(k -> txBuilder.up(new ValidatorBFTData(k, 0, 0)));
 
 		txBuilder.up(new EpochData(prevEpoch.getEpoch() + 1));
 		txBuilder.up(new RoundData(0, 0));
 	}
+
 }

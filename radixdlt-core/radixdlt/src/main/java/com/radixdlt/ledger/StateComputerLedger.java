@@ -34,13 +34,11 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.store.LastProof;
-
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
@@ -98,7 +96,6 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 
 	private final Comparator<LedgerProof> headerComparator;
 	private final StateComputer stateComputer;
-	private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
 	private final SystemCounters counters;
 	private final LedgerAccumulator accumulator;
 	private final LedgerAccumulatorVerifier verifier;
@@ -113,7 +110,6 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 		@LastProof LedgerProof initialLedgerState,
 		Comparator<LedgerProof> headerComparator,
 		StateComputer stateComputer,
-		EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
 		LedgerAccumulator accumulator,
 		LedgerAccumulatorVerifier verifier,
 		SystemCounters counters
@@ -121,11 +117,9 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 		this.headerComparator = Objects.requireNonNull(headerComparator);
 		this.stateComputer = Objects.requireNonNull(stateComputer);
-		this.ledgerUpdateDispatcher = Objects.requireNonNull(ledgerUpdateDispatcher);
 		this.counters = Objects.requireNonNull(counters);
 		this.accumulator = Objects.requireNonNull(accumulator);
 		this.verifier = Objects.requireNonNull(verifier);
-
 		this.currentLedgerHeader = initialLedgerState;
 	}
 
@@ -148,8 +142,8 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 	@Override
 	public List<Txn> generateNextTxns(View view, List<PreparedVertex> prepared) {
 		final ImmutableList<PreparedTxn> preparedTxns = prepared.stream()
-			.flatMap(PreparedVertex::successfulCommands)
-			.collect(ImmutableList.toImmutableList());
+				.flatMap(PreparedVertex::successfulCommands)
+				.collect(ImmutableList.toImmutableList());
 		synchronized (lock) {
 			return stateComputer.getNextTxnsFromMempool(preparedTxns);
 		}
@@ -278,9 +272,6 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 			// TODO: move all of the following to post-persist event handling
 			this.currentLedgerHeader = nextHeader;
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentLedgerHeader.getStateVersion());
-
-			LedgerUpdate ledgerUpdate = new LedgerUpdate(txnsAndProof);
-			ledgerUpdateDispatcher.dispatch(ledgerUpdate);
 		}
 	}
 }

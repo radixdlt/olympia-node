@@ -20,6 +20,8 @@ package com.radixdlt.integration.distributed.deterministic;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventProcessorOnDispatch;
+
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -56,5 +58,9 @@ public final class NodeEvents {
 
 	public <T> EventProcessor<T> processor(BFTNode node, Class<T> eventClass) {
 		return t -> processors.get(eventClass).forEach(c -> c.process(node, t));
+	}
+
+	public <T> EventProcessorOnDispatch<T> processorOnDispatch(BFTNode node, Class<T> eventClass) {
+		return new EventProcessorOnDispatch<>(eventClass, processor(node, eventClass));
 	}
 }

@@ -18,6 +18,10 @@
 
 package com.radixdlt.statecomputer.radixengine;
 
+import com.radixdlt.statecomputer.forks.ForkManagerModule;
+import com.radixdlt.statecomputer.forks.MainnetEngineRules;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,7 +38,6 @@ import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -47,9 +50,7 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.BetanetForksModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.statecomputer.transaction.TokenFeeChecker;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LastStoredProof;
@@ -86,8 +87,9 @@ public class TokenFeeTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
-			new BetanetForksModule(),
-			new RadixEngineForksLatestOnlyModule(View.of(100), true),
+			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
+			new ForkManagerModule(),
+			new MainnetForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
@@ -114,7 +116,7 @@ public class TokenFeeTest {
 	@Test
 	public void when_validating_atom_with_particles__result_has_no_error() throws Exception {
 		var account = REAddr.ofPubKeyAccount(ecKeyPair.getPublicKey());
-		var atom = sut.construct(new PayFee(account, TokenFeeChecker.FIXED_FEE))
+		var atom = sut.construct(new PayFee(account, MainnetEngineRules.FIXED_FEE))
 			.mutex(ecKeyPair.getPublicKey(), "test").signAndBuild(ecKeyPair::sign);
 
 		sut.execute(List.of(atom));
@@ -130,7 +132,7 @@ public class TokenFeeTest {
 	@Test
 	public void when_validating_atom_with_fee_and_no_change__result_has_no_error() throws Exception {
 		var account = REAddr.ofPubKeyAccount(ecKeyPair.getPublicKey());
-		var txn = sut.construct(new PayFee(account, TokenFeeChecker.FIXED_FEE))
+		var txn = sut.construct(new PayFee(account, MainnetEngineRules.FIXED_FEE))
 			.signAndBuild(ecKeyPair::sign);
 
 		sut.execute(List.of(txn));

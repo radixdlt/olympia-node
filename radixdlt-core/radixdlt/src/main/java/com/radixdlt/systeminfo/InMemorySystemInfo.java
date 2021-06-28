@@ -21,15 +21,17 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -59,10 +61,11 @@ public final class InMemorySystemInfo {
 		currentView.set(epochView);
 	}
 
-	public EventProcessor<EpochsLedgerUpdate> ledgerUpdateEventProcessor() {
+	public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
 		return update -> {
-			this.ledgerProof.set(update.getBase().getTail());
-			update.getEpochChange().ifPresent(e -> epochsLedgerProof.set(update.getBase().getTail()));
+			this.ledgerProof.set(update.getTail());
+			var epochChange = (Optional<EpochChange>) update.getStateComputerOutput();
+			epochChange.ifPresent(e -> epochsLedgerProof.set(update.getTail()));
 		};
 	}
 

@@ -19,9 +19,9 @@ package com.radixdlt.sync;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
+import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.ledger.LedgerUpdate;
 
 public class MockedCommittedReaderModule extends AbstractModule {
@@ -31,9 +31,12 @@ public class MockedCommittedReaderModule extends AbstractModule {
 		bind(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
 	}
 
+	@Singleton
 	@ProvidesIntoSet
-	@ProcessOnDispatch
-	public EventProcessor<LedgerUpdate> eventProcessor(InMemoryCommittedReader reader) {
-		return reader.updateProcessor();
+	public EventProcessorOnDispatch<?> eventProcessor(InMemoryCommittedReader reader) {
+		return new EventProcessorOnDispatch<>(
+			LedgerUpdate.class,
+			reader.updateProcessor()
+		);
 	}
 }

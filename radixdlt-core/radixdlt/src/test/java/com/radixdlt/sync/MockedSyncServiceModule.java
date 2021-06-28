@@ -27,12 +27,12 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.store.LastEpochProof;
@@ -73,25 +73,27 @@ public class MockedSyncServiceModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(SyncRequestTimeout.class);
 		eventBinder.addBinding().toInstance(LocalSyncRequest.class);
 		eventBinder.addBinding().toInstance(SyncLedgerUpdateTimeout.class);
-		eventBinder.addBinding().toInstance(EpochsLedgerUpdate.class);
 	}
 
+	@Singleton
 	@ProvidesIntoSet
-	@ProcessOnDispatch
-	private EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
-		return update -> {
-			final LedgerProof headerAndProof = update.getTail();
-			long stateVersion = headerAndProof.getAccumulatorState().getStateVersion();
-			long firstVersion = stateVersion - update.getNewTxns().size() + 1;
-			for (int i = 0; i < update.getNewTxns().size(); i++) {
-				sharedCommittedCommands.put(firstVersion + i, update.getNewTxns().get(i));
-			}
+	private EventProcessorOnDispatch<?> ledgerUpdateEventProcessor() {
+		return new EventProcessorOnDispatch<>(
+			LedgerUpdate.class,
+			update -> {
+				final LedgerProof headerAndProof = update.getTail();
+				long stateVersion = headerAndProof.getAccumulatorState().getStateVersion();
+				long firstVersion = stateVersion - update.getNewTxns().size() + 1;
+				for (int i = 0; i < update.getNewTxns().size(); i++) {
+					sharedCommittedCommands.put(firstVersion + i, update.getNewTxns().get(i));
+				}
 
-			if (update.getTail().isEndOfEpoch()) {
-				logger.info("Epoch Proof: " + (update.getTail().getEpoch() + 1));
-				sharedEpochProofs.put(update.getTail().getEpoch() + 1, update.getTail());
+				if (update.getTail().isEndOfEpoch()) {
+					logger.info("Epoch Proof: " + (update.getTail().getEpoch() + 1));
+					sharedEpochProofs.put(update.getTail().getEpoch() + 1, update.getTail());
+				}
 			}
-		};
+		);
 	}
 
 	@ProvidesIntoSet
@@ -155,7 +157,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	private EventProcessorOnRunner<?> epochsLedgerUpdateEventProcessor() {
-		return noOpProcessor(EpochsLedgerUpdate.class);
+		return noOpProcessor(LedgerUpdate.class);
 	}
 
 	@ProvidesIntoSet

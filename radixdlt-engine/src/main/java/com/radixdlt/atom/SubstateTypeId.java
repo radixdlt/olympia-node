@@ -19,28 +19,25 @@
 package com.radixdlt.atom;
 
 public enum SubstateTypeId {
-	UNCLAIMED_READDR((byte) 0),
-	SYSTEM((byte) 1),
-	TOKEN_DEF((byte) 2),
-	TOKENS((byte) 3),
-	PREPARED_STAKE((byte) 4),
-	VALIDATOR((byte) 5),
-	UNIQUE((byte) 6),
-	TOKENS_LOCKED((byte) 7),
-	STAKE_V1((byte) 8),
-	ROUND_DATA((byte) 9),
-	EPOCH_DATA((byte) 10),
-	STAKE_OWNERSHIP((byte) 11),
-	VALIDATOR_EPOCH_DATA((byte) 12),
-	PREPARED_UNSTAKE((byte) 13),
-	EXITTING_STAKE((byte) 14),
-	RAKE_COPY((byte) 15),
-	PREPARED_RAKE_UPDATE((byte) 16),
-	STAKE_V2((byte) 17),
-	NULL_VALIDATOR_UPDATE((byte) 18),
-	PREPARED_VALIDATOR_UPDATE((byte) 19),
-	ALLOW_DELEGATION_FLAG((byte) 20),
-	VALIDATOR_WITH_FORKS((byte) 21);
+	UNCLAIMED_READDR((byte) 0x0),
+	ROUND_DATA((byte) 0x1),
+	EPOCH_DATA((byte) 0x2),
+	TOKEN_DEF((byte) 0x3),
+	TOKENS((byte) 0x4),
+	PREPARED_STAKE((byte) 0x5),
+	STAKE_OWNERSHIP((byte) 0x6),
+	PREPARED_UNSTAKE((byte) 0x7),
+	EXITTING_STAKE((byte) 0x8),
+	VALIDATOR_META_DATA((byte) 0x9),
+	VALIDATOR_STAKE_DATA((byte) 0xa),
+	VALIDATOR_BFT_DATA((byte) 0xb),
+	VALIDATOR_ALLOW_DELEGATION_FLAG((byte) 0xc),
+	VALIDATOR_REGISTERED_FLAG_COPY((byte) 0xd),
+	PREPARED_REGISTERED_FLAG_UPDATE((byte) 0xe),
+	VALIDATOR_RAKE_COPY((byte) 0xf),
+	PREPARED_RAKE_UPDATE((byte) 0x10),
+	VALIDATOR_OWNER_COPY((byte) 0x11),
+	PREPARED_VALIDATOR_OWNER_UPDATE((byte) 0x12);
 
 	private final byte id;
 

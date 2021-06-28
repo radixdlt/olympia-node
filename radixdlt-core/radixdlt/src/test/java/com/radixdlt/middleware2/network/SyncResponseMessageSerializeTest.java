@@ -31,7 +31,7 @@ public class SyncResponseMessageSerializeTest extends SerializeMessageObject<Syn
 
 	private static SyncResponseMessage get() {
 		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-		return new SyncResponseMessage(1234, new DtoTxnsAndProof(
+		return new SyncResponseMessage(new DtoTxnsAndProof(
 			ImmutableList.of(),
 			LedgerProof.genesis(accumulatorState, null, 0).toDto(),
 			LedgerProof.genesis(accumulatorState, null, 0).toDto()
