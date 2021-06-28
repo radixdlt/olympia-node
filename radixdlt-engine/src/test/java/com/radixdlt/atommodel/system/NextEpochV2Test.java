@@ -24,8 +24,8 @@ import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.SystemNextEpoch;
-import com.radixdlt.atom.actions.SystemNextView;
+import com.radixdlt.atom.actions.NextEpoch;
+import com.radixdlt.atom.actions.NextRound;
 import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.atommodel.system.construction.NextEpochConstructorV3;
 import com.radixdlt.atommodel.system.construction.NextViewConstructorV3;
@@ -76,8 +76,8 @@ public class NextEpochV2Test {
 					new ValidatorRegisterConstraintScrypt()
 				),
 				ActionConstructors.newBuilder()
-					.put(SystemNextView.class, new NextViewConstructorV3())
-					.put(SystemNextEpoch.class, new NextEpochConstructorV3())
+					.put(NextRound.class, new NextViewConstructorV3())
+					.put(NextEpoch.class, new NextEpochConstructorV3())
 					.put(CreateSystem.class, new CreateSystemConstructorV2())
 					.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 					.put(MintToken.class, new MintTokenConstructor())
@@ -123,7 +123,7 @@ public class NextEpochV2Test {
 		var accountAddr = REAddr.ofPubKeyAccount(key);
 		var start = sut.construct(
 			TxnConstructionRequest.create()
-				.action(new CreateSystem())
+				.action(new CreateSystem(0))
 				.action(new CreateMutableToken(null, "xrd", "xrd", "", "", ""))
 				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, ValidatorStakeData.MINIMUM_STAKE))
 				.action(new StakeTokens(accountAddr, key, ValidatorStakeData.MINIMUM_STAKE))
@@ -131,7 +131,7 @@ public class NextEpochV2Test {
 		sut.execute(List.of(start), null, PermissionLevel.SYSTEM);
 
 		var request = TxnConstructionRequest.create()
-			.action(new SystemNextEpoch(u -> List.of(key), 1));
+			.action(new NextEpoch(u -> List.of(key), 1));
 
 		// Act
 		var txn = sut.construct(request)

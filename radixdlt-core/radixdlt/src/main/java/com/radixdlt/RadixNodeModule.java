@@ -29,11 +29,9 @@ import com.radixdlt.api.qualifier.Endpoints;
 import com.radixdlt.api.service.RriParser;
 import com.radixdlt.application.NodeApplicationModule;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
@@ -42,7 +40,6 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
-import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.network.hostip.HostIpModule;
 import com.radixdlt.network.messaging.MessageCentralModule;
 import com.radixdlt.network.messaging.MessagingModule;
@@ -66,8 +63,12 @@ import com.radixdlt.universe.Network;
 import com.radixdlt.utils.Bytes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.radix.universe.system.LocalSystem;
+import org.apache.logging.log4j.util.Strings;
+import org.json.JSONObject;
+import org.radix.utils.IOUtils;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.List;
 
 import static com.radixdlt.EndpointConfig.*;
@@ -93,21 +94,53 @@ public final class RadixNodeModule extends AbstractModule {
 	@Provides
 	@Genesis
 	@Singleton
-	VerifiedTxnsAndProof genesis(@NetworkId int networkId, GenesisBuilder genesisBuilder) throws RadixEngineException {
-		var genesisTxnHex = properties.get("network.genesis_txn", "");
-		var network = Network.ofId(networkId);
-		if (!genesisTxnHex.isEmpty() && network.map(Network::genesisTxn).isPresent()) {
-			throw new IllegalStateException("Cannot provide genesis file for well-known networks.");
-		}
+	VerifiedTxnsAndProof genesis(@Genesis Txn genesis, GenesisBuilder genesisBuilder) throws RadixEngineException {
+		var proof = genesisBuilder.generateGenesisProof(genesis);
+		return VerifiedTxnsAndProof.create(List.of(genesis), proof);
+	}
 
-		var genesisTxn = Txn.create(Bytes.fromHexString(genesisTxnHex));
-		var proof = genesisBuilder.generateGenesisProof(genesisTxn);
-		return VerifiedTxnsAndProof.create(List.of(genesisTxn), proof);
+	private Txn loadGenesisFile(String genesisFile) {
+		try (var genesisJsonString = new FileInputStream(genesisFile)) {
+			var genesisJson = new JSONObject(IOUtils.toString(genesisJsonString));
+			var genesisHex = genesisJson.getString("genesis");
+			return Txn.create(Bytes.fromHexString(genesisHex));
+		} catch (IOException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private Txn loadGenesis(int networkId) {
+		var genesisTxnHex = properties.get("network.genesis_txn");
+		var genesisFile = properties.get("network.genesis_file");
+		var network = Network.ofId(networkId);
+		var networkGenesis = network.flatMap(Network::genesisTxn);
+		if (networkGenesis.isPresent()) {
+			if (Strings.isNotBlank(genesisTxnHex)) {
+				throw new IllegalStateException("Cannot provide genesis txn for well-known network " + network.orElseThrow());
+			}
+
+			if (Strings.isNotBlank(genesisFile)) {
+				throw new IllegalStateException("Cannot provide genesis file for well-known network " + network.orElseThrow());
+			}
+			return networkGenesis.get();
+		} else {
+			var genesisCount = 0;
+			genesisCount += Strings.isNotBlank(genesisTxnHex) ? 1 : 0;
+			genesisCount += Strings.isNotBlank(genesisFile) ? 1 : 0;
+			if (genesisCount > 1) {
+				throw new IllegalStateException("Multiple genesis txn specified.");
+			}
+			if (genesisCount == 0) {
+				throw new IllegalStateException("No genesis txn specified.");
+			}
+			return Strings.isNotBlank(genesisTxnHex) ? Txn.create(Bytes.fromHexString(genesisTxnHex)) : loadGenesisFile(genesisFile);
+		}
 	}
 
 	@Override
 	protected void configure() {
 		bindConstant().annotatedWith(NetworkId.class).to(networkId);
+		bind(Txn.class).annotatedWith(Genesis.class).toInstance(loadGenesis(networkId));
 		bind(RuntimeProperties.class).toInstance(properties);
 
 		// Consensus configuration
@@ -224,11 +257,5 @@ public final class RadixNodeModule extends AbstractModule {
 
 	private boolean hasActiveEndpoints(List<EndpointConfig> archiveEndpoints, List<EndpointConfig> nodeEndpoints) {
 		return !archiveEndpoints.isEmpty() || !nodeEndpoints.isEmpty();
-	}
-
-	@Provides
-	@Singleton
-	LocalSystem localSystem(@Self BFTNode self, InfoSupplier infoSupplier) {
-		return LocalSystem.create(self, infoSupplier);
 	}
 }

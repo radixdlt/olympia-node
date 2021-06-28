@@ -32,8 +32,8 @@ import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.SplitToken;
 import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.SystemNextEpoch;
-import com.radixdlt.atom.actions.SystemNextView;
+import com.radixdlt.atom.actions.NextEpoch;
+import com.radixdlt.atom.actions.NextRound;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeOwnership;
@@ -87,7 +87,7 @@ public final class MainnetForkRulesModule extends AbstractModule {
 
 	@ProvidesIntoMap
 	@StringMapKey("mainnet")
-	Function<RERulesConfig, RERules> betanetV4() {
+	Function<RERulesConfig, RERules> mainnet() {
 		return config -> {
 			var maxRounds = config.getMaxRounds();
 			var fees = config.includeFees();
@@ -116,8 +116,8 @@ public final class MainnetForkRulesModule extends AbstractModule {
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(DeprecatedUnstakeTokens.class, new DeprecatedUnstakeTokensConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
-				.put(SystemNextEpoch.class, new NextEpochConstructorV3())
-				.put(SystemNextView.class, new NextViewConstructorV3())
+				.put(NextEpoch.class, new NextEpochConstructorV3())
+				.put(NextRound.class, new NextViewConstructorV3())
 				.put(RegisterValidator.class, new RegisterValidatorConstructor())
 				.put(SplitToken.class, new SplitTokenConstructor())
 				.put(StakeTokens.class, new StakeTokensConstructorV3())

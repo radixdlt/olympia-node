@@ -21,23 +21,22 @@ package com.radixdlt.atommodel.system.construction;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.SystemNextView;
+import com.radixdlt.atom.actions.NextRound;
 import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.ValidatorBFTData;
-import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.KeyComparator;
 
 import java.util.Optional;
 import java.util.TreeMap;
 
-public class NextViewConstructorV3 implements ActionConstructor<SystemNextView> {
+public class NextViewConstructorV3 implements ActionConstructor<NextRound> {
 	@Override
-	public void construct(SystemNextView action, TxBuilder txBuilder) throws TxBuilderException {
+	public void construct(NextRound action, TxBuilder txBuilder) throws TxBuilderException {
 		var prevRound = txBuilder.down(
 			RoundData.class,
 			p -> true,
-			Optional.of(SubstateWithArg.noArg(new RoundData(0, 0))),
+			Optional.empty(),
 			"No round state available."
 		);
 

@@ -103,6 +103,17 @@ public final class REFieldSerialization {
 		return buf.getInt();
 	}
 
+	public static void deserializeReservedByte(ByteBuffer buf) throws DeserializeException {
+		var b = buf.get();
+		if (b != 0) {
+			throw new DeserializeException("Reserved byte must be 0");
+		}
+	}
+
+	public static void serializeReservedByte(ByteBuffer buf) {
+		buf.put((byte) 0);
+	}
+
 	public static Long deserializeNonNegativeLong(ByteBuffer buf) throws DeserializeException {
 		var l = buf.getLong();
 		if (l < 0) {

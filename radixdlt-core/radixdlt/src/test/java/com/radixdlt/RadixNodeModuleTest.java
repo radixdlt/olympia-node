@@ -17,6 +17,7 @@
 
 package com.radixdlt;
 
+import com.radixdlt.qualifier.NetworkId;
 import org.assertj.core.util.Files;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -29,16 +30,15 @@ import com.radixdlt.properties.RuntimeProperties;
 
 import java.io.File;
 
-import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyDouble;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class RadixNodeModuleTest {
-	private RadixNodeModule radixNodeModule;
+	@NetworkId
+	private int networkId;
 
 	@BeforeClass
 	public static void beforeClass() {
@@ -48,11 +48,9 @@ public class RadixNodeModuleTest {
 	@Test
 	public void testInjectorNotNullToken() {
 		final var properties = createDefaultProperties();
-		when(properties.get(eq("consensus.pacemaker_rate"), anyDouble())).thenReturn(2.0);
-		when(properties.get(eq("consensus.pacemaker_rate"), anyDouble())).thenReturn(2.0);
-		when(properties.get(eq("network.id"))).thenReturn("1");
-		this.radixNodeModule = new RadixNodeModule(properties);
-		assertNotNull(Guice.createInjector(this.radixNodeModule));
+		when(properties.get(eq("network.id"))).thenReturn("99");
+		when(properties.get(eq("network.genesis_txn"))).thenReturn("00");
+		Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this);
 	}
 
 	private RuntimeProperties createDefaultProperties() {

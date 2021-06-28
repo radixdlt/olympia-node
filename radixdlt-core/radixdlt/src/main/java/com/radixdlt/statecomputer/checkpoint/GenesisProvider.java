@@ -28,7 +28,7 @@ import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
-import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -44,20 +44,23 @@ import java.util.List;
  */
 public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 	private final ImmutableList<TokenIssuance> tokenIssuances;
-	private final ImmutableList<ECKeyPair> validatorKeys;
+	private final ImmutableList<ECPublicKey> validatorKeys;
 	private final ImmutableList<StakeDelegation> stakeDelegations;
 	private final List<TxAction> additionalActions;
 	private final GenesisBuilder genesisBuilder;
+	private final long timestamp;
 
 	@Inject
 	public GenesisProvider(
 		GenesisBuilder genesisBuilder,
+		@Genesis long timestamp,
 		@Genesis ImmutableList<TokenIssuance> tokenIssuances,
 		@Genesis ImmutableList<StakeDelegation> stakeDelegations,
-		@Genesis ImmutableList<ECKeyPair> validatorKeys, // TODO: Remove private keys, replace with public keys
+		@Genesis ImmutableList<ECPublicKey> validatorKeys, // TODO: Remove private keys, replace with public keys
 		@Genesis List<TxAction> additionalActions
 	) {
 		this.genesisBuilder = genesisBuilder;
+		this.timestamp = timestamp;
 		this.tokenIssuances = tokenIssuances;
 		this.validatorKeys = validatorKeys;
 		this.stakeDelegations = stakeDelegations;
@@ -80,8 +83,8 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 
 			// Initial validator registration
 			for (var validatorKey : validatorKeys) {
-				actions.add(new RegisterValidator(validatorKey.getPublicKey()));
-				actions.add(new UpdateAllowDelegationFlag(validatorKey.getPublicKey(), true));
+				actions.add(new RegisterValidator(validatorKey));
+				actions.add(new UpdateAllowDelegationFlag(validatorKey, true));
 			}
 
 			// Initial stakes
@@ -91,7 +94,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 			}
 
 			actions.addAll(additionalActions);
-			var genesis = genesisBuilder.build(actions);
+			var genesis = genesisBuilder.build(timestamp, actions);
 			var proof = genesisBuilder.generateGenesisProof(genesis);
 			return VerifiedTxnsAndProof.create(List.of(genesis), proof);
 		} catch (TxBuilderException | RadixEngineException e) {

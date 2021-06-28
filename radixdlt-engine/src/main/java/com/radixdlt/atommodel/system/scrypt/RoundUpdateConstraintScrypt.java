@@ -76,15 +76,16 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 				RoundData.class,
 				SubstateTypeId.ROUND_DATA.id(),
 				buf -> {
+					REFieldSerialization.deserializeReservedByte(buf);
 					var view = REFieldSerialization.deserializeNonNegativeLong(buf);
 					var timestamp = REFieldSerialization.deserializeNonNegativeLong(buf);
 					return new RoundData(view, timestamp);
 				},
 				(s, buf) -> {
+					REFieldSerialization.serializeReservedByte(buf);
 					buf.putLong(s.getView());
 					buf.putLong(s.getTimestamp());
-				},
-				p -> p.getView() == 0 && p.getTimestamp() == 0
+				}
 			)
 		);
 		os.substate(
@@ -92,12 +93,14 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 				ValidatorBFTData.class,
 				SubstateTypeId.VALIDATOR_BFT_DATA.id(),
 				buf -> {
+					REFieldSerialization.deserializeReservedByte(buf);
 					var key = REFieldSerialization.deserializeKey(buf);
 					var proposalsCompleted = REFieldSerialization.deserializeNonNegativeLong(buf);
 					var proposalsMissed = REFieldSerialization.deserializeNonNegativeLong(buf);
 					return new ValidatorBFTData(key, proposalsCompleted, proposalsMissed);
 				},
 				(s, buf) -> {
+					REFieldSerialization.serializeReservedByte(buf);
 					REFieldSerialization.serializeKey(buf, s.validatorKey());
 					buf.putLong(s.proposalsCompleted());
 					buf.putLong(s.proposalsMissed());

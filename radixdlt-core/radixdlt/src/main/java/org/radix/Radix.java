@@ -59,10 +59,6 @@ public final class Radix {
 	private static final String SYSTEM_VERSION_COMMIT;
 	private static final Map<String, Map<String, Object>> SYSTEM_VERSION_INFO;
 
-	public static final int PROTOCOL_VERSION = 100;
-
-	public static final int AGENT_VERSION = 2710000;
-	public static final String AGENT = "/Radix:/" + AGENT_VERSION;
 	public static final String SYSTEM_VERSION_KEY = "system_version";
 	public static final String VERSION_STRING_KEY = "version_string";
 
@@ -88,9 +84,6 @@ public final class Radix {
 
 					map.put(mapKey, p.getProperty(key, defaultValue));
 				}
-
-				map.put("agent_version", AGENT_VERSION);
-				map.put("protocol_version", PROTOCOL_VERSION);
 			}
 		} catch (IOException e) {
 			// Ignore exception

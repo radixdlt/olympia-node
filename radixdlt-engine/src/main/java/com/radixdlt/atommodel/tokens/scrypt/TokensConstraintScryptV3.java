@@ -55,7 +55,6 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				TokenResource.class,
 				SubstateTypeId.TOKEN_DEF.id(),
 				buf -> {
-					var rri = REFieldSerialization.deserializeREAddr(buf);
 					var type = buf.get();
 					final UInt256 supply;
 					final ECPublicKey minter;
@@ -71,6 +70,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 					} else {
 						throw new DeserializeException("Unknown token def type " + type);
 					}
+					var rri = REFieldSerialization.deserializeREAddr(buf);
 					var name = REFieldSerialization.deserializeString(buf);
 					var description = REFieldSerialization.deserializeString(buf);
 					var url = REFieldSerialization.deserializeUrl(buf);
@@ -78,7 +78,6 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 					return new TokenResource(rri, name, description, iconUrl, url, supply, minter);
 				},
 				(s, buf) -> {
-					REFieldSerialization.serializeREAddr(buf, s.getAddr());
 					s.getSupply().ifPresentOrElse(
 						i -> {
 							buf.put((byte) 2);
@@ -94,6 +93,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 							);
 						}
 					);
+					REFieldSerialization.serializeREAddr(buf, s.getAddr());
 					REFieldSerialization.serializeString(buf, s.getName());
 					REFieldSerialization.serializeString(buf, s.getDescription());
 					REFieldSerialization.serializeString(buf, s.getUrl());
@@ -107,6 +107,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				TokensInAccount.class,
 				SubstateTypeId.TOKENS.id(),
 				buf -> {
+					REFieldSerialization.deserializeReservedByte(buf);
 					var rri = REFieldSerialization.deserializeREAddr(buf);
 					var holdingAddr = REFieldSerialization.deserializeREAddr(buf);
 					if (!holdingAddr.isAccount()) {
@@ -116,6 +117,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 					return new TokensInAccount(holdingAddr, amount, rri);
 				},
 				(s, buf) -> {
+					REFieldSerialization.serializeReservedByte(buf);
 					REFieldSerialization.serializeREAddr(buf, s.getResourceAddr());
 					REFieldSerialization.serializeREAddr(buf, s.getHoldingAddr());
 					buf.put(s.getAmount().toByteArray());

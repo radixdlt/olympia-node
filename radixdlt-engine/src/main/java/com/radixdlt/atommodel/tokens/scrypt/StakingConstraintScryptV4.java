@@ -54,12 +54,14 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 				PreparedStake.class,
 				SubstateTypeId.PREPARED_STAKE.id(),
 				buf -> {
+					REFieldSerialization.deserializeReservedByte(buf);
 					var owner = REFieldSerialization.deserializeAccountREAddr(buf);
 					var delegate = REFieldSerialization.deserializeKey(buf);
 					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					return new PreparedStake(amount, owner, delegate);
 				},
 				(s, buf) -> {
+					REFieldSerialization.serializeReservedByte(buf);
 					REFieldSerialization.serializeREAddr(buf, s.getOwner());
 					REFieldSerialization.serializeKey(buf, s.getDelegateKey());
 					buf.put(s.getAmount().toByteArray());
@@ -72,12 +74,14 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 				PreparedUnstakeOwnership.class,
 				SubstateTypeId.PREPARED_UNSTAKE.id(),
 				buf -> {
+					REFieldSerialization.deserializeReservedByte(buf);
 					var delegate = REFieldSerialization.deserializeKey(buf);
 					var owner = REFieldSerialization.deserializeAccountREAddr(buf);
 					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					return new PreparedUnstakeOwnership(delegate, owner, amount);
 				},
 				(s, buf) -> {
+					REFieldSerialization.serializeReservedByte(buf);
 					REFieldSerialization.serializeKey(buf, s.getDelegateKey());
 					REFieldSerialization.serializeREAddr(buf, s.getOwner());
 					buf.put(s.getAmount().toByteArray());

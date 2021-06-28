@@ -189,7 +189,6 @@ tasks.withType(Test){
 tasks.withType(Tar) {
     compression = Compression.GZIP
 }
-def nodeNames = System.getenv('NODE_NAMES') != null ? System.getenv('NODE_NAMES') :''
 task generateDevUniverse(type: Exec) {
     dependsOn compileJava
 
@@ -197,62 +196,11 @@ task generateDevUniverse(type: Exec) {
     //dependsOn tasks.withType(Jar)
     dependsOn ':radixdlt-java-common:jar'
     dependsOn ':radixdlt-engine:jar'
-    environment "NODE_NAME_PREFIX",nodeNamePrefix
-    environment "NODE_NAMES",nodeNames
     group = "Execution"
     description = "Generate development universe"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
         "org.radix.GenerateUniverses",
-        "--network-id=99",
-        "--validator-count=${validators}",
-        "--include-private-keys",
-        "--no-json-output",
-        "--issue-default-tokens",
-        "--helm-configuration=${helmConfig}",
-        "--helm-output-directory=${helmConfigOut}",
-        "--enable-aws-secrets=${enableAWSSecret}",
-        "--recreate-aws-secrets=${recreateAWSSecret}"
-}
-
-task generateProdUniverse(type: Exec) {
-    dependsOn compileJava
-
-    //Alternative solution (slower, but does not require manual maintenance):
-    //dependsOn tasks.withType(Jar)
-    dependsOn ':radixdlt-java-common:jar'
-    dependsOn ':radixdlt-engine:jar'
-    environment "NODE_NAME_PREFIX",nodeNamePrefix
-    environment "NODE_NAMES",nodeNames
-    group = "Execution"
-    description = "Generate production universe"
-    commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
-            "org.radix.GenerateUniverses",
-            "--universe-type=production",
-            "--include-private-keys",
-            "--no-json-output",
-            "--pubkey-issuance=${pubKey}",
-            "--amount-issuance=${tokensToIssue}",
-            "--enable-aws-secrets=${enableAWSSecret}",
-            "--recreate-aws-secrets=${recreateAWSSecret}",
-            "--network-name=${networkName}"
-}
-
-task generateJsonUniverse(type: Exec) {
-    dependsOn compileJava
-
-    //Alternative solution (slower, but does not require manual maintenance):
-    //dependsOn tasks.withType(Jar)
-    dependsOn ':radixdlt-java-common:jar'
-    dependsOn ':radixdlt-engine:jar'
-
-    group = "Execution"
-    description = "Generate development universe"
-    commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
-        "org.radix.GenerateUniverses",
-        "--universe-type=development",
-        "--validator-count=${validators}",
-        "--no-cbor-output",
-        "--issue-default-tokens"
+        "--validator-count=${validators}"
 }
 
 task createGenerateUniversesScripts(type: CreateStartScripts) {
