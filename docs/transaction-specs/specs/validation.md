@@ -36,6 +36,10 @@ If no violation is found, a list of parsed instructions, an optional message dat
    * The `class_id` operand must be one of the supported substate type.
 - `DOWNINDEX`:
    * The `prefix` length should be less than 10 and the first byte must be a valid `class_id`.
+- `SYSCALL`:
+   * The `calldata` operand must be one of the following:
+      - `0x00 + u256`: Deposit into the fee reserve
+      - `0x01 + u256`: Withdraw from the fee reserve
 
 #### Substate Static Check
 
@@ -238,22 +242,33 @@ Constraint machine executes transaction instructions sequentially, based on the 
    * Update `end_expected` to `false`
 1. Jump to step 1
 
-### Transaction Fee
+### SYSCALL and Transaction Fee
 
-Currently, there is a minimum transaction fee of `0.1 XRD`.
+At Radix, transaction fees are charged based on transaction size (bytes). The price is `0.0002XRD per byte`.
 
-Transaction fee is paid by spending tokens and making a system call. Any subsequent instructions (non-`DOWN`) will result in a failure if no transaction fee has been paid.
+The way to pay transaction fee is through spending XRD tokens and making system call (`SYSCALL` instructions).
 
-In addition, the transaction fee `SYSCALL` can occur **once only**.
+Currently, there are two system functions:
+- `FEE_RESERVE_PUT` - Deposit a fee into the fee reserve managed by fee checker (at most once)
+- `FEE_RESERVE_TAKE` - Withdraw some amount from the fee reserve
 
-Effectively, for non-`DOWN` instructions, fee payment (`SYSCALL`) has to be the first instruction after `HEADER` flags.
+The billing system works as follows:
+- Before a transaction gets executed, it's granted a loan (`200 XRD`) from the system and the loan goes directly into the fee reserve;
+- Then, the transaction fee (based on size) is immediately charged from the reserve (if not covered, exception is thrown);
+- After that, XRDs are deposited into the reserve through a combination of `HEADER`, `SYSCALL`, `DOWN` instructions;
+- At the first non-`HEADER`/`SYSCALL`/`DOWN` instruction or transaction end, the system takes back the loan from the reserve (if not covered, exception is thrown).
+
+As of now, the cost of each instruction is `0` but may be billed (if not covered, exception is thrown) in the future.
 
 Example transaction structure:
 ```
 HEADER(0, 1)
-DOWN <some_xrd_substate>
-SYSCALL <0x00 (u8) + fee (u256)>
+DOWN <xrd_substate_id>
+SYSCALL <FEE_RESERVE_PUT (0x00) + amount (u256)>
 UP <xrd_remainder>
 END
-<remaining instructions>
+...
+SYSCALL <FEE_RESERVE_TAKE (0x01) + amount (u256)>
+END
+SIG <signature>
 ```
