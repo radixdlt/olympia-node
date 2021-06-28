@@ -85,6 +85,10 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		);
 	}
 
+	public UInt256 getTotalStake() {
+		return totalStake;
+	}
+
 	public boolean isRegistered() {
 		return isRegistered;
 	}
@@ -130,15 +134,6 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		);
 	}
 
-	@Override
-	public UInt256 getAmount() {
-		return this.totalStake;
-	}
-
-	@Override
-	public Bucket bucket() {
-		return new StakeBucket(validatorKey);
-	}
 
 	public ValidatorStakeData addEmission(UInt256 amount) {
 		return new ValidatorStakeData(
@@ -151,6 +146,13 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		);
 	}
 
+	private static UInt256 toSafeLow(UInt384 i) {
+		if (!i.getHigh().isZero()) {
+			throw new IllegalStateException("Unexpected overflow occurred " + i);
+		}
+		return i.getLow();
+	}
+
 	public Pair<ValidatorStakeData, StakeOwnership> stake(REAddr owner, UInt256 stake) throws ProcedureException {
 		if (totalStake.isZero()) {
 			var nextValidatorStake = new ValidatorStakeData(validatorKey, stake, stake, rakePercentage, ownerAddr, isRegistered);
@@ -159,10 +161,7 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		}
 
 		var ownership384 = UInt384.from(totalOwnership).multiply(stake).divide(totalStake);
-		if (ownership384.isHighBitSet()) {
-			throw new IllegalStateException("Overflow");
-		}
-		var ownershipAmt = ownership384.getLow();
+		var ownershipAmt = toSafeLow(ownership384);
 		var stakeOwnership = new StakeOwnership(validatorKey, owner, ownershipAmt);
 		var nextValidatorStake = new ValidatorStakeData(
 			validatorKey,
@@ -181,10 +180,7 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		}
 
 		var unstaked384 = UInt384.from(totalStake).multiply(unstakeOwnership).divide(totalOwnership);
-		if (unstaked384.isHighBitSet()) {
-			throw new IllegalStateException("Overflow");
-		}
-		var unstaked = unstaked384.getLow();
+		var unstaked = toSafeLow(unstaked384);
 		var nextValidatorStake = new ValidatorStakeData(
 			validatorKey,
 			totalStake.subtract(unstaked),
@@ -201,6 +197,10 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		return validatorKey;
 	}
 
+	public UInt256 getTotalOwnership() {
+		return this.totalOwnership;
+	}
+
 	@Override
 	public String toString() {
 		return String.format("%s{stake=%s ownership=%s rake=%s owner=%s}",
@@ -212,8 +212,14 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		);
 	}
 
-	public UInt256 getTotalOwnership() {
-		return this.totalOwnership;
+	@Override
+	public UInt256 getAmount() {
+		return this.totalStake;
+	}
+
+	@Override
+	public Bucket bucket() {
+		return new StakeBucket(validatorKey);
 	}
 
 	@Override

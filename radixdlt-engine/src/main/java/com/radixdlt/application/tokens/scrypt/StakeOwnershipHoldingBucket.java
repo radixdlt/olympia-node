@@ -20,18 +20,14 @@ package com.radixdlt.application.tokens.scrypt;
 
 import com.radixdlt.application.system.state.StakeOwnership;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
-import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.exceptions.MismatchException;
 import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.constraintmachine.ImmutableAddrs;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
-
-import java.util.Objects;
 
 public final class StakeOwnershipHoldingBucket implements ReducerState {
 	private final ECPublicKey delegate;
