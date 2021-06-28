@@ -9,6 +9,7 @@ For transaction parsing, please check [this doc](./parsing.md).
 
 ## Transaction Limit
 
+- The maximum number of signatures should be less than `50` per round proposal
 - The maximum transaction size is `1024 * 1024` bytes.
 
 ## Stateless Validation
@@ -114,6 +115,11 @@ Validation state is the internal state of the constraint machine, which includes
 | `end_expected`                | A flag indicates if an `END` instruction is expected                                  |
 | `local_up_substates`          | A map of substates created locally, keyed off the substate index                      |
 | `remote_down_substates`       | A set of substate IDs that are spun down remotely                                     |
+| `meters`                      | Instruction metering handlers                                                         |
+
+Currently, we have two instruction meters:
+- Fee checker
+- Max signatures per round checker
 
 #### Transition Procedure
 
@@ -199,6 +205,8 @@ Constraint machine executes transaction instructions sequentially, based on the 
 1. If `end_expected == true`
    * If `current_instruction != END`
       * Abort
+1. Check if this instruction is allowed by the meters
+   * If not, abort
 1. If the current instruction is `SYSCALL`
    * Look up transition procedure with procedure key and abort if not found
    * Verify the required permission level
