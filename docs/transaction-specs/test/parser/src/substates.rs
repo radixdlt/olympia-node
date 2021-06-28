@@ -36,16 +36,16 @@ pub struct TokenDefinition {
 #[derive(Debug)]
 pub struct Tokens {
     pub reserved: u8,
-    pub resource: Address,
     pub owner: Address,
+    pub resource: Address,
     pub amount: U256,
 }
 
 #[derive(Debug)]
 pub struct PreparedStake {
     pub reserved: u8,
-    pub owner: Address,
     pub validator: PublicKey,
+    pub owner: Address,
     pub amount: U256,
 }
 

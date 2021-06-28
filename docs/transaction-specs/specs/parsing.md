@@ -168,8 +168,8 @@ Substates are serialized and deserialized based on the following protocol:
 | **Name**   | **Type**  | **Description**      |
 |------------|-----------|----------------------|
 | `reserved` | `u8`      | Reserved, always `0` |
-| `resource` | `address` | The resource address |
 | `owner`    | `address` | The owner address    |
+| `resource` | `address` | The resource address |
 | `amount`   | `u256`    | The amount           |
 
 #### `PREPARED_STAKE` (`0x05`)
@@ -177,8 +177,8 @@ Substates are serialized and deserialized based on the following protocol:
 | **Name**    | **Type**     | **Description**          |
 |-------------|--------------|--------------------------|
 | `reserved`  | `u8`         | Reserved, always `0`     |
-| `owner`     | `address`    | The owner address        |
 | `validator` | `public_key` | The validator public key |
+| `owner`     | `address`    | The owner address        |
 | `amount`    | `u256`       | The stake amount         |
 
 #### `STAKE_OWNERSHIP` (`0x06`)
