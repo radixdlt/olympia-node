@@ -27,21 +27,33 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
-public final class UpdatingValidatorStakeData {
+public final class ValidatorScratchPad {
+	private final ECPublicKey validatorKey;
 	private UInt256 totalStake;
 	private UInt256 totalOwnership;
 	private int rakePercentage;
 	private REAddr ownerAddr;
 	private boolean isRegistered;
-	private ECPublicKey validatorKey;
 
-	public UpdatingValidatorStakeData(ValidatorStakeData validatorStakeData) {
+	public ValidatorScratchPad(ValidatorStakeData validatorStakeData) {
 		this.totalStake = validatorStakeData.getTotalStake();
 		this.totalOwnership = validatorStakeData.getTotalOwnership();
 		this.rakePercentage = validatorStakeData.getRakePercentage();
 		this.ownerAddr = validatorStakeData.getOwnerAddr();
 		this.isRegistered = validatorStakeData.isRegistered();
 		this.validatorKey = validatorStakeData.getValidatorKey();
+	}
+
+	public ECPublicKey getValidatorKey() {
+		return validatorKey;
+	}
+
+	public REAddr getOwnerAddr() {
+		return ownerAddr;
+	}
+
+	public int getRakePercentage() {
+		return rakePercentage;
 	}
 
 	public void setRegistered(boolean isRegistered) {

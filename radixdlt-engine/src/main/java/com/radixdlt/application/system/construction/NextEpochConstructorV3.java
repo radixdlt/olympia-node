@@ -18,7 +18,7 @@
 
 package com.radixdlt.application.system.construction;
 
-import com.radixdlt.application.system.scrypt.UpdatingValidatorStakeData;
+import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
@@ -76,10 +76,10 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		this.minimumCompletedProposalsPercentage = minimumCompletedProposalsPercentage;
 	}
 
-	private static UpdatingValidatorStakeData loadValidatorStakeData(
+	private static ValidatorScratchPad loadValidatorStakeData(
 		TxBuilder txBuilder,
 		ECPublicKey k,
-		TreeMap<ECPublicKey, UpdatingValidatorStakeData> validatorsToUpdate
+		TreeMap<ECPublicKey, ValidatorScratchPad> validatorsToUpdate
 	) throws TxBuilderException {
 		if (!validatorsToUpdate.containsKey(k)) {
 			var validatorData = txBuilder.down(
@@ -88,16 +88,16 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 				Optional.of(SubstateWithArg.noArg(ValidatorStakeData.createVirtual(k))),
 				() -> new TxBuilderException("Validator not found")
 			);
-			validatorsToUpdate.put(k, new UpdatingValidatorStakeData(validatorData));
+			validatorsToUpdate.put(k, new ValidatorScratchPad(validatorData));
 		}
 		return validatorsToUpdate.get(k);
 	}
 
 	private static <T extends ValidatorData, U extends ValidatorData> void prepare(
 		TxBuilder txBuilder,
-		TreeMap<ECPublicKey, UpdatingValidatorStakeData> validatorsToUpdate,
+		TreeMap<ECPublicKey, ValidatorScratchPad> validatorsToUpdate,
 		Class<T> preparedClass,
-		BiConsumer<UpdatingValidatorStakeData, T> updater,
+		BiConsumer<ValidatorScratchPad, T> updater,
 		Function<T, U> copy
 	) throws TxBuilderException {
 		var preparing = new TreeMap<ECPublicKey, T>(KeyComparator.instance());
@@ -145,7 +145,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 			txBuilder.up(e.unlock());
 		}
 
-		var validatorsToUpdate = new TreeMap<ECPublicKey, UpdatingValidatorStakeData>(KeyComparator.instance());
+		var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorScratchPad>(KeyComparator.instance());
 		var validatorBFTData = txBuilder.shutdownAll(ValidatorBFTData.class, i -> {
 			final TreeMap<ECPublicKey, ValidatorBFTData> proposalsCompleted = new TreeMap<>(KeyComparator.instance());
 			i.forEachRemaining(e -> {
@@ -174,11 +174,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 				continue;
 			}
 
-			var validatorStakeData = txBuilder.down(
-				ValidatorStakeData.class,
-				s -> s.getValidatorKey().equals(k),
-				() -> new TxBuilderException("Validator not found")
-			);
+			var validatorStakeData = loadValidatorStakeData(txBuilder, k, validatorsToUpdate);
 			int rakePercentage = validatorStakeData.getRakePercentage();
 			final UInt256 rakedEmissions;
 			if (rakePercentage != 0) {
@@ -193,9 +189,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 			} else {
 				rakedEmissions = nodeRewards;
 			}
-			var updating = new UpdatingValidatorStakeData(validatorStakeData);
-			updating.addEmission(rakedEmissions);
-			validatorsToUpdate.put(k, updating);
+			validatorStakeData.addEmission(rakedEmissions);
 		}
 
 		var allPreparedUnstake = txBuilder.shutdownAll(PreparedUnstakeOwnership.class, i -> {
@@ -293,7 +287,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 
 		validatorsToUpdate.forEach((k, v) -> txBuilder.up(v.toSubstate()));
 		var validatorKeys = action.validators(
-			validatorsToUpdate.values().stream().map(UpdatingValidatorStakeData::toSubstate).collect(Collectors.toList())
+			validatorsToUpdate.values().stream().map(ValidatorScratchPad::toSubstate).collect(Collectors.toList())
 		);
 		validatorKeys.forEach(k -> txBuilder.up(new ValidatorBFTData(k, 0, 0)));
 

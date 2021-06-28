@@ -20,13 +20,9 @@ package com.radixdlt.application.system.state;
 
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.Bucket;
-import com.radixdlt.application.tokens.state.ExittingStake;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.UInt384;
 
 import java.util.Objects;
 
@@ -99,98 +95,6 @@ public final class ValidatorStakeData implements ResourceInBucket {
 
 	public int getRakePercentage() {
 		return rakePercentage;
-	}
-
-	public ValidatorStakeData setRegistered(boolean isRegistered) {
-		return new ValidatorStakeData(
-			validatorKey,
-			totalStake,
-			totalOwnership,
-			rakePercentage,
-			ownerAddr,
-			isRegistered
-		);
-	}
-
-	public ValidatorStakeData setRakePercentage(int rakePercentage) {
-		return new ValidatorStakeData(
-			validatorKey,
-			totalStake,
-			totalOwnership,
-			rakePercentage,
-			ownerAddr,
-			isRegistered
-		);
-	}
-
-	public ValidatorStakeData setOwnerAddr(REAddr ownerAddr) {
-		return new ValidatorStakeData(
-			validatorKey,
-			totalStake,
-			totalOwnership,
-			rakePercentage,
-			ownerAddr,
-			isRegistered
-		);
-	}
-
-
-	public ValidatorStakeData addEmission(UInt256 amount) {
-		return new ValidatorStakeData(
-			validatorKey,
-			this.totalStake.add(amount),
-			totalOwnership,
-			rakePercentage,
-			ownerAddr,
-			isRegistered
-		);
-	}
-
-	private static UInt256 toSafeLow(UInt384 i) {
-		if (!i.getHigh().isZero()) {
-			throw new IllegalStateException("Unexpected overflow occurred " + i);
-		}
-		return i.getLow();
-	}
-
-	public Pair<ValidatorStakeData, StakeOwnership> stake(REAddr owner, UInt256 stake) throws ProcedureException {
-		if (totalStake.isZero()) {
-			var nextValidatorStake = new ValidatorStakeData(validatorKey, stake, stake, rakePercentage, ownerAddr, isRegistered);
-			var stakeOwnership = new StakeOwnership(validatorKey, owner, stake);
-			return Pair.of(nextValidatorStake, stakeOwnership);
-		}
-
-		var ownership384 = UInt384.from(totalOwnership).multiply(stake).divide(totalStake);
-		var ownershipAmt = toSafeLow(ownership384);
-		var stakeOwnership = new StakeOwnership(validatorKey, owner, ownershipAmt);
-		var nextValidatorStake = new ValidatorStakeData(
-			validatorKey,
-			totalStake.add(stake),
-			totalOwnership.add(ownershipAmt),
-			rakePercentage,
-			ownerAddr,
-			isRegistered
-		);
-		return Pair.of(nextValidatorStake, stakeOwnership);
-	}
-
-	public Pair<ValidatorStakeData, ExittingStake> unstakeOwnership(REAddr owner, UInt256 unstakeOwnership, long epochUnlocked) {
-		if (totalOwnership.compareTo(unstakeOwnership) < 0) {
-			throw new IllegalStateException("Not enough ownership");
-		}
-
-		var unstaked384 = UInt384.from(totalStake).multiply(unstakeOwnership).divide(totalOwnership);
-		var unstaked = toSafeLow(unstaked384);
-		var nextValidatorStake = new ValidatorStakeData(
-			validatorKey,
-			totalStake.subtract(unstaked),
-			totalOwnership.subtract(unstakeOwnership),
-			rakePercentage,
-			ownerAddr,
-			isRegistered
-		);
-		var exittingStake = new ExittingStake(epochUnlocked, validatorKey, owner, unstaked);
-		return Pair.of(nextValidatorStake, exittingStake);
 	}
 
 	public ECPublicKey getValidatorKey() {
