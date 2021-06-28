@@ -62,7 +62,6 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 			PreparedOwnerUpdate.class,
 			AllowDelegationFlag.class,
 			ValidatorMetaData.class,
-			AllowDelegationFlag.class,
 			PreparedRakeUpdate.class
 		);
 	}
