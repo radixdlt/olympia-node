@@ -19,6 +19,7 @@
 package com.radixdlt.statecomputer.radixengine;
 
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,7 +33,6 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atomos.UnclaimedREAddr;
-import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -58,7 +58,7 @@ public final class UniqueTest {
 	private RadixEngine<LedgerAndBFTProof> sut;
 
 	@Inject
-	private SubstateSerialization substateSerialization;
+	private RERules rules;
 
 	private Injector createInjector() {
 		return Guice.createInjector(
@@ -81,7 +81,7 @@ public final class UniqueTest {
 	private Txn uniqueTxn(ECKeyPair keyPair) {
 		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
 		var rriParticle = new UnclaimedREAddr(addr);
-		var atomBuilder = TxLowLevelBuilder.newBuilder(substateSerialization)
+		var atomBuilder = TxLowLevelBuilder.newBuilder(rules.getSerialization())
 			.virtualDown(rriParticle, "test".getBytes(StandardCharsets.UTF_8))
 			.end();
 		var sig = keyPair.sign(atomBuilder.hashToSign());

@@ -49,6 +49,8 @@ public class RadixNodeModuleTest {
 	public void testInjectorNotNullToken() {
 		final var properties = createDefaultProperties();
 		when(properties.get(eq("consensus.pacemaker_rate"), anyDouble())).thenReturn(2.0);
+		when(properties.get(eq("consensus.pacemaker_rate"), anyDouble())).thenReturn(2.0);
+		when(properties.get(eq("network.id"))).thenReturn("1");
 		this.radixNodeModule = new RadixNodeModule(properties);
 		assertNotNull(Guice.createInjector(this.radixNodeModule));
 	}

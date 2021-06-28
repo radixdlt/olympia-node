@@ -20,11 +20,9 @@ package com.radixdlt.middleware2.network;
 import org.radix.network.messaging.Message;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.network.messaging.MessageCentral;
@@ -35,34 +33,17 @@ import java.util.Objects;
 
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.subjects.PublishSubject;
 
 /**
  * BFT Network sending and receiving layer used on top of the MessageCentral
  * layer.
  */
 public final class MessageCentralBFTNetwork {
-	private final BFTNode self;
 	private final MessageCentral messageCentral;
-	private final PublishSubject<ConsensusEvent> localMessages;
 
 	@Inject
-	public MessageCentralBFTNetwork(
-		@Self BFTNode self,
-		MessageCentral messageCentral
-	) {
-		this.self = Objects.requireNonNull(self);
+	public MessageCentralBFTNetwork(MessageCentral messageCentral) {
 		this.messageCentral = Objects.requireNonNull(messageCentral);
-		this.localMessages = PublishSubject.create();
-	}
-
-	public Observable<Proposal> localProposals() {
-		return localMessages.ofType(Proposal.class);
-	}
-
-	public Observable<Vote> localVotes() {
-		return localMessages.ofType(Vote.class);
 	}
 
 	public Flowable<RemoteEvent<Vote>> remoteVotes() {
@@ -98,12 +79,8 @@ public final class MessageCentralBFTNetwork {
 	}
 
 	private void sendProposal(BFTNode receiver, Proposal proposal) {
-		if (this.self.equals(receiver)) {
-			this.localMessages.onNext(proposal);
-		} else {
-			ConsensusEventMessage message = new ConsensusEventMessage(proposal);
-			send(message, receiver);
-		}
+		ConsensusEventMessage message = new ConsensusEventMessage(proposal);
+		send(message, receiver);
 	}
 
 	public RemoteEventDispatcher<Vote> voteDispatcher() {
@@ -111,12 +88,8 @@ public final class MessageCentralBFTNetwork {
 	}
 
 	private void sendVote(BFTNode receiver, Vote vote) {
-		if (this.self.equals(receiver)) {
-			this.localMessages.onNext(vote);
-		} else {
-			ConsensusEventMessage message = new ConsensusEventMessage(vote);
-			send(message, receiver);
-		}
+		ConsensusEventMessage message = new ConsensusEventMessage(vote);
+		send(message, receiver);
 	}
 
 	private void send(Message message, BFTNode recipient) {

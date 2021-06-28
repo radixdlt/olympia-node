@@ -17,6 +17,8 @@
 
 package com.radixdlt;
 
+import com.radixdlt.universe.Network;
+import com.radixdlt.api.module.DeveloperEndpointModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -33,7 +35,6 @@ import com.radixdlt.api.module.UniverseEndpointModule;
 import com.radixdlt.api.module.ValidationEndpointModule;
 import com.radixdlt.api.module.VersionEndpointModule;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.universe.Universe.UniverseType;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -70,6 +71,7 @@ public final class EndpointConfig {
 	private static final String API_HEALTH = "health";
 	private static final String API_VERSION = "version";
 	private static final String API_METRICS = "metrics";
+	private static final String API_DEVELOPER = "developer";
 	private static final List<EndpointConfig> ENDPOINTS = List.of(
 		new EndpointConfig(API_ARCHIVE, false, ARCHIVE, ALL, ArchiveEndpointModule::new),
 		new EndpointConfig(API_CONSTRUCTION, false, ARCHIVE, ALL, ConstructEndpointModule::new),
@@ -81,7 +83,8 @@ public final class EndpointConfig {
 		new EndpointConfig(API_FAUCET, false, NODE, DEV_ONLY, FaucetEndpointModule::new),
 		new EndpointConfig(API_CHAOS, false, NODE, DEV_ONLY, ChaosEndpointModule::new),
 		new EndpointConfig(API_HEALTH, true, NODE, ALL, HealthEndpointModule::new),
-		new EndpointConfig(API_VERSION, true, NODE, ALL, VersionEndpointModule::new)
+		new EndpointConfig(API_VERSION, true, NODE, ALL, VersionEndpointModule::new),
+		new EndpointConfig(API_DEVELOPER, true, NODE, ALL, DeveloperEndpointModule::new)
 	);
 
 	private static final List<EndpointConfig> ARCHIVE_ENDPOINTS = ENDPOINTS.stream()
@@ -112,17 +115,17 @@ public final class EndpointConfig {
 		this.moduleSupplier = moduleSupplier;
 	}
 
-	public static List<EndpointConfig> enabledArchiveEndpoints(RuntimeProperties properties, UniverseType env) {
+	public static List<EndpointConfig> enabledArchiveEndpoints(RuntimeProperties properties, int networkId) {
 		return ARCHIVE_ENDPOINTS.stream()
 			.filter(e -> e.isEnabled(properties))
-			.filter(e -> isEnabledInEnvironment(e, env))
+			.filter(e -> isEnabledInEnvironment(e, networkId))
 			.collect(Collectors.toList());
 	}
 
-	public static List<EndpointConfig> enabledNodeEndpoints(RuntimeProperties properties, UniverseType env) {
+	public static List<EndpointConfig> enabledNodeEndpoints(RuntimeProperties properties, int networkId) {
 		return NODE_ENDPOINTS.stream()
 			.filter(e -> e.isEnabled(properties))
-			.filter(e -> isEnabledInEnvironment(e, env))
+			.filter(e -> isEnabledInEnvironment(e, networkId))
 			.collect(Collectors.toList());
 	}
 
@@ -141,17 +144,17 @@ public final class EndpointConfig {
 		return value;
 	}
 
-	public static List<EndpointStatus> endpointStatuses(RuntimeProperties properties, UniverseType env) {
+	public static List<EndpointStatus> endpointStatuses(RuntimeProperties properties, int networkId) {
 		return NODE_ENDPOINTS.stream()
-			.map(e -> EndpointStatus.create(e.name, isEnabled(e, properties, env)))
+			.map(e -> EndpointStatus.create(e.name, isEnabled(e, properties, networkId)))
 			.collect(Collectors.toList());
 	}
 
-	private static boolean isEnabled(EndpointConfig e, RuntimeProperties properties, UniverseType env) {
-		return e.isEnabled(properties) && isEnabledInEnvironment(e, env);
+	private static boolean isEnabled(EndpointConfig e, RuntimeProperties properties, int networkId) {
+		return e.isEnabled(properties) && isEnabledInEnvironment(e, networkId);
 	}
 
-	private static boolean isEnabledInEnvironment(EndpointConfig e, UniverseType env) {
-		return env != UniverseType.PRODUCTION || e.environment == ALL;
+	private static boolean isEnabledInEnvironment(EndpointConfig e, int networkId) {
+		return networkId != Network.MAINNET.getId() || e.environment == ALL;
 	}
 }

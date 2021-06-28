@@ -33,15 +33,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class MessageCentralBFTNetworkTest {
-	private BFTNode self;
 	private MessageCentral messageCentral;
 	private MessageCentralBFTNetwork network;
 
 	@Before
 	public void setUp() {
-		this.self = mock(BFTNode.class);
 		this.messageCentral = MessageCentralMockProvider.get();
-		this.network = new MessageCentralBFTNetwork(self, messageCentral);
+		this.network = new MessageCentralBFTNetwork(messageCentral);
 	}
 
 	@Test

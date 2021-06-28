@@ -18,6 +18,7 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -35,7 +36,6 @@ import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyPair;
@@ -75,7 +75,7 @@ public class MempoolTest {
 	@Inject private RadixEngineStateComputer stateComputer;
 	@Inject private SystemCounters systemCounters;
 	@Inject private PeersView peersView;
-	@Inject private SubstateSerialization serialization;
+	@Inject private RERules rules;
 	@Inject @MempoolRelayInitialDelay private long initialDelay;
 	@Inject @MempoolRelayRepeatDelay private long repeatDelay;
 
@@ -102,7 +102,7 @@ public class MempoolTest {
 	}
 
 	private Txn createTxn(ECKeyPair keyPair, int numParticles) {
-		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder(serialization);
+		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder(rules.getSerialization());
 		for (int i = 0; i < numParticles; i++) {
 			var symbol = "test" + (char) ('c' + i);
 			var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), symbol);
@@ -236,8 +236,8 @@ public class MempoolTest {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		var txn = createTxn(keyPair);
 		var proof = mock(LedgerProof.class);
-		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.getTxns().size(), HashUtils.random256()));
-		when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size());
+		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.getTxns().size() + 1, HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size() + 1);
 		var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn), proof);
 		stateComputer.commit(commandsAndProof, null);
 
@@ -261,8 +261,8 @@ public class MempoolTest {
 		// Act
 		var txn2 = createTxn(keyPair, 1);
 		var proof = mock(LedgerProof.class);
-		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.getTxns().size(), HashUtils.random256()));
-		when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size());
+		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.getTxns().size() + 1, HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size() + 1);
 		var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn2), proof);
 		stateComputer.commit(commandsAndProof, null);
 
@@ -284,8 +284,8 @@ public class MempoolTest {
 		// Act
 		var txn3 = createTxn(keyPair, 1);
 		var proof = mock(LedgerProof.class);
-		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.getTxns().size(), HashUtils.random256()));
-		when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size());
+		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.getTxns().size() + 1, HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size() + 1);
 		var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn3), proof);
 		stateComputer.commit(commandsAndProof, null);
 

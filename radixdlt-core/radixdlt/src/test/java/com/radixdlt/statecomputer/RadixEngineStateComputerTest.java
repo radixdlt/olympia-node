@@ -59,7 +59,6 @@ import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.ConstraintMachineException;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
@@ -85,6 +84,7 @@ import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.EngineStore;
@@ -117,7 +117,7 @@ public class RadixEngineStateComputerTest {
 	private RadixEngineStateComputer sut;
 
 	@Inject
-	private SubstateSerialization substateSerialization;
+	private RERules rules;
 
 	@Inject
 	private ProposerElection proposerElection;
@@ -306,7 +306,7 @@ public class RadixEngineStateComputerTest {
 		// Arrange
 		var txn = radixEngine.construct(new SystemNextView(1, false, 0, i -> proposerElection.getProposer(View.of(i)).getKey()))
 			.buildWithoutSignature();
-		var illegalTxn = TxLowLevelBuilder.newBuilder(substateSerialization)
+		var illegalTxn = TxLowLevelBuilder.newBuilder(rules.getSerialization())
 			.down(SubstateId.ofSubstate(txn.getId(), 3))
 			.up(new RoundData(2, 0))
 			.end()

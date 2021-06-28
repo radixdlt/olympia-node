@@ -1,8 +1,9 @@
 ntp=false
 ntp.pool=pool.ntp.org
 
-universe=$RADIXDLT_UNIVERSE
-universe.location=$RADIXDLT_UNIVERSE_LOCATION
+network.id=$RADIXDLT_NETWORK_ID
+network.genesis_txn=$RADIXDLT_GENESIS_TXN
+
 node.key.path=$RADIXDLT_VALIDATOR_KEY_LOCATION
 
 network.host_ip=$RADIXDLT_HOST_IP_ADDRESS

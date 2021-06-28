@@ -98,50 +98,6 @@ public class GenerateUniversesTest {
 		assertThat(out).isEmpty();
 	}
 
-	@Test
-	public void testDsonWithPrivkey() throws IOException {
-		final String out;
-		final String err;
-		try (Capture stdOut = Capture.forOut();
-			 Capture stdErr = Capture.forErr()) {
-			GenerateUniverses.main(strings("-j", "-p", "-t", "test", "-v", "1"));
-			out = stdOut.toString();
-			err = stdErr.toString();
-		}
-		assertThat(err).isEmpty();
-		assertThat(out)
-			.hasLineCount(7)
-			.containsSubsequence(
-				"RADIXDLT_VALIDATOR_0_PRIVKEY=", "\n",
-				"RADIXDLT_VALIDATOR_0_PUBKEY=", "\n",
-				"RADIXDLT_STAKER_0_PRIVKEY=", "\n",
-				"RADIXDLT_STAKER_0_PUBKEY=", "\n",
-				"RADIXDLT_UNIVERSE_TYPE=TEST", "\n",
-				"RADIXDLT_UNIVERSE_TOKEN=", "\n",
-				"RADIXDLT_UNIVERSE=", "\n"
-			);
-	}
-
-	@Test
-	public void testDsonWithoutPrivkey() throws IOException {
-		final String out;
-		final String err;
-		try (Capture stdOut = Capture.forOut();
-			 Capture stdErr = Capture.forErr()) {
-			GenerateUniverses.main(strings("-j", "-t", "test", "-v", "1"));
-			out = stdOut.toString();
-			err = stdErr.toString();
-		}
-		assertThat(err).isEmpty();
-		assertThat(out)
-			.hasLineCount(3)
-			.containsSubsequence(
-				"RADIXDLT_UNIVERSE_TYPE=TEST", "\n",
-				"RADIXDLT_UNIVERSE_TOKEN=", "\n",
-				"RADIXDLT_UNIVERSE=", "\n"
-			);
-	}
-
 	// Largely to combat checkstyle whining about "whitespace after {"
 	// when using 'new String[] { "foo", "bar" }'.
 	private static String[] strings(String... strings) {

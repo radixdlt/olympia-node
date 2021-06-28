@@ -21,9 +21,9 @@ import com.google.inject.Inject;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.statecomputer.forks.RERules;
 
 /**
  * Generates a new unique rri consumer command. Because new addresses are used
@@ -34,13 +34,13 @@ public class RadixEngineUniqueGenerator implements TxnGenerator {
 	private REParser parser;
 
 	@Inject
-	private SubstateSerialization serialization;
+	private RERules rules;
 
 	@Override
 	public Txn nextTxn() {
 		var keyPair = ECKeyPair.generateNew();
 		try {
-			return TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization)
+			return TxBuilder.newBuilder(parser.getSubstateDeserialization(), rules.getSerialization())
 				.mutex(keyPair.getPublicKey(), "test")
 				.signAndBuild(keyPair::sign);
 		} catch (TxBuilderException e) {

@@ -646,7 +646,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			var key = entry();
 			var status = cursor.getLast(key, null, DEFAULT);
 			if (status == OperationStatus.NOTFOUND) {
-				stateVersion = 0;
+				stateVersion = 1;
 			} else {
 				stateVersion = Longs.fromByteArray(key.getData()) + 1;
 			}

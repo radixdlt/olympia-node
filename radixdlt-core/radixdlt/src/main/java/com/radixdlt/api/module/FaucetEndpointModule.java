@@ -35,10 +35,10 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.TxnParseException;
-import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.statecomputer.forks.RERules;
 
 import java.util.Map;
 import java.util.Set;
@@ -74,13 +74,13 @@ public class FaucetEndpointModule extends AbstractModule {
 	@FaucetToken
 	@Singleton
 	public Set<REAddr> tokens(
-		REParser parser,
+		RERules rules,
 		@Genesis VerifiedTxnsAndProof genesis
 	) {
 		return genesis.getTxns().stream()
 			.flatMap(txn -> {
 				try {
-					var parsed = parser.parse(txn);
+					var parsed = rules.getParser().parse(txn);
 					return parsed.instructions().stream()
 						.map(REInstruction::getData)
 						.filter(Substate.class::isInstance)

@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -15,15 +15,23 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.time;
+package com.radixdlt.qualifier;
 
-public enum Timestamps {
-	ACTIVE,
-	BANNED,
-	PROBED;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-	@Override
-	public String toString() {
-		return super.toString().toLowerCase();
-	}
+import javax.inject.Qualifier;
+
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+/**
+ * Marker for network ID.
+ */
+@Qualifier
+@Target({ FIELD, PARAMETER, METHOD })
+@Retention(RUNTIME)
+public @interface NetworkId {
 }

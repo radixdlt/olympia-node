@@ -22,19 +22,16 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.atom.ActionConstructors;
 import com.radixdlt.atommodel.system.state.ValidatorBFTData;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.ConstraintMachineConfig;
-import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.engine.SubstateCacheRegister;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.Pair;
@@ -56,108 +53,57 @@ public class RadixEngineModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<SubstateCacheRegister<?>>() { });
 	}
 
+	@Provides
+	@Singleton
+	RERules reRules(
+		CommittedReader committedReader, // TODO: This is a hack, remove
+		Forks forks
+	) {
+		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
+		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
+		return forks.get(epoch);
+	}
 
+	// TODO: Remove
+	@Provides
+	@Singleton
+	private REParser parser(RERules rules) {
+		return rules.getParser();
+	}
+
+	// TODO: Remove
 	@Provides
 	@Singleton
 	@EpochCeilingView
-	private View epochCeilingHighView(
-		CommittedReader committedReader, // TODO: This is a hack, remove
-		Forks forks
-	) {
-		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
-		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return forks.get(epoch).getMaxRounds();
-	}
-
-	@Provides
-	@Singleton
-	private ConstraintMachineConfig buildConstraintMachineConfig(
-		CommittedReader committedReader, // TODO: This is a hack, remove
-		Forks forks
-	) {
-		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
-		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return forks.get(epoch).getConstraintMachineConfig();
-	}
-
-	@Provides
-	@Singleton
-	private ConstraintMachine constraintMachine(
-		ConstraintMachineConfig config
-	) {
-		return new ConstraintMachine(
-			config.getVirtualStoreLayer(),
-			config.getProcedures(),
-			config.getMetering()
-		);
-	}
-
-	@Provides
-	@Singleton
-	private ActionConstructors actionConstructors(
-		CommittedReader committedReader, // TODO: This is a hack, remove
-		Forks forks
-	) {
-		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
-		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return forks.get(epoch).getActionConstructors();
-	}
-
-	@Provides
-	@Singleton
-	private BatchVerifier<LedgerAndBFTProof> batchVerifier(
-		CommittedReader committedReader, // TODO: This is a hack, remove
-		Forks forks
-	) {
-		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
-		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return forks.get(epoch).getBatchVerifier();
-	}
-
-	@Provides
-	@Singleton
-	private REParser parser(
-		CommittedReader committedReader, // TODO: This is a hack, remove
-		Forks forks
-	) {
-		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
-		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return forks.get(epoch).getParser();
-	}
-
-	@Provides
-	@Singleton
-	private SubstateSerialization substateSerialization(
-		CommittedReader committedReader, // TODO: This is a hack, remove
-		Forks forks
-	) {
-		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
-		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return forks.get(epoch).getSerialization();
+	private View epochCeilingHighView(RERules rules) {
+		return rules.getMaxRounds();
 	}
 
 	@Provides
 	@Singleton
 	private RadixEngine<LedgerAndBFTProof> getRadixEngine(
-		REParser parser,
-		SubstateSerialization serialization,
-		ConstraintMachine constraintMachine,
-		ActionConstructors actionConstructors,
 		EngineStore<LedgerAndBFTProof> engineStore,
-		BatchVerifier<LedgerAndBFTProof> batchVerifier,
 		Set<StateReducer<?>> stateReducers,
 		Set<Pair<String, StateReducer<?>>> namedStateReducers,
 		Set<SubstateCacheRegister<?>> substateCacheRegisters,
-		StakedValidatorsReducer stakedValidatorsReducer
+		StakedValidatorsReducer stakedValidatorsReducer,
+		RERules rules
 	) {
-		var radixEngine = new RadixEngine<>(
-			parser,
-			serialization,
-			actionConstructors,
-			constraintMachine,
-			engineStore,
-			batchVerifier
+		var cmConfig = rules.getConstraintMachineConfig();
+		var cm = new ConstraintMachine(
+			cmConfig.getVirtualStoreLayer(),
+			cmConfig.getProcedures(),
+			cmConfig.getMetering()
 		);
+		var radixEngine = new RadixEngine<>(
+			rules.getParser(),
+			rules.getSerialization(),
+			rules.getActionConstructors(),
+			cm,
+			engineStore,
+			rules.getBatchVerifier()
+		);
+
 
 		// TODO: Convert to something more like the following:
 		// RadixEngine

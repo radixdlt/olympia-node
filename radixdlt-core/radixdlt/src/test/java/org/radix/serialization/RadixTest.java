@@ -23,7 +23,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.universe.Universe;
 import org.junit.BeforeClass;
 import org.mockito.stubbing.Answer;
 import org.radix.time.NtpService;
@@ -39,7 +38,6 @@ public abstract class RadixTest {
 	private static NtpService ntpService;
 	private static RuntimeProperties properties;
 	private static LocalSystem localSystem;
-	private static Universe universe;
 	private static ECKeyPair ecKeyPair;
 
 	@BeforeClass
@@ -48,9 +46,6 @@ public abstract class RadixTest {
 
 		properties = mock(RuntimeProperties.class);
 		doAnswer(invocation -> invocation.getArgument(1)).when(properties).get(any(), any());
-
-		universe = mock(Universe.class);
-		when(universe.getMagic()).thenReturn(2);
 
 		ntpService = mock(NtpService.class);
 		when(ntpService.getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
@@ -80,9 +75,5 @@ public abstract class RadixTest {
 
 	public static ECKeyPair getKeyPair() {
 		return ecKeyPair;
-	}
-
-	public static Universe getUniverse() {
-		return universe;
 	}
 }

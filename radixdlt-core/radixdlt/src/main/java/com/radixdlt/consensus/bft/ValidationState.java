@@ -86,7 +86,7 @@ public final class ValidationState {
 			this.signedNodes.computeIfAbsent(node, k -> {
 				UInt256 weight = this.validatorSet.getPower(node);
 				this.signedPower = this.signedPower.add(weight);
-				return TimestampedECDSASignature.from(timestamp, weight, signature);
+				return TimestampedECDSASignature.from(timestamp, signature);
 			});
 			return true;
 		}
