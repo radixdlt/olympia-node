@@ -20,7 +20,6 @@ package com.radixdlt.integration.recovery;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -219,7 +218,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 					bind(PeersView.class).toInstance(Stream::of);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bindConstant().annotatedWith(DatabaseLocation.class)
-						.to(folder.getRoot().getAbsolutePath() + "/" + ValidatorAddress.of(ecKeyPair.getPublicKey()));
+						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
 				}
 
 				@ProvidesIntoSet
@@ -244,12 +243,11 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 	private void startNode(int index) {
 		Injector injector = nodes.get(index);
-		String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
-		ThreadContext.put("bftNode", bftNode);
+		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
 		try {
 			injector.getInstance(DeterministicProcessor.class).start();
 		} finally {
-			ThreadContext.remove("bftNode");
+			ThreadContext.remove("self");
 		}
 	}
 
@@ -259,13 +257,12 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 		int nodeIndex = msg.value().channelId().receiverIndex();
 		Injector injector = this.nodes.get(nodeIndex);
-		String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
-		ThreadContext.put("bftNode", bftNode);
+		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
 		try {
 			injector.getInstance(DeterministicProcessor.class)
 				.handleMessage(msg.value().origin(), msg.value().message(), msg.value().typeLiteral());
 		} finally {
-			ThreadContext.remove("bftNode");
+			ThreadContext.remove("self");
 		}
 	}
 

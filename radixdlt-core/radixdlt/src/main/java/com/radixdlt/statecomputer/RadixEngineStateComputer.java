@@ -270,6 +270,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	private void executeUserCommands(
+		BFTNode proposer,
 		RadixEngineBranch<LedgerAndBFTProof> branch,
 		List<Txn> nextTxns,
 		ImmutableList.Builder<PreparedTxn> successBuilder,
@@ -281,7 +282,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				parsed = branch.execute(List.of(txn));
 			} catch (RadixEngineException e) {
 				errorBuilder.put(txn, e);
-				invalidProposedCommandEventDispatcher.dispatch(InvalidProposedTxn.create(txn, e));
+				invalidProposedCommandEventDispatcher.dispatch(InvalidProposedTxn.create(proposer.getKey(), txn, e));
 				return;
 			}
 
@@ -313,7 +314,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		final BFTValidatorSet validatorSet = this.executeSystemUpdate(transientBranch, vertex, timestamp, successBuilder);
 		// Don't execute command if changing epochs
 		if (validatorSet == null) {
-			this.executeUserCommands(transientBranch, next, successBuilder, exceptionBuilder);
+			this.executeUserCommands(vertex.getProposer(), transientBranch, next, successBuilder, exceptionBuilder);
 		}
 		this.radixEngine.deleteBranches();
 

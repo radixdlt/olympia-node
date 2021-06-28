@@ -16,21 +16,45 @@
  *
  */
 
-package com.radixdlt.universe;
+package com.radixdlt.networks;
 
 import com.radixdlt.atom.Txn;
 
 import java.util.Optional;
 
 public enum Network {
-	MAINNET(1),
-	TESTNET(2),
-	LOCALNET(99);
+	MAINNET(1, "rdx", "rv", "_rr", "rn"),
+	STOKENET(2, "tdx", "tv", "_tr", "tn"),
+	LOCALNET(99, "ddx", "dv", "_dr", "dn");
 
 	private final int id;
+	private final String accountHrp;
+	private final String validatorHrp;
+	private final String resourceHrpSuffix;
+	private final String nodeHrp;
 
-	Network(int id) {
+	Network(int id, String accountHrp, String validatorHrp, String resourceHrpSuffix, String nodeHrp) {
 		this.id = id;
+		this.accountHrp = accountHrp;
+		this.validatorHrp = validatorHrp;
+		this.resourceHrpSuffix = resourceHrpSuffix;
+		this.nodeHrp = nodeHrp;
+	}
+
+	public String getAccountHrp() {
+		return accountHrp;
+	}
+
+	public String getValidatorHrp() {
+		return validatorHrp;
+	}
+
+	public String getResourceHrpSuffix() {
+		return resourceHrpSuffix;
+	}
+
+	public String getNodeHrp() {
+		return nodeHrp;
 	}
 
 	public int getId() {

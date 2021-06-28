@@ -23,7 +23,7 @@ import org.junit.Test;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.ValidatorAddress;
+import com.radixdlt.identifiers.ValidatorAddressing;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bytes;
 
@@ -32,7 +32,8 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class ValidatorAddressTest {
+public class ValidatorAddressingTest {
+	private final ValidatorAddressing validatorAddresses = ValidatorAddressing.bech32("vb");
 	private final BiMap<String, String> privateKeyToValidatorId = HashBiMap.create(
 		Map.of(
 			"00", "vb1qvz3anvawgvm7pwvjs7xmjg48dvndczkgnufh475k2tqa2vm5c6cq9u3702",
@@ -54,7 +55,7 @@ public class ValidatorAddressTest {
 		privateKeyToValidatorId.forEach((privHex, expectedAddress) -> {
 			var keyPair = ECKeyPair.fromSeed(Bytes.fromHexString(privHex));
 			var publicKey = keyPair.getPublicKey();
-			var validatorAddress = ValidatorAddress.of(publicKey);
+			var validatorAddress = validatorAddresses.of(publicKey);
 			assertThat(validatorAddress).isEqualTo(expectedAddress);
 		});
 	}
@@ -64,7 +65,7 @@ public class ValidatorAddressTest {
 		for (var e : privateKeyToValidatorId.entrySet()) {
 			var address = e.getValue();
 			var privHex = e.getKey();
-			var pubKey = ValidatorAddress.parse(address);
+			var pubKey = validatorAddresses.parse(address);
 			var keyPair = ECKeyPair.fromSeed(Bytes.fromHexString(privHex));
 			var expectedPubKey = keyPair.getPublicKey();
 			assertThat(pubKey).isEqualTo(expectedPubKey);
@@ -76,7 +77,7 @@ public class ValidatorAddressTest {
 		for (var e : invalidAddresses.entrySet()) {
 			var address = e.getKey();
 			var expectedError = e.getValue();
-			assertThatThrownBy(() -> ValidatorAddress.parse(address), expectedError).isInstanceOf(DeserializeException.class);
+			assertThatThrownBy(() -> validatorAddresses.parse(address), expectedError).isInstanceOf(DeserializeException.class);
 		}
 	}
 }

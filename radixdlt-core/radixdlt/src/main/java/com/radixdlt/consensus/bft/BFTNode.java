@@ -17,7 +17,6 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
@@ -40,7 +39,7 @@ public final class BFTNode {
 	}
 
 	public static BFTNode create(ECPublicKey key) {
-		var shortenedAddress = ValidatorAddress.of(key).substring(0, 8);
+		var shortenedAddress = key.toHex().substring(0, 10);
 		return new BFTNode(key, shortenedAddress);
 	}
 

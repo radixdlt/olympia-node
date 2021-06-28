@@ -68,7 +68,6 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
@@ -236,7 +235,7 @@ public class StakingUnstakingValidatorsTest {
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bindConstant().annotatedWith(DatabaseLocation.class)
-						.to(folder.getRoot().getAbsolutePath() + "/" + ValidatorAddress.of(ecKeyPair.getPublicKey()));
+						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
 					bind(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() { })
 						.toInstance(new DeterministicSavedLastEvent<>(LedgerUpdate.class));
 					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() { })
@@ -261,11 +260,11 @@ public class StakingUnstakingValidatorsTest {
 	}
 
 	private void withThreadCtx(Injector injector, Runnable r) {
-		ThreadContext.put("bftNode", " " + injector.getInstance(Key.get(BFTNode.class, Self.class)));
+		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
 		try {
 			r.run();
 		} finally {
-			ThreadContext.remove("bftNode");
+			ThreadContext.remove("self");
 		}
 	}
 
@@ -275,13 +274,12 @@ public class StakingUnstakingValidatorsTest {
 
 		int nodeIndex = msg.value().channelId().receiverIndex();
 		Injector injector = this.nodes.get(nodeIndex);
-		String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
-		ThreadContext.put("bftNode", bftNode);
+		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
 		try {
 			injector.getInstance(DeterministicProcessor.class)
 				.handleMessage(msg.value().origin(), msg.value().message(), msg.value().typeLiteral());
 		} finally {
-			ThreadContext.remove("bftNode");
+			ThreadContext.remove("self");
 		}
 
 		return msg;

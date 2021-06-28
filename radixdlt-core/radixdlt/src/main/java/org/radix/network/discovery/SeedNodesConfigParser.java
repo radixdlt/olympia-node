@@ -26,11 +26,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.google.inject.Inject;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.identifiers.NodeAddress;
+import com.radixdlt.identifiers.NodeAddressing;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.NetworkId;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Pair;
 import com.google.common.collect.ImmutableSet;
@@ -40,9 +40,12 @@ public final class SeedNodesConfigParser {
 	private final int defaultPort;
 	private final Set<String> unresolvedUris = new HashSet<>();
 	private final Set<RadixNodeUri> resolvedSeedNodes = new HashSet<>();
-
+	private final Addressing addressing;
+	private final int networkId;
 	@Inject
-	public SeedNodesConfigParser(P2PConfig config) {
+	public SeedNodesConfigParser(P2PConfig config, @NetworkId int networkId, Addressing addressing) {
+		this.networkId = networkId;
+		this.addressing = addressing;
 		this.defaultPort = config.defaultPort();
 		this.unresolvedUris.addAll(config.seedNodes());
 		this.resolveHostNames();
@@ -79,8 +82,10 @@ public final class SeedNodesConfigParser {
 		try {
 			final var parsedUri = new URI(rawUri);
 			final var resolved = InetAddress.getByName(parsedUri.getHost());
+			// FIXME: This is a bit messy, should have clearer logic on the checks
 			return Optional.of(RadixNodeUri.fromPubKeyAndAddress(
-				NodeAddress.parse(parsedUri.getUserInfo()),
+				networkId,
+				addressing.forNodes().parse(parsedUri.getUserInfo()),
 				resolved.getHostAddress(),
 				parsedUri.getPort() > 0 ? parsedUri.getPort() : defaultPort
 			));

@@ -180,7 +180,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 	public String toString() {
 		// Not going to print the private key here
 		return String.format("%s[%s]",
-			getClass().getSimpleName(), getPublicKey().toBase64());
+			getClass().getSimpleName(), getPublicKey().toHex());
 	}
 
 	public static ECKeyPair fromFile(File file) throws PrivateKeyException, PublicKeyException {

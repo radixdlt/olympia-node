@@ -17,6 +17,7 @@
 
 package com.radixdlt.api.store.berkeley;
 
+import com.radixdlt.networks.Addressing;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
@@ -28,7 +29,6 @@ import com.google.common.collect.Streams;
 import com.google.inject.Inject;
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.accounting.TwoActorEntry;
-import com.radixdlt.api.Rri;
 import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.api.data.ScheduledQueueFlush;
@@ -53,9 +53,7 @@ import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -156,6 +154,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final TxnParser txnParser;
 	private final TransactionParser transactionParser;
 	private final REParser parser;
+	private final Addressing addressing;
 
 	private Database transactionHistory;
 	private Database tokenDefinitions;
@@ -175,7 +174,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		SystemCounters systemCounters,
 		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
 		TransactionParser transactionParser,
-		boolean isTest
+		boolean isTest,
+		Addressing addressing
 	) {
 		this.dbEnv = dbEnv;
 		this.parser = parser;
@@ -185,6 +185,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		this.systemCounters = systemCounters;
 		this.scheduledFlushEventDispatcher = scheduledFlushEventDispatcher;
 		this.transactionParser = transactionParser;
+		this.addressing = addressing;
 
 		open(isTest);
 	}
@@ -198,16 +199,17 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		Serialization serialization,
 		SystemCounters systemCounters,
 		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
-		TransactionParser transactionParser
+		TransactionParser transactionParser,
+		Addressing addressing
 	) {
 		this(dbEnv, parser, txnParser, store, serialization, systemCounters,
-			 scheduledFlushEventDispatcher, transactionParser, false
+			 scheduledFlushEventDispatcher, transactionParser, false, addressing
 		);
 	}
 
 	@Override
 	public Result<REAddr> parseRri(String rri) {
-		return Rri.parseFunctional(rri)
+		return addressing.forResources().parseFunctional(rri)
 			.flatMap(tuple -> tuple.map(
 				(symbol, address) -> getTokenDefinition(address)
 					.map(TokenDefinitionRecord::getSymbol)
@@ -326,7 +328,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private String getRriOrFail(REAddr addr) {
 		try {
-			return rriCache.get(addr, () -> getTokenDefinition(addr).toOptional().orElseThrow().rri());
+			return rriCache.get(addr, () -> getTokenDefinition(addr).toOptional().orElseThrow().rri(addressing));
 		} catch (ExecutionException e) {
 			log.error("Unable to find rri of token at address {}", addr);
 			throw new IllegalStateException(e);
@@ -650,10 +652,10 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				var bucketJson = new JSONObject();
 				bucketJson.put("type", b.getClass().getSimpleName());
 				if (b.getOwner() != null) {
-					bucketJson.put("owner", AccountAddress.of(b.getOwner()));
+					bucketJson.put("owner", addressing.forAccounts().of(b.getOwner()));
 				}
 				if (b.getValidatorKey() != null) {
-					bucketJson.put("validator", ValidatorAddress.of(b.getValidatorKey()));
+					bucketJson.put("validator", addressing.forValidators().of(b.getValidatorKey()));
 				}
 				bucketJson.put("delta", i.toString());
 				bucketJson.put("asset", b.resourceAddr() == null ? "stake_ownership" : getRriOrFail(b.resourceAddr()));
@@ -807,7 +809,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		);
 
 		if (status != OperationStatus.SUCCESS) {
-			log.error("Error {} while storing token definition {}", status, tokenDefinition.asJson());
+			log.error("Error {} while storing token definition {}", status, tokenDefinition.asJson(addressing));
 		}
 	}
 

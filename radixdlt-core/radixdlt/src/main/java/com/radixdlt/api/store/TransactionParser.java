@@ -17,6 +17,7 @@
 
 package com.radixdlt.api.store;
 
+import com.google.inject.Inject;
 import com.radixdlt.accounting.TwoActorEntry;
 import com.radixdlt.api.data.ActionEntry;
 import com.radixdlt.api.data.ActionType;
@@ -27,9 +28,8 @@ import com.radixdlt.atommodel.tokens.state.AccountBucket;
 import com.radixdlt.atommodel.tokens.state.ExittingOwnershipBucket;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddress;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
@@ -43,12 +43,19 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class TransactionParser {
-	private static String bucketToString(Bucket bucket) {
+	private final Addressing addressing;
+
+	@Inject
+	public TransactionParser(Addressing addressing) {
+		this.addressing = addressing;
+	}
+
+	private String bucketToString(Bucket bucket) {
 		if (bucket.getValidatorKey() != null && !(bucket instanceof ExittingOwnershipBucket)) {
-			return ValidatorAddress.of(bucket.getValidatorKey());
+			return addressing.forValidators().of(bucket.getValidatorKey());
 		}
 
-		return AccountAddress.of(bucket.getOwner());
+		return addressing.forAccounts().of(bucket.getOwner());
 	}
 
 	private ActionEntry mapToActionEntry(
@@ -89,8 +96,8 @@ public final class TransactionParser {
 
 		return ActionEntry.create(
 			type,
-			from.map(TransactionParser::bucketToString).orElse(null),
-			to.map(TransactionParser::bucketToString).orElse(null),
+			from.map(this::bucketToString).orElse(null),
+			to.map(this::bucketToString).orElse(null),
 			amt,
 			addrToRri.apply(entry.resourceAddr().orElse(REAddr.ofNativeToken()))
 		);

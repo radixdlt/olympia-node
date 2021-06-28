@@ -131,7 +131,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 			});
 
 		if (!removed.isEmpty()) {
-			logger.info("Evicting {} txns from mempool", removed.size());
+			logger.debug("Evicting {} txns from mempool", removed.size());
 		}
 
 		return removed;

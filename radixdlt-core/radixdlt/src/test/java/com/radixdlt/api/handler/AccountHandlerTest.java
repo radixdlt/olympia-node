@@ -17,12 +17,13 @@
 
 package com.radixdlt.api.handler;
 
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import org.json.JSONObject;
 import org.junit.Test;
 
 import com.radixdlt.api.service.AccountInfoService;
 import com.radixdlt.api.service.ActionParserService;
-import com.radixdlt.api.service.RriParser;
 import com.radixdlt.api.service.SubmissionService;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.crypto.ECKeyPair;
@@ -30,7 +31,6 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.utils.functional.Result;
 
 import static org.junit.Assert.assertEquals;
@@ -45,10 +45,10 @@ import static com.radixdlt.api.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 public class AccountHandlerTest {
-	private final RriParser rriParser = mock(RriParser.class);
 	private final SubmissionService submissionService = mock(SubmissionService.class);
 	private final AccountInfoService accountService = mock(AccountInfoService.class);
-	private final ActionParserService actionParserService = new ActionParserService(rriParser);
+	private final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
+	private final ActionParserService actionParserService = new ActionParserService(addressing);
 
 	private final ECKeyPair keyPair = ECKeyPair.generateNew();
 	private final ECPublicKey bftKey = keyPair.getPublicKey();
@@ -104,7 +104,7 @@ public class AccountHandlerTest {
 			.put(
 				jsonObject()
 					.put("type", "RegisterValidator")
-					.put("validator", ValidatorAddress.of(bftKey))
+					.put("validator", addressing.forValidators().of(bftKey))
 			);
 		var params = jsonArray()
 			.put(actions)

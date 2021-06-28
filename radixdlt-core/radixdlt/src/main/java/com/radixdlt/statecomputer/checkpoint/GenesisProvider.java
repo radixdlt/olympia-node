@@ -56,7 +56,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 		@Genesis long timestamp,
 		@Genesis ImmutableList<TokenIssuance> tokenIssuances,
 		@Genesis ImmutableList<StakeDelegation> stakeDelegations,
-		@Genesis ImmutableList<ECPublicKey> validatorKeys, // TODO: Remove private keys, replace with public keys
+		@Genesis ImmutableList<ECPublicKey> validatorKeys,
 		@Genesis List<TxAction> additionalActions
 	) {
 		this.genesisBuilder = genesisBuilder;

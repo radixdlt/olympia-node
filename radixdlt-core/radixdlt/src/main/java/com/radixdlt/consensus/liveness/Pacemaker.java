@@ -45,7 +45,6 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.utils.TimeSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Level;
 
 import java.util.List;
 import java.util.Objects;
@@ -282,14 +281,6 @@ public final class Pacemaker {
 		this.timeoutDispatcher.dispatch(localTimeoutOccurrence);
 
 		final long timeout = timeoutCalculator.timeout(latestViewUpdate.uncommittedViewsCount());
-
-		final Level logLevel = this.logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
-		log.log(logLevel, "LocalTimeout: Restarting timeout {} for {}ms CurrentState: {}",
-			scheduledTimeout,
-			timeout,
-			this.latestViewUpdate
-		);
-
 		final ScheduledLocalTimeout nextTimeout = scheduledTimeout.nextRetry(timeout);
 		this.timeoutSender.dispatch(nextTimeout, timeout);
 	}

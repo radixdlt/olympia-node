@@ -24,7 +24,6 @@ import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -203,7 +202,7 @@ public class MempoolRelayTest {
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bindConstant().annotatedWith(DatabaseLocation.class)
-						.to(folder.getRoot().getAbsolutePath() + "/" + ValidatorAddress.of(ecKeyPair.getPublicKey()));
+						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
 				}
 
 				@Provides
@@ -245,11 +244,11 @@ public class MempoolRelayTest {
 	}
 
 	private void withThreadCtx(Injector injector, Runnable r) {
-		ThreadContext.put("bftNode", " " + injector.getInstance(Key.get(BFTNode.class, Self.class)));
+		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
 		try {
 			r.run();
 		} finally {
-			ThreadContext.remove("bftNode");
+			ThreadContext.remove("self");
 		}
 	}
 

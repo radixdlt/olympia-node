@@ -16,6 +16,8 @@
  */
 package com.radixdlt.api.handler;
 
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import org.json.JSONObject;
 import org.junit.Test;
 
@@ -40,7 +42,8 @@ public class ArchiveTokenHandlerTest {
 	private static final ECPublicKey PUB_KEY = ECKeyPair.generateNew().getPublicKey();
 
 	private final TokenService tokenService = mock(TokenService.class);
-	private final ArchiveTokenHandler handler = new ArchiveTokenHandler(tokenService);
+	private final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
+	private final ArchiveTokenHandler handler = new ArchiveTokenHandler(tokenService, addressing);
 
 	@Test
 	public void testNativeToken() {

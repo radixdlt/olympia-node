@@ -23,7 +23,7 @@ import org.junit.Test;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.AccountAddress;
+import com.radixdlt.identifiers.AccountAddressing;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bytes;
@@ -33,7 +33,8 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class AccountAddressTest {
+public class AccountAddressingTest {
+	private final AccountAddressing accountAddresses = AccountAddressing.bech32("brx");
 	private final BiMap<String, String> privateKeyToAccountAddress = HashBiMap.create(
 		Map.of(
 			"00", "brx1qsps28kdn4epn0c9ej2rcmwfz5a4jdhq2ez03x7h6jefvr4fnwnrtqqjqllv9",
@@ -63,7 +64,7 @@ public class AccountAddressTest {
 			var keyPair = ECKeyPair.fromSeed(Bytes.fromHexString(privHex));
 			var publicKey = keyPair.getPublicKey();
 			var addr = REAddr.ofPubKeyAccount(publicKey);
-			var accountAddress = AccountAddress.of(addr);
+			var accountAddress = accountAddresses.of(addr);
 			assertThat(accountAddress).isEqualTo(expectedAddress);
 		});
 	}
@@ -72,7 +73,7 @@ public class AccountAddressTest {
 	public void test_re_addr_to_address_serialization() {
 		reAddrToAccountAddress.forEach((hex, expectedAddress) -> {
 			var addr = REAddr.of(Bytes.fromHexString(hex));
-			var accountAddr = AccountAddress.of(addr);
+			var accountAddr = accountAddresses.of(addr);
 			assertThat(accountAddr).isEqualTo(expectedAddress);
 		});
 	}
@@ -82,7 +83,7 @@ public class AccountAddressTest {
 		for (var e : privateKeyToAccountAddress.entrySet()) {
 			var address = e.getValue();
 			var privHex = e.getKey();
-			var reAddr = AccountAddress.parse(address);
+			var reAddr = accountAddresses.parse(address);
 			var keyPair = ECKeyPair.fromSeed(Bytes.fromHexString(privHex));
 			var pubKey = keyPair.getPublicKey();
 			assertThat(reAddr).isEqualTo(REAddr.ofPubKeyAccount(pubKey));
@@ -95,7 +96,7 @@ public class AccountAddressTest {
 			var address = e.getValue();
 			var hex = e.getKey();
 			var reAddr = REAddr.of(Bytes.fromHexString(hex));
-			assertThat(reAddr).isEqualTo(AccountAddress.parse(address));
+			assertThat(reAddr).isEqualTo(accountAddresses.parse(address));
 		}
 	}
 
@@ -104,7 +105,7 @@ public class AccountAddressTest {
 		for (var e : invalidAddresses.entrySet()) {
 			var address = e.getKey();
 			var expectedError = e.getValue();
-			assertThatThrownBy(() -> AccountAddress.parse(address), expectedError).isInstanceOf(DeserializeException.class);
+			assertThatThrownBy(() -> accountAddresses.parse(address), expectedError).isInstanceOf(DeserializeException.class);
 		}
 	}
 }

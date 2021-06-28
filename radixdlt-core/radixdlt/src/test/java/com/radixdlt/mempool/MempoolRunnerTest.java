@@ -43,6 +43,8 @@ import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.store.LastProof;
 import io.reactivex.rxjava3.core.Flowable;
@@ -68,7 +70,7 @@ public final class MempoolRunnerTest {
 		return new AbstractModule() {
 			@Override
 			public void configure() {
-				bind(BFTNode.class).annotatedWith(Self.class).toInstance(mock(BFTNode.class));
+				bind(BFTNode.class).annotatedWith(Self.class).toInstance(BFTNode.random());
 				bind(LedgerProof.class).annotatedWith(LastProof.class)
 					.toInstance(mock(LedgerProof.class));
 				bind(StateComputer.class).toInstance(stateComputer);
@@ -82,6 +84,7 @@ public final class MempoolRunnerTest {
 				bind(LedgerAccumulator.class).toInstance(mock(LedgerAccumulator.class));
 				bind(LedgerAccumulatorVerifier.class).toInstance(mock(LedgerAccumulatorVerifier.class));
 				bind(new TypeLiteral<Comparator<LedgerProof>>() { }).toInstance(mock(Comparator.class));
+				bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
 				bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 				Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);
 				install(MempoolConfig.asModule(100, 10));

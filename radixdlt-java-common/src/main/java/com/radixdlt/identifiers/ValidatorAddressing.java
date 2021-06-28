@@ -27,22 +27,26 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bits;
 import com.radixdlt.utils.functional.Result;
 
+import java.util.Objects;
+
 import static com.radixdlt.identifiers.CommonErrors.INVALID_VALIDATOR_ADDRESS;
 
 /**
  * Bech-32 encoding/decoding of validators. Validators are represented as 33-byte
  * compressed EC Public Keys.
  * <p>
- * The human-readable part is "vr" for mainnet, "vb" for betanet.
- * <p>
  * The data part is a conversion of the 33 byte compressed EC public key to Base32
  * similar to specification described in BIP_0173 for converting witness programs.
  */
-public final class ValidatorAddress {
-	private static final String VALIDATOR_HRP = "vb"; // "vr" for mainnet
+public final class ValidatorAddressing {
+	private final String hrp;
+	private ValidatorAddressing(String hrp) {
+		this.hrp = hrp;
+	}
 
-	private ValidatorAddress() {
-		throw new IllegalStateException();
+	public static ValidatorAddressing bech32(String hrp) {
+		Objects.requireNonNull(hrp);
+		return new ValidatorAddressing(hrp);
 	}
 
 	private static byte[] toBech32Data(byte[] bytes) {
@@ -53,13 +57,13 @@ public final class ValidatorAddress {
 		return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
 	}
 
-	public static String of(ECPublicKey key) {
+	public String of(ECPublicKey key) {
 		var bytes = key.getCompressedBytes();
 		var convert = toBech32Data(bytes);
-		return Bech32.encode(VALIDATOR_HRP, convert);
+		return Bech32.encode(hrp, convert);
 	}
 
-	public static ECPublicKey parse(String v) throws DeserializeException {
+	public ECPublicKey parse(String v) throws DeserializeException {
 		Bech32.Bech32Data bech32Data;
 		try {
 			bech32Data = Bech32.decode(v);
@@ -67,7 +71,7 @@ public final class ValidatorAddress {
 			throw new DeserializeException("Could not decode string: " + v, e);
 		}
 
-		if (!bech32Data.hrp.equals(VALIDATOR_HRP)) {
+		if (!bech32Data.hrp.equals(hrp)) {
 			throw new DeserializeException("hrp must be vb but was " + bech32Data.hrp);
 		}
 		var keyBytes = fromBech32Data(bech32Data.data);
@@ -78,7 +82,7 @@ public final class ValidatorAddress {
 		}
 	}
 
-	public static Result<ECPublicKey> fromString(String input) {
+	public Result<ECPublicKey> fromString(String input) {
 		return Result.wrap(INVALID_VALIDATOR_ADDRESS, () -> parse(input));
 	}
 }

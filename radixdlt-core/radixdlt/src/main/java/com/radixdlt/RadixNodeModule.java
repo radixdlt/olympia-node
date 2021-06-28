@@ -21,12 +21,10 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.api.Rri;
 import com.radixdlt.api.module.ArchiveApiModule;
 import com.radixdlt.api.module.CommonApiModule;
 import com.radixdlt.api.module.NodeApiModule;
 import com.radixdlt.api.qualifier.Endpoints;
-import com.radixdlt.api.service.RriParser;
 import com.radixdlt.application.NodeApplicationModule;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
@@ -46,8 +44,10 @@ import com.radixdlt.network.messaging.MessagingModule;
 import com.radixdlt.network.p2p.P2PModule;
 import com.radixdlt.network.p2p.PeerDiscoveryModule;
 import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.qualifier.NetworkId;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
@@ -59,7 +59,6 @@ import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
-import com.radixdlt.universe.Network;
 import com.radixdlt.utils.Bytes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -139,6 +138,12 @@ public final class RadixNodeModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
+		if (this.networkId <= 0) {
+			throw new IllegalStateException("Illegal networkId " + networkId);
+		}
+
+		var addressing = Addressing.ofNetworkId(networkId);
+		bind(Addressing.class).toInstance(addressing);
 		bindConstant().annotatedWith(NetworkId.class).to(networkId);
 		bind(Txn.class).annotatedWith(Genesis.class).toInstance(loadGenesis(networkId));
 		bind(RuntimeProperties.class).toInstance(properties);
@@ -247,10 +252,6 @@ public final class RadixNodeModule extends AbstractModule {
 		}
 
 		if (!nodeEndpoints.isEmpty()) {
-			if (archiveEndpoints.isEmpty()) {
-				bind(RriParser.class).toInstance(Rri::rriParser);
-			}
-
 			install(new NodeApiModule(nodeEndpoints));
 		}
 	}
