@@ -19,7 +19,6 @@ pub struct U256 {
 }
 
 /// Byte array of variable length
-#[derive(Debug)]
 pub struct Bytes {
     pub length: u8,
     pub data: Vec<u8>,
@@ -168,6 +167,12 @@ impl fmt::Debug for Address {
             Self::HashedKeyNonce(data) => write!(f, "0x03{}", hex::encode(data)),
             Self::PublicKey(data) => write!(f, "0x04{}", hex::encode(data)),
         }
+    }
+}
+
+impl fmt::Debug for Bytes {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "0x{}", hex::encode(&self.data))
     }
 }
 
