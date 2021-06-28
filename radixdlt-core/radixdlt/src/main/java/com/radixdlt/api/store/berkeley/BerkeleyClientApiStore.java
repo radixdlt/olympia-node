@@ -17,6 +17,7 @@
 
 package com.radixdlt.api.store.berkeley;
 
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.networks.Addressing;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -701,6 +702,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private REResourceAccounting processGroupedStateUpdates(List<REStateUpdate> updates, AID txId) {
 		byte[] addressArg = null;
+		TokenResource res = null;
 
 		for (var update : updates) {
 			var substate = update.getRawSubstate();
@@ -708,20 +710,22 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				// FIXME: sort of a hacky way of getting this info
 				addressArg = update.getArg().orElse("xrd".getBytes(StandardCharsets.UTF_8));
 			} else if (substate instanceof TokenResource) {
-				var tokenResource = (TokenResource) substate;
-				if (addressArg == null) {
+				res = (TokenResource) substate;
+			} else if (substate instanceof TokenResourceMetadata) {
+				var meta = (TokenResourceMetadata) substate;
+				if (addressArg == null || res == null) {
 					throw new IllegalStateException();
 				}
 				var symbol = new String(addressArg);
 				var record = TokenDefinitionRecord.create(
 					symbol,
-					tokenResource.getName(),
-					tokenResource.getAddr(),
-					tokenResource.getDescription(),
+					meta.getName(),
+					meta.getAddr(),
+					meta.getDescription(),
 					UInt384.ZERO,
-					tokenResource.getIconUrl(),
-					tokenResource.getUrl(),
-					tokenResource.isMutable()
+					meta.getIconUrl(),
+					meta.getUrl(),
+					res.isMutable()
 				);
 				storeTokenDefinition(record);
 			} else if (substate instanceof RoundData) {

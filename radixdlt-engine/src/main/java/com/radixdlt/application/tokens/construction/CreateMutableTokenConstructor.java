@@ -18,6 +18,7 @@
 
 package com.radixdlt.application.tokens.construction;
 
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
@@ -42,13 +43,13 @@ public final class CreateMutableTokenConstructor implements ActionConstructor<Cr
 			Optional.of(SubstateWithArg.withArg(new UnclaimedREAddr(reAddress), action.getSymbol().getBytes(StandardCharsets.UTF_8))),
 			() -> new TxBuilderException("RRI not available")
 		);
-		txBuilder.up(TokenResource.createMutableSupplyResource(
+		txBuilder.up(TokenResource.createMutableSupplyResource(reAddress, action.getKey()));
+		txBuilder.up(new TokenResourceMetadata(
 			reAddress,
 			action.getName(),
 			action.getDescription(),
 			action.getIconUrl(),
-			action.getTokenUrl(),
-			action.getKey()
+			action.getTokenUrl()
 		));
 		txBuilder.end();
 	}

@@ -453,7 +453,7 @@ public final class TxBuilder {
 	) {
 		lowLevelBuilder.syscall(Syscall.FEE_RESERVE_TAKE, amount);
 		if (!amount.isZero()) {
-			up(new TokensInAccount(addr, amount, REAddr.ofNativeToken()));
+			up(new TokensInAccount(addr, REAddr.ofNativeToken(), amount));
 		}
 		this.feeReserveTake = this.feeReserveTake.add(amount);
 	}

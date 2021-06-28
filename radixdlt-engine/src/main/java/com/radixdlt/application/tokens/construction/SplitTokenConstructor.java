@@ -39,8 +39,8 @@ public final class SplitTokenConstructor implements ActionConstructor<SplitToken
 
 		var amt1 = tokens.getAmount().divide(UInt256.TWO);
 		var amt2 = tokens.getAmount().subtract(amt1);
-		txBuilder.up(new TokensInAccount(userAccount, amt1, action.rri()));
-		txBuilder.up(new TokensInAccount(userAccount, amt2, action.rri()));
+		txBuilder.up(new TokensInAccount(userAccount, action.rri(), amt1));
+		txBuilder.up(new TokensInAccount(userAccount, action.rri(), amt2));
 		txBuilder.end();
 	}
 }
