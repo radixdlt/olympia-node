@@ -161,8 +161,8 @@ impl Substate for TokenDefinition {
 impl Substate for Tokens {
     fn from_buffer(buffer: &mut ByteBuffer) -> Self {
         let reserved = read_reserved_byte(buffer);
-        let resource = Address::from_buffer(buffer);
         let owner = Address::from_buffer(buffer);
+        let resource = Address::from_buffer(buffer);
         let amount = U256::from_buffer(buffer);
 
         Self {
@@ -177,8 +177,8 @@ impl Substate for Tokens {
 impl Substate for PreparedStake {
     fn from_buffer(buffer: &mut ByteBuffer) -> Self {
         let reserved = read_reserved_byte(buffer);
-        let owner = Address::from_buffer(buffer);
         let validator = PublicKey::from_buffer(buffer);
+        let owner = Address::from_buffer(buffer);
         let amount = U256::from_buffer(buffer);
 
         Self {
