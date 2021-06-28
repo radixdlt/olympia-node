@@ -30,6 +30,8 @@ import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.transport.PeerChannel;
 import com.radixdlt.serialization.Serialization;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.socket.SocketChannel;
 
 import java.security.SecureRandom;
@@ -93,14 +95,18 @@ final class MockP2PNetwork {
 		});
 
 		when(clientSocketChannel.close()).thenAnswer(inv -> {
-			clientChannel.channelInactive(null);
-			serverChannel.channelInactive(null);
+			final var mockChannel = mock(ChannelHandlerContext.class);
+			when(mockChannel.channel()).thenReturn(mock(Channel.class));
+			clientChannel.channelInactive(mockChannel);
+			serverChannel.channelInactive(mockChannel);
 			return null;
 		});
 
 		when(serverSocketChannel.close()).thenAnswer(inv -> {
-			serverChannel.channelInactive(null);
-			clientChannel.channelInactive(null);
+			final var mockChannel = mock(ChannelHandlerContext.class);
+			when(mockChannel.channel()).thenReturn(mock(Channel.class));
+			serverChannel.channelInactive(mockChannel);
+			clientChannel.channelInactive(mockChannel);
 			return null;
 		});
 
