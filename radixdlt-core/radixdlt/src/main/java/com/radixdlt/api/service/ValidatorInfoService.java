@@ -24,8 +24,6 @@ import com.radixdlt.api.service.reducer.AllValidatorsReducer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.ValidatorAddress;
-import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.Forks;
@@ -61,7 +59,6 @@ public class ValidatorInfoService {
 		this.entryStore = entryStore;
 		this.forks = forks;
 		this.inMemorySystemInfo = inMemorySystemInfo;
-		this.radixEngine = radixEngine;
 		this.addressing = addressing;
 	}
 
@@ -87,7 +84,7 @@ public class ValidatorInfoService {
 			.filter(validatorInfoDetails -> validatorInfoDetails.getValidatorKey().equals(validatorPublicKey))
 			.findFirst()
 			.map(Result::ok)
-			.orElseGet(() -> UNKNOWN_VALIDATOR.with(ValidatorAddress.of(validatorPublicKey)).result());
+			.orElseGet(() -> UNKNOWN_VALIDATOR.with(addressing.forValidators().of(validatorPublicKey)).result());
 	}
 
 	public List<ValidatorInfoDetails> getAllValidators() {

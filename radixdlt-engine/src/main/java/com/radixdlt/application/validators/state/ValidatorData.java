@@ -16,7 +16,7 @@
  *
  */
 
-package com.radixdlt.atommodel.validators.state;
+package com.radixdlt.application.validators.state;
 
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;

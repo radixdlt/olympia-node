@@ -17,7 +17,6 @@
 
 package com.radixdlt.api.service;
 
-import com.radixdlt.atom.UnsignedTxnData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -27,8 +26,9 @@ import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.atom.UnsignedTxnData;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.constraintmachine.ConstraintMachineException;
+import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;

@@ -16,18 +16,18 @@
  */
 package com.radixdlt.api.service;
 
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.networks.Network;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.radixdlt.api.service.reducer.AllValidators;
-import com.radixdlt.atommodel.validators.state.ValidatorMetaData;
+import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.RERules;

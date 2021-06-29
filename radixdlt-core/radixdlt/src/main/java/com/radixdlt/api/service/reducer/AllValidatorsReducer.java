@@ -18,13 +18,13 @@
 package com.radixdlt.api.service.reducer;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atommodel.system.state.ValidatorStakeData;
-import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.validators.state.AllowDelegationFlag;
-import com.radixdlt.atommodel.validators.state.PreparedOwnerUpdate;
-import com.radixdlt.atommodel.validators.state.PreparedRakeUpdate;
-import com.radixdlt.atommodel.validators.state.PreparedRegisteredUpdate;
-import com.radixdlt.atommodel.validators.state.ValidatorMetaData;
+import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.tokens.state.PreparedStake;
+import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.validators.state.PreparedOwnerUpdate;
+import com.radixdlt.application.validators.state.PreparedRakeUpdate;
+import com.radixdlt.application.validators.state.PreparedRegisteredUpdate;
+import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.constraintmachine.Particle;
 
 import java.util.Set;
@@ -45,7 +45,6 @@ public final class AllValidatorsReducer {
 			PreparedOwnerUpdate.class,
 			AllowDelegationFlag.class,
 			ValidatorMetaData.class,
-			AllowDelegationFlag.class,
 			PreparedRakeUpdate.class
 		);
 	}

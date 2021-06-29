@@ -19,7 +19,7 @@ package com.radixdlt.api.service.reducer;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-import com.radixdlt.atommodel.validators.state.ValidatorMetaData;
+import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.ValidatorDetails;

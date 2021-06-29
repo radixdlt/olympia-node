@@ -18,6 +18,18 @@
 
 package com.radixdlt.integration.staking;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.radix.TokenIssuance;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
@@ -34,6 +46,13 @@ import com.google.inject.util.Modules;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.application.NodeApplicationRequest;
+import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.tokens.state.ExittingStake;
+import com.radixdlt.application.tokens.state.PreparedStake;
+import com.radixdlt.application.tokens.state.TokensInAccount;
+import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.validators.state.PreparedRakeUpdate;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.RegisterValidator;
@@ -44,13 +63,6 @@ import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
 import com.radixdlt.atom.actions.UpdateRake;
 import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.application.tokens.state.ExittingStake;
-import com.radixdlt.application.tokens.state.PreparedStake;
-import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.application.validators.state.PreparedRakeUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -97,20 +109,6 @@ import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
 
-import io.reactivex.rxjava3.schedulers.Timed;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.ThreadContext;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.radix.TokenIssuance;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -122,6 +120,8 @@ import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import io.reactivex.rxjava3.schedulers.Timed;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -379,6 +379,7 @@ public class StakingUnstakingValidatorsTest {
 			return map;
 		}
 
+		@SuppressWarnings("unchecked")
 		public UInt256 getTotalNativeTokens() {
 			var forkConfig = forks.get(getEpoch());
 			var reParser = forkConfig.getParser();
@@ -389,8 +390,8 @@ public class StakingUnstakingValidatorsTest {
 					return i.add(tokens.getAmount());
 				},
 				reParser.getSubstateDeserialization(),
-				TokensInAccount.class,
-				);
+				TokensInAccount.class
+			);
 			logger.info("Total tokens: {}", Amount.ofSubunits(totalTokens));
 			var totalStaked = entryStore.reduceUpParticles(
 				UInt256.ZERO,

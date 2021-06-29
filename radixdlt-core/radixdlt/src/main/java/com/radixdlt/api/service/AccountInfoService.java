@@ -80,14 +80,14 @@ public class AccountInfoService {
 				.put("name", details.getName())
 				.put("url", details.getInfoUrl())
 				.put("registered", details.isRegistered())
-				.put("owner", AccountAddress.of(details.getOwner()))
+				.put("owner", addressing.forAccounts().of(details.getOwner()))
 				.put("percentage", details.getPercentage())
 				.put("allowDelegation", details.isExternalStakesAllowed()),
 			() -> result
 				.put("name", "")
 				.put("url", "")
 				.put("registered", false)
-				.put("owner", AccountAddress.of(REAddr.ofPubKeyAccount(bftKey)))
+				.put("owner", addressing.forAccounts().of(REAddr.ofPubKeyAccount(bftKey)))
 				.put("percentage", 0)
 				.put("allowDelegation", true)
 		);
