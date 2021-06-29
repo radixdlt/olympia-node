@@ -38,7 +38,6 @@ import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.utils.UInt256;
 
 public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 	@Override
@@ -55,48 +54,34 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				SubstateTypeId.TOKEN_DEF.id(),
 				buf -> {
 					var type = buf.get();
-					final UInt256 supply;
-					final ECPublicKey minter;
-					if (type == 0) {
-						supply = null;
-						minter = null;
-					} else if (type == 1) {
-						supply = null;
-						minter = REFieldSerialization.deserializeKey(buf);
-					} else if (type == 2) {
-						supply = REFieldSerialization.deserializeNonZeroUInt256(buf);
-						minter = null;
-					} else {
-						throw new DeserializeException("Unknown token def type " + type);
-					}
 					var rri = REFieldSerialization.deserializeREAddr(buf);
 					var name = REFieldSerialization.deserializeString(buf);
 					var description = REFieldSerialization.deserializeString(buf);
 					var url = REFieldSerialization.deserializeUrl(buf);
 					var iconUrl = REFieldSerialization.deserializeUrl(buf);
-					return new TokenResource(rri, name, description, iconUrl, url, supply, minter);
+					final ECPublicKey minter;
+					if (type == (byte) 0x1) {
+						return new TokenResource(rri, name, description, iconUrl, url, true, null);
+					} else if (type == (byte) 0x3) {
+						minter = REFieldSerialization.deserializeKey(buf);
+						return new TokenResource(rri, name, description, iconUrl, url, true, minter);
+					} else if (type == (byte) 0x0) {
+						return new TokenResource(rri, name, description, iconUrl, url, false, null);
+					} else {
+						throw new DeserializeException("Unknown token def type " + type);
+					}
 				},
 				(s, buf) -> {
-					s.getSupply().ifPresentOrElse(
-						i -> {
-							buf.put((byte) 2);
-							buf.put(i.toByteArray());
-						},
-						() -> {
-							s.getOwner().ifPresentOrElse(
-								m -> {
-									buf.put((byte) 1);
-									REFieldSerialization.serializeKey(buf, m);
-								},
-								() -> buf.put((byte) 0)
-							);
-						}
-					);
+					byte type = 0;
+					type |= (s.isMutable() ? 0x1 : 0x0);
+					type |= (s.getOwner().isPresent() ? 0x2 : 0x0);
+					buf.put(type);
 					REFieldSerialization.serializeREAddr(buf, s.getAddr());
 					REFieldSerialization.serializeString(buf, s.getName());
 					REFieldSerialization.serializeString(buf, s.getDescription());
 					REFieldSerialization.serializeString(buf, s.getUrl());
 					REFieldSerialization.serializeString(buf, s.getIconUrl());
+					s.getOwner().ifPresent(k -> REFieldSerialization.serializeKey(buf, k));
 				}
 			)
 		);
@@ -159,11 +144,6 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				if (!u.getResourceAddr().equals(s.tokenResource.getAddr())) {
 					throw new ProcedureException("Addresses don't match.");
 				}
-
-				if (!u.getAmount().equals(s.tokenResource.getSupply().orElseThrow())) {
-					throw new ProcedureException("Initial supply doesn't match.");
-				}
-
 				return ReducerResult.complete();
 			}
 		));

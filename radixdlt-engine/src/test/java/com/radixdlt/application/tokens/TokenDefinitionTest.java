@@ -84,13 +84,12 @@ public class TokenDefinitionTest {
 		var keyPair = ECKeyPair.generateNew();
 		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
 		var addrParticle = new UnclaimedREAddr(addr);
-		var tokenDefinitionParticle = new TokenResource(
+		var tokenDefinitionParticle = TokenResource.createFixedSupplyResource(
 			addr,
 			"TEST",
 			"description",
 			"",
-			"",
-			UInt256.TEN
+			""
 		);
 
 		var holdingAddress = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
@@ -118,13 +117,12 @@ public class TokenDefinitionTest {
 		var keyPair = ECKeyPair.generateNew();
 		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
 		var addrParticle = new UnclaimedREAddr(addr);
-		var tokenDefinitionParticle = new TokenResource(
+		var tokenDefinitionParticle = TokenResource.createFixedSupplyResource(
 			addr,
 			"TEST",
 			"description",
 			"",
-			"",
-			UInt256.TEN
+			""
 		);
 		var builder = TxLowLevelBuilder.newBuilder(serialization)
 			.virtualDown(addrParticle, "test".getBytes(StandardCharsets.UTF_8))
@@ -143,7 +141,7 @@ public class TokenDefinitionTest {
 		var keyPair = ECKeyPair.generateNew();
 		// Arrange
 		var addr = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "smthng");
-		var tokenDefinitionParticle = new TokenResource(
+		var tokenDefinitionParticle = TokenResource.createMutableSupplyResource(
 			addr,
 			"TEST",
 			"description",

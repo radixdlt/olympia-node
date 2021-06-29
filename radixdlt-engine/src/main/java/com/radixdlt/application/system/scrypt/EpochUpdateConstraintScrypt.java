@@ -43,6 +43,7 @@ import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.exceptions.MismatchException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
@@ -123,7 +124,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	}
 
 	private final class RewardingValidators implements ReducerState {
-		private final TreeMap<ECPublicKey, ValidatorStakeData> curStake = new TreeMap<>(KeyComparator.instance());
+		private final TreeMap<ECPublicKey, ValidatorScratchPad> updatingValidators = new TreeMap<>(KeyComparator.instance());
 		private final TreeMap<ECPublicKey, ValidatorBFTData> validatorBFTData = new TreeMap<>(KeyComparator.instance());
 		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake = new TreeMap<>(KeyComparator.instance());
 		private final UpdatingEpoch updatingEpoch;
@@ -148,12 +149,12 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 		ReducerState next() {
 			if (validatorBFTData.isEmpty()) {
-				return new PreparingUnstake(updatingEpoch, curStake, preparingStake);
+				return new PreparingUnstake(updatingEpoch, updatingValidators, preparingStake);
 			}
 
 			var k = validatorBFTData.firstKey();
-			if (curStake.containsKey(k)) {
-				throw new IllegalStateException();
+			if (updatingValidators.containsKey(k)) {
+				throw new IllegalStateException("Inconsistent data, there should only be a single substate per validator");
 			}
 			var bftData = validatorBFTData.remove(k);
 			if (bftData.proposalsCompleted() + bftData.proposalsMissed() == 0) {
@@ -188,7 +189,8 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 				} else {
 					rakedEmissions = nodeRewards;
 				}
-				curStake.put(k, validatorStakeData.addEmission(rakedEmissions));
+				validatorStakeData.addEmission(rakedEmissions);
+				updatingValidators.put(k, validatorStakeData);
 				return next();
 			});
 		}
@@ -241,14 +243,14 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	private final class Unstaking implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<REAddr, UInt256> unstaking;
-		private final Function<ValidatorStakeData, ReducerState> onDone;
-		private ValidatorStakeData current;
+		private final Supplier<ReducerState> onDone;
+		private ValidatorScratchPad current;
 
 		Unstaking(
 			UpdatingEpoch updatingEpoch,
-			ValidatorStakeData current,
+			ValidatorScratchPad current,
 			TreeMap<REAddr, UInt256> unstaking,
-			Function<ValidatorStakeData, ReducerState> onDone
+			Supplier<ReducerState> onDone
 		) {
 			this.updatingEpoch = updatingEpoch;
 			this.current = current;
@@ -256,20 +258,18 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.onDone = onDone;
 		}
 
-		ReducerState exit(ExittingStake u) throws ProcedureException {
+		ReducerState exit(ExittingStake u) throws MismatchException {
 			var firstAddr = unstaking.firstKey();
 			var ownershipUnstake = unstaking.remove(firstAddr);
 			var epochUnlocked = updatingEpoch.prevEpoch.getEpoch() + unstakingEpochDelay + 1;
-			var nextValidatorAndExit = current.unstakeOwnership(
+			var expectedExit = current.unstakeOwnership(
 				firstAddr, ownershipUnstake, epochUnlocked
 			);
-			this.current = nextValidatorAndExit.getFirst();
-			var expectedExit = nextValidatorAndExit.getSecond();
 			if (!u.equals(expectedExit)) {
-				throw new ProcedureException("Invalid exit expected " + expectedExit + " but was " + u);
+				throw new MismatchException(expectedExit, u);
 			}
 
-			return unstaking.isEmpty() ? onDone.apply(current) : this;
+			return unstaking.isEmpty() ? onDone.get() : this;
 		}
 	}
 
@@ -277,15 +277,15 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingUnstake = new TreeMap<>(KeyComparator.instance());
 		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake;
-		private final TreeMap<ECPublicKey, ValidatorStakeData> curStake;
+		private final TreeMap<ECPublicKey, ValidatorScratchPad> updatingValidators;
 
 		PreparingUnstake(
 			UpdatingEpoch updatingEpoch,
-			TreeMap<ECPublicKey, ValidatorStakeData> curStake,
+			TreeMap<ECPublicKey, ValidatorScratchPad> updatingValidators,
 			TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake
 		) {
 			this.updatingEpoch = updatingEpoch;
-			this.curStake = curStake;
+			this.updatingValidators = updatingValidators;
 			this.preparingStake = preparingStake;
 		}
 
@@ -304,66 +304,51 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 		ReducerState next() {
 			if (preparingUnstake.isEmpty()) {
-				return new PreparingStake(updatingEpoch, curStake, preparingStake);
+				return new PreparingStake(updatingEpoch, updatingValidators, preparingStake);
 			}
 
 			var k = preparingUnstake.firstKey();
 			var unstakes = preparingUnstake.remove(k);
 
-			if (!curStake.containsKey(k)) {
-				return new LoadingStake(k, validatorStake ->
-					new Unstaking(updatingEpoch, validatorStake, unstakes, s -> {
-						curStake.put(k, s);
-						return next();
-					})
-				);
-			} else {
-				var validatorStake = curStake.get(k);
-				return new Unstaking(updatingEpoch, validatorStake, unstakes, s -> {
-					curStake.put(k, s);
-					return next();
+			if (!updatingValidators.containsKey(k)) {
+				return new LoadingStake(k, validatorStake -> {
+					updatingValidators.put(k, validatorStake);
+					return new Unstaking(updatingEpoch, validatorStake, unstakes, this::next);
 				});
+			} else {
+				var validatorStake = updatingValidators.get(k);
+				return new Unstaking(updatingEpoch, validatorStake, unstakes, this::next);
 			}
 		}
 	}
 
 	private static final class Staking implements ReducerState {
-		private ValidatorStakeData validatorStake;
+		private final ValidatorScratchPad validatorScratchPad;
 		private final TreeMap<REAddr, UInt256> stakes;
-		private final Function<ValidatorStakeData, ReducerState> onDone;
+		private final Supplier<ReducerState> onDone;
 
-		Staking(ValidatorStakeData validatorStake, TreeMap<REAddr, UInt256> stakes, Function<ValidatorStakeData, ReducerState> onDone) {
-			this.validatorStake = validatorStake;
+		Staking(ValidatorScratchPad validatorScratchPad, TreeMap<REAddr, UInt256> stakes, Supplier<ReducerState> onDone) {
+			this.validatorScratchPad = validatorScratchPad;
 			this.stakes = stakes;
 			this.onDone = onDone;
 		}
 
-		ReducerState stake(StakeOwnership stakeOwnership) throws ProcedureException {
-			if (!Objects.equals(validatorStake.getValidatorKey(), stakeOwnership.getDelegateKey())) {
-				throw new ProcedureException("Invalid update");
-			}
+		ReducerState stake(StakeOwnership stakeOwnership) throws MismatchException, ProcedureException {
 			var accountAddr = stakes.firstKey();
-			if (!Objects.equals(stakeOwnership.getOwner(), accountAddr)) {
-				throw new ProcedureException(stakeOwnership + " is not the first addr in " + stakes);
-			}
 			var stakeAmt = stakes.remove(accountAddr);
-			var nextValidatorAndOwnership = validatorStake.stake(accountAddr, stakeAmt);
-			this.validatorStake = nextValidatorAndOwnership.getFirst();
-			var expectedOwnership = nextValidatorAndOwnership.getSecond();
+			var expectedOwnership = validatorScratchPad.stake(accountAddr, stakeAmt);
 			if (!Objects.equals(stakeOwnership, expectedOwnership)) {
-				throw new ProcedureException(
-					String.format("Amount (%s) does not match what is prepared (%s)", stakeOwnership.getAmount(), stakeAmt)
-				);
+				throw new MismatchException(expectedOwnership, stakeOwnership);
 			}
-			return stakes.isEmpty() ? onDone.apply(this.validatorStake) : this;
+			return stakes.isEmpty() ? onDone.get() : this;
 		}
 	}
 
 	private static final class LoadingStake implements ReducerState {
 		private final ECPublicKey key;
-		private final Function<ValidatorStakeData, ReducerState> onDone;
+		private final Function<ValidatorScratchPad, ReducerState> onDone;
 
-		LoadingStake(ECPublicKey key, Function<ValidatorStakeData, ReducerState> onDone) {
+		LoadingStake(ECPublicKey key, Function<ValidatorScratchPad, ReducerState> onDone) {
 			this.key = key;
 			this.onDone = onDone;
 		}
@@ -372,7 +357,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			if (!stake.getValidatorKey().equals(key)) {
 				throw new ProcedureException("Invalid stake load");
 			}
-			return onDone.apply(stake);
+			return onDone.apply(new ValidatorScratchPad(stake));
 		}
 
 		@Override
@@ -383,15 +368,15 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 	private static final class PreparingStake implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
-		private final TreeMap<ECPublicKey, ValidatorStakeData> curStake;
+		private final TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
 		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake;
 
 		PreparingStake(
 			UpdatingEpoch updatingEpoch,
-			TreeMap<ECPublicKey, ValidatorStakeData> curStake,
+			TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad,
 			TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake
 		) {
-			this.curStake = curStake;
+			this.validatorsScratchPad = validatorsScratchPad;
 			this.updatingEpoch = updatingEpoch;
 			this.preparingStake = preparingStake;
 		}
@@ -411,23 +396,18 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 		ReducerState next() {
 			if (preparingStake.isEmpty()) {
-				return new PreparingRakeUpdate(updatingEpoch, curStake);
+				return new PreparingRakeUpdate(updatingEpoch, validatorsScratchPad);
 			}
 
 			var k = preparingStake.firstKey();
 			var stakes = preparingStake.remove(k);
-			if (!curStake.containsKey(k)) {
-				return new LoadingStake(k, validatorStake ->
-					new Staking(validatorStake, stakes, updated -> {
-						curStake.put(k, updated);
-						return this.next();
-					})
-				);
-			} else {
-				return new Staking(curStake.get(k), stakes, updated -> {
-					curStake.put(k, updated);
-					return this.next();
+			if (!validatorsScratchPad.containsKey(k)) {
+				return new LoadingStake(k, validatorStake -> {
+					validatorsScratchPad.put(k, validatorStake);
+					return new Staking(validatorStake, stakes, this::next);
 				});
+			} else {
+				return new Staking(validatorsScratchPad.get(k), stakes, this::next);
 			}
 		}
 	}
@@ -456,15 +436,15 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 	private static final class PreparingRakeUpdate implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
-		private final TreeMap<ECPublicKey, ValidatorStakeData> validatorsToUpdate;
+		private final TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
 		private final TreeMap<ECPublicKey, PreparedRakeUpdate> preparingRakeUpdates = new TreeMap<>(KeyComparator.instance());
 
 		PreparingRakeUpdate(
 			UpdatingEpoch updatingEpoch,
-			TreeMap<ECPublicKey, ValidatorStakeData> validatorsToUpdate
+			TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad
 		) {
 			this.updatingEpoch = updatingEpoch;
-			this.validatorsToUpdate = validatorsToUpdate;
+			this.validatorsScratchPad = validatorsScratchPad;
 		}
 
 		ReducerState prepareRakeUpdates(ShutdownAll<PreparedRakeUpdate> shutdownAll) throws ProcedureException {
@@ -482,21 +462,19 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 		ReducerState next() {
 			if (preparingRakeUpdates.isEmpty()) {
-				return new PreparingOwnerUpdate(updatingEpoch, validatorsToUpdate);
+				return new PreparingOwnerUpdate(updatingEpoch, validatorsScratchPad);
 			}
 
 			var k = preparingRakeUpdates.firstKey();
 			var validatorUpdate = preparingRakeUpdates.remove(k);
-			if (!validatorsToUpdate.containsKey(k)) {
+			if (!validatorsScratchPad.containsKey(k)) {
 				return new LoadingStake(k, validatorStake -> {
-					var updatedValidator = validatorStake.setRakePercentage(validatorUpdate.getNextRakePercentage());
-					validatorsToUpdate.put(k, updatedValidator);
+					validatorsScratchPad.put(k, validatorStake);
+					validatorStake.setRakePercentage(validatorUpdate.getNextRakePercentage());
 					return new ResetRakeUpdate(validatorUpdate, this::next);
 				});
 			} else {
-				var updatedValidator = validatorsToUpdate.get(k)
-					.setRakePercentage(validatorUpdate.getNextRakePercentage());
-				validatorsToUpdate.put(k, updatedValidator);
+				validatorsScratchPad.get(k).setRakePercentage(validatorUpdate.getNextRakePercentage());
 				return new ResetRakeUpdate(validatorUpdate, this::next);
 			}
 		}
@@ -522,15 +500,15 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 	private static final class PreparingOwnerUpdate implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
-		private final TreeMap<ECPublicKey, ValidatorStakeData> validatorsToUpdate;
+		private final TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
 		private final TreeMap<ECPublicKey, PreparedOwnerUpdate> preparingValidatorUpdates = new TreeMap<>(KeyComparator.instance());
 
 		PreparingOwnerUpdate(
 			UpdatingEpoch updatingEpoch,
-			TreeMap<ECPublicKey, ValidatorStakeData> validatorsToUpdate
+			TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad
 		) {
 			this.updatingEpoch = updatingEpoch;
-			this.validatorsToUpdate = validatorsToUpdate;
+			this.validatorsScratchPad = validatorsScratchPad;
 		}
 
 		ReducerState prepareValidatorUpdate(ShutdownAll<PreparedOwnerUpdate> shutdownAll) throws ProcedureException {
@@ -545,21 +523,19 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 		ReducerState next() {
 			if (preparingValidatorUpdates.isEmpty()) {
-				return new PreparingRegisteredUpdate(updatingEpoch, validatorsToUpdate);
+				return new PreparingRegisteredUpdate(updatingEpoch, validatorsScratchPad);
 			}
 
 			var k = preparingValidatorUpdates.firstKey();
 			var validatorUpdate = preparingValidatorUpdates.remove(k);
-			if (!validatorsToUpdate.containsKey(k)) {
+			if (!validatorsScratchPad.containsKey(k)) {
 				return new LoadingStake(k, validatorStake -> {
-					var updatedValidator = validatorStake.setOwnerAddr(validatorUpdate.getOwnerAddress());
-					validatorsToUpdate.put(k, updatedValidator);
+					validatorsScratchPad.put(k, validatorStake);
+					validatorStake.setOwnerAddr(validatorUpdate.getOwnerAddress());
 					return new ResetOwnerUpdate(k, this::next);
 				});
 			} else {
-				var updatedValidator = validatorsToUpdate.get(k)
-					.setOwnerAddr(validatorUpdate.getOwnerAddress());
-				validatorsToUpdate.put(k, updatedValidator);
+				validatorsScratchPad.get(k).setOwnerAddr(validatorUpdate.getOwnerAddress());
 				return new ResetOwnerUpdate(k, this::next);
 			}
 		}
@@ -589,15 +565,15 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 	private static final class PreparingRegisteredUpdate implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
-		private final TreeMap<ECPublicKey, ValidatorStakeData> validatorsToUpdate;
+		private final TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
 		private final TreeMap<ECPublicKey, PreparedRegisteredUpdate> preparingRegisteredUpdates = new TreeMap<>(KeyComparator.instance());
 
 		PreparingRegisteredUpdate(
 			UpdatingEpoch updatingEpoch,
-			TreeMap<ECPublicKey, ValidatorStakeData> validatorsToUpdate
+			TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad
 		) {
 			this.updatingEpoch = updatingEpoch;
-			this.validatorsToUpdate = validatorsToUpdate;
+			this.validatorsScratchPad = validatorsScratchPad;
 		}
 
 		ReducerState prepareRegisterUpdates(ShutdownAll<PreparedRegisteredUpdate> shutdownAll) throws ProcedureException {
@@ -612,23 +588,21 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 		ReducerState next() {
 			if (preparingRegisteredUpdates.isEmpty()) {
-				return validatorsToUpdate.isEmpty()
+				return validatorsScratchPad.isEmpty()
 					? new CreatingNextValidatorSet(updatingEpoch)
-					: new UpdatingValidatorStakes(updatingEpoch, validatorsToUpdate);
+					: new UpdatingValidatorStakes(updatingEpoch, validatorsScratchPad);
 			}
 
 			var k = preparingRegisteredUpdates.firstKey();
 			var validatorUpdate = preparingRegisteredUpdates.remove(k);
-			if (!validatorsToUpdate.containsKey(k)) {
+			if (!validatorsScratchPad.containsKey(k)) {
 				return new LoadingStake(k, validatorStake -> {
-					var updatedValidator = validatorStake.setRegistered(validatorUpdate.isRegistered());
-					validatorsToUpdate.put(k, updatedValidator);
+					validatorsScratchPad.put(k, validatorStake);
+					validatorStake.setRegistered(validatorUpdate.isRegistered());
 					return new ResetRegisteredUpdate(validatorUpdate, this::next);
 				});
 			} else {
-				var updatedValidator = validatorsToUpdate.get(k)
-					.setRegistered(validatorUpdate.isRegistered());
-				validatorsToUpdate.put(k, updatedValidator);
+				validatorsScratchPad.get(k).setRegistered(validatorUpdate.isRegistered());
 				return new ResetRegisteredUpdate(validatorUpdate, this::next);
 			}
 		}
@@ -636,24 +610,20 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 	private static final class UpdatingValidatorStakes implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
-		private final TreeMap<ECPublicKey, ValidatorStakeData> curStake;
-		UpdatingValidatorStakes(UpdatingEpoch updatingEpoch, TreeMap<ECPublicKey, ValidatorStakeData> curStake) {
+		private final TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
+		UpdatingValidatorStakes(UpdatingEpoch updatingEpoch, TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad) {
 			this.updatingEpoch = updatingEpoch;
-			this.curStake = curStake;
+			this.validatorsScratchPad = validatorsScratchPad;
 		}
 
-		ReducerState updateStake(ValidatorStakeData stake) throws ProcedureException {
-			var k = curStake.firstKey();
-			if (!stake.getValidatorKey().equals(k)) {
-				throw new ProcedureException("First key does not match.");
+		ReducerState updateStake(ValidatorStakeData stake) throws MismatchException {
+			var k = validatorsScratchPad.firstKey();
+			var expectedValidatorData = validatorsScratchPad.remove(k).toSubstate();
+			if (!stake.equals(expectedValidatorData)) {
+				throw new MismatchException(expectedValidatorData, stake);
 			}
 
-			var expectedUpdate = curStake.remove(k);
-			if (!stake.equals(expectedUpdate)) {
-				throw new ProcedureException("Stake amount does not match Expected: " + expectedUpdate + " Actual: " + stake);
-			}
-
-			return curStake.isEmpty() ? new CreatingNextValidatorSet(updatingEpoch) : this;
+			return validatorsScratchPad.isEmpty() ? new CreatingNextValidatorSet(updatingEpoch) : this;
 		}
 	}
 

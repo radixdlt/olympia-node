@@ -27,6 +27,11 @@ import com.radixdlt.utils.UInt384;
 
 import java.util.Objects;
 
+/**
+ * Execution layer representation of tokens. We use UInt384 as substates are limited
+ * to use of UInt256 amounts and we make the assumption of 2^128 max total transactions
+ * in the network so UInt384 should be enough to handle this.
+ */
 public final class Tokens {
 	private final REAddr resourceAddr;
 	private final UInt384 amount;

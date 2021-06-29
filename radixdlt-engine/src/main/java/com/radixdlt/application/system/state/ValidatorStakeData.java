@@ -20,13 +20,9 @@ package com.radixdlt.application.system.state;
 
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.Bucket;
-import com.radixdlt.application.tokens.state.ExittingStake;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.UInt384;
 
 import java.util.Objects;
 
@@ -85,6 +81,10 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		);
 	}
 
+	public UInt256 getTotalStake() {
+		return totalStake;
+	}
+
 	public boolean isRegistered() {
 		return isRegistered;
 	}
@@ -97,108 +97,12 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		return rakePercentage;
 	}
 
-	public ValidatorStakeData setRegistered(boolean isRegistered) {
-		return new ValidatorStakeData(
-			validatorKey,
-			totalStake,
-			totalOwnership,
-			rakePercentage,
-			ownerAddr,
-			isRegistered
-		);
-	}
-
-	public ValidatorStakeData setRakePercentage(int rakePercentage) {
-		return new ValidatorStakeData(
-			validatorKey,
-			totalStake,
-			totalOwnership,
-			rakePercentage,
-			ownerAddr,
-			isRegistered
-		);
-	}
-
-	public ValidatorStakeData setOwnerAddr(REAddr ownerAddr) {
-		return new ValidatorStakeData(
-			validatorKey,
-			totalStake,
-			totalOwnership,
-			rakePercentage,
-			ownerAddr,
-			isRegistered
-		);
-	}
-
-	@Override
-	public UInt256 getAmount() {
-		return this.totalStake;
-	}
-
-	@Override
-	public Bucket bucket() {
-		return new StakeBucket(validatorKey);
-	}
-
-	public ValidatorStakeData addEmission(UInt256 amount) {
-		return new ValidatorStakeData(
-			validatorKey,
-			this.totalStake.add(amount),
-			totalOwnership,
-			rakePercentage,
-			ownerAddr,
-			isRegistered
-		);
-	}
-
-	public Pair<ValidatorStakeData, StakeOwnership> stake(REAddr owner, UInt256 stake) throws ProcedureException {
-		if (totalStake.isZero()) {
-			var nextValidatorStake = new ValidatorStakeData(validatorKey, stake, stake, rakePercentage, ownerAddr, isRegistered);
-			var stakeOwnership = new StakeOwnership(validatorKey, owner, stake);
-			return Pair.of(nextValidatorStake, stakeOwnership);
-		}
-
-		var ownership384 = UInt384.from(totalOwnership).multiply(stake).divide(totalStake);
-		if (ownership384.isHighBitSet()) {
-			throw new IllegalStateException("Overflow");
-		}
-		var ownershipAmt = ownership384.getLow();
-		var stakeOwnership = new StakeOwnership(validatorKey, owner, ownershipAmt);
-		var nextValidatorStake = new ValidatorStakeData(
-			validatorKey,
-			totalStake.add(stake),
-			totalOwnership.add(ownershipAmt),
-			rakePercentage,
-			ownerAddr,
-			isRegistered
-		);
-		return Pair.of(nextValidatorStake, stakeOwnership);
-	}
-
-	public Pair<ValidatorStakeData, ExittingStake> unstakeOwnership(REAddr owner, UInt256 unstakeOwnership, long epochUnlocked) {
-		if (totalOwnership.compareTo(unstakeOwnership) < 0) {
-			throw new IllegalStateException("Not enough ownership");
-		}
-
-		var unstaked384 = UInt384.from(totalStake).multiply(unstakeOwnership).divide(totalOwnership);
-		if (unstaked384.isHighBitSet()) {
-			throw new IllegalStateException("Overflow");
-		}
-		var unstaked = unstaked384.getLow();
-		var nextValidatorStake = new ValidatorStakeData(
-			validatorKey,
-			totalStake.subtract(unstaked),
-			totalOwnership.subtract(unstakeOwnership),
-			rakePercentage,
-			ownerAddr,
-			isRegistered
-		);
-		var exittingStake = new ExittingStake(epochUnlocked, validatorKey, owner, unstaked);
-		return Pair.of(nextValidatorStake, exittingStake);
-	}
-
 	public ECPublicKey getValidatorKey() {
 		return validatorKey;
+	}
+
+	public UInt256 getTotalOwnership() {
+		return this.totalOwnership;
 	}
 
 	@Override
@@ -212,8 +116,14 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		);
 	}
 
-	public UInt256 getTotalOwnership() {
-		return this.totalOwnership;
+	@Override
+	public UInt256 getAmount() {
+		return this.totalStake;
+	}
+
+	@Override
+	public Bucket bucket() {
+		return new StakeBucket(validatorKey);
 	}
 
 	@Override

@@ -42,7 +42,7 @@ public final class CreateMutableTokenConstructor implements ActionConstructor<Cr
 			Optional.of(SubstateWithArg.withArg(new UnclaimedREAddr(reAddress), action.getSymbol().getBytes(StandardCharsets.UTF_8))),
 			() -> new TxBuilderException("RRI not available")
 		);
-		txBuilder.up(new TokenResource(
+		txBuilder.up(TokenResource.createMutableSupplyResource(
 			reAddress,
 			action.getName(),
 			action.getDescription(),

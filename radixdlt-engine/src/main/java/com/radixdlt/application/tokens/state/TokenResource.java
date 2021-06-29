@@ -22,7 +22,6 @@ import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -37,7 +36,7 @@ public final class TokenResource implements Particle {
 	private final String iconUrl;
 	private final String url;
 	private final ECPublicKey owner;
-	private final UInt256 supply;
+	private final boolean isMutable;
 
 	public TokenResource(
 		REAddr addr,
@@ -45,7 +44,7 @@ public final class TokenResource implements Particle {
 		String description,
 		String iconUrl,
 		String url,
-		UInt256 supply,
+		boolean isMutable,
 		ECPublicKey owner
 	) {
 		this.addr = Objects.requireNonNull(addr);
@@ -54,26 +53,25 @@ public final class TokenResource implements Particle {
 		this.iconUrl = Objects.requireNonNull(iconUrl);
 		this.url = Objects.requireNonNull(url);
 
-		if (supply != null && owner != null) {
+		if (!isMutable && owner != null) {
 			throw new IllegalArgumentException("Can't have fixed supply and minter");
 		}
 
-		this.supply = supply;
+		this.isMutable = isMutable;
 		this.owner = owner;
 	}
 
-	public TokenResource(
+	public static TokenResource createFixedSupplyResource(
 		REAddr addr,
 		String name,
 		String description,
 		String iconUrl,
-		String url,
-		UInt256 supply
+		String url
 	) {
-		this(addr, name, description, iconUrl, url, Objects.requireNonNull(supply), null);
+		return new TokenResource(addr, name, description, iconUrl, url, false, null);
 	}
 
-	public TokenResource(
+	public static TokenResource createMutableSupplyResource(
 		REAddr addr,
 		String name,
 		String description,
@@ -81,7 +79,7 @@ public final class TokenResource implements Particle {
 		String url,
 		ECPublicKey owner
 	) {
-		this(addr, name, description, iconUrl, url, null, owner);
+		return new TokenResource(addr, name, description, iconUrl, url, true, owner);
 	}
 
 	public void verifyMintAuthorization(Optional<ECPublicKey> key) throws AuthorizationException {
@@ -101,7 +99,7 @@ public final class TokenResource implements Particle {
 	}
 
 	public boolean isMutable() {
-		return this.supply == null;
+		return isMutable;
 	}
 
 	public REAddr getAddr() {
@@ -116,10 +114,6 @@ public final class TokenResource implements Particle {
 		return this.description;
 	}
 
-	public Optional<UInt256> getSupply() {
-		return Optional.ofNullable(this.supply);
-	}
-
 	public String getIconUrl() {
 		return this.iconUrl;
 	}
@@ -131,7 +125,7 @@ public final class TokenResource implements Particle {
 	@Override
 	public String toString() {
 		return String.format("%s[(%s:%s:%s), (%s)]", getClass().getSimpleName(),
-			this.addr, name, supply, description);
+			this.addr, name, isMutable, description);
 	}
 
 	@Override
@@ -146,7 +140,7 @@ public final class TokenResource implements Particle {
 		return Objects.equals(addr, that.addr)
 			&& Objects.equals(name, that.name)
 			&& Objects.equals(description, that.description)
-			&& Objects.equals(supply, that.supply)
+			&& this.isMutable == that.isMutable
 			&& Objects.equals(iconUrl, that.iconUrl)
 			&& Objects.equals(url, that.url)
 			&& Objects.equals(owner, that.owner);
@@ -154,6 +148,6 @@ public final class TokenResource implements Particle {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(addr, name, description, supply, iconUrl, url, owner);
+		return Objects.hash(addr, name, description, isMutable, iconUrl, url, owner);
 	}
 }
