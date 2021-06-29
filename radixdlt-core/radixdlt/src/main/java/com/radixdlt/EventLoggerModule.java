@@ -24,6 +24,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.system.ValidatorBFTDataEvent;
+import com.radixdlt.application.system.ValidatorMissedProposalsEvent;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -48,12 +49,12 @@ public final class EventLoggerModule extends AbstractModule {
 
 	@Provides
 	Function<BFTNode, String> stringForNodes1(Addressing addressing) {
-		return n -> addressing.forValidators().of(n.getKey()).substring(0, 10);
+		return n -> addressing.forValidators().of(n.getKey()).substring(0, 11);
 	}
 
 	@Provides
 	Function<ECPublicKey, String> stringForNodes2(Addressing addressing) {
-		return n -> addressing.forValidators().of(n).substring(0, 10);
+		return n -> addressing.forValidators().of(n).substring(0, 11);
 	}
 
 	@ProvidesIntoSet
@@ -120,21 +121,7 @@ public final class EventLoggerModule extends AbstractModule {
 						validatorSet.getValidators().size(),
 						Amount.ofSubunits(validatorSet.getTotalPower())
 					);
-					if (output == null) {
-						return;
-					}
-					output.getProcessedTxns().stream().flatMap(t -> t.getEvents().stream())
-						.forEach(e -> {
-							if (e instanceof ValidatorBFTDataEvent) {
-								var event = (ValidatorBFTDataEvent) e;
-								Level logLevel = event.getMissedProposals() > 0 ? Level.WARN : Level.INFO;
-								logger.log(logLevel, "eng_vldbft{validator={} completed_proposals={} missed_proposals={}",
-									nodeString.apply(event.getValidatorKey()),
-									event.getCompletedProposals(),
-									event.getMissedProposals()
-								);
-							}
-						});
+
 				} else {
 					long userTxns = output != null ? output.getProcessedTxns().stream().filter(t -> !t.isSystemOnly()).count() : 0;
 					Level logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
@@ -146,6 +133,32 @@ public final class EventLoggerModule extends AbstractModule {
 						userTxns
 					);
 				}
+
+				if (output == null) {
+					return;
+				}
+
+				output.getProcessedTxns().stream().flatMap(t -> t.getEvents().stream())
+					.forEach(e -> {
+						if (e instanceof ValidatorBFTDataEvent) {
+							var event = (ValidatorBFTDataEvent) e;
+							Level logLevel = event.getMissedProposals() > 0 ? Level.WARN : Level.INFO;
+							logger.log(logLevel, "vdr_epochr{validator={} completed_proposals={} missed_proposals={}}",
+								nodeString.apply(event.getValidatorKey()),
+								event.getCompletedProposals(),
+								event.getMissedProposals()
+							);
+						} else if (e instanceof ValidatorMissedProposalsEvent) {
+							var event = (ValidatorMissedProposalsEvent) e;
+							var you = event.getValidatorKey().equals(self.getKey());
+							Level logLevel = you ? Level.ERROR : Level.WARN;
+							logger.log(logLevel, "{}_failed{validator={} missed_proposals={}}",
+								you ? "you" : "vdr",
+								nodeString.apply(event.getValidatorKey()),
+								event.getMissedProposals()
+							);
+						}
+					});
 			}
 		);
 	}
