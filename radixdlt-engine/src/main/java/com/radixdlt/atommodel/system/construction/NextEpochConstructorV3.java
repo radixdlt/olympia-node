@@ -120,14 +120,19 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 			Optional.empty(),
 			"No round data available"
 		);
-		var prevEpoch = txBuilder.down(
+		var closingEpoch = txBuilder.down(
 			EpochData.class,
 			p -> true,
-			Optional.of(SubstateWithArg.noArg(new EpochData(0))),
+			Optional.empty(),
 			"No epoch data available"
 		);
 
-		var exitting = txBuilder.shutdownAll(ExittingStake.class, i -> {
+		var unlockedStateIndexBuf = ByteBuffer.allocate(2 + Long.BYTES);
+		unlockedStateIndexBuf.put(SubstateTypeId.EXITTING_STAKE.id());
+		unlockedStateIndexBuf.put((byte) 0);
+		unlockedStateIndexBuf.putLong(closingEpoch.getEpoch() + 1);
+		var unlockedStakeIndex = new ShutdownAllIndex(unlockedStateIndexBuf.array(), ExittingStake.class);
+		var exitting = txBuilder.shutdownAll(unlockedStakeIndex, (Iterator<ExittingStake> i) -> {
 			final TreeSet<ExittingStake> exit = new TreeSet<>(
 				(o1, o2) -> Arrays.compare(o1.dataKey(), o2.dataKey())
 			);
@@ -135,11 +140,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 			return exit;
 		});
 		for (var e : exitting) {
-			if (e.getEpochUnlocked() == prevEpoch.getEpoch()) {
-				txBuilder.up(e.unlock());
-			} else {
-				txBuilder.up(e); // TODO: optimize and remove this unneed read/write
-			}
+			txBuilder.up(e.unlock());
 		}
 
 		var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorStakeData>(KeyComparator.instance());
@@ -212,7 +213,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 			for (var entry : unstakes.entrySet()) {
 				var addr = entry.getKey();
 				var amt = entry.getValue();
-				var epochUnlocked = prevEpoch.getEpoch() + unstakingEpochDelay;
+				var epochUnlocked = closingEpoch.getEpoch() + 1 + unstakingEpochDelay;
 				var nextStakeAndAmt = curValidator.unstakeOwnership(addr, amt, epochUnlocked);
 				curValidator = nextStakeAndAmt.getFirst();
 				var exittingStake = nextStakeAndAmt.getSecond();
@@ -256,7 +257,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		var buf = ByteBuffer.allocate(2 + Long.BYTES);
 		buf.put(SubstateTypeId.PREPARED_RAKE_UPDATE.id());
 		buf.put((byte) 0);
-		buf.putLong(prevEpoch.getEpoch() + 1);
+		buf.putLong(closingEpoch.getEpoch() + 1);
 		var index = new ShutdownAllIndex(buf.array(), PreparedRakeUpdate.class);
 		txBuilder.shutdownAll(index, (Iterator<PreparedRakeUpdate> i) -> {
 			i.forEachRemaining(preparedValidatorUpdate ->
@@ -296,7 +297,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		var validatorKeys = action.validators(validatorsToUpdate.values());
 		validatorKeys.forEach(k -> txBuilder.up(new ValidatorBFTData(k, 0, 0)));
 
-		txBuilder.up(new EpochData(prevEpoch.getEpoch() + 1));
+		txBuilder.up(new EpochData(closingEpoch.getEpoch() + 1));
 		txBuilder.up(new RoundData(0, closedRound.getTimestamp()));
 	}
 

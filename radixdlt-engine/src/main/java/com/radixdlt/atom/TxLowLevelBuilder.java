@@ -48,7 +48,7 @@ public final class TxLowLevelBuilder {
 	private final Map<Integer, LocalSubstate> localUpParticles = new HashMap<>();
 	private final Set<SubstateId> remoteDownSubstate = new HashSet<>();
 	private final SubstateSerialization serialization;
-	private int instructionIndex = 0;
+	private int upParticleCount = 0;
 
 	TxLowLevelBuilder(SubstateSerialization serialization, ByteArrayOutputStream blobStream) {
 		this.serialization = serialization;
@@ -96,7 +96,6 @@ public final class TxLowLevelBuilder {
 		} catch (IOException e) {
 			throw new IllegalStateException("Unable to write data.", e);
 		}
-		this.instructionIndex++;
 	}
 
 	public TxLowLevelBuilder message(byte[] bytes) {
@@ -111,9 +110,10 @@ public final class TxLowLevelBuilder {
 
 	public TxLowLevelBuilder up(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
-		this.localUpParticles.put(instructionIndex, LocalSubstate.create(instructionIndex, particle));
+		this.localUpParticles.put(upParticleCount, LocalSubstate.create(upParticleCount, particle));
 		var bytes = serialization.serialize(particle);
 		instruction(REInstruction.REMicroOp.UP, bytes);
+		upParticleCount++;
 		return this;
 	}
 
