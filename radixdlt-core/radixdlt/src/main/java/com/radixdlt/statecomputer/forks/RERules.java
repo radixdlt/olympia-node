@@ -18,7 +18,7 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.REConstructor;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.SubstateSerialization;
@@ -33,7 +33,7 @@ public final class RERules {
 	private final REParser parser;
 	private final SubstateSerialization serialization;
 	private final ConstraintMachineConfig constraintMachineConfig;
-	private final ActionConstructors actionConstructors;
+	private final REConstructor actionConstructors;
 	private final BatchVerifier<LedgerAndBFTProof> batchVerifier;
 	private final View maxRounds;
 	private final OptionalInt maxSigsPerRound;
@@ -43,7 +43,7 @@ public final class RERules {
 		REParser parser,
 		SubstateSerialization serialization,
 		ConstraintMachineConfig constraintMachineConfig,
-		ActionConstructors actionConstructors,
+		REConstructor actionConstructors,
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
 		View maxRounds,
 		OptionalInt maxSigsPerRound
@@ -70,7 +70,7 @@ public final class RERules {
 		return serialization;
 	}
 
-	public ActionConstructors getActionConstructors() {
+	public REConstructor getActionConstructors() {
 		return actionConstructors;
 	}
 

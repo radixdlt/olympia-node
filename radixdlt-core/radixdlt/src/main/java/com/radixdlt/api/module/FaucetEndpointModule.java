@@ -32,7 +32,7 @@ import com.radixdlt.api.qualifier.NodeServer;
 import com.radixdlt.api.qualifier.FaucetEndpoint;
 import com.radixdlt.api.server.JsonRpcServer;
 import com.radixdlt.atom.Substate;
-import com.radixdlt.atommodel.tokens.state.TokenResource;
+import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.exceptions.TxnParseException;
 import com.radixdlt.identifiers.REAddr;

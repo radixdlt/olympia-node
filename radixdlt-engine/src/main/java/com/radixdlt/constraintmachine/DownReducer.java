@@ -18,8 +18,6 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-
 public interface DownReducer<I extends Particle, S extends ReducerState> {
-	ReducerResult reduce(SubstateWithArg<I> inputParticle, S reducerState, ImmutableAddrs immutableAddrs) throws ProcedureException;
+	ReducerResult reduce(SubstateWithArg<I> inputParticle, S reducerState, ImmutableAddrs immutableAddrs) throws Exception;
 }

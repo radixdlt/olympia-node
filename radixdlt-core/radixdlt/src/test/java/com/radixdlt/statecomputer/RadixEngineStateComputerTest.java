@@ -40,7 +40,7 @@ import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.NextEpoch;
 import com.radixdlt.atom.actions.NextRound;
-import com.radixdlt.atommodel.system.state.RoundData;
+import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;

@@ -20,7 +20,7 @@ package com.radixdlt.constraintmachine.exceptions;
 
 import com.radixdlt.identifiers.REAddr;
 
-public final class InvalidResourceException extends ProcedureException {
+public final class InvalidResourceException extends Exception {
 	private final REAddr expected;
 	private final REAddr actual;
 

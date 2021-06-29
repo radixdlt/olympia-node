@@ -27,41 +27,19 @@ public interface Meter {
 		ProcedureKey procedureKey,
 		Object param,
 		ExecutionContext context
-	) throws AuthorizationException;
+	) throws Exception;
 
 	void onSuperUserProcedure(
 		ProcedureKey procedureKey,
 		Object param,
 		ExecutionContext context
-	);
+	) throws Exception;
 
 	void onSigInstruction(ExecutionContext context) throws AuthorizationException;
 
-	default Meter combine(Meter other) {
-		return new Meter() {
-			@Override
-			public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws AuthorizationException {
-				this.onUserProcedure(procedureKey, param, context);
-				other.onUserProcedure(procedureKey, param, context);
-			}
-
-			@Override
-			public void onSuperUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) {
-				this.onSuperUserProcedure(procedureKey, param, context);
-				other.onSuperUserProcedure(procedureKey, param, context);
-			}
-
-			@Override
-			public void onSigInstruction(ExecutionContext context) throws AuthorizationException {
-				this.onSigInstruction(context);
-				other.onSigInstruction(context);
-			}
-		};
-	}
-
 	Meter EMPTY = new Meter() {
 		@Override
-		public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws AuthorizationException {
+		public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) {
 			// no-op
 		}
 
@@ -71,7 +49,7 @@ public interface Meter {
 		}
 
 		@Override
-		public void onSigInstruction(ExecutionContext context) throws AuthorizationException {
+		public void onSigInstruction(ExecutionContext context) {
 			// no-op
 		}
 	};

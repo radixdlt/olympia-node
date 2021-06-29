@@ -17,7 +17,7 @@
 
 package com.radixdlt.api.chaos.mempoolfiller;
 
-import com.radixdlt.statecomputer.forks.RERulesVersion;
+import com.radixdlt.application.tokens.TokenUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -26,7 +26,6 @@ import com.google.inject.Inject;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
@@ -121,10 +120,11 @@ public final class MempoolFiller {
 				return;
 			}
 
+			var minSize = UInt256.TWO.multiply(UInt256.TEN.pow(TokenUtils.SUB_UNITS_POW_10 - 4));
 			var shuttingDown = radixEngineMempool.getShuttingDownSubstates();
 			var txnConstructionRequest = TxnConstructionRequest.create()
-				.action(new PayFee(account, RERulesVersion.FIXED_FEE))
-				.splitNative(REAddr.ofNativeToken(), account, RERulesVersion.FIXED_FEE.multiply(UInt256.TWO))
+				.feePayer(account)
+				.splitNative(REAddr.ofNativeToken(), account, minSize)
 				.avoidSubstates(shuttingDown);
 
 			var txns = new ArrayList<Txn>();

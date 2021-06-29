@@ -22,4 +22,8 @@ public class AuthorizationException extends Exception {
 	public AuthorizationException(String msg) {
 		super(msg);
 	}
+
+	public AuthorizationException(String msg, Exception cause) {
+		super(msg, cause);
+	}
 }

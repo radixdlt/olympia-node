@@ -20,7 +20,7 @@ package com.radixdlt.statecomputer.forks;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.atommodel.tokens.Amount;
+import com.radixdlt.application.tokens.Amount;
 
 import java.util.OptionalInt;
 
@@ -35,7 +35,7 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 			"olympia-first-epoch",
 			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
-				true,
+				Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
 				OptionalInt.of(50), // 50 Txns per round
 				1_500_000, // Two weeks worth of rounds for first epoch
 				150, // Two weeks worth of epochs
@@ -54,7 +54,7 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 			"olympia",
 			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
-				true,
+				Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
 				OptionalInt.of(50), // 50 Txns per round
 				10_000,
 				150, // Two weeks worth of epochs

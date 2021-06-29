@@ -19,8 +19,8 @@
 package com.radixdlt.application;
 
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.validators.state.PreparedRegisteredUpdate;
-import com.radixdlt.atommodel.validators.state.ValidatorMetaData;
+import com.radixdlt.application.validators.state.PreparedRegisteredUpdate;
+import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;

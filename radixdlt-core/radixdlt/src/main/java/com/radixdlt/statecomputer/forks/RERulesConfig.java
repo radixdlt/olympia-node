@@ -18,14 +18,14 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.radixdlt.atommodel.tokens.Amount;
+import com.radixdlt.application.tokens.Amount;
 
 import java.util.OptionalInt;
 
 public final class RERulesConfig {
 	private final long maxRounds;
 	private final OptionalInt maxSigsPerRound;
-	private final boolean fees;
+	private final Amount perByteFee;
 	private final long rakeIncreaseDebouncerEpochLength;
 	private final Amount minimumStake;
 	private final long unstakingEpochDelay;
@@ -33,7 +33,7 @@ public final class RERulesConfig {
 	private final int minimumCompletedProposalsPercentage;
 
 	public RERulesConfig(
-		boolean fees,
+		Amount perByteFee,
 		OptionalInt maxSigsPerRound,
 		long maxRounds,
 		long rakeIncreaseDebouncerEpochLength,
@@ -42,7 +42,7 @@ public final class RERulesConfig {
 		Amount rewardsPerProposal,
 		int minimumCompletedProposalsPercentage
 	) {
-		this.fees = fees;
+		this.perByteFee = perByteFee;
 		this.maxSigsPerRound = maxSigsPerRound;
 		this.maxRounds = maxRounds;
 		this.rakeIncreaseDebouncerEpochLength = rakeIncreaseDebouncerEpochLength;
@@ -54,7 +54,7 @@ public final class RERulesConfig {
 
 	public static RERulesConfig testingDefault() {
 		return new RERulesConfig(
-			false,
+			Amount.ofTokens(0),
 			OptionalInt.of(2),
 			10,
 			1,
@@ -77,8 +77,8 @@ public final class RERulesConfig {
 		return rakeIncreaseDebouncerEpochLength;
 	}
 
-	public boolean includeFees() {
-		return fees;
+	public Amount getPerByteFee() {
+		return perByteFee;
 	}
 
 	public long getMaxRounds() {
@@ -99,7 +99,7 @@ public final class RERulesConfig {
 
 	public RERulesConfig overrideMaxSigsPerRound(int maxSigsPerRound) {
 		return new RERulesConfig(
-			this.fees,
+			this.perByteFee,
 			OptionalInt.of(maxSigsPerRound),
 			this.maxRounds,
 			this.rakeIncreaseDebouncerEpochLength,
@@ -112,7 +112,7 @@ public final class RERulesConfig {
 
 	public RERulesConfig removeSigsPerRoundLimit() {
 		return new RERulesConfig(
-			this.fees,
+			this.perByteFee,
 			OptionalInt.empty(),
 			this.maxRounds,
 			this.rakeIncreaseDebouncerEpochLength,
@@ -123,9 +123,9 @@ public final class RERulesConfig {
 		);
 	}
 
-	public RERulesConfig overrideFees(boolean fees) {
+	public RERulesConfig overridePerByteFee(Amount perByteFee) {
 		return new RERulesConfig(
-			fees,
+			perByteFee,
 			this.maxSigsPerRound,
 			this.maxRounds,
 			this.rakeIncreaseDebouncerEpochLength,
@@ -138,7 +138,7 @@ public final class RERulesConfig {
 
 	public RERulesConfig overrideMaxRounds(long maxRounds) {
 		return new RERulesConfig(
-			this.fees,
+			this.perByteFee,
 			this.maxSigsPerRound,
 			maxRounds,
 			this.rakeIncreaseDebouncerEpochLength,

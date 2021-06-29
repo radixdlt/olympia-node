@@ -18,15 +18,17 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.application.system.construction.FeeReserveCompleteConstructor;
+import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
+import com.radixdlt.atom.actions.FeeReserveComplete;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.NextEpoch;
 import com.radixdlt.atom.actions.NextRound;
-import com.radixdlt.atom.actions.PayFee;
+import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.SplitToken;
 import com.radixdlt.atom.actions.StakeTokens;
@@ -38,44 +40,42 @@ import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
 import com.radixdlt.atom.actions.UpdateRake;
 import com.radixdlt.atom.actions.UpdateValidatorMetadata;
 import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
-import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
-import com.radixdlt.atommodel.system.construction.NextEpochConstructorV3;
-import com.radixdlt.atommodel.system.construction.NextViewConstructorV3;
-import com.radixdlt.atommodel.system.construction.PayFeeConstructorV2;
-import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
-import com.radixdlt.atommodel.system.scrypt.FeeConstraintScrypt;
-import com.radixdlt.atommodel.system.scrypt.RoundUpdateConstraintScrypt;
-import com.radixdlt.atommodel.tokens.TokenUtils;
-import com.radixdlt.atommodel.tokens.construction.BurnTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.CreateFixedTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.SplitTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV3;
-import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV2;
-import com.radixdlt.atommodel.tokens.construction.UnstakeOwnershipConstructor;
-import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV2;
-import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV4;
-import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
-import com.radixdlt.atommodel.unique.scrypt.MutexConstraintScrypt;
-import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
-import com.radixdlt.atommodel.validators.construction.UnregisterValidatorConstructor;
-import com.radixdlt.atommodel.validators.construction.UpdateAllowDelegationFlagConstructor;
-import com.radixdlt.atommodel.validators.construction.UpdateRakeConstructor;
-import com.radixdlt.atommodel.validators.construction.UpdateValidatorConstructor;
-import com.radixdlt.atommodel.validators.construction.UpdateValidatorOwnerConstructor;
-import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
-import com.radixdlt.atommodel.validators.scrypt.ValidatorRegisterConstraintScrypt;
+import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
+import com.radixdlt.application.system.construction.NextEpochConstructorV3;
+import com.radixdlt.application.system.construction.NextViewConstructorV3;
+import com.radixdlt.application.system.construction.FeeReservePutConstructor;
+import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
+import com.radixdlt.application.system.scrypt.FeeConstraintScrypt;
+import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
+import com.radixdlt.application.tokens.construction.BurnTokenConstructor;
+import com.radixdlt.application.tokens.construction.CreateFixedTokenConstructor;
+import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
+import com.radixdlt.application.tokens.construction.MintTokenConstructor;
+import com.radixdlt.application.tokens.construction.SplitTokenConstructor;
+import com.radixdlt.application.tokens.construction.StakeTokensConstructorV3;
+import com.radixdlt.application.tokens.construction.TransferTokensConstructorV2;
+import com.radixdlt.application.tokens.construction.UnstakeOwnershipConstructor;
+import com.radixdlt.application.tokens.construction.UnstakeTokensConstructorV2;
+import com.radixdlt.application.tokens.scrypt.StakingConstraintScryptV4;
+import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
+import com.radixdlt.application.unique.scrypt.MutexConstraintScrypt;
+import com.radixdlt.application.validators.construction.RegisterValidatorConstructor;
+import com.radixdlt.application.validators.construction.UnregisterValidatorConstructor;
+import com.radixdlt.application.validators.construction.UpdateAllowDelegationFlagConstructor;
+import com.radixdlt.application.validators.construction.UpdateRakeConstructor;
+import com.radixdlt.application.validators.construction.UpdateValidatorConstructor;
+import com.radixdlt.application.validators.construction.UpdateValidatorOwnerConstructor;
+import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
+import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.meter.Meter;
 import com.radixdlt.constraintmachine.meter.Meters;
-import com.radixdlt.constraintmachine.meter.FixedFeeMeter;
 import com.radixdlt.constraintmachine.meter.SigsPerRoundMeter;
+import com.radixdlt.constraintmachine.meter.TxnSizeFeeMeter;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.EpochProofVerifierV2;
-import com.radixdlt.utils.UInt256;
 
 import java.util.Set;
 
@@ -84,7 +84,7 @@ public enum RERulesVersion {
 		@Override
 		public RERules create(RERulesConfig config) {
 			var maxRounds = config.getMaxRounds();
-			var fees = config.includeFees();
+			var perByteFee = config.getPerByteFee().toSubunits();
 			var rakeIncreaseDebouncerEpochLength = config.getRakeIncreaseDebouncerEpochLength();
 
 			final CMAtomOS v4 = new CMAtomOS(Set.of("xrd"));
@@ -103,7 +103,7 @@ public enum RERulesVersion {
 			));
 			var meter = Meters.combine(
 				config.getMaxSigsPerRound().stream().<Meter>mapToObj(SigsPerRoundMeter::create).findAny().orElse(Meter.EMPTY),
-				FixedFeeMeter.create(fees ? FIXED_FEE : UInt256.ZERO)
+				TxnSizeFeeMeter.create(perByteFee)
 			);
 			var betanet4 = new ConstraintMachineConfig(
 				v4.virtualizedUpParticles(),
@@ -112,7 +112,8 @@ public enum RERulesVersion {
 			);
 			var parser = new REParser(v4.buildSubstateDeserialization());
 			var serialization = v4.buildSubstateSerialization();
-			var actionConstructors = ActionConstructors.newBuilder()
+			var actionConstructors = REConstructor.newBuilder()
+				.perByteFee(perByteFee)
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.put(BurnToken.class, new BurnTokenConstructor())
 				.put(CreateFixedToken.class, new CreateFixedTokenConstructor())
@@ -132,7 +133,8 @@ public enum RERulesVersion {
 				.put(TransferToken.class, new TransferTokensConstructorV2())
 				.put(UnregisterValidator.class, new UnregisterValidatorConstructor())
 				.put(UpdateValidatorMetadata.class, new UpdateValidatorConstructor())
-				.put(PayFee.class, new PayFeeConstructorV2())
+				.put(FeeReservePut.class, new FeeReservePutConstructor())
+				.put(FeeReserveComplete.class, new FeeReserveCompleteConstructor(perByteFee))
 				.put(UpdateRake.class, new UpdateRakeConstructor(rakeIncreaseDebouncerEpochLength))
 				.put(UpdateValidatorOwnerAddress.class, new UpdateValidatorOwnerConstructor())
 				.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())
@@ -151,7 +153,6 @@ public enum RERulesVersion {
 		}
 	};
 
-	public static final UInt256 FIXED_FEE = com.radixdlt.utils.UInt256.TEN.pow(TokenUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(100));
 
 	public abstract RERules create(RERulesConfig config);
 }

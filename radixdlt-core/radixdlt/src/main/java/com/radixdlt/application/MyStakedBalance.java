@@ -18,7 +18,7 @@
 
 package com.radixdlt.application;
 
-import com.radixdlt.atommodel.system.state.ValidatorStakeData;
+import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
 

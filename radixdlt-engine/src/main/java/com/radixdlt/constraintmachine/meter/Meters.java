@@ -30,13 +30,13 @@ public final class Meters {
 	public static Meter combine(Meter m0, Meter m1) {
 		return new Meter() {
 			@Override
-			public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws AuthorizationException {
+			public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws Exception {
 				m0.onUserProcedure(procedureKey, param, context);
 				m1.onUserProcedure(procedureKey, param, context);
 			}
 
 			@Override
-			public void onSuperUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) {
+			public void onSuperUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws Exception {
 				m0.onSuperUserProcedure(procedureKey, param, context);
 				m1.onSuperUserProcedure(procedureKey, param, context);
 			}

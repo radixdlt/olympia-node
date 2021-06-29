@@ -20,12 +20,13 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atommodel.tokens.state.TokenResource;
+import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.constraintmachine.exceptions.InvalidVirtualSubstateException;
 import com.radixdlt.constraintmachine.exceptions.LocalSubstateNotFoundException;
+import com.radixdlt.constraintmachine.exceptions.MeterException;
 import com.radixdlt.constraintmachine.exceptions.MissingProcedureException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
@@ -98,7 +99,7 @@ public final class ConstraintMachine {
 			this.store = store;
 		}
 
-		public ImmutableAddrs readableAddrs() {
+		public ImmutableAddrs immutableAddrs() {
 			return addr ->
 				localUpParticles.values().stream()
 					.map(Pair::getFirst)
@@ -217,16 +218,20 @@ public final class ConstraintMachine {
 		ReducerState reducerState,
 		ImmutableAddrs immutableAddrs,
 		ExecutionContext context
-	) throws SignedSystemException, InvalidPermissionException, AuthorizationException, ProcedureException {
+	) throws SignedSystemException, InvalidPermissionException, AuthorizationException, MeterException, ProcedureException {
 		// System permissions don't require additional authorization
 		var authorization = procedure.authorization(procedureParam);
 		var requiredLevel = authorization.permissionLevel();
 		context.verifyPermissionLevel(requiredLevel);
 		if (context.permissionLevel() != PermissionLevel.SYSTEM) {
-			if (requiredLevel == PermissionLevel.USER) {
-				this.metering.onUserProcedure(procedure.key(), procedureParam, context);
-			} else if (requiredLevel == PermissionLevel.SUPER_USER) {
-				this.metering.onSuperUserProcedure(procedure.key(), procedureParam, context);
+			try {
+				if (requiredLevel == PermissionLevel.USER) {
+					this.metering.onUserProcedure(procedure.key(), procedureParam, context);
+				} else if (requiredLevel == PermissionLevel.SUPER_USER) {
+					this.metering.onSuperUserProcedure(procedure.key(), procedureParam, context);
+				}
+			} catch (Exception e) {
+				throw new MeterException(e);
 			}
 
 			authorization.authorizer().verify(immutableAddrs, context);
@@ -250,7 +255,7 @@ public final class ConstraintMachine {
 		int instIndex = 0;
 		var expectEnd = false;
 		ReducerState reducerState = null;
-		var readableAddrs = validationState.readableAddrs();
+		var readableAddrs = validationState.immutableAddrs();
 		var groupedStateUpdates = new ArrayList<List<REStateUpdate>>();
 		var stateUpdates = new ArrayList<REStateUpdate>();
 
@@ -378,6 +383,12 @@ public final class ConstraintMachine {
 			}
 
 			instIndex++;
+		}
+
+		try {
+			context.destroy();
+		} catch (Exception e) {
+			throw new ConstraintMachineException(instIndex, null, reducerState, e);
 		}
 
 		return groupedStateUpdates;

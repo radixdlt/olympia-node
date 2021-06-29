@@ -17,7 +17,7 @@
 
 package com.radixdlt.statecomputer.checkpoint;
 
-import com.radixdlt.atommodel.tokens.Amount;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.crypto.ECPublicKey;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;

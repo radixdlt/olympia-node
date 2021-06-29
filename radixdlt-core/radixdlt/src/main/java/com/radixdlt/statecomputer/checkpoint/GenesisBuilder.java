@@ -67,7 +67,7 @@ public final class GenesisBuilder {
 		var cm = new ConstraintMachine(
 			cmConfig.getVirtualStoreLayer(),
 			cmConfig.getProcedures(),
-			cmConfig.getMetering()
+			cmConfig.getMeter()
 		);
 		this.radixEngine = new RadixEngine<>(
 			rules.getParser(),
@@ -94,7 +94,7 @@ public final class GenesisBuilder {
 		);
 		txnConstructionRequest.createMutableToken(tokenDef);
 		actions.forEach(txnConstructionRequest::action);
-		var tempTxn = Txn.create(radixEngine.construct(txnConstructionRequest).buildForExternalSign().getFirst());
+		var tempTxn = Txn.create(radixEngine.construct(txnConstructionRequest).buildForExternalSign().blob());
 		var branch = radixEngine.transientBranch();
 
 		branch.execute(List.of(tempTxn), PermissionLevel.SYSTEM);

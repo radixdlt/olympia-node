@@ -17,7 +17,7 @@
 
 package com.radixdlt.api.handler;
 
-import com.radixdlt.atommodel.tokens.Amount;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.networks.Addressing;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

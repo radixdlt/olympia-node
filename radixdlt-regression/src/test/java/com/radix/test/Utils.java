@@ -1,7 +1,7 @@
 package com.radix.test;
 
 import com.radix.test.account.Account;
-import com.radixdlt.atommodel.tokens.TokenUtils;
+import com.radixdlt.application.tokens.TokenUtils;
 import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.serialization.DeserializeException;

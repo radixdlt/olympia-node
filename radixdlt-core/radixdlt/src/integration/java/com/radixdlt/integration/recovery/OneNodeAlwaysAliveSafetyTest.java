@@ -17,7 +17,7 @@
 
 package com.radixdlt.integration.recovery;
 
-import com.radixdlt.atommodel.tokens.Amount;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
@@ -209,7 +209,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 			MempoolConfig.asModule(10, 10),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
-					false,
+					Amount.zero(),
 					OptionalInt.of(50),
 					88,
 					2,

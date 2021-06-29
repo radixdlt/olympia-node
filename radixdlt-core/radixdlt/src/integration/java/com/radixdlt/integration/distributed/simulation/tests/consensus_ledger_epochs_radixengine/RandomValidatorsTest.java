@@ -19,7 +19,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.atommodel.tokens.Amount;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
@@ -53,7 +53,7 @@ public class RandomValidatorsTest {
 			RadixEngineConfig.asModule(2, 50),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
-					false,
+					Amount.ofTokens(0),
 					OptionalInt.of(5),
 					100,
 					2,
