@@ -27,6 +27,9 @@ import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
+
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.Map;
@@ -68,7 +71,7 @@ public class RandomVoteAndViewTimeoutDropperTest {
 	@Test
 	public void when_random_validators__then_sanity_checks_should_pass() {
 		SimulationTest simulationTest = bftTestBuilder.build();
-		final var runningTest = simulationTest.run();
+		final var runningTest = simulationTest.run(Duration.of(2, ChronoUnit.MINUTES));
 		final var checkResults = runningTest.awaitCompletion();
 
 		List<CounterType> counterTypes = List.of(
