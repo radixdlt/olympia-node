@@ -18,7 +18,6 @@
 
 package com.radixdlt.application.validators.state;
 
-import com.radixdlt.application.validators.scrypt.ValidatorData;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;

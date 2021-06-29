@@ -81,15 +81,15 @@ public interface EngineStore<M> extends SubstateStore {
 	 * Deterministically computes a value from a list of particles of a given type.
 	 * Must implement this until we get rid of optimistic concurrency.
 	 *
-	 * @param particleClass the particle class to reduce
-	 * @param initial the initial value of the state
 	 * @param <V> the class of the state to reduce to
+	 * @param initial the initial value of the state
+	 * @param particleClass the particle class to reduce
 	 * @return the computed, reduced state
 	 */
 	<V> V reduceUpParticles(
-		Class<? extends Particle> particleClass,
 		V initial,
 		BiFunction<V, Particle, V> outputReducer,
-		SubstateDeserialization deserialization
+		SubstateDeserialization deserialization,
+		Class<? extends Particle>... particleClass
 	);
 }

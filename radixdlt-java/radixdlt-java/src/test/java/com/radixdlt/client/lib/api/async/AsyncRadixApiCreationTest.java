@@ -52,16 +52,14 @@ public class AsyncRadixApiCreationTest {
 	private static final AccountAddress ACCOUNT_ADDRESS1 = AccountAddress.create(KEY_PAIR1.getPublicKey());
 	private static final AccountAddress ACCOUNT_ADDRESS2 = AccountAddress.create(KEY_PAIR2.getPublicKey());
 
-	private static final String BUILT_TRANSACTION = "{\"result\":{\"fee\":\"100000000000000000\","
-		+ "\"transaction\":{\"blob\":\"04391cb03c5195e82ee9ec92d48d8a65b6ce9c9c98b3dd80eb195d418a0"
-		+ "fd3e1df0000000304d1a119a0a76e66bed56bb50209896c8838bebbe559d2a0e1ea16090ff9e689ca000000"
-		+ "02092100000000000000000000000000000000000000000000000000016345785d8a0000010301040279be6"
-		+ "67ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798000000000000000000000000002c"
-		+ "d76fe086b93ce2f768a006f8cf96e761fffc000500000003010301040279be667ef9dcbbac55a06295ce870"
-		+ "b07029bfcdb2dce28d959f2815b16f81798000000000000000000000000002cd76fe086b93ce2f768a006f8"
-		+ "cf96e761fff30103010402c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee50"
-		+ "00000000000000000000000000000000000000000000000000000000000000900060c54657374206d657373"
-		+ "616765\",\"hashOfBlobToSign\":\"c102c08beb1dfe78abc3060a675e4d748d2bd6c2e70261341b1edd83688638a8\"}},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
+	private static final String BUILT_TRANSACTION = "{\"result\":{\"fee\":\"100000000000000000\",\"transaction\":{\""
+		+ "blob\":\"048ea194df8759b0780ca7a0526540f8067c97c67040c656aadde295e745f6485200000006010301040279be667ef9dc"
+		+ "bbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798000000000000000000000000002cd76fe086b93ce2f768a009bf5"
+		+ "a87a2760000000103010402c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5000000000000000000"
+		+ "00000000000000000000000000000000000000000000090500000001010301040279be667ef9dcbbac55a06295ce870b07029bfcd"
+		+ "b2dce28d959f2815b16f81798000000000000000000000000002cd76fe086b93ce2f768a009bf5a87a275fff700060c5465737420"
+		+ "6d657373616765\",\"hashOfBlobToSign\":\"503072d2fa763dd8e4f3796165674389785401686b4a6b2ca8b518203930bf0e\""
+		+ "}},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
 
 	private static final String FINALIZE_TRANSACTION = "{\"result\":{\"txID\":"
 		+ "\"a41e12e424431e8f5f8b86eddc36fb84c6a1811d9005607258f799675a3bc338\"},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
@@ -72,7 +70,7 @@ public class AsyncRadixApiCreationTest {
 	public void testBuildTransaction() throws IOException {
 		var hash = Hex.decode("c102c08beb1dfe78abc3060a675e4d748d2bd6c2e70261341b1edd83688638a8");
 
-		var request = TransactionRequest.createBuilder()
+		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
 			.transfer(
 				ACCOUNT_ADDRESS1,
 				ACCOUNT_ADDRESS2,
@@ -126,7 +124,7 @@ public class AsyncRadixApiCreationTest {
 	@Test
 	@Ignore
 	public void testBuildAndSubmitTransactionWithMessage() {
-		var request = TransactionRequest.createBuilder()
+		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
 			.transfer(
 				ACCOUNT_ADDRESS1,
 				ACCOUNT_ADDRESS2,
