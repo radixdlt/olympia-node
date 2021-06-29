@@ -66,7 +66,7 @@ public class ValidatorDTO {
 		@JsonProperty(value = "infoURL", required = true) String infoURL,
 		@JsonProperty(value = "totalDelegatedStake", required = true) UInt256 totalDelegatedStake,
 		@JsonProperty(value = "ownerDelegation", required = true) UInt256 ownerDelegation,
-		@JsonProperty(value = "percentage", required = true) long percentage,
+		@JsonProperty(value = "rakePercentage", required = true) long percentage,
 		@JsonProperty(value = "isExternalStakeAccepted", required = true) boolean isExternalStakeAccepted,
 		@JsonProperty(value = "registered", required = true) boolean registered
 	) {
