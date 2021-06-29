@@ -17,21 +17,15 @@
 
 package com.radixdlt.environment;
 
-import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.networks.Addressing;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -39,8 +33,6 @@ import java.util.stream.Collectors;
  * Helper class to set up environment with dispatched events
  */
 public final class Dispatchers {
-	private static final Logger logger = LogManager.getLogger();
-
 	private Dispatchers() {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
@@ -55,27 +47,20 @@ public final class Dispatchers {
 		@Inject
 		private Set<EventProcessorOnDispatch<?>> onDispatchProcessors;
 
-		@Inject
-		private Addressing addressing;
-
 		private final Class<T> c;
 		private final Function<T, SystemCounters.CounterType> counterTypeMapper;
-		private final BiFunction<T, Addressing, String> message;
 
 		DispatcherProvider(
 			Class<T> c,
-			@Nullable Function<T, SystemCounters.CounterType> counterTypeMapper,
-			BiFunction<T, Addressing, String> message
+			@Nullable Function<T, SystemCounters.CounterType> counterTypeMapper
 		) {
 			this.c = c;
 			this.counterTypeMapper = counterTypeMapper;
-			this.message = message;
 		}
 
 		@Override
 		public EventDispatcher<T> get() {
 			final EventDispatcher<T> dispatcher = environmentProvider.get().getDispatcher(c);
-			final RateLimiter logLimiter = RateLimiter.create(1.0);
 			final Set<EventProcessor<T>> processors = onDispatchProcessors.stream()
 				.flatMap(p -> p.getProcessor(c).stream())
 				.collect(Collectors.toSet());
@@ -84,10 +69,6 @@ public final class Dispatchers {
 				processors.forEach(p -> p.process(e));
 				if (counterTypeMapper != null) {
 					systemCounters.increment(counterTypeMapper.apply(e));
-				}
-				if (message != null) {
-					Level logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
-					logger.log(logLevel, "{}", message.apply(e, addressing));
 				}
 			};
 		}
@@ -171,26 +152,14 @@ public final class Dispatchers {
 	}
 
 	public static <T> Provider<EventDispatcher<T>> dispatcherProvider(Class<T> c) {
-		return new DispatcherProvider<>(c, null, null);
+		return new DispatcherProvider<>(c, null);
 	}
 
 	public static <T> Provider<EventDispatcher<T>> dispatcherProvider(
 		Class<T> c,
 		Function<T, SystemCounters.CounterType> counterTypeMapper
 	) {
-		return new DispatcherProvider<>(c, counterTypeMapper, null);
-	}
-
-	public static <T> Provider<EventDispatcher<T>> dispatcherProvider(
-		Class<T> c,
-		Function<T, SystemCounters.CounterType> counterTypeMapper,
-		BiFunction<T, Addressing, String> message
-	) {
-		return new DispatcherProvider<>(c, counterTypeMapper, message);
-	}
-
-	public static <T> Provider<EventDispatcher<T>> dispatcherProvider(Class<T> c, BiFunction<T, Addressing, String> message) {
-		return new DispatcherProvider<>(c, null, message);
+		return new DispatcherProvider<>(c, counterTypeMapper);
 	}
 
 	public static <T> Provider<ScheduledEventDispatcher<T>> scheduledDispatcherProvider(Class<T> c) {
