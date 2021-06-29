@@ -32,6 +32,7 @@ import com.radixdlt.integration.distributed.simulation.application.RadixEngineUn
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -44,9 +45,9 @@ public class SanityTest {
 			NetworkLatencies.fixed()
 		)
 		.addRadixEngineConfigModules(
-			RadixEngineConfig.asModule(2, 50, 5),
+			RadixEngineConfig.asModule(2, 50),
 			new ForksModule(),
-			new RadixEngineForksLatestOnlyModule()
+			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault())
 		)
 		.ledgerAndRadixEngineWithEpochHighView()
 		.addTestModules(

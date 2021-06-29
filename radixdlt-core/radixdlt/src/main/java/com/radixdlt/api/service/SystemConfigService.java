@@ -36,7 +36,6 @@ import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.statecomputer.MaxTxnsPerProposal;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
@@ -172,7 +171,6 @@ public class SystemConfigService {
 		@MempoolThrottleMs long mempoolThrottleMs,
 		@MinValidators int minValidators,
 		@MaxValidators int maxValidators,
-		@MaxTxnsPerProposal int maxTxnsPerProposal,
 		@Genesis VerifiedTxnsAndProof genesis,
 		TreeMap<Long, ForkConfig> forkConfigTreeMap,
 		SyncConfig syncConfig,
@@ -188,7 +186,7 @@ public class SystemConfigService {
 		this.peersView = peersView;
 		this.addressing = addressing;
 
-		radixEngineConfiguration = prepareRadixEngineConfiguration(forkConfigTreeMap, minValidators, maxValidators, maxTxnsPerProposal);
+		radixEngineConfiguration = prepareRadixEngineConfiguration(forkConfigTreeMap, minValidators, maxValidators);
 		mempoolConfiguration = prepareMempoolConfiguration(mempoolMaxSize, mempoolThrottleMs);
 		apiConfiguration = prepareApiConfiguration(endpointStatuses);
 		bftConfiguration = prepareBftConfiguration(pacemakerTimeout, bftSyncPatienceMillis);
@@ -350,8 +348,7 @@ public class SystemConfigService {
 	static JSONObject prepareRadixEngineConfiguration(
 		TreeMap<Long, ForkConfig> forkConfigTreeMap,
 		int minValidators,
-		int maxValidators,
-		int maxTxnsPerProposal
+		int maxValidators
 	) {
 		var forks = jsonArray();
 		forkConfigTreeMap.forEach((e, config) -> forks.put(
@@ -359,13 +356,13 @@ public class SystemConfigService {
 				.put("name", config.getName())
 				.put("version", config.getVersion().name().toLowerCase())
 				.put("maxRounds", config.getConfig().getMaxRounds())
+				.put("maxSigsPerRound", config.getConfig().getMaxSigsPerRound().orElse(-1))
 				.put("epoch", e)
 		));
 
 		return jsonObject()
 			.put("minValidators", minValidators)
 			.put("maxValidators", maxValidators)
-			.put("maxTxnsPerProposal", maxTxnsPerProposal)
 			.put("forks", forks);
 	}
 

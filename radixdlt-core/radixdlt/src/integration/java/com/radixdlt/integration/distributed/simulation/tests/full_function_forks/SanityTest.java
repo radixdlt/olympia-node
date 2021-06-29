@@ -42,6 +42,7 @@ import org.junit.runners.Parameterized;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -72,6 +73,7 @@ public class SanityTest {
 				new ForkOverwritesWithShorterEpochsModule(
 					new RERulesConfig(
 						fees,
+						OptionalInt.of(5),
 						10,
 						2,
 						Amount.ofTokens(10),

@@ -16,26 +16,29 @@
  *
  */
 
-package com.radixdlt.constraintmachine.metering;
+package com.radixdlt.constraintmachine.meter;
 
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.ExecutionContext;
-import com.radixdlt.constraintmachine.Metering;
 import com.radixdlt.constraintmachine.ProcedureKey;
 import com.radixdlt.constraintmachine.REOp;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.utils.UInt256;
 
-public class FixedFeeMetering implements Metering {
+public class FixedFeeMeter implements Meter {
 	private final UInt256 fixedFee;
 
-	public FixedFeeMetering(UInt256 fixedFee) {
+	private FixedFeeMeter(UInt256 fixedFee) {
 		this.fixedFee = fixedFee;
 	}
 
+	public static FixedFeeMeter create(UInt256 fixedFee) {
+		return new FixedFeeMeter(fixedFee);
+	}
+
 	@Override
-	public void onUserInstruction(ProcedureKey procedureKey, Object param, ExecutionContext context) throws AuthorizationException {
+	public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws AuthorizationException {
 		if (procedureKey.opSignature().op() == REOp.SYSCALL) {
 			return;
 		}
@@ -53,5 +56,13 @@ public class FixedFeeMetering implements Metering {
 		}
 
 		context.verifyHasReserve(fixedFee);
+	}
+
+	@Override
+	public void onSuperUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) {
+	}
+
+	@Override
+	public void onSigInstruction(ExecutionContext context) throws AuthorizationException {
 	}
 }

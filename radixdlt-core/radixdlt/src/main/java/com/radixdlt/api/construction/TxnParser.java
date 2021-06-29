@@ -21,11 +21,13 @@ package com.radixdlt.api.construction;
 import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.exceptions.TxnParseException;
 import com.radixdlt.statecomputer.forks.RERules;
+import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.Objects;
@@ -52,14 +54,18 @@ public final class TxnParser {
 			cmConfig.getProcedures(),
 			cmConfig.getMetering()
 		);
+		var context = new ExecutionContext(
+			PermissionLevel.SYSTEM,
+			UInt256.ZERO,
+			1
+		);
+
 		var stateUpdates = cm.verify(
 			logCMStore.createTransaction(),
 			parser.getSubstateDeserialization(),
 			logCMStore,
-			PermissionLevel.SYSTEM,
-			parsedTxn.instructions(),
-			parsedTxn.getSignedBy(),
-			parsedTxn.disableResourceAllocAndDestroy()
+			context,
+			parsedTxn.instructions()
 		);
 
 		return new REProcessedTxn(parsedTxn, stateUpdates);

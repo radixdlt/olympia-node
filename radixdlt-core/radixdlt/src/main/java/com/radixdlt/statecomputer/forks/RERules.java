@@ -26,6 +26,8 @@ import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
+import java.util.OptionalInt;
+
 public final class RERules {
 	private final String name;
 	private final REParser parser;
@@ -34,6 +36,7 @@ public final class RERules {
 	private final ActionConstructors actionConstructors;
 	private final BatchVerifier<LedgerAndBFTProof> batchVerifier;
 	private final View maxRounds;
+	private final OptionalInt maxSigsPerRound;
 
 	public RERules(
 		String name,
@@ -42,7 +45,8 @@ public final class RERules {
 		ConstraintMachineConfig constraintMachineConfig,
 		ActionConstructors actionConstructors,
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
-		View maxRounds
+		View maxRounds,
+		OptionalInt maxSigsPerRound
 	) {
 		this.name = name;
 		this.parser = parser;
@@ -51,6 +55,7 @@ public final class RERules {
 		this.actionConstructors = actionConstructors;
 		this.batchVerifier = batchVerifier;
 		this.maxRounds = maxRounds;
+		this.maxSigsPerRound = maxSigsPerRound;
 	}
 
 	public String name() {
@@ -79,5 +84,9 @@ public final class RERules {
 
 	public View getMaxRounds() {
 		return maxRounds;
+	}
+
+	public OptionalInt getMaxSigsPerRound() {
+		return maxSigsPerRound;
 	}
 }

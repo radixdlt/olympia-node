@@ -345,7 +345,7 @@ public class SimulationTest {
 			modules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
-					install(RadixEngineConfig.asModule(minValidators, maxValidators, 50));
+					install(RadixEngineConfig.asModule(minValidators, maxValidators));
 					bind(SyncConfig.class).toInstance(syncConfig);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
 				}
@@ -356,7 +356,7 @@ public class SimulationTest {
 				protected void configure() {
 					install(new MockedCryptoModule());
 					install(new RadixEngineModule());
-					install(RadixEngineConfig.asModule(minValidators, maxValidators, 50));
+					install(RadixEngineConfig.asModule(minValidators, maxValidators));
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
 						.toInstance(nodes.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
@@ -367,7 +367,7 @@ public class SimulationTest {
 			});
 
 			this.testModules.add(
-				RadixEngineConfig.asModule(minValidators, maxValidators, 50)
+				RadixEngineConfig.asModule(minValidators, maxValidators)
 			);
 
 			return this;

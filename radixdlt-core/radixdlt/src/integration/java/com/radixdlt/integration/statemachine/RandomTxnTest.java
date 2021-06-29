@@ -65,7 +65,7 @@ public class RandomTxnTest {
 			MempoolConfig.asModule(1000, 10),
 			new RadixEngineForksLatestOnlyModule(),
 			new ForksModule(),
-			RadixEngineConfig.asModule(1, 10, 50),
+			RadixEngineConfig.asModule(1, 10),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
 			new AbstractModule() {

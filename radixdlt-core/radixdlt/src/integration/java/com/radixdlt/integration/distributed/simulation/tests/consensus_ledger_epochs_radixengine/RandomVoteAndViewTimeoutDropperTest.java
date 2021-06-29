@@ -40,6 +40,7 @@ import com.radixdlt.integration.distributed.simulation.application.NodeValidator
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import org.apache.commons.collections4.MapUtils;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -54,8 +55,8 @@ public class RandomVoteAndViewTimeoutDropperTest {
 			NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.2)
 		)
 		.addRadixEngineConfigModules(
-			RadixEngineConfig.asModule(2, 50, 5),
-			new RadixEngineForksLatestOnlyModule(),
+			RadixEngineConfig.asModule(2, 50),
+			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMaxSigsPerRound(5)),
 			new ForksModule()
 		)
 		.ledgerAndRadixEngineWithEpochHighView()

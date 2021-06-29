@@ -16,19 +16,16 @@
  *
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.ledger;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import com.radixdlt.engine.RadixEngineException;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+public class CommittedBadTxnException extends ByzantineQuorumException {
+	public CommittedBadTxnException(VerifiedTxnsAndProof txnsAndProof, RadixEngineException cause) {
+		super("epoch=" + txnsAndProof.getProof().getEpoch() + " version=" + versionWithIssue(txnsAndProof, cause), cause);
+	}
 
-@Qualifier
-@Target({ FIELD, PARAMETER, METHOD })
-@Retention(RUNTIME)
-public @interface MaxTxnsPerProposal {
+	private static long versionWithIssue(VerifiedTxnsAndProof txnsAndProof, RadixEngineException cause) {
+		return txnsAndProof.getProof().getStateVersion() - txnsAndProof.getTxns().size() + cause.getTxnIndex();
+	}
 }

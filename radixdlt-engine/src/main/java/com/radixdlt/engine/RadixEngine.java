@@ -29,6 +29,7 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
+import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -44,6 +45,7 @@ import com.radixdlt.store.EngineStore;
 
 import com.radixdlt.store.TransientEngineStore;
 import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -391,19 +393,22 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	private REProcessedTxn verify(CMStore.Transaction dbTransaction, Txn txn, PermissionLevel permissionLevel)
+	private REProcessedTxn verify(CMStore.Transaction dbTransaction, Txn txn, ExecutionContext context)
 		throws TxnParseException, ConstraintMachineException {
 
+
 		var parsedTxn = parser.parse(txn);
+		parsedTxn.getSignedBy().ifPresent(context::setKey);
+		context.setDisableResourceAllocAndDestroy(parsedTxn.disableResourceAllocAndDestroy());
+
 		var stateUpdates = constraintMachine.verify(
 			dbTransaction,
 			parser.getSubstateDeserialization(),
 			engineStore,
-			permissionLevel,
-			parsedTxn.instructions(),
-			parsedTxn.getSignedBy(),
-			parsedTxn.disableResourceAllocAndDestroy()
+			context,
+			parsedTxn.instructions()
 		);
+
 		return new REProcessedTxn(parsedTxn, stateUpdates);
 	}
 
@@ -455,14 +460,24 @@ public final class RadixEngine<M> {
 	) throws RadixEngineException {
 		var checker = batchVerifier.newVerifier(this::getComputedState);
 		var parsedTransactions = new ArrayList<REProcessedTxn>();
-		for (var txn : txns) {
+
+		// FIXME: This is quite the hack to increase sigsLeft for execution on noncommits (e.g. mempool)
+		// FIXME: Should probably just change metering
+		var sigsLeft = meta != null ? 0 : 1000; // Start with 0
+
+		for (int i = 0; i < txns.size(); i++) {
+			var txn = txns.get(i);
+			var context = new ExecutionContext(permissionLevel, UInt256.ZERO, sigsLeft);
+
 			final REProcessedTxn parsedTxn;
 			// TODO: combine verification and storage
 			try {
-				parsedTxn = this.verify(dbTransaction, txn, permissionLevel);
+				parsedTxn = this.verify(dbTransaction, txn, context);
 			} catch (TxnParseException | ConstraintMachineException e) {
-				throw new RadixEngineException(txn, e);
+				throw new RadixEngineException(i, txns.size(), txn, e);
 			}
+			// Carry sigs left to the next transaction
+			sigsLeft = context.sigsLeft();
 
 			try {
 				this.engineStore.storeTxn(dbTransaction, txn, parsedTxn.stateUpdates().collect(Collectors.toList()));

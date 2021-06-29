@@ -23,7 +23,6 @@ import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
-import com.radixdlt.atom.actions.DeprecatedUnstakeTokens;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.NextEpoch;
 import com.radixdlt.atom.actions.NextRound;
@@ -50,7 +49,6 @@ import com.radixdlt.atommodel.tokens.TokenUtils;
 import com.radixdlt.atommodel.tokens.construction.BurnTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.CreateFixedTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.DeprecatedUnstakeTokensConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.SplitTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV3;
@@ -71,7 +69,10 @@ import com.radixdlt.atommodel.validators.scrypt.ValidatorRegisterConstraintScryp
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
-import com.radixdlt.constraintmachine.metering.FixedFeeMetering;
+import com.radixdlt.constraintmachine.meter.Meter;
+import com.radixdlt.constraintmachine.meter.Meters;
+import com.radixdlt.constraintmachine.meter.FixedFeeMeter;
+import com.radixdlt.constraintmachine.meter.SigsPerRoundMeter;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.EpochProofVerifierV2;
 import com.radixdlt.utils.UInt256;
@@ -100,10 +101,14 @@ public enum RERulesVersion {
 				config.getMinimumCompletedProposalsPercentage(),
 				config.getUnstakingEpochDelay()
 			));
+			var meter = Meters.combine(
+				config.getMaxSigsPerRound().stream().<Meter>mapToObj(SigsPerRoundMeter::create).findAny().orElse(Meter.EMPTY),
+				FixedFeeMeter.create(fees ? FIXED_FEE : UInt256.ZERO)
+			);
 			var betanet4 = new ConstraintMachineConfig(
 				v4.virtualizedUpParticles(),
 				v4.getProcedures(),
-				fees ? new FixedFeeMetering(FIXED_FEE) : (procedureKey, param, context) -> { }
+				meter
 			);
 			var parser = new REParser(v4.buildSubstateDeserialization());
 			var serialization = v4.buildSubstateSerialization();
@@ -112,7 +117,6 @@ public enum RERulesVersion {
 				.put(BurnToken.class, new BurnTokenConstructor())
 				.put(CreateFixedToken.class, new CreateFixedTokenConstructor())
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
-				.put(DeprecatedUnstakeTokens.class, new DeprecatedUnstakeTokensConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
 				.put(NextEpoch.class, new NextEpochConstructorV3(
 					config.getRewardsPerProposal().toSubunits(),
@@ -141,7 +145,8 @@ public enum RERulesVersion {
 				betanet4,
 				actionConstructors,
 				new EpochProofVerifierV2(),
-				View.of(maxRounds)
+				View.of(maxRounds),
+				config.getMaxSigsPerRound()
 			);
 		}
 	};

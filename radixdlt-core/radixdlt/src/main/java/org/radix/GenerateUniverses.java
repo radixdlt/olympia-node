@@ -137,7 +137,7 @@ public final class GenerateUniverses {
 			protected void configure() {
 				install(new CryptoModule());
 				install(new ForksModule());
-				install(RadixEngineConfig.asModule(1, 100, 50));
+				install(RadixEngineConfig.asModule(1, 100));
 				bind(new TypeLiteral<List<TxAction>>() {}).annotatedWith(Genesis.class).toInstance(additionalActions);
 				bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 				bind(SystemCounters.class).toInstance(new SystemCountersImpl());

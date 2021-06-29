@@ -19,6 +19,7 @@
 package com.radixdlt.integration.staking;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -128,15 +129,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class StakingUnstakingValidatorsTest {
 	private static final Logger logger = LogManager.getLogger();
 	private static final Amount REWARDS_PER_PROPOSAL = Amount.ofTokens(10);
-	private static final RERulesConfig config = RERulesConfig.testingDefault();
+	private static final RERulesConfig config = RERulesConfig.testingDefault().overrideMaxSigsPerRound(2);
 
 	@Parameterized.Parameters
 	public static Collection<Object[]> forksModule() {
 		return List.of(new Object[][] {
-			{new RadixEngineForksLatestOnlyModule(config.overrideMaxRounds(100)), false, 100},
-			{new ForkOverwritesWithShorterEpochsModule(config), false, 10},
-			{new RadixEngineForksLatestOnlyModule(config.overrideMaxRounds(100).overrideFees(true)), true, 100},
-			{new ForkOverwritesWithShorterEpochsModule(config.overrideFees(true)), true, 10},
+			{new RadixEngineForksLatestOnlyModule(config.overrideMaxRounds(100)), false, 100, null},
+			{new ForkOverwritesWithShorterEpochsModule(config), false, 10, null},
+			{
+				new ForkOverwritesWithShorterEpochsModule(config), false, 10,
+				new ForkOverwritesWithShorterEpochsModule(config.removeSigsPerRoundLimit())
+			},
+			{new RadixEngineForksLatestOnlyModule(config.overrideMaxRounds(100).overrideFees(true)), true, 100, null},
+			{new ForkOverwritesWithShorterEpochsModule(config.overrideFees(true)), true, 10, null},
 		});
 	}
 
@@ -152,10 +157,11 @@ public class StakingUnstakingValidatorsTest {
 	private List<Injector> nodes = new ArrayList<>();
 	private final ImmutableList<ECKeyPair> nodeKeys;
 	private final Module radixEngineConfiguration;
+	private final Module byzantineModule;
 	private final boolean payFees;
 	private final long maxRounds;
 
-	public StakingUnstakingValidatorsTest(Module forkModule, boolean payFees, long maxRounds) {
+	public StakingUnstakingValidatorsTest(Module forkModule, boolean payFees, long maxRounds, Module byzantineModule) {
 		this.nodeKeys = Stream.generate(ECKeyPair::generateNew)
 			.limit(20)
 			.sorted(Comparator.comparing(ECKeyPair::getPublicKey, KeyComparator.instance()))
@@ -163,10 +169,11 @@ public class StakingUnstakingValidatorsTest {
 		this.radixEngineConfiguration = Modules.combine(
 			new ForksModule(),
 			forkModule,
-			RadixEngineConfig.asModule(1, 10, 50)
+			RadixEngineConfig.asModule(1, 10)
 		);
 		this.payFees = payFees;
 		this.maxRounds = maxRounds;
+		this.byzantineModule = byzantineModule;
 	}
 
 	@Before
@@ -203,9 +210,8 @@ public class StakingUnstakingValidatorsTest {
 			}
 		).injectMembers(this);
 
-		this.nodeCreators = nodeKeys.stream()
-			.<Supplier<Injector>>map(k -> () -> createRunner(k, allNodes))
-			.collect(Collectors.toList());
+		this.nodeCreators = Streams.mapWithIndex(nodeKeys.stream(), (k, i) ->
+			(Supplier<Injector>) () -> createRunner(i == 1, k, allNodes)).collect(Collectors.toList());
 
 		for (Supplier<Injector> nodeCreator : nodeCreators) {
 			this.nodes.add(nodeCreator.get());
@@ -224,10 +230,14 @@ public class StakingUnstakingValidatorsTest {
 		this.nodes.forEach(this::stopDatabase);
 	}
 
-	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
+	private Injector createRunner(boolean byzantine, ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
+		var reConfig = byzantine && byzantineModule != null
+			? Modules.override(this.radixEngineConfiguration).with(byzantineModule)
+			: this.radixEngineConfiguration;
+
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
-			this.radixEngineConfiguration,
+			reConfig,
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {
 				@Override

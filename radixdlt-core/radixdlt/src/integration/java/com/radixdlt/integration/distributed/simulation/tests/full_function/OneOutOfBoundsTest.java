@@ -39,6 +39,7 @@ import org.junit.runners.Parameterized;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -67,6 +68,7 @@ public class OneOutOfBoundsTest {
 				new RadixEngineForksLatestOnlyModule(
 					new RERulesConfig(
 						fees,
+						OptionalInt.of(5),
 						20L,
 						2,
 						Amount.ofTokens(10),

@@ -90,6 +90,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -147,7 +148,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 			new RadixEngineForksLatestOnlyModule(),
 			new ForksModule(),
 			new RadixEngineModule(),
-			RadixEngineConfig.asModule(1, 10, 50),
+			RadixEngineConfig.asModule(1, 10),
 			new CryptoModule(),
 			new AbstractModule() {
 				@Override
@@ -209,6 +210,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
 					false,
+					OptionalInt.of(50),
 					88,
 					2,
 					Amount.ofTokens(10),
@@ -217,7 +219,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 					9800
 				)),
 			new ForksModule(),
-			RadixEngineConfig.asModule(1, 10, 50),
+			RadixEngineConfig.asModule(1, 10),
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {
 				@Override
