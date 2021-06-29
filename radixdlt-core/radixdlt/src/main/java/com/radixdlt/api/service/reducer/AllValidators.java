@@ -136,7 +136,7 @@ public final class AllValidators {
 
 	public Boolean allowsDelegation(ECPublicKey validatorKey) {
 		return ofNullable(delegationFlags.get(validatorKey))
-			.orElse(Boolean.TRUE);
+			.orElse(Boolean.FALSE);
 	}
 
 	public UInt256 getOwnerStake(ECPublicKey key) {
