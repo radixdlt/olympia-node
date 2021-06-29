@@ -148,6 +148,8 @@ public class AWSSecrets {
 			var keyStoreName = String.format("%s.ks", nodeName);
 			var keyStoreSecretName = String.format("%s.ks", nodeName);
 			var passwordName = "password";
+			var networkId = findNetworkId(networkName);
+			var publicKeyPrefix = String.format("tn%s", networkId);
 			var publicKeyFileSecretName = String.format("%s/%s/public_key", networkName, nodeName);
 			if (namePrefix.equals(CORE_NODE_PREFIX)) {
 				if (isStaker) {
@@ -182,14 +184,15 @@ public class AWSSecrets {
 				var keystoreFile = new File(keyFilePath.toString());
 				var keyFileAwsSecret = new HashMap<String, Object>();
 				var publicKeyFileAwsSecret = new HashMap<String, Object>();
-				final ValidatorAddressing validatorAddresses = ValidatorAddressing.bech32("vb");
+				final ValidatorAddressing validatorAddresses = ValidatorAddressing.bech32(publicKeyPrefix);
 				try {
 					var data = Files.readAllBytes(keyFilePath);
 					keyFileAwsSecret.put("key", data);
 					var pubKey = returnPublicKey(keystoreFile, password);
 					publicKeyFileAwsSecret.put("bech32", validatorAddresses.of(pubKey));
 					publicKeyFileAwsSecret.put("hex", pubKey.toHex());
-					System.out.println(pubKey);
+					System.out.println(validatorAddresses.of(pubKey));
+					System.out.println(pubKey.toHex());
 				} catch (IOException e) {
 					throw new IllegalStateException("While reading validator keys", e);
 				}
@@ -276,5 +279,19 @@ public class AWSSecrets {
 		return awsSecretsOutputOptions.getRecreateAwsSecrets()
 			&& (!awsSecretsOutputOptions.getNetworkName().equalsIgnoreCase("betanet")
 					|| !awsSecretsOutputOptions.getNetworkName().equalsIgnoreCase("mainnet"));
+	}
+
+	private static String findNetworkId(String networkName){
+		Map<String, String> networks = new HashMap<String, String>();
+		networks.put("releasenet", "3");
+		networks.put("rcnet", "4");
+		networks.put("milestonenet", "5");
+		networks.put("devopsnet", "6");
+
+		if (!networks.containsKey(networkName)){
+			System.out.println("Network " + networkName + " is not supported. Available networks: " + networks.keySet());
+			System.exit(1);
+		}
+		return networks.get(networkName);
 	}
 }
