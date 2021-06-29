@@ -26,7 +26,6 @@ A boolean value is encoded as a single byte:
 | `u32`    | 4                   | Unsigned 32-bit integer  |
 | `u64`    | 8                   | Unsigned 64-bit integer  |
 | `u256`   | 32                  | Unsigned 256-bit integer |
-| `u384`   | 48                  | Unsigned 384-bit integer |
 
 ### Bytes
 
@@ -353,7 +352,7 @@ A `VDOWN` instruction spins down a virtual substate (which is not stored in glob
 
 A `VDOWNARG` instruction spins down a virtual substate with an additional argument. 
 
-One use case is to create a new token by spinning down a `UNCLAIMED_READDR` substate and booting up a `TOKEN_DEF` substate, where the argument is the token symbol.
+One use case is to create a new token by spinning down a `UNCLAIMED_READDR` substate and booting up a `TOKEN_RESOURCE` substate, where the argument is the token symbol.
 
 ### `DOWN` (`0x04`)
 

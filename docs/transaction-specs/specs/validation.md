@@ -50,7 +50,8 @@ If a substate is created by one instruction, its content must be statically chec
 | `UNCLAIMED_READDR`                | <ul><li>None</li></ul>                                                                                                                         |
 | `ROUND_DATA`                      | <ul><li>None</li></ul>                                                                                                                         |
 | `EPOCH_DATA`                      | <ul><li>None</li></ul>                                                                                                                         |
-| `TOKEN_DEF`                       | <ul><li>`description`: max 200 characters</li><li>`icon_url`: must be of OWASP URL format</li><li>`url`: must be of OWASP URL format</li></ul> |
+| `TOKEN_RESOURCE`                  | <ul><li>None</li></ul>                                                                                                                         |
+| `TOKEN_RESOURCE_METADATA`         | <ul><li>`description`: max 200 characters</li><li>`icon_url`: must be of OWASP URL format</li><li>`url`: must be of OWASP URL format</li></ul> |
 | `TOKENS`                          | <ul><li>`amount`: must be non-zero</li><li>`owner`: must of an account address</li></ul>                                                       |
 | `PREPARED_STAKE`                  | <ul><li>`amount`: must be non-zero</li></ul>                                                                                                   |
 | `STAKE_OWNERSHIP`                 | <ul><li>`amount`: must be non-zero</li></ul>                                                                                                   |
