@@ -18,6 +18,7 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.identifiers.REAddr;
 
 import java.util.function.Supplier;
@@ -54,12 +55,12 @@ public class SystemCallProcedure<S extends ReducerState> implements Procedure {
 	public ReducerResult call(
 		Object o,
 		ReducerState reducerState,
-		ReadableAddrs readableAddrs,
+		ImmutableAddrs immutableAddrs,
 		ExecutionContext context
 	) throws ProcedureException {
 		try {
 			return reducer.reduce((S) reducerState, (CallData) o, context);
-		} catch (CallDataAccessException e) {
+		} catch (Exception e) {
 			throw new ProcedureException(e);
 		}
 	}

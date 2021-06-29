@@ -57,71 +57,71 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
  * stragglers left behind.
  */
 public final class MempoolFillAndEmptyTest {
-    @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
+	@Rule
+	public TemporaryFolder folder = new TemporaryFolder();
 
-    @Inject private DeterministicProcessor processor;
-    @Inject private DeterministicNetwork network;
-    @Inject private EventDispatcher<MempoolFillerUpdate> mempoolFillerUpdateEventDispatcher;
-    @Inject private EventDispatcher<ScheduledMempoolFill> scheduledMempoolFillEventDispatcher;
-    @Inject private SystemCounters systemCounters;
+	@Inject private DeterministicProcessor processor;
+	@Inject private DeterministicNetwork network;
+	@Inject private EventDispatcher<MempoolFillerUpdate> mempoolFillerUpdateEventDispatcher;
+	@Inject private EventDispatcher<ScheduledMempoolFill> scheduledMempoolFillEventDispatcher;
+	@Inject private SystemCounters systemCounters;
 
-    private Injector createInjector() {
-        return Guice.createInjector(
-            MempoolConfig.asModule(1000, 10),
-            new ForkManagerModule(),
-            new MainnetForksModule(),
-            new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
-            RadixEngineConfig.asModule(1, 10, 10),
-            new SingleNodeAndPeersDeterministicNetworkModule(),
-            new MockedGenesisModule(),
-            new MempoolFillerModule(),
-            new AbstractModule() {
-                @Override
-                protected void configure() {
-                    bindConstant().annotatedWith(NumPeers.class).to(0);
-                    bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-                }
+	private Injector createInjector() {
+		return Guice.createInjector(
+			MempoolConfig.asModule(1000, 10),
+			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
+	        new ForkManagerModule(),
+			new MainnetForksModule(),
+			RadixEngineConfig.asModule(1, 10),
+			new SingleNodeAndPeersDeterministicNetworkModule(),
+			new MockedGenesisModule(),
+			new MempoolFillerModule(),
+			new AbstractModule() {
+				@Override
+				protected void configure() {
+					bindConstant().annotatedWith(NumPeers.class).to(0);
+					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
+				}
 
-                @ProvidesIntoSet
-                private TokenIssuance mempoolFillerIssuance(@Self ECPublicKey self) {
-                    return TokenIssuance.of(self, TokenUnitConversions.unitsToSubunits(10000000000L));
-                }
-            }
-        );
-    }
+				@ProvidesIntoSet
+				private TokenIssuance mempoolFillerIssuance(@Self ECPublicKey self) {
+					return TokenIssuance.of(self, TokenUnitConversions.unitsToSubunits(10000000000L));
+				}
+			}
+		);
+	}
 
-    private void fillAndEmptyMempool() {
-        while (systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT) < 1000) {
-            ControlledMessage msg = network.nextMessage().value();
-            processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
-            if (msg.message() instanceof EpochViewUpdate) {
-                scheduledMempoolFillEventDispatcher.dispatch(ScheduledMempoolFill.create());
-            }
-        }
+	private void fillAndEmptyMempool() {
+		while (systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT) < 1000) {
+			ControlledMessage msg = network.nextMessage().value();
+			processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
+			if (msg.message() instanceof EpochViewUpdate) {
+				scheduledMempoolFillEventDispatcher.dispatch(ScheduledMempoolFill.create());
+			}
+		}
 
-        for (int i = 0; i < 10000; i++) {
-            ControlledMessage msg = network.nextMessage().value();
-            processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
-            if (systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT) == 0) {
-                break;
-            }
-        }
+		for (int i = 0; i < 10000; i++) {
+			ControlledMessage msg = network.nextMessage().value();
+			processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
+			if (systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT) == 0) {
+				break;
+			}
+		}
 
-        assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isZero();
-    }
+		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isZero();
+	}
 
-    @Test
-    public void check_that_full_mempool_empties_itself() {
-        createInjector().injectMembers(this);
-        processor.start();
+	@Test
+	public void check_that_full_mempool_empties_itself() {
+		createInjector().injectMembers(this);
+		processor.start();
 
-        mempoolFillerUpdateEventDispatcher.dispatch(MempoolFillerUpdate.enable(50, true));
+		mempoolFillerUpdateEventDispatcher.dispatch(MempoolFillerUpdate.enable(50, true));
 
-        for (int i = 0; i < 10; i++) {
-            fillAndEmptyMempool();
-        }
+		for (int i = 0; i < 10; i++) {
+			fillAndEmptyMempool();
+		}
 
-        assertThat(systemCounters.get(SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS)).isZero();
-    }
+		assertThat(systemCounters.get(SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS)).isZero();
+	}
 }

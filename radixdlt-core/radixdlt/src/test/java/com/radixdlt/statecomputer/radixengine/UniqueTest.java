@@ -18,6 +18,7 @@
 
 package com.radixdlt.statecomputer.radixengine;
 
+import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -33,7 +34,6 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atomos.UnclaimedREAddr;
-import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -59,15 +59,15 @@ public final class UniqueTest {
 	private RadixEngine<LedgerAndBFTProof> sut;
 
 	@Inject
-	private SubstateSerialization substateSerialization;
+	private ForkConfig forkConfig;
 
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
+			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
 			new ForkManagerModule(),
 			new MainnetForksModule(),
-			RadixEngineConfig.asModule(1, 100, 50),
+			RadixEngineConfig.asModule(1, 100),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
 			new AbstractModule() {
@@ -83,7 +83,7 @@ public final class UniqueTest {
 	private Txn uniqueTxn(ECKeyPair keyPair) {
 		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
 		var rriParticle = new UnclaimedREAddr(addr);
-		var atomBuilder = TxLowLevelBuilder.newBuilder(substateSerialization)
+		var atomBuilder = TxLowLevelBuilder.newBuilder(forkConfig.getEngineRules().getSerialization())
 			.virtualDown(rriParticle, "test".getBytes(StandardCharsets.UTF_8))
 			.end();
 		var sig = keyPair.sign(atomBuilder.hashToSign());

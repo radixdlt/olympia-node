@@ -18,6 +18,7 @@
 
 package com.radixdlt.statecomputer.radixengine;
 
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -33,7 +34,6 @@ import com.google.inject.Injector;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
@@ -78,10 +78,10 @@ public class StakingTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
+			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
 			new ForkManagerModule(),
 			new MainnetForksModule(),
-			RadixEngineConfig.asModule(1, 100, 50),
+			RadixEngineConfig.asModule(1, 100),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
 			new AbstractModule() {
@@ -93,7 +93,7 @@ public class StakingTest {
 
 				@ProvidesIntoSet
 				private TokenIssuance issuance() {
-					return TokenIssuance.of(staker.getPublicKey(), ValidatorStakeData.MINIMUM_STAKE);
+					return TokenIssuance.of(staker.getPublicKey(), Amount.ofTokens(10).toSubunits());
 				}
 			}
 		);
@@ -107,12 +107,12 @@ public class StakingTest {
 
 		// Act
 		var acct = REAddr.ofPubKeyAccount(staker.getPublicKey());
-		var atom = sut.construct(new StakeTokens(acct, self.getPublicKey(), ValidatorStakeData.MINIMUM_STAKE))
+		var atom = sut.construct(new StakeTokens(acct, self.getPublicKey(), Amount.ofTokens(10).toSubunits()))
 			.signAndBuild(staker::sign);
 		sut.execute(List.of(atom));
 
 		// Assert
 		var nextStaked = sut.getComputedState(StakedValidators.class).getStake(self.getPublicKey());
-		assertThat(nextStaked).isEqualTo(ValidatorStakeData.MINIMUM_STAKE.add(staked));
+		assertThat(nextStaked).isEqualTo(Amount.ofTokens(10).toSubunits().add(staked));
 	}
 }

@@ -18,7 +18,7 @@
 
 package com.radixdlt.statecomputer;
 
-import com.radixdlt.atommodel.system.state.ValidatorBFTData;
+import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
 

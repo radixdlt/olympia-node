@@ -21,8 +21,9 @@ package com.radixdlt.atom;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
-import com.radixdlt.atommodel.tokens.ResourceInBucket;
-import com.radixdlt.atommodel.tokens.state.TokensInAccount;
+import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.Particle;
@@ -32,7 +33,6 @@ import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
 import java.nio.charset.StandardCharsets;
@@ -43,6 +43,7 @@ import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -54,6 +55,8 @@ public final class TxBuilder {
 	private final SubstateStore remoteSubstate;
 	private final SubstateDeserialization deserialization;
 	private final SubstateSerialization serialization;
+	private UInt256 feeReservePut;
+	private UInt256 feeReserveTake = UInt256.ZERO;
 
 	private TxBuilder(
 		SubstateStore remoteSubstate,
@@ -184,16 +187,16 @@ public final class TxBuilder {
 	public <T extends Particle> T down(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
-		String errorMessage
+		Supplier<TxBuilderException> exceptionSupplier
 	) throws TxBuilderException {
-		return down(particleClass, particlePredicate, Optional.empty(), errorMessage);
+		return down(particleClass, particlePredicate, Optional.empty(), exceptionSupplier);
 	}
 
 	public <T extends Particle> T down(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		Optional<SubstateWithArg<T>> virtualParticle,
-		String errorMessage
+		Supplier<TxBuilderException> exceptionSupplier
 	) throws TxBuilderException {
 		var localDown = lowLevelBuilder.localUpSubstate().stream()
 			.filter(s -> {
@@ -225,7 +228,7 @@ public final class TxBuilder {
 				});
 
 			if (substateDown.isEmpty()) {
-				throw new TxBuilderException(errorMessage + " (Substate not found)");
+				throw exceptionSupplier.get();
 			}
 
 			return substateDown.get();
@@ -324,9 +327,9 @@ public final class TxBuilder {
 	public <T extends Particle> Replacer<T> swap(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
-		String errorMessage
+		Supplier<TxBuilderException> exceptionSupplier
 	) throws TxBuilderException {
-		T t = down(particleClass, particlePredicate, errorMessage);
+		T t = down(particleClass, particlePredicate, exceptionSupplier);
 		return replacer -> replacer.map(t).forEach(this::up);
 	}
 
@@ -334,9 +337,9 @@ public final class TxBuilder {
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		Optional<SubstateWithArg<T>> virtualParticle,
-		String errorMessage
+		Supplier<TxBuilderException> exceptionSupplier
 	) throws TxBuilderException {
-		T t = down(particleClass, particlePredicate, virtualParticle, errorMessage);
+		T t = down(particleClass, particlePredicate, virtualParticle, exceptionSupplier);
 		return replacer -> replacer.map(t).forEach(this::up);
 	}
 
@@ -352,14 +355,14 @@ public final class TxBuilder {
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		UInt256 amount,
-		String errorMessage
+		Supplier<TxBuilderException> exceptionSupplier
 	) throws TxBuilderException {
 		UInt256 spent = UInt256.ZERO;
 		while (spent.compareTo(amount) < 0) {
 			var substateDown = down(
 				particleClass,
 				particlePredicate,
-				errorMessage
+				exceptionSupplier
 			);
 
 			spent = spent.add(substateDown.getAmount());
@@ -373,7 +376,7 @@ public final class TxBuilder {
 		Predicate<T> particlePredicate,
 		FungibleMapper<T> remainderMapper,
 		UInt256 amount,
-		String errorMessage
+		Supplier<TxBuilderException> exceptionSupplier
 	) throws TxBuilderException {
 		UInt256 spent = UInt256.ZERO;
 		while (spent.compareTo(amount) < 0) {
@@ -386,7 +389,7 @@ public final class TxBuilder {
 			var substateDown = down(
 				particleClass,
 				particlePredicate,
-				errorMessage
+				exceptionSupplier
 			);
 
 			spent = spent.add(substateDown.getAmount());
@@ -403,7 +406,7 @@ public final class TxBuilder {
 		Predicate<T> particlePredicate,
 		FungibleMapper<T> remainderMapper,
 		UInt256 amount,
-		String errorMessage
+		Supplier<TxBuilderException> exceptionSupplier
 	) {
 		return mapper -> {
 			var substateUp = mapper.map(amount);
@@ -412,7 +415,7 @@ public final class TxBuilder {
 				particleClass,
 				particlePredicate.and(p -> !p.equals(substateUp)), // HACK to allow mempool filler to do it's thing
 				amount,
-				errorMessage
+				exceptionSupplier
 			);
 			if (!remainder.isZero()) {
 				up(remainderMapper.map(remainder));
@@ -420,23 +423,39 @@ public final class TxBuilder {
 		};
 	}
 
-	public <T extends ResourceInBucket> void payFee(
+	public UInt256 getFeeReserve() {
+		return feeReservePut;
+	}
+
+	public <T extends ResourceInBucket> void putFeeReserve(
 		Predicate<TokensInAccount> particlePredicate,
 		FungibleMapper<T> remainderMapper,
 		UInt256 amount,
-		String errorMessage
+		Supplier<TxBuilderException> exceptionSupplier
 	) throws TxBuilderException {
 		// Take
 		var remainder = downFungible(
 			TokensInAccount.class,
 			particlePredicate,
 			amount,
-			errorMessage
+			exceptionSupplier
 		);
-		lowLevelBuilder.payFee(amount);
+		lowLevelBuilder.syscall(Syscall.FEE_RESERVE_PUT, amount);
 		if (!remainder.isZero()) {
 			up(remainderMapper.map(remainder));
 		}
+		this.feeReservePut = amount;
+	}
+
+	public void takeFeeReserve(
+		REAddr addr,
+		UInt256 amount
+	) {
+		lowLevelBuilder.syscall(Syscall.FEE_RESERVE_TAKE, amount);
+		if (!amount.isZero()) {
+			up(new TokensInAccount(addr, amount, REAddr.ofNativeToken()));
+		}
+		this.feeReserveTake = this.feeReserveTake.add(amount);
 	}
 
 	public <T extends ResourceInBucket, U extends ResourceInBucket> void downFungible(
@@ -444,14 +463,14 @@ public final class TxBuilder {
 		Predicate<T> particlePredicate,
 		FungibleMapper<T> remainderMapper,
 		UInt256 amount,
-		String errorMessage
+		Supplier<TxBuilderException> exceptionSupplier
 	) throws TxBuilderException {
 		// Take
 		var remainder = downFungible(
 			particleClass,
 			particlePredicate,
 			amount,
-			errorMessage
+			exceptionSupplier
 		);
 		if (!remainder.isZero()) {
 			up(remainderMapper.map(remainder));
@@ -463,7 +482,7 @@ public final class TxBuilder {
 		Predicate<T> particlePredicate,
 		FungibleMapper<T> remainderMapper,
 		UInt256 amount,
-		String errorMessage
+		Supplier<TxBuilderException> exceptionSupplier
 	) {
 		return mapper -> {
 			// Take
@@ -472,7 +491,7 @@ public final class TxBuilder {
 				particlePredicate,
 				remainderMapper,
 				amount,
-				errorMessage
+				exceptionSupplier
 			);
 
 			// Put
@@ -487,7 +506,7 @@ public final class TxBuilder {
 			UnclaimedREAddr.class,
 			p -> p.getAddr().equals(addr),
 			Optional.of(SubstateWithArg.withArg(new UnclaimedREAddr(addr), id.getBytes(StandardCharsets.UTF_8))),
-			"RRI not available"
+			() -> new TxBuilderException("Address already claimed")
 		);
 		end();
 
@@ -508,7 +527,14 @@ public final class TxBuilder {
 		return lowLevelBuilder.build();
 	}
 
-	public Pair<byte[], HashCode> buildForExternalSign() {
-		return Pair.of(lowLevelBuilder.blob(), lowLevelBuilder.hashToSign());
+	public UnsignedTxnData buildForExternalSign() {
+		var put = Optional.ofNullable(feeReservePut).orElse(UInt256.ZERO);
+		var take = feeReserveTake;
+		if (put.compareTo(take) < 0) {
+			throw new IllegalStateException("Should not get to this state.");
+		}
+		var feesPaid = put.subtract(take);
+
+		return new UnsignedTxnData(lowLevelBuilder.blob(), lowLevelBuilder.hashToSign(), feesPaid);
 	}
 }

@@ -22,7 +22,7 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.PayFee;
+import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.SplitToken;
 import com.radixdlt.atom.actions.TransferToken;
@@ -41,12 +41,22 @@ public class TxnConstructionRequest {
 	private final List<TxAction> actions = new ArrayList<>();
 	private byte[] msg = null;
 	private Set<SubstateId> toAvoid;
+	private REAddr feePayer;
 
 	private TxnConstructionRequest() {
 	}
 
 	public static TxnConstructionRequest create() {
 		return new TxnConstructionRequest();
+	}
+
+	public TxnConstructionRequest feePayer(REAddr feePayer) {
+		this.feePayer = feePayer;
+		return this;
+	}
+
+	public Optional<REAddr> getFeePayer() {
+		return Optional.ofNullable(feePayer);
 	}
 
 	public Optional<byte[]> getMsg() {
@@ -113,7 +123,7 @@ public class TxnConstructionRequest {
 	}
 
 	public TxnConstructionRequest payFee(REAddr from, UInt256 amount) {
-		var action = new PayFee(from, amount);
+		var action = new FeeReservePut(from, amount);
 		actions.add(action);
 		return this;
 	}

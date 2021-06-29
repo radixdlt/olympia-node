@@ -18,8 +18,9 @@
 package com.radixdlt.integration.recovery;
 
 import com.google.inject.Provides;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -86,6 +87,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -146,11 +148,21 @@ public class RecoveryLivenessTest {
 		Guice.createInjector(
 			new MockedGenesisModule(),
 			new CryptoModule(),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, epochCeilingView, 2)),
+			new RadixEngineForksLatestOnlyModule(
+				new RERulesConfig(
+					Amount.zero(),
+					OptionalInt.of(50),
+					epochCeilingView,
+					2,
+					Amount.ofTokens(10),
+					1,
+					Amount.ofTokens(10),
+					9800
+				)),
 			new ForkManagerModule(),
 			new MainnetForksModule(),
 			new RadixEngineModule(),
-			RadixEngineConfig.asModule(1, 100, 50),
+			RadixEngineConfig.asModule(1, 100),
 			new AbstractModule() {
 				@Override
 				public void configure() {
@@ -158,7 +170,8 @@ public class RecoveryLivenessTest {
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class).toInstance(nodeKeys);
+					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
+						.toInstance(nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
 				}
 			}
 		).injectMembers(this);
@@ -191,10 +204,20 @@ public class RecoveryLivenessTest {
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, epochCeilingView, 2)),
+			new RadixEngineForksLatestOnlyModule(
+				new RERulesConfig(
+					Amount.zero(),
+					OptionalInt.of(50),
+					epochCeilingView,
+					2,
+					Amount.ofTokens(10),
+					1,
+					Amount.ofTokens(10),
+					9800
+				)),
 			new ForkManagerModule(),
 			new MainnetForksModule(),
-			RadixEngineConfig.asModule(1, 100, 50),
+			RadixEngineConfig.asModule(1, 100),
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {
 				@Override
@@ -204,7 +227,7 @@ public class RecoveryLivenessTest {
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bindConstant().annotatedWith(DatabaseLocation.class)
-						.to(folder.getRoot().getAbsolutePath() + "/" + ValidatorAddress.of(ecKeyPair.getPublicKey()));
+						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
 				}
 
 				@Provides
@@ -235,11 +258,11 @@ public class RecoveryLivenessTest {
 	}
 
 	private void withThreadCtx(Injector injector, Runnable r) {
-		ThreadContext.put("bftNode", " " + injector.getInstance(Key.get(BFTNode.class, Self.class)));
+		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
 		try {
 			r.run();
 		} finally {
-			ThreadContext.remove("bftNode");
+			ThreadContext.remove("self");
 		}
 	}
 
@@ -249,13 +272,12 @@ public class RecoveryLivenessTest {
 
 		int nodeIndex = msg.value().channelId().receiverIndex();
 		Injector injector = this.nodes.get(nodeIndex);
-		String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
-		ThreadContext.put("bftNode", bftNode);
+		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
 		try {
 			injector.getInstance(DeterministicProcessor.class)
 				.handleMessage(msg.value().origin(), msg.value().message(), msg.value().typeLiteral());
 		} finally {
-			ThreadContext.remove("bftNode");
+			ThreadContext.remove("self");
 		}
 
 		return msg;

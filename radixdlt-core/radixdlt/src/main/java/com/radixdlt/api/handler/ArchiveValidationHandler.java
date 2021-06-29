@@ -17,6 +17,7 @@
 
 package com.radixdlt.api.handler;
 
+import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
@@ -24,7 +25,6 @@ import com.google.inject.Singleton;
 import com.radixdlt.api.data.ValidatorInfoDetails;
 import com.radixdlt.api.service.ValidatorInfoService;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
@@ -43,10 +43,15 @@ import static com.radixdlt.utils.functional.Result.ok;
 @Singleton
 public class ArchiveValidationHandler {
 	private final ValidatorInfoService validatorInfoService;
+	private final Addressing addressing;
 
 	@Inject
-	public ArchiveValidationHandler(ValidatorInfoService validatorInfoService) {
+	public ArchiveValidationHandler(
+		ValidatorInfoService validatorInfoService,
+		Addressing addressing
+	) {
 		this.validatorInfoService = validatorInfoService;
+		this.addressing = addressing;
 	}
 
 	public JSONObject handleValidatorsGetNextEpochSet(JSONObject request) {
@@ -57,7 +62,7 @@ public class ArchiveValidationHandler {
 			params -> allOf(parseSize(params), ok(parseAddressCursor(params)))
 				.flatMap((size, cursor) ->
 							 validatorInfoService.getValidators(size, cursor)
-								 .map(ArchiveValidationHandler::formatValidatorResponse))
+								 .map(this::formatValidatorResponse))
 		);
 	}
 
@@ -65,9 +70,9 @@ public class ArchiveValidationHandler {
 		return withRequiredStringParameter(
 			request,
 			"validatorAddress",
-			address -> ValidatorAddress.fromString(address)
+			address -> addressing.forValidators().fromString(address)
 				.flatMap(validatorInfoService::getValidator)
-				.map(ValidatorInfoDetails::asJson)
+				.map(d -> d.asJson(addressing))
 		);
 	}
 
@@ -75,20 +80,20 @@ public class ArchiveValidationHandler {
 	// internal processing
 	//-----------------------------------------------------------------------------------------------------
 
-	private static JSONObject formatValidatorResponse(Optional<ECPublicKey> cursor, List<ValidatorInfoDetails> transactions) {
+	private JSONObject formatValidatorResponse(Optional<ECPublicKey> cursor, List<ValidatorInfoDetails> transactions) {
 		return jsonObject()
-			.put("cursor", cursor.map(ValidatorAddress::of).orElse(""))
-			.put("validators", fromList(transactions, ValidatorInfoDetails::asJson));
+			.put("cursor", cursor.map(addressing.forValidators()::of).orElse(""))
+			.put("validators", fromList(transactions, d -> d.asJson(addressing)));
 	}
 
-	private static Optional<ECPublicKey> parseAddressCursor(JSONObject params) {
+	private Optional<ECPublicKey> parseAddressCursor(JSONObject params) {
 		return safeString(params, "cursor")
 			.toOptional()
-			.flatMap(ArchiveValidationHandler::parsePublicKey);
+			.flatMap(this::parsePublicKey);
 	}
 
-	private static Optional<ECPublicKey> parsePublicKey(String address) {
-		return ValidatorAddress.fromString(address).toOptional();
+	private Optional<ECPublicKey> parsePublicKey(String address) {
+		return addressing.forValidators().fromString(address).toOptional();
 	}
 
 	private static Result<Integer> parseSize(JSONObject params) {

@@ -44,6 +44,10 @@ public final class EpochLocalTimeoutOccurrence {
 		return localTimeoutOccurrence.getLeader();
 	}
 
+	public BFTNode getNextLeader() {
+		return localTimeoutOccurrence.getNextLeader();
+	}
+
 	@Override
 	public String toString() {
 		return String.format("%s{epoch=%s event=%s}", this.getClass().getSimpleName(), epoch, localTimeoutOccurrence);

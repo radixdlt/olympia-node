@@ -18,6 +18,8 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.constraintmachine.exceptions.CallDataAccessException;
+import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
@@ -40,5 +42,10 @@ public final class CallData {
 			throw new CallDataAccessException(data.length, offset, UInt256.BYTES);
 		}
 		return UInt256.from(data, offset);
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{data=%s}", this.getClass().getSimpleName(), Bytes.toHexString(data));
 	}
 }

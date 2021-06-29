@@ -20,42 +20,54 @@ package com.radixdlt.api.construction;
 
 import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.ConstraintMachineException;
+import com.radixdlt.constraintmachine.ExecutionContext;
+import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.constraintmachine.TxnParseException;
-import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.constraintmachine.exceptions.TxnParseException;
+import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.Objects;
 
 public final class TxnParser {
 	private final LogCMStore logCMStore;
-	private final REParser parser;
-	private final ConstraintMachine constraintMachine;
+	private final RERules rules;
 
 	@Inject
 	public TxnParser(
-		REParser parser,
-		ConstraintMachine constraintMachine,
+		ForkConfig forkConfig,
 		LogCMStore logCMStore
 	) {
-		this.parser = parser;
-		this.constraintMachine = Objects.requireNonNull(constraintMachine);
+		this.rules = forkConfig.getEngineRules();
 		this.logCMStore = Objects.requireNonNull(logCMStore);
 	}
 
 	public REProcessedTxn parse(Txn txn) throws TxnParseException, ConstraintMachineException {
+		var parser = rules.getParser();
 		var parsedTxn = parser.parse(txn);
-		var stateUpdates = constraintMachine.verify(
+		var cmConfig = rules.getConstraintMachineConfig();
+		var cm = new ConstraintMachine(
+			cmConfig.getVirtualStoreLayer(),
+			cmConfig.getProcedures(),
+			cmConfig.getMeter()
+		);
+		var context = new ExecutionContext(
+			txn,
+			PermissionLevel.SYSTEM,
+			1,
+			Amount.ofTokens(100).toSubunits()
+		);
+
+		var stateUpdates = cm.verify(
 			logCMStore.createTransaction(),
 			parser.getSubstateDeserialization(),
 			logCMStore,
-			PermissionLevel.SYSTEM,
-			parsedTxn.instructions(),
-			parsedTxn.getSignedBy(),
-			parsedTxn.disableResourceAllocAndDestroy()
+			context,
+			parsedTxn.instructions()
 		);
 
 		return new REProcessedTxn(parsedTxn, stateUpdates);

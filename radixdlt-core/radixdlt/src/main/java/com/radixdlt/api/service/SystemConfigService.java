@@ -18,6 +18,7 @@
 
 package com.radixdlt.api.service;
 
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.ForkManager;
 import com.radixdlt.store.EngineStore;
@@ -32,14 +33,12 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.identifiers.NodeAddress;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.statecomputer.MaxTxnsPerProposal;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
@@ -163,6 +162,7 @@ public class SystemConfigService {
 	private final SystemCounters systemCounters;
 	private final List<EndpointStatus> endpointStatuses;
 	private final PeersView peersView;
+	private final Addressing addressing;
 
 	@Inject
 	public SystemConfigService(
@@ -173,7 +173,6 @@ public class SystemConfigService {
 		@MempoolThrottleMs long mempoolThrottleMs,
 		@MinValidators int minValidators,
 		@MaxValidators int maxValidators,
-		@MaxTxnsPerProposal int maxTxnsPerProposal,
 		@Genesis VerifiedTxnsAndProof genesis,
 		ForkManager forkManager,
 		EngineStore<LedgerAndBFTProof> engineStore,
@@ -181,14 +180,16 @@ public class SystemConfigService {
 		InMemorySystemInfo inMemorySystemInfo,
 		SystemCounters systemCounters,
 		PeersView peersView,
-		P2PConfig p2PConfig
+		P2PConfig p2PConfig,
+		Addressing addressing
 	) {
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.systemCounters = systemCounters;
 		this.endpointStatuses = endpointStatuses;
 		this.peersView = peersView;
+		this.addressing = addressing;
 
-		radixEngineConfiguration = prepareRadixEngineConfiguration(forkManager, engineStore, minValidators, maxValidators, maxTxnsPerProposal);
+		radixEngineConfiguration = prepareRadixEngineConfiguration(forkManager, engineStore, minValidators, maxValidators);
 		mempoolConfiguration = prepareMempoolConfiguration(mempoolMaxSize, mempoolThrottleMs);
 		apiConfiguration = prepareApiConfiguration(endpointStatuses);
 		bftConfiguration = prepareBftConfiguration(pacemakerTimeout, bftSyncPatienceMillis);
@@ -223,12 +224,12 @@ public class SystemConfigService {
 
 	public JSONObject getLatestProof() {
 		var proof = inMemorySystemInfo.getCurrentProof();
-		return proof == null ? new JSONObject() : proof.asJSON();
+		return proof == null ? new JSONObject() : proof.asJSON(addressing);
 	}
 
 	public JSONObject getLatestEpochProof() {
 		var proof = inMemorySystemInfo.getEpochProof();
-		return proof == null ? new JSONObject() : proof.asJSON();
+		return proof == null ? new JSONObject() : proof.asJSON(addressing);
 	}
 
 	public JSONObject getRadixEngineConfiguration() {
@@ -351,8 +352,7 @@ public class SystemConfigService {
 		ForkManager forkManager,
 		EngineStore<LedgerAndBFTProof> engineStore,
 		int minValidators,
-		int maxValidators,
-		int maxTxnsPerProposal
+		int maxValidators
 	) {
 		final var knownForks = jsonArray();
 		forkManager.forkConfigs().forEach(config -> knownForks.put(forkConfigJson(config)));
@@ -364,7 +364,6 @@ public class SystemConfigService {
 		return jsonObject()
 			.put("minValidators", minValidators)
 			.put("maxValidators", maxValidators)
-			.put("maxTxnsPerProposal", maxTxnsPerProposal)
 			.put("known_forks", knownForks)
 			.put("current_fork", forkConfigJson(currentFork));
 	}
@@ -374,7 +373,8 @@ public class SystemConfigService {
 			.put("name", forkConfig.getName())
 			.put("hash", forkConfig.getHash().toString())
 			.put("minEpoch", forkConfig.getMinEpoch())
-			.put("maxRounds", forkConfig.getEngineRules().getMaxRounds().number());
+			.put("maxRounds", forkConfig.getEngineRules().getMaxRounds().number())
+			.put("maxSigsPerRound", forkConfig.getEngineRules().getMaxSigsPerRound().orElse(0));
 	}
 
 	@VisibleForTesting
@@ -392,10 +392,10 @@ public class SystemConfigService {
 	}
 
 	@VisibleForTesting
-	static JSONObject prepareCheckpointsConfiguration(VerifiedTxnsAndProof genesis) {
+	JSONObject prepareCheckpointsConfiguration(VerifiedTxnsAndProof genesis) {
 		return jsonObject()
 			.put("txn", fromList(genesis.getTxns(), txn -> Bytes.toHexString(txn.getPayload())))
-			.put("proof", genesis.getProof().asJSON());
+			.put("proof", genesis.getProof().asJSON(addressing));
 	}
 
 	private JSONObject prepareNetworkingConfiguration(P2PConfig p2PConfig) {
@@ -416,7 +416,7 @@ public class SystemConfigService {
 
 	private JSONObject peerToJson(PeersView.PeerInfo peer) {
 		var channelsJson = jsonArray();
-		var peerJson = jsonObject().put("address", NodeAddress.of(peer.getNodeId().getPublicKey()));
+		var peerJson = jsonObject().put("address", addressing.forNodes().of(peer.getNodeId().getPublicKey()));
 
 		peer.getChannels().forEach(channel -> {
 			var channelJson = jsonObject();

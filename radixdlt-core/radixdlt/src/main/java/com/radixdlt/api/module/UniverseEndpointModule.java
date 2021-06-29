@@ -20,18 +20,29 @@ package com.radixdlt.api.module;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.controller.UniverseController;
 import com.radixdlt.api.qualifier.NodeServer;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.universe.Universe;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.NetworkId;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import org.json.JSONObject;
 
 public class UniverseEndpointModule extends AbstractModule {
 	@NodeServer
 	@ProvidesIntoMap
 	@StringMapKey("/universe.json")
-	public Controller universeController(Universe universe) {
-		return new UniverseController(DefaultSerialization.getInstance().toJson(universe, DsonOutput.Output.API));
+	public Controller universeController(
+		@NetworkId int networkId,
+		@Genesis VerifiedTxnsAndProof genesis,
+		Addressing addressing
+	) {
+		return new UniverseController(
+			new JSONObject()
+				.put("networkId", networkId)
+				.put("genesis", genesis.toJSON(addressing))
+				.toString()
+		);
 	}
 }

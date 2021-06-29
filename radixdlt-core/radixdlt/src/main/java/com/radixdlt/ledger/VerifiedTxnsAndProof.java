@@ -19,7 +19,13 @@ package com.radixdlt.ledger;
 
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.utils.Bytes;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -52,6 +58,25 @@ public final class VerifiedTxnsAndProof {
 
 	public LedgerProof getProof() {
 		return proof;
+	}
+
+	public static VerifiedTxnsAndProof fromJSON(Addressing addressing, JSONObject json) throws DeserializeException {
+		var txnArray = json.getJSONArray("txns");
+		var txns = new ArrayList<Txn>();
+		for (int i = 0; i < txnArray.length(); i++) {
+			var txn = Txn.create(Bytes.fromHexString(txnArray.getString(i)));
+			txns.add(txn);
+		}
+		var proof = LedgerProof.fromJSON(addressing, json.getJSONObject("proof"));
+		return VerifiedTxnsAndProof.create(txns, proof);
+	}
+
+	public JSONObject toJSON(Addressing addressing) {
+		var txnsArray = new JSONArray();
+		txns.forEach(txn -> txnsArray.put(Bytes.toHexString(txn.getPayload())));
+		return new JSONObject()
+			.put("proof", proof.asJSON(addressing))
+			.put("txns", txnsArray);
 	}
 
 	@Override

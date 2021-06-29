@@ -19,7 +19,7 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atommodel.system.state.ValidatorBFTData;
+import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Map;

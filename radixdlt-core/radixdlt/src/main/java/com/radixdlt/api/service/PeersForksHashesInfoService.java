@@ -26,12 +26,10 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.network.p2p.PeerEvent;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.forks.ForkManager;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -49,21 +47,20 @@ import static java.util.function.Predicate.not;
  */
 @Singleton
 public final class PeersForksHashesInfoService {
-
-	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final ForkManager forkManager;
+	private final Addressing addressing;
 
 	private BFTValidatorSet currentValidatorSet;
 	private ImmutableMap<HashCode, ImmutableSet<ECPublicKey>> unknownReportedForksHashes;
 
 	@Inject
 	public PeersForksHashesInfoService(
-		RadixEngine<LedgerAndBFTProof> radixEngine,
 		ForkManager forkManager,
+		Addressing addressing,
 		EpochChange initialEpoch
 	) {
-		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.forkManager = Objects.requireNonNull(forkManager);
+		this.addressing = Objects.requireNonNull(addressing);
 
 		this.currentValidatorSet = initialEpoch.getBFTConfiguration().getValidatorSet();
 		this.unknownReportedForksHashes = ImmutableMap.of();
@@ -116,7 +113,7 @@ public final class PeersForksHashesInfoService {
 
 		this.unknownReportedForksHashes.forEach((forkHash, reportedBy) -> {
 			final var reportedByArray = new JSONArray();
-			reportedBy.forEach(pubKey -> reportedByArray.put(ValidatorAddress.of(pubKey)));
+			reportedBy.forEach(pubKey -> reportedByArray.put(addressing.forValidators().of(pubKey)));
 			jsonObj.put(forkHash.toString(), reportedByArray);
 		});
 

@@ -19,6 +19,7 @@
 package com.radixdlt.atom;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.ShutdownAllIndex;
@@ -48,7 +49,7 @@ public final class TxLowLevelBuilder {
 	private final Map<Integer, LocalSubstate> localUpParticles = new HashMap<>();
 	private final Set<SubstateId> remoteDownSubstate = new HashSet<>();
 	private final SubstateSerialization serialization;
-	private int instructionIndex = 0;
+	private int upParticleCount = 0;
 
 	TxLowLevelBuilder(SubstateSerialization serialization, ByteArrayOutputStream blobStream) {
 		this.serialization = serialization;
@@ -96,7 +97,6 @@ public final class TxLowLevelBuilder {
 		} catch (IOException e) {
 			throw new IllegalStateException("Unable to write data.", e);
 		}
-		this.instructionIndex++;
 	}
 
 	public TxLowLevelBuilder message(byte[] bytes) {
@@ -111,9 +111,10 @@ public final class TxLowLevelBuilder {
 
 	public TxLowLevelBuilder up(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
-		this.localUpParticles.put(instructionIndex, LocalSubstate.create(instructionIndex, particle));
+		this.localUpParticles.put(upParticleCount, LocalSubstate.create(upParticleCount, particle));
 		var bytes = serialization.serialize(particle);
 		instruction(REInstruction.REMicroOp.UP, bytes);
+		upParticleCount++;
 		return this;
 	}
 
@@ -191,10 +192,10 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
-	public TxLowLevelBuilder payFee(UInt256 amount) {
+	public TxLowLevelBuilder syscall(Syscall syscall, UInt256 amount) {
 		var data = new byte[2 + UInt256.BYTES];
 		data[0] = UInt256.BYTES + 1;
-		data[1] = 0;
+		data[1] = syscall.id();
 		amount.toByteArray(data, 2);
 		instruction(REInstruction.REMicroOp.SYSCALL, data);
 		return this;
@@ -204,6 +205,10 @@ public final class TxLowLevelBuilder {
 		var data = new byte[] {0, 1};
 		instruction(REInstruction.REMicroOp.HEADER, data);
 		return this;
+	}
+
+	public int size() {
+		return blobStream.size();
 	}
 
 	public byte[] blob() {

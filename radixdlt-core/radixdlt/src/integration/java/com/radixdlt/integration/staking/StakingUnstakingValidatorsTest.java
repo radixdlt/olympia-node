@@ -19,6 +19,7 @@
 package com.radixdlt.integration.staking;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -28,13 +29,13 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.util.Modules;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
@@ -43,13 +44,13 @@ import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
 import com.radixdlt.atom.actions.UpdateRake;
 import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
-import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
-import com.radixdlt.atommodel.system.state.ValidatorStakeData;
-import com.radixdlt.atommodel.tokens.state.ExittingStake;
-import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.tokens.state.TokensInAccount;
-import com.radixdlt.atommodel.validators.state.AllowDelegationFlag;
-import com.radixdlt.atommodel.validators.state.PreparedRakeUpdate;
+import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.tokens.state.ExittingStake;
+import com.radixdlt.application.tokens.state.PreparedStake;
+import com.radixdlt.application.tokens.state.TokensInAccount;
+import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.validators.state.PreparedRakeUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -57,6 +58,7 @@ import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
@@ -67,7 +69,6 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
@@ -75,6 +76,7 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.statecomputer.InvalidProposedTxn;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
@@ -83,7 +85,6 @@ import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForkManager;
 import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
-import com.radixdlt.statecomputer.forks.MainnetEngineRules;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
@@ -120,19 +121,27 @@ import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(Parameterized.class)
 public class StakingUnstakingValidatorsTest {
 	private static final Logger logger = LogManager.getLogger();
+	private static final Amount REWARDS_PER_PROPOSAL = Amount.ofTokens(10);
+	private static final RERulesConfig config = RERulesConfig.testingDefault().overrideMaxSigsPerRound(2);
+	private static final Amount PER_BYTE_FEE = Amount.ofMicroTokens(2);
 
 	@Parameterized.Parameters
 	public static Collection<Object[]> forksModule() {
 		return List.of(new Object[][] {
-			{new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)), false, 100},
-			{new ForkOverwritesWithShorterEpochsModule(new RERulesConfig(false, 10, 2)), false, 10},
-			{new RadixEngineForksLatestOnlyModule(new RERulesConfig(true, 100, 2)), true, 100},
-			{new ForkOverwritesWithShorterEpochsModule(new RERulesConfig(true, 10, 2)), true, 10},
+			{new RadixEngineForksLatestOnlyModule(config.overrideMaxRounds(100)), 100, null},
+			{new ForkOverwritesWithShorterEpochsModule(config), 10, null},
+			{
+				new ForkOverwritesWithShorterEpochsModule(config), 10,
+				new ForkOverwritesWithShorterEpochsModule(config.removeSigsPerRoundLimit())
+			},
+			{new RadixEngineForksLatestOnlyModule(config.overrideMaxRounds(100).overridePerByteFee(PER_BYTE_FEE)), 100, null},
+			{new ForkOverwritesWithShorterEpochsModule(config.overridePerByteFee(PER_BYTE_FEE)), 10, null},
 		});
 	}
 
@@ -148,10 +157,10 @@ public class StakingUnstakingValidatorsTest {
 	private List<Injector> nodes = new ArrayList<>();
 	private final ImmutableList<ECKeyPair> nodeKeys;
 	private final Module radixEngineConfiguration;
-	private final boolean payFees;
+	private final Module byzantineModule;
 	private final long maxRounds;
 
-	public StakingUnstakingValidatorsTest(Module forkModifierModule, boolean payFees, long maxRounds) {
+	public StakingUnstakingValidatorsTest(Module forkModule, long maxRounds, Module byzantineModule) {
 		this.nodeKeys = Stream.generate(ECKeyPair::generateNew)
 			.limit(20)
 			.sorted(Comparator.comparing(ECKeyPair::getPublicKey, KeyComparator.instance()))
@@ -159,11 +168,11 @@ public class StakingUnstakingValidatorsTest {
 		this.radixEngineConfiguration = Modules.combine(
 			new ForkManagerModule(),
 			new MainnetForksModule(),
-			forkModifierModule,
-			RadixEngineConfig.asModule(1, 10, 50)
+			forkModule,
+			RadixEngineConfig.asModule(1, 10)
 		);
-		this.payFees = payFees;
 		this.maxRounds = maxRounds;
+		this.byzantineModule = byzantineModule;
 	}
 
 	@Before
@@ -189,21 +198,19 @@ public class StakingUnstakingValidatorsTest {
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class).toInstance(nodeKeys);
+					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
+						.toInstance(nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
 
 					nodeKeys.forEach(key ->
 						Multibinder.newSetBinder(binder(), TokenIssuance.class)
-							.addBinding().toInstance(
-								TokenIssuance.of(key.getPublicKey(), ValidatorStakeData.MINIMUM_STAKE.multiply(UInt256.TEN))
-						)
+							.addBinding().toInstance(TokenIssuance.of(key.getPublicKey(), Amount.ofTokens(10 * 10).toSubunits()))
 					);
 				}
 			}
 		).injectMembers(this);
 
-		this.nodeCreators = nodeKeys.stream()
-			.<Supplier<Injector>>map(k -> () -> createRunner(k, allNodes))
-			.collect(Collectors.toList());
+		this.nodeCreators = Streams.mapWithIndex(nodeKeys.stream(), (k, i) ->
+			(Supplier<Injector>) () -> createRunner(i == 1, k, allNodes)).collect(Collectors.toList());
 
 		for (Supplier<Injector> nodeCreator : nodeCreators) {
 			this.nodes.add(nodeCreator.get());
@@ -222,10 +229,14 @@ public class StakingUnstakingValidatorsTest {
 		this.nodes.forEach(this::stopDatabase);
 	}
 
-	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
+	private Injector createRunner(boolean byzantine, ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
+		var reConfig = byzantine && byzantineModule != null
+			? Modules.override(this.radixEngineConfiguration).with(byzantineModule)
+			: this.radixEngineConfiguration;
+
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
-			this.radixEngineConfiguration,
+			reConfig,
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {
 				@Override
@@ -235,11 +246,21 @@ public class StakingUnstakingValidatorsTest {
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bindConstant().annotatedWith(DatabaseLocation.class)
-						.to(folder.getRoot().getAbsolutePath() + "/" + ValidatorAddress.of(ecKeyPair.getPublicKey()));
+						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
 					bind(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() { })
 						.toInstance(new DeterministicSavedLastEvent<>(LedgerUpdate.class));
 					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() { })
 						.addBinding().toProvider(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() { });
+				}
+
+				@ProvidesIntoSet
+				EventProcessorOnDispatch<?> failOnEvent() {
+					return new EventProcessorOnDispatch<>(
+						InvalidProposedTxn.class,
+						i -> {
+							throw new IllegalStateException("Invalid proposed transaction occurred: " + i, i.getException());
+						}
+					);
 				}
 
 				@Provides
@@ -260,11 +281,11 @@ public class StakingUnstakingValidatorsTest {
 	}
 
 	private void withThreadCtx(Injector injector, Runnable r) {
-		ThreadContext.put("bftNode", " " + injector.getInstance(Key.get(BFTNode.class, Self.class)));
+		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
 		try {
 			r.run();
 		} finally {
-			ThreadContext.remove("bftNode");
+			ThreadContext.remove("self");
 		}
 	}
 
@@ -274,13 +295,12 @@ public class StakingUnstakingValidatorsTest {
 
 		int nodeIndex = msg.value().channelId().receiverIndex();
 		Injector injector = this.nodes.get(nodeIndex);
-		String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
-		ThreadContext.put("bftNode", bftNode);
+		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
 		try {
 			injector.getInstance(DeterministicProcessor.class)
 				.handleMessage(msg.value().origin(), msg.value().message(), msg.value().typeLiteral());
 		} finally {
-			ThreadContext.remove("bftNode");
+			ThreadContext.remove("self");
 		}
 
 		return msg;
@@ -293,6 +313,7 @@ public class StakingUnstakingValidatorsTest {
 	}
 
 	private static class NodeState {
+		private final String self;
 		private final DeterministicSavedLastEvent<LedgerUpdate> lastLedgerUpdate;
 		private final EpochChange epochChange;
 		private final BerkeleyLedgerEntryStore entryStore;
@@ -300,15 +321,21 @@ public class StakingUnstakingValidatorsTest {
 
 		@Inject
 		private NodeState(
+			@Self String self,
 			DeterministicSavedLastEvent<LedgerUpdate> lastLedgerUpdate,
 			EpochChange epochChange,
 			BerkeleyLedgerEntryStore entryStore,
 			ForkManager forkManager
 		) {
+			this.self = self;
 			this.lastLedgerUpdate = lastLedgerUpdate;
 			this.epochChange = epochChange;
 			this.entryStore = entryStore;
 			this.forkManager = forkManager;
+		}
+
+		public String getSelf() {
+			return self;
 		}
 
 		public long getEpoch() {
@@ -368,7 +395,7 @@ public class StakingUnstakingValidatorsTest {
 				},
 				reParser.getSubstateDeserialization()
 			);
-			logger.info("Total tokens: {}", totalTokens);
+			logger.info("Total tokens: {}", Amount.ofSubunits(totalTokens));
 			var totalStaked = entryStore.reduceUpParticles(ValidatorStakeData.class, UInt256.ZERO,
 				(i, p) -> {
 					var tokens = (ValidatorStakeData) p;
@@ -376,7 +403,7 @@ public class StakingUnstakingValidatorsTest {
 				},
 				reParser.getSubstateDeserialization()
 			);
-			logger.info("Total staked: {}", totalStaked);
+			logger.info("Total staked: {}", Amount.ofSubunits(totalStaked));
 			var totalStakePrepared = entryStore.reduceUpParticles(PreparedStake.class, UInt256.ZERO,
 				(i, p) -> {
 					var tokens = (PreparedStake) p;
@@ -384,7 +411,7 @@ public class StakingUnstakingValidatorsTest {
 				},
 				reParser.getSubstateDeserialization()
 			);
-			logger.info("Total preparing stake: {}", totalStakePrepared);
+			logger.info("Total preparing stake: {}", Amount.ofSubunits(totalStakePrepared));
 			var totalStakeExitting = entryStore.reduceUpParticles(ExittingStake.class, UInt256.ZERO,
 				(i, p) -> {
 					var tokens = (ExittingStake) p;
@@ -392,9 +419,9 @@ public class StakingUnstakingValidatorsTest {
 				},
 				reParser.getSubstateDeserialization()
 			);
-			logger.info("Total exitting stake: {}", totalStakeExitting);
+			logger.info("Total exitting stake: {}", Amount.ofSubunits(totalStakeExitting));
 			var total = totalTokens.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting);
-			logger.info("Total: {}", total);
+			logger.info("Total: {}", Amount.ofSubunits(total));
 			return total;
 		}
 	}
@@ -424,7 +451,7 @@ public class StakingUnstakingValidatorsTest {
 			var privKey = nodeKeys.get(nodeIndex);
 			var acct = REAddr.ofPubKeyAccount(privKey.getPublicKey());
 			var to = nodeKeys.get(random.nextInt(nodeKeys.size())).getPublicKey();
-			var amount = UInt256.from(random.nextInt(10)).multiply(ValidatorStakeData.MINIMUM_STAKE);
+			var amount = Amount.ofTokens(random.nextInt(10) * 10).toSubunits();
 
 			var next = random.nextInt(16);
 			final TxAction action;
@@ -465,11 +492,7 @@ public class StakingUnstakingValidatorsTest {
 					continue;
 			}
 
-			var request = TxnConstructionRequest.create();
-			if (payFees) {
-				request.action(new PayFee(acct, MainnetEngineRules.FIXED_FEE));
-			}
-			request.action(action);
+			var request = TxnConstructionRequest.create().action(action);
 			dispatcher.dispatch(NodeApplicationRequest.create(request));
 			this.nodes.forEach(n -> {
 				n.getInstance(new Key<EventDispatcher<MempoolRelayTrigger>>() { }).dispatch(MempoolRelayTrigger.create());
@@ -477,19 +500,18 @@ public class StakingUnstakingValidatorsTest {
 			});
 		}
 
-		var node = this.nodes.get(0).getInstance(Key.get(BFTNode.class, Self.class));
-		logger.info("Node {}", node);
-		logger.info("Initial {}", initialCount);
 		var nodeState = reloadNodeState();
+		logger.info("Node {}", nodeState.getSelf());
+		logger.info("Initial {}", Amount.ofSubunits(initialCount));
 		var epoch = nodeState.getEpoch();
 		logger.info("Epoch {}", epoch);
-		var maxEmissions = UInt256.from(maxRounds).multiply(EpochUpdateConstraintScrypt.REWARDS_PER_PROPOSAL).multiply(UInt256.from(epoch - 1));
-		logger.info("Max emissions {}", maxEmissions);
+		var maxEmissions = UInt256.from(maxRounds).multiply(REWARDS_PER_PROPOSAL.toSubunits()).multiply(UInt256.from(epoch - 1));
+		logger.info("Max emissions {}", Amount.ofSubunits(maxEmissions));
 		var finalCount = nodeState.getTotalNativeTokens();
 
 		assertThat(finalCount).isGreaterThan(initialCount);
 		var diff = finalCount.subtract(initialCount);
-		logger.info("Difference {}", diff);
+		logger.info("Difference {}", Amount.ofSubunits(diff));
 		assertThat(diff).isLessThanOrEqualTo(maxEmissions);
 
 		for (var e : nodeState.getValidators().entrySet()) {

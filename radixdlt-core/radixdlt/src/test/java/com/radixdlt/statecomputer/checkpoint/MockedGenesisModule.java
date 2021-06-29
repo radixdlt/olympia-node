@@ -17,7 +17,8 @@
 
 package com.radixdlt.statecomputer.checkpoint;
 
-import com.radixdlt.qualifier.Magic;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.crypto.ECPublicKey;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
 
@@ -28,10 +29,7 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atommodel.system.state.ValidatorStakeData;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.utils.UInt256;
 
 import java.util.Comparator;
 import java.util.List;
@@ -44,8 +42,6 @@ import java.util.stream.Stream;
 public final class MockedGenesisModule extends AbstractModule {
 	@Override
 	public void configure() {
-	    install(new RadixNativeTokenModule());
-		bindConstant().annotatedWith(Magic.class).to(0);
 		Multibinder.newSetBinder(binder(), TokenIssuance.class);
 		bind(new TypeLiteral<VerifiedTxnsAndProof>() { }).annotatedWith(Genesis.class).toProvider(GenesisProvider.class).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<List<TxAction>>() { }).annotatedWith(Genesis.class).toInstance(List.of());
@@ -60,10 +56,10 @@ public final class MockedGenesisModule extends AbstractModule {
 	@Provides
 	@Genesis
 	public ImmutableList<StakeDelegation> stakeDelegations(
-		@Genesis ImmutableList<ECKeyPair> initialValidators
+		@Genesis ImmutableList<ECPublicKey> initialValidators
 	) {
 		return initialValidators.stream()
-			.map(v -> StakeDelegation.of(v.getPublicKey(), v.getPublicKey(), ValidatorStakeData.MINIMUM_STAKE.multiply(UInt256.from(100))))
+			.map(v -> StakeDelegation.of(v, v, Amount.ofTokens(100 * 100).toSubunits()))
 			.collect(ImmutableList.toImmutableList());
 	}
 
@@ -71,14 +67,14 @@ public final class MockedGenesisModule extends AbstractModule {
 	@Genesis
 	public ImmutableList<TokenIssuance> tokenIssuanceList(
 		Set<TokenIssuance> tokenIssuanceSet,
-		@Genesis ImmutableList<ECKeyPair> initialValidators
+		@Genesis ImmutableList<ECPublicKey> initialValidators
 	) {
 		return Stream.concat(
 			tokenIssuanceSet.stream(),
 			initialValidators.stream()
-				.map(v -> TokenIssuance.of(v.getPublicKey(), ValidatorStakeData.MINIMUM_STAKE.multiply(UInt256.from(100))))
+				.map(v -> TokenIssuance.of(v, Amount.ofTokens(100 * 100).toSubunits()))
 		)
-			.sorted(Comparator.comparing(t -> t.receiver().toBase64()))
+			.sorted(Comparator.comparing(t -> t.receiver().toHex()))
 			.collect(ImmutableList.toImmutableList());
 	}
 }

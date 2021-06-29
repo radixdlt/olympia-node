@@ -25,7 +25,6 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
@@ -46,10 +45,6 @@ public final class TimestampedECDSASignature {
 	@DsonOutput(Output.ALL)
 	private final long timestamp;
 
-	@JsonProperty("weight")
-	@DsonOutput(Output.ALL)
-	private final UInt256 weight;
-
 	@JsonProperty("signature")
 	@DsonOutput(Output.ALL)
 	private final ECDSASignature signature;
@@ -58,22 +53,19 @@ public final class TimestampedECDSASignature {
 	 * Create a timestamped signature from a timestamp, weight and signature.
 	 *
 	 * @param timestamp the timestamp
-	 * @param weight the weighting of the timestamp
 	 * @param signature the signature
 	 * @return a timestamped signature with the specified properties
 	 */
 	@JsonCreator
 	public static TimestampedECDSASignature from(
 		@JsonProperty("timestamp") long timestamp,
-		@JsonProperty("weight") UInt256 weight,
 		@JsonProperty("signature") ECDSASignature signature
 	) {
-		return new TimestampedECDSASignature(timestamp, weight, signature);
+		return new TimestampedECDSASignature(timestamp, signature);
 	}
 
-	private TimestampedECDSASignature(long timestamp, UInt256 weight, ECDSASignature signature) {
+	private TimestampedECDSASignature(long timestamp, ECDSASignature signature) {
 		this.timestamp = timestamp;
-		this.weight = Objects.requireNonNull(weight);
 		this.signature = Objects.requireNonNull(signature);
 	}
 
@@ -83,14 +75,6 @@ public final class TimestampedECDSASignature {
 	 */
 	public long timestamp() {
 		return this.timestamp;
-	}
-
-	/**
-	 * Returns the weighting of the signature.
-	 * @return the weighting of the signature
-	 */
-	public UInt256 weight() {
-		return this.weight;
 	}
 
 	/**
@@ -106,7 +90,6 @@ public final class TimestampedECDSASignature {
 		if (o instanceof TimestampedECDSASignature) {
 			TimestampedECDSASignature that = (TimestampedECDSASignature) o;
 			return this.timestamp == that.timestamp
-				&& Objects.equals(this.weight, that.weight)
 				&& Objects.equals(this.signature, that.signature);
 		}
 		return false;
@@ -114,11 +97,11 @@ public final class TimestampedECDSASignature {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.timestamp, this.weight, this.signature);
+		return Objects.hash(this.timestamp, this.signature);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s:%s]", getClass().getSimpleName(), this.timestamp, this.signature, this.weight);
+		return String.format("%s[%s:%s]", getClass().getSimpleName(), this.timestamp, this.signature);
 	}
 }

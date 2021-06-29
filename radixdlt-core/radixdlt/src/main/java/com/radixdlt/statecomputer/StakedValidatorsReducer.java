@@ -19,12 +19,12 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.system.state.ValidatorStakeData;
-import com.radixdlt.atommodel.tokens.state.PreparedStake;
-import com.radixdlt.atommodel.validators.state.AllowDelegationFlag;
-import com.radixdlt.atommodel.validators.state.PreparedOwnerUpdate;
-import com.radixdlt.atommodel.validators.state.PreparedRegisteredUpdate;
-import com.radixdlt.atommodel.validators.state.ValidatorMetaData;
+import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.tokens.state.PreparedStake;
+import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.validators.state.PreparedOwnerUpdate;
+import com.radixdlt.application.validators.state.PreparedRegisteredUpdate;
+import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;
 

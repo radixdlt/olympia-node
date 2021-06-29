@@ -16,6 +16,8 @@
  */
 package com.radixdlt.api.service;
 
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -105,7 +107,7 @@ public class ValidatorInfoServiceTest {
 	@SuppressWarnings("unchecked")
 	private ValidatorInfoService setUpService() {
 		var radixEngine = (RadixEngine<LedgerAndBFTProof>) mock(RadixEngine.class);
-		var validatorInfoService = new ValidatorInfoService(radixEngine);
+		var validatorInfoService = new ValidatorInfoService(radixEngine, Addressing.ofNetwork(Network.LOCALNET));
 		var validators = StakedValidators.create(3, 3)
 			.add(validator1, Optional.empty())
 			.add(validator2, Optional.empty())

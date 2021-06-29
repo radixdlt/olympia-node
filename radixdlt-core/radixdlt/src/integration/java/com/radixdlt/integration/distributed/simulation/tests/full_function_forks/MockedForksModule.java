@@ -4,11 +4,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.statecomputer.forks.ForkBuilder;
 import com.radixdlt.statecomputer.forks.ForksPredicates;
 import com.radixdlt.statecomputer.forks.MainnetEngineRules;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
+
+import java.util.OptionalInt;
 
 public final class MockedForksModule extends AbstractModule {
 
@@ -22,11 +25,20 @@ public final class MockedForksModule extends AbstractModule {
 	@Singleton
 	ImmutableList<ForkBuilder> forksConfig() {
 		final var baseForkBuilder = new ForkBuilder(
-			"fork1",
+			"",
 			0L,
 			ForksPredicates.atEpoch(0L),
-			MainnetEngineRules.mainnetGenesis,
-			new RERulesConfig(false, epochCeilingView.number(), 0L)
+			MainnetEngineRules.olympiaV1,
+			new RERulesConfig(
+				Amount.zero(),
+				OptionalInt.empty(),
+				epochCeilingView.number(),
+				0L,
+				Amount.zero(),
+				0L,
+				Amount.zero(),
+				0
+			)
 		);
 
 		/* three forks at fixed epochs and one fork with stake voting, all based on the most recent "real" fork */

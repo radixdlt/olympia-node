@@ -18,36 +18,39 @@ package com.radixdlt.api.store.berkeley;
 
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.accounting.TwoActorEntry;
-import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.PayFee;
+import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.atom.actions.RegisterValidator;
-import com.radixdlt.atom.actions.SystemNextEpoch;
+import com.radixdlt.atom.actions.NextEpoch;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
-import com.radixdlt.atommodel.system.construction.CreateSystemConstructorV2;
-import com.radixdlt.atommodel.system.construction.NextEpochConstructorV3;
-import com.radixdlt.atommodel.system.construction.PayFeeConstructorV2;
-import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
-import com.radixdlt.atommodel.system.scrypt.FeeConstraintScrypt;
-import com.radixdlt.atommodel.system.scrypt.RoundUpdateConstraintScrypt;
-import com.radixdlt.atommodel.system.state.ValidatorStakeData;
-import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
-import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV3;
-import com.radixdlt.atommodel.tokens.construction.TransferTokensConstructorV2;
-import com.radixdlt.atommodel.tokens.construction.UnstakeTokensConstructorV2;
-import com.radixdlt.atommodel.tokens.scrypt.StakingConstraintScryptV4;
-import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
-import com.radixdlt.atommodel.validators.construction.RegisterValidatorConstructor;
-import com.radixdlt.atommodel.validators.construction.UpdateAllowDelegationFlagConstructor;
-import com.radixdlt.atommodel.validators.scrypt.ValidatorConstraintScryptV2;
-import com.radixdlt.atommodel.validators.scrypt.ValidatorRegisterConstraintScrypt;
+import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
+import com.radixdlt.application.system.construction.NextEpochConstructorV3;
+import com.radixdlt.application.system.construction.FeeReservePutConstructor;
+import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
+import com.radixdlt.application.system.scrypt.FeeConstraintScrypt;
+import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
+import com.radixdlt.application.tokens.construction.MintTokenConstructor;
+import com.radixdlt.application.tokens.construction.StakeTokensConstructorV3;
+import com.radixdlt.application.tokens.construction.TransferTokensConstructorV2;
+import com.radixdlt.application.tokens.construction.UnstakeTokensConstructorV2;
+import com.radixdlt.application.tokens.scrypt.StakingConstraintScryptV4;
+import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
+import com.radixdlt.application.validators.construction.RegisterValidatorConstructor;
+import com.radixdlt.application.validators.construction.UpdateAllowDelegationFlagConstructor;
+import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
+import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
+import com.radixdlt.constraintmachine.meter.FixedFeeMeter;
 import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -92,38 +95,40 @@ public class TransactionParserTest {
 	private final MutableTokenDefinition tokDefII = new MutableTokenDefinition(
 		tokenOwnerKeyPair.getPublicKey(), "tst", "Test2", "description2", null, null
 	);
+	private final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
 
 	private RadixEngine<Void> engine;
 
-	private final TransactionParser parser = new TransactionParser();
+	private final TransactionParser parser = new TransactionParser(addressing);
 
 	@Before
 	public void setup() throws Exception {
 		final var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new RoundUpdateConstraintScrypt(10));
-		cmAtomOS.load(new EpochUpdateConstraintScrypt(10));
+		cmAtomOS.load(new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1));
 		cmAtomOS.load(new ValidatorConstraintScryptV2(2));
 		cmAtomOS.load(new TokensConstraintScryptV3());
-		cmAtomOS.load(new StakingConstraintScryptV4());
+		cmAtomOS.load(new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()));
 		cmAtomOS.load(new FeeConstraintScrypt());
 		cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
 
 		final var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
-			cmAtomOS.getProcedures()
+			cmAtomOS.getProcedures(),
+			FixedFeeMeter.create(UInt256.FOUR)
 		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		var substateSerialization = cmAtomOS.buildSubstateSerialization();
 
-		var actionConstructors = ActionConstructors.newBuilder()
+		var actionConstructors = REConstructor.newBuilder()
 			.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 			.put(RegisterValidator.class, new RegisterValidatorConstructor())
 			.put(MintToken.class, new MintTokenConstructor())
 			.put(TransferToken.class, new TransferTokensConstructorV2())
-			.put(PayFee.class, new PayFeeConstructorV2())
-			.put(StakeTokens.class, new StakeTokensConstructorV3())
+			.put(FeeReservePut.class, new FeeReservePutConstructor())
+			.put(StakeTokens.class, new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()))
 			.put(UnstakeTokens.class, new UnstakeTokensConstructorV2())
-			.put(SystemNextEpoch.class, new NextEpochConstructorV3())
+			.put(NextEpoch.class, new NextEpochConstructorV3(Amount.ofTokens(10).toSubunits(), 9800, 1))
 			.put(CreateSystem.class, new CreateSystemConstructorV2())
 			.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())
 			.build();
@@ -133,13 +138,13 @@ public class TransactionParserTest {
 		var txn0 = engine.construct(
 			TxnConstructionRequest.create()
 				.createMutableToken(tokDef)
-				.mint(this.tokenRri, this.tokenOwnerAcct, ValidatorStakeData.MINIMUM_STAKE.multiply(UInt256.TWO))
+				.mint(this.tokenRri, this.tokenOwnerAcct, Amount.ofTokens(10 * 2).toSubunits())
 		).buildWithoutSignature();
 		var validatorBuilder = this.engine.construct(
 			TxnConstructionRequest.create()
 				.action(new RegisterValidator(this.validatorKeyPair.getPublicKey(), Optional.empty()))
 				.action(new UpdateAllowDelegationFlag(this.validatorKeyPair.getPublicKey(), true))
-				.action(new CreateSystem())
+				.action(new CreateSystem(System.currentTimeMillis()))
 		);
 		var txn1 = validatorBuilder.buildWithoutSignature();
 
@@ -150,25 +155,29 @@ public class TransactionParserTest {
 	public void stakeIsParsedCorrectly() throws Exception {
 		var txn = engine.construct(
 			TxnConstructionRequest.create()
-				.action(new PayFee(tokenOwnerAcct, UInt256.TWO))
+				.action(new FeeReservePut(tokenOwnerAcct, UInt256.FOUR))
 				.action(nativeStake())
 		)
 			.signAndBuild(tokenOwnerKeyPair::sign);
 
-		executeAndDecode(List.of(ActionType.STAKE), UInt256.TWO, txn);
+		executeAndDecode(List.of(ActionType.STAKE), UInt256.FOUR, txn);
 	}
 
 	@Test
 	public void unstakeIsParsedCorrectly() throws Exception {
-		var txn1 = engine.construct(nativeStake()).signAndBuild(tokenOwnerKeyPair::sign);
+		var txn1 = engine.construct(
+			TxnConstructionRequest.create()
+				.action(new FeeReservePut(tokenOwnerAcct, UInt256.FOUR))
+				.action(nativeStake())
+		).signAndBuild(tokenOwnerKeyPair::sign);
 		engine.execute(List.of(txn1));
-		var nextEpoch = engine.construct(new SystemNextEpoch(s -> List.of(validatorKeyPair.getPublicKey()), 0))
+		var nextEpoch = engine.construct(new NextEpoch(s -> List.of(validatorKeyPair.getPublicKey()), 0))
 			.buildWithoutSignature();
 		engine.execute(List.of(nextEpoch), null, PermissionLevel.SYSTEM);
 
 		var txn2 = engine.construct(
 			TxnConstructionRequest.create()
-				.action(new PayFee(tokenOwnerAcct, UInt256.FOUR))
+				.action(new FeeReservePut(tokenOwnerAcct, UInt256.FOUR))
 				.action(nativeUnstake())
 		).signAndBuild(tokenOwnerKeyPair::sign);
 
@@ -182,8 +191,8 @@ public class TransactionParserTest {
 			TxnConstructionRequest.create()
 				.payFee(tokenOwnerAcct, UInt256.FOUR)
 				.createMutableToken(tokDefII)
-				.mint(tokenRriII, tokenOwnerAcct, ValidatorStakeData.MINIMUM_STAKE.multiply(UInt256.TWO))
-				.transfer(tokenRriII, tokenOwnerAcct, otherAccount, ValidatorStakeData.MINIMUM_STAKE)
+				.mint(tokenRriII, tokenOwnerAcct, Amount.ofTokens(10 * 2).toSubunits())
+				.transfer(tokenRriII, tokenOwnerAcct, otherAccount, Amount.ofTokens(10).toSubunits())
 		).signAndBuild(tokenOwnerKeyPair::sign);
 
 		executeAndDecode(List.of(ActionType.UNKNOWN, ActionType.MINT, ActionType.TRANSFER), UInt256.FOUR, txn);
@@ -216,11 +225,11 @@ public class TransactionParserTest {
 	}
 
 	private StakeTokens nativeStake() {
-		return new StakeTokens(tokenOwnerAcct, validatorKeyPair.getPublicKey(), ValidatorStakeData.MINIMUM_STAKE);
+		return new StakeTokens(tokenOwnerAcct, validatorKeyPair.getPublicKey(), Amount.ofTokens(10).toSubunits());
 	}
 
 	private UnstakeTokens nativeUnstake() {
-		return new UnstakeTokens(tokenOwnerAcct, validatorKeyPair.getPublicKey(), ValidatorStakeData.MINIMUM_STAKE);
+		return new UnstakeTokens(tokenOwnerAcct, validatorKeyPair.getPublicKey(), Amount.ofTokens(10).toSubunits());
 	}
 
 	private List<ActionType> toActionTypes(TxHistoryEntry txEntry) {

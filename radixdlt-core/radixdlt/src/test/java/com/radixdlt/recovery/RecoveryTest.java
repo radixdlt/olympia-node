@@ -17,7 +17,9 @@
 
 package com.radixdlt.recovery;
 
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -69,7 +71,6 @@ import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.qualifier.Magic;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
@@ -89,6 +90,7 @@ import com.radixdlt.sync.CommittedReader;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.stream.Stream;
 
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -143,7 +145,17 @@ public class RecoveryTest {
 			new CryptoModule(),
 			new ForkManagerModule(),
 			new MainnetForksModule(),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100L, 2)),
+			new RadixEngineForksLatestOnlyModule(
+				new RERulesConfig(
+					Amount.ofTokens(0),
+					OptionalInt.of(50),
+					100L,
+					2,
+					Amount.ofTokens(10),
+					1,
+					Amount.ofTokens(10),
+					9800
+				)),
 			new RadixEngineModule(),
 			new AbstractModule() {
 				@Override
@@ -152,8 +164,8 @@ public class RecoveryTest {
 					bind(CommittedReader.class).toInstance(CommittedReader.mocked());
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
-						.toInstance(ImmutableList.of(ecKeyPair));
+					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
+						.toInstance(ImmutableList.of(ecKeyPair.getPublicKey()));
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bindConstant().annotatedWith(MaxValidators.class).to(100);
 					bindConstant().annotatedWith(MinValidators.class).to(1);
@@ -178,15 +190,24 @@ public class RecoveryTest {
 		final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
 
 		return Guice.createInjector(
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, epochCeilingView, 2)),
+			new RadixEngineForksLatestOnlyModule(
+				new RERulesConfig(
+					Amount.ofTokens(0),
+					OptionalInt.of(50),
+					epochCeilingView,
+					2,
+					Amount.ofTokens(10),
+					1,
+					Amount.ofTokens(10),
+					9800
+				)),
 			new ForkManagerModule(),
 			new MainnetForksModule(),
 			MempoolConfig.asModule(10, 10),
-			RadixEngineConfig.asModule(1, Integer.MAX_VALUE, 50),
+			RadixEngineConfig.asModule(1, Integer.MAX_VALUE),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bindConstant().annotatedWith(Magic.class).to(0);
 					bind(VerifiedTxnsAndProof.class).annotatedWith(Genesis.class).toInstance(genesisTxns);
 					bind(PeersView.class).toInstance(Stream::of);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);

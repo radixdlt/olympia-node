@@ -22,8 +22,8 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -155,20 +155,23 @@ public class MempoolRelayTest {
 
 	private void injectGenesisAtomToThis(ImmutableList<ECKeyPair> nodeKeys) {
 		/* Using injector to create a valid genesis atoms using the modules, and inject it to this instance */
-		final var validatorsKeys = this.validators.stream().map(nodeKeys::get).collect(ImmutableList.toImmutableList());
+		final var validatorsKeys = this.validators.stream()
+			.map(nodeKeys::get)
+			.map(ECKeyPair::getPublicKey)
+			.collect(ImmutableList.toImmutableList());
 		Guice.createInjector(
 			new MockedGenesisModule(),
 			new CryptoModule(),
 			new RadixEngineModule(),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
+			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMaxSigsPerRound(50)),
 			new ForkManagerModule(),
 			new MainnetForksModule(),
-			RadixEngineConfig.asModule(1, 100, 50),
+			RadixEngineConfig.asModule(1, 100),
 			new AbstractModule() {
 				@Override
 				public void configure() {
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class).toInstance(validatorsKeys);
+					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class).toInstance(validatorsKeys);
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 					bind(CommittedReader.class).toInstance(CommittedReader.mocked());
@@ -188,10 +191,10 @@ public class MempoolRelayTest {
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
 			MempoolConfig.asModule(500, 100, 10, 10, 10),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
+			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMaxSigsPerRound(50)),
 			new ForkManagerModule(),
 			new MainnetForksModule(),
-			RadixEngineConfig.asModule(1, 100, 50),
+			RadixEngineConfig.asModule(1, 100),
 			new PersistedNodeForTestingModule(),
 			new MempoolFillerModule(),
 			new AbstractModule() {
@@ -202,7 +205,7 @@ public class MempoolRelayTest {
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bindConstant().annotatedWith(DatabaseLocation.class)
-						.to(folder.getRoot().getAbsolutePath() + "/" + ValidatorAddress.of(ecKeyPair.getPublicKey()));
+						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
 				}
 
 				@Provides
@@ -244,11 +247,11 @@ public class MempoolRelayTest {
 	}
 
 	private void withThreadCtx(Injector injector, Runnable r) {
-		ThreadContext.put("bftNode", " " + injector.getInstance(Key.get(BFTNode.class, Self.class)));
+		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
 		try {
 			r.run();
 		} finally {
-			ThreadContext.remove("bftNode");
+			ThreadContext.remove("self");
 		}
 	}
 

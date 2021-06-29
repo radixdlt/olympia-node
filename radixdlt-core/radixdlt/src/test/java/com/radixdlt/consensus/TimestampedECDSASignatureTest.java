@@ -21,7 +21,6 @@ import org.junit.Test;
 import org.radix.serialization.SerializeObject;
 
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.utils.UInt256;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -44,6 +43,6 @@ public class TimestampedECDSASignatureTest extends SerializeObject<TimestampedEC
 	}
 
 	private static TimestampedECDSASignature create() {
-		return TimestampedECDSASignature.from(1L, UInt256.ONE, ECDSASignature.zeroSignature());
+		return TimestampedECDSASignature.from(1L, ECDSASignature.zeroSignature());
 	}
 }

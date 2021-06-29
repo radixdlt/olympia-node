@@ -31,16 +31,16 @@ import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.atom.actions.NextEpoch;
+import com.radixdlt.atom.actions.NextRound;
 import com.radixdlt.atom.actions.RegisterValidator;
-import com.radixdlt.atom.actions.SystemNextEpoch;
-import com.radixdlt.atom.actions.SystemNextView;
-import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -56,13 +56,13 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.constraintmachine.CMErrorCode;
-import com.radixdlt.constraintmachine.ConstraintMachineException;
+import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
+import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.MetadataException;
@@ -84,9 +84,9 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
+import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -119,7 +119,7 @@ public class RadixEngineStateComputerTest {
 	private RadixEngineStateComputer sut;
 
 	@Inject
-	private SubstateSerialization substateSerialization;
+	private ForkConfig forkConfig;
 
 	@Inject
 	private ProposerElection proposerElection;
@@ -139,8 +139,8 @@ public class RadixEngineStateComputerTest {
 
 			@Override
 			public void configure() {
-				bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
-					.toInstance(registeredNodes);
+				bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
+					.toInstance(registeredNodes.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
 				var validatorSet = BFTValidatorSet.from(registeredNodes.stream().map(ECKeyPair::getPublicKey)
 					.map(BFTNode::create)
 					.map(n -> BFTValidator.from(n, UInt256.ONE)));
@@ -154,8 +154,8 @@ public class RadixEngineStateComputerTest {
 				install(MempoolConfig.asModule(10, 10));
 				install(new ForkManagerModule());
 				install(new MainnetForksModule());
-				install(new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10, 2)));
-				install(RadixEngineConfig.asModule(1, 100, 50));
+				install(new RadixEngineForksLatestOnlyModule());
+				install(RadixEngineConfig.asModule(1, 100));
 
 				// HACK
 				bind(CommittedReader.class).toInstance(CommittedReader.mocked());
@@ -216,11 +216,11 @@ public class RadixEngineStateComputerTest {
 		TxBuilder builder;
 		if (nextEpoch >= 2) {
 			var request = TxnConstructionRequest.create()
-				.action(new SystemNextView(10, true, 0,  v -> proposerElection.getProposer(View.of(v)).getKey()))
-				.action(new SystemNextEpoch(u -> List.of(registeredNodes.get(0).getPublicKey()), 0));
+				.action(new NextRound(10, true, 0, v -> proposerElection.getProposer(View.of(v)).getKey()))
+				.action(new NextEpoch(u -> List.of(registeredNodes.get(0).getPublicKey()), 0));
 			builder = radixEngine.construct(request);
 		} else {
-			builder = radixEngine.construct(new SystemNextView(
+			builder = radixEngine.construct(new NextRound(
 				nextView,
 				false,
 				0,
@@ -307,10 +307,10 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void preparing_system_update_from_vertex_should_fail() throws TxBuilderException {
 		// Arrange
-		var txn = radixEngine.construct(new SystemNextView(1, false, 0, i -> proposerElection.getProposer(View.of(i)).getKey()))
+		var txn = radixEngine.construct(new NextRound(1, false, 0, i -> proposerElection.getProposer(View.of(i)).getKey()))
 			.buildWithoutSignature();
-		var illegalTxn = TxLowLevelBuilder.newBuilder(substateSerialization)
-			.down(SubstateId.ofSubstate(txn.getId(), 3))
+		var illegalTxn = TxLowLevelBuilder.newBuilder(forkConfig.getEngineRules().getSerialization())
+			.down(SubstateId.ofSubstate(txn.getId(), 1))
 			.up(new RoundData(2, 0))
 			.end()
 			.build();
@@ -332,7 +332,7 @@ public class RadixEngineStateComputerTest {
 				e -> {
 					RadixEngineException ex = (RadixEngineException) e;
 					ConstraintMachineException cmException = (ConstraintMachineException) ex.getCause();
-					return cmException.getErrorCode().equals(CMErrorCode.PERMISSION_LEVEL_ERROR);
+					return cmException.getCause() instanceof InvalidPermissionException;
 				},
 				"Is invalid_execution_permission error"
 			)

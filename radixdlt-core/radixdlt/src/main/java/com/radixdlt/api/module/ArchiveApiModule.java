@@ -28,8 +28,6 @@ import com.radixdlt.EndpointConfig;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.data.ScheduledQueueFlush;
 import com.radixdlt.api.server.ArchiveHttpServer;
-import com.radixdlt.api.service.ClientStoreRriParser;
-import com.radixdlt.api.service.RriParser;
 import com.radixdlt.api.service.ScheduledCacheCleanup;
 import com.radixdlt.api.service.TransactionStatusService;
 import com.radixdlt.api.store.ClientApiStore;
@@ -54,7 +52,6 @@ public class ArchiveApiModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
-		bind(RriParser.class).to(ClientStoreRriParser.class).in(Scopes.SINGLETON);
 
 		endpoints.forEach(ep -> {
 			log.info("Enabling /{} endpoint", ep.name());

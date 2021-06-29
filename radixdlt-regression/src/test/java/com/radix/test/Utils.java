@@ -1,7 +1,7 @@
 package com.radix.test;
 
 import com.radix.test.account.Account;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.application.tokens.TokenUtils;
 import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.serialization.DeserializeException;
@@ -89,7 +89,7 @@ public final class Utils {
     }
 
     public static UInt256 fromMinorToMajor(UInt256 minorAmount) {
-        return minorAmount.divide(TokenDefinitionUtils.SUB_UNITS);
+        return minorAmount.divide(TokenUtils.SUB_UNITS);
     }
 
     public static <R> R toTestFailureException(Failure failure) {
@@ -97,15 +97,15 @@ public final class Utils {
     }
 
     public static UInt256 fromMajorToMinor(int amountMajor) {
-        return UInt256.from(amountMajor).multiply(TokenDefinitionUtils.SUB_UNITS);
+        return UInt256.from(amountMajor).multiply(TokenUtils.SUB_UNITS);
     }
 
     public static UInt256 fromMajorToMinor(long amountMajor) {
-        return UInt256.from(amountMajor).multiply(TokenDefinitionUtils.SUB_UNITS);
+        return UInt256.from(amountMajor).multiply(TokenUtils.SUB_UNITS);
     }
 
     public static UInt256 fromMajorToMinor(UInt256 amountMajor) {
-        return amountMajor.multiply(TokenDefinitionUtils.SUB_UNITS);
+        return amountMajor.multiply(TokenUtils.SUB_UNITS);
     }
 
     public static ValidatorAddress createValidatorAddress(ValidatorDTO validatorDTO) {

@@ -19,15 +19,17 @@
 package com.radixdlt.engine.parser;
 
 import com.radixdlt.atom.Txn;
+import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.constraintmachine.CallData;
-import com.radixdlt.constraintmachine.CallDataAccessException;
+import com.radixdlt.constraintmachine.exceptions.CallDataAccessException;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.REOp;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
-import com.radixdlt.constraintmachine.TxnParseException;
+import com.radixdlt.constraintmachine.exceptions.TxnParseException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.UInt256;
 
@@ -47,12 +49,18 @@ public final class REParser {
 		return substateDeserialization;
 	}
 
-	private static class ParserState {
+	public static class ParserState {
+		private final Txn txn;
 		private final List<REInstruction> instructions = new ArrayList<>();
 		private byte[] msg = null;
+		private int upSubstateCount = 0;
 		private int substateUpdateCount = 0;
 		private int endCount = 0;
 		private boolean disableResourceAllocAndDestroy = false;
+
+		ParserState(Txn txn) {
+			this.txn = txn;
+		}
 
 		void header(boolean disableResourceAllocAndDestroy) throws TxnParseException {
 			if (instructions.size() != 1) {
@@ -68,8 +76,16 @@ public final class REParser {
 			instructions.add(inst);
 		}
 
-		int curIndex() {
+		public int curIndex() {
 			return instructions.size();
+		}
+
+		public AID txnId() {
+			return txn.getId();
+		}
+
+		public int upSubstateCount() {
+			return upSubstateCount;
 		}
 
 		void msg(byte[] msg) throws TxnParseException {
@@ -79,8 +95,11 @@ public final class REParser {
 			this.msg = msg;
 		}
 
-		void substateUpdate() {
+		void substateUpdate(REOp op) {
 			substateUpdateCount++;
+			if (op == REOp.UP) {
+				upSubstateCount++;
+			}
 		}
 
 		void end() throws TxnParseException {
@@ -111,7 +130,7 @@ public final class REParser {
 		UInt256 feePaid = null;
 		ECDSASignature sig = null;
 		int sigPosition = 0;
-		var parserState = new ParserState();
+		var parserState = new ParserState(txn);
 
 		var buf = ByteBuffer.wrap(txn.getPayload());
 		while (buf.hasRemaining()) {
@@ -122,14 +141,14 @@ public final class REParser {
 			int curPos = buf.position();
 			final REInstruction inst;
 			try {
-				inst = REInstruction.readFrom(txn, parserState.curIndex(), buf, substateDeserialization);
+				inst = REInstruction.readFrom(parserState, buf, substateDeserialization);
 			} catch (DeserializeException e) {
 				throw new TxnParseException("Could not read instruction", e);
 			}
 			parserState.nextInstruction(inst);
 
 			if (inst.isStateUpdate()) {
-				parserState.substateUpdate();
+				parserState.substateUpdate(inst.getMicroOp().getOp());
 			} else if (inst.getMicroOp().getOp() == REOp.READ) {
 				parserState.read();
 			} else if (inst.getMicroOp() == REInstruction.REMicroOp.HEADER) {
@@ -137,15 +156,31 @@ public final class REParser {
 			} else if (inst.getMicroOp() == REInstruction.REMicroOp.SYSCALL) {
 				try {
 					CallData callData = inst.getData();
-					// TODO: Need to rethink how stateless verification occurs here
-					// TODO: Along with FeeConstraintScrypt.java
-					if (callData.get(0) != 0) {
-						throw new TxnParseException("Invalid call data type: " + callData.get(0));
+					byte id = callData.get(0);
+					var syscall = Syscall.of(id).orElseThrow(() -> new TxnParseException("Invalid call data type: " + id));
+
+					switch (syscall) {
+						case FEE_RESERVE_PUT:
+							if (feePaid != null) {
+								throw new TxnParseException("Should only pay fees once.");
+							}
+							feePaid = callData.getUInt256(1);
+							break;
+						case FEE_RESERVE_TAKE:
+							if (feePaid == null) {
+								throw new TxnParseException("No fees paid");
+							}
+							var takeAmount = callData.getUInt256(1);
+							if (takeAmount.compareTo(feePaid) > 0) {
+								throw new TxnParseException("Trying to take more fees than paid");
+							}
+							feePaid = feePaid.subtract(takeAmount);
+							break;
+						// TODO: Need to rethink how stateless verification occurs here
+						// TODO: Along with FeeConstraintScrypt.java
+						default:
+							throw new TxnParseException("Invalid call data type: " + id);
 					}
-					if (feePaid != null) {
-						throw new TxnParseException("Should only pay fees once.");
-					}
-					feePaid = callData.getUInt256(1);
 				} catch (CallDataAccessException e) {
 					throw new TxnParseException(e);
 				}

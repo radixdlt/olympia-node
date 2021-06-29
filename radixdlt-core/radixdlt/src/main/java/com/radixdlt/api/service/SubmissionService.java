@@ -17,18 +17,16 @@
 
 package com.radixdlt.api.service;
 
-import com.radixdlt.statecomputer.forks.MainnetEngineRules;
+import com.radixdlt.atom.UnsignedTxnData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.api.data.PreparedTransaction;
 import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.PayFee;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.engine.RadixEngine;
@@ -71,21 +69,19 @@ public final class SubmissionService {
 			UNABLE_TO_PREPARE_TX,
 			() -> radixEngine.construct(toConstructionRequest(address, steps, message, disableResourceAllocAndDestroy))
 				.buildForExternalSign()
-				.map(this::toPreparedTx)
-		);
+		).map(this::toPreparedTx);
 	}
 
 	private TxnConstructionRequest toConstructionRequest(
-		REAddr addr,
+		REAddr feePayer,
 		List<TransactionAction> steps,
 		Optional<String> message,
 		boolean disableResourceAllocAndDestroy
 	) {
-		var txnConstructionRequest = TxnConstructionRequest.create();
+		var txnConstructionRequest = TxnConstructionRequest.create().feePayer(feePayer);
 		if (disableResourceAllocAndDestroy) {
 			txnConstructionRequest.disableResourceAllocAndDestroy();
 		}
-		txnConstructionRequest.action(new PayFee(addr, MainnetEngineRules.FIXED_FEE));
 		steps.stream().flatMap(TransactionAction::toAction).forEach(txnConstructionRequest::action);
 		message.map(t -> t.getBytes(RadixConstants.STANDARD_CHARSET)).ifPresent(txnConstructionRequest::msg);
 		return txnConstructionRequest;
@@ -137,7 +133,7 @@ public final class SubmissionService {
 			.flatMap(this::submit);
 	}
 
-	private PreparedTransaction toPreparedTx(byte[] first, HashCode second) {
-		return PreparedTransaction.create(first, second.asBytes(), MainnetEngineRules.FIXED_FEE);
+	private PreparedTransaction toPreparedTx(UnsignedTxnData unsignedTxnData) {
+		return PreparedTransaction.create(unsignedTxnData.blob(), unsignedTxnData.hashToSign().asBytes(), unsignedTxnData.feesPaid());
 	}
 }

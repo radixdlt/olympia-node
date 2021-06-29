@@ -30,6 +30,10 @@ import java.util.function.UnaryOperator;
 public class RadixEngineForksLatestOnlyModule extends AbstractModule {
 	private final RERulesConfig config;
 
+	public RadixEngineForksLatestOnlyModule() {
+		this(RERulesConfig.testingDefault());
+	}
+
 	public RadixEngineForksLatestOnlyModule(RERulesConfig config) {
 		this.config = config;
 	}

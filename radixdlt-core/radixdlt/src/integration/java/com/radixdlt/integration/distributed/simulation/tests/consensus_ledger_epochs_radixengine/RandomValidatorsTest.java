@@ -19,12 +19,15 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
+
+import java.util.OptionalInt;
 import java.util.concurrent.TimeUnit;
 
 import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRandomRegistrator;
@@ -48,8 +51,18 @@ public class RandomValidatorsTest {
 			NetworkLatencies.fixed()
 		)
 		.addRadixEngineConfigModules(
-			RadixEngineConfig.asModule(2, 50, 5),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
+			RadixEngineConfig.asModule(2, 50),
+			new RadixEngineForksLatestOnlyModule(
+				new RERulesConfig(
+					Amount.ofTokens(0),
+					OptionalInt.of(5),
+					100,
+					2,
+					Amount.ofTokens(10),
+					1,
+					Amount.ofTokens(10),
+					9800
+				)),
 			new ForkManagerModule(),
 			new MainnetForksModule()
 		)

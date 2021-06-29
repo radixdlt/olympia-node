@@ -22,13 +22,9 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.atom.ActionConstructors;
-import com.radixdlt.atommodel.system.state.ValidatorBFTData;
+import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.ConstraintMachineConfig;
-import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.engine.SubstateCacheRegister;
@@ -39,6 +35,7 @@ import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.OptionalInt;
 import java.util.Set;
 
 /**
@@ -54,6 +51,22 @@ public class RadixEngineModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<SubstateCacheRegister<?>>() { });
 	}
 
+	// TODO: Remove
+	@Provides
+	@Singleton
+	private REParser parser(ForkConfig forkConfig) {
+		return forkConfig.getEngineRules().getParser();
+	}
+
+	// TODO: Remove
+	@Provides
+	@Singleton
+	@MaxSigsPerRound
+	private OptionalInt maxSigsPerRound(ForkConfig forkConfig) {
+		return forkConfig.getEngineRules().getMaxSigsPerRound();
+	}
+
+	// TODO: Remove
 	@Provides
 	@Singleton
 	@EpochCeilingView
@@ -63,68 +76,29 @@ public class RadixEngineModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private ConstraintMachineConfig buildConstraintMachineConfig(ForkConfig forkConfig) {
-		return forkConfig.getEngineRules().getConstraintMachineConfig();
-	}
-
-	@Provides
-	@Singleton
-	private ConstraintMachine constraintMachine(
-		ConstraintMachineConfig config
-	) {
-		return new ConstraintMachine(
-			config.getVirtualStoreLayer(),
-			config.getProcedures(),
-			config.getMetering()
-		);
-	}
-
-	@Provides
-	@Singleton
-	private ActionConstructors actionConstructors(ForkConfig forkConfig) {
-		return forkConfig.getEngineRules().getActionConstructors();
-	}
-
-	@Provides
-	@Singleton
-	private BatchVerifier<LedgerAndBFTProof> batchVerifier(ForkConfig forkConfig) {
-		return forkConfig.getEngineRules().getBatchVerifier();
-	}
-
-	@Provides
-	@Singleton
-	private REParser parser(ForkConfig forkConfig) {
-		return forkConfig.getEngineRules().getParser();
-	}
-
-	@Provides
-	@Singleton
-	private SubstateSerialization substateSerialization(ForkConfig forkConfig) {
-		return forkConfig.getEngineRules().getSerialization();
-	}
-
-	@Provides
-	@Singleton
 	private RadixEngine<LedgerAndBFTProof> getRadixEngine(
-		REParser parser,
-		SubstateSerialization serialization,
-		ConstraintMachine constraintMachine,
-		ActionConstructors actionConstructors,
 		EngineStore<LedgerAndBFTProof> engineStore,
-		BatchVerifier<LedgerAndBFTProof> batchVerifier,
 		Set<StateReducer<?>> stateReducers,
 		Set<Pair<String, StateReducer<?>>> namedStateReducers,
 		Set<SubstateCacheRegister<?>> substateCacheRegisters,
-		StakedValidatorsReducer stakedValidatorsReducer
+		StakedValidatorsReducer stakedValidatorsReducer,
+		ForkConfig forkConfig
 	) {
-		var radixEngine = new RadixEngine<>(
-			parser,
-			serialization,
-			actionConstructors,
-			constraintMachine,
-			engineStore,
-			batchVerifier
+		final var cmConfig = forkConfig.getEngineRules().getConstraintMachineConfig();
+		final var cm = new ConstraintMachine(
+			cmConfig.getVirtualStoreLayer(),
+			cmConfig.getProcedures(),
+			cmConfig.getMeter()
 		);
+		final var radixEngine = new RadixEngine<>(
+			forkConfig.getEngineRules().getParser(),
+			forkConfig.getEngineRules().getSerialization(),
+			forkConfig.getEngineRules().getActionConstructors(),
+			cm,
+			engineStore,
+			forkConfig.getEngineRules().getBatchVerifier()
+		);
+
 
 		// TODO: Convert to something more like the following:
 		// RadixEngine

@@ -17,10 +17,9 @@
 
 package com.radixdlt.api.data;
 
-import com.radixdlt.identifiers.AccountAddress;
-import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;
 
 import com.radixdlt.statecomputer.ValidatorDetails;
@@ -88,8 +87,8 @@ public class ValidatorInfoDetails {
 	}
 
 
-	public String getValidatorAddress() {
-		return ValidatorAddress.of(validator);
+	public String getValidatorAddress(Addressing addressing) {
+		return addressing.forValidators().of(validator);
 	}
 
 	public ECPublicKey getValidatorKey() {
@@ -100,10 +99,10 @@ public class ValidatorInfoDetails {
 		return totalStake;
 	}
 
-	public JSONObject asJson() {
+	public JSONObject asJson(Addressing addressing) {
 		return jsonObject()
-			.put("address", getValidatorAddress())
-			.put("ownerAddress", AccountAddress.of(owner))
+			.put("address", addressing.forValidators().of(validator))
+			.put("ownerAddress", addressing.forAccounts().of(owner))
 			.put("name", name)
 			.put("infoURL", infoUrl)
 			.put("totalDelegatedStake", totalStake)

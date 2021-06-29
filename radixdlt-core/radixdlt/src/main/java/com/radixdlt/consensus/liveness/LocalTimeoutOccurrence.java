@@ -43,6 +43,10 @@ public final class LocalTimeoutOccurrence {
 		return scheduledLocalTimeout.viewUpdate().getLeader();
 	}
 
+	public BFTNode getNextLeader() {
+		return scheduledLocalTimeout.viewUpdate().getNextLeader();
+	}
+
 	@Override
 	public int hashCode() {
 		return Objects.hash(scheduledLocalTimeout);

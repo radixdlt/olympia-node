@@ -18,6 +18,8 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+
 import java.util.function.Function;
 
 public final class UpProcedure<S extends ReducerState, U extends Particle> implements Procedure {
@@ -52,9 +54,13 @@ public final class UpProcedure<S extends ReducerState, U extends Particle> imple
 	public ReducerResult call(
 		Object o,
 		ReducerState reducerState,
-		ReadableAddrs readableAddrs,
+		ImmutableAddrs immutableAddrs,
 		ExecutionContext context
 	) throws ProcedureException {
-		return upReducer.reduce((S) reducerState, (U) o, context, readableAddrs);
+		try {
+			return upReducer.reduce((S) reducerState, (U) o, context, immutableAddrs);
+		} catch (Exception e) {
+			throw new ProcedureException(e);
+		}
 	}
 }

@@ -16,10 +16,13 @@
  */
 package com.radixdlt.api.service;
 
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
@@ -137,14 +140,14 @@ public class SubmissionServiceTest {
 
 			@Override
 			public void configure() {
-				install(new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10, 2)));
+				install(new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overridePerByteFee(Amount.ofSubunits(UInt256.ONE))));
 				install(new ForkManagerModule());
 				install(new MainnetForksModule());
-				install(RadixEngineConfig.asModule(1, 100, 50));
+				install(RadixEngineConfig.asModule(1, 100));
 				install(MempoolConfig.asModule(10, 10));
 
-				bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
-					.toInstance(registeredNodes);
+				bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
+					.toInstance(registeredNodes.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
 				var validatorSet = BFTValidatorSet.from(registeredNodes.stream().map(ECKeyPair::getPublicKey)
 					.map(BFTNode::create)
 					.map(n -> BFTValidator.from(n, UInt256.ONE)));
@@ -221,8 +224,9 @@ public class SubmissionServiceTest {
 	public void testPrepareTransaction() throws Exception {
 		var acct = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var action = new TransferToken(nativeToken, acct, ALICE_ACCT, BIG_AMOUNT);
+		var request = TxnConstructionRequest.create().action(action).feePayer(acct);
 
-		var tx = radixEngine.construct(action).signAndBuild(key::sign);
+		var tx = radixEngine.construct(request).signAndBuild(key::sign);
 
 		radixEngine.execute(List.of(tx));
 
@@ -243,7 +247,7 @@ public class SubmissionServiceTest {
 				var json = prepared.asJson();
 
 				assertTrue(json.has("fee"));
-				assertEquals("100000000000000000", json.get("fee"));
+				assertEquals("387", json.get("fee"));
 
 				assertTrue(json.has("transaction"));
 
@@ -286,8 +290,9 @@ public class SubmissionServiceTest {
 	private Result<PreparedTransaction> buildTransaction() throws TxBuilderException, RadixEngineException {
 		var acct = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var action = new TransferToken(nativeToken, acct, ALICE_ACCT, BIG_AMOUNT);
+		var request = TxnConstructionRequest.create().action(action).feePayer(acct);
 
-		var tx = radixEngine.construct(action).signAndBuild(key::sign);
+		var tx = radixEngine.construct(request).signAndBuild(key::sign);
 
 		radixEngine.execute(List.of(tx));
 

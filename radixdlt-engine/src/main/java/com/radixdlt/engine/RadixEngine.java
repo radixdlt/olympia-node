@@ -20,7 +20,8 @@ package com.radixdlt.engine;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.hash.HashCode;
-import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.application.system.construction.FeeReserveCompleteException;
+import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateStore;
@@ -29,22 +30,29 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.atom.actions.FeeReserveComplete;
+import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
-import com.radixdlt.constraintmachine.ConstraintMachineException;
+import com.radixdlt.constraintmachine.ExecutionContext;
+import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
+import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.constraintmachine.TxnParseException;
+import com.radixdlt.constraintmachine.exceptions.TxnParseException;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 
 import com.radixdlt.store.TransientEngineStore;
 import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -55,6 +63,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -165,13 +174,13 @@ public final class RadixEngine<M> {
 	private REParser parser;
 	private SubstateSerialization serialization;
 	private BatchVerifier<M> batchVerifier;
-	private ActionConstructors actionConstructors;
+	private REConstructor actionConstructors;
 	private ConstraintMachine constraintMachine;
 
 	public RadixEngine(
 		REParser parser,
 		SubstateSerialization serialization,
-		ActionConstructors actionConstructors,
+		REConstructor actionConstructors,
 		ConstraintMachine constraintMachine,
 		EngineStore<M> engineStore
 	) {
@@ -181,7 +190,7 @@ public final class RadixEngine<M> {
 	public RadixEngine(
 		REParser parser,
 		SubstateSerialization serialization,
-		ActionConstructors actionConstructors,
+		REConstructor actionConstructors,
 		ConstraintMachine constraintMachine,
 		EngineStore<M> engineStore,
 		BatchVerifier<M> batchVerifier
@@ -271,7 +280,7 @@ public final class RadixEngine<M> {
 	public void replaceConstraintMachine(
 		ConstraintMachineConfig constraintMachineConfig,
 		SubstateSerialization serialization,
-		ActionConstructors actionToConstructorMap,
+		REConstructor actionToConstructorMap,
 		BatchVerifier<M> batchVerifier,
 		REParser parser
 	) {
@@ -279,7 +288,7 @@ public final class RadixEngine<M> {
 			this.constraintMachine = new ConstraintMachine(
 				constraintMachineConfig.getVirtualStoreLayer(),
 				constraintMachineConfig.getProcedures(),
-				constraintMachineConfig.getMetering()
+				constraintMachineConfig.getMeter()
 			);
 			this.actionConstructors = actionToConstructorMap;
 			this.batchVerifier = batchVerifier;
@@ -299,7 +308,7 @@ public final class RadixEngine<M> {
 		private RadixEngineBranch(
 			REParser parser,
 			SubstateSerialization serialization,
-			ActionConstructors actionToConstructorMap,
+			REConstructor actionToConstructorMap,
 			ConstraintMachine constraintMachine,
 			EngineStore<M> parentStore,
 			Map<Pair<Class<?>, String>, ApplicationStateReducer<?, M>> stateComputers,
@@ -393,19 +402,21 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	private REProcessedTxn verify(CMStore.Transaction dbTransaction, Txn txn, PermissionLevel permissionLevel)
-		throws TxnParseException, ConstraintMachineException {
+	private REProcessedTxn verify(CMStore.Transaction dbTransaction, Txn txn, ExecutionContext context)
+		throws AuthorizationException, TxnParseException, ConstraintMachineException {
 
 		var parsedTxn = parser.parse(txn);
+		parsedTxn.getSignedBy().ifPresent(context::setKey);
+		context.setDisableResourceAllocAndDestroy(parsedTxn.disableResourceAllocAndDestroy());
+
 		var stateUpdates = constraintMachine.verify(
 			dbTransaction,
 			parser.getSubstateDeserialization(),
 			engineStore,
-			permissionLevel,
-			parsedTxn.instructions(),
-			parsedTxn.getSignedBy(),
-			parsedTxn.disableResourceAllocAndDestroy()
+			context,
+			parsedTxn.instructions()
 		);
+
 		return new REProcessedTxn(parsedTxn, stateUpdates);
 	}
 
@@ -470,14 +481,24 @@ public final class RadixEngine<M> {
 	) throws RadixEngineException {
 		var checker = batchVerifier.newVerifier(this::getComputedState);
 		var parsedTransactions = new ArrayList<REProcessedTxn>();
-		for (var txn : txns) {
+
+		// FIXME: This is quite the hack to increase sigsLeft for execution on noncommits (e.g. mempool)
+		// FIXME: Should probably just change metering
+		var sigsLeft = meta != null ? 0 : 1000; // Start with 0
+
+		for (int i = 0; i < txns.size(); i++) {
+			var txn = txns.get(i);
+			var context = new ExecutionContext(txn, permissionLevel, sigsLeft, Amount.ofTokens(200).toSubunits());
+
 			final REProcessedTxn parsedTxn;
 			// TODO: combine verification and storage
 			try {
-				parsedTxn = this.verify(dbTransaction, txn, permissionLevel);
-			} catch (TxnParseException | ConstraintMachineException e) {
-				throw new RadixEngineException(txn, e);
+				parsedTxn = this.verify(dbTransaction, txn, context);
+			} catch (TxnParseException | AuthorizationException | ConstraintMachineException e) {
+				throw new RadixEngineException(i, txns.size(), txn, e);
 			}
+			// Carry sigs left to the next transaction
+			sigsLeft = context.sigsLeft();
 
 			try {
 				this.engineStore.storeTxn(dbTransaction, txn, parsedTxn.stateUpdates().collect(Collectors.toList()));
@@ -578,18 +599,52 @@ public final class RadixEngine<M> {
 	}
 
 	public TxBuilder construct(TxnConstructionRequest request) throws TxBuilderException {
-		return construct(
-			txBuilder -> {
-				if (request.isDisableResourceAllocAndDestroy()) {
-					txBuilder.toLowLevelBuilder().disableResourceAllocAndDestroy();
-				}
-				for (var action : request.getActions()) {
-					this.actionConstructors.construct(action, txBuilder);
-					txBuilder.end();
-				}
-				request.getMsg().ifPresent(txBuilder::message);
-			},
-			request.getSubstatesToAvoid()
-		);
+		var feePayer = request.getFeePayer();
+		if (feePayer.isPresent()) {
+			return constructWithFees(request, feePayer.get());
+		} else {
+			return construct(
+				txBuilder -> {
+					if (request.isDisableResourceAllocAndDestroy()) {
+						txBuilder.toLowLevelBuilder().disableResourceAllocAndDestroy();
+					}
+					for (var action : request.getActions()) {
+						this.actionConstructors.construct(action, txBuilder);
+					}
+					request.getMsg().ifPresent(txBuilder::message);
+				},
+				request.getSubstatesToAvoid()
+			);
+		}
+	}
+
+	private TxBuilder constructWithFees(TxnConstructionRequest request, REAddr feePayer) throws TxBuilderException {
+		int maxTries = 5;
+		var perByteFee = this.actionConstructors.getPerByteFee().orElse(UInt256.ZERO);
+		var feeGuess = new AtomicReference<>(perByteFee.multiply(UInt256.from(100))); // Close to minimum size
+		for (int i = 0; i < maxTries; i++) {
+			try {
+				return construct(
+					txBuilder -> {
+						if (request.isDisableResourceAllocAndDestroy()) {
+							txBuilder.toLowLevelBuilder().disableResourceAllocAndDestroy();
+						}
+
+						this.actionConstructors.construct(new FeeReservePut(feePayer, feeGuess.get()), txBuilder);
+						for (var action : request.getActions()) {
+							this.actionConstructors.construct(action, txBuilder);
+						}
+						this.actionConstructors.construct(new FeeReserveComplete(feePayer), txBuilder);
+
+						request.getMsg().ifPresent(txBuilder::message);
+					},
+					request.getSubstatesToAvoid()
+				);
+			} catch (FeeReserveCompleteException e) {
+				feeGuess.set(e.getExpectedFee());
+			}
+		}
+
+		throw new TxBuilderException("Not enough fees: unable to construct with fees after " + maxTries + " tries.");
 	}
 }

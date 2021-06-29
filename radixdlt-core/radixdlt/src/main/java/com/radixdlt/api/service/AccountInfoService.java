@@ -17,6 +17,7 @@
 
 package com.radixdlt.api.service;
 
+import com.radixdlt.networks.Addressing;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -28,9 +29,7 @@ import com.radixdlt.application.MyValidatorInfo;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
@@ -42,11 +41,17 @@ import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 public class AccountInfoService {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final ECPublicKey bftKey;
+	private final Addressing addressing;
 
 	@Inject
-	public AccountInfoService(RadixEngine<LedgerAndBFTProof> radixEngine, @Self ECPublicKey bftKey) {
+	public AccountInfoService(
+		RadixEngine<LedgerAndBFTProof> radixEngine,
+		@Self ECPublicKey bftKey,
+		Addressing addressing
+	) {
 		this.radixEngine = radixEngine;
 		this.bftKey = bftKey;
+		this.addressing = addressing;
 	}
 
 	public JSONObject getAccountInfo() {
@@ -69,7 +74,7 @@ public class AccountInfoService {
 	}
 
 	public String getValidatorAddress() {
-		return ValidatorAddress.of(bftKey);
+		return addressing.forValidators().of(bftKey);
 	}
 
 	public MyValidatorInfo getValidatorInfoDetails() {
@@ -87,7 +92,7 @@ public class AccountInfoService {
 		stakeReceived.forEach((address, amt) -> {
 			stakeFrom.put(
 				jsonObject()
-					.put("delegator", AccountAddress.of(address))
+					.put("delegator", addressing.forAccounts().of(address))
 					.put("amount", amt)
 			);
 		});
@@ -96,7 +101,7 @@ public class AccountInfoService {
 	}
 
 	public String getOwnAddress() {
-		return AccountAddress.of(REAddr.ofPubKeyAccount(bftKey));
+		return addressing.forAccounts().of(REAddr.ofPubKeyAccount(bftKey));
 	}
 
 	public ECPublicKey getOwnPubKey() {
@@ -127,6 +132,6 @@ public class AccountInfoService {
 	}
 
 	private JSONObject constructStakeEntry(ECPublicKey publicKey, UInt256 amount) {
-		return jsonObject().put("delegate", ValidatorAddress.of(publicKey)).put("amount", amount);
+		return jsonObject().put("delegate", addressing.forValidators().of(publicKey)).put("amount", amount);
 	}
 }

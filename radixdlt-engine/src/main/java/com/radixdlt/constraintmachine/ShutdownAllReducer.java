@@ -18,10 +18,12 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+
 public interface ShutdownAllReducer<D extends Particle, S extends ReducerState> {
 	ReducerResult reduce(
 		ShutdownAll<D> inputState,
 		S reducerState,
-		ReadableAddrs readableAddrs
+		ImmutableAddrs immutableAddrs
 	) throws ProcedureException;
 }

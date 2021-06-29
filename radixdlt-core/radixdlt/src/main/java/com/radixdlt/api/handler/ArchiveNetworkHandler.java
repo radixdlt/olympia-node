@@ -22,7 +22,7 @@ import org.json.JSONObject;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.api.service.NetworkInfoService;
-import com.radixdlt.qualifier.Magic;
+import com.radixdlt.networks.NetworkId;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.JsonRpcUtil.response;
@@ -31,16 +31,16 @@ import static com.radixdlt.api.JsonRpcUtil.response;
 public class ArchiveNetworkHandler {
 	private final NetworkInfoService networkInfoService;
 
-	private final byte magic;
+	private final int magic;
 
 	@Inject
 	public ArchiveNetworkHandler(
 		NetworkInfoService networkInfoService,
-		@Magic int magic
+		@NetworkId int networkId
 	) {
 		this.networkInfoService = networkInfoService;
 
-		this.magic = (byte) magic;
+		this.magic = networkId;
 	}
 
 	public JSONObject handleNetworkGetId(JSONObject request) {

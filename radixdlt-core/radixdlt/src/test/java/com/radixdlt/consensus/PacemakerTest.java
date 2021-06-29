@@ -19,7 +19,6 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.assertj.core.api.Condition;
 import org.junit.Rule;
 import org.junit.Test;
@@ -67,10 +66,10 @@ public class PacemakerTest {
 	private Injector createRunner() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
-			RadixEngineConfig.asModule(1, Integer.MAX_VALUE, 50),
+			RadixEngineConfig.asModule(1, Integer.MAX_VALUE),
 			new ForkManagerModule(),
 			new MainnetForksModule(),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100L, 2)),
+			new RadixEngineForksLatestOnlyModule(),
 			new MockedGenesisModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new AbstractModule() {

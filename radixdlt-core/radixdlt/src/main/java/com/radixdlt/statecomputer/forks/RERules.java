@@ -18,7 +18,7 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.radixdlt.atom.ActionConstructors;
+import com.radixdlt.atom.REConstructor;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.SubstateSerialization;
@@ -26,21 +26,25 @@ import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
-public class RERules {
+import java.util.OptionalInt;
+
+public final class RERules {
 	private final REParser parser;
 	private final SubstateSerialization serialization;
 	private final ConstraintMachineConfig constraintMachineConfig;
-	private final ActionConstructors actionConstructors;
+	private final REConstructor actionConstructors;
 	private final BatchVerifier<LedgerAndBFTProof> batchVerifier;
 	private final View maxRounds;
+	private final OptionalInt maxSigsPerRound;
 
 	public RERules(
 		REParser parser,
 		SubstateSerialization serialization,
 		ConstraintMachineConfig constraintMachineConfig,
-		ActionConstructors actionConstructors,
+		REConstructor actionConstructors,
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
-		View maxRounds
+		View maxRounds,
+		OptionalInt maxSigsPerRound
 	) {
 		this.parser = parser;
 		this.serialization = serialization;
@@ -48,6 +52,7 @@ public class RERules {
 		this.actionConstructors = actionConstructors;
 		this.batchVerifier = batchVerifier;
 		this.maxRounds = maxRounds;
+		this.maxSigsPerRound = maxSigsPerRound;
 	}
 
 	public ConstraintMachineConfig getConstraintMachineConfig() {
@@ -58,7 +63,7 @@ public class RERules {
 		return serialization;
 	}
 
-	public ActionConstructors getActionConstructors() {
+	public REConstructor getActionConstructors() {
 		return actionConstructors;
 	}
 
@@ -72,5 +77,9 @@ public class RERules {
 
 	public View getMaxRounds() {
 		return maxRounds;
+	}
+
+	public OptionalInt getMaxSigsPerRound() {
+		return maxSigsPerRound;
 	}
 }

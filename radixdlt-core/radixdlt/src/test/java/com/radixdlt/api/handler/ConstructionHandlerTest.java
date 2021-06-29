@@ -17,6 +17,8 @@
 package com.radixdlt.api.handler;
 
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForkManager;
 import com.radixdlt.statecomputer.forks.RERules;
@@ -31,16 +33,13 @@ import org.junit.Test;
 
 import com.radixdlt.api.data.PreparedTransaction;
 import com.radixdlt.api.service.ActionParserService;
-import com.radixdlt.api.service.RriParser;
 import com.radixdlt.api.service.SubmissionService;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
@@ -61,13 +60,13 @@ import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 public class ConstructionHandlerTest {
 	private static final ECPublicKey PUB_KEY = ECKeyPair.generateNew().getPublicKey();
 	private static final REAddr ACCOUNT_ADDR = REAddr.ofPubKeyAccount(PUB_KEY);
-	private static final String FEE_PAYER = AccountAddress.of(ACCOUNT_ADDR);
+	private static final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
+	private static final String FEE_PAYER = addressing.forAccounts().of(ACCOUNT_ADDR);
 
-	private final RriParser rriParser = mock(RriParser.class);
 	private final SubmissionService submissionService = mock(SubmissionService.class);
 	private final ForkManager forkManager = mock(ForkManager.class);
-	private final ActionParserService actionParserService = new ActionParserService(rriParser, forkManager);
-	private final ConstructionHandler handler = new ConstructionHandler(submissionService, actionParserService);
+	private final ActionParserService actionParserService = new ActionParserService(addressing, forkManager);
+	private final ConstructionHandler handler = new ConstructionHandler(submissionService, actionParserService, addressing);
 
 	@Before
 	public void setup() {
@@ -88,7 +87,7 @@ public class ConstructionHandlerTest {
 			.put(
 				jsonObject()
 					.put("type", "RegisterValidator")
-					.put("validator", ValidatorAddress.of(PUB_KEY))
+					.put("validator", addressing.forValidators().of(PUB_KEY))
 			);
 		var params = jsonArray()
 			.put(actions)
@@ -117,7 +116,7 @@ public class ConstructionHandlerTest {
 			.put(
 				jsonObject()
 					.put("type", "RegisterValidator")
-					.put("validator", ValidatorAddress.of(PUB_KEY))
+					.put("validator", addressing.forValidators().of(PUB_KEY))
 			);
 		var params = jsonObject()
 			.put("actions", actions)

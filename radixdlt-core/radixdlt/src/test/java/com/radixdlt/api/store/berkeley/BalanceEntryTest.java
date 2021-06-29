@@ -16,9 +16,10 @@
  */
 package com.radixdlt.api.store.berkeley;
 
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import org.junit.Test;
 
-import com.radixdlt.api.Rri;
 import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -36,7 +37,8 @@ public class BalanceEntryTest {
 	private static final ECPublicKey KEY = ECKeyPair.generateNew().getPublicKey();
 	private static final REAddr ACCT = REAddr.ofPubKeyAccount(KEY);
 	private static final REAddr TOKEN_ADDRESS = REAddr.ofHashedKey(KEY, "xrd");
-	private static final String TOKEN_RRI = Rri.of("xrd", TOKEN_ADDRESS);
+	private static final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
+	private static final String TOKEN_RRI = addressing.forResources().of("xrd", TOKEN_ADDRESS);
 
 	@Test
 	public void verifyBalanceCalculation() {

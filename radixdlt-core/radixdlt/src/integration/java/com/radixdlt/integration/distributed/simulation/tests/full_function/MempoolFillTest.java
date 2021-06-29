@@ -25,7 +25,7 @@ import com.radixdlt.application.NodeApplicationModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
@@ -37,7 +37,6 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.sync.SyncConfig;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -63,7 +62,7 @@ public class MempoolFillTest {
 		)
 		.fullFunctionNodes(SyncConfig.of(800L, 10, 5000L))
 		.addRadixEngineConfigModules(
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10, 2)),
+			new RadixEngineForksLatestOnlyModule(),
 			new ForkManagerModule(),
 			new MainnetForksModule()
 		)
@@ -77,8 +76,8 @@ public class MempoolFillTest {
 		})
 		.addGenesisConfigModule(new AbstractModule() {
 			@ProvidesIntoSet
-			private TokenIssuance mempoolFillerIssuance(@Genesis ImmutableList<ECKeyPair> validators) {
-				return TokenIssuance.of(validators.get(0).getPublicKey(), TokenUnitConversions.unitsToSubunits(10000000000L));
+			private TokenIssuance mempoolFillerIssuance(@Genesis ImmutableList<ECPublicKey> validators) {
+				return TokenIssuance.of(validators.get(0), TokenUnitConversions.unitsToSubunits(10000000000L));
 			}
 		})
 		.addTestModules(

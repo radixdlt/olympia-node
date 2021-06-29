@@ -16,10 +16,11 @@
  */
 package com.radixdlt.api.handler;
 
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import org.json.JSONObject;
 import org.junit.Test;
 
-import com.radixdlt.api.Rri;
 import com.radixdlt.api.data.ActionEntry;
 import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.service.ArchiveAccountService;
@@ -27,9 +28,7 @@ import com.radixdlt.api.store.TokenBalance;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
@@ -55,22 +54,23 @@ import static com.radixdlt.utils.functional.Tuple.tuple;
 public class ArchiveAccountHandlerTest {
 	private static final ECPublicKey PUB_KEY = ECKeyPair.generateNew().getPublicKey();
 	private static final REAddr ACCOUNT_ADDRESS = REAddr.ofPubKeyAccount(PUB_KEY);
-	private static final String ADDRESS = AccountAddress.of(ACCOUNT_ADDRESS);
+	private static final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
+	private static final String ADDRESS = addressing.forAccounts().of(ACCOUNT_ADDRESS);
 	private static final ECPublicKey V1 = ECKeyPair.generateNew().getPublicKey();
 	private static final ECPublicKey V2 = ECKeyPair.generateNew().getPublicKey();
 	private static final ECPublicKey V3 = ECKeyPair.generateNew().getPublicKey();
 
 	private final ArchiveAccountService accountService = mock(ArchiveAccountService.class);
-	private final ArchiveAccountHandler handler = new ArchiveAccountHandler(accountService);
+	private final ArchiveAccountHandler handler = new ArchiveAccountHandler(accountService, addressing);
 
 	@Test
 	public void testTokenBalancePositional() {
 		var address1 = REAddr.ofHashedKey(PUB_KEY, "xyz");
 		var address2 = REAddr.ofHashedKey(PUB_KEY, "yzs");
 		var address3 = REAddr.ofHashedKey(PUB_KEY, "zxy");
-		var balance1 = TokenBalance.create(Rri.of("xyz", address1), UInt384.TWO);
-		var balance2 = TokenBalance.create(Rri.of("yzs", address2), UInt384.FIVE);
-		var balance3 = TokenBalance.create(Rri.of("zxy", address3), UInt384.EIGHT);
+		var balance1 = TokenBalance.create(addressing.forResources().of("xyz", address1), UInt384.TWO);
+		var balance2 = TokenBalance.create(addressing.forResources().of("yzs", address2), UInt384.FIVE);
+		var balance3 = TokenBalance.create(addressing.forResources().of("zxy", address3), UInt384.EIGHT);
 
 		when(accountService.getTokenBalances(any(REAddr.class)))
 			.thenReturn(Result.ok(List.of(balance1, balance2, balance3)));
@@ -95,9 +95,9 @@ public class ArchiveAccountHandlerTest {
 		var address1 = REAddr.ofHashedKey(PUB_KEY, "xyz");
 		var address2 = REAddr.ofHashedKey(PUB_KEY, "yzs");
 		var address3 = REAddr.ofHashedKey(PUB_KEY, "zxy");
-		var balance1 = TokenBalance.create(Rri.of("xyz", address1), UInt384.TWO);
-		var balance2 = TokenBalance.create(Rri.of("yzs", address2), UInt384.FIVE);
-		var balance3 = TokenBalance.create(Rri.of("zxy", address3), UInt384.EIGHT);
+		var balance1 = TokenBalance.create(addressing.forResources().of("xyz", address1), UInt384.TWO);
+		var balance2 = TokenBalance.create(addressing.forResources().of("yzs", address2), UInt384.FIVE);
+		var balance3 = TokenBalance.create(addressing.forResources().of("zxy", address3), UInt384.EIGHT);
 
 		when(accountService.getTokenBalances(any(REAddr.class)))
 			.thenReturn(Result.ok(List.of(balance1, balance2, balance3)));
@@ -134,13 +134,13 @@ public class ArchiveAccountHandlerTest {
 
 		assertEquals(3, list.length());
 		assertEquals(UInt384.TWO, list.getJSONObject(0).get("amount"));
-		assertEquals(ValidatorAddress.of(balance1.getDelegate()), list.getJSONObject(0).get("validator"));
+		assertEquals(addressing.forValidators().of(balance1.getDelegate()), list.getJSONObject(0).get("validator"));
 
 		assertEquals(UInt384.FIVE, list.getJSONObject(1).get("amount"));
-		assertEquals(ValidatorAddress.of(balance2.getDelegate()), list.getJSONObject(1).get("validator"));
+		assertEquals(addressing.forValidators().of(balance2.getDelegate()), list.getJSONObject(1).get("validator"));
 
 		assertEquals(UInt384.EIGHT, list.getJSONObject(2).get("amount"));
-		assertEquals(ValidatorAddress.of(balance3.getDelegate()), list.getJSONObject(2).get("validator"));
+		assertEquals(addressing.forValidators().of(balance3.getDelegate()), list.getJSONObject(2).get("validator"));
 	}
 
 	@Test
@@ -160,13 +160,13 @@ public class ArchiveAccountHandlerTest {
 
 		assertEquals(3, list.length());
 		assertEquals(UInt384.TWO, list.getJSONObject(0).get("amount"));
-		assertEquals(ValidatorAddress.of(balance1.getDelegate()), list.getJSONObject(0).get("validator"));
+		assertEquals(addressing.forValidators().of(balance1.getDelegate()), list.getJSONObject(0).get("validator"));
 
 		assertEquals(UInt384.FIVE, list.getJSONObject(1).get("amount"));
-		assertEquals(ValidatorAddress.of(balance2.getDelegate()), list.getJSONObject(1).get("validator"));
+		assertEquals(addressing.forValidators().of(balance2.getDelegate()), list.getJSONObject(1).get("validator"));
 
 		assertEquals(UInt384.EIGHT, list.getJSONObject(2).get("amount"));
-		assertEquals(ValidatorAddress.of(balance3.getDelegate()), list.getJSONObject(2).get("validator"));
+		assertEquals(addressing.forValidators().of(balance3.getDelegate()), list.getJSONObject(2).get("validator"));
 	}
 
 	@Test

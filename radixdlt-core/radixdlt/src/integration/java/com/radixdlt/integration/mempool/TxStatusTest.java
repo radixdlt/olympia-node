@@ -18,6 +18,7 @@
 
 package com.radixdlt.integration.mempool;
 
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -40,7 +41,6 @@ import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.REProcessedTxn;
@@ -112,10 +112,10 @@ public class TxStatusTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
+			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
 			new ForkManagerModule(),
 			new MainnetForksModule(),
-			RadixEngineConfig.asModule(1, 10, 10),
+			RadixEngineConfig.asModule(1, 10),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
 			new MempoolFillerModule(),
@@ -129,7 +129,7 @@ public class TxStatusTest {
 
 				@ProvidesIntoSet
 				private TokenIssuance mempoolFillerIssuance(@Self ECPublicKey self) {
-					return TokenIssuance.of(self, ValidatorStakeData.MINIMUM_STAKE);
+					return TokenIssuance.of(self, Amount.ofTokens(10).toSubunits());
 				}
 			}
 		);
@@ -166,8 +166,7 @@ public class TxStatusTest {
 		assertEquals(TRANSACTION_NOT_FOUND, transactionStatusService.getTransactionStatus(notExistingTxId));
 
 		// Correct transfer
-		var transferAction = new TransferToken(REAddr.ofNativeToken(), accountAddr, otherAddr,
-			ValidatorStakeData.MINIMUM_STAKE);
+		var transferAction = new TransferToken(REAddr.ofNativeToken(), accountAddr, otherAddr, Amount.ofTokens(10).toSubunits());
 		var transferDispatched = dispatchAndWaitForCommit(transferAction);
 		assertEquals(CONFIRMED, transactionStatusService.getTransactionStatus(transferDispatched.getTxn().getId()));
 	}

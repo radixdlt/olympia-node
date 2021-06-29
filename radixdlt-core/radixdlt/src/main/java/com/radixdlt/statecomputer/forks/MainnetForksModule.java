@@ -21,24 +21,52 @@ package com.radixdlt.statecomputer.forks;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.radixdlt.application.tokens.Amount;
+
+import java.util.OptionalInt;
 
 public final class MainnetForksModule extends AbstractModule {
-	private static final long TWO_WEEKS_WORTH_OF_ROUNDS = 1_500_000;
-	private static final long TWO_WEEKS_WORTH_OF_EPOCHS = 150;
 
 	@Provides
 	ImmutableList<ForkBuilder> mainnetForks() {
-		return ImmutableList.of(mainnetGenesis());
+		return ImmutableList.of(olympiaFirstEpoch(), olympia());
 	}
 
-	private
-	ForkBuilder mainnetGenesis() {
+	private ForkBuilder olympiaFirstEpoch() {
 		return new ForkBuilder(
-			"mainnet",
+			"olympia-first-epoch",
 			0L,
 			ForksPredicates.atEpoch(0L),
-			MainnetEngineRules.mainnetGenesis,
-			new RERulesConfig(true, TWO_WEEKS_WORTH_OF_ROUNDS, TWO_WEEKS_WORTH_OF_EPOCHS)
+			MainnetEngineRules.olympiaV1,
+			new RERulesConfig(
+				Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
+				OptionalInt.of(50), // 50 Txns per round
+				1_500_000, // Two weeks worth of rounds for first epoch
+				150, // Two weeks worth of epochs
+				Amount.ofTokens(100), // Minimum stake
+				150, // Two weeks worth of epochs
+				Amount.ofTokens(0),   // No rewards for epoch 1 where it will only be radix foundation nodes
+				9800 // 98.00% threshold for completed proposals to get any rewards
+			)
+		);
+	}
+
+	private ForkBuilder olympia() {
+		return new ForkBuilder(
+			"olympia",
+			2L,
+			ForksPredicates.atEpoch(2L),
+			MainnetEngineRules.olympiaV1,
+			new RERulesConfig(
+				Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
+				OptionalInt.of(50), // 50 Txns per round
+				10_000,
+				150, // Two weeks worth of epochs
+				Amount.ofTokens(100), // Minimum stake
+				150, // Two weeks worth of epochs
+				Amount.ofTokens(10), // Rewards per proposal
+				9800 // 98.00% threshold for completed proposals to get any rewards
+			)
 		);
 	}
 }

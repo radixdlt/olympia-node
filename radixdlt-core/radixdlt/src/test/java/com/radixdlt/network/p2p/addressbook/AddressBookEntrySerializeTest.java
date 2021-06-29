@@ -38,7 +38,12 @@ public class AddressBookEntrySerializeTest extends SerializeMessageObject<Addres
 		final var bannedUntil = rnd.nextBoolean()
 			? Optional.of(Instant.ofEpochMilli(Math.abs(rnd.nextLong())))
 			: Optional.<Instant>empty();
-		final var uri = RadixNodeUri.fromPubKeyAndAddress(keyPair.getPublicKey(), "127.0.0.1", 30000);
+		final var uri = RadixNodeUri.fromPubKeyAndAddress(
+			1,
+			keyPair.getPublicKey(),
+			"127.0.0.1",
+			30000
+		);
 		final var addressEntry = new AddressBookEntry.PeerAddressEntry(uri, Optional.of(Instant.ofEpochMilli(Math.abs(rnd.nextLong()))));
 		return new AddressBookEntry(NodeId.fromPublicKey(keyPair.getPublicKey()), bannedUntil, ImmutableSet.of(addressEntry));
 	}

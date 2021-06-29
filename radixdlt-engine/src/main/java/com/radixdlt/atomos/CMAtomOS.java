@@ -20,11 +20,11 @@ package com.radixdlt.atomos;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.constraintmachine.AuthorizationException;
+import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ProcedureException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.Procedures;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
@@ -81,12 +81,13 @@ public final class CMAtomOS {
 					UnclaimedREAddr.class,
 					SubstateTypeId.UNCLAIMED_READDR.id(),
 					buf -> {
+						REFieldSerialization.deserializeReservedByte(buf);
 						var rri = REFieldSerialization.deserializeREAddr(buf);
 						return new UnclaimedREAddr(rri);
 					},
 					(s, buf) -> {
-						var rri = s.getAddr();
-						REFieldSerialization.serializeREAddr(buf, rri);
+						REFieldSerialization.serializeReservedByte(buf);
+						REFieldSerialization.serializeREAddr(buf, s.getAddr());
 					},
 					v -> v.getAddr().getType() == REAddr.REAddrType.NATIVE_TOKEN
 						|| v.getAddr().getType() == REAddr.REAddrType.HASHED_KEY

@@ -26,7 +26,6 @@ import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
@@ -92,7 +91,7 @@ public final class RxEnvironmentModule extends AbstractModule {
 	@StringMapKey(Runners.CONSENSUS)
 	@Singleton
 	public ModuleRunner consensusRunner(
-		@Self BFTNode self,
+		@Self String name,
 		Set<EventProcessorOnRunner<?>> processors,
 		RxEnvironment rxEnvironment,
 		Set<RemoteEventProcessorOnRunner<?>> remoteProcessors,
@@ -106,42 +105,42 @@ public final class RxEnvironmentModule extends AbstractModule {
 		addRemoteProcessorsOnRunner(remoteProcessors, rxRemoteEnvironment, runnerName, builder);
 		addScheduledEventProducersOnRunner(scheduledEventProducers, runnerName, builder);
 		addStartProcessorsOnRunner(startProcessors, runnerName, builder);
-		return builder.build("ConsensusRunner " + self);
+		return builder.build("BFT " + name);
 	}
 
 	@ProvidesIntoMap
 	@StringMapKey(Runners.SYSTEM_INFO)
 	@Singleton
 	public ModuleRunner systemInfoRunner(
-		@Self BFTNode self,
+		@Self String name,
 		Set<EventProcessorOnRunner<?>> processors,
 		RxEnvironment rxEnvironment
 	) {
 		final var runnerName = Runners.SYSTEM_INFO;
 		final var builder = ModuleRunnerImpl.builder();
 		addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
-		return builder.build("SystemInfo " + self);
+		return builder.build("SystemInfo " + name);
 	}
 
 	@ProvidesIntoMap
 	@StringMapKey(Runners.CHAOS)
 	@Singleton
 	public ModuleRunner chaosRunner(
-		@Self BFTNode self,
+		@Self String name,
 		Set<EventProcessorOnRunner<?>> processors,
 		RxEnvironment rxEnvironment
 	) {
 		final var runnerName = Runners.CHAOS;
 		final var builder = ModuleRunnerImpl.builder();
 		addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
-		return builder.build("ChaosRunner " + self);
+		return builder.build("ChaosRunner " + name);
 	}
 
 	@ProvidesIntoMap
 	@StringMapKey(Runners.MEMPOOL)
 	@Singleton
 	public ModuleRunner mempoolRunner(
-		@Self BFTNode self,
+		@Self String name,
 		Set<EventProcessorOnRunner<?>> processors,
 		RxEnvironment rxEnvironment,
 		Set<RemoteEventProcessorOnRunner<?>> remoteProcessors,
@@ -153,28 +152,28 @@ public final class RxEnvironmentModule extends AbstractModule {
 		addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
 		addRemoteProcessorsOnRunner(remoteProcessors, rxRemoteEnvironment, runnerName, builder);
 		addScheduledEventProducersOnRunner(scheduledEventProducers, runnerName, builder);
-		return builder.build("MempoolRunner " + self);
+		return builder.build("MempoolRunner " + name);
 	}
 
 	@ProvidesIntoMap
 	@StringMapKey(Runners.APPLICATION)
 	@Singleton
 	public ModuleRunner applicationRunner(
-		@Self BFTNode self,
+		@Self String name,
 		Set<EventProcessorOnRunner<?>> processors,
 		RxEnvironment rxEnvironment
 	) {
 		final var runnerName = Runners.APPLICATION;
 		final var builder = ModuleRunnerImpl.builder();
 		addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
-		return builder.build("ApplicationRunner " + self);
+		return builder.build("ApplicationRunner " + name);
 	}
 
 	@ProvidesIntoMap
 	@StringMapKey(Runners.SYNC)
 	@Singleton
 	public ModuleRunner syncRunner(
-		@Self BFTNode self,
+		@Self String name,
 		Set<EventProcessorOnRunner<?>> processors,
 		RxEnvironment rxEnvironment,
 		Set<RemoteEventProcessorOnRunner<?>> remoteProcessors,
@@ -187,14 +186,14 @@ public final class RxEnvironmentModule extends AbstractModule {
 		addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
 		addRemoteProcessorsOnRunner(remoteProcessors, rxRemoteEnvironment, runnerName, builder);
 		addScheduledEventProducersOnRunner(scheduledEventProducers, runnerName, builder);
-		return builder.build("SyncRunner " + self);
+		return builder.build("SyncRunner " + name);
 	}
 
 	@ProvidesIntoMap
 	@StringMapKey(Runners.P2P_NETWORK)
 	@Singleton
 	public ModuleRunner p2pNetworkRunner(
-		@Self BFTNode self,
+		@Self String name,
 		Set<EventProcessorOnRunner<?>> processors,
 		RxEnvironment rxEnvironment,
 		Set<RemoteEventProcessorOnRunner<?>> remoteProcessors,
@@ -206,7 +205,7 @@ public final class RxEnvironmentModule extends AbstractModule {
 		addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
 		addRemoteProcessorsOnRunner(remoteProcessors, rxRemoteEnvironment, runnerName, builder);
 		addScheduledEventProducersOnRunner(scheduledEventProducers, runnerName, builder);
-		return builder.build("P2PNetworkRunner " + self);
+		return builder.build("P2PNetworkRunner " + name);
 	}
 
 	private static <T> void addToBuilder(

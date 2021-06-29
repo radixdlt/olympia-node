@@ -18,6 +18,7 @@
 
 package com.radixdlt.integration.staking;
 
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -42,7 +43,6 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -114,10 +114,10 @@ public class UnstakingLockedTokensTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
+			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
 			new ForkManagerModule(),
 			new MainnetForksModule(),
-			RadixEngineConfig.asModule(1, 10, 10),
+			RadixEngineConfig.asModule(1, 10),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
 			new MempoolFillerModule(),
@@ -130,7 +130,7 @@ public class UnstakingLockedTokensTest {
 
 				@ProvidesIntoSet
 				private TokenIssuance mempoolFillerIssuance(@Self ECPublicKey self) {
-					return TokenIssuance.of(self, ValidatorStakeData.MINIMUM_STAKE);
+					return TokenIssuance.of(self, Amount.ofTokens(10).toSubunits());
 				}
 			}
 		);
@@ -178,12 +178,12 @@ public class UnstakingLockedTokensTest {
 		}
 
 		var accountAddr = REAddr.ofPubKeyAccount(self);
-		var stakeTxn = dispatchAndWaitForCommit(new StakeTokens(accountAddr, self, ValidatorStakeData.MINIMUM_STAKE));
+		var stakeTxn = dispatchAndWaitForCommit(new StakeTokens(accountAddr, self, Amount.ofTokens(10).toSubunits()));
 		runner.runNextEventsThrough(
 			LedgerUpdate.class,
 			e -> ((Optional<EpochChange>) e.getStateComputerOutput()).map(c -> c.getEpoch() == unstakingEpoch).orElse(false)
 		);
-		var unstakeTxn = dispatchAndWaitForCommit(new UnstakeTokens(accountAddr, self, ValidatorStakeData.MINIMUM_STAKE));
+		var unstakeTxn = dispatchAndWaitForCommit(new UnstakeTokens(accountAddr, self, Amount.ofTokens(10).toSubunits()));
 
 		if (transferEpoch > unstakingEpoch) {
 			runner.runNextEventsThrough(
@@ -193,7 +193,7 @@ public class UnstakingLockedTokensTest {
 		}
 
 		var otherAddr = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
-		var transferAction = new TransferToken(REAddr.ofNativeToken(), accountAddr, otherAddr, ValidatorStakeData.MINIMUM_STAKE);
+		var transferAction = new TransferToken(REAddr.ofNativeToken(), accountAddr, otherAddr, Amount.ofTokens(10).toSubunits());
 
 		// Build transaction through radix engine
 		if (shouldSucceed) {

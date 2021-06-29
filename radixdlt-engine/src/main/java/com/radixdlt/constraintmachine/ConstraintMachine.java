@@ -20,14 +20,23 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atommodel.system.state.EpochData;
-import com.radixdlt.atommodel.tokens.state.TokenResource;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.application.tokens.state.TokenResource;
+import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
+import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
+import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
+import com.radixdlt.constraintmachine.exceptions.InvalidVirtualSubstateException;
+import com.radixdlt.constraintmachine.exceptions.LocalSubstateNotFoundException;
+import com.radixdlt.constraintmachine.exceptions.MeterException;
+import com.radixdlt.constraintmachine.exceptions.MissingProcedureException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
+import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
+import com.radixdlt.constraintmachine.exceptions.TxnParseException;
+import com.radixdlt.constraintmachine.meter.Meter;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.UInt256;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -36,6 +45,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -49,25 +59,23 @@ import java.util.function.Supplier;
 public final class ConstraintMachine {
 	private final Predicate<Particle> virtualStoreLayer;
 	private final Procedures procedures;
-	private final Metering metering;
+	private final Meter metering;
 
 	public ConstraintMachine(
 		Predicate<Particle> virtualStoreLayer,
 		Procedures procedures
 	) {
-		this.virtualStoreLayer = virtualStoreLayer;
-		this.procedures = procedures;
-		this.metering = (k, param, context) -> { };
+		this(virtualStoreLayer, procedures, Meter.EMPTY);
 	}
 
 	public ConstraintMachine(
 		Predicate<Particle> virtualStoreLayer,
 		Procedures procedures,
-		Metering metering
+		Meter metering
 	) {
-		this.virtualStoreLayer = virtualStoreLayer;
-		this.procedures = procedures;
-		this.metering = metering;
+		this.virtualStoreLayer = Objects.requireNonNull(virtualStoreLayer);
+		this.procedures = Objects.requireNonNull(procedures);
+		this.metering = Objects.requireNonNull(metering);
 	}
 
 	private static final class CMValidationState {
@@ -77,6 +85,7 @@ public final class ConstraintMachine {
 		private final CMStore.Transaction dbTxn;
 		private final Predicate<Particle> virtualStoreLayer;
 		private final SubstateDeserialization deserialization;
+		private int bootupCount = 0;
 
 		CMValidationState(
 			SubstateDeserialization deserialization,
@@ -90,27 +99,17 @@ public final class ConstraintMachine {
 			this.store = store;
 		}
 
-		public ReadableAddrs readableAddrs() {
-			return addr -> {
-				if (addr.isSystem()) {
-					return localUpParticles.values().stream()
-						.map(Pair::getFirst)
-						.map(Substate::getParticle)
-						.filter(EpochData.class::isInstance)
-						.findFirst()
-						.or(() -> store.loadAddr(dbTxn, addr, deserialization));
-				} else {
-					return localUpParticles.values().stream()
-						.map(Pair::getFirst)
-						.map(Substate::getParticle)
-						.filter(TokenResource.class::isInstance)
-						.map(TokenResource.class::cast)
-						.filter(p -> p.getAddr().equals(addr))
-						.findFirst()
-						.map(Particle.class::cast)
-						.or(() -> store.loadAddr(dbTxn, addr, deserialization));
-				}
-			};
+		public ImmutableAddrs immutableAddrs() {
+			return addr ->
+				localUpParticles.values().stream()
+					.map(Pair::getFirst)
+					.map(Substate::getParticle)
+					.filter(TokenResource.class::isInstance)
+					.map(TokenResource.class::cast)
+					.filter(p -> p.getAddr().equals(addr))
+					.findFirst()
+					.map(Particle.class::cast)
+					.or(() -> store.loadAddr(dbTxn, addr, deserialization));
 		}
 
 		public Optional<Particle> loadUpParticle(SubstateId substateId) {
@@ -121,57 +120,57 @@ public final class ConstraintMachine {
 			return store.loadUpParticle(dbTxn, substateId, deserialization);
 		}
 
-		public void bootUp(int instructionIndex, Substate substate, Supplier<ByteBuffer> buffer) {
-			localUpParticles.put(instructionIndex, Pair.of(substate, buffer));
+		public void bootUp(Substate substate, Supplier<ByteBuffer> buffer) {
+			localUpParticles.put(bootupCount, Pair.of(substate, buffer));
+			bootupCount++;
 		}
 
-
-		public void virtualRead(Substate substate) throws ConstraintMachineException {
+		public void virtualRead(Substate substate) throws SubstateNotFoundException, InvalidVirtualSubstateException {
 			if (remoteDownParticles.contains(substate.getId())) {
-				throw new ConstraintMachineException(CMErrorCode.SUBSTATE_NOT_FOUND);
+				throw new SubstateNotFoundException(substate.getId());
 			}
 
 			if (!virtualStoreLayer.test(substate.getParticle())) {
-				throw new ConstraintMachineException(CMErrorCode.INVALID_PARTICLE);
+				throw new InvalidVirtualSubstateException(substate.getParticle());
 			}
 
 			if (store.isVirtualDown(dbTxn, substate.getId())) {
-				throw new ConstraintMachineException(CMErrorCode.SUBSTATE_NOT_FOUND);
+				throw new SubstateNotFoundException(substate.getId());
 			}
 		}
 
-		public void virtualShutdown(Substate substate) throws ConstraintMachineException {
+		public void virtualShutdown(Substate substate) throws SubstateNotFoundException, InvalidVirtualSubstateException {
 			virtualRead(substate);
 			remoteDownParticles.add(substate.getId());
 		}
 
-		public Particle localShutdown(int index) throws ConstraintMachineException {
+		public Particle localShutdown(int index) throws LocalSubstateNotFoundException {
 			var substate = localUpParticles.remove(index);
 			if (substate == null) {
-				throw new ConstraintMachineException(CMErrorCode.LOCAL_NONEXISTENT);
+				throw new LocalSubstateNotFoundException(index);
 			}
 
 			return substate.getFirst().getParticle();
 		}
 
-		public Particle localRead(int index) throws ConstraintMachineException {
+		public Particle localRead(int index) throws LocalSubstateNotFoundException {
 			var substate = localUpParticles.get(index);
 			if (substate == null) {
-				throw new ConstraintMachineException(CMErrorCode.LOCAL_NONEXISTENT);
+				throw new LocalSubstateNotFoundException(index);
 			}
 
 			return substate.getFirst().getParticle();
 		}
 
-		public Particle read(SubstateId substateId) throws ConstraintMachineException {
+		public Particle read(SubstateId substateId) throws SubstateNotFoundException {
 			var read = loadUpParticle(substateId);
 			if (read.isEmpty()) {
-				throw new ConstraintMachineException(CMErrorCode.SUBSTATE_NOT_FOUND);
+				throw new SubstateNotFoundException(substateId);
 			}
 			return read.get();
 		}
 
-		public Particle shutdown(SubstateId substateId) throws ConstraintMachineException {
+		public Particle shutdown(SubstateId substateId) throws SubstateNotFoundException {
 			var substate = read(substateId);
 			remoteDownParticles.add(substateId);
 			return substate;
@@ -217,30 +216,31 @@ public final class ConstraintMachine {
 		Procedure procedure,
 		Object procedureParam,
 		ReducerState reducerState,
-		ReadableAddrs readableAddrs,
+		ImmutableAddrs immutableAddrs,
 		ExecutionContext context
-	) throws ConstraintMachineException {
+	) throws SignedSystemException, InvalidPermissionException, AuthorizationException, MeterException, ProcedureException {
 		// System permissions don't require additional authorization
 		var authorization = procedure.authorization(procedureParam);
 		var requiredLevel = authorization.permissionLevel();
 		context.verifyPermissionLevel(requiredLevel);
-		try {
-			if (context.permissionLevel() != PermissionLevel.SYSTEM) {
+		if (context.permissionLevel() != PermissionLevel.SYSTEM) {
+			try {
 				if (requiredLevel == PermissionLevel.USER) {
-					this.metering.onUserInstruction(procedure.key(), procedureParam, context);
+					this.metering.onUserProcedure(procedure.key(), procedureParam, context);
+				} else if (requiredLevel == PermissionLevel.SUPER_USER) {
+					this.metering.onSuperUserProcedure(procedure.key(), procedureParam, context);
 				}
-
-				authorization.authorizer().verify(readableAddrs, context);
+			} catch (Exception e) {
+				throw new MeterException(e);
 			}
 
-			return procedure.call(procedureParam, reducerState, readableAddrs, context).state();
-		} catch (AuthorizationException e) {
-			throw new ConstraintMachineException(CMErrorCode.AUTHORIZATION_ERROR, e);
-		} catch (ProcedureException e) {
-			throw new ConstraintMachineException(CMErrorCode.PROCEDURE_ERROR, e);
-		} catch (Exception e) {
-			throw new ConstraintMachineException(CMErrorCode.UNKNOWN_ERROR, e);
+			authorization.authorizer().verify(immutableAddrs, context);
 		}
+
+		return procedure.call(procedureParam, reducerState, immutableAddrs, context).state();
+	}
+
+	private static class MissingExpectedEndException extends Exception {
 	}
 
 	/**
@@ -255,16 +255,16 @@ public final class ConstraintMachine {
 		int instIndex = 0;
 		var expectEnd = false;
 		ReducerState reducerState = null;
-		var readableAddrs = validationState.readableAddrs();
+		var readableAddrs = validationState.immutableAddrs();
 		var groupedStateUpdates = new ArrayList<List<REStateUpdate>>();
 		var stateUpdates = new ArrayList<REStateUpdate>();
 
 		for (REInstruction inst : instructions) {
-			if (expectEnd && inst.getMicroOp() != REInstruction.REMicroOp.END) {
-				throw new ConstraintMachineException(CMErrorCode.MISSING_PARTICLE_GROUP);
-			}
-
 			try {
+				if (expectEnd && inst.getMicroOp() != REInstruction.REMicroOp.END) {
+					throw new MissingExpectedEndException();
+				}
+
 				if (inst.getMicroOp() == REInstruction.REMicroOp.SYSCALL) {
 					CallData callData = inst.getData();
 					var opSignature = OpSignature.ofMethod(inst.getMicroOp().getOp(), REAddr.ofSystem());
@@ -329,7 +329,7 @@ public final class ConstraintMachine {
 						arg = null;
 						nextParticle = substate.getParticle();
 						o = nextParticle;
-						validationState.bootUp(instIndex, substate, inst::getDataByteBuffer);
+						validationState.bootUp(substate, inst::getDataByteBuffer);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.VDOWN) {
 						substate = inst.getData();
 						arg = null;
@@ -355,7 +355,7 @@ public final class ConstraintMachine {
 						arg = null;
 						o = SubstateWithArg.noArg(nextParticle);
 					} else {
-						throw new ConstraintMachineException(CMErrorCode.UNKNOWN_OP);
+						throw new IllegalStateException("Unhandled op: " + inst.getMicroOp());
 					}
 
 					var op = inst.getMicroOp().getOp();
@@ -375,16 +375,20 @@ public final class ConstraintMachine {
 					}
 
 					expectEnd = false;
+				} else if (inst.getMicroOp() == REInstruction.REMicroOp.SIG) {
+					metering.onSigInstruction(context);
 				}
-			} catch (MissingProcedureException e) {
-				throw new ConstraintMachineException(
-					CMErrorCode.MISSING_PROCEDURE,
-					"ReducerState: " + reducerState + " Instruction: " + inst.toString(),
-					e
-				);
+			} catch (Exception e) {
+				throw new ConstraintMachineException(instIndex, inst, reducerState, e);
 			}
 
 			instIndex++;
+		}
+
+		try {
+			context.destroy();
+		} catch (Exception e) {
+			throw new ConstraintMachineException(instIndex, null, reducerState, e);
 		}
 
 		return groupedStateUpdates;
@@ -400,13 +404,10 @@ public final class ConstraintMachine {
 		CMStore.Transaction dbTxn,
 		SubstateDeserialization deserialization,
 		CMStore cmStore,
-		PermissionLevel permissionLevel,
-		List<REInstruction> instructions,
-		Optional<ECPublicKey> signature,
-		boolean disableResourceAllocAndDestroy
+		ExecutionContext context,
+		List<REInstruction> instructions
 	) throws TxnParseException, ConstraintMachineException {
 		var validationState = new CMValidationState(deserialization, virtualStoreLayer, dbTxn, cmStore);
-		var context = new ExecutionContext(permissionLevel, signature, UInt256.ZERO, disableResourceAllocAndDestroy);
 		return this.statefulVerify(context, validationState, instructions);
 	}
 }

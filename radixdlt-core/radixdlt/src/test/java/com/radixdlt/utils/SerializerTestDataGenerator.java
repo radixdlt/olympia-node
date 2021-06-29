@@ -97,7 +97,6 @@ public class SerializerTestDataGenerator {
 	public static TimestampedECDSASignature randomTimestampedECDSASignature() {
 		return TimestampedECDSASignature.from(
 			Math.abs(random.nextLong()),
-			UInt256.from(random.nextLong()),
 			randomECDSASignature()
 		);
 	}

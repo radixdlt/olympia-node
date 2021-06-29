@@ -18,6 +18,8 @@
 package com.radixdlt.api.handler;
 
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForkManager;
 import com.radixdlt.statecomputer.forks.RERules;
@@ -27,7 +29,6 @@ import org.junit.Test;
 
 import com.radixdlt.api.service.AccountInfoService;
 import com.radixdlt.api.service.ActionParserService;
-import com.radixdlt.api.service.RriParser;
 import com.radixdlt.api.service.SubmissionService;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.crypto.ECKeyPair;
@@ -35,7 +36,6 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.utils.functional.Result;
 
 import static org.junit.Assert.assertEquals;
@@ -44,17 +44,17 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.powermock.api.mockito.PowerMockito.when;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
-import static org.mockito.Mockito.when;
 
 public class AccountHandlerTest {
-	private final RriParser rriParser = mock(RriParser.class);
 	private final SubmissionService submissionService = mock(SubmissionService.class);
 	private final AccountInfoService accountService = mock(AccountInfoService.class);
+	private final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
 	private final ForkManager forkManager = mock(ForkManager.class);
-	private final ActionParserService actionParserService = new ActionParserService(rriParser, forkManager);
+	private final ActionParserService actionParserService = new ActionParserService(addressing, forkManager);
 
 	private final ECKeyPair keyPair = ECKeyPair.generateNew();
 	private final ECPublicKey bftKey = keyPair.getPublicKey();
@@ -118,7 +118,7 @@ public class AccountHandlerTest {
 			.put(
 				jsonObject()
 					.put("type", "RegisterValidator")
-					.put("validator", ValidatorAddress.of(bftKey))
+					.put("validator", addressing.forValidators().of(bftKey))
 			);
 		var params = jsonArray()
 			.put(actions)

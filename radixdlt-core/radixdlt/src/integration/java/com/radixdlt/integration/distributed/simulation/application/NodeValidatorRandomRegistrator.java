@@ -48,7 +48,8 @@ public final class NodeValidatorRandomRegistrator implements SimulationTest.Simu
 	public void start(SimulationNodes.RunningNetwork network) {
 		List<BFTNode> nodes = network.getNodes();
 		this.disposable = Observable.interval(1, 1, TimeUnit.SECONDS)
-			.map(i -> nodes.get(random.nextInt(nodes.size())))
+			// Don't unregister node0/node1 so we are assured validatorSet never becomes empty
+			.map(i -> nodes.get(random.nextInt(nodes.size() - 2) + 2))
 			.subscribe(node -> {
 				var d = network.getDispatcher(NodeApplicationRequest.class, node);
 				var txnConstructionRequest = TxnConstructionRequest.create();

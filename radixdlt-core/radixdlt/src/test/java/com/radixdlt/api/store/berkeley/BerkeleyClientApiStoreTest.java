@@ -16,9 +16,10 @@
  */
 package com.radixdlt.api.store.berkeley;
 
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -31,7 +32,6 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.api.Rri;
 import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.api.data.ActionType;
 import com.radixdlt.api.store.ClientApiStore.BalanceType;
@@ -53,7 +53,6 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.qualifier.NumPeers;
@@ -91,6 +90,7 @@ public class BerkeleyClientApiStoreTest {
 	private static final REAddr OWNER_ACCOUNT = REAddr.ofPubKeyAccount(OWNER_KEYPAIR.getPublicKey());
 	private static final ECKeyPair TOKEN_KEYPAIR = ECKeyPair.generateNew();
 	private static final REAddr TOKEN_ACCOUNT = REAddr.ofPubKeyAccount(TOKEN_KEYPAIR.getPublicKey());
+	private static final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
 
 	private static final String SYMBOL = "cfee";
 	private static final REAddr TOKEN = REAddr.ofHashedKey(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
@@ -115,10 +115,10 @@ public class BerkeleyClientApiStoreTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 0),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10, 2)),
+			new RadixEngineForksLatestOnlyModule(),
 			new ForkManagerModule(),
 			new MainnetForksModule(),
-			RadixEngineConfig.asModule(1, 100, 50),
+			RadixEngineConfig.asModule(1, 100),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
 			new AbstractModule() {
@@ -172,7 +172,7 @@ public class BerkeleyClientApiStoreTest {
 	public void tokenSupplyIsCalculateProperlyForInitialTokenIssuance() throws Exception {
 		var tokenDef = prepareMutableTokenDef(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
 		var addr = REAddr.ofHashedKey(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
-		var rri = Rri.of(SYMBOL, addr);
+		var rri = addressing.forResources().of(SYMBOL, addr);
 		var tx = engine.construct(new CreateMutableToken(tokenDef))
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
@@ -187,7 +187,7 @@ public class BerkeleyClientApiStoreTest {
 	public void tokenSupplyIsCalculateProperlyAfterBurnMint() throws Exception {
 		var tokenDef = prepareMutableTokenDef(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
 		var addr = REAddr.ofHashedKey(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
-		var rri = Rri.of(SYMBOL, addr);
+		var rri = addressing.forResources().of(SYMBOL, addr);
 		var tx = engine.construct(
 			TxnConstructionRequest.create()
 				.createMutableToken(tokenDef)
@@ -264,8 +264,8 @@ public class BerkeleyClientApiStoreTest {
 
 				assertEquals(ActionType.TRANSFER, action.getType());
 				assertEquals(UInt256.FOUR, action.getAmount());
-				assertEquals(AccountAddress.of(TOKEN_ACCOUNT), action.getFrom());
-				assertEquals(AccountAddress.of(REAddr.ofPubKeyAccount(OWNER_KEYPAIR.getPublicKey())), action.getTo());
+				assertEquals(addressing.forAccounts().of(TOKEN_ACCOUNT), action.getFrom());
+				assertEquals(addressing.forAccounts().of(REAddr.ofPubKeyAccount(OWNER_KEYPAIR.getPublicKey())), action.getTo());
 
 				newCursor.set(entry.timestamp());
 			});
@@ -343,8 +343,9 @@ public class BerkeleyClientApiStoreTest {
 			serialization,
 			mock(SystemCounters.class),
 			mock(ScheduledEventDispatcher.class),
-			new TransactionParser(),
-			true
+			new TransactionParser(addressing),
+			true,
+			addressing
 		);
 	}
 

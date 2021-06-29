@@ -64,7 +64,7 @@ public class ValidatorKeyGenerator implements Runnable {
 		var newFile = !keystoreFile.canWrite();
 		var isNew = newFile ? "new" : "existing";
 		var keyPair = ECKeyPair.generateNew();
-		var publicKey = keyPair.getPublicKey().toBase64();
+		var publicKey = keyPair.getPublicKey().toHex();
 
 		printfln("Writing key %s (pubKey: %s) into %s keystore %s",
 				keystoreDetails.keypair(), publicKey, isNew, keystoreDetails.keyStore()
