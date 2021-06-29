@@ -40,14 +40,16 @@ import java.util.Optional;
 public class TransactionRequest {
 	private final List<Action> actions;
 	private final String message;
+	private final AccountAddress feePayer;
 
-	private TransactionRequest(String message, List<Action> actions) {
+	private TransactionRequest(String message, List<Action> actions, AccountAddress feePayer) {
 		this.message = message;
 		this.actions = actions;
+		this.feePayer = feePayer;
 	}
 
-	public static TransactionRequestBuilder createBuilder() {
-		return new TransactionRequestBuilder();
+	public static TransactionRequestBuilder createBuilder(AccountAddress feePayer) {
+		return new TransactionRequestBuilder(feePayer);
 	}
 
 	@JsonProperty("message")
@@ -60,11 +62,19 @@ public class TransactionRequest {
 		return actions;
 	}
 
+	@JsonProperty("feePayer")
+	public AccountAddress getFeePayer() {
+		return feePayer;
+	}
+
 	public static final class TransactionRequestBuilder {
 		private final List<Action> actions = new ArrayList<>();
+		private final AccountAddress feePayer;
 		private String message;
 
-		private TransactionRequestBuilder() { }
+		private TransactionRequestBuilder(AccountAddress feePayer) {
+			this.feePayer = feePayer;
+		}
 
 		public TransactionRequestBuilder transfer(AccountAddress from, AccountAddress to, UInt256 amount, String rri) {
 			actions.add(new TransferAction(from, to, amount, rri));
@@ -131,7 +141,7 @@ public class TransactionRequest {
 		}
 
 		public TransactionRequest build() {
-			return new TransactionRequest(message, actions);
+			return new TransactionRequest(message, actions, feePayer);
 		}
 	}
 }

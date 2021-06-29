@@ -212,40 +212,35 @@ public final class RadixEngineStateComputer implements StateComputer {
 		} else {
 			var stakedValidators = branch.getComputedState(StakedValidators.class);
 			if (stakedValidators.toValidatorSet() == null) {
-				// FIXME: Better way to handle rare case when there isn't enough in validator set
+				// TODO: Catch this error and halt services
+				throw new NoValidatorsException(vertex.getQC().getEpoch());
+			}
+
+			if (vertex.getParentHeader().getView().compareTo(epochCeilingView) < 0) {
 				systemActions.action(new NextRound(
-					view.number(),
-					false,
+					epochCeilingView.number(),
+					true,
 					timestamp,
 					getValidatorMapping()
 				));
-			} else {
-				if (vertex.getParentHeader().getView().compareTo(epochCeilingView) < 0) {
-					systemActions.action(new NextRound(
-						epochCeilingView.number(),
-						true,
-						timestamp,
-						getValidatorMapping()
-					));
-				}
-
-				systemActions.action(new NextEpoch(updates -> {
-					var cur = stakedValidators;
-					for (var u : updates) {
-						cur = cur.setStake(u.getValidatorKey(), u.getAmount());
-					}
-					// FIXME: cur.toValidatorSet() may be null
-					var validatorSet = cur.toValidatorSet();
-					if (validatorSet == null) {
-						throw new IllegalStateException();
-					}
-					nextValidatorSet.set(validatorSet);
-					return validatorSet.nodes().stream()
-						.map(BFTNode::getKey)
-						.sorted(Comparator.comparing(ECPublicKey::getBytes, Arrays::compare))
-						.collect(Collectors.toList());
-				}, timestamp));
 			}
+
+			systemActions.action(new NextEpoch(updates -> {
+				var cur = stakedValidators;
+				for (var u : updates) {
+					cur = cur.setStake(u.getValidatorKey(), u.getAmount());
+				}
+				// FIXME: cur.toValidatorSet() may be null
+				var validatorSet = cur.toValidatorSet();
+				if (validatorSet == null) {
+					throw new NoValidatorsException(vertex.getQC().getEpoch());
+				}
+				nextValidatorSet.set(validatorSet);
+				return validatorSet.nodes().stream()
+					.map(BFTNode::getKey)
+					.sorted(Comparator.comparing(ECPublicKey::getBytes, Arrays::compare))
+					.collect(Collectors.toList());
+			}, timestamp));
 		}
 
 		final Txn systemUpdate;

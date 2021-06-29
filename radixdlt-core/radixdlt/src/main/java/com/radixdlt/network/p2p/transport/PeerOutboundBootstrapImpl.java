@@ -27,6 +27,7 @@ import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.RadixNodeUri;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.serialization.Serialization;
 import io.netty.bootstrap.Bootstrap;
@@ -41,6 +42,7 @@ import java.util.Optional;
 @Singleton
 public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 	private final P2PConfig config;
+	private final Addressing addressing;
 	private final int networkId;
 	private final SystemCounters counters;
 	private final Serialization serialization;
@@ -54,6 +56,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 	@Inject
 	public PeerOutboundBootstrapImpl(
 		P2PConfig config,
+		Addressing addressing,
 		@NetworkId int networkId,
 		SystemCounters counters,
 		Serialization serialization,
@@ -63,6 +66,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 		Provider<PeerControl> peerControl
 	) {
 		this.config = Objects.requireNonNull(config);
+		this.addressing = Objects.requireNonNull(addressing);
 		this.networkId = networkId;
 		this.counters = Objects.requireNonNull(counters);
 		this.serialization = Objects.requireNonNull(serialization);
@@ -83,6 +87,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 			.option(ChannelOption.SO_KEEPALIVE, true)
 			.handler(new PeerChannelInitializer(
 				config,
+				addressing,
 				networkId,
 				counters,
 				serialization,

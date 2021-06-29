@@ -53,7 +53,7 @@ public class SyncRadixApiTest {
 	@Test
 	@Ignore //Useful testbed for experiments
 	public void testBuildTransactionWithMessage() {
-		var request = TransactionRequest.createBuilder()
+		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
 			.transfer(
 				ACCOUNT_ADDRESS1,
 				ACCOUNT_ADDRESS2,
@@ -165,7 +165,7 @@ public class SyncRadixApiTest {
 	}
 
 	private void transferUnStake(RadixApi client, UInt256 amount) {
-		var request = TransactionRequest.createBuilder()
+		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS2)
 			.transfer(
 				ACCOUNT_ADDRESS2,
 				ACCOUNT_ADDRESS1,
@@ -200,7 +200,7 @@ public class SyncRadixApiTest {
 	}
 
 	private void makeStake(RadixApi client, UInt256 amount) {
-		var request = TransactionRequest.createBuilder()
+		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
 			.stake(ACCOUNT_ADDRESS1, ValidatorAddress.of(KEY_PAIR2.getPublicKey()), amount)
 			.build();
 
@@ -216,7 +216,7 @@ public class SyncRadixApiTest {
 	}
 
 	private void makeUnStake(RadixApi client, UInt256 amount) {
-		var request = TransactionRequest.createBuilder()
+		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
 			.unstake(ACCOUNT_ADDRESS1, ValidatorAddress.of(KEY_PAIR2.getPublicKey()), amount)
 			.build();
 
@@ -232,7 +232,7 @@ public class SyncRadixApiTest {
 	}
 
 	private void addTransaction(RadixApi client, UInt256 amount) {
-		var request = TransactionRequest.createBuilder()
+		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
 			.transfer(
 				ACCOUNT_ADDRESS1,
 				ACCOUNT_ADDRESS2,

@@ -18,12 +18,11 @@
 
 package com.radixdlt.application.validators.state;
 
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
 
-public final class AllowDelegationFlag implements Particle {
+public final class AllowDelegationFlag implements ValidatorData {
 	private final ECPublicKey validatorKey;
 	private final boolean allowDelegation;
 
@@ -32,6 +31,7 @@ public final class AllowDelegationFlag implements Particle {
 		this.allowDelegation = allowDelegation;
 	}
 
+	@Override
 	public ECPublicKey getValidatorKey() {
 		return validatorKey;
 	}
