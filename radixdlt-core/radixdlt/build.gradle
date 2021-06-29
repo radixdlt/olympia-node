@@ -34,14 +34,7 @@ node {
 // Example: ./gradlew run ... -P overrideMainClassName=org.radix.GenerateUniverses
 mainClassName = properties.get('overrideMainClassName', 'org.radix.Radix')
 def validators = properties.get('validators', '0')
-def helmConfig = properties.get('helmConfig', false)
-def helmConfigOut = properties.get('helmConfigOut', '.')
-def networkName = properties.get('network-name', 'test')
-def enableAWSSecret = properties.get('enableAWSSecret', false)
-def recreateAWSSecret = properties.get('recreateAWSSecret', false)
-def nodeNamePrefix = properties.get('nodeNamePrefix',"node");
-def pubKey = properties.get('pubKey');
-def tokensToIssue = properties.get('tokensToIssue', 0);
+def publicKeys = properties.get('publicKeys', '')
 
 startScripts {
     classpath = files('src/resources') + classpath
@@ -201,6 +194,17 @@ task generateDevUniverse(type: Exec) {
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
         "org.radix.GenerateUniverses",
         "--validator-count=${validators}"
+}
+
+task generateGenesisFile(type: Exec) {
+    dependsOn compileJava
+    dependsOn ':radixdlt-java-common:jar'
+    dependsOn ':radixdlt-engine:jar'
+    group = "Execution"
+    description = "Generate development universe"
+    commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
+        "org.radix.GenerateUniverses",
+        "--public-keys=${publicKeys}"
 }
 
 task createGenerateUniversesScripts(type: CreateStartScripts) {
