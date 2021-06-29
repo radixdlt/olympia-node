@@ -90,36 +90,36 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	CommittedReader, PersistentVertexStore {
 	private static final Logger log = LogManager.getLogger();
 
-	private static final String ATOM_ID_DB_NAME = "radix.atom_id_db";
+	private static final String TXN_ID_DB_NAME = "radix.txn_id_db";
 	private static final String VERTEX_STORE_DB_NAME = "radix.vertex_store";
-	private static final String ATOMS_DB_NAME = "radix.atom_db";
-	private static final String RRI_DB_NAME = "radix.rri_db";
-	private static final String PARTICLE_DB_NAME = "radix.particle_db";
-	private static final String UP_PARTICLE_DB_NAME = "radix.up_particle_db";
+	private static final String TXN_DB_NAME = "radix.txn_db";
+	private static final String RESOURCE_DB_NAME = "radix.resource_db";
+	private static final String SUBSTATE_DB_NAME = "radix.substate_db";
+	private static final String INDEXED_SUBSTATE_DB_NAME = "radix.indexed_substate_db";
 	private static final String PROOF_DB_NAME = "radix.proof_db";
 	private static final String EPOCH_PROOF_DB_NAME = "radix.epoch_proof_db";
-	private static final String ATOM_LOG = "radix.ledger";
+	private static final String LEDGER_NAME = "radix.ledger";
 
 	private final Serialization serialization;
 	private final DatabaseEnvironment dbEnv;
 	private final SystemCounters systemCounters;
 	private final StoreConfig storeConfig;
 
-	private Database atomDatabase; // Atoms by primary keys (state version, no prefixes); Append-only
+	private Database txnDatabase; // Txns by state version; Append-only
 
-	private Database atomIdDatabase; // Atoms by AID; Append-only
+	private Database txnIdDatabase; // Txns by AID; Append-only
 
-	private Database particleDatabase; // Write/Delete
-	private SecondaryDatabase upParticleDatabase; // Write/Delete
+	private Database substatesDatabase; // Write/Delete
+	private SecondaryDatabase indexedSubstatesDatabase; // Write/Delete
+	private Database resourceDatabase;
 
 	private Database vertexStoreDatabase; // Write/Delete
 
 	private Database proofDatabase; // Write/Delete
 	private SecondaryDatabase epochProofDatabase;
 
-	private Database addrDatabase;
 
-	private AppendLog atomLog; //Atom data append only log
+	private AppendLog txnLog; //Atom data append only log
 
 	@Inject
 	public BerkeleyLedgerEntryStore(
@@ -137,21 +137,21 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	public void close() {
-		safeClose(atomDatabase);
-		safeClose(addrDatabase);
+		safeClose(txnDatabase);
+		safeClose(resourceDatabase);
 
-		safeClose(atomIdDatabase);
+		safeClose(txnIdDatabase);
 
-		safeClose(upParticleDatabase);
-		safeClose(particleDatabase);
+		safeClose(indexedSubstatesDatabase);
+		safeClose(substatesDatabase);
 
 		safeClose(epochProofDatabase);
 		safeClose(proofDatabase);
 
 		safeClose(vertexStoreDatabase);
 
-		if (atomLog != null) {
-			atomLog.close();
+		if (txnLog != null) {
+			txnLog.close();
 		}
 	}
 
@@ -159,7 +159,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	public boolean contains(AID aid) {
 		return withTime(() -> {
 			var key = entry(aid.getBytes());
-			return SUCCESS == atomIdDatabase.get(null, key, null, DEFAULT);
+			return SUCCESS == txnIdDatabase.get(null, key, null, DEFAULT);
 		}, CounterType.ELAPSED_BDB_LEDGER_CONTAINS, CounterType.COUNT_BDB_LEDGER_CONTAINS);
 	}
 
@@ -170,8 +170,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				var key = entry(aid.getBytes());
 				var value = entry();
 
-				if (atomIdDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
-					var txnBytes = atomLog.read(fromByteArray(value.getData()));
+				if (txnIdDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
+					var txnBytes = txnLog.read(fromByteArray(value.getData()));
 					addBytesRead(value, key);
 					return Optional.of(Txn.create(txnBytes));
 				}
@@ -203,7 +203,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		var proof = ledgerAndBFTProof.getProof();
 
 		// TODO: combine atom and proof store and remove these extra checks
-		try (var atomCursor = atomDatabase.openCursor(txn, null)) {
+		try (var atomCursor = txnDatabase.openCursor(txn, null)) {
 			var key = entry();
 			var status = atomCursor.getLast(key, null, DEFAULT);
 			if (status == NOTFOUND) {
@@ -272,7 +272,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	public void forEach(Consumer<Txn> particleConsumer) {
-		atomLog.forEach((bytes, offset) -> particleConsumer.accept(Txn.create(bytes)));
+		txnLog.forEach((bytes, offset) -> particleConsumer.accept(Txn.create(bytes)));
 	}
 
 	@Override
@@ -288,25 +288,42 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		var primaryConfig = buildPrimaryConfig();
 		var rriConfig = buildRriConfig();
 		var pendingConfig = buildPendingConfig();
-		var upParticleConfig = buildUpParticleConfig();
 
 		try {
 			// This SuppressWarnings here is valid, as ownership of the underlying
 			// resource is not changed here, the resource is just accessed.
 			@SuppressWarnings("resource")
 			var env = dbEnv.getEnvironment();
-			atomDatabase = env.openDatabase(null, ATOMS_DB_NAME, primaryConfig);
+			txnDatabase = env.openDatabase(null, TXN_DB_NAME, primaryConfig);
 
-			addrDatabase = env.openDatabase(null, RRI_DB_NAME, rriConfig);
-			particleDatabase = env.openDatabase(null, PARTICLE_DB_NAME, primaryConfig);
-			upParticleDatabase = env.openSecondaryDatabase(null, UP_PARTICLE_DB_NAME, particleDatabase, upParticleConfig);
+			resourceDatabase = env.openDatabase(null, RESOURCE_DB_NAME, rriConfig);
+			substatesDatabase = env.openDatabase(null, SUBSTATE_DB_NAME, primaryConfig);
+
+			indexedSubstatesDatabase = env.openSecondaryDatabase(
+				null, INDEXED_SUBSTATE_DB_NAME, substatesDatabase,
+				(SecondaryConfig) new SecondaryConfig()
+					.setKeyCreator(
+						(secondary, key, data, result) -> {
+							if (entryToSpin(data) != REOp.UP) {
+								return false;
+							}
+
+							// Index by substate type
+							result.setData(data.getData(), data.getOffset(), 1);
+							return true;
+						}
+					)
+					.setSortedDuplicates(true)
+					.setAllowCreate(true)
+					.setTransactional(true)
+			);
 
 			proofDatabase = env.openDatabase(null, PROOF_DB_NAME, primaryConfig);
-			atomIdDatabase = env.openDatabase(null, ATOM_ID_DB_NAME, primaryConfig);
+			txnIdDatabase = env.openDatabase(null, TXN_ID_DB_NAME, primaryConfig);
 			vertexStoreDatabase = env.openDatabase(null, VERTEX_STORE_DB_NAME, pendingConfig);
 			epochProofDatabase = env.openSecondaryDatabase(null, EPOCH_PROOF_DB_NAME, proofDatabase, buildEpochProofConfig());
 
-			atomLog = AppendLog.openCompressed(new File(env.getHome(), ATOM_LOG).getAbsolutePath(), systemCounters);
+			txnLog = AppendLog.openCompressed(new File(env.getHome(), LEDGER_NAME).getAbsolutePath(), systemCounters);
 		} catch (Exception e) {
 			throw new BerkeleyStoreException("Error while opening databases", e);
 		}
@@ -316,24 +333,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			// TODO perhaps we should implement recovery instead?
 			// TODO recovering should be integrated with recovering of ClientApiStore
 		}
-	}
-
-	private SecondaryConfig buildUpParticleConfig() {
-		return (SecondaryConfig) new SecondaryConfig()
-			.setKeyCreator(
-				(secondary, key, data, result) -> {
-					if (entryToSpin(data) != REOp.UP) {
-						return false;
-					}
-
-					// Index by substate type
-					result.setData(data.getData(), data.getOffset(), 1);
-					return true;
-				}
-			)
-			.setSortedDuplicates(true)
-			.setAllowCreate(true)
-			.setTransactional(true);
 	}
 
 	private SecondaryConfig buildEpochProofConfig() {
@@ -501,7 +500,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	) {
 		var dbTxn = unwrap(wrappedDbTxn);
 		final byte[] indexableBytes = new byte[] {index.getPrefix()[0]};
-		var cursor = new BerkeleySubstateCursor(dbTxn, upParticleDatabase, indexableBytes);
+		var cursor = new BerkeleySubstateCursor(dbTxn, indexedSubstatesDatabase, indexableBytes);
 		cursor.open();
 		return CloseableCursor.filter(cursor, index::test);
 	}
@@ -511,7 +510,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		SubstateDeserialization deserialization
 	) {
 		final byte[] indexableBytes = new byte[] {index};
-		var cursor = new BerkeleySubstateCursor(null, upParticleDatabase, indexableBytes);
+		var cursor = new BerkeleySubstateCursor(null, indexedSubstatesDatabase, indexableBytes);
 		cursor.open();
 		return CloseableCursor.map(cursor, p -> {
 			try {
@@ -546,7 +545,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		V v = initial;
 
 		for (var typeByte : typeBytes) {
-			try (var particleCursor = upParticleDatabase.openCursor(null, null)) {
+			try (var particleCursor = indexedSubstatesDatabase.openCursor(null, null)) {
 				var index = entry(new byte[] {typeByte});
 				var value = entry();
 				var status = particleCursor.getSearchKey(index, null, value, null);
@@ -573,18 +572,18 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	) {
 		byte[] particleKey = substateId.asBytes();
 		var value = new DatabaseEntry(bytes.array(), bytes.position(), bytes.remaining());
-		particleDatabase.putNoOverwrite(txn, entry(particleKey), value);
+		substatesDatabase.putNoOverwrite(txn, entry(particleKey), value);
 	}
 
 	private void downVirtualSubstate(com.sleepycat.je.Transaction txn, SubstateId substateId) {
 		var particleKey = substateId.asBytes();
-		particleDatabase.put(txn, entry(particleKey), downEntry());
+		substatesDatabase.put(txn, entry(particleKey), downEntry());
 	}
 
 	private void downSubstate(com.sleepycat.je.Transaction txn, SubstateId substateId) {
 		// TODO: check for up Particle state
 		final var downedParticle = entry();
-		var status = particleDatabase.get(txn, entry(substateId.asBytes()), downedParticle, DEFAULT);
+		var status = substatesDatabase.get(txn, entry(substateId.asBytes()), downedParticle, DEFAULT);
 		if (status != SUCCESS) {
 			throw new IllegalStateException("Downing particle does not exist " + substateId);
 		}
@@ -593,7 +592,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			throw new IllegalStateException("Particle was already spun down: " + substateId);
 		}
 
-		particleDatabase.delete(txn, entry(substateId.asBytes()));
+		substatesDatabase.delete(txn, entry(substateId.asBytes()));
 	}
 
 	private DatabaseEntry downEntry() {
@@ -627,7 +626,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				var addr = p.getAddr();
 				var buf2 = stateUpdate.getStateBuf();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
-				addrDatabase.putNoOverwrite(txn, new DatabaseEntry(addr.getBytes()), value);
+				resourceDatabase.putNoOverwrite(txn, new DatabaseEntry(addr.getBytes()), value);
 			}
 		} else if (stateUpdate.isShutDown()) {
 			if (stateUpdate.getSubstate().getId().isVirtual()) {
@@ -646,7 +645,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		List<REStateUpdate> stateUpdates
 	) {
 		final long stateVersion;
-		try (var cursor = atomDatabase.openCursor(transaction, null)) {
+		try (var cursor = txnDatabase.openCursor(transaction, null)) {
 			var key = entry();
 			var status = cursor.getLast(key, null, DEFAULT);
 			if (status == OperationStatus.NOTFOUND) {
@@ -659,14 +658,14 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		try {
 			var aid = txn.getId();
 			// Write atom data as soon as possible
-			var offset = atomLog.write(txn.getPayload());
+			var offset = txnLog.write(txn.getPayload());
 			// Store atom indices
 			var pKey = toPKey(stateVersion);
 			var atomPosData = entry(offset, aid);
-			failIfNotSuccess(atomDatabase.putNoOverwrite(transaction, pKey, atomPosData), "Atom write for", aid);
+			failIfNotSuccess(txnDatabase.putNoOverwrite(transaction, pKey, atomPosData), "Atom write for", aid);
 			addBytesWrite(atomPosData, pKey);
 			var idKey = entry(aid);
-			failIfNotSuccess(atomIdDatabase.put(transaction, idKey, atomPosData), "Atom Id write for", aid);
+			failIfNotSuccess(txnIdDatabase.put(transaction, idKey, atomPosData), "Atom Id write for", aid);
 			addBytesWrite(atomPosData, idKey);
 
 			systemCounters.increment(CounterType.COUNT_BDB_LEDGER_COMMIT);
@@ -717,7 +716,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		final var atomSearchKey = toPKey(stateVersion + 1);
 		final var atomPosData = entry();
 
-		try (var atomCursor = atomDatabase.openCursor(null, null)) {
+		try (var atomCursor = txnDatabase.openCursor(null, null)) {
 			int atomCount = (int) (nextHeader.getStateVersion() - stateVersion);
 			int count = 0;
 			var atomCursorStatus = atomCursor.getSearchKeyRange(atomSearchKey, atomPosData, DEFAULT);
@@ -726,7 +725,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 					throw new BerkeleyStoreException("Atom database search failure");
 				}
 				var offset = fromByteArray(atomPosData.getData());
-				var txnBytes = atomLog.read(offset);
+				var txnBytes = txnLog.read(offset);
 				txns.add(Txn.create(txnBytes));
 				atomCursorStatus = atomCursor.getNext(atomSearchKey, atomPosData, DEFAULT);
 				count++;
@@ -752,7 +751,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		var pos = buf.position();
 		var key = new DatabaseEntry(buf.array(), 0, pos);
 		var value = entry();
-		var status = addrDatabase.get(unwrap(tx), key, value, DEFAULT);
+		var status = resourceDatabase.get(unwrap(tx), key, value, DEFAULT);
 		if (status != SUCCESS) {
 			return Optional.empty();
 		}
@@ -764,7 +763,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	public boolean isVirtualDown(Transaction tx, SubstateId substateId) {
 		var key = entry(substateId.asBytes());
 		var value = entry();
-		var status = particleDatabase.get(unwrap(tx), key, value, DEFAULT);
+		var status = substatesDatabase.get(unwrap(tx), key, value, DEFAULT);
 		return status == SUCCESS;
 	}
 
@@ -772,7 +771,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	public Optional<Particle> loadUpParticle(Transaction tx, SubstateId substateId, SubstateDeserialization deserialization) {
 		var key = entry(substateId.asBytes());
 		var value = entry();
-		var status = particleDatabase.get(unwrap(tx), key, value, DEFAULT);
+		var status = substatesDatabase.get(unwrap(tx), key, value, DEFAULT);
 		if (status != SUCCESS) {
 			return Optional.empty();
 		}
