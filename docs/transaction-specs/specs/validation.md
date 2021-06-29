@@ -257,8 +257,10 @@ The billing system works as follows:
 - Then, the transaction fee (based on size) is immediately charged from the reserve (if not covered, exception is thrown);
 - After that, XRDs are deposited into the reserve through a combination of `HEADER`, `SYSCALL`, `DOWN` instructions;
 - At the first non-`HEADER`/`SYSCALL`/`DOWN` instruction or transaction end, the system takes back the loan from the reserve (if not covered, exception is thrown).
-
-As of now, the cost of each instruction is `0` but may be billed (if not covered, exception is thrown) in the future.
+- Additionally, there is a cost associated with each instruction:
+    - Token creation (`UP` token resource): `1000 XRD`
+    - Others: `0`
+    - (If the fee reserve is unable to cover it, exception is thrown)
 
 Example transaction structure:
 ```
@@ -269,6 +271,7 @@ UP <xrd_remainder>
 END
 ...
 SYSCALL <FEE_RESERVE_TAKE (0x01) + amount (u256)>
+UP <xrd_remainder>
 END
 SIG <signature>
 ```
