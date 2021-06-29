@@ -21,7 +21,9 @@ package com.radixdlt;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.application.system.ValidatorBFTDataEvent;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -33,6 +35,7 @@ import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
+import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.utils.Bytes;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -101,11 +104,13 @@ public final class EventLoggerModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	EventProcessorOnDispatch<?> ledgerUpdate(@Self BFTNode self) {
+	@Singleton
+	EventProcessorOnDispatch<?> ledgerUpdate(@Self BFTNode self, Function<ECPublicKey, String> nodeString) {
 		final RateLimiter logLimiter = RateLimiter.create(1.0);
 		return new EventProcessorOnDispatch<>(
 			LedgerUpdate.class,
 			u -> {
+				var output = u.getStateComputerOutput().getInstance(REOutput.class);
 				var epochChange = u.getStateComputerOutput().getInstance(EpochChange.class);
 				if (epochChange != null) {
 					var validatorSet = epochChange.getBFTConfiguration().getValidatorSet();
@@ -115,13 +120,30 @@ public final class EventLoggerModule extends AbstractModule {
 						validatorSet.getValidators().size(),
 						Amount.ofSubunits(validatorSet.getTotalPower())
 					);
+					if (output == null) {
+						return;
+					}
+					output.getProcessedTxns().stream().flatMap(t -> t.getEvents().stream())
+						.forEach(e -> {
+							if (e instanceof ValidatorBFTDataEvent) {
+								var event = (ValidatorBFTDataEvent) e;
+								Level logLevel = event.getMissedProposals() > 0 ? Level.WARN : Level.INFO;
+								logger.log(logLevel, "eng_vldbft{validator={} completed_proposals={} missed_proposals={}",
+									nodeString.apply(event.getValidatorKey()),
+									event.getCompletedProposals(),
+									event.getMissedProposals()
+								);
+							}
+						});
 				} else {
+					long userTxns = output != null ? output.getProcessedTxns().stream().filter(t -> !t.isSystemOnly()).count() : 0;
 					Level logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
-					logger.log(logLevel, "lgr_commit{epoch={} round={} version={} hash={}}",
+					logger.log(logLevel, "lgr_commit{epoch={} round={} version={} hash={} user_txns={}}",
 						u.getTail().getEpoch(),
 						u.getTail().getView().number(),
 						u.getTail().getStateVersion(),
-						Bytes.toHexString(u.getTail().getAccumulatorState().getAccumulatorHash().asBytes()).substring(0, 16)
+						Bytes.toHexString(u.getTail().getAccumulatorState().getAccumulatorHash().asBytes()).substring(0, 16),
+						userTxns
 					);
 				}
 			}

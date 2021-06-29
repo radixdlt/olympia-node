@@ -24,8 +24,6 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.NextEpoch;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
@@ -62,7 +60,6 @@ import java.util.stream.Collectors;
 import static com.radixdlt.application.validators.state.PreparedRakeUpdate.RAKE_MAX;
 
 public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch> {
-	private static Logger logger = LogManager.getLogger();
 	private final UInt256 rewardsPerProposal;
 	private final long unstakingEpochDelay;
 	private final long minimumCompletedProposalsPercentage;
@@ -149,10 +146,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorScratchPad>(KeyComparator.instance());
 		var validatorBFTData = txBuilder.shutdownAll(ValidatorBFTData.class, i -> {
 			final TreeMap<ECPublicKey, ValidatorBFTData> bftData = new TreeMap<>(KeyComparator.instance());
-			i.forEachRemaining(e -> {
-				bftData.put(e.validatorKey(), e);
-				logger.info("Validator {} completed {} missed {}", e.validatorKey(), e.proposalsCompleted(), e.proposalsMissed());
-			});
+			i.forEachRemaining(e -> bftData.put(e.validatorKey(), e));
 			return bftData;
 		});
 		var preparingStake = new TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>>(KeyComparator.instance());

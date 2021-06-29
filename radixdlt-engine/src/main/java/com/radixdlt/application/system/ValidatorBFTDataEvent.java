@@ -21,7 +21,7 @@ package com.radixdlt.application.system;
 import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.crypto.ECPublicKey;
 
-public class ValidatorBFTDataEvent implements REEvent {
+public final class ValidatorBFTDataEvent implements REEvent {
 	private final ECPublicKey validatorKey;
 	private final long completedProposals;
 	private final long missedProposals;
@@ -34,5 +34,17 @@ public class ValidatorBFTDataEvent implements REEvent {
 
 	public static ValidatorBFTDataEvent create(ECPublicKey validatorKey, long completedProposals, long missedProposals) {
 		return new ValidatorBFTDataEvent(validatorKey, completedProposals, missedProposals);
+	}
+
+	public ECPublicKey getValidatorKey() {
+		return validatorKey;
+	}
+
+	public long getCompletedProposals() {
+		return completedProposals;
+	}
+
+	public long getMissedProposals() {
+		return missedProposals;
 	}
 }

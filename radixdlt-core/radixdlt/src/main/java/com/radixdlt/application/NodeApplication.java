@@ -67,7 +67,7 @@ public final class NodeApplication {
 				.orElseGet(() -> MempoolAdd.create(txn));
 			this.mempoolAddEventDispatcher.dispatch(mempoolAdd);
 		} catch (TxBuilderException | RuntimeException e) {
-			log.error("Failed to fulfil request {} reason: {}", request, e.getMessage());
+			log.warn("Failed to fulfil request {} reason: {}", request, e.getMessage());
 			request.completableFuture().ifPresent(c -> c.completeExceptionally(e));
 		}
 	}
