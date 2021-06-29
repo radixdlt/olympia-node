@@ -111,7 +111,7 @@ public final class RadixEngine<M> {
 
 		void initialize(EngineStore<M> engineStore) {
 			for (var particleClass : particleClasses) {
-				curValue = engineStore.reduceUpParticles(particleClass, curValue, outputReducer, reParser.getSubstateDeserialization());
+				curValue = engineStore.reduceUpParticles(curValue, outputReducer, reParser.getSubstateDeserialization(), particleClass);
 			}
 		}
 

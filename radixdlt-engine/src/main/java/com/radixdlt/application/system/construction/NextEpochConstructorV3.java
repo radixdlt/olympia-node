@@ -18,11 +18,9 @@
 
 package com.radixdlt.application.system.construction;
 
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.NextEpoch;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.ValidatorBFTData;
@@ -30,22 +28,25 @@ import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.ExittingStake;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
-import com.radixdlt.application.validators.scrypt.ValidatorData;
-import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.PreparedOwnerUpdate;
-import com.radixdlt.application.validators.state.ValidatorRakeCopy;
 import com.radixdlt.application.validators.state.PreparedRakeUpdate;
-import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.application.validators.state.PreparedRegisteredUpdate;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.application.validators.state.ValidatorData;
+import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
+import com.radixdlt.application.validators.state.ValidatorRakeCopy;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
+import com.radixdlt.atom.ActionConstructor;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.actions.NextEpoch;
 import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.SubstateWithArg;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;

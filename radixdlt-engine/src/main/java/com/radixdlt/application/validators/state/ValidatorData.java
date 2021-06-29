@@ -16,7 +16,7 @@
  *
  */
 
-package com.radixdlt.application.validators.scrypt;
+package com.radixdlt.application.validators.state;
 
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;

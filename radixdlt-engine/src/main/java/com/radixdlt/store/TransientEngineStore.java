@@ -47,10 +47,10 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 
 	@Override
 	public <V> V reduceUpParticles(
-		Class<? extends Particle> aClass,
 		V v,
 		BiFunction<V, Particle, V> biFunction,
-		SubstateDeserialization substateDeserialization
+		SubstateDeserialization substateDeserialization,
+		Class<? extends Particle>... aClass
 	) {
 		throw new UnsupportedOperationException("Transient store should not require reduction.");
 	}

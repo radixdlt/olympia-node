@@ -18,12 +18,11 @@
 
 package com.radixdlt.application.validators.state;
 
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
 
-public final class ValidatorRakeCopy implements Particle {
+public final class ValidatorRakeCopy implements ValidatorData {
 	private final ECPublicKey validatorKey;
 	private final int curRakePercentage;
 
@@ -32,6 +31,7 @@ public final class ValidatorRakeCopy implements Particle {
 		this.curRakePercentage = curRakePercentage;
 	}
 
+	@Override
 	public ECPublicKey getValidatorKey() {
 		return validatorKey;
 	}

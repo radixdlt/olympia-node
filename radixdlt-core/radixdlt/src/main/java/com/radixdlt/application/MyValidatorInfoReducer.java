@@ -65,7 +65,7 @@ public final class MyValidatorInfoReducer implements StateReducer<MyValidatorInf
 		return (i, p) -> {
 			if (p instanceof ValidatorMetaData) {
 				var r = (ValidatorMetaData) p;
-				if (r.getKey().equals(self)) {
+				if (r.getValidatorKey().equals(self)) {
 					return new MyValidatorInfo(
 						r.getName(),
 						r.getUrl(),

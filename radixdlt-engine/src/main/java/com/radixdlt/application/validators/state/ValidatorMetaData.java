@@ -19,36 +19,36 @@
 package com.radixdlt.application.validators.state;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
 import java.util.Optional;
 
-public final class ValidatorMetaData implements Particle {
-	private final ECPublicKey key;
+public final class ValidatorMetaData implements ValidatorData {
+	private final ECPublicKey validatorKey;
 	private final String name;
 	private final String url;
 	private final Optional<HashCode> forkVoteHash;
 
-	public ValidatorMetaData(ECPublicKey key) {
-		this(key, "", "", Optional.empty());
+	public ValidatorMetaData(ECPublicKey validatorKey) {
+		this(validatorKey, "", "", Optional.empty());
 	}
 
 	public ValidatorMetaData(
-		ECPublicKey key,
+		ECPublicKey validatorKey,
 		String name,
 		String url,
 		Optional<HashCode> forkVoteHash
 	) {
-		this.key = Objects.requireNonNull(key);
+		this.validatorKey = Objects.requireNonNull(validatorKey);
 		this.name = Objects.requireNonNull(name);
 		this.url = Objects.requireNonNull(url);
 		this.forkVoteHash = Objects.requireNonNull(forkVoteHash);
 	}
 
-	public ECPublicKey getKey() {
-		return key;
+	@Override
+	public ECPublicKey getValidatorKey() {
+		return validatorKey;
 	}
 
 	public String getName() {
@@ -65,7 +65,7 @@ public final class ValidatorMetaData implements Particle {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.key, this.name, this.url, this.forkVoteHash);
+		return Objects.hash(this.validatorKey, this.name, this.url, this.forkVoteHash);
 	}
 
 	@Override
@@ -77,7 +77,7 @@ public final class ValidatorMetaData implements Particle {
 			return false;
 		}
 		final var that = (ValidatorMetaData) obj;
-		return Objects.equals(this.key, that.key)
+		return Objects.equals(this.validatorKey, that.validatorKey)
 			&& Objects.equals(this.name, that.name)
 			&& Objects.equals(this.url, that.url)
 			&& Objects.equals(this.forkVoteHash, that.forkVoteHash);
@@ -87,7 +87,7 @@ public final class ValidatorMetaData implements Particle {
 	public String toString() {
 		return String.format(
 			"%s[%s, %s, %s]",
-			getClass().getSimpleName(), getKey(), getUrl(), forkVoteHash
+			getClass().getSimpleName(), getValidatorKey(), getUrl(), forkVoteHash
 		);
 	}
 }

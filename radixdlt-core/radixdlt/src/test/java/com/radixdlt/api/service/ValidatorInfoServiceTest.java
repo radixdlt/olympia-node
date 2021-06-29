@@ -14,25 +14,35 @@
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
+
 package com.radixdlt.api.service;
 
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.networks.Network;
+import com.google.common.hash.HashCode;
+import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.ForkManager;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.radixdlt.api.service.reducer.AllValidators;
+import com.radixdlt.application.validators.state.ValidatorMetaData;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.StakedValidators;
+import com.radixdlt.statecomputer.forks.RERules;
+import com.radixdlt.store.EngineStore;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -106,17 +116,37 @@ public class ValidatorInfoServiceTest {
 
 	@SuppressWarnings("unchecked")
 	private ValidatorInfoService setUpService() {
-		var radixEngine = (RadixEngine<LedgerAndBFTProof>) mock(RadixEngine.class);
-		var validatorInfoService = new ValidatorInfoService(radixEngine, Addressing.ofNetwork(Network.LOCALNET));
-		var validators = StakedValidators.create(3, 3)
-			.add(validator1, Optional.empty())
-			.add(validator2, Optional.empty())
-			.add(validator3, Optional.empty())
+		var engineStore = (EngineStore<LedgerAndBFTProof>) mock(EngineStore.class);
+		var inMemorySystemInfo = mock(InMemorySystemInfo.class);
+		var forkManager = mock(ForkManager.class);
+		var rules = mock(RERules.class);
+		var parser = mock(REParser.class);
+
+		var validatorInfoService = new ValidatorInfoService(
+			engineStore, forkManager, inMemorySystemInfo, Addressing.ofNetwork(Network.LOCALNET)
+		);
+
+		var particle1 = new ValidatorMetaData(validator1, "V1", "http://v1.com", Optional.empty());
+		var particle2 = new ValidatorMetaData(validator2, "V2", "http://v2.com", Optional.empty());
+		var particle3 = new ValidatorMetaData(validator3, "V3", "http://v3.com", Optional.empty());
+		var validators = AllValidators.create()
+			.set(particle1)
+			.set(particle2)
+			.set(particle3)
 			.setStake(validator1, UInt256.FIVE)
 			.setStake(validator2, UInt256.EIGHT)
 			.setStake(validator3, UInt256.TEN);
 
-		when(radixEngine.getComputedState(eq(StakedValidators.class))).thenReturn(validators);
+		when(inMemorySystemInfo.getCurrentProof()).thenReturn(LedgerProof.mock());
+		final var forkHash = HashCode.fromInt(1);
+		when(engineStore.getCurrentForkHash()).thenReturn(Optional.of(forkHash));
+		final var forkConfig = mock(ForkConfig.class);
+		when(forkConfig.getEngineRules()).thenReturn(rules);
+		when(forkManager.getByHash(forkHash)).thenReturn(Optional.of(forkConfig));
+		when(rules.getParser()).thenReturn(parser);
+		when(parser.getSubstateDeserialization()).thenReturn(mock(SubstateDeserialization.class));
+		when(engineStore.reduceUpParticles(any(), any(), any(), any())).thenReturn(validators);
+
 		return validatorInfoService;
 	}
 }

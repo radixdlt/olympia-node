@@ -76,6 +76,8 @@ import java.util.OptionalLong;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.store.berkeley.BerkeleyTransaction.wrap;
@@ -559,26 +561,32 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 	@Override
 	public <V> V reduceUpParticles(
-		Class<? extends Particle> particleClass,
 		V initial,
 		BiFunction<V, Particle, V> outputReducer,
-		SubstateDeserialization substateDeserialization
+		SubstateDeserialization substateDeserialization,
+		Class<? extends Particle>... particleClass
 	) {
-		var typeByte = substateDeserialization.classToByte(particleClass);
+		var typeBytes = Stream.of(particleClass)
+			.map(substateDeserialization::classToByte)
+			.collect(Collectors.toSet());
+
 		V v = initial;
-		try (var particleCursor = upParticleDatabase.openCursor(null, null)) {
-			var index = entry(new byte[] {typeByte});
-			var value = entry();
-			var status = particleCursor.getSearchKey(index, null, value, null);
-			while (status == SUCCESS) {
-				Particle particle;
-				try {
-					particle = substateDeserialization.deserialize(value.getData());
-				} catch (DeserializeException e) {
-					throw new IllegalStateException();
+
+		for (var typeByte : typeBytes) {
+			try (var particleCursor = upParticleDatabase.openCursor(null, null)) {
+				var index = entry(new byte[] {typeByte});
+				var value = entry();
+				var status = particleCursor.getSearchKey(index, null, value, null);
+				while (status == SUCCESS) {
+					Particle particle;
+					try {
+						particle = substateDeserialization.deserialize(value.getData());
+					} catch (DeserializeException e) {
+						throw new IllegalStateException();
+					}
+					v = outputReducer.apply(v, particle);
+					status = particleCursor.getNextDup(index, null, value, null);
 				}
-				v = outputReducer.apply(v, particle);
-				status = particleCursor.getNextDup(index, null, value, null);
 			}
 		}
 

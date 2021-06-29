@@ -27,6 +27,7 @@ import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.transport.logging.LogSink;
 import com.radixdlt.network.p2p.transport.logging.LoggingHandler;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -49,6 +50,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 	private static final int FRAME_HEADER_LENGTH = Integer.BYTES;
 
 	private final P2PConfig config;
+	private final Addressing addressing;
 	private final int magic;
 	private final HashCode latestKnownForkHash;
 	private final SystemCounters counters;
@@ -61,6 +63,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 
 	public PeerChannelInitializer(
 		P2PConfig config,
+		Addressing addressing,
 		int magic,
 		HashCode latestKnownForkHash,
 		SystemCounters counters,
@@ -72,6 +75,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 		Optional<RadixNodeUri> uri
 	) {
 		this.config = Objects.requireNonNull(config);
+		this.addressing = Objects.requireNonNull(addressing);
 		this.magic = magic;
 		this.latestKnownForkHash = Objects.requireNonNull(latestKnownForkHash);
 		this.counters = Objects.requireNonNull(counters);
@@ -87,6 +91,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 	protected void initChannel(SocketChannel socketChannel) {
 		final var channel = new PeerChannel(
 			config,
+			addressing,
 			magic,
 			latestKnownForkHash,
 			counters,

@@ -15,10 +15,9 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.api.service.reducer;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Inject;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
@@ -27,35 +26,14 @@ import com.radixdlt.application.validators.state.PreparedRakeUpdate;
 import com.radixdlt.application.validators.state.PreparedRegisteredUpdate;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.engine.StateReducer;
 
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.Supplier;
 
 /**
  * Reduces particles to Registered Validators
  */
-public final class StakedValidatorsReducer implements StateReducer<StakedValidators> {
-
-	private final int minValidators;
-	private final int maxValidators;
-
-	@Inject
-	public StakedValidatorsReducer(
-		@MinValidators int minValidators,
-		@MaxValidators int maxValidators
-	) {
-		this.minValidators = minValidators;
-		this.maxValidators = maxValidators;
-	}
-
-	@Override
-	public Class<StakedValidators> stateClass() {
-		return StakedValidators.class;
-	}
-
-	@Override
+public final class AllValidatorsReducer {
 	public Set<Class<? extends Particle>> particleClasses() {
 		// Use immutable set here so that we can guarantee order
 		// as there is a bit of a hack in that PreparedStake must be loaded
@@ -67,22 +45,15 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 			PreparedOwnerUpdate.class,
 			AllowDelegationFlag.class,
 			ValidatorMetaData.class,
-			AllowDelegationFlag.class,
 			PreparedRakeUpdate.class
 		);
 	}
 
-	@Override
-	public Supplier<StakedValidators> initial() {
-		return () -> StakedValidators.create(minValidators, maxValidators);
-	}
-
-	@Override
-	public BiFunction<StakedValidators, Particle, StakedValidators> outputReducer() {
+	public BiFunction<AllValidators, Particle, AllValidators> outputReducer() {
 		return (prev, p) -> {
 			if (p instanceof PreparedRegisteredUpdate) {
 				var v = (PreparedRegisteredUpdate) p;
-				return v.isRegistered() ? prev.add(v.getValidatorKey(), v.getForkVoteHash()) : prev.remove(v.getValidatorKey());
+				return prev.add(v.getValidatorKey());
 			} else if (p instanceof ValidatorMetaData) {
 				var s = (ValidatorMetaData) p;
 				return prev.set(s);
@@ -104,18 +75,6 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 					.setStake(s.getValidatorKey(), s.getAmount())
 					.setRegistered(s.getValidatorKey(), s.isRegistered());
 			}
-		};
-	}
-
-	@Override
-	public BiFunction<StakedValidators, Particle, StakedValidators> inputReducer() {
-		return (prev, p) -> {
-			if (p instanceof PreparedStake) { // TODO: Remove for mainnet
-				var s = (PreparedStake) p;
-				return prev.remove(s.getDelegateKey(), s.getAmount());
-			}
-
-			return prev;
 		};
 	}
 }
