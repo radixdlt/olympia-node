@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiFunction;
 
 public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateStore {
@@ -67,21 +68,28 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 
 	@Override
 	public <V> V reduceUpParticles(
-		Class<? extends Particle> particleClass,
 		V initial,
 		BiFunction<V, Particle, V> outputReducer,
-		SubstateDeserialization substateDeserialization
+		SubstateDeserialization substateDeserialization,
+		Class<? extends Particle>... particleClass
 	) {
 		V v = initial;
+		var types = Set.of(particleClass);
+
 		synchronized (lock) {
 			for (var i : storedParticles.values()) {
-				if (!i.isBootUp() || !particleClass.isInstance(i.getRawSubstate())) {
+				if (!i.isBootUp() || !isOneOf(types, i.getRawSubstate())) {
 					continue;
 				}
-				v = outputReducer.apply(v, particleClass.cast(i.getRawSubstate()));
+
+				v = outputReducer.apply(v, i.getRawSubstate());
 			}
 		}
 		return v;
+	}
+
+	private static boolean isOneOf(Set<Class<? extends Particle>> bundle, Particle instance) {
+		return bundle.stream().anyMatch(v -> v.isInstance(instance));
 	}
 
 	@Override

@@ -159,7 +159,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				},
 				(s, buf) -> {
 					REFieldSerialization.serializeReservedByte(buf);
-					REFieldSerialization.serializeKey(buf, s.getKey());
+					REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 					REFieldSerialization.serializeString(buf, s.getName());
 					REFieldSerialization.serializeString(buf, s.getUrl());
 				},
@@ -172,7 +172,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {
-					if (!c.key().map(d.getSubstate().getKey()::equals).orElse(false)) {
+					if (!c.key().map(d.getSubstate().getValidatorKey()::equals).orElse(false)) {
 						throw new AuthorizationException("Key does not match.");
 					}
 				}
@@ -189,10 +189,10 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 			UpdatingValidatorInfo.class, ValidatorMetaData.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> {
-				if (!Objects.equals(s.prevState.getKey(), u.getKey())) {
+				if (!Objects.equals(s.prevState.getValidatorKey(), u.getValidatorKey())) {
 					throw new ProcedureException(String.format(
 						"validator addresses do not match: %s != %s",
-						s.prevState.getKey(), u.getKey()
+						s.prevState.getValidatorKey(), u.getValidatorKey()
 					));
 				}
 				return ReducerResult.complete();

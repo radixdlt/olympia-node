@@ -42,16 +42,19 @@ public class AccountInfoService {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final ECPublicKey bftKey;
 	private final Addressing addressing;
+	private final ValidatorInfoService validatorInfoService;
 
 	@Inject
 	public AccountInfoService(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		@Self ECPublicKey bftKey,
-		Addressing addressing
+		Addressing addressing,
+		ValidatorInfoService validatorInfoService
 	) {
 		this.radixEngine = radixEngine;
 		this.bftKey = bftKey;
 		this.addressing = addressing;
+		this.validatorInfoService = validatorInfoService;
 	}
 
 	public JSONObject getAccountInfo() {
@@ -61,16 +64,35 @@ public class AccountInfoService {
 	}
 
 	public JSONObject getValidatorInfo() {
-		var validatorInfo = getValidatorInfoDetails();
+		var validator = validatorInfoService.getAllValidators().stream()
+			.filter(validatorInfoDetails -> validatorInfoDetails.getValidatorKey().equals(bftKey))
+			.findAny();
+
 		var validatorStakes = getValidatorStakes();
 
-		return new JSONObject()
+		var result = jsonObject()
 			.put("address", getValidatorAddress())
-			.put("name", validatorInfo.getName())
-			.put("url", validatorInfo.getUrl())
-			.put("registered", validatorInfo.isRegistered())
 			.put("totalStake", validatorStakes.getFirst())
 			.put("stakes", validatorStakes.getSecond());
+
+		validator.ifPresentOrElse(
+			details -> result
+				.put("name", details.getName())
+				.put("url", details.getInfoUrl())
+				.put("registered", details.isRegistered())
+				.put("owner", addressing.forAccounts().of(details.getOwner()))
+				.put("percentage", details.getPercentage())
+				.put("allowDelegation", details.isExternalStakesAllowed()),
+			() -> result
+				.put("name", "")
+				.put("url", "")
+				.put("registered", false)
+				.put("owner", addressing.forAccounts().of(REAddr.ofPubKeyAccount(bftKey)))
+				.put("percentage", 0)
+				.put("allowDelegation", true)
+		);
+
+		return result;
 	}
 
 	public String getValidatorAddress() {
