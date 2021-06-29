@@ -17,14 +17,21 @@
 
 package org.radix;
 
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.forks.ForkBuilder;
+import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.ForkManager;
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.store.EngineStore;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -59,6 +66,8 @@ import java.security.Security;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -126,7 +135,19 @@ public final class GenerateUniverses {
 			@Override
 			protected void configure() {
 				install(new CryptoModule());
-				install(new ForkManagerModule());
+				install(new AbstractModule() {
+					@Provides
+					@Singleton
+					private ForkManager forkManager(ForkConfig initialForkConfig) {
+						return new ForkManager(ImmutableList.of(initialForkConfig));
+					}
+
+					@Provides
+					@Singleton
+					private ForkConfig initialForkConfig(ImmutableList<ForkBuilder> forkBuilders) {
+						return forkBuilders.get(forkBuilders.size() - 1).build();
+					}
+				});
 				install(new MainnetForksModule());
 				install(RadixEngineConfig.asModule(1, 100));
 				bind(new TypeLiteral<List<TxAction>>() {}).annotatedWith(Genesis.class).toInstance(additionalActions);
