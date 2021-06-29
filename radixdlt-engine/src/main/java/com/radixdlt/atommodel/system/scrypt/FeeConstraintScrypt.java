@@ -23,7 +23,7 @@ import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ProcedureException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.SystemCallProcedure;
 import com.radixdlt.identifiers.REAddr;

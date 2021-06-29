@@ -20,10 +20,10 @@ package com.radixdlt.atommodel.tokens.scrypt;
 
 import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.ExecutionContext;
-import com.radixdlt.constraintmachine.InvalidResourceException;
-import com.radixdlt.constraintmachine.NotEnoughResourcesException;
-import com.radixdlt.constraintmachine.ProcedureException;
-import com.radixdlt.constraintmachine.ReadableAddrs;
+import com.radixdlt.constraintmachine.exceptions.InvalidResourceException;
+import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.constraintmachine.ImmutableAddrs;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -70,7 +70,7 @@ public class TokenHoldingBucket implements ReducerState {
 		return new TokenHoldingBucket(this.resourceAddr, amount.subtract(withdraw384));
 	}
 
-	public void destroy(ExecutionContext c, ReadableAddrs r) throws ProcedureException {
+	public void destroy(ExecutionContext c, ImmutableAddrs r) throws ProcedureException {
 		if (!amount.isZero()) {
 			c.verifyCanAllocAndDestroyResources();
 
@@ -87,5 +87,10 @@ public class TokenHoldingBucket implements ReducerState {
 				throw new ProcedureException("Can only burn mutable tokens.");
 			}
 		}
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{resource=%s amount=%s}", this.getClass().getSimpleName(), resourceAddr, amount);
 	}
 }

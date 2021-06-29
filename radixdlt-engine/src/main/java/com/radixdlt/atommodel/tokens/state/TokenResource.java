@@ -18,7 +18,7 @@
 
 package com.radixdlt.atommodel.tokens.state;
 
-import com.radixdlt.constraintmachine.AuthorizationException;
+import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;

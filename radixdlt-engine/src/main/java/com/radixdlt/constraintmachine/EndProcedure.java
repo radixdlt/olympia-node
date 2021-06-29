@@ -18,6 +18,8 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+
 import java.util.function.Function;
 
 public class EndProcedure<S extends ReducerState> implements Procedure {
@@ -49,10 +51,10 @@ public class EndProcedure<S extends ReducerState> implements Procedure {
 	public ReducerResult call(
 		Object o,
 		ReducerState reducerState,
-		ReadableAddrs readableAddrs,
+		ImmutableAddrs immutableAddrs,
 		ExecutionContext executionContext
 	) throws ProcedureException {
-		endReducer.reduce((S) reducerState, executionContext, readableAddrs);
+		endReducer.reduce((S) reducerState, executionContext, immutableAddrs);
 		return ReducerResult.complete();
 	}
 }

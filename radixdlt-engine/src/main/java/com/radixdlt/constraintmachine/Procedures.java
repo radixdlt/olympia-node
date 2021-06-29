@@ -18,6 +18,8 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.constraintmachine.exceptions.MissingProcedureException;
+
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;

@@ -30,7 +30,7 @@ import com.radixdlt.atommodel.tokens.state.TokenResource;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.UnclaimedREAddr;
-import com.radixdlt.constraintmachine.CMErrorCode;
+import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECKeyPair;
@@ -161,8 +161,6 @@ public class TokenDefinitionTest {
 
 		// Act and Assert
 		assertThatThrownBy(() -> this.engine.execute(List.of(txn)))
-			.isInstanceOf(RadixEngineException.class)
-			.extracting("cause.errorCode")
-			.containsExactly(CMErrorCode.AUTHORIZATION_ERROR);
+			.hasRootCauseInstanceOf(AuthorizationException.class);
 	}
 }

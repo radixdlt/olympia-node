@@ -16,21 +16,10 @@
  *
  */
 
-package com.radixdlt.atommodel.system.scrypt;
+package com.radixdlt.constraintmachine.exceptions;
 
-import com.radixdlt.atommodel.system.state.RoundData;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.constraintmachine.ReducerState;
-
-public class StartNextRound implements ReducerState {
-	private final long expectedView;
-	public StartNextRound(long expectedView) {
-		this.expectedView = expectedView;
-	}
-
-	public void update(RoundData next) throws ProcedureException {
-		if (this.expectedView != next.getView()) {
-			throw new ProcedureException("Expected view " + this.expectedView + " but was " + next.getView());
-		}
+public class CallDataAccessException extends Exception {
+	public CallDataAccessException(int callDataSize, int index, int accessSize) {
+		super("CallData invalid access (index: " + index + " accessSize: " + accessSize + ") on size " + callDataSize);
 	}
 }

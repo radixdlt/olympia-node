@@ -37,7 +37,7 @@ import com.radixdlt.atommodel.validators.state.PreparedOwnerUpdate;
 import com.radixdlt.atommodel.validators.state.ValidatorRakeCopy;
 import com.radixdlt.atommodel.validators.state.PreparedRakeUpdate;
 import com.radixdlt.atommodel.validators.state.ValidatorRegisteredCopy;
-import com.radixdlt.constraintmachine.ProcedureException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECPublicKey;

@@ -16,21 +16,12 @@
  *
  */
 
-package com.radixdlt.atommodel.system.scrypt;
+package com.radixdlt.constraintmachine.exceptions;
 
-import com.radixdlt.atommodel.system.state.RoundData;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.PermissionLevel;
 
-public class StartNextRound implements ReducerState {
-	private final long expectedView;
-	public StartNextRound(long expectedView) {
-		this.expectedView = expectedView;
-	}
-
-	public void update(RoundData next) throws ProcedureException {
-		if (this.expectedView != next.getView()) {
-			throw new ProcedureException("Expected view " + this.expectedView + " but was " + next.getView());
-		}
+public class InvalidPermissionException extends Exception {
+	public InvalidPermissionException(PermissionLevel required, PermissionLevel actual) {
+		super("Required: " + required + " Actual: " + actual);
 	}
 }

@@ -32,11 +32,10 @@ import com.radixdlt.atommodel.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atommodel.tokens.state.AccountBucket;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.constraintmachine.CMErrorCode;
+import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
@@ -126,9 +125,7 @@ public class TransferTokensTest {
 		var transfer = this.engine.construct(new TransferToken(tokenAddr, accountAddr, to, transferAmt))
 			.signAndBuild(nextKey::sign);
 		assertThatThrownBy(() -> this.engine.execute(List.of(transfer)))
-			.isInstanceOf(RadixEngineException.class)
-			.extracting("cause.errorCode")
-			.containsExactly(CMErrorCode.AUTHORIZATION_ERROR);
+			.hasRootCauseInstanceOf(AuthorizationException.class);
 	}
 
 	@Test

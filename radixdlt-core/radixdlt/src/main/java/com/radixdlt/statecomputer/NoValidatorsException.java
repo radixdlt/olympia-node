@@ -16,12 +16,10 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.statecomputer;
 
-public class MissingProcedureException extends Exception {
-	public MissingProcedureException(
-		ProcedureKey key
-	) {
-		super("Missing: " + key);
+public final class NoValidatorsException extends RuntimeException {
+	public NoValidatorsException(long epoch) {
+		super("Fatal no validators at the end of epoch " + epoch);
 	}
 }

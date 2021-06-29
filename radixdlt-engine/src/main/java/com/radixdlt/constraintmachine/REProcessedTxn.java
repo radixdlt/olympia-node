@@ -18,12 +18,15 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.atom.Substate;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.engine.parser.ParsedTxn;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
 import java.util.List;
@@ -78,6 +81,23 @@ public final class REProcessedTxn {
 
 	public Stream<REStateUpdate> stateUpdates() {
 		return stateUpdates.stream().flatMap(List::stream);
+	}
+
+	public Stream<SubstateId> substateDependencies() {
+		return parsedTxn.instructions().stream()
+			.flatMap(i -> {
+				if (i.getMicroOp() == REInstruction.REMicroOp.DOWN || i.getMicroOp() == REInstruction.REMicroOp.READ) {
+					SubstateId substateId = i.getData();
+					return Stream.of(substateId);
+				} else if (i.getMicroOp() == REInstruction.REMicroOp.VDOWN || i.getMicroOp() == REInstruction.REMicroOp.VREAD) {
+					Substate substate = i.getData();
+					return Stream.of(substate.getId());
+				} else if (i.getMicroOp() == REInstruction.REMicroOp.VDOWNARG) {
+					Pair<Substate, byte[]> substateArg = i.getData();
+					return Stream.of(substateArg.getFirst().getId());
+				}
+				return Stream.empty();
+			});
 	}
 
 	@Override

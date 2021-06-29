@@ -18,6 +18,9 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.constraintmachine.exceptions.CallDataAccessException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+
 public interface SystemCallReducer<S extends ReducerState> {
 	ReducerResult reduce(S reducerState, CallData c, ExecutionContext context)
 		throws ProcedureException, CallDataAccessException;

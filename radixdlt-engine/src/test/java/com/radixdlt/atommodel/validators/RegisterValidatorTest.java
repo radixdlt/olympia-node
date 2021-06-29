@@ -27,12 +27,12 @@ import com.radixdlt.atommodel.validators.scrypt.ValidatorRegisterConstraintScryp
 import com.radixdlt.atommodel.validators.state.PreparedRegisteredUpdate;
 import com.radixdlt.atommodel.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.constraintmachine.CMErrorCode;
+import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -91,9 +91,7 @@ public class RegisterValidatorTest {
 		var registerTxn = this.engine.construct(new RegisterValidator(ECKeyPair.generateNew().getPublicKey()))
 			.signAndBuild(key::sign);
 		assertThatThrownBy(() -> this.engine.execute(List.of(registerTxn)))
-			.isInstanceOf(RadixEngineException.class)
-			.extracting("cause.errorCode")
-			.containsExactly(CMErrorCode.AUTHORIZATION_ERROR);
+			.hasRootCauseInstanceOf(AuthorizationException.class);
 	}
 
 	@Test
@@ -109,8 +107,6 @@ public class RegisterValidatorTest {
 
 		// Act and Assert
 		assertThatThrownBy(() -> this.engine.execute(List.of(txn)))
-			.isInstanceOf(RadixEngineException.class)
-			.extracting("cause.errorCode")
-			.containsExactly(CMErrorCode.PROCEDURE_ERROR);
+			.hasRootCauseInstanceOf(ProcedureException.class);
 	}
 }

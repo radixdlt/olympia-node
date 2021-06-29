@@ -98,10 +98,8 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 		var mempoolTxn = MempoolMetadata.create(System.currentTimeMillis());
 		var data = Pair.of(radixEngineTxns.get(0), mempoolTxn);
 		this.data.put(txn.getId(), data);
-		radixEngineTxns.get(0).stateUpdates().filter(REStateUpdate::isShutDown).forEach(instruction -> {
-			var substateId = instruction.getSubstate().getId();
-			substateIndex.merge(substateId, Set.of(txn.getId()), Sets::union);
-		});
+		radixEngineTxns.get(0).substateDependencies()
+			.forEach(substateId -> substateIndex.merge(substateId, Set.of(txn.getId()), Sets::union));
 	}
 
 	@Override

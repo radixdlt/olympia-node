@@ -27,7 +27,6 @@ import com.radixdlt.atommodel.validators.state.ValidatorRakeCopy;
 import com.radixdlt.atommodel.validators.state.PreparedRakeUpdate;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 
-import java.util.List;
 import java.util.Optional;
 
 import static com.radixdlt.atommodel.validators.state.PreparedRakeUpdate.RAKE_MAX;
@@ -41,44 +40,34 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateRake
 
 	@Override
 	public void construct(UpdateRake action, TxBuilder builder) throws TxBuilderException {
-		var epochData = builder.find(EpochData.class, p -> true).orElseThrow();
-
 		var updateInFlight = builder
 			.find(PreparedRakeUpdate.class, p -> p.getValidatorKey().equals(action.getValidatorKey()));
+		final int curRakePercentage;
 		if (updateInFlight.isPresent()) {
-			builder.swap(
+			curRakePercentage = builder.down(
 				PreparedRakeUpdate.class,
 				p -> p.getValidatorKey().equals(action.getValidatorKey()),
 				Optional.empty(),
 				"Cannot find state"
-			).with(substateDown -> {
-				var isIncrease = action.getRakePercentage() > substateDown.getCurRakePercentage();
-				var epochDiff = isIncrease ? rakeIncreaseDebounceEpochLength : 1;
-				var epoch = epochData.getEpoch() + epochDiff;
-				return List.of(new PreparedRakeUpdate(
-					epoch,
-					action.getValidatorKey(),
-					substateDown.getCurRakePercentage(),
-					action.getRakePercentage()
-				));
-			});
+			).getCurRakePercentage();
 		} else {
-			builder.swap(
+			curRakePercentage = builder.down(
 				ValidatorRakeCopy.class,
 				p -> p.getValidatorKey().equals(action.getValidatorKey()),
 				Optional.of(SubstateWithArg.noArg(new ValidatorRakeCopy(action.getValidatorKey(), RAKE_MAX))),
 				"Cannot find state"
-			).with(substateDown -> {
-				var isIncrease = action.getRakePercentage() > substateDown.getCurRakePercentage();
-				var epochDiff = isIncrease ? rakeIncreaseDebounceEpochLength : 1;
-				var epoch = epochData.getEpoch() + epochDiff;
-				return List.of(new PreparedRakeUpdate(
-					epoch,
-					action.getValidatorKey(),
-					substateDown.getCurRakePercentage(),
-					action.getRakePercentage()
-				));
-			});
+			).getCurRakePercentage();
 		}
+
+		var curEpoch = builder.read(EpochData.class, p -> true, Optional.empty(), "Cannot find epoch");
+		var isIncrease = action.getRakePercentage() > curRakePercentage;
+		var epochDiff = isIncrease ? rakeIncreaseDebounceEpochLength : 1;
+		var epoch = curEpoch.getEpoch() + epochDiff;
+		builder.up(new PreparedRakeUpdate(
+			epoch,
+			action.getValidatorKey(),
+			curRakePercentage,
+			action.getRakePercentage()
+		));
 	}
 }

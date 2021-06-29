@@ -16,7 +16,7 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.constraintmachine.exceptions;
 
 import com.radixdlt.utils.UInt256;
 

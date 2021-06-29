@@ -16,14 +16,10 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.constraintmachine.exceptions;
 
-public class ProcedureException extends Exception {
-	public ProcedureException(Throwable cause) {
-		super(cause);
-	}
-
-	public ProcedureException(String msg) {
-		super(msg);
+public class NotEnoughFeesException extends AuthorizationException {
+	public NotEnoughFeesException() {
+		super("Not enough fees.");
 	}
 }

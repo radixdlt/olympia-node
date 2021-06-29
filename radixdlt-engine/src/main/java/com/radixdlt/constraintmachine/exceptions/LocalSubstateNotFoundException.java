@@ -16,10 +16,10 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.constraintmachine.exceptions;
 
-public class NotEnoughFeesException extends AuthorizationException {
-	public NotEnoughFeesException() {
-		super("Not enough fees.");
+public class LocalSubstateNotFoundException extends Exception {
+	public LocalSubstateNotFoundException(int index) {
+		super("Local substate with index " + index + " not found");
 	}
 }

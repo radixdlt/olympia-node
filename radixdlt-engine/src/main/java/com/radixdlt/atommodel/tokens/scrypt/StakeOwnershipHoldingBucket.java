@@ -21,9 +21,9 @@ package com.radixdlt.atommodel.tokens.scrypt;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.constraintmachine.ExecutionContext;
-import com.radixdlt.constraintmachine.NotEnoughResourcesException;
-import com.radixdlt.constraintmachine.ProcedureException;
-import com.radixdlt.constraintmachine.ReadableAddrs;
+import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.constraintmachine.ImmutableAddrs;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -92,7 +92,7 @@ public class StakeOwnershipHoldingBucket implements ReducerState {
 		);
 	}
 
-	public void destroy(ExecutionContext context, ReadableAddrs readableAddrs) throws ProcedureException {
+	public void destroy(ExecutionContext context, ImmutableAddrs immutableAddrs) throws ProcedureException {
 		if (!shareAmount.isZero()) {
 			throw new ProcedureException("Shares cannot be burnt.");
 		}

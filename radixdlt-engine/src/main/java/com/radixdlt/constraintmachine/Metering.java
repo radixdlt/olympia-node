@@ -18,6 +18,8 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
+
 public interface Metering {
 	void onUserInstruction(
 		ProcedureKey procedureKey,

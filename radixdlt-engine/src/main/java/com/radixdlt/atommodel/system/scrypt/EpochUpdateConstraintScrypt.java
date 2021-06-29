@@ -43,7 +43,7 @@ import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ProcedureException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.ShutdownAll;

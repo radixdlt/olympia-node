@@ -16,10 +16,14 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.constraintmachine.exceptions;
 
-public class CallDataAccessException extends Exception {
-	public CallDataAccessException(int callDataSize, int index, int accessSize) {
-		super("CallData invalid access (index: " + index + " accessSize: " + accessSize + ") on size " + callDataSize);
+import com.radixdlt.constraintmachine.ProcedureKey;
+
+public class MissingProcedureException extends Exception {
+	public MissingProcedureException(
+		ProcedureKey key
+	) {
+		super("Missing: " + key);
 	}
 }

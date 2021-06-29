@@ -20,7 +20,7 @@ package com.radixdlt.atommodel.validators.scrypt;
 
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.atommodel.system.state.HasEpochData;
+import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.atommodel.validators.state.AllowDelegationFlag;
 import com.radixdlt.atommodel.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.atommodel.validators.state.PreparedOwnerUpdate;
@@ -31,11 +31,11 @@ import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
-import com.radixdlt.constraintmachine.AuthorizationException;
+import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ProcedureException;
-import com.radixdlt.constraintmachine.ReadableAddrs;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.constraintmachine.ReadProcedure;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
@@ -96,14 +96,16 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 		}
 	}
 
-	private class UpdatingRake implements ReducerState {
+	private class UpdatingRakeReady implements ReducerState {
 		private final ValidatorRakeCopy rakeCopy;
+		private final EpochData epochData;
 
-		private UpdatingRake(ValidatorRakeCopy rakeCopy) {
+		UpdatingRakeReady(ValidatorRakeCopy rakeCopy, EpochData epochData) {
 			this.rakeCopy = rakeCopy;
+			this.epochData = epochData;
 		}
 
-		void update(ReadableAddrs r, PreparedRakeUpdate update) throws ProcedureException {
+		void update(PreparedRakeUpdate update) throws ProcedureException {
 			if (!Objects.equals(rakeCopy.getValidatorKey(), update.getValidatorKey())) {
 				throw new ProcedureException("Must update same key");
 			}
@@ -113,18 +115,29 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				throw new ProcedureException("Max rake increase is " + MAX_RAKE_INCREASE + " but trying to increase " + rakeIncrease);
 			}
 
-			var system = (HasEpochData) r.loadAddr(REAddr.ofSystem()).orElseThrow();
 			if (rakeIncrease > 0) {
-				var expectedEpoch = system.getEpoch() + rakeIncreaseDebounceEpochLength;
+				var expectedEpoch = epochData.getEpoch() + rakeIncreaseDebounceEpochLength;
 				if (update.getEpoch() < expectedEpoch) {
 					throw new ProcedureException("Increasing rake requires epoch delay to " + expectedEpoch + " but was " + update.getEpoch());
 				}
 			} else {
-				var expectedEpoch = system.getEpoch() + 1;
+				var expectedEpoch = epochData.getEpoch() + 1;
 				if (update.getEpoch() != expectedEpoch) {
 					throw new ProcedureException("Decreasing rake requires epoch delay to " + expectedEpoch + " but was " + update.getEpoch());
 				}
 			}
+		}
+	}
+
+	private class UpdatingRakeNeedToReadEpoch implements ReducerState {
+		private final ValidatorRakeCopy rakeCopy;
+
+		private UpdatingRakeNeedToReadEpoch(ValidatorRakeCopy rakeCopy) {
+			this.rakeCopy = rakeCopy;
+		}
+
+		ReducerState readEpoch(EpochData epochData) {
+			return new UpdatingRakeReady(rakeCopy, epochData);
 		}
 	}
 
@@ -248,7 +261,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				if (d.getArg().isPresent()) {
 					throw new ProcedureException("Args not allowed");
 				}
-				return ReducerResult.incomplete(new UpdatingRake(d.getSubstate().getCurrentConfig()));
+				return ReducerResult.incomplete(new UpdatingRakeNeedToReadEpoch(d.getSubstate().getCurrentConfig()));
 			}
 		));
 		os.procedure(new DownProcedure<>(
@@ -265,14 +278,20 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				if (d.getArg().isPresent()) {
 					throw new ProcedureException("Args not allowed");
 				}
-				return ReducerResult.incomplete(new UpdatingRake(d.getSubstate()));
+				return ReducerResult.incomplete(new UpdatingRakeNeedToReadEpoch(d.getSubstate()));
 			}
 		));
+		os.procedure(new ReadProcedure<>(
+			UpdatingRakeNeedToReadEpoch.class, EpochData.class,
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			(s, u, r) -> ReducerResult.incomplete(s.readEpoch(u))
+		));
+
 		os.procedure(new UpProcedure<>(
-			UpdatingRake.class, PreparedRakeUpdate.class,
+			UpdatingRakeReady.class, PreparedRakeUpdate.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> {
-				s.update(r, u);
+				s.update(u);
 				return ReducerResult.complete();
 			}
 		));

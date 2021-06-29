@@ -16,21 +16,18 @@
  *
  */
 
-package com.radixdlt.atommodel.system.scrypt;
+package com.radixdlt.constraintmachine.exceptions;
 
-import com.radixdlt.atommodel.system.state.RoundData;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.constraintmachine.ReducerState;
-
-public class StartNextRound implements ReducerState {
-	private final long expectedView;
-	public StartNextRound(long expectedView) {
-		this.expectedView = expectedView;
+public class TxnParseException extends Exception {
+	public TxnParseException(String message, Throwable cause) {
+		super(message, cause);
 	}
 
-	public void update(RoundData next) throws ProcedureException {
-		if (this.expectedView != next.getView()) {
-			throw new ProcedureException("Expected view " + this.expectedView + " but was " + next.getView());
-		}
+	public TxnParseException(Throwable cause) {
+		super(cause);
+	}
+
+	public TxnParseException(String message) {
+		super(message);
 	}
 }

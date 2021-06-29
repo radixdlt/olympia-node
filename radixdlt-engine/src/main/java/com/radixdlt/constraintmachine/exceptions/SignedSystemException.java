@@ -16,12 +16,10 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.constraintmachine.exceptions;
 
-import com.radixdlt.identifiers.REAddr;
-
-import java.util.Optional;
-
-public interface ReadableAddrs {
-	Optional<Particle> loadAddr(REAddr addr);
+public final class SignedSystemException extends Exception {
+	public SignedSystemException() {
+		super("System updates should not be signed.");
+	}
 }

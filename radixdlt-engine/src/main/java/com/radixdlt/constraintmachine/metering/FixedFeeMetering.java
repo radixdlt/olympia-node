@@ -19,7 +19,7 @@
 package com.radixdlt.constraintmachine.metering;
 
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
-import com.radixdlt.constraintmachine.AuthorizationException;
+import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.Metering;
 import com.radixdlt.constraintmachine.ProcedureKey;

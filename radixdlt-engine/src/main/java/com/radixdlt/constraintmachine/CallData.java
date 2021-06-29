@@ -18,6 +18,7 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.constraintmachine.exceptions.CallDataAccessException;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;

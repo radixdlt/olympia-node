@@ -19,7 +19,7 @@
 package com.radixdlt.atommodel.system.scrypt;
 
 import com.radixdlt.atommodel.system.state.ValidatorBFTData;
-import com.radixdlt.constraintmachine.ProcedureException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.crypto.ECPublicKey;
 
