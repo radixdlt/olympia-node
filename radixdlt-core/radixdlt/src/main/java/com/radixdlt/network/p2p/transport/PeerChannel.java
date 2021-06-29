@@ -22,7 +22,6 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.identifiers.ValidatorAddressing;
 import com.radixdlt.network.messaging.InboundMessage;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
@@ -35,6 +34,7 @@ import com.radixdlt.network.p2p.transport.handshake.AuthHandshaker;
 import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
 import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
 import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.RateCalculator;
 import com.radixdlt.utils.functional.Result;
@@ -79,6 +79,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 	private final Flowable<InboundMessage> inboundMessages;
 
 	private final SystemCounters counters;
+	private final Addressing addressing;
 	private final EventDispatcher<PeerEvent> peerEventDispatcher;
 	private final PeerControl peerControl;
 	private final Optional<RadixNodeUri> uri;
@@ -94,6 +95,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 
 	public PeerChannel(
 		P2PConfig config,
+		Addressing addressing,
 		int magic,
 		SystemCounters counters,
 		Serialization serialization,
@@ -105,6 +107,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		SocketChannel nettyChannel
 	) {
 		this.counters = Objects.requireNonNull(counters);
+		this.addressing = Objects.requireNonNull(addressing);
 		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
 		this.peerControl = Objects.requireNonNull(peerControl);
 		this.uri = Objects.requireNonNull(uri);
@@ -206,13 +209,12 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) {
-		final ValidatorAddressing validatorAddresses = ValidatorAddressing.bech32("vb");
 		log.info("Channel closed {} at state {} [initiator ?= {}, remoteNodeId = {}, nodeAddress = {}, uri = {}]",
 			ctx.channel().remoteAddress(),
 			this.state,
 			this.isInitiator,
 			this.remoteNodeId,
-				 validatorAddresses.of(this.remoteNodeId.getPublicKey()),
+		 	addressing.forNodes().of(this.remoteNodeId.getPublicKey()),
 			this.uri
 		);
 
@@ -227,13 +229,12 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-		final ValidatorAddressing validatorAddresses = ValidatorAddressing.bech32("vb");
 		log.warn("Exception on channel {} at state {} [initiator ?= {}, remoteNodeId = {}, nodeAddress = {}, uri = {}]: {}",
 			ctx.channel().remoteAddress(),
 			this.state,
 			this.isInitiator,
 			this.remoteNodeId,
-			validatorAddresses.of(this.remoteNodeId.getPublicKey()),
+			addressing.forNodes().of(this.remoteNodeId.getPublicKey()),
 			this.uri,
 			cause.getMessage()
 		);
