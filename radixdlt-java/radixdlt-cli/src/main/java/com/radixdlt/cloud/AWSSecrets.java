@@ -281,14 +281,14 @@ public class AWSSecrets {
 					|| !awsSecretsOutputOptions.getNetworkName().equalsIgnoreCase("mainnet"));
 	}
 
-	private static String findNetworkId(String networkName){
+	private static String findNetworkId(String networkName) {
 		Map<String, String> networks = new HashMap<String, String>();
 		networks.put("releasenet", "3");
 		networks.put("rcnet", "4");
 		networks.put("milestonenet", "5");
 		networks.put("devopsnet", "6");
 
-		if (!networks.containsKey(networkName)){
+		if (!networks.containsKey(networkName)) {
 			System.out.println("Network " + networkName + " is not supported. Available networks: " + networks.keySet());
 			System.exit(1);
 		}
