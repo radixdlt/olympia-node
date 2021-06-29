@@ -87,7 +87,7 @@ impl Instruction {
             0x0C => Self::LREAD(buffer.read_u32()),
             0x0D => Self::VREAD(Self::read_substate(buffer)),
             0x0E => Self::READ(SubstateId::from_buffer(buffer)),
-            _ => panic!("Unexpected opcode: {}", t),
+            _ => panic!("Unexpected opcode: {:#04X}", t),
         }
     }
 
@@ -95,17 +95,18 @@ impl Instruction {
         let t = buffer.read_u8();
         match t {
             0x00 => Box::new(REAddress::from_buffer(buffer)),
-            0x03 => Box::new(TokenDefinition::from_buffer(buffer)),
-            0x04 => Box::new(Tokens::from_buffer(buffer)),
-            0x05 => Box::new(PreparedStake::from_buffer(buffer)),
-            0x06 => Box::new(StakeOwnership::from_buffer(buffer)),
-            0x07 => Box::new(PreparedUnstake::from_buffer(buffer)),
-            0x08 => Box::new(ExitingStake::from_buffer(buffer)),
-            0x0C => Box::new(ValidatorAllowDelegationFlag::from_buffer(buffer)),
-            0x0D => Box::new(ValidatorRegisteredFlagCopy::from_buffer(buffer)),
-            0x0E => Box::new(PreparedRegisteredFlagUpdate::from_buffer(buffer)),
-            0x11 => Box::new(ValidatorOwnerCopy::from_buffer(buffer)),
-            _ => panic!("Unsupported substate type: {}", t),
+            0x03 => Box::new(TokenResource::from_buffer(buffer)),
+            0x04 => Box::new(TokenResourceMetadata::from_buffer(buffer)),
+            0x05 => Box::new(Tokens::from_buffer(buffer)),
+            0x06 => Box::new(PreparedStake::from_buffer(buffer)),
+            0x07 => Box::new(StakeOwnership::from_buffer(buffer)),
+            0x08 => Box::new(PreparedUnstake::from_buffer(buffer)),
+            0x09 => Box::new(ExitingStake::from_buffer(buffer)),
+            0x0D => Box::new(ValidatorAllowDelegationFlag::from_buffer(buffer)),
+            0x0E => Box::new(ValidatorRegisteredFlagCopy::from_buffer(buffer)),
+            0x0F => Box::new(PreparedRegisteredFlagUpdate::from_buffer(buffer)),
+            0x12 => Box::new(ValidatorOwnerCopy::from_buffer(buffer)),
+            _ => panic!("Unsupported substate type: {:#04X}", t),
         }
     }
 }
@@ -148,13 +149,27 @@ mod tests {
     }
 
     #[test]
+    fn xrd_transfer() {
+        let contents = fs::read_to_string("../samples/xrd_transfer.txt").unwrap();
+        let raw = hex::decode(contents).unwrap();
+        let tx = Transaction::from_bytes(raw);
+        println!("{:?}", tx)
+    }
+
+    #[test]
+    fn xrd_transfer_with_msg() {
+        let contents = fs::read_to_string("../samples/xrd_transfer_with_msg.txt").unwrap();
+        let raw = hex::decode(contents).unwrap();
+        let tx = Transaction::from_bytes(raw);
+        println!("{:?}", tx)
+    }
+
+    #[test]
     fn xrd_stake() {
-        for n in 1..3 {
-            let contents = fs::read_to_string(format!("../samples/xrd_stake{}.txt", n)).unwrap();
-            let raw = hex::decode(contents).unwrap();
-            let tx = Transaction::from_bytes(raw);
-            println!("{:?}", tx)
-        }
+        let contents = fs::read_to_string("../samples/xrd_stake.txt").unwrap();
+        let raw = hex::decode(contents).unwrap();
+        let tx = Transaction::from_bytes(raw);
+        println!("{:?}", tx)
     }
 
     #[test]
@@ -178,6 +193,38 @@ mod tests {
     #[test]
     fn validator_unregister() {
         let contents = fs::read_to_string("../samples/validator_unregister.txt").unwrap();
+        let raw = hex::decode(contents).unwrap();
+        let tx = Transaction::from_bytes(raw);
+        println!("{:?}", tx)
+    }
+
+    #[test]
+    fn validator_re_register() {
+        let contents = fs::read_to_string("../samples/validator_re_register.txt").unwrap();
+        let raw = hex::decode(contents).unwrap();
+        let tx = Transaction::from_bytes(raw);
+        println!("{:?}", tx)
+    }
+
+    #[test]
+    fn validator_allow_delegation() {
+        let contents = fs::read_to_string("../samples/validator_allow_delegation.txt").unwrap();
+        let raw = hex::decode(contents).unwrap();
+        let tx = Transaction::from_bytes(raw);
+        println!("{:?}", tx)
+    }
+
+    #[test]
+    fn other_transfer_to_self() {
+        let contents = fs::read_to_string("../samples/other_transfer_to_self.txt").unwrap();
+        let raw = hex::decode(contents).unwrap();
+        let tx = Transaction::from_bytes(raw);
+        println!("{:?}", tx)
+    }
+
+    #[test]
+    fn other_transfer_mixed_tokens() {
+        let contents = fs::read_to_string("../samples/other_transfer_mixed_tokens.txt").unwrap();
         let raw = hex::decode(contents).unwrap();
         let tx = Transaction::from_bytes(raw);
         println!("{:?}", tx)

@@ -22,10 +22,16 @@ pub struct REAddress {
 }
 
 #[derive(Debug)]
-pub struct TokenDefinition {
-    pub token_type: u8,
-    pub supply: Option<U256>,
-    pub minter: Option<PublicKey>,
+pub struct TokenResource {
+    pub kind: u8,
+    pub resource: Address,
+    pub granularity: U256,
+    pub owner: Option<PublicKey>,
+}
+
+#[derive(Debug)]
+pub struct TokenResourceMetadata {
+    pub reserved: u8,
     pub resource: Address,
     pub name: UTF8,
     pub description: UTF8,
@@ -36,16 +42,16 @@ pub struct TokenDefinition {
 #[derive(Debug)]
 pub struct Tokens {
     pub reserved: u8,
-    pub resource: Address,
     pub owner: Address,
+    pub resource: Address,
     pub amount: U256,
 }
 
 #[derive(Debug)]
 pub struct PreparedStake {
     pub reserved: u8,
-    pub owner: Address,
     pub validator: PublicKey,
+    pub owner: Address,
     pub amount: U256,
 }
 
@@ -128,17 +134,28 @@ impl Substate for REAddress {
     }
 }
 
-impl Substate for TokenDefinition {
+impl Substate for TokenResource {
     fn from_buffer(buffer: &mut ByteBuffer) -> Self {
-        let token_type = buffer.read_u8();
-        let supply = match token_type {
-            0x02 => Some(U256::from_buffer(buffer)),
+        let kind = buffer.read_u8();
+        let resource = Address::from_buffer(buffer);
+        let granularity = U256::from_buffer(buffer);
+        let owner = match kind {
+            0x03 => Some(PublicKey::from_buffer(buffer)),
             _ => None,
         };
-        let minter = match token_type {
-            0x01 => Some(PublicKey::from_buffer(buffer)),
-            _ => None,
-        };
+
+        Self {
+            kind,
+            resource,
+            granularity,
+            owner,
+        }
+    }
+}
+
+impl Substate for TokenResourceMetadata {
+    fn from_buffer(buffer: &mut ByteBuffer) -> Self {
+        let reserved = read_reserved_byte(buffer);
         let resource = Address::from_buffer(buffer);
         let name = UTF8::from_buffer(buffer);
         let description = UTF8::from_buffer(buffer);
@@ -146,9 +163,7 @@ impl Substate for TokenDefinition {
         let icon_url = UTF8::from_buffer(buffer);
 
         Self {
-            token_type,
-            supply,
-            minter,
+            reserved,
             resource,
             name,
             description,
@@ -161,8 +176,8 @@ impl Substate for TokenDefinition {
 impl Substate for Tokens {
     fn from_buffer(buffer: &mut ByteBuffer) -> Self {
         let reserved = read_reserved_byte(buffer);
-        let resource = Address::from_buffer(buffer);
         let owner = Address::from_buffer(buffer);
+        let resource = Address::from_buffer(buffer);
         let amount = U256::from_buffer(buffer);
 
         Self {
@@ -177,8 +192,8 @@ impl Substate for Tokens {
 impl Substate for PreparedStake {
     fn from_buffer(buffer: &mut ByteBuffer) -> Self {
         let reserved = read_reserved_byte(buffer);
-        let owner = Address::from_buffer(buffer);
         let validator = PublicKey::from_buffer(buffer);
+        let owner = Address::from_buffer(buffer);
         let amount = U256::from_buffer(buffer);
 
         Self {
