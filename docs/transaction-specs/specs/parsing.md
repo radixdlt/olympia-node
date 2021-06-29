@@ -108,22 +108,23 @@ Currently, we have the following types:
 | `UNCLAIMED_READDR`                | `0x00`   | Unclaimed Radix Engine address                                 |
 | `ROUND_DATA`                      | `0x01`   | BFT consensus round data                                       |
 | `EPOCH_DATA`                      | `0x02`   | BFT consensus epoch data                                       |
-| `TOKEN_DEF`                       | `0x03`   | Token definition                                               |
-| `TOKENS`                          | `0x04`   | Tokens                                                         |
-| `PREPARED_STAKE`                  | `0x05`   | Prepared stake, will transition into stake ownership by system |
-| `STAKE_OWNERSHIP`                 | `0x06`   | Stake ownership                                                |
-| `PREPARED_UNSTAKE`                | `0x07`   | Prepared unstake                                               |
-| `EXITTING_STAKE`                  | `0x08`   | Existing stake                                                 |
-| `VALIDATOR_META_DATA`             | `0x09`   | Validator metadata, e.g. name and url                          |
-| `VALIDATOR_STAKE_DATA`            | `0x0A`   | Validator stake data                                           |
-| `VALIDATOR_BFT_DATA`              | `0x0B`   | Validator BFT data                                             |
-| `VALIDATOR_ALLOW_DELEGATION_FLAG` | `0x0C`   | Validator allow delegation from others flag                    |
-| `VALIDATOR_REGISTERED_FLAG_COPY`  | `0x0D`   | Validator registered flag copy                                 |
-| `PREPARED_REGISTERED_FLAG_UPDATE` | `0x0E`   | Prepared registered flag copy                                  |
-| `VALIDATOR_RAKE_COPY`             | `0x0F`   | Validator rake (fee) copy                                      |
-| `PREPARED_RAKE_UPDATE`            | `0x10`   | Prepared validator rake update                                 |
-| `VALIDATOR_OWNER_COPY`            | `0x11`   | Validator owner copy                                           |
-| `PREPARED_VALIDATOR_OWNER_UPDATE` | `0x12`   | Prepared validator owner update                                |
+| `TOKEN_RESOURCE`                  | `0x03`   | Token resource                                                 |
+| `TOKEN_RESOURCE_METADATA`         | `0x04`   | Token resource metadata                                        |
+| `TOKENS`                          | `0x05`   | Tokens                                                         |
+| `PREPARED_STAKE`                  | `0x06`   | Prepared stake, will transition into stake ownership by system |
+| `STAKE_OWNERSHIP`                 | `0x07`   | Stake ownership                                                |
+| `PREPARED_UNSTAKE`                | `0x08`   | Prepared unstake                                               |
+| `EXITTING_STAKE`                  | `0x09`   | Existing stake                                                 |
+| `VALIDATOR_META_DATA`             | `0x0A`   | Validator metadata, e.g. name and url                          |
+| `VALIDATOR_STAKE_DATA`            | `0x0B`   | Validator stake data                                           |
+| `VALIDATOR_BFT_DATA`              | `0x0C`   | Validator BFT data                                             |
+| `VALIDATOR_ALLOW_DELEGATION_FLAG` | `0x0D`   | Validator allow delegation from others flag                    |
+| `VALIDATOR_REGISTERED_FLAG_COPY`  | `0x0E`   | Validator registered flag copy                                 |
+| `PREPARED_REGISTERED_FLAG_UPDATE` | `0x0F`   | Prepared registered flag copy                                  |
+| `VALIDATOR_RAKE_COPY`             | `0x10`   | Validator rake (fee) copy                                      |
+| `PREPARED_RAKE_UPDATE`            | `0x11`   | Prepared validator rake update                                 |
+| `VALIDATOR_OWNER_COPY`            | `0x12`   | Validator owner copy                                           |
+| `PREPARED_VALIDATOR_OWNER_UPDATE` | `0x13`   | Prepared validator owner update                                |
 
 ### Substate Schema
 
@@ -153,20 +154,27 @@ Substates are serialized and deserialized based on the following protocol:
 | `reserved` | `u8`     | Reserved, always `0` |
 | `epoch`    | `u64`    | The new epoch        |
 
-#### `TOKEN_DEF` (`0x03`)
+#### `TOKEN_RESOURCE` (`0x03`)
 
-| **Name**      | **Type**     | **Description**                                               |
-|---------------|--------------|---------------------------------------------------------------|
-| `type`        | `u8`         | The resource type (allowed values: `0x00`, `0x01` and `0x02`) |
-| `supply`      | `u256`       | (If `type == 0x02`) The max token supply                      |
-| `minter`      | `public_key` | (If `type == 0x01`) The token minter public key               |
-| `resource`    | `address`    | The resource address                                          |
-| `name`        | `string`     | The token name                                                |
-| `description` | `string`     | The token description                                         |
-| `url`         | `string`     | An URL                                                        |
-| `icon_url`    | `string`     | An URL to an icon                                             |
+| **Name**      | **Type**     | **Description**                                                                              |
+|---------------|--------------|----------------------------------------------------------------------------------------------|
+| `type`        | `u8`         | The resource type (`0x00`: immutable, `0x01`: mutable, `0x03`: mutable with specified owner) |
+| `resource`    | `address`    | The resource address                                                                         |
+| `granularity` | `u256`       | The token granularity, must be `1` as of now                                                 |
+| `owner`       | `public_key` | (If `type == 0x03`) The token owner public key                                               |
 
-#### `TOKENS` (`0x04`)
+#### `TOKEN_RESOURCE_METADATA` (`0x04`)
+
+| **Name**      | **Type**  | **Description**       |
+|---------------|-----------|-----------------------|
+| `reserved`    | `u8`      | Reserved, always `0`  |
+| `resource`    | `address` | The resource address  |
+| `name`        | `string`  | The token name        |
+| `description` | `string`  | The token description |
+| `url`         | `string`  | An URL                |
+| `icon_url`    | `string`  | An URL to an icon     |
+
+#### `TOKENS` (`0x05`)
 
 | **Name**   | **Type**  | **Description**      |
 |------------|-----------|----------------------|
@@ -175,7 +183,7 @@ Substates are serialized and deserialized based on the following protocol:
 | `resource` | `address` | The resource address |
 | `amount`   | `u256`    | The amount           |
 
-#### `PREPARED_STAKE` (`0x05`)
+#### `PREPARED_STAKE` (`0x06`)
 
 | **Name**    | **Type**     | **Description**          |
 |-------------|--------------|--------------------------|
@@ -184,7 +192,7 @@ Substates are serialized and deserialized based on the following protocol:
 | `owner`     | `address`    | The owner address        |
 | `amount`    | `u256`       | The stake amount         |
 
-#### `STAKE_OWNERSHIP` (`0x06`)
+#### `STAKE_OWNERSHIP` (`0x07`)
 
 | **Name**    | **Type**     | **Description**          |
 |-------------|--------------|--------------------------|
@@ -193,7 +201,7 @@ Substates are serialized and deserialized based on the following protocol:
 | `owner`     | `address`    | The stake owner          |
 | `amount`    | `u256`       | The stake amount         |
 
-#### `PREPARED_UNSTAKE` (`0x07`)
+#### `PREPARED_UNSTAKE` (`0x08`)
 
 | **Name**    | **Type**     | **Description**          |
 |-------------|--------------|--------------------------|
@@ -202,7 +210,7 @@ Substates are serialized and deserialized based on the following protocol:
 | `owner`     | `u256`       | The owner                |
 | `amount`    | `u256`       | The stake amount         |
 
-#### `EXITING_STAKE` (`0x08`)
+#### `EXITING_STAKE` (`0x09`)
 
 | **Name**         | **Type**     | **Description**          |
 |------------------|--------------|--------------------------|
@@ -212,7 +220,7 @@ Substates are serialized and deserialized based on the following protocol:
 | `owner`          | `u256`       | The owner                |
 | `amount`         | `u256`       | The stake amount         |
 
-#### `VALIDATOR_META_DATA` (`0x09`)
+#### `VALIDATOR_META_DATA` (`0x0A`)
 
 | **Name**    | **Type**     | **Description**                 |
 |-------------|--------------|---------------------------------|
@@ -221,7 +229,7 @@ Substates are serialized and deserialized based on the following protocol:
 | `name`      | `string`     | The validator name              |
 | `url`       | `string`     | A link to the validator website |
 
-#### `VALIDATOR_STAKE_DATA` (`0x0A`)
+#### `VALIDATOR_STAKE_DATA` (`0x0B`)
 
 | **Name**          | **Type**     | **Description**                      |
 |-------------------|--------------|--------------------------------------|
@@ -233,7 +241,7 @@ Substates are serialized and deserialized based on the following protocol:
 | `rake_percentage` | `u32`        | Rake percentage                      |
 | `owner`           | `address`    | Validator owner address              |
 
-#### `VALIDATOR_BFT_DATA` (`0x0B`)
+#### `VALIDATOR_BFT_DATA` (`0x0C`)
 
 | **Name**              | **Type**     | **Description**              |
 |-----------------------|--------------|------------------------------|
@@ -242,7 +250,7 @@ Substates are serialized and deserialized based on the following protocol:
 | `proposals_completed` | `u64`        | Number of proposal completed |
 | `proposals_missed`    | `u64`        | Number of proposal missed    |
 
-#### `VALIDATOR_ALLOW_DELEGATION_FLAG` (`0x0C`)
+#### `VALIDATOR_ALLOW_DELEGATION_FLAG` (`0x0D`)
 
 | **Name**                | **Type**     | **Description**               |
 |-------------------------|--------------|-------------------------------|
@@ -250,7 +258,7 @@ Substates are serialized and deserialized based on the following protocol:
 | `validator`             | `public_key` | Validator public key          |
 | `is_delegation_allowed` | `bool`       | Whether delegation is allowed |
 
-#### `VALIDATOR_REGISTERED_FLAG_COPY` (`0x0D`)
+#### `VALIDATOR_REGISTERED_FLAG_COPY` (`0x0E`)
 
 | **Name**        | **Type**     | **Description**                             |
 |-----------------|--------------|---------------------------------------------|
@@ -258,7 +266,7 @@ Substates are serialized and deserialized based on the following protocol:
 | `validator`     | `public_key` | Validator public key                        |
 | `is_registered` | `bool`       | Whether this validator is registered active |
 
-#### `PREPARED_REGISTERED_FLAG_UPDATE` (`0x0E`)
+#### `PREPARED_REGISTERED_FLAG_UPDATE` (`0x0F`)
 
 | **Name**        | **Type**     | **Description**                                |
 |-----------------|--------------|------------------------------------------------|
@@ -266,7 +274,7 @@ Substates are serialized and deserialized based on the following protocol:
 | `validator`     | `public_key` | Validator public key                           |
 | `is_registered` | `bool`       | Whether this validator is registered as active |
 
-#### `VALIDATOR_RAKE_COPY` (`0x0F`)
+#### `VALIDATOR_RAKE_COPY` (`0x10`)
 
 | **Name**          | **Type**     | **Description**           |
 |-------------------|--------------|---------------------------|
@@ -274,7 +282,7 @@ Substates are serialized and deserialized based on the following protocol:
 | `validator`       | `public_key` | Validator public key      |
 | `rake_percentage` | `u32`        | Validator rake percentage |
 
-#### `PREPARED_RAKE_UPDATE` (`0x10`)
+#### `PREPARED_RAKE_UPDATE` (`0x11`)
 
 | **Name**                  | **Type**     | **Description**         |
 |---------------------------|--------------|-------------------------|
@@ -284,7 +292,7 @@ Substates are serialized and deserialized based on the following protocol:
 | `current_rake_percentage` | `u32`        | Current rake percentage |
 | `next_rake_percentage`    | `u32`        | Next rake percentage    |
 
-#### `VALIDATOR_OWNER_COPY` (`0x11`)
+#### `VALIDATOR_OWNER_COPY` (`0x12`)
 
 | **Name**    | **Type**     | **Description**         |
 |-------------|--------------|-------------------------|
@@ -292,7 +300,7 @@ Substates are serialized and deserialized based on the following protocol:
 | `validator` | `public_key` | Validator public key    |
 | `owner`     | `address`    | Validator owner address |
 
-#### `PREPARED_VALIDATOR_OWNER_UPDATE` (`0x12`)
+#### `PREPARED_VALIDATOR_OWNER_UPDATE` (`0x13`)
 
 | **Name**    | **Type**     | **Description**         |
 |-------------|--------------|-------------------------|
