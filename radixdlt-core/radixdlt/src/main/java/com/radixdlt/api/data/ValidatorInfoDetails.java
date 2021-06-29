@@ -150,7 +150,7 @@ public class ValidatorInfoDetails {
 			.put("infoURL", infoUrl)
 			.put("totalDelegatedStake", totalStake)
 			.put("ownerDelegation", ownerStake)
-			.put("percentage", percentage)
+			.put("rakePercentage", percentage)
 			.put("registered", registered)
 			.put("isExternalStakeAccepted", externalStakesAllowed);
 	}
