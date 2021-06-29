@@ -68,7 +68,7 @@ public final class TxnParser {
 			parsedTxn.instructions()
 		);
 
-		return new REProcessedTxn(parsedTxn, stateUpdates);
+		return new REProcessedTxn(parsedTxn, stateUpdates, context.getEvents());
 	}
 
 	public Result<REProcessedTxn> parseTxn(Txn txn) {

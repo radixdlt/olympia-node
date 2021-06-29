@@ -57,6 +57,6 @@ public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> im
 		ImmutableAddrs immutableAddrs,
 		ExecutionContext context
 	) throws ProcedureException {
-		return downReducer.reduce((ShutdownAll<D>) o, (S) reducerState, immutableAddrs);
+		return downReducer.reduce((S) reducerState, (ShutdownAll<D>) o, context, immutableAddrs);
 	}
 }

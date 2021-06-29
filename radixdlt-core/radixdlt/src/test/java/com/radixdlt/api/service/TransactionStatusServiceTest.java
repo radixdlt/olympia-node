@@ -64,7 +64,7 @@ public class TransactionStatusServiceTest {
 
 		var txn = randomTxn();
 		var parsedTxn = new ParsedTxn(txn, UInt256.ZERO, null, null, null, false);
-		var processedTxn = new REProcessedTxn(parsedTxn, null);
+		var processedTxn = new REProcessedTxn(parsedTxn, null, List.of());
 		var one = TxnsCommittedToLedger.create(List.of(processedTxn));
 		transactionStatusService.atomsCommittedToLedgerEventProcessor().process(one);
 
@@ -130,7 +130,7 @@ public class TransactionStatusServiceTest {
 		transactionStatusService.mempoolAddSuccessEventProcessor().process(succeeded);
 		var txnCommitted = randomTxn();
 		var parsedTxn = new ParsedTxn(txnCommitted, UInt256.ZERO, null, null, null, false);
-		var processedTxn = new REProcessedTxn(parsedTxn, null);
+		var processedTxn = new REProcessedTxn(parsedTxn, null, List.of());
 		var committed = TxnsCommittedToLedger.create(List.of(processedTxn));
 		transactionStatusService.atomsCommittedToLedgerEventProcessor().process(committed);
 		var txnRejected = randomTxn();
