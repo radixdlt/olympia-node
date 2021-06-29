@@ -45,18 +45,18 @@ public class SyncRadixApiValidatorTest {
 	private static final String LIST = "{\"result\":{\"cursor\":\"vb1q0tczj5k4n5nw7lf4prxrawja84pjt"
 		+ "xwh68gl65hd9almsg77r87zmhdqpf\",\"validators\":[{\"totalDelegatedStake\":\"1000000000000"
 		+ "000000000000\",\"address\":\"vb1q27acjcz0vs0dg9mwv7nwyxfxu28rcvu35zwcnn9ulul25ss3kfgkue7"
-		+ "d6p\",\"infoURL\":\"\",\"ownerDelegation\":\"1000000000000000000000000\",\"percentage\":"
+		+ "d6p\",\"infoURL\":\"\",\"ownerDelegation\":\"1000000000000000000000000\",\"rakePercentage\":"
 		+ "0,\"name\":\"\",\"registered\":true,\"ownerAddress\":\"brx1qsptmhztqfajpa4qhden6dcseym3g"
 		+ "u0pnjxsfmzwvhnlna2jzzxe9zc5ntj47\",\"isExternalStakeAccepted\":true},{\"totalDelegatedSt"
 		+ "ake\":\"1000000000000000000000000\",\"address\":\"vb1q0tczj5k4n5nw7lf4prxrawja84pjtxwh68"
 		+ "gl65hd9almsg77r87zmhdqpf\",\"infoURL\":\"\",\"ownerDelegation\":\"1000000000000000000000"
-		+ "000\",\"percentage\":0,\"name\":\"\",\"registered\":true,\"ownerAddress\":\"brx1qspa0q22"
+		+ "000\",\"rakePercentage\":0,\"name\":\"\",\"registered\":true,\"ownerAddress\":\"brx1qspa0q22"
 		+ "j6kwjdmmax5yvc046t575xfve6lgarl2ja5hhlwprmcvlcg8k98kp\",\"isExternalStakeAccepted\":true"
 		+ "}]},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
 
 	private static final String LOOKUP = "{\"result\":{\"totalDelegatedStake\":\"475424000000000000"
 		+ "0000000\",\"address\":\"vb1q0tczj5k4n5nw7lf4prxrawja84pjtxwh68gl65hd9almsg77r87zmhdqpf\""
-		+ ",\"infoURL\":\"\",\"ownerDelegation\":\"1000000000000000000000000\",\"percentage\":0,\"n"
+		+ ",\"infoURL\":\"\",\"ownerDelegation\":\"1000000000000000000000000\",\"rakePercentage\":0,\"n"
 		+ "ame\":\"\",\"registered\":true,\"ownerAddress\":\"brx1qspa0q22j6kwjdmmax5yvc046t575xfve6"
 		+ "lgarl2ja5hhlwprmcvlcg8k98kp\",\"isExternalStakeAccepted\":true},\"id\":\"1\",\"jsonrpc\""
 		+ ":\"2.0\"}\n";
