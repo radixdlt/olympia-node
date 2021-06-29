@@ -517,7 +517,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	private static final class PreparingOwnerUpdate implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
-		private final TreeMap<ECPublicKey, PreparedOwnerUpdate> preparingValidatorUpdates = new TreeMap<>(KeyComparator.instance());
+		private final TreeMap<ECPublicKey, PreparedOwnerUpdate> preparingOwnerUpdates = new TreeMap<>(KeyComparator.instance());
 
 		PreparingOwnerUpdate(
 			UpdatingEpoch updatingEpoch,
@@ -532,18 +532,18 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			var iter = shutdownAll.iterator();
 			while (iter.hasNext()) {
 				var preparedValidatorUpdate = iter.next();
-				preparingValidatorUpdates.put(preparedValidatorUpdate.getValidatorKey(), preparedValidatorUpdate);
+				preparingOwnerUpdates.put(preparedValidatorUpdate.getValidatorKey(), preparedValidatorUpdate);
 			}
 			return next();
 		}
 
 		ReducerState next() {
-			if (preparingValidatorUpdates.isEmpty()) {
+			if (preparingOwnerUpdates.isEmpty()) {
 				return new PreparingRegisteredUpdate(updatingEpoch, validatorsScratchPad);
 			}
 
-			var k = preparingValidatorUpdates.firstKey();
-			var validatorUpdate = preparingValidatorUpdates.remove(k);
+			var k = preparingOwnerUpdates.firstKey();
+			var validatorUpdate = preparingOwnerUpdates.remove(k);
 			if (!validatorsScratchPad.containsKey(k)) {
 				return new LoadingStake(k, validatorStake -> {
 					validatorsScratchPad.put(k, validatorStake);
@@ -554,6 +554,11 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 				validatorsScratchPad.get(k).setOwnerAddr(validatorUpdate.getOwnerAddress());
 				return new ResetOwnerUpdate(k, this::next);
 			}
+		}
+
+		@Override
+		public String toString() {
+			return String.format("%s{preparingOwnerUpdates=%s}", this.getClass().getSimpleName(), preparingOwnerUpdates);
 		}
 	}
 
