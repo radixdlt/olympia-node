@@ -15,7 +15,7 @@ import com.radixdlt.crypto.RadixKeyStore;
 import com.radixdlt.crypto.exception.KeyStoreException;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.identifiers.NodeAddress;
+import com.radixdlt.identifiers.ValidatorAddressing;
 import com.radixdlt.utils.AWSSecretManager;
 import com.radixdlt.utils.AWSSecretsOutputOptions;
 
@@ -182,12 +182,14 @@ public class AWSSecrets {
 				var keystoreFile = new File(keyFilePath.toString());
 				var keyFileAwsSecret = new HashMap<String, Object>();
 				var publicKeyFileAwsSecret = new HashMap<String, Object>();
+				final ValidatorAddressing validatorAddresses = ValidatorAddressing.bech32("vb");
 				try {
 					var data = Files.readAllBytes(keyFilePath);
 					keyFileAwsSecret.put("key", data);
 					var pubKey = returnPublicKey(keystoreFile, password);
-					publicKeyFileAwsSecret.put("bech32", NodeAddress.of(pubKey));
+					publicKeyFileAwsSecret.put("bech32", validatorAddresses.of(pubKey));
 					publicKeyFileAwsSecret.put("hex", pubKey.toHex());
+					System.out.println(pubKey);
 				} catch (IOException e) {
 					throw new IllegalStateException("While reading validator keys", e);
 				}
