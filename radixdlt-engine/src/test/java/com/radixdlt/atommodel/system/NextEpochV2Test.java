@@ -31,7 +31,7 @@ import com.radixdlt.atommodel.system.construction.NextEpochConstructorV3;
 import com.radixdlt.atommodel.system.construction.NextViewConstructorV3;
 import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.atommodel.system.scrypt.RoundUpdateConstraintScrypt;
-import com.radixdlt.atommodel.system.state.ValidatorStakeData;
+import com.radixdlt.atommodel.tokens.Amount;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV3;
@@ -69,19 +69,19 @@ public class NextEpochV2Test {
 			{
 				List.of(
 					new RoundUpdateConstraintScrypt(10),
-					new EpochUpdateConstraintScrypt(10),
-					new StakingConstraintScryptV4(),
+					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1),
+					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new TokensConstraintScryptV3(),
 					new ValidatorConstraintScryptV2(2),
 					new ValidatorRegisterConstraintScrypt()
 				),
 				ActionConstructors.newBuilder()
 					.put(NextRound.class, new NextViewConstructorV3())
-					.put(NextEpoch.class, new NextEpochConstructorV3())
+					.put(NextEpoch.class, new NextEpochConstructorV3(Amount.ofTokens(10).toSubunits(), 9800, 1))
 					.put(CreateSystem.class, new CreateSystemConstructorV2())
 					.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 					.put(MintToken.class, new MintTokenConstructor())
-					.put(StakeTokens.class, new StakeTokensConstructorV3())
+					.put(StakeTokens.class, new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()))
 					.build()
 			}
 		});
@@ -125,8 +125,8 @@ public class NextEpochV2Test {
 			TxnConstructionRequest.create()
 				.action(new CreateSystem(0))
 				.action(new CreateMutableToken(null, "xrd", "xrd", "", "", ""))
-				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, ValidatorStakeData.MINIMUM_STAKE))
-				.action(new StakeTokens(accountAddr, key, ValidatorStakeData.MINIMUM_STAKE))
+				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, Amount.ofTokens(10).toSubunits()))
+				.action(new StakeTokens(accountAddr, key, Amount.ofTokens(10).toSubunits()))
 		).buildWithoutSignature();
 		sut.execute(List.of(start), null, PermissionLevel.SYSTEM);
 

@@ -19,7 +19,6 @@
 package com.radixdlt.atommodel.system.state;
 
 import com.radixdlt.atommodel.tokens.ResourceInBucket;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.Bucket;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.constraintmachine.ProcedureException;
@@ -34,9 +33,6 @@ import java.util.Objects;
 import static com.radixdlt.atommodel.validators.state.PreparedRakeUpdate.RAKE_MAX;
 
 public final class ValidatorStakeData implements ResourceInBucket {
-	public static final UInt256 MINIMUM_STAKE = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
-	public static final int EPOCHS_LOCKED = 1; // Must go through one full epoch before being unlocked
-
 	private final UInt256 totalStake;
 	private final UInt256 totalOwnership;
 	private final int rakePercentage;
@@ -179,7 +175,7 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		return Pair.of(nextValidatorStake, stakeOwnership);
 	}
 
-	public Pair<ValidatorStakeData, ExittingStake> unstakeOwnership(REAddr owner, UInt256 unstakeOwnership, long curEpoch) {
+	public Pair<ValidatorStakeData, ExittingStake> unstakeOwnership(REAddr owner, UInt256 unstakeOwnership, long epochUnlocked) {
 		if (totalOwnership.compareTo(unstakeOwnership) < 0) {
 			throw new IllegalStateException("Not enough ownership");
 		}
@@ -197,7 +193,6 @@ public final class ValidatorStakeData implements ResourceInBucket {
 			ownerAddr,
 			isRegistered
 		);
-		var epochUnlocked = curEpoch + EPOCHS_LOCKED;
 		var exittingStake = new ExittingStake(validatorKey, owner, epochUnlocked, unstaked);
 		return Pair.of(nextValidatorStake, exittingStake);
 	}

@@ -24,11 +24,9 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -37,15 +35,13 @@ public final class ForksModule extends AbstractModule {
 	protected void configure() {
 		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkConfig>>>() { });
 		install(new MainnetForkConfigsModule());
-		install(new MainnetForkRulesModule());
 	}
 
 	@Provides
 	@Singleton
 	private Forks forks(
 		Set<ForkConfig> forkConfigs,
-		Optional<UnaryOperator<Set<ForkConfig>>> transformer,
-		Map<String, Function<RERulesConfig, RERules>> rules
+		Optional<UnaryOperator<Set<ForkConfig>>> transformer
 	) {
 		var transformed = transformer.map(o -> o.apply(forkConfigs))
 			.orElse(forkConfigs);
@@ -54,7 +50,7 @@ public final class ForksModule extends AbstractModule {
 			transformed.stream()
 				.collect(Collectors.toMap(
 					ForkConfig::getEpoch,
-					e -> rules.get(e.getName()).apply(e.getConfig())
+					e -> e.getVersion().create(e.getConfig())
 				))
 		);
 

@@ -33,7 +33,7 @@ import com.radixdlt.atommodel.system.construction.NextEpochConstructorV3;
 import com.radixdlt.atommodel.system.construction.NextViewConstructorV3;
 import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.atommodel.system.scrypt.RoundUpdateConstraintScrypt;
-import com.radixdlt.atommodel.system.state.ValidatorStakeData;
+import com.radixdlt.atommodel.tokens.Amount;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV3;
@@ -71,7 +71,7 @@ public class NextViewV2Test {
 		return List.of(new Object[][] {
 			{
 				List.of(
-					new EpochUpdateConstraintScrypt(10),
+					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1),
 					new RoundUpdateConstraintScrypt(10)
 				),
 				new NextViewConstructorV3()
@@ -94,7 +94,7 @@ public class NextViewV2Test {
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
 		scrypts.forEach(cmAtomOS::load);
-		cmAtomOS.load(new StakingConstraintScryptV4());
+		cmAtomOS.load(new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()));
 		cmAtomOS.load(new TokensConstraintScryptV3());
 		cmAtomOS.load(new ValidatorConstraintScryptV2(2));
 		cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
@@ -109,11 +109,11 @@ public class NextViewV2Test {
 			parser,
 			serialization,
 			ActionConstructors.newBuilder()
-				.put(NextEpoch.class, new NextEpochConstructorV3())
+				.put(NextEpoch.class, new NextEpochConstructorV3(Amount.ofTokens(10).toSubunits(), 9800, 1))
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
-				.put(StakeTokens.class, new StakeTokensConstructorV3())
+				.put(StakeTokens.class, new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()))
 				.put(NextRound.class, nextViewConstructor)
 				.put(RegisterValidator.class, new RegisterValidatorConstructor())
 				.build(),
@@ -126,8 +126,8 @@ public class NextViewV2Test {
 			TxnConstructionRequest.create()
 				.action(new CreateSystem(0))
 				.action(new CreateMutableToken(null, "xrd", "xrd", "", "", ""))
-				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, ValidatorStakeData.MINIMUM_STAKE))
-				.action(new StakeTokens(accountAddr, key.getPublicKey(), ValidatorStakeData.MINIMUM_STAKE))
+				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, Amount.ofTokens(10).toSubunits()))
+				.action(new StakeTokens(accountAddr, key.getPublicKey(), Amount.ofTokens(10).toSubunits()))
 				.action(new RegisterValidator(key.getPublicKey()))
 				.action(new NextEpoch(u -> List.of(key.getPublicKey()), 0))
 		).buildWithoutSignature();

@@ -33,6 +33,7 @@ import com.radixdlt.network.p2p.liveness.PeerPingTimeout;
 import com.radixdlt.network.p2p.liveness.PeersLivenessCheckTrigger;
 import com.radixdlt.network.p2p.liveness.Ping;
 import com.radixdlt.network.p2p.liveness.Pong;
+import com.radixdlt.utils.Bytes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -195,7 +196,7 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<EventDispatcher<EpochLocalTimeoutOccurrence>>() { }).toProvider(
 			Dispatchers.dispatcherProvider(
 				EpochLocalTimeoutOccurrence.class,
-				(t, a) -> String.format("Timeout{epoch=%s round=%s leader=%s nextLeader=%s count=%s}",
+				(t, a) -> String.format("bft_timout{epoch=%s round=%s leader=%s nextLeader=%s count=%s}",
 					t.getEpochView().getEpoch(),
 					t.getEpochView().getView().number(),
 					a.forValidators().of(t.getLeader().getKey()).substring(0, 10),
@@ -211,13 +212,24 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<EventDispatcher<EpochViewUpdate>>() { }).toProvider(
 			Dispatchers.dispatcherProvider(
 				EpochViewUpdate.class,
-				(u, a) -> String.format("NextRnd{epoch=%s round=%s leader=%s nextLeader=%s}",
+				(u, a) -> String.format("bft_nxtrnd{epoch=%s round=%s leader=%s nextLeader=%s}",
 					u.getEpoch(),
 					u.getEpochView().getView().number(),
 					a.forValidators().of(u.getViewUpdate().getLeader().getKey()).substring(0, 10),
 					a.forValidators().of(u.getViewUpdate().getNextLeader().getKey()).substring(0, 10)
 				)
 			)).in(Scopes.SINGLETON);
+
+		bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() { }).toProvider(
+			Dispatchers.dispatcherProvider(
+				LedgerUpdate.class,
+				(u, a) -> String.format("lgr_commit{epoch=%s round=%s version=%s hash=%s}",
+					u.getTail().getEpoch(),
+					u.getTail().getView().number(),
+					u.getTail().getStateVersion(),
+					Bytes.toHexString(u.getTail().getAccumulatorState().getAccumulatorHash().asBytes()).substring(0, 16)
+				)
+		)).in(Scopes.SINGLETON);
 
 		final var insertUpdateKey = new TypeLiteral<EventProcessor<BFTInsertUpdate>>() { };
 		Multibinder.newSetBinder(binder(), insertUpdateKey, ProcessOnDispatch.class);
@@ -245,8 +257,6 @@ public class DispatcherModule extends AbstractModule {
 				null
 			));
 
-		bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(LedgerUpdate.class)).in(Scopes.SINGLETON);
 
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() { });
 

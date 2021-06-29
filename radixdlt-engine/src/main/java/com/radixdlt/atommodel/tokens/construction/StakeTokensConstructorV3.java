@@ -28,12 +28,24 @@ import com.radixdlt.atommodel.validators.state.AllowDelegationFlag;
 import com.radixdlt.atommodel.validators.state.PreparedOwnerUpdate;
 import com.radixdlt.atommodel.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.UInt256;
 
 import java.util.Optional;
 
 public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> {
+
+	private final UInt256 minimumStake;
+
+	public StakeTokensConstructorV3(UInt256 minimumStake) {
+		this.minimumStake = minimumStake;
+	}
+
 	@Override
 	public void construct(StakeTokens action, TxBuilder builder) throws TxBuilderException {
+		if (action.amount().compareTo(minimumStake) < 0) {
+			throw new TxBuilderException("Minimum to stake is " + minimumStake + " but trying to stake " + action.amount());
+		}
+
 		builder.downFungible(
 			TokensInAccount.class,
 			p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(action.from()),

@@ -20,20 +20,45 @@ package com.radixdlt.statecomputer.forks;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.atommodel.tokens.Amount;
 
 /**
  * The forks for betanet and the epochs at which they will occur.
  */
 public final class MainnetForkConfigsModule extends AbstractModule {
-	private static final long TWO_WEEKS_WORTH_OF_ROUNDS = 1_500_000;
-	private static final long TWO_WEEKS_WORTH_OF_EPOCHS = 150;
-
 	@ProvidesIntoSet
-	ForkConfig mainnet() {
+	ForkConfig olympiaFirstEpoch() {
 		return new ForkConfig(
 			0L,
-			"mainnet",
-			new RERulesConfig(true, TWO_WEEKS_WORTH_OF_ROUNDS, TWO_WEEKS_WORTH_OF_EPOCHS)
+			"olympia-first-epoch",
+			RERulesVersion.OLYMPIA_V1,
+			new RERulesConfig(
+				true,
+				1_500_000, // Two weeks worth of rounds for first epoch
+				150, // Two weeks worth of epochs
+				Amount.ofTokens(100), // Minimum stake
+				150, // Two weeks worth of epochs
+				Amount.ofTokens(0),   // No rewards for epoch 1 where it will only be radix foundation nodes
+				9800 // 98.00% threshold for completed proposals to get any rewards
+			)
+		);
+	}
+
+	@ProvidesIntoSet
+	ForkConfig olympia() {
+		return new ForkConfig(
+			2L,
+			"olympia",
+			RERulesVersion.OLYMPIA_V1,
+			new RERulesConfig(
+				true,
+				10_000,
+				150, // Two weeks worth of epochs
+				Amount.ofTokens(100), // Minimum stake
+				150, // Two weeks worth of epochs
+				Amount.ofTokens(10), // Rewards per proposal
+				9800 // 98.00% threshold for completed proposals to get any rewards
+			)
 		);
 	}
 }

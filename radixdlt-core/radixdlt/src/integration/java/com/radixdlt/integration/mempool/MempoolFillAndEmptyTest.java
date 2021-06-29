@@ -18,7 +18,6 @@
 package com.radixdlt.integration.mempool;
 
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -69,7 +68,7 @@ public final class MempoolFillAndEmptyTest {
         return Guice.createInjector(
             MempoolConfig.asModule(1000, 10),
             new ForksModule(),
-            new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
+            new RadixEngineForksLatestOnlyModule(),
             RadixEngineConfig.asModule(1, 10, 10),
             new SingleNodeAndPeersDeterministicNetworkModule(),
             new MockedGenesisModule(),

@@ -26,7 +26,6 @@ import com.radixdlt.atommodel.system.state.RoundData;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
 import com.radixdlt.atommodel.system.state.ValidatorBFTData;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
@@ -68,15 +67,24 @@ import java.util.function.Supplier;
 import static com.radixdlt.atommodel.validators.state.PreparedRakeUpdate.RAKE_MAX;
 
 public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
-
-	public static final UInt256 REWARDS_PER_PROPOSAL = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
 	private final long maxRounds;
+	private final UInt256 rewardsPerProposal;
+	private final long unstakingEpochDelay;
+	private int minimumCompletedProposalsPercentage;
 
-	public EpochUpdateConstraintScrypt(long maxRounds) {
+	public EpochUpdateConstraintScrypt(
+		long maxRounds,
+		UInt256 rewardsPerProposal,
+		int minimumCompletedProposalsPercentage,
+		long unstakingEpochDelay
+	) {
 		this.maxRounds = maxRounds;
+		this.rewardsPerProposal = rewardsPerProposal;
+		this.unstakingEpochDelay = unstakingEpochDelay;
+		this.minimumCompletedProposalsPercentage = minimumCompletedProposalsPercentage;
 	}
 
-	public static final class ProcessExittingStake implements ReducerState {
+	public final class ProcessExittingStake implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeSet<ExittingStake> exitting = new TreeSet<>(
 			(o1, o2) -> Arrays.compare(o1.dataKey(), o2.dataKey())
@@ -123,9 +131,9 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		}
 	}
 
-	private static final class RewardingValidators implements ReducerState {
+	private final class RewardingValidators implements ReducerState {
 		private final TreeMap<ECPublicKey, ValidatorStakeData> curStake = new TreeMap<>(KeyComparator.instance());
-		private final TreeMap<ECPublicKey, Long> proposalsCompleted = new TreeMap<>(KeyComparator.instance());
+		private final TreeMap<ECPublicKey, ValidatorBFTData> validatorBFTData = new TreeMap<>(KeyComparator.instance());
 		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake = new TreeMap<>(KeyComparator.instance());
 		private final UpdatingEpoch updatingEpoch;
 
@@ -138,41 +146,56 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			var iter = i.iterator();
 			while (iter.hasNext()) {
 				var validatorEpochData = iter.next();
-				if (proposalsCompleted.containsKey(validatorEpochData.validatorKey())) {
+				if (validatorBFTData.containsKey(validatorEpochData.validatorKey())) {
 					throw new ProcedureException("Already inserted " + validatorEpochData.validatorKey());
 				}
-				proposalsCompleted.put(validatorEpochData.validatorKey(), validatorEpochData.proposalsCompleted());
+				validatorBFTData.put(validatorEpochData.validatorKey(), validatorEpochData);
 			}
 
 			return next();
 		}
 
 		ReducerState next() {
-			if (proposalsCompleted.isEmpty()) {
+			if (validatorBFTData.isEmpty()) {
 				return new PreparingUnstake(updatingEpoch, curStake, preparingStake);
 			}
 
-			var k = proposalsCompleted.firstKey();
+			var k = validatorBFTData.firstKey();
 			if (curStake.containsKey(k)) {
 				throw new IllegalStateException();
 			}
-			var numProposals = proposalsCompleted.remove(k);
-			var nodeEmission = REWARDS_PER_PROPOSAL.multiply(UInt256.from(numProposals));
+			var bftData = validatorBFTData.remove(k);
+			if (bftData.proposalsCompleted() + bftData.proposalsMissed() == 0) {
+				return next();
+			}
+
+			var percentageCompleted = bftData.proposalsCompleted() * 10000
+				/ (bftData.proposalsCompleted() + bftData.proposalsMissed());
+
+			// Didn't pass threshold, no rewards!
+			if (percentageCompleted < minimumCompletedProposalsPercentage) {
+				return next();
+			}
+
+			var nodeRewards = rewardsPerProposal.multiply(UInt256.from(bftData.proposalsCompleted()));
+			if (nodeRewards.isZero()) {
+				return next();
+			}
 
 			return new LoadingStake(k, validatorStakeData -> {
 				int rakePercentage = validatorStakeData.getRakePercentage();
 				final UInt256 rakedEmissions;
-				if (rakePercentage != 0 && !nodeEmission.isZero()) {
-					var rake = nodeEmission
+				if (rakePercentage != 0) {
+					var rake = nodeRewards
 						.multiply(UInt256.from(rakePercentage))
 						.divide(UInt256.from(RAKE_MAX));
 					var validatorOwner = validatorStakeData.getOwnerAddr();
 					var initStake = new TreeMap<REAddr, UInt256>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
 					initStake.put(validatorOwner, rake);
 					preparingStake.put(k, initStake);
-					rakedEmissions = nodeEmission.subtract(rake);
+					rakedEmissions = nodeRewards.subtract(rake);
 				} else {
-					rakedEmissions = nodeEmission;
+					rakedEmissions = nodeRewards;
 				}
 				curStake.put(k, validatorStakeData.addEmission(rakedEmissions));
 				return next();
@@ -224,7 +247,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	}
 
 
-	private static final class Unstaking implements ReducerState {
+	private final class Unstaking implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<REAddr, UInt256> unstaking;
 		private final Function<ValidatorStakeData, ReducerState> onDone;
@@ -245,8 +268,9 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		ReducerState exit(ExittingStake u) throws ProcedureException {
 			var firstAddr = unstaking.firstKey();
 			var ownershipUnstake = unstaking.remove(firstAddr);
+			var epochUnlocked = updatingEpoch.prevEpoch.getEpoch() + unstakingEpochDelay;
 			var nextValidatorAndExit = current.unstakeOwnership(
-				firstAddr, ownershipUnstake, updatingEpoch.prevEpoch.getEpoch()
+				firstAddr, ownershipUnstake, epochUnlocked
 			);
 			this.current = nextValidatorAndExit.getFirst();
 			var expectedExit = nextValidatorAndExit.getSecond();
@@ -258,7 +282,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		}
 	}
 
-	private static final class PreparingUnstake implements ReducerState {
+	private final class PreparingUnstake implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingUnstake = new TreeMap<>(KeyComparator.instance());
 		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake;

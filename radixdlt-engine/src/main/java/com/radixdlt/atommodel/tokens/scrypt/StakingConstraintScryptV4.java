@@ -21,7 +21,6 @@ package com.radixdlt.atommodel.tokens.scrypt;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atommodel.system.state.StakeOwnership;
-import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atommodel.validators.state.AllowDelegationFlag;
@@ -42,10 +41,16 @@ import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.UInt256;
 
 import java.util.function.Predicate;
 
 public final class StakingConstraintScryptV4 implements ConstraintScrypt {
+	private final UInt256 minimumStake;
+
+	public StakingConstraintScryptV4(UInt256 minimumStake) {
+		this.minimumStake = minimumStake;
+	}
 
 	@Override
 	public void main(Loader os) {
@@ -92,7 +97,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 		defineStaking(os);
 	}
 
-	private static final class OwnerStakePrepare implements ReducerState {
+	private final class OwnerStakePrepare implements ReducerState {
 		private final TokenHoldingBucket tokenHoldingBucket;
 		private final AllowDelegationFlag allowDelegationFlag;
 
@@ -120,7 +125,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 		}
 	}
 
-	private static final class StakePrepare implements ReducerState {
+	private final class StakePrepare implements ReducerState {
 		private final TokenHoldingBucket tokenHoldingBucket;
 		private final ECPublicKey validatorKey;
 		private final Predicate<REAddr> delegateAllowed;
@@ -132,9 +137,9 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 		}
 
 		ReducerState withdraw(PreparedStake preparedStake) throws ProcedureException {
-			if (preparedStake.getAmount().compareTo(ValidatorStakeData.MINIMUM_STAKE) < 0) {
+			if (preparedStake.getAmount().compareTo(minimumStake) < 0) {
 				throw new ProcedureException(
-					"Minimum amount to stake must be >= " + ValidatorStakeData.MINIMUM_STAKE
+					"Minimum amount to stake must be >= " + minimumStake
 						+ " but trying to stake " + preparedStake.getAmount()
 				);
 			}

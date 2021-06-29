@@ -18,15 +18,37 @@
 
 package com.radixdlt.statecomputer.forks;
 
+import com.radixdlt.atommodel.tokens.Amount;
+
 public final class RERulesConfig {
 	private final long maxRounds;
 	private final boolean fees;
 	private final long rakeIncreaseDebouncerEpochLength;
+	private final Amount minimumStake;
+	private final long unstakingEpochDelay;
+	private final Amount rewardsPerProposal;
+	private final int minimumCompletedProposalsPercentage;
 
-	public RERulesConfig(boolean fees, long maxRounds, long rakeIncreaseDebouncerEpochLength) {
+	public RERulesConfig(
+		boolean fees,
+		long maxRounds,
+		long rakeIncreaseDebouncerEpochLength,
+		Amount minimumStake,
+		long unstakingEpochDelay,
+		Amount rewardsPerProposal,
+		int minimumCompletedProposalsPercentage
+	) {
 		this.fees = fees;
 		this.maxRounds = maxRounds;
 		this.rakeIncreaseDebouncerEpochLength = rakeIncreaseDebouncerEpochLength;
+		this.minimumStake = minimumStake;
+		this.unstakingEpochDelay = unstakingEpochDelay;
+		this.rewardsPerProposal = rewardsPerProposal;
+		this.minimumCompletedProposalsPercentage = minimumCompletedProposalsPercentage;
+	}
+
+	public Amount getMinimumStake() {
+		return minimumStake;
 	}
 
 	public long getRakeIncreaseDebouncerEpochLength() {
@@ -41,7 +63,27 @@ public final class RERulesConfig {
 		return maxRounds;
 	}
 
+	public Amount getRewardsPerProposal() {
+		return rewardsPerProposal;
+	}
+
+	public long getUnstakingEpochDelay() {
+		return unstakingEpochDelay;
+	}
+
+	public int getMinimumCompletedProposalsPercentage() {
+		return minimumCompletedProposalsPercentage;
+	}
+
 	public RERulesConfig overrideMaxRounds(long maxRounds) {
-		return new RERulesConfig(this.fees, maxRounds, this.rakeIncreaseDebouncerEpochLength);
+		return new RERulesConfig(
+			this.fees,
+			maxRounds,
+			this.rakeIncreaseDebouncerEpochLength,
+			this.minimumStake,
+			this.unstakingEpochDelay,
+			this.rewardsPerProposal,
+			this.minimumCompletedProposalsPercentage
+		);
 	}
 }

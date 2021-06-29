@@ -17,6 +17,7 @@
 
 package com.radixdlt.statecomputer.checkpoint;
 
+import com.radixdlt.atommodel.tokens.Amount;
 import com.radixdlt.crypto.ECPublicKey;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
@@ -28,9 +29,7 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.utils.UInt256;
 
 import java.util.Comparator;
 import java.util.List;
@@ -60,7 +59,7 @@ public final class MockedGenesisModule extends AbstractModule {
 		@Genesis ImmutableList<ECPublicKey> initialValidators
 	) {
 		return initialValidators.stream()
-			.map(v -> StakeDelegation.of(v, v, ValidatorStakeData.MINIMUM_STAKE.multiply(UInt256.from(100))))
+			.map(v -> StakeDelegation.of(v, v, Amount.ofTokens(100 * 100).toSubunits()))
 			.collect(ImmutableList.toImmutableList());
 	}
 
@@ -73,7 +72,7 @@ public final class MockedGenesisModule extends AbstractModule {
 		return Stream.concat(
 			tokenIssuanceSet.stream(),
 			initialValidators.stream()
-				.map(v -> TokenIssuance.of(v, ValidatorStakeData.MINIMUM_STAKE.multiply(UInt256.from(100))))
+				.map(v -> TokenIssuance.of(v, Amount.ofTokens(100 * 100).toSubunits()))
 		)
 			.sorted(Comparator.comparing(t -> t.receiver().toHex()))
 			.collect(ImmutableList.toImmutableList());

@@ -43,8 +43,8 @@ import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
 import com.radixdlt.atom.actions.UpdateRake;
 import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
-import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.atommodel.system.state.ValidatorStakeData;
+import com.radixdlt.atommodel.tokens.Amount;
 import com.radixdlt.atommodel.tokens.state.ExittingStake;
 import com.radixdlt.atommodel.tokens.state.PreparedStake;
 import com.radixdlt.atommodel.tokens.state.TokensInAccount;
@@ -83,7 +83,7 @@ import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkRulesModule;
+import com.radixdlt.statecomputer.forks.RERulesVersion;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -125,14 +125,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RunWith(Parameterized.class)
 public class StakingUnstakingValidatorsTest {
 	private static final Logger logger = LogManager.getLogger();
+	private static final Amount REWARDS_PER_PROPOSAL = Amount.ofTokens(10);
+	private static final RERulesConfig config1 = new RERulesConfig(
+		false, 100, 2, Amount.ofTokens(10), 1, REWARDS_PER_PROPOSAL, 9800
+	);
+	private static final RERulesConfig config2 = new RERulesConfig(
+		false, 10, 2, Amount.ofTokens(10), 1, REWARDS_PER_PROPOSAL, 9800
+	);
 
 	@Parameterized.Parameters
 	public static Collection<Object[]> forksModule() {
 		return List.of(new Object[][] {
-			{new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)), false, 100},
-			{new ForkOverwritesWithShorterEpochsModule(new RERulesConfig(false, 10, 2)), false, 10},
-			{new RadixEngineForksLatestOnlyModule(new RERulesConfig(true, 100, 2)), true, 100},
-			{new ForkOverwritesWithShorterEpochsModule(new RERulesConfig(true, 10, 2)), true, 10},
+			{new RadixEngineForksLatestOnlyModule(config1), false, 100},
+			{new ForkOverwritesWithShorterEpochsModule(config2), false, 10},
+			{new RadixEngineForksLatestOnlyModule(config1), true, 100},
+			{new ForkOverwritesWithShorterEpochsModule(config2), true, 10},
 		});
 	}
 
@@ -193,9 +200,7 @@ public class StakingUnstakingValidatorsTest {
 
 					nodeKeys.forEach(key ->
 						Multibinder.newSetBinder(binder(), TokenIssuance.class)
-							.addBinding().toInstance(
-								TokenIssuance.of(key.getPublicKey(), ValidatorStakeData.MINIMUM_STAKE.multiply(UInt256.TEN))
-						)
+							.addBinding().toInstance(TokenIssuance.of(key.getPublicKey(), Amount.ofTokens(10 * 10).toSubunits()))
 					);
 				}
 			}
@@ -363,7 +368,7 @@ public class StakingUnstakingValidatorsTest {
 				},
 				reParser.getSubstateDeserialization()
 			);
-			logger.info("Total tokens: {}", totalTokens);
+			logger.info("Total tokens: {}", Amount.ofSubunits(totalTokens));
 			var totalStaked = entryStore.reduceUpParticles(ValidatorStakeData.class, UInt256.ZERO,
 				(i, p) -> {
 					var tokens = (ValidatorStakeData) p;
@@ -371,7 +376,7 @@ public class StakingUnstakingValidatorsTest {
 				},
 				reParser.getSubstateDeserialization()
 			);
-			logger.info("Total staked: {}", totalStaked);
+			logger.info("Total staked: {}", Amount.ofSubunits(totalStaked));
 			var totalStakePrepared = entryStore.reduceUpParticles(PreparedStake.class, UInt256.ZERO,
 				(i, p) -> {
 					var tokens = (PreparedStake) p;
@@ -379,7 +384,7 @@ public class StakingUnstakingValidatorsTest {
 				},
 				reParser.getSubstateDeserialization()
 			);
-			logger.info("Total preparing stake: {}", totalStakePrepared);
+			logger.info("Total preparing stake: {}", Amount.ofSubunits(totalStakePrepared));
 			var totalStakeExitting = entryStore.reduceUpParticles(ExittingStake.class, UInt256.ZERO,
 				(i, p) -> {
 					var tokens = (ExittingStake) p;
@@ -387,9 +392,9 @@ public class StakingUnstakingValidatorsTest {
 				},
 				reParser.getSubstateDeserialization()
 			);
-			logger.info("Total exitting stake: {}", totalStakeExitting);
+			logger.info("Total exitting stake: {}", Amount.ofSubunits(totalStakeExitting));
 			var total = totalTokens.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting);
-			logger.info("Total: {}", total);
+			logger.info("Total: {}", Amount.ofSubunits(total));
 			return total;
 		}
 	}
@@ -419,7 +424,7 @@ public class StakingUnstakingValidatorsTest {
 			var privKey = nodeKeys.get(nodeIndex);
 			var acct = REAddr.ofPubKeyAccount(privKey.getPublicKey());
 			var to = nodeKeys.get(random.nextInt(nodeKeys.size())).getPublicKey();
-			var amount = UInt256.from(random.nextInt(10)).multiply(ValidatorStakeData.MINIMUM_STAKE);
+			var amount = Amount.ofTokens(random.nextInt(10) * 10).toSubunits();
 
 			var next = random.nextInt(16);
 			final TxAction action;
@@ -462,7 +467,7 @@ public class StakingUnstakingValidatorsTest {
 
 			var request = TxnConstructionRequest.create();
 			if (payFees) {
-				request.action(new PayFee(acct, MainnetForkRulesModule.FIXED_FEE));
+				request.action(new PayFee(acct, RERulesVersion.FIXED_FEE));
 			}
 			request.action(action);
 			dispatcher.dispatch(NodeApplicationRequest.create(request));
@@ -474,17 +479,17 @@ public class StakingUnstakingValidatorsTest {
 
 		var node = this.nodes.get(0).getInstance(Key.get(BFTNode.class, Self.class));
 		logger.info("Node {}", node);
-		logger.info("Initial {}", initialCount);
+		logger.info("Initial {}", Amount.ofSubunits(initialCount));
 		var nodeState = reloadNodeState();
 		var epoch = nodeState.getEpoch();
 		logger.info("Epoch {}", epoch);
-		var maxEmissions = UInt256.from(maxRounds).multiply(EpochUpdateConstraintScrypt.REWARDS_PER_PROPOSAL).multiply(UInt256.from(epoch - 1));
-		logger.info("Max emissions {}", maxEmissions);
+		var maxEmissions = UInt256.from(maxRounds).multiply(REWARDS_PER_PROPOSAL.toSubunits()).multiply(UInt256.from(epoch - 1));
+		logger.info("Max emissions {}", Amount.ofSubunits(maxEmissions));
 		var finalCount = nodeState.getTotalNativeTokens();
 
 		assertThat(finalCount).isGreaterThan(initialCount);
 		var diff = finalCount.subtract(initialCount);
-		logger.info("Difference {}", diff);
+		logger.info("Difference {}", Amount.ofSubunits(diff));
 		assertThat(diff).isLessThanOrEqualTo(maxEmissions);
 
 		for (var e : nodeState.getValidators().entrySet()) {

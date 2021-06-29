@@ -22,7 +22,7 @@ import com.radixdlt.utils.UInt256;
 /**
  * Utility values and methods for tokens.
  */
-public final class TokenDefinitionUtils {
+public final class TokenUtils {
 	/**
 	 * Power of 10 number of subunits to be used by every token.
 	 * Follows EIP-777 model.
@@ -34,16 +34,7 @@ public final class TokenDefinitionUtils {
 	 */
 	public static final UInt256 SUB_UNITS = UInt256.TEN.pow(SUB_UNITS_POW_10);
 
-	private TokenDefinitionUtils() {
+	private TokenUtils() {
 		throw new IllegalStateException("Cannot instantiate.");
-	}
-
-	/**
-	 * Returns the short code of the native asset of the network this node is a part of.
-	 *
-	 * @return The short code of the native asset.
-	 */
-	public static String getNativeTokenShortCode() {
-		return "xrd";
 	}
 }

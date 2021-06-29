@@ -36,7 +36,6 @@ import com.radixdlt.atommodel.system.construction.NextEpochConstructorV3;
 import com.radixdlt.atommodel.system.construction.NextViewConstructorV3;
 import com.radixdlt.atommodel.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.atommodel.system.scrypt.RoundUpdateConstraintScrypt;
-import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV3;
@@ -77,59 +76,59 @@ public class UnstakeTokensV2Test {
 	public static Collection<Object[]> parameters() {
 		return List.of(new Object[][] {
 			{
-				List.of(UInt256.TEN),
-				UInt256.TEN,
+				List.of(10),
+				10,
 				List.of(
 					new RoundUpdateConstraintScrypt(10),
-					new EpochUpdateConstraintScrypt(10),
+					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1),
 					new TokensConstraintScryptV3(),
-					new StakingConstraintScryptV4(),
+					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScryptV2(2),
 					new ValidatorRegisterConstraintScrypt()
 				),
-				new StakeTokensConstructorV3(),
+				new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()),
 				new UnstakeOwnershipConstructor()
 			},
 			{
-				List.of(UInt256.FIVE, UInt256.FIVE),
-				UInt256.TEN,
+				List.of(5, 5),
+				10,
 				List.of(
 					new RoundUpdateConstraintScrypt(10),
-					new EpochUpdateConstraintScrypt(10),
+					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1),
 					new TokensConstraintScryptV3(),
-					new StakingConstraintScryptV4(),
+					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScryptV2(2),
 					new ValidatorRegisterConstraintScrypt()
 				),
-				new StakeTokensConstructorV3(),
+				new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()),
 				new UnstakeOwnershipConstructor()
 			},
 			{
-				List.of(UInt256.TEN),
-				UInt256.SIX,
+				List.of(10),
+				6,
 				List.of(
 					new RoundUpdateConstraintScrypt(10),
-					new EpochUpdateConstraintScrypt(10),
+					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1),
 					new TokensConstraintScryptV3(),
-					new StakingConstraintScryptV4(),
+					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScryptV2(2),
 					new ValidatorRegisterConstraintScrypt()
 				),
-				new StakeTokensConstructorV3(),
+				new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()),
 				new UnstakeOwnershipConstructor()
 			},
 			{
-				List.of(UInt256.FIVE, UInt256.FIVE),
-				UInt256.SIX,
+				List.of(5, 5),
+				6,
 				List.of(
 					new RoundUpdateConstraintScrypt(10),
-					new EpochUpdateConstraintScrypt(10),
+					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1),
 					new TokensConstraintScryptV3(),
-					new StakingConstraintScryptV4(),
+					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScryptV2(2),
 					new ValidatorRegisterConstraintScrypt()
 				),
-				new StakeTokensConstructorV3(),
+				new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()),
 				new UnstakeOwnershipConstructor()
 			},
 		});
@@ -147,15 +146,15 @@ public class UnstakeTokensV2Test {
 	private final ActionConstructor<UnstakeOwnership> unstakeTokensConstructor;
 
 	public UnstakeTokensV2Test(
-		List<UInt256> stakes,
-		UInt256 unstakeAmt,
+		List<Integer> stakes,
+		int unstakeAmt,
 		List<ConstraintScrypt> scrypts,
 		ActionConstructor<StakeTokens> stakeTokensConstructor,
 		ActionConstructor<UnstakeOwnership> unstakeTokensConstructor
 	) {
-		this.stakes = stakes.stream().map(ValidatorStakeData.MINIMUM_STAKE::multiply).collect(Collectors.toList());
+		this.stakes = stakes.stream().map(i -> Amount.ofTokens(i * 10).toSubunits()).collect(Collectors.toList());
 		this.totalStakes = this.stakes.stream().reduce(UInt256::add).orElseThrow();
-		this.unstakeAmt = ValidatorStakeData.MINIMUM_STAKE.multiply(unstakeAmt);
+		this.unstakeAmt = Amount.ofTokens(unstakeAmt * 10).toSubunits();
 		this.scrypts = scrypts;
 		this.stakeTokensConstructor = stakeTokensConstructor;
 		this.unstakeTokensConstructor = unstakeTokensConstructor;
@@ -178,7 +177,7 @@ public class UnstakeTokensV2Test {
 			ActionConstructors.newBuilder()
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.put(NextRound.class, new NextViewConstructorV3())
-				.put(NextEpoch.class, new NextEpochConstructorV3())
+				.put(NextEpoch.class, new NextEpochConstructorV3(Amount.ofTokens(10).toSubunits(), 9800, 1))
 				.put(StakeTokens.class, stakeTokensConstructor)
 				.put(UnstakeOwnership.class, unstakeTokensConstructor)
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())

@@ -19,9 +19,8 @@
 package com.radixdlt.statecomputer.radixengine;
 
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkRulesModule;
+import com.radixdlt.statecomputer.forks.RERulesVersion;
 import com.radixdlt.statecomputer.forks.RERules;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -86,7 +85,7 @@ public class TokenFeeTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
+			new RadixEngineForksLatestOnlyModule(),
 			new ForksModule(),
 			RadixEngineConfig.asModule(1, 100, 50),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
@@ -114,7 +113,7 @@ public class TokenFeeTest {
 	@Test
 	public void when_validating_atom_with_particles__result_has_no_error() throws Exception {
 		var account = REAddr.ofPubKeyAccount(ecKeyPair.getPublicKey());
-		var atom = sut.construct(new PayFee(account, MainnetForkRulesModule.FIXED_FEE))
+		var atom = sut.construct(new PayFee(account, RERulesVersion.FIXED_FEE))
 			.mutex(ecKeyPair.getPublicKey(), "test").signAndBuild(ecKeyPair::sign);
 
 		sut.execute(List.of(atom));
@@ -130,7 +129,7 @@ public class TokenFeeTest {
 	@Test
 	public void when_validating_atom_with_fee_and_no_change__result_has_no_error() throws Exception {
 		var account = REAddr.ofPubKeyAccount(ecKeyPair.getPublicKey());
-		var txn = sut.construct(new PayFee(account, MainnetForkRulesModule.FIXED_FEE))
+		var txn = sut.construct(new PayFee(account, RERulesVersion.FIXED_FEE))
 			.signAndBuild(ecKeyPair::sign);
 
 		sut.execute(List.of(txn));

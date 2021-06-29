@@ -17,7 +17,7 @@
 
 package com.radixdlt.api.chaos.mempoolfiller;
 
-import com.radixdlt.statecomputer.forks.MainnetForkRulesModule;
+import com.radixdlt.statecomputer.forks.RERulesVersion;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -123,8 +123,8 @@ public final class MempoolFiller {
 
 			var shuttingDown = radixEngineMempool.getShuttingDownSubstates();
 			var txnConstructionRequest = TxnConstructionRequest.create()
-				.action(new PayFee(account, MainnetForkRulesModule.FIXED_FEE))
-				.splitNative(REAddr.ofNativeToken(), account, MainnetForkRulesModule.FIXED_FEE.multiply(UInt256.TWO))
+				.action(new PayFee(account, RERulesVersion.FIXED_FEE))
+				.splitNative(REAddr.ofNativeToken(), account, RERulesVersion.FIXED_FEE.multiply(UInt256.TWO))
 				.avoidSubstates(shuttingDown);
 
 			var txns = new ArrayList<Txn>();

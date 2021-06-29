@@ -25,7 +25,6 @@ import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atommodel.system.state.ValidatorStakeData;
 import com.radixdlt.atommodel.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.MintTokenConstructor;
 import com.radixdlt.atommodel.tokens.construction.StakeTokensConstructorV3;
@@ -66,12 +65,16 @@ public class StakeTokensTest {
 
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
-		var startAmounts = List.of(UInt256.TEN);
-		var stakeAmounts = List.of(UInt256.TEN, UInt256.SIX);
+		var startAmounts = List.of(10);
+		var stakeAmounts = List.of(10, 6);
 		var scrypts = List.of(
 			Pair.of(
-				List.of(new TokensConstraintScryptV3(), new StakingConstraintScryptV4(), new ValidatorConstraintScryptV2(2)),
-				new StakeTokensConstructorV3()
+				List.of(
+					new TokensConstraintScryptV3(),
+					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
+					new ValidatorConstraintScryptV2(2)
+				),
+				new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits())
 			)
 		);
 
@@ -100,13 +103,13 @@ public class StakeTokensTest {
 	private final ActionConstructor<StakeTokens> stakeTokensConstructor;
 
 	public StakeTokensTest(
-		UInt256 startAmt,
-		UInt256 stakeAmt,
+		long startAmt,
+		long stakeAmt,
 		List<ConstraintScrypt> scrypts,
 		ActionConstructor<StakeTokens> stakeTokensConstructor
 	) {
-		this.startAmt = ValidatorStakeData.MINIMUM_STAKE.multiply(startAmt);
-		this.stakeAmt = ValidatorStakeData.MINIMUM_STAKE.multiply(stakeAmt);
+		this.startAmt = Amount.ofTokens(startAmt * 10).toSubunits();
+		this.stakeAmt = Amount.ofTokens(stakeAmt * 10).toSubunits();
 		this.scrypts = scrypts;
 		this.stakeTokensConstructor = stakeTokensConstructor;
 	}

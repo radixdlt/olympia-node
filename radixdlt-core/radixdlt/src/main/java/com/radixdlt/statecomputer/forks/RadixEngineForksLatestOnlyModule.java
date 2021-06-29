@@ -21,6 +21,7 @@ package com.radixdlt.statecomputer.forks;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
+import com.radixdlt.atommodel.tokens.Amount;
 
 import java.util.Comparator;
 import java.util.Set;
@@ -36,6 +37,20 @@ public class RadixEngineForksLatestOnlyModule extends AbstractModule {
 		this.config = config;
 	}
 
+	public RadixEngineForksLatestOnlyModule() {
+		this(
+			new RERulesConfig(
+				false,
+				10,
+				2,
+				Amount.ofTokens(10),
+				1,
+				Amount.ofTokens(10),
+				9800
+			)
+		);
+	}
+
 	@Override
 	protected void configure() {
 		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkConfig>>>() { })
@@ -43,7 +58,7 @@ public class RadixEngineForksLatestOnlyModule extends AbstractModule {
 			.toInstance(m ->
 				Set.of(m.stream()
 					.max(Comparator.comparingLong(ForkConfig::getEpoch))
-					.map(f -> new ForkConfig(0L, f.getName(), config))
+					.map(f -> new ForkConfig(0L, f.getName(), f.getVersion(), config))
 					.orElseThrow())
 			);
 	}

@@ -17,6 +17,7 @@
 
 package com.radixdlt.api.handler;
 
+import com.radixdlt.atommodel.tokens.Amount;
 import com.radixdlt.networks.Addressing;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,7 +27,6 @@ import com.google.inject.Inject;
 import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.api.faucet.FaucetToken;
 import com.radixdlt.api.service.SubmissionService;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.identifiers.AID;
@@ -45,7 +45,7 @@ import static java.util.Optional.empty;
 
 public class FaucetHandler {
 	private static final Logger logger = LogManager.getLogger();
-	private static final UInt256 AMOUNT = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
+	private static final UInt256 AMOUNT = Amount.ofTokens(10).toSubunits();
 
 	private final SubmissionService submissionService;
 	private final REAddr account;
