@@ -102,7 +102,14 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			var expectedPrefix = new byte[Long.BYTES + 1];
 			Longs.copyTo(expectedEpoch, expectedPrefix, 1);
 			shutdownAll.verifyPostTypePrefixEquals(expectedPrefix);
-			shutdownAll.iterator().forEachRemaining(exitting::add);
+			shutdownAll.iterator().forEachRemaining(e -> {
+				// Sanity check
+				if (e.getEpochUnlocked() != expectedEpoch) {
+					throw new IllegalStateException("Invalid shutdown of exitting stake update epoch expected "
+						+ expectedEpoch + " but was " + e.getEpochUnlocked());
+				}
+				exitting.add(e);
+			});
 			return next();
 		}
 
@@ -459,6 +466,11 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			var iter = shutdownAll.iterator();
 			while (iter.hasNext()) {
 				var preparedRakeUpdate = iter.next();
+				// Sanity check
+				if (preparedRakeUpdate.getEpoch() != expectedEpoch) {
+					throw new IllegalStateException("Invalid rake update epoch expected " + expectedEpoch
+						+ " but was " + preparedRakeUpdate.getEpoch());
+				}
 				preparingRakeUpdates.put(preparedRakeUpdate.getValidatorKey(), preparedRakeUpdate);
 			}
 			return next();
