@@ -38,7 +38,6 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Optional;
 import java.util.function.Function;
 
 public final class EventLoggerModule extends AbstractModule {
@@ -107,9 +106,8 @@ public final class EventLoggerModule extends AbstractModule {
 		return new EventProcessorOnDispatch<>(
 			LedgerUpdate.class,
 			u -> {
-				var epochChangeMaybe = (Optional<EpochChange>) u.getStateComputerOutput();
-				if (epochChangeMaybe.isPresent()) {
-					var epochChange = epochChangeMaybe.get();
+				var epochChange = u.getStateComputerOutput().getInstance(EpochChange.class);
+				if (epochChange != null) {
 					var validatorSet = epochChange.getBFTConfiguration().getValidatorSet();
 					logger.info("lgr_nepoch{epoch={} included={} num_validators={} total_stake={}}",
 						epochChange.getEpoch(),

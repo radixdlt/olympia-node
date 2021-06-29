@@ -26,9 +26,10 @@ import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.statecomputer.TxnsCommittedToLedger;
+import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.functional.Result;
 
@@ -72,8 +73,9 @@ public class TransactionStatusService {
 		scheduledCacheCleanup.dispatch(ScheduledCacheCleanup.create(), DEFAULT_CLEANUP_INTERVAL);
 	}
 
-	private void onCommit(TxnsCommittedToLedger txnsCommittedToLedger) {
-		txnsCommittedToLedger.getParsedTxs().forEach(txn -> updateStatus(txn.getTxn().getId(), CONFIRMED));
+	private void onCommit(LedgerUpdate ledgerUpdate) {
+		var output = ledgerUpdate.getStateComputerOutput().getInstance(REOutput.class);
+		output.getProcessedTxns().forEach(txn -> updateStatus(txn.getTxn().getId(), CONFIRMED));
 	}
 
 	private void onReject(MempoolAddFailure mempoolAddFailure) {
@@ -84,7 +86,7 @@ public class TransactionStatusService {
 		updateStatus(mempoolAddSuccess.getTxn().getId(), PENDING);
 	}
 
-	public EventProcessor<TxnsCommittedToLedger> atomsCommittedToLedgerEventProcessor() {
+	public EventProcessor<LedgerUpdate> ledgerUpdateProcessor() {
 		return this::onCommit;
 	}
 

@@ -33,6 +33,7 @@ import com.radixdlt.network.p2p.liveness.PeerPingTimeout;
 import com.radixdlt.network.p2p.liveness.PeersLivenessCheckTrigger;
 import com.radixdlt.network.p2p.liveness.Ping;
 import com.radixdlt.network.p2p.liveness.Pong;
+import com.radixdlt.statecomputer.REOutput;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -80,7 +81,6 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
@@ -120,12 +120,15 @@ public class DispatcherModule extends AbstractModule {
 				m -> CounterType.MEMPOOL_ERRORS_OTHER
 			))
 			.in(Scopes.SINGLETON);
+
+		// TODO: Remove, this hack required for initial genesis event emit
+		bind(new TypeLiteral<EventDispatcher<REOutput>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(REOutput.class)).in(Scopes.SINGLETON);
+
 		bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(AtomsRemovedFromMempool.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MempoolRelayTrigger.class)).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<EventDispatcher<TxnsCommittedToLedger>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(TxnsCommittedToLedger.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MessageFlooderUpdate>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MessageFlooderUpdate.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolFillerUpdate>>() { })

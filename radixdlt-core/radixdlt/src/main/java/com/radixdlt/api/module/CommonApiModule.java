@@ -31,7 +31,7 @@ import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
-import com.radixdlt.statecomputer.TxnsCommittedToLedger;
+import com.radixdlt.statecomputer.REOutput;
 
 public class CommonApiModule extends AbstractModule {
 	@Override
@@ -40,7 +40,7 @@ public class CommonApiModule extends AbstractModule {
 			.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
 			.permitDuplicates();
 		eventBinder.addBinding().toInstance(AtomsRemovedFromMempool.class);
-		eventBinder.addBinding().toInstance(TxnsCommittedToLedger.class);
+		eventBinder.addBinding().toInstance(REOutput.class);
 		eventBinder.addBinding().toInstance(MempoolAddFailure.class);
 		eventBinder.addBinding().toInstance(ScheduledCacheCleanup.class);
 		eventBinder.addBinding().toInstance(ScheduledQueueFlush.class);

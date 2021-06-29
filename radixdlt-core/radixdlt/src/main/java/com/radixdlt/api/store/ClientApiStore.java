@@ -23,7 +23,8 @@ import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.statecomputer.TxnsCommittedToLedger;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
 
@@ -100,5 +101,7 @@ public interface ClientApiStore {
 
 	EventProcessor<ScheduledQueueFlush> queueFlushProcessor();
 
-	EventProcessor<TxnsCommittedToLedger> atomsCommittedToLedgerEventProcessor();
+	EventProcessor<REOutput> atomsCommittedToLedgerEventProcessor();
+
+	EventProcessor<LedgerUpdate> ledgerUpdateProcessor();
 }

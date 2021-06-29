@@ -25,6 +25,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -282,8 +283,8 @@ public class EpochManagerTest {
 		);
 		LedgerProof proof = mock(LedgerProof.class);
 		when(proof.getEpoch()).thenReturn(header.getEpoch() + 1);
-		EpochChange epochChange = new EpochChange(proof, bftConfiguration);
-		var ledgerUpdate = new LedgerUpdate(mock(VerifiedTxnsAndProof.class), Optional.of(epochChange));
+		var epochChange = new EpochChange(proof, bftConfiguration);
+		var ledgerUpdate = new LedgerUpdate(mock(VerifiedTxnsAndProof.class), ImmutableClassToInstanceMap.of(EpochChange.class, epochChange));
 
 		// Act
 		epochManager.epochsLedgerUpdateEventProcessor().process(ledgerUpdate);

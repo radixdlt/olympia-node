@@ -60,14 +60,13 @@ import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
-import com.radixdlt.statecomputer.TxnsCommittedToLedger;
+import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
@@ -137,11 +136,14 @@ public class UnstakingLockedTokensTest {
 	public REProcessedTxn waitForCommit() {
 		var mempoolAdd = runner.runNextEventsThrough(MempoolAddSuccess.class);
 		var committed = runner.runNextEventsThrough(
-			TxnsCommittedToLedger.class,
-			c -> c.getParsedTxs().stream().anyMatch(txn -> txn.getTxn().getId().equals(mempoolAdd.getTxn().getId()))
+			LedgerUpdate.class,
+			u -> {
+				var output = u.getStateComputerOutput().getInstance(REOutput.class);
+				return output.getProcessedTxns().stream().anyMatch(txn -> txn.getTxn().getId().equals(mempoolAdd.getTxn().getId()));
+			}
 		);
 
-		return committed.getParsedTxs().stream()
+		return committed.getStateComputerOutput().getInstance(REOutput.class).getProcessedTxns().stream()
 			.filter(t -> t.getTxn().getId().equals(mempoolAdd.getTxn().getId()))
 			.findFirst()
 			.orElseThrow();
@@ -171,7 +173,10 @@ public class UnstakingLockedTokensTest {
 		if (stakingEpoch > 1) {
 			runner.runNextEventsThrough(
 				LedgerUpdate.class,
-				e -> ((Optional<EpochChange>) e.getStateComputerOutput()).map(c -> c.getEpoch() == stakingEpoch).orElse(false)
+				e -> {
+					var epochChange = e.getStateComputerOutput().getInstance(EpochChange.class);
+					return epochChange != null && epochChange.getEpoch() == stakingEpoch;
+				}
 			);
 		}
 
@@ -179,14 +184,20 @@ public class UnstakingLockedTokensTest {
 		var stakeTxn = dispatchAndWaitForCommit(new StakeTokens(accountAddr, self, Amount.ofTokens(10).toSubunits()));
 		runner.runNextEventsThrough(
 			LedgerUpdate.class,
-			e -> ((Optional<EpochChange>) e.getStateComputerOutput()).map(c -> c.getEpoch() == unstakingEpoch).orElse(false)
+			e -> {
+				var epochChange = e.getStateComputerOutput().getInstance(EpochChange.class);
+				return epochChange != null && epochChange.getEpoch() == stakingEpoch;
+			}
 		);
 		var unstakeTxn = dispatchAndWaitForCommit(new UnstakeTokens(accountAddr, self, Amount.ofTokens(10).toSubunits()));
 
 		if (transferEpoch > unstakingEpoch) {
 			runner.runNextEventsThrough(
 				LedgerUpdate.class,
-				e -> ((Optional<EpochChange>) e.getStateComputerOutput()).map(c -> c.getEpoch() == transferEpoch).orElse(false)
+				e -> {
+					var epochChange = e.getStateComputerOutput().getInstance(EpochChange.class);
+					return epochChange != null && epochChange.getEpoch() == stakingEpoch;
+				}
 			);
 		}
 

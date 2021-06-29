@@ -35,7 +35,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.statecomputer.TxnsCommittedToLedger;
+import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.store.LastEpochProof;
@@ -57,14 +57,14 @@ public final class LedgerRecoveryModule extends AbstractModule {
 		RadixEngine<LedgerAndBFTProof> radixEngine, // TODO: Remove
 		CommittedReader committedReader,
 		@Genesis VerifiedTxnsAndProof genesis,
-		EventDispatcher<TxnsCommittedToLedger> committedDispatcher // FIXME: this is hack so client can get genesis
+		EventDispatcher<REOutput> committedDispatcher // FIXME: this is hack so client can get genesis
 	) {
 		return committedReader.getLastProof().orElseGet(() -> {
 			var txns = genesis.getTxns();
 			var proof = LedgerAndBFTProof.create(genesis.getProof());
 			try {
 				var parsed = radixEngine.execute(txns, proof, PermissionLevel.SYSTEM);
-				committedDispatcher.dispatch(TxnsCommittedToLedger.create(parsed));
+				committedDispatcher.dispatch(REOutput.create(parsed));
 			} catch (RadixEngineException e) {
 				throw new IllegalStateException("Error during node initialization", e);
 			}

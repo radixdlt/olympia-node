@@ -66,7 +66,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
@@ -250,11 +249,12 @@ public final class EpochManager {
 	}
 
 	private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
-		var epochChange = (Optional<EpochChange>) ledgerUpdate.getStateComputerOutput();
-		epochChange.ifPresentOrElse(
-			this::processEpochChange,
-			() -> this.syncLedgerUpdateProcessor.process(ledgerUpdate)
-		);
+		var epochChange = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
+		if (epochChange != null) {
+			this.processEpochChange(epochChange);
+		} else {
+			this.syncLedgerUpdateProcessor.process(ledgerUpdate);
+		}
 	}
 
 	private void processEpochChange(EpochChange epochChange) {

@@ -17,6 +17,7 @@
 
 package com.radixdlt.statecomputer;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.BFTConfiguration;
@@ -82,7 +83,7 @@ public final class MockedStateComputer implements StateComputer {
 
 	@Override
 	public void commit(VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
-		Optional<EpochChange> epochChangeOptional = txnsAndProof.getProof().getNextValidatorSet().map(validatorSet -> {
+		var output = txnsAndProof.getProof().getNextValidatorSet().map(validatorSet -> {
 			LedgerProof header = txnsAndProof.getProof();
 			UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(header.getRaw());
 			VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
@@ -103,9 +104,9 @@ public final class MockedStateComputer implements StateComputer {
 			var proposerElection = new WeightedRotatingLeaders(validatorSet);
 			var bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, initialState);
 			return new EpochChange(header, bftConfiguration);
-		});
+		}).map(e -> ImmutableClassToInstanceMap.<Object, EpochChange>of(EpochChange.class, e)).orElse(ImmutableClassToInstanceMap.of());
 
-		var ledgerUpdate = new LedgerUpdate(txnsAndProof, epochChangeOptional);
+		var ledgerUpdate = new LedgerUpdate(txnsAndProof, output);
 		ledgerUpdateDispatcher.dispatch(ledgerUpdate);
 	}
 }

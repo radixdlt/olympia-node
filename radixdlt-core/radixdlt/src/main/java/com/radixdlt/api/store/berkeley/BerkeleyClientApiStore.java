@@ -18,6 +18,7 @@
 package com.radixdlt.api.store.berkeley;
 
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.networks.Addressing;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -56,7 +57,7 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.TxnsCommittedToLedger;
+import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt384;
@@ -148,7 +149,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final Serialization serialization;
 	private final SystemCounters systemCounters;
 	private final ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher;
-	private final StackingCollector<TxnsCommittedToLedger> txCollector = StackingCollector.create();
+	private final StackingCollector<REOutput> txCollector = StackingCollector.create();
 	private final AtomicReference<Instant> currentTimestamp = new AtomicReference<>(NOW);
 	private final AtomicLong currentEpoch = new AtomicLong(0);
 	private final AtomicLong currentRound = new AtomicLong(0);
@@ -625,17 +626,27 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
-	public EventProcessor<TxnsCommittedToLedger> atomsCommittedToLedgerEventProcessor() {
+	public EventProcessor<REOutput> atomsCommittedToLedgerEventProcessor() {
 		return this::newBatch;
 	}
 
-	private void newBatch(TxnsCommittedToLedger transactions) {
+	@Override
+	public EventProcessor<LedgerUpdate> ledgerUpdateProcessor() {
+		return u -> {
+			var output = u.getStateComputerOutput().getInstance(REOutput.class);
+			if (output != null) {
+				this.newBatch(output);
+			}
+		};
+	}
+
+	private void newBatch(REOutput transactions) {
 		txCollector.push(transactions);
 		systemCounters.increment(COUNT_APIDB_QUEUE_SIZE);
 	}
 
-	private void storeTransactionBatch(TxnsCommittedToLedger act) {
-		act.getParsedTxs().forEach(this::processRETransaction);
+	private void storeTransactionBatch(REOutput act) {
+		act.getProcessedTxns().forEach(this::processRETransaction);
 	}
 
 	private JSONObject accountingJson(

@@ -47,7 +47,6 @@ import com.radixdlt.utils.Pair;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -187,9 +186,8 @@ public class SimulationNodes {
 				Set<Observable<EpochChange>> epochChanges = nodeInstances.stream()
 					.map(i -> i.getInstance(Key.get(new TypeLiteral<Observable<LedgerUpdate>>() { })))
 					.map(o -> o
-						.map(u -> (Optional<EpochChange>) u.getStateComputerOutput())
-						.filter(u -> u.isPresent())
-						.map(u -> u.get())
+						.map(u -> u.getStateComputerOutput().getInstance(EpochChange.class))
+						.filter(Objects::nonNull)
 					)
 					.collect(Collectors.toSet());
 
