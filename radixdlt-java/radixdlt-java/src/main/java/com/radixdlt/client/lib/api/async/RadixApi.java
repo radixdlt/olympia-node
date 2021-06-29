@@ -48,6 +48,7 @@ import com.radixdlt.client.lib.dto.TokenInfo;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
+import com.radixdlt.client.lib.dto.TxBlobDTO;
 import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
@@ -93,7 +94,7 @@ public interface RadixApi {
 	interface Transaction {
 		Promise<BuiltTransaction> build(TransactionRequest request);
 
-		Promise<TxDTO> finalize(FinalizedTransaction request);
+		Promise<TxBlobDTO> finalize(FinalizedTransaction request);
 
 		Promise<TxDTO> submit(FinalizedTransaction request);
 

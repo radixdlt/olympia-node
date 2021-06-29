@@ -45,6 +45,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -122,10 +123,10 @@ public class ConstructionHandlerTest {
 
 	@Test
 	public void testFinalizeTransactionPositional() {
-		var aid = AID.from(randomBytes());
+		var txn = Txn.create(randomBytes());
 
-		when(submissionService.calculateTxId(any(), any()))
-			.thenReturn(Result.ok(aid));
+		when(submissionService.finalizeTxn(any(), any(), anyBoolean()))
+			.thenReturn(Result.ok(txn));
 
 		var blob = randomBytes();
 		var hash = HashUtils.sha256(blob).asBytes();
@@ -150,16 +151,18 @@ public class ConstructionHandlerTest {
 		var result = response.getJSONObject("result");
 
 		assertTrue(result.has("txID"));
+		assertTrue(result.has("blob"));
 
-		assertEquals(aid, result.get("txID"));
+		assertEquals(txn.getId(), result.get("txID"));
+		assertEquals(Hex.toHexString(txn.getPayload()), result.get("blob"));
 	}
 
 	@Test
 	public void testFinalizeTransactionNamed() {
-		var aid = AID.from(randomBytes());
+		var txn = Txn.create(randomBytes());
 
-		when(submissionService.calculateTxId(any(), any()))
-			.thenReturn(Result.ok(aid));
+		when(submissionService.finalizeTxn(any(), any(), anyBoolean()))
+			.thenReturn(Result.ok(txn));
 
 		var blob = randomBytes();
 		var hash = HashUtils.sha256(blob).asBytes();
@@ -184,32 +187,23 @@ public class ConstructionHandlerTest {
 		var result = response.getJSONObject("result");
 
 		assertTrue(result.has("txID"));
+		assertTrue(result.has("blob"));
 
-		assertEquals(aid, result.get("txID"));
+		assertEquals(txn.getId(), result.get("txID"));
+		assertEquals(Hex.toHexString(txn.getPayload()), result.get("blob"));
 	}
 
 	@Test
 	public void testSubmitTransactionPositional() {
-		var aid = AID.from(randomBytes());
-
-		when(submissionService.submitTx(any(), any(), any()))
-			.thenReturn(Result.ok(aid));
-
 		var blob = randomBytes();
-		var hash = HashUtils.sha256(blob).asBytes();
+		var txn = Txn.create(blob);
 
-		var transaction = jsonObject()
-			.put("blob", Hex.toHexString(blob))
-			.put("hashOfBlobToSign", Hex.toHexString(hash));
+		when(submissionService.submitTx(any(), any()))
+			.thenReturn(Result.ok(txn));
 
-		var keyPair = ECKeyPair.generateNew();
-
-		var signature = keyPair.sign(hash);
 		var params = jsonArray()
-			.put(transaction)
-			.put(encodeToDer(signature))
-			.put(keyPair.getPublicKey().toHex())
-			.put(aid.toString());
+			.put(Hex.toHexString(blob))
+			.put(txn.getId().toString());
 
 		var response = handler.handleConstructionSubmitTransaction(requestWith(params));
 
@@ -219,32 +213,20 @@ public class ConstructionHandlerTest {
 		var result = response.getJSONObject("result");
 
 		assertTrue(result.has("txID"));
-
-		assertEquals(aid, result.get("txID"));
+		assertEquals(txn.getId(), result.get("txID"));
 	}
 
 	@Test
 	public void testSubmitTransactionNamed() {
-		var aid = AID.from(randomBytes());
-
-		when(submissionService.submitTx(any(), any(), any()))
-			.thenReturn(Result.ok(aid));
-
 		var blob = randomBytes();
-		var hash = HashUtils.sha256(blob).asBytes();
+		var txn = Txn.create(blob);
 
-		var transaction = jsonObject()
-			.put("blob", Hex.toHexString(blob))
-			.put("hashOfBlobToSign", Hex.toHexString(hash));
+		when(submissionService.submitTx(any(), any()))
+			.thenReturn(Result.ok(txn));
 
-		var keyPair = ECKeyPair.generateNew();
-
-		var signature = keyPair.sign(hash);
 		var params = jsonObject()
-			.put("transaction", transaction)
-			.put("signatureDER", encodeToDer(signature))
-			.put("publicKeyOfSigner", keyPair.getPublicKey().toHex())
-			.put("txID", aid.toString());
+			.put("blob", Hex.toHexString(blob))
+			.put("txID", txn.getId().toJson());
 
 		var response = handler.handleConstructionSubmitTransaction(requestWith(params));
 
@@ -255,24 +237,23 @@ public class ConstructionHandlerTest {
 
 		assertTrue(result.has("txID"));
 
-		assertEquals(aid, result.get("txID"));
+		assertEquals(txn.getId(), result.get("txID"));
 	}
 
 	private String encodeToDer(ECDSASignature signature) {
 		try {
-			ASN1EncodableVector vector = new ASN1EncodableVector();
+			var vector = new ASN1EncodableVector();
 			vector.add(new ASN1Integer(signature.getR()));
 			vector.add(new ASN1Integer(signature.getS()));
 
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			ASN1OutputStream asnOS = ASN1OutputStream.create(baos);
-
+			var baos = new ByteArrayOutputStream();
+			var asnOS = ASN1OutputStream.create(baos);
 			asnOS.writeObject(new DERSequence(vector));
 			asnOS.flush();
 
 			return Hex.toHexString(baos.toByteArray());
 		} catch (Exception e) {
-			fail();
+			fail(e.getMessage());
 			return null;
 		}
 	}

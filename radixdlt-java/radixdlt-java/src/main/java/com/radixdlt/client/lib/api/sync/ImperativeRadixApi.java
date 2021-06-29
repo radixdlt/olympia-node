@@ -48,6 +48,7 @@ import com.radixdlt.client.lib.dto.TokenInfo;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
+import com.radixdlt.client.lib.dto.TxBlobDTO;
 import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
@@ -88,7 +89,7 @@ public interface ImperativeRadixApi {
 	interface Transaction {
 		BuiltTransaction build(TransactionRequest request);
 
-		TxDTO finalize(FinalizedTransaction request);
+		TxBlobDTO finalize(FinalizedTransaction request);
 
 		TxDTO submit(FinalizedTransaction request);
 
@@ -250,7 +251,7 @@ public interface ImperativeRadixApi {
 					}
 
 					@Override
-					public TxDTO finalize(FinalizedTransaction request) {
+					public TxBlobDTO finalize(FinalizedTransaction request) {
 						return unwrap(api.transaction().finalize(request));
 					}
 

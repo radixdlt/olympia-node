@@ -58,6 +58,7 @@ import com.radixdlt.client.lib.dto.TokenInfo;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
+import com.radixdlt.client.lib.dto.TxBlobDTO;
 import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
@@ -192,7 +193,7 @@ class SyncRadixApi implements RadixApi {
 		}
 
 		@Override
-		public Result<TxDTO> finalize(FinalizedTransaction request) {
+		public Result<TxBlobDTO> finalize(FinalizedTransaction request) {
 			return call(
 				request(CONSTRUCTION_FINALIZE, request.getBlob(), request.getSignature(), request.getPublicKey()),
 				new TypeReference<>() {}
@@ -202,7 +203,7 @@ class SyncRadixApi implements RadixApi {
 		@Override
 		public Result<TxDTO> submit(FinalizedTransaction request) {
 			return call(
-				request(CONSTRUCTION_SUBMIT, request.getBlob(), request.getSignature(), request.getPublicKey(), request.getTxId()),
+				request(CONSTRUCTION_SUBMIT, request.getBlob(), request.getTxId()),
 				new TypeReference<>() {}
 			);
 		}
