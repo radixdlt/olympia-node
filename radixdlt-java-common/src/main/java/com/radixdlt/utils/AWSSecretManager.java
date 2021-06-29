@@ -16,12 +16,16 @@ import software.amazon.awssdk.services.secretsmanager.model.SecretsManagerExcept
 import software.amazon.awssdk.services.secretsmanager.model.Tag;
 import software.amazon.awssdk.services.secretsmanager.model.UpdateSecretRequest;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 
@@ -29,7 +33,6 @@ public class AWSSecretManager {
     private AWSSecretManager() {
 
     }
-    private static Region defaultRegion = Region.EU_WEST_2;
 
     public static void createSecret(String secretName, Object secretValue, String network, Region region, boolean binarySecret) {
         removeBouncyCastleSecurityProvider();
@@ -40,17 +43,24 @@ public class AWSSecretManager {
         String secretARN = createNewSecret(secretsClient, secretName, secretValue, network, binarySecret);
         System.out.println("Secret created with ARN " + secretARN);
         secretsClient.close();
-
     }
 
+    public static void createSecret(String secretName, String secretValue, String network, String region) {
+        boolean binarySecret = false;
+        createSecret(secretName, secretValue, network, Region.of(region), binarySecret);
+    }
     public static void createSecret(String secretName, String secretValue, String network) {
         boolean binarySecret = false;
-        createSecret(secretName, secretValue, network, defaultRegion, binarySecret);
+        createSecret(secretName, secretValue, network, getRegion(), binarySecret);
     }
 
+    public static void createBinarySecret(String secretName, SdkBytes secretValue, String network, String region) {
+        boolean binarySecret = true;
+        createSecret(secretName, secretValue, network, Region.of(region), binarySecret);
+    }
     public static void createBinarySecret(String secretName, SdkBytes secretValue, String network) {
         boolean binarySecret = true;
-        createSecret(secretName, secretValue, network, defaultRegion, binarySecret);
+        createSecret(secretName, secretValue, network, getRegion(), binarySecret);
     }
 
     public static String getSecret(String secretName, Region region) {
@@ -64,8 +74,24 @@ public class AWSSecretManager {
         return secret;
     }
 
+    public static void downloadPrivateKey(String secretName, String destFile, Region region) throws IOException {
+        System.out.format("About to download private key for %s %n", secretName);
+        removeBouncyCastleSecurityProvider();
+
+        SecretsManagerClient secretsClient = SecretsManagerClient.builder()
+            .region(region)
+            .build();
+        SdkBytes secret = getBinaryValue(secretsClient, secretName);
+        secretsClient.close();
+
+        uncompressData(secret, destFile);
+    }
+    public static void downloadPrivateKey(String secretName, String destFile) throws IOException {
+        downloadPrivateKey(secretName, destFile, getRegion());
+    }
+
     public static String getSecret(String secretName) {
-        return getSecret(secretName, defaultRegion);
+        return getSecret(secretName, getRegion());
     }
 
     public static boolean awsSecretExists(String secretName) {
@@ -102,11 +128,17 @@ public class AWSSecretManager {
     }
 
     public static void updateBinarySecret(String secretName, SdkBytes secretValue) {
-        updateBinarySecret(secretName, secretValue, defaultRegion);
+        updateBinarySecret(secretName, secretValue, getRegion());
+    }
+
+    private static Region getRegion() {
+        String regionEnv = Optional.ofNullable((System.getenv("AWS_DEFAULT_REGION"))).orElse("eu-west-2");
+        Region region = Region.of(regionEnv);
+        return region;
     }
 
     public static void updateSecret(String secretName, String secretValue) {
-        updateSecret(secretName, secretValue, defaultRegion);
+        updateSecret(secretName, secretValue, getRegion());
     }
 
     private static void updateMySecret(SecretsManagerClient secretsClient, String secretName, String secretValue) {
@@ -135,6 +167,14 @@ public class AWSSecretManager {
         GetSecretValueResponse valueResponse = secretsClient.getSecretValue(valueRequest);
         return valueResponse.secretString();
 
+    }
+    private static SdkBytes getBinaryValue(SecretsManagerClient secretsClient, String secretName) {
+        GetSecretValueRequest valueRequest = GetSecretValueRequest.builder()
+            .secretId(secretName)
+            .build();
+
+        GetSecretValueResponse valueResponse = secretsClient.getSecretValue(valueRequest);
+        return valueResponse.secretBinary();
     }
 
     private static String createNewSecret(
@@ -212,6 +252,26 @@ public class AWSSecretManager {
         bos.close();
         return compressed;
     }
+
+    private static void uncompressData(SdkBytes data, String destFile) throws IOException {
+        try {
+
+            ByteArrayInputStream bis = new ByteArrayInputStream(data.asByteArray());
+            GZIPInputStream gZIPInputStream = new GZIPInputStream(bis);
+            FileOutputStream fileOutputStream = new FileOutputStream(destFile);
+            int bytesRead;
+            byte[] buffer = new byte[1024];
+            while ((bytesRead = gZIPInputStream.read(buffer)) > 0) {
+                fileOutputStream.write(buffer, 0, bytesRead);
+            }
+            gZIPInputStream.close();
+            fileOutputStream.close();
+            System.out.format("Data decompressed successfully %n");
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+}
 
     public static void updateAWSSecret(
         Map<String, Object> awsSecret,

@@ -186,7 +186,7 @@ class SyncRadixApi implements RadixApi {
 		@Override
 		public Result<BuiltTransaction> build(TransactionRequest request) {
 			return call(
-				request(CONSTRUCTION_BUILD, request.getActions(), request.getMessage()),
+				request(CONSTRUCTION_BUILD, request.getActions(), request.getFeePayer(), request.getMessage()),
 				new TypeReference<>() {}
 			);
 		}
@@ -511,6 +511,6 @@ class SyncRadixApi implements RadixApi {
 				   ? primaryPort
 				   : secondaryPort;
 
-		return trace(baseUrl + ":" + port + endPoint.path());
+		return baseUrl + ":" + port + endPoint.path();
 	}
 }

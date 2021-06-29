@@ -34,6 +34,7 @@ import com.radixdlt.network.p2p.transport.handshake.AuthHandshaker;
 import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
 import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
 import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.RateCalculator;
 import com.radixdlt.utils.functional.Result;
@@ -78,6 +79,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 	private final Flowable<InboundMessage> inboundMessages;
 
 	private final SystemCounters counters;
+	private final Addressing addressing;
 	private final EventDispatcher<PeerEvent> peerEventDispatcher;
 	private final PeerControl peerControl;
 	private final Optional<RadixNodeUri> uri;
@@ -93,6 +95,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 
 	public PeerChannel(
 		P2PConfig config,
+		Addressing addressing,
 		int magic,
 		SystemCounters counters,
 		Serialization serialization,
@@ -104,6 +107,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		SocketChannel nettyChannel
 	) {
 		this.counters = Objects.requireNonNull(counters);
+		this.addressing = Objects.requireNonNull(addressing);
 		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
 		this.peerControl = Objects.requireNonNull(peerControl);
 		this.uri = Objects.requireNonNull(uri);
@@ -205,6 +209,15 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) {
+		log.info("Channel closed {} at state {} [initiator ?= {}, remoteNodeId = {}, nodeAddress = {}, uri = {}]",
+			ctx.channel().remoteAddress(),
+			this.state,
+			this.isInitiator,
+			this.remoteNodeId != null ? this.remoteNodeId : "unknown",
+		 	this.remoteNodeId != null ? addressing.forNodes().of(this.remoteNodeId.getPublicKey()) : "unknown",
+			this.uri
+		);
+
 		final var prevState = this.state;
 		this.state = ChannelState.INACTIVE;
 		this.inboundMessageSink.onComplete();
@@ -216,7 +229,16 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-		log.info("Channel {} closed with exception: {}", ctx.channel().remoteAddress(), cause.getMessage());
+		log.warn("Exception on channel {} at state {} [initiator ?= {}, remoteNodeId = {}, nodeAddress = {}, uri = {}]: {}",
+			ctx.channel().remoteAddress(),
+			this.state,
+			this.isInitiator,
+			this.remoteNodeId != null ? this.remoteNodeId : "unknown",
+			this.remoteNodeId != null ? addressing.forNodes().of(this.remoteNodeId.getPublicKey()) : "unknown",
+			this.uri,
+			cause.getMessage()
+		);
+
 		ctx.close();
 	}
 

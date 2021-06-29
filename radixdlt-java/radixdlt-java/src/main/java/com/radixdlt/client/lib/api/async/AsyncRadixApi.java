@@ -198,7 +198,7 @@ public class AsyncRadixApi implements RadixApi {
 		@Override
 		public Promise<BuiltTransaction> build(TransactionRequest request) {
 			return call(
-				request(CONSTRUCTION_BUILD, request.getActions(), request.getMessage()),
+				request(CONSTRUCTION_BUILD, request.getActions(), request.getFeePayer(), request.getMessage()),
 				new TypeReference<>() {}
 			);
 		}
@@ -529,7 +529,7 @@ public class AsyncRadixApi implements RadixApi {
 				   ? primaryPort
 				   : secondaryPort;
 
-		return trace(URI.create(baseUrl + ":" + port + endPoint.path()));
+		return URI.create(baseUrl + ":" + port + endPoint.path());
 	}
 
 	private static Result<HttpClient> buildHttpClient() {

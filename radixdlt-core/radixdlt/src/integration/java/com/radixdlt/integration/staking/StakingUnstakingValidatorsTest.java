@@ -18,6 +18,18 @@
 
 package com.radixdlt.integration.staking;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.radix.TokenIssuance;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
@@ -34,6 +46,13 @@ import com.google.inject.util.Modules;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.application.NodeApplicationRequest;
+import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.tokens.state.ExittingStake;
+import com.radixdlt.application.tokens.state.PreparedStake;
+import com.radixdlt.application.tokens.state.TokensInAccount;
+import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.validators.state.PreparedRakeUpdate;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.RegisterValidator;
@@ -44,13 +63,6 @@ import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
 import com.radixdlt.atom.actions.UpdateRake;
 import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.application.tokens.state.ExittingStake;
-import com.radixdlt.application.tokens.state.PreparedStake;
-import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.application.validators.state.PreparedRakeUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -96,18 +108,6 @@ import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
-import io.reactivex.rxjava3.schedulers.Timed;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.ThreadContext;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.radix.TokenIssuance;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -121,6 +121,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.reactivex.rxjava3.schedulers.Timed;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(Parameterized.class)
@@ -132,7 +134,7 @@ public class StakingUnstakingValidatorsTest {
 
 	@Parameterized.Parameters
 	public static Collection<Object[]> forksModule() {
-		return List.of(new Object[][] {
+		return List.of(new Object[][]{
 			{new RadixEngineForksLatestOnlyModule(config.overrideMaxRounds(100)), 100, null},
 			{new ForkOverwritesWithShorterEpochsModule(config), 10, null},
 			{
@@ -194,14 +196,14 @@ public class StakingUnstakingValidatorsTest {
 				public void configure() {
 					bind(CommittedReader.class).toInstance(CommittedReader.mocked());
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
+					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() {}).toInstance(new InMemoryEngineStore<>());
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
+					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() {}).annotatedWith(Genesis.class)
 						.toInstance(nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
 
 					nodeKeys.forEach(key ->
-						Multibinder.newSetBinder(binder(), TokenIssuance.class)
-							.addBinding().toInstance(TokenIssuance.of(key.getPublicKey(), Amount.ofTokens(10 * 10).toSubunits()))
+										 Multibinder.newSetBinder(binder(), TokenIssuance.class)
+											 .addBinding().toInstance(TokenIssuance.of(key.getPublicKey(), Amount.ofTokens(10 * 10).toSubunits()))
 					);
 				}
 			}
@@ -229,8 +231,8 @@ public class StakingUnstakingValidatorsTest {
 
 	private Injector createRunner(boolean byzantine, ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		var reConfig = byzantine && byzantineModule != null
-			? Modules.override(this.radixEngineConfiguration).with(byzantineModule)
-			: this.radixEngineConfiguration;
+					   ? Modules.override(this.radixEngineConfiguration).with(byzantineModule)
+					   : this.radixEngineConfiguration;
 
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
@@ -241,14 +243,14 @@ public class StakingUnstakingValidatorsTest {
 				protected void configure() {
 					bind(VerifiedTxnsAndProof.class).annotatedWith(Genesis.class).toInstance(genesis);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
-					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
+					bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
-					bind(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() { })
+					bind(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() {})
 						.toInstance(new DeterministicSavedLastEvent<>(LedgerUpdate.class));
-					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() { })
-						.addBinding().toProvider(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() { });
+					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() {})
+						.addBinding().toProvider(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() {});
 				}
 
 				@ProvidesIntoSet
@@ -348,9 +350,7 @@ public class StakingUnstakingValidatorsTest {
 			var forkConfig = forks.get(getEpoch());
 			var reParser = forkConfig.getParser();
 			Map<BFTNode, Map<String, String>> map = entryStore.reduceUpParticles(
-				ValidatorStakeData.class,
-				new HashMap<>(),
-				(i, p) -> {
+				new HashMap<>(), (i, p) -> {
 					var stakeData = (ValidatorStakeData) p;
 					var data = new HashMap<String, String>();
 					data.put("stake", stakeData.getAmount().toString());
@@ -358,13 +358,12 @@ public class StakingUnstakingValidatorsTest {
 					i.put(BFTNode.create(stakeData.getValidatorKey()), data);
 					return i;
 				},
-				reParser.getSubstateDeserialization()
+				reParser.getSubstateDeserialization(),
+				ValidatorStakeData.class
 			);
 
 			entryStore.reduceUpParticles(
-				AllowDelegationFlag.class,
-				map,
-				(i, p) -> {
+				map, (i, p) -> {
 					var flag = (AllowDelegationFlag) p;
 					var data = new HashMap<String, String>();
 					data.put("allowDelegation", Boolean.toString(flag.allowsDelegation()));
@@ -374,44 +373,54 @@ public class StakingUnstakingValidatorsTest {
 					});
 					return i;
 				},
-				reParser.getSubstateDeserialization()
+				reParser.getSubstateDeserialization(),
+				AllowDelegationFlag.class
 			);
 			return map;
 		}
 
+		@SuppressWarnings("unchecked")
 		public UInt256 getTotalNativeTokens() {
 			var forkConfig = forks.get(getEpoch());
 			var reParser = forkConfig.getParser();
-			var totalTokens = entryStore.reduceUpParticles(TokensInAccount.class, UInt256.ZERO,
+			var totalTokens = entryStore.reduceUpParticles(
+				UInt256.ZERO,
 				(i, p) -> {
 					var tokens = (TokensInAccount) p;
 					return i.add(tokens.getAmount());
 				},
-				reParser.getSubstateDeserialization()
+				reParser.getSubstateDeserialization(),
+				TokensInAccount.class
 			);
 			logger.info("Total tokens: {}", Amount.ofSubunits(totalTokens));
-			var totalStaked = entryStore.reduceUpParticles(ValidatorStakeData.class, UInt256.ZERO,
+			var totalStaked = entryStore.reduceUpParticles(
+				UInt256.ZERO,
 				(i, p) -> {
 					var tokens = (ValidatorStakeData) p;
 					return i.add(tokens.getAmount());
 				},
-				reParser.getSubstateDeserialization()
+				reParser.getSubstateDeserialization(),
+				ValidatorStakeData.class
 			);
 			logger.info("Total staked: {}", Amount.ofSubunits(totalStaked));
-			var totalStakePrepared = entryStore.reduceUpParticles(PreparedStake.class, UInt256.ZERO,
+			var totalStakePrepared = entryStore.reduceUpParticles(
+				UInt256.ZERO,
 				(i, p) -> {
 					var tokens = (PreparedStake) p;
 					return i.add(tokens.getAmount());
 				},
-				reParser.getSubstateDeserialization()
+				reParser.getSubstateDeserialization(),
+				PreparedStake.class
 			);
 			logger.info("Total preparing stake: {}", Amount.ofSubunits(totalStakePrepared));
-			var totalStakeExitting = entryStore.reduceUpParticles(ExittingStake.class, UInt256.ZERO,
+			var totalStakeExitting = entryStore.reduceUpParticles(
+				UInt256.ZERO,
 				(i, p) -> {
 					var tokens = (ExittingStake) p;
 					return i.add(tokens.getAmount());
 				},
-				reParser.getSubstateDeserialization()
+				reParser.getSubstateDeserialization(),
+				ExittingStake.class
 			);
 			logger.info("Total exitting stake: {}", Amount.ofSubunits(totalStakeExitting));
 			var total = totalTokens.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting);
@@ -439,7 +448,7 @@ public class StakingUnstakingValidatorsTest {
 
 			var nodeIndex = random.nextInt(nodeKeys.size());
 			var dispatcher = this.nodes.get(nodeIndex).getInstance(
-				Key.get(new TypeLiteral<EventDispatcher<NodeApplicationRequest>>() { })
+				Key.get(new TypeLiteral<EventDispatcher<NodeApplicationRequest>>() {})
 			);
 
 			var privKey = nodeKeys.get(nodeIndex);
@@ -489,8 +498,8 @@ public class StakingUnstakingValidatorsTest {
 			var request = TxnConstructionRequest.create().action(action);
 			dispatcher.dispatch(NodeApplicationRequest.create(request));
 			this.nodes.forEach(n -> {
-				n.getInstance(new Key<EventDispatcher<MempoolRelayTrigger>>() { }).dispatch(MempoolRelayTrigger.create());
-				n.getInstance(new Key<EventDispatcher<SyncCheckTrigger>>() { }).dispatch(SyncCheckTrigger.create());
+				n.getInstance(new Key<EventDispatcher<MempoolRelayTrigger>>() {}).dispatch(MempoolRelayTrigger.create());
+				n.getInstance(new Key<EventDispatcher<SyncCheckTrigger>>() {}).dispatch(SyncCheckTrigger.create());
 			});
 		}
 
