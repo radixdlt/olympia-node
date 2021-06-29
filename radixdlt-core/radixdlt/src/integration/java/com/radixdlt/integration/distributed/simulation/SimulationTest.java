@@ -46,6 +46,8 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.network.p2p.NoOpPeerControl;
 import com.radixdlt.network.p2p.PeerControl;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
@@ -343,7 +345,7 @@ public class SimulationTest {
 			modules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
-					install(RadixEngineConfig.asModule(minValidators, maxValidators, 50));
+					install(RadixEngineConfig.asModule(minValidators, maxValidators));
 					bind(SyncConfig.class).toInstance(syncConfig);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
 				}
@@ -354,17 +356,18 @@ public class SimulationTest {
 				protected void configure() {
 					install(new MockedCryptoModule());
 					install(new RadixEngineModule());
-					install(RadixEngineConfig.asModule(minValidators, maxValidators, 50));
+					install(RadixEngineConfig.asModule(minValidators, maxValidators));
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
 						.toInstance(nodes.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
+					bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
 				}
 			});
 
 			this.testModules.add(
-				RadixEngineConfig.asModule(minValidators, maxValidators, 50)
+				RadixEngineConfig.asModule(minValidators, maxValidators)
 			);
 
 			return this;
@@ -438,6 +441,7 @@ public class SimulationTest {
 						.toInstance(nodes.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
+					bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
 					install(new MockedCryptoModule());
 					install(new RadixEngineModule());
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
@@ -510,6 +514,7 @@ public class SimulationTest {
 				@Override
 				public void configure() {
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+					bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
 					bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
 					bindConstant().annotatedWith(PacemakerTimeout.class).to(pacemakerTimeout);
 					bindConstant().annotatedWith(PacemakerRate.class).to(2.0);

@@ -31,6 +31,8 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.deterministic.DeterministicEnvironmentModule;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.store.PersistenceModule;
@@ -59,6 +61,8 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
 
 		// P2P
 		bind(PeerControl.class).toInstance(new NoOpPeerControl());
+
+		bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
 
 		install(new InMemoryBFTKeyModule());
 		install(new CryptoModule());

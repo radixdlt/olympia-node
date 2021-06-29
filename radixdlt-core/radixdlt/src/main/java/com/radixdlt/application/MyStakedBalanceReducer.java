@@ -19,8 +19,8 @@
 package com.radixdlt.application;
 
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.system.state.StakeOwnership;
-import com.radixdlt.atommodel.system.state.ValidatorStakeData;
+import com.radixdlt.application.system.state.StakeOwnership;
+import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.StateReducer;

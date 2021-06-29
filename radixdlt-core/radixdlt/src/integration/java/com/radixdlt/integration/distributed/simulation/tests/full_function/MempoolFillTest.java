@@ -36,7 +36,6 @@ import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.Rad
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.sync.SyncConfig;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -62,7 +61,7 @@ public class MempoolFillTest {
 		)
 		.fullFunctionNodes(SyncConfig.of(800L, 10, 5000L))
 		.addRadixEngineConfigModules(
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10, 2)),
+			new RadixEngineForksLatestOnlyModule(),
 			new ForksModule()
 		)
 		.addNodeModule(new AbstractModule() {

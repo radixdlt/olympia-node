@@ -17,12 +17,12 @@
 
 package com.radixdlt.api.handler;
 
+import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.api.service.TokenService;
-import com.radixdlt.api.store.TokenDefinitionRecord;
 
 import static com.radixdlt.api.JsonRpcUtil.invalidParamsError;
 import static com.radixdlt.api.JsonRpcUtil.response;
@@ -31,15 +31,20 @@ import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
 @Singleton
 public class ArchiveTokenHandler {
 	private final TokenService tokenService;
+	private final Addressing addressing;
 
 	@Inject
-	public ArchiveTokenHandler(TokenService tokenService) {
+	public ArchiveTokenHandler(
+		TokenService tokenService,
+		Addressing addressing
+	) {
 		this.tokenService = tokenService;
+		this.addressing = addressing;
 	}
 
 	public JSONObject handleTokensGetNativeToken(JSONObject request) {
 		return tokenService.getNativeTokenDescription()
-			.map(TokenDefinitionRecord::asJson)
+			.map(r -> r.asJson(addressing))
 			.fold(failure -> invalidParamsError(request, failure.message()), response -> response(request, response));
 	}
 
@@ -48,7 +53,7 @@ public class ArchiveTokenHandler {
 			request,
 			"rri",
 			tokenId -> tokenService.getTokenDescription(tokenId)
-				.map(TokenDefinitionRecord::asJson)
+				.map(r -> r.asJson(addressing))
 		);
 	}
 }

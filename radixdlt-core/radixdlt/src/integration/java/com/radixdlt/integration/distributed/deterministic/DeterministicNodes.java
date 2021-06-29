@@ -23,6 +23,7 @@ import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -91,12 +92,12 @@ public final class DeterministicNodes {
 		for (int index = 0; index < this.nodeInstances.size(); index++) {
 			Injector injector = nodeInstances.get(index);
 			var processor = injector.getInstance(DeterministicProcessor.class);
-			String bftNode = " " + this.nodeLookup.inverse().get(index);
-			ThreadContext.put("bftNode", bftNode);
+
+			ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
 			try {
 				processor.start();
 			} finally {
-				ThreadContext.remove("bftNode");
+				ThreadContext.remove("self");
 			}
 		}
 	}
@@ -106,14 +107,15 @@ public final class DeterministicNodes {
 		int senderIndex = nextMsg.channelId().senderIndex();
 		int receiverIndex = nextMsg.channelId().receiverIndex();
 		BFTNode sender = this.nodeLookup.inverse().get(senderIndex);
-		String bftNode = " " + this.nodeLookup.inverse().get(receiverIndex);
-		ThreadContext.put("bftNode", bftNode);
+
+		var injector = nodeInstances.get(receiverIndex);
+		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
 		try {
 			log.debug("Received message {} at {}", nextMsg, timedNextMsg.time());
 			nodeInstances.get(receiverIndex).getInstance(DeterministicProcessor.class)
 				.handleMessage(sender, nextMsg.message(), nextMsg.typeLiteral());
 		} finally {
-			ThreadContext.remove("bftNode");
+			ThreadContext.remove("self");
 		}
 	}
 

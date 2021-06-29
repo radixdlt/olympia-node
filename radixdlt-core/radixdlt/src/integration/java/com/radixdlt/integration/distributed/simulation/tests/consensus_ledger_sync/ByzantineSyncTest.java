@@ -21,10 +21,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
+import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.IncorrectAlwaysAcceptingAccumulatorVerifierModule;
 import com.radixdlt.sync.SometimesByzantineCommittedReader;
@@ -69,9 +69,12 @@ public class ByzantineSyncTest {
 				}
 
 				@ProvidesIntoSet
-				@ProcessOnDispatch
-				private EventProcessor<LedgerUpdate> eventProcessor(SometimesByzantineCommittedReader reader) {
-					return reader.ledgerUpdateEventProcessor();
+				@Singleton
+				private EventProcessorOnDispatch<?> eventProcessor(SometimesByzantineCommittedReader reader) {
+					return new EventProcessorOnDispatch<>(
+						LedgerUpdate.class,
+						reader.ledgerUpdateEventProcessor()
+					);
 				}
 			})
 			.pacemakerTimeout(3000)
@@ -79,7 +82,6 @@ public class ByzantineSyncTest {
 			.addTestModules(
 				ConsensusMonitors.safety(),
 				ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
-				ConsensusMonitors.noTimeouts(),
 				ConsensusMonitors.directParents(),
 				LedgerMonitors.consensusToLedger(),
 				LedgerMonitors.ordered()

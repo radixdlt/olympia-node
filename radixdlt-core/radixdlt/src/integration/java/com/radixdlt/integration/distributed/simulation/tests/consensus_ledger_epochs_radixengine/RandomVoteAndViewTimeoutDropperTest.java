@@ -27,6 +27,9 @@ import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
+
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.Map;
@@ -52,8 +55,8 @@ public class RandomVoteAndViewTimeoutDropperTest {
 			NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.2)
 		)
 		.addRadixEngineConfigModules(
-			RadixEngineConfig.asModule(2, 50, 5),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100, 2)),
+			RadixEngineConfig.asModule(2, 50),
+			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMaxSigsPerRound(5)),
 			new ForksModule()
 		)
 		.ledgerAndRadixEngineWithEpochHighView()
@@ -69,7 +72,7 @@ public class RandomVoteAndViewTimeoutDropperTest {
 	@Test
 	public void when_random_validators__then_sanity_checks_should_pass() {
 		SimulationTest simulationTest = bftTestBuilder.build();
-		final var runningTest = simulationTest.run();
+		final var runningTest = simulationTest.run(Duration.of(2, ChronoUnit.MINUTES));
 		final var checkResults = runningTest.awaitCompletion();
 
 		List<CounterType> counterTypes = List.of(

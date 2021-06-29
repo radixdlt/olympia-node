@@ -17,7 +17,7 @@
 
 package com.radixdlt.statecomputer;
 
-import com.radixdlt.atommodel.validators.state.ValidatorMetaData;
+import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;

@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.full_function_forks;
 
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
 import com.radixdlt.integration.distributed.simulation.monitors.application.ApplicationMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
@@ -31,6 +32,7 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -41,6 +43,7 @@ import org.junit.runners.Parameterized;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -50,15 +53,15 @@ public class SanityTest {
 	@Parameterized.Parameters
 	public static Collection<Object[]> fees() {
 		return List.of(new Object[][] {
-			{false}, {true},
+			{UInt256.ZERO}, {UInt256.ONE},
 		});
 	}
 
 	private static final Logger logger = LogManager.getLogger();
 	private final Builder bftTestBuilder;
 
-	public SanityTest(boolean fees) {
-		logger.info("Test fees={}", fees);
+	public SanityTest(UInt256 perByteFee) {
+		logger.info("Test fees={}", perByteFee);
 		bftTestBuilder = SimulationTest.builder()
 			.numNodes(4)
 			.pacemakerTimeout(3000)
@@ -68,7 +71,17 @@ public class SanityTest {
 			)
 			.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
 			.addRadixEngineConfigModules(
-				new ForkOverwritesWithShorterEpochsModule(new RERulesConfig(fees, 10, 2)),
+				new ForkOverwritesWithShorterEpochsModule(
+					new RERulesConfig(
+						Amount.ofTokens(0),
+						OptionalInt.of(5),
+						10,
+						2,
+						Amount.ofTokens(10),
+						1,
+						Amount.ofTokens(10),
+						9800
+					)),
 				new ForksModule()
 			)
 			.addNodeModule(MempoolConfig.asModule(1000, 10))
@@ -83,7 +96,7 @@ public class SanityTest {
 			)
 			.addMempoolSubmissionsSteadyState(RadixEngineUniqueGenerator.class);
 
-		if (!fees) {
+		if (perByteFee.isZero()) {
 			bftTestBuilder.addTestModules(ApplicationMonitors.mempoolCommitted());
 		}
 	}

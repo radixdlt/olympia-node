@@ -17,6 +17,7 @@
 
 package com.radixdlt.recovery;
 
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.statecomputer.forks.ForksModule;
@@ -88,6 +89,7 @@ import com.radixdlt.sync.CommittedReader;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.stream.Stream;
 
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -141,7 +143,17 @@ public class RecoveryTest {
 			new MockedGenesisModule(),
 			new CryptoModule(),
 			new ForksModule(),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 100L, 2)),
+			new RadixEngineForksLatestOnlyModule(
+				new RERulesConfig(
+					Amount.ofTokens(0),
+					OptionalInt.of(50),
+					100L,
+					2,
+					Amount.ofTokens(10),
+					1,
+					Amount.ofTokens(10),
+					9800
+				)),
 			new RadixEngineModule(),
 			new AbstractModule() {
 				@Override
@@ -176,10 +188,20 @@ public class RecoveryTest {
 		final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
 
 		return Guice.createInjector(
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, epochCeilingView, 2)),
+			new RadixEngineForksLatestOnlyModule(
+				new RERulesConfig(
+					Amount.ofTokens(0),
+					OptionalInt.of(50),
+					epochCeilingView,
+					2,
+					Amount.ofTokens(10),
+					1,
+					Amount.ofTokens(10),
+					9800
+				)),
 			new ForksModule(),
 			MempoolConfig.asModule(10, 10),
-			RadixEngineConfig.asModule(1, Integer.MAX_VALUE, 50),
+			RadixEngineConfig.asModule(1, Integer.MAX_VALUE),
 			new AbstractModule() {
 				@Override
 				protected void configure() {

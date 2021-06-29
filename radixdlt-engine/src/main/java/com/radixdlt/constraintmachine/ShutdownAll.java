@@ -18,6 +18,7 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.utils.Bytes;
 
 import java.util.Iterator;

@@ -26,16 +26,19 @@ import com.radixdlt.utils.Bytes;
 @SuppressWarnings("serial")
 public final class RadixEngineException extends Exception {
 	private final Txn txn;
+	private final int txnIndex;
 
-	public RadixEngineException(
-		Txn txn,
-		Exception cause
-	) {
-		super("Txn: " + Bytes.toHexString(txn.getPayload()), cause);
+	public RadixEngineException(int txnIndex, int batchSize, Txn txn, Exception cause) {
+		super("index=" + txnIndex + " batchSize=" + batchSize + " txnId=" + txn.getId() + " txn=" + Bytes.toHexString(txn.getPayload()), cause);
 		this.txn = txn;
+		this.txnIndex = txnIndex;
 	}
 
 	public Txn getTxn() {
 		return txn;
+	}
+
+	public int getTxnIndex() {
+		return txnIndex;
 	}
 }

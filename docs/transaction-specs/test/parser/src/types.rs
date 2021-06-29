@@ -6,6 +6,12 @@ use bytebuffer::ByteBuffer;
 use std::fmt;
 use std::str;
 
+/// Boolean
+#[derive(Debug)]
+pub struct Boolean {
+    pub raw: u8,
+}
+
 /// Unsigned 256-bit integer
 #[derive(Debug)]
 pub struct U256 {
@@ -68,6 +74,16 @@ macro_rules! read_bytes {
         bytes.copy_from_slice(&temp[..]);
         bytes
     }};
+}
+
+impl Boolean {
+    pub fn from_buffer(buffer: &mut ByteBuffer) -> Self {
+        let raw = buffer.read_u8();
+        if raw != 0 && raw != 1 {
+            panic!("Invalid boolean value: {}", raw);
+        }
+        Self { raw }
+    }
 }
 
 impl U256 {

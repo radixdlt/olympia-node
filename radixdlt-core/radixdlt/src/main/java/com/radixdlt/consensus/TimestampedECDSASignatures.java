@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atom.REFieldSerialization;
-import com.radixdlt.identifiers.ValidatorAddress;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DeserializeException;
@@ -77,11 +77,16 @@ public final class TimestampedECDSASignatures {
 		var builder = ImmutableMap.<BFTNode, TimestampedECDSASignature>builder();
 		for (int i = 0; i < json.length(); i++) {
 			var signatureJson = json.getJSONObject(i);
-			var key = ValidatorAddress.parse(signatureJson.getString("address"));
-			var bytes = Bytes.fromHexString(signatureJson.getString("signature"));
-			var signature = REFieldSerialization.deserializeSignature(ByteBuffer.wrap(bytes));
-			var timestamp = signatureJson.getLong("timestamp");
-			builder.put(BFTNode.create(key), TimestampedECDSASignature.from(timestamp, signature));
+
+			try {
+				var key = ECPublicKey.fromHex(signatureJson.getString("key"));
+				var bytes = Bytes.fromHexString(signatureJson.getString("signature"));
+				var signature = REFieldSerialization.deserializeSignature(ByteBuffer.wrap(bytes));
+				var timestamp = signatureJson.getLong("timestamp");
+				builder.put(BFTNode.create(key), TimestampedECDSASignature.from(timestamp, signature));
+			} catch (PublicKeyException e) {
+				throw new DeserializeException(e.getMessage());
+			}
 		}
 		return new TimestampedECDSASignatures(builder.build());
 	}
@@ -90,7 +95,7 @@ public final class TimestampedECDSASignatures {
 		var json = new JSONArray();
 		nodeToTimestampedSignature.forEach((node, sig) -> {
 			var obj = new JSONObject()
-				.put("address", ValidatorAddress.of(node.getKey()))
+				.put("key", node.getKey().toHex()) // TODO: retrieve key from signature
 				.put("signature", Bytes.toHexString(REFieldSerialization.serializeSignature(sig.signature())))
 				.put("timestamp", sig.timestamp());
 			json.put(obj);

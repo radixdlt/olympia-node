@@ -17,6 +17,7 @@
 
 package com.radixdlt.api.service;
 
+import com.radixdlt.networks.Addressing;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -156,6 +157,7 @@ public class MetricsService {
 	private final ValidatorInfoService validatorInfoService;
 	private final AccountInfoService accountInfoService;
 	private final NetworkInfoService networkInfoService;
+	private final Addressing addressing;
 
 	@Inject
 	public MetricsService(
@@ -164,7 +166,8 @@ public class MetricsService {
 		SystemConfigService systemConfigService,
 		ValidatorInfoService validatorInfoService,
 		AccountInfoService accountInfoService,
-		NetworkInfoService networkInfoService
+		NetworkInfoService networkInfoService,
+		Addressing addressing
 	) {
 		this.systemCounters = systemCounters;
 		this.infoSupplier = infoSupplier;
@@ -172,6 +175,7 @@ public class MetricsService {
 		this.validatorInfoService = validatorInfoService;
 		this.accountInfoService = accountInfoService;
 		this.networkInfoService = networkInfoService;
+		this.addressing = addressing;
 	}
 
 	public String getMetrics() {
@@ -256,7 +260,7 @@ public class MetricsService {
 
 		var inSet = validatorInfoService.getAllValidators()
 			.stream()
-			.anyMatch(v -> v.getValidatorAddress().equals(validatorAddress));
+			.anyMatch(v -> v.getValidatorAddress(addressing).equals(validatorAddress));
 		appendField(builder, "is_in_validator_set", inSet);
 	}
 

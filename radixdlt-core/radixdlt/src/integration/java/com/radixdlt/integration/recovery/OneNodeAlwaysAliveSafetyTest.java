@@ -17,10 +17,10 @@
 
 package com.radixdlt.integration.recovery;
 
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -90,6 +90,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -144,10 +145,10 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 		Guice.createInjector(
 			new MockedGenesisModule(),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 10, 2)),
+			new RadixEngineForksLatestOnlyModule(),
 			new ForksModule(),
 			new RadixEngineModule(),
-			RadixEngineConfig.asModule(1, 10, 50),
+			RadixEngineConfig.asModule(1, 10),
 			new CryptoModule(),
 			new AbstractModule() {
 				@Override
@@ -206,9 +207,19 @@ public class OneNodeAlwaysAliveSafetyTest {
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
-			new RadixEngineForksLatestOnlyModule(new RERulesConfig(false, 88, 2)),
+			new RadixEngineForksLatestOnlyModule(
+				new RERulesConfig(
+					Amount.zero(),
+					OptionalInt.of(50),
+					88,
+					2,
+					Amount.ofTokens(10),
+					1,
+					Amount.ofTokens(10),
+					9800
+				)),
 			new ForksModule(),
-			RadixEngineConfig.asModule(1, 10, 50),
+			RadixEngineConfig.asModule(1, 10),
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {
 				@Override
@@ -219,7 +230,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 					bind(PeersView.class).toInstance(Stream::of);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bindConstant().annotatedWith(DatabaseLocation.class)
-						.to(folder.getRoot().getAbsolutePath() + "/" + ValidatorAddress.of(ecKeyPair.getPublicKey()));
+						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
 				}
 
 				@ProvidesIntoSet
@@ -244,12 +255,11 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 	private void startNode(int index) {
 		Injector injector = nodes.get(index);
-		String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
-		ThreadContext.put("bftNode", bftNode);
+		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
 		try {
 			injector.getInstance(DeterministicProcessor.class).start();
 		} finally {
-			ThreadContext.remove("bftNode");
+			ThreadContext.remove("self");
 		}
 	}
 
@@ -259,13 +269,12 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 		int nodeIndex = msg.value().channelId().receiverIndex();
 		Injector injector = this.nodes.get(nodeIndex);
-		String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
-		ThreadContext.put("bftNode", bftNode);
+		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
 		try {
 			injector.getInstance(DeterministicProcessor.class)
 				.handleMessage(msg.value().origin(), msg.value().message(), msg.value().typeLiteral());
 		} finally {
-			ThreadContext.remove("bftNode");
+			ThreadContext.remove("self");
 		}
 	}
 

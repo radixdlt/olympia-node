@@ -17,7 +17,7 @@
 
 package com.radixdlt;
 
-import com.radixdlt.universe.Network;
+import com.radixdlt.networks.Network;
 import com.radixdlt.api.module.DeveloperEndpointModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

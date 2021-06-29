@@ -27,6 +27,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.qualifier.LocalSigner;
 
@@ -62,6 +63,12 @@ public final class PersistedBFTKeyModule extends AbstractModule {
 	@Self
 	BFTNode bftNode(PersistedBFTKeyManager bftKeyManager) {
 		return bftKeyManager.self();
+	}
+
+	@Provides
+	@Self
+	String name(Addressing addressing, @Self ECPublicKey key) {
+		return addressing.forValidators().of(key).substring(0, 10);
 	}
 
 	@Provides

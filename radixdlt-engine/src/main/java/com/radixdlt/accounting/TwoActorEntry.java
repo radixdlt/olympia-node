@@ -18,7 +18,7 @@
 
 package com.radixdlt.accounting;
 
-import com.radixdlt.atommodel.tokens.Bucket;
+import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.identifiers.REAddr;
 
 import java.math.BigInteger;

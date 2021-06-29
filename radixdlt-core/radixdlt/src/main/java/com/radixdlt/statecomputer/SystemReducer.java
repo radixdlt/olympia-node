@@ -18,8 +18,8 @@
 
 package com.radixdlt.statecomputer;
 
-import com.radixdlt.atommodel.system.state.EpochData;
-import com.radixdlt.atommodel.system.state.RoundData;
+import com.radixdlt.application.system.state.EpochData;
+import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.constraintmachine.Particle;

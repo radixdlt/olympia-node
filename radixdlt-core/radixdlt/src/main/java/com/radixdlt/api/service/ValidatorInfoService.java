@@ -21,7 +21,7 @@ import com.google.inject.Inject;
 import com.radixdlt.api.data.ValidatorInfoDetails;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.ValidatorAddress;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.StakedValidators;
 import com.radixdlt.utils.functional.FunctionalUtils;
@@ -38,10 +38,15 @@ import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class ValidatorInfoService {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+	private final Addressing addressing;
 
 	@Inject
-	public ValidatorInfoService(RadixEngine<LedgerAndBFTProof> radixEngine) {
+	public ValidatorInfoService(
+		RadixEngine<LedgerAndBFTProof> radixEngine,
+		Addressing addressing
+	) {
 		this.radixEngine = radixEngine;
+		this.addressing = addressing;
 	}
 
 	public Mapper2<Optional<ECPublicKey>, List<ValidatorInfoDetails>> getValidators(
@@ -77,7 +82,7 @@ public class ValidatorInfoService {
 		var validators = radixEngine.getComputedState(StakedValidators.class);
 
 		return Result.fromOptional(
-			UNKNOWN_VALIDATOR.with(ValidatorAddress.of(validatorPublicKey)),
+			UNKNOWN_VALIDATOR.with(addressing.forValidators().of(validatorPublicKey)),
 			validators.mapSingle(validatorPublicKey, ValidatorInfoDetails::create)
 		);
 	}

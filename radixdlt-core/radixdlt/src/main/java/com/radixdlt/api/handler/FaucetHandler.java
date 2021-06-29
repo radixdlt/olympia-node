@@ -17,6 +17,8 @@
 
 package com.radixdlt.api.handler;
 
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.networks.Addressing;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
@@ -25,11 +27,9 @@ import com.google.inject.Inject;
 import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.api.faucet.FaucetToken;
 import com.radixdlt.api.service.SubmissionService;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.utils.UInt256;
@@ -45,35 +45,38 @@ import static java.util.Optional.empty;
 
 public class FaucetHandler {
 	private static final Logger logger = LogManager.getLogger();
-	private static final UInt256 AMOUNT = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
+	private static final UInt256 AMOUNT = Amount.ofTokens(10).toSubunits();
 
 	private final SubmissionService submissionService;
 	private final REAddr account;
 	private final Set<REAddr> tokensToSend;
 	private final HashSigner hashSigner;
+	private final Addressing addressing;
 
 	@Inject
 	public FaucetHandler(
 		SubmissionService submissionService,
 		@Self REAddr account,
 		@FaucetToken Set<REAddr> tokensToSend,
-		@LocalSigner HashSigner hashSigner
+		@LocalSigner HashSigner hashSigner,
+		Addressing addressing
 	) {
 		this.submissionService = submissionService;
 		this.account = account;
 		this.tokensToSend = tokensToSend;
 		this.hashSigner = hashSigner;
+		this.addressing = addressing;
 	}
 
 	public JSONObject requestTokens(JSONObject request) {
 		return withRequiredStringParameter(
 			request, "address",
-			address -> AccountAddress.parseFunctional(address).flatMap(this::sendTokens)
+			address -> addressing.forAccounts().parseFunctional(address).flatMap(this::sendTokens)
 		);
 	}
 
 	private Result<JSONObject> sendTokens(REAddr destination) {
-		logger.info("Sending {} {} to {}", AMOUNT, tokensToSend, AccountAddress.of(destination));
+		logger.info("Sending {} {} to {}", AMOUNT, tokensToSend, addressing.forAccounts().of(destination));
 
 		var steps = new ArrayList<TransactionAction>();
 

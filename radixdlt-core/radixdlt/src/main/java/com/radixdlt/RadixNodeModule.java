@@ -21,12 +21,10 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.api.Rri;
 import com.radixdlt.api.module.ArchiveApiModule;
 import com.radixdlt.api.module.CommonApiModule;
 import com.radixdlt.api.module.NodeApiModule;
 import com.radixdlt.api.qualifier.Endpoints;
-import com.radixdlt.api.service.RriParser;
 import com.radixdlt.application.NodeApplicationModule;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
@@ -46,8 +44,10 @@ import com.radixdlt.network.messaging.MessagingModule;
 import com.radixdlt.network.p2p.P2PModule;
 import com.radixdlt.network.p2p.PeerDiscoveryModule;
 import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.qualifier.NetworkId;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
@@ -59,7 +59,6 @@ import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
-import com.radixdlt.universe.Network;
 import com.radixdlt.utils.Bytes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -113,15 +112,16 @@ public final class RadixNodeModule extends AbstractModule {
 		var genesisTxnHex = properties.get("network.genesis_txn");
 		var genesisFile = properties.get("network.genesis_file");
 		var network = Network.ofId(networkId);
-		if (network.flatMap(Network::genesisTxn).isPresent()) {
+		var networkGenesis = network.flatMap(Network::genesisTxn);
+		if (networkGenesis.isPresent()) {
 			if (Strings.isNotBlank(genesisTxnHex)) {
-				throw new IllegalStateException("Cannot provide genesis txn for well-known network " + network.get());
+				throw new IllegalStateException("Cannot provide genesis txn for well-known network " + network.orElseThrow());
 			}
 
 			if (Strings.isNotBlank(genesisFile)) {
-				throw new IllegalStateException("Cannot provide genesis file for well-known network " + network.get());
+				throw new IllegalStateException("Cannot provide genesis file for well-known network " + network.orElseThrow());
 			}
-			return network.flatMap(Network::genesisTxn).get();
+			return networkGenesis.get();
 		} else {
 			var genesisCount = 0;
 			genesisCount += Strings.isNotBlank(genesisTxnHex) ? 1 : 0;
@@ -138,6 +138,12 @@ public final class RadixNodeModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
+		if (this.networkId <= 0) {
+			throw new IllegalStateException("Illegal networkId " + networkId);
+		}
+
+		var addressing = Addressing.ofNetworkId(networkId);
+		bind(Addressing.class).toInstance(addressing);
 		bindConstant().annotatedWith(NetworkId.class).to(networkId);
 		bind(Txn.class).annotatedWith(Genesis.class).toInstance(loadGenesis(networkId));
 		bind(RuntimeProperties.class).toInstance(properties);
@@ -164,7 +170,7 @@ public final class RadixNodeModule extends AbstractModule {
 		// These cannot be changed without introducing possible forks with
 		// the network.
 		// TODO: Move these deeper into radix engine.
-		install(RadixEngineConfig.asModule(1, 100, 50));
+		install(RadixEngineConfig.asModule(1, 100));
 
 		// System (e.g. time, random)
 		install(new SystemModule());
@@ -246,10 +252,6 @@ public final class RadixNodeModule extends AbstractModule {
 		}
 
 		if (!nodeEndpoints.isEmpty()) {
-			if (archiveEndpoints.isEmpty()) {
-				bind(RriParser.class).toInstance(Rri::rriParser);
-			}
-
 			install(new NodeApiModule(nodeEndpoints));
 		}
 	}

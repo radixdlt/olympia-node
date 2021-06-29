@@ -17,7 +17,6 @@
 
 package com.radixdlt.store.berkeley;
 
-import com.radixdlt.atommodel.system.state.EpochData;
 import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
@@ -31,7 +30,7 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.tokens.state.TokenResource;
+import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -620,10 +619,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				var buf2 = stateUpdate.getStateBuf();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
 				addrDatabase.putNoOverwrite(txn, new DatabaseEntry(addr.getBytes()), value);
-			} else if (stateUpdate.getRawSubstate() instanceof EpochData) {
-				var buf2 = stateUpdate.getStateBuf();
-				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
-				addrDatabase.put(txn, new DatabaseEntry(REAddr.ofSystem().getBytes()), value);
 			}
 		} else if (stateUpdate.isShutDown()) {
 			if (stateUpdate.getSubstate().getId().isVirtual()) {

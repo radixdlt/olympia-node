@@ -18,6 +18,7 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.full_function;
 
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
@@ -30,6 +31,7 @@ import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.utils.UInt256;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,6 +40,7 @@ import org.junit.runners.Parameterized;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -47,13 +50,13 @@ public class OneOutOfBoundsTest {
 	@Parameterized.Parameters
 	public static Collection<Object[]> fees() {
 		return List.of(new Object[][] {
-			{true}, {false},
+			{UInt256.ONE}, {UInt256.ZERO},
 		});
 	}
 
 	private final SimulationTest.Builder bftTestBuilder;
 
-	public OneOutOfBoundsTest(boolean fees) {
+	public OneOutOfBoundsTest(UInt256 perByteFee) {
 		bftTestBuilder = SimulationTest.builder()
 			.numNodes(4)
 			.pacemakerTimeout(3000)
@@ -63,7 +66,17 @@ public class OneOutOfBoundsTest {
 			)
 			.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
 			.addRadixEngineConfigModules(
-				new RadixEngineForksLatestOnlyModule(new RERulesConfig(fees, 20L, 2)),
+				new RadixEngineForksLatestOnlyModule(
+					new RERulesConfig(
+						Amount.ofSubunits(perByteFee),
+						OptionalInt.of(5),
+						20L,
+						2,
+						Amount.ofTokens(10),
+						1,
+						Amount.ofTokens(10),
+						9800
+					)),
 				new ForksModule()
 			)
 			.addNodeModule(MempoolConfig.asModule(1000, 10))

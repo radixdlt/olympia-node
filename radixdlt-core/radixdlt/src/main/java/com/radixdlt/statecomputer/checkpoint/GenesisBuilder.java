@@ -26,7 +26,6 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.NextEpoch;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -68,7 +67,7 @@ public final class GenesisBuilder {
 		var cm = new ConstraintMachine(
 			cmConfig.getVirtualStoreLayer(),
 			cmConfig.getProcedures(),
-			cmConfig.getMetering()
+			cmConfig.getMeter()
 		);
 		this.radixEngine = new RadixEngine<>(
 			rules.getParser(),
@@ -87,7 +86,7 @@ public final class GenesisBuilder {
 
 		var tokenDef = new MutableTokenDefinition(
 			null,
-			TokenDefinitionUtils.getNativeTokenShortCode(),
+			"xrd",
 			"Rads",
 			"Radix Tokens",
 			RADIX_ICON_URL,
@@ -95,7 +94,7 @@ public final class GenesisBuilder {
 		);
 		txnConstructionRequest.createMutableToken(tokenDef);
 		actions.forEach(txnConstructionRequest::action);
-		var tempTxn = Txn.create(radixEngine.construct(txnConstructionRequest).buildForExternalSign().getFirst());
+		var tempTxn = Txn.create(radixEngine.construct(txnConstructionRequest).buildForExternalSign().blob());
 		var branch = radixEngine.transientBranch();
 
 		branch.execute(List.of(tempTxn), PermissionLevel.SYSTEM);

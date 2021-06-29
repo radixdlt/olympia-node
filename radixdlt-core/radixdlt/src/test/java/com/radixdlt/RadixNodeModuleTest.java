@@ -17,7 +17,7 @@
 
 package com.radixdlt;
 
-import com.radixdlt.qualifier.NetworkId;
+import com.radixdlt.networks.NetworkId;
 import org.assertj.core.util.Files;
 import org.junit.BeforeClass;
 import org.junit.Test;

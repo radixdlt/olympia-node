@@ -18,30 +18,134 @@
 
 package com.radixdlt.statecomputer.forks;
 
+import com.radixdlt.application.tokens.Amount;
+
+import java.util.OptionalInt;
+
 public final class RERulesConfig {
 	private final long maxRounds;
-	private final boolean fees;
+	private final OptionalInt maxSigsPerRound;
+	private final Amount perByteFee;
 	private final long rakeIncreaseDebouncerEpochLength;
+	private final Amount minimumStake;
+	private final long unstakingEpochDelay;
+	private final Amount rewardsPerProposal;
+	private final int minimumCompletedProposalsPercentage;
 
-	public RERulesConfig(boolean fees, long maxRounds, long rakeIncreaseDebouncerEpochLength) {
-		this.fees = fees;
+	public RERulesConfig(
+		Amount perByteFee,
+		OptionalInt maxSigsPerRound,
+		long maxRounds,
+		long rakeIncreaseDebouncerEpochLength,
+		Amount minimumStake,
+		long unstakingEpochDelay,
+		Amount rewardsPerProposal,
+		int minimumCompletedProposalsPercentage
+	) {
+		this.perByteFee = perByteFee;
+		this.maxSigsPerRound = maxSigsPerRound;
 		this.maxRounds = maxRounds;
 		this.rakeIncreaseDebouncerEpochLength = rakeIncreaseDebouncerEpochLength;
+		this.minimumStake = minimumStake;
+		this.unstakingEpochDelay = unstakingEpochDelay;
+		this.rewardsPerProposal = rewardsPerProposal;
+		this.minimumCompletedProposalsPercentage = minimumCompletedProposalsPercentage;
+	}
+
+	public static RERulesConfig testingDefault() {
+		return new RERulesConfig(
+			Amount.ofTokens(0),
+			OptionalInt.of(2),
+			10,
+			1,
+			Amount.ofTokens(10),
+			1,
+			Amount.ofTokens(10),
+			9800
+		);
+	}
+
+	public OptionalInt getMaxSigsPerRound() {
+		return maxSigsPerRound;
+	}
+
+	public Amount getMinimumStake() {
+		return minimumStake;
 	}
 
 	public long getRakeIncreaseDebouncerEpochLength() {
 		return rakeIncreaseDebouncerEpochLength;
 	}
 
-	public boolean includeFees() {
-		return fees;
+	public Amount getPerByteFee() {
+		return perByteFee;
 	}
 
 	public long getMaxRounds() {
 		return maxRounds;
 	}
 
+	public Amount getRewardsPerProposal() {
+		return rewardsPerProposal;
+	}
+
+	public long getUnstakingEpochDelay() {
+		return unstakingEpochDelay;
+	}
+
+	public int getMinimumCompletedProposalsPercentage() {
+		return minimumCompletedProposalsPercentage;
+	}
+
+	public RERulesConfig overrideMaxSigsPerRound(int maxSigsPerRound) {
+		return new RERulesConfig(
+			this.perByteFee,
+			OptionalInt.of(maxSigsPerRound),
+			this.maxRounds,
+			this.rakeIncreaseDebouncerEpochLength,
+			this.minimumStake,
+			this.unstakingEpochDelay,
+			this.rewardsPerProposal,
+			this.minimumCompletedProposalsPercentage
+		);
+	}
+
+	public RERulesConfig removeSigsPerRoundLimit() {
+		return new RERulesConfig(
+			this.perByteFee,
+			OptionalInt.empty(),
+			this.maxRounds,
+			this.rakeIncreaseDebouncerEpochLength,
+			this.minimumStake,
+			this.unstakingEpochDelay,
+			this.rewardsPerProposal,
+			this.minimumCompletedProposalsPercentage
+		);
+	}
+
+	public RERulesConfig overridePerByteFee(Amount perByteFee) {
+		return new RERulesConfig(
+			perByteFee,
+			this.maxSigsPerRound,
+			this.maxRounds,
+			this.rakeIncreaseDebouncerEpochLength,
+			this.minimumStake,
+			this.unstakingEpochDelay,
+			this.rewardsPerProposal,
+			this.minimumCompletedProposalsPercentage
+		);
+	}
+
 	public RERulesConfig overrideMaxRounds(long maxRounds) {
-		return new RERulesConfig(this.fees, maxRounds, this.rakeIncreaseDebouncerEpochLength);
+		return new RERulesConfig(
+			this.perByteFee,
+			this.maxSigsPerRound,
+			maxRounds,
+			this.rakeIncreaseDebouncerEpochLength,
+			this.minimumStake,
+			this.unstakingEpochDelay,
+			this.rewardsPerProposal,
+			this.minimumCompletedProposalsPercentage
+		);
 	}
 }

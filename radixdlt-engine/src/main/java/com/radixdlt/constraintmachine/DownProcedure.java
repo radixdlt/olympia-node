@@ -18,6 +18,8 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+
 import java.util.function.Function;
 
 public class DownProcedure<D extends Particle, S extends ReducerState> implements Procedure {
@@ -51,9 +53,13 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 	public ReducerResult call(
 		Object o,
 		ReducerState reducerState,
-		ReadableAddrs readableAddrs,
+		ImmutableAddrs immutableAddrs,
 		ExecutionContext context
 	) throws ProcedureException {
-		return downReducer.reduce((SubstateWithArg<D>) o, (S) reducerState, readableAddrs);
+		try {
+			return downReducer.reduce((SubstateWithArg<D>) o, (S) reducerState, immutableAddrs);
+		} catch (Exception e) {
+			throw new ProcedureException(e);
+		}
 	}
 }

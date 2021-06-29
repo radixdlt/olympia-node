@@ -20,8 +20,11 @@ package org.radix;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERules;
@@ -38,12 +41,10 @@ import com.google.inject.Guice;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.identifiers.NodeAddress;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
@@ -69,7 +70,7 @@ public final class GenerateUniverses {
 	private GenerateUniverses() { }
 
 	private static final String DEFAULT_TIMESTAMP = String.valueOf(Instant.parse("2020-01-01T00:00:00.00Z").getEpochSecond());
-	private static final UInt256 DEFAULT_ISSUANCE = UInt256.from("1000000000000000000000000000").multiply(TokenDefinitionUtils.SUB_UNITS);
+	private static final UInt256 DEFAULT_ISSUANCE = Amount.ofTokens(1000000000).toSubunits(); // 1 Billion!
 
 	public static void main(String[] args) throws Exception {
 		Security.insertProviderAt(new BouncyCastleProvider(), 1);
@@ -135,7 +136,7 @@ public final class GenerateUniverses {
 			protected void configure() {
 				install(new CryptoModule());
 				install(new ForksModule());
-				install(RadixEngineConfig.asModule(1, 100, 50));
+				install(RadixEngineConfig.asModule(1, 100));
 				bind(new TypeLiteral<List<TxAction>>() {}).annotatedWith(Genesis.class).toInstance(additionalActions);
 				bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 				bind(SystemCounters.class).toInstance(new SystemCountersImpl());
@@ -152,14 +153,14 @@ public final class GenerateUniverses {
 		var genesis = genesisProvider.get().getTxns().get(0);
 		IntStream.range(0, generatedValidatorKeys.size()).forEach(i -> {
 			System.out.format("export RADIXDLT_VALIDATOR_%s_PRIVKEY=%s%n", i, Bytes.toBase64String(generatedValidatorKeys.get(i).getPrivateKey()));
-			System.out.format("export RADIXDLT_VALIDATOR_%s_PUBKEY=%s%n", i, NodeAddress.of(generatedValidatorKeys.get(i).getPublicKey()));
+			System.out.format("export RADIXDLT_VALIDATOR_%s_PUBKEY=%s%n", i, Addressing.ofNetwork(Network.LOCALNET).forNodes().of(generatedValidatorKeys.get(i).getPublicKey()));
 		});
 		if (validatorsCount > 0) {
 			System.out.format("export RADIXDLT_GENESIS_TXN=%s%n", Bytes.toHexString(genesis.getPayload()));
 		} else {
-			var writer = new BufferedWriter(new FileWriter("genesis.json"));
-			writer.write(new JSONObject().put("genesis", Bytes.toHexString(genesis.getPayload())).toString());
-			writer.close();
+			try (var writer = new BufferedWriter(new FileWriter("genesis.json"))) {
+				writer.write(new JSONObject().put("genesis", Bytes.toHexString(genesis.getPayload())).toString());
+			}
 		}
 	}
 

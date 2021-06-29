@@ -21,11 +21,14 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.ValidatorAddressing;
 import com.radixdlt.serialization.DeserializeException;
 
 import java.util.Objects;
 
 public class ValidatorAddress {
+	private static final ValidatorAddressing validatorAddresses = ValidatorAddressing.bech32("vb"); // This needs to come from somewhere else
+
 	@JsonIgnore
 	private final ECPublicKey address;
 
@@ -36,7 +39,7 @@ public class ValidatorAddress {
 
 	@JsonCreator
 	public static ValidatorAddress create(String address) throws DeserializeException {
-		var publicKey = com.radixdlt.identifiers.ValidatorAddress.parse(address);
+		var publicKey = validatorAddresses.parse(address);
 		return new ValidatorAddress(publicKey);
 	}
 
@@ -69,11 +72,11 @@ public class ValidatorAddress {
 
 	@JsonValue
 	public String toValidatorAddress() {
-		return com.radixdlt.identifiers.ValidatorAddress.of(address);
+		return validatorAddresses.of(address);
 	}
 
 	@Override
 	public String toString() {
-		return com.radixdlt.identifiers.ValidatorAddress.of(address);
+		return validatorAddresses.of(address);
 	}
 }

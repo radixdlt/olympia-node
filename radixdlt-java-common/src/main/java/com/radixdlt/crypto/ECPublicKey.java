@@ -76,11 +76,6 @@ public final class ECPublicKey {
 		return fromBytes(Bytes.fromHexString(hex));
 	}
 
-	@JsonCreator
-	public static ECPublicKey fromBase64(String base64) throws PublicKeyException {
-		return fromBytes(Bytes.fromBase64String(base64));
-	}
-
 	public static Optional<ECPublicKey> recoverFrom(HashCode hash, ECDSASignature signature) {
 		return ECKeyUtils.recoverFromSignature(signature, hash.asBytes())
 			.map(ECPublicKey::new);
@@ -118,10 +113,6 @@ public final class ECPublicKey {
 
 	public byte[] encrypt(byte[] data) throws ECIESException {
 		return ECIES.encrypt(data, this);
-	}
-
-	public String toBase64() {
-		return Bytes.toBase64String(getBytes());
 	}
 
 	public String toHex() {

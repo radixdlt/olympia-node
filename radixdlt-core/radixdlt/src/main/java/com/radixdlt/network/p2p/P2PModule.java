@@ -33,6 +33,7 @@ import com.radixdlt.network.p2p.addressbook.AddressBookPeerControl;
 import com.radixdlt.network.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.network.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.network.p2p.transport.PeerOutboundBootstrapImpl;
+import com.radixdlt.networks.NetworkId;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.store.berkeley.BerkeleyAddressBookPersistence;
 
@@ -95,9 +96,9 @@ public final class P2PModule extends AbstractModule {
 
 	@Provides
 	@Self
-	public RadixNodeUri selfUri(@Self ECPublicKey selfKey, HostIp hostIp, P2PConfig p2pConfig) {
+	public RadixNodeUri selfUri(@NetworkId int networkId, @Self ECPublicKey selfKey, HostIp hostIp, P2PConfig p2pConfig) {
 		final var host = hostIp.hostIp().orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
 		final var port = p2pConfig.broadcastPort();
-		return RadixNodeUri.fromPubKeyAndAddress(selfKey, host, port);
+		return RadixNodeUri.fromPubKeyAndAddress(networkId, selfKey, host, port);
 	}
 }

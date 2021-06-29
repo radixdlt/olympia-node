@@ -22,7 +22,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.atommodel.system.state.ValidatorBFTData;
+import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -38,6 +38,7 @@ import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.OptionalInt;
 import java.util.Set;
 
 /**
@@ -74,6 +75,14 @@ public class RadixEngineModule extends AbstractModule {
 	// TODO: Remove
 	@Provides
 	@Singleton
+	@MaxSigsPerRound
+	private OptionalInt maxSigsPerRound(RERules rules) {
+		return rules.getMaxSigsPerRound();
+	}
+
+	// TODO: Remove
+	@Provides
+	@Singleton
 	@EpochCeilingView
 	private View epochCeilingHighView(RERules rules) {
 		return rules.getMaxRounds();
@@ -93,7 +102,7 @@ public class RadixEngineModule extends AbstractModule {
 		var cm = new ConstraintMachine(
 			cmConfig.getVirtualStoreLayer(),
 			cmConfig.getProcedures(),
-			cmConfig.getMetering()
+			cmConfig.getMeter()
 		);
 		var radixEngine = new RadixEngine<>(
 			rules.getParser(),

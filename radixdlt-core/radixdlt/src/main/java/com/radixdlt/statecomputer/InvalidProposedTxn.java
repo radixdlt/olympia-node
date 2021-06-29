@@ -18,6 +18,7 @@
 package com.radixdlt.statecomputer;
 
 import com.radixdlt.atom.Txn;
+import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
 
@@ -26,18 +27,28 @@ import java.util.Objects;
  * does not pass verification.
  */
 public final class InvalidProposedTxn {
+    private final ECPublicKey proposer;
     private final Txn txn;
     private final Exception e;
 
-    private InvalidProposedTxn(Txn txn, Exception e) {
+    private InvalidProposedTxn(ECPublicKey proposer, Txn txn, Exception e) {
+        this.proposer = proposer;
         this.txn = txn;
         this.e = e;
     }
 
-    public static InvalidProposedTxn create(Txn txn, Exception e) {
+    public static InvalidProposedTxn create(ECPublicKey proposer, Txn txn, Exception e) {
         Objects.requireNonNull(txn);
         Objects.requireNonNull(e);
-        return new InvalidProposedTxn(txn, e);
+        return new InvalidProposedTxn(proposer, txn, e);
+    }
+
+    public ECPublicKey getProposer() {
+        return proposer;
+    }
+
+    public Exception getException() {
+        return e;
     }
 
     @Override
@@ -47,7 +58,7 @@ public final class InvalidProposedTxn {
 
     @Override
     public int hashCode() {
-        return Objects.hash(txn, e);
+        return Objects.hash(proposer, txn, e);
     }
 
     @Override
@@ -57,7 +68,8 @@ public final class InvalidProposedTxn {
         }
 
         InvalidProposedTxn other = (InvalidProposedTxn) o;
-        return Objects.equals(this.e, other.e)
+        return Objects.equals(this.proposer, other.proposer)
+            && Objects.equals(this.e, other.e)
             && Objects.equals(this.txn, other.txn);
     }
 }

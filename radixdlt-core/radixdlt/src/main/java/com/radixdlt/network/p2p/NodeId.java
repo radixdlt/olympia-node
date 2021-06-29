@@ -22,15 +22,14 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 public final class NodeId {
 	private final ECPublicKey publicKey;
 
 	@JsonCreator
-	public static NodeId deserialize(byte[] pubKeyBase64) throws PublicKeyException {
-		return fromPublicKey(ECPublicKey.fromBase64(new String(pubKeyBase64)));
+	public static NodeId deserialize(byte[] pubKey) throws PublicKeyException {
+		return fromPublicKey(ECPublicKey.fromBytes(pubKey));
 	}
 
 	public static NodeId fromPublicKey(ECPublicKey publicKey) {
@@ -46,8 +45,8 @@ public final class NodeId {
 	}
 
 	@JsonValue
-	public byte[] getPublicKeyBase64() {
-		return publicKey.toBase64().getBytes(StandardCharsets.UTF_8);
+	public byte[] getPubKey() {
+		return publicKey.getCompressedBytes();
 	}
 
 	@Override
@@ -69,6 +68,6 @@ public final class NodeId {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), publicKey.toBase64());
+		return String.format("%s[%s]", getClass().getSimpleName(), publicKey.toHex());
 	}
 }
