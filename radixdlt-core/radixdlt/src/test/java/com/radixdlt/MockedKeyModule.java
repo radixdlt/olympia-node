@@ -34,7 +34,7 @@ public final class MockedKeyModule extends AbstractModule {
 	@Provides
 	@Self
 	private String name(Addressing addressing, @Self BFTNode self) {
-		return addressing.forValidators().of(self.getKey()).substring(0, 10);
+		return addressing.forValidators().of(self.getKey()).substring(0, 11);
 	}
 
 	@Provides

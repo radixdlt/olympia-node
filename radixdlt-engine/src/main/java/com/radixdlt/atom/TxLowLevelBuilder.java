@@ -175,7 +175,7 @@ public final class TxLowLevelBuilder {
 	}
 
 	public TxLowLevelBuilder downAll(Byte typeByte) {
-		instruction(REInstruction.REMicroOp.DOWNALL, new byte[] {typeByte});
+		instruction(REInstruction.REMicroOp.DOWNINDEX, new byte[] {1, typeByte});
 		return this;
 	}
 
