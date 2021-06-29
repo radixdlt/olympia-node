@@ -49,6 +49,15 @@ public final class MutableTokenDefinition {
 		this.tokenUrl = tokenUrl;
 	}
 
+	public MutableTokenDefinition(ECPublicKey key, String symbol) {
+		this.key = key;
+		this.symbol = symbol.toLowerCase();
+		this.name = null;
+		this.description = null;
+		this.iconUrl = null;
+		this.tokenUrl = null;
+	}
+
 	public ECPublicKey getKey() {
 		return key;
 	}
