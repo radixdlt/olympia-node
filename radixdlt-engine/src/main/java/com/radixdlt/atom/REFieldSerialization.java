@@ -127,6 +127,10 @@ public final class REFieldSerialization {
 		return UInt256.from(amountDest);
 	}
 
+	public static void serializeUInt256(ByteBuffer buf, UInt256 u) {
+		buf.put(u.toByteArray());
+	}
+
 	public static UInt256 deserializeNonZeroUInt256(ByteBuffer buf) throws DeserializeException {
 		var amountDest = new byte[UInt256.BYTES]; // amount
 		buf.get(amountDest);

@@ -22,6 +22,7 @@ import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -31,11 +32,13 @@ import java.util.Optional;
  */
 public final class TokenResource implements Particle {
 	private final REAddr addr;
+	private final UInt256 granularity;
 	private final boolean isMutable;
 	private final ECPublicKey owner;
 
 	public TokenResource(
 		REAddr addr,
+		UInt256 granularity,
 		boolean isMutable,
 		ECPublicKey owner
 	) {
@@ -43,16 +46,17 @@ public final class TokenResource implements Particle {
 			throw new IllegalArgumentException("Can't have fixed supply and minter");
 		}
 		this.addr = Objects.requireNonNull(addr);
+		this.granularity = granularity;
 		this.isMutable = isMutable;
 		this.owner = owner;
 	}
 
 	public static TokenResource createFixedSupplyResource(REAddr addr) {
-		return new TokenResource(addr, false, null);
+		return new TokenResource(addr, UInt256.ONE, false, null);
 	}
 
 	public static TokenResource createMutableSupplyResource(REAddr addr, ECPublicKey owner) {
-		return new TokenResource(addr, true, owner);
+		return new TokenResource(addr, UInt256.ONE, true, owner);
 	}
 
 	public void verifyMintAuthorization(Optional<ECPublicKey> key) throws AuthorizationException {
@@ -65,6 +69,10 @@ public final class TokenResource implements Particle {
 		if (!key.flatMap(p -> getOwner().map(p::equals)).orElse(false)) {
 			throw new AuthorizationException("Key not authorized: " + key);
 		}
+	}
+
+	public UInt256 getGranularity() {
+		return granularity;
 	}
 
 	public Optional<ECPublicKey> getOwner() {
@@ -81,8 +89,8 @@ public final class TokenResource implements Particle {
 
 	@Override
 	public String toString() {
-		return String.format("%s{addr=%s isMutable=%s owner=%s}", getClass().getSimpleName(),
-			this.addr, isMutable, owner);
+		return String.format("%s{addr=%s granularity=%s isMutable=%s owner=%s}", getClass().getSimpleName(),
+			this.addr, this.granularity, isMutable, owner);
 	}
 
 	@Override
@@ -95,12 +103,13 @@ public final class TokenResource implements Particle {
 		}
 		TokenResource that = (TokenResource) o;
 		return Objects.equals(addr, that.addr)
+			&& Objects.equals(this.granularity, that.granularity)
 			&& this.isMutable == that.isMutable
 			&& Objects.equals(owner, that.owner);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(addr, isMutable, owner);
+		return Objects.hash(addr, granularity, isMutable, owner);
 	}
 }
