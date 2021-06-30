@@ -18,8 +18,9 @@
 package com.radixdlt.statecomputer.checkpoint;
 
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.crypto.ECPublicKey;
-import org.radix.StakeDelegation;
+import com.radixdlt.identifiers.REAddr;
 import org.radix.TokenIssuance;
 
 import com.google.common.collect.ImmutableList;
@@ -34,6 +35,7 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -55,12 +57,12 @@ public final class MockedGenesisModule extends AbstractModule {
 
 	@Provides
 	@Genesis
-	public ImmutableList<StakeDelegation> stakeDelegations(
+	public Set<StakeTokens> stakeDelegations(
 		@Genesis ImmutableList<ECPublicKey> initialValidators
 	) {
 		return initialValidators.stream()
-			.map(v -> StakeDelegation.of(v, v, Amount.ofTokens(100 * 100).toSubunits()))
-			.collect(ImmutableList.toImmutableList());
+			.map(v -> new StakeTokens(REAddr.ofPubKeyAccount(v), v, Amount.ofTokens(100 * 100).toSubunits()))
+			.collect(Collectors.toSet());
 	}
 
 	@Provides

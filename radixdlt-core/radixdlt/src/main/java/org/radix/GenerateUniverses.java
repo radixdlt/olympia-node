@@ -62,6 +62,8 @@ import java.security.Security;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -71,6 +73,9 @@ public final class GenerateUniverses {
 
 	private static final String DEFAULT_TIMESTAMP = String.valueOf(Instant.parse("2020-01-01T00:00:00.00Z").getEpochSecond());
 	private static final UInt256 DEFAULT_ISSUANCE = Amount.ofTokens(1000000000).toSubunits(); // 1 Billion!
+	private static final UInt256 DEFAULT_STAKE = Amount.ofTokens(100).toSubunits();
+	private static final String mnemomicKeyHex = "022873d192f4186907fbc725109d5679c983a167a4a06768ef7922664a5fc31fe2";
+
 
 	public static void main(String[] args) throws Exception {
 		Security.insertProviderAt(new BouncyCastleProvider(), 1);
@@ -93,18 +98,27 @@ public final class GenerateUniverses {
 			return;
 		}
 
-		final int validatorsCount = cmd.getOptionValue("v") != null ? Integer.parseInt(cmd.getOptionValue("v")) : 0;
-		var generatedValidatorKeys = Stream.generate(ECKeyPair::generateNew).limit(validatorsCount).collect(Collectors.toList());
-
-		var validatorKeys = new ArrayList<ECPublicKey>();
+		var allValidatorKeysBuilder = ImmutableList.<ECPublicKey>builder();
 		if (cmd.getOptionValue("p") != null) {
 			var hexKeys = cmd.getOptionValue("p").split(",");
 			for (var hexKey : hexKeys) {
-				validatorKeys.add(ECPublicKey.fromHex(hexKey));
+				allValidatorKeysBuilder.add(ECPublicKey.fromHex(hexKey));
 			}
 		}
+		final int validatorsCount = cmd.getOptionValue("v") != null ? Integer.parseInt(cmd.getOptionValue("v")) : 0;
+		var nextGeneratedKey = new AtomicInteger(6);
+		var generatedValidatorKeys = IntStream.generate(() -> nextGeneratedKey.getAndAdd(1))
+			.mapToObj(GenerateUniverses::privKeyOf)
+			.limit(validatorsCount)
+			.collect(Collectors.toList());
+		generatedValidatorKeys.stream().map(ECKeyPair::getPublicKey).forEach(allValidatorKeysBuilder::add);
+		var allValidatorKeys = allValidatorKeysBuilder.build();
 
+
+		// Issuances to mnemomic account, keys 1-5, and 1st validator
+		final var mnemomicKey = ECPublicKey.fromHex(mnemomicKeyHex);
 		final ImmutableList.Builder<TokenIssuance> tokenIssuancesBuilder = ImmutableList.builder();
+		tokenIssuancesBuilder.add(TokenIssuance.of(mnemomicKey, DEFAULT_ISSUANCE));
 		tokenIssuancesBuilder.add(
 			TokenIssuance.of(pubkeyOf(1), DEFAULT_ISSUANCE),
 			TokenIssuance.of(pubkeyOf(2), DEFAULT_ISSUANCE),
@@ -112,18 +126,13 @@ public final class GenerateUniverses {
 			TokenIssuance.of(pubkeyOf(4), DEFAULT_ISSUANCE),
 			TokenIssuance.of(pubkeyOf(5), DEFAULT_ISSUANCE)
 		);
-
-		var allValidatorKeysBuilder = ImmutableList.<ECPublicKey>builder().addAll(validatorKeys);
-		generatedValidatorKeys.stream().map(ECKeyPair::getPublicKey).forEach(allValidatorKeysBuilder::add);
-		var allValidatorKeys = allValidatorKeysBuilder.build();
-
-		var additionalActions = new ArrayList<TxAction>();
 		// Issue tokens to initial validators for now to support application services
-		allValidatorKeys.forEach(pk -> {
-			var tokenIssuance = TokenIssuance.of(pk, DEFAULT_ISSUANCE);
-			tokenIssuancesBuilder.add(tokenIssuance);
-			additionalActions.add(new StakeTokens(REAddr.ofPubKeyAccount(pk), pk, DEFAULT_ISSUANCE));
-		});
+		allValidatorKeys.forEach(pk -> tokenIssuancesBuilder.add(TokenIssuance.of(pk, DEFAULT_ISSUANCE)));
+
+		// Stakes issued by mnemomic account
+		var stakes = allValidatorKeys.stream()
+			.map(pk -> new StakeTokens(REAddr.ofPubKeyAccount(mnemomicKey), pk, DEFAULT_STAKE))
+			.collect(Collectors.toSet());
 
 		var genesisProvider = Guice.createInjector(new AbstractModule() {
 			@Provides
@@ -137,14 +146,13 @@ public final class GenerateUniverses {
 				install(new CryptoModule());
 				install(new ForksModule());
 				install(RadixEngineConfig.asModule(1, 100));
-				bind(new TypeLiteral<List<TxAction>>() {}).annotatedWith(Genesis.class).toInstance(additionalActions);
+				bind(new TypeLiteral<List<TxAction>>() {}).annotatedWith(Genesis.class).toInstance(List.of());
 				bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 				bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 				bindConstant().annotatedWith(Genesis.class).to(DEFAULT_TIMESTAMP);
+				bind(new TypeLiteral<Set<StakeTokens>>() { }).annotatedWith(Genesis.class).toInstance(stakes);
 				bind(new TypeLiteral<ImmutableList<TokenIssuance>>() {}).annotatedWith(Genesis.class)
 					.toInstance(tokenIssuancesBuilder.build());
-				bind(new TypeLiteral<ImmutableList<StakeDelegation>>() {}).annotatedWith(Genesis.class)
-					.toInstance(ImmutableList.of());
 				bind(new TypeLiteral<ImmutableList<ECPublicKey>>() {}).annotatedWith(Genesis.class)
 					.toInstance(allValidatorKeys);
 			}
@@ -164,15 +172,19 @@ public final class GenerateUniverses {
 		}
 	}
 
-	private static ECPublicKey pubkeyOf(int pk) {
+	private static ECKeyPair privKeyOf(int pk) {
 		var privateKey = new byte[ECKeyPair.BYTES];
 		Ints.copyTo(pk, privateKey, ECKeyPair.BYTES - Integer.BYTES);
 
 		try {
-			return ECKeyPair.fromPrivateKey(privateKey).getPublicKey();
+			return ECKeyPair.fromPrivateKey(privateKey);
 		} catch (PrivateKeyException | PublicKeyException e) {
 			throw new IllegalArgumentException("Error while generating public key", e);
 		}
+	}
+
+	private static ECPublicKey pubkeyOf(int pk) {
+		return privKeyOf(pk).getPublicKey();
 	}
 
 	private static void usage(Options options) {
