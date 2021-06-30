@@ -17,10 +17,13 @@
 
 package com.radixdlt.store.berkeley;
 
+import com.radixdlt.application.tokens.state.ExittingStake;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.store.ReadableAddrsStore;
+import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -67,6 +70,7 @@ import com.sleepycat.je.SecondaryDatabase;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -308,8 +312,17 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 								return false;
 							}
 
+							var substateTypeId = data.getData()[data.getOffset()];
+							final int prefixIndexSize;
+							if (substateTypeId == SubstateTypeId.EXITTING_STAKE.id()) {
+								prefixIndexSize = 2 + Long.BYTES;
+							} else if (substateTypeId == SubstateTypeId.PREPARED_RAKE_UPDATE.id()) {
+								prefixIndexSize = 2 + Long.BYTES;
+							} else {
+								prefixIndexSize = 1;
+							}
 							// Index by substate type
-							result.setData(data.getData(), data.getOffset(), 1);
+							result.setData(data.getData(), data.getOffset(), prefixIndexSize);
 							return true;
 						}
 					)
@@ -449,10 +462,11 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	private static class BerkeleySubstateCursor implements CloseableCursor<RawSubstateBytes> {
 		private final SecondaryDatabase db;
 		private final com.sleepycat.je.Transaction dbTxn;
+		private final byte[] indexableBytes;
 		private SecondaryCursor cursor;
 		private OperationStatus status;
 
-		private DatabaseEntry index;
+		private DatabaseEntry key;
 		private DatabaseEntry value = entry();
 		private DatabaseEntry substateIdBytes = entry();
 
@@ -463,12 +477,13 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		) {
 			this.dbTxn = dbTxn;
 			this.db = db;
-			this.index = entry(indexableBytes);
+			this.key = entry(indexableBytes);
+			this.indexableBytes = indexableBytes;
 		}
 
 		private void open() {
 			this.cursor = db.openCursor(dbTxn, null);
-			this.status = cursor.getSearchKey(index, substateIdBytes, value, null);
+			this.status = cursor.getSearchKeyRange(key, substateIdBytes, value, null);
 		}
 
 		@Override
@@ -478,7 +493,15 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 		@Override
 		public boolean hasNext() {
-			return status == SUCCESS;
+			if (status != SUCCESS) {
+				return false;
+			}
+
+			if (indexableBytes.length > key.getData().length) {
+				return false;
+			}
+
+			return Arrays.equals(indexableBytes, 0, indexableBytes.length, key.getData(), 0, indexableBytes.length);
 		}
 
 		@Override
@@ -488,7 +511,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			}
 
 			var next = new RawSubstateBytes(substateIdBytes.getData(), value.getData());
-			status = cursor.getNextDup(index, substateIdBytes, value, null);
+			status = cursor.getNext(key, substateIdBytes, value, null);
 			return next;
 		}
 	}
@@ -499,8 +522,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		ShutdownAllIndex index
 	) {
 		var dbTxn = unwrap(wrappedDbTxn);
-		final byte[] indexableBytes = new byte[] {index.getPrefix()[0]};
-		var cursor = new BerkeleySubstateCursor(dbTxn, indexedSubstatesDatabase, indexableBytes);
+		var cursor = new BerkeleySubstateCursor(dbTxn, indexedSubstatesDatabase, index.getPrefix());
 		cursor.open();
 		return CloseableCursor.filter(cursor, index::test);
 	}
