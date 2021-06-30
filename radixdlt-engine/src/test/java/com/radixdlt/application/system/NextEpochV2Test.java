@@ -19,6 +19,7 @@
 package com.radixdlt.application.system;
 
 import com.radixdlt.atom.REConstructor;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
@@ -139,6 +140,6 @@ public class NextEpochV2Test {
 		this.sut.execute(List.of(txn), null, PermissionLevel.SUPER_USER);
 
 		// Assert
-		assertThat(store.openIndexedCursor(PreparedStake.class, parser.getSubstateDeserialization())).isEmpty();
+		assertThat(store.openIndexedCursor(SubstateTypeId.PREPARED_STAKE.id(), parser.getSubstateDeserialization())).isEmpty();
 	}
 }

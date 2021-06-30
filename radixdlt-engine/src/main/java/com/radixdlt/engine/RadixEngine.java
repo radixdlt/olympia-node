@@ -205,6 +205,7 @@ public final class RadixEngine<M> {
 		this.batchVerifier = batchVerifier;
 	}
 
+	/*
 	public <T extends Particle> void addSubstateCache(SubstateCacheRegister<T> substateCacheRegister, boolean includeInBranches) {
 		synchronized (stateUpdateEngineLock) {
 			if (substateCache.containsKey(substateCacheRegister.getParticleClass())) {
@@ -226,6 +227,7 @@ public final class RadixEngine<M> {
 			substateCache.put(substateCacheRegister.getParticleClass(), cache);
 		}
 	}
+	 */
 
 
 	/**
@@ -561,7 +563,7 @@ public final class RadixEngine<M> {
 
 	private TxBuilder construct(TxBuilderExecutable executable, Set<SubstateId> avoid) throws TxBuilderException {
 		synchronized (stateUpdateEngineLock) {
-			SubstateStore substateStore = (c, d) -> {
+			SubstateStore substateStore = engineStore;/*(c, d) -> {
 				var cache = substateCache.get(c);
 				if (cache == null) {
 					return engineStore.openIndexedCursor(c, d);
@@ -576,11 +578,11 @@ public final class RadixEngine<M> {
 						next -> !cache.cache.asMap().containsKey(next.getId())
 					)
 				);
-			};
+			};*/
 
-			SubstateStore filteredStore = (c, d) -> CloseableCursor.filter(
-				substateStore.openIndexedCursor(c, d),
-				i -> !avoid.contains(i.getId())
+			SubstateStore filteredStore = b -> CloseableCursor.filter(
+				substateStore.openIndexedCursor(b),
+				i -> !avoid.contains(SubstateId.fromBytes(i.getId()))
 			);
 
 			var txBuilder = TxBuilder.newBuilder(

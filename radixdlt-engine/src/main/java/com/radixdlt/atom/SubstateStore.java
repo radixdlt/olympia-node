@@ -18,8 +18,7 @@
 
 package com.radixdlt.atom;
 
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
 
 import java.util.NoSuchElementException;
 
@@ -28,13 +27,10 @@ import java.util.NoSuchElementException;
  */
 public interface SubstateStore {
 
-	CloseableCursor<Substate> openIndexedCursor(
-		Class<? extends Particle> particleClass,
-		SubstateDeserialization deserialization
-	);
+	CloseableCursor<RawSubstateBytes> openIndexedCursor(byte typeByte);
 
 	static SubstateStore empty() {
-		return (c, d) -> new CloseableCursor<>() {
+		return t -> new CloseableCursor<>() {
 			@Override
 			public void close() {
 			}
@@ -45,7 +41,7 @@ public interface SubstateStore {
 			}
 
 			@Override
-			public Substate next() {
+			public RawSubstateBytes next() {
 				throw new NoSuchElementException();
 			}
 		};

@@ -111,14 +111,14 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	}
 
 	@Override
-	public CloseableCursor<Substate> openIndexedCursor(Class<? extends Particle> substateClass, SubstateDeserialization deserialization) {
-		final List<Substate> substates = new ArrayList<>();
+	public CloseableCursor<RawSubstateBytes> openIndexedCursor(byte typeByte) {
+		final List<RawSubstateBytes> substates = new ArrayList<>();
 		synchronized (lock) {
 			for (var i : storedParticles.values()) {
-				if (!i.isBootUp() || !substateClass.isInstance(i.getRawSubstate())) {
+				if (!i.isBootUp() || i.getRawSubstateBytes().getData()[0] != typeByte) {
 					continue;
 				}
-				substates.add(i.getSubstate());
+				substates.add(i.getRawSubstateBytes());
 			}
 		}
 

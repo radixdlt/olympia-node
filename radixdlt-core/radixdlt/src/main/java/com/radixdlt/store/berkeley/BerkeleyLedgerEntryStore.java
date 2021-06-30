@@ -527,30 +527,12 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return cursor;
 	}
 
-	private CloseableCursor<Substate> openIndexedCursorInternal(
-		byte index,
-		SubstateDeserialization deserialization
-	) {
+	@Override
+	public CloseableCursor<RawSubstateBytes> openIndexedCursor(byte index) {
 		final byte[] indexableBytes = new byte[] {index};
 		var cursor = new BerkeleySubstateCursor(null, indexedSubstatesDatabase, indexableBytes);
 		cursor.open();
-		return CloseableCursor.map(cursor, p -> {
-			try {
-				var particle = deserialization.deserialize(p.getData());
-				return Substate.create(particle, SubstateId.fromBytes(p.getId()));
-			} catch (DeserializeException e) {
-				throw new IllegalStateException("Unable to deserialize already stored substate.");
-			}
-		});
-	}
-
-	@Override
-	public CloseableCursor<Substate> openIndexedCursor(
-		Class<? extends Particle> particleClass,
-		SubstateDeserialization deserialization
-	) {
-		var typeByte = deserialization.classToByte(particleClass);
-		return openIndexedCursorInternal(typeByte, deserialization);
+		return cursor;
 	}
 
 	@Override

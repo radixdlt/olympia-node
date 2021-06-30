@@ -125,7 +125,7 @@ public class RadixEngineModule extends AbstractModule {
 		radixEngine.addStateReducer(new SystemReducer(), true);
 
 		var validatorsCache = new SubstateCacheRegister<>(ValidatorBFTData.class, p -> true);
-		radixEngine.addSubstateCache(validatorsCache, true);
+		//radixEngine.addSubstateCache(validatorsCache, true);
 		radixEngine.addStateReducer(new CurrentValidatorsReducer(), false);
 
 		// Additional state reducers are not required for consensus so don't need to include their
@@ -134,8 +134,8 @@ public class RadixEngineModule extends AbstractModule {
 		stateReducers.forEach(r -> radixEngine.addStateReducer(r, false));
 		namedStateReducers.forEach(n -> radixEngine.addStateReducer(n.getSecond(), n.getFirst(), false));
 
-		logger.info("RE - Initializing substate caches: {}", substateCacheRegisters);
-		substateCacheRegisters.forEach(c -> radixEngine.addSubstateCache(c, false));
+		//logger.info("RE - Initializing substate caches: {}", substateCacheRegisters);
+		//substateCacheRegisters.forEach(c -> radixEngine.addSubstateCache(c, false));
 
 		return radixEngine;
 	}
