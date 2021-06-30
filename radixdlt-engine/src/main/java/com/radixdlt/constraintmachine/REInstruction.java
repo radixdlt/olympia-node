@@ -212,6 +212,10 @@ public final class REInstruction {
 		this.length = length;
 	}
 
+	public int getDataLength() {
+		return length;
+	}
+
 	public REMicroOp getMicroOp() {
 		return microOp;
 	}
