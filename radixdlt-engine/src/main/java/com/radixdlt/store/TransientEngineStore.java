@@ -78,11 +78,6 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index) {
-		return openIndexedCursor(null, index);
-	}
-
-	@Override
 	public Optional<Particle> loadAddr(Transaction dbTxn, REAddr rri, SubstateDeserialization deserialization) {
 		return transientStore.loadAddr(dbTxn, rri, deserialization)
 			.or(() -> base.loadAddr(dbTxn, rri, deserialization));

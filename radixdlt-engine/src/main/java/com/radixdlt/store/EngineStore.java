@@ -35,7 +35,7 @@ import java.util.function.BiFunction;
 /**
  *  A state that gives access to the state of a certain shard space
  */
-public interface EngineStore<M> extends SubstateStore {
+public interface EngineStore<M> {
 	/**
 	 * Hack for atomic transaction, better to implement
 	 * whole function in single interface in future.
@@ -51,30 +51,25 @@ public interface EngineStore<M> extends SubstateStore {
 			return null;
 		}
 	}
-
 	Transaction createTransaction();
 
-	boolean isVirtualDown(Transaction txn, SubstateId substateId);
-
+	boolean isVirtualDown(Transaction dbTxn, SubstateId substateId);
 	Optional<Particle> loadUpParticle(
-		Transaction txn,
+		Transaction dbTxn,
 		SubstateId substateId,
 		SubstateDeserialization deserialization
 	);
-
+	Optional<Particle> loadAddr(
+		Transaction dbTxn,
+		REAddr addr,
+		SubstateDeserialization deserialization
+	);
 	CloseableCursor<RawSubstateBytes> openIndexedCursor(Transaction txn, SubstateIndex index);
 
 	/**
 	 * Stores the atom into this CMStore
 	 */
 	void storeTxn(Transaction dbTxn, Txn txn, List<REStateUpdate> instructions);
-
-	Optional<Particle> loadAddr(
-		Transaction dbTxn,
-		REAddr addr,
-		SubstateDeserialization deserialization
-	);
-
 	void storeMetadata(Transaction txn, M metadata);
 
 	/**

@@ -525,11 +525,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index) {
-		return openIndexedCursor(null, index);
-	}
-
-	@Override
 	public <V> V reduceUpParticles(
 		V initial,
 		BiFunction<V, Particle, V> outputReducer,
