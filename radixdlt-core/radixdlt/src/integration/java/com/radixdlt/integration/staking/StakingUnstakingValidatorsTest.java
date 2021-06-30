@@ -18,6 +18,12 @@
 
 package com.radixdlt.integration.staking;
 
+import com.google.common.collect.Iterators;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.serialization.DeserializeException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -117,9 +123,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import io.reactivex.rxjava3.schedulers.Timed;
 
@@ -218,8 +227,8 @@ public class StakingUnstakingValidatorsTest {
 						.toInstance(nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
 
 					nodeKeys.forEach(key ->
-										 Multibinder.newSetBinder(binder(), TokenIssuance.class)
-											 .addBinding().toInstance(TokenIssuance.of(key.getPublicKey(), Amount.ofTokens(10 * 10).toSubunits()))
+						Multibinder.newSetBinder(binder(), TokenIssuance.class)
+							.addBinding().toInstance(TokenIssuance.of(key.getPublicKey(), Amount.ofTokens(10 * 10).toSubunits()))
 					);
 				}
 			}
@@ -247,8 +256,8 @@ public class StakingUnstakingValidatorsTest {
 
 	private Injector createRunner(boolean byzantine, ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		var reConfig = byzantine && byzantineModule != null
-					   ? Modules.override(this.radixEngineConfiguration).with(byzantineModule)
-					   : this.radixEngineConfiguration;
+			? Modules.override(this.radixEngineConfiguration).with(byzantineModule)
+			: this.radixEngineConfiguration;
 
 		return Guice.createInjector(
 			MempoolConfig.asModule(10, 10),
@@ -399,10 +408,19 @@ public class StakingUnstakingValidatorsTest {
 			return map;
 		}
 
+		private <T extends Particle> T deserialize(SubstateDeserialization deserialization, byte[] data) {
+			try {
+				return (T) deserialization.deserialize(data);
+			} catch (DeserializeException e) {
+				throw new IllegalStateException(e);
+			}
+		}
+
 		@SuppressWarnings("unchecked")
 		public UInt256 getTotalNativeTokens() {
 			var forkConfig = forks.get(getEpoch());
 			var reParser = forkConfig.getParser();
+			var deserialization = reParser.getSubstateDeserialization();
 			var totalTokens = entryStore.reduceUpParticles(
 				UInt256.ZERO,
 				(i, p) -> {
@@ -413,15 +431,15 @@ public class StakingUnstakingValidatorsTest {
 				TokensInAccount.class
 			);
 			logger.info("Total tokens: {}", Amount.ofSubunits(totalTokens));
-			var totalStaked = entryStore.reduceUpParticles(
-				UInt256.ZERO,
-				(i, p) -> {
-					var tokens = (ValidatorStakeData) p;
-					return i.add(tokens.getAmount());
-				},
-				reParser.getSubstateDeserialization(),
-				ValidatorStakeData.class
-			);
+			var index = deserialization.index(ValidatorStakeData.class);
+			final UInt256 totalStaked;
+			try (var stakeCursor = entryStore.openIndexedCursor(index)) {
+				totalStaked = Streams.stream(stakeCursor)
+					.map(s -> {
+						ValidatorStakeData validatorStake = deserialize(deserialization, s.getData());
+						return validatorStake.getAmount();
+					}).reduce(UInt256::add).orElse(UInt256.ZERO);
+			}
 			logger.info("Total staked: {}", Amount.ofSubunits(totalStaked));
 			var totalStakePrepared = entryStore.reduceUpParticles(
 				UInt256.ZERO,
@@ -494,13 +512,14 @@ public class StakingUnstakingValidatorsTest {
 					break;
 				case 4:
 					// Only unregister once in a while
-					if (random.nextInt(10) == 0) {
-						action = new UnregisterValidator(privKey.getPublicKey());
-						break;
+					if (nodeIndex <= 1) {
+						continue;
 					}
-					continue;
+
+					action = new UnregisterValidator(privKey.getPublicKey());
+					break;
 				case 5:
-					restartNode(nodeIndex);
+					//restartNode(nodeIndex);
 					continue;
 				case 6:
 					action = new UpdateRake(privKey.getPublicKey(), random.nextInt(PreparedRakeUpdate.RAKE_MAX + 1));
