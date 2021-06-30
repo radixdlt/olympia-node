@@ -55,7 +55,7 @@ public class IncreasingValidatorsTest {
 		.ledgerAndRadixEngineWithEpochHighView()
 		.addTestModules(
 			ConsensusMonitors.safety(),
-			ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+			ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
 			ConsensusMonitors.noTimeouts(),
 			ConsensusMonitors.directParents(),
 			LedgerMonitors.consensusToLedger(),

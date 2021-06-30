@@ -33,7 +33,7 @@ public final class LedgerUpdate {
 
 	public LedgerUpdate(VerifiedTxnsAndProof verifiedTxnsAndProof, ClassToInstanceMap<Object> output) {
 		this.verifiedTxnsAndProof = Objects.requireNonNull(verifiedTxnsAndProof);
-		this.output = output;
+		this.output = Objects.requireNonNull(output);
 	}
 
 	public ClassToInstanceMap<Object> getStateComputerOutput() {
