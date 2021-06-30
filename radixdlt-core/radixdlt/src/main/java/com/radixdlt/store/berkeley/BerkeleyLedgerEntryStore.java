@@ -524,7 +524,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		var dbTxn = unwrap(wrappedDbTxn);
 		var cursor = new BerkeleySubstateCursor(dbTxn, indexedSubstatesDatabase, index.getPrefix());
 		cursor.open();
-		return CloseableCursor.filter(cursor, index::test);
+		return cursor;
 	}
 
 	private CloseableCursor<Substate> openIndexedCursorInternal(
