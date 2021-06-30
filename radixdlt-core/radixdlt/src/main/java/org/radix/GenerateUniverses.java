@@ -138,8 +138,8 @@ public final class GenerateUniverses {
 			@Provides
 			@Singleton
 			RERules reRules(Forks forks) {
-									   return forks.get(0);
-														   }
+				return forks.get(0);
+			}
 
 			@Override
 			protected void configure() {
