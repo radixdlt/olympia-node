@@ -21,7 +21,7 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
-import com.radixdlt.store.ReadableAddrsStore;
+import com.radixdlt.store.ResourceStore;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -87,7 +87,7 @@ import static com.sleepycat.je.OperationStatus.NOTFOUND;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
 @Singleton
-public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTProof>, ReadableAddrsStore, TxnIndex,
+public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTProof>, ResourceStore, TxnIndex,
 	CommittedReader, PersistentVertexStore {
 	private static final Logger log = LogManager.getLogger();
 
@@ -596,21 +596,11 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return e.getData().length == 0 ? REOp.DOWN : REOp.UP;
 	}
 
-	private Optional<ByteBuffer> entryToUpParticle(DatabaseEntry e) {
+	private Optional<ByteBuffer> entryToSubstate(DatabaseEntry e) {
 		if (entryToSpin(e) == REOp.DOWN) {
 			return Optional.empty();
 		}
 		return Optional.of(ByteBuffer.wrap(e.getData()));
-	}
-
-	private Optional<Particle> entryToUpParticle(DatabaseEntry e, SubstateDeserialization deserialization) {
-		return entryToUpParticle(e).map(b -> {
-			try {
-				return deserialization.deserialize(e.getData());
-			} catch (DeserializeException ex) {
-				throw new IllegalStateException("Unable to deserialize particle");
-			}
-		});
 	}
 
 	private void updateParticle(com.sleepycat.je.Transaction txn, REStateUpdate stateUpdate) {
@@ -738,12 +728,12 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public Optional<Particle> loadAddr(REAddr addr, SubstateDeserialization deserialization) {
-		return loadAddr(null, addr, deserialization);
+	public Optional<ByteBuffer> loadResource(REAddr addr) {
+		return loadAddr(null, addr);
 	}
 
 	@Override
-	public Optional<Particle> loadAddr(Transaction tx, REAddr addr, SubstateDeserialization deserialization) {
+	public Optional<ByteBuffer> loadAddr(Transaction tx, REAddr addr) {
 		var buf = ByteBuffer.allocate(128);
 		buf.put(addr.getBytes());
 		var pos = buf.position();
@@ -754,7 +744,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			return Optional.empty();
 		}
 
-		return entryToUpParticle(value, deserialization);
+		return entryToSubstate(value);
 	}
 
 	@Override
@@ -766,7 +756,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public Optional<ByteBuffer> loadUpParticle(Transaction tx, SubstateId substateId) {
+	public Optional<ByteBuffer> loadSubstate(Transaction tx, SubstateId substateId) {
 		var key = entry(substateId.asBytes());
 		var value = entry();
 		var status = substatesDatabase.get(unwrap(tx), key, value, DEFAULT);
@@ -774,7 +764,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			return Optional.empty();
 		}
 
-		return entryToUpParticle(value);
+		return entryToSubstate(value);
 	}
 
 	@Override

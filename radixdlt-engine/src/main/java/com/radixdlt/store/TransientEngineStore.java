@@ -56,12 +56,12 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public Optional<ByteBuffer> loadUpParticle(Transaction txn, SubstateId substateId) {
+	public Optional<ByteBuffer> loadSubstate(Transaction txn, SubstateId substateId) {
 		if (transientStore.getSpin(substateId).isEmpty()) {
-			return base.loadUpParticle(txn, substateId);
+			return base.loadSubstate(txn, substateId);
 		}
 
-		return transientStore.loadUpParticle(txn, substateId);
+		return transientStore.loadSubstate(txn, substateId);
 	}
 
 	@Override
@@ -79,8 +79,7 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public Optional<Particle> loadAddr(Transaction dbTxn, REAddr rri, SubstateDeserialization deserialization) {
-		return transientStore.loadAddr(dbTxn, rri, deserialization)
-			.or(() -> base.loadAddr(dbTxn, rri, deserialization));
+	public Optional<ByteBuffer> loadAddr(Transaction dbTxn, REAddr addr) {
+		return transientStore.loadAddr(dbTxn, addr).or(() -> base.loadAddr(dbTxn, addr));
 	}
 }

@@ -348,7 +348,7 @@ public final class RadixEngine<M> {
 
 				@Override
 				public Optional<ByteBuffer> loadUpParticle(SubstateId substateId) {
-					return engineStore.loadUpParticle(dbTransaction, substateId);
+					return engineStore.loadSubstate(dbTransaction, substateId);
 				}
 
 				@Override
@@ -357,8 +357,8 @@ public final class RadixEngine<M> {
 				}
 
 				@Override
-				public Optional<Particle> loadAddr(REAddr addr, SubstateDeserialization deserialization) {
-					return engineStore.loadAddr(dbTransaction, addr, deserialization);
+				public Optional<ByteBuffer> loadResource(REAddr addr) {
+					return engineStore.loadAddr(dbTransaction, addr);
 				}
 			},
 			context,

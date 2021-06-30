@@ -19,21 +19,17 @@
 package com.radixdlt.api.construction;
 
 import com.google.inject.Inject;
-import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.exceptions.TxnParseException;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.TxnIndex;
 import com.radixdlt.store.CMStore;
-import com.radixdlt.store.ReadableAddrsStore;
-import io.netty.buffer.ByteBuf;
+import com.radixdlt.store.ResourceStore;
 
 import java.nio.ByteBuffer;
 import java.util.Optional;
@@ -45,13 +41,13 @@ import java.util.Optional;
  */
 public final class LogCMStore implements CMStore {
 	private final TxnIndex txnIndex;
-	private final ReadableAddrsStore readableAddrs;
+	private final ResourceStore readableAddrs;
 	private final REParser reParser;
 
 	@Inject
 	public LogCMStore(
 		TxnIndex txnIndex,
-		ReadableAddrsStore readableAddrs,
+		ResourceStore readableAddrs,
 		REParser reParser
 	) {
 		this.txnIndex = txnIndex;
@@ -65,8 +61,8 @@ public final class LogCMStore implements CMStore {
 	}
 
 	@Override
-	public Optional<Particle> loadAddr(REAddr rri, SubstateDeserialization deserialization) {
-		return readableAddrs.loadAddr(rri, deserialization);
+	public Optional<ByteBuffer> loadResource(REAddr rri) {
+		return readableAddrs.loadResource(rri);
 	}
 
 	@Override

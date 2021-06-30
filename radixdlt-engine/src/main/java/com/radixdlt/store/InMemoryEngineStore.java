@@ -38,11 +38,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
-public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateStore {
+public final class InMemoryEngineStore<M> implements EngineStore<M> {
 	private final Object lock = new Object();
 	private final Map<SubstateId, REStateUpdate> storedParticles = new HashMap<>();
-	private final Map<REAddr, Particle> addrParticles = new HashMap<>();
+	private final Map<REAddr, Supplier<ByteBuffer>> addrParticles = new HashMap<>();
 
 	@Override
 	public void storeTxn(Transaction dbTxn, Txn txn, List<REStateUpdate> stateUpdates) {
@@ -50,12 +51,11 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 			stateUpdates.forEach(i -> storedParticles.put(i.getSubstate().getId(), i));
 			stateUpdates.stream()
 				.filter(REStateUpdate::isBootUp)
-				.map(REStateUpdate::getRawSubstate)
 				.forEach(p -> {
 					// FIXME: Superhack
-					if (p instanceof TokenResource) {
-						var tokenDef = (TokenResource) p;
-						addrParticles.put(tokenDef.getAddr(), p);
+					if (p.getRawSubstate() instanceof TokenResource) {
+						var tokenDef = (TokenResource) p.getRawSubstate();
+						addrParticles.put(tokenDef.getAddr(), p::getStateBuf);
 					}
 				});
 		}
@@ -111,11 +111,6 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	}
 
 	@Override
-	public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index) {
-		return openIndexedCursor(null, index);
-	}
-
-	@Override
 	public Transaction createTransaction() {
 		return new Transaction() { };
 	}
@@ -136,7 +131,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	}
 
 	@Override
-	public Optional<ByteBuffer> loadUpParticle(Transaction txn, SubstateId substateId) {
+	public Optional<ByteBuffer> loadSubstate(Transaction txn, SubstateId substateId) {
 		synchronized (lock) {
 			var inst = storedParticles.get(substateId);
 			if (inst == null || inst.getOp() != REOp.UP) {
@@ -148,9 +143,9 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	}
 
 	@Override
-	public Optional<Particle> loadAddr(Transaction dbTxn, REAddr rri, SubstateDeserialization deserialization) {
+	public Optional<ByteBuffer> loadAddr(Transaction dbTxn, REAddr rri) {
 		synchronized (lock) {
-			return Optional.ofNullable(addrParticles.get(rri));
+			return Optional.ofNullable(addrParticles.get(rri).get());
 		}
 	}
 }

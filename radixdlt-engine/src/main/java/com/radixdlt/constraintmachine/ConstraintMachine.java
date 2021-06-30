@@ -106,7 +106,14 @@ public final class ConstraintMachine {
 					.filter(p -> p.getAddr().equals(addr))
 					.findFirst()
 					.map(Particle.class::cast)
-					.or(() -> store.loadAddr(addr, deserialization));
+					.or(() ->
+						store.loadResource(addr).map(b -> {
+							try {
+								return deserialization.deserialize(b);
+							} catch (DeserializeException e) {
+								throw new IllegalStateException(e);
+							}
+						}));
 		}
 
 		public Optional<Particle> loadUpParticle(SubstateId substateId) {

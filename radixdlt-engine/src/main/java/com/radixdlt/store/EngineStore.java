@@ -55,12 +55,8 @@ public interface EngineStore<M> {
 	Transaction createTransaction();
 
 	boolean isVirtualDown(Transaction dbTxn, SubstateId substateId);
-	Optional<ByteBuffer> loadUpParticle(Transaction dbTxn, SubstateId substateId);
-	Optional<Particle> loadAddr(
-		Transaction dbTxn,
-		REAddr addr,
-		SubstateDeserialization deserialization
-	);
+	Optional<ByteBuffer> loadSubstate(Transaction dbTxn, SubstateId substateId);
+	Optional<ByteBuffer> loadAddr(Transaction dbTxn, REAddr addr);
 	CloseableCursor<RawSubstateBytes> openIndexedCursor(Transaction txn, SubstateIndex index);
 
 	/**

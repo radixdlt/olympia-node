@@ -18,18 +18,14 @@
 
 package com.radixdlt.store;
 
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.identifiers.REAddr;
 
+import java.nio.ByteBuffer;
 import java.util.Optional;
 
 /**
  * Index into immutable substates
  */
-public interface ReadableAddrsStore {
-	Optional<Particle> loadAddr(
-		REAddr addr,
-		SubstateDeserialization deserialization
-	);
+public interface ResourceStore {
+	Optional<ByteBuffer> loadResource(REAddr addr);
 }

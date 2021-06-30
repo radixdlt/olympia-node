@@ -20,9 +20,7 @@ package com.radixdlt.store;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.SubstateDeserialization;
 
 import java.nio.ByteBuffer;
 import java.util.Optional;
@@ -30,10 +28,8 @@ import java.util.Optional;
 /**
  * Read only store interface for Constraint Machine validation
  */
-public interface CMStore extends ReadableAddrsStore {
+public interface CMStore extends ResourceStore {
 	boolean isVirtualDown(SubstateId substateId);
-
 	Optional<ByteBuffer> loadUpParticle(SubstateId substateId);
-
 	CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index);
 }
