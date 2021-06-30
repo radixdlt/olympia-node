@@ -65,9 +65,9 @@ public class TxnSizeFeeTest {
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
 		return List.of(
-			new Object[] {UInt256.ONE},
-			new Object[] {UInt256.TWO},
-			new Object[] {Amount.ofMicroTokens(2).toSubunits()}
+			new Object[] {Amount.ofSubunits(UInt256.ONE)},
+			new Object[] {Amount.ofSubunits(UInt256.TWO)},
+			new Object[] {Amount.ofMicroTokens(2)}
 		);
 	}
 
@@ -75,9 +75,9 @@ public class TxnSizeFeeTest {
 	private EngineStore<Void> store;
 	private final ECKeyPair key = ECKeyPair.generateNew();
 	private final REAddr accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
-	private final UInt256 costPerByte;
+	private final Amount costPerByte;
 
-	public TxnSizeFeeTest(UInt256 costPerByte) {
+	public TxnSizeFeeTest(Amount costPerByte) {
 		this.costPerByte = costPerByte;
 	}
 
@@ -89,7 +89,7 @@ public class TxnSizeFeeTest {
 		var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures(),
-			TxnSizeFeeMeter.create(costPerByte)
+			TxnSizeFeeMeter.create(costPerByte.toSubunits())
 		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		var serialization = cmAtomOS.buildSubstateSerialization();
@@ -102,7 +102,7 @@ public class TxnSizeFeeTest {
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
 				.put(FeeReservePut.class, new FeeReservePutConstructor())
-				.put(FeeReserveComplete.class, new FeeReserveCompleteConstructor(costPerByte))
+				.put(FeeReserveComplete.class, new FeeReserveCompleteConstructor(FeeTable.create(costPerByte, Amount.zero())))
 				.build(),
 			cm,
 			store
@@ -123,7 +123,7 @@ public class TxnSizeFeeTest {
 		var to = REAddr.ofPubKeyAccount(nextKey.getPublicKey());
 		var transfer = this.engine.construct(
 			TxnConstructionRequest.create()
-				.action(new FeeReservePut(accountAddr, costPerByte.multiply(UInt256.from(expectedTxnSize))))
+				.action(new FeeReservePut(accountAddr, costPerByte.toSubunits().multiply(UInt256.from(expectedTxnSize))))
 				.action(new TransferToken(REAddr.ofNativeToken(), accountAddr, to, UInt256.FIVE)))
 			.signAndBuild(key::sign);
 
@@ -141,7 +141,7 @@ public class TxnSizeFeeTest {
 		var to = REAddr.ofPubKeyAccount(nextKey.getPublicKey());
 		var transfer = this.engine.construct(
 			TxnConstructionRequest.create()
-				.action(new FeeReservePut(accountAddr, costPerByte.multiply(UInt256.from(expectedTxnSize))))
+				.action(new FeeReservePut(accountAddr, costPerByte.toSubunits().multiply(UInt256.from(expectedTxnSize))))
 				.action(new TransferToken(REAddr.ofNativeToken(), accountAddr, to, UInt256.FIVE))
 				.action(new FeeReserveComplete(accountAddr)))
 			.signAndBuild(key::sign);
@@ -198,7 +198,7 @@ public class TxnSizeFeeTest {
 				.action(new FeeReserveComplete(accountAddr)))
 			.signAndBuild(key::sign);
 
-		var expectedFee = costPerByte.multiply(UInt256.from(transfer.getPayload().length));
+		var expectedFee = costPerByte.toSubunits().multiply(UInt256.from(transfer.getPayload().length));
 		var expectedRefund = new BigInteger(1, Amount.ofTokens(1).toSubunits().subtract(expectedFee).toByteArray());
 
 		// Act

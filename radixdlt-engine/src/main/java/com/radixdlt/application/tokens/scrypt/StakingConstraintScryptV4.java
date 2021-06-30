@@ -208,25 +208,40 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 		os.procedure(new DownProcedure<>(
 			StakeOwnershipHoldingBucket.class, StakeOwnership.class,
 			d -> d.getSubstate().bucket().withdrawAuthorization(),
-			(d, s, r) -> ReducerResult.incomplete(s.depositOwnership(d.getSubstate()))
+			(d, s, r) -> {
+				s.depositOwnership(d.getSubstate());
+				return ReducerResult.incomplete(s);
+			}
 		));
 		// Change
 		os.procedure(new UpProcedure<>(
 			StakeOwnershipHoldingBucket.class, StakeOwnership.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, u, c, r) -> ReducerResult.incomplete(s.withdrawOwnership(u))
+			(s, u, c, r) -> {
+				var ownership = s.withdrawOwnership(u.getAmount());
+				if (!ownership.equals(u)) {
+					throw new MismatchException(ownership, u);
+				}
+				return ReducerResult.incomplete(s);
+			}
 		));
 		os.procedure(new UpProcedure<>(
 			StakeOwnershipHoldingBucket.class, PreparedUnstakeOwnership.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, u, c, r) -> ReducerResult.incomplete(s.unstake(u))
+			(s, u, c, r) -> {
+				var unstake = s.unstake(u.getAmount());
+				if (!unstake.equals(u)) {
+					throw new MismatchException(unstake, u);
+				}
+				return ReducerResult.incomplete(s);
+			}
 		));
 
 		// Deallocate Stake Holding Bucket
 		os.procedure(new EndProcedure<>(
 			StakeOwnershipHoldingBucket.class,
 			s -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			StakeOwnershipHoldingBucket::destroy
+			(s, c, r) -> s.destroy()
 		));
 	}
 }

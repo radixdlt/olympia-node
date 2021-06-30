@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRandomRegistrator;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.statecomputer.RadixEngineConfig;
+import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -54,7 +55,7 @@ public class RandomValidatorsTest {
 			RadixEngineConfig.asModule(2, 50),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
-					Amount.ofTokens(0),
+					FeeTable.noFees(),
 					OptionalInt.of(5),
 					100,
 					2,

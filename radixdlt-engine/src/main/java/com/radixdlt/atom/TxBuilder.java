@@ -23,6 +23,7 @@ import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.constraintmachine.ShutdownAllIndex;
@@ -57,6 +58,7 @@ public final class TxBuilder {
 	private final SubstateSerialization serialization;
 	private UInt256 feeReservePut;
 	private UInt256 feeReserveTake = UInt256.ZERO;
+	private int numResourcesCreated = 0;
 
 	private TxBuilder(
 		SubstateStore remoteSubstate,
@@ -91,6 +93,13 @@ public final class TxBuilder {
 
 	public void up(Particle particle) {
 		lowLevelBuilder.up(particle);
+		if (particle instanceof TokenResource) {
+			numResourcesCreated++;
+		}
+	}
+
+	public int getNumResourcesCreated() {
+		return numResourcesCreated;
 	}
 
 	private void virtualDown(SubstateWithArg<?> substateWithArg) {
@@ -453,7 +462,7 @@ public final class TxBuilder {
 	) {
 		lowLevelBuilder.syscall(Syscall.FEE_RESERVE_TAKE, amount);
 		if (!amount.isZero()) {
-			up(new TokensInAccount(addr, amount, REAddr.ofNativeToken()));
+			up(new TokensInAccount(addr, REAddr.ofNativeToken(), amount));
 		}
 		this.feeReserveTake = this.feeReserveTake.add(amount);
 	}

@@ -23,21 +23,24 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.FeeReserveComplete;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Optional;
 
 public class FeeReserveCompleteConstructor implements ActionConstructor<FeeReserveComplete> {
-	private final UInt256 costPerByte;
-	public FeeReserveCompleteConstructor(UInt256 costPerByte) {
-		this.costPerByte = costPerByte;
+	private final FeeTable feeTable;
+	public FeeReserveCompleteConstructor(FeeTable feeTable) {
+		this.feeTable = feeTable;
 	}
 
 	@Override
 	public void construct(FeeReserveComplete action, TxBuilder builder) throws TxBuilderException {
 		var feeReserve = Optional.ofNullable(builder.getFeeReserve()).orElse(UInt256.ZERO);
 		int curSize = builder.toLowLevelBuilder().size() + signatureInstructionSize();
-		var expectedFee1 = costPerByte.multiply(UInt256.from(curSize));
+		var perByteFee = feeTable.getPerByteFee().toSubunits();
+		var resourceCost = feeTable.getPerResourceFee().toSubunits().multiply(UInt256.from(builder.getNumResourcesCreated()));
+		var expectedFee1 = perByteFee.multiply(UInt256.from(curSize)).add(resourceCost);
 		if (feeReserve.compareTo(expectedFee1) < 0) {
 			throw new FeeReserveCompleteException(feeReserve, expectedFee1);
 		}
@@ -49,10 +52,10 @@ public class FeeReserveCompleteConstructor implements ActionConstructor<FeeReser
 
 		// TODO: Figure out cleaner way to do this which isn't so fragile
 		var expectedSizeWithNoReturn = curSize + syscallInstructionSize() + endInstructionSize();
-		var expectedFee = costPerByte.multiply(UInt256.from(expectedSizeWithNoReturn));
+		var expectedFee = perByteFee.multiply(UInt256.from(expectedSizeWithNoReturn)).add(resourceCost);
 		if (!expectedFee.equals(feeReserve)) {
 			var expectedSizeWithReturn = expectedSizeWithNoReturn + returnedSubstateInstructionSize();
-			expectedFee = costPerByte.multiply(UInt256.from(expectedSizeWithReturn));
+			expectedFee = perByteFee.multiply(UInt256.from(expectedSizeWithReturn)).add(resourceCost);
 		}
 		if (feeReserve.compareTo(expectedFee) < 0) {
 			throw new FeeReserveCompleteException(feeReserve, expectedFee);

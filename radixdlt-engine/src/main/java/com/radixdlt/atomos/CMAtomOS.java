@@ -28,6 +28,8 @@ import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.Procedures;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
+
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -75,6 +77,10 @@ public final class CMAtomOS {
 		// RRI particle is a low level particle managed by the OS used for the management of all other resources
 		this.systemNames = systemNames;
 
+		// PUB_KEY type is already claimed by accounts
+		var claimableAddrTypes =
+			EnumSet.of(REAddr.REAddrType.NATIVE_TOKEN, REAddr.REAddrType.HASHED_KEY, REAddr.REAddrType.SYSTEM);
+
 		this.load(os -> {
 			os.substate(
 				new SubstateDefinition<>(
@@ -82,17 +88,14 @@ public final class CMAtomOS {
 					SubstateTypeId.UNCLAIMED_READDR.id(),
 					buf -> {
 						REFieldSerialization.deserializeReservedByte(buf);
-						var rri = REFieldSerialization.deserializeREAddr(buf);
+						var rri = REFieldSerialization.deserializeREAddr(buf, claimableAddrTypes);
 						return new UnclaimedREAddr(rri);
 					},
 					(s, buf) -> {
 						REFieldSerialization.serializeReservedByte(buf);
 						REFieldSerialization.serializeREAddr(buf, s.getAddr());
 					},
-					v -> v.getAddr().getType() == REAddr.REAddrType.NATIVE_TOKEN
-						|| v.getAddr().getType() == REAddr.REAddrType.HASHED_KEY
-						|| v.getAddr().isSystem()
-					// PUB_KEY type is already claimed by accounts
+					v -> claimableAddrTypes.contains(v.getAddr().getType())
 				)
 			);
 			os.procedure(new DownProcedure<>(

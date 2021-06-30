@@ -18,6 +18,11 @@
 
 package com.radixdlt.statecomputer.radixengine;
 
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -50,15 +55,15 @@ import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt256;
+import org.radix.TokenIssuance;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.Assert.assertNotNull;
 
 
-public class MutableTokenTest {
-	private ECKeyPair keyPair = ECKeyPair.generateNew();
+public class MutableTokenAndResourceFeeTest {
+	private final ECKeyPair keyPair = ECKeyPair.generateNew();
 
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
@@ -77,7 +82,12 @@ public class MutableTokenTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
-			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
+			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideFeeTable(
+				FeeTable.create(
+					Amount.zero(),
+					Amount.ofTokens(1)
+				)
+			)),
 			new ForkManagerModule(),
 			new MainnetForksModule(),
 			RadixEngineConfig.asModule(1, 100),
@@ -89,6 +99,11 @@ public class MutableTokenTest {
 					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
+
+				@ProvidesIntoSet
+				private TokenIssuance issuance() {
+					return TokenIssuance.of(keyPair.getPublicKey(), Amount.ofTokens(1).toSubunits());
+				}
 			}
 		);
 	}
@@ -97,6 +112,7 @@ public class MutableTokenTest {
 	public void cannot_create_xrd_token() throws Exception {
 		// Arrange
 		createInjector().injectMembers(this);
+		var account = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
 		var tokDef = new MutableTokenDefinition(
 			keyPair.getPublicKey(),
 			"xrd",
@@ -105,12 +121,15 @@ public class MutableTokenTest {
 			null,
 			null
 		);
-		var txn = sut.construct(new CreateMutableToken(tokDef)).signAndBuild(keyPair::sign);
+		var txn = sut.construct(
+			TxnConstructionRequest.create()
+				.feePayer(account)
+				.action(new CreateMutableToken(tokDef))
+		).signAndBuild(keyPair::sign);
 
 		// Act/Assert
-		assertThatThrownBy(() -> sut.execute(List.of(txn))).isInstanceOf(RadixEngineException.class);
-
-		assertNotNull(ledgerEntryStore);
+		assertThatThrownBy(() -> sut.execute(List.of(txn)))
+			.hasRootCauseInstanceOf(InvalidPermissionException.class);
 	}
 
 	@Test
@@ -122,11 +141,12 @@ public class MutableTokenTest {
 		var account = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
 		var txn = sut.construct(new MintToken(REAddr.ofNativeToken(), account, UInt256.SEVEN))
 			.signAndBuild(keyPair::sign);
-		assertThatThrownBy(() -> sut.execute(List.of(txn))).isInstanceOf(RadixEngineException.class);
+		assertThatThrownBy(() -> sut.execute(List.of(txn)))
+			.hasRootCauseInstanceOf(InvalidPermissionException.class);
 	}
 
 	@Test
-	public void atomic_token_creation_and_spend_should_succeed() throws Exception {
+	public void atomic_token_creation_with_fees_and_spend_should_succeed() throws Exception {
 		// Arrange
 		createInjector().injectMembers(this);
 		var tokDef = new MutableTokenDefinition(
@@ -142,6 +162,7 @@ public class MutableTokenTest {
 		var tokenAddr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
 		var txn = sut.construct(
 			TxnConstructionRequest.create()
+				.feePayer(account)
 				.createMutableToken(tokDef)
 				.mint(tokenAddr, account, UInt256.SEVEN)
 				.transfer(tokenAddr, account, account, UInt256.FIVE)
@@ -164,15 +185,17 @@ public class MutableTokenTest {
 			null
 		);
 
+		var account = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
 		var tokenAddr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
 		var txn = sut.construct(
 			TxnConstructionRequest.create()
+				.feePayer(account)
 				.createMutableToken(tokDef)
 				.mint(tokenAddr, REAddr.ofHashedKey(keyPair.getPublicKey(), "test"), UInt256.SEVEN)
 		).signAndBuild(keyPair::sign);
 
 		// Act/Assert
-		assertThatThrownBy(() -> sut.execute(List.of(txn))).isInstanceOf(RadixEngineException.class);
+		assertThatThrownBy(() -> sut.execute(List.of(txn))).hasRootCauseInstanceOf(DeserializeException.class);
 	}
 
 	@Test
@@ -187,7 +210,12 @@ public class MutableTokenTest {
 			null,
 			null
 		);
-		var atom = sut.construct(new CreateMutableToken(tokDef)).signAndBuild(keyPair::sign);
+		var account = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
+		var atom = sut.construct(
+			TxnConstructionRequest.create()
+				.feePayer(account)
+				.action(new CreateMutableToken(tokDef))
+			).signAndBuild(keyPair::sign);
 
 		// Act/Assert
 		sut.execute(List.of(atom));

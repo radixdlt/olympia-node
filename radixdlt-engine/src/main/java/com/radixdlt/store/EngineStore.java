@@ -18,11 +18,16 @@
 package com.radixdlt.store;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.atom.CloseableCursor;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
+import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.identifiers.REAddr;
 
 import java.util.List;
 import java.util.Optional;
@@ -31,11 +36,45 @@ import java.util.function.BiFunction;
 /**
  *  A state that gives access to the state of a certain shard space
  */
-public interface EngineStore<M> extends SubstateStore, CMStore {
+public interface EngineStore<M> extends SubstateStore {
+	/**
+	 * Hack for atomic transaction, better to implement
+	 * whole function in single interface in future.
+	 */
+	interface Transaction {
+		default void commit() {
+		}
+
+		default void abort() {
+		}
+
+		default <T> T unwrap() {
+			return null;
+		}
+	}
+
+	Transaction createTransaction();
+
+	boolean isVirtualDown(Transaction txn, SubstateId substateId);
+
+	Optional<Particle> loadUpParticle(
+		Transaction txn,
+		SubstateId substateId,
+		SubstateDeserialization deserialization
+	);
+
+	CloseableCursor<RawSubstateBytes> openIndexedCursor(Transaction txn, ShutdownAllIndex index);
+
 	/**
 	 * Stores the atom into this CMStore
 	 */
 	void storeTxn(Transaction dbTxn, Txn txn, List<REStateUpdate> instructions);
+
+	Optional<Particle> loadAddr(
+		Transaction dbTxn,
+		REAddr addr,
+		SubstateDeserialization deserialization
+	);
 
 	void storeMetadata(Transaction txn, M metadata);
 

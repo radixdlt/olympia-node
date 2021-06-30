@@ -63,7 +63,6 @@ public final class TxnParser {
 		);
 
 		var stateUpdates = cm.verify(
-			logCMStore.createTransaction(),
 			parser.getSubstateDeserialization(),
 			logCMStore,
 			context,

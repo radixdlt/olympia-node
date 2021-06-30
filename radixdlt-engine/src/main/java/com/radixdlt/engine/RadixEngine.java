@@ -35,6 +35,9 @@ import com.radixdlt.atom.actions.FeeReserveComplete;
 import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.ExecutionContext;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
+import com.radixdlt.constraintmachine.ShutdownAllIndex;
+import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.REProcessedTxn;
@@ -402,7 +405,7 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	private REProcessedTxn verify(CMStore.Transaction dbTransaction, Txn txn, ExecutionContext context)
+	private REProcessedTxn verify(EngineStore.Transaction dbTransaction, Txn txn, ExecutionContext context)
 		throws AuthorizationException, TxnParseException, ConstraintMachineException {
 
 		var parsedTxn = parser.parse(txn);
@@ -410,9 +413,28 @@ public final class RadixEngine<M> {
 		context.setDisableResourceAllocAndDestroy(parsedTxn.disableResourceAllocAndDestroy());
 
 		var stateUpdates = constraintMachine.verify(
-			dbTransaction,
 			parser.getSubstateDeserialization(),
-			engineStore,
+			new CMStore() {
+				@Override
+				public boolean isVirtualDown(SubstateId substateId) {
+					return engineStore.isVirtualDown(dbTransaction, substateId);
+				}
+
+				@Override
+				public Optional<Particle> loadUpParticle(SubstateId substateId, SubstateDeserialization deserialization) {
+					return engineStore.loadUpParticle(dbTransaction, substateId, deserialization);
+				}
+
+				@Override
+				public CloseableCursor<RawSubstateBytes> openIndexedCursor(ShutdownAllIndex index) {
+					return engineStore.openIndexedCursor(dbTransaction, index);
+				}
+
+				@Override
+				public Optional<Particle> loadAddr(REAddr addr, SubstateDeserialization deserialization) {
+					return engineStore.loadAddr(dbTransaction, addr, deserialization);
+				}
+			},
 			context,
 			parsedTxn.instructions()
 		);
@@ -473,7 +495,7 @@ public final class RadixEngine<M> {
 	}
 
 	private List<REProcessedTxn> executeInternal(
-		CMStore.Transaction dbTransaction,
+		EngineStore.Transaction dbTransaction,
 		List<Txn> txns,
 		M meta,
 		PermissionLevel permissionLevel,

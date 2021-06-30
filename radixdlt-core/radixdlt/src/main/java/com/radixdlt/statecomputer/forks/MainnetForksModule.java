@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.system.FeeTable;
 
 import java.util.OptionalInt;
 
@@ -39,7 +40,10 @@ public final class MainnetForksModule extends AbstractModule {
 			ForksPredicates.atEpoch(0L),
 			MainnetEngineRules.olympiaV1,
 			new RERulesConfig(
-				Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
+				FeeTable.create(
+					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
+					Amount.ofTokens(1000) // 1000XRD per resource
+				),
 				OptionalInt.of(50), // 50 Txns per round
 				1_500_000, // Two weeks worth of rounds for first epoch
 				150, // Two weeks worth of epochs
@@ -58,7 +62,10 @@ public final class MainnetForksModule extends AbstractModule {
 			ForksPredicates.atEpoch(2L),
 			MainnetEngineRules.olympiaV1,
 			new RERulesConfig(
-				Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
+				FeeTable.create(
+					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
+					Amount.ofTokens(1000) // 1000XRD per resource
+				),
 				OptionalInt.of(50), // 50 Txns per round
 				10_000,
 				150, // Two weeks worth of epochs

@@ -35,7 +35,7 @@ public class FeeReservePutConstructor implements ActionConstructor<FeeReservePut
 		txBuilder.putFeeReserve(
 			p -> p.getResourceAddr().isNativeToken()
 				&& p.getHoldingAddr().equals(action.from()),
-			amt -> new TokensInAccount(action.from(), amt, REAddr.ofNativeToken()),
+			amt -> new TokensInAccount(action.from(), REAddr.ofNativeToken(), amt),
 			action.amount(),
 			FeeReserveNotEnoughBalanceException::new
 		);

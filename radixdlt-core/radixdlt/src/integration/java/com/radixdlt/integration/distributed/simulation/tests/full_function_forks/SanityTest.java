@@ -18,6 +18,7 @@
 package com.radixdlt.integration.distributed.simulation.tests.full_function_forks;
 
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
 import com.radixdlt.integration.distributed.simulation.monitors.application.ApplicationMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
@@ -74,7 +75,7 @@ public class SanityTest {
 			.addRadixEngineConfigModules(
 				new ForkOverwritesWithShorterEpochsModule(
 					new RERulesConfig(
-						Amount.ofTokens(0),
+						FeeTable.noFees(),
 						OptionalInt.of(5),
 						10,
 						2,

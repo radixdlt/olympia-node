@@ -17,19 +17,19 @@
 
 package com.radixdlt.store.berkeley;
 
-import com.radixdlt.store.CMStore.Transaction;
+import com.radixdlt.store.EngineStore;
 
 /**
- * Implementation of {@link Transaction} for BDB.
+ * Implementation of {@link com.radixdlt.store.EngineStore.Transaction} for BDB.
  */
-final class BerkeleyTransaction implements Transaction {
+final class BerkeleyTransaction implements EngineStore.Transaction {
 	private final com.sleepycat.je.Transaction transaction;
 
 	private BerkeleyTransaction(com.sleepycat.je.Transaction transaction) {
 		this.transaction = transaction;
 	}
 
-	public static Transaction wrap(com.sleepycat.je.Transaction transaction) {
+	public static EngineStore.Transaction wrap(com.sleepycat.je.Transaction transaction) {
 		return new BerkeleyTransaction(transaction);
 	}
 

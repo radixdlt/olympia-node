@@ -18,6 +18,7 @@
 
 package com.radixdlt.application.tokens;
 
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxLowLevelBuilder;
@@ -84,25 +85,18 @@ public class TokenDefinitionTest {
 		var keyPair = ECKeyPair.generateNew();
 		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
 		var addrParticle = new UnclaimedREAddr(addr);
-		var tokenDefinitionParticle = new TokenResource(
-			addr,
-			"TEST",
-			"description",
-			"",
-			"",
-			UInt256.TEN
-		);
-
+		var tokenResource = TokenResource.createFixedSupplyResource(addr);
 		var holdingAddress = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
 		var tokensParticle = new TokensInAccount(
 			holdingAddress,
-			UInt256.TEN,
-			addr
+			addr,
+			UInt256.TEN
 		);
 		var builder = TxLowLevelBuilder.newBuilder(serialization)
 			.virtualDown(addrParticle, "test".getBytes(StandardCharsets.UTF_8))
-			.up(tokenDefinitionParticle)
+			.up(tokenResource)
 			.up(tokensParticle)
+			.up(TokenResourceMetadata.empty(addr))
 			.end();
 		var sig = keyPair.sign(builder.hashToSign().asBytes());
 		var txn = builder.sig(sig).build();
@@ -118,14 +112,7 @@ public class TokenDefinitionTest {
 		var keyPair = ECKeyPair.generateNew();
 		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
 		var addrParticle = new UnclaimedREAddr(addr);
-		var tokenDefinitionParticle = new TokenResource(
-			addr,
-			"TEST",
-			"description",
-			"",
-			"",
-			UInt256.TEN
-		);
+		var tokenDefinitionParticle = TokenResource.createFixedSupplyResource(addr);
 		var builder = TxLowLevelBuilder.newBuilder(serialization)
 			.virtualDown(addrParticle, "test".getBytes(StandardCharsets.UTF_8))
 			.up(tokenDefinitionParticle)
@@ -143,14 +130,7 @@ public class TokenDefinitionTest {
 		var keyPair = ECKeyPair.generateNew();
 		// Arrange
 		var addr = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "smthng");
-		var tokenDefinitionParticle = new TokenResource(
-			addr,
-			"TEST",
-			"description",
-			"",
-			"",
-			keyPair.getPublicKey()
-		);
+		var tokenDefinitionParticle = TokenResource.createMutableSupplyResource(addr, keyPair.getPublicKey());
 		var builder = TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization)
 			.toLowLevelBuilder()
 			.virtualDown(new UnclaimedREAddr(addr), "smthng".getBytes(StandardCharsets.UTF_8))

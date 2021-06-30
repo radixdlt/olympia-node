@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.statecomputer.forks.ForkBuilder;
@@ -30,7 +31,7 @@ public final class MockedForksModule extends AbstractModule {
 			ForksPredicates.atEpoch(0L),
 			MainnetEngineRules.olympiaV1,
 			new RERulesConfig(
-				Amount.zero(),
+				FeeTable.noFees(),
 				OptionalInt.empty(),
 				epochCeilingView.number(),
 				0L,

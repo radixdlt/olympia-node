@@ -63,7 +63,7 @@ public final class ExittingStake implements ResourceInBucket {
 
 	public TokensInAccount unlock() {
 		return new TokensInAccount(
-			owner, amount, REAddr.ofNativeToken()
+			owner, REAddr.ofNativeToken(), amount
 		);
 	}
 

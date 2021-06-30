@@ -72,6 +72,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.meter.Meter;
 import com.radixdlt.constraintmachine.meter.Meters;
+import com.radixdlt.constraintmachine.meter.ResourceFeeMeter;
 import com.radixdlt.constraintmachine.meter.SigsPerRoundMeter;
 import com.radixdlt.constraintmachine.meter.TxnSizeFeeMeter;
 import com.radixdlt.engine.parser.REParser;
@@ -84,10 +85,11 @@ public final class MainnetEngineRules {
 
 	public static final Function<RERulesConfig, RERules> olympiaV1 = config -> {
 		final var maxRounds = config.getMaxRounds();
-		final var perByteFee = config.getPerByteFee().toSubunits();
+		final var perByteFee = config.getFeeTable().getPerByteFee().toSubunits();
+		final var perResourceFee = config.getFeeTable().getPerResourceFee().toSubunits();
 		final var rakeIncreaseDebouncerEpochLength = config.getRakeIncreaseDebouncerEpochLength();
 
-		final CMAtomOS v4 = new CMAtomOS(Set.of("xrd"));
+		final var v4 = new CMAtomOS(Set.of("xrd"));
 		v4.load(new ValidatorConstraintScryptV2(rakeIncreaseDebouncerEpochLength));
 		v4.load(new ValidatorRegisterConstraintScrypt());
 		v4.load(new TokensConstraintScryptV3());
@@ -103,7 +105,10 @@ public final class MainnetEngineRules {
 		));
 		final var meter = Meters.combine(
 			config.getMaxSigsPerRound().stream().<Meter>mapToObj(SigsPerRoundMeter::create).findAny().orElse(Meter.EMPTY),
-			TxnSizeFeeMeter.create(perByteFee)
+			Meters.combine(
+				TxnSizeFeeMeter.create(perByteFee),
+				ResourceFeeMeter.create(perResourceFee)
+			)
 		);
 		final var constraintMachineConfig = new ConstraintMachineConfig(
 			v4.virtualizedUpParticles(),
@@ -134,7 +139,7 @@ public final class MainnetEngineRules {
 			.put(UnregisterValidator.class, new UnregisterValidatorConstructor())
 			.put(UpdateValidatorMetadata.class, new UpdateValidatorConstructor())
 			.put(FeeReservePut.class, new FeeReservePutConstructor())
-			.put(FeeReserveComplete.class, new FeeReserveCompleteConstructor(perByteFee))
+			.put(FeeReserveComplete.class, new FeeReserveCompleteConstructor(config.getFeeTable()))
 			.put(UpdateRake.class, new UpdateRakeConstructor(rakeIncreaseDebouncerEpochLength))
 			.put(UpdateValidatorOwnerAddress.class, new UpdateValidatorOwnerConstructor())
 			.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())

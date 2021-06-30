@@ -28,6 +28,7 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
+import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -160,7 +161,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
-							.toInstance(nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
+						.toInstance(nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
 				}
 			},
 			new AbstractModule() {
@@ -211,7 +212,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 			MempoolConfig.asModule(10, 10),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
-					Amount.zero(),
+					FeeTable.noFees(),
 					OptionalInt.of(50),
 					88,
 					2,

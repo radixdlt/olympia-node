@@ -217,8 +217,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 			ctx.channel().remoteAddress(),
 			this.state,
 			this.isInitiator,
-			this.remoteNodeId,
-		 	addressing.forNodes().of(this.remoteNodeId.getPublicKey()),
+			this.remoteNodeId != null ? this.remoteNodeId : "unknown",
+		 	this.remoteNodeId != null ? addressing.forNodes().of(this.remoteNodeId.getPublicKey()) : "unknown",
 			this.uri
 		);
 
@@ -237,8 +237,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 			ctx.channel().remoteAddress(),
 			this.state,
 			this.isInitiator,
-			this.remoteNodeId,
-			addressing.forNodes().of(this.remoteNodeId.getPublicKey()),
+			this.remoteNodeId != null ? this.remoteNodeId : "unknown",
+			this.remoteNodeId != null ? addressing.forNodes().of(this.remoteNodeId.getPublicKey()) : "unknown",
 			this.uri,
 			cause.getMessage()
 		);

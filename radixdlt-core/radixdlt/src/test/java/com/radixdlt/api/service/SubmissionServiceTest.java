@@ -24,6 +24,7 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -140,7 +141,14 @@ public class SubmissionServiceTest {
 
 			@Override
 			public void configure() {
-				install(new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overridePerByteFee(Amount.ofSubunits(UInt256.ONE))));
+				install(new RadixEngineForksLatestOnlyModule(
+					RERulesConfig.testingDefault().overrideFeeTable(
+						FeeTable.create(
+							Amount.ofSubunits(UInt256.ONE),
+							Amount.ofSubunits(UInt256.ONE)
+						)
+					)
+				));
 				install(new ForkManagerModule());
 				install(new MainnetForksModule());
 				install(RadixEngineConfig.asModule(1, 100));

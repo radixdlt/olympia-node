@@ -82,7 +82,6 @@ public final class ConstraintMachine {
 		private final Map<Integer, Pair<Substate, Supplier<ByteBuffer>>> localUpParticles = new HashMap<>();
 		private final Set<SubstateId> remoteDownParticles = new HashSet<>();
 		private final CMStore store;
-		private final CMStore.Transaction dbTxn;
 		private final Predicate<Particle> virtualStoreLayer;
 		private final SubstateDeserialization deserialization;
 		private int bootupCount = 0;
@@ -90,12 +89,10 @@ public final class ConstraintMachine {
 		CMValidationState(
 			SubstateDeserialization deserialization,
 			Predicate<Particle> virtualStoreLayer,
-			CMStore.Transaction dbTxn,
 			CMStore store
 		) {
 			this.deserialization = deserialization;
 			this.virtualStoreLayer = virtualStoreLayer;
-			this.dbTxn = dbTxn;
 			this.store = store;
 		}
 
@@ -109,7 +106,7 @@ public final class ConstraintMachine {
 					.filter(p -> p.getAddr().equals(addr))
 					.findFirst()
 					.map(Particle.class::cast)
-					.or(() -> store.loadAddr(dbTxn, addr, deserialization));
+					.or(() -> store.loadAddr(addr, deserialization));
 		}
 
 		public Optional<Particle> loadUpParticle(SubstateId substateId) {
@@ -117,7 +114,7 @@ public final class ConstraintMachine {
 				return Optional.empty();
 			}
 
-			return store.loadUpParticle(dbTxn, substateId, deserialization);
+			return store.loadUpParticle(substateId, deserialization);
 		}
 
 		public void bootUp(Substate substate, Supplier<ByteBuffer> buffer) {
@@ -134,7 +131,7 @@ public final class ConstraintMachine {
 				throw new InvalidVirtualSubstateException(substate.getParticle());
 			}
 
-			if (store.isVirtualDown(dbTxn, substate.getId())) {
+			if (store.isVirtualDown(substate.getId())) {
 				throw new SubstateNotFoundException(substate.getId());
 			}
 		}
@@ -183,7 +180,7 @@ public final class ConstraintMachine {
 				),
 				() -> CloseableCursor.filter(
 					CloseableCursor.map(
-						store.openIndexedCursor(dbTxn, index),
+						store.openIndexedCursor(index),
 						r -> {
 							try {
 								var substate = deserialization.deserialize(r.getData());
@@ -401,13 +398,12 @@ public final class ConstraintMachine {
 	 * @return the first error found, otherwise an empty optional
 	 */
 	public List<List<REStateUpdate>> verify(
-		CMStore.Transaction dbTxn,
 		SubstateDeserialization deserialization,
 		CMStore cmStore,
 		ExecutionContext context,
 		List<REInstruction> instructions
 	) throws TxnParseException, ConstraintMachineException {
-		var validationState = new CMValidationState(deserialization, virtualStoreLayer, dbTxn, cmStore);
+		var validationState = new CMValidationState(deserialization, virtualStoreLayer, cmStore);
 		return this.statefulVerify(context, validationState, instructions);
 	}
 }

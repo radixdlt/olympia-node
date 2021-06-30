@@ -29,7 +29,6 @@ import java.util.Optional;
  */
 public interface ReadableAddrsStore {
 	Optional<Particle> loadAddr(
-		CMStore.Transaction dbTxn,
 		REAddr addr,
 		SubstateDeserialization deserialization
 	);
