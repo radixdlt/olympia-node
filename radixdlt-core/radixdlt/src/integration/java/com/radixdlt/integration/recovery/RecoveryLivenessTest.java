@@ -28,6 +28,7 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
+import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
@@ -149,7 +150,7 @@ public class RecoveryLivenessTest {
 			new CryptoModule(),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
-					Amount.zero(),
+					FeeTable.noFees(),
 					OptionalInt.of(50),
 					epochCeilingView,
 					2,
@@ -204,7 +205,7 @@ public class RecoveryLivenessTest {
 			MempoolConfig.asModule(10, 10),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
-					Amount.zero(),
+					FeeTable.noFees(),
 					OptionalInt.of(50),
 					epochCeilingView,
 					2,

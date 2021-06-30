@@ -809,7 +809,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					var delegate = REFieldSerialization.deserializeKey(buf);
 					var ownership = REFieldSerialization.deserializeUInt256(buf);
 					var rakePercentage = REFieldSerialization.deserializeInt(buf);
-					var ownerAddress = REFieldSerialization.deserializeREAddr(buf);
+					var ownerAddress = REFieldSerialization.deserializeAccountREAddr(buf);
 					return ValidatorStakeData.create(delegate, amount, ownership, rakePercentage, ownerAddress, isRegistered);
 				},
 				(s, buf) -> {
@@ -831,7 +831,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 				buf -> {
 					REFieldSerialization.deserializeReservedByte(buf);
 					var delegate = REFieldSerialization.deserializeKey(buf);
-					var owner = REFieldSerialization.deserializeREAddr(buf);
+					var owner = REFieldSerialization.deserializeAccountREAddr(buf);
 					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					return new StakeOwnership(delegate, owner, amount);
 				},
@@ -851,7 +851,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					REFieldSerialization.deserializeReservedByte(buf);
 					var epochUnlocked = REFieldSerialization.deserializeNonNegativeLong(buf);
 					var delegate = REFieldSerialization.deserializeKey(buf);
-					var owner = REFieldSerialization.deserializeREAddr(buf);
+					var owner = REFieldSerialization.deserializeAccountREAddr(buf);
 					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					return new ExittingStake(epochUnlocked, delegate, owner, amount);
 				},

@@ -18,6 +18,7 @@
 
 package com.radixdlt.application.tokens.scrypt;
 
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.application.tokens.state.TokenResource;
@@ -38,6 +39,7 @@ import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.utils.UInt256;
 
 public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 	@Override
@@ -51,22 +53,22 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 		os.substate(
 			new SubstateDefinition<>(
 				TokenResource.class,
-				SubstateTypeId.TOKEN_DEF.id(),
+				SubstateTypeId.TOKEN_RESOURCE.id(),
 				buf -> {
 					var type = buf.get();
-					var rri = REFieldSerialization.deserializeREAddr(buf);
-					var name = REFieldSerialization.deserializeString(buf);
-					var description = REFieldSerialization.deserializeString(buf);
-					var url = REFieldSerialization.deserializeUrl(buf);
-					var iconUrl = REFieldSerialization.deserializeUrl(buf);
+					var addr = REFieldSerialization.deserializeResourceAddr(buf);
+					var granularity = REFieldSerialization.deserializeNonZeroUInt256(buf);
+					if (!granularity.equals(UInt256.ONE)) {
+						throw new DeserializeException("Granularity must be one.");
+					}
 					final ECPublicKey minter;
 					if (type == (byte) 0x1) {
-						return new TokenResource(rri, name, description, iconUrl, url, true, null);
+						return new TokenResource(addr, granularity, true, null);
 					} else if (type == (byte) 0x3) {
 						minter = REFieldSerialization.deserializeKey(buf);
-						return new TokenResource(rri, name, description, iconUrl, url, true, minter);
+						return new TokenResource(addr, granularity, true, minter);
 					} else if (type == (byte) 0x0) {
-						return new TokenResource(rri, name, description, iconUrl, url, false, null);
+						return new TokenResource(addr, granularity, false, null);
 					} else {
 						throw new DeserializeException("Unknown token def type " + type);
 					}
@@ -77,11 +79,32 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 					type |= (s.getOwner().isPresent() ? 0x2 : 0x0);
 					buf.put(type);
 					REFieldSerialization.serializeREAddr(buf, s.getAddr());
+					REFieldSerialization.serializeUInt256(buf, UInt256.ONE);
+					s.getOwner().ifPresent(k -> REFieldSerialization.serializeKey(buf, k));
+				}
+			)
+		);
+
+		os.substate(
+			new SubstateDefinition<>(
+				TokenResourceMetadata.class,
+				SubstateTypeId.TOKEN_RESOURCE_METADATA.id(),
+				buf -> {
+					REFieldSerialization.deserializeReservedByte(buf);
+					var addr = REFieldSerialization.deserializeResourceAddr(buf);
+					var name = REFieldSerialization.deserializeString(buf);
+					var description = REFieldSerialization.deserializeString(buf);
+					var url = REFieldSerialization.deserializeUrl(buf);
+					var iconUrl = REFieldSerialization.deserializeUrl(buf);
+					return new TokenResourceMetadata(addr, name, description, url, iconUrl);
+				},
+				(s, buf) -> {
+					REFieldSerialization.serializeReservedByte(buf);
+					REFieldSerialization.serializeREAddr(buf, s.getAddr());
 					REFieldSerialization.serializeString(buf, s.getName());
 					REFieldSerialization.serializeString(buf, s.getDescription());
 					REFieldSerialization.serializeString(buf, s.getUrl());
 					REFieldSerialization.serializeString(buf, s.getIconUrl());
-					s.getOwner().ifPresent(k -> REFieldSerialization.serializeKey(buf, k));
 				}
 			)
 		);
@@ -92,16 +115,12 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				SubstateTypeId.TOKENS.id(),
 				buf -> {
 					REFieldSerialization.deserializeReservedByte(buf);
-					var holdingAddr = REFieldSerialization.deserializeREAddr(buf);
-					if (!holdingAddr.isAccount()) {
-						throw new DeserializeException("Tokens must be held by holding address: " + holdingAddr);
-					}
-					var rri = REFieldSerialization.deserializeREAddr(buf);
+					var holdingAddr = REFieldSerialization.deserializeAccountREAddr(buf);
+					var addr = REFieldSerialization.deserializeResourceAddr(buf);
 					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
-					return new TokensInAccount(holdingAddr, amount, rri);
+					return new TokensInAccount(holdingAddr, addr, amount);
 				},
 				(s, buf) -> {
-					var p = buf.position();
 					REFieldSerialization.serializeReservedByte(buf);
 					REFieldSerialization.serializeREAddr(buf, s.getHoldingAddr());
 					REFieldSerialization.serializeREAddr(buf, s.getResourceAddr());
@@ -120,6 +139,19 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 		}
 	}
 
+	private static class NeedMetadata implements ReducerState {
+		private final TokenResource tokenResource;
+		private NeedMetadata(TokenResource tokenResource) {
+			this.tokenResource = tokenResource;
+		}
+
+		void metadata(TokenResourceMetadata metadata) throws ProcedureException {
+			if (!metadata.getAddr().equals(tokenResource.getAddr())) {
+				throw new ProcedureException("Addresses don't match");
+			}
+		}
+	}
+
 	private void defineTokenCreation(Loader os) {
 		os.procedure(new UpProcedure<>(
 			CMAtomOS.REAddrClaim.class, TokenResource.class,
@@ -130,7 +162,11 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				}
 
 				if (u.isMutable()) {
-					return ReducerResult.complete();
+					return ReducerResult.incomplete(new NeedMetadata(u));
+				}
+
+				if (!u.getGranularity().equals(UInt256.ONE)) {
+					throw new ProcedureException("Granularity must be one.");
 				}
 
 				return ReducerResult.incomplete(new NeedFixedTokenSupply(s.getArg(), u));
@@ -144,6 +180,15 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				if (!u.getResourceAddr().equals(s.tokenResource.getAddr())) {
 					throw new ProcedureException("Addresses don't match.");
 				}
+				return ReducerResult.incomplete(new NeedMetadata(s.tokenResource));
+			}
+		));
+
+		os.procedure(new UpProcedure<>(
+			NeedMetadata.class, TokenResourceMetadata.class,
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			(s, u, c, r) -> {
+				s.metadata(u);
 				return ReducerResult.complete();
 			}
 		));

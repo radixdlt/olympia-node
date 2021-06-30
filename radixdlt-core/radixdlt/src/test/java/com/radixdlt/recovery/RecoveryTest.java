@@ -20,6 +20,7 @@ package com.radixdlt.recovery;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.assertj.core.api.Condition;
@@ -145,7 +146,7 @@ public class RecoveryTest {
 			new ForksModule(),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
-					Amount.ofTokens(0),
+					FeeTable.noFees(),
 					OptionalInt.of(50),
 					100L,
 					2,
@@ -190,7 +191,7 @@ public class RecoveryTest {
 		return Guice.createInjector(
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
-					Amount.ofTokens(0),
+					FeeTable.noFees(),
 					OptionalInt.of(50),
 					epochCeilingView,
 					2,

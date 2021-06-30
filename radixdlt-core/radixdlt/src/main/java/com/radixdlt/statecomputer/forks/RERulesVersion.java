@@ -72,6 +72,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.meter.Meter;
 import com.radixdlt.constraintmachine.meter.Meters;
+import com.radixdlt.constraintmachine.meter.ResourceFeeMeter;
 import com.radixdlt.constraintmachine.meter.SigsPerRoundMeter;
 import com.radixdlt.constraintmachine.meter.TxnSizeFeeMeter;
 import com.radixdlt.engine.parser.REParser;
@@ -84,7 +85,8 @@ public enum RERulesVersion {
 		@Override
 		public RERules create(RERulesConfig config) {
 			var maxRounds = config.getMaxRounds();
-			var perByteFee = config.getPerByteFee().toSubunits();
+			var perByteFee = config.getFeeTable().getPerByteFee().toSubunits();
+			var perResourceFee = config.getFeeTable().getPerResourceFee().toSubunits();
 			var rakeIncreaseDebouncerEpochLength = config.getRakeIncreaseDebouncerEpochLength();
 
 			final CMAtomOS v4 = new CMAtomOS(Set.of("xrd"));
@@ -103,7 +105,10 @@ public enum RERulesVersion {
 			));
 			var meter = Meters.combine(
 				config.getMaxSigsPerRound().stream().<Meter>mapToObj(SigsPerRoundMeter::create).findAny().orElse(Meter.EMPTY),
-				TxnSizeFeeMeter.create(perByteFee)
+				Meters.combine(
+					TxnSizeFeeMeter.create(perByteFee),
+					ResourceFeeMeter.create(perResourceFee)
+				)
 			);
 			var betanet4 = new ConstraintMachineConfig(
 				v4.virtualizedUpParticles(),
@@ -134,7 +139,7 @@ public enum RERulesVersion {
 				.put(UnregisterValidator.class, new UnregisterValidatorConstructor())
 				.put(UpdateValidatorMetadata.class, new UpdateValidatorConstructor())
 				.put(FeeReservePut.class, new FeeReservePutConstructor())
-				.put(FeeReserveComplete.class, new FeeReserveCompleteConstructor(perByteFee))
+				.put(FeeReserveComplete.class, new FeeReserveCompleteConstructor(config.getFeeTable()))
 				.put(UpdateRake.class, new UpdateRakeConstructor(rakeIncreaseDebouncerEpochLength))
 				.put(UpdateValidatorOwnerAddress.class, new UpdateValidatorOwnerConstructor())
 				.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())

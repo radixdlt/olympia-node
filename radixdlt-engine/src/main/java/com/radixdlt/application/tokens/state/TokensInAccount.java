@@ -36,8 +36,8 @@ public final class TokensInAccount implements ResourceInBucket {
 
 	public TokensInAccount(
 		REAddr holdingAddress,
-		UInt256 amount,
-		REAddr resourceAddr
+		REAddr resourceAddr,
+		UInt256 amount
 	) {
 		this.holdingAddress = Objects.requireNonNull(holdingAddress);
 		this.resourceAddr = Objects.requireNonNull(resourceAddr);

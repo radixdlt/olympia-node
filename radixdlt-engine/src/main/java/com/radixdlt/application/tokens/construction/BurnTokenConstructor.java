@@ -32,7 +32,7 @@ public final class BurnTokenConstructor implements ActionConstructor<BurnToken> 
 			TokensInAccount.class,
 			p -> p.getResourceAddr().equals(burnToken.resourceAddr())
 				&& p.getHoldingAddr().equals(burnToken.from()),
-			amt -> new TokensInAccount(burnToken.from(), amt, burnToken.resourceAddr()),
+			amt -> new TokensInAccount(burnToken.from(), burnToken.resourceAddr(), amt),
 			burnToken.amount(),
 			() -> new TxBuilderException("Not enough balance to for fee burn.")
 		);

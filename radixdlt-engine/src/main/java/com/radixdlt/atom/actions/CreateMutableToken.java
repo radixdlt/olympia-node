@@ -22,8 +22,6 @@ import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.crypto.ECPublicKey;
 
-import java.util.Objects;
-
 public final class CreateMutableToken implements TxAction {
 	private final ECPublicKey key;
 	private final String symbol;
@@ -46,7 +44,7 @@ public final class CreateMutableToken implements TxAction {
 	) {
 		this.key = key;
 		this.symbol = symbol.toLowerCase();
-		this.name = Objects.requireNonNull(name);
+		this.name = name;
 		this.description = description;
 		this.iconUrl = iconUrl;
 		this.tokenUrl = tokenUrl;
@@ -61,7 +59,7 @@ public final class CreateMutableToken implements TxAction {
 	}
 
 	public String getName() {
-		return name;
+		return name == null ? "" : name;
 	}
 
 	public String getDescription() {

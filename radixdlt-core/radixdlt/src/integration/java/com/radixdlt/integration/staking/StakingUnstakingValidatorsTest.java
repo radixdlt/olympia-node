@@ -94,6 +94,7 @@ import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
+import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksModule;
@@ -141,8 +142,24 @@ public class StakingUnstakingValidatorsTest {
 				new ForkOverwritesWithShorterEpochsModule(config), 10,
 				new ForkOverwritesWithShorterEpochsModule(config.removeSigsPerRoundLimit())
 			},
-			{new RadixEngineForksLatestOnlyModule(config.overrideMaxRounds(100).overridePerByteFee(PER_BYTE_FEE)), 100, null},
-			{new ForkOverwritesWithShorterEpochsModule(config.overridePerByteFee(PER_BYTE_FEE)), 10, null},
+			{
+				new RadixEngineForksLatestOnlyModule(
+					config.overrideMaxRounds(100).overrideFeeTable(
+						FeeTable.create(
+							PER_BYTE_FEE,
+							Amount.zero()
+						)
+					)
+				), 100, null},
+			{
+				new ForkOverwritesWithShorterEpochsModule(
+					config.overrideFeeTable(
+						FeeTable.create(
+							PER_BYTE_FEE,
+							Amount.zero()
+						)
+					)
+				), 10, null},
 		});
 	}
 

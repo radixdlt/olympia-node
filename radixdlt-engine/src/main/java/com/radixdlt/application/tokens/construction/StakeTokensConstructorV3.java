@@ -49,7 +49,7 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 		builder.downFungible(
 			TokensInAccount.class,
 			p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(action.from()),
-			amt -> new TokensInAccount(action.from(), amt, REAddr.ofNativeToken()),
+			amt -> new TokensInAccount(action.from(), REAddr.ofNativeToken(), amt),
 			action.amount(),
 			() -> new TxBuilderException("Not enough balance for staking.")
 		);

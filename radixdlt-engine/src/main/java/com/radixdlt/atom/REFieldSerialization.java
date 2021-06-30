@@ -27,6 +27,7 @@ import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
 
 import java.nio.ByteBuffer;
+import java.util.EnumSet;
 import java.util.regex.Pattern;
 
 public final class REFieldSerialization {
@@ -77,26 +78,24 @@ public final class REFieldSerialization {
 		buf.put(rri.getBytes());
 	}
 
-	public static REAddr deserializeREAddr(ByteBuffer buf) throws DeserializeException {
+	public static REAddr deserializeREAddr(ByteBuffer buf, EnumSet<REAddr.REAddrType> allowed) throws DeserializeException {
 		var v = buf.get(); // version
 		var type = REAddr.REAddrType.parse(v);
 		if (type.isEmpty()) {
 			throw new DeserializeException("Unknown address type " + v);
+		}
+		if (!allowed.contains(type.get())) {
+			throw new DeserializeException("Address type not allowed. Allowed: " + allowed);
 		}
 		return type.get().parse(buf);
 	}
 
+	public static REAddr deserializeResourceAddr(ByteBuffer buf) throws DeserializeException {
+		return deserializeREAddr(buf, EnumSet.of(REAddr.REAddrType.NATIVE_TOKEN, REAddr.REAddrType.HASHED_KEY));
+	}
+
 	public static REAddr deserializeAccountREAddr(ByteBuffer buf) throws DeserializeException {
-		var v = buf.get(); // version
-		var type = REAddr.REAddrType.parse(v);
-		if (type.isEmpty()) {
-			throw new DeserializeException("Unknown address type " + v);
-		}
-		var addr = type.get().parse(buf);
-		if (!addr.isAccount()) {
-			throw new DeserializeException("Address is not an account" + v);
-		}
-		return addr;
+		return deserializeREAddr(buf, EnumSet.of(REAddr.REAddrType.PUB_KEY));
 	}
 
 	public static int deserializeInt(ByteBuffer buf) throws DeserializeException {
@@ -126,6 +125,10 @@ public final class REFieldSerialization {
 		var amountDest = new byte[UInt256.BYTES]; // amount
 		buf.get(amountDest);
 		return UInt256.from(amountDest);
+	}
+
+	public static void serializeUInt256(ByteBuffer buf, UInt256 u) {
+		buf.put(u.toByteArray());
 	}
 
 	public static UInt256 deserializeNonZeroUInt256(ByteBuffer buf) throws DeserializeException {

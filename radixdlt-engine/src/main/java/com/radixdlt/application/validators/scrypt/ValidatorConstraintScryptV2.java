@@ -348,7 +348,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 			buf -> {
 				REFieldSerialization.deserializeReservedByte(buf);
 				var key = REFieldSerialization.deserializeKey(buf);
-				var owner = REFieldSerialization.deserializeREAddr(buf);
+				var owner = REFieldSerialization.deserializeAccountREAddr(buf);
 				if (!owner.isAccount()) {
 					throw new DeserializeException("Address is not an account: " + owner);
 				}
@@ -368,7 +368,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 			buf -> {
 				REFieldSerialization.deserializeReservedByte(buf);
 				var key = REFieldSerialization.deserializeKey(buf);
-				var ownerAddr = REFieldSerialization.deserializeREAddr(buf);
+				var ownerAddr = REFieldSerialization.deserializeAccountREAddr(buf);
 				if (!ownerAddr.isAccount()) {
 					throw new DeserializeException("Owner address must be an account");
 				}
