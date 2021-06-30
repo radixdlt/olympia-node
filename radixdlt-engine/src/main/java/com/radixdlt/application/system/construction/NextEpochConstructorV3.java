@@ -39,7 +39,7 @@ import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRakeCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
-import com.radixdlt.constraintmachine.ShutdownAllIndex;
+import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
@@ -131,7 +131,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		unlockedStateIndexBuf.put(SubstateTypeId.EXITTING_STAKE.id());
 		unlockedStateIndexBuf.put((byte) 0);
 		unlockedStateIndexBuf.putLong(closingEpoch.getEpoch() + 1);
-		var unlockedStakeIndex = new ShutdownAllIndex(unlockedStateIndexBuf.array(), ExittingStake.class);
+		var unlockedStakeIndex = SubstateIndex.create(unlockedStateIndexBuf.array(), ExittingStake.class);
 		var exitting = txBuilder.shutdownAll(unlockedStakeIndex, (Iterator<ExittingStake> i) -> {
 			final TreeSet<ExittingStake> exit = new TreeSet<>(
 				(o1, o2) -> Arrays.compare(o1.dataKey(), o2.dataKey())
@@ -247,7 +247,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		buf.put(SubstateTypeId.PREPARED_RAKE_UPDATE.id());
 		buf.put((byte) 0);
 		buf.putLong(closingEpoch.getEpoch() + 1);
-		var index = new ShutdownAllIndex(buf.array(), PreparedRakeUpdate.class);
+		var index = SubstateIndex.create(buf.array(), PreparedRakeUpdate.class);
 		txBuilder.shutdownAll(index, (Iterator<PreparedRakeUpdate> i) -> {
 			i.forEachRemaining(preparedValidatorUpdate ->
 				preparingRakeUpdates.put(preparedValidatorUpdate.getValidatorKey(), preparedValidatorUpdate)

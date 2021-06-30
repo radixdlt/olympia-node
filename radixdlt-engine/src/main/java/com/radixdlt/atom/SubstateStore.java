@@ -19,6 +19,7 @@
 package com.radixdlt.atom;
 
 import com.radixdlt.constraintmachine.RawSubstateBytes;
+import com.radixdlt.constraintmachine.SubstateIndex;
 
 import java.util.NoSuchElementException;
 
@@ -27,7 +28,7 @@ import java.util.NoSuchElementException;
  */
 public interface SubstateStore {
 
-	CloseableCursor<RawSubstateBytes> openIndexedCursor(byte typeByte);
+	CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index);
 
 	static SubstateStore empty() {
 		return t -> new CloseableCursor<>() {

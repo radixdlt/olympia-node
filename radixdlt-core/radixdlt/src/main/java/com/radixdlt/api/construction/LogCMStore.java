@@ -22,7 +22,7 @@ import com.google.inject.Inject;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.constraintmachine.ShutdownAllIndex;
+import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
@@ -91,7 +91,7 @@ public final class LogCMStore implements CMStore {
 	}
 
 	@Override
-	public CloseableCursor<RawSubstateBytes> openIndexedCursor(ShutdownAllIndex index) {
+	public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index) {
 		throw new UnsupportedOperationException();
 	}
 }

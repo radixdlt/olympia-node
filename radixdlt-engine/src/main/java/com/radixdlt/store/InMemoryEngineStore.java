@@ -17,13 +17,12 @@
 
 package com.radixdlt.store;
 
-import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.application.tokens.state.TokenResource;
-import com.radixdlt.constraintmachine.ShutdownAllIndex;
+import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REOp;
@@ -93,7 +92,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	}
 
 	@Override
-	public CloseableCursor<RawSubstateBytes> openIndexedCursor(Transaction dbTxn, ShutdownAllIndex index) {
+	public CloseableCursor<RawSubstateBytes> openIndexedCursor(Transaction dbTxn, SubstateIndex index) {
 		final List<RawSubstateBytes> substates = new ArrayList<>();
 		synchronized (lock) {
 			for (var i : storedParticles.values()) {
@@ -111,18 +110,8 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	}
 
 	@Override
-	public CloseableCursor<RawSubstateBytes> openIndexedCursor(byte typeByte) {
-		final List<RawSubstateBytes> substates = new ArrayList<>();
-		synchronized (lock) {
-			for (var i : storedParticles.values()) {
-				if (!i.isBootUp() || i.getRawSubstateBytes().getData()[0] != typeByte) {
-					continue;
-				}
-				substates.add(i.getRawSubstateBytes());
-			}
-		}
-
-		return CloseableCursor.wrapIterator(substates.iterator());
+	public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index) {
+		return openIndexedCursor(null, index);
 	}
 
 	@Override

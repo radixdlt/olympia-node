@@ -129,7 +129,7 @@ public final class REInstruction {
 				}
 				var buf = new byte[indexSize];
 				b.get(buf);
-				return new ShutdownAllIndex(buf, d.byteToClass(buf[0]));
+				return SubstateIndex.create(buf, d.byteToClass(buf[0]));
 			}
 		},
 		SIG((byte) 0xb, REOp.SIG) {

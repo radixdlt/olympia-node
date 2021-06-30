@@ -46,6 +46,7 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.parser.REParser;
@@ -140,6 +141,6 @@ public class NextEpochV2Test {
 		this.sut.execute(List.of(txn), null, PermissionLevel.SUPER_USER);
 
 		// Assert
-		assertThat(store.openIndexedCursor(SubstateTypeId.PREPARED_STAKE.id(), parser.getSubstateDeserialization())).isEmpty();
+		assertThat(store.openIndexedCursor(SubstateIndex.create(SubstateTypeId.PREPARED_STAKE.id(), PreparedStake.class))).isEmpty();
 	}
 }

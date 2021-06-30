@@ -35,7 +35,7 @@ import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.ShutdownAllIndex;
+import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
@@ -427,7 +427,7 @@ public final class RadixEngine<M> {
 				}
 
 				@Override
-				public CloseableCursor<RawSubstateBytes> openIndexedCursor(ShutdownAllIndex index) {
+				public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index) {
 					return engineStore.openIndexedCursor(dbTransaction, index);
 				}
 

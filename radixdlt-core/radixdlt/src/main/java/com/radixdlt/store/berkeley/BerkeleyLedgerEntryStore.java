@@ -17,20 +17,17 @@
 
 package com.radixdlt.store.berkeley;
 
-import com.radixdlt.application.tokens.state.ExittingStake;
 import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.constraintmachine.ShutdownAllIndex;
+import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.store.ReadableAddrsStore;
-import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
@@ -519,7 +516,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	@Override
 	public CloseableCursor<RawSubstateBytes> openIndexedCursor(
 		Transaction wrappedDbTxn,
-		ShutdownAllIndex index
+		SubstateIndex index
 	) {
 		var dbTxn = unwrap(wrappedDbTxn);
 		var cursor = new BerkeleySubstateCursor(dbTxn, indexedSubstatesDatabase, index.getPrefix());
@@ -528,11 +525,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public CloseableCursor<RawSubstateBytes> openIndexedCursor(byte index) {
-		final byte[] indexableBytes = new byte[] {index};
-		var cursor = new BerkeleySubstateCursor(null, indexedSubstatesDatabase, indexableBytes);
-		cursor.open();
-		return cursor;
+	public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index) {
+		return openIndexedCursor(null, index);
 	}
 
 	@Override

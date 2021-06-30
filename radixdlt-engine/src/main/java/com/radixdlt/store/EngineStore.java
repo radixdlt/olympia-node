@@ -24,7 +24,7 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.ShutdownAllIndex;
+import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.identifiers.REAddr;
 
@@ -62,7 +62,7 @@ public interface EngineStore<M> extends SubstateStore {
 		SubstateDeserialization deserialization
 	);
 
-	CloseableCursor<RawSubstateBytes> openIndexedCursor(Transaction txn, ShutdownAllIndex index);
+	CloseableCursor<RawSubstateBytes> openIndexedCursor(Transaction txn, SubstateIndex index);
 
 	/**
 	 * Stores the atom into this CMStore
