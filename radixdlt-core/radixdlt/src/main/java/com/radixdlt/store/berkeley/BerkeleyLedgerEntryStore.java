@@ -21,7 +21,9 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.store.ResourceStore;
+import com.sleepycat.je.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -80,7 +82,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
-import static com.radixdlt.store.berkeley.BerkeleyTransaction.wrap;
 import static com.radixdlt.utils.Longs.fromByteArray;
 import static com.sleepycat.je.LockMode.DEFAULT;
 import static com.sleepycat.je.OperationStatus.NOTFOUND;
@@ -184,27 +185,71 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}, CounterType.ELAPSED_BDB_LEDGER_GET, CounterType.COUNT_BDB_LEDGER_GET);
 	}
 
-	@Override
-	public Transaction createTransaction() {
+	private Transaction createTransaction() {
 		return withTime(
-			() -> wrap(beginTransaction()),
+			() -> beginTransaction(),
 			CounterType.ELAPSED_BDB_LEDGER_CREATE_TX,
 			CounterType.COUNT_BDB_LEDGER_CREATE_TX
 		);
 	}
 
 	@Override
-	public void storeTxn(Transaction dbTxn, Txn txn, List<REStateUpdate> stateUpdates) {
-		withTime(() -> doStore(unwrap(dbTxn), txn, stateUpdates), CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
+	public <R> R transaction(TransactionEngineStoreConsumer<LedgerAndBFTProof, R> consumer) throws RadixEngineException {
+		var dbTxn = createTransaction();
+		try {
+			var result = consumer.start(new EngineStoreInTransaction<LedgerAndBFTProof>() {
+				@Override
+				public void storeTxn(Txn txn, List<REStateUpdate> stateUpdates) {
+					BerkeleyLedgerEntryStore.this.storeTxn(dbTxn, txn, stateUpdates);
+				}
+
+				@Override
+				public void storeMetadata(LedgerAndBFTProof metadata) {
+					BerkeleyLedgerEntryStore.this.storeMetadata(dbTxn, metadata);
+				}
+
+				@Override
+				public boolean isVirtualDown(SubstateId substateId) {
+					return BerkeleyLedgerEntryStore.this.isVirtualDown(dbTxn, substateId);
+				}
+
+				@Override
+				public Optional<ByteBuffer> loadSubstate(SubstateId substateId) {
+					return BerkeleyLedgerEntryStore.this.loadSubstate(dbTxn, substateId);
+				}
+
+				@Override
+				public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index) {
+					return BerkeleyLedgerEntryStore.this.openIndexedCursor(dbTxn, index);
+				}
+
+				@Override
+				public Optional<ByteBuffer> loadResource(REAddr addr) {
+					return BerkeleyLedgerEntryStore.this.loadAddr(dbTxn, addr);
+				}
+			});
+			dbTxn.commit();
+			return result;
+		} catch (Exception e) {
+			dbTxn.abort();
+			throw e;
+		}
 	}
 
 	@Override
-	public void storeMetadata(Transaction tx, LedgerAndBFTProof ledgerAndBFTProof) {
-		var txn = unwrap(tx);
+	public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index) {
+		return BerkeleyLedgerEntryStore.this.openIndexedCursor(null, index);
+	}
+
+	private void storeTxn(Transaction dbTxn, Txn txn, List<REStateUpdate> stateUpdates) {
+		withTime(() -> doStore(dbTxn, txn, stateUpdates), CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
+	}
+
+	private void storeMetadata(Transaction dbTxn, LedgerAndBFTProof ledgerAndBFTProof) {
 		var proof = ledgerAndBFTProof.getProof();
 
 		// TODO: combine atom and proof store and remove these extra checks
-		try (var atomCursor = txnDatabase.openCursor(txn, null)) {
+		try (var atomCursor = txnDatabase.openCursor(dbTxn, null)) {
 			var key = entry();
 			var status = atomCursor.getLast(key, null, DEFAULT);
 			if (status == NOTFOUND) {
@@ -218,7 +263,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			}
 		}
 
-		try (var proofCursor = proofDatabase.openCursor(txn, null)) {
+		try (var proofCursor = proofDatabase.openCursor(dbTxn, null)) {
 			var prevHeaderKey = entry();
 			var status = proofCursor.getLast(prevHeaderKey, null, DEFAULT);
 			// Cannot remove end of epoch proofs
@@ -248,7 +293,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			systemCounters.increment(CounterType.COUNT_BDB_LEDGER_PROOFS_ADDED);
 		}
 
-		ledgerAndBFTProof.vertexStoreState().ifPresent(v -> doSave(txn, v));
+		ledgerAndBFTProof.vertexStoreState().ifPresent(v -> doSave(dbTxn, v));
 	}
 
 	public Optional<SerializedVertexStoreState> loadLastVertexStoreState() {
@@ -513,12 +558,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 	}
 
-	@Override
-	public CloseableCursor<RawSubstateBytes> openIndexedCursor(
-		Transaction wrappedDbTxn,
-		SubstateIndex index
-	) {
-		var dbTxn = unwrap(wrappedDbTxn);
+	private CloseableCursor<RawSubstateBytes> openIndexedCursor(Transaction dbTxn, SubstateIndex index) {
 		var cursor = new BerkeleySubstateCursor(dbTxn, indexedSubstatesDatabase, index.getPrefix());
 		cursor.open();
 		return cursor;
@@ -732,14 +772,13 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return loadAddr(null, addr);
 	}
 
-	@Override
-	public Optional<ByteBuffer> loadAddr(Transaction tx, REAddr addr) {
+	private Optional<ByteBuffer> loadAddr(Transaction dbTxn, REAddr addr) {
 		var buf = ByteBuffer.allocate(128);
 		buf.put(addr.getBytes());
 		var pos = buf.position();
 		var key = new DatabaseEntry(buf.array(), 0, pos);
 		var value = entry();
-		var status = resourceDatabase.get(unwrap(tx), key, value, DEFAULT);
+		var status = resourceDatabase.get(dbTxn, key, value, DEFAULT);
 		if (status != SUCCESS) {
 			return Optional.empty();
 		}
@@ -747,19 +786,17 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return entryToSubstate(value);
 	}
 
-	@Override
-	public boolean isVirtualDown(Transaction tx, SubstateId substateId) {
+	private boolean isVirtualDown(Transaction dbTxn, SubstateId substateId) {
 		var key = entry(substateId.asBytes());
 		var value = entry();
-		var status = substatesDatabase.get(unwrap(tx), key, value, DEFAULT);
+		var status = substatesDatabase.get(dbTxn, key, value, DEFAULT);
 		return status == SUCCESS;
 	}
 
-	@Override
-	public Optional<ByteBuffer> loadSubstate(Transaction tx, SubstateId substateId) {
+	private Optional<ByteBuffer> loadSubstate(Transaction dbTxn, SubstateId substateId) {
 		var key = entry(substateId.asBytes());
 		var value = entry();
-		var status = substatesDatabase.get(unwrap(tx), key, value, DEFAULT);
+		var status = substatesDatabase.get(dbTxn, key, value, DEFAULT);
 		if (status != SUCCESS) {
 			return Optional.empty();
 		}
@@ -888,11 +925,5 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		if (additionalCounterType != null) {
 			systemCounters.add(additionalCounterType, amount);
 		}
-	}
-
-	private static com.sleepycat.je.Transaction unwrap(Transaction tx) {
-		return Optional.ofNullable(tx)
-			.map(wrapped -> tx.<com.sleepycat.je.Transaction>unwrap())
-			.orElse(null);
 	}
 }

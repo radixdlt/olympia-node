@@ -121,7 +121,7 @@ public final class ConstraintMachine {
 				return Optional.empty();
 			}
 
-			var raw = store.loadUpParticle(substateId);
+			var raw = store.loadSubstate(substateId);
 			return raw.map(b -> {
 				try {
 					return deserialization.deserialize(b);

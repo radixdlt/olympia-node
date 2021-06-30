@@ -8,6 +8,7 @@ import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 
 import java.nio.ByteBuffer;
@@ -18,20 +19,10 @@ import java.util.function.BiFunction;
 
 public class TransientEngineStore<M> implements EngineStore<M> {
 	private final EngineStore<M> base;
-	private InMemoryEngineStore<M> transientStore = new InMemoryEngineStore<>();
+	private final InMemoryEngineStore<M> transientStore = new InMemoryEngineStore<>();
 
 	public TransientEngineStore(EngineStore<M> base) {
 		this.base = Objects.requireNonNull(base);
-	}
-
-	@Override
-	public void storeTxn(Transaction dbTxn, Txn txn, List<REStateUpdate> stateUpdates) {
-		transientStore.storeTxn(dbTxn, txn, stateUpdates);
-	}
-
-	@Override
-	public void storeMetadata(Transaction txn, M metadata) {
-		// No-op
 	}
 
 	@Override
@@ -45,41 +36,63 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public Transaction createTransaction() {
-		return new Transaction() { };
-	}
+	public <R> R transaction(TransactionEngineStoreConsumer<M, R> consumer) throws RadixEngineException {
+		return base.transaction(baseStore ->
+			transientStore.transaction(tStore ->
+				consumer.start(new EngineStoreInTransaction<M>() {
+					@Override
+					public void storeTxn(Txn txn, List<REStateUpdate> instructions) {
+						tStore.storeTxn(txn, instructions);
+					}
 
-	@Override
-	public boolean isVirtualDown(Transaction txn, SubstateId substateId) {
-		return transientStore.isVirtualDown(txn, substateId)
-			|| base.isVirtualDown(txn, substateId);
-	}
+					@Override
+					public void storeMetadata(M metadata) {
+						// no-op
+					}
 
-	@Override
-	public Optional<ByteBuffer> loadSubstate(Transaction txn, SubstateId substateId) {
-		if (transientStore.getSpin(substateId).isEmpty()) {
-			return base.loadSubstate(txn, substateId);
-		}
+					@Override
+					public boolean isVirtualDown(SubstateId substateId) {
+						return tStore.isVirtualDown(substateId)
+							|| baseStore.isVirtualDown(substateId);
+					}
 
-		return transientStore.loadSubstate(txn, substateId);
-	}
+					@Override
+					public Optional<ByteBuffer> loadSubstate(SubstateId substateId) {
+						if (transientStore.getSpin(substateId).isEmpty()) {
+							return baseStore.loadSubstate(substateId);
+						}
 
-	@Override
-	public CloseableCursor<RawSubstateBytes> openIndexedCursor(
-		Transaction dbTxn,
-		SubstateIndex index
-	) {
-		return CloseableCursor.concat(
-			transientStore.openIndexedCursor(dbTxn, index),
-			() -> CloseableCursor.filter(
-				base.openIndexedCursor(dbTxn, index),
-				s -> transientStore.getSpin(SubstateId.fromBytes(s.getId())).isEmpty()
+						return tStore.loadSubstate(substateId);
+					}
+
+					@Override
+					public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index) {
+						return CloseableCursor.concat(
+							tStore.openIndexedCursor(index),
+							() -> CloseableCursor.filter(
+								baseStore.openIndexedCursor(index),
+								s -> transientStore.getSpin(SubstateId.fromBytes(s.getId())).isEmpty()
+							)
+						);
+					}
+
+					@Override
+					public Optional<ByteBuffer> loadResource(REAddr addr) {
+						return tStore.loadResource(addr).or(() -> baseStore.loadResource(addr));
+					}
+				})
 			)
 		);
 	}
 
 	@Override
-	public Optional<ByteBuffer> loadAddr(Transaction dbTxn, REAddr addr) {
-		return transientStore.loadAddr(dbTxn, addr).or(() -> base.loadAddr(dbTxn, addr));
+	public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index) {
+		return CloseableCursor.concat(
+			transientStore.openIndexedCursor(index),
+			() -> CloseableCursor.filter(
+				base.openIndexedCursor(index),
+				s -> transientStore.getSpin(SubstateId.fromBytes(s.getId())).isEmpty()
+			)
+		);
 	}
 }

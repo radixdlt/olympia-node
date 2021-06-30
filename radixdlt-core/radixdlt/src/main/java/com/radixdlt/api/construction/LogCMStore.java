@@ -66,7 +66,7 @@ public final class LogCMStore implements CMStore {
 	}
 
 	@Override
-	public Optional<ByteBuffer> loadUpParticle(SubstateId substateId) {
+	public Optional<ByteBuffer> loadSubstate(SubstateId substateId) {
 		var txnId = substateId.getTxnId();
 		return txnIndex.get(txnId)
 			.flatMap(txn -> {

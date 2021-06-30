@@ -31,9 +31,6 @@ import com.radixdlt.atom.actions.FeeReserveComplete;
 import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.ExecutionContext;
-import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.REProcessedTxn;
@@ -46,7 +43,6 @@ import com.radixdlt.constraintmachine.exceptions.TxnParseException;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 
 import com.radixdlt.store.TransientEngineStore;
@@ -55,13 +51,11 @@ import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -331,7 +325,7 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	private REProcessedTxn verify(EngineStore.Transaction dbTransaction, Txn txn, ExecutionContext context)
+	private REProcessedTxn verify(EngineStore.EngineStoreInTransaction<M> engineStoreInTransaction, Txn txn, ExecutionContext context)
 		throws AuthorizationException, TxnParseException, ConstraintMachineException {
 
 		var parsedTxn = parser.parse(txn);
@@ -340,27 +334,7 @@ public final class RadixEngine<M> {
 
 		var stateUpdates = constraintMachine.verify(
 			parser.getSubstateDeserialization(),
-			new CMStore() {
-				@Override
-				public boolean isVirtualDown(SubstateId substateId) {
-					return engineStore.isVirtualDown(dbTransaction, substateId);
-				}
-
-				@Override
-				public Optional<ByteBuffer> loadUpParticle(SubstateId substateId) {
-					return engineStore.loadSubstate(dbTransaction, substateId);
-				}
-
-				@Override
-				public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index) {
-					return engineStore.openIndexedCursor(dbTransaction, index);
-				}
-
-				@Override
-				public Optional<ByteBuffer> loadResource(REAddr addr) {
-					return engineStore.loadAddr(dbTransaction, addr);
-				}
-			},
+			engineStoreInTransaction,
 			context,
 			parsedTxn.instructions()
 		);
@@ -396,20 +370,12 @@ public final class RadixEngine<M> {
 					)
 				);
 			}
-			var dbTransaction = engineStore.createTransaction();
-			try {
-				var parsedTransactions = executeInternal(dbTransaction, txns, meta, permissionLevel);
-				dbTransaction.commit();
-				return parsedTransactions;
-			} catch (Exception e) {
-				dbTransaction.abort();
-				throw e;
-			}
+			return engineStore.transaction(store -> executeInternal(store, txns, meta, permissionLevel));
 		}
 	}
 
 	private List<REProcessedTxn> executeInternal(
-		EngineStore.Transaction dbTransaction,
+		EngineStore.EngineStoreInTransaction<M> engineStoreInTransaction,
 		List<Txn> txns,
 		M meta,
 		PermissionLevel permissionLevel
@@ -428,7 +394,7 @@ public final class RadixEngine<M> {
 			final REProcessedTxn parsedTxn;
 			// TODO: combine verification and storage
 			try {
-				parsedTxn = this.verify(dbTransaction, txn, context);
+				parsedTxn = this.verify(engineStoreInTransaction, txn, context);
 			} catch (TxnParseException | AuthorizationException | ConstraintMachineException e) {
 				throw new RadixEngineException(i, txns.size(), txn, e);
 			}
@@ -436,7 +402,7 @@ public final class RadixEngine<M> {
 			sigsLeft = context.sigsLeft();
 
 			try {
-				this.engineStore.storeTxn(dbTransaction, txn, parsedTxn.stateUpdates().collect(Collectors.toList()));
+				engineStoreInTransaction.storeTxn(txn, parsedTxn.stateUpdates().collect(Collectors.toList()));
 			} catch (Exception e) {
 				logger.error("Store of atom failed: " + parsedTxn, e);
 				throw e;
@@ -460,7 +426,7 @@ public final class RadixEngine<M> {
 		}
 
 		if (meta != null) {
-			this.engineStore.storeMetadata(dbTransaction, meta);
+			engineStoreInTransaction.storeMetadata(meta);
 		}
 
 		return parsedTransactions;
@@ -477,7 +443,7 @@ public final class RadixEngine<M> {
 	private TxBuilder construct(TxBuilderExecutable executable, Set<SubstateId> avoid) throws TxBuilderException {
 		synchronized (stateUpdateEngineLock) {
 			SubstateStore filteredStore = b -> CloseableCursor.filter(
-				engineStore.openIndexedCursor(null, b),
+				engineStore.openIndexedCursor(b),
 				i -> !avoid.contains(SubstateId.fromBytes(i.getId()))
 			);
 

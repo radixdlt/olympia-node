@@ -19,7 +19,6 @@ package com.radixdlt.store;
 
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.SubstateIndex;
@@ -28,6 +27,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REOp;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 
 import java.nio.ByteBuffer;
@@ -46,24 +46,87 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 	private final Map<REAddr, Supplier<ByteBuffer>> addrParticles = new HashMap<>();
 
 	@Override
-	public void storeTxn(Transaction dbTxn, Txn txn, List<REStateUpdate> stateUpdates) {
-		synchronized (lock) {
-			stateUpdates.forEach(i -> storedParticles.put(i.getSubstate().getId(), i));
-			stateUpdates.stream()
-				.filter(REStateUpdate::isBootUp)
-				.forEach(p -> {
-					// FIXME: Superhack
-					if (p.getRawSubstate() instanceof TokenResource) {
-						var tokenDef = (TokenResource) p.getRawSubstate();
-						addrParticles.put(tokenDef.getAddr(), p::getStateBuf);
+	public <R> R transaction(TransactionEngineStoreConsumer<M, R> consumer) throws RadixEngineException {
+		return consumer.start(new EngineStoreInTransaction<M>() {
+			@Override
+			public void storeTxn(Txn txn, List<REStateUpdate> stateUpdates) {
+				synchronized (lock) {
+					stateUpdates.forEach(i -> storedParticles.put(i.getSubstate().getId(), i));
+					stateUpdates.stream()
+						.filter(REStateUpdate::isBootUp)
+						.forEach(p -> {
+							// FIXME: Superhack
+							if (p.getRawSubstate() instanceof TokenResource) {
+								var tokenDef = (TokenResource) p.getRawSubstate();
+								addrParticles.put(tokenDef.getAddr(), p::getStateBuf);
+							}
+						});
+				}
+			}
+
+			@Override
+			public void storeMetadata(M metadata) {
+
+			}
+
+			@Override
+			public boolean isVirtualDown(SubstateId substateId) {
+				synchronized (lock) {
+					var inst = storedParticles.get(substateId);
+					return inst != null && inst.isShutDown();
+				}
+			}
+
+			@Override
+			public Optional<ByteBuffer> loadSubstate(SubstateId substateId) {
+				synchronized (lock) {
+					var inst = storedParticles.get(substateId);
+					if (inst == null || inst.getOp() != REOp.UP) {
+						return Optional.empty();
 					}
-				});
-		}
+
+					return Optional.of(inst.getStateBuf());
+				}
+			}
+
+			@Override
+			public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index) {
+				return InMemoryEngineStore.this.openIndexedCursor(index);
+			}
+
+			@Override
+			public Optional<ByteBuffer> loadResource(REAddr addr) {
+				synchronized (lock) {
+					var supplier = addrParticles.get(addr);
+					return supplier == null ? Optional.empty() : Optional.of(supplier.get());
+				}
+			}
+		});
 	}
 
 	@Override
-	public void storeMetadata(Transaction txn, M metadata) {
-		 // No-op
+	public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index) {
+		final List<RawSubstateBytes> substates = new ArrayList<>();
+		synchronized (lock) {
+			for (var i : storedParticles.values()) {
+				if (!i.isBootUp()) {
+					continue;
+				}
+				if (!index.test(i.getRawSubstateBytes())) {
+					continue;
+				}
+				substates.add(i.getRawSubstateBytes());
+			}
+		}
+
+		return CloseableCursor.wrapIterator(substates.iterator());
+	}
+
+	public Optional<REOp> getSpin(SubstateId substateId) {
+		synchronized (lock) {
+			var inst = storedParticles.get(substateId);
+			return Optional.ofNullable(inst).map(REStateUpdate::getOp);
+		}
 	}
 
 	@Override
@@ -92,60 +155,4 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 		return bundle.stream().anyMatch(v -> v.isInstance(instance));
 	}
 
-	@Override
-	public CloseableCursor<RawSubstateBytes> openIndexedCursor(Transaction dbTxn, SubstateIndex index) {
-		final List<RawSubstateBytes> substates = new ArrayList<>();
-		synchronized (lock) {
-			for (var i : storedParticles.values()) {
-				if (!i.isBootUp()) {
-					continue;
-				}
-				if (!index.test(i.getRawSubstateBytes())) {
-					continue;
-				}
-				substates.add(i.getRawSubstateBytes());
-			}
-		}
-
-		return CloseableCursor.wrapIterator(substates.iterator());
-	}
-
-	@Override
-	public Transaction createTransaction() {
-		return new Transaction() { };
-	}
-
-	@Override
-	public boolean isVirtualDown(Transaction txn, SubstateId substateId) {
-		synchronized (lock) {
-			var inst = storedParticles.get(substateId);
-			return inst != null && inst.isShutDown();
-		}
-	}
-
-	public Optional<REOp> getSpin(SubstateId substateId) {
-		synchronized (lock) {
-			var inst = storedParticles.get(substateId);
-			return Optional.ofNullable(inst).map(REStateUpdate::getOp);
-		}
-	}
-
-	@Override
-	public Optional<ByteBuffer> loadSubstate(Transaction txn, SubstateId substateId) {
-		synchronized (lock) {
-			var inst = storedParticles.get(substateId);
-			if (inst == null || inst.getOp() != REOp.UP) {
-				return Optional.empty();
-			}
-
-			return Optional.of(inst.getStateBuf());
-		}
-	}
-
-	@Override
-	public Optional<ByteBuffer> loadAddr(Transaction dbTxn, REAddr rri) {
-		synchronized (lock) {
-			return Optional.ofNullable(addrParticles.get(rri).get());
-		}
-	}
 }
