@@ -1,3 +1,5 @@
+
+
 extern crate bytebuffer;
 
 use bytebuffer::ByteBuffer;
@@ -240,6 +242,14 @@ mod tests {
     #[test]
     fn other_stake_from_validator_2() {
         let contents = fs::read_to_string("../samples/other_stake_from_validator_2.txt").unwrap();
+        let raw = hex::decode(contents).unwrap();
+        let tx = Transaction::from_bytes(raw);
+        println!("{:?}", tx)
+    }
+
+    #[test]
+    fn other_complex_fee() {
+        let contents = fs::read_to_string("../samples/other_complex_fee.txt").unwrap();
         let raw = hex::decode(contents).unwrap();
         let tx = Transaction::from_bytes(raw);
         println!("{:?}", tx)

@@ -20,3 +20,4 @@
 | (Secondary) Transfer mixed tokens | Yes                    | Yes          | [`other_transfer_mixed_tokens.txt`](./other_transfer_mixed_tokens.txt) |
 | (Secondary) Stake from validator owner 1 | Yes                    | Yes          | [`other_stake_from_validator_1.txt`](./other_stake_from_validator_1.txt) |
 | (Secondary) Stake from validator owner 2 | Yes                    | Yes          | [`other_stake_from_validator_2.txt`](./other_stake_from_validator_2.txt) |
+| (Secondary) Complex fee                  | Yes                    | Yes          | [`other_complex_fee.txt`](./other_complex_fee.txt) |
