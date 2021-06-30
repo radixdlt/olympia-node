@@ -186,7 +186,7 @@ public class UnstakingLockedTokensTest {
 			LedgerUpdate.class,
 			e -> {
 				var epochChange = e.getStateComputerOutput().getInstance(EpochChange.class);
-				return epochChange != null && epochChange.getEpoch() == stakingEpoch;
+				return epochChange != null && epochChange.getEpoch() == unstakingEpoch;
 			}
 		);
 		var unstakeTxn = dispatchAndWaitForCommit(new UnstakeTokens(accountAddr, self, Amount.ofTokens(10).toSubunits()));
@@ -196,7 +196,7 @@ public class UnstakingLockedTokensTest {
 				LedgerUpdate.class,
 				e -> {
 					var epochChange = e.getStateComputerOutput().getInstance(EpochChange.class);
-					return epochChange != null && epochChange.getEpoch() == stakingEpoch;
+					return epochChange != null && epochChange.getEpoch() == transferEpoch;
 				}
 			);
 		}
