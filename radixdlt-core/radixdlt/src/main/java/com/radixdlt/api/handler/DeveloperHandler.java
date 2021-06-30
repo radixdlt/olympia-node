@@ -22,7 +22,6 @@ import com.google.inject.Inject;
 import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.api.service.ActionParserService;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.constraintmachine.exceptions.TxnParseException;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.networks.Addressing;
