@@ -596,16 +596,21 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return e.getData().length == 0 ? REOp.DOWN : REOp.UP;
 	}
 
-	private Optional<Particle> entryToUpParticle(DatabaseEntry e, SubstateDeserialization deserialization) {
+	private Optional<ByteBuffer> entryToUpParticle(DatabaseEntry e) {
 		if (entryToSpin(e) == REOp.DOWN) {
 			return Optional.empty();
 		}
+		return Optional.of(ByteBuffer.wrap(e.getData()));
+	}
 
-		try {
-			return Optional.of(deserialization.deserialize(e.getData()));
-		} catch (DeserializeException ex) {
-			throw new IllegalStateException("Unable to deserialize particle");
-		}
+	private Optional<Particle> entryToUpParticle(DatabaseEntry e, SubstateDeserialization deserialization) {
+		return entryToUpParticle(e).map(b -> {
+			try {
+				return deserialization.deserialize(e.getData());
+			} catch (DeserializeException ex) {
+				throw new IllegalStateException("Unable to deserialize particle");
+			}
+		});
 	}
 
 	private void updateParticle(com.sleepycat.je.Transaction txn, REStateUpdate stateUpdate) {
@@ -761,7 +766,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public Optional<Particle> loadUpParticle(Transaction tx, SubstateId substateId, SubstateDeserialization deserialization) {
+	public Optional<ByteBuffer> loadUpParticle(Transaction tx, SubstateId substateId) {
 		var key = entry(substateId.asBytes());
 		var value = entry();
 		var status = substatesDatabase.get(unwrap(tx), key, value, DEFAULT);
@@ -769,7 +774,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			return Optional.empty();
 		}
 
-		return entryToUpParticle(value, deserialization);
+		return entryToUpParticle(value);
 	}
 
 	@Override

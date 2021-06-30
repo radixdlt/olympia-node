@@ -30,6 +30,7 @@ import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.identifiers.REAddr;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -135,15 +136,14 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	}
 
 	@Override
-	public Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId, SubstateDeserialization deserialization) {
+	public Optional<ByteBuffer> loadUpParticle(Transaction txn, SubstateId substateId) {
 		synchronized (lock) {
 			var inst = storedParticles.get(substateId);
 			if (inst == null || inst.getOp() != REOp.UP) {
 				return Optional.empty();
 			}
 
-			var particle = inst.getRawSubstate();
-			return Optional.of(particle);
+			return Optional.of(inst.getStateBuf());
 		}
 	}
 

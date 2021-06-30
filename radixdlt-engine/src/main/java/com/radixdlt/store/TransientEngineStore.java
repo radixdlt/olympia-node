@@ -10,6 +10,7 @@ import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.identifiers.REAddr;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -55,12 +56,12 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId, SubstateDeserialization deserialization) {
+	public Optional<ByteBuffer> loadUpParticle(Transaction txn, SubstateId substateId) {
 		if (transientStore.getSpin(substateId).isEmpty()) {
-			return base.loadUpParticle(txn, substateId, deserialization);
+			return base.loadUpParticle(txn, substateId);
 		}
 
-		return transientStore.loadUpParticle(txn, substateId, deserialization);
+		return transientStore.loadUpParticle(txn, substateId);
 	}
 
 	@Override

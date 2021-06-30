@@ -55,6 +55,7 @@ import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -346,8 +347,8 @@ public final class RadixEngine<M> {
 				}
 
 				@Override
-				public Optional<Particle> loadUpParticle(SubstateId substateId, SubstateDeserialization deserialization) {
-					return engineStore.loadUpParticle(dbTransaction, substateId, deserialization);
+				public Optional<ByteBuffer> loadUpParticle(SubstateId substateId) {
+					return engineStore.loadUpParticle(dbTransaction, substateId);
 				}
 
 				@Override

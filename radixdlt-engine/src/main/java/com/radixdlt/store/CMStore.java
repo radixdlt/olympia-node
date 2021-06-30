@@ -24,6 +24,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 
+import java.nio.ByteBuffer;
 import java.util.Optional;
 
 /**
@@ -32,10 +33,7 @@ import java.util.Optional;
 public interface CMStore extends ReadableAddrsStore {
 	boolean isVirtualDown(SubstateId substateId);
 
-	Optional<Particle> loadUpParticle(
-		SubstateId substateId,
-		SubstateDeserialization deserialization
-	);
+	Optional<ByteBuffer> loadUpParticle(SubstateId substateId);
 
 	CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index);
 }

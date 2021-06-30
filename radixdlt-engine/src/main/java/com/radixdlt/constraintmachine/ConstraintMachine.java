@@ -114,7 +114,14 @@ public final class ConstraintMachine {
 				return Optional.empty();
 			}
 
-			return store.loadUpParticle(substateId, deserialization);
+			var raw = store.loadUpParticle(substateId);
+			return raw.map(b -> {
+				try {
+					return deserialization.deserialize(b);
+				} catch (DeserializeException e) {
+					throw new IllegalStateException(e);
+				}
+			});
 		}
 
 		public void bootUp(Substate substate, Supplier<ByteBuffer> buffer) {

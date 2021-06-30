@@ -33,7 +33,9 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.TxnIndex;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.ReadableAddrsStore;
+import io.netty.buffer.ByteBuf;
 
+import java.nio.ByteBuffer;
 import java.util.Optional;
 
 /**
@@ -68,22 +70,18 @@ public final class LogCMStore implements CMStore {
 	}
 
 	@Override
-	public Optional<Particle> loadUpParticle(SubstateId substateId, SubstateDeserialization deserialization) {
+	public Optional<ByteBuffer> loadUpParticle(SubstateId substateId) {
 		var txnId = substateId.getTxnId();
 		return txnIndex.get(txnId)
 			.flatMap(txn -> {
 				var index = substateId.getIndex().orElseThrow();
 				try {
 					var instructions = reParser.parse(txn).instructions();
-					if (index >= instructions.size()) {
-						return Optional.empty();
-					}
-					var inst = instructions.get(index);
-					if (inst.getMicroOp() != REInstruction.REMicroOp.UP) {
-						return Optional.empty();
-					}
-					Substate s = inst.getData();
-					return Optional.of(s.getParticle());
+					return instructions.stream()
+						.filter(i -> i.getMicroOp() == REInstruction.REMicroOp.UP)
+						.skip(index)
+						.findFirst()
+						.map(i -> i.getDataByteBuffer());
 				} catch (TxnParseException e) {
 					throw new IllegalStateException("Cannot deserialize txn", e);
 				}

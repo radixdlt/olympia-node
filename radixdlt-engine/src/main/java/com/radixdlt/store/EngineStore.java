@@ -28,6 +28,7 @@ import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.identifiers.REAddr;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -54,11 +55,7 @@ public interface EngineStore<M> {
 	Transaction createTransaction();
 
 	boolean isVirtualDown(Transaction dbTxn, SubstateId substateId);
-	Optional<Particle> loadUpParticle(
-		Transaction dbTxn,
-		SubstateId substateId,
-		SubstateDeserialization deserialization
-	);
+	Optional<ByteBuffer> loadUpParticle(Transaction dbTxn, SubstateId substateId);
 	Optional<Particle> loadAddr(
 		Transaction dbTxn,
 		REAddr addr,
