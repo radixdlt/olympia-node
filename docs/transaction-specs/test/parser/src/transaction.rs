@@ -229,4 +229,20 @@ mod tests {
         let tx = Transaction::from_bytes(raw);
         println!("{:?}", tx)
     }
+
+    #[test]
+    fn other_stake_from_validator_1() {
+        let contents = fs::read_to_string("../samples/other_stake_from_validator_1.txt").unwrap();
+        let raw = hex::decode(contents).unwrap();
+        let tx = Transaction::from_bytes(raw);
+        println!("{:?}", tx)
+    }
+
+    #[test]
+    fn other_stake_from_validator_2() {
+        let contents = fs::read_to_string("../samples/other_stake_from_validator_2.txt").unwrap();
+        let raw = hex::decode(contents).unwrap();
+        let tx = Transaction::from_bytes(raw);
+        println!("{:?}", tx)
+    }
 }
