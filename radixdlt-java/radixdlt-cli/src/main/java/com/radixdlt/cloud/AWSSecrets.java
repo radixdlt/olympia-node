@@ -150,6 +150,9 @@ public class AWSSecrets {
 			var passwordName = "password";
 			var networkId = findNetworkId(networkName);
 			var publicKeyPrefix = String.format("tn%s", networkId);
+			if (networkName.equals("stokenet")){
+				publicKeyPrefix = "tdx";
+			}
 			var publicKeyFileSecretName = String.format("%s/%s/public_key", networkName, nodeName);
 			if (namePrefix.equals(CORE_NODE_PREFIX)) {
 				if (isStaker) {
