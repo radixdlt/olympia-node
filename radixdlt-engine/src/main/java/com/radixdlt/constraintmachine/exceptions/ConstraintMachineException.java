@@ -23,6 +23,6 @@ import com.radixdlt.constraintmachine.ReducerState;
 
 public final class ConstraintMachineException extends Exception {
 	public ConstraintMachineException(int instIndex, REInstruction instruction, ReducerState reducerState, Throwable cause) {
-		super("index=" + instIndex + " instruction=" + instruction + " reducerState=" + reducerState, cause);
+		super("index=" + instIndex + " reducerState=" + reducerState + " instruction=" + instruction, cause);
 	}
 }

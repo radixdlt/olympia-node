@@ -36,8 +36,6 @@ import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.statecomputer.MaxValidators;
-import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.sync.SyncConfig;
@@ -169,8 +167,6 @@ public class SystemConfigService {
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
 		@MempoolMaxSize int mempoolMaxSize,
 		@MempoolThrottleMs long mempoolThrottleMs,
-		@MinValidators int minValidators,
-		@MaxValidators int maxValidators,
 		@Genesis VerifiedTxnsAndProof genesis,
 		TreeMap<Long, ForkConfig> forkConfigTreeMap,
 		SyncConfig syncConfig,
@@ -186,7 +182,7 @@ public class SystemConfigService {
 		this.peersView = peersView;
 		this.addressing = addressing;
 
-		radixEngineConfiguration = prepareRadixEngineConfiguration(forkConfigTreeMap, minValidators, maxValidators);
+		radixEngineConfiguration = prepareRadixEngineConfiguration(forkConfigTreeMap);
 		mempoolConfiguration = prepareMempoolConfiguration(mempoolMaxSize, mempoolThrottleMs);
 		apiConfiguration = prepareApiConfiguration(endpointStatuses);
 		bftConfiguration = prepareBftConfiguration(pacemakerTimeout, bftSyncPatienceMillis);
@@ -345,11 +341,7 @@ public class SystemConfigService {
 	}
 
 	@VisibleForTesting
-	static JSONObject prepareRadixEngineConfiguration(
-		TreeMap<Long, ForkConfig> forkConfigTreeMap,
-		int minValidators,
-		int maxValidators
-	) {
+	static JSONObject prepareRadixEngineConfiguration(TreeMap<Long, ForkConfig> forkConfigTreeMap) {
 		var forks = jsonArray();
 		forkConfigTreeMap.forEach((e, config) -> forks.put(
 			jsonObject()
@@ -357,12 +349,11 @@ public class SystemConfigService {
 				.put("version", config.getVersion().name().toLowerCase())
 				.put("maxRounds", config.getConfig().getMaxRounds())
 				.put("maxSigsPerRound", config.getConfig().getMaxSigsPerRound().orElse(-1))
+				.put("maxValidators", config.getConfig().getMaxValidators())
 				.put("epoch", e)
 		));
 
 		return jsonObject()
-			.put("minValidators", minValidators)
-			.put("maxValidators", maxValidators)
 			.put("forks", forks);
 	}
 

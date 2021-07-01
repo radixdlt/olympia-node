@@ -30,7 +30,6 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -164,7 +163,6 @@ public class MempoolRelayTest {
 			new RadixEngineModule(),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMaxSigsPerRound(50)),
 			new ForksModule(),
-			RadixEngineConfig.asModule(1, 100),
 			new AbstractModule() {
 				@Override
 				public void configure() {
@@ -191,7 +189,6 @@ public class MempoolRelayTest {
 			MempoolConfig.asModule(500, 100, 10, 10, 10),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMaxSigsPerRound(50)),
 			new ForksModule(),
-			RadixEngineConfig.asModule(1, 100),
 			new PersistedNodeForTestingModule(),
 			new MempoolFillerModule(),
 			new AbstractModule() {

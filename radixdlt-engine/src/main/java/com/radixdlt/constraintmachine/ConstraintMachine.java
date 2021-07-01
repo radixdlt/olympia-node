@@ -106,7 +106,14 @@ public final class ConstraintMachine {
 					.filter(p -> p.getAddr().equals(addr))
 					.findFirst()
 					.map(Particle.class::cast)
-					.or(() -> store.loadAddr(addr, deserialization));
+					.or(() ->
+						store.loadResource(addr).map(b -> {
+							try {
+								return deserialization.deserialize(b);
+							} catch (DeserializeException e) {
+								throw new IllegalStateException(e);
+							}
+						}));
 		}
 
 		public Optional<Particle> loadUpParticle(SubstateId substateId) {
@@ -114,7 +121,14 @@ public final class ConstraintMachine {
 				return Optional.empty();
 			}
 
-			return store.loadUpParticle(substateId, deserialization);
+			var raw = store.loadSubstate(substateId);
+			return raw.map(b -> {
+				try {
+					return deserialization.deserialize(b);
+				} catch (DeserializeException e) {
+					throw new IllegalStateException(e);
+				}
+			});
 		}
 
 		public void bootUp(Substate substate, Supplier<ByteBuffer> buffer) {
@@ -173,7 +187,7 @@ public final class ConstraintMachine {
 			return substate;
 		}
 
-		public CloseableCursor<Substate> shutdownAll(ShutdownAllIndex index) {
+		public CloseableCursor<Substate> shutdownAll(SubstateIndex index) {
 			return CloseableCursor.concat(
 				CloseableCursor.wrapIterator(localUpParticles.values().stream()
 					.filter(s -> index.test(s.getSecond().get())).map(Pair::getFirst).iterator()
@@ -287,14 +301,14 @@ public final class ConstraintMachine {
 					reducerState = callProcedure(methodProcedure, nextParticle, reducerState, readableAddrs, context);
 					expectEnd = reducerState == null;
 				} else if (inst.getMicroOp().getOp() == REOp.DOWNINDEX) {
-					ShutdownAllIndex index = inst.getData();
+					SubstateIndex index = inst.getData();
 					var substateCursor = validationState.shutdownAll(index);
 					var tmp = stateUpdates;
 					var iterator = new Iterator<Particle>() {
 						@Override
 						public boolean hasNext() {
-													   return substateCursor.hasNext();
-																					   }
+							return substateCursor.hasNext();
+						}
 
 						@Override
 						public Particle next() {

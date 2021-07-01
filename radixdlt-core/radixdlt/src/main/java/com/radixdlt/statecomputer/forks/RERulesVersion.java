@@ -101,7 +101,8 @@ public enum RERulesVersion {
 				maxRounds,
 				config.getRewardsPerProposal().toSubunits(),
 				config.getMinimumCompletedProposalsPercentage(),
-				config.getUnstakingEpochDelay()
+				config.getUnstakingEpochDelay(),
+				config.getMaxValidators()
 			));
 			var meter = Meters.combine(
 				config.getMaxSigsPerRound().stream().<Meter>mapToObj(SigsPerRoundMeter::create).findAny().orElse(Meter.EMPTY),
@@ -127,7 +128,8 @@ public enum RERulesVersion {
 				.put(NextEpoch.class, new NextEpochConstructorV3(
 					config.getRewardsPerProposal().toSubunits(),
 					config.getMinimumCompletedProposalsPercentage(),
-					config.getUnstakingEpochDelay()
+					config.getUnstakingEpochDelay(),
+					config.getMaxValidators()
 				))
 				.put(NextRound.class, new NextViewConstructorV3())
 				.put(RegisterValidator.class, new RegisterValidatorConstructor())
@@ -153,7 +155,8 @@ public enum RERulesVersion {
 				actionConstructors,
 				new EpochProofVerifierV2(),
 				View.of(maxRounds),
-				config.getMaxSigsPerRound()
+				config.getMaxSigsPerRound(),
+				config.getMaxValidators()
 			);
 		}
 	};

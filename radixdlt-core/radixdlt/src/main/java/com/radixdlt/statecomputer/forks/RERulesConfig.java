@@ -32,6 +32,7 @@ public final class RERulesConfig {
 	private final long unstakingEpochDelay;
 	private final Amount rewardsPerProposal;
 	private final int minimumCompletedProposalsPercentage;
+	private final int maxValidators;
 
 	public RERulesConfig(
 		FeeTable feeTable,
@@ -41,7 +42,8 @@ public final class RERulesConfig {
 		Amount minimumStake,
 		long unstakingEpochDelay,
 		Amount rewardsPerProposal,
-		int minimumCompletedProposalsPercentage
+		int minimumCompletedProposalsPercentage,
+		int maxValidators
 	) {
 		this.feeTable = feeTable;
 		this.maxSigsPerRound = maxSigsPerRound;
@@ -51,6 +53,7 @@ public final class RERulesConfig {
 		this.unstakingEpochDelay = unstakingEpochDelay;
 		this.rewardsPerProposal = rewardsPerProposal;
 		this.minimumCompletedProposalsPercentage = minimumCompletedProposalsPercentage;
+		this.maxValidators = maxValidators;
 	}
 
 	public static RERulesConfig testingDefault() {
@@ -62,7 +65,8 @@ public final class RERulesConfig {
 			Amount.ofTokens(10),
 			1,
 			Amount.ofTokens(10),
-			9800
+			9800,
+			10
 		);
 	}
 
@@ -98,6 +102,10 @@ public final class RERulesConfig {
 		return minimumCompletedProposalsPercentage;
 	}
 
+	public int getMaxValidators() {
+		return maxValidators;
+	}
+
 	public RERulesConfig overrideMaxSigsPerRound(int maxSigsPerRound) {
 		return new RERulesConfig(
 			this.feeTable,
@@ -107,7 +115,8 @@ public final class RERulesConfig {
 			this.minimumStake,
 			this.unstakingEpochDelay,
 			this.rewardsPerProposal,
-			this.minimumCompletedProposalsPercentage
+			this.minimumCompletedProposalsPercentage,
+			this.maxValidators
 		);
 	}
 
@@ -120,7 +129,8 @@ public final class RERulesConfig {
 			this.minimumStake,
 			this.unstakingEpochDelay,
 			this.rewardsPerProposal,
-			this.minimumCompletedProposalsPercentage
+			this.minimumCompletedProposalsPercentage,
+			this.maxValidators
 		);
 	}
 
@@ -133,7 +143,8 @@ public final class RERulesConfig {
 			this.minimumStake,
 			this.unstakingEpochDelay,
 			this.rewardsPerProposal,
-			this.minimumCompletedProposalsPercentage
+			this.minimumCompletedProposalsPercentage,
+			this.maxValidators
 		);
 	}
 
@@ -146,7 +157,8 @@ public final class RERulesConfig {
 			this.minimumStake,
 			this.unstakingEpochDelay,
 			this.rewardsPerProposal,
-			this.minimumCompletedProposalsPercentage
+			this.minimumCompletedProposalsPercentage,
+			this.maxValidators
 		);
 	}
 }

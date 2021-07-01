@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRegistrator;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
-import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
@@ -48,7 +47,6 @@ public class IncreasingValidatorsTest {
 		.pacemakerTimeout(3000)
 		.numNodes(50, 2) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware pacemaker
 		.addRadixEngineConfigModules(
-			RadixEngineConfig.asModule(2, 40),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMaxSigsPerRound(5)),
 			new ForksModule()
 		)

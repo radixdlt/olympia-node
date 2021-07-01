@@ -24,10 +24,10 @@ import com.radixdlt.utils.Bytes;
 import java.util.Iterator;
 
 public final class ShutdownAll<D extends Particle> {
-	private ShutdownAllIndex index;
+	private SubstateIndex index;
 	private final Iterator<D> iterator;
 
-	public ShutdownAll(ShutdownAllIndex index, Iterator<D> iterator) {
+	public ShutdownAll(SubstateIndex index, Iterator<D> iterator) {
 		this.index = index;
 		this.iterator = iterator;
 	}

@@ -74,7 +74,6 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.StakedValidators;
@@ -149,7 +148,6 @@ public class SubmissionServiceTest {
 					)
 				));
 				install(new ForksModule());
-				install(RadixEngineConfig.asModule(1, 100));
 				install(MempoolConfig.asModule(10, 10));
 
 				bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)

@@ -29,7 +29,8 @@ public final class RadixEngineException extends Exception {
 	private final int txnIndex;
 
 	public RadixEngineException(int txnIndex, int batchSize, Txn txn, Exception cause) {
-		super("index=" + txnIndex + " batchSize=" + batchSize + " txnId=" + txn.getId() + " txn=" + Bytes.toHexString(txn.getPayload()), cause);
+		super("index=" + txnIndex + " batchSize=" + batchSize + " txnId=" + txn.getId()
+			+ " size=" + txn.getPayload().length + " txn=" + Bytes.toHexString(txn.getPayload()), cause);
 		this.txn = txn;
 		this.txnIndex = txnIndex;
 	}

@@ -74,17 +74,20 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	private final UInt256 rewardsPerProposal;
 	private final long unstakingEpochDelay;
 	private int minimumCompletedProposalsPercentage;
+	private int maxValidators;
 
 	public EpochUpdateConstraintScrypt(
 		long maxRounds,
 		UInt256 rewardsPerProposal,
 		int minimumCompletedProposalsPercentage,
-		long unstakingEpochDelay
+		long unstakingEpochDelay,
+		int maxValidators
 	) {
 		this.maxRounds = maxRounds;
 		this.rewardsPerProposal = rewardsPerProposal;
 		this.unstakingEpochDelay = unstakingEpochDelay;
 		this.minimumCompletedProposalsPercentage = minimumCompletedProposalsPercentage;
+		this.maxValidators = maxValidators;
 	}
 
 	public final class ProcessExittingStake implements ReducerState {
@@ -102,7 +105,14 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			var expectedPrefix = new byte[Long.BYTES + 1];
 			Longs.copyTo(expectedEpoch, expectedPrefix, 1);
 			shutdownAll.verifyPostTypePrefixEquals(expectedPrefix);
-			shutdownAll.iterator().forEachRemaining(exitting::add);
+			shutdownAll.iterator().forEachRemaining(e -> {
+				// Sanity check
+				if (e.getEpochUnlocked() != expectedEpoch) {
+					throw new IllegalStateException("Invalid shutdown of exitting stake update epoch expected "
+						+ expectedEpoch + " but was " + e.getEpochUnlocked());
+				}
+				exitting.add(e);
+			});
 			return next();
 		}
 
@@ -200,7 +210,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		}
 	}
 
-	public static final class CreatingNextValidatorSet implements ReducerState {
+	public final class CreatingNextValidatorSet implements ReducerState {
 		private final Set<ECPublicKey> validators = new HashSet<>();
 		private final UpdatingEpoch updatingEpoch;
 
@@ -209,6 +219,10 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		}
 
 		ReducerState nextValidator(ValidatorBFTData u) throws ProcedureException {
+			if (validators.size() >= maxValidators) {
+				throw new ProcedureException("Max validators is " + maxValidators);
+			}
+
 			if (validators.contains(u.validatorKey())) {
 				throw new ProcedureException("Already in set: " + u.validatorKey());
 			}
@@ -216,6 +230,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 				throw new ProcedureException("Proposals completed must be 0");
 			}
 			validators.add(u.validatorKey());
+
 			return this;
 		}
 
@@ -370,7 +385,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		}
 	}
 
-	private static final class PreparingStake implements ReducerState {
+	private final class PreparingStake implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
 		private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake;
@@ -438,7 +453,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		}
 	}
 
-	private static final class PreparingRakeUpdate implements ReducerState {
+	private final class PreparingRakeUpdate implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
 		private final TreeMap<ECPublicKey, PreparedRakeUpdate> preparingRakeUpdates = new TreeMap<>(KeyComparator.instance());
@@ -459,6 +474,11 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			var iter = shutdownAll.iterator();
 			while (iter.hasNext()) {
 				var preparedRakeUpdate = iter.next();
+				// Sanity check
+				if (preparedRakeUpdate.getEpoch() != expectedEpoch) {
+					throw new IllegalStateException("Invalid rake update epoch expected " + expectedEpoch
+						+ " but was " + preparedRakeUpdate.getEpoch());
+				}
 				preparingRakeUpdates.put(preparedRakeUpdate.getValidatorKey(), preparedRakeUpdate);
 			}
 			return next();
@@ -502,10 +522,10 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		}
 	}
 
-	private static final class PreparingOwnerUpdate implements ReducerState {
+	private final class PreparingOwnerUpdate implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
-		private final TreeMap<ECPublicKey, PreparedOwnerUpdate> preparingValidatorUpdates = new TreeMap<>(KeyComparator.instance());
+		private final TreeMap<ECPublicKey, PreparedOwnerUpdate> preparingOwnerUpdates = new TreeMap<>(KeyComparator.instance());
 
 		PreparingOwnerUpdate(
 			UpdatingEpoch updatingEpoch,
@@ -520,18 +540,18 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			var iter = shutdownAll.iterator();
 			while (iter.hasNext()) {
 				var preparedValidatorUpdate = iter.next();
-				preparingValidatorUpdates.put(preparedValidatorUpdate.getValidatorKey(), preparedValidatorUpdate);
+				preparingOwnerUpdates.put(preparedValidatorUpdate.getValidatorKey(), preparedValidatorUpdate);
 			}
 			return next();
 		}
 
 		ReducerState next() {
-			if (preparingValidatorUpdates.isEmpty()) {
+			if (preparingOwnerUpdates.isEmpty()) {
 				return new PreparingRegisteredUpdate(updatingEpoch, validatorsScratchPad);
 			}
 
-			var k = preparingValidatorUpdates.firstKey();
-			var validatorUpdate = preparingValidatorUpdates.remove(k);
+			var k = preparingOwnerUpdates.firstKey();
+			var validatorUpdate = preparingOwnerUpdates.remove(k);
 			if (!validatorsScratchPad.containsKey(k)) {
 				return new LoadingStake(k, validatorStake -> {
 					validatorsScratchPad.put(k, validatorStake);
@@ -542,6 +562,11 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 				validatorsScratchPad.get(k).setOwnerAddr(validatorUpdate.getOwnerAddress());
 				return new ResetOwnerUpdate(k, this::next);
 			}
+		}
+
+		@Override
+		public String toString() {
+			return String.format("%s{preparingOwnerUpdates=%s}", this.getClass().getSimpleName(), preparingOwnerUpdates);
 		}
 	}
 
@@ -567,7 +592,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		}
 	}
 
-	private static final class PreparingRegisteredUpdate implements ReducerState {
+	private final class PreparingRegisteredUpdate implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
 		private final TreeMap<ECPublicKey, PreparedRegisteredUpdate> preparingRegisteredUpdates = new TreeMap<>(KeyComparator.instance());
@@ -612,7 +637,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		}
 	}
 
-	private static final class UpdatingValidatorStakes implements ReducerState {
+	private final class UpdatingValidatorStakes implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
 		UpdatingValidatorStakes(UpdatingEpoch updatingEpoch, TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad) {

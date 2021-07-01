@@ -16,26 +16,16 @@
  *
  */
 
-package com.radixdlt.engine;
+package com.radixdlt.store;
 
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.identifiers.REAddr;
 
-import java.util.function.Predicate;
+import java.nio.ByteBuffer;
+import java.util.Optional;
 
-public class SubstateCacheRegister<T extends Particle> {
-	private final Class<T> particleClass;
-	private final Predicate<T> particlePredicate;
-
-	public SubstateCacheRegister(Class<T> particleClass, Predicate<T> particlePredicate) {
-		this.particleClass = particleClass;
-		this.particlePredicate = particlePredicate;
-	}
-
-	public Class<T> getParticleClass() {
-		return particleClass;
-	}
-
-	public Predicate<T> getParticlePredicate() {
-		return particlePredicate;
-	}
+/**
+ * Index into immutable substates
+ */
+public interface ResourceStore {
+	Optional<ByteBuffer> loadResource(REAddr addr);
 }

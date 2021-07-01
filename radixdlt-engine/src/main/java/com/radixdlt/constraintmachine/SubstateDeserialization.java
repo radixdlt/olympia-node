@@ -55,6 +55,10 @@ public final class SubstateDeserialization {
 		return b;
 	}
 
+	public SubstateIndex index(Class<? extends Particle> substateClass) {
+		return SubstateIndex.create(classToByte(substateClass), substateClass);
+	}
+
 	public Particle deserialize(byte[] b) throws DeserializeException {
 		return deserialize(ByteBuffer.wrap(b));
 	}

@@ -17,11 +17,8 @@
 
 package com.radixdlt.engine;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.radixdlt.application.system.construction.FeeReserveCompleteException;
 import com.radixdlt.atom.REConstructor;
-import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.TxAction;
@@ -34,9 +31,6 @@ import com.radixdlt.atom.actions.FeeReserveComplete;
 import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.ExecutionContext;
-import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.ShutdownAllIndex;
-import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.REProcessedTxn;
@@ -49,7 +43,6 @@ import com.radixdlt.constraintmachine.exceptions.TxnParseException;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 
 import com.radixdlt.store.TransientEngineStore;
@@ -63,11 +56,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -131,46 +122,9 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	private static final class SubstateCache<T extends Particle> {
-		private final Predicate<T> particleCheck;
-		private final Cache<SubstateId, Substate> cache = CacheBuilder.newBuilder()
-			.maximumSize(1000)
-			.build();
-
-		private final boolean includeInBranches;
-
-		SubstateCache(Predicate<T> particleCheck, boolean includeInBranches) {
-			this.particleCheck = particleCheck;
-			this.includeInBranches = includeInBranches;
-		}
-
-		public SubstateCache<T> copy() {
-			var copy = new SubstateCache<>(particleCheck, includeInBranches);
-			copy.cache.putAll(cache.asMap());
-			return copy;
-		}
-
-		public boolean test(Particle particle) {
-			return particleCheck.test((T) particle);
-		}
-
-		public SubstateCache<T> bringUp(Substate upSubstate) {
-			if (particleCheck.test((T) upSubstate.getParticle())) {
-				this.cache.put(upSubstate.getId(), upSubstate);
-			}
-			return this;
-		}
-
-		public SubstateCache<T> shutDown(SubstateId substateId) {
-			this.cache.invalidate(substateId);
-			return this;
-		}
-	}
-
 	private final EngineStore<M> engineStore;
 	private final Object stateUpdateEngineLock = new Object();
 	private final Map<Pair<Class<?>, String>, ApplicationStateReducer<?, M>> stateComputers = new HashMap<>();
-	private final Map<Class<?>, SubstateCache<?>> substateCache = new HashMap<>();
 	private final List<RadixEngineBranch<M>> branches = new ArrayList<>();
 
 	private REParser parser;
@@ -204,29 +158,6 @@ public final class RadixEngine<M> {
 		this.engineStore = Objects.requireNonNull(engineStore);
 		this.batchVerifier = batchVerifier;
 	}
-
-	public <T extends Particle> void addSubstateCache(SubstateCacheRegister<T> substateCacheRegister, boolean includeInBranches) {
-		synchronized (stateUpdateEngineLock) {
-			if (substateCache.containsKey(substateCacheRegister.getParticleClass())) {
-				throw new IllegalStateException("Already added " + substateCacheRegister.getParticleClass());
-			}
-
-			var cache = new SubstateCache<>(substateCacheRegister.getParticlePredicate(), includeInBranches);
-			try (var cursor = engineStore.openIndexedCursor(
-				substateCacheRegister.getParticleClass(),
-				parser.getSubstateDeserialization()
-			)) {
-				cursor.forEachRemaining(substate -> {
-					var p = substateCacheRegister.getParticleClass().cast(substate.getParticle());
-					if (substateCacheRegister.getParticlePredicate().test(p)) {
-						cache.bringUp(substate);
-					}
-				});
-			}
-			substateCache.put(substateCacheRegister.getParticleClass(), cache);
-		}
-	}
-
 
 	/**
 	 * Add a deterministic computation engine which maps an ordered list of
@@ -313,8 +244,7 @@ public final class RadixEngine<M> {
 			REConstructor actionToConstructorMap,
 			ConstraintMachine constraintMachine,
 			EngineStore<M> parentStore,
-			Map<Pair<Class<?>, String>, ApplicationStateReducer<?, M>> stateComputers,
-			Map<Class<?>, SubstateCache<?>> substateCache
+			Map<Pair<Class<?>, String>, ApplicationStateReducer<?, M>> stateComputers
 		) {
 			var transientEngineStore = new TransientEngineStore<>(parentStore);
 
@@ -326,8 +256,6 @@ public final class RadixEngine<M> {
 				transientEngineStore,
 				BatchVerifier.empty()
 			);
-
-			engine.substateCache.putAll(substateCache);
 			engine.stateComputers.putAll(stateComputers);
 		}
 
@@ -382,20 +310,13 @@ public final class RadixEngine<M> {
 					branchedStateComputers.put(c, computer.copy());
 				}
 			});
-			var branchedCache = new HashMap<Class<?>, SubstateCache<?>>();
-			this.substateCache.forEach((c, cache) -> {
-				if (cache.includeInBranches) {
-					branchedCache.put(c, cache.copy());
-				}
-			});
 			RadixEngineBranch<M> branch = new RadixEngineBranch<>(
 				this.parser,
 				this.serialization,
 				this.actionConstructors,
 				this.constraintMachine,
 				this.engineStore,
-				branchedStateComputers,
-				branchedCache
+				branchedStateComputers
 			);
 
 			branches.add(branch);
@@ -404,7 +325,7 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	private REProcessedTxn verify(EngineStore.Transaction dbTransaction, Txn txn, ExecutionContext context)
+	private REProcessedTxn verify(EngineStore.EngineStoreInTransaction<M> engineStoreInTransaction, Txn txn, ExecutionContext context)
 		throws AuthorizationException, TxnParseException, ConstraintMachineException {
 
 		var parsedTxn = parser.parse(txn);
@@ -413,27 +334,7 @@ public final class RadixEngine<M> {
 
 		var stateUpdates = constraintMachine.verify(
 			parser.getSubstateDeserialization(),
-			new CMStore() {
-				@Override
-				public boolean isVirtualDown(SubstateId substateId) {
-					return engineStore.isVirtualDown(dbTransaction, substateId);
-				}
-
-				@Override
-				public Optional<Particle> loadUpParticle(SubstateId substateId, SubstateDeserialization deserialization) {
-					return engineStore.loadUpParticle(dbTransaction, substateId, deserialization);
-				}
-
-				@Override
-				public CloseableCursor<RawSubstateBytes> openIndexedCursor(ShutdownAllIndex index) {
-					return engineStore.openIndexedCursor(dbTransaction, index);
-				}
-
-				@Override
-				public Optional<Particle> loadAddr(REAddr addr, SubstateDeserialization deserialization) {
-					return engineStore.loadAddr(dbTransaction, addr, deserialization);
-				}
-			},
+			engineStoreInTransaction,
 			context,
 			parsedTxn.instructions()
 		);
@@ -469,20 +370,12 @@ public final class RadixEngine<M> {
 					)
 				);
 			}
-			var dbTransaction = engineStore.createTransaction();
-			try {
-				var parsedTransactions = executeInternal(dbTransaction, txns, meta, permissionLevel);
-				dbTransaction.commit();
-				return parsedTransactions;
-			} catch (Exception e) {
-				dbTransaction.abort();
-				throw e;
-			}
+			return engineStore.transaction(store -> executeInternal(store, txns, meta, permissionLevel));
 		}
 	}
 
 	private List<REProcessedTxn> executeInternal(
-		EngineStore.Transaction dbTransaction,
+		EngineStore.EngineStoreInTransaction<M> engineStoreInTransaction,
 		List<Txn> txns,
 		M meta,
 		PermissionLevel permissionLevel
@@ -501,7 +394,7 @@ public final class RadixEngine<M> {
 			final REProcessedTxn parsedTxn;
 			// TODO: combine verification and storage
 			try {
-				parsedTxn = this.verify(dbTransaction, txn, context);
+				parsedTxn = this.verify(engineStoreInTransaction, txn, context);
 			} catch (TxnParseException | AuthorizationException | ConstraintMachineException e) {
 				throw new RadixEngineException(i, txns.size(), txn, e);
 			}
@@ -509,7 +402,7 @@ public final class RadixEngine<M> {
 			sigsLeft = context.sigsLeft();
 
 			try {
-				this.engineStore.storeTxn(dbTransaction, txn, parsedTxn.stateUpdates().collect(Collectors.toList()));
+				engineStoreInTransaction.storeTxn(txn, parsedTxn.stateUpdates().collect(Collectors.toList()));
 			} catch (Exception e) {
 				logger.error("Store of atom failed: " + parsedTxn, e);
 				throw e;
@@ -518,19 +411,7 @@ public final class RadixEngine<M> {
 			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
 			// Non-persisted computed state
 			for (var group : parsedTxn.getGroupedStateUpdates()) {
-				group.forEach(update -> {
-					stateComputers.forEach((a, computer) -> computer.processStateUpdate(update));
-					final var particle = update.getSubstate().getParticle();
-					var cache = substateCache.get(particle.getClass());
-					if (cache != null && cache.test(particle)) {
-						if (update.isBootUp()) {
-							cache.bringUp(update.getSubstate());
-						} else {
-							cache.shutDown(update.getSubstate().getId());
-						}
-					}
-				});
-
+				group.forEach(update -> stateComputers.forEach((a, computer) -> computer.processStateUpdate(update)));
 				checker.test(this::getComputedState);
 			}
 
@@ -545,7 +426,7 @@ public final class RadixEngine<M> {
 		}
 
 		if (meta != null) {
-			this.engineStore.storeMetadata(dbTransaction, meta);
+			engineStoreInTransaction.storeMetadata(meta);
 		}
 
 		return parsedTransactions;
@@ -561,26 +442,9 @@ public final class RadixEngine<M> {
 
 	private TxBuilder construct(TxBuilderExecutable executable, Set<SubstateId> avoid) throws TxBuilderException {
 		synchronized (stateUpdateEngineLock) {
-			SubstateStore substateStore = (c, d) -> {
-				var cache = substateCache.get(c);
-				if (cache == null) {
-					return engineStore.openIndexedCursor(c, d);
-				}
-
-				var cacheIterator = cache.cache.asMap().values().iterator();
-
-				return CloseableCursor.concat(
-					CloseableCursor.wrapIterator(cacheIterator),
-					() -> CloseableCursor.filter(
-						engineStore.openIndexedCursor(c, parser.getSubstateDeserialization()),
-						next -> !cache.cache.asMap().containsKey(next.getId())
-					)
-				);
-			};
-
-			SubstateStore filteredStore = (c, d) -> CloseableCursor.filter(
-				substateStore.openIndexedCursor(c, d),
-				i -> !avoid.contains(i.getId())
+			SubstateStore filteredStore = b -> CloseableCursor.filter(
+				engineStore.openIndexedCursor(b),
+				i -> !avoid.contains(SubstateId.fromBytes(i.getId()))
 			);
 
 			var txBuilder = TxBuilder.newBuilder(

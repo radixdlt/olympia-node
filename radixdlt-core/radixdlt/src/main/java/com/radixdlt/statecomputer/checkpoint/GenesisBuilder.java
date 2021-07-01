@@ -27,8 +27,6 @@ import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.NextEpoch;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.HashUtils;
@@ -43,7 +41,6 @@ import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.store.InMemoryEngineStore;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public final class GenesisBuilder {
 	private static final String RADIX_ICON_URL  = "https://assets.radixdlt.com/icons/icon-xrd-32x32.png";
@@ -94,21 +91,7 @@ public final class GenesisBuilder {
 		var branch = radixEngine.transientBranch();
 
 		branch.execute(List.of(tempTxn), PermissionLevel.SYSTEM);
-		var stakedValidators = branch.getComputedState(StakedValidators.class);
-		txnConstructionRequest.action(new NextEpoch(updates -> {
-			var cur = stakedValidators;
-			for (var u : updates) {
-				cur = cur.setStake(u.getValidatorKey(), u.getAmount());
-			}
-			var validatorSet = cur.toValidatorSet();
-			if (validatorSet == null) {
-				throw new IllegalStateException("No validator set created in genesis.");
-			}
-			return validatorSet.getValidators().stream()
-				.map(BFTValidator::getNode)
-				.map(BFTNode::getKey)
-				.collect(Collectors.toList());
-		}, timestamp));
+		txnConstructionRequest.action(new NextEpoch(updates -> { }, timestamp));
 
 		radixEngine.deleteBranches();
 		return radixEngine.construct(txnConstructionRequest).buildWithoutSignature();

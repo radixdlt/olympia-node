@@ -49,7 +49,6 @@ import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
@@ -200,7 +199,6 @@ public class SimulationTest {
 		// TODO: Fix pacemaker so can Default 1 so can debug in IDE, possibly from properties at some point
 		// TODO: Specifically, simulation test with engine, epochs and mempool gets stuck on a single validator
 		private final int minValidators = 2;
-		private int maxValidators = Integer.MAX_VALUE;
 
 		private Builder() {
 		}
@@ -245,8 +243,7 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder numNodes(int numNodes, int numInitialValidators, int maxValidators, Iterable<UInt256> initialStakes) {
-			this.maxValidators = maxValidators;
+		public Builder numNodes(int numNodes, int numInitialValidators, Iterable<UInt256> initialStakes) {
 			this.nodes = Stream.generate(ECKeyPair::generateNew)
 				.limit(numNodes)
 				.collect(ImmutableList.toImmutableList());
@@ -289,10 +286,6 @@ public class SimulationTest {
 			});
 
 			return this;
-		}
-
-		public Builder numNodes(int numNodes, int numInitialValidators, Iterable<UInt256> initialStakes) {
-			return numNodes(numNodes, numInitialValidators, maxValidators, initialStakes);
 		}
 
 		public Builder numNodes(int numNodes, int numInitialValidators) {
@@ -345,7 +338,6 @@ public class SimulationTest {
 			modules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
-					install(RadixEngineConfig.asModule(minValidators, maxValidators));
 					bind(SyncConfig.class).toInstance(syncConfig);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
 				}
@@ -356,7 +348,6 @@ public class SimulationTest {
 				protected void configure() {
 					install(new MockedCryptoModule());
 					install(new RadixEngineModule());
-					install(RadixEngineConfig.asModule(minValidators, maxValidators));
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
 						.toInstance(nodes.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
@@ -365,10 +356,6 @@ public class SimulationTest {
 					bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
 				}
 			});
-
-			this.testModules.add(
-				RadixEngineConfig.asModule(minValidators, maxValidators)
-			);
 
 			return this;
 		}

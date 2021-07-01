@@ -72,9 +72,6 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.MaxValidators;
-import com.radixdlt.statecomputer.MinValidators;
-import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
@@ -153,7 +150,8 @@ public class RecoveryTest {
 					Amount.ofTokens(10),
 					1,
 					Amount.ofTokens(10),
-					9800
+					9800,
+					10
 				)),
 			new RadixEngineModule(),
 			new AbstractModule() {
@@ -166,8 +164,6 @@ public class RecoveryTest {
 					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
 						.toInstance(ImmutableList.of(ecKeyPair.getPublicKey()));
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-					bindConstant().annotatedWith(MaxValidators.class).to(100);
-					bindConstant().annotatedWith(MinValidators.class).to(1);
 				}
 			}
 		).injectMembers(this);
@@ -198,11 +194,11 @@ public class RecoveryTest {
 					Amount.ofTokens(10),
 					1,
 					Amount.ofTokens(10),
-					9800
+					9800,
+					10
 				)),
 			new ForksModule(),
 			MempoolConfig.asModule(10, 10),
-			RadixEngineConfig.asModule(1, Integer.MAX_VALUE),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
