@@ -21,7 +21,6 @@ package com.radixdlt.utils;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.crypto.ECPublicKey;
 
-import java.util.Arrays;
 import java.util.Comparator;
 
 public final class KeyComparator {

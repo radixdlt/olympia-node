@@ -46,7 +46,8 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 				Amount.ofTokens(100), // Minimum stake
 				150, // Two weeks worth of epochs
 				Amount.ofTokens(0),   // No rewards for epoch 1 where it will only be radix foundation nodes
-				9800 // 98.00% threshold for completed proposals to get any rewards
+				9800, // 98.00% threshold for completed proposals to get any rewards,
+				100 // 100 max validators
 			)
 		);
 	}
@@ -68,7 +69,8 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 				Amount.ofTokens(100), // Minimum stake
 				150, // Two weeks worth of epochs
 				Amount.ofTokens(10), // Rewards per proposal
-				9800 // 98.00% threshold for completed proposals to get any rewards
+				9800, // 98.00% threshold for completed proposals to get any rewards
+				100 // 100 max validators
 			)
 		);
 	}

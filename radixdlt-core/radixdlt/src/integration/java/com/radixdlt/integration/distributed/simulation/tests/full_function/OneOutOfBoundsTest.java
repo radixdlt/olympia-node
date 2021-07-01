@@ -79,7 +79,8 @@ public class OneOutOfBoundsTest {
 						Amount.ofTokens(10),
 						1,
 						Amount.ofTokens(10),
-						9800
+						9800,
+						10
 					)),
 				new ForksModule()
 			)

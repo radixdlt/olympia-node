@@ -61,7 +61,8 @@ public class RandomValidatorsTest {
 					Amount.ofTokens(10),
 					1,
 					Amount.ofTokens(10),
-					9800
+					9800,
+					50
 				)),
 			new ForksModule()
 		)

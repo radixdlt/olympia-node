@@ -18,11 +18,8 @@
 
 package com.radixdlt.integration.staking;
 
-import com.google.common.collect.Iterators;
-import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
-import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.serialization.DeserializeException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -123,12 +120,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import io.reactivex.rxjava3.schedulers.Timed;
 

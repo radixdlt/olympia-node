@@ -23,7 +23,6 @@ import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
-import org.bouncycastle.util.encoders.Hex;
 
 import java.util.Objects;
 

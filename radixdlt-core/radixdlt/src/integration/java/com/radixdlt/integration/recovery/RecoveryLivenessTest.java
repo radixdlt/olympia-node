@@ -157,7 +157,8 @@ public class RecoveryLivenessTest {
 					Amount.ofTokens(10),
 					1,
 					Amount.ofTokens(10),
-					9800
+					9800,
+					10
 				)),
 			new ForksModule(),
 			new RadixEngineModule(),
@@ -212,7 +213,8 @@ public class RecoveryLivenessTest {
 					Amount.ofTokens(10),
 					1,
 					Amount.ofTokens(10),
-					9800
+					9800,
+					10
 				)),
 			new ForksModule(),
 			RadixEngineConfig.asModule(1, 100),

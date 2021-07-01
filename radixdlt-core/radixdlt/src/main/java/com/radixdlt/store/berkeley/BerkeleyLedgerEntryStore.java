@@ -23,7 +23,6 @@ import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.store.ResourceStore;
-import com.radixdlt.utils.UInt256;
 import com.sleepycat.je.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

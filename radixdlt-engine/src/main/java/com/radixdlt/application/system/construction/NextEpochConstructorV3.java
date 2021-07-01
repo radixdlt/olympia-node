@@ -52,7 +52,6 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -66,15 +65,18 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 	private final UInt256 rewardsPerProposal;
 	private final long unstakingEpochDelay;
 	private final long minimumCompletedProposalsPercentage;
+	private final int maxValidators;
 
 	public NextEpochConstructorV3(
 		UInt256 rewardsPerProposal,
 		long minimumCompletedProposalsPercentage,
-		long unstakingEpochDelay
+		long unstakingEpochDelay,
+		int maxValidators
 	) {
 		this.rewardsPerProposal = rewardsPerProposal;
 		this.unstakingEpochDelay = unstakingEpochDelay;
 		this.minimumCompletedProposalsPercentage = minimumCompletedProposalsPercentage;
+		this.maxValidators = maxValidators;
 	}
 
 	private static ValidatorScratchPad loadValidatorStakeData(
@@ -286,39 +288,24 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 
 		validatorsToUpdate.forEach((k, v) -> txBuilder.up(v.toSubstate()));
 
-
-
-		List<ECPublicKey> validatorKeys1;
 		try (var cursor = txBuilder.readIndex(
 			SubstateIndex.create(new byte[] {SubstateTypeId.VALIDATOR_STAKE_DATA.id(), 0, 1}, ValidatorStakeData.class)
 		)) {
-			validatorKeys1 = Streams.stream(cursor)
+			// TODO: Explicitly specify next validatorset
+			var nextValidators = Streams.stream(cursor)
 				.map(ValidatorStakeData.class::cast)
 				.sorted(Comparator.comparing(ValidatorStakeData::getAmount)
 					.thenComparing(ValidatorStakeData::getValidatorKey, KeyComparator.instance())
 					.reversed()
 				)
-				.limit(10)
-				.peek(System.out::println)
-				.map(ValidatorStakeData::getValidatorKey)
+				.limit(maxValidators)
+				.peek(v -> txBuilder.up(new ValidatorBFTData(v.getValidatorKey(), 0, 0)))
 				.collect(Collectors.toList());
-				//.forEach(System.out::println);
+
+			action.validators(nextValidators);
 		}
-		System.out.println("=================================");
-
-
-
-		var validatorKeys = action.validators(
-			validatorsToUpdate.values().stream().map(ValidatorScratchPad::toSubstate).collect(Collectors.toList())
-		);
-		if (!validatorKeys.equals(validatorKeys1)) {
-			throw new IllegalStateException("OOOPS " + validatorKeys + " " + validatorKeys1);
-		}
-		validatorKeys.forEach(k -> txBuilder.up(new ValidatorBFTData(k, 0, 0)));
-
 		txBuilder.up(new EpochData(closingEpoch.getEpoch() + 1));
 		txBuilder.up(new RoundData(0, closedRound.getTimestamp()));
 		txBuilder.end();
 	}
-
 }
