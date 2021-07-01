@@ -40,23 +40,23 @@ public class SyncRadixApiMempoolTest {
 	private static final String BASE_URL = "http://localhost/";
 
 	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
-	private static final String CONFIGURATION = "{\"result\":{\"throttleMs\":5,\"maxSize\":10000},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
-	private static final String DATA = "{\"result\":{\"addSuccess\":0,\"maxcount\":0,\"relayerSentCount\":0,\"p"
-		+ "roposedTransaction\":0,\"count\":0,\"errors\":{\"other\":1,\"hook\":0,\"conflict\":0}},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String CONFIGURATION = "{\"result\":{\"throttleMs\":5,\"maxSize\":10000},\"id\":\"2\","
+		+ "\"jsonrpc\":\"2.0\"}";
+	private static final String DATA = "{\"result\":{\"addSuccess\":1273473,\"maxcount\":0,\"relayerSentCount\":0,"
+		+ "\"proposedTransaction\":0,\"count\":0,\"errors\":{\"other\":0,\"hook\":3,\"conflict\":0}},\"id\":\"2\","
+		+ "\"jsonrpc\":\"2.0\"}";
 
 	private final OkHttpClient client = mock(OkHttpClient.class);
 
 	@Test
 	public void testConfiguration() throws IOException {
-//		prepareClient(CONFIGURATION)
-		RadixApi.connect(BASE_URL)
+		prepareClient(CONFIGURATION)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.mempool().configuration()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(configuration -> assertEquals(10000L, configuration.getMaxSize()))
-				.onSuccess(configuration -> assertEquals(5L, configuration.getThrottleMs()))
-			);
+				.onSuccess(configuration -> assertEquals(5L, configuration.getThrottleMs())));
 	}
 
 	@Test
@@ -68,8 +68,7 @@ public class SyncRadixApiMempoolTest {
 				client -> client.mempool().data()
 					.onFailure(failure -> fail(failure.toString()))
 					.onSuccess(data -> assertEquals(1273473L, data.getAddSuccess()))
-					.onSuccess(data -> assertEquals(3L, data.getErrors().getHook()))
-			);
+					.onSuccess(data -> assertEquals(3L, data.getErrors().getHook())));
 	}
 
 	private Result<RadixApi> prepareClient(String responseBody) throws IOException {

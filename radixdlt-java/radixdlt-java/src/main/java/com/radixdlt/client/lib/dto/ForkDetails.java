@@ -22,24 +22,27 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class ForkConfig {
+public class ForkDetails {
 	private final String name;
 	private final long epoch;
-	private final long ceilingView;
+	private final long maxRounds;
+	private final long maxSigsPerRound;
 
-	private ForkConfig(String name, long epoch, long ceilingView) {
+	private ForkDetails(String name, long epoch, long maxRounds, long maxSigsPerRound) {
 		this.name = name;
 		this.epoch = epoch;
-		this.ceilingView = ceilingView;
+		this.maxRounds = maxRounds;
+		this.maxSigsPerRound = maxSigsPerRound;
 	}
 
 	@JsonCreator
-	public static ForkConfig create(
+	public static ForkDetails create(
 		@JsonProperty(value = "name", required = true) String name,
 		@JsonProperty(value = "epoch", required = true) long epoch,
-		@JsonProperty(value = "ceilingView", required = true) long ceilingView
+		@JsonProperty(value = "maxRounds", required = true) long maxRounds,
+		@JsonProperty(value = "maxSigsPerRound", required = true) long maxSigsPerRound
 	) {
-		return new ForkConfig(name, epoch, ceilingView);
+		return new ForkDetails(name, epoch, maxRounds, maxSigsPerRound);
 	}
 
 	@Override
@@ -48,22 +51,26 @@ public class ForkConfig {
 			return true;
 		}
 
-		if (!(o instanceof ForkConfig)) {
+		if (!(o instanceof ForkDetails)) {
 			return false;
 		}
 
-		var that = (ForkConfig) o;
-		return epoch == that.epoch && ceilingView == that.ceilingView && name.equals(that.name);
+		var that = (ForkDetails) o;
+		return epoch == that.epoch
+			&& maxRounds == that.maxRounds
+			&& maxSigsPerRound == that.maxSigsPerRound
+			&& name.equals(that.name);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(name, epoch, ceilingView);
+		return Objects.hash(name, epoch, maxRounds, maxSigsPerRound);
 	}
 
 	@Override
 	public String toString() {
-		return "{name:'" + name + '\'' + ", epoch:" + epoch + ", ceilingView:" + ceilingView + '}';
+		return "{name:'" + name + '\'' + ", epoch:" + epoch
+			+ ", maxRounds:" + maxRounds + ", maxSigsPerRound:" + maxSigsPerRound + '}';
 	}
 
 	public String getName() {
@@ -74,7 +81,11 @@ public class ForkConfig {
 		return epoch;
 	}
 
-	public long getCeilingView() {
-		return ceilingView;
+	public long getMaxRounds() {
+		return maxRounds;
+	}
+
+	public long getMaxSigsPerRound() {
+		return maxSigsPerRound;
 	}
 }

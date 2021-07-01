@@ -20,6 +20,7 @@ package com.radixdlt.client.lib.api.sync;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.TransactionRequest;
+import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.dto.ApiConfiguration;
 import com.radixdlt.client.lib.dto.ApiData;
 import com.radixdlt.client.lib.dto.BuiltTransaction;
@@ -92,7 +93,7 @@ public interface RadixApi {
 	interface Transaction {
 		Result<BuiltTransaction> build(TransactionRequest request);
 
-		Result<TxBlobDTO> finalize(FinalizedTransaction request);
+		Result<TxBlobDTO> finalize(FinalizedTransaction request, boolean immediateSubmit);
 
 		Result<TxDTO> submit(TxBlobDTO request);
 
@@ -140,7 +141,7 @@ public interface RadixApi {
 	interface Validator {
 		Result<ValidatorsResponse> list(int size, Optional<NavigationCursor> cursor);
 
-		Result<ValidatorDTO> lookup(String validatorAddress);
+		Result<ValidatorDTO> lookup(ValidatorAddress validatorAddress);
 	}
 
 	Validator validator();

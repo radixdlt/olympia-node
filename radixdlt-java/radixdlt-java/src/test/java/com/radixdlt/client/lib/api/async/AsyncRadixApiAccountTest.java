@@ -21,7 +21,6 @@ import org.junit.Test;
 
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
-import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.dto.TokenBalances;
 import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.crypto.ECKeyPair;
@@ -43,6 +42,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static com.radixdlt.client.lib.api.token.Amount.amount;
 
 public class AsyncRadixApiAccountTest {
 	private static final String BASE_URL = "http://localhost/";
@@ -51,61 +51,30 @@ public class AsyncRadixApiAccountTest {
 	private static final AccountAddress ACCOUNT_ADDRESS1 = AccountAddress.create(KEY_PAIR1.getPublicKey());
 	private static final AccountAddress ACCOUNT_ADDRESS2 = AccountAddress.create(KEY_PAIR2.getPublicKey());
 
-	private static final String TOKEN_BALANCES = "{\"result\":{\"owner\":"
-		+ "\"brx1qsp8n0nx0muaewav2ksx99wwsu9swq5mlndjmn3gm9vl9q2mzmup0xqmhf7fh\",\"tokenBalances\":[{\"amount\":"
-		+ "\"1000000000000000000000000000000000000000000000\",\"rri\":\"xrd_rb1qya85pwq\"}]},\"id\":\"4\","
-		+ "\"jsonrpc\":\"2.0\"}";
-	private static final String TX_HISTORY = "{\"result\":{\"cursor\":\"1577836800000:0\",\"transactions\":[{"
-		+ "\"fee\":\"0\",\"txID\":\"7cc3526729b27e4bdfedbb140f3a566ffc2ab582de8e1e94c2358c8466d842a3\",\"sentAt\":"
-		+ "\"+51969-08-29T00:00:00Z\",\"actions\":[{\"type\":\"Other\"},{\"type\":\"Other\"},{\"type\":\"Other\"},"
-		+ "{\"type\":\"Other\"},{\"type\":\"Other\"},{\"type\":\"Other\"},{\"type\":\"Other\"},{\"type\":\"Other\"},"
-		+ "{\"type\":\"Other\"},{\"type\":\"Other\"},{\"type\":\"Other\"},"
-		+ "{\"amount\":\"1000000000000000000000000\",\"validator\":"
-		+ "\"vb1q27acjcz0vs0dg9mwv7nwyxfxu28rcvu35zwcnn9ulul25ss3kfgkue7d6p\",\"from\":"
-		+ "\"brx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs27s5vq5h24sh5s4yh\",\"type\":\"StakeTokens\"},"
-		+ "{\"amount\":\"1000000000000000000000000\",\"validator\":"
-		+ "\"vb1q0tczj5k4n5nw7lf4prxrawja84pjtxwh68gl65hd9almsg77r87zmhdqpf\",\"from\":"
-		+ "\"brx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs27s5vq5h24sh5s4yh\",\"type\":\"StakeTokens\"},"
-		+ "{\"type\":\"Other\"},{\"type\":\"Other\"},{\"type\":\"Other\"},"
-		+ "{\"amount\":\"1000000000000000000000000\",\"rri\":"
-		+ "\"gum_rb1qvnrj7v43s875nuq7lv2hlghmydvz3udnv3kwssy0stqang8k7\",\"from\":"
-		+ "\"brx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs27s5vq5h24sh5s4yh\",\"to\":"
-		+ "\"brx1qsptmhztqfajpa4qhden6dcseym3gu0pnjxsfmzwvhnlna2jzzxe9zc5ntj47\",\"type\":\"TokenTransfer\"},"
-		+ "{\"amount\":\"1000000000000000000000000\",\"rri\":"
-		+ "\"cerb_rb1qdaezx9damhh9nv3kp4gl5a58ch59yspal6gr8c63xmskrtk96\",\"from\":"
-		+ "\"brx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs27s5vq5h24sh5s4yh\",\"to\":"
-		+ "\"brx1qsptmhztqfajpa4qhden6dcseym3gu0pnjxsfmzwvhnlna2jzzxe9zc5ntj47\",\"type\":\"TokenTransfer\"},"
-		+ "{\"amount\":\"1000000000000000000000000\",\"rri\":"
-		+ "\"emunie_rb1q0amnvsa09rxfz83xny849cyg39v3qu9taxcra5p7hxqnn6afk\",\"from\":"
-		+ "\"brx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs27s5vq5h24sh5s4yh\",\"to\":"
-		+ "\"brx1qsptmhztqfajpa4qhden6dcseym3gu0pnjxsfmzwvhnlna2jzzxe9zc5ntj47\",\"type\":\"TokenTransfer\"},"
-		+ "{\"amount\":\"1000000000000000000000000\",\"rri\":"
-		+ "\"gum_rb1qvnrj7v43s875nuq7lv2hlghmydvz3udnv3kwssy0stqang8k7\",\"from\":"
-		+ "\"brx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs27s5vq5h24sh5s4yh\",\"to\":"
-		+ "\"brx1qspa0q22j6kwjdmmax5yvc046t575xfve6lgarl2ja5hhlwprmcvlcg8k98kp\",\"type\":\"TokenTransfer\"},"
-		+ "{\"amount\":\"1000000000000000000000000\",\"rri\":"
-		+ "\"cerb_rb1qdaezx9damhh9nv3kp4gl5a58ch59yspal6gr8c63xmskrtk96\",\"from\":"
-		+ "\"brx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs27s5vq5h24sh5s4yh\",\"to\":"
-		+ "\"brx1qspa0q22j6kwjdmmax5yvc046t575xfve6lgarl2ja5hhlwprmcvlcg8k98kp\",\"type\":\"TokenTransfer\"},"
-		+ "{\"amount\":\"1000000000000000000000000\",\"rri\":"
-		+ "\"emunie_rb1q0amnvsa09rxfz83xny849cyg39v3qu9taxcra5p7hxqnn6afk\",\"from\":"
-		+ "\"brx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs27s5vq5h24sh5s4yh\",\"to\":"
-		+ "\"brx1qspa0q22j6kwjdmmax5yvc046t575xfve6lgarl2ja5hhlwprmcvlcg8k98kp\",\"type\":\"TokenTransfer\"},"
-		+ "{\"type\":\"Other\"}]}]},\"id\":\"7\",\"jsonrpc\":\"2.0\"}";
-	private static final String ERROR_RESPONSE = "{\"id\":\"8\",\"jsonrpc\":\"2.0\",\"error\":{\"code\":2523,\"data"
-		+ "\":[\"7cc3526729b27e4bdfedbb140f3a566ffc2ab582de8e1e94c2358c8466d842a3\"],"
-		+ "\"message\":"
-		+ "\"Unable to restore creator from transaction "
-		+ "7cc3526729b27e4bdfedbb140f3a566ffc2ab582de8e1e94c2358c8466d842a3\"}}";
+	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
+	private static final String TOKEN_BALANCES = "{\"result\":{\"owner\":\"ddx1qsp8n0nx0muaewav2ksx99wwsu9swq5mlndjmn3gm"
+		+ "9vl9q2mzmup0xq904xyj\",\"tokenBalances\":[{\"amount\":\"1000000000000000000000000000\",\"rri\":\"xrd_dr1qyrs8"
+		+ "qwl\"}]},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String TX_HISTORY = "{\"result\":{\"cursor\":\"1577836:800000000\",\"transactions\":[{\"fee\":"
+		+ "\"0\",\"txID\":\"407074cfe7b33d7e01c317eee743d33a952360eb1c7ae64ab9caeb8d975329b3\",\"sentAt\":\"1970-01-19T"
+		+ "06:17:16.800Z\",\"actions\":[{\"type\":\"Other\"},{\"type\":\"Other\"},{\"type\":\"Other\"},{\"type\":\"Othe"
+		+ "r\"},{\"type\":\"Other\"},{\"type\":\"Other\"},{\"type\":\"Other\"},{\"type\":\"Other\"},{\"type\":\"Other\""
+		+ "},{\"type\":\"Other\"},{\"type\":\"Other\"},{\"type\":\"Other\"},{\"type\":\"Other\"},{\"type\":\"Other\"},{"
+		+ "\"amount\":\"100000000000000000000\",\"validator\":\"dv1qfwtmurydewmf64rnrektuh20g8r6svm0cpnpcuuay4ammw2cnum"
+		+ "c3jtmxl\",\"from\":\"ddx1qspzsu73jt6ps6g8l0rj2yya2euunqapv7j2qemgaaujyej2tlp3lcs99m6k9\",\"type\":\"StakeTok"
+		+ "ens\"},{\"amount\":\"100000000000000000000\",\"validator\":\"dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh"
+		+ "59rq9964vjryzf9\",\"from\":\"ddx1qspzsu73jt6ps6g8l0rj2yya2euunqapv7j2qemgaaujyej2tlp3lcs99m6k9\",\"type\":\""
+		+ "StakeTokens\"},{\"type\":\"Other\"}]}]},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String ERROR_RESPONSE = "{\"id\":\"2\",\"jsonrpc\":\"2.0\",\"error\":{\"code\":2523,\"data\":"
+		+ "[\"0000000000000000000000000000000000000000000000000000000000000000\"],\"message\":\"Transaction with id 00"
+		+ "00000000000000000000000000000000000000000000000000000000000000 not found\"}}\n";
 
-	private static final String STAKES_RESPONSE = "{\"result\":[{\"amount\":\"18\","
-		+ "\"validator\":\"vb1qtrqglu5g8kh6mfsg4qxa9wq0nv9cauwfwxw70984wkqnw2uwz0w2p0mkqq\"}],"
-		+ "\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String STAKES_RESPONSE = "{\"result\":[{\"amount\":\"2000000000000000000000\",\"validator\":"
+		+ "\"dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\"}],\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
-	private static final String UNSTAKES_RESPONSE = "{\"result\":[{\"amount\":\"5\","
-		+ "\"withdrawTxID\":\"13a2465719885944f8ed12d881522f083e6cb323a164ed9d0d470b8ad5b8abc9\","
-		+ "\"epochsUntil\":0,\"validator\":\"vb1qtrqglu5g8kh6mfsg4qxa9wq0nv9cauwfwxw70984wkqnw2uwz0w2p0mkqq\"}],"
-		+ "\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
+	private static final String UNSTAKES_RESPONSE = "{\"result\":[{\"amount\":\"100000000000000000000\",\"withdrawTxID\""
+		+ ":\"a8b096c07e13080299e1733a654eb60fa45014caf5d0d1d16578e8f1c3680bec\",\"epochsUntil\":147,\"validator\":"
+		+ "\"dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\"}],\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
 	private final HttpClient client = mock(HttpClient.class);
 
@@ -113,70 +82,64 @@ public class AsyncRadixApiAccountTest {
 	public void testTransactionHistory() throws IOException {
 		prepareClient(TX_HISTORY)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(
-				client -> client.account().history(ACCOUNT_ADDRESS1, 5, Optional.empty())
-					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(transactionHistoryDTO -> assertNotNull(transactionHistoryDTO.getCursor()))
-					.onSuccess(transactionHistoryDTO -> assertNotNull(transactionHistoryDTO.getTransactions()))
-					.map(TransactionHistory::getTransactions)
-					.onSuccess(txs -> assertEquals(1, txs.size()))
-					.map(txs -> txs.get(0).getActions())
-					.onSuccess(actions -> assertEquals(23, actions.size()))
-					.join())
-			.join();
+			.onSuccess(client -> client.account().history(ACCOUNT_ADDRESS1, 5, Optional.empty()).join()
+				.onFailure(failure -> fail(failure.toString()))
+				.onSuccess(transactionHistoryDTO -> assertNotNull(transactionHistoryDTO.getCursor()))
+				.onSuccess(transactionHistoryDTO -> assertNotNull(transactionHistoryDTO.getTransactions()))
+				.map(TransactionHistory::getTransactions)
+				.onSuccess(txs -> assertEquals(1, txs.size()))
+				.map(txs -> txs.get(0).getActions())
+				.onSuccess(actions -> assertEquals(17, actions.size())));
 	}
 
 	@Test
 	public void testTokenBalances() throws IOException {
 		prepareClient(TOKEN_BALANCES)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.account().balances(ACCOUNT_ADDRESS1)
+			.onSuccess(client -> client.account().balances(ACCOUNT_ADDRESS1).join()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(tokenBalancesDTO -> assertEquals(ACCOUNT_ADDRESS1, tokenBalancesDTO.getOwner()))
 				.map(TokenBalances::getTokenBalances)
-				.onSuccess(balances -> assertEquals(1, balances.size()))
-				.join())
-			.join();
+				.onSuccess(balances -> assertEquals(1, balances.size())));
 	}
 
 	@Test
 	public void testErrorResponse() throws IOException {
 		prepareClient(ERROR_RESPONSE)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.transaction().lookup(AID.ZERO)
+			.onSuccess(client -> client.transaction().lookup(AID.ZERO).join()
 				.onFailure(failure -> assertEquals(2523, failure.code()))
-				.onSuccess(__ -> fail())
-				.join())
-			.join();
+				.onSuccess(__ -> fail()));
 	}
 
 	@Test
 	public void listStakes() throws IOException {
 		prepareClient(STAKES_RESPONSE)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.account().stakes(ACCOUNT_ADDRESS1)
+			.onSuccess(client -> client.account().stakes(ACCOUNT_ADDRESS1).join()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(stakePositionsDTOS -> assertEquals(1, stakePositionsDTOS.size()))
-				.onSuccess(stakePositionsDTOS -> assertEquals(UInt256.from(18L), stakePositionsDTOS.get(0).getAmount()))
-				.join())
-			.join();
+				.onSuccess(stakePositionsDTOS -> assertEquals(amount(2000).tokens(), stakePositionsDTOS.get(0).getAmount())));
 	}
 
 	@Test
 	public void listUnStakes() throws IOException {
 		prepareClient(UNSTAKES_RESPONSE)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.account().unstakes(ACCOUNT_ADDRESS1)
+			.onSuccess(client -> client.account().unstakes(ACCOUNT_ADDRESS1).join()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(unstakePositionsDTOS -> assertEquals(1, unstakePositionsDTOS.size()))
-				.onSuccess(unstakePositionsDTOS -> assertEquals(UInt256.FIVE, unstakePositionsDTOS.get(0).getAmount()))
-				.join())
-			.join();
+				.onSuccess(unstakePositionsDTOS -> assertEquals(amount(100).tokens(), unstakePositionsDTOS.get(0).getAmount())));
 	}
 
 	@Test
@@ -184,9 +147,9 @@ public class AsyncRadixApiAccountTest {
 	public void makeStake() {
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> makeStake(client, UInt256.NINE))
-			.join();
+			.onSuccess(client -> makeStake(client, amount(1000).tokens()));
 	}
 
 	@Test
@@ -194,9 +157,9 @@ public class AsyncRadixApiAccountTest {
 	public void makeUnStake() {
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> makeUnStake(client, UInt256.FIVE))
-			.join();
+			.onSuccess(client -> makeUnStake(client, amount(100).tokens()));
 	}
 
 	@Test
@@ -204,61 +167,42 @@ public class AsyncRadixApiAccountTest {
 	public void transferUnStake() {
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> transferUnStake(client, UInt256.NINE));
+			.onSuccess(client -> transferUnStake(client, amount(100).tokens()));
 	}
 
 	private void transferUnStake(RadixApi client, UInt256 amount) {
-		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS2)
-			.transfer(
-				ACCOUNT_ADDRESS2,
-				ACCOUNT_ADDRESS1,
-				amount,
-				"xrd_rb1qya85pwq"
-			)
-			.message("Test message")
-			.build();
-
-		client.transaction().build(request)
-			.onFailure(failure -> fail(failure.toString()))
-			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR2))
-			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
-				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
-					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId())))
-				.join())
+		client.local().accountInfo()
+			.map(account -> TransactionRequest.createBuilder(account.getAddress())
+				.transfer(account.getAddress(), ACCOUNT_ADDRESS1, amount, "xrd_dr1qyrs8qwl")
+				.build())
+			.flatMap(request -> client.local().submitTxSingleStep(request)
+				.onFailure(failure -> fail(failure.toString())))
 			.join();
 	}
 
 	private void makeStake(RadixApi client, UInt256 amount) {
-		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
-			.stake(ACCOUNT_ADDRESS1, ValidatorAddress.of(KEY_PAIR2.getPublicKey()), amount)
-			.build();
-
-		client.transaction().build(request)
-			.onFailure(failure -> fail(failure.toString()))
-			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
-			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
-				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
-					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId())))
-				.join())
+		client.local().validatorInfo()
+			.map(account -> TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
+				.stake(ACCOUNT_ADDRESS1, account.getAddress(), amount)
+				.build())
+			.flatMap(request -> client.transaction().build(request)
+				.onFailure(failure -> fail(failure.toString()))
+				.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR1))
+				.onSuccess(transaction -> client.transaction().finalize(transaction, true)))
 			.join();
 	}
 
 	private void makeUnStake(RadixApi client, UInt256 amount) {
-		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
-			.unstake(ACCOUNT_ADDRESS1, ValidatorAddress.of(KEY_PAIR2.getPublicKey()), amount)
-			.build();
-
-		client.transaction().build(request)
-			.onFailure(failure -> fail(failure.toString()))
-			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
-			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
-				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
-					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId())))
-				.join())
+		client.local().validatorInfo()
+			.map(account -> TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
+				.unstake(ACCOUNT_ADDRESS1, account.getAddress(), amount)
+				.build())
+			.flatMap(request -> client.transaction().build(request)
+				.onFailure(failure -> fail(failure.toString()))
+				.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR1))
+				.onSuccess(transaction -> client.transaction().finalize(transaction, true)))
 			.join();
 	}
 
@@ -267,7 +211,7 @@ public class AsyncRadixApiAccountTest {
 		var response = (HttpResponse<String>) mock(HttpResponse.class);
 		var completableFuture = new CompletableFuture<HttpResponse<String>>();
 
-		when(response.body()).thenReturn(responseBody);
+		when(response.body()).thenReturn(NETWORK_ID, responseBody);
 		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
 
 		try {

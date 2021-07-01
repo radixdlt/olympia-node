@@ -17,7 +17,6 @@
 
 package com.radixdlt.api.module;
 
-import com.radixdlt.ledger.LedgerUpdate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -35,6 +34,7 @@ import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.api.store.berkeley.BerkeleyClientApiStore;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.REOutput;
@@ -67,13 +67,20 @@ public class ArchiveApiModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> atomsCommittedToLedgerEventProcessorBerkeleyClientApi(
-		ClientApiStore clientApiStore
-	) {
+	private EventProcessorOnRunner<?> atomsCommittedToLedgerEventProcessorApiStore(ClientApiStore clientApiStore) {
 		return new EventProcessorOnRunner<>(
 			Runners.APPLICATION,
 			REOutput.class,
 			clientApiStore.atomsCommittedToLedgerEventProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> ledgerUpdateToLedgerApiStore(ClientApiStore clientApiStore) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			LedgerUpdate.class,
+			clientApiStore.ledgerUpdateProcessor()
 		);
 	}
 

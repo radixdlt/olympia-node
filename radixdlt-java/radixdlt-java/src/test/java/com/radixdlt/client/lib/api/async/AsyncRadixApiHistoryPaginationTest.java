@@ -52,6 +52,7 @@ public class AsyncRadixApiHistoryPaginationTest {
 	public void testAddManyTransactions() {
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> {
 				for (int i = 0; i < 20; i++) {
@@ -62,8 +63,7 @@ public class AsyncRadixApiHistoryPaginationTest {
 						e.printStackTrace();
 					}
 				}
-			})
-			.join();
+			});
 	}
 
 	@Test
@@ -71,33 +71,33 @@ public class AsyncRadixApiHistoryPaginationTest {
 	public void testTransactionHistoryInPages() {
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(
 				client -> {
 					var cursorHolder = new AtomicReference<NavigationCursor>();
 					do {
-						client.account().history(ACCOUNT_ADDRESS1, 5, Optional.ofNullable(cursorHolder.get()))
+						client.account().history(ACCOUNT_ADDRESS1, 50, Optional.ofNullable(cursorHolder.get())).join()
 							.onFailure(failure -> fail(failure.toString()))
 							.onSuccess(v -> v.getCursor().ifPresent(System.out::println))
 							.onSuccess(v -> v.getCursor().ifPresentOrElse(cursorHolder::set, () -> cursorHolder.set(null)))
 							.map(TransactionHistory::getTransactions)
 							.map(this::formatTxns)
-							.onSuccess(System.out::println)
-							.join();
+							.onSuccess(System.out::println);
 					} while (cursorHolder.get() != null && !cursorHolder.get().value().isEmpty());
-				}
-			).join();
+				});
 	}
 
 	private List<String> formatTxns(List<TransactionDTO> t) {
 		return t.stream()
 			.map(v -> String.format(
-				"%s (%s) - %s (%d:%d)%n",
+				"%s (%s) - %s (%d:%d), Fee: %s%n",
 				v.getTxID(),
 				v.getMessage().orElse("<none>"),
 				v.getSentAt().getInstant(),
 				v.getSentAt().getInstant().getEpochSecond(),
-				v.getSentAt().getInstant().getNano()
+				v.getSentAt().getInstant().getNano(),
+				v.getFee()
 			))
 			.collect(Collectors.toList());
 	}
@@ -108,23 +108,20 @@ public class AsyncRadixApiHistoryPaginationTest {
 				ACCOUNT_ADDRESS1,
 				ACCOUNT_ADDRESS2,
 				UInt256.from(count + 10),
-				"xrd_rb1qya85pwq"
+				"xrd_dr1qyrs8qwl"
 			)
 			.message("Test message " + count)
 			.build();
 
-		client.transaction().build(request)
+		client.transaction().build(request).join()
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(builtTransactionDTO -> assertEquals(UInt256.from(100000000000000000L), builtTransactionDTO.getFee()))
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
-			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
+			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, false).join()
 				.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
-				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
+				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction).join()
 					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))
-					.join())
-				.join())
-			.join();
+					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))));
 	}
 
 	private static ECKeyPair keyPairOf(int pk) {

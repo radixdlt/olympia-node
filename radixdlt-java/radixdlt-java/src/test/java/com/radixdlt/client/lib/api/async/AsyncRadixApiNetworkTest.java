@@ -32,9 +32,9 @@ import static org.mockito.Mockito.when;
 public class AsyncRadixApiNetworkTest {
 	private static final String BASE_URL = "http://localhost/";
 
-	private static final String NETWORK_ID = "{\"result\":{\"networkId\":2},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
-	private static final String DEMAND = "{\"result\":{\"tps\":5},\"id\":\"5\",\"jsonrpc\":\"2.0\"}";
-	private static final String THROUGHPUT = "{\"result\":{\"tps\":8},\"id\":\"6\",\"jsonrpc\":\"2.0\"}";
+	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"2\",\"jsonrpc\":\"2.0\"}";
+	private static final String DEMAND = "{\"result\":{\"tps\":5},\"id\":\"2\",\"jsonrpc\":\"2.0\"}";
+	private static final String THROUGHPUT = "{\"result\":{\"tps\":283},\"id\":\"2\",\"jsonrpc\":\"2.0\"}";
 
 	private final HttpClient client = mock(HttpClient.class);
 
@@ -42,36 +42,33 @@ public class AsyncRadixApiNetworkTest {
 	public void testNetworkId() throws IOException {
 		prepareClient(NETWORK_ID)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.network().id()
+			.onSuccess(client -> client.network().id().join()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(networkIdDTO -> assertEquals(2, networkIdDTO.getNetworkId()))
-				.join())
-			.join();
+				.onSuccess(networkIdDTO -> assertEquals(99, networkIdDTO.getNetworkId())));
 	}
 
 	@Test
 	public void testDemand() throws IOException {
 		prepareClient(DEMAND)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.network().demand()
+			.onSuccess(client -> client.network().demand().join()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(networkStatsDTO -> assertEquals(5L, networkStatsDTO.getTps()))
-				.join())
-			.join();
+				.onSuccess(networkStatsDTO -> assertEquals(5L, networkStatsDTO.getTps())));
 	}
 
 	@Test
 	public void testThroughput() throws IOException {
 		prepareClient(THROUGHPUT)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.network().throughput()
+			.onSuccess(client -> client.network().throughput().join()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(networkStatsDTO -> assertEquals(8L, networkStatsDTO.getTps()))
-				.join())
-			.join();
+				.onSuccess(networkStatsDTO -> assertEquals(283L, networkStatsDTO.getTps())));
 	}
 
 	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {
@@ -79,7 +76,7 @@ public class AsyncRadixApiNetworkTest {
 		var response = (HttpResponse<String>) mock(HttpResponse.class);
 		var completableFuture = new CompletableFuture<HttpResponse<String>>();
 
-		when(response.body()).thenReturn(responseBody);
+		when(response.body()).thenReturn(NETWORK_ID, responseBody);
 		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
 
 		try {

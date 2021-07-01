@@ -20,6 +20,7 @@ package com.radixdlt.statecomputer.forks;
 
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.function.BiConsumer;
 
 public final class Forks {
 	private final TreeMap<Long, RERules> forks;
@@ -38,5 +39,9 @@ public final class Forks {
 
 	public Optional<RERules> ifForkGet(long epoch) {
 		return Optional.ofNullable(this.forks.get(epoch));
+	}
+
+	public void forEach(BiConsumer<Long, RERules> consumer) {
+		forks.forEach(consumer);
 	}
 }

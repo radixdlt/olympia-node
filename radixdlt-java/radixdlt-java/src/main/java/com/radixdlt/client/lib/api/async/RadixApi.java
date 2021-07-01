@@ -20,6 +20,7 @@ package com.radixdlt.client.lib.api.async;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.TransactionRequest;
+import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.dto.ApiConfiguration;
 import com.radixdlt.client.lib.dto.ApiData;
 import com.radixdlt.client.lib.dto.BuiltTransaction;
@@ -94,7 +95,7 @@ public interface RadixApi {
 	interface Transaction {
 		Promise<BuiltTransaction> build(TransactionRequest request);
 
-		Promise<TxBlobDTO> finalize(FinalizedTransaction request);
+		Promise<TxBlobDTO> finalize(FinalizedTransaction request, boolean immediateSubmit);
 
 		Promise<TxDTO> submit(TxBlobDTO request);
 
@@ -142,7 +143,7 @@ public interface RadixApi {
 	interface Validator {
 		Promise<ValidatorsResponse> list(int size, Optional<NavigationCursor> cursor);
 
-		Promise<ValidatorDTO> lookup(String validatorAddress);
+		Promise<ValidatorDTO> lookup(ValidatorAddress validatorAddress);
 	}
 
 	Validator validator();

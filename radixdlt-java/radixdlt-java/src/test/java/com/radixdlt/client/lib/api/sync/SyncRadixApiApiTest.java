@@ -69,15 +69,13 @@ public class SyncRadixApiApiTest {
 		prepareClient(DATA)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(
-				client -> client.api().data()
-					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(data -> assertNotNull(data.getCount()))
-					.onSuccess(data -> assertNotNull(data.getElapsed()))
-					.onSuccess(data -> assertEquals(630722, data.getElapsed().getApiDb().getFlush().getTime()))
-					.onSuccess(data -> assertEquals(1672, data.getElapsed().getApiDb().getBalance().getRead()))
-					.onSuccess(data -> assertEquals(6, data.getCount().getApiDb().getQueue().getSize()))
-			);
+			.onSuccess(client -> client.api().data()
+				.onFailure(failure -> fail(failure.toString()))
+				.onSuccess(data -> assertNotNull(data.getCount()))
+				.onSuccess(data -> assertNotNull(data.getElapsed()))
+				.onSuccess(data -> assertEquals(630722, data.getElapsed().getApiDb().getFlush().getTime()))
+				.onSuccess(data -> assertEquals(1672, data.getElapsed().getApiDb().getBalance().getRead()))
+				.onSuccess(data -> assertEquals(6, data.getCount().getApiDb().getQueue().getSize())));
 	}
 
 	private Result<RadixApi> prepareClient(String responseBody) throws IOException {

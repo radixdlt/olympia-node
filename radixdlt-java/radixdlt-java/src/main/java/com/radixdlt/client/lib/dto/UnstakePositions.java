@@ -19,7 +19,9 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.networks.Network;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
@@ -28,11 +30,11 @@ import static java.util.Objects.requireNonNull;
 
 public class UnstakePositions {
 	private final UInt256 amount;
-	private final String validator;
+	private final ValidatorAddress validator;
 	private final int epochsUntil;
 	private final AID withdrawTxID;
 
-	private UnstakePositions(UInt256 amount, String validator, int epochsUntil, AID withdrawTxID) {
+	private UnstakePositions(UInt256 amount, ValidatorAddress validator, int epochsUntil, AID withdrawTxID) {
 		this.amount = amount;
 		this.validator = validator;
 		this.epochsUntil = epochsUntil;
@@ -42,7 +44,7 @@ public class UnstakePositions {
 	@JsonCreator
 	public static UnstakePositions create(
 		@JsonProperty(value = "amount", required = true) UInt256 amount,
-		@JsonProperty(value = "validator", required = true) String validator,
+		@JsonProperty(value = "validator", required = true) ValidatorAddress validator,
 		@JsonProperty(value = "epochsUntil", required = true) int epochsUntil,
 		@JsonProperty(value = "withdrawTxID", required = true) AID withdrawTxID
 	) {
@@ -78,7 +80,7 @@ public class UnstakePositions {
 	@Override
 	public String toString() {
 		return "UnstakePositionsDTO("
-			+ "amount=" + amount +	", validator=" + validator
+			+ "amount=" + amount +	", validator=" + validator.toString(Network.MAINNET.getId())
 			+ ", epochsUntil=" + epochsUntil + ", withdrawTxID=" + withdrawTxID + ')';
 	}
 
@@ -86,7 +88,7 @@ public class UnstakePositions {
 		return amount;
 	}
 
-	public String getValidator() {
+	public ValidatorAddress getValidator() {
 		return validator;
 	}
 

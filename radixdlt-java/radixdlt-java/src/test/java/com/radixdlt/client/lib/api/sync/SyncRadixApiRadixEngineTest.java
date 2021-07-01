@@ -39,13 +39,12 @@ import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_SECONDARY_PORT;
 public class SyncRadixApiRadixEngineTest {
 	private static final String BASE_URL = "http://localhost/";
 
-	private static final String CONFIGURATION = "{\"result\":{\"forks\":[{\"name\":\"betanet1\",\"epoch\":0,"
-		+ "\"ceilingView\":1000},{\"name\":\"betanet2\",\"epoch\":4,\"ceilingView\":1000},{\"name\":\"betanet3\","
-		+ "\"epoch\":8,\"ceilingView\":1000},{\"name\":\"betanet4\",\"epoch\":10,\"ceilingView\":10000}],"
-		+ "\"maxValidators\":100,\"minValidators\":1,\"maxTxnsPerProposal\":50},"
-		+ "\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
-	private static final String DATA = "{\"result\":{\"invalidProposedCommands\":0,\"systemTransactions\":207536,"
-		+ "\"userTransactions\":0},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
+	private static final String CONFIGURATION = "{\"result\":{\"forks\":[{\"maxSigsPerRound\":50,\"name\":\"mainnet\","
+		+ "\"maxRounds\":1500000,\"epoch\":0},{\"maxSigsPerRound\":50,\"name\":\"mainnet\",\"maxRounds\":10000,"
+		+ "\"epoch\":2}],\"maxValidators\":100,\"minValidators\":1},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String DATA = "{\"result\":{\"systemTransactions\":37884,\"invalidProposedCommands\":1,"
+		+ "\"userTransactions\":2016},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
 	private final OkHttpClient client = mock(OkHttpClient.class);
 
@@ -56,8 +55,8 @@ public class SyncRadixApiRadixEngineTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.radixEngine().configuration()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(configuration -> assertEquals(4, configuration.getForks().size()))
-				.onSuccess(configuration -> assertEquals("betanet4", configuration.getForks().get(3).getName()))
+				.onSuccess(configuration -> assertEquals(2, configuration.getForks().size()))
+				.onSuccess(configuration -> assertEquals("mainnet", configuration.getForks().get(1).getName()))
 			);
 	}
 
@@ -69,7 +68,9 @@ public class SyncRadixApiRadixEngineTest {
 			.onSuccess(
 				client -> client.radixEngine().data()
 					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(data -> assertEquals(207536L, data.getSystemTransactions()))
+					.onSuccess(data -> assertEquals(37884L, data.getSystemTransactions()))
+					.onSuccess(data -> assertEquals(2016L, data.getUserTransactions()))
+					.onSuccess(data -> assertEquals(1L, data.getInvalidProposedCommands()))
 			);
 	}
 
@@ -81,7 +82,7 @@ public class SyncRadixApiRadixEngineTest {
 		when(client.newCall(any())).thenReturn(call);
 		when(call.execute()).thenReturn(response);
 		when(response.body()).thenReturn(body);
-		when(body.string()).thenReturn(responseBody);
+		when(body.string()).thenReturn(NETWORK_ID, responseBody);
 
 		return SyncRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
 	}

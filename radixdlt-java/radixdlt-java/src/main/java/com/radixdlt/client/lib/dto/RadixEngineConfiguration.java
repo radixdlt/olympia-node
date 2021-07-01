@@ -24,26 +24,23 @@ import java.util.List;
 import java.util.Objects;
 
 public class RadixEngineConfiguration {
-	private final List<ForkConfig> forks;
+	private final List<ForkDetails> forks;
 	private final long maxValidators;
 	private final long minValidators;
-	private final long maxTxnsPerProposal;
 
-	private RadixEngineConfiguration(List<ForkConfig> forks, long maxValidators, long minValidators, long maxTxnsPerProposal) {
+	private RadixEngineConfiguration(List<ForkDetails> forks, long maxValidators, long minValidators) {
 		this.forks = forks;
 		this.maxValidators = maxValidators;
 		this.minValidators = minValidators;
-		this.maxTxnsPerProposal = maxTxnsPerProposal;
 	}
 
 	@JsonCreator
 	public static RadixEngineConfiguration create(
-		@JsonProperty(value = "forks", required = true) List<ForkConfig> forks,
+		@JsonProperty(value = "forks", required = true) List<ForkDetails> forks,
 		@JsonProperty(value = "maxValidators", required = true) long maxValidators,
-		@JsonProperty(value = "minValidators", required = true) long minValidators,
-		@JsonProperty(value = "maxTxnsPerProposal", required = true) long maxTxnsPerProposal
+		@JsonProperty(value = "minValidators", required = true) long minValidators
 	) {
-		return new RadixEngineConfiguration(forks, maxValidators, minValidators, maxTxnsPerProposal);
+		return new RadixEngineConfiguration(forks, maxValidators, minValidators);
 	}
 
 	@Override
@@ -59,24 +56,22 @@ public class RadixEngineConfiguration {
 		var that = (RadixEngineConfiguration) o;
 		return maxValidators == that.maxValidators
 			&& minValidators == that.minValidators
-			&& maxTxnsPerProposal == that.maxTxnsPerProposal
 			&& forks.equals(that.forks);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(forks, maxValidators, minValidators, maxTxnsPerProposal);
+		return Objects.hash(forks, maxValidators, minValidators);
 	}
 
 	@Override
 	public String toString() {
 		return "{forks:" + forks
 			+ ", maxValidators:" + maxValidators
-			+ ", minValidators:" + minValidators
-			+ ", maxTxnsPerProposal:" + maxTxnsPerProposal + '}';
+			+ ", minValidators:" + minValidators + '}';
 	}
 
-	public List<ForkConfig> getForks() {
+	public List<ForkDetails> getForks() {
 		return forks;
 	}
 
@@ -86,9 +81,5 @@ public class RadixEngineConfiguration {
 
 	public long getMinValidators() {
 		return minValidators;
-	}
-
-	public long getMaxTxnsPerProposal() {
-		return maxTxnsPerProposal;
 	}
 }

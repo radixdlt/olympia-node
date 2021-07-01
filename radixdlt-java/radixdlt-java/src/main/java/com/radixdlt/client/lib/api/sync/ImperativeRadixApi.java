@@ -20,6 +20,7 @@ package com.radixdlt.client.lib.api.sync;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.TransactionRequest;
+import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.dto.ApiConfiguration;
 import com.radixdlt.client.lib.dto.ApiData;
 import com.radixdlt.client.lib.dto.BuiltTransaction;
@@ -137,7 +138,7 @@ public interface ImperativeRadixApi {
 	interface Validator {
 		ValidatorsResponse list(int size, NavigationCursor cursor);
 
-		ValidatorDTO lookup(String validatorAddress);
+		ValidatorDTO lookup(ValidatorAddress validatorAddress);
 	}
 
 	Validator validator();
@@ -252,7 +253,7 @@ public interface ImperativeRadixApi {
 
 					@Override
 					public TxBlobDTO finalize(FinalizedTransaction request) {
-						return unwrap(api.transaction().finalize(request));
+						return unwrap(api.transaction().finalize(request, false));
 					}
 
 					@Override
@@ -351,7 +352,7 @@ public interface ImperativeRadixApi {
 					}
 
 					@Override
-					public ValidatorDTO lookup(String validatorAddress) {
+					public ValidatorDTO lookup(ValidatorAddress validatorAddress) {
 						return unwrap(api.validator().lookup(validatorAddress));
 					}
 				};

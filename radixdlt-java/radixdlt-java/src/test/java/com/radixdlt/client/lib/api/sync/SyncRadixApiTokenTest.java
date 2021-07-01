@@ -43,19 +43,17 @@ import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_SECONDARY_PORT;
 public class SyncRadixApiTokenTest {
 	private static final String BASE_URL = "http://localhost/";
 
-	private static final String NATIVE_TOKEN = "{\"result\":{\"tokenInfoURL\":\"https://tokens.radixdlt.com/\","
-		+ "\"symbol\":\"xrd\",\"isSupplyMutable\":true,\"granularity\":\"1\",\"name\":"
-		+ "\"Rads\",\"rri\":\"xrd_rb1qya85pwq\","
-		+ "\"description\":\"Radix Betanet Tokens\",\"currentSupply\":"
-		+ "\"8000000000000000000000000000000000000000000000\",\"iconURL\":"
-		+ "\"https://assets.radixdlt.com/icons/icon-xrd-32x32.png\"},\"id\":\"2\",\"jsonrpc\":\"2.0\"}";
+	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
+	private static final String NATIVE_TOKEN = "{\"result\":{\"tokenInfoURL\":\"https://assets.radixdlt.com/ico"
+		+ "ns/icon-xrd-32x32.png\",\"symbol\":\"xrd\",\"isSupplyMutable\":true,\"granularity\":\"1\",\"name\":\""
+		+ "Rads\",\"rri\":\"xrd_dr1qyrs8qwl\",\"description\":\"Radix Tokens\",\"currentSupply\":\"8000000000000"
+		+ "000000000000000\",\"iconURL\":\"https://tokens.radixdlt.com/\"},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
 	private final OkHttpClient client = mock(OkHttpClient.class);
 
 	@Test
 	public void testNativeToken() throws IOException {
-		//prepareClient(NATIVE_TOKEN)
-		RadixApi.connect(BASE_URL)
+		prepareClient(NATIVE_TOKEN)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.token().describeNative()
@@ -68,7 +66,7 @@ public class SyncRadixApiTokenTest {
 		prepareClient(NATIVE_TOKEN)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.token().describe("xrd_rb1qya85pwq")
+			.onSuccess(client -> client.token().describe("xrd_dr1qyrs8qwl")
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(tokenInfoDTO -> assertEquals("Rads", tokenInfoDTO.getName())));
 	}
@@ -81,7 +79,7 @@ public class SyncRadixApiTokenTest {
 		when(client.newCall(any())).thenReturn(call);
 		when(call.execute()).thenReturn(response);
 		when(response.body()).thenReturn(body);
-		when(body.string()).thenReturn(responseBody);
+		when(body.string()).thenReturn(NETWORK_ID, responseBody);
 
 		return SyncRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
 	}

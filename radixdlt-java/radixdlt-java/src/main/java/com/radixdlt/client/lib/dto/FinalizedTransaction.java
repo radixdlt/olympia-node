@@ -62,7 +62,7 @@ public class FinalizedTransaction {
 
 		var signature = keyPair.sign(tx.getTransaction().getHashToSign());
 
-		return FinalizedTransaction.create(tx.getTransaction().getBlob(), signature, keyPair.getPublicKey(), null);
+		return create(tx.getTransaction().getBlob(), signature, keyPair.getPublicKey(), null);
 	}
 
 	public FinalizedTransaction withTxId(AID txId) {

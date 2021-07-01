@@ -32,10 +32,12 @@ import static org.mockito.Mockito.when;
 public class AsyncRadixApiMempoolTest {
 	private static final String BASE_URL = "http://localhost/";
 
-	private static final String CONFIGURATION = "{\"result\":{\"throttleMs\":5,\"maxSize\":10000},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
-	private static final String DATA = "{\"result\":{\"maxcount\":0,\"relayerSentCount\":0,\"count\":0,"
-		+ "\"addSuccess\":1273473,\"proposedTransaction\":0,\"errors\":{\"other\":0,\"hook\":3,\"conflict\":0}},"
-		+ "\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
+	private static final String CONFIGURATION = "{\"result\":{\"throttleMs\":5,\"maxSize\":10000},\"id\":\"2\","
+		+ "\"jsonrpc\":\"2.0\"}";
+	private static final String DATA = "{\"result\":{\"addSuccess\":1273473,\"maxcount\":0,\"relayerSentCount\":0,"
+		+ "\"proposedTransaction\":0,\"count\":0,\"errors\":{\"other\":0,\"hook\":3,\"conflict\":0}},\"id\":\"2\","
+		+ "\"jsonrpc\":\"2.0\"}";
 
 	private final HttpClient client = mock(HttpClient.class);
 
@@ -43,27 +45,24 @@ public class AsyncRadixApiMempoolTest {
 	public void testConfiguration() throws IOException {
 		prepareClient(CONFIGURATION)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.mempool().configuration()
+			.onSuccess(client -> client.mempool().configuration().join()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(configuration -> assertEquals(10000L, configuration.getMaxSize()))
-				.onSuccess(configuration -> assertEquals(5L, configuration.getThrottleMs()))
-				.join())
-			.join();
+				.onSuccess(configuration -> assertEquals(5L, configuration.getThrottleMs())));
 	}
 
 	@Test
 	public void testData() throws IOException {
 		prepareClient(DATA)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(
-				client -> client.mempool().data()
-					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(data -> assertEquals(1273473L, data.getAddSuccess()))
-					.onSuccess(data -> assertEquals(3L, data.getErrors().getHook()))
-					.join())
-			.join();
+			.onSuccess(client -> client.mempool().data().join()
+				.onFailure(failure -> fail(failure.toString()))
+				.onSuccess(data -> assertEquals(1273473L, data.getAddSuccess()))
+				.onSuccess(data -> assertEquals(3L, data.getErrors().getHook())));
 	}
 
 	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {
@@ -71,7 +70,7 @@ public class AsyncRadixApiMempoolTest {
 		var response = (HttpResponse<String>) mock(HttpResponse.class);
 		var completableFuture = new CompletableFuture<HttpResponse<String>>();
 
-		when(response.body()).thenReturn(responseBody);
+		when(response.body()).thenReturn(NETWORK_ID, responseBody);
 		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
 
 		try {

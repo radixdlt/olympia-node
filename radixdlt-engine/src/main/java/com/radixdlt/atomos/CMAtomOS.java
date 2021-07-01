@@ -20,21 +20,13 @@ package com.radixdlt.atomos;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.Procedures;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
-
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Predicate;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.VoidReducerState;
@@ -42,6 +34,7 @@ import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.identifiers.REAddr;
 
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -53,11 +46,8 @@ import static com.radixdlt.identifiers.Naming.NAME_PATTERN;
 /**
  * Implementation of the AtomOS interface on top of a UTXO based Constraint Machine.
  */
-// FIXME: rawtypes
-@SuppressWarnings("rawtypes")
 public final class CMAtomOS {
 	private final Map<Class<? extends Particle>, SubstateDefinition<? extends Particle>> substateDefinitions = new HashMap<>();
-	private final Set<String> systemNames;
 	private Procedures procedures = Procedures.empty();
 
 	public static class REAddrClaim implements ReducerState {
@@ -74,19 +64,16 @@ public final class CMAtomOS {
 		}
 
 		public REAddr getAddr() {
-			return this.unclaimedREAddr.getAddr();
+			return unclaimedREAddr.getAddr();
 		}
 	}
 
 	public CMAtomOS(Set<String> systemNames) {
-		// RRI particle is a low level particle managed by the OS used for the management of all other resources
-		this.systemNames = systemNames;
-
 		// PUB_KEY type is already claimed by accounts
 		var claimableAddrTypes =
 			EnumSet.of(REAddr.REAddrType.NATIVE_TOKEN, REAddr.REAddrType.HASHED_KEY, REAddr.REAddrType.SYSTEM);
 
-		this.load(os -> {
+		load(os -> {
 			os.substate(
 				new SubstateDefinition<>(
 					UnclaimedREAddr.class,
@@ -147,8 +134,8 @@ public final class CMAtomOS {
 	public void load(ConstraintScrypt constraintScrypt) {
 		var constraintScryptEnv = new ConstraintScryptEnv(ImmutableMap.copyOf(substateDefinitions));
 		constraintScrypt.main(constraintScryptEnv);
-		this.substateDefinitions.putAll(constraintScryptEnv.getScryptParticleDefinitions());
-		this.procedures = this.procedures.combine(constraintScryptEnv.getProcedures());
+		substateDefinitions.putAll(constraintScryptEnv.getScryptParticleDefinitions());
+		procedures = procedures.combine(constraintScryptEnv.getProcedures());
 	}
 
 	public Procedures getProcedures() {
@@ -156,13 +143,14 @@ public final class CMAtomOS {
 	}
 
 	public SubstateDeserialization buildSubstateDeserialization() {
-		return new SubstateDeserialization(this.substateDefinitions.values());
+		return new SubstateDeserialization(substateDefinitions.values());
 	}
 
 	public SubstateSerialization buildSubstateSerialization() {
-		return new SubstateSerialization(this.substateDefinitions.values());
+		return new SubstateSerialization(substateDefinitions.values());
 	}
 
+	@SuppressWarnings("unchecked")
 	public Predicate<Particle> virtualizedUpParticles() {
 		Map<? extends Class<? extends Particle>, Predicate<Particle>> virtualizedParticles = substateDefinitions.entrySet().stream()
 			.filter(def -> def.getValue().getVirtualized() != null)

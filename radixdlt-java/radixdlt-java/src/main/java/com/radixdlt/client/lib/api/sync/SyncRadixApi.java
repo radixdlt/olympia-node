@@ -125,6 +125,7 @@ import static com.radixdlt.client.lib.dto.RpcMethod.VALIDATION_NODE_INFO;
 import static com.radixdlt.client.lib.dto.RpcMethod.VALIDATORS_LIST;
 import static com.radixdlt.client.lib.dto.RpcMethod.VALIDATORS_LOOKUP;
 import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DESERIALIZE;
+import static com.radixdlt.networks.Network.LOCALNET;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 
 import static java.util.Optional.ofNullable;
@@ -142,6 +143,7 @@ class SyncRadixApi implements RadixApi {
 	private final OkHttpClient client;
 	private boolean doTrace = false;
 	private ObjectMapper objectMapper;
+	private int networkId = LOCALNET.getId();
 
 	private final Network network = new Network() {
 		@Override
@@ -197,9 +199,9 @@ class SyncRadixApi implements RadixApi {
 		}
 
 		@Override
-		public Result<TxBlobDTO> finalize(FinalizedTransaction request) {
+		public Result<TxBlobDTO> finalize(FinalizedTransaction request, boolean immediateSubmit) {
 			return call(
-				request(CONSTRUCTION_FINALIZE, request.getBlob(), request.getSignature(), request.getPublicKey()),
+				request(CONSTRUCTION_FINALIZE, request.getBlob(), request.getSignature(), request.getPublicKey(), Boolean.toString(immediateSubmit)),
 				new TypeReference<>() {}
 			);
 		}
@@ -226,14 +228,14 @@ class SyncRadixApi implements RadixApi {
 	private final SingleAccount account = new SingleAccount() {
 		@Override
 		public Result<TokenBalances> balances(AccountAddress address) {
-			return call(request(ACCOUNT_BALANCES, address.toString()), new TypeReference<>() {});
+			return call(request(ACCOUNT_BALANCES, address.toString(networkId)), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<TransactionHistory> history(
 			AccountAddress address, int size, Optional<NavigationCursor> cursor
 		) {
-			var request = request(ACCOUNT_HISTORY, address.toString(), size);
+			var request = request(ACCOUNT_HISTORY, address.toString(networkId), size);
 			cursor.ifPresent(cursorValue -> request.addParameters(cursorValue.value()));
 
 			return call(request, new TypeReference<>() {});
@@ -241,12 +243,12 @@ class SyncRadixApi implements RadixApi {
 
 		@Override
 		public Result<List<StakePositions>> stakes(AccountAddress address) {
-			return call(request(ACCOUNT_STAKES, address.toString()), new TypeReference<>() {});
+			return call(request(ACCOUNT_STAKES, address.toString(networkId)), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<List<UnstakePositions>> unstakes(AccountAddress address) {
-			return call(request(ACCOUNT_UNSTAKES, address.toString()), new TypeReference<>() {});
+			return call(request(ACCOUNT_UNSTAKES, address.toString(networkId)), new TypeReference<>() {});
 		}
 	};
 
@@ -260,8 +262,8 @@ class SyncRadixApi implements RadixApi {
 		}
 
 		@Override
-		public Result<ValidatorDTO> lookup(String validatorAddress) {
-			return call(request(VALIDATORS_LOOKUP, validatorAddress), new TypeReference<>() {});
+		public Result<ValidatorDTO> lookup(ValidatorAddress validatorAddress) {
+			return call(request(VALIDATORS_LOOKUP, validatorAddress.toString(networkId)), new TypeReference<>() {});
 		}
 	};
 
@@ -523,6 +525,7 @@ class SyncRadixApi implements RadixApi {
 	}
 
 	private void configureSerialization(int networkId) {
+		this.networkId = networkId;
 		var module = new SimpleModule();
 		module.addSerializer(AccountAddress.class, new AccountAddressSerializer(networkId));
 		module.addDeserializer(AccountAddress.class, new AccountAddressDeserializer(networkId));

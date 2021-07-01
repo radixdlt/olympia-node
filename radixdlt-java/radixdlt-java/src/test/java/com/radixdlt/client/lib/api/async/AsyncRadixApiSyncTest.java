@@ -32,12 +32,13 @@ import static org.mockito.Mockito.when;
 public class AsyncRadixApiSyncTest {
 	private static final String BASE_URL = "http://localhost/";
 
+	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
 	private static final String CONFIGURATION = "{\"result\":{\"maxLedgerUpdatesRate\":50,\"syncCheckMaxPeers\":10,"
-		+ "\"ledgerStatusUpdateMaxPeersToNotify\":10,\"syncCheckInterval\":3000,\"requestTimeout\":5000},\"id\":\"1\","
+		+ "\"ledgerStatusUpdateMaxPeersToNotify\":10,\"syncCheckInterval\":3000,\"requestTimeout\":5000},\"id\":\"2\","
 		+ "\"jsonrpc\":\"2.0\"}\n";
-	private static final String DATA = "{\"result\":{\"processed\":207,\"invalidCommandsReceived\":0,"
-		+ "\"targetCurrentDiff\":0,\"remoteRequestsProcessed\":10773,\"lastReadMillis\":0,"
-		+ "\"targetStateVersion\":229529},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String DATA = "{\"result\":{\"processed\":36898,\"invalidCommandsReceived\":0,\"targetCurrent"
+		+ "Diff\":0,\"remoteRequestsProcessed\":38614,\"lastReadMillis\":0,\"targetStateVersion\":814181},\"id\":\"2\""
+		+ ",\"jsonrpc\":\"2.0\"}\n";
 
 	private final HttpClient client = mock(HttpClient.class);
 
@@ -45,26 +46,24 @@ public class AsyncRadixApiSyncTest {
 	public void testConfiguration() throws IOException {
 		prepareClient(CONFIGURATION)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.sync().configuration()
+			.onSuccess(client -> client.sync().configuration().join()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(configuration -> assertEquals(50L, configuration.getMaxLedgerUpdatesRate()))
-				.onSuccess(configuration -> assertEquals(3000, configuration.getSyncCheckInterval()))
-				.join())
-			.join();
+				.onSuccess(configuration -> assertEquals(3000, configuration.getSyncCheckInterval())));
 	}
 
 	@Test
 	public void testData() throws IOException {
 		prepareClient(DATA)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.sync().data()
+			.onSuccess(client -> client.sync().data().join()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(data -> assertEquals(207L, data.getProcessed()))
-				.onSuccess(data -> assertEquals(229529L, data.getTargetStateVersion()))
-				.join())
-			.join();
+				.onSuccess(data -> assertEquals(36898L, data.getProcessed()))
+				.onSuccess(data -> assertEquals(814181L, data.getTargetStateVersion())));
 	}
 
 	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {
@@ -72,7 +71,7 @@ public class AsyncRadixApiSyncTest {
 		var response = (HttpResponse<String>) mock(HttpResponse.class);
 		var completableFuture = new CompletableFuture<HttpResponse<String>>();
 
-		when(response.body()).thenReturn(responseBody);
+		when(response.body()).thenReturn(NETWORK_ID, responseBody);
 		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
 
 		try {

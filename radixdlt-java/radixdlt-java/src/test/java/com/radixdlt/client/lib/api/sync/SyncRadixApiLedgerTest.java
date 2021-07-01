@@ -122,8 +122,7 @@ public class SyncRadixApiLedgerTest {
 				.onSuccess(proof -> assertEquals(2, proof.getSigs().size()))
 				.onSuccess(proof -> assertEquals(1L, proof.getHeader().getEpoch()))
 				.onSuccess(proof -> assertEquals(212000L, proof.getHeader().getVersion()))
-				.onSuccess(proof -> assertEquals(212000L, proof.getHeader().getView()))
-			);
+				.onSuccess(proof -> assertEquals(212000L, proof.getHeader().getView())));
 	}
 
 	@Test
@@ -137,8 +136,7 @@ public class SyncRadixApiLedgerTest {
 				.onSuccess(proof -> assertEquals(0L, proof.getHeader().getEpoch()))
 				.onSuccess(proof -> assertEquals(1L, proof.getHeader().getVersion()))
 				.onSuccess(proof -> assertEquals(0L, proof.getHeader().getView()))
-				.onSuccess(proof -> assertEquals(2, proof.getHeader().getNextValidators().size()))
-			);
+				.onSuccess(proof -> assertEquals(2, proof.getHeader().getNextValidators().size())));
 	}
 
 	@Test
@@ -149,8 +147,7 @@ public class SyncRadixApiLedgerTest {
 			.onSuccess(client -> client.ledger().checkpoints()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(checkpoint -> assertEquals(1, checkpoint.getTxn().size()))
-				.onSuccess(checkpoint -> assertEquals(2, checkpoint.getProof().getHeader().getNextValidators().size()))
-			);
+				.onSuccess(checkpoint -> assertEquals(2, checkpoint.getProof().getHeader().getNextValidators().size())));
 	}
 
 	private Result<RadixApi> prepareClient(String responseBody) throws IOException {

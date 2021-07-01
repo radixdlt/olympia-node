@@ -32,13 +32,12 @@ import static org.mockito.Mockito.when;
 public class AsyncRadixApiRadixEngineTest {
 	private static final String BASE_URL = "http://localhost/";
 
-	private static final String CONFIGURATION = "{\"result\":{\"forks\":[{\"name\":\"betanet1\",\"epoch\":0,"
-		+ "\"ceilingView\":1000},{\"name\":\"betanet2\",\"epoch\":4,\"ceilingView\":1000},{\"name\":\"betanet3\","
-		+ "\"epoch\":8,\"ceilingView\":1000},{\"name\":\"betanet4\",\"epoch\":10,\"ceilingView\":10000}],"
-		+ "\"maxValidators\":100,\"minValidators\":1,\"maxTxnsPerProposal\":50},"
-		+ "\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
-	private static final String DATA = "{\"result\":{\"invalidProposedCommands\":0,\"systemTransactions\":207536,"
-		+ "\"userTransactions\":0},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
+	private static final String CONFIGURATION = "{\"result\":{\"forks\":[{\"maxSigsPerRound\":50,\"name\":\"mainnet\","
+		+ "\"maxRounds\":1500000,\"epoch\":0},{\"maxSigsPerRound\":50,\"name\":\"mainnet\",\"maxRounds\":10000,"
+		+ "\"epoch\":2}],\"maxValidators\":100,\"minValidators\":1},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String DATA = "{\"result\":{\"systemTransactions\":37884,\"invalidProposedCommands\":1,"
+		+ "\"userTransactions\":2016},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
 	private final HttpClient client = mock(HttpClient.class);
 
@@ -46,25 +45,27 @@ public class AsyncRadixApiRadixEngineTest {
 	public void testConfiguration() throws IOException {
 		prepareClient(CONFIGURATION)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.radixEngine().configuration()
+			.onSuccess(client -> client.radixEngine().configuration().join()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(configuration -> assertEquals(4, configuration.getForks().size()))
-				.onSuccess(configuration -> assertEquals("betanet4", configuration.getForks().get(3).getName()))
-				.join())
-			.join();
+				.onSuccess(configuration -> assertEquals(2, configuration.getForks().size()))
+				.onSuccess(configuration -> assertEquals("mainnet", configuration.getForks().get(1).getName())));
 	}
 
 	@Test
 	public void testData() throws IOException {
 		prepareClient(DATA)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.radixEngine().data()
-				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(data -> assertEquals(207536L, data.getSystemTransactions()))
-				.join())
-			.join();
+			.onSuccess(
+				client -> client.radixEngine().data().join()
+					.onFailure(failure -> fail(failure.toString()))
+					.onSuccess(data -> assertEquals(37884L, data.getSystemTransactions()))
+					.onSuccess(data -> assertEquals(2016L, data.getUserTransactions()))
+					.onSuccess(data -> assertEquals(1L, data.getInvalidProposedCommands()))
+			);
 	}
 
 	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {
@@ -72,7 +73,7 @@ public class AsyncRadixApiRadixEngineTest {
 		var response = (HttpResponse<String>) mock(HttpResponse.class);
 		var completableFuture = new CompletableFuture<HttpResponse<String>>();
 
-		when(response.body()).thenReturn(responseBody);
+		when(response.body()).thenReturn(NETWORK_ID, responseBody);
 		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
 
 		try {
