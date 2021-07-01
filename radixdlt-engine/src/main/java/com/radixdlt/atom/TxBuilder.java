@@ -330,6 +330,8 @@ public final class TxBuilder {
 			.sorted(Comparator.comparing(Pair::getSecond, comparator))
 			.iterator();
 
+		lowLevelBuilder.readIndex(index);
+
 		return new CloseableCursor<T>() {
 			private RawSubstateBytes nextRemote = cursor.hasNext() ? cursor.next() : null;
 			private Pair<T, byte[]> nextLocal = localIterator.hasNext() ? localIterator.next() : null;
@@ -389,7 +391,7 @@ public final class TxBuilder {
 				.iterator();
 			var remoteIterator = Iterators.transform(cursor, s -> (T) this.deserialize(s).getParticle());
 			var result = mapper.apply(Iterators.concat(localIterator, remoteIterator));
-			lowLevelBuilder.downAll(index);
+			lowLevelBuilder.downIndex(index);
 			return result;
 		}
 	}

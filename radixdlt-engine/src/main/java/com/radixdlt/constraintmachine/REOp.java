@@ -24,6 +24,7 @@ public enum REOp {
 	READ(false),
 	DOWN(true),
 	DOWNINDEX(true),
+	READINDEX(false),
 	SIG(false),
 	MSG(false),
 	HEADER(false);
