@@ -288,11 +288,6 @@ public final class RadixEngine<M> {
 			assertNotDeleted();
 			return engine.construct(request);
 		}
-
-		public <U> U getComputedState(Class<U> applicationStateClass) {
-			assertNotDeleted();
-			return engine.getComputedState(applicationStateClass);
-		}
 	}
 
 	public void deleteBranches() {
