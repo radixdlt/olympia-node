@@ -93,7 +93,6 @@ import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
@@ -187,8 +186,7 @@ public class StakingUnstakingValidatorsTest {
 			.collect(ImmutableList.toImmutableList());
 		this.radixEngineConfiguration = Modules.combine(
 			new ForksModule(),
-			forkModule,
-			RadixEngineConfig.asModule(1)
+			forkModule
 		);
 		this.maxRounds = maxRounds;
 		this.byzantineModule = byzantineModule;

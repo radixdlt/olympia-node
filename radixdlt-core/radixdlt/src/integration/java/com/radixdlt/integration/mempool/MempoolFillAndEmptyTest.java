@@ -44,7 +44,6 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.qualifier.NumPeers;
-import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
@@ -70,7 +69,6 @@ public final class MempoolFillAndEmptyTest {
             MempoolConfig.asModule(1000, 10),
             new ForksModule(),
             new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
-            RadixEngineConfig.asModule(1),
             new SingleNodeAndPeersDeterministicNetworkModule(),
             new MockedGenesisModule(),
             new MempoolFillerModule(),

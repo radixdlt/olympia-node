@@ -38,15 +38,10 @@ import java.util.function.Supplier;
  */
 public final class StakedValidatorsReducer implements StateReducer<StakedValidators> {
 
-	private final int minValidators;
 	private final int maxValidators;
 
 	@Inject
-	public StakedValidatorsReducer(
-		@MinValidators int minValidators,
-		@MaxValidators int maxValidators
-	) {
-		this.minValidators = minValidators;
+	public StakedValidatorsReducer(@MaxValidators int maxValidators) {
 		this.maxValidators = maxValidators;
 	}
 
@@ -74,7 +69,7 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 
 	@Override
 	public Supplier<StakedValidators> initial() {
-		return () -> StakedValidators.create(minValidators, maxValidators);
+		return () -> StakedValidators.create(maxValidators);
 	}
 
 	@Override
