@@ -62,7 +62,7 @@ public class PacemakerViewUpdateRaceConditionTest {
 	private static final Random random = new Random(123456);
 
 	private static final int numNodes = 4;
-	private static final int nodeUnderTestIndex = 1; // leader for view 2
+	private static final int nodeUnderTestIndex = 2; // leader for view 2
 	private static final long pacemakerTimeout = 1000L;
 	private static final long additionalMessageDelay = pacemakerTimeout + 1000L;
 
