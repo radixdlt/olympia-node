@@ -17,6 +17,7 @@
 
 package com.radixdlt.store.berkeley;
 
+import com.google.common.collect.Streams;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
@@ -75,6 +76,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -533,7 +535,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 		@Override
 		public void close() {
-			cursor.close();
+			if (cursor != null) {
+				cursor.close();
+			}
 		}
 
 		@Override
@@ -577,28 +581,23 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		var typeBytes = Stream.of(particleClass)
 			.map(substateDeserialization::classToByte)
 			.collect(Collectors.toSet());
-
-		V v = initial;
-
+		var v = new AtomicReference<>(initial);
 		for (var typeByte : typeBytes) {
-			try (var particleCursor = indexedSubstatesDatabase.openCursor(null, null)) {
-				var index = entry(new byte[] {typeByte});
-				var value = entry();
-				var status = particleCursor.getSearchKey(index, null, value, null);
-				while (status == SUCCESS) {
-					Particle particle;
-					try {
-						particle = substateDeserialization.deserialize(value.getData());
-					} catch (DeserializeException e) {
-						throw new IllegalStateException();
-					}
-					v = outputReducer.apply(v, particle);
-					status = particleCursor.getNextDup(index, null, value, null);
-				}
+			try (var cursor = new BerkeleySubstateCursor(null, indexedSubstatesDatabase, new byte[] {typeByte})) {
+				cursor.open();
+				Streams.stream(cursor)
+					.map(b -> {
+						try {
+							return substateDeserialization.deserialize(b.getData());
+						} catch (DeserializeException e) {
+							throw new IllegalStateException();
+						}
+					})
+					.forEach(s -> v.set(outputReducer.apply(v.get(), s)));
 			}
 		}
 
-		return v;
+		return v.get();
 	}
 
 	private void upParticle(

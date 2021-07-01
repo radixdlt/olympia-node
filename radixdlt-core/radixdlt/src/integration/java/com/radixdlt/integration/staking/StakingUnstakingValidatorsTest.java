@@ -513,7 +513,7 @@ public class StakingUnstakingValidatorsTest {
 					action = new UnregisterValidator(privKey.getPublicKey());
 					break;
 				case 5:
-					//restartNode(nodeIndex);
+					restartNode(nodeIndex);
 					continue;
 				case 6:
 					action = new UpdateRake(privKey.getPublicKey(), random.nextInt(PreparedRakeUpdate.RAKE_MAX + 1));

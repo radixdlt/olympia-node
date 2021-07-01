@@ -53,7 +53,6 @@ public final class StakedValidators {
 	private final Map<ECPublicKey, Boolean> delegationFlags;
 	private final Set<ECPublicKey> registered;
 	private final Map<ECPublicKey, Integer> rakes;
-	private static final Comparator<UInt256> stakeOrdering = Comparator.reverseOrder();
 	private static final Comparator<Map.Entry<ECPublicKey, UInt256>> validatorOrdering =
 		Map.Entry.<ECPublicKey, UInt256>comparingByValue()
 			.thenComparing(Map.Entry.comparingByKey(KeyComparator.instance()))
