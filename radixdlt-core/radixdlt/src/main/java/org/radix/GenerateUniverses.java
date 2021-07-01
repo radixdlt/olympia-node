@@ -63,6 +63,7 @@ import java.security.Security;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -134,13 +135,16 @@ public final class GenerateUniverses {
 					@Provides
 					@Singleton
 					private ForkManager forkManager(ForkConfig initialForkConfig) {
-						return new ForkManager(ImmutableList.of(initialForkConfig));
+						return ForkManager.create(Set.of(initialForkConfig));
 					}
 
 					@Provides
 					@Singleton
-					private ForkConfig initialForkConfig(ImmutableList<ForkBuilder> forkBuilders) {
-						return forkBuilders.get(forkBuilders.size() - 1).build();
+					private ForkConfig initialForkConfig(Set<ForkBuilder> forkBuilders) {
+						return forkBuilders.stream()
+							.max((a, b) -> (int) (a.fixedOrMinEpoch() - b.fixedOrMinEpoch()))
+							.get()
+							.build();
 					}
 				});
 				install(new MainnetForksModule());

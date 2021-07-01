@@ -20,7 +20,6 @@ package com.radixdlt.api.service;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
-import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForkManager;
 import com.radixdlt.statecomputer.forks.RERules;
 import org.json.JSONArray;
@@ -43,6 +42,8 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Failure;
 
+import java.util.Optional;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
@@ -60,8 +61,7 @@ public class ActionParserServiceTest {
 	public void setup() {
 		final var reRules = mock(RERules.class);
 		when(reRules.getMaxRounds()).thenReturn(View.of(10L));
-		final var forkConfig = new ForkConfig("fork1", 0L, null, reRules);
-		when(forkManager.latestKnownFork()).thenReturn(forkConfig);
+		when(forkManager.getCandidateFork()).thenReturn(Optional.empty());
 	}
 
 	@Test

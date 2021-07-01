@@ -18,26 +18,23 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.crypto.HashUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.OptionalInt;
 
 public final class MainnetForksModule extends AbstractModule {
 
-	@Provides
-	ImmutableList<ForkBuilder> mainnetForks() {
-		return ImmutableList.of(olympiaFirstEpoch(), olympia());
-	}
-
-	private ForkBuilder olympiaFirstEpoch() {
+	@ProvidesIntoSet
+	ForkBuilder olympiaFirstEpoch() {
 		return new ForkBuilder(
 			"olympia-first-epoch",
+			HashUtils.sha256("hello world".getBytes(StandardCharsets.UTF_8)),
 			0L,
-			ForksPredicates.atEpoch(0L),
 			MainnetEngineRules.olympiaV1,
 			new RERulesConfig(
 				FeeTable.create(
@@ -55,11 +52,12 @@ public final class MainnetForksModule extends AbstractModule {
 		);
 	}
 
-	private ForkBuilder olympia() {
+	@ProvidesIntoSet
+	ForkBuilder olympia() {
 		return new ForkBuilder(
 			"olympia",
+			HashUtils.sha256("olympia".getBytes(StandardCharsets.UTF_8)),
 			2L,
-			ForksPredicates.atEpoch(2L),
 			MainnetEngineRules.olympiaV1,
 			new RERulesConfig(
 				FeeTable.create(

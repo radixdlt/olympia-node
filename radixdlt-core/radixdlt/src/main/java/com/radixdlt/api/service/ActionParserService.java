@@ -124,8 +124,9 @@ public final class ActionParserService {
 				return allOf(
 					validator(element)
 				).map(validatorKey -> {
-					final var forkVoteHash = ForkConfig.voteHash(validatorKey, forkManager.latestKnownFork());
-					return TransactionAction.register(validatorKey, Optional.of(forkVoteHash));
+					final var maybeForkVoteHash =
+						forkManager.getCandidateFork().map(f -> ForkConfig.voteHash(validatorKey, f));
+					return TransactionAction.register(validatorKey, maybeForkVoteHash);
 				});
 
 			case UNREGISTER_VALIDATOR:
@@ -139,8 +140,9 @@ public final class ActionParserService {
 					optionalName(element),
 					optionalUrl(element)
 				).map((validatorKey, name, url) -> {
-					final var forkVoteHash = ForkConfig.voteHash(validatorKey, forkManager.latestKnownFork());
-					return TransactionAction.update(validatorKey, name, url, Optional.of(forkVoteHash));
+					final var maybeForkVoteHash =
+						forkManager.getCandidateFork().map(f -> ForkConfig.voteHash(validatorKey, f));
+					return TransactionAction.update(validatorKey, name, url, maybeForkVoteHash);
 				});
 
 			case UPDATE_RAKE:

@@ -100,6 +100,7 @@ public final class PeersForksHashesInfoService {
 			.build();
 	}
 
+	@SuppressWarnings("unchecked")
 	public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
 		return ledgerUpdate -> {
 			final var maybeEpochChange = (Optional<EpochChange>) ledgerUpdate.getStateComputerOutput();

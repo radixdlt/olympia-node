@@ -18,10 +18,11 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
+
+import java.util.Set;
 import java.util.function.UnaryOperator;
 
 /**
@@ -40,14 +41,14 @@ public class RadixEngineForksLatestOnlyModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<ImmutableList<ForkBuilder>>>() { })
+		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkBuilder>>>() { })
 			.setBinding()
 			.toInstance(m -> {
-				final var latestFork = m.get(m.size() - 1)
-					.withMinEpoch(0L)
-					.withExecutePredicate(ForksPredicates.atEpoch(0L))
-					.withEngineRules(config);
-				return ImmutableList.of(latestFork);
+				final var latestFork = m.stream()
+					.max((a, b) -> (int) (a.fixedOrMinEpoch() - b.fixedOrMinEpoch()));
+				return Set.of(latestFork.get()
+					.withEngineRulesConfig(config)
+					.atFixedEpoch(0L));
 			});
 	}
 }

@@ -22,30 +22,80 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.utils.Triplet;
-import java.util.Objects;
+
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+/**
+ * Manages forks and their transitions. There are two kinds of forks:
+ * - a list forks executed at fixed epochs
+ * - an optional candidate fork that is switched on based on a predicate (in most cases stake voting)
+ *
+ * All forks must be executed in order, and a candidate fork can only be considered
+ * when we're already running the latest fixed epoch fork.
+ */
 public final class ForkManager {
-	private final ImmutableList<ForkConfig> forkConfigs;
+	private final ImmutableList<FixedEpochForkConfig> fixedEpochForks;
+	private final Optional<CandidateForkConfig> candidateFork;
 
-	public ForkManager(ImmutableList<ForkConfig> forkConfigs) {
-		if (Objects.requireNonNull(forkConfigs).isEmpty()) {
-			throw new IllegalArgumentException("At least one fork config is required");
+	public static ForkManager create(Set<ForkConfig> forks) {
+		if (!ensureUniqueHashes(forks)) {
+			throw new IllegalArgumentException("Forks contain duplicate hashes: " + forks);
 		}
 
-		if (!sanityCheckMinEpochs(forkConfigs)) {
-			throw new IllegalArgumentException("Forks min epochs should be strictly increasing");
+		final var candidateForks = forks.stream()
+			.filter(CandidateForkConfig.class::isInstance)
+			.map(CandidateForkConfig.class::cast)
+			.collect(ImmutableList.toImmutableList());
+
+		if (candidateForks.size() > 1) {
+			throw new IllegalArgumentException("Only a single candidate fork is allowed but got " + candidateForks);
 		}
 
-		this.forkConfigs = forkConfigs;
+		final var maybeCandidateFork = candidateForks.stream().findAny();
+
+		final var fixedEpochForks = forks.stream()
+			.filter(FixedEpochForkConfig.class::isInstance)
+			.map(FixedEpochForkConfig.class::cast)
+			.sorted((a, b) -> (int) (a.getEpoch() - b.getEpoch()))
+			.collect(ImmutableList.toImmutableList());
+
+		if (fixedEpochForks.get(0).getEpoch() != 0L) {
+			throw new IllegalArgumentException("Genesis fork must start at epoch 0");
+		}
+
+		if (!sanityCheckFixedEpochs(fixedEpochForks)) {
+			throw new IllegalArgumentException("Invalid forks: duplicate epoch. " + fixedEpochForks);
+		}
+
+		if (fixedEpochForks.isEmpty()) {
+			throw new IllegalArgumentException("At least one fork config at fixed epoch is required");
+		}
+
+		final var latestFixedEpochFork = fixedEpochForks.get(fixedEpochForks.size() - 1);
+
+		if (maybeCandidateFork.isPresent()
+			&& maybeCandidateFork.get().getPredicate().minEpoch() <= latestFixedEpochFork.getEpoch()) {
+			throw new IllegalArgumentException("Candidate fork's minEpoch must be greater than the last fixed fork epoch.");
+		}
+
+		return new ForkManager(fixedEpochForks, maybeCandidateFork);
 	}
 
-	private static boolean sanityCheckMinEpochs(ImmutableList<ForkConfig> forkConfigs) {
-		ForkConfig prev = null;
+
+	private static boolean ensureUniqueHashes(Set<ForkConfig> forks) {
+		final var hashesSet = forks.stream()
+			.map(ForkConfig::getHash)
+			.collect(Collectors.toSet());
+		return forks.size() == hashesSet.size();
+	}
+
+	private static boolean sanityCheckFixedEpochs(ImmutableList<FixedEpochForkConfig> forkConfigs) {
+		FixedEpochForkConfig prev = null;
 		for (var i = forkConfigs.iterator(); i.hasNext();) {
 			final var el = i.next();
-			if (prev != null && prev.getMinEpoch() >= el.getMinEpoch()) {
+			if (prev != null && prev.getEpoch() >= el.getEpoch()) {
 				return false;
 			}
 			prev = el;
@@ -53,44 +103,84 @@ public final class ForkManager {
 		return true;
 	}
 
-	public ForkConfig latestKnownFork() {
-		return forkConfigs.get(forkConfigs.size() - 1);
+	private ForkManager(
+		ImmutableList<FixedEpochForkConfig> fixedEpochForks,
+		Optional<CandidateForkConfig> candidateFork
+	) {
+		this.fixedEpochForks = fixedEpochForks;
+		this.candidateFork = candidateFork;
+	}
+
+	public Optional<CandidateForkConfig> getCandidateFork() {
+		return this.candidateFork;
 	}
 
 	public ImmutableList<ForkConfig> forkConfigs() {
-		return this.forkConfigs;
+		final var builder = ImmutableList.<ForkConfig>builder()
+			.addAll(fixedEpochForks);
+		candidateFork.ifPresent(builder::add);
+		return builder.build();
 	}
 
+	@SuppressWarnings("unchecked")
 	public Optional<ForkConfig> getByHash(HashCode forkHash) {
-		return this.forkConfigs.stream()
-				.filter(forkConfig -> forkConfig.getHash().equals(forkHash))
-				.findFirst();
+		final var maybeFixedEpochFork = this.fixedEpochForks.stream()
+			.filter(forkConfig -> forkConfig.getHash().equals(forkHash))
+			.findFirst();
+
+		if (maybeFixedEpochFork.isPresent()) {
+			// thank you Java for a non-covariant Optional type...
+			return (Optional) maybeFixedEpochFork;
+		} else {
+			return (Optional) candidateFork
+				.filter(forkConfig -> forkConfig.getHash().equals(forkHash));
+		}
 	}
 
 	public ForkConfig genesisFork() {
-		return this.forkConfigs.get(0);
+		return this.fixedEpochForks.get(0);
 	}
 
+	public ForkConfig latestKnownFork() {
+		if (candidateFork.isPresent()) {
+			return candidateFork.get();
+		} else {
+			return fixedEpochForks.get(fixedEpochForks.size() - 1);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
 	public Optional<ForkConfig> findNextForkConfig(
 		ForkConfig currentForkConfig,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		LedgerAndBFTProof uncommittedProof
 	) {
-		final var currentForkIndex = this.forkConfigs.indexOf(currentForkConfig);
-		if (currentForkIndex < 0) {
+		if (currentForkConfig instanceof CandidateForkConfig) {
+			// if we're already running a candidate fork than no action is needed
 			return Optional.empty();
 		}
 
-		final var remainingForks = this.forkConfigs.subList(
-			currentForkIndex + 1,
-			this.forkConfigs.size()
-		);
-		return remainingForks
-			.reverse()
-			.stream()
-			.filter(forkConfig -> uncommittedProof.getProof().getEpoch() + 1 >= forkConfig.getMinEpoch())
-			.filter(forkConfig -> forkConfig.getExecutePredicate().test(
-				Triplet.of(forkConfig, radixEngine, uncommittedProof)))
-			.findFirst();
+		final var nextEpoch = uncommittedProof.getProof().getEpoch() + 1;
+		final var currentFixedEpochFork = (FixedEpochForkConfig) currentForkConfig;
+		final var latestFixedEpochFork = fixedEpochForks.get(fixedEpochForks.size() - 1);
+
+		final var maybeNextFixedEpochFork =
+			this.fixedEpochForks.stream()
+				.filter(f -> f.getEpoch() > currentFixedEpochFork.getEpoch() && nextEpoch == f.getEpoch())
+				.findFirst();
+
+		if (maybeNextFixedEpochFork.isPresent()) {
+			// move to a next fixed epoch fork, if there is one
+			return (Optional) maybeNextFixedEpochFork;
+		} else if (currentFixedEpochFork.equals(latestFixedEpochFork)) {
+			// if we're at the latest fixed epoch fork, then consider the candidate fork
+			return (Optional) candidateFork
+				.filter(f ->
+					nextEpoch >= f.getPredicate().minEpoch()
+						&& f.getPredicate().test(f, radixEngine, uncommittedProof)
+				);
+		} else {
+			return Optional.empty();
+		}
 	}
 }

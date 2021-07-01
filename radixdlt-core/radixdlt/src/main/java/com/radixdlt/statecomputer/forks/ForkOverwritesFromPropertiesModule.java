@@ -18,7 +18,6 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
 import com.google.inject.TypeLiteral;
@@ -26,43 +25,44 @@ import com.google.inject.multibindings.OptionalBinder;
 import com.radixdlt.properties.RuntimeProperties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.Set;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 public class ForkOverwritesFromPropertiesModule extends AbstractModule {
 	private static final Logger logger = LogManager.getLogger();
 
-	private static class ForkOverwrite implements UnaryOperator<ImmutableList<ForkBuilder>> {
+	private static class ForkOverwrite implements UnaryOperator<Set<ForkBuilder>> {
 		@Inject
 		private RuntimeProperties properties;
 
 		@Override
-		public ImmutableList<ForkBuilder> apply(ImmutableList<ForkBuilder> forkBuilders) {
+		public Set<ForkBuilder> apply(Set<ForkBuilder> forkBuilders) {
 			return forkBuilders.stream()
 				.map(c -> {
 					var epochOverwrite = properties.get("overwrite_forks." + c.getName() + ".epoch", "");
 					if (!epochOverwrite.isBlank()) {
 						var epoch = Long.parseLong(epochOverwrite);
 						logger.warn("Overwriting epoch of " + c.getName() + " to " + epoch);
-						c = c
-							.withMinEpoch(epoch)
-							.withExecutePredicate(ForksPredicates.atEpoch(epoch));
+						c = c.atFixedEpoch(epoch);
 					}
 
 					var viewOverwrite = properties.get("overwrite_forks." + c.getName() + ".views", "");
 					if (!viewOverwrite.isBlank()) {
 						var view = Long.parseLong(viewOverwrite);
 						logger.warn("Overwriting views of " + c.getName() + " from " + c.getEngineRulesConfig().getMaxRounds() + " to " + view);
-						c = c.withEngineRules(c.getEngineRulesConfig().overrideMaxRounds(view));
+						c = c.withEngineRulesConfig(c.getEngineRulesConfig().overrideMaxRounds(view));
 					}
 					return c;
 				})
-				.collect(ImmutableList.toImmutableList());
+				.collect(Collectors.toSet());
 		}
 	}
 
 	@Override
 	protected void configure() {
-		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<ImmutableList<ForkBuilder>>>() { })
+		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkBuilder>>>() { })
 			.setBinding()
 			.to(ForkOverwrite.class);
 	}

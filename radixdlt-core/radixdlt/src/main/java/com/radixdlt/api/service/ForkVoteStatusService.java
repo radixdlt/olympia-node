@@ -57,13 +57,17 @@ public class ForkVoteStatusService {
 		}
 
 		final var stakedValidators = radixEngine.getComputedState(StakedValidators.class);
-		final var latestKnownForkHash = forkManager.latestKnownFork().getHash();
-		final var forkVoteHash = ForkConfig.voteHash(self.getKey(), latestKnownForkHash);
-		if (stakedValidators.getForksVotes().containsKey(self.getKey())
-			&& stakedValidators.getForksVotes().get(self.getKey()).equals(forkVoteHash)) {
-			return ForkVoteStatus.NO_ACTION_NEEDED;
-		} else {
-			return ForkVoteStatus.VOTE_REQUIRED;
-		}
+
+		final var expectedCandidateForkVoteHash =
+			forkManager.getCandidateFork()
+				.map(f -> ForkConfig.voteHash(self.getKey(), f));
+
+		final var hasVotedIfNeeded =
+			expectedCandidateForkVoteHash.isEmpty() || // all good if there's no candidate fork
+				(stakedValidators.getForksVotes().containsKey(self.getKey()) // else existing vote hash must be present and match
+					&& stakedValidators.getForksVotes().get(self.getKey()).equals(expectedCandidateForkVoteHash.get())
+				);
+
+		return hasVotedIfNeeded ? ForkVoteStatus.NO_ACTION_NEEDED : ForkVoteStatus.VOTE_REQUIRED;
 	}
 }

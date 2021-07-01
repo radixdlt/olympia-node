@@ -19,7 +19,6 @@ package com.radixdlt.api.handler;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
-import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForkManager;
 import com.radixdlt.statecomputer.forks.RERules;
 import org.bouncycastle.asn1.ASN1EncodableVector;
@@ -44,6 +43,7 @@ import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
 import java.io.ByteArrayOutputStream;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -72,8 +72,7 @@ public class ConstructionHandlerTest {
 	public void setup() {
 		final var reRules = mock(RERules.class);
 		when(reRules.getMaxRounds()).thenReturn(View.of(10L));
-		final var forkConfig = new ForkConfig("fork1", 0L, null, reRules);
-		when(forkManager.latestKnownFork()).thenReturn(forkConfig);
+		when(forkManager.getCandidateFork()).thenReturn(Optional.empty());
 	}
 
 	@Test

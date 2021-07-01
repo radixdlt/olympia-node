@@ -45,7 +45,6 @@ import org.junit.Test;
 
 import java.time.Duration;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -164,8 +163,10 @@ public final class CoordinatedForkSanityTest {
 
 	private void updateValidatorWithLatestFork(RunningNetwork network, BFTNode node) {
 		final var forkManager = network.getInstance(ForkManager.class, node);
-		final var forkVoteHash = Optional.of(ForkConfig.voteHash(node.getKey(), forkManager.latestKnownFork()));
-		final var txRequest = TxnConstructionRequest.create().registerAsValidator(node.getKey(), forkVoteHash);
+		final var maybeForkVoteHash =
+			forkManager.getCandidateFork().map(f -> ForkConfig.voteHash(node.getKey(), f));
+		final var txRequest = TxnConstructionRequest.create()
+			.registerAsValidator(node.getKey(), maybeForkVoteHash);
 		network.getDispatcher(NodeApplicationRequest.class, node)
 			.dispatch(NodeApplicationRequest.create(txRequest));
 	}

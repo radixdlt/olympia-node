@@ -28,10 +28,9 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.StakedValidators;
-import com.radixdlt.utils.Triplet;
 import com.radixdlt.utils.UInt256;
 import org.junit.Test;
-import static com.radixdlt.statecomputer.forks.ForksPredicates.stakeVoting;
+import static com.radixdlt.statecomputer.forks.CandidateForkPredicates.stakeVoting;
 
 import java.util.Arrays;
 import java.util.List;
@@ -47,26 +46,8 @@ import static org.mockito.Mockito.when;
 public final class ForksPredicatesTest {
 
 	@Test
-	public void test_epoch_predicate() {
-		assertFalse(ForksPredicates.atEpoch(100).test(Triplet.of(null, null, proofAtEndOfEpoch(98))));
-		// we're at the end of epoch 99, next is 100 so predicate should match
-		assertTrue(ForksPredicates.atEpoch(100).test(Triplet.of(null, null, proofAtEndOfEpoch(99))));
-		assertTrue(ForksPredicates.atEpoch(100).test(Triplet.of(null, null, proofAtEndOfEpoch(100))));
-		assertTrue(ForksPredicates.atEpoch(100).test(Triplet.of(null, null, proofAtEndOfEpoch(101))));
-	}
-
-	private LedgerAndBFTProof proofAtEndOfEpoch(long epoch) {
-		final var proof  = mock(LedgerAndBFTProof.class);
-		final var ledgerProof = mock(LedgerProof.class);
-		when(ledgerProof.getNextValidatorSet()).thenReturn(Optional.of(mock(BFTValidatorSet.class)));
-		when(proof.getProof()).thenReturn(ledgerProof);
-		when(ledgerProof.getEpoch()).thenReturn(epoch);
-		return proof;
-	}
-
-	@Test
 	public void test_stake_voting() {
-		final var forkConfig = new ForkConfig("fork1", 0L, null, null);
+		final var forkConfig = new CandidateForkConfig("fork1", HashCode.fromInt(1), null, null);
 		final RadixEngine<LedgerAndBFTProof> radixEngine = rmock(RadixEngine.class);
 		final var node1 = BFTNode.random();
 		final var node2 = BFTNode.random();
@@ -94,40 +75,40 @@ public final class ForksPredicatesTest {
 		when(stakedValidators.getForksVotes()).thenReturn(
 			votesOf(forkConfig, node2, node3)
 		);
-		assertTrue(stakeVoting(0.1).test(Triplet.of(forkConfig, radixEngine, proofWithValidatorSet(validatorSet))));
-		assertTrue(stakeVoting(0.5).test(Triplet.of(forkConfig, radixEngine, proofWithValidatorSet(validatorSet))));
-		assertFalse(stakeVoting(0.6).test(Triplet.of(forkConfig, radixEngine, proofWithValidatorSet(validatorSet))));
+		assertTrue(stakeVoting(0, 0.1).test(forkConfig, radixEngine, proofWithValidatorSet(validatorSet)));
+		assertTrue(stakeVoting(0, 0.5).test(forkConfig, radixEngine, proofWithValidatorSet(validatorSet)));
+		assertFalse(stakeVoting(0, 0.6).test(forkConfig, radixEngine, proofWithValidatorSet(validatorSet)));
 
 		// node1, node2, node4, node5 and node6 have 6/9
 		when(stakedValidators.getForksVotes()).thenReturn(
 			votesOf(forkConfig, node1, node2, node4, node5, node6)
 		);
-		assertTrue(stakeVoting(0.5).test(Triplet.of(forkConfig, radixEngine, proofWithValidatorSet(validatorSet))));
-		assertTrue(stakeVoting(0.66).test(Triplet.of(forkConfig, radixEngine, proofWithValidatorSet(validatorSet))));
-		assertFalse(stakeVoting(0.69).test(Triplet.of(forkConfig, radixEngine, proofWithValidatorSet(validatorSet))));
+		assertTrue(stakeVoting(0, 0.5).test(forkConfig, radixEngine, proofWithValidatorSet(validatorSet)));
+		assertTrue(stakeVoting(0, 0.66).test(forkConfig, radixEngine, proofWithValidatorSet(validatorSet)));
+		assertFalse(stakeVoting(0, 0.69).test(forkConfig, radixEngine, proofWithValidatorSet(validatorSet)));
 
 		// node3 alone has 3/9
 		when(stakedValidators.getForksVotes()).thenReturn(
 			votesOf(forkConfig, node3)
 		);
-		assertTrue(stakeVoting(0.32).test(Triplet.of(forkConfig, radixEngine, proofWithValidatorSet(validatorSet))));
-		assertTrue(stakeVoting(0.33).test(Triplet.of(forkConfig, radixEngine, proofWithValidatorSet(validatorSet))));
-		assertFalse(stakeVoting(0.5).test(Triplet.of(forkConfig, radixEngine, proofWithValidatorSet(validatorSet))));
+		assertTrue(stakeVoting(0, 0.32).test(forkConfig, radixEngine, proofWithValidatorSet(validatorSet)));
+		assertTrue(stakeVoting(0, 0.33).test(forkConfig, radixEngine, proofWithValidatorSet(validatorSet)));
+		assertFalse(stakeVoting(0, 0.5).test(forkConfig, radixEngine, proofWithValidatorSet(validatorSet)));
 
 		// no votes
 		when(stakedValidators.getForksVotes()).thenReturn(
 			ImmutableMap.of()
 		);
-		assertFalse(stakeVoting(0.001).test(Triplet.of(forkConfig, radixEngine, proofWithValidatorSet(validatorSet))));
-		assertFalse(stakeVoting(0.1).test(Triplet.of(forkConfig, radixEngine, proofWithValidatorSet(validatorSet))));
-		assertFalse(stakeVoting(0.5).test(Triplet.of(forkConfig, radixEngine, proofWithValidatorSet(validatorSet)))); // no votes
+		assertFalse(stakeVoting(0, 0.001).test(forkConfig, radixEngine, proofWithValidatorSet(validatorSet)));
+		assertFalse(stakeVoting(0, 0.1).test(forkConfig, radixEngine, proofWithValidatorSet(validatorSet)));
+		assertFalse(stakeVoting(0, 0.5).test(forkConfig, radixEngine, proofWithValidatorSet(validatorSet))); // no votes
 
 		// all votes
 		when(stakedValidators.getForksVotes()).thenReturn(
 			votesOf(forkConfig, node1, node2, node3, node4, node5, node6)
 		);
-		assertTrue(stakeVoting(0.5).test(Triplet.of(forkConfig, radixEngine, proofWithValidatorSet(validatorSet))));
-		assertTrue(stakeVoting(1).test(Triplet.of(forkConfig, radixEngine, proofWithValidatorSet(validatorSet))));
+		assertTrue(stakeVoting(0, 0.5).test(forkConfig, radixEngine, proofWithValidatorSet(validatorSet)));
+		assertTrue(stakeVoting(0, 1).test(forkConfig, radixEngine, proofWithValidatorSet(validatorSet)));
 	}
 
 	private LedgerAndBFTProof proofWithValidatorSet(BFTValidatorSet validatorSet) {

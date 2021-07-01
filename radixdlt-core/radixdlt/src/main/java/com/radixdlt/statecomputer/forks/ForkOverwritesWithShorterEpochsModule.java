@@ -18,13 +18,14 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
 
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 public class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
 	private final RERulesConfig config;
@@ -36,17 +37,16 @@ public class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		var epoch = new AtomicLong(0);
-		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<ImmutableList<ForkBuilder>>>() { })
+		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkBuilder>>>() { })
 			.setBinding()
 			.toInstance(s -> s.stream()
 				.map(fork -> {
 					final var forkEpoch = epoch.getAndAdd(5);
 					return fork
-						.withMinEpoch(forkEpoch)
-						.withExecutePredicate(ForksPredicates.atEpoch(forkEpoch))
-						.withEngineRules(config);
+						.atFixedEpoch(forkEpoch)
+						.withEngineRulesConfig(config);
 				})
-				.collect(ImmutableList.toImmutableList())
+				.collect(Collectors.toSet())
 			);
 	}
 }

@@ -20,6 +20,8 @@ package com.radixdlt.api.service;
 
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.forks.CandidateForkConfig;
+import com.radixdlt.statecomputer.forks.FixedEpochForkConfig;
 import com.radixdlt.statecomputer.forks.ForkManager;
 import com.radixdlt.store.EngineStore;
 import org.json.JSONArray;
@@ -369,12 +371,20 @@ public class SystemConfigService {
 	}
 
 	private static JSONObject forkConfigJson(ForkConfig forkConfig) {
-		return new JSONObject()
+		final var json = new JSONObject()
 			.put("name", forkConfig.getName())
 			.put("hash", forkConfig.getHash().toString())
-			.put("minEpoch", forkConfig.getMinEpoch())
+			.put("isCandidate", forkConfig instanceof CandidateForkConfig)
 			.put("maxRounds", forkConfig.getEngineRules().getMaxRounds().number())
 			.put("maxSigsPerRound", forkConfig.getEngineRules().getMaxSigsPerRound().orElse(0));
+
+		if (forkConfig instanceof FixedEpochForkConfig) {
+			json.put("epoch", ((FixedEpochForkConfig) forkConfig).getEpoch());
+		} else if (forkConfig instanceof CandidateForkConfig) {
+			json.put("min_epoch", ((CandidateForkConfig) forkConfig).getPredicate().minEpoch());
+		}
+
+		return json;
 	}
 
 	@VisibleForTesting

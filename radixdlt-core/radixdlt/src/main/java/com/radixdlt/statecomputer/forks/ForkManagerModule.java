@@ -18,7 +18,6 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -28,28 +27,30 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.EngineStore;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 public final class ForkManagerModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<ImmutableList<ForkBuilder>>>() { });
+		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkBuilder>>>() { });
 	}
 
 	@Provides
 	@Singleton
 	private ForkManager forkManager(
-		ImmutableList<ForkBuilder> forkBuilders,
-		Optional<UnaryOperator<ImmutableList<ForkBuilder>>> transformer
+		Set<ForkBuilder> forkBuilders,
+		Optional<UnaryOperator<Set<ForkBuilder>>> transformer
 	) {
 		final var transformed = transformer.map(o -> o.apply(forkBuilders))
 			.orElse(forkBuilders);
 
 		final var forkConfigs = transformed.stream()
 			.map(ForkBuilder::build)
-			.collect(ImmutableList.toImmutableList());
+			.collect(Collectors.toSet());
 
-		return new ForkManager(forkConfigs);
+		return ForkManager.create(forkConfigs);
 	}
 
 	@Provides

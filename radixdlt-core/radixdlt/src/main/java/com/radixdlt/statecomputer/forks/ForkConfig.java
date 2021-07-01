@@ -21,45 +21,24 @@ package com.radixdlt.statecomputer.forks;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.utils.Triplet;
 import org.bouncycastle.pqc.math.linearalgebra.ByteUtils;
-
-import java.nio.charset.StandardCharsets;
-import java.util.function.Predicate;
 
 /**
  * Configuration used for hard forks
  */
-public final class ForkConfig {
+public abstract class ForkConfig {
 	private final String name;
-	private final long minEpoch;
-	private final Predicate<Triplet<ForkConfig, RadixEngine<LedgerAndBFTProof>, LedgerAndBFTProof>> executePredicate;
+	private final HashCode hash;
 	private final RERules reRules;
 
-	private final HashCode hash;
-
-	public ForkConfig(
-		String name,
-		long minEpoch,
-		Predicate<Triplet<ForkConfig, RadixEngine<LedgerAndBFTProof>, LedgerAndBFTProof>> executePredicate,
-		RERules reRules
-	) {
+	public ForkConfig(String name, HashCode hash, RERules reRules) {
 		this.name = name;
-		this.minEpoch = minEpoch;
-		this.executePredicate = executePredicate;
+		this.hash = hash;
 		this.reRules = reRules;
-
-		this.hash = HashUtils.sha256(name.getBytes(StandardCharsets.UTF_8));
 	}
 
 	public String getName() {
 		return name;
-	}
-
-	public Predicate<Triplet<ForkConfig, RadixEngine<LedgerAndBFTProof>, LedgerAndBFTProof>> getExecutePredicate() {
-		return this.executePredicate;
 	}
 
 	public HashCode getHash() {
@@ -70,8 +49,9 @@ public final class ForkConfig {
 		return reRules;
 	}
 
-	public long getMinEpoch() {
-		return minEpoch;
+	@Override
+	public String toString() {
+		return String.format("%s[%s:%s]", getClass().getSimpleName(), this.name, this.hash);
 	}
 
 	public static HashCode voteHash(ECPublicKey publicKey, ForkConfig forkConfig) {
@@ -80,6 +60,6 @@ public final class ForkConfig {
 
 	public static HashCode voteHash(ECPublicKey publicKey, HashCode forkHash) {
 		final var bytes = ByteUtils.concatenate(publicKey.getBytes(), forkHash.asBytes());
-		return HashUtils.sha256(bytes);
+		return HashUtils.sha256(bytes); // it's actually hashed twice (see HashUtils impl)
 	}
 }
