@@ -19,28 +19,29 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.lib.api.ValidatorAddress;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
 
 import java.util.Objects;
 
 public class SignatureDetails {
-	private final ValidatorAddress address;
+	private final ECPublicKey key;
 	private final String signature;
 	private final long timestamp;
 
-	private SignatureDetails(ValidatorAddress address, String signature, long timestamp) {
-		this.address = address;
+	private SignatureDetails(ECPublicKey key, String signature, long timestamp) {
+		this.key = key;
 		this.signature = signature;
 		this.timestamp = timestamp;
 	}
 
 	@JsonCreator
 	public static SignatureDetails create(
-		@JsonProperty(value = "address", required = true) ValidatorAddress address,
+		@JsonProperty(value = "key", required = true) String key,
 		@JsonProperty(value = "signature", required = true) String signature,
 		@JsonProperty(value = "timestamp", required = true) long timestamp
-	) {
-		return new SignatureDetails(address, signature, timestamp);
+	) throws PublicKeyException {
+		return new SignatureDetails(ECPublicKey.fromHex(key), signature, timestamp);
 	}
 
 	@Override
@@ -54,23 +55,23 @@ public class SignatureDetails {
 		}
 
 		var that = (SignatureDetails) o;
-		return timestamp == that.timestamp && address.equals(that.address) && signature.equals(that.signature);
+		return timestamp == that.timestamp && key.equals(that.key) && signature.equals(that.signature);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(address, signature, timestamp);
+		return Objects.hash(key, signature, timestamp);
 	}
 
 	@Override
 	public String toString() {
-		return "{address:" + address
+		return "{key:" + key.toHex()
 			+ ", signature:" + signature
 			+ ", timestamp:" + timestamp + '}';
 	}
 
-	public ValidatorAddress getAddress() {
-		return address;
+	public ECPublicKey getKey() {
+		return key;
 	}
 
 	public String getSignature() {

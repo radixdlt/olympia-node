@@ -39,16 +39,17 @@ import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_SECONDARY_PORT;
 public class SyncRadixApiMempoolTest {
 	private static final String BASE_URL = "http://localhost/";
 
+	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
 	private static final String CONFIGURATION = "{\"result\":{\"throttleMs\":5,\"maxSize\":10000},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
-	private static final String DATA = "{\"result\":{\"maxcount\":0,\"relayerSentCount\":0,\"count\":0,"
-		+ "\"addSuccess\":1273473,\"proposedTransaction\":0,\"errors\":{\"other\":0,\"hook\":3,\"conflict\":0}},"
-		+ "\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String DATA = "{\"result\":{\"addSuccess\":0,\"maxcount\":0,\"relayerSentCount\":0,\"p"
+		+ "roposedTransaction\":0,\"count\":0,\"errors\":{\"other\":1,\"hook\":0,\"conflict\":0}},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
 	private final OkHttpClient client = mock(OkHttpClient.class);
 
 	@Test
 	public void testConfiguration() throws IOException {
-		prepareClient(CONFIGURATION)
+//		prepareClient(CONFIGURATION)
+		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.mempool().configuration()
@@ -79,7 +80,7 @@ public class SyncRadixApiMempoolTest {
 		when(client.newCall(any())).thenReturn(call);
 		when(call.execute()).thenReturn(response);
 		when(response.body()).thenReturn(body);
-		when(body.string()).thenReturn(responseBody);
+		when(body.string()).thenReturn(NETWORK_ID, responseBody);
 
 		return SyncRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
 	}

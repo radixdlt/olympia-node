@@ -96,7 +96,7 @@ public interface RadixApi {
 
 		Promise<TxBlobDTO> finalize(FinalizedTransaction request);
 
-		Promise<TxDTO> submit(FinalizedTransaction request);
+		Promise<TxDTO> submit(TxBlobDTO request);
 
 		Promise<TransactionDTO> lookup(AID txId);
 

@@ -62,11 +62,11 @@ public class Promise<T> extends CompletableFuture<Result<T>> {
 	}
 
 	public static <R> Promise<R> ok(R value) {
-		return Promise.promise(Result.ok(value));
+		return promise(Result.ok(value));
 	}
 
 	public static <R> Promise<R> failure(Failure failure) {
-		return Promise.promise(Result.fail(failure));
+		return promise(Result.fail(failure));
 	}
 
 	public Promise<T> resolve(Result<T> value) {
@@ -95,11 +95,20 @@ public class Promise<T> extends CompletableFuture<Result<T>> {
 		return result;
 	}
 
-	public <R> Promise<R> flatMap(Function<? super T, Result<R>> mapper) {
-		var result = Promise.<R>promise();
+	@SuppressWarnings("unchecked")
+	public <R> Promise<R> flatMap(Function<? super T, Promise<R>> mapper) {
+		var resultPromise = Promise.<R>promise();
 
-		onResult(r -> result.resolve(r.flatMap(mapper)));
+		onResult(result -> result.fold(
+			failure -> resultPromise.resolve((Result<R>) result),
+			success -> mapper.apply(success).onResult(resultPromise::resolve)
+		));
 
-		return result;
+		return resultPromise;
+	}
+
+	public Promise<T> async(Consumer<Promise<T>> consumer) {
+		runAsync(() -> consumer.accept(this));
+		return this;
 	}
 }

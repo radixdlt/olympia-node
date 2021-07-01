@@ -17,7 +17,6 @@
 
 package com.radixdlt.api.handler;
 
-import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
@@ -31,6 +30,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Result.Mapper2;
 
@@ -162,6 +162,4 @@ public class ConstructionHandler {
 			.put("txID", txn.getId())
 			.put("blob", toHexString(txn.getPayload()));
 	}
-
-
 }

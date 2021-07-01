@@ -19,6 +19,9 @@ package com.radixdlt.client.lib.api.async;
 import org.junit.Test;
 
 import com.radixdlt.client.lib.api.AccountAddress;
+import com.radixdlt.identifiers.AccountAddressing;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
@@ -55,12 +58,13 @@ public class AsyncRadixApiLocalTest {
 		+ "ax5yvc046t575xfve6lgarl2ja5hhlwprmcvlcg8k98kp\",\"isExternalStakeAccepted\":true}]},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
 	private static final String SINGLE_STEP = "";
 	private static final String CURRENT_EPOCH = "";
+	private static final AccountAddressing addressing = Addressing.ofNetwork(Network.LOCALNET).forAccounts();
 
 	private final HttpClient client = mock(HttpClient.class);
 
 	@Test
 	public void testAccountInfo() throws IOException {
-		var accountAddress = AccountAddress.create("brx1qsptmhztqfajpa4qhden6dcseym3gu0pnjxsfmzwvhnlna2jzzxe9zc5ntj47");
+		var accountAddress = AccountAddress.create(addressing.parse("brx1qsptmhztqfajpa4qhden6dcseym3gu0pnjxsfmzwvhnlna2jzzxe9zc5ntj47"));
 
 		prepareClient(ACCOUNT_INFO)
 			.map(RadixApi::withTrace)

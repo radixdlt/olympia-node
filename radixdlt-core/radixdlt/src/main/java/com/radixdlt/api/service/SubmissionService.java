@@ -39,7 +39,6 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.forks.MainnetForkRulesModule;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.functional.Result;
 

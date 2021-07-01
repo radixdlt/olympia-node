@@ -71,16 +71,13 @@ public class SyncRadixApiTest {
 				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
 				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
 					.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
-					.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
 					.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 						.onFailure(failure -> fail(failure.toString()))
-						.onSuccess(txDTO -> submittableTransaction.rawTxId()
-							.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))))
-			);
+						.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId())))));
 	}
 
 	@Test
-	@Ignore	//Useful testbed for experiments
+	@Ignore    //Useful testbed for experiments
 	public void testTransactionHistoryInPages() {
 		connect(BASE_URL)
 			.onFailure(failure -> fail(failure.toString()))
@@ -179,11 +176,9 @@ public class SyncRadixApiTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR2))
 			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
-				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
 				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(txDTO -> submittableTransaction.rawTxId()
-						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))));
+					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))));
 	}
 
 	private List<String> formatTxns(List<TransactionDTO> t) {
@@ -208,11 +203,9 @@ public class SyncRadixApiTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
 			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
-				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
 				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(txDTO -> submittableTransaction.rawTxId()
-						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))));
+					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))));
 	}
 
 	private void makeUnStake(RadixApi client, UInt256 amount) {
@@ -224,11 +217,9 @@ public class SyncRadixApiTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
 			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
-				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
 				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(txDTO -> submittableTransaction.rawTxId()
-						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))));
+					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))));
 	}
 
 	private void addTransaction(RadixApi client, UInt256 amount) {
@@ -248,11 +239,9 @@ public class SyncRadixApiTest {
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
 			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
 				.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
-				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
 				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(txDTO -> submittableTransaction.rawTxId()
-						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))));
+					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))));
 	}
 
 	private static ECKeyPair keyPairOf(int pk) {

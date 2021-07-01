@@ -38,10 +38,17 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.identifiers.REAddr;
 
-import java.util.regex.Pattern;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import static com.radixdlt.identifiers.Naming.NAME_PATTERN;
 
 /**
  * Implementation of the AtomOS interface on top of a UTXO based Constraint Machine.
@@ -52,8 +59,6 @@ public final class CMAtomOS {
 	private final Map<Class<? extends Particle>, SubstateDefinition<? extends Particle>> substateDefinitions = new HashMap<>();
 	private final Set<String> systemNames;
 	private Procedures procedures = Procedures.empty();
-	public static final String NAME_REGEX = "[a-z0-9]+";
-	public static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
 
 	public static class REAddrClaim implements ReducerState {
 		private final byte[] arg;

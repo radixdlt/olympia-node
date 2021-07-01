@@ -71,11 +71,9 @@ public class AsyncRadixApiTest {
 				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
 				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
 					.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
-					.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
 					.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 						.onFailure(failure -> fail(failure.toString()))
-						.onSuccess(txDTO -> submittableTransaction.rawTxId()
-							.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))
+						.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))
 						.join())
 					.join())
 				.join())
@@ -83,7 +81,7 @@ public class AsyncRadixApiTest {
 	}
 
 	@Test
-	@Ignore	//Useful testbed for experiments
+	@Ignore    //Useful testbed for experiments
 	public void testTransactionHistoryInPages() {
 		connect(BASE_URL)
 			.onFailure(failure -> fail(failure.toString()))
@@ -188,11 +186,9 @@ public class AsyncRadixApiTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR2))
 			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
-				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
 				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(txDTO -> submittableTransaction.rawTxId()
-						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))
+					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))
 					.join())
 				.join())
 			.join();
@@ -220,11 +216,9 @@ public class AsyncRadixApiTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
 			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
-				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
 				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(txDTO -> submittableTransaction.rawTxId()
-						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))
+					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))
 					.join())
 				.join())
 			.join();
@@ -239,11 +233,9 @@ public class AsyncRadixApiTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
 			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
-				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
 				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(txDTO -> submittableTransaction.rawTxId()
-						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))
+					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))
 					.join())
 				.join())
 			.join();
@@ -266,11 +258,9 @@ public class AsyncRadixApiTest {
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
 			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
 				.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
-				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
 				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(txDTO -> submittableTransaction.rawTxId()
-						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))
+					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))
 					.join())
 				.join())
 			.join();

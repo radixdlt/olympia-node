@@ -19,13 +19,16 @@ package com.radixdlt.client.lib.api.sync;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bouncycastle.util.encoders.Hex;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.TransactionRequest;
+import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.dto.ApiConfiguration;
 import com.radixdlt.client.lib.dto.ApiData;
 import com.radixdlt.client.lib.dto.BuiltTransaction;
@@ -63,6 +66,10 @@ import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponse;
+import com.radixdlt.client.lib.dto.serializer.AccountAddressDeserializer;
+import com.radixdlt.client.lib.dto.serializer.AccountAddressSerializer;
+import com.radixdlt.client.lib.dto.serializer.ValidatorAddressDeserializer;
+import com.radixdlt.client.lib.dto.serializer.ValidatorAddressSerializer;
 import com.radixdlt.client.lib.network.HttpClients;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.functional.Result;
@@ -125,11 +132,7 @@ import static java.util.Optional.ofNullable;
 class SyncRadixApi implements RadixApi {
 	private static final Logger log = LogManager.getLogger();
 	private static final MediaType MEDIA_TYPE = MediaType.parse("application/json");
-	private static final ObjectMapper objectMapper;
-
-	static {
-		objectMapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_ABSENT);
-	}
+	private static final ObjectMapper DEFAULT_OBJECT_MAPPER = createDefaultMapper();
 
 	private final AtomicLong idCounter = new AtomicLong();
 
@@ -138,6 +141,7 @@ class SyncRadixApi implements RadixApi {
 	private final int secondaryPort;
 	private final OkHttpClient client;
 	private boolean doTrace = false;
+	private ObjectMapper objectMapper;
 
 	private final Network network = new Network() {
 		@Override
@@ -201,9 +205,9 @@ class SyncRadixApi implements RadixApi {
 		}
 
 		@Override
-		public Result<TxDTO> submit(FinalizedTransaction request) {
+		public Result<TxDTO> submit(TxBlobDTO request) {
 			return call(
-				request(CONSTRUCTION_SUBMIT, request.getBlob(), request.getTxId()),
+				request(CONSTRUCTION_SUBMIT, Hex.toHexString(request.getBlob()), request.getTxId()),
 				new TypeReference<>() {}
 			);
 		}
@@ -387,8 +391,11 @@ class SyncRadixApi implements RadixApi {
 
 	static Result<RadixApi> connect(String url, int primaryPort, int secondaryPort, OkHttpClient client) {
 		return ofNullable(url)
-			.map(baseUrl -> Result.ok((RadixApi) new SyncRadixApi(baseUrl, primaryPort, secondaryPort, client)))
-			.orElseGet(BASE_URL_IS_MANDATORY::result);
+			.map(baseUrl -> Result.ok(new SyncRadixApi(baseUrl, primaryPort, secondaryPort, client)))
+			.orElseGet(BASE_URL_IS_MANDATORY::result)
+			.flatMap(radixApi -> radixApi.network().id()
+				.onSuccess(networkId -> radixApi.configureSerialization(networkId.getNetworkId()))
+				.map(__ -> radixApi));
 	}
 
 	@Override
@@ -482,11 +489,11 @@ class SyncRadixApi implements RadixApi {
 	}
 
 	private Result<String> serialize(JsonRpcRequest request) {
-		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper.writeValueAsString(request));
+		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper().writeValueAsString(request));
 	}
 
 	private <T> Result<JsonRpcResponse<T>> deserialize(String body, TypeReference<JsonRpcResponse<T>> typeReference) {
-		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper.readValue(body, typeReference));
+		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper().readValue(body, typeReference));
 	}
 
 	private Result<String> doCall(RpcMethod rpcMethod, RequestBody requestBody) {
@@ -513,5 +520,22 @@ class SyncRadixApi implements RadixApi {
 				   : secondaryPort;
 
 		return baseUrl + ":" + port + endPoint.path();
+	}
+
+	private void configureSerialization(int networkId) {
+		var module = new SimpleModule();
+		module.addSerializer(AccountAddress.class, new AccountAddressSerializer(networkId));
+		module.addDeserializer(AccountAddress.class, new AccountAddressDeserializer(networkId));
+		module.addSerializer(ValidatorAddress.class, new ValidatorAddressSerializer(networkId));
+		module.addDeserializer(ValidatorAddress.class, new ValidatorAddressDeserializer(networkId));
+		objectMapper = createDefaultMapper().registerModule(module);
+	}
+
+	private ObjectMapper objectMapper() {
+		return objectMapper == null ? DEFAULT_OBJECT_MAPPER : objectMapper;
+	}
+
+	private static ObjectMapper createDefaultMapper() {
+		return new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_ABSENT);
 	}
 }

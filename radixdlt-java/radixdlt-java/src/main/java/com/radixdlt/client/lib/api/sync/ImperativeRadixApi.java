@@ -91,7 +91,7 @@ public interface ImperativeRadixApi {
 
 		TxBlobDTO finalize(FinalizedTransaction request);
 
-		TxDTO submit(FinalizedTransaction request);
+		TxDTO submit(TxBlobDTO request);
 
 		TransactionDTO lookup(AID txId);
 
@@ -256,7 +256,7 @@ public interface ImperativeRadixApi {
 					}
 
 					@Override
-					public TxDTO submit(FinalizedTransaction request) {
+					public TxDTO submit(TxBlobDTO request) {
 						return unwrap(api.transaction().submit(request));
 					}
 

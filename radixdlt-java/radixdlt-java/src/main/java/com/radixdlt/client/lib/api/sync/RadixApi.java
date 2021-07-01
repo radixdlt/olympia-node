@@ -94,7 +94,7 @@ public interface RadixApi {
 
 		Result<TxBlobDTO> finalize(FinalizedTransaction request);
 
-		Result<TxDTO> submit(FinalizedTransaction request);
+		Result<TxDTO> submit(TxBlobDTO request);
 
 		Result<TransactionDTO> lookup(AID txId);
 

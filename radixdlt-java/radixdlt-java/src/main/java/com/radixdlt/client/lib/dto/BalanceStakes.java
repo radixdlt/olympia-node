@@ -19,25 +19,30 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.utils.UInt256;
 
-import java.util.List;
 import java.util.Objects;
 
-public class AccountBalance {
-	private final List<BalanceStakes> stakes;
-	private final List<Balance> tokens;
+import static java.util.Objects.requireNonNull;
 
-	private AccountBalance(List<BalanceStakes> stakes, List<Balance> tokens) {
-		this.stakes = stakes;
-		this.tokens = tokens;
+public class BalanceStakes {
+	private final String delegate;
+	private final UInt256 amount;
+
+	private BalanceStakes(String delegate, UInt256 amount) {
+		this.delegate = delegate;
+		this.amount = amount;
 	}
 
 	@JsonCreator
-	public static AccountBalance create(
-		@JsonProperty(value = "stakes", required = true) List<BalanceStakes> stakes,
-		@JsonProperty(value = "tokens", required = true) List<Balance> tokens
+	public static BalanceStakes create(
+		@JsonProperty(value = "delegate", required = true) String validator,
+		@JsonProperty(value = "amount", required = true) UInt256 amount
 	) {
-		return new AccountBalance(stakes, tokens);
+		requireNonNull(validator);
+		requireNonNull(amount);
+
+		return new BalanceStakes(validator, amount);
 	}
 
 	@Override
@@ -46,29 +51,29 @@ public class AccountBalance {
 			return true;
 		}
 
-		if (!(o instanceof AccountBalance)) {
+		if (!(o instanceof BalanceStakes)) {
 			return false;
 		}
 
-		var that = (AccountBalance) o;
-		return stakes.equals(that.stakes) && tokens.equals(that.tokens);
+		var that = (BalanceStakes) o;
+		return delegate.equals(that.delegate) && amount.equals(that.amount);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(stakes, tokens);
+		return Objects.hash(delegate, amount);
 	}
 
 	@Override
 	public String toString() {
-		return "{stakes:" + stakes + ", tokens:" + tokens + '}';
+		return "StakePositionsDTO(" + "validator=" + delegate + ", amount=" + amount +	')';
 	}
 
-	public List<BalanceStakes> getStakes() {
-		return stakes;
+	public String getDelegate() {
+		return delegate;
 	}
 
-	public List<Balance> getTokens() {
-		return tokens;
+	public UInt256 getAmount() {
+		return amount;
 	}
 }

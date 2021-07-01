@@ -18,10 +18,14 @@
 package com.radixdlt.client.lib.api.action;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.ActionType;
 import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.utils.UInt256;
+
+import java.util.Objects;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class StakeAction implements Action {
@@ -30,9 +34,39 @@ public class StakeAction implements Action {
 	private final ValidatorAddress validator;
 	private final UInt256 amount;
 
-	public StakeAction(AccountAddress from, ValidatorAddress validator, UInt256 amount) {
+	@JsonCreator
+	public StakeAction(
+		@JsonProperty(value = "from", required = true) AccountAddress from,
+		@JsonProperty(value = "validator", required = true) ValidatorAddress validator,
+		@JsonProperty(value = "amount", required = true) UInt256 amount
+	) {
 		this.from = from;
 		this.validator = validator;
 		this.amount = amount;
+	}
+
+	public String toJSON(int networkId) {
+		return String.format("{\"from\":\"%s\",\"validator\":\"%s\",\"amount\":\"%s\",\"type\":\"StakeTokens\"}",
+							 from.toString(networkId), validator.toString(networkId), amount
+		);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (!(o instanceof StakeAction)) {
+			return false;
+		}
+
+		var that = (StakeAction) o;
+		return type == that.type && from.equals(that.from) && validator.equals(that.validator) && amount.equals(that.amount);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(type, from, validator, amount);
 	}
 }

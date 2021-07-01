@@ -119,12 +119,11 @@ public class AsyncRadixApiHistoryPaginationTest {
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
 			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
 				.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
-				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
 				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(txDTO -> submittableTransaction.rawTxId()
-						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))
-					.join()))
+					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))
+					.join())
+				.join())
 			.join();
 	}
 

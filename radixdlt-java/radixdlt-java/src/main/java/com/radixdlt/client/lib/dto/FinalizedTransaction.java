@@ -23,6 +23,7 @@ import org.bouncycastle.asn1.ASN1OutputStream;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.util.encoders.Hex;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
@@ -71,6 +72,11 @@ public class FinalizedTransaction {
 	@JsonProperty("blob")
 	public Blob getBlob() {
 		return new Blob(blob);
+	}
+
+	@JsonIgnore
+	public byte[] getRawBlob() {
+		return blob;
 	}
 
 	@JsonProperty("signatureDER")

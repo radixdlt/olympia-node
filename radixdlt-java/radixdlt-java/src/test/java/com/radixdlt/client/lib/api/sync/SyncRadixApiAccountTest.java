@@ -220,11 +220,9 @@ public class SyncRadixApiAccountTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR2))
 			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
-				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
 				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(txDTO -> submittableTransaction.rawTxId()
-						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))));
+					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))));
 	}
 
 	private void makeStake(RadixApi client, UInt256 amount) {
@@ -236,11 +234,9 @@ public class SyncRadixApiAccountTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
 			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
-				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
 				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(txDTO -> submittableTransaction.rawTxId()
-						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))));
+					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))));
 	}
 
 	private void makeUnStake(RadixApi client, UInt256 amount) {
@@ -252,11 +248,9 @@ public class SyncRadixApiAccountTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
 			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
-				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
 				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(txDTO -> submittableTransaction.rawTxId()
-						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))));
+					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))));
 	}
 
 	private Result<RadixApi> prepareClient(String responseBody) throws IOException {

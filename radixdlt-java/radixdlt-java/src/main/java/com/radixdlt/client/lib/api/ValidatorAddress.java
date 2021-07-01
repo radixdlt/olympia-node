@@ -17,30 +17,16 @@
 
 package com.radixdlt.client.lib.api;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.ValidatorAddressing;
-import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.networks.Addressing;
 
 import java.util.Objects;
 
 public class ValidatorAddress {
-	private static final ValidatorAddressing validatorAddresses = ValidatorAddressing.bech32("vb"); // This needs to come from somewhere else
-
-	@JsonIgnore
 	private final ECPublicKey address;
 
-	@JsonIgnore
 	private ValidatorAddress(ECPublicKey address) {
 		this.address = address;
-	}
-
-	@JsonCreator
-	public static ValidatorAddress create(String address) throws DeserializeException {
-		var publicKey = validatorAddresses.parse(address);
-		return new ValidatorAddress(publicKey);
 	}
 
 	public static ValidatorAddress of(ECPublicKey publicKey) {
@@ -70,13 +56,7 @@ public class ValidatorAddress {
 		return Objects.hash(address);
 	}
 
-	@JsonValue
-	public String toValidatorAddress() {
-		return validatorAddresses.of(address);
-	}
-
-	@Override
-	public String toString() {
-		return validatorAddresses.of(address);
+	public String toString(int networkId) {
+		return Addressing.ofNetworkId(networkId).forValidators().of(address);
 	}
 }

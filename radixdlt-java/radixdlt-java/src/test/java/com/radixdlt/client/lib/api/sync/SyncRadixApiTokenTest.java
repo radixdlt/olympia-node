@@ -54,7 +54,8 @@ public class SyncRadixApiTokenTest {
 
 	@Test
 	public void testNativeToken() throws IOException {
-		prepareClient(NATIVE_TOKEN)
+		//prepareClient(NATIVE_TOKEN)
+		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.token().describeNative()
