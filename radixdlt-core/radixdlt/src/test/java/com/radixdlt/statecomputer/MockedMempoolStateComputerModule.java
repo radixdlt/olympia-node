@@ -17,6 +17,7 @@
 
 package com.radixdlt.statecomputer;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
@@ -109,7 +110,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 				mempool.committed(txnsAndProof.getTxns());
 				counters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
 
-				var ledgerUpdate = new LedgerUpdate(txnsAndProof, null);
+				var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
 				ledgerUpdateDispatcher.dispatch(ledgerUpdate);
 			}
 		};

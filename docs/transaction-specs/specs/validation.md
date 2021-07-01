@@ -9,6 +9,7 @@ For transaction parsing, please check [this doc](./parsing.md).
 
 ## Transaction Limit
 
+- The maximum number of signatures must be less or equal to `50` per round proposal
 - The maximum transaction size is `1024 * 1024` bytes.
 
 ## Stateless Validation
@@ -30,11 +31,15 @@ If no violation is found, a list of parsed instructions, an optional message dat
 - `MSG`: 
    * Can appear **at most once** per transaction.
 - `LDOWN` and `LREAD`:
-   * The `index` operand must be less than the index of the current instruction.
+   * The `index` operand must be less than the number of `UP` instructions before this instruction.
 - `DOWNALL`:
    * The `class_id` operand must be one of the supported substate type.
 - `DOWNINDEX`:
    * The `prefix` length should be less than 10 and the first byte must be a valid `class_id`.
+- `SYSCALL`:
+   * The `calldata` operand must be one of the following:
+      - `0x00 + u256`: Deposit into the fee reserve
+      - `0x01 + u256`: Withdraw from the fee reserve
 
 #### Substate Static Check
 
@@ -45,7 +50,8 @@ If a substate is created by one instruction, its content must be statically chec
 | `UNCLAIMED_READDR`                | <ul><li>None</li></ul>                                                                                                                         |
 | `ROUND_DATA`                      | <ul><li>None</li></ul>                                                                                                                         |
 | `EPOCH_DATA`                      | <ul><li>None</li></ul>                                                                                                                         |
-| `TOKEN_DEF`                       | <ul><li>`description`: max 200 characters</li><li>`icon_url`: must be of OWASP URL format</li><li>`url`: must be of OWASP URL format</li></ul> |
+| `TOKEN_RESOURCE`                  | <ul><li>None</li></ul>                                                                                                                         |
+| `TOKEN_RESOURCE_METADATA`         | <ul><li>`description`: max 200 characters</li><li>`icon_url`: must be of OWASP URL format</li><li>`url`: must be of OWASP URL format</li></ul> |
 | `TOKENS`                          | <ul><li>`amount`: must be non-zero</li><li>`owner`: must of an account address</li></ul>                                                       |
 | `PREPARED_STAKE`                  | <ul><li>`amount`: must be non-zero</li></ul>                                                                                                   |
 | `STAKE_OWNERSHIP`                 | <ul><li>`amount`: must be non-zero</li></ul>                                                                                                   |
@@ -109,10 +115,16 @@ Validation state is the internal state of the constraint machine, which includes
 | `resource_mint_burn_disabled` | A flag indicates if resource allocation and deallocation is disabled, ***immutable*** |
 | `current_instruction`         | The current instruction                                                               |
 | `current_index`               | The index of the current instruction                                                  |
+| `up_instruction_count`        | The number of `UP` instruction processed so far                                       |
 | `reducer_state`               | The current reducer state                                                             |
 | `end_expected`                | A flag indicates if an `END` instruction is expected                                  |
 | `local_up_substates`          | A map of substates created locally, keyed off the substate index                      |
 | `remote_down_substates`       | A set of substate IDs that are spun down remotely                                     |
+| `meters`                      | Instruction metering handlers                                                         |
+
+Currently, we have two instruction meters:
+- Fee checker
+- Max signatures per round checker
 
 #### Transition Procedure
 
@@ -194,10 +206,12 @@ Constraint machine executes transaction instructions sequentially, based on the 
 
 ![Validation Flow](./validation_flow.png)
 
-1. Load the next instruction and update `current_instruction` and `current_index`
+1. Load the next instruction and update `current_instruction`, `current_index` and `up_instruction_count`
 1. If `end_expected == true`
    * If `current_instruction != END`
       * Abort
+1. Check if this instruction is allowed by the meters
+   * If not, abort
 1. If the current instruction is `SYSCALL`
    * Look up transition procedure with procedure key and abort if not found
    * Verify the required permission level
@@ -229,22 +243,36 @@ Constraint machine executes transaction instructions sequentially, based on the 
    * Update `end_expected` to `false`
 1. Jump to step 1
 
-### Transaction Fee
+### SYSCALL and Transaction Fee
 
-Currently, there is a minimum transaction fee of `0.1 XRD`.
+At Radix, transaction fees are charged based on transaction size (bytes). The price is `0.0002XRD per byte`.
 
-Transaction fee is paid by spending tokens and making a system call. Any subsequent instructions (non-`DOWN`) will result in a failure if no transaction fee has been paid.
+The way to pay transaction fee is through spending XRD tokens and making system call (`SYSCALL` instructions).
 
-In addition, the transaction fee `SYSCALL` can occur **once only**.
+Currently, there are two system functions:
+- `FEE_RESERVE_PUT` - Deposit a fee into the fee reserve managed by fee checker (at most once)
+- `FEE_RESERVE_TAKE` - Withdraw some amount from the fee reserve
 
-Effectively, for non-`DOWN` instructions, fee payment (`SYSCALL`) has to be the first instruction after `HEADER` flags.
+The billing system works as follows:
+- Before a transaction gets executed, it's granted a loan (`200 XRD`) from the system and the loan goes directly into the fee reserve;
+- Then, the transaction fee (based on size) is immediately charged from the reserve (if not covered, exception is thrown);
+- After that, XRDs are deposited into the reserve through a combination of `HEADER`, `SYSCALL`, `DOWN` instructions;
+- At the first non-`HEADER`/`SYSCALL`/`DOWN` instruction or transaction end, the system takes back the loan from the reserve (if not covered, exception is thrown).
+- Additionally, there is a cost associated with each instruction:
+    - Token creation (`UP` token resource): `1000 XRD`
+    - Others: `0`
+    - (If the fee reserve is unable to cover it, exception is thrown)
 
 Example transaction structure:
 ```
 HEADER(0, 1)
-DOWN <some_xrd_substate>
-SYSCALL <0x00 (u8) + fee (u256)>
+DOWN <xrd_substate_id>
+SYSCALL <FEE_RESERVE_PUT (0x00) + amount (u256)>
 UP <xrd_remainder>
 END
-<remaining instructions>
+...
+SYSCALL <FEE_RESERVE_TAKE (0x01) + amount (u256)>
+UP <xrd_remainder>
+END
+SIG <signature>
 ```
