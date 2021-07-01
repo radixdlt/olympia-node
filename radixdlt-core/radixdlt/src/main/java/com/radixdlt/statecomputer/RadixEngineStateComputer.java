@@ -332,19 +332,22 @@ public final class RadixEngineStateComputer implements StateComputer {
 		VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState
 	) {
 		var proof = verifiedTxnsAndProof.getProof();
-		var ledgerAndBFTProof = LedgerAndBFTProof.create(proof, vertexStoreState);
+		var intermediateLedgerAndBFTProof = LedgerAndBFTProof.create(proof, vertexStoreState);
 
 		final var maybeNextForkConfig = proof.getNextValidatorSet().isPresent()
-			? forkManager.findNextForkConfig(currentForkConfig, radixEngine, ledgerAndBFTProof)
+			? forkManager.findNextForkConfig(currentForkConfig, radixEngine, intermediateLedgerAndBFTProof)
 			: Optional.<ForkConfig>empty(); /* forks only happen at epoch boundary */
+
+		final var ledgerAndBftProofWithForkHash = maybeNextForkConfig.isPresent()
+			? intermediateLedgerAndBFTProof.withNextForkHash(maybeNextForkConfig.get().getHash())
+			: intermediateLedgerAndBFTProof;
 
 		final List<REProcessedTxn> radixEngineTxns;
 		try {
 			radixEngineTxns = this.radixEngine.execute(
 				verifiedTxnsAndProof.getTxns(),
-				ledgerAndBFTProof,
-				PermissionLevel.SUPER_USER,
-				maybeNextForkConfig.map(ForkConfig::getHash)
+				ledgerAndBftProofWithForkHash,
+				PermissionLevel.SUPER_USER
 			);
 		} catch (RadixEngineException e) {
 			throw new CommittedBadTxnException(verifiedTxnsAndProof, e);

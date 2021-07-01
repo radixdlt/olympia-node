@@ -18,6 +18,8 @@
 package com.radixdlt.sync;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerHeader;
@@ -223,5 +225,10 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
 	@Override
 	public Optional<LedgerProof> getLastProof() {
 		return correctReader.getLastProof();
+	}
+
+	@Override
+	public ImmutableMap<Long, HashCode> getEpochsForkHashes() {
+		return correctReader.getEpochsForkHashes();
 	}
 }

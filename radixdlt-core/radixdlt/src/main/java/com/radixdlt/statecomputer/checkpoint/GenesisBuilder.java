@@ -40,12 +40,13 @@ import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.StakedValidators;
 import com.radixdlt.statecomputer.StakedValidatorsReducer;
-import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.ForkBuilder;
 import com.radixdlt.store.InMemoryEngineStore;
 
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -58,12 +59,18 @@ public final class GenesisBuilder {
 
 	@Inject
 	public GenesisBuilder(
-		ForkConfig forkConfig,
+		Set<ForkBuilder> forks,
 		LedgerAccumulator ledgerAccumulator,
 		StakedValidatorsReducer reducer
 	) {
+		final var genesisFork = forks.stream()
+			.filter(f -> f.fixedOrMinEpoch() == 0L)
+			.findFirst()
+			.orElseThrow()
+			.build();
+
 		this.ledgerAccumulator = ledgerAccumulator;
-		final var rules = forkConfig.getEngineRules();
+		final var rules = genesisFork.getEngineRules();
 		var cmConfig = rules.getConstraintMachineConfig();
 		var cm = new ConstraintMachine(
 			cmConfig.getVirtualStoreLayer(),

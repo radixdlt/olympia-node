@@ -19,7 +19,6 @@ package com.radixdlt.engine;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.hash.HashCode;
 import com.radixdlt.application.system.construction.FeeReserveCompleteException;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.Substate;
@@ -349,7 +348,7 @@ public final class RadixEngine<M> {
 
 		public List<REProcessedTxn> execute(List<Txn> txns, PermissionLevel permissionLevel) throws RadixEngineException {
 			assertNotDeleted();
-			return engine.execute(txns, null, permissionLevel, Optional.empty());
+			return engine.execute(txns, null, permissionLevel);
 		}
 
 		public TxBuilder construct(TxAction action) throws TxBuilderException {
@@ -449,12 +448,7 @@ public final class RadixEngine<M> {
 	 * @throws RadixEngineException on state conflict, dependency issues or bad atom
 	 */
 	public List<REProcessedTxn> execute(List<Txn> txns) throws RadixEngineException {
-		return execute(txns, null, PermissionLevel.USER, Optional.empty());
-	}
-
-	public List<REProcessedTxn> execute(List<Txn> txns, M meta, PermissionLevel permissionLevel)
-			throws RadixEngineException {
-		return execute(txns, meta, permissionLevel, Optional.empty());
+		return execute(txns, null, PermissionLevel.USER);
 	}
 
 	/**
@@ -468,8 +462,7 @@ public final class RadixEngine<M> {
 	public List<REProcessedTxn> execute(
 		List<Txn> txns,
 		M meta,
-		PermissionLevel permissionLevel,
-		Optional<HashCode> nextForkHash
+		PermissionLevel permissionLevel
 	) throws RadixEngineException {
 		synchronized (stateUpdateEngineLock) {
 			if (!branches.isEmpty()) {
@@ -484,7 +477,7 @@ public final class RadixEngine<M> {
 			final var dbTransaction = engineStore.createTransaction();
 			try {
 				final var parsedTransactions =
-					executeInternal(dbTransaction, txns, meta, permissionLevel, nextForkHash);
+					executeInternal(dbTransaction, txns, meta, permissionLevel);
 				dbTransaction.commit();
 				return parsedTransactions;
 			} catch (Exception e) {
@@ -498,8 +491,7 @@ public final class RadixEngine<M> {
 		EngineStore.Transaction dbTransaction,
 		List<Txn> txns,
 		M meta,
-		PermissionLevel permissionLevel,
-		Optional<HashCode> nextForkHash
+		PermissionLevel permissionLevel
 	) throws RadixEngineException {
 		var checker = batchVerifier.newVerifier(this::getComputedState);
 		var parsedTransactions = new ArrayList<REProcessedTxn>();
@@ -549,13 +541,6 @@ public final class RadixEngine<M> {
 			}
 
 			parsedTransactions.add(parsedTxn);
-		}
-
-		try {
-			nextForkHash.ifPresent(nfh -> this.engineStore.storeCurrentForkHash(dbTransaction, nfh));
-		} catch (Exception e) {
-			logger.error("Failed to store current fork hash", e);
-			throw e;
 		}
 
 		try {

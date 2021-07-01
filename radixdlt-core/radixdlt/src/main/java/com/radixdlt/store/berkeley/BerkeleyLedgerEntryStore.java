@@ -17,11 +17,13 @@
 
 package com.radixdlt.store.berkeley;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.constraintmachine.ShutdownAllIndex;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.store.ReadableAddrsStore;
+import com.sleepycat.je.LockMode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -67,8 +69,8 @@ import com.sleepycat.je.SecondaryDatabase;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -101,7 +103,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	private static final String PROOF_DB_NAME = "radix.proof_db";
 	private static final String EPOCH_PROOF_DB_NAME = "radix.epoch_proof_db";
 	private static final String FORK_CONFIG_DB = "radix.fork_config_db";
-	private static final String CURRENT_FORK_HASH_KEY = "current_fork_hash";
 	private static final String ATOM_LOG = "radix.ledger";
 
 	private final Serialization serialization;
@@ -256,24 +257,31 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 
 		ledgerAndBFTProof.vertexStoreState().ifPresent(v -> doSave(txn, v));
+
+		ledgerAndBFTProof.getNextForkHash().ifPresent(nextForkHash -> {
+			final var nextEpoch = ledgerAndBFTProof.getProof().getEpoch() + 1;
+			this.storeEpochForkHash(tx, nextEpoch, nextForkHash);
+		});
 	}
 
-	@Override
-	public void storeCurrentForkHash(Transaction tx, HashCode forkHash) {
+	private void storeEpochForkHash(Transaction tx, long epoch, HashCode forkHash) {
 		final var txn = unwrap(tx);
-		final var key = new DatabaseEntry(CURRENT_FORK_HASH_KEY.getBytes(StandardCharsets.UTF_8));
+		final var key = new DatabaseEntry(BigInteger.valueOf(epoch).toByteArray());
 		final var entry = new DatabaseEntry(forkHash.asBytes());
 		forkConfigDatabase.put(txn, key, entry);
 	}
 
 	@Override
-	public Optional<HashCode> getCurrentForkHash() {
-		final var key = new DatabaseEntry(CURRENT_FORK_HASH_KEY.getBytes(StandardCharsets.UTF_8));
-		final var value = entry();
-		forkConfigDatabase.get(null, key, value, null);
-		return value.getSize() == 0
-			? Optional.empty()
-			: Optional.of(HashCode.fromBytes(value.getData()));
+	public ImmutableMap<Long, HashCode> getEpochsForkHashes() {
+		final var builder = ImmutableMap.<Long, HashCode>builder();
+		try (var cursor = forkConfigDatabase.openCursor(null, null)) {
+			var key = entry();
+			var value = entry();
+			while (cursor.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+				builder.put(new BigInteger(key.getData()).longValueExact(), HashCode.fromBytes(value.getData()));
+			}
+		}
+		return builder.build();
 	}
 
 	public Optional<SerializedVertexStoreState> loadLastVertexStoreState() {

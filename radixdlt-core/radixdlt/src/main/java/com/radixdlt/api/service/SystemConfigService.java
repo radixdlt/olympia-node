@@ -19,11 +19,10 @@
 package com.radixdlt.api.service;
 
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.CandidateForkConfig;
 import com.radixdlt.statecomputer.forks.FixedEpochForkConfig;
 import com.radixdlt.statecomputer.forks.ForkManager;
-import com.radixdlt.store.EngineStore;
+import com.radixdlt.sync.CommittedReader;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -177,7 +176,7 @@ public class SystemConfigService {
 		@MaxValidators int maxValidators,
 		@Genesis VerifiedTxnsAndProof genesis,
 		ForkManager forkManager,
-		EngineStore<LedgerAndBFTProof> engineStore,
+		CommittedReader committedReader,
 		SyncConfig syncConfig,
 		InMemorySystemInfo inMemorySystemInfo,
 		SystemCounters systemCounters,
@@ -191,7 +190,7 @@ public class SystemConfigService {
 		this.peersView = peersView;
 		this.addressing = addressing;
 
-		radixEngineConfiguration = prepareRadixEngineConfiguration(forkManager, engineStore, minValidators, maxValidators);
+		radixEngineConfiguration = prepareRadixEngineConfiguration(forkManager, committedReader, minValidators, maxValidators);
 		mempoolConfiguration = prepareMempoolConfiguration(mempoolMaxSize, mempoolThrottleMs);
 		apiConfiguration = prepareApiConfiguration(endpointStatuses);
 		bftConfiguration = prepareBftConfiguration(pacemakerTimeout, bftSyncPatienceMillis);
@@ -352,16 +351,14 @@ public class SystemConfigService {
 	@VisibleForTesting
 	static JSONObject prepareRadixEngineConfiguration(
 		ForkManager forkManager,
-		EngineStore<LedgerAndBFTProof> engineStore,
+		CommittedReader committedReader,
 		int minValidators,
 		int maxValidators
 	) {
 		final var knownForks = jsonArray();
 		forkManager.forkConfigs().forEach(config -> knownForks.put(forkConfigJson(config)));
 
-		final var currentFork = engineStore.getCurrentForkHash()
-			.flatMap(forkManager::getByHash)
-			.orElseGet(forkManager::genesisFork);
+		final var currentFork = forkManager.getCurrentFork(committedReader.getEpochsForkHashes());
 
 		return jsonObject()
 			.put("minValidators", minValidators)

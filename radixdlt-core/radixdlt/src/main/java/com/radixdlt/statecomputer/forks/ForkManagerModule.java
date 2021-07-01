@@ -23,8 +23,8 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.store.EngineStore;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.sync.CommittedReader;
 
 import java.util.Optional;
 import java.util.Set;
@@ -55,10 +55,12 @@ public final class ForkManagerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private ForkConfig initialForkConfig(EngineStore<LedgerAndBFTProof> engineStore, ForkManager forkManager) {
-		return engineStore
-			.getCurrentForkHash()
-			.flatMap(forkManager::getByHash)
-			.orElseGet(forkManager::genesisFork);
+	private ForkConfig initialForkConfig(
+		CommittedReader committedReader,
+		ForkManager forkManager
+	) {
+		final var storedEpochForks = committedReader.getEpochsForkHashes();
+		final var epoch = committedReader.getLastProof().map(LedgerProof::getEpoch).orElse(0L);
+		return forkManager.sanityCheckForksAndGetInitial(storedEpochForks, epoch);
 	}
 }

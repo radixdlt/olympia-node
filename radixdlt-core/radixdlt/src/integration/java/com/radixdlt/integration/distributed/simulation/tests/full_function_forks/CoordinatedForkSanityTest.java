@@ -17,7 +17,6 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.full_function_forks;
 
-import com.google.inject.Key;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -32,11 +31,10 @@ import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMon
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForkManager;
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
-import com.radixdlt.store.EngineStore;
+import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.UInt256;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -172,9 +170,10 @@ public final class CoordinatedForkSanityTest {
 	}
 
 	private boolean verifyCurrentFork(RunningNetwork network, ForkConfig forkConfig) {
-		return network.getNodes().stream().allMatch(node ->
-			network.getInstance(new Key<EngineStore<LedgerAndBFTProof>>() {}, node).getCurrentForkHash().get()
-				.equals(forkConfig.getHash())
-		);
+		return network.getNodes().stream().allMatch(node -> {
+			final var forkManager = network.getInstance(ForkManager.class, node);
+			final var epochsForks = network.getInstance(CommittedReader.class, node).getEpochsForkHashes();
+			return forkManager.getCurrentFork(epochsForks).getHash().equals(forkConfig.getHash());
+		});
 	}
 }

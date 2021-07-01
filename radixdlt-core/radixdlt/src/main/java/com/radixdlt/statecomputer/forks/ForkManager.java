@@ -19,12 +19,17 @@
 package com.radixdlt.statecomputer.forks;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -36,6 +41,8 @@ import java.util.stream.Collectors;
  * when we're already running the latest fixed epoch fork.
  */
 public final class ForkManager {
+	private static final Logger log = LogManager.getLogger();
+
 	private final ImmutableList<FixedEpochForkConfig> fixedEpochForks;
 	private final Optional<CandidateForkConfig> candidateFork;
 
@@ -82,7 +89,6 @@ public final class ForkManager {
 
 		return new ForkManager(fixedEpochForks, maybeCandidateFork);
 	}
-
 
 	private static boolean ensureUniqueHashes(Set<ForkConfig> forks) {
 		final var hashesSet = forks.stream()
@@ -147,6 +153,60 @@ public final class ForkManager {
 		} else {
 			return fixedEpochForks.get(fixedEpochForks.size() - 1);
 		}
+	}
+
+	public ForkConfig sanityCheckForksAndGetInitial(ImmutableMap<Long, HashCode> storedForks, long currentEpoch) {
+		final var fixedEpochForksMap = fixedEpochForks.stream()
+			.collect(ImmutableMap.toImmutableMap(FixedEpochForkConfig::getEpoch, Function.identity()));
+
+		final var expectedForksAreStored = fixedEpochForks.stream()
+			.filter(f -> f.getEpoch() <= currentEpoch && f.getEpoch() > 0)
+			.allMatch(fork -> {
+				final var maybeStored = Optional.ofNullable(storedForks.get(fork.getEpoch()));
+				return maybeStored.isPresent() && maybeStored.get().equals(fork.getHash());
+			});
+
+		final var storedForksAreExpected = storedForks.entrySet().stream()
+			.filter(e -> e.getKey() <= currentEpoch)
+			.allMatch(e -> {
+				final var maybeExpectedAtFixedEpoch =
+					Optional.ofNullable(fixedEpochForksMap.get(e.getKey()));
+
+				final var maybeExpectedCandidate = candidateFork
+					.filter(f -> f.getPredicate().minEpoch() >= e.getKey());
+
+				final var expectedAtFixedEpochMatches =
+					maybeExpectedAtFixedEpoch.isPresent() && maybeExpectedAtFixedEpoch.get().getHash().equals(e.getValue());
+
+				final var expectedCandidateMatches =
+					maybeExpectedCandidate.isPresent() && maybeExpectedCandidate.get().getHash().equals(e.getValue());
+
+				return expectedAtFixedEpochMatches || expectedCandidateMatches;
+			});
+
+		if (!expectedForksAreStored) {
+			log.warn("Stored forks: {}", storedForks);
+			log.warn("Expected forks: {}", forkConfigs());
+			throw new RuntimeException("Forks inconsistency! Found a fork config that should have been executed, but wasn't.");
+		}
+
+		if (!storedForksAreExpected) {
+			log.warn("Stored forks: {}", storedForks);
+			log.warn("Expected forks: {}", forkConfigs());
+			throw new RuntimeException("Forks inconsistency! Found a fork config that was executed, but shouldn't have been.");
+		}
+
+		return getCurrentFork(storedForks);
+	}
+
+	public ForkConfig getCurrentFork(ImmutableMap<Long, HashCode> storedForks) {
+		final var maybeLatestForkHash = storedForks.entrySet().stream()
+			.max((a, b) -> (int) (a.getKey() - b.getKey()))
+			.map(Map.Entry::getValue);
+
+		return maybeLatestForkHash
+			.flatMap(this::getByHash)
+			.orElseGet(this::genesisFork);
 	}
 
 	@SuppressWarnings("unchecked")

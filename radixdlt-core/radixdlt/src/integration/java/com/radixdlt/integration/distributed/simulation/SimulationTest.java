@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed.simulation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -425,6 +426,11 @@ public class SimulationTest {
 						@Override
 						public Optional<LedgerProof> getLastProof() {
 							return Optional.empty();
+						}
+
+						@Override
+						public ImmutableMap<Long, HashCode> getEpochsForkHashes() {
+							return ImmutableMap.of();
 						}
 					};
 				}

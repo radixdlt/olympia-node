@@ -17,7 +17,6 @@
 
 package com.radixdlt.store;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateStore;
@@ -77,10 +76,6 @@ public interface EngineStore<M> extends SubstateStore {
 	);
 
 	void storeMetadata(Transaction txn, M metadata);
-
-	void storeCurrentForkHash(Transaction txn, HashCode forkHash);
-
-	Optional<HashCode> getCurrentForkHash();
 
 	/**
 	 * Deterministically computes a value from a list of particles of a given type.

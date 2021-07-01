@@ -18,6 +18,7 @@
 
 package com.radixdlt.statecomputer;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 
@@ -30,10 +31,16 @@ import java.util.Optional;
 public final class LedgerAndBFTProof {
 	private final LedgerProof ledgerProof;
 	private final VerifiedVertexStoreState vertexStoreState;
+	private final Optional<HashCode> nextForkHash;
 
-	private LedgerAndBFTProof(LedgerProof ledgerProof, VerifiedVertexStoreState vertexStoreState) {
+	private LedgerAndBFTProof(
+			LedgerProof ledgerProof,
+			VerifiedVertexStoreState vertexStoreState,
+			Optional<HashCode> nextForkHash
+	) {
 		this.ledgerProof = ledgerProof;
 		this.vertexStoreState = vertexStoreState;
+		this.nextForkHash = nextForkHash;
 	}
 
 	public static LedgerAndBFTProof create(LedgerProof ledgerProof) {
@@ -41,8 +48,12 @@ public final class LedgerAndBFTProof {
 	}
 
 	public static LedgerAndBFTProof create(LedgerProof ledgerProof, VerifiedVertexStoreState vertexStoreState) {
+		return create(ledgerProof, vertexStoreState, Optional.empty());
+	}
+
+	public static LedgerAndBFTProof create(LedgerProof ledgerProof, VerifiedVertexStoreState vertexStoreState, Optional<HashCode> nextForkHash) {
 		Objects.requireNonNull(ledgerProof);
-		return new LedgerAndBFTProof(ledgerProof, vertexStoreState);
+		return new LedgerAndBFTProof(ledgerProof, vertexStoreState, nextForkHash);
 	}
 
 	public LedgerProof getProof() {
@@ -53,9 +64,17 @@ public final class LedgerAndBFTProof {
 		return Optional.ofNullable(vertexStoreState);
 	}
 
+	public Optional<HashCode> getNextForkHash() {
+		return nextForkHash;
+	}
+
+	public LedgerAndBFTProof withNextForkHash(HashCode nextForkHash) {
+		return new LedgerAndBFTProof(ledgerProof, vertexStoreState, Optional.of(nextForkHash));
+	}
+
 	@Override
 	public int hashCode() {
-		return Objects.hash(ledgerProof, vertexStoreState);
+		return Objects.hash(ledgerProof, vertexStoreState, nextForkHash);
 	}
 
 	@Override
@@ -66,6 +85,7 @@ public final class LedgerAndBFTProof {
 
 		var other = (LedgerAndBFTProof) o;
 		return Objects.equals(this.ledgerProof, other.ledgerProof)
-			&& Objects.equals(this.vertexStoreState, other.vertexStoreState);
+			&& Objects.equals(this.vertexStoreState, other.vertexStoreState)
+			&& Objects.equals(this.nextForkHash, other.nextForkHash);
 	}
 }

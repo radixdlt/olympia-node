@@ -366,9 +366,7 @@ public class StakingUnstakingValidatorsTest {
 		}
 
 		public Map<BFTNode, Map<String, String>> getValidators() {
-			final var forkConfig = entryStore.getCurrentForkHash()
-				.flatMap(forkManager::getByHash)
-				.orElseGet(forkManager::genesisFork);
+			final var forkConfig = forkManager.getCurrentFork(entryStore.getEpochsForkHashes());
 			var reParser = forkConfig.getEngineRules().getParser();
 			Map<BFTNode, Map<String, String>> map = entryStore.reduceUpParticles(
 				new HashMap<>(), (i, p) -> {
@@ -402,9 +400,7 @@ public class StakingUnstakingValidatorsTest {
 
 		@SuppressWarnings("unchecked")
 		public UInt256 getTotalNativeTokens() {
-			final var forkConfig = entryStore.getCurrentForkHash()
-				.flatMap(forkManager::getByHash)
-				.orElseGet(forkManager::genesisFork);
+			final var forkConfig = forkManager.getCurrentFork(entryStore.getEpochsForkHashes());
 			var reParser = forkConfig.getEngineRules().getParser();
 			var totalTokens = entryStore.reduceUpParticles(
 				UInt256.ZERO,

@@ -69,18 +69,6 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	}
 
 	@Override
-	public void storeCurrentForkHash(Transaction txn, HashCode forkHash) {
-		synchronized (lock) {
-			this.currentForkHash = Optional.of(forkHash);
-		}
-	}
-
-	@Override
-	public Optional<HashCode> getCurrentForkHash() {
-		return this.currentForkHash;
-	}
-
-	@Override
 	public <V> V reduceUpParticles(
 		V initial,
 		BiFunction<V, Particle, V> outputReducer,

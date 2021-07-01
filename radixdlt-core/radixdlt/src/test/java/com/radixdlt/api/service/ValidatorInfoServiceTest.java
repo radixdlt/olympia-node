@@ -17,9 +17,9 @@
 
 package com.radixdlt.api.service;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForkManager;
+import com.radixdlt.sync.CommittedReader;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -117,13 +117,14 @@ public class ValidatorInfoServiceTest {
 	@SuppressWarnings("unchecked")
 	private ValidatorInfoService setUpService() {
 		var engineStore = (EngineStore<LedgerAndBFTProof>) mock(EngineStore.class);
+		var committedReader = mock(CommittedReader.class);
 		var inMemorySystemInfo = mock(InMemorySystemInfo.class);
 		var forkManager = mock(ForkManager.class);
 		var rules = mock(RERules.class);
 		var parser = mock(REParser.class);
 
 		var validatorInfoService = new ValidatorInfoService(
-			engineStore, forkManager, inMemorySystemInfo, Addressing.ofNetwork(Network.LOCALNET)
+			engineStore, committedReader, forkManager, Addressing.ofNetwork(Network.LOCALNET)
 		);
 
 		var particle1 = new ValidatorMetaData(validator1, "V1", "http://v1.com", Optional.empty());
@@ -138,11 +139,9 @@ public class ValidatorInfoServiceTest {
 			.setStake(validator3, UInt256.TEN);
 
 		when(inMemorySystemInfo.getCurrentProof()).thenReturn(LedgerProof.mock());
-		final var forkHash = HashCode.fromInt(1);
-		when(engineStore.getCurrentForkHash()).thenReturn(Optional.of(forkHash));
 		final var forkConfig = mock(ForkConfig.class);
 		when(forkConfig.getEngineRules()).thenReturn(rules);
-		when(forkManager.getByHash(forkHash)).thenReturn(Optional.of(forkConfig));
+		when(forkManager.getCurrentFork(any())).thenReturn(forkConfig);
 		when(rules.getParser()).thenReturn(parser);
 		when(parser.getSubstateDeserialization()).thenReturn(mock(SubstateDeserialization.class));
 		when(engineStore.reduceUpParticles(any(), any(), any(), any())).thenReturn(validators);

@@ -63,7 +63,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 			var txns = genesis.getTxns();
 			var proof = LedgerAndBFTProof.create(genesis.getProof());
 			try {
-				var parsed = radixEngine.execute(txns, proof, PermissionLevel.SYSTEM, Optional.empty());
+				var parsed = radixEngine.execute(txns, proof, PermissionLevel.SYSTEM);
 				committedDispatcher.dispatch(TxnsCommittedToLedger.create(parsed));
 			} catch (RadixEngineException e) {
 				throw new IllegalStateException("Error during node initialization", e);
