@@ -121,7 +121,7 @@ public final class DeterministicTest {
 			this.nodes = Stream.generate(ECKeyPair::generateNew)
 				.limit(numNodes)
 				.map(ECKeyPair::getPublicKey)
-				.sorted(KeyComparator.instance().reversed())
+				.sorted(KeyComparator.instance())
 				.map(BFTNode::create)
 				.collect(ImmutableList.toImmutableList());
 			return this;
