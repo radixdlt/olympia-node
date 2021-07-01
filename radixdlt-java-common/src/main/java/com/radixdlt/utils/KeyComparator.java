@@ -18,6 +18,7 @@
 
 package com.radixdlt.utils;
 
+import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Arrays;
@@ -29,6 +30,6 @@ public final class KeyComparator {
 	}
 
 	public static Comparator<ECPublicKey> instance() {
-		return (o1, o2) -> Arrays.compare(o1.getCompressedBytes(), o2.getCompressedBytes());
+		return Comparator.comparing(ECPublicKey::getCompressedBytes, UnsignedBytes.lexicographicalComparator());
 	}
 }

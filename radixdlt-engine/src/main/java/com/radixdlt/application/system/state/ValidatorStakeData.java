@@ -114,7 +114,7 @@ public final class ValidatorStakeData implements ResourceInBucket {
 			totalStake,
 			totalOwnership,
 			rakePercentage,
-			Hex.toHexString(validatorKey.getBytes()).substring(0, 11)
+			validatorKey.toHex().substring(0, 11)
 		);
 	}
 

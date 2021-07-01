@@ -18,6 +18,7 @@
 
 package com.radixdlt.application.system.construction;
 
+import com.google.common.collect.Streams;
 import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.SubstateTypeId;
@@ -49,7 +50,9 @@ import com.radixdlt.utils.UInt256;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -285,10 +288,21 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 
 
 
-		try (var cursor = txBuilder.readIndexReversed(
+		List<ECPublicKey> validatorKeys1;
+		try (var cursor = txBuilder.readIndex(
 			SubstateIndex.create(new byte[] {SubstateTypeId.VALIDATOR_STAKE_DATA.id(), 0, 1}, ValidatorStakeData.class)
 		)) {
-			cursor.forEachRemaining(System.out::println);
+			validatorKeys1 = Streams.stream(cursor)
+				.map(ValidatorStakeData.class::cast)
+				.sorted(Comparator.comparing(ValidatorStakeData::getAmount)
+					.thenComparing(ValidatorStakeData::getValidatorKey, KeyComparator.instance())
+					.reversed()
+				)
+				.limit(10)
+				.peek(System.out::println)
+				.map(ValidatorStakeData::getValidatorKey)
+				.collect(Collectors.toList());
+				//.forEach(System.out::println);
 		}
 		System.out.println("=================================");
 
@@ -297,6 +311,9 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		var validatorKeys = action.validators(
 			validatorsToUpdate.values().stream().map(ValidatorScratchPad::toSubstate).collect(Collectors.toList())
 		);
+		if (!validatorKeys.equals(validatorKeys1)) {
+			throw new IllegalStateException("OOOPS " + validatorKeys + " " + validatorKeys1);
+		}
 		validatorKeys.forEach(k -> txBuilder.up(new ValidatorBFTData(k, 0, 0)));
 
 		txBuilder.up(new EpochData(closingEpoch.getEpoch() + 1));

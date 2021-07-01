@@ -28,6 +28,7 @@ import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.NextEpoch;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -111,9 +112,9 @@ public final class GenesisBuilder {
 			}
 			// FIXME: cur.toValidatorSet() may be null
 			genesisValidatorSet.set(validatorSet);
-			return genesisValidatorSet.get().nodes().stream()
+			return validatorSet.getValidators().stream()
+				.map(BFTValidator::getNode)
 				.map(BFTNode::getKey)
-				.sorted(Comparator.comparing(ECPublicKey::getBytes, Arrays::compare))
 				.collect(Collectors.toList());
 		}, timestamp));
 

@@ -362,7 +362,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 							} else if (substateTypeId == SubstateTypeId.PREPARED_RAKE_UPDATE.id()) {
 								prefixIndexSize = 2 + Long.BYTES;
 							} else if (substateTypeId == SubstateTypeId.VALIDATOR_STAKE_DATA.id()) {
-								prefixIndexSize = 3 + UInt256.BYTES;
+								prefixIndexSize = 3;
 							} else {
 								prefixIndexSize = 1;
 							}

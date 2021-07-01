@@ -320,8 +320,8 @@ public final class TxBuilder {
 		return shutdownAll(SubstateIndex.create(typeByte, particleClass), mapper);
 	}
 
-	public <T extends Particle> CloseableCursor<T> readIndexReversed(SubstateIndex index) {
-		var comparator = UnsignedBytes.lexicographicalComparator().reversed();
+	public <T extends Particle> CloseableCursor<T> readIndex(SubstateIndex index) {
+		var comparator = UnsignedBytes.lexicographicalComparator();
 		var cursor = createRemoteSubstateCursor(index);
 		var localIterator = lowLevelBuilder.localUpSubstate().stream()
 			.map(LocalSubstate::getParticle)
