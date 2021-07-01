@@ -30,12 +30,9 @@ import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.radixdlt.utils.functional.FunctionalUtils.removeKey;
@@ -255,26 +252,6 @@ public final class StakedValidators {
 		);
 	}
 
-	public <T> List<T> map(Function<ValidatorDetails, T> mapper) {
-		return registered
-			.stream()
-			.map(this::fillDetails)
-			.map(mapper)
-			.collect(Collectors.toList());
-	}
-
-	public long count() {
-		return registered.size();
-	}
-
-	public <T> Optional<T> mapSingle(ECPublicKey validatorKey, Function<ValidatorDetails, T> mapper) {
-		return registered.stream()
-			.filter(key -> key.equals(validatorKey))
-			.findFirst()
-			.map(this::fillDetails)
-			.map(mapper);
-	}
-
 	@Override
 	public int hashCode() {
 		return Objects.hash(minValidators, maxValidators, registered, stake, owners, rakes, delegationFlags, metadata);
@@ -295,17 +272,5 @@ public final class StakedValidators {
 			&& Objects.equals(owners, other.owners)
 			&& Objects.equals(rakes, other.rakes)
 			&& Objects.equals(delegationFlags, other.delegationFlags);
-	}
-
-	private ValidatorDetails fillDetails(ECPublicKey validatorKey) {
-		return ValidatorDetails.fromParticle(
-			getMetadata(validatorKey),
-			getOwner(validatorKey),
-			getStake(validatorKey),
-			getOwnerStake(validatorKey),
-			allowsDelegation(validatorKey),
-			registered.contains(validatorKey),
-			getRake(validatorKey)
-		);
 	}
 }
