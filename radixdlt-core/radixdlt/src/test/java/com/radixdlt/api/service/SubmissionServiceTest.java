@@ -253,7 +253,7 @@ public class SubmissionServiceTest {
 				var json = prepared.asJson();
 
 				assertTrue(json.has("fee"));
-				assertEquals("387", json.get("fee"));
+				assertEquals("396", json.get("fee"));
 
 				assertTrue(json.has("transaction"));
 

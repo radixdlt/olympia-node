@@ -635,9 +635,8 @@ public final class RadixEngine<M> {
 						for (var action : request.getActions()) {
 							this.actionConstructors.construct(action, txBuilder);
 						}
-						this.actionConstructors.construct(new FeeReserveComplete(feePayer), txBuilder);
-
 						request.getMsg().ifPresent(txBuilder::message);
+						this.actionConstructors.construct(new FeeReserveComplete(feePayer), txBuilder);
 					},
 					request.getSubstatesToAvoid()
 				);

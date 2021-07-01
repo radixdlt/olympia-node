@@ -40,7 +40,8 @@ public class FeeReserveCompleteConstructor implements ActionConstructor<FeeReser
 		int curSize = builder.toLowLevelBuilder().size() + signatureInstructionSize();
 		var perByteFee = feeTable.getPerByteFee().toSubunits();
 		var resourceCost = feeTable.getPerResourceFee().toSubunits().multiply(UInt256.from(builder.getNumResourcesCreated()));
-		var expectedFee1 = perByteFee.multiply(UInt256.from(curSize)).add(resourceCost);
+		var txnBytesCost = perByteFee.multiply(UInt256.from(curSize));
+		var expectedFee1 = txnBytesCost.add(resourceCost);
 		if (feeReserve.compareTo(expectedFee1) < 0) {
 			throw new FeeReserveCompleteException(feeReserve, expectedFee1);
 		}
