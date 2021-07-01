@@ -162,7 +162,7 @@ public class RecoveryLivenessTest {
 				)),
 			new ForksModule(),
 			new RadixEngineModule(),
-			RadixEngineConfig.asModule(1, 100),
+			RadixEngineConfig.asModule(1),
 			new AbstractModule() {
 				@Override
 				public void configure() {
@@ -217,7 +217,7 @@ public class RecoveryLivenessTest {
 					10
 				)),
 			new ForksModule(),
-			RadixEngineConfig.asModule(1, 100),
+			RadixEngineConfig.asModule(1),
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {
 				@Override

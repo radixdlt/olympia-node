@@ -116,7 +116,7 @@ public class BerkeleyClientApiStoreTest {
 			MempoolConfig.asModule(1000, 0),
 			new RadixEngineForksLatestOnlyModule(),
 			new ForksModule(),
-			RadixEngineConfig.asModule(1, 100),
+			RadixEngineConfig.asModule(1),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
 			new AbstractModule() {

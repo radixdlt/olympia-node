@@ -149,7 +149,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 			new RadixEngineForksLatestOnlyModule(),
 			new ForksModule(),
 			new RadixEngineModule(),
-			RadixEngineConfig.asModule(1, 10),
+			RadixEngineConfig.asModule(1),
 			new CryptoModule(),
 			new AbstractModule() {
 				@Override
@@ -221,7 +221,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 					10
 				)),
 			new ForksModule(),
-			RadixEngineConfig.asModule(1, 10),
+			RadixEngineConfig.asModule(1),
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {
 				@Override

@@ -114,7 +114,7 @@ public class TxStatusTest {
 			MempoolConfig.asModule(1000, 10),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
 			new ForksModule(),
-			RadixEngineConfig.asModule(1, 10),
+			RadixEngineConfig.asModule(1),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
 			new MempoolFillerModule(),

@@ -152,7 +152,7 @@ public class RadixEngineStateComputerTest {
 				install(MempoolConfig.asModule(10, 10));
 				install(new ForksModule());
 				install(new RadixEngineForksLatestOnlyModule());
-				install(RadixEngineConfig.asModule(1, 100));
+				install(RadixEngineConfig.asModule(1));
 
 				// HACK
 				bind(CommittedReader.class).toInstance(CommittedReader.mocked());

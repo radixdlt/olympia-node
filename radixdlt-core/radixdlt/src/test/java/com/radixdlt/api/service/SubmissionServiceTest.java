@@ -149,7 +149,7 @@ public class SubmissionServiceTest {
 					)
 				));
 				install(new ForksModule());
-				install(RadixEngineConfig.asModule(1, 100));
+				install(RadixEngineConfig.asModule(1));
 				install(MempoolConfig.asModule(10, 10));
 
 				bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)

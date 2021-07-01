@@ -164,7 +164,7 @@ public class MempoolRelayTest {
 			new RadixEngineModule(),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMaxSigsPerRound(50)),
 			new ForksModule(),
-			RadixEngineConfig.asModule(1, 100),
+			RadixEngineConfig.asModule(1),
 			new AbstractModule() {
 				@Override
 				public void configure() {
@@ -191,7 +191,7 @@ public class MempoolRelayTest {
 			MempoolConfig.asModule(500, 100, 10, 10, 10),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMaxSigsPerRound(50)),
 			new ForksModule(),
-			RadixEngineConfig.asModule(1, 100),
+			RadixEngineConfig.asModule(1),
 			new PersistedNodeForTestingModule(),
 			new MempoolFillerModule(),
 			new AbstractModule() {

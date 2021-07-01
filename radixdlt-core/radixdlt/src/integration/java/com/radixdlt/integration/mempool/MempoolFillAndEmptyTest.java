@@ -70,7 +70,7 @@ public final class MempoolFillAndEmptyTest {
             MempoolConfig.asModule(1000, 10),
             new ForksModule(),
             new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
-            RadixEngineConfig.asModule(1, 10),
+            RadixEngineConfig.asModule(1),
             new SingleNodeAndPeersDeterministicNetworkModule(),
             new MockedGenesisModule(),
             new MempoolFillerModule(),

@@ -85,7 +85,7 @@ public class MempoolTest {
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().removeSigsPerRoundLimit()),
 			MempoolConfig.asModule(10, 10, 200, 500, 10),
 			new ForksModule(),
-			RadixEngineConfig.asModule(1, 100),
+			RadixEngineConfig.asModule(1),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
 			new AbstractModule() {

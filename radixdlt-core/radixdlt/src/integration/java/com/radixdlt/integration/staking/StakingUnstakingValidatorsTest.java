@@ -188,7 +188,7 @@ public class StakingUnstakingValidatorsTest {
 		this.radixEngineConfiguration = Modules.combine(
 			new ForksModule(),
 			forkModule,
-			RadixEngineConfig.asModule(1, 10)
+			RadixEngineConfig.asModule(1)
 		);
 		this.maxRounds = maxRounds;
 		this.byzantineModule = byzantineModule;

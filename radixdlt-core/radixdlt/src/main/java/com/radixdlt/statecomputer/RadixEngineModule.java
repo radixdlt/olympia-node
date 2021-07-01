@@ -85,6 +85,14 @@ public class RadixEngineModule extends AbstractModule {
 		return rules.getMaxRounds();
 	}
 
+	// TODO: Remove
+	@Provides
+	@Singleton
+	@MaxValidators
+	private int maxValidators(RERules rules) {
+		return rules.getMaxValidators();
+	}
+
 	@Provides
 	@Singleton
 	private RadixEngine<LedgerAndBFTProof> getRadixEngine(

@@ -45,7 +45,7 @@ public class SanityTest {
 			NetworkLatencies.fixed()
 		)
 		.addRadixEngineConfigModules(
-			RadixEngineConfig.asModule(2, 50),
+			RadixEngineConfig.asModule(2),
 			new ForksModule(),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault())
 		)

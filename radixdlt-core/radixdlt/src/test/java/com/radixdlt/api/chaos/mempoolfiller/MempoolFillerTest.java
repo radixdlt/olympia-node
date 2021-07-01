@@ -70,7 +70,7 @@ public class MempoolFillerTest {
 			new RadixEngineForksLatestOnlyModule(),
 			MempoolConfig.asModule(10, 10),
 			new ForksModule(),
-			RadixEngineConfig.asModule(1, 100),
+			RadixEngineConfig.asModule(1),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),
 			new AbstractModule() {

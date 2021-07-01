@@ -204,7 +204,7 @@ public class RecoveryTest {
 				)),
 			new ForksModule(),
 			MempoolConfig.asModule(10, 10),
-			RadixEngineConfig.asModule(1, Integer.MAX_VALUE),
+			RadixEngineConfig.asModule(1),
 			new AbstractModule() {
 				@Override
 				protected void configure() {

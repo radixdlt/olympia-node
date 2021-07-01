@@ -155,7 +155,8 @@ public enum RERulesVersion {
 				actionConstructors,
 				new EpochProofVerifierV2(),
 				View.of(maxRounds),
-				config.getMaxSigsPerRound()
+				config.getMaxSigsPerRound(),
+				config.getMaxValidators()
 			);
 		}
 	};
