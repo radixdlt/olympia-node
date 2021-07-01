@@ -33,11 +33,11 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.utils.UInt256;
-import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Generates a genesis atom
@@ -45,7 +45,7 @@ import java.util.List;
 public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 	private final ImmutableList<TokenIssuance> tokenIssuances;
 	private final ImmutableList<ECPublicKey> validatorKeys;
-	private final ImmutableList<StakeDelegation> stakeDelegations;
+	private final Set<StakeTokens> stakeTokens;
 	private final List<TxAction> additionalActions;
 	private final GenesisBuilder genesisBuilder;
 	private final long timestamp;
@@ -55,7 +55,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 		GenesisBuilder genesisBuilder,
 		@Genesis long timestamp,
 		@Genesis ImmutableList<TokenIssuance> tokenIssuances,
-		@Genesis ImmutableList<StakeDelegation> stakeDelegations,
+		@Genesis Set<StakeTokens> stakeTokens,
 		@Genesis ImmutableList<ECPublicKey> validatorKeys,
 		@Genesis List<TxAction> additionalActions
 	) {
@@ -63,7 +63,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 		this.timestamp = timestamp;
 		this.tokenIssuances = tokenIssuances;
 		this.validatorKeys = validatorKeys;
-		this.stakeDelegations = stakeDelegations;
+		this.stakeTokens = stakeTokens;
 		this.additionalActions = additionalActions;
 	}
 
@@ -87,12 +87,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 				actions.add(new UpdateAllowDelegationFlag(validatorKey, true));
 			}
 
-			// Initial stakes
-			for (var stakeDelegation : stakeDelegations) {
-				var delegateAddr = REAddr.ofPubKeyAccount(stakeDelegation.staker());
-				actions.add(new StakeTokens(delegateAddr, stakeDelegation.delegate(), stakeDelegation.amount()));
-			}
-
+			actions.addAll(stakeTokens);
 			actions.addAll(additionalActions);
 			var genesis = genesisBuilder.build(timestamp, actions);
 			var proof = genesisBuilder.generateGenesisProof(genesis);
