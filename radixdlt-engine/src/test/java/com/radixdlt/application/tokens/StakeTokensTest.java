@@ -32,7 +32,7 @@ import com.radixdlt.application.tokens.scrypt.StakingConstraintScryptV4;
 import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.application.tokens.state.AccountBucket;
 import com.radixdlt.application.tokens.state.PreparedStakeBucket;
-import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
+import com.radixdlt.application.validators.scrypt.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
@@ -71,7 +71,7 @@ public class StakeTokensTest {
 				List.of(
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
-					new ValidatorConstraintScryptV2(2)
+					new ValidatorConstraintScrypt(2)
 				),
 				new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits())
 			)

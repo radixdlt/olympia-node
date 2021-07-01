@@ -51,11 +51,11 @@ import java.util.Optional;
 import static com.radixdlt.application.validators.state.PreparedRakeUpdate.RAKE_MAX;
 import static com.radixdlt.application.validators.state.PreparedRakeUpdate.RAKE_MIN;
 
-public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
+public class ValidatorConstraintScrypt implements ConstraintScrypt {
 	public static final int MAX_RAKE_INCREASE = 10 * PreparedRakeUpdate.RAKE_PERCENTAGE_GRANULARITY; // 10%
 	private final long rakeIncreaseDebounceEpochLength;
 
-	public ValidatorConstraintScryptV2(long rakeIncreaseDebounceEpochLength) {
+	public ValidatorConstraintScrypt(long rakeIncreaseDebounceEpochLength) {
 		this.rakeIncreaseDebounceEpochLength = rakeIncreaseDebounceEpochLength;
 	}
 

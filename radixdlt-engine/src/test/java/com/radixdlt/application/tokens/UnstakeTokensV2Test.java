@@ -43,7 +43,7 @@ import com.radixdlt.application.tokens.construction.TransferTokensConstructorV2;
 import com.radixdlt.application.tokens.construction.UnstakeOwnershipConstructor;
 import com.radixdlt.application.tokens.scrypt.StakingConstraintScryptV4;
 import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
-import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
+import com.radixdlt.application.validators.scrypt.ValidatorConstraintScrypt;
 import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -82,7 +82,7 @@ public class UnstakeTokensV2Test {
 					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
-					new ValidatorConstraintScryptV2(2),
+					new ValidatorConstraintScrypt(2),
 					new ValidatorRegisterConstraintScrypt()
 				),
 				new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()),
@@ -96,7 +96,7 @@ public class UnstakeTokensV2Test {
 					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
-					new ValidatorConstraintScryptV2(2),
+					new ValidatorConstraintScrypt(2),
 					new ValidatorRegisterConstraintScrypt()
 				),
 				new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()),
@@ -110,7 +110,7 @@ public class UnstakeTokensV2Test {
 					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
-					new ValidatorConstraintScryptV2(2),
+					new ValidatorConstraintScrypt(2),
 					new ValidatorRegisterConstraintScrypt()
 				),
 				new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()),
@@ -124,7 +124,7 @@ public class UnstakeTokensV2Test {
 					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
-					new ValidatorConstraintScryptV2(2),
+					new ValidatorConstraintScrypt(2),
 					new ValidatorRegisterConstraintScrypt()
 				),
 				new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()),
