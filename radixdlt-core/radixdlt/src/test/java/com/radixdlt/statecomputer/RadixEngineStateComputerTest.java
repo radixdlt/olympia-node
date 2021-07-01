@@ -212,7 +212,7 @@ public class RadixEngineStateComputerTest {
 		if (nextEpoch >= 2) {
 			var request = TxnConstructionRequest.create()
 				.action(new NextRound(10, true, 0, v -> proposerElection.getProposer(View.of(v)).getKey()))
-				.action(new NextEpoch(u -> List.of(registeredNodes.get(0).getPublicKey()), 0));
+				.action(new NextEpoch(0));
 			builder = radixEngine.construct(request);
 		} else {
 			builder = radixEngine.construct(new NextRound(

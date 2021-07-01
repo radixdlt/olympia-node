@@ -19,25 +19,12 @@
 package com.radixdlt.atom.actions;
 
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-
-import java.util.List;
-import java.util.function.Consumer;
 
 public final class NextEpoch implements TxAction {
 	private final long timestamp;
-	private final Consumer<List<ValidatorStakeData>> nextValidatorsConsumer;
 
-	public NextEpoch(
-		Consumer<List<ValidatorStakeData>> nextValidatorsConsumer,
-		long timestamp
-	) {
-		this.nextValidatorsConsumer = nextValidatorsConsumer;
+	public NextEpoch(long timestamp) {
 		this.timestamp = timestamp;
-	}
-
-	public void validators(List<ValidatorStakeData> nextValidatorSet) {
-		nextValidatorsConsumer.accept(nextValidatorSet);
 	}
 
 	public long timestamp() {

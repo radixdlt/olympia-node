@@ -91,7 +91,7 @@ public final class GenesisBuilder {
 		var branch = radixEngine.transientBranch();
 
 		branch.execute(List.of(tempTxn), PermissionLevel.SYSTEM);
-		txnConstructionRequest.action(new NextEpoch(updates -> { }, timestamp));
+		txnConstructionRequest.action(new NextEpoch(timestamp));
 
 		radixEngine.deleteBranches();
 		return radixEngine.construct(txnConstructionRequest).buildWithoutSignature();

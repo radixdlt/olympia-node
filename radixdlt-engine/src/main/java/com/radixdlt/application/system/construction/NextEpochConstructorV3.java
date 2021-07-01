@@ -301,8 +301,6 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 				.limit(maxValidators)
 				.peek(v -> txBuilder.up(new ValidatorBFTData(v.getValidatorKey(), 0, 0)))
 				.collect(Collectors.toList());
-
-			action.validators(nextValidators);
 		}
 		txBuilder.up(new EpochData(closingEpoch.getEpoch() + 1));
 		txBuilder.up(new RoundData(0, closedRound.getTimestamp()));
