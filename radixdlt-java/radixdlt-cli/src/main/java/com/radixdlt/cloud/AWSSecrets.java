@@ -290,6 +290,8 @@ public class AWSSecrets {
 		networks.put("rcnet", "4");
 		networks.put("milestonenet", "5");
 		networks.put("devopsnet", "6");
+		networks.put("stokenet", "2");
+		networks.put("mainnet", "1");
 
 		if (!networks.containsKey(networkName)) {
 			System.out.println("Network " + networkName + " is not supported. Available networks: " + networks.keySet());
