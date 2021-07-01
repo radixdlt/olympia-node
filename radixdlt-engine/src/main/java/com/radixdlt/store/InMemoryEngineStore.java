@@ -17,6 +17,7 @@
 
 package com.radixdlt.store;
 
+import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
@@ -32,6 +33,7 @@ import com.radixdlt.identifiers.REAddr;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -118,6 +120,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 				substates.add(i.getRawSubstateBytes());
 			}
 		}
+		substates.sort(Comparator.comparing(RawSubstateBytes::getData, UnsignedBytes.lexicographicalComparator().reversed()));
 
 		return CloseableCursor.wrapIterator(substates.iterator());
 	}

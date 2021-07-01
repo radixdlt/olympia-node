@@ -22,8 +22,10 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.store.ResourceStore;
+import com.radixdlt.utils.UInt256;
 import com.sleepycat.je.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -363,7 +365,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 							} else if (substateTypeId == SubstateTypeId.PREPARED_RAKE_UPDATE.id()) {
 								prefixIndexSize = 2 + Long.BYTES;
 							} else if (substateTypeId == SubstateTypeId.VALIDATOR_STAKE_DATA.id()) {
-								prefixIndexSize = 3;
+								prefixIndexSize = 3 + UInt256.BYTES + ECPublicKey.COMPRESSED_BYTES;
 							} else {
 								prefixIndexSize = 1;
 							}
@@ -510,6 +512,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		private final SecondaryDatabase db;
 		private final com.sleepycat.je.Transaction dbTxn;
 		private final byte[] indexableBytes;
+		private final boolean reverse;
 		private SecondaryCursor cursor;
 		private OperationStatus status;
 
@@ -524,13 +527,26 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		) {
 			this.dbTxn = dbTxn;
 			this.db = db;
-			this.key = entry(indexableBytes);
 			this.indexableBytes = indexableBytes;
+			this.reverse = indexableBytes[0] == SubstateTypeId.VALIDATOR_STAKE_DATA.id();
 		}
 
 		private void open() {
 			this.cursor = db.openCursor(dbTxn, null);
-			this.status = cursor.getSearchKeyRange(key, substateIdBytes, value, null);
+			if (reverse) {
+				var copy = Arrays.copyOf(indexableBytes, indexableBytes.length);
+				var lastIndex = indexableBytes.length - 1;
+				if (copy[lastIndex] == (byte) (0xff)) {
+					throw new IllegalStateException("Unexpected last byte.");
+				}
+				copy[lastIndex]++;
+				this.key = entry(copy);
+				cursor.getSearchKeyRange(key, substateIdBytes, value, null);
+				this.status = cursor.getPrev(key, substateIdBytes, value, null);
+			} else {
+				this.key = entry(indexableBytes);
+				this.status = cursor.getSearchKeyRange(key, substateIdBytes, value, null);
+			}
 		}
 
 		@Override
@@ -560,7 +576,11 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			}
 
 			var next = new RawSubstateBytes(substateIdBytes.getData(), value.getData());
-			status = cursor.getNext(key, substateIdBytes, value, null);
+			if (reverse) {
+				status = cursor.getPrev(key, substateIdBytes, value, null);
+			} else {
+				status = cursor.getNext(key, substateIdBytes, value, null);
+			}
 			return next;
 		}
 	}

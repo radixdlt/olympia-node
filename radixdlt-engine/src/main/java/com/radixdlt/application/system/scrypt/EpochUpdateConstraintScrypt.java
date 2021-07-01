@@ -805,7 +805,6 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			(s, u, c, r) -> ReducerResult.incomplete(s.reset(u))
 		));
 
-
 		os.procedure(new UpProcedure<>(
 			Staking.class, StakeOwnership.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),

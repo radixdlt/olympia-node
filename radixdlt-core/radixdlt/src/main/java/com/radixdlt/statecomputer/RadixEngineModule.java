@@ -116,13 +116,6 @@ public class RadixEngineModule extends AbstractModule {
 			rules.getBatchVerifier()
 		);
 
-		// TODO: Convert to something more like the following:
-		// RadixEngine
-		//   .newStateComputer()
-		//   .ofType(RegisteredValidatorParticle.class)
-		//   .toWindowedSet(initialValidatorSet, RegisteredValidatorParticle.class, p -> p.getAddress(), 2)
-		//   .build();
-
 		radixEngine.addStateReducer(new CurrentValidatorsReducer(), false);
 
 		// Additional state reducers are not required for consensus so don't need to include their

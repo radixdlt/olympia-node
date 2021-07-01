@@ -50,14 +50,12 @@ import com.radixdlt.utils.UInt256;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static com.radixdlt.application.validators.state.PreparedRakeUpdate.RAKE_MAX;
 
@@ -292,15 +290,10 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 			SubstateIndex.create(new byte[] {SubstateTypeId.VALIDATOR_STAKE_DATA.id(), 0, 1}, ValidatorStakeData.class)
 		)) {
 			// TODO: Explicitly specify next validatorset
-			var nextValidators = Streams.stream(cursor)
+			Streams.stream(cursor)
 				.map(ValidatorStakeData.class::cast)
-				.sorted(Comparator.comparing(ValidatorStakeData::getAmount)
-					.thenComparing(ValidatorStakeData::getValidatorKey, KeyComparator.instance())
-					.reversed()
-				)
 				.limit(maxValidators)
-				.peek(v -> txBuilder.up(new ValidatorBFTData(v.getValidatorKey(), 0, 0)))
-				.collect(Collectors.toList());
+				.forEach(v -> txBuilder.up(new ValidatorBFTData(v.getValidatorKey(), 0, 0)));
 		}
 		txBuilder.up(new EpochData(closingEpoch.getEpoch() + 1));
 		txBuilder.up(new RoundData(0, closedRound.getTimestamp()));
