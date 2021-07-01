@@ -120,25 +120,13 @@ public final class REInstruction {
 				return Pair.of(Substate.create(p, SubstateId.ofVirtualSubstate(b)), arg);
 			}
 		},
-		DOWNINDEX((byte) 0xa, REOp.DOWNINDEX) {
-			@Override
-			public Object read(REParser.ParserState parserState, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
-				int indexSize = Byte.toUnsignedInt(b.get());
-				if (indexSize <= 0 || indexSize > 10) {
-					throw new DeserializeException("Bad DownIndex size " + indexSize);
-				}
-				var buf = new byte[indexSize];
-				b.get(buf);
-				return new ShutdownAllIndex(buf, d.byteToClass(buf[0]));
-			}
-		},
-		SIG((byte) 0xb, REOp.SIG) {
+		SIG((byte) 0xa, REOp.SIG) {
 			@Override
 			Object read(REParser.ParserState parserState, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
 				return REFieldSerialization.deserializeSignature(b);
 			}
 		},
-		MSG((byte) 0xc, REOp.MSG) {
+		MSG((byte) 0xb, REOp.MSG) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
 				var length = Byte.toUnsignedInt(b.get());
@@ -147,7 +135,7 @@ public final class REInstruction {
 				return bytes;
 			}
 		},
-		HEADER((byte) 0xd, REOp.HEADER) {
+		HEADER((byte) 0xc, REOp.HEADER) {
 			@Override
 			Object read(REParser.ParserState parserState, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
 				int version = b.get();
@@ -159,6 +147,18 @@ public final class REInstruction {
 					throw new DeserializeException("Invalid flags");
 				}
 				return (flags & 0x1) == 1;
+			}
+		},
+		DOWNINDEX((byte) 0xd, REOp.DOWNINDEX) {
+			@Override
+			public Object read(REParser.ParserState parserState, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
+				int indexSize = Byte.toUnsignedInt(b.get());
+				if (indexSize <= 0 || indexSize > 10) {
+					throw new DeserializeException("Bad DownIndex size " + indexSize);
+				}
+				var buf = new byte[indexSize];
+				b.get(buf);
+				return new ShutdownAllIndex(buf, d.byteToClass(buf[0]));
 			}
 		};
 
