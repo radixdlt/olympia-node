@@ -18,6 +18,7 @@ package com.radixdlt.api.service;
 
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.atom.actions.NextRound;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -95,6 +96,7 @@ import java.util.Optional;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class SubmissionServiceTest {
 	@Inject
@@ -228,11 +230,13 @@ public class SubmissionServiceTest {
 	public void testPrepareTransaction() throws Exception {
 		var acct = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var action = new TransferToken(nativeToken, acct, ALICE_ACCT, BIG_AMOUNT);
+		var tx1 = radixEngine.construct(new NextRound(1, true, 0, i -> registeredNodes.get(0).getPublicKey()))
+			.buildWithoutSignature();
 		var request = TxnConstructionRequest.create().action(action).feePayer(acct);
-
-		var tx = radixEngine.construct(request).signAndBuild(key::sign);
-
-		radixEngine.execute(List.of(tx));
+		var tx2 = radixEngine.construct(request).signAndBuild(key::sign);
+		var ledgerAndBFTProof = mock(LedgerAndBFTProof.class);
+		when(ledgerAndBFTProof.getProof()).thenReturn(mock(LedgerProof.class));
+		radixEngine.execute(List.of(tx1, tx2), ledgerAndBFTProof, PermissionLevel.SUPER_USER);
 
 		var steps = List.of(
 			TransactionAction.transfer(
@@ -296,9 +300,13 @@ public class SubmissionServiceTest {
 		var action = new TransferToken(nativeToken, acct, ALICE_ACCT, BIG_AMOUNT);
 		var request = TxnConstructionRequest.create().action(action).feePayer(acct);
 
-		var tx = radixEngine.construct(request).signAndBuild(key::sign);
+		var tx1 = radixEngine.construct(new NextRound(1, true, 0, i -> registeredNodes.get(0).getPublicKey()))
+			.buildWithoutSignature();
+		var tx2 = radixEngine.construct(request).signAndBuild(key::sign);
 
-		radixEngine.execute(List.of(tx));
+		var ledgerAndBFTProof = mock(LedgerAndBFTProof.class);
+		when(ledgerAndBFTProof.getProof()).thenReturn(mock(LedgerProof.class));
+		radixEngine.execute(List.of(tx1, tx2), ledgerAndBFTProof, PermissionLevel.SUPER_USER);
 
 		var steps = List.of(
 			TransactionAction.transfer(ALICE_ACCT, BOB_ACCT, UInt256.FOUR, nativeToken)

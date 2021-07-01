@@ -380,8 +380,7 @@ public final class RadixEngine<M> {
 		M meta,
 		PermissionLevel permissionLevel
 	) throws RadixEngineException {
-		var checker = batchVerifier.newVerifier(this::getComputedState);
-		var parsedTransactions = new ArrayList<REProcessedTxn>();
+		var processedTxns = new ArrayList<REProcessedTxn>();
 
 		// FIXME: This is quite the hack to increase sigsLeft for execution on noncommits (e.g. mempool)
 		// FIXME: Should probably just change metering
@@ -412,16 +411,15 @@ public final class RadixEngine<M> {
 			// Non-persisted computed state
 			for (var group : parsedTxn.getGroupedStateUpdates()) {
 				group.forEach(update -> stateComputers.forEach((a, computer) -> computer.processStateUpdate(update)));
-				checker.test(this::getComputedState);
 			}
 
-			parsedTransactions.add(parsedTxn);
+			processedTxns.add(parsedTxn);
 		}
 
 		try {
-			checker.testMetadata(meta, this::getComputedState);
+			batchVerifier.testMetadata(meta, processedTxns);
 		} catch (MetadataException e) {
-			logger.error("Invalid metadata: " + parsedTransactions);
+			logger.error("Invalid metadata: " + processedTxns);
 			throw e;
 		}
 
@@ -429,7 +427,7 @@ public final class RadixEngine<M> {
 			engineStoreInTransaction.storeMetadata(meta);
 		}
 
-		return parsedTransactions;
+		return processedTxns;
 	}
 
 	public interface TxBuilderExecutable {

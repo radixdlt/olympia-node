@@ -19,6 +19,7 @@
 package com.radixdlt.application.system.scrypt;
 
 import com.google.common.collect.Streams;
+import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.application.system.ValidatorBFTDataEvent;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
@@ -213,7 +214,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		}
 	}
 
-	public final class BootupValidator implements ReducerState {
+	public static final class BootupValidator implements ReducerState {
 		private final ValidatorBFTData expected;
 		private final Supplier<ReducerState> onDone;
 
@@ -230,7 +231,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		}
 	}
 
-	public class StartingNextEpoch implements ReducerState {
+	public static class StartingNextEpoch implements ReducerState {
 		private final HasEpochData prevEpoch;
 
 		StartingNextEpoch(HasEpochData prevEpoch) {
@@ -254,7 +255,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.updatingEpoch = updatingEpoch;
 		}
 
-		ReducerState readIndex(IndexedSubstateIterator<ValidatorStakeData> substateIterator) throws ProcedureException {
+		ReducerState readIndex(IndexedSubstateIterator<ValidatorStakeData> substateIterator, ExecutionContext context) throws ProcedureException {
 			substateIterator.verifyPostTypePrefixEquals(new byte[] {0, 1}); // registered validator
 			this.nextValidatorSet = Streams.stream(substateIterator.iterator())
 				.sorted(Comparator.comparing(ValidatorStakeData::getAmount)
@@ -263,6 +264,8 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 				)
 				.limit(maxValidators)
 				.collect(Collectors.toCollection(LinkedList::new));
+
+			context.emitEvent(NextValidatorSetEvent.create(this.nextValidatorSet));
 			return next();
 		}
 
@@ -817,7 +820,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		os.procedure(new ReadIndexProcedure<>(
 			CreatingNextValidatorSet.class, ValidatorStakeData.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, d, c, r) -> ReducerResult.incomplete(s.readIndex(d))
+			(s, d, c, r) -> ReducerResult.incomplete(s.readIndex(d, c))
 		));
 
 		os.procedure(new UpProcedure<>(

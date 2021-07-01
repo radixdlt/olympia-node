@@ -389,7 +389,9 @@ public final class ConstraintMachine {
 
 					expectEnd = false;
 				} else if (inst.getMicroOp() == REInstruction.REMicroOp.SIG) {
-					metering.onSigInstruction(context);
+					if (context.permissionLevel() != PermissionLevel.SYSTEM) {
+						metering.onSigInstruction(context);
+					}
 				} else {
 					// Collect no-ops here
 					if (inst.getMicroOp() != REInstruction.REMicroOp.MSG) {
