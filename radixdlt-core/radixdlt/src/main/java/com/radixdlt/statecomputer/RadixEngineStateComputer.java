@@ -292,7 +292,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		final ImmutableList.Builder<PreparedTxn> successBuilder = ImmutableList.builder();
 		successBuilder.add(systemTxn);
 		final ImmutableMap.Builder<Txn, Exception> exceptionBuilder = ImmutableMap.builder();
-		var nextValidatorSet = systemTxn .processedTxn().getEvents().stream()
+		var nextValidatorSet = systemTxn.processedTxn().getEvents().stream()
 			.filter(NextValidatorSetEvent.class::isInstance)
 			.map(NextValidatorSetEvent.class::cast)
 			.findFirst()

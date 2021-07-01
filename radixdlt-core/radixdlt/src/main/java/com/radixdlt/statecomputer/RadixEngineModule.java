@@ -99,7 +99,6 @@ public class RadixEngineModule extends AbstractModule {
 		EngineStore<LedgerAndBFTProof> engineStore,
 		Set<StateReducer<?>> stateReducers,
 		Set<Pair<String, StateReducer<?>>> namedStateReducers,
-		StakedValidatorsReducer stakedValidatorsReducer,
 		RERules rules
 	) {
 		var cmConfig = rules.getConstraintMachineConfig();
@@ -125,7 +124,6 @@ public class RadixEngineModule extends AbstractModule {
 		//   .toWindowedSet(initialValidatorSet, RegisteredValidatorParticle.class, p -> p.getAddress(), 2)
 		//   .build();
 
-		radixEngine.addStateReducer(stakedValidatorsReducer, true);
 		radixEngine.addStateReducer(new SystemReducer(), true);
 		radixEngine.addStateReducer(new CurrentValidatorsReducer(), false);
 

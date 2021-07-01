@@ -31,6 +31,7 @@ import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.SubstateId;
@@ -179,8 +180,15 @@ public class RadixEngineStateComputerTest {
 
 	private void setupGenesis() throws RadixEngineException {
 		var branch = radixEngine.transientBranch();
-		branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
-		final var genesisValidatorSet = branch.getComputedState(StakedValidators.class).toValidatorSet();
+		var processed = branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
+		var genesisValidatorSet = processed.get(0).getEvents().stream()
+			.filter(NextValidatorSetEvent.class::isInstance)
+			.map(NextValidatorSetEvent.class::cast)
+			.findFirst()
+			.map(e -> BFTValidatorSet.from(
+				e.nextValidators().stream()
+					.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount())))
+			).orElseThrow(() -> new IllegalStateException("No validator set in genesis."));
 		radixEngine.deleteBranches();
 
 		var genesisLedgerHeader = LedgerProof.genesis(

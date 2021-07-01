@@ -16,6 +16,7 @@
  */
 package com.radixdlt.api.service;
 
+import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.NextRound;
@@ -77,7 +78,6 @@ import com.radixdlt.statecomputer.InvalidProposedTxn;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.statecomputer.StakedValidators;
 import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
@@ -197,8 +197,16 @@ public class SubmissionServiceTest {
 
 	private void setupGenesis() throws RadixEngineException {
 		var branch = radixEngine.transientBranch();
-		branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
-		final var genesisValidatorSet = branch.getComputedState(StakedValidators.class).toValidatorSet();
+		var processed = branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
+		var genesisValidatorSet = processed.get(0).getEvents().stream()
+			.filter(NextValidatorSetEvent.class::isInstance)
+			.map(NextValidatorSetEvent.class::cast)
+			.findFirst()
+			.map(e -> BFTValidatorSet.from(
+				e.nextValidators().stream()
+					.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount())))
+			).orElseThrow(() -> new IllegalStateException("No validator set in genesis."));
+
 		radixEngine.deleteBranches();
 
 		var genesisLedgerHeader = LedgerProof.genesis(
