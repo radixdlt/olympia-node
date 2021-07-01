@@ -33,7 +33,7 @@ import com.radixdlt.network.p2p.liveness.PeerPingTimeout;
 import com.radixdlt.network.p2p.liveness.PeersLivenessCheckTrigger;
 import com.radixdlt.network.p2p.liveness.Ping;
 import com.radixdlt.network.p2p.liveness.Pong;
-import com.radixdlt.utils.Bytes;
+import com.radixdlt.statecomputer.REOutput;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -81,7 +81,6 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.statecomputer.TxnsCommittedToLedger;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
@@ -113,8 +112,7 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(
 				MempoolAddSuccess.class,
-				m -> CounterType.MEMPOOL_ADD_SUCCESS,
-				null
+				m -> CounterType.MEMPOOL_ADD_SUCCESS
 			)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(
@@ -122,12 +120,15 @@ public class DispatcherModule extends AbstractModule {
 				m -> CounterType.MEMPOOL_ERRORS_OTHER
 			))
 			.in(Scopes.SINGLETON);
+
+		// TODO: Remove, this hack required for initial genesis event emit
+		bind(new TypeLiteral<EventDispatcher<REOutput>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(REOutput.class)).in(Scopes.SINGLETON);
+
 		bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(AtomsRemovedFromMempool.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MempoolRelayTrigger.class)).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<EventDispatcher<TxnsCommittedToLedger>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(TxnsCommittedToLedger.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MessageFlooderUpdate>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MessageFlooderUpdate.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolFillerUpdate>>() { })
@@ -135,13 +136,12 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<EventDispatcher<ScheduledMempoolFill>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<NoVote>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(NoVote.class, v -> CounterType.BFT_REJECTED, null))
+			.toProvider(Dispatchers.dispatcherProvider(NoVote.class, v -> CounterType.BFT_REJECTED))
 			.in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<InvalidProposedTxn>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(
 				InvalidProposedTxn.class,
-				v -> CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS,
-				(i, a) -> String.format("%s{%s}", i.getClass().getSimpleName(), a.forValidators().of(i.getProposer()).substring(0, 10))
+				v -> CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS
 			)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(new TypeLiteral<Epoched<ScheduledLocalTimeout>>() { }))
@@ -193,43 +193,18 @@ public class DispatcherModule extends AbstractModule {
 		final var timeoutOccurrenceKey = new TypeLiteral<EventProcessor<LocalTimeoutOccurrence>>() { };
 		Multibinder.newSetBinder(binder(), timeoutOccurrenceKey, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), timeoutOccurrenceKey);
-		bind(new TypeLiteral<EventDispatcher<EpochLocalTimeoutOccurrence>>() { }).toProvider(
-			Dispatchers.dispatcherProvider(
-				EpochLocalTimeoutOccurrence.class,
-				(t, a) -> String.format("bft_timout{epoch=%s round=%s leader=%s nextLeader=%s count=%s}",
-					t.getEpochView().getEpoch(),
-					t.getEpochView().getView().number(),
-					a.forValidators().of(t.getLeader().getKey()).substring(0, 10),
-					a.forValidators().of(t.getNextLeader().getKey()).substring(0, 10),
-					t.getBase().timeout().count()
-				)
-			)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<EpochLocalTimeoutOccurrence>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(EpochLocalTimeoutOccurrence.class)).in(Scopes.SINGLETON);
 
 		final var viewUpdateKey = new TypeLiteral<EventProcessor<ViewUpdate>>() { };
 		Multibinder.newSetBinder(binder(), viewUpdateKey, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), viewUpdateKey);
 
-		bind(new TypeLiteral<EventDispatcher<EpochViewUpdate>>() { }).toProvider(
-			Dispatchers.dispatcherProvider(
-				EpochViewUpdate.class,
-				(u, a) -> String.format("bft_nxtrnd{epoch=%s round=%s leader=%s nextLeader=%s}",
-					u.getEpoch(),
-					u.getEpochView().getView().number(),
-					a.forValidators().of(u.getViewUpdate().getLeader().getKey()).substring(0, 10),
-					a.forValidators().of(u.getViewUpdate().getNextLeader().getKey()).substring(0, 10)
-				)
-			)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<EpochViewUpdate>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(EpochViewUpdate.class)).in(Scopes.SINGLETON);
 
-		bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() { }).toProvider(
-			Dispatchers.dispatcherProvider(
-				LedgerUpdate.class,
-				(u, a) -> String.format("lgr_commit{epoch=%s round=%s version=%s hash=%s}",
-					u.getTail().getEpoch(),
-					u.getTail().getView().number(),
-					u.getTail().getStateVersion(),
-					Bytes.toHexString(u.getTail().getAccumulatorState().getAccumulatorHash().asBytes()).substring(0, 16)
-				)
-		)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(LedgerUpdate.class)).in(Scopes.SINGLETON);
 
 		final var insertUpdateKey = new TypeLiteral<EventProcessor<BFTInsertUpdate>>() { };
 		Multibinder.newSetBinder(binder(), insertUpdateKey, ProcessOnDispatch.class);
@@ -253,8 +228,7 @@ public class DispatcherModule extends AbstractModule {
 						return CounterType.BFT_TIMEOUT_QUORUMS;
 					}
 					return CounterType.BFT_VOTE_QUORUMS;
-				},
-				null
+				}
 			));
 
 

@@ -25,34 +25,19 @@ import java.util.Objects;
 /**
  * Event signifying that an atom was committed to ledger successfully
  */
-public final class TxnsCommittedToLedger {
-    private final List<REProcessedTxn> parsedTxs;
+public final class REOutput {
+    private final List<REProcessedTxn> processed;
 
-    private TxnsCommittedToLedger(List<REProcessedTxn> parsedTxs) {
-        this.parsedTxs = parsedTxs;
+    private REOutput(List<REProcessedTxn> processed) {
+        this.processed = processed;
     }
 
-    public List<REProcessedTxn> getParsedTxs() {
-        return parsedTxs;
+    public static REOutput create(List<REProcessedTxn> processed) {
+        Objects.requireNonNull(processed);
+        return new REOutput(processed);
     }
 
-    public static TxnsCommittedToLedger create(List<REProcessedTxn> parsedTxs) {
-        Objects.requireNonNull(parsedTxs);
-        return new TxnsCommittedToLedger(parsedTxs);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(parsedTxs);
-    }
-
-    @Override
-	public boolean equals(Object o) {
-        if (!(o instanceof TxnsCommittedToLedger)) {
-            return false;
-        }
-
-        TxnsCommittedToLedger other = (TxnsCommittedToLedger) o;
-        return Objects.equals(this.parsedTxs, other.parsedTxs);
+    public List<REProcessedTxn> getProcessedTxns() {
+        return processed;
     }
 }

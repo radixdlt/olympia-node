@@ -116,7 +116,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -359,8 +358,12 @@ public class StakingUnstakingValidatorsTest {
 			if (lastLedgerUpdate.getLastEvent() == null) {
 				return epochChange.getEpoch();
 			}
-			var epochChange = (Optional<EpochChange>) lastLedgerUpdate.getLastEvent().getStateComputerOutput();
-			return epochChange.map(EpochChange::getEpoch).orElse(lastLedgerUpdate.getLastEvent().getTail().getEpoch());
+			var epochChange = lastLedgerUpdate.getLastEvent().getStateComputerOutput().getInstance(EpochChange.class);
+			if (epochChange != null) {
+				return epochChange.getEpoch();
+			} else {
+				return lastLedgerUpdate.getLastEvent().getTail().getEpoch();
+			}
 		}
 
 		public Map<BFTNode, Map<String, String>> getValidators() {

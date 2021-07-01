@@ -17,6 +17,7 @@
 
 package com.radixdlt.ledger;
 
+import com.google.common.collect.ClassToInstanceMap;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -27,15 +28,16 @@ import java.util.Optional;
 
 public final class LedgerUpdate {
 	private final VerifiedTxnsAndProof verifiedTxnsAndProof;
-	private final Object stateComputerOutput;
+	// FIXME: Easiest way to implement this part for now
+	private final ClassToInstanceMap<Object> output;
 
-	public LedgerUpdate(VerifiedTxnsAndProof verifiedTxnsAndProof, Object stateComputerOutput) {
+	public LedgerUpdate(VerifiedTxnsAndProof verifiedTxnsAndProof, ClassToInstanceMap<Object> output) {
 		this.verifiedTxnsAndProof = Objects.requireNonNull(verifiedTxnsAndProof);
-		this.stateComputerOutput = stateComputerOutput;
+		this.output = Objects.requireNonNull(output);
 	}
 
-	public Object getStateComputerOutput() {
-		return stateComputerOutput;
+	public ClassToInstanceMap<Object> getStateComputerOutput() {
+		return output;
 	}
 
 	public List<Txn> getNewTxns() {
@@ -57,7 +59,7 @@ public final class LedgerUpdate {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(verifiedTxnsAndProof, stateComputerOutput);
+		return Objects.hash(verifiedTxnsAndProof, output);
 	}
 
 	@Override
@@ -68,6 +70,6 @@ public final class LedgerUpdate {
 
 		LedgerUpdate other = (LedgerUpdate) o;
 		return Objects.equals(other.verifiedTxnsAndProof, this.verifiedTxnsAndProof)
-			&& Objects.equals(other.stateComputerOutput, this.stateComputerOutput);
+			&& Objects.equals(other.output, this.output);
 	}
 }

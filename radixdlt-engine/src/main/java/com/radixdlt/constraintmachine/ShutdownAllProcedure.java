@@ -42,7 +42,7 @@ public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> im
 
 	@Override
 	public ProcedureKey key() {
-		return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.DOWNALL, downClass));
+		return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.DOWNINDEX, downClass));
 	}
 
 	@Override
@@ -57,6 +57,6 @@ public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> im
 		ImmutableAddrs immutableAddrs,
 		ExecutionContext context
 	) throws ProcedureException {
-		return downReducer.reduce((ShutdownAll<D>) o, (S) reducerState, immutableAddrs);
+		return downReducer.reduce((S) reducerState, (ShutdownAll<D>) o, context, immutableAddrs);
 	}
 }

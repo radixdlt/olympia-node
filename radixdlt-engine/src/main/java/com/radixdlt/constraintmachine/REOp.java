@@ -18,15 +18,15 @@
 package com.radixdlt.constraintmachine;
 
 public enum REOp {
+	END(false),
+	SYSCALL(false),
 	UP(true),
 	READ(false),
 	DOWN(true),
-	DOWNALL(true),
-	SYSCALL(false),
-	HEADER(false),
+	DOWNINDEX(true),
 	SIG(false),
 	MSG(false),
-	END(false);
+	HEADER(false);
 
 	private final boolean isSubstateUpdate;
 

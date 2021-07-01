@@ -22,8 +22,6 @@ import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.bft.View;
@@ -31,7 +29,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
 
@@ -52,7 +49,7 @@ public class WeightedRotatingLeadersTest {
 			.limit(validatorSetSize)
 			.map(BFTNode::create)
 			.map(node -> BFTValidator.from(node, UInt256.ONE))
-			.sorted(Comparator.comparing(v -> v.getNode().getKey(), KeyComparator.instance()))
+			.sorted(Comparator.comparing(v -> v.getNode().getKey(), KeyComparator.instance().reversed()))
 			.collect(ImmutableList.toImmutableList());
 
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(validatorsInOrder);
@@ -128,11 +125,7 @@ public class WeightedRotatingLeadersTest {
 
 		final int sumOfPower = fibonacci.get().sum();
 		this.validatorsInOrder = fibonacci.get()
-			.mapToObj(p -> {
-				BFTNode node = mock(BFTNode.class);
-				when(node.getKey()).thenReturn(mock(ECPublicKey.class));
-				return BFTValidator.from(node, UInt256.from(p));
-			})
+			.mapToObj(p -> BFTValidator.from(BFTNode.random(), UInt256.from(p)))
 			.collect(ImmutableList.toImmutableList());
 
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(validatorsInOrder);

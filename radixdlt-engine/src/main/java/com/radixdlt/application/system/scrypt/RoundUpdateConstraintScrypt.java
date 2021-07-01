@@ -45,14 +45,12 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 		this.maxRounds = maxRounds;
 	}
 
-	private static class StartValidatorBFTUpdate implements ReducerState {
-		private final long maxRounds;
-		private final long view;
-		private TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate = new TreeMap<>(KeyComparator.instance());
+	private class StartValidatorBFTUpdate implements ReducerState {
+		private final long closedRound;
+		private final TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate = new TreeMap<>(KeyComparator.instance());
 
-		StartValidatorBFTUpdate(long maxRounds, long view) {
-			this.maxRounds = maxRounds;
-			this.view = view;
+		StartValidatorBFTUpdate(long closedRound) {
+			this.closedRound = closedRound;
 		}
 
 		public ReducerState beginUpdate(ValidatorBFTData validatorBFTData) throws ProcedureException {
@@ -65,7 +63,7 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 		}
 
 		public UpdatingValidatorBFTData exit() {
-			return new UpdatingValidatorBFTData(maxRounds, view, validatorsToUpdate);
+			return new UpdatingValidatorBFTData(maxRounds, closedRound, validatorsToUpdate);
 		}
 	}
 
@@ -118,8 +116,8 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 			EndPrevRound.class, ValidatorBFTData.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r) -> {
-				var view = s.getClosedRound().getView();
-				var next = new StartValidatorBFTUpdate(maxRounds, view);
+				var closedRound = s.getClosedRound().getView();
+				var next = new StartValidatorBFTUpdate(closedRound);
 				next.beginUpdate(d.getSubstate());
 				return ReducerResult.incomplete(next);
 			}
@@ -136,14 +134,14 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> {
 				var next = s.exit();
-				return ReducerResult.incomplete(next.update(u));
+				return ReducerResult.incomplete(next.update(u, c));
 			}
 		));
 
 		os.procedure(new UpProcedure<>(
 			UpdatingValidatorBFTData.class, ValidatorBFTData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, u, c, r) -> ReducerResult.incomplete(s.update(u))
+			(s, u, c, r) -> ReducerResult.incomplete(s.update(u, c))
 		));
 
 		os.procedure(new UpProcedure<>(

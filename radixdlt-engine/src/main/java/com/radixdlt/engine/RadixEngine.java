@@ -438,7 +438,7 @@ public final class RadixEngine<M> {
 			parsedTxn.instructions()
 		);
 
-		return new REProcessedTxn(parsedTxn, stateUpdates);
+		return new REProcessedTxn(parsedTxn, stateUpdates, context.getEvents());
 	}
 
 	/**

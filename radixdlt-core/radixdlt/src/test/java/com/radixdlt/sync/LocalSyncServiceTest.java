@@ -28,6 +28,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.anyLong;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atom.Txn;
@@ -390,7 +391,7 @@ public class LocalSyncServiceTest {
 		this.setupSyncServiceWithState(syncState);
 
 		this.localSyncService.ledgerUpdateEventProcessor().process(
-			new LedgerUpdate(VerifiedTxnsAndProof.create(ImmutableList.of(), targetHeader), null)
+			new LedgerUpdate(VerifiedTxnsAndProof.create(ImmutableList.of(), targetHeader), ImmutableClassToInstanceMap.of())
 		);
 
 		verifyNoMoreInteractions(syncRequestDispatcher);

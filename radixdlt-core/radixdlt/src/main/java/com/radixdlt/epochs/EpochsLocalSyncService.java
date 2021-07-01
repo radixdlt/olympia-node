@@ -38,8 +38,6 @@ import com.radixdlt.sync.messages.remote.SyncResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Optional;
-
 /**
  * Manages the syncing service across epochs
  */
@@ -69,20 +67,17 @@ public class EpochsLocalSyncService {
 	}
 
 	private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
-		var epochChangeMaybe = (Optional<EpochChange>) ledgerUpdate.getStateComputerOutput();
-		epochChangeMaybe.ifPresent(
-			epochChange -> {
-				// epoch has changed, replace localSyncService (keep current state) and proceed
-				this.currentEpoch = epochChange;
+		var epochChange = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
+		if (epochChange != null) {
+			this.currentEpoch = epochChange;
 
-				this.localSyncService = localSyncServiceFactory.create(
-					new RemoteSyncResponseValidatorSetVerifier(
-						epochChange.getBFTConfiguration().getValidatorSet()
-					),
-					this.localSyncService.getSyncState()
-				);
-			}
-		);
+			this.localSyncService = localSyncServiceFactory.create(
+				new RemoteSyncResponseValidatorSetVerifier(
+					epochChange.getBFTConfiguration().getValidatorSet()
+				),
+				this.localSyncService.getSyncState()
+			);
+		}
 		this.localSyncService.ledgerUpdateEventProcessor().process(ledgerUpdate);
 	}
 

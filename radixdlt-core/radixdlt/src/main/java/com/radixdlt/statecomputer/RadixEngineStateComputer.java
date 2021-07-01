@@ -17,6 +17,7 @@
 
 package com.radixdlt.statecomputer;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
@@ -31,6 +32,7 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -63,8 +65,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -86,7 +86,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher;
 	private final EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher;
 	private final EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher;
-	private final EventDispatcher<TxnsCommittedToLedger> committedDispatcher;
+	private final EventDispatcher<REOutput> committedDispatcher;
 	private final SystemCounters systemCounters;
 	private final Hasher hasher;
 	private final Forks forks;
@@ -107,7 +107,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher,
 		EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher,
 		EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher,
-		EventDispatcher<TxnsCommittedToLedger> committedDispatcher,
+		EventDispatcher<REOutput> committedDispatcher,
 		EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
 		Hasher hasher,
 		SystemCounters systemCounters
@@ -236,9 +236,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 					throw new NoValidatorsException(vertex.getQC().getEpoch());
 				}
 				nextValidatorSet.set(validatorSet);
-				return validatorSet.nodes().stream()
+				return validatorSet.getValidators().stream()
+					.map(BFTValidator::getNode)
 					.map(BFTNode::getKey)
-					.sorted(Comparator.comparing(ECPublicKey::getBytes, Arrays::compare))
 					.collect(Collectors.toList());
 			}, timestamp));
 		}
@@ -382,9 +382,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			mempoolAtomsRemovedEventDispatcher.dispatch(atomsRemovedFromMempool);
 		}
 
-		committedDispatcher.dispatch(TxnsCommittedToLedger.create(txCommitted));
-
-		Optional<EpochChange> epochChangeOptional = txnsAndProof.getProof().getNextValidatorSet().map(validatorSet -> {
+		var epochChangeOptional = txnsAndProof.getProof().getNextValidatorSet().map(validatorSet -> {
 			var header = txnsAndProof.getProof();
 			// TODO: Move vertex stuff somewhere else
 			var genesisVertex = UnverifiedVertex.createGenesis(header.getRaw());
@@ -407,10 +405,13 @@ public final class RadixEngineStateComputer implements StateComputer {
 			var bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, initialState);
 			return new EpochChange(header, bftConfiguration);
 		});
-
-		epochChangeOptional.ifPresent(e -> this.proposerElection = e.getBFTConfiguration().getProposerElection());
-
-		var ledgerUpdate = new LedgerUpdate(txnsAndProof, epochChangeOptional);
+		var outputBuilder = ImmutableClassToInstanceMap.builder();
+		epochChangeOptional.ifPresent(e -> {
+			this.proposerElection = e.getBFTConfiguration().getProposerElection();
+			outputBuilder.put(EpochChange.class, e);
+		});
+		outputBuilder.put(REOutput.class, REOutput.create(txCommitted));
+		var ledgerUpdate = new LedgerUpdate(txnsAndProof, outputBuilder.build());
 		ledgerUpdateDispatcher.dispatch(ledgerUpdate);
 	}
 }

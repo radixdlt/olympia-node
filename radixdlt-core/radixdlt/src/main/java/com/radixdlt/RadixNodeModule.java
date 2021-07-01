@@ -177,6 +177,7 @@ public final class RadixNodeModule extends AbstractModule {
 
 		install(new RxEnvironmentModule());
 
+		install(new EventLoggerModule());
 		install(new DispatcherModule());
 
 		// Application

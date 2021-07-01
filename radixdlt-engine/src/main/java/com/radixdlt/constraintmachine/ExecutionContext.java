@@ -35,9 +35,12 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
+// TODO: Cleanup permissions to access to these methods
 public final class ExecutionContext {
 	private final Txn txn;
 	private final PermissionLevel level;
@@ -48,6 +51,7 @@ public final class ExecutionContext {
 	private UInt256 systemLoan;
 	private int sigsLeft;
 	private boolean chargedOneTimeFee = false;
+	private List<REEvent> events = new ArrayList<>();
 
 	public ExecutionContext(
 		Txn txn,
@@ -60,6 +64,14 @@ public final class ExecutionContext {
 		this.sigsLeft = sigsLeft;
 		this.systemLoan = systemLoan;
 		this.reserve = new TokenHoldingBucket(Tokens.create(REAddr.ofNativeToken(), systemLoan));
+	}
+
+	public List<REEvent> getEvents() {
+		return events;
+	}
+
+	public void emitEvent(REEvent event) {
+		this.events.add(event);
 	}
 
 	public void resetSigs(int sigs) {

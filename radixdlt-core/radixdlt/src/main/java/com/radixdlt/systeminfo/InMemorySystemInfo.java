@@ -31,7 +31,6 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -64,8 +63,10 @@ public final class InMemorySystemInfo {
 	public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
 		return update -> {
 			this.ledgerProof.set(update.getTail());
-			var epochChange = (Optional<EpochChange>) update.getStateComputerOutput();
-			epochChange.ifPresent(e -> epochsLedgerProof.set(update.getTail()));
+			var epochChange = update.getStateComputerOutput().getInstance(EpochChange.class);
+			if (epochChange != null) {
+				epochsLedgerProof.set(update.getTail());
+			}
 		};
 	}
 

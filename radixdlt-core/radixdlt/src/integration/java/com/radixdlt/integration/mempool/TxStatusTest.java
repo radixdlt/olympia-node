@@ -19,6 +19,7 @@
 package com.radixdlt.integration.mempool;
 
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Rule;
@@ -58,7 +59,7 @@ import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineConfig;
-import com.radixdlt.statecomputer.TxnsCommittedToLedger;
+import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
@@ -136,11 +137,14 @@ public class TxStatusTest {
 	public REProcessedTxn waitForCommit() {
 		var mempoolAdd = runner.runNextEventsThrough(MempoolAddSuccess.class);
 		var committed = runner.runNextEventsThrough(
-			TxnsCommittedToLedger.class,
-			c -> c.getParsedTxs().stream().anyMatch(txn -> txn.getTxn().getId().equals(mempoolAdd.getTxn().getId()))
+			LedgerUpdate.class,
+			u -> {
+				var output = u.getStateComputerOutput().getInstance(REOutput.class);
+				return output.getProcessedTxns().stream().anyMatch(txn -> txn.getTxn().getId().equals(mempoolAdd.getTxn().getId()));
+			}
 		);
 
-		return committed.getParsedTxs().stream()
+		return committed.getStateComputerOutput().getInstance(REOutput.class).getProcessedTxns().stream()
 			.filter(t -> t.getTxn().getId().equals(mempoolAdd.getTxn().getId()))
 			.findFirst()
 			.orElseThrow();

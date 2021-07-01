@@ -21,6 +21,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt256s;
 import com.radixdlt.utils.UInt384;
@@ -59,9 +60,7 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 		this.validatorSet = validatorSet;
 		this.weightsComparator = Comparator
 			.comparing(Entry<BFTValidator, UInt384>::getValue)
-			.thenComparing(
-				(o1, o2) -> Arrays.compare(o1.getKey().getNode().getKey().getCompressedBytes(), o2.getKey().getNode().getKey().getCompressedBytes())
-			);
+			.thenComparing(v -> v.getKey().getNode().getKey(), KeyComparator.instance().reversed());
 		this.nextLeaderComputer = new CachingNextLeaderComputer(validatorSet, weightsComparator, cacheSize);
 	}
 

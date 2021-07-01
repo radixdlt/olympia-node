@@ -17,6 +17,7 @@
 
 package com.radixdlt.api.module;
 
+import com.radixdlt.ledger.LedgerUpdate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,7 +37,7 @@ import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.statecomputer.TxnsCommittedToLedger;
+import com.radixdlt.statecomputer.REOutput;
 
 import java.util.List;
 
@@ -71,7 +72,7 @@ public class ArchiveApiModule extends AbstractModule {
 	) {
 		return new EventProcessorOnRunner<>(
 			Runners.APPLICATION,
-			TxnsCommittedToLedger.class,
+			REOutput.class,
 			clientApiStore.atomsCommittedToLedgerEventProcessor()
 		);
 	}
@@ -86,11 +87,11 @@ public class ArchiveApiModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> atomsCommittedToLedgerTransactionStatus(TransactionStatusService transactionStatusService) {
+	public EventProcessorOnRunner<?> ledgerUpdateToLedgerTransactionStatus(TransactionStatusService transactionStatusService) {
 		return new EventProcessorOnRunner<>(
 			Runners.APPLICATION,
-			TxnsCommittedToLedger.class,
-			transactionStatusService.atomsCommittedToLedgerEventProcessor()
+			LedgerUpdate.class,
+			transactionStatusService.ledgerUpdateProcessor()
 		);
 	}
 

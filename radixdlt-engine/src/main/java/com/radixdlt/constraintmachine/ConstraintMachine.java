@@ -286,7 +286,7 @@ public final class ConstraintMachine {
 					var methodProcedure = loadProcedure(reducerState, eventId);
 					reducerState = callProcedure(methodProcedure, nextParticle, reducerState, readableAddrs, context);
 					expectEnd = reducerState == null;
-				} else if (inst.getMicroOp().getOp() == REOp.DOWNALL) {
+				} else if (inst.getMicroOp().getOp() == REOp.DOWNINDEX) {
 					ShutdownAllIndex index = inst.getData();
 					var substateCursor = validationState.shutdownAll(index);
 					var tmp = stateUpdates;

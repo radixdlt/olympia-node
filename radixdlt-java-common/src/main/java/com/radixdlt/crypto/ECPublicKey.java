@@ -116,7 +116,7 @@ public final class ECPublicKey {
 	}
 
 	public String toHex() {
-		return Bytes.toHexString(getBytes());
+		return Bytes.toHexString(getCompressedBytes());
 	}
 
 	@Override

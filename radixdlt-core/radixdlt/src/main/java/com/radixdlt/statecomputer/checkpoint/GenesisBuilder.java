@@ -28,10 +28,9 @@ import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.NextEpoch;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -43,10 +42,7 @@ import com.radixdlt.statecomputer.StakedValidatorsReducer;
 import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.store.InMemoryEngineStore;
 
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public final class GenesisBuilder {
@@ -99,7 +95,6 @@ public final class GenesisBuilder {
 
 		branch.execute(List.of(tempTxn), PermissionLevel.SYSTEM);
 		var stakedValidators = branch.getComputedState(StakedValidators.class);
-		var genesisValidatorSet = new AtomicReference<BFTValidatorSet>();
 		txnConstructionRequest.action(new NextEpoch(updates -> {
 			var cur = stakedValidators;
 			for (var u : updates) {
@@ -109,11 +104,9 @@ public final class GenesisBuilder {
 			if (validatorSet == null) {
 				throw new IllegalStateException("No validator set created in genesis.");
 			}
-			// FIXME: cur.toValidatorSet() may be null
-			genesisValidatorSet.set(validatorSet);
-			return genesisValidatorSet.get().nodes().stream()
+			return validatorSet.getValidators().stream()
+				.map(BFTValidator::getNode)
 				.map(BFTNode::getKey)
-				.sorted(Comparator.comparing(ECPublicKey::getBytes, Arrays::compare))
 				.collect(Collectors.toList());
 		}, timestamp));
 
