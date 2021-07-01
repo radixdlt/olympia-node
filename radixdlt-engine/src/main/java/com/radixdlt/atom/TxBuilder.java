@@ -21,6 +21,7 @@ package com.radixdlt.atom;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
+import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.TokenResource;
@@ -36,17 +37,22 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -149,7 +155,7 @@ public final class TxBuilder {
 				iterator,
 				Spliterator.ORDERED
 			),
-			 false
+			false
 		);
 	}
 
@@ -312,6 +318,64 @@ public final class TxBuilder {
 	) {
 		var typeByte = deserialization.classToByte(particleClass);
 		return shutdownAll(SubstateIndex.create(typeByte, particleClass), mapper);
+	}
+
+	public <T extends Particle> CloseableCursor<T> readIndexReversed(SubstateIndex index) {
+		var comparator = UnsignedBytes.lexicographicalComparator().reversed();
+		var cursor = createRemoteSubstateCursor(index);
+		var localIterator = lowLevelBuilder.localUpSubstate().stream()
+			.map(LocalSubstate::getParticle)
+			.filter(index.getSubstateClass()::isInstance)
+			.map(p -> (T) p)
+			.map(p -> Pair.of(p, serialization.serialize(p)))
+			.filter(p -> index.test(p.getSecond()))
+			.sorted(Comparator.comparing(Pair::getSecond, comparator))
+			.iterator();
+
+		return new CloseableCursor<T>() {
+			private RawSubstateBytes nextRemote = cursor.hasNext() ? cursor.next() : null;
+			private Pair<T, byte[]> nextLocal = localIterator.hasNext() ? localIterator.next() : null;
+
+			private T nextRemote() {
+				var next = nextRemote;
+				nextRemote = cursor.hasNext() ? cursor.next() : null;
+				try {
+					return (T) deserialization.deserialize(next.getData());
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			}
+
+			private T nextLocal() {
+				var next = nextLocal;
+				nextLocal = localIterator.hasNext() ? localIterator.next() : null;
+				return next.getFirst();
+			}
+
+			@Override
+			public void close() {
+				cursor.close();
+			}
+
+			@Override
+			public boolean hasNext() {
+				return nextRemote != null || nextLocal != null;
+			}
+
+			@Override
+			public T next() {
+				if (nextRemote != null && nextLocal != null) {
+					var compare = comparator.compare(nextRemote.getData(), nextLocal.getSecond());
+					return compare <= 0 ? nextRemote() : nextLocal();
+				} else if (nextRemote != null) {
+					return nextRemote();
+				} else if (nextLocal != null) {
+					return nextLocal();
+				} else {
+					throw new NoSuchElementException();
+				}
+			}
+		};
 	}
 
 	public <T extends Particle, U> U shutdownAll(

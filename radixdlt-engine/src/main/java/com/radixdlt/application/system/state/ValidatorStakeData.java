@@ -23,6 +23,7 @@ import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
+import org.bouncycastle.util.encoders.Hex;
 
 import java.util.Objects;
 
@@ -107,12 +108,13 @@ public final class ValidatorStakeData implements ResourceInBucket {
 
 	@Override
 	public String toString() {
-		return String.format("%s{stake=%s ownership=%s rake=%s owner=%s}",
+		return String.format("%s{registered=%s stake=%s ownership=%s rake=%s validator=%s}",
 			getClass().getSimpleName(),
+			isRegistered,
 			totalStake,
 			totalOwnership,
 			rakePercentage,
-			ownerAddr
+			Hex.toHexString(validatorKey.getBytes()).substring(0, 11)
 		);
 	}
 

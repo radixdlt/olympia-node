@@ -371,6 +371,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 							return true;
 						}
 					)
+					.setBtreeComparator(lexicographicalComparator())
 					.setSortedDuplicates(true)
 					.setAllowCreate(true)
 					.setTransactional(true)
