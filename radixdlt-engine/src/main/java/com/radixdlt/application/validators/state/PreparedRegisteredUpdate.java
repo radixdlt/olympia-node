@@ -18,21 +18,17 @@
 
 package com.radixdlt.application.validators.state;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
-import java.util.Optional;
 
 public final class PreparedRegisteredUpdate implements ValidatorData {
 	private final ECPublicKey validatorKey;
 	private final boolean isRegistered;
-	private final Optional<HashCode> forkVoteHash;
 
-	public PreparedRegisteredUpdate(ECPublicKey validatorKey, boolean isRegistered, Optional<HashCode> forkVoteHash) {
+	public PreparedRegisteredUpdate(ECPublicKey validatorKey, boolean isRegistered) {
 		this.validatorKey = validatorKey;
 		this.isRegistered = isRegistered;
-		this.forkVoteHash = forkVoteHash;
 	}
 
 	@Override
@@ -44,13 +40,9 @@ public final class PreparedRegisteredUpdate implements ValidatorData {
 		return isRegistered;
 	}
 
-	public Optional<HashCode> getForkVoteHash() {
-		return forkVoteHash;
-	}
-
 	@Override
 	public int hashCode() {
-		return Objects.hash(validatorKey, isRegistered, forkVoteHash);
+		return Objects.hash(validatorKey, isRegistered);
 	}
 
 	@Override
@@ -61,7 +53,6 @@ public final class PreparedRegisteredUpdate implements ValidatorData {
 
 		var other = (PreparedRegisteredUpdate) o;
 		return Objects.equals(this.validatorKey, other.validatorKey)
-			&& this.isRegistered == other.isRegistered
-			&& Objects.equals(this.forkVoteHash, other.forkVoteHash);
+			&& this.isRegistered == other.isRegistered;
 	}
 }

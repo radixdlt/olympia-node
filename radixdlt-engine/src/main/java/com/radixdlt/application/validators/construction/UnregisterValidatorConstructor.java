@@ -40,14 +40,14 @@ public final class UnregisterValidatorConstructor implements ActionConstructor<U
 				p -> p.getValidatorKey().equals(action.validatorKey()),
 				Optional.empty(),
 				() -> new TxBuilderException("Cannot find state")
-			).with(substateDown -> List.of(new PreparedRegisteredUpdate(action.validatorKey(), false, Optional.empty())));
+			).with(substateDown -> List.of(new PreparedRegisteredUpdate(action.validatorKey(), false)));
 		} else {
 			txBuilder.swap(
 				ValidatorRegisteredCopy.class,
 				p -> p.getValidatorKey().equals(action.validatorKey()),
 				Optional.of(SubstateWithArg.noArg(new ValidatorRegisteredCopy(action.validatorKey(), false))),
 				() -> new TxBuilderException("Cannot find state")
-			).with(substateDown -> List.of(new PreparedRegisteredUpdate(action.validatorKey(), false, Optional.empty())));
+			).with(substateDown -> List.of(new PreparedRegisteredUpdate(action.validatorKey(), false)));
 		}
 		txBuilder.end();
 	}

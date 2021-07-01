@@ -38,7 +38,6 @@ import org.radix.TokenIssuance;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Generates a genesis atom
@@ -84,7 +83,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 
 			// Initial validator registration
 			for (var validatorKey : validatorKeys) {
-				actions.add(new RegisterValidator(validatorKey, Optional.empty()));
+				actions.add(new RegisterValidator(validatorKey));
 				actions.add(new UpdateAllowDelegationFlag(validatorKey, true));
 			}
 

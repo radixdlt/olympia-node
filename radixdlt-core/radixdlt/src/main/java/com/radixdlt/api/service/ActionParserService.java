@@ -123,11 +123,7 @@ public final class ActionParserService {
 			case REGISTER_VALIDATOR:
 				return allOf(
 					validator(element)
-				).map(validatorKey -> {
-					final var maybeForkVoteHash =
-						forkManager.getCandidateFork().map(f -> ForkConfig.voteHash(validatorKey, f));
-					return TransactionAction.register(validatorKey, maybeForkVoteHash);
-				});
+				).map(TransactionAction::register);
 
 			case UNREGISTER_VALIDATOR:
 				return allOf(

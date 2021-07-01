@@ -74,7 +74,6 @@ import com.radixdlt.utils.UInt256;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -142,7 +141,7 @@ public class TransactionParserTest {
 		).buildWithoutSignature();
 		var validatorBuilder = this.engine.construct(
 			TxnConstructionRequest.create()
-				.action(new RegisterValidator(this.validatorKeyPair.getPublicKey(), Optional.empty()))
+				.action(new RegisterValidator(this.validatorKeyPair.getPublicKey()))
 				.action(new UpdateAllowDelegationFlag(this.validatorKeyPair.getPublicKey(), true))
 				.action(new CreateSystem(System.currentTimeMillis()))
 		);

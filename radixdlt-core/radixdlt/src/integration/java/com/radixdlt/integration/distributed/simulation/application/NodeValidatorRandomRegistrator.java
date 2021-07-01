@@ -28,7 +28,6 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -54,7 +53,7 @@ public final class NodeValidatorRandomRegistrator implements SimulationTest.Simu
 				var d = network.getDispatcher(NodeApplicationRequest.class, node);
 				var txnConstructionRequest = TxnConstructionRequest.create();
 				if (random.nextBoolean()) {
-					txnConstructionRequest.registerAsValidator(node.getKey(), Optional.empty());
+					txnConstructionRequest.registerAsValidator(node.getKey());
 				} else {
 					txnConstructionRequest.unregisterAsValidator(node.getKey());
 				}

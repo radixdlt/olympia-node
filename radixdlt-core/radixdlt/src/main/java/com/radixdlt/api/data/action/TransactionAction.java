@@ -49,8 +49,8 @@ public interface TransactionAction {
 		return new MintAction(to, amount, rri);
 	}
 
-	static TransactionAction register(ECPublicKey validatorKey, Optional<HashCode> forkVoteHash) {
-		return new RegisterValidatorAction(validatorKey, forkVoteHash);
+	static TransactionAction register(ECPublicKey validatorKey) {
+		return new RegisterValidatorAction(validatorKey);
 	}
 
 	static TransactionAction unregister(ECPublicKey validatorKey) {

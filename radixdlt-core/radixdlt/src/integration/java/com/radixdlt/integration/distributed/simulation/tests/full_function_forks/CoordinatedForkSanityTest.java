@@ -166,7 +166,7 @@ public final class CoordinatedForkSanityTest {
 		final var maybeForkVoteHash =
 			forkManager.getCandidateFork().map(f -> ForkConfig.voteHash(node.getKey(), f));
 		final var txRequest = TxnConstructionRequest.create()
-			.registerAsValidator(node.getKey(), maybeForkVoteHash);
+			.updateValidatorMetadata(node.getKey(), node.getSimpleName(), "", maybeForkVoteHash);
 		network.getDispatcher(NodeApplicationRequest.class, node)
 			.dispatch(NodeApplicationRequest.create(txRequest));
 	}

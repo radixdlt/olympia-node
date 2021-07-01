@@ -18,26 +18,17 @@
 
 package com.radixdlt.atom.actions;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.crypto.ECPublicKey;
 
-import java.util.Optional;
-
 public final class RegisterValidator implements TxAction {
 	private final ECPublicKey validatorKey;
-	private final Optional<HashCode> forkVoteHash;
 
-	public RegisterValidator(ECPublicKey validatorKey, Optional<HashCode> forkVoteHash) {
+	public RegisterValidator(ECPublicKey validatorKey) {
 		this.validatorKey = validatorKey;
-		this.forkVoteHash = forkVoteHash;
 	}
 
 	public ECPublicKey validatorKey() {
 		return validatorKey;
-	}
-
-	public Optional<HashCode> forkVoteHash() {
-		return forkVoteHash;
 	}
 }

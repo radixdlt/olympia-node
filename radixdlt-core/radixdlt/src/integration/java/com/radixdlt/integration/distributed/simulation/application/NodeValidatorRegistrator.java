@@ -29,7 +29,6 @@ import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -47,7 +46,7 @@ public final class NodeValidatorRegistrator implements SimulationTest.Simulation
             .doOnNext(validationRegistrations::onNext)
             .subscribe(node -> {
                 var d = network.getDispatcher(NodeApplicationRequest.class, node);
-                d.dispatch(NodeApplicationRequest.create(new RegisterValidator(node.getKey(), Optional.empty())));
+                d.dispatch(NodeApplicationRequest.create(new RegisterValidator(node.getKey())));
             });
     }
 

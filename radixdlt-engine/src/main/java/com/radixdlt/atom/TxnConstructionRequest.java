@@ -27,6 +27,7 @@ import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.SplitToken;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
+import com.radixdlt.atom.actions.UpdateValidatorMetadata;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -92,8 +93,19 @@ public class TxnConstructionRequest {
 		return this;
 	}
 
-	public TxnConstructionRequest registerAsValidator(ECPublicKey validatorKey, Optional<HashCode> forkVoteHash) {
-		var action = new RegisterValidator(validatorKey, forkVoteHash);
+	public TxnConstructionRequest registerAsValidator(ECPublicKey validatorKey) {
+		var action = new RegisterValidator(validatorKey);
+		actions.add(action);
+		return this;
+	}
+
+	public TxnConstructionRequest updateValidatorMetadata(
+		ECPublicKey validatorKey,
+		String name,
+		String uri,
+		Optional<HashCode> forkVoteHash
+	) {
+		var action = new UpdateValidatorMetadata(validatorKey, name, uri, forkVoteHash);
 		actions.add(action);
 		return this;
 	}

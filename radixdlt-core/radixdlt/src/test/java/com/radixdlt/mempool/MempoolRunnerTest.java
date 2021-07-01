@@ -53,6 +53,7 @@ import org.junit.Test;
 import java.util.Comparator;
 import java.util.Map;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
@@ -83,7 +84,7 @@ public final class MempoolRunnerTest {
 				});
 				bind(LedgerAccumulator.class).toInstance(mock(LedgerAccumulator.class));
 				bind(LedgerAccumulatorVerifier.class).toInstance(mock(LedgerAccumulatorVerifier.class));
-				bind(new TypeLiteral<Comparator<LedgerProof>>() { }).toInstance(mock(Comparator.class));
+				bind(new TypeLiteral<Comparator<LedgerProof>>() { }).toInstance(rmock(Comparator.class));
 				bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
 				bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 				Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);

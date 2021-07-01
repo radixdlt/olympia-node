@@ -18,7 +18,6 @@
 
 package com.radixdlt.application.validators.scrypt;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.application.validators.state.PreparedRegisteredUpdate;
@@ -36,8 +35,6 @@ import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
-
-import java.util.Optional;
 
 public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 	private static class UpdatingRegistered implements ReducerState {
@@ -80,20 +77,12 @@ public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 				REFieldSerialization.deserializeReservedByte(buf);
 				var key = REFieldSerialization.deserializeKey(buf);
 				var flag = REFieldSerialization.deserializeBoolean(buf);
-				final var forkVoteHashBytes = REFieldSerialization.deserializeBytes(buf);
-				final var forkVoteHash = forkVoteHashBytes.length > 0
-					? Optional.of(HashCode.fromBytes(forkVoteHashBytes))
-					: Optional.<HashCode>empty();
-				return new PreparedRegisteredUpdate(key, flag, forkVoteHash);
+				return new PreparedRegisteredUpdate(key, flag);
 			},
 			(s, buf) -> {
 				REFieldSerialization.serializeReservedByte(buf);
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				buf.put((byte) (s.isRegistered() ? 1 : 0));
-				s.getForkVoteHash().ifPresentOrElse(
-					forkVoteHash -> REFieldSerialization.serializeBytes(buf, forkVoteHash.asBytes()),
-					() -> REFieldSerialization.serializeBytes(buf, new byte[] {})
-				);
 			},
 			s -> !s.isRegistered()
 		));

@@ -82,7 +82,7 @@ public final class StakedValidatorsReducer implements StateReducer<StakedValidat
 		return (prev, p) -> {
 			if (p instanceof PreparedRegisteredUpdate) {
 				var v = (PreparedRegisteredUpdate) p;
-				return v.isRegistered() ? prev.add(v.getValidatorKey(), v.getForkVoteHash()) : prev.remove(v.getValidatorKey());
+				return v.isRegistered() ? prev.add(v.getValidatorKey()) : prev.remove(v.getValidatorKey());
 			} else if (p instanceof ValidatorMetaData) {
 				var s = (ValidatorMetaData) p;
 				return prev.set(s);

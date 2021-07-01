@@ -493,7 +493,7 @@ public class StakingUnstakingValidatorsTest {
 					action = new UnstakeTokens(acct, to, unstakeAmt);
 					break;
 				case 3:
-					action = new RegisterValidator(privKey.getPublicKey(), Optional.empty());
+					action = new RegisterValidator(privKey.getPublicKey());
 					break;
 				case 4:
 					// Only unregister once in a while

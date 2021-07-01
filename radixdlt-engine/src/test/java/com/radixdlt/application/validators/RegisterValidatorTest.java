@@ -40,7 +40,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -78,7 +77,7 @@ public class RegisterValidatorTest {
 		var key = ECKeyPair.generateNew();
 
 		// Act and Assert
-		var registerTxn = this.engine.construct(new RegisterValidator(key.getPublicKey(), Optional.empty()))
+		var registerTxn = this.engine.construct(new RegisterValidator(key.getPublicKey()))
 			.signAndBuild(key::sign);
 		this.engine.execute(List.of(registerTxn));
 	}
@@ -89,7 +88,7 @@ public class RegisterValidatorTest {
 		var key = ECKeyPair.generateNew();
 
 		// Act and Assert
-		var registerTxn = this.engine.construct(new RegisterValidator(ECKeyPair.generateNew().getPublicKey(), Optional.empty()))
+		var registerTxn = this.engine.construct(new RegisterValidator(ECKeyPair.generateNew().getPublicKey()))
 			.signAndBuild(key::sign);
 		assertThatThrownBy(() -> this.engine.execute(List.of(registerTxn)))
 			.hasRootCauseInstanceOf(AuthorizationException.class);
@@ -101,7 +100,7 @@ public class RegisterValidatorTest {
 		var key = ECKeyPair.generateNew();
 		var builder = TxLowLevelBuilder.newBuilder(serialization)
 			.virtualDown(new ValidatorRegisteredCopy(key.getPublicKey(), false))
-			.up(new PreparedRegisteredUpdate(ECKeyPair.generateNew().getPublicKey(), true, Optional.empty()))
+			.up(new PreparedRegisteredUpdate(ECKeyPair.generateNew().getPublicKey(), true))
 			.end();
 		var sig = key.sign(builder.hashToSign().asBytes());
 		var txn = builder.sig(sig).build();

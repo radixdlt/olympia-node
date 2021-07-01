@@ -17,26 +17,22 @@
 
 package com.radixdlt.api.data.action;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.crypto.ECPublicKey;
 
-import java.util.Optional;
 import java.util.stream.Stream;
 
 class RegisterValidatorAction implements TransactionAction {
 	private final ECPublicKey validatorKey;
-	private final Optional<HashCode> forkVoteHash;
 
-	RegisterValidatorAction(ECPublicKey validatorKey, Optional<HashCode> forkVoteHash) {
+	RegisterValidatorAction(ECPublicKey validatorKey) {
 		this.validatorKey = validatorKey;
-		this.forkVoteHash = forkVoteHash;
 	}
 
 	@Override
 	public Stream<TxAction> toAction() {
-		return Stream.of(new RegisterValidator(validatorKey, forkVoteHash));
+		return Stream.of(new RegisterValidator(validatorKey));
 	}
 }
 

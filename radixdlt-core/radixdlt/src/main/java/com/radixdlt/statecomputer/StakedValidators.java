@@ -155,18 +155,12 @@ public final class StakedValidators {
 		}
 	}
 
-	public StakedValidators add(ECPublicKey validatorKey, Optional<HashCode> forkVoteHash) {
+	public StakedValidators add(ECPublicKey validatorKey) {
 		var set = ImmutableSet.<ECPublicKey>builder()
 			.addAll(registered)
 			.add(validatorKey)
 			.build();
-
-		final var updatedState =
-			new StakedValidators(minValidators, maxValidators, set, stake, owners, delegationFlags, metadata, rakes, forksVotes);
-
-		return forkVoteHash
-			.map(h -> updatedState.addForkVote(validatorKey, h))
-			.orElse(updatedState);
+		return new StakedValidators(minValidators, maxValidators, set, stake, owners, delegationFlags, metadata, rakes, forksVotes);
 	}
 
 	public StakedValidators remove(ECPublicKey validatorKey) {

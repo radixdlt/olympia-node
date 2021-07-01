@@ -95,7 +95,6 @@ import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 import org.assertj.core.api.Condition;
 import org.junit.Before;
@@ -236,7 +235,7 @@ public class RadixEngineStateComputerTest {
 	}
 
 	private Txn registerCommand(ECKeyPair keyPair) throws TxBuilderException {
-		return radixEngine.construct(new RegisterValidator(keyPair.getPublicKey(), Optional.empty()))
+		return radixEngine.construct(new RegisterValidator(keyPair.getPublicKey()))
 			.signAndBuild(keyPair::sign);
 	}
 
