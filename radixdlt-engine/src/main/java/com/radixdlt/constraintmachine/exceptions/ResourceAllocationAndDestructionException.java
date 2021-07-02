@@ -16,8 +16,10 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.constraintmachine.exceptions;
 
-public interface EndReducer<S extends ReducerState> {
-	void reduce(S reducerState, ExecutionContext context, ImmutableAddrs immutableAddrs) throws Exception;
+public class ResourceAllocationAndDestructionException extends Exception {
+	public ResourceAllocationAndDestructionException() {
+		super("Allocation and destruction of resources not enabled.");
+	}
 }

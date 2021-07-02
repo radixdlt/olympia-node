@@ -394,7 +394,8 @@ public final class ConstraintMachine {
 					}
 				} else {
 					// Collect no-ops here
-					if (inst.getMicroOp() != REInstruction.REMicroOp.MSG) {
+					if (inst.getMicroOp() != REInstruction.REMicroOp.MSG
+						&& inst.getMicroOp() != REInstruction.REMicroOp.HEADER) {
 						throw new ProcedureException("Unknown op " + inst.getMicroOp());
 					}
 				}

@@ -361,12 +361,24 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 							var substateTypeId = data.getData()[data.getOffset()];
 							final int prefixIndexSize;
 							if (substateTypeId == SubstateTypeId.EXITTING_STAKE.id()) {
+								// 0: Type Byte
+								// 1: Reserved Byte
+								// 2-5: Epoch
 								prefixIndexSize = 2 + Long.BYTES;
 							} else if (substateTypeId == SubstateTypeId.PREPARED_RAKE_UPDATE.id()) {
+								// 0: Type Byte
+								// 1: Reserved Byte
+								// 2-5: Epoch
 								prefixIndexSize = 2 + Long.BYTES;
 							} else if (substateTypeId == SubstateTypeId.VALIDATOR_STAKE_DATA.id()) {
+								// 0: Type Byte
+								// 1: Reserved Byte
+								// 2: Registered Byte
+								// 3-34: Stake amount
+								// 35-67: Public key
 								prefixIndexSize = 3 + UInt256.BYTES + ECPublicKey.COMPRESSED_BYTES;
 							} else {
+								// 0: Type Byte
 								prefixIndexSize = 1;
 							}
 							// Index by substate type
