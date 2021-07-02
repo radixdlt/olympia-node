@@ -20,6 +20,7 @@ package com.radixdlt.client.lib.api.async;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.TransactionRequest;
+import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.dto.ApiConfiguration;
 import com.radixdlt.client.lib.dto.ApiData;
 import com.radixdlt.client.lib.dto.BuiltTransaction;
@@ -28,6 +29,7 @@ import com.radixdlt.client.lib.dto.ConsensusConfiguration;
 import com.radixdlt.client.lib.dto.ConsensusData;
 import com.radixdlt.client.lib.dto.EpochData;
 import com.radixdlt.client.lib.dto.FinalizedTransaction;
+import com.radixdlt.client.lib.dto.ForkDetails;
 import com.radixdlt.client.lib.dto.LocalAccount;
 import com.radixdlt.client.lib.dto.LocalValidatorInfo;
 import com.radixdlt.client.lib.dto.MempoolConfiguration;
@@ -38,7 +40,6 @@ import com.radixdlt.client.lib.dto.NetworkId;
 import com.radixdlt.client.lib.dto.NetworkPeers;
 import com.radixdlt.client.lib.dto.NetworkStats;
 import com.radixdlt.client.lib.dto.Proof;
-import com.radixdlt.client.lib.dto.RadixEngineConfiguration;
 import com.radixdlt.client.lib.dto.RadixEngineData;
 import com.radixdlt.client.lib.dto.StakePositions;
 import com.radixdlt.client.lib.dto.SyncConfiguration;
@@ -48,6 +49,7 @@ import com.radixdlt.client.lib.dto.TokenInfo;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
+import com.radixdlt.client.lib.dto.TxBlobDTO;
 import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
@@ -93,9 +95,9 @@ public interface RadixApi {
 	interface Transaction {
 		Promise<BuiltTransaction> build(TransactionRequest request);
 
-		Promise<TxDTO> finalize(FinalizedTransaction request);
+		Promise<TxBlobDTO> finalize(FinalizedTransaction request, boolean immediateSubmit);
 
-		Promise<TxDTO> submit(FinalizedTransaction request);
+		Promise<TxDTO> submit(TxBlobDTO request);
 
 		Promise<TransactionDTO> lookup(AID txId);
 
@@ -141,7 +143,7 @@ public interface RadixApi {
 	interface Validator {
 		Promise<ValidatorsResponse> list(int size, Optional<NavigationCursor> cursor);
 
-		Promise<ValidatorDTO> lookup(String validatorAddress);
+		Promise<ValidatorDTO> lookup(ValidatorAddress validatorAddress);
 	}
 
 	Validator validator();
@@ -171,7 +173,7 @@ public interface RadixApi {
 	Mempool mempool();
 
 	interface RadixEngine {
-		Promise<RadixEngineConfiguration> configuration();
+		Promise<List<ForkDetails>> configuration();
 
 		Promise<RadixEngineData> data();
 	}

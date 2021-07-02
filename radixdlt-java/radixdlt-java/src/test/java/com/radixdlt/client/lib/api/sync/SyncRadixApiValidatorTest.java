@@ -18,16 +18,14 @@ package com.radixdlt.client.lib.api.sync;
 
 import org.junit.Test;
 
+import com.radixdlt.client.lib.api.ValidatorAddress;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
-import java.io.IOException;
+import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
 import java.util.Optional;
-
-import okhttp3.Call;
-import okhttp3.OkHttpClient;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -36,49 +34,42 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_PRIMARY_PORT;
-import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_SECONDARY_PORT;
-
 public class SyncRadixApiValidatorTest {
 	private static final String BASE_URL = "http://localhost/";
 
-	private static final String LIST = "{\"result\":{\"cursor\":\"vb1q0tczj5k4n5nw7lf4prxrawja84pjt"
-		+ "xwh68gl65hd9almsg77r87zmhdqpf\",\"validators\":[{\"totalDelegatedStake\":\"1000000000000"
-		+ "000000000000\",\"address\":\"vb1q27acjcz0vs0dg9mwv7nwyxfxu28rcvu35zwcnn9ulul25ss3kfgkue7"
-		+ "d6p\",\"infoURL\":\"\",\"ownerDelegation\":\"1000000000000000000000000\",\"rakePercentage\":"
-		+ "0,\"name\":\"\",\"registered\":true,\"ownerAddress\":\"brx1qsptmhztqfajpa4qhden6dcseym3g"
-		+ "u0pnjxsfmzwvhnlna2jzzxe9zc5ntj47\",\"isExternalStakeAccepted\":true},{\"totalDelegatedSt"
-		+ "ake\":\"1000000000000000000000000\",\"address\":\"vb1q0tczj5k4n5nw7lf4prxrawja84pjtxwh68"
-		+ "gl65hd9almsg77r87zmhdqpf\",\"infoURL\":\"\",\"ownerDelegation\":\"1000000000000000000000"
-		+ "000\",\"rakePercentage\":0,\"name\":\"\",\"registered\":true,\"ownerAddress\":\"brx1qspa0q22"
-		+ "j6kwjdmmax5yvc046t575xfve6lgarl2ja5hhlwprmcvlcg8k98kp\",\"isExternalStakeAccepted\":true"
-		+ "}]},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
+	private static final String LIST = "{\"result\":{\"cursor\":\"dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\""
+		+ ",\"validators\":[{\"totalDelegatedStake\":\"100000000000000000000\",\"validatorFee\":0,\"address\":\"dv1qfwtmurydewmf"
+		+ "64rnrektuh20g8r6svm0cpnpcuuay4ammw2cnumc3jtmxl\",\"infoURL\":\"\",\"ownerDelegation\":\"100000000000000000000\",\"name\""
+		+ ":\"\",\"registered\":true,\"ownerAddress\":\"ddx1qsp9e00sv3h9md825wv0xe0jafaqu02pndlqxv8rnn5jhh0detz0n0qtp2phh\",\"isExt"
+		+ "ernalStakeAccepted\":true},{\"totalDelegatedStake\":\"100000000000000000000\",\"validatorFee\":0,\"address\":\"dv1q0ll"
+		+ "j774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\",\"infoURL\":\"\",\"ownerDelegation\":\"100000000000000000000\""
+		+ ",\"name\":\"\",\"registered\":true,\"ownerAddress\":\"ddx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs27s5vq5h24sfvvdfj\""
+		+ ",\"isExternalStakeAccepted\":true}]},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
-	private static final String LOOKUP = "{\"result\":{\"totalDelegatedStake\":\"475424000000000000"
-		+ "0000000\",\"address\":\"vb1q0tczj5k4n5nw7lf4prxrawja84pjtxwh68gl65hd9almsg77r87zmhdqpf\""
-		+ ",\"infoURL\":\"\",\"ownerDelegation\":\"1000000000000000000000000\",\"rakePercentage\":0,\"n"
-		+ "ame\":\"\",\"registered\":true,\"ownerAddress\":\"brx1qspa0q22j6kwjdmmax5yvc046t575xfve6"
-		+ "lgarl2ja5hhlwprmcvlcg8k98kp\",\"isExternalStakeAccepted\":true},\"id\":\"1\",\"jsonrpc\""
-		+ ":\"2.0\"}\n";
+	private static final String LOOKUP = "{\"result\":{\"totalDelegatedStake\":\"4754240000000000000000000\",\"validatorFee\":0,\""
+		+ "address\":\"dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\",\"infoURL\":\"\",\"ownerDelegation\":\"10000"
+		+ "0000000000000000\",\"name\":\"\",\"registered\":true,\"ownerAddress\":\"ddx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs2"
+		+ "7s5vq5h24sfvvdfj\",\"isExternalStakeAccepted\":true},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
-	private final OkHttpClient client = mock(OkHttpClient.class);
+	private final HttpClient client = mock(HttpClient.class);
 
 	@Test
-	public void testList() throws IOException {
+	public void testList() throws Exception {
 		prepareClient(LIST)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.validator().list(10, Optional.empty())
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(validatorsResponse -> assertTrue(validatorsResponse.getCursor().isPresent()))
-				.onSuccess(validatorsResponse -> assertEquals(2, validatorsResponse.getValidators().size()))
-			);
+				.onSuccess(validatorsResponse -> assertEquals(2, validatorsResponse.getValidators().size())));
 	}
 
 	@Test
-	public void testLookup() throws IOException {
+	public void testLookup() throws Exception {
 		var stake = UInt256.from("4754240000000000000000000");
-		var address = "vb1q0tczj5k4n5nw7lf4prxrawja84pjtxwh68gl65hd9almsg77r87zmhdqpf";
+		var address = ValidatorAddress.of(Addressing.ofNetworkId(99).forValidators()
+			.parse("dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9"));
 
 		prepareClient(LOOKUP)
 			.map(RadixApi::withTrace)
@@ -87,20 +78,16 @@ public class SyncRadixApiValidatorTest {
 				client -> client.validator().lookup(address)
 					.onFailure(failure -> fail(failure.toString()))
 					.onSuccess(validatorDTO -> assertTrue(validatorDTO.isExternalStakeAccepted()))
-					.onSuccess(validatorDTO -> assertEquals(stake, validatorDTO.getTotalDelegatedStake()))
-			);
+					.onSuccess(validatorDTO -> assertEquals(stake, validatorDTO.getTotalDelegatedStake())));
 	}
 
-	private Result<RadixApi> prepareClient(String responseBody) throws IOException {
-		var call = mock(Call.class);
-		var response = mock(Response.class);
-		var body = mock(ResponseBody.class);
+	private Result<RadixApi> prepareClient(String responseBody) throws Exception {
+		@SuppressWarnings("unchecked")
+		var response = (HttpResponse<String>) mock(HttpResponse.class);
 
-		when(client.newCall(any())).thenReturn(call);
-		when(call.execute()).thenReturn(response);
-		when(response.body()).thenReturn(body);
-		when(body.string()).thenReturn(responseBody);
+		when(response.body()).thenReturn(NETWORK_ID, responseBody);
+		when(client.<String>send(any(), any())).thenReturn(response);
 
-		return SyncRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
+		return SyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
 	}
 }

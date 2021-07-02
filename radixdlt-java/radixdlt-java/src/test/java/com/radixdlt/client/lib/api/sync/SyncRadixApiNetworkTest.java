@@ -20,12 +20,8 @@ import org.junit.Test;
 
 import com.radixdlt.utils.functional.Result;
 
-import java.io.IOException;
-
-import okhttp3.Call;
-import okhttp3.OkHttpClient;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
+import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -33,30 +29,27 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_PRIMARY_PORT;
-import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_SECONDARY_PORT;
-
 public class SyncRadixApiNetworkTest {
 	private static final String BASE_URL = "http://localhost/";
 
-	private static final String NETWORK_ID = "{\"result\":{\"networkId\":2},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
-	private static final String DEMAND = "{\"result\":{\"tps\":5},\"id\":\"5\",\"jsonrpc\":\"2.0\"}";
-	private static final String THROUGHPUT = "{\"result\":{\"tps\":8},\"id\":\"6\",\"jsonrpc\":\"2.0\"}";
+	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"2\",\"jsonrpc\":\"2.0\"}";
+	private static final String DEMAND = "{\"result\":{\"tps\":5},\"id\":\"2\",\"jsonrpc\":\"2.0\"}";
+	private static final String THROUGHPUT = "{\"result\":{\"tps\":283},\"id\":\"2\",\"jsonrpc\":\"2.0\"}";
 
-	private final OkHttpClient client = mock(OkHttpClient.class);
+	private final HttpClient client = mock(HttpClient.class);
 
 	@Test
-	public void testNetworkId() throws IOException {
+	public void testNetworkId() throws Exception {
 		prepareClient(NETWORK_ID)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.network().id()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(networkIdDTO -> assertEquals(2, networkIdDTO.getNetworkId())));
+				.onSuccess(networkIdDTO -> assertEquals(99, networkIdDTO.getNetworkId())));
 	}
 
 	@Test
-	public void testDemand() throws IOException {
+	public void testDemand() throws Exception {
 		prepareClient(DEMAND)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
@@ -66,25 +59,22 @@ public class SyncRadixApiNetworkTest {
 	}
 
 	@Test
-	public void testThroughput() throws IOException {
+	public void testThroughput() throws Exception {
 		prepareClient(THROUGHPUT)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.network().throughput()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(networkStatsDTO -> assertEquals(8L, networkStatsDTO.getTps())));
+				.onSuccess(networkStatsDTO -> assertEquals(283L, networkStatsDTO.getTps())));
 	}
 
-	private Result<RadixApi> prepareClient(String responseBody) throws IOException {
-		var call = mock(Call.class);
-		var response = mock(Response.class);
-		var body = mock(ResponseBody.class);
+	private Result<RadixApi> prepareClient(String responseBody) throws Exception {
+		@SuppressWarnings("unchecked")
+		var response = (HttpResponse<String>) mock(HttpResponse.class);
 
-		when(client.newCall(any())).thenReturn(call);
-		when(call.execute()).thenReturn(response);
-		when(response.body()).thenReturn(body);
-		when(body.string()).thenReturn(responseBody);
+		when(response.body()).thenReturn(NETWORK_ID, responseBody);
+		when(client.<String>send(any(), any())).thenReturn(response);
 
-		return SyncRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
+		return SyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
 	}
 }

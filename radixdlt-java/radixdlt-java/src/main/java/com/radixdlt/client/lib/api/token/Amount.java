@@ -16,32 +16,32 @@
  *
  */
 
-package com.radixdlt.statecomputer.forks;
+package com.radixdlt.client.lib.api.token;
 
-import java.util.Optional;
-import java.util.TreeMap;
-import java.util.function.BiConsumer;
+import com.radixdlt.utils.UInt256;
 
-public final class Forks {
-	private final TreeMap<Long, RERules> forks;
+public interface Amount {
+	int SUB_UNITS_POW_10 = 18;
 
-	public Forks(TreeMap<Long, RERules> forks) {
-		if (forks.isEmpty() || forks.get(0L) == null) {
-			throw new IllegalArgumentException();
-		}
-
-		this.forks = forks;
+	static Amount amount(long value) {
+		return () -> UInt256.from(value);
 	}
 
-	public RERules get(long epoch) {
-		return this.forks.floorEntry(epoch).getValue();
+	default UInt256 tokens() {
+		return subunits().multiply(UInt256.TEN.pow(SUB_UNITS_POW_10));
 	}
 
-	public Optional<RERules> ifForkGet(long epoch) {
-		return Optional.ofNullable(this.forks.get(epoch));
+	default UInt256 millis() {
+		return subunits().multiply(UInt256.TEN.pow(SUB_UNITS_POW_10 - 3));
 	}
 
-	public void forEach(BiConsumer<Long, RERules> consumer) {
-		forks.forEach(consumer);
+	default UInt256 micros() {
+		return subunits().multiply(UInt256.TEN.pow(SUB_UNITS_POW_10 - 6));
 	}
+
+	default UInt256 nanos() {
+		return subunits().multiply(UInt256.TEN.pow(SUB_UNITS_POW_10 - 9));
+	}
+
+	UInt256 subunits();
 }

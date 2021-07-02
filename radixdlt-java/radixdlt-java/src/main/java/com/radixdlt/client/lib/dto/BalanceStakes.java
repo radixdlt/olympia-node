@@ -19,27 +19,30 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 
-public class ForkConfig {
-	private final String name;
-	private final long epoch;
-	private final long ceilingView;
+import static java.util.Objects.requireNonNull;
 
-	private ForkConfig(String name, long epoch, long ceilingView) {
-		this.name = name;
-		this.epoch = epoch;
-		this.ceilingView = ceilingView;
+public class BalanceStakes {
+	private final String delegate;
+	private final UInt256 amount;
+
+	private BalanceStakes(String delegate, UInt256 amount) {
+		this.delegate = delegate;
+		this.amount = amount;
 	}
 
 	@JsonCreator
-	public static ForkConfig create(
-		@JsonProperty(value = "name", required = true) String name,
-		@JsonProperty(value = "epoch", required = true) long epoch,
-		@JsonProperty(value = "ceilingView", required = true) long ceilingView
+	public static BalanceStakes create(
+		@JsonProperty(value = "delegate", required = true) String validator,
+		@JsonProperty(value = "amount", required = true) UInt256 amount
 	) {
-		return new ForkConfig(name, epoch, ceilingView);
+		requireNonNull(validator);
+		requireNonNull(amount);
+
+		return new BalanceStakes(validator, amount);
 	}
 
 	@Override
@@ -48,33 +51,29 @@ public class ForkConfig {
 			return true;
 		}
 
-		if (!(o instanceof ForkConfig)) {
+		if (!(o instanceof BalanceStakes)) {
 			return false;
 		}
 
-		var that = (ForkConfig) o;
-		return epoch == that.epoch && ceilingView == that.ceilingView && name.equals(that.name);
+		var that = (BalanceStakes) o;
+		return delegate.equals(that.delegate) && amount.equals(that.amount);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(name, epoch, ceilingView);
+		return Objects.hash(delegate, amount);
 	}
 
 	@Override
 	public String toString() {
-		return "{name:'" + name + '\'' + ", epoch:" + epoch + ", ceilingView:" + ceilingView + '}';
+		return "StakePositionsDTO(" + "validator=" + delegate + ", amount=" + amount +	')';
 	}
 
-	public String getName() {
-		return name;
+	public String getDelegate() {
+		return delegate;
 	}
 
-	public long getEpoch() {
-		return epoch;
-	}
-
-	public long getCeilingView() {
-		return ceilingView;
+	public UInt256 getAmount() {
+		return amount;
 	}
 }

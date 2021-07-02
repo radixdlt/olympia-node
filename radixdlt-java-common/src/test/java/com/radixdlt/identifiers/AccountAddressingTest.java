@@ -16,15 +16,13 @@
  *
  */
 
-package com.radixdlt.api.data;
+package com.radixdlt.identifiers;
 
 import org.junit.Test;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.AccountAddressing;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bytes;
 

@@ -18,6 +18,8 @@ package com.radixdlt.client.lib.api.async;
 
 import org.junit.Test;
 
+import com.radixdlt.client.lib.api.ValidatorAddress;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.UInt256;
 
 import java.io.IOException;
@@ -36,22 +38,20 @@ import static org.mockito.Mockito.when;
 public class AsyncRadixApiValidatorTest {
 	private static final String BASE_URL = "http://localhost/";
 
-	private static final String LIST = "{\"result\":{\"cursor\":\"vb1q0tczj5k4n5nw7lf4"
-		+ "prxrawja84pjtxwh68gl65hd9almsg77r87zmhdqpf\",\"validators\":[{\"totalDelegatedStake\":"
-		+ "\"4505000000000000000000000\",\"address\":\"vb1q27acjcz0vs0dg9mwv7nwyxfxu28rcvu35zwcnn"
-		+ "9ulul25ss3kfgkue7d6p\",\"infoURL\":\"\",\"ownerDelegation\":\"0\",\"name\":\"\",\"owne"
-		+ "rAddress\":\"brx1qsptmhztqfajpa4qhden6dcseym3gu0pnjxsfmzwvhnlna2jzzxe9zc5ntj47\",\"isE"
-		+ "xternalStakeAccepted\":true},{\"totalDelegatedStake\":\"4504290000000000000000000\","
-		+ "\"address\":\"vb1q0tczj5k4n5nw7lf4prxrawja84pjtxwh68gl65hd9almsg77r87zmhdqpf\","
-		+ "\"infoURL\":\"\",\"ownerDelegation\":\"0\",\"name\":\"\",\"ownerAddress\":\"brx1qspa0q"
-		+ "22j6kwjdmmax5yvc046t575xfve6lgarl2ja5hhlwprmcvlcg8k98kp\",\"isExternalStakeAccepted"
-		+ "\":true}]},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
+	private static final String LIST = "{\"result\":{\"cursor\":\"dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\""
+		+ ",\"validators\":[{\"totalDelegatedStake\":\"100000000000000000000\",\"validatorFee\":0,\"address\":\"dv1qfwtmurydewmf"
+		+ "64rnrektuh20g8r6svm0cpnpcuuay4ammw2cnumc3jtmxl\",\"infoURL\":\"\",\"ownerDelegation\":\"100000000000000000000\",\"name\""
+		+ ":\"\",\"registered\":true,\"ownerAddress\":\"ddx1qsp9e00sv3h9md825wv0xe0jafaqu02pndlqxv8rnn5jhh0detz0n0qtp2phh\",\"isExt"
+		+ "ernalStakeAccepted\":true},{\"totalDelegatedStake\":\"100000000000000000000\",\"validatorFee\":0,\"address\":\"dv1q0ll"
+		+ "j774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\",\"infoURL\":\"\",\"ownerDelegation\":\"100000000000000000000\""
+		+ ",\"name\":\"\",\"registered\":true,\"ownerAddress\":\"ddx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs27s5vq5h24sfvvdfj\""
+		+ ",\"isExternalStakeAccepted\":true}]},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
-	private static final String LOOKUP = "{\"result\":{\"totalDelegatedStake\":\"47542400000000000"
-		+ "00000000\",\"address\":\"vb1q0tczj5k4n5nw7lf4prxrawja84pjtxwh68gl65hd9almsg77r87zmhdqpf\","
-		+ "\"infoURL\":\"\",\"ownerDelegation\":\"0\",\"name\":\"\",\"ownerAddress\":\"brx1qspa0q22j6"
-		+ "kwjdmmax5yvc046t575xfve6lgarl2ja5hhlwprmcvlcg8k98kp\",\"isExternalStakeAccepted\":true},"
-		+ "\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String LOOKUP = "{\"result\":{\"totalDelegatedStake\":\"4754240000000000000000000\",\"validatorFee\":0,\""
+		+ "address\":\"dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\",\"infoURL\":\"\",\"ownerDelegation\":\"10000"
+		+ "0000000000000000\",\"name\":\"\",\"registered\":true,\"ownerAddress\":\"ddx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs2"
+		+ "7s5vq5h24sfvvdfj\",\"isExternalStakeAccepted\":true},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
 	private final HttpClient client = mock(HttpClient.class);
 
@@ -59,29 +59,30 @@ public class AsyncRadixApiValidatorTest {
 	public void testList() throws IOException {
 		prepareClient(LIST)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.validator().list(10, Optional.empty())
+				.join()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(validatorsResponse -> assertTrue(validatorsResponse.getCursor().isPresent()))
-				.onSuccess(validatorsResponse -> assertEquals(2, validatorsResponse.getValidators().size()))
-				.join())
-			.join();
+				.onSuccess(validatorsResponse -> assertEquals(2, validatorsResponse.getValidators().size())));
 	}
 
 	@Test
-	public void testData() throws IOException {
+	public void testLookup() throws IOException {
 		var stake = UInt256.from("4754240000000000000000000");
-		var address = "vb1q0tczj5k4n5nw7lf4prxrawja84pjtxwh68gl65hd9almsg77r87zmhdqpf";
+		var address = ValidatorAddress.of(Addressing.ofNetworkId(99).forValidators()
+			.parse("dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9"));
 
 		prepareClient(LOOKUP)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.validator().lookup(address)
+				.join()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(validatorDTO -> assertTrue(validatorDTO.isExternalStakeAccepted()))
-				.onSuccess(validatorDTO -> assertEquals(stake, validatorDTO.getTotalDelegatedStake()))
-				.join())
-			.join();
+				.onSuccess(validatorDTO -> assertEquals(stake, validatorDTO.getTotalDelegatedStake())));
 	}
 
 	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {
@@ -89,13 +90,10 @@ public class AsyncRadixApiValidatorTest {
 		var response = (HttpResponse<String>) mock(HttpResponse.class);
 		var completableFuture = new CompletableFuture<HttpResponse<String>>();
 
-		when(response.body()).thenReturn(responseBody);
+		when(response.body()).thenReturn(NETWORK_ID, responseBody);
 		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
 
-		try {
-			return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
-		} finally {
-			completableFuture.completeAsync(() -> response);
-		}
+		completableFuture.completeAsync(() -> response);
+		return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
 	}
 }

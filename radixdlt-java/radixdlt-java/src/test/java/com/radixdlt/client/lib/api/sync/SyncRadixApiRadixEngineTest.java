@@ -20,12 +20,8 @@ import org.junit.Test;
 
 import com.radixdlt.utils.functional.Result;
 
-import java.io.IOException;
-
-import okhttp3.Call;
-import okhttp3.OkHttpClient;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
+import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -33,56 +29,50 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_PRIMARY_PORT;
-import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_SECONDARY_PORT;
-
 public class SyncRadixApiRadixEngineTest {
 	private static final String BASE_URL = "http://localhost/";
 
-	private static final String CONFIGURATION = "{\"result\":{\"forks\":[{\"name\":\"betanet1\",\"epoch\":0,"
-		+ "\"ceilingView\":1000},{\"name\":\"betanet2\",\"epoch\":4,\"ceilingView\":1000},{\"name\":\"betanet3\","
-		+ "\"epoch\":8,\"ceilingView\":1000},{\"name\":\"betanet4\",\"epoch\":10,\"ceilingView\":10000}],"
-		+ "\"maxValidators\":100,\"minValidators\":1,\"maxTxnsPerProposal\":50},"
-		+ "\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
-	private static final String DATA = "{\"result\":{\"invalidProposedCommands\":0,\"systemTransactions\":207536,"
-		+ "\"userTransactions\":0},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
+	private static final String CONFIGURATION = "{\"result\":[{\"maxSigsPerRound\":50,\"maxValidators\":100,"
+		+ "\"name\":\"olympia-first-epoch\",\"maxRounds\":1500000,\"epoch\":0,\"version\":\"olympia_v1\"},"
+		+ "{\"maxSigsPerRound\":50,\"maxValidators\":100,\"name\":\"olympia\",\"maxRounds\":10000,\"epoch\":2,"
+		+ "\"version\":\"olympia_v1\"}],\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String DATA = "{\"result\":{\"systemTransactions\":37884,\"invalidProposedCommands\":1,"
+		+ "\"userTransactions\":2016},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
-	private final OkHttpClient client = mock(OkHttpClient.class);
+	private final HttpClient client = mock(HttpClient.class);
 
 	@Test
-	public void testConfiguration() throws IOException {
+	public void testConfiguration() throws Exception {
 		prepareClient(CONFIGURATION)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.radixEngine().configuration()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(configuration -> assertEquals(4, configuration.getForks().size()))
-				.onSuccess(configuration -> assertEquals("betanet4", configuration.getForks().get(3).getName()))
-			);
+				.onSuccess(configuration -> assertEquals(2, configuration.size()))
+				.onSuccess(configuration -> assertEquals("olympia", configuration.get(1).getName())));
 	}
 
 	@Test
-	public void testData() throws IOException {
+	public void testData() throws Exception {
 		prepareClient(DATA)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(
 				client -> client.radixEngine().data()
 					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(data -> assertEquals(207536L, data.getSystemTransactions()))
-			);
+					.onSuccess(data -> assertEquals(37884L, data.getSystemTransactions()))
+					.onSuccess(data -> assertEquals(2016L, data.getUserTransactions()))
+					.onSuccess(data -> assertEquals(1L, data.getInvalidProposedCommands())));
 	}
 
-	private Result<RadixApi> prepareClient(String responseBody) throws IOException {
-		var call = mock(Call.class);
-		var response = mock(Response.class);
-		var body = mock(ResponseBody.class);
+	private Result<RadixApi> prepareClient(String responseBody) throws Exception {
+		@SuppressWarnings("unchecked")
+		var response = (HttpResponse<String>) mock(HttpResponse.class);
 
-		when(client.newCall(any())).thenReturn(call);
-		when(call.execute()).thenReturn(response);
-		when(response.body()).thenReturn(body);
-		when(body.string()).thenReturn(responseBody);
+		when(response.body()).thenReturn(NETWORK_ID, responseBody);
+		when(client.<String>send(any(), any())).thenReturn(response);
 
-		return SyncRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
+		return SyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
 	}
 }

@@ -18,9 +18,9 @@
 
 package com.radixdlt.networks;
 
-import com.radixdlt.api.ResourceAddressing;
 import com.radixdlt.identifiers.AccountAddressing;
 import com.radixdlt.identifiers.NodeAddressing;
+import com.radixdlt.identifiers.ResourceAddressing;
 import com.radixdlt.identifiers.ValidatorAddressing;
 
 public final class Addressing {

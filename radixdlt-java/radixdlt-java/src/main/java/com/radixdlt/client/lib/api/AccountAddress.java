@@ -17,26 +17,17 @@
 
 package com.radixdlt.client.lib.api;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.AccountAddressing;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.networks.Addressing;
 
 import java.util.Objects;
 
 public class AccountAddress {
-	private static final AccountAddressing accountAddresses = AccountAddressing.bech32("brx"); // This needs to come from somewhere else
 	private final REAddr address;
 
-	public AccountAddress(REAddr address) {
+	private AccountAddress(REAddr address) {
 		this.address = address;
-	}
-
-	@JsonCreator
-	public static AccountAddress create(String address) throws DeserializeException {
-		return new AccountAddress(accountAddresses.parse(address));
 	}
 
 	public static AccountAddress create(REAddr address) {
@@ -70,13 +61,7 @@ public class AccountAddress {
 		return Objects.hash(address);
 	}
 
-	@JsonValue
-	public String toAccountAddress() {
-		return accountAddresses.of(address);
-	}
-
-	@Override
-	public String toString() {
-		return accountAddresses.of(address);
+	public String toString(int networkId) {
+		return Addressing.ofNetworkId(networkId).forAccounts().of(address);
 	}
 }

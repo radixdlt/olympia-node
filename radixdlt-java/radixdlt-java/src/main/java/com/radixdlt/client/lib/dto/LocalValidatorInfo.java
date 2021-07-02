@@ -19,6 +19,7 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.utils.UInt256;
 
@@ -32,6 +33,9 @@ public class LocalValidatorInfo {
 	private final String url;
 	private final boolean registered;
 	private final List<DelegatedStake> stakes;
+	private final AccountAddress owner;
+	private final int rakePercentage;
+	private final boolean allowDelegation;
 
 	public LocalValidatorInfo(
 		ValidatorAddress address,
@@ -39,7 +43,10 @@ public class LocalValidatorInfo {
 		String name,
 		String url,
 		boolean registered,
-		List<DelegatedStake> stakes
+		List<DelegatedStake> stakes,
+		AccountAddress owner,
+		int rakePercentage,
+		boolean allowDelegation
 	) {
 		this.address = address;
 		this.totalStake = totalStake;
@@ -47,18 +54,24 @@ public class LocalValidatorInfo {
 		this.url = url;
 		this.registered = registered;
 		this.stakes = stakes;
+		this.owner = owner;
+		this.rakePercentage = rakePercentage;
+		this.allowDelegation = allowDelegation;
 	}
 
 	@JsonCreator
 	public static LocalValidatorInfo create(
-		@JsonProperty("address") ValidatorAddress address,
-		@JsonProperty("totalStake") UInt256 totalStake,
-		@JsonProperty("name") String name,
-		@JsonProperty("url") String url,
-		@JsonProperty("registered") boolean registered,
-		@JsonProperty("stakes") List<DelegatedStake> stakes
+		@JsonProperty(value = "address", required = true) ValidatorAddress address,
+		@JsonProperty(value = "totalStake", required = true) UInt256 totalStake,
+		@JsonProperty(value = "name", required = true) String name,
+		@JsonProperty(value = "url", required = true) String url,
+		@JsonProperty(value = "registered", required = true) boolean registered,
+		@JsonProperty(value = "stakes", required = true) List<DelegatedStake> stakes,
+		@JsonProperty(value = "owner", required = true) AccountAddress owner,
+		@JsonProperty(value = "validatorFee", required = true) int rakePercentage,
+		@JsonProperty(value = "allowDelegation", required = true) boolean allowDelegation
 	) {
-		return new LocalValidatorInfo(address, totalStake, name, url, registered, stakes);
+		return new LocalValidatorInfo(address, totalStake, name, url, registered, stakes, owner, rakePercentage, allowDelegation);
 	}
 
 	@Override
@@ -73,16 +86,19 @@ public class LocalValidatorInfo {
 
 		var that = (LocalValidatorInfo) o;
 		return registered == that.registered
+			&& rakePercentage == that.rakePercentage
+			&& allowDelegation == that.allowDelegation
 			&& address.equals(that.address)
 			&& totalStake.equals(that.totalStake)
 			&& name.equals(that.name)
 			&& url.equals(that.url)
-			&& stakes.equals(that.stakes);
+			&& stakes.equals(that.stakes)
+			&& owner.equals(that.owner);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(address, totalStake, name, url, registered, stakes);
+		return Objects.hash(address, totalStake, name, url, registered, stakes, owner, rakePercentage, allowDelegation);
 	}
 
 	@Override

@@ -17,7 +17,6 @@
 
 package com.radixdlt.api.service;
 
-import com.radixdlt.networks.Addressing;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -26,6 +25,7 @@ import com.radixdlt.api.data.ActionType;
 import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
@@ -187,7 +187,7 @@ public final class ActionParserService {
 	}
 
 	private Result<Integer> percentage(JSONObject element) {
-		return param(element, "rakePercentage")
+		return param(element, "validatorFee")
 			.flatMap(parameter -> wrap(UNABLE_TO_DECODE, () -> Integer.parseInt(parameter)));
 	}
 

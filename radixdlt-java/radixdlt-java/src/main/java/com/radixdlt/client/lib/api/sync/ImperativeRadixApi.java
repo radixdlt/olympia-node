@@ -20,6 +20,7 @@ package com.radixdlt.client.lib.api.sync;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.TransactionRequest;
+import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.dto.ApiConfiguration;
 import com.radixdlt.client.lib.dto.ApiData;
 import com.radixdlt.client.lib.dto.BuiltTransaction;
@@ -28,6 +29,7 @@ import com.radixdlt.client.lib.dto.ConsensusConfiguration;
 import com.radixdlt.client.lib.dto.ConsensusData;
 import com.radixdlt.client.lib.dto.EpochData;
 import com.radixdlt.client.lib.dto.FinalizedTransaction;
+import com.radixdlt.client.lib.dto.ForkDetails;
 import com.radixdlt.client.lib.dto.LocalAccount;
 import com.radixdlt.client.lib.dto.LocalValidatorInfo;
 import com.radixdlt.client.lib.dto.MempoolConfiguration;
@@ -38,7 +40,6 @@ import com.radixdlt.client.lib.dto.NetworkId;
 import com.radixdlt.client.lib.dto.NetworkPeers;
 import com.radixdlt.client.lib.dto.NetworkStats;
 import com.radixdlt.client.lib.dto.Proof;
-import com.radixdlt.client.lib.dto.RadixEngineConfiguration;
 import com.radixdlt.client.lib.dto.RadixEngineData;
 import com.radixdlt.client.lib.dto.StakePositions;
 import com.radixdlt.client.lib.dto.SyncConfiguration;
@@ -48,6 +49,7 @@ import com.radixdlt.client.lib.dto.TokenInfo;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
+import com.radixdlt.client.lib.dto.TxBlobDTO;
 import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
@@ -88,9 +90,9 @@ public interface ImperativeRadixApi {
 	interface Transaction {
 		BuiltTransaction build(TransactionRequest request);
 
-		TxDTO finalize(FinalizedTransaction request);
+		TxBlobDTO finalize(FinalizedTransaction request);
 
-		TxDTO submit(FinalizedTransaction request);
+		TxDTO submit(TxBlobDTO request);
 
 		TransactionDTO lookup(AID txId);
 
@@ -136,7 +138,7 @@ public interface ImperativeRadixApi {
 	interface Validator {
 		ValidatorsResponse list(int size, NavigationCursor cursor);
 
-		ValidatorDTO lookup(String validatorAddress);
+		ValidatorDTO lookup(ValidatorAddress validatorAddress);
 	}
 
 	Validator validator();
@@ -166,7 +168,7 @@ public interface ImperativeRadixApi {
 	Mempool mempool();
 
 	interface RadixEngine {
-		RadixEngineConfiguration configuration();
+		List<ForkDetails> configuration();
 
 		RadixEngineData data();
 	}
@@ -250,12 +252,12 @@ public interface ImperativeRadixApi {
 					}
 
 					@Override
-					public TxDTO finalize(FinalizedTransaction request) {
-						return unwrap(api.transaction().finalize(request));
+					public TxBlobDTO finalize(FinalizedTransaction request) {
+						return unwrap(api.transaction().finalize(request, false));
 					}
 
 					@Override
-					public TxDTO submit(FinalizedTransaction request) {
+					public TxDTO submit(TxBlobDTO request) {
 						return unwrap(api.transaction().submit(request));
 					}
 
@@ -350,7 +352,7 @@ public interface ImperativeRadixApi {
 					}
 
 					@Override
-					public ValidatorDTO lookup(String validatorAddress) {
+					public ValidatorDTO lookup(ValidatorAddress validatorAddress) {
 						return unwrap(api.validator().lookup(validatorAddress));
 					}
 				};
@@ -405,7 +407,7 @@ public interface ImperativeRadixApi {
 			public RadixEngine radixEngine() {
 				return new RadixEngine() {
 					@Override
-					public RadixEngineConfiguration configuration() {
+					public List<ForkDetails> configuration() {
 						return unwrap(api.radixEngine().configuration());
 					}
 

@@ -17,7 +17,6 @@
 
 package com.radixdlt.api.service;
 
-import com.radixdlt.networks.Addressing;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -30,6 +29,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
@@ -81,14 +81,14 @@ public class AccountInfoService {
 				.put("url", details.getInfoUrl())
 				.put("registered", details.isRegistered())
 				.put("owner", addressing.forAccounts().of(details.getOwner()))
-				.put("rakePercentage", details.getPercentage())
+				.put("validatorFee", details.getPercentage())
 				.put("allowDelegation", details.isExternalStakesAllowed()),
 			() -> result
 				.put("name", "")
 				.put("url", "")
 				.put("registered", false)
 				.put("owner", addressing.forAccounts().of(REAddr.ofPubKeyAccount(bftKey)))
-				.put("rakePercentage", 0)
+				.put("validatorFee", 0)
 				.put("allowDelegation", true)
 		);
 

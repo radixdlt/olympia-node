@@ -16,12 +16,10 @@
  *
  */
 
-package com.radixdlt.api;
+package com.radixdlt.identifiers;
 
 import org.bitcoinj.core.Bech32;
 
-import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Bits;
 import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Tuple.Tuple2;
@@ -65,7 +63,7 @@ public final class ResourceAddressing {
 			throw new IllegalArgumentException("Address hrp suffix must be " + hrpSuffix + "(" + rri + ")");
 		}
 		var symbol = data.hrp.substring(0, data.hrp.length() - hrpSuffix.length());
-		if (!CMAtomOS.NAME_PATTERN.matcher(symbol).matches()) {
+		if (!Naming.NAME_PATTERN.matcher(symbol).matches()) {
 			throw new IllegalArgumentException("Invalid symbol in address (" + rri + ")");
 		}
 		var addrBytes = fromBech32Data(data.data);

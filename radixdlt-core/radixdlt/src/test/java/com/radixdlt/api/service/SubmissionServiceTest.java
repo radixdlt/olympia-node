@@ -46,8 +46,6 @@ import com.radixdlt.api.data.PreparedTransaction;
 import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Sha256Hasher;
@@ -76,9 +74,9 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
@@ -160,25 +158,25 @@ public class SubmissionServiceTest {
 				bind(ProposerElection.class).toInstance(new WeightedRotatingLeaders(validatorSet));
 				bind(Serialization.class).toInstance(serialization);
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
-				bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(engineStore);
+				bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() {}).toInstance(engineStore);
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 				bind(CommittedReader.class).toInstance(CommittedReader.mocked());
 				bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-				bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() { })
+				bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() {})
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
+				bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() {})
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<InvalidProposedTxn>>() { })
+				bind(new TypeLiteral<EventDispatcher<InvalidProposedTxn>>() {})
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() { })
+				bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() {})
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<REOutput>>() { })
+				bind(new TypeLiteral<EventDispatcher<REOutput>>() {})
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() { })
+				bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() {})
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<MempoolAdd>>() { })
+				bind(new TypeLiteral<EventDispatcher<MempoolAdd>>() {})
 					.toInstance(mempoolAddEventDispatcher());
-				bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() { })
+				bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {})
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 
 				bind(BFTNode.class).annotatedWith(Self.class).toInstance(NODE);
@@ -280,10 +278,12 @@ public class SubmissionServiceTest {
 
 		result
 			.onFailureDo(Assert::fail)
-			.flatMap(prep ->
-						 signature.flatMap(sig ->
-											   submissionService.calculateTxId(prep.getBlob(), sig)))
-			.onFailureDo(Assert::fail)
+			.flatMap(
+				prep -> signature.flatMap(
+					sig -> submissionService.finalizeTxn(prep.getBlob(), sig, false)
+				)
+			)
+			.onFailure(failure -> Assert.fail(failure.message()))
 			.onSuccess(Assert::assertNotNull);
 	}
 
@@ -294,12 +294,13 @@ public class SubmissionServiceTest {
 
 		result
 			.onFailureDo(Assert::fail)
-			.flatMap(prepared ->
-						 signature.flatMap(recoverable ->
-							 Result.ok(TxLowLevelBuilder.newBuilder(prepared.getBlob()).sig(recoverable).build())
-							 .map(Txn::getId)
-							 .flatMap(txId -> submissionService.submitTx(prepared.getBlob(), recoverable, txId))))
-			.onFailureDo(Assert::fail)
+			.flatMap(
+				prep -> signature.flatMap(
+					sig -> submissionService.finalizeTxn(prep.getBlob(), sig, false)
+				)
+			)
+			.flatMap(txn -> submissionService.submitTx(txn.getPayload(), Optional.of(txn.getId())))
+			.onFailure(failure -> Assert.fail(failure.message()))
 			.onSuccess(Assert::assertNotNull);
 	}
 
