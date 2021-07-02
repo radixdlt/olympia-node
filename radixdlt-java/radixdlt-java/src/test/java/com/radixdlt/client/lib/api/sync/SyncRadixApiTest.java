@@ -124,8 +124,7 @@ public class SyncRadixApiTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.account().stakes(ACCOUNT_ADDRESS1)
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(stakePositionsDTOS -> System.out.println("Stake positions: " + stakePositionsDTOS.toString()))
-			);
+				.onSuccess(stakePositionsDTOS -> System.out.println("Stake positions: " + stakePositionsDTOS.toString())));
 	}
 
 	@Test
@@ -135,8 +134,7 @@ public class SyncRadixApiTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.account().unstakes(ACCOUNT_ADDRESS1)
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(unstakePositionsDTOS -> System.out.println("UnStake positions: " + unstakePositionsDTOS.toString()))
-			);
+				.onSuccess(unstakePositionsDTOS -> System.out.println("UnStake positions: " + unstakePositionsDTOS.toString())));
 	}
 
 	@Test
@@ -208,8 +206,7 @@ public class SyncRadixApiTest {
 				.onFailure(failure -> fail(failure.toString()))
 				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
 				.flatMap(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true))
-				.onSuccess(System.out::println)
-			);
+				.onSuccess(System.out::println));
 	}
 
 	private void makeUnStake(RadixApi client, UInt256 amount) {
@@ -228,12 +225,7 @@ public class SyncRadixApiTest {
 
 	private void addTransaction(RadixApi client, UInt256 amount) {
 		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
-			.transfer(
-				ACCOUNT_ADDRESS1,
-				ACCOUNT_ADDRESS2,
-				amount,
-				"xrd_dr1qyrs8qwl"
-			)
+			.transfer(ACCOUNT_ADDRESS1, ACCOUNT_ADDRESS2, amount, "xrd_dr1qyrs8qwl")
 			.message("Test message")
 			.build();
 

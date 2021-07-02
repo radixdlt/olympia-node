@@ -23,10 +23,6 @@ import com.radixdlt.utils.UInt256;
 public interface Amount {
 	int SUB_UNITS_POW_10 = 18;
 
-	static Amount amount(UInt256 value) {
-		return () -> value;
-	}
-
 	static Amount amount(long value) {
 		return () -> UInt256.from(value);
 	}
