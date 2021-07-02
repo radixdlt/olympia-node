@@ -59,6 +59,10 @@ public enum Network {
 		return id;
 	}
 
+	public Optional<String> genesisTxn() {
+		return Optional.empty();
+	}
+
 	public static Optional<Network> ofId(int id) {
 		for (var network : values()) {
 			if (network.id == id) {

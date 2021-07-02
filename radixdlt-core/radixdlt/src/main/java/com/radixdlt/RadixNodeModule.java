@@ -114,7 +114,11 @@ public final class RadixNodeModule extends AbstractModule {
 		var genesisTxnHex = properties.get("network.genesis_txn");
 		var genesisFile = properties.get("network.genesis_file");
 		var network = Network.ofId(networkId);
-		var networkGenesis = network.flatMap(NetworkGenesis::txn);
+		var networkGenesis = network
+			.flatMap(Network::genesisTxn)
+			.map(Bytes::fromHexString)
+			.map(Txn::create);
+
 		if (networkGenesis.isPresent()) {
 			if (Strings.isNotBlank(genesisTxnHex)) {
 				throw new IllegalStateException("Cannot provide genesis txn for well-known network " + network.orElseThrow());
