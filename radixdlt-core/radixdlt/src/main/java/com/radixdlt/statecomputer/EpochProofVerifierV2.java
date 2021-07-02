@@ -72,7 +72,7 @@ public class EpochProofVerifierV2 implements BatchVerifier<LedgerAndBFTProof> {
 			var nextValidatorSet = nextValidatorSetEvent.nextValidators().stream()
 				.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount()));
 			var bftValidatorSet = BFTValidatorSet.from(nextValidatorSet);
-			if (!nextValidatorSetMaybe.get().equals(bftValidatorSet)) {
+			if (!nextValidatorSetMaybe.orElseThrow().equals(bftValidatorSet)) {
 				throw new MetadataException("Validator set computed does not match proof.");
 			}
 		}
