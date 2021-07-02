@@ -18,6 +18,7 @@
 
 package com.radixdlt.application.system;
 
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
@@ -95,8 +96,9 @@ public class NextViewV2Test {
 		scrypts.forEach(cmAtomOS::load);
 		cmAtomOS.load(new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()));
 		cmAtomOS.load(new TokensConstraintScryptV3());
-		cmAtomOS.load(new ValidatorConstraintScryptV2(2));
+		cmAtomOS.load(new ValidatorConstraintScryptV2());
 		cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
+		cmAtomOS.load(new ValidatorUpdateRakeConstraintScrypt(2));
 		var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()

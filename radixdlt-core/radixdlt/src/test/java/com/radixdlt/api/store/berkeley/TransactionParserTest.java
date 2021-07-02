@@ -107,7 +107,7 @@ public class TransactionParserTest {
 		cmAtomOS.load(new EpochUpdateConstraintScrypt(
 			10, Amount.ofTokens(10).toSubunits(), 9800, 1, 10
 		));
-		cmAtomOS.load(new ValidatorConstraintScryptV2(2));
+		cmAtomOS.load(new ValidatorConstraintScryptV2());
 		cmAtomOS.load(new TokensConstraintScryptV3());
 		cmAtomOS.load(new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()));
 		cmAtomOS.load(new FeeConstraintScrypt());

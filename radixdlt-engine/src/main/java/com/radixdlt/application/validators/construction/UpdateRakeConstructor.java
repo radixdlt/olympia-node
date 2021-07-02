@@ -18,6 +18,7 @@
 
 package com.radixdlt.application.validators.construction;
 
+import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
@@ -47,30 +48,37 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateRake
 	public void construct(UpdateRake action, TxBuilder builder) throws TxBuilderException {
 		var updateInFlight = builder
 			.find(PreparedRakeUpdate.class, p -> p.getValidatorKey().equals(action.getValidatorKey()));
-		final int curRakePercentage;
 		if (updateInFlight.isPresent()) {
-			curRakePercentage = builder.down(
+			builder.down(
 				PreparedRakeUpdate.class,
 				p -> p.getValidatorKey().equals(action.getValidatorKey()),
 				Optional.empty(),
 				() -> new TxBuilderException("Cannot find state")
-			).getCurRakePercentage();
+			);
 		} else {
-			curRakePercentage = builder.down(
+			builder.down(
 				ValidatorRakeCopy.class,
 				p -> p.getValidatorKey().equals(action.getValidatorKey()),
 				Optional.of(SubstateWithArg.noArg(new ValidatorRakeCopy(action.getValidatorKey(), RAKE_MAX))),
 				() -> new TxBuilderException("Cannot find state")
-			).getCurRakePercentage();
+			);
 		}
 
-		var curEpoch = builder.read(EpochData.class, p -> true, Optional.empty(), "Cannot find epoch");
+		var curRakePercentage = builder.read(
+			ValidatorStakeData.class,
+			s -> s.getValidatorKey().equals(action.getValidatorKey()),
+			Optional.of(ValidatorStakeData.createVirtual(action.getValidatorKey())),
+			"Can't find validator stake"
+		).getRakePercentage();
+
 		var isIncrease = action.getRakePercentage() > curRakePercentage;
 		var rakeIncrease = action.getRakePercentage() - curRakePercentage;
 		if (isIncrease && rakeIncrease >= maxRakeIncrease) {
 			throw new TxBuilderException("Max rake increase is " + maxRakeIncrease + " but trying to increase " + rakeIncrease);
 		}
+
 		var epochDiff = isIncrease ? rakeIncreaseDebounceEpochLength : 1;
+		var curEpoch = builder.read(EpochData.class, p -> true, Optional.empty(), "Cannot find epoch");
 		var epoch = curEpoch.getEpoch() + epochDiff;
 		builder.up(new PreparedRakeUpdate(
 			epoch,

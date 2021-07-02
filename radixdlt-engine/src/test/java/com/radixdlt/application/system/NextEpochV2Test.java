@@ -18,6 +18,7 @@
 
 package com.radixdlt.application.system;
 
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxnConstructionRequest;
@@ -80,7 +81,8 @@ public class NextEpochV2Test {
 					),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new TokensConstraintScryptV3(),
-					new ValidatorConstraintScryptV2(2),
+					new ValidatorConstraintScryptV2(),
+					new ValidatorUpdateRakeConstraintScrypt(2),
 					new ValidatorRegisterConstraintScrypt()
 				),
 				REConstructor.newBuilder()

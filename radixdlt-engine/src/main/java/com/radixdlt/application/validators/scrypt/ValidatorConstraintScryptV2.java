@@ -20,12 +20,9 @@ package com.radixdlt.application.validators.scrypt;
 
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.PreparedOwnerUpdate;
-import com.radixdlt.application.validators.state.ValidatorRakeCopy;
-import com.radixdlt.application.validators.state.PreparedRakeUpdate;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
@@ -35,7 +32,6 @@ import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.constraintmachine.ReadProcedure;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
@@ -46,17 +42,8 @@ import com.radixdlt.serialization.DeserializeException;
 
 import java.util.Objects;
 
-import static com.radixdlt.application.validators.state.PreparedRakeUpdate.RAKE_MAX;
-import static com.radixdlt.application.validators.state.PreparedRakeUpdate.RAKE_MIN;
 
 public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
-	public static final int MAX_RAKE_INCREASE = 10 * PreparedRakeUpdate.RAKE_PERCENTAGE_GRANULARITY; // 10%
-	private final long rakeIncreaseDebounceEpochLength;
-
-	public ValidatorConstraintScryptV2(long rakeIncreaseDebounceEpochLength) {
-		this.rakeIncreaseDebounceEpochLength = rakeIncreaseDebounceEpochLength;
-	}
-
 	private static class UpdatingValidatorInfo implements ReducerState {
 		private final ValidatorMetaData prevState;
 
@@ -82,10 +69,10 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 		}
 	}
 
-	private static class UpdatingValidator implements ReducerState {
+	private static class UpdatingValidatorOwner implements ReducerState {
 		private final ECPublicKey validatorKey;
 
-		UpdatingValidator(ECPublicKey validatorKey) {
+		UpdatingValidatorOwner(ECPublicKey validatorKey) {
 			this.validatorKey = validatorKey;
 		}
 
@@ -95,53 +82,6 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 			}
 		}
 	}
-
-	private class UpdatingRakeReady implements ReducerState {
-		private final ValidatorRakeCopy rakeCopy;
-		private final EpochData epochData;
-
-		UpdatingRakeReady(ValidatorRakeCopy rakeCopy, EpochData epochData) {
-			this.rakeCopy = rakeCopy;
-			this.epochData = epochData;
-		}
-
-		void update(PreparedRakeUpdate update) throws ProcedureException {
-			if (!Objects.equals(rakeCopy.getValidatorKey(), update.getValidatorKey())) {
-				throw new ProcedureException("Must update same key");
-			}
-
-			var rakeIncrease = update.getNextRakePercentage() - rakeCopy.getCurRakePercentage();
-			if (rakeIncrease > MAX_RAKE_INCREASE) {
-				throw new ProcedureException("Max rake increase is " + MAX_RAKE_INCREASE + " but trying to increase " + rakeIncrease);
-			}
-
-			if (rakeIncrease > 0) {
-				var expectedEpoch = epochData.getEpoch() + rakeIncreaseDebounceEpochLength;
-				if (update.getEpoch() < expectedEpoch) {
-					throw new ProcedureException("Increasing rake requires epoch delay to " + expectedEpoch + " but was " + update.getEpoch());
-				}
-			} else {
-				var expectedEpoch = epochData.getEpoch() + 1;
-				if (update.getEpoch() != expectedEpoch) {
-					throw new ProcedureException("Decreasing rake requires epoch delay to " + expectedEpoch + " but was " + update.getEpoch());
-				}
-			}
-		}
-	}
-
-	private class UpdatingRakeNeedToReadEpoch implements ReducerState {
-		private final ValidatorRakeCopy rakeCopy;
-
-		private UpdatingRakeNeedToReadEpoch(ValidatorRakeCopy rakeCopy) {
-			this.rakeCopy = rakeCopy;
-		}
-
-		ReducerState readEpoch(EpochData epochData) {
-			return new UpdatingRakeReady(rakeCopy, epochData);
-		}
-	}
-
-
 
 	@Override
 	public void main(Loader os) {
@@ -204,97 +144,6 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 	}
 
 	public void registerRakeUpdates(Loader os) {
-		os.substate(new SubstateDefinition<>(
-			ValidatorRakeCopy.class,
-			SubstateTypeId.VALIDATOR_RAKE_COPY.id(),
-			buf -> {
-				REFieldSerialization.deserializeReservedByte(buf);
-				var key = REFieldSerialization.deserializeKey(buf);
-				var curRakePercentage = REFieldSerialization.deserializeInt(buf);
-				return new ValidatorRakeCopy(key, curRakePercentage);
-			},
-			(s, buf) -> {
-				REFieldSerialization.serializeReservedByte(buf);
-				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
-				buf.putInt(s.getCurRakePercentage());
-			},
-			s -> s.getCurRakePercentage() == RAKE_MAX
-		));
-
-		os.substate(new SubstateDefinition<>(
-			PreparedRakeUpdate.class,
-			SubstateTypeId.PREPARED_RAKE_UPDATE.id(),
-			buf -> {
-				REFieldSerialization.deserializeReservedByte(buf);
-				var epoch = REFieldSerialization.deserializeNonNegativeLong(buf);
-				var validatorKey = REFieldSerialization.deserializeKey(buf);
-				var curRakePercentage = REFieldSerialization.deserializeInt(buf);
-				if (curRakePercentage < RAKE_MIN || curRakePercentage > RAKE_MAX) {
-					throw new DeserializeException("Invalid cur rake percentage " + curRakePercentage);
-				}
-				var nextRakePercentage = REFieldSerialization.deserializeInt(buf);
-				if (nextRakePercentage < RAKE_MIN || nextRakePercentage > RAKE_MAX) {
-					throw new DeserializeException("Invalid rake percentage " + nextRakePercentage);
-				}
-
-				return new PreparedRakeUpdate(epoch, validatorKey, curRakePercentage, nextRakePercentage);
-			},
-			(s, buf) -> {
-				REFieldSerialization.serializeReservedByte(buf);
-				buf.putLong(s.getEpoch());
-				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
-				buf.putInt(s.getCurRakePercentage());
-				buf.putInt(s.getNextRakePercentage());
-			}
-		));
-		os.procedure(new DownProcedure<>(
-			VoidReducerState.class, PreparedRakeUpdate.class,
-			d -> new Authorization(
-				PermissionLevel.USER,
-				(r, c) -> {
-					if (!c.key().map(d.getSubstate().getValidatorKey()::equals).orElse(false)) {
-						throw new AuthorizationException("Key does not match.");
-					}
-				}
-			),
-			(d, s, r) -> {
-				if (d.getArg().isPresent()) {
-					throw new ProcedureException("Args not allowed");
-				}
-				return ReducerResult.incomplete(new UpdatingRakeNeedToReadEpoch(d.getSubstate().getCurrentConfig()));
-			}
-		));
-		os.procedure(new DownProcedure<>(
-			VoidReducerState.class, ValidatorRakeCopy.class,
-			d -> new Authorization(
-				PermissionLevel.USER,
-				(r, c) -> {
-					if (!c.key().map(d.getSubstate().getValidatorKey()::equals).orElse(false)) {
-						throw new AuthorizationException("Key does not match.");
-					}
-				}
-			),
-			(d, s, r) -> {
-				if (d.getArg().isPresent()) {
-					throw new ProcedureException("Args not allowed");
-				}
-				return ReducerResult.incomplete(new UpdatingRakeNeedToReadEpoch(d.getSubstate()));
-			}
-		));
-		os.procedure(new ReadProcedure<>(
-			UpdatingRakeNeedToReadEpoch.class, EpochData.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, u, r) -> ReducerResult.incomplete(s.readEpoch(u))
-		));
-
-		os.procedure(new UpProcedure<>(
-			UpdatingRakeReady.class, PreparedRakeUpdate.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, u, c, r) -> {
-				s.update(u);
-				return ReducerResult.complete();
-			}
-		));
 
 		os.substate(new SubstateDefinition<>(
 			AllowDelegationFlag.class,
@@ -394,7 +243,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				if (d.getArg().isPresent()) {
 					throw new ProcedureException("Args not allowed");
 				}
-				return ReducerResult.incomplete(new UpdatingValidator(d.getSubstate().getValidatorKey()));
+				return ReducerResult.incomplete(new UpdatingValidatorOwner(d.getSubstate().getValidatorKey()));
 			}
 		));
 		os.procedure(new DownProcedure<>(
@@ -411,12 +260,12 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				if (d.getArg().isPresent()) {
 					throw new ProcedureException("Args not allowed");
 				}
-				return ReducerResult.incomplete(new UpdatingValidator(d.getSubstate().getValidatorKey()));
+				return ReducerResult.incomplete(new UpdatingValidatorOwner(d.getSubstate().getValidatorKey()));
 			}
 		));
 
 		os.procedure(new UpProcedure<>(
-			UpdatingValidator.class, PreparedOwnerUpdate.class,
+			UpdatingValidatorOwner.class, PreparedOwnerUpdate.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> {
 				s.update(u);
