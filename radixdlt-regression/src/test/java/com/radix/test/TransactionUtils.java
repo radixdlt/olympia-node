@@ -79,8 +79,8 @@ public final class TransactionUtils {
         var keyPair = account.getKeyPair();
 		return account.transaction().build(request).flatMap(builtTransactionDTO -> {
             var finalizedTransaction = builtTransactionDTO.toFinalized(keyPair);
-            return account.transaction().finalize(finalizedTransaction)
-                    .flatMap(finalTxTdo -> account.transaction().submit(finalizedTransaction.withTxId(finalTxTdo.getTxId())));
+            return account.transaction().finalize(finalizedTransaction, false)
+                    .flatMap(finalTxTdo -> account.transaction().submit(finalTxTdo));
         }).onFailure(Utils::toTestFailureException);
     }
 

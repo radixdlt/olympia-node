@@ -39,12 +39,14 @@ import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_SECONDARY_PORT;
 public class SyncRadixApiConsensusTest {
 	private static final String BASE_URL = "http://localhost/";
 
+	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
 	private static final String CONFIGURATION = "{\"result\":{\"pacemakerTimeout\":3000,\"bftSyncPatienceMs\":200},"
-		+ "\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
-	private static final String DATA = "{\"result\":{\"stateVersion\":37736,\"voteQuorums\":18881,\"rejected\":0,"
-		+ "\"vertexStoreRebuilds\":0,\"vertexStoreForks\":1,\"sync\":{\"requestTimeouts\":0,\"requestsSent\":0},"
-		+ "\"timeout\":1,\"vertexStoreSize\":3,\"processed\":37734,\"consensusEvents\":75526,\"indirectParent\":1,"
-		+ "\"proposalsMade\":18884,\"timedOutViews\":1,\"timeoutQuorums\":1},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
+		+ "\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String DATA = "{\"result\":{\"timeoutQuorums\":1,\"rejected\":0,\"voteQuorums\":79981,"
+		+ "\"vertexStoreForks\":1,\"sync\":{\"requestsSent\":0,\"requestTimeouts\":0},\"timeout\":1,\"stateVers"
+		+ "ion\":159960,\"processed\":159959,\"timedOutViews\":1,\"vertexStoreSize\":2,\"vertexStoreRebuilds\":"
+		+ "0,\"consensusEvents\":319926,\"indirectParent\":1,\"proposalsMade\":79981},\"id\":\"2\",\"jsonrpc\":"
+		+ "\"2.0\"}\n";
 
 	private final OkHttpClient client = mock(OkHttpClient.class);
 
@@ -56,8 +58,7 @@ public class SyncRadixApiConsensusTest {
 			.onSuccess(client -> client.consensus().configuration()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(configuration -> assertEquals(200L, configuration.getBftSyncPatienceMs()))
-				.onSuccess(configuration -> assertEquals(3000L, configuration.getPacemakerTimeout()))
-			);
+				.onSuccess(configuration -> assertEquals(3000L, configuration.getPacemakerTimeout())));
 	}
 
 	@Test
@@ -68,9 +69,8 @@ public class SyncRadixApiConsensusTest {
 			.onSuccess(
 				client -> client.consensus().data()
 					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(data -> assertEquals(37734L, data.getProcessed()))
-					.onSuccess(data -> assertEquals(37736L, data.getStateVersion()))
-			);
+					.onSuccess(data -> assertEquals(159959L, data.getProcessed()))
+					.onSuccess(data -> assertEquals(159960L, data.getStateVersion())));
 	}
 
 	private Result<RadixApi> prepareClient(String responseBody) throws IOException {
@@ -81,7 +81,7 @@ public class SyncRadixApiConsensusTest {
 		when(client.newCall(any())).thenReturn(call);
 		when(call.execute()).thenReturn(response);
 		when(response.body()).thenReturn(body);
-		when(body.string()).thenReturn(responseBody);
+		when(body.string()).thenReturn(NETWORK_ID, responseBody);
 
 		return SyncRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
 	}

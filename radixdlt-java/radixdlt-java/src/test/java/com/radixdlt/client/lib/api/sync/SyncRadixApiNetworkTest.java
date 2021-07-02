@@ -39,9 +39,9 @@ import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_SECONDARY_PORT;
 public class SyncRadixApiNetworkTest {
 	private static final String BASE_URL = "http://localhost/";
 
-	private static final String NETWORK_ID = "{\"result\":{\"networkId\":2},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
-	private static final String DEMAND = "{\"result\":{\"tps\":5},\"id\":\"5\",\"jsonrpc\":\"2.0\"}";
-	private static final String THROUGHPUT = "{\"result\":{\"tps\":8},\"id\":\"6\",\"jsonrpc\":\"2.0\"}";
+	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"2\",\"jsonrpc\":\"2.0\"}";
+	private static final String DEMAND = "{\"result\":{\"tps\":5},\"id\":\"2\",\"jsonrpc\":\"2.0\"}";
+	private static final String THROUGHPUT = "{\"result\":{\"tps\":283},\"id\":\"2\",\"jsonrpc\":\"2.0\"}";
 
 	private final OkHttpClient client = mock(OkHttpClient.class);
 
@@ -52,7 +52,7 @@ public class SyncRadixApiNetworkTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.network().id()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(networkIdDTO -> assertEquals(2, networkIdDTO.getNetworkId())));
+				.onSuccess(networkIdDTO -> assertEquals(99, networkIdDTO.getNetworkId())));
 	}
 
 	@Test
@@ -72,7 +72,7 @@ public class SyncRadixApiNetworkTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.network().throughput()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(networkStatsDTO -> assertEquals(8L, networkStatsDTO.getTps())));
+				.onSuccess(networkStatsDTO -> assertEquals(283L, networkStatsDTO.getTps())));
 	}
 
 	private Result<RadixApi> prepareClient(String responseBody) throws IOException {
@@ -83,7 +83,7 @@ public class SyncRadixApiNetworkTest {
 		when(client.newCall(any())).thenReturn(call);
 		when(call.execute()).thenReturn(response);
 		when(response.body()).thenReturn(body);
-		when(body.string()).thenReturn(responseBody);
+		when(body.string()).thenReturn(NETWORK_ID, responseBody);
 
 		return SyncRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
 	}

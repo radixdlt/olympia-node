@@ -39,10 +39,12 @@ import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_SECONDARY_PORT;
 public class SyncRadixApiMempoolTest {
 	private static final String BASE_URL = "http://localhost/";
 
-	private static final String CONFIGURATION = "{\"result\":{\"throttleMs\":5,\"maxSize\":10000},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
-	private static final String DATA = "{\"result\":{\"maxcount\":0,\"relayerSentCount\":0,\"count\":0,"
-		+ "\"addSuccess\":1273473,\"proposedTransaction\":0,\"errors\":{\"other\":0,\"hook\":3,\"conflict\":0}},"
-		+ "\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
+	private static final String CONFIGURATION = "{\"result\":{\"throttleMs\":5,\"maxSize\":10000},\"id\":\"2\","
+		+ "\"jsonrpc\":\"2.0\"}";
+	private static final String DATA = "{\"result\":{\"addSuccess\":1273473,\"maxcount\":0,\"relayerSentCount\":0,"
+		+ "\"proposedTransaction\":0,\"count\":0,\"errors\":{\"other\":0,\"hook\":3,\"conflict\":0}},\"id\":\"2\","
+		+ "\"jsonrpc\":\"2.0\"}";
 
 	private final OkHttpClient client = mock(OkHttpClient.class);
 
@@ -54,8 +56,7 @@ public class SyncRadixApiMempoolTest {
 			.onSuccess(client -> client.mempool().configuration()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(configuration -> assertEquals(10000L, configuration.getMaxSize()))
-				.onSuccess(configuration -> assertEquals(5L, configuration.getThrottleMs()))
-			);
+				.onSuccess(configuration -> assertEquals(5L, configuration.getThrottleMs())));
 	}
 
 	@Test
@@ -67,8 +68,7 @@ public class SyncRadixApiMempoolTest {
 				client -> client.mempool().data()
 					.onFailure(failure -> fail(failure.toString()))
 					.onSuccess(data -> assertEquals(1273473L, data.getAddSuccess()))
-					.onSuccess(data -> assertEquals(3L, data.getErrors().getHook()))
-			);
+					.onSuccess(data -> assertEquals(3L, data.getErrors().getHook())));
 	}
 
 	private Result<RadixApi> prepareClient(String responseBody) throws IOException {
@@ -79,7 +79,7 @@ public class SyncRadixApiMempoolTest {
 		when(client.newCall(any())).thenReturn(call);
 		when(call.execute()).thenReturn(response);
 		when(response.body()).thenReturn(body);
-		when(body.string()).thenReturn(responseBody);
+		when(body.string()).thenReturn(NETWORK_ID, responseBody);
 
 		return SyncRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
 	}

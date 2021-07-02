@@ -17,22 +17,27 @@
 
 package com.radixdlt.api.handler;
 
-import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.data.PreparedTransaction;
 import com.radixdlt.api.service.ActionParserService;
 import com.radixdlt.api.service.SubmissionService;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Result;
+import com.radixdlt.utils.functional.Result.Mapper2;
 
 import java.util.List;
+import java.util.Optional;
+
+import static org.bouncycastle.util.encoders.Hex.toHexString;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.JsonRpcUtil.optString;
@@ -42,9 +47,12 @@ import static com.radixdlt.api.JsonRpcUtil.safeObject;
 import static com.radixdlt.api.JsonRpcUtil.safeString;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
 import static com.radixdlt.api.data.ApiErrors.INVALID_SIGNATURE_DER;
+import static com.radixdlt.api.data.ApiErrors.INVALID_TX_ID;
 import static com.radixdlt.identifiers.CommonErrors.INVALID_PUBLIC_KEY;
 import static com.radixdlt.utils.functional.Result.allOf;
+import static com.radixdlt.utils.functional.Result.fromOptional;
 import static com.radixdlt.utils.functional.Result.wrap;
+import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class ConstructionHandler {
 	private final SubmissionService submissionService;
@@ -74,7 +82,8 @@ public class ConstructionHandler {
 							feePayer,
 							steps,
 							optString(params, "message"),
-							params.optBoolean("disableResourceAllocationAndDestroy")))
+							params.optBoolean("disableResourceAllocationAndDestroy")
+						))
 						.map(PreparedTransaction::asJson))
 		);
 	}
@@ -83,24 +92,27 @@ public class ConstructionHandler {
 		return withRequiredParameters(
 			request,
 			List.of("transaction", "signatureDER", "publicKeyOfSigner"),
-			List.of(),
+			List.of("immediateSubmit"),
 			params ->
 				allOf(parseBlob(params), parseSignatureDer(params), parsePublicKey(params))
 					.flatMap((blob, signature, publicKey) -> toRecoverable(blob, signature, publicKey)
-						.flatMap(recoverable -> submissionService.calculateTxId(blob, recoverable)))
-					.map(ConstructionHandler::formatTxId)
+						.flatMap(recoverable -> submissionService.finalizeTxn(
+							blob, recoverable, params.optBoolean("immediateSubmit")
+						)))
+					.map(ConstructionHandler::formatTx)
 		);
 	}
 
 	public JSONObject handleConstructionSubmitTransaction(JSONObject request) {
 		return withRequiredParameters(
 			request,
-			List.of("transaction", "signatureDER", "publicKeyOfSigner", "txID"),
-			List.of(),
+			List.of("blob"),
+			List.of("txID"),
 			params ->
-				allOf(parseBlob(params), parseSignatureDer(params), parsePublicKey(params), parseTxId(params))
-					.flatMap((blob, signature, publicKey, txId) -> toRecoverable(blob, signature, publicKey)
-						.flatMap(recoverable -> submissionService.submitTx(blob, recoverable, txId)))
+				safeBlob(params, "blob")
+					.flatMap(blob -> parseTxId(blob, params)
+						.flatMap(submissionService::submitTx))
+					.map(Txn::getId)
 					.map(ConstructionHandler::formatTxId)
 		);
 	}
@@ -124,16 +136,30 @@ public class ConstructionHandler {
 			.flatMap(param -> wrap(INVALID_PUBLIC_KEY, () -> ECPublicKey.fromBytes(param)));
 	}
 
-	private static Result<AID> parseTxId(JSONObject params) {
-		return safeString(params, "txID").flatMap(AID::fromString);
+	private static Mapper2<byte[], Optional<AID>> parseTxId(byte[] blob, JSONObject params) {
+		var optTxId = optString(params, "txID");
+
+		if (optTxId.isEmpty()) {
+			return () -> Result.ok(tuple(blob, Optional.empty()));
+		}
+
+		return () -> fromOptional(INVALID_TX_ID.with("txID"), optTxId)
+			.flatMap(AID::fromString)
+			.map(aid -> tuple(blob, Optional.of(aid)));
+	}
+
+	private Result<REAddr> account(JSONObject params) {
+		return safeString(params, "feePayer")
+			.flatMap(addressing.forAccounts()::parseFunctional);
 	}
 
 	private static JSONObject formatTxId(AID txId) {
 		return jsonObject().put("txID", txId);
 	}
 
-	private Result<REAddr> account(JSONObject params) {
-		return safeString(params, "feePayer")
-			.flatMap(addressing.forAccounts()::parseFunctional);
+	private static JSONObject formatTx(Txn txn) {
+		return jsonObject()
+			.put("txID", txn.getId())
+			.put("blob", toHexString(txn.getPayload()));
 	}
 }

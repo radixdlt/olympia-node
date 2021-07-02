@@ -635,7 +635,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		return u -> {
 			var output = u.getStateComputerOutput().getInstance(REOutput.class);
 			if (output != null) {
-				this.newBatch(output);
+				newBatch(output);
 			}
 		};
 	}

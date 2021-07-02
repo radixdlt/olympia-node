@@ -19,6 +19,8 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.lib.api.ValidatorAddress;
+import com.radixdlt.networks.Network;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
@@ -26,17 +28,17 @@ import java.util.Objects;
 import static java.util.Objects.requireNonNull;
 
 public class StakePositions {
-	private final String validator;
+	private final ValidatorAddress validator;
 	private final UInt256 amount;
 
-	private StakePositions(String validator, UInt256 amount) {
+	private StakePositions(ValidatorAddress validator, UInt256 amount) {
 		this.validator = validator;
 		this.amount = amount;
 	}
 
 	@JsonCreator
 	public static StakePositions create(
-		@JsonProperty(value = "validator", required = true) String validator,
+		@JsonProperty(value = "validator", required = true) ValidatorAddress validator,
 		@JsonProperty(value = "amount", required = true) UInt256 amount
 	) {
 		requireNonNull(validator);
@@ -66,10 +68,10 @@ public class StakePositions {
 
 	@Override
 	public String toString() {
-		return "StakePositionsDTO(" + "validator=" + validator + ", amount=" + amount +	')';
+		return "StakePositionsDTO(" + "validator=" + validator.toString(Network.MAINNET.getId()) + ", amount=" + amount +	')';
 	}
 
-	public String getValidator() {
+	public ValidatorAddress getValidator() {
 		return validator;
 	}
 

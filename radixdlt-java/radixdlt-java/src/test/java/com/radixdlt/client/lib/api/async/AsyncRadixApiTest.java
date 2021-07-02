@@ -41,6 +41,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 import static com.radixdlt.client.lib.api.async.RadixApi.connect;
+import static com.radixdlt.client.lib.api.token.Amount.amount;
 
 //TODO: move to acceptance tests and repurpose to integration testing of the API's.
 public class AsyncRadixApiTest {
@@ -58,32 +59,31 @@ public class AsyncRadixApiTest {
 				ACCOUNT_ADDRESS1,
 				ACCOUNT_ADDRESS2,
 				UInt256.NINE,
-				"xrd_rb1qya85pwq"
+				"xrd_dr1qyrs8qwl"
 			)
 			.message("Test message")
 			.build();
 
 		connect(BASE_URL)
+			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.transaction().build(request)
+				.join()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(builtTransactionDTO -> assertEquals(UInt256.from(100000000000000000L), builtTransactionDTO.getFee()))
 				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
-				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
+				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, false)
+					.join()
 					.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
-					.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
 					.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
+						.join()
 						.onFailure(failure -> fail(failure.toString()))
-						.onSuccess(txDTO -> submittableTransaction.rawTxId()
-							.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))
-						.join())
-					.join())
-				.join())
-			.join();
+						.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId())))));
 	}
 
 	@Test
-	@Ignore	//Useful testbed for experiments
+	@Ignore    //Useful testbed for experiments
 	public void testTransactionHistoryInPages() {
 		connect(BASE_URL)
 			.onFailure(failure -> fail(failure.toString()))
@@ -92,16 +92,16 @@ public class AsyncRadixApiTest {
 					var cursorHolder = new AtomicReference<NavigationCursor>();
 					do {
 						client.account().history(ACCOUNT_ADDRESS1, 5, Optional.ofNullable(cursorHolder.get()))
+							.join()
 							.onFailure(failure -> fail(failure.toString()))
 							.onSuccess(v -> v.getCursor().ifPresent(System.out::println))
 							.onSuccess(v -> v.getCursor().ifPresentOrElse(cursorHolder::set, () -> cursorHolder.set(null)))
 							.map(TransactionHistory::getTransactions)
 							.map(this::formatTxns)
-							.onSuccess(System.out::println)
-							.join();
+							.onSuccess(System.out::println);
 					} while (cursorHolder.get() != null && !cursorHolder.get().value().isEmpty());
 				}
-			).join();
+			);
 	}
 
 	@Test
@@ -109,6 +109,7 @@ public class AsyncRadixApiTest {
 	public void addManyTransactions() {
 		connect(BASE_URL)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> {
 				for (int i = 0; i < 20; i++) {
@@ -119,58 +120,63 @@ public class AsyncRadixApiTest {
 						e.printStackTrace();
 					}
 				}
-			}).join();
+			});
 	}
 
 	@Test
 	@Ignore
 	public void listStakes() {
 		connect(BASE_URL)
+			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.account().stakes(ACCOUNT_ADDRESS1)
+				.join()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(stakePositionsDTOS -> System.out.println("Stake positions: " + stakePositionsDTOS.toString()))
-				.join())
-			.join();
+				.onSuccess(stakePositionsDTOS -> System.out.println("Stake positions: " + stakePositionsDTOS.toString())));
 	}
 
 	@Test
 	@Ignore
 	public void listUnStakes() {
 		connect(BASE_URL)
+			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.account().unstakes(ACCOUNT_ADDRESS1)
+				.join()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(unstakePositionsDTOS -> System.out.println("UnStake positions: " + unstakePositionsDTOS.toString()))
-				.join())
-			.join();
+				.onSuccess(unstakePositionsDTOS -> System.out.println("UnStake positions: " + unstakePositionsDTOS.toString())));
 	}
 
 	@Test
 	@Ignore
 	public void makeStake() {
 		connect(BASE_URL)
+			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> makeStake(client, UInt256.NINE))
-			.join();
+			.onSuccess(client -> makeStake(client, amount(200).tokens()));
 	}
 
 	@Test
 	@Ignore
 	public void makeUnStake() {
 		connect(BASE_URL)
+			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> makeUnStake(client, UInt256.NINE))
-			.join();
+			.onSuccess(client -> makeUnStake(client, amount(100).tokens()));
 	}
 
 	@Test
 	@Ignore
 	public void transferUnStake() {
 		connect(BASE_URL)
+			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> transferUnStake(client, UInt256.NINE))
-			.join();
+			.onSuccess(client -> transferUnStake(client, amount(100).tokens()));
 	}
 
 	private void transferUnStake(RadixApi client, UInt256 amount) {
@@ -179,23 +185,18 @@ public class AsyncRadixApiTest {
 				ACCOUNT_ADDRESS2,
 				ACCOUNT_ADDRESS1,
 				amount,
-				"xrd_rb1qya85pwq"
+				"xrd_dr1qyrs8qwl"
 			)
 			.message("Test message")
 			.build();
 
-		client.transaction().build(request)
+		client.transaction().build(request).join()
 			.onFailure(failure -> fail(failure.toString()))
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR2))
-			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
-				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
-				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
+			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, false).join()
+				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction).join()
 					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(txDTO -> submittableTransaction.rawTxId()
-						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))
-					.join())
-				.join())
-			.join();
+					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))));
 	}
 
 	private List<String> formatTxns(List<TransactionDTO> t) {
@@ -212,22 +213,17 @@ public class AsyncRadixApiTest {
 	}
 
 	private void makeStake(RadixApi client, UInt256 amount) {
-		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
-			.stake(ACCOUNT_ADDRESS1, ValidatorAddress.of(KEY_PAIR2.getPublicKey()), amount)
-			.build();
-
-		client.transaction().build(request)
-			.onFailure(failure -> fail(failure.toString()))
-			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
-			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
-				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
-				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
-					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(txDTO -> submittableTransaction.rawTxId()
-						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))
-					.join())
-				.join())
-			.join();
+		client.local().validatorInfo()
+			.join()
+			.map(account -> TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
+				.stake(ACCOUNT_ADDRESS1, account.getAddress(), amount)
+				.build())
+			.onSuccess(request -> client.transaction().build(request)
+				.join()
+				.onFailure(failure -> fail(failure.toString()))
+				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
+				.flatMap(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true).join())
+				.onSuccess(System.out::println));
 	}
 
 	private void makeUnStake(RadixApi client, UInt256 amount) {
@@ -235,18 +231,13 @@ public class AsyncRadixApiTest {
 			.unstake(ACCOUNT_ADDRESS1, ValidatorAddress.of(KEY_PAIR2.getPublicKey()), amount)
 			.build();
 
-		client.transaction().build(request)
+		client.transaction().build(request).join()
 			.onFailure(failure -> fail(failure.toString()))
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
-			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
-				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
-				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
+			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, false).join()
+				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction).join()
 					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(txDTO -> submittableTransaction.rawTxId()
-						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))
-					.join())
-				.join())
-			.join();
+					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))));
 	}
 
 	private void addTransaction(RadixApi client, UInt256 amount) {
@@ -255,25 +246,20 @@ public class AsyncRadixApiTest {
 				ACCOUNT_ADDRESS1,
 				ACCOUNT_ADDRESS2,
 				amount,
-				"xrd_rb1qya85pwq"
+				"xrd_dr1qyrs8qwl"
 			)
 			.message("Test message")
 			.build();
 
-		client.transaction().build(request)
+		client.transaction().build(request).join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(builtTransactionDTO -> assertEquals(UInt256.from(100000000000000000L), builtTransactionDTO.getFee()))
+			.onSuccess(builtTransactionDTO -> assertEquals(amount(73800L).micros(), builtTransactionDTO.getFee()))
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
-			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
+			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, false).join()
 				.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
-				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
-				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
+				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction).join()
 					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(txDTO -> submittableTransaction.rawTxId()
-						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))
-					.join())
-				.join())
-			.join();
+					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))));
 	}
 
 	private static ECKeyPair keyPairOf(int pk) {

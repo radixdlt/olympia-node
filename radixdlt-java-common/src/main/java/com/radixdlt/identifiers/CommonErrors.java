@@ -23,6 +23,7 @@ public enum CommonErrors implements Failure {
 	INVALID_VALIDATOR_ADDRESS(2509, "Invalid validator address {0}"),
 	INVALID_ACCOUNT_ADDRESS(2510, "Invalid account address {0}"),
 	INVALID_PUBLIC_KEY(2513, "Invalid public key {0}"),
+	ASYNC_PROCESSING_ERROR(2525, "Async processing error {0}"),
 	AID_IS_NULL(1601, "AID string is 'null'"),
 	INVALID_LENGTH(1602, "AID string has incorrect length {0}"),
 	UNABLE_TO_DECODE(1603, "Unable to decode: {0}"),
