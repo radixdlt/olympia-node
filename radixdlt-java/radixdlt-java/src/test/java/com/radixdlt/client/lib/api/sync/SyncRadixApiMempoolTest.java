@@ -20,21 +20,14 @@ import org.junit.Test;
 
 import com.radixdlt.utils.functional.Result;
 
-import java.io.IOException;
-
-import okhttp3.Call;
-import okhttp3.OkHttpClient;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
+import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_PRIMARY_PORT;
-import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_SECONDARY_PORT;
 
 public class SyncRadixApiMempoolTest {
 	private static final String BASE_URL = "http://localhost/";
@@ -46,10 +39,10 @@ public class SyncRadixApiMempoolTest {
 		+ "\"proposedTransaction\":0,\"count\":0,\"errors\":{\"other\":0,\"hook\":3,\"conflict\":0}},\"id\":\"2\","
 		+ "\"jsonrpc\":\"2.0\"}";
 
-	private final OkHttpClient client = mock(OkHttpClient.class);
+	private final HttpClient client = mock(HttpClient.class);
 
 	@Test
-	public void testConfiguration() throws IOException {
+	public void testConfiguration() throws Exception {
 		prepareClient(CONFIGURATION)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
@@ -60,7 +53,7 @@ public class SyncRadixApiMempoolTest {
 	}
 
 	@Test
-	public void testData() throws IOException {
+	public void testData() throws Exception {
 		prepareClient(DATA)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
@@ -71,16 +64,13 @@ public class SyncRadixApiMempoolTest {
 					.onSuccess(data -> assertEquals(3L, data.getErrors().getHook())));
 	}
 
-	private Result<RadixApi> prepareClient(String responseBody) throws IOException {
-		var call = mock(Call.class);
-		var response = mock(Response.class);
-		var body = mock(ResponseBody.class);
+	private Result<RadixApi> prepareClient(String responseBody) throws Exception {
+		@SuppressWarnings("unchecked")
+		var response = (HttpResponse<String>) mock(HttpResponse.class);
 
-		when(client.newCall(any())).thenReturn(call);
-		when(call.execute()).thenReturn(response);
-		when(response.body()).thenReturn(body);
-		when(body.string()).thenReturn(NETWORK_ID, responseBody);
+		when(response.body()).thenReturn(NETWORK_ID, responseBody);
+		when(client.<String>send(any(), any())).thenReturn(response);
 
-		return SyncRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
+		return SyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
 	}
 }

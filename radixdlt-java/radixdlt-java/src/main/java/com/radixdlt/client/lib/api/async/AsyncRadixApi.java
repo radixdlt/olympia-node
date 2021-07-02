@@ -213,7 +213,10 @@ public class AsyncRadixApi implements RadixApi {
 		@Override
 		public Promise<TxBlobDTO> finalize(FinalizedTransaction request, boolean immediateSubmit) {
 			return call(
-				request(CONSTRUCTION_FINALIZE, request.getBlob(), request.getSignature(), request.getPublicKey(), Boolean.toString(immediateSubmit)),
+				request(
+					CONSTRUCTION_FINALIZE,
+					Hex.toHexString(request.getRawBlob()), request.getSignature(), request.getPublicKey(), Boolean.toString(immediateSubmit)
+				),
 				new TypeReference<>() {}
 			);
 		}
@@ -554,7 +557,6 @@ public class AsyncRadixApi implements RadixApi {
 				}
 
 				public void checkClientTrusted(X509Certificate[] certs, String authType) { }
-
 				public void checkServerTrusted(X509Certificate[] certs, String authType) { }
 			}
 		};

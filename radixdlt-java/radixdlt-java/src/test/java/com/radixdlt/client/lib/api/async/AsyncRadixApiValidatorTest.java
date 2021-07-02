@@ -40,15 +40,15 @@ public class AsyncRadixApiValidatorTest {
 
 	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
 	private static final String LIST = "{\"result\":{\"cursor\":\"dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\""
-		+ ",\"validators\":[{\"totalDelegatedStake\":\"100000000000000000000\",\"rakePercentage\":0,\"address\":\"dv1qfwtmurydewmf"
+		+ ",\"validators\":[{\"totalDelegatedStake\":\"100000000000000000000\",\"validatorFee\":0,\"address\":\"dv1qfwtmurydewmf"
 		+ "64rnrektuh20g8r6svm0cpnpcuuay4ammw2cnumc3jtmxl\",\"infoURL\":\"\",\"ownerDelegation\":\"100000000000000000000\",\"name\""
 		+ ":\"\",\"registered\":true,\"ownerAddress\":\"ddx1qsp9e00sv3h9md825wv0xe0jafaqu02pndlqxv8rnn5jhh0detz0n0qtp2phh\",\"isExt"
-		+ "ernalStakeAccepted\":true},{\"totalDelegatedStake\":\"100000000000000000000\",\"rakePercentage\":0,\"address\":\"dv1q0ll"
+		+ "ernalStakeAccepted\":true},{\"totalDelegatedStake\":\"100000000000000000000\",\"validatorFee\":0,\"address\":\"dv1q0ll"
 		+ "j774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\",\"infoURL\":\"\",\"ownerDelegation\":\"100000000000000000000\""
 		+ ",\"name\":\"\",\"registered\":true,\"ownerAddress\":\"ddx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs27s5vq5h24sfvvdfj\""
 		+ ",\"isExternalStakeAccepted\":true}]},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
-	private static final String LOOKUP = "{\"result\":{\"totalDelegatedStake\":\"4754240000000000000000000\",\"rakePercentage\":0,\""
+	private static final String LOOKUP = "{\"result\":{\"totalDelegatedStake\":\"4754240000000000000000000\",\"validatorFee\":0,\""
 		+ "address\":\"dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\",\"infoURL\":\"\",\"ownerDelegation\":\"10000"
 		+ "0000000000000000\",\"name\":\"\",\"registered\":true,\"ownerAddress\":\"ddx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs2"
 		+ "7s5vq5h24sfvvdfj\",\"isExternalStakeAccepted\":true},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";

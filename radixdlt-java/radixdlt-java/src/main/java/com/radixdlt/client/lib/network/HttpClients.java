@@ -22,19 +22,21 @@
 
 package com.radixdlt.client.lib.network;
 
-import io.reactivex.Single;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
+
+import io.reactivex.Single;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import okhttp3.OkHttpClient;
 
+@Deprecated	//TODO: remove it before mainnet
 public class HttpClients {
 	private HttpClients() {
 	}
@@ -103,6 +105,7 @@ public class HttpClients {
 	 *
 	 * @return created client
 	 */
+	@Deprecated
 	public static OkHttpClient getSslAllTrustingClient() {
 		synchronized (LOCK) {
 			if (sslAllTrustingClient == null) {
@@ -111,5 +114,4 @@ public class HttpClients {
 			return sslAllTrustingClient;
 		}
 	}
-
 }

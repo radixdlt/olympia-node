@@ -29,12 +29,8 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.functional.Result;
 
-import java.io.IOException;
-
-import okhttp3.Call;
-import okhttp3.OkHttpClient;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
+import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -44,8 +40,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_PRIMARY_PORT;
-import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_SECONDARY_PORT;
 import static com.radixdlt.client.lib.api.token.Amount.amount;
 
 public class SyncRadixApiLocalTest {
@@ -64,15 +58,15 @@ public class SyncRadixApiLocalTest {
 		+ "tt0q0sjsjwawyvs6zsklj\",\"amount\":\"1000000000000000000000000000\"}],\"tokens\":[]}},\"id\":\"2\",\"jsonrp"
 		+ "c\":\"2.0\"}\n";
 	private static final String VALIDATOR_INFO = "{\"result\":{\"owner\":\"ddx1qsprpeqt46q3qqmx56muck5rs9dhuz9a2x9l0g4"
-		+ "addup7z2zfm4c3jqurkgjv\",\"rakePercentage\":0,\"address\":\"dv1qgcwgzawsygqxe4xklx94quptdlq302330m690tt0q0s"
+		+ "addup7z2zfm4c3jqurkgjv\",\"validatorFee\":0,\"address\":\"dv1qgcwgzawsygqxe4xklx94quptdlq302330m690tt0q0s"
 		+ "jsjwawyvs6zsklj\",\"stakes\":[{\"amount\":\"1000000000000000000000000000\",\"delegator\":\"ddx1qsprpeqt46q3"
 		+ "qqmx56muck5rs9dhuz9a2x9l0g4addup7z2zfm4c3jqurkgjv\"}],\"allowDelegation\":true,\"name\":\"\",\"registered\""
 		+ ":true,\"totalStake\":\"1000000000000000000000000000\",\"url\":\"\"},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 	private static final String NEXT_EPOCH = "{\"result\":{\"validators\":[{\"totalDelegatedStake\":\"1000000000000000"
-		+ "000000000000\",\"rakePercentage\":0,\"address\":\"dv1qtjlayqkvk234cwh5rs72uunjwgte8gnr4gp6vvgqmmdjl9fjvr5ul"
+		+ "000000000000\",\"validatorFee\":0,\"address\":\"dv1qtjlayqkvk234cwh5rs72uunjwgte8gnr4gp6vvgqmmdjl9fjvr5ul"
 		+ "nv4zg\",\"infoURL\":\"\",\"ownerDelegation\":\"1000000000000000000000000000\",\"name\":\"\",\"registered\":"
 		+ "true,\"ownerAddress\":\"ddx1qspwtl5szeje2xhp67swretnjwfep0yazvw4q8f33qr0dktu4xfswnsjjpvcy\",\"isExternalSta"
-		+ "keAccepted\":true},{\"totalDelegatedStake\":\"1000000000000000000000000000\",\"rakePercentage\":0,\"address"
+		+ "keAccepted\":true},{\"totalDelegatedStake\":\"1000000000000000000000000000\",\"validatorFee\":0,\"address"
 		+ "\":\"dv1qgcwgzawsygqxe4xklx94quptdlq302330m690tt0q0sjsjwawyvs6zsklj\",\"infoURL\":\"\",\"ownerDelegation\":"
 		+ "\"1000000000000000000000000000\",\"name\":\"\",\"registered\":true,\"ownerAddress\":\"ddx1qsprpeqt46q3qqmx5"
 		+ "6muck5rs9dhuz9a2x9l0g4addup7z2zfm4c3jqurkgjv\",\"isExternalStakeAccepted\":true}]},\"id\":\"2\",\"jsonrpc\""
@@ -101,10 +95,10 @@ public class SyncRadixApiLocalTest {
 	//TODO: add tests for current epoch request
 	private static final String CURRENT_EPOCH = "";
 
-	private final OkHttpClient client = mock(OkHttpClient.class);
+	private final HttpClient client = mock(HttpClient.class);
 
 	@Test
-	public void testAccountInfo() throws IOException {
+	public void testAccountInfo() throws Exception {
 		var accountAddress = AccountAddress.create(ACCOUNTS.parse("ddx1qsprpeqt46q3qqmx56muck5rs9dhuz9a2x9l0g4addup7z2zfm4c3jqurkgjv"));
 
 		prepareClient(ACCOUNT_INFO)
@@ -117,7 +111,7 @@ public class SyncRadixApiLocalTest {
 	}
 
 	@Test
-	public void testValidatorInfo() throws IOException {
+	public void testValidatorInfo() throws Exception {
 		prepareClient(VALIDATOR_INFO)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
@@ -128,7 +122,7 @@ public class SyncRadixApiLocalTest {
 	}
 
 	@Test
-	public void testNextEpoch() throws IOException {
+	public void testNextEpoch() throws Exception {
 		prepareClient(NEXT_EPOCH)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
@@ -138,7 +132,7 @@ public class SyncRadixApiLocalTest {
 	}
 
 	@Test
-	public void testSubmitTxSingleStep() throws IOException {
+	public void testSubmitTxSingleStep() throws Exception {
 		prepareClient(ACCOUNT_INFO, BUILD_TRANSACTION, FINALIZE_TRANSACTION, ACCOUNT_INFO, SINGLE_STEP)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
@@ -171,19 +165,6 @@ public class SyncRadixApiLocalTest {
 			.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()));
 	}
 
-	private Result<RadixApi> prepareClient(String... responseBodies) throws IOException {
-		var call = mock(Call.class);
-		var response = mock(Response.class);
-		var body = mock(ResponseBody.class);
-
-		when(client.newCall(any())).thenReturn(call);
-		when(call.execute()).thenReturn(response);
-		when(response.body()).thenReturn(body);
-		when(body.string()).thenReturn(NETWORK_ID, responseBodies);
-
-		return SyncRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
-	}
-
 	private static ECKeyPair keyPairOf(int pk) {
 		var privateKey = new byte[ECKeyPair.BYTES];
 
@@ -194,5 +175,15 @@ public class SyncRadixApiLocalTest {
 		} catch (PrivateKeyException | PublicKeyException e) {
 			throw new IllegalArgumentException("Error while generating public key", e);
 		}
+	}
+
+	private Result<RadixApi> prepareClient(String... responseBodies) throws Exception {
+		@SuppressWarnings("unchecked")
+		var response = (HttpResponse<String>) mock(HttpResponse.class);
+
+		when(response.body()).thenReturn(NETWORK_ID, responseBodies);
+		when(client.<String>send(any(), any())).thenReturn(response);
+
+		return SyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
 	}
 }
