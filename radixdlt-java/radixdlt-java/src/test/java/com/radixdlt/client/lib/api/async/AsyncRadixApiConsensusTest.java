@@ -76,10 +76,7 @@ public class AsyncRadixApiConsensusTest {
 		when(response.body()).thenReturn(NETWORK_ID, responseBody);
 		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
 
-		try {
-			return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
-		} finally {
-			completableFuture.completeAsync(() -> response);
-		}
+		completableFuture.completeAsync(() -> response);
+		return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
 	}
 }
