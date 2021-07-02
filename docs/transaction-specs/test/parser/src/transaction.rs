@@ -16,35 +16,35 @@ pub struct Transaction {
 
 #[derive(Debug)]
 pub enum Instruction {
-    HEADER(u8, u8),
+    END,
 
     SYSCALL(Bytes),
 
     UP(Box<dyn Substate>),
 
-    VDOWN(Box<dyn Substate>),
-
-    VDOWNARG(Box<dyn Substate>, Bytes),
-
-    DOWN(SubstateId),
-
-    LDOWN(u32),
-
-    DOWNALL(u8),
-
-    MSG(Bytes),
-
-    SIG(Signature),
-
-    DOWNINDEX(Bytes),
+    READ(SubstateId),
 
     LREAD(u32),
 
     VREAD(Box<dyn Substate>),
 
-    READ(SubstateId),
+    DOWN(SubstateId),
 
-    END,
+    LDOWN(u32),
+
+    VDOWN(Box<dyn Substate>),
+
+    VDOWNARG(Box<dyn Substate>, Bytes),
+
+    SIG(Signature),
+
+    MSG(Bytes),
+
+    HEADER(u8, u8),
+
+    READINDEX(Bytes),
+
+    DOWNINDEX(Bytes),
 }
 
 impl Transaction {
@@ -84,10 +84,11 @@ impl Instruction {
             0x07 => Self::LDOWN(buffer.read_u32()),
             0x08 => Self::VDOWN(Self::read_substate(buffer)),
             0x09 => Self::VDOWNARG(Self::read_substate(buffer), Bytes::from_buffer(buffer)),
-            0x0A => Self::DOWNINDEX(Bytes::from_buffer(buffer)),
-            0x0B => Self::SIG(Signature::from_buffer(buffer)),
-            0x0C => Self::MSG(Bytes::from_buffer(buffer)),
-            0x0D => Self::HEADER(buffer.read_u8(), buffer.read_u8()),
+            0x0A => Self::SIG(Signature::from_buffer(buffer)),
+            0x0B => Self::MSG(Bytes::from_buffer(buffer)),
+            0x0C => Self::HEADER(buffer.read_u8(), buffer.read_u8()),
+            0x0D => Self::READINDEX(Bytes::from_buffer(buffer)),
+            0x0E => Self::DOWNINDEX(Bytes::from_buffer(buffer)),
             _ => panic!("Unexpected opcode: {:#04X}", t),
         }
     }
