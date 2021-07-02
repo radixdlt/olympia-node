@@ -37,12 +37,10 @@ import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.StakedValidators;
 import com.radixdlt.statecomputer.StakedValidatorsReducer;
-import com.radixdlt.statecomputer.forks.ForkBuilder;
 import com.radixdlt.statecomputer.forks.ForkManager;
 import com.radixdlt.store.InMemoryEngineStore;
 
 import java.util.List;
-import java.util.Set;
 
 public final class GenesisBuilder {
 	private static final String RADIX_ICON_URL  = "https://assets.radixdlt.com/icons/icon-xrd-32x32.png";

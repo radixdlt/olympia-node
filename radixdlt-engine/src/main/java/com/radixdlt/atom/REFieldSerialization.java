@@ -179,6 +179,19 @@ public final class REFieldSerialization {
 		return dest;
 	}
 
+	public static void serializeFixedLengthBytes(ByteBuffer buf, byte[] bytes, int length) {
+		if (bytes.length != length) {
+			throw new IllegalArgumentException("Expected " + length + " bytes, but got " + bytes.length);
+		}
+		buf.put(bytes);
+	}
+
+	public static byte[] deserializeFixedLengthBytes(ByteBuffer buf, int length) {
+		final var dest = new byte[length];
+		buf.get(dest);
+		return dest;
+	}
+
 	public static String deserializeUrl(ByteBuffer buf) throws DeserializeException {
 		var len = Byte.toUnsignedInt(buf.get()); // url
 		var dest = new byte[len];

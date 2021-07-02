@@ -68,16 +68,16 @@ public final class ForkManager {
 			.sorted((a, b) -> (int) (a.getEpoch() - b.getEpoch()))
 			.collect(ImmutableList.toImmutableList());
 
+		if (fixedEpochForks.isEmpty()) {
+			throw new IllegalArgumentException("At least one fork config at fixed epoch is required");
+		}
+
 		if (fixedEpochForks.get(0).getEpoch() != 0L) {
 			throw new IllegalArgumentException("Genesis fork must start at epoch 0");
 		}
 
 		if (!sanityCheckFixedEpochs(fixedEpochForks)) {
 			throw new IllegalArgumentException("Invalid forks: duplicate epoch. " + fixedEpochForks);
-		}
-
-		if (fixedEpochForks.isEmpty()) {
-			throw new IllegalArgumentException("At least one fork config at fixed epoch is required");
 		}
 
 		final var latestFixedEpochFork = fixedEpochForks.get(fixedEpochForks.size() - 1);
@@ -159,6 +159,8 @@ public final class ForkManager {
 		final var fixedEpochForksMap = fixedEpochForks.stream()
 			.collect(ImmutableMap.toImmutableMap(FixedEpochForkConfig::getEpoch, Function.identity()));
 
+		// TODO: this should also include a check for the candidate fork
+		// i.e. if there are enough votes on ledger at any point after `minEpoch`, then the fork should have been executed
 		final var expectedForksAreStored = fixedEpochForks.stream()
 			.filter(f -> f.getEpoch() <= currentEpoch && f.getEpoch() > 0)
 			.allMatch(fork -> {

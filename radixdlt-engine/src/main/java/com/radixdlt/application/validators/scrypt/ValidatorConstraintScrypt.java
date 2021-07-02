@@ -53,6 +53,8 @@ import static com.radixdlt.application.validators.state.PreparedRakeUpdate.RAKE_
 
 public class ValidatorConstraintScrypt implements ConstraintScrypt {
 	public static final int MAX_RAKE_INCREASE = 10 * PreparedRakeUpdate.RAKE_PERCENTAGE_GRANULARITY; // 10%
+	private static final int FORK_VOTE_LENGTH = 32;
+
 	private final long rakeIncreaseDebounceEpochLength;
 
 	public ValidatorConstraintScrypt(long rakeIncreaseDebounceEpochLength) {
@@ -157,10 +159,20 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 					var key = REFieldSerialization.deserializeKey(buf);
 					var name = REFieldSerialization.deserializeString(buf);
 					var url = REFieldSerialization.deserializeUrl(buf);
-					final var forkVoteHashBytes = REFieldSerialization.deserializeBytes(buf);
-					final var forkVoteHash = forkVoteHashBytes.length > 0
-						? Optional.of(HashCode.fromBytes(forkVoteHashBytes))
-						: Optional.<HashCode>empty();
+					final var forkVoteHashBytes = REFieldSerialization.deserializeFixedLengthBytes(buf, FORK_VOTE_LENGTH);
+
+					var forkVoteHashAllZeros = true;
+					for (int i = 0; i < FORK_VOTE_LENGTH; i++) {
+						if (forkVoteHashBytes[i] != (byte) 0x00) {
+							forkVoteHashAllZeros = false;
+							break;
+						}
+					}
+
+					final var forkVoteHash = forkVoteHashAllZeros
+						? Optional.<HashCode>empty()
+						: Optional.of(HashCode.fromBytes(forkVoteHashBytes));
+
 					return new ValidatorMetaData(key, name, url, forkVoteHash);
 				},
 				(s, buf) -> {
@@ -169,8 +181,8 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 					REFieldSerialization.serializeString(buf, s.getName());
 					REFieldSerialization.serializeString(buf, s.getUrl());
 					s.getForkVoteHash().ifPresentOrElse(
-						forkVoteHash -> REFieldSerialization.serializeBytes(buf, forkVoteHash.asBytes()),
-						() -> REFieldSerialization.serializeBytes(buf, new byte[] {})
+						forkVoteHash -> REFieldSerialization.serializeFixedLengthBytes(buf, forkVoteHash.asBytes(), FORK_VOTE_LENGTH),
+						() -> REFieldSerialization.serializeBytes(buf, new byte[FORK_VOTE_LENGTH])
 					);
 				},
 				p -> p.getUrl().isEmpty() && p.getName().isEmpty()
