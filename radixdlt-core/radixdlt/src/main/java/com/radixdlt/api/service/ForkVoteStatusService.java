@@ -17,15 +17,20 @@
 
 package com.radixdlt.api.service;
 
+import com.google.common.collect.Streams;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.radixdlt.application.validators.state.ValidatorMetaData;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.StakedValidators;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForkManager;
+import com.radixdlt.store.EngineStore;
+import com.radixdlt.sync.CommittedReader;
 import java.util.Objects;
 
 @Singleton
@@ -36,38 +41,54 @@ public class ForkVoteStatusService {
 	}
 
 	private final BFTNode self;
-	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+	private final EngineStore<LedgerAndBFTProof> engineStore;
+	private final CommittedReader committedReader;
 	private final ForkManager forkManager;
 
 	@Inject
 	public ForkVoteStatusService(
 		@Self BFTNode self,
-		RadixEngine<LedgerAndBFTProof> radixEngine,
+		EngineStore<LedgerAndBFTProof> engineStore,
+		CommittedReader committedReader,
 		ForkManager forkManager
 	) {
 		this.self = Objects.requireNonNull(self);
-		this.radixEngine = Objects.requireNonNull(radixEngine);
+		this.engineStore = Objects.requireNonNull(engineStore);
+		this.committedReader = Objects.requireNonNull(committedReader);
 		this.forkManager = Objects.requireNonNull(forkManager);
 	}
 
 	public ForkVoteStatus forkVoteStatus() {
-		if (forkManager.forkConfigs().size() == 1) {
-			// no known forks other than the "genesis" fork
+		if (forkManager.getCandidateFork().isEmpty()) {
 			return ForkVoteStatus.NO_ACTION_NEEDED;
 		}
 
-		final var stakedValidators = radixEngine.getComputedState(StakedValidators.class);
-
 		final var expectedCandidateForkVoteHash =
-			forkManager.getCandidateFork()
-				.map(f -> ForkConfig.voteHash(self.getKey(), f));
+			ForkConfig.voteHash(self.getKey(), forkManager.getCandidateFork().get());
 
-		final var hasVotedIfNeeded =
-			expectedCandidateForkVoteHash.isEmpty() || // all good if there's no candidate fork
-				(stakedValidators.getForksVotes().containsKey(self.getKey()) // else existing vote hash must be present and match
-					&& stakedValidators.getForksVotes().get(self.getKey()).equals(expectedCandidateForkVoteHash.get())
-				);
+		final var currentFork = forkManager.getCurrentFork(committedReader.getEpochsForkHashes());
+		final var substateDeserialization = currentFork.getEngineRules().getParser().getSubstateDeserialization();
 
-		return hasVotedIfNeeded ? ForkVoteStatus.NO_ACTION_NEEDED : ForkVoteStatus.VOTE_REQUIRED;
+		// TODO: this could be optimized
+		try (var validatorMetadataCursor = engineStore.openIndexedCursor(
+				SubstateIndex.create(SubstateTypeId.VALIDATOR_META_DATA.id(), ValidatorMetaData.class))) {
+
+			final var maybeSelfForkVoteHash = Streams.stream(validatorMetadataCursor)
+				.map(s -> {
+					try {
+						return (ValidatorMetaData) substateDeserialization.deserialize(s.getData());
+					} catch (DeserializeException e) {
+						throw new IllegalStateException("Failed to deserialize ValidatorMetaData substate");
+					}
+				})
+				.filter(vm -> vm.getValidatorKey().equals(self.getKey()))
+				.findAny()
+				.flatMap(ValidatorMetaData::getForkVoteHash);
+
+			return maybeSelfForkVoteHash.filter(expectedCandidateForkVoteHash::equals).isPresent()
+				? ForkVoteStatus.NO_ACTION_NEEDED
+				: ForkVoteStatus.VOTE_REQUIRED;
+
+		}
 	}
 }

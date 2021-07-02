@@ -20,6 +20,7 @@ package com.radixdlt.application.tokens;
 
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.atom.REConstructor;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
@@ -30,6 +31,7 @@ import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.exceptions.ResourceAllocationAndDestructionException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -114,15 +116,14 @@ public class BurnTokensV3Test {
 		this.engine.execute(List.of(mintTxn));
 
 		// Act
-		var burnTxn = this.engine.construct(txBuilder -> {
-			txBuilder.toLowLevelBuilder().disableResourceAllocAndDestroy();
-			new BurnTokenConstructor().construct(new BurnToken(tokenAddr, account, UInt256.TEN), txBuilder);
-			txBuilder.end();
-		}).signAndBuild(key::sign);
+		var request = TxnConstructionRequest.create()
+			.disableResourceAllocAndDestroy()
+			.action(new BurnToken(tokenAddr, account, UInt256.TEN));
+		var burnTxn = this.engine.construct(request).signAndBuild(key::sign);
 
 		// Assert
 		assertThatThrownBy(() -> this.engine.execute(List.of(burnTxn)))
-			.isInstanceOf(RadixEngineException.class);
+			.hasRootCauseInstanceOf(ResourceAllocationAndDestructionException.class);
 	}
 
 	@Test

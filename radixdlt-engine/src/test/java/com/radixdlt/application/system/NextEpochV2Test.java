@@ -141,7 +141,7 @@ public class NextEpochV2Test {
 		sut.execute(List.of(start), null, PermissionLevel.SYSTEM);
 
 		var request = TxnConstructionRequest.create()
-			.action(new NextEpoch(u -> { }, 1));
+			.action(new NextEpoch(1));
 
 		// Act
 		var txn = sut.construct(request)

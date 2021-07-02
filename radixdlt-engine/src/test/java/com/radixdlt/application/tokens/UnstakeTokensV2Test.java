@@ -225,7 +225,7 @@ public class UnstakeTokensV2Test {
 			TxnConstructionRequest.create().actions(stakeActions)
 		).signAndBuild(key::sign);
 		this.sut.execute(List.of(stake));
-		var nextEpoch = sut.construct(new NextEpoch(u -> { }, 1))
+		var nextEpoch = sut.construct(new NextEpoch(1))
 			.buildWithoutSignature();
 		this.sut.execute(List.of(nextEpoch), null, PermissionLevel.SUPER_USER);
 
@@ -245,7 +245,7 @@ public class UnstakeTokensV2Test {
 			TxnConstructionRequest.create().actions(stakeActions)
 		).signAndBuild(key::sign);
 		this.sut.execute(List.of(stake));
-		var nextEpoch = sut.construct(new NextEpoch(u -> { }, 1))
+		var nextEpoch = sut.construct(new NextEpoch(1))
 			.buildWithoutSignature();
 		this.sut.execute(List.of(nextEpoch), null, PermissionLevel.SUPER_USER);
 
@@ -271,7 +271,7 @@ public class UnstakeTokensV2Test {
 				.action(new RegisterValidator(key.getPublicKey()))
 		).signAndBuild(key::sign);
 		sut.execute(List.of(txn));
-		var nextEpoch = sut.construct(new NextEpoch(u -> { }, 1))
+		var nextEpoch = sut.construct(new NextEpoch(1))
 			.buildWithoutSignature();
 		this.sut.execute(List.of(nextEpoch), null, PermissionLevel.SUPER_USER);
 		var unstake = this.sut.construct(new UnstakeOwnership(accountAddr, key.getPublicKey(), unstakeAmt))
@@ -279,7 +279,7 @@ public class UnstakeTokensV2Test {
 		sut.execute(List.of(unstake));
 		var request = TxnConstructionRequest.create()
 			.action(new NextRound(10, true, 1, u -> key.getPublicKey()))
-			.action(new NextEpoch(u -> { }, 1));
+			.action(new NextEpoch(1));
 		var nextEpoch2 = sut.construct(request).buildWithoutSignature();
 		this.sut.execute(List.of(nextEpoch2), null, PermissionLevel.SUPER_USER);
 

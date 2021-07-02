@@ -21,8 +21,8 @@ package com.radixdlt.statecomputer.forks;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
-import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.store.EngineStore;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -214,15 +214,15 @@ public final class ForkManager {
 	@SuppressWarnings("unchecked")
 	public Optional<ForkConfig> findNextForkConfig(
 		ForkConfig currentForkConfig,
-		RadixEngine<LedgerAndBFTProof> radixEngine,
-		LedgerAndBFTProof uncommittedProof
+		EngineStore<LedgerAndBFTProof> engineStore,
+		LedgerAndBFTProof ledgerAndBFTProof
 	) {
 		if (currentForkConfig instanceof CandidateForkConfig) {
 			// if we're already running a candidate fork than no action is needed
 			return Optional.empty();
 		}
 
-		final var nextEpoch = uncommittedProof.getProof().getEpoch() + 1;
+		final var nextEpoch = ledgerAndBFTProof.getProof().getEpoch() + 1;
 		final var currentFixedEpochFork = (FixedEpochForkConfig) currentForkConfig;
 		final var latestFixedEpochFork = fixedEpochForks.get(fixedEpochForks.size() - 1);
 
@@ -236,10 +236,11 @@ public final class ForkManager {
 			return (Optional) maybeNextFixedEpochFork;
 		} else if (currentFixedEpochFork.equals(latestFixedEpochFork)) {
 			// if we're at the latest fixed epoch fork, then consider the candidate fork
+			final var reParser = currentFixedEpochFork.getEngineRules().getParser();
 			return (Optional) candidateFork
 				.filter(f ->
 					nextEpoch >= f.getPredicate().minEpoch()
-						&& f.getPredicate().test(f, radixEngine, uncommittedProof)
+						&& f.getPredicate().test(f, engineStore, reParser, ledgerAndBFTProof)
 				);
 		} else {
 			return Optional.empty();

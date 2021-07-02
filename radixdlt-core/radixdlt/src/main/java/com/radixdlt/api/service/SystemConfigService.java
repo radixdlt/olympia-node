@@ -366,7 +366,7 @@ public class SystemConfigService {
 			.put("isCandidate", forkConfig instanceof CandidateForkConfig)
 			.put("maxRounds", forkConfig.getEngineRules().getMaxRounds().number())
 			.put("maxValidators", forkConfig.getEngineRules().getMaxValidators())
-			.put("maxSigsPerRound", forkConfig.getEngineRules().getMaxSigsPerRound().orElse(0));
+			.put("maxSigsPerRound", forkConfig.getEngineRules().getMaxSigsPerRound().orElse(-1));
 
 		if (forkConfig instanceof FixedEpochForkConfig) {
 			json.put("epoch", ((FixedEpochForkConfig) forkConfig).getEpoch());

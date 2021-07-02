@@ -24,17 +24,17 @@ import java.util.List;
 import java.util.Objects;
 
 public class AccountBalance {
-	private final List<StakePositions> stakes;
+	private final List<BalanceStakes> stakes;
 	private final List<Balance> tokens;
 
-	private AccountBalance(List<StakePositions> stakes, List<Balance> tokens) {
+	private AccountBalance(List<BalanceStakes> stakes, List<Balance> tokens) {
 		this.stakes = stakes;
 		this.tokens = tokens;
 	}
 
 	@JsonCreator
 	public static AccountBalance create(
-		@JsonProperty(value = "stakes", required = true) List<StakePositions> stakes,
+		@JsonProperty(value = "stakes", required = true) List<BalanceStakes> stakes,
 		@JsonProperty(value = "tokens", required = true) List<Balance> tokens
 	) {
 		return new AccountBalance(stakes, tokens);
@@ -64,7 +64,7 @@ public class AccountBalance {
 		return "{stakes:" + stakes + ", tokens:" + tokens + '}';
 	}
 
-	public List<StakePositions> getStakes() {
+	public List<BalanceStakes> getStakes() {
 		return stakes;
 	}
 

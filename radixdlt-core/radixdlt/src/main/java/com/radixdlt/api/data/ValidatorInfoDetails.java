@@ -17,11 +17,11 @@
 
 package com.radixdlt.api.data;
 
+import org.json.JSONObject;
+
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
-import org.json.JSONObject;
-
 import com.radixdlt.statecomputer.ValidatorDetails;
 import com.radixdlt.utils.UInt256;
 
@@ -150,7 +150,7 @@ public class ValidatorInfoDetails {
 			.put("infoURL", infoUrl)
 			.put("totalDelegatedStake", totalStake)
 			.put("ownerDelegation", ownerStake)
-			.put("rakePercentage", percentage)
+			.put("validatorFee", percentage)
 			.put("registered", registered)
 			.put("isExternalStakeAccepted", externalStakesAllowed);
 	}

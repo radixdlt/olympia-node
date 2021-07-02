@@ -1,17 +1,19 @@
 package com.radix.test.account;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.radix.test.Utils;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.sync.RadixApi;
 import com.radixdlt.client.lib.dto.Balance;
-import com.radixdlt.client.lib.dto.TokenInfo;
 import com.radixdlt.client.lib.dto.TokenBalances;
+import com.radixdlt.client.lib.dto.TokenInfo;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+import java.time.Duration;
 import java.util.stream.Collectors;
 
 /**
@@ -33,8 +35,14 @@ public final class Account implements RadixApi {
     }
 
     @Override
-    public RadixApi withTrace() {
+    public Account withTrace() {
         client.withTrace();
+        return this;
+    }
+
+    @Override
+    public RadixApi withTimeout(Duration timeout) {
+        client.withTimeout(timeout);
         return this;
     }
 

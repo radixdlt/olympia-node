@@ -16,8 +16,10 @@
  */
 package com.radixdlt.api.service;
 
+import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.atom.actions.NextRound;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -45,8 +47,6 @@ import com.radixdlt.api.data.PreparedTransaction;
 import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Sha256Hasher;
@@ -75,10 +75,9 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.statecomputer.StakedValidators;
-import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
@@ -96,6 +95,7 @@ import java.util.Optional;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class SubmissionServiceTest {
 	@Inject
@@ -160,25 +160,25 @@ public class SubmissionServiceTest {
 				bind(ProposerElection.class).toInstance(new WeightedRotatingLeaders(validatorSet));
 				bind(Serialization.class).toInstance(serialization);
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
-				bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(engineStore);
+				bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() {}).toInstance(engineStore);
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 				bind(CommittedReader.class).toInstance(CommittedReader.mocked());
 				bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-				bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() { })
+				bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() {})
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
+				bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() {})
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<InvalidProposedTxn>>() { })
+				bind(new TypeLiteral<EventDispatcher<InvalidProposedTxn>>() {})
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() { })
+				bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() {})
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<REOutput>>() { })
+				bind(new TypeLiteral<EventDispatcher<REOutput>>() {})
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() { })
+				bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() {})
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<MempoolAdd>>() { })
+				bind(new TypeLiteral<EventDispatcher<MempoolAdd>>() {})
 					.toInstance(mempoolAddEventDispatcher());
-				bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() { })
+				bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {})
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 
 				bind(BFTNode.class).annotatedWith(Self.class).toInstance(NODE);
@@ -197,8 +197,16 @@ public class SubmissionServiceTest {
 
 	private void setupGenesis() throws RadixEngineException {
 		var branch = radixEngine.transientBranch();
-		branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
-		final var genesisValidatorSet = branch.getComputedState(StakedValidators.class).toValidatorSet();
+		var processed = branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM).getFirst();
+		var genesisValidatorSet = processed.get(0).getEvents().stream()
+			.filter(NextValidatorSetEvent.class::isInstance)
+			.map(NextValidatorSetEvent.class::cast)
+			.findFirst()
+			.map(e -> BFTValidatorSet.from(
+				e.nextValidators().stream()
+					.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount())))
+			).orElseThrow(() -> new IllegalStateException("No validator set in genesis."));
+
 		radixEngine.deleteBranches();
 
 		var genesisLedgerHeader = LedgerProof.genesis(
@@ -230,11 +238,13 @@ public class SubmissionServiceTest {
 	public void testPrepareTransaction() throws Exception {
 		var acct = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var action = new TransferToken(nativeToken, acct, ALICE_ACCT, BIG_AMOUNT);
+		var tx1 = radixEngine.construct(new NextRound(1, true, 0, i -> registeredNodes.get(0).getPublicKey()))
+			.buildWithoutSignature();
 		var request = TxnConstructionRequest.create().action(action).feePayer(acct);
-
-		var tx = radixEngine.construct(request).signAndBuild(key::sign);
-
-		radixEngine.execute(List.of(tx));
+		var tx2 = radixEngine.construct(request).signAndBuild(key::sign);
+		var ledgerAndBFTProof = mock(LedgerAndBFTProof.class);
+		when(ledgerAndBFTProof.getProof()).thenReturn(mock(LedgerProof.class));
+		radixEngine.execute(List.of(tx1, tx2), ledgerAndBFTProof, PermissionLevel.SUPER_USER);
 
 		var steps = List.of(
 			TransactionAction.transfer(
@@ -270,10 +280,12 @@ public class SubmissionServiceTest {
 
 		result
 			.onFailureDo(Assert::fail)
-			.flatMap(prep ->
-						 signature.flatMap(sig ->
-											   submissionService.calculateTxId(prep.getBlob(), sig)))
-			.onFailureDo(Assert::fail)
+			.flatMap(
+				prep -> signature.flatMap(
+					sig -> submissionService.finalizeTxn(prep.getBlob(), sig, false)
+				)
+			)
+			.onFailure(failure -> Assert.fail(failure.message()))
 			.onSuccess(Assert::assertNotNull);
 	}
 
@@ -284,12 +296,13 @@ public class SubmissionServiceTest {
 
 		result
 			.onFailureDo(Assert::fail)
-			.flatMap(prepared ->
-						 signature.flatMap(recoverable ->
-							 Result.ok(TxLowLevelBuilder.newBuilder(prepared.getBlob()).sig(recoverable).build())
-							 .map(Txn::getId)
-							 .flatMap(txId -> submissionService.submitTx(prepared.getBlob(), recoverable, txId))))
-			.onFailureDo(Assert::fail)
+			.flatMap(
+				prep -> signature.flatMap(
+					sig -> submissionService.finalizeTxn(prep.getBlob(), sig, false)
+				)
+			)
+			.flatMap(txn -> submissionService.submitTx(txn.getPayload(), Optional.of(txn.getId())))
+			.onFailure(failure -> Assert.fail(failure.message()))
 			.onSuccess(Assert::assertNotNull);
 	}
 
@@ -298,9 +311,13 @@ public class SubmissionServiceTest {
 		var action = new TransferToken(nativeToken, acct, ALICE_ACCT, BIG_AMOUNT);
 		var request = TxnConstructionRequest.create().action(action).feePayer(acct);
 
-		var tx = radixEngine.construct(request).signAndBuild(key::sign);
+		var tx1 = radixEngine.construct(new NextRound(1, true, 0, i -> registeredNodes.get(0).getPublicKey()))
+			.buildWithoutSignature();
+		var tx2 = radixEngine.construct(request).signAndBuild(key::sign);
 
-		radixEngine.execute(List.of(tx));
+		var ledgerAndBFTProof = mock(LedgerAndBFTProof.class);
+		when(ledgerAndBFTProof.getProof()).thenReturn(mock(LedgerProof.class));
+		radixEngine.execute(List.of(tx1, tx2), ledgerAndBFTProof, PermissionLevel.SUPER_USER);
 
 		var steps = List.of(
 			TransactionAction.transfer(ALICE_ACCT, BOB_ACCT, UInt256.FOUR, nativeToken)

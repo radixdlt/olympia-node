@@ -29,7 +29,7 @@ import com.radixdlt.constraintmachine.exceptions.InvalidResourceException;
 import com.radixdlt.constraintmachine.exceptions.DepletedFeeReserveException;
 import com.radixdlt.constraintmachine.exceptions.MultipleFeeReserveDepositException;
 import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.constraintmachine.exceptions.ResourceAllocationAndDestructionException;
 import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -134,9 +134,9 @@ public final class ExecutionContext {
 		systemLoan = UInt256.ZERO;
 	}
 
-	public void verifyCanAllocAndDestroyResources() throws ProcedureException {
+	public void verifyCanAllocAndDestroyResources() throws ResourceAllocationAndDestructionException {
 		if (disableResourceAllocAndDestroy) {
-			throw new ProcedureException("Destruction of resources not enabled.");
+			throw new ResourceAllocationAndDestructionException();
 		}
 	}
 

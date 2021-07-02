@@ -18,11 +18,6 @@ package com.radixdlt.client.lib.api.async;
 
 import org.junit.Test;
 
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.exception.PrivateKeyException;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.utils.Ints;
-
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
@@ -37,12 +32,11 @@ import static org.mockito.Mockito.when;
 public class AsyncRadixApiTokenTest {
 	private static final String BASE_URL = "http://localhost/";
 
-	private static final String NATIVE_TOKEN = "{\"result\":{\"tokenInfoURL\":\"https://tokens.radixdlt.com/\","
-		+ "\"symbol\":\"xrd\",\"isSupplyMutable\":true,\"granularity\":\"1\",\"name\":"
-		+ "\"Rads\",\"rri\":\"xrd_rb1qya85pwq\","
-		+ "\"description\":\"Radix Betanet Tokens\",\"currentSupply\":"
-		+ "\"8000000000000000000000000000000000000000000000\",\"iconURL\":"
-		+ "\"https://assets.radixdlt.com/icons/icon-xrd-32x32.png\"},\"id\":\"2\",\"jsonrpc\":\"2.0\"}";
+	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
+	private static final String NATIVE_TOKEN = "{\"result\":{\"tokenInfoURL\":\"https://assets.radixdlt.com/ico"
+		+ "ns/icon-xrd-32x32.png\",\"symbol\":\"xrd\",\"isSupplyMutable\":true,\"granularity\":\"1\",\"name\":\""
+		+ "Rads\",\"rri\":\"xrd_dr1qyrs8qwl\",\"description\":\"Radix Tokens\",\"currentSupply\":\"8000000000000"
+		+ "000000000000000\",\"iconURL\":\"https://tokens.radixdlt.com/\"},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
 	private final HttpClient client = mock(HttpClient.class);
 
@@ -50,24 +44,22 @@ public class AsyncRadixApiTokenTest {
 	public void testNativeToken() throws IOException {
 		prepareClient(NATIVE_TOKEN)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.token().describeNative()
+			.onSuccess(client -> client.token().describeNative().join()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(tokenInfoDTO -> assertEquals("Rads", tokenInfoDTO.getName()))
-				.join())
-			.join();
+				.onSuccess(tokenInfoDTO -> assertEquals("Rads", tokenInfoDTO.getName())));
 	}
 
 	@Test
 	public void testTokenInfo() throws IOException {
 		prepareClient(NATIVE_TOKEN)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.token().describe("xrd_rb1qya85pwq")
+			.onSuccess(client -> client.token().describe("xrd_dr1qyrs8qwl").join()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(tokenInfoDTO -> assertEquals("Rads", tokenInfoDTO.getName()))
-				.join())
-			.join();
+				.onSuccess(tokenInfoDTO -> assertEquals("Rads", tokenInfoDTO.getName())));
 	}
 
 	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {
@@ -75,25 +67,10 @@ public class AsyncRadixApiTokenTest {
 		var response = (HttpResponse<String>) mock(HttpResponse.class);
 		var completableFuture = new CompletableFuture<HttpResponse<String>>();
 
-		when(response.body()).thenReturn(responseBody);
+		when(response.body()).thenReturn(NETWORK_ID, responseBody);
 		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
 
-		try {
-			return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
-		} finally {
-			completableFuture.completeAsync(() -> response);
-		}
-	}
-
-	private static ECKeyPair keyPairOf(int pk) {
-		var privateKey = new byte[ECKeyPair.BYTES];
-
-		Ints.copyTo(pk, privateKey, ECKeyPair.BYTES - Integer.BYTES);
-
-		try {
-			return ECKeyPair.fromPrivateKey(privateKey);
-		} catch (PrivateKeyException | PublicKeyException e) {
-			throw new IllegalArgumentException("Error while generating public key", e);
-		}
+		completableFuture.completeAsync(() -> response);
+		return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
 	}
 }

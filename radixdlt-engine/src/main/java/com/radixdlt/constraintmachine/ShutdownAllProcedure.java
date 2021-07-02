@@ -25,14 +25,14 @@ import java.util.function.Supplier;
 public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> implements Procedure {
 	private final Class<D> downClass;
 	private final Class<S> reducerStateClass;
-	private final ShutdownAllReducer<D, S> downReducer;
+	private final IndexedReducer<D, S> downReducer;
 	private final Supplier<Authorization> authorization;
 
 	public ShutdownAllProcedure(
 		Class<D> downClass,
 		Class<S> reducerStateClass,
 		Supplier<Authorization> authorization,
-		ShutdownAllReducer<D, S> downReducer
+		IndexedReducer<D, S> downReducer
 	) {
 		this.downClass = downClass;
 		this.reducerStateClass = reducerStateClass;
@@ -57,6 +57,6 @@ public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> im
 		ImmutableAddrs immutableAddrs,
 		ExecutionContext context
 	) throws ProcedureException {
-		return downReducer.reduce((S) reducerState, (ShutdownAll<D>) o, context, immutableAddrs);
+		return downReducer.reduce((S) reducerState, (IndexedSubstateIterator<D>) o, context, immutableAddrs);
 	}
 }

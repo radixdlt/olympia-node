@@ -16,10 +16,19 @@
  */
 package com.radixdlt.api.store.berkeley;
 
+import com.radixdlt.atom.actions.NextRound;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.networks.Network;
+import com.radixdlt.store.LastStoredProof;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -110,6 +119,15 @@ public class BerkeleyClientApiStoreTest {
 
 	@Inject
 	private REParser parser;
+
+	@Inject
+	@Self
+	private ECPublicKey self;
+
+	// FIXME: Hack, need this in order to cause provider for genesis to be stored
+	@Inject
+	@LastStoredProof
+	private LedgerProof ledgerProof;
 
 	private Injector createInjector() {
 		return Guice.createInjector(
@@ -290,9 +308,9 @@ public class BerkeleyClientApiStoreTest {
 		var clientApiStore = prepareApiStore(tx, txMap);
 		var txId = txMap.entrySet().stream().findFirst().map(Map.Entry::getKey).orElse(AID.ZERO);
 
-		clientApiStore.getTransaction(txId)
+		clientApiStore.getTransaction(tx.getId())
 			.onFailure(this::failWithMessage)
-			.onSuccess(entry -> assertEquals(txId, entry.getTxId()));
+			.onSuccess(entry -> assertEquals(tx.getId(), entry.getTxId()));
 	}
 
 	@Test
@@ -311,13 +329,20 @@ public class BerkeleyClientApiStoreTest {
 			.onSuccess(list -> fail("Request must be rejected"));
 	}
 
-	private BerkeleyClientApiStore prepareApiStore(Txn tx) throws RadixEngineException {
+	private BerkeleyClientApiStore prepareApiStore(Txn tx) throws TxBuilderException, RadixEngineException {
 		return prepareApiStore(tx, new HashMap<>());
 	}
 
 	@SuppressWarnings("unchecked")
-	private BerkeleyClientApiStore prepareApiStore(Txn tx, Map<AID, Txn> txMap) throws RadixEngineException {
-		var transactions = engine.execute(List.of(tx), null, PermissionLevel.USER)
+	private BerkeleyClientApiStore prepareApiStore(Txn tx, Map<AID, Txn> txMap) throws TxBuilderException, RadixEngineException {
+		var ledgerProof = new LedgerProof(
+			HashUtils.random256(),
+			LedgerHeader.create(0, View.of(9), new AccumulatorState(3, HashUtils.zero256()), 0),
+			new TimestampedECDSASignatures()
+		);
+		var tx1 = engine.construct(new NextRound(1, true, 2, i -> self))
+			.buildWithoutSignature();
+		var transactions = engine.execute(List.of(tx1, tx), LedgerAndBFTProof.create(ledgerProof), PermissionLevel.SUPER_USER).getFirst()
 			.stream()
 			.map(REProcessedTxn::getTxn)
 			.collect(Collectors.toList());

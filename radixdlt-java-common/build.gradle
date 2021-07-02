@@ -26,10 +26,6 @@ dependencyManagement {
         // the Maven BOM which contains a coherent set of module versions
         // for Vaadin dependencies
         mavenBom ('software.amazon.awssdk:bom:2.16.3')
-//        mavenBom ('software.amazon.awssdk:secretsmanager:2.16.3')
-//                {
-//                    exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
-//                }
     }
 }
 
@@ -47,6 +43,7 @@ dependencies {
     api 'com.fasterxml.jackson.datatype:jackson-datatype-json-org'
     api 'com.fasterxml.jackson.datatype:jackson-datatype-guava'
     api 'com.google.guava:guava'
+    api 'com.google.inject:guice'
     api 'com.github.bitcoinj:bitcoinj'
     implementation('software.amazon.awssdk:secretsmanager:2.16.3')
             {

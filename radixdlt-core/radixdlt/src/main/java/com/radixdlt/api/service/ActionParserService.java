@@ -195,7 +195,7 @@ public final class ActionParserService {
 	}
 
 	private Result<Integer> percentage(JSONObject element) {
-		return param(element, "rakePercentage")
+		return param(element, "validatorFee")
 			.flatMap(parameter -> wrap(UNABLE_TO_DECODE, () -> Integer.parseInt(parameter)));
 	}
 

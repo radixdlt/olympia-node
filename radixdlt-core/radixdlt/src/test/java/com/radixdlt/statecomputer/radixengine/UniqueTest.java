@@ -18,6 +18,7 @@
 
 package com.radixdlt.statecomputer.radixengine;
 
+import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
@@ -93,11 +94,12 @@ public final class UniqueTest {
 		// Arrange
 		createInjector().injectMembers(this);
 		var keyPair = ECKeyPair.generateNew();
-		var committedAtom0 = uniqueTxn(keyPair);
-		sut.execute(List.of(committedAtom0));
+		var txn0 = uniqueTxn(keyPair);
+		var branch = sut.transientBranch();
+		branch.execute(List.of(txn0));
 
 		// Act/Assert
-		var committedAtom1 = uniqueTxn(keyPair);
-		assertThatThrownBy(() -> sut.execute(List.of(committedAtom1))).isInstanceOf(RadixEngineException.class);
+		var txn1 = uniqueTxn(keyPair);
+		assertThatThrownBy(() -> branch.execute(List.of(txn1))).hasRootCauseInstanceOf(SubstateNotFoundException.class);
 	}
 }

@@ -32,40 +32,39 @@ import static org.mockito.Mockito.when;
 public class AsyncRadixApiRadixEngineTest {
 	private static final String BASE_URL = "http://localhost/";
 
-	private static final String CONFIGURATION = "{\"result\":{\"current_fork\":{\"name\":\"betanet1\",\"hash\":\"abcd\",\"minEpoch\":0,"
-		+ "\"maxRounds\":1000},\"known_forks\":[{\"name\":\"betanet1\",\"hash\":\"abcd\",\"minEpoch\":0,"
-		+ "\"maxRounds\":1000},{\"name\":\"betanet2\",\"hash\":\"cde\",\"minEpoch\":4,\"maxRounds\":1000},{\"name\":\"betanet3\",\"hash\":\"xyz\","
-		+ "\"minEpoch\":8,\"maxRounds\":1000},{\"name\":\"betanet4\",\"hash\":\"www\",\"minEpoch\":10,\"maxRounds\":10000}],"
-		+ "\"maxValidators\":100,\"minValidators\":1,\"maxTxnsPerProposal\":50},"
-		+ "\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
-	private static final String DATA = "{\"result\":{\"invalidProposedCommands\":0,\"systemTransactions\":207536,"
-		+ "\"userTransactions\":0},\"id\":\"1\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
+	private static final String CONFIGURATION = "{\"result\":[{\"maxSigsPerRound\":50,\"maxValidators\":100,"
+			+ "\"name\":\"olympia-first-epoch\",\"maxRounds\":1500000,\"epoch\":0,\"version\":\"olympia_v1\"},"
+			+ "{\"maxSigsPerRound\":50,\"maxValidators\":100,\"name\":\"olympia\",\"maxRounds\":10000,\"epoch\":2,"
+			+ "\"version\":\"olympia_v1\"}],\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String DATA = "{\"result\":{\"systemTransactions\":37884,\"invalidProposedCommands\":1,"
+			+ "\"userTransactions\":2016},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
 	private final HttpClient client = mock(HttpClient.class);
 
 	@Test
 	public void testConfiguration() throws IOException {
 		prepareClient(CONFIGURATION)
-			.map(RadixApi::withTrace)
-			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.radixEngine().configuration()
+				.map(RadixApi::withTrace)
+				.join()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(configuration -> assertEquals(4, configuration.getKnownForks().size()))
-				.onSuccess(configuration -> assertEquals("betanet4", configuration.getKnownForks().get(3).getName()))
-				.join())
-			.join();
+				.onSuccess(client -> client.radixEngine().configuration().join()
+						.onFailure(failure -> fail(failure.toString()))
+						.onSuccess(configuration -> assertEquals(2, configuration.size()))
+						.onSuccess(configuration -> assertEquals("olympia", configuration.get(1).getName())));
 	}
 
 	@Test
 	public void testData() throws IOException {
 		prepareClient(DATA)
-			.map(RadixApi::withTrace)
-			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.radixEngine().data()
+				.map(RadixApi::withTrace)
+				.join()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(data -> assertEquals(207536L, data.getSystemTransactions()))
-				.join())
-			.join();
+				.onSuccess(client -> client.radixEngine().data().join()
+						.onFailure(failure -> fail(failure.toString()))
+						.onSuccess(data -> assertEquals(37884L, data.getSystemTransactions()))
+						.onSuccess(data -> assertEquals(2016L, data.getUserTransactions()))
+						.onSuccess(data -> assertEquals(1L, data.getInvalidProposedCommands())));
 	}
 
 	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {
@@ -73,13 +72,10 @@ public class AsyncRadixApiRadixEngineTest {
 		var response = (HttpResponse<String>) mock(HttpResponse.class);
 		var completableFuture = new CompletableFuture<HttpResponse<String>>();
 
-		when(response.body()).thenReturn(responseBody);
+		when(response.body()).thenReturn(NETWORK_ID, responseBody);
 		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
 
-		try {
-			return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
-		} finally {
-			completableFuture.completeAsync(() -> response);
-		}
+		completableFuture.completeAsync(() -> response);
+		return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
 	}
 }

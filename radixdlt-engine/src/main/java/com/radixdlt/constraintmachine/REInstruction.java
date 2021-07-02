@@ -34,7 +34,7 @@ public final class REInstruction {
 	public enum REMicroOp {
 		END((byte) 0x0, REOp.END) {
 			@Override
-			Object read(REParser.ParserState parserState, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
+			Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
 				return null;
 			}
 		},
@@ -149,16 +149,28 @@ public final class REInstruction {
 				return (flags & 0x1) == 1;
 			}
 		},
-		DOWNINDEX((byte) 0xd, REOp.DOWNINDEX) {
+		READINDEX((byte) 0xd, REOp.READINDEX) {
 			@Override
-			public Object read(REParser.ParserState parserState, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
-				int indexSize = Byte.toUnsignedInt(b.get());
+			Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
+				int indexSize = Byte.toUnsignedInt(buf.get());
+				if (indexSize <= 0 || indexSize > 10) {
+					throw new DeserializeException("Bad ReadIndex size " + indexSize);
+				}
+				var array = new byte[indexSize];
+				buf.get(array);
+				return SubstateIndex.create(array, d.byteToClass(array[0]));
+			}
+		},
+		DOWNINDEX((byte) 0xe, REOp.DOWNINDEX) {
+			@Override
+			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
+				int indexSize = Byte.toUnsignedInt(buf.get());
 				if (indexSize <= 0 || indexSize > 10) {
 					throw new DeserializeException("Bad DownIndex size " + indexSize);
 				}
-				var buf = new byte[indexSize];
-				b.get(buf);
-				return SubstateIndex.create(buf, d.byteToClass(buf[0]));
+				var b = new byte[indexSize];
+				buf.get(b);
+				return SubstateIndex.create(b, d.byteToClass(b[0]));
 			}
 		};
 

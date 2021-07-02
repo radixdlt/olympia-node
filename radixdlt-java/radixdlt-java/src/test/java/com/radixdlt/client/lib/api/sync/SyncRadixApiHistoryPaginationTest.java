@@ -35,8 +35,6 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 //TODO: move to acceptance tests
@@ -54,10 +52,10 @@ public class SyncRadixApiHistoryPaginationTest {
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> {
-				for (int i = 0; i < 2000; i++) {
+				for (int i = 0; i < 20; i++) {
 					addTransaction(client, i);
 					try {
-						Thread.sleep(50);
+						Thread.sleep(100);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -75,7 +73,7 @@ public class SyncRadixApiHistoryPaginationTest {
 				client -> {
 					var cursorHolder = new AtomicReference<NavigationCursor>();
 					do {
-						client.account().history(ACCOUNT_ADDRESS1, 50, Optional.ofNullable(cursorHolder.get()))
+						client.account().history(ACCOUNT_ADDRESS1, 5, Optional.ofNullable(cursorHolder.get()))
 							.onFailure(failure -> fail(failure.toString()))
 							.onSuccess(v -> v.getCursor().ifPresent(System.out::println))
 							.onSuccess(v -> v.getCursor().ifPresentOrElse(cursorHolder::set, () -> cursorHolder.set(null)))
@@ -83,8 +81,7 @@ public class SyncRadixApiHistoryPaginationTest {
 							.map(this::formatTxns)
 							.onSuccess(System.out::println);
 					} while (cursorHolder.get() != null && !cursorHolder.get().value().isEmpty());
-				}
-			);
+				});
 	}
 
 	private List<String> formatTxns(List<TransactionDTO> t) {
@@ -107,22 +104,15 @@ public class SyncRadixApiHistoryPaginationTest {
 				ACCOUNT_ADDRESS1,
 				ACCOUNT_ADDRESS2,
 				UInt256.from(count + 10),
-				"xrd_rb1qya85pwq"
+				"xrd_dr1qyrs8qwl"
 			)
 			.message("Test message " + count)
 			.build();
 
 		client.transaction().build(request)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(builtTransactionDTO -> assertEquals(UInt256.from(100000000000000000L), builtTransactionDTO.getFee()))
-			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
-			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
-				.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
-				.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
-				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
-					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(txDTO -> submittableTransaction.rawTxId()
-						.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))));
+			.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR1))
+			.flatMap(transaction -> client.transaction().finalize(transaction, true));
 	}
 
 	private static ECKeyPair keyPairOf(int pk) {

@@ -19,13 +19,16 @@ package com.radixdlt.client.lib.api.async;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bouncycastle.util.encoders.Hex;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.TransactionRequest;
+import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.dto.ApiConfiguration;
 import com.radixdlt.client.lib.dto.ApiData;
 import com.radixdlt.client.lib.dto.BuiltTransaction;
@@ -34,6 +37,7 @@ import com.radixdlt.client.lib.dto.ConsensusConfiguration;
 import com.radixdlt.client.lib.dto.ConsensusData;
 import com.radixdlt.client.lib.dto.EpochData;
 import com.radixdlt.client.lib.dto.FinalizedTransaction;
+import com.radixdlt.client.lib.dto.ForkDetails;
 import com.radixdlt.client.lib.dto.JsonRpcRequest;
 import com.radixdlt.client.lib.dto.JsonRpcResponse;
 import com.radixdlt.client.lib.dto.LocalAccount;
@@ -47,7 +51,6 @@ import com.radixdlt.client.lib.dto.NetworkPeers;
 import com.radixdlt.client.lib.dto.NetworkStats;
 import com.radixdlt.client.lib.dto.PortSelector;
 import com.radixdlt.client.lib.dto.Proof;
-import com.radixdlt.client.lib.dto.RadixEngineConfiguration;
 import com.radixdlt.client.lib.dto.RadixEngineData;
 import com.radixdlt.client.lib.dto.RpcMethod;
 import com.radixdlt.client.lib.dto.StakePositions;
@@ -58,10 +61,15 @@ import com.radixdlt.client.lib.dto.TokenInfo;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
+import com.radixdlt.client.lib.dto.TxBlobDTO;
 import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponse;
+import com.radixdlt.client.lib.dto.serializer.AccountAddressDeserializer;
+import com.radixdlt.client.lib.dto.serializer.AccountAddressSerializer;
+import com.radixdlt.client.lib.dto.serializer.ValidatorAddressDeserializer;
+import com.radixdlt.client.lib.dto.serializer.ValidatorAddressSerializer;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
@@ -126,6 +134,7 @@ import static com.radixdlt.identifiers.CommonErrors.SSL_ALGORITHM_ERROR;
 import static com.radixdlt.identifiers.CommonErrors.SSL_GENERAL_ERROR;
 import static com.radixdlt.identifiers.CommonErrors.SSL_KEY_ERROR;
 import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DESERIALIZE;
+import static com.radixdlt.networks.Network.LOCALNET;
 
 import static java.util.Optional.ofNullable;
 
@@ -133,12 +142,8 @@ public class AsyncRadixApi implements RadixApi {
 	private static final Logger log = LogManager.getLogger();
 	private static final String CONTENT_TYPE = "Content-Type";
 	private static final String APPLICATION_JSON = "application/json";
-	private static final ObjectMapper objectMapper;
 	private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
-
-	static {
-		objectMapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_ABSENT);
-	}
+	private static final ObjectMapper DEFAULT_OBJECT_MAPPER = createDefaultMapper();
 
 	private final AtomicLong idCounter = new AtomicLong();
 
@@ -149,6 +154,8 @@ public class AsyncRadixApi implements RadixApi {
 
 	private Duration timeout = DEFAULT_TIMEOUT;
 	private boolean doTrace = false;
+	private ObjectMapper objectMapper;
+	private int networkId = LOCALNET.getId();
 
 	private final Network network = new Network() {
 		@Override
@@ -204,17 +211,20 @@ public class AsyncRadixApi implements RadixApi {
 		}
 
 		@Override
-		public Promise<TxDTO> finalize(FinalizedTransaction request) {
+		public Promise<TxBlobDTO> finalize(FinalizedTransaction request, boolean immediateSubmit) {
 			return call(
-				request(CONSTRUCTION_FINALIZE, request.getBlob(), request.getSignature(), request.getPublicKey()),
+				request(
+					CONSTRUCTION_FINALIZE,
+					Hex.toHexString(request.getRawBlob()), request.getSignature(), request.getPublicKey(), Boolean.toString(immediateSubmit)
+				),
 				new TypeReference<>() {}
 			);
 		}
 
 		@Override
-		public Promise<TxDTO> submit(FinalizedTransaction request) {
+		public Promise<TxDTO> submit(TxBlobDTO request) {
 			return call(
-				request(CONSTRUCTION_SUBMIT, request.getBlob(), request.getSignature(), request.getPublicKey(), request.getTxId()),
+				request(CONSTRUCTION_SUBMIT, Hex.toHexString(request.getBlob()), request.getTxId()),
 				new TypeReference<>() {}
 			);
 		}
@@ -233,14 +243,14 @@ public class AsyncRadixApi implements RadixApi {
 	private final SingleAccount account = new SingleAccount() {
 		@Override
 		public Promise<TokenBalances> balances(AccountAddress address) {
-			return call(request(ACCOUNT_BALANCES, address.toString()), new TypeReference<>() {});
+			return call(request(ACCOUNT_BALANCES, address.toString(networkId)), new TypeReference<>() {});
 		}
 
 		@Override
 		public Promise<TransactionHistory> history(
 			AccountAddress address, int size, Optional<NavigationCursor> cursor
 		) {
-			var request = request(ACCOUNT_HISTORY, address.toString(), size);
+			var request = request(ACCOUNT_HISTORY, address.toString(networkId), size);
 			cursor.ifPresent(cursorValue -> request.addParameters(cursorValue.value()));
 
 			return call(request, new TypeReference<>() {});
@@ -248,12 +258,12 @@ public class AsyncRadixApi implements RadixApi {
 
 		@Override
 		public Promise<List<StakePositions>> stakes(AccountAddress address) {
-			return call(request(ACCOUNT_STAKES, address.toString()), new TypeReference<>() {});
+			return call(request(ACCOUNT_STAKES, address.toString(networkId)), new TypeReference<>() {});
 		}
 
 		@Override
 		public Promise<List<UnstakePositions>> unstakes(AccountAddress address) {
-			return call(request(ACCOUNT_UNSTAKES, address.toString()), new TypeReference<>() {});
+			return call(request(ACCOUNT_UNSTAKES, address.toString(networkId)), new TypeReference<>() {});
 		}
 	};
 
@@ -267,8 +277,8 @@ public class AsyncRadixApi implements RadixApi {
 		}
 
 		@Override
-		public Promise<ValidatorDTO> lookup(String validatorAddress) {
-			return call(request(VALIDATORS_LOOKUP, validatorAddress), new TypeReference<>() {});
+		public Promise<ValidatorDTO> lookup(ValidatorAddress validatorAddress) {
+			return call(request(VALIDATORS_LOOKUP, validatorAddress.toString(networkId)), new TypeReference<>() {});
 		}
 	};
 
@@ -340,7 +350,7 @@ public class AsyncRadixApi implements RadixApi {
 
 	private final RadixEngine radixEngine = new RadixEngine() {
 		@Override
-		public Promise<RadixEngineConfiguration> configuration() {
+		public Promise<List<ForkDetails>> configuration() {
 			return call(request(RADIX_ENGINE_CONFIGURATION), new TypeReference<>() {});
 		}
 
@@ -398,8 +408,12 @@ public class AsyncRadixApi implements RadixApi {
 
 	static Promise<RadixApi> connect(String url, int primaryPort, int secondaryPort, HttpClient client) {
 		return ofNullable(url)
-			.map(baseUrl -> Promise.ok((RadixApi) new AsyncRadixApi(baseUrl, primaryPort, secondaryPort, client)))
-			.orElseGet(() -> Promise.promise(BASE_URL_IS_MANDATORY.result()));
+			.map(baseUrl -> Result.ok(new AsyncRadixApi(baseUrl, primaryPort, secondaryPort, client)))
+			.orElseGet(BASE_URL_IS_MANDATORY::result)
+			.flatMap(asyncRadixApi -> asyncRadixApi.network().id().join()
+				.onSuccess(networkId -> asyncRadixApi.configureSerialization(networkId.getNetworkId()))
+				.map(__ -> asyncRadixApi))
+			.fold(Promise::failure, Promise::ok);
 	}
 
 	@Override
@@ -516,11 +530,11 @@ public class AsyncRadixApi implements RadixApi {
 	}
 
 	private Result<String> serialize(JsonRpcRequest request) {
-		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper.writeValueAsString(request));
+		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper().writeValueAsString(request));
 	}
 
 	private <T> Result<JsonRpcResponse<T>> deserialize(String body, TypeReference<JsonRpcResponse<T>> typeReference) {
-		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper.readValue(body, typeReference));
+		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper().readValue(body, typeReference));
 	}
 
 	private URI buildUrl(RpcMethod rpcMethod) {
@@ -543,7 +557,6 @@ public class AsyncRadixApi implements RadixApi {
 				}
 
 				public void checkClientTrusted(X509Certificate[] certs, String authType) { }
-
 				public void checkServerTrusted(X509Certificate[] certs, String authType) { }
 			}
 		};
@@ -571,5 +584,22 @@ public class AsyncRadixApi implements RadixApi {
 		}
 
 		return SSL_GENERAL_ERROR.with(throwable.getMessage());
+	}
+
+	private void configureSerialization(int networkId) {
+		var module = new SimpleModule();
+		module.addSerializer(AccountAddress.class, new AccountAddressSerializer(networkId));
+		module.addDeserializer(AccountAddress.class, new AccountAddressDeserializer(networkId));
+		module.addSerializer(ValidatorAddress.class, new ValidatorAddressSerializer(networkId));
+		module.addDeserializer(ValidatorAddress.class, new ValidatorAddressDeserializer(networkId));
+		objectMapper = createDefaultMapper().registerModule(module);
+	}
+
+	private ObjectMapper objectMapper() {
+		return objectMapper == null ? DEFAULT_OBJECT_MAPPER : objectMapper;
+	}
+
+	private static ObjectMapper createDefaultMapper() {
+		return new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_ABSENT);
 	}
 }

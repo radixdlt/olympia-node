@@ -87,7 +87,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 		final List<REProcessedTxn> radixEngineTxns;
 		try {
 			RadixEngine.RadixEngineBranch<LedgerAndBFTProof> checker = radixEngine.transientBranch();
-			radixEngineTxns = checker.execute(List.of(txn));
+			radixEngineTxns = checker.execute(List.of(txn)).getFirst();
 		} catch (RadixEngineException e) {
 			// TODO: allow missing dependency atoms to live for a certain amount of time
 			throw new RadixEngineMempoolException(e);

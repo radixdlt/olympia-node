@@ -19,6 +19,7 @@
 package com.radixdlt.statecomputer.checkpoint;
 
 import com.google.inject.Inject;
+import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
@@ -27,6 +28,9 @@ import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.NextEpoch;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.HashUtils;
@@ -35,8 +39,6 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.StakedValidators;
-import com.radixdlt.statecomputer.StakedValidatorsReducer;
 import com.radixdlt.statecomputer.forks.ForkManager;
 import com.radixdlt.store.InMemoryEngineStore;
 
@@ -51,28 +53,25 @@ public final class GenesisBuilder {
 
 	@Inject
 	public GenesisBuilder(
-		ForkManager forkManager,
-		LedgerAccumulator ledgerAccumulator,
-		StakedValidatorsReducer reducer
+			ForkManager forkManager,
+			LedgerAccumulator ledgerAccumulator
 	) {
-		var genesisFork = forkManager.genesisFork();
 		this.ledgerAccumulator = ledgerAccumulator;
-		final var rules = genesisFork.getEngineRules();
+		final var rules = forkManager.genesisFork().getEngineRules();
 		var cmConfig = rules.getConstraintMachineConfig();
 		var cm = new ConstraintMachine(
-			cmConfig.getVirtualStoreLayer(),
-			cmConfig.getProcedures(),
-			cmConfig.getMeter()
+				cmConfig.getVirtualStoreLayer(),
+				cmConfig.getProcedures(),
+				cmConfig.getMeter()
 		);
 		this.radixEngine = new RadixEngine<>(
-			rules.getParser(),
-			rules.getSerialization(),
-			rules.getActionConstructors(),
-			cm,
-			new InMemoryEngineStore<>(),
-			rules.getBatchVerifier()
+				rules.getParser(),
+				rules.getSerialization(),
+				rules.getActionConstructors(),
+				cm,
+				new InMemoryEngineStore<>(),
+				rules.getBatchVerifier()
 		);
-		radixEngine.addStateReducer(reducer, true);
 	}
 
 	public Txn build(long timestamp, List<TxAction> actions) throws TxBuilderException, RadixEngineException {
@@ -80,12 +79,12 @@ public final class GenesisBuilder {
 		txnConstructionRequest.action(new CreateSystem(timestamp));
 
 		var tokenDef = new MutableTokenDefinition(
-			null,
-			"xrd",
-			"Rads",
-			"Radix Tokens",
-			RADIX_ICON_URL,
-			RADIX_TOKEN_URL
+				null,
+				"xrd",
+				"Rads",
+				"Radix Tokens",
+				RADIX_ICON_URL,
+				RADIX_TOKEN_URL
 		);
 		txnConstructionRequest.createMutableToken(tokenDef);
 		actions.forEach(txnConstructionRequest::action);
@@ -93,7 +92,7 @@ public final class GenesisBuilder {
 		var branch = radixEngine.transientBranch();
 
 		branch.execute(List.of(tempTxn), PermissionLevel.SYSTEM);
-		txnConstructionRequest.action(new NextEpoch(updates -> { }, timestamp));
+		txnConstructionRequest.action(new NextEpoch(timestamp));
 
 		radixEngine.deleteBranches();
 		return radixEngine.construct(txnConstructionRequest).buildWithoutSignature();
@@ -101,17 +100,23 @@ public final class GenesisBuilder {
 
 	public LedgerProof generateGenesisProof(Txn txn) throws RadixEngineException {
 		var branch = radixEngine.transientBranch();
-		branch.execute(List.of(txn), PermissionLevel.SYSTEM);
-		var stakedValidators = branch.getComputedState(StakedValidators.class);
-		var genesisValidatorSet = stakedValidators.toValidatorSet();
+		var processed = branch.execute(List.of(txn), PermissionLevel.SYSTEM);
 		radixEngine.deleteBranches();
+		var genesisValidatorSet = processed.getFirst().get(0).getEvents().stream()
+				.filter(NextValidatorSetEvent.class::isInstance)
+				.map(NextValidatorSetEvent.class::cast)
+				.findFirst()
+				.map(e -> BFTValidatorSet.from(
+						e.nextValidators().stream()
+								.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount())))
+				).orElseThrow(() -> new IllegalStateException("No validator set in genesis."));
 
 		var init = new AccumulatorState(0, HashUtils.zero256());
 		var accumulatorState = ledgerAccumulator.accumulate(init, txn.getId().asHashCode());
 		var genesisProof = LedgerProof.genesis(
-			accumulatorState,
-			genesisValidatorSet,
-			0L
+				accumulatorState,
+				genesisValidatorSet,
+				0L
 		);
 		if (!genesisProof.isEndOfEpoch()) {
 			throw new IllegalStateException("Genesis must be end of epoch");

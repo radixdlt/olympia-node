@@ -1,16 +1,16 @@
 package com.radix.test;
 
-import com.radix.test.account.Account;
-import com.radixdlt.application.tokens.TokenUtils;
-import com.radixdlt.client.lib.api.ValidatorAddress;
-import com.radixdlt.client.lib.dto.ValidatorDTO;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.functional.Failure;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.awaitility.Durations;
 import org.awaitility.core.ConditionTimeoutException;
+
+import com.radix.test.account.Account;
+import com.radixdlt.application.tokens.TokenUtils;
+import com.radixdlt.client.lib.api.ValidatorAddress;
+import com.radixdlt.client.lib.dto.ValidatorDTO;
+import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.functional.Failure;
 
 import static org.awaitility.Awaitility.await;
 
@@ -108,11 +108,13 @@ public final class Utils {
         return amountMajor.multiply(TokenUtils.SUB_UNITS);
     }
 
+    //TODO: fix it. the method requires addressing or network ID as a parameter
     public static ValidatorAddress createValidatorAddress(ValidatorDTO validatorDTO) {
-        try {
-            return ValidatorAddress.create(validatorDTO.getAddress());
-        } catch (DeserializeException e) {
+//        try {
+//            //return ValidatorAddress.create(validatorDTO.getAddress());
+//
+//        } catch (DeserializeException e) {
             throw new IllegalStateException("Failed to parse validator address: " + validatorDTO.getAddress());
-        }
+//        }
     }
 }

@@ -90,21 +90,29 @@ public final class SubmissionService {
 		return txnConstructionRequest;
 	}
 
-	public Result<AID> calculateTxId(byte[] blob, ECDSASignature recoverable) {
-		return Result.ok(buildTxn(blob, recoverable)).map(Txn::getId);
+	public Result<Txn> finalizeTxn(byte[] blob, ECDSASignature recoverable, boolean immediateSubmit) {
+		return Result.ok(buildTxn(blob, recoverable)).flatMap(txn -> submitNow(txn, immediateSubmit));
 	}
 
-	public Result<AID> submitTx(byte[] blob, ECDSASignature recoverable, AID txId) {
-		var txn = buildTxn(blob, recoverable);
+	private Result<Txn> submitNow(Txn txn, boolean immediateSubmit) {
+		return immediateSubmit ? submit(txn) : Result.ok(txn);
+	}
 
-		if (!txn.getId().equals(txId)) {
+	public Result<Txn> submitTx(byte[] blob, Optional<AID> txId) {
+		var txn = TxLowLevelBuilder.newBuilder(blob).build();
+
+		if (!sameTxId(txId, txn.getId())) {
 			return TRANSACTION_ADDRESS_DOES_NOT_MATCH.result();
 		}
 
 		return submit(txn);
 	}
 
-	private Result<AID> submit(Txn txn) {
+	private boolean sameTxId(Optional<AID> txId, AID newId) {
+		return txId.map(newId::equals).orElse(true);
+	}
+
+	private Result<Txn> submit(Txn txn) {
 		var completableFuture = new CompletableFuture<MempoolAddSuccess>();
 		var mempoolAdd = MempoolAdd.create(txn, completableFuture);
 
@@ -112,7 +120,7 @@ public final class SubmissionService {
 
 		try {
 			var success = completableFuture.get();
-			return Result.ok(success.getTxn().getId());
+			return Result.ok(success.getTxn());
 		} catch (ExecutionException e) {
 			var cause = lookupCause(e);
 
@@ -157,7 +165,8 @@ public final class SubmissionService {
 		return prepareTransaction(address, steps, message, disableResourceAllocAndDestroy)
 			.onFailure(failure -> logger.error("Error preparing transaction {}", failure))
 			.map(prepared -> buildTxn(prepared.getBlob(), signer.sign(prepared.getHashToSign())))
-			.flatMap(this::submit);
+			.flatMap(this::submit)
+			.map(Txn::getId);
 	}
 
 	private PreparedTransaction toPreparedTx(UnsignedTxnData unsignedTxnData) {

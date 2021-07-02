@@ -18,9 +18,14 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.radixdlt.engine.RadixEngine;
+import com.google.common.collect.Streams;
+import com.radixdlt.application.validators.state.ValidatorMetaData;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.StakedValidators;
+import com.radixdlt.store.EngineStore;
 import com.radixdlt.utils.UInt256;
 
 import java.math.BigDecimal;
@@ -44,32 +49,41 @@ public final class CandidateForkPredicates {
 			@Override
 			public boolean test(
 				CandidateForkConfig forkConfig,
-				RadixEngine<LedgerAndBFTProof> radixEngine,
-				LedgerAndBFTProof uncommittedProof
+				EngineStore<LedgerAndBFTProof> engineStore,
+				REParser reParser,
+				LedgerAndBFTProof ledgerAndBFTProof
 			) {
-				final var validatorSet = uncommittedProof.getProof().getNextValidatorSet().get();
-				final var stakedValidators = radixEngine.getComputedState(StakedValidators.class);
-				final var forksVotes = stakedValidators.getForksVotes();
+				final var validatorSet = ledgerAndBFTProof.getProof().getNextValidatorSet().get();
 
 				final var requiredPower =
 					new BigDecimal(new BigInteger(1, validatorSet.getTotalPower().toByteArray()))
 						.multiply(BigDecimal.valueOf(requiredPercentage));
 
-				final var forkVotesPower = validatorSet.getValidators().stream()
-					.map(validator -> {
-						final var key = validator.getNode().getKey();
-						final var expectedVoteHash = ForkConfig.voteHash(key, forkConfig);
-						if (forksVotes.containsKey(key) && forksVotes.get(key).equals(expectedVoteHash)) {
-							return validator.getPower();
-						} else {
-							return UInt256.ZERO;
-						}
-					}).reduce(UInt256.ZERO, UInt256::add);
+				final var substateDeserialization = reParser.getSubstateDeserialization();
 
-				return new BigDecimal(new BigInteger(1, forkVotesPower.toByteArray()))
-					.compareTo(requiredPower) >= 0;
+				try (var validatorMetadataCursor = engineStore.openIndexedCursor(
+						SubstateIndex.create(SubstateTypeId.VALIDATOR_META_DATA.id(), ValidatorMetaData.class))) {
+
+					final var forkVotesPower = Streams.stream(validatorMetadataCursor)
+						.map(s -> {
+							try {
+								return (ValidatorMetaData) substateDeserialization.deserialize(s.getData());
+							} catch (DeserializeException e) {
+								throw new IllegalStateException("Failed to deserialize ValidatorMetaData substate");
+							}
+						})
+						.filter(vm -> validatorSet.containsNode(vm.getValidatorKey()))
+						.filter(vm -> {
+							final var expectedVoteHash = ForkConfig.voteHash(vm.getValidatorKey(), forkConfig);
+							return vm.getForkVoteHash().filter(expectedVoteHash::equals).isPresent();
+						})
+						.map(validatorMetadata -> validatorSet.getPower(validatorMetadata.getValidatorKey()))
+						.reduce(UInt256.ZERO, UInt256::add);
+
+					return new BigDecimal(new BigInteger(1, forkVotesPower.toByteArray()))
+						.compareTo(requiredPower) >= 0;
+				}
 			}
-
 		};
 	}
 }

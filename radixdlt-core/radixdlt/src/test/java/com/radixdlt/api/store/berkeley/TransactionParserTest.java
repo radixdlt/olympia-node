@@ -172,7 +172,7 @@ public class TransactionParserTest {
 				.action(nativeStake())
 		).signAndBuild(tokenOwnerKeyPair::sign);
 		engine.execute(List.of(txn1));
-		var nextEpoch = engine.construct(new NextEpoch(s -> List.of(validatorKeyPair.getPublicKey()), 0))
+		var nextEpoch = engine.construct(new NextEpoch(0))
 			.buildWithoutSignature();
 		engine.execute(List.of(nextEpoch), null, PermissionLevel.SYSTEM);
 
@@ -200,7 +200,7 @@ public class TransactionParserTest {
 	}
 
 	private void executeAndDecode(List<ActionType> expectedActions, UInt256 fee, Txn... txns) throws Exception {
-		var list = engine.execute(List.of(txns), null, PermissionLevel.USER);
+		var list = engine.execute(List.of(txns), null, PermissionLevel.USER).getFirst();
 
 		if (txns.length != 1) {
 			return;

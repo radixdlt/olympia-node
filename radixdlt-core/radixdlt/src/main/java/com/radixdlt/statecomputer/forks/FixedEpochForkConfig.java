@@ -25,10 +25,10 @@ public final class FixedEpochForkConfig extends ForkConfig {
 	private final long epoch;
 
 	public FixedEpochForkConfig(
-		String name,
-		HashCode hash,
-		RERules reRules,
-		long epoch
+			String name,
+			HashCode hash,
+			RERules reRules,
+			long epoch
 	) {
 		super(name, hash, reRules);
 

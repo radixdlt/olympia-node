@@ -35,13 +35,20 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.json.JSONObject;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.CryptoModule;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PrivateKeyException;
@@ -49,8 +56,12 @@ import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
+import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.GenesisProvider;
+import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.UInt256;
@@ -161,6 +172,7 @@ public final class GenerateUniverses {
 					.toInstance(tokenIssuancesBuilder.build());
 				bind(new TypeLiteral<ImmutableList<ECPublicKey>>() {}).annotatedWith(Genesis.class)
 					.toInstance(allValidatorKeys);
+				bindConstant().annotatedWith(MaxValidators.class).to(100);
 			}
 		}).getInstance(GenesisProvider.class);
 

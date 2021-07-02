@@ -17,6 +17,12 @@
 
 package com.radixdlt;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.util.Strings;
+import org.json.JSONObject;
+import org.radix.utils.IOUtils;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -60,17 +66,14 @@ import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.Bytes;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.util.Strings;
-import org.json.JSONObject;
-import org.radix.utils.IOUtils;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
 
-import static com.radixdlt.EndpointConfig.*;
+import static com.radixdlt.EndpointConfig.enabledArchiveEndpoints;
+import static com.radixdlt.EndpointConfig.enabledNodeEndpoints;
+import static com.radixdlt.EndpointConfig.endpointStatuses;
 
 /**
  * Module which manages everything in a single node
@@ -112,7 +115,11 @@ public final class RadixNodeModule extends AbstractModule {
 		var genesisTxnHex = properties.get("network.genesis_txn");
 		var genesisFile = properties.get("network.genesis_file");
 		var network = Network.ofId(networkId);
-		var networkGenesis = network.flatMap(Network::genesisTxn);
+		var networkGenesis = network
+			.flatMap(Network::genesisTxn)
+			.map(Bytes::fromHexString)
+			.map(Txn::create);
+
 		if (networkGenesis.isPresent()) {
 			if (Strings.isNotBlank(genesisTxnHex)) {
 				throw new IllegalStateException("Cannot provide genesis txn for well-known network " + network.orElseThrow());

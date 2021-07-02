@@ -18,10 +18,16 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.store.EngineStore;
 
 public interface CandidateForkPredicate {
 	long minEpoch();
-	boolean test(CandidateForkConfig forkConfig, RadixEngine<LedgerAndBFTProof> radixEngine, LedgerAndBFTProof uncommittedProof);
+	boolean test(
+		CandidateForkConfig forkConfig,
+		EngineStore<LedgerAndBFTProof> radixEngine,
+		REParser reParser,
+		LedgerAndBFTProof ledgerAndBFTProof
+	);
 }

@@ -269,12 +269,12 @@ public final class RadixEngine<M> {
 			}
 		}
 
-		public List<REProcessedTxn> execute(List<Txn> txns) throws RadixEngineException {
+		public Pair<List<REProcessedTxn>, M> execute(List<Txn> txns) throws RadixEngineException {
 			assertNotDeleted();
 			return engine.execute(txns);
 		}
 
-		public List<REProcessedTxn> execute(List<Txn> txns, PermissionLevel permissionLevel) throws RadixEngineException {
+		public Pair<List<REProcessedTxn>, M> execute(List<Txn> txns, PermissionLevel permissionLevel) throws RadixEngineException {
 			assertNotDeleted();
 			return engine.execute(txns, null, permissionLevel);
 		}
@@ -287,11 +287,6 @@ public final class RadixEngine<M> {
 		public TxBuilder construct(TxnConstructionRequest request) throws TxBuilderException {
 			assertNotDeleted();
 			return engine.construct(request);
-		}
-
-		public <U> U getComputedState(Class<U> applicationStateClass) {
-			assertNotDeleted();
-			return engine.getComputedState(applicationStateClass);
 		}
 	}
 
@@ -348,7 +343,7 @@ public final class RadixEngine<M> {
 	 *
 	 * @throws RadixEngineException on state conflict, dependency issues or bad atom
 	 */
-	public List<REProcessedTxn> execute(List<Txn> txns) throws RadixEngineException {
+	public Pair<List<REProcessedTxn>, M> execute(List<Txn> txns) throws RadixEngineException {
 		return execute(txns, null, PermissionLevel.USER);
 	}
 
@@ -360,7 +355,7 @@ public final class RadixEngine<M> {
 	 * @param permissionLevel permission level to execute on
 	 * @throws RadixEngineException on state conflict or dependency issues
 	 */
-	public List<REProcessedTxn> execute(
+	public Pair<List<REProcessedTxn>, M> execute(
 		List<Txn> txns,
 		M meta,
 		PermissionLevel permissionLevel
@@ -378,14 +373,14 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	private List<REProcessedTxn> executeInternal(
+	// TODO: consider adding a dedicated EngineExecuteResult type instead of Pair
+	private Pair<List<REProcessedTxn>, M> executeInternal(
 		EngineStore.EngineStoreInTransaction<M> engineStoreInTransaction,
 		List<Txn> txns,
 		M meta,
 		PermissionLevel permissionLevel
 	) throws RadixEngineException {
-		var checker = batchVerifier.newVerifier(this::getComputedState);
-		var parsedTransactions = new ArrayList<REProcessedTxn>();
+		var processedTxns = new ArrayList<REProcessedTxn>();
 
 		// FIXME: This is quite the hack to increase sigsLeft for execution on noncommits (e.g. mempool)
 		// FIXME: Should probably just change metering
@@ -416,24 +411,23 @@ public final class RadixEngine<M> {
 			// Non-persisted computed state
 			for (var group : parsedTxn.getGroupedStateUpdates()) {
 				group.forEach(update -> stateComputers.forEach((a, computer) -> computer.processStateUpdate(update)));
-				checker.test(this::getComputedState);
 			}
 
-			parsedTransactions.add(parsedTxn);
+			processedTxns.add(parsedTxn);
 		}
 
 		try {
-			checker.testMetadata(meta, this::getComputedState);
+			final var processedMetadata = batchVerifier.processMetadata(meta, engineStore, processedTxns);
+
+			if (processedMetadata != null) {
+				engineStoreInTransaction.storeMetadata(processedMetadata);
+			}
+
+			return Pair.of(processedTxns, processedMetadata);
 		} catch (MetadataException e) {
-			logger.error("Invalid metadata: " + parsedTransactions);
+			logger.error("Invalid metadata: " + processedTxns);
 			throw e;
 		}
-
-		if (meta != null) {
-			engineStoreInTransaction.storeMetadata(meta);
-		}
-
-		return parsedTransactions;
 	}
 
 	public interface TxBuilderExecutable {

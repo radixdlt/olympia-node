@@ -167,7 +167,8 @@ public class MutableTokenAndResourceFeeTest {
 		).signAndBuild(keyPair::sign);
 
 		// Act/Assert
-		sut.execute(List.of(txn));
+		var branch = sut.transientBranch();
+		branch.execute(List.of(txn));
 	}
 
 	@Test
@@ -209,13 +210,14 @@ public class MutableTokenAndResourceFeeTest {
 			null
 		);
 		var account = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
-		var atom = sut.construct(
+		var txn = sut.construct(
 			TxnConstructionRequest.create()
 				.feePayer(account)
 				.action(new CreateMutableToken(tokDef))
 			).signAndBuild(keyPair::sign);
 
+		var branch = sut.transientBranch();
 		// Act/Assert
-		sut.execute(List.of(atom));
+		branch.execute(List.of(txn));
 	}
 }
