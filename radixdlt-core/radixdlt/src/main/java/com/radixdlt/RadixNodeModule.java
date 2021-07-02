@@ -48,7 +48,6 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
@@ -167,17 +166,12 @@ public final class RadixNodeModule extends AbstractModule {
 		final long syncPatience = properties.get("sync.patience", 5000L);
 		bind(SyncConfig.class).toInstance(SyncConfig.of(syncPatience, 10, 3000L));
 
-		// Radix Engine configuration
-		// These cannot be changed without introducing possible forks with
-		// the network.
-		// TODO: Move these deeper into radix engine.
-		install(RadixEngineConfig.asModule(1, 100));
-
 		// System (e.g. time, random)
 		install(new SystemModule());
 
 		install(new RxEnvironmentModule());
 
+		install(new EventLoggerModule());
 		install(new DispatcherModule());
 
 		// Application

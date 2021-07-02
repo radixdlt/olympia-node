@@ -107,12 +107,13 @@ public final class ValidatorStakeData implements ResourceInBucket {
 
 	@Override
 	public String toString() {
-		return String.format("%s{stake=%s ownership=%s rake=%s owner=%s}",
+		return String.format("%s{registered=%s stake=%s ownership=%s rake=%s validator=%s}",
 			getClass().getSimpleName(),
+			isRegistered,
 			totalStake,
 			totalOwnership,
 			rakePercentage,
-			ownerAddr
+			validatorKey.toHex().substring(0, 11)
 		);
 	}
 

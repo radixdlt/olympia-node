@@ -26,12 +26,9 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFiller;
-import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.StateReducer;
-import com.radixdlt.engine.SubstateCacheRegister;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
@@ -71,18 +68,6 @@ public final class NodeApplicationModule extends AbstractModule {
 		return REAddr.ofPubKeyAccount(self);
 	}
 
-	@ProvidesIntoSet
-	private SubstateCacheRegister<?> registeredValidator(@Self ECPublicKey self) {
-		return new SubstateCacheRegister<>(ValidatorMetaData.class, p -> p.getValidatorKey().equals(self));
-	}
-
-	@ProvidesIntoSet
-	private SubstateCacheRegister<?> registeredSubstate(@Self REAddr self) {
-		return new SubstateCacheRegister<>(
-			TokensInAccount.class,
-			p -> p.getHoldingAddr().equals(self) && p.getResourceAddr().isNativeToken()
-		);
-	}
 
 	@ProvidesIntoSet
 	@Singleton

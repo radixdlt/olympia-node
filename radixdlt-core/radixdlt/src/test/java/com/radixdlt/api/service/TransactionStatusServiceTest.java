@@ -16,6 +16,9 @@
  */
 package com.radixdlt.api.service;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -30,7 +33,7 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.statecomputer.TxnsCommittedToLedger;
+import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
@@ -64,9 +67,10 @@ public class TransactionStatusServiceTest {
 
 		var txn = randomTxn();
 		var parsedTxn = new ParsedTxn(txn, UInt256.ZERO, null, null, null, false);
-		var processedTxn = new REProcessedTxn(parsedTxn, null);
-		var one = TxnsCommittedToLedger.create(List.of(processedTxn));
-		transactionStatusService.atomsCommittedToLedgerEventProcessor().process(one);
+		var processedTxn = new REProcessedTxn(parsedTxn, null, List.of());
+		var one = REOutput.create(List.of(processedTxn));
+		var update = new LedgerUpdate(mock(VerifiedTxnsAndProof.class), ImmutableClassToInstanceMap.of(REOutput.class, one));
+		transactionStatusService.ledgerUpdateProcessor().process(update);
 
 		assertEquals(CONFIRMED, transactionStatusService.getTransactionStatus(txn.getId()));
 	}
@@ -130,9 +134,10 @@ public class TransactionStatusServiceTest {
 		transactionStatusService.mempoolAddSuccessEventProcessor().process(succeeded);
 		var txnCommitted = randomTxn();
 		var parsedTxn = new ParsedTxn(txnCommitted, UInt256.ZERO, null, null, null, false);
-		var processedTxn = new REProcessedTxn(parsedTxn, null);
-		var committed = TxnsCommittedToLedger.create(List.of(processedTxn));
-		transactionStatusService.atomsCommittedToLedgerEventProcessor().process(committed);
+		var processedTxn = new REProcessedTxn(parsedTxn, null, List.of());
+		var committed = REOutput.create(List.of(processedTxn));
+		var update = new LedgerUpdate(mock(VerifiedTxnsAndProof.class), ImmutableClassToInstanceMap.of(REOutput.class, committed));
+		transactionStatusService.ledgerUpdateProcessor().process(update);
 		var txnRejected = randomTxn();
 		var rejected = MempoolAddFailure.create(txnRejected, null, null);
 		transactionStatusService.mempoolAddFailureEventProcessor().process(rejected);

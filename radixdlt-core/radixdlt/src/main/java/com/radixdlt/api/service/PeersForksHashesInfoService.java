@@ -36,7 +36,6 @@ import org.json.JSONObject;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 
 import static java.util.function.Predicate.not;
 
@@ -103,9 +102,10 @@ public final class PeersForksHashesInfoService {
 	@SuppressWarnings("unchecked")
 	public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
 		return ledgerUpdate -> {
-			final var maybeEpochChange = (Optional<EpochChange>) ledgerUpdate.getStateComputerOutput();
-			maybeEpochChange
-				.ifPresent(epochChange -> this.currentValidatorSet = epochChange.getBFTConfiguration().getValidatorSet());
+			final var epochChange = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
+			if (epochChange != null) {
+				this.currentValidatorSet = epochChange.getBFTConfiguration().getValidatorSet();
+			}
 		};
 	}
 

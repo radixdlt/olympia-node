@@ -77,6 +77,7 @@ public final class FunctionalNodeModule extends AbstractModule {
 
 	@Override
 	public void configure() {
+		install(new EventLoggerModule());
 		install(new DispatcherModule());
 
 		// Consensus

@@ -47,11 +47,11 @@ import com.radixdlt.utils.Pair;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
 
 import static java.util.function.Predicate.not;
@@ -191,9 +191,10 @@ public class SimulationNodes {
 				Set<Observable<EpochChange>> epochChanges = nodeInstances.stream()
 					.map(i -> i.getInstance(Key.get(new TypeLiteral<Observable<LedgerUpdate>>() { })))
 					.map(o -> o
-						.map(u -> (Optional<EpochChange>) u.getStateComputerOutput())
-						.filter(u -> u.isPresent())
-						.map(u -> u.get())
+						.flatMapMaybe(u -> {
+							var e = u.getStateComputerOutput().getInstance(EpochChange.class);
+							return e == null ? Maybe.empty() : Maybe.just(e);
+						})
 					)
 					.collect(Collectors.toSet());
 

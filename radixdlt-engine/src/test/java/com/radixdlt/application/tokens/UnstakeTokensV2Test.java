@@ -18,6 +18,7 @@
 
 package com.radixdlt.application.tokens;
 
+import com.radixdlt.application.validators.construction.RegisterValidatorConstructor;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxAction;
@@ -26,6 +27,7 @@ import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.NextEpoch;
 import com.radixdlt.atom.actions.NextRound;
@@ -79,7 +81,10 @@ public class UnstakeTokensV2Test {
 				10,
 				List.of(
 					new RoundUpdateConstraintScrypt(10),
-					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1),
+					new EpochUpdateConstraintScrypt(
+						10, Amount.ofTokens(10).toSubunits(), 9800,
+						1, 10
+					),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScrypt(2),
@@ -93,7 +98,10 @@ public class UnstakeTokensV2Test {
 				10,
 				List.of(
 					new RoundUpdateConstraintScrypt(10),
-					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1),
+					new EpochUpdateConstraintScrypt(
+						10, Amount.ofTokens(10).toSubunits(), 9800,
+						1, 10
+					),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScrypt(2),
@@ -107,7 +115,10 @@ public class UnstakeTokensV2Test {
 				6,
 				List.of(
 					new RoundUpdateConstraintScrypt(10),
-					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1),
+					new EpochUpdateConstraintScrypt(
+						10, Amount.ofTokens(10).toSubunits(), 9800,
+						1, 10
+					),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScrypt(2),
@@ -121,7 +132,10 @@ public class UnstakeTokensV2Test {
 				6,
 				List.of(
 					new RoundUpdateConstraintScrypt(10),
-					new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1),
+					new EpochUpdateConstraintScrypt(
+						10, Amount.ofTokens(10).toSubunits(), 9800,
+						1, 10
+					),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScrypt(2),
@@ -153,7 +167,7 @@ public class UnstakeTokensV2Test {
 	) {
 		this.stakes = stakes.stream().map(i -> Amount.ofTokens(i * 10).toSubunits()).collect(Collectors.toList());
 		this.totalStakes = this.stakes.stream().reduce(UInt256::add).orElseThrow();
-		this.unstakeAmt = Amount.ofTokens(unstakeAmt * 10).toSubunits();
+		this.unstakeAmt = Amount.ofTokens(unstakeAmt * 10L).toSubunits();
 		this.scrypts = scrypts;
 		this.stakeTokensConstructor = stakeTokensConstructor;
 		this.unstakeTokensConstructor = unstakeTokensConstructor;
@@ -176,12 +190,15 @@ public class UnstakeTokensV2Test {
 			REConstructor.newBuilder()
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.put(NextRound.class, new NextViewConstructorV3())
-				.put(NextEpoch.class, new NextEpochConstructorV3(Amount.ofTokens(10).toSubunits(), 9800, 1))
+				.put(NextEpoch.class, new NextEpochConstructorV3(
+					Amount.ofTokens(10).toSubunits(), 9800, 1, 10
+				))
 				.put(StakeTokens.class, stakeTokensConstructor)
 				.put(UnstakeOwnership.class, unstakeTokensConstructor)
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
 				.put(TransferToken.class, new TransferTokensConstructorV2())
+				.put(RegisterValidator.class, new RegisterValidatorConstructor())
 				.build(),
 			cm,
 			store
@@ -208,7 +225,7 @@ public class UnstakeTokensV2Test {
 			TxnConstructionRequest.create().actions(stakeActions)
 		).signAndBuild(key::sign);
 		this.sut.execute(List.of(stake));
-		var nextEpoch = sut.construct(new NextEpoch(u -> List.of(key.getPublicKey()), 1))
+		var nextEpoch = sut.construct(new NextEpoch(u -> { }, 1))
 			.buildWithoutSignature();
 		this.sut.execute(List.of(nextEpoch), null, PermissionLevel.SUPER_USER);
 
@@ -228,7 +245,7 @@ public class UnstakeTokensV2Test {
 			TxnConstructionRequest.create().actions(stakeActions)
 		).signAndBuild(key::sign);
 		this.sut.execute(List.of(stake));
-		var nextEpoch = sut.construct(new NextEpoch(u -> List.of(key.getPublicKey()), 1))
+		var nextEpoch = sut.construct(new NextEpoch(u -> { }, 1))
 			.buildWithoutSignature();
 		this.sut.execute(List.of(nextEpoch), null, PermissionLevel.SUPER_USER);
 
@@ -249,10 +266,12 @@ public class UnstakeTokensV2Test {
 			.map(amt -> new StakeTokens(accountAddr, key.getPublicKey(), amt))
 			.collect(Collectors.<TxAction>toList());
 		var txn = sut.construct(
-			TxnConstructionRequest.create().actions(stakeActions)
+			TxnConstructionRequest.create()
+				.actions(stakeActions)
+				.action(new RegisterValidator(key.getPublicKey()))
 		).signAndBuild(key::sign);
 		sut.execute(List.of(txn));
-		var nextEpoch = sut.construct(new NextEpoch(u -> List.of(key.getPublicKey()), 1))
+		var nextEpoch = sut.construct(new NextEpoch(u -> { }, 1))
 			.buildWithoutSignature();
 		this.sut.execute(List.of(nextEpoch), null, PermissionLevel.SUPER_USER);
 		var unstake = this.sut.construct(new UnstakeOwnership(accountAddr, key.getPublicKey(), unstakeAmt))
@@ -260,7 +279,7 @@ public class UnstakeTokensV2Test {
 		sut.execute(List.of(unstake));
 		var request = TxnConstructionRequest.create()
 			.action(new NextRound(10, true, 1, u -> key.getPublicKey()))
-			.action(new NextEpoch(u -> List.of(key.getPublicKey()), 1));
+			.action(new NextEpoch(u -> { }, 1));
 		var nextEpoch2 = sut.construct(request).buildWithoutSignature();
 		this.sut.execute(List.of(nextEpoch2), null, PermissionLevel.SUPER_USER);
 

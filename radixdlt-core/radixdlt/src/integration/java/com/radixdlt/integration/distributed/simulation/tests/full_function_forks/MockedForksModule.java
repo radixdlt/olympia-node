@@ -34,7 +34,8 @@ public final class MockedForksModule extends AbstractModule {
 				Amount.zero(),
 				0L,
 				Amount.zero(),
-				0
+				0,
+				10
 			)
 		);
 	}

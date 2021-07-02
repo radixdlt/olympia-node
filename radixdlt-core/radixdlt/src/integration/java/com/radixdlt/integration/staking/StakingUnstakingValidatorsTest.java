@@ -18,6 +18,9 @@
 
 package com.radixdlt.integration.staking;
 
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.serialization.DeserializeException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -90,7 +93,6 @@ import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
@@ -117,7 +119,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -187,8 +188,7 @@ public class StakingUnstakingValidatorsTest {
 		this.radixEngineConfiguration = Modules.combine(
 			new ForkManagerModule(),
 			new MainnetForksModule(),
-			forkModule,
-			RadixEngineConfig.asModule(1, 10)
+			forkModule
 		);
 		this.maxRounds = maxRounds;
 		this.byzantineModule = byzantineModule;
@@ -361,8 +361,12 @@ public class StakingUnstakingValidatorsTest {
 			if (lastLedgerUpdate.getLastEvent() == null) {
 				return epochChange.getEpoch();
 			}
-			var epochChange = (Optional<EpochChange>) lastLedgerUpdate.getLastEvent().getStateComputerOutput();
-			return epochChange.map(EpochChange::getEpoch).orElse(lastLedgerUpdate.getLastEvent().getTail().getEpoch());
+			var epochChange = lastLedgerUpdate.getLastEvent().getStateComputerOutput().getInstance(EpochChange.class);
+			if (epochChange != null) {
+				return epochChange.getEpoch();
+			} else {
+				return lastLedgerUpdate.getLastEvent().getTail().getEpoch();
+			}
 		}
 
 		public Map<BFTNode, Map<String, String>> getValidators() {
@@ -398,10 +402,19 @@ public class StakingUnstakingValidatorsTest {
 			return map;
 		}
 
+		private <T extends Particle> T deserialize(SubstateDeserialization deserialization, byte[] data) {
+			try {
+				return (T) deserialization.deserialize(data);
+			} catch (DeserializeException e) {
+				throw new IllegalStateException(e);
+			}
+		}
+
 		@SuppressWarnings("unchecked")
 		public UInt256 getTotalNativeTokens() {
 			final var forkConfig = forkManager.getCurrentFork(entryStore.getEpochsForkHashes());
 			var reParser = forkConfig.getEngineRules().getParser();
+			var deserialization = reParser.getSubstateDeserialization();
 			var totalTokens = entryStore.reduceUpParticles(
 				UInt256.ZERO,
 				(i, p) -> {
@@ -412,15 +425,15 @@ public class StakingUnstakingValidatorsTest {
 				TokensInAccount.class
 			);
 			logger.info("Total tokens: {}", Amount.ofSubunits(totalTokens));
-			var totalStaked = entryStore.reduceUpParticles(
-				UInt256.ZERO,
-				(i, p) -> {
-					var tokens = (ValidatorStakeData) p;
-					return i.add(tokens.getAmount());
-				},
-				reParser.getSubstateDeserialization(),
-				ValidatorStakeData.class
-			);
+			var index = deserialization.index(ValidatorStakeData.class);
+			final UInt256 totalStaked;
+			try (var stakeCursor = entryStore.openIndexedCursor(index)) {
+				totalStaked = Streams.stream(stakeCursor)
+					.map(s -> {
+						ValidatorStakeData validatorStake = deserialize(deserialization, s.getData());
+						return validatorStake.getAmount();
+					}).reduce(UInt256::add).orElse(UInt256.ZERO);
+			}
 			logger.info("Total staked: {}", Amount.ofSubunits(totalStaked));
 			var totalStakePrepared = entryStore.reduceUpParticles(
 				UInt256.ZERO,
@@ -493,11 +506,12 @@ public class StakingUnstakingValidatorsTest {
 					break;
 				case 4:
 					// Only unregister once in a while
-					if (random.nextInt(10) == 0) {
-						action = new UnregisterValidator(privKey.getPublicKey());
-						break;
+					if (nodeIndex <= 1) {
+						continue;
 					}
-					continue;
+
+					action = new UnregisterValidator(privKey.getPublicKey());
+					break;
 				case 5:
 					restartNode(nodeIndex);
 					continue;

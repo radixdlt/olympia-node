@@ -36,6 +36,7 @@ public final class RERules {
 	private final BatchVerifier<LedgerAndBFTProof> batchVerifier;
 	private final View maxRounds;
 	private final OptionalInt maxSigsPerRound;
+	private final int maxValidators;
 
 	public RERules(
 		REParser parser,
@@ -44,7 +45,8 @@ public final class RERules {
 		REConstructor actionConstructors,
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
 		View maxRounds,
-		OptionalInt maxSigsPerRound
+		OptionalInt maxSigsPerRound,
+		int maxValidators
 	) {
 		this.parser = parser;
 		this.serialization = serialization;
@@ -53,6 +55,7 @@ public final class RERules {
 		this.batchVerifier = batchVerifier;
 		this.maxRounds = maxRounds;
 		this.maxSigsPerRound = maxSigsPerRound;
+		this.maxValidators = maxValidators;
 	}
 
 	public ConstraintMachineConfig getConstraintMachineConfig() {
@@ -81,5 +84,9 @@ public final class RERules {
 
 	public OptionalInt getMaxSigsPerRound() {
 		return maxSigsPerRound;
+	}
+
+	public int getMaxValidators() {
+		return maxValidators;
 	}
 }

@@ -40,8 +40,6 @@ import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.statecomputer.MaxValidators;
-import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.sync.SyncConfig;
@@ -172,8 +170,6 @@ public class SystemConfigService {
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
 		@MempoolMaxSize int mempoolMaxSize,
 		@MempoolThrottleMs long mempoolThrottleMs,
-		@MinValidators int minValidators,
-		@MaxValidators int maxValidators,
 		@Genesis VerifiedTxnsAndProof genesis,
 		ForkManager forkManager,
 		CommittedReader committedReader,
@@ -190,7 +186,7 @@ public class SystemConfigService {
 		this.peersView = peersView;
 		this.addressing = addressing;
 
-		radixEngineConfiguration = prepareRadixEngineConfiguration(forkManager, committedReader, minValidators, maxValidators);
+		radixEngineConfiguration = prepareRadixEngineConfiguration(forkManager, committedReader);
 		mempoolConfiguration = prepareMempoolConfiguration(mempoolMaxSize, mempoolThrottleMs);
 		apiConfiguration = prepareApiConfiguration(endpointStatuses);
 		bftConfiguration = prepareBftConfiguration(pacemakerTimeout, bftSyncPatienceMillis);
@@ -351,9 +347,7 @@ public class SystemConfigService {
 	@VisibleForTesting
 	static JSONObject prepareRadixEngineConfiguration(
 		ForkManager forkManager,
-		CommittedReader committedReader,
-		int minValidators,
-		int maxValidators
+		CommittedReader committedReader
 	) {
 		final var knownForks = jsonArray();
 		forkManager.forkConfigs().forEach(config -> knownForks.put(forkConfigJson(config)));
@@ -361,8 +355,6 @@ public class SystemConfigService {
 		final var currentFork = forkManager.getCurrentFork(committedReader.getEpochsForkHashes());
 
 		return jsonObject()
-			.put("minValidators", minValidators)
-			.put("maxValidators", maxValidators)
 			.put("known_forks", knownForks)
 			.put("current_fork", forkConfigJson(currentFork));
 	}
@@ -373,6 +365,7 @@ public class SystemConfigService {
 			.put("hash", forkConfig.getHash().toString())
 			.put("isCandidate", forkConfig instanceof CandidateForkConfig)
 			.put("maxRounds", forkConfig.getEngineRules().getMaxRounds().number())
+			.put("maxValidators", forkConfig.getEngineRules().getMaxValidators())
 			.put("maxSigsPerRound", forkConfig.getEngineRules().getMaxSigsPerRound().orElse(0));
 
 		if (forkConfig instanceof FixedEpochForkConfig) {

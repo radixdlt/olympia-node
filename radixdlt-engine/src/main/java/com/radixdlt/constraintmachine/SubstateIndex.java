@@ -24,13 +24,21 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 
-public final class ShutdownAllIndex {
+public final class SubstateIndex {
 	private final byte[] index;
 	private final Class<? extends Particle> substateClass;
 
-	public ShutdownAllIndex(byte[] index, Class<? extends Particle> substateClass) {
+	private SubstateIndex(byte[] index, Class<? extends Particle> substateClass) {
 		this.index = index;
 		this.substateClass = substateClass;
+	}
+
+	public static SubstateIndex create(byte[] prefix, Class<? extends Particle> substateClass) {
+		return new SubstateIndex(prefix, substateClass);
+	}
+
+	public static SubstateIndex create(byte typeByte, Class<? extends Particle> substateClass) {
+		return new SubstateIndex(new byte[] {typeByte}, substateClass);
 	}
 
 	public boolean test(RawSubstateBytes bytes) {
@@ -76,11 +84,11 @@ public final class ShutdownAllIndex {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof ShutdownAllIndex)) {
+		if (!(o instanceof SubstateIndex)) {
 			return false;
 		}
 
-		var other = (ShutdownAllIndex) o;
+		var other = (SubstateIndex) o;
 		return this.index == other.index
 			&& Objects.equals(this.substateClass, other.substateClass);
 	}

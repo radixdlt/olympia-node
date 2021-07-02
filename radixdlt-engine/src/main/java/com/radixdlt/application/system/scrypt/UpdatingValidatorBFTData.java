@@ -18,7 +18,9 @@
 
 package com.radixdlt.application.system.scrypt;
 
+import com.radixdlt.application.system.ValidatorMissedProposalsEvent;
 import com.radixdlt.application.system.state.ValidatorBFTData;
+import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.crypto.ECPublicKey;
@@ -49,7 +51,7 @@ public class UpdatingValidatorBFTData implements ReducerState {
 		this.expectedNextView += count;
 	}
 
-	public ReducerState update(ValidatorBFTData next) throws ProcedureException {
+	public ReducerState update(ValidatorBFTData next, ExecutionContext context) throws ProcedureException {
 		var first = validatorsToUpdate.firstKey();
 		if (!next.validatorKey().equals(first)) {
 			throw new ProcedureException("Invalid key for validator bft data update");
@@ -66,6 +68,9 @@ public class UpdatingValidatorBFTData implements ReducerState {
 
 		var additionalProposalsCompleted = next.proposalsCompleted() - old.proposalsCompleted();
 		var additionalProposalsMissed = next.proposalsMissed() - old.proposalsMissed();
+		if (additionalProposalsMissed > 0) {
+			context.emitEvent(ValidatorMissedProposalsEvent.create(next.validatorKey(), additionalProposalsMissed));
+		}
 
 		incrementViews(additionalProposalsCompleted);
 		incrementViews(additionalProposalsMissed);

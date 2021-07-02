@@ -113,14 +113,14 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 
 		ReducerState readOwner(ValidatorOwnerCopy ownerCopy) throws ProcedureException {
 			if (!allowDelegationFlag.getValidatorKey().equals(ownerCopy.getValidatorKey())) {
-				throw new ProcedureException("Not matchin validator keys");
+				throw new ProcedureException("Not matching validator keys");
 			}
 			return new StakePrepare(tokenHoldingBucket, allowDelegationFlag.getValidatorKey(), ownerCopy.getOwner()::equals);
 		}
 
 		ReducerState readOwner(PreparedOwnerUpdate preparedOwnerUpdate) throws ProcedureException {
 			if (!allowDelegationFlag.getValidatorKey().equals(preparedOwnerUpdate.getValidatorKey())) {
-				throw new ProcedureException("Not matchin validator keys");
+				throw new ProcedureException("Not matching validator keys");
 			}
 			return new StakePrepare(
 				tokenHoldingBucket,

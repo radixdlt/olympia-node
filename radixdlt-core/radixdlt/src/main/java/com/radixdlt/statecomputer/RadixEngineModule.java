@@ -22,12 +22,10 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
-import com.radixdlt.engine.SubstateCacheRegister;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.store.EngineStore;
@@ -48,7 +46,6 @@ public class RadixEngineModule extends AbstractModule {
 	protected void configure() {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<Pair<String, StateReducer<?>>>() { });
-		Multibinder.newSetBinder(binder(), new TypeLiteral<SubstateCacheRegister<?>>() { });
 	}
 
 	// TODO: Remove
@@ -74,13 +71,20 @@ public class RadixEngineModule extends AbstractModule {
 		return forkConfig.getEngineRules().getMaxRounds();
 	}
 
+	// TODO: Remove
+	@Provides
+	@Singleton
+	@MaxValidators
+	private int maxValidators(ForkConfig forkConfig) {
+		return forkConfig.getEngineRules().getMaxValidators();
+	}
+
 	@Provides
 	@Singleton
 	private RadixEngine<LedgerAndBFTProof> getRadixEngine(
 		EngineStore<LedgerAndBFTProof> engineStore,
 		Set<StateReducer<?>> stateReducers,
 		Set<Pair<String, StateReducer<?>>> namedStateReducers,
-		Set<SubstateCacheRegister<?>> substateCacheRegisters,
 		StakedValidatorsReducer stakedValidatorsReducer,
 		ForkConfig forkConfig
 	) {
@@ -109,9 +113,6 @@ public class RadixEngineModule extends AbstractModule {
 
 		radixEngine.addStateReducer(stakedValidatorsReducer, true);
 		radixEngine.addStateReducer(new SystemReducer(), true);
-
-		var validatorsCache = new SubstateCacheRegister<>(ValidatorBFTData.class, p -> true);
-		radixEngine.addSubstateCache(validatorsCache, true);
 		radixEngine.addStateReducer(new CurrentValidatorsReducer(), false);
 
 		// Additional state reducers are not required for consensus so don't need to include their
@@ -119,9 +120,6 @@ public class RadixEngineModule extends AbstractModule {
 		logger.info("RE - Initializing stateReducers: {} {}", stateReducers, namedStateReducers);
 		stateReducers.forEach(r -> radixEngine.addStateReducer(r, false));
 		namedStateReducers.forEach(n -> radixEngine.addStateReducer(n.getSecond(), n.getFirst(), false));
-
-		logger.info("RE - Initializing substate caches: {}", substateCacheRegisters);
-		substateCacheRegisters.forEach(c -> radixEngine.addSubstateCache(c, false));
 
 		return radixEngine;
 	}

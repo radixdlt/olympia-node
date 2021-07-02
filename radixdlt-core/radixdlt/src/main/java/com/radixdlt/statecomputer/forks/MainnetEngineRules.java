@@ -82,7 +82,6 @@ import java.util.Set;
 import java.util.function.Function;
 
 public final class MainnetEngineRules {
-
 	public static final Function<RERulesConfig, RERules> olympiaV1 = config -> {
 		final var maxRounds = config.getMaxRounds();
 		final var perByteFee = config.getFeeTable().getPerByteFee().toSubunits();
@@ -101,7 +100,8 @@ public final class MainnetEngineRules {
 			maxRounds,
 			config.getRewardsPerProposal().toSubunits(),
 			config.getMinimumCompletedProposalsPercentage(),
-			config.getUnstakingEpochDelay()
+			config.getUnstakingEpochDelay(),
+			config.getMaxValidators()
 		));
 		final var meter = Meters.combine(
 			config.getMaxSigsPerRound().stream().<Meter>mapToObj(SigsPerRoundMeter::create).findAny().orElse(Meter.EMPTY),
@@ -127,7 +127,8 @@ public final class MainnetEngineRules {
 			.put(NextEpoch.class, new NextEpochConstructorV3(
 				config.getRewardsPerProposal().toSubunits(),
 				config.getMinimumCompletedProposalsPercentage(),
-				config.getUnstakingEpochDelay()
+				config.getUnstakingEpochDelay(),
+				config.getMaxValidators()
 			))
 			.put(NextRound.class, new NextViewConstructorV3())
 			.put(RegisterValidator.class, new RegisterValidatorConstructor())
@@ -152,7 +153,8 @@ public final class MainnetEngineRules {
 			actionConstructors,
 			new EpochProofVerifierV2(),
 			View.of(maxRounds),
-			config.getMaxSigsPerRound()
+			config.getMaxSigsPerRound(),
+			config.getMaxValidators()
 		);
 	};
 

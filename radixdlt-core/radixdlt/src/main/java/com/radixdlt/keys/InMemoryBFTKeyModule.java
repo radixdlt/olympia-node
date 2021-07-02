@@ -56,6 +56,6 @@ public final class InMemoryBFTKeyModule extends AbstractModule {
 	@Provides
 	@Self
 	String name(Addressing addressing, @Self ECPublicKey key) {
-		return addressing.forValidators().of(key).substring(0, 10);
+		return addressing.forValidators().of(key).substring(0, 11);
 	}
 }

@@ -18,6 +18,7 @@
 
 package com.radixdlt.identifiers;
 
+import com.radixdlt.utils.Pair;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
 
@@ -50,6 +51,22 @@ public final class AccountAddressing {
 		return new AccountAddressing(hrp);
 	}
 
+	public static Pair<String, REAddr> parseUnknownHrp(String v) throws DeserializeException {
+		Bech32.Bech32Data bech32Data;
+		try {
+			bech32Data = Bech32.decode(v);
+		} catch (AddressFormatException e) {
+			throw new DeserializeException("Could not decode string: " + v, e);
+		}
+
+		try {
+			var addrBytes = fromBech32Data(bech32Data.data);
+			return Pair.of(bech32Data.hrp, REAddr.of(addrBytes));
+		} catch (IllegalArgumentException e) {
+			throw new DeserializeException("Invalid address", e);
+		}
+	}
+
 	private static byte[] toBech32Data(byte[] bytes) {
 		return Bits.convertBits(bytes, 0, bytes.length, 8, 5, true);
 	}
@@ -64,23 +81,11 @@ public final class AccountAddressing {
 	}
 
 	public REAddr parse(String v) throws DeserializeException {
-		Bech32.Bech32Data bech32Data;
-		try {
-			bech32Data = Bech32.decode(v);
-		} catch (AddressFormatException e) {
-			throw new DeserializeException("Could not decode string: " + v, e);
+		var p = parseUnknownHrp(v);
+		if (!p.getFirst().equals(hrp)) {
+			throw new DeserializeException("hrp must be " + hrp + " but was " + p.getFirst());
 		}
-
-		if (!bech32Data.hrp.equals(hrp)) {
-			throw new DeserializeException("hrp must be " + hrp + " but was " + bech32Data.hrp);
-		}
-
-		try {
-			var addrBytes = fromBech32Data(bech32Data.data);
-			return REAddr.of(addrBytes);
-		} catch (IllegalArgumentException e) {
-			throw new DeserializeException("Invalid address", e);
-		}
+		return p.getSecond();
 	}
 
 	public Result<REAddr> parseFunctional(String addr) {

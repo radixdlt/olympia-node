@@ -21,12 +21,14 @@ package com.radixdlt.atom;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
+import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.UnclaimedREAddr;
-import com.radixdlt.constraintmachine.ShutdownAllIndex;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
+import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateSerialization;
@@ -34,11 +36,15 @@ import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -129,11 +135,16 @@ public final class TxBuilder {
 		lowLevelBuilder.virtualRead(p);
 	}
 
-	private CloseableCursor<Substate> createRemoteSubstateCursor(Class<? extends Particle> particleClass) {
+	private CloseableCursor<RawSubstateBytes> createRemoteSubstateCursor(SubstateIndex index) {
 		return CloseableCursor.filter(
-			remoteSubstate.openIndexedCursor(particleClass, deserialization),
-			s -> !lowLevelBuilder.remoteDownSubstate().contains(s.getId())
+			remoteSubstate.openIndexedCursor(index),
+			s -> !lowLevelBuilder.remoteDownSubstate().contains(SubstateId.fromBytes(s.getId()))
 		);
+	}
+
+	private CloseableCursor<RawSubstateBytes> createRemoteSubstateCursor(Class<? extends Particle> c) {
+		var b = deserialization.classToByte(c);
+		return createRemoteSubstateCursor(SubstateIndex.create(new byte[] {b}, c));
 	}
 
 	private static <T> Stream<T> iteratorToStream(Iterator<T> iterator) {
@@ -142,8 +153,17 @@ public final class TxBuilder {
 				iterator,
 				Spliterator.ORDERED
 			),
-			 false
+			false
 		);
+	}
+
+	private Substate deserialize(RawSubstateBytes rawSubstateBytes) {
+		try {
+			var raw = deserialization.deserialize(rawSubstateBytes.getData());
+			return Substate.create(raw, SubstateId.fromBytes(rawSubstateBytes.getId()));
+		} catch (DeserializeException e) {
+			throw new IllegalStateException(e);
+		}
 	}
 
 	// For mempool filler
@@ -164,6 +184,7 @@ public final class TxBuilder {
 
 		try (var cursor = createRemoteSubstateCursor(particleClass)) {
 			var substateRead = iteratorToStream(cursor)
+				.map(this::deserialize)
 				.filter(s -> particlePredicate.test(particleClass.cast(s.getParticle())))
 				.findFirst();
 
@@ -184,7 +205,7 @@ public final class TxBuilder {
 		try (var cursor = createRemoteSubstateCursor(particleClass)) {
 			return Streams.concat(
 				lowLevelBuilder.localUpSubstate().stream().map(LocalSubstate::getParticle),
-				iteratorToStream(cursor).map(Substate::getParticle)
+				iteratorToStream(cursor).map(this::deserialize).map(Substate::getParticle)
 			)
 				.filter(particleClass::isInstance)
 				.map(particleClass::cast)
@@ -226,6 +247,7 @@ public final class TxBuilder {
 
 		try (var cursor = createRemoteSubstateCursor(particleClass)) {
 			var substateDown = iteratorToStream(cursor)
+				.map(this::deserialize)
 				.filter(s -> particlePredicate.test(particleClass.cast(s.getParticle())))
 				.peek(s -> this.down(s.getId()))
 				.map(Substate::getParticle)
@@ -269,6 +291,7 @@ public final class TxBuilder {
 
 		try (var cursor = createRemoteSubstateCursor(particleClass)) {
 			var substateDown = iteratorToStream(cursor)
+				.map(this::deserialize)
 				.filter(s -> particlePredicate.test(particleClass.cast(s.getParticle())))
 				.peek(s -> this.read(s.getId()))
 				.map(Substate::getParticle)
@@ -291,35 +314,81 @@ public final class TxBuilder {
 		Class<T> particleClass,
 		Function<Iterator<T>, U> mapper
 	) {
-		try (var cursor = createRemoteSubstateCursor(particleClass)) {
-			var localIterator = lowLevelBuilder.localUpSubstate().stream()
-				.map(LocalSubstate::getParticle)
-				.filter(particleClass::isInstance)
-				.map(particleClass::cast)
-				.iterator();
-			var remoteIterator = Iterators.transform(cursor, s -> (T) s.getParticle());
-			var result = mapper.apply(Iterators.concat(localIterator, remoteIterator));
-			var typeByte = deserialization.classToByte(particleClass);
-			lowLevelBuilder.downAll(typeByte);
-			return result;
-		}
+		var typeByte = deserialization.classToByte(particleClass);
+		return shutdownAll(SubstateIndex.create(typeByte, particleClass), mapper);
+	}
+
+	public <T extends Particle> CloseableCursor<T> readIndex(SubstateIndex index) {
+		var comparator = UnsignedBytes.lexicographicalComparator();
+		var cursor = createRemoteSubstateCursor(index);
+		var localIterator = lowLevelBuilder.localUpSubstate().stream()
+			.map(LocalSubstate::getParticle)
+			.filter(index.getSubstateClass()::isInstance)
+			.map(p -> (T) p)
+			.map(p -> Pair.of(p, serialization.serialize(p)))
+			.filter(p -> index.test(p.getSecond()))
+			.sorted(Comparator.comparing(Pair::getSecond, comparator))
+			.iterator();
+
+		return new CloseableCursor<T>() {
+			private RawSubstateBytes nextRemote = cursor.hasNext() ? cursor.next() : null;
+			private Pair<T, byte[]> nextLocal = localIterator.hasNext() ? localIterator.next() : null;
+
+			private T nextRemote() {
+				var next = nextRemote;
+				nextRemote = cursor.hasNext() ? cursor.next() : null;
+				try {
+					return (T) deserialization.deserialize(next.getData());
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			}
+
+			private T nextLocal() {
+				var next = nextLocal;
+				nextLocal = localIterator.hasNext() ? localIterator.next() : null;
+				return next.getFirst();
+			}
+
+			@Override
+			public void close() {
+				cursor.close();
+			}
+
+			@Override
+			public boolean hasNext() {
+				return nextRemote != null || nextLocal != null;
+			}
+
+			@Override
+			public T next() {
+				if (nextRemote != null && nextLocal != null) {
+					var compare = comparator.compare(nextRemote.getData(), nextLocal.getSecond());
+					return compare <= 0 ? nextRemote() : nextLocal();
+				} else if (nextRemote != null) {
+					return nextRemote();
+				} else if (nextLocal != null) {
+					return nextLocal();
+				} else {
+					throw new NoSuchElementException();
+				}
+			}
+		};
 	}
 
 	public <T extends Particle, U> U shutdownAll(
-		ShutdownAllIndex index,
+		SubstateIndex index,
 		Function<Iterator<T>, U> mapper
 	) {
-		try (var cursor = createRemoteSubstateCursor(index.getSubstateClass())) {
+		try (var cursor = createRemoteSubstateCursor(index)) {
 			var localIterator = lowLevelBuilder.localUpSubstate().stream()
 				.map(LocalSubstate::getParticle)
 				.filter(index.getSubstateClass()::isInstance)
 				.map(p -> (T) p)
+				.filter(p -> index.test(serialization.serialize(p)))
 				.iterator();
-			var remoteIterator = Iterators.transform(cursor, s -> (T) s.getParticle());
-			var result = mapper.apply(Iterators.filter(
-				Iterators.concat(localIterator, remoteIterator),
-				p -> index.test(serialization.serialize(p))
-			));
+			var remoteIterator = Iterators.transform(cursor, s -> (T) this.deserialize(s).getParticle());
+			var result = mapper.apply(Iterators.concat(localIterator, remoteIterator));
 			lowLevelBuilder.downAll(index);
 			return result;
 		}

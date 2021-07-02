@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 
 import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRandomRegistrator;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
-import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -49,14 +48,13 @@ import org.junit.Test;
 
 public class RandomVoteAndViewTimeoutDropperTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(8, 4)
+		.numNodes(8)
 		.networkModules(
 			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed(),
 			NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.2)
 		)
 		.addRadixEngineConfigModules(
-			RadixEngineConfig.asModule(2, 50),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMaxSigsPerRound(5)),
 			new ForkManagerModule(),
 			new MainnetForksModule()

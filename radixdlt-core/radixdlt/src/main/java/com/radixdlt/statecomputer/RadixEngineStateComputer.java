@@ -17,6 +17,7 @@
 
 package com.radixdlt.statecomputer;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
@@ -31,6 +32,7 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -64,8 +66,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -87,7 +87,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher;
 	private final EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher;
 	private final EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher;
-	private final EventDispatcher<TxnsCommittedToLedger> committedDispatcher;
 	private final ForkManager forkManager;
 	private final SystemCounters systemCounters;
 	private final Hasher hasher;
@@ -108,7 +107,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher,
 		EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher,
 		EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher,
-		EventDispatcher<TxnsCommittedToLedger> committedDispatcher,
 		EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
 		Hasher hasher,
 		SystemCounters systemCounters,
@@ -127,7 +125,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.mempoolAddFailureEventDispatcher = Objects.requireNonNull(mempoolAddFailureEventDispatcher);
 		this.invalidProposedCommandEventDispatcher = Objects.requireNonNull(invalidProposedCommandEventDispatcher);
 		this.mempoolAtomsRemovedEventDispatcher = Objects.requireNonNull(mempoolAtomsRemovedEventDispatcher);
-		this.committedDispatcher = Objects.requireNonNull(committedDispatcher);
 		this.ledgerUpdateDispatcher = Objects.requireNonNull(ledgerUpdateDispatcher);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.systemCounters = Objects.requireNonNull(systemCounters);
@@ -214,12 +211,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 				getValidatorMapping()
 			));
 		} else {
-			var stakedValidators = branch.getComputedState(StakedValidators.class);
-			if (stakedValidators.toValidatorSet() == null) {
-				// TODO: Catch this error and halt services
-				throw new NoValidatorsException(vertex.getQC().getEpoch());
-			}
-
 			if (vertex.getParentHeader().getView().compareTo(epochCeilingView) < 0) {
 				systemActions.action(new NextRound(
 					epochCeilingView.number(),
@@ -228,22 +219,14 @@ public final class RadixEngineStateComputer implements StateComputer {
 					getValidatorMapping()
 				));
 			}
-
-			systemActions.action(new NextEpoch(updates -> {
-				var cur = stakedValidators;
-				for (var u : updates) {
-					cur = cur.setStake(u.getValidatorKey(), u.getAmount());
-				}
-				// FIXME: cur.toValidatorSet() may be null
-				var validatorSet = cur.toValidatorSet();
-				if (validatorSet == null) {
+			systemActions.action(new NextEpoch(nextValidators -> {
+				var next = nextValidators.stream()
+					.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount()))
+					.collect(Collectors.toList());
+				if (next.isEmpty()) {
 					throw new NoValidatorsException(vertex.getQC().getEpoch());
 				}
-				nextValidatorSet.set(validatorSet);
-				return validatorSet.nodes().stream()
-					.map(BFTNode::getKey)
-					.sorted(Comparator.comparing(ECPublicKey::getBytes, Arrays::compare))
-					.collect(Collectors.toList());
+				nextValidatorSet.set(BFTValidatorSet.from(next));
 			}, timestamp));
 		}
 
@@ -392,9 +375,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			mempoolAtomsRemovedEventDispatcher.dispatch(atomsRemovedFromMempool);
 		}
 
-		committedDispatcher.dispatch(TxnsCommittedToLedger.create(txCommitted));
-
-		Optional<EpochChange> epochChangeOptional = txnsAndProof.getProof().getNextValidatorSet().map(validatorSet -> {
+		var epochChangeOptional = txnsAndProof.getProof().getNextValidatorSet().map(validatorSet -> {
 			var header = txnsAndProof.getProof();
 			// TODO: Move vertex stuff somewhere else
 			var genesisVertex = UnverifiedVertex.createGenesis(header.getRaw());
@@ -417,10 +398,13 @@ public final class RadixEngineStateComputer implements StateComputer {
 			var bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, initialState);
 			return new EpochChange(header, bftConfiguration);
 		});
-
-		epochChangeOptional.ifPresent(e -> this.proposerElection = e.getBFTConfiguration().getProposerElection());
-
-		var ledgerUpdate = new LedgerUpdate(txnsAndProof, epochChangeOptional);
+		var outputBuilder = ImmutableClassToInstanceMap.builder();
+		epochChangeOptional.ifPresent(e -> {
+			this.proposerElection = e.getBFTConfiguration().getProposerElection();
+			outputBuilder.put(EpochChange.class, e);
+		});
+		outputBuilder.put(REOutput.class, REOutput.create(txCommitted));
+		var ledgerUpdate = new LedgerUpdate(txnsAndProof, outputBuilder.build());
 		ledgerUpdateDispatcher.dispatch(ledgerUpdate);
 	}
 }

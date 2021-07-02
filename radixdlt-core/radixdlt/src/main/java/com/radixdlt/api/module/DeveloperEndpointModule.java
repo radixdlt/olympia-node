@@ -58,4 +58,18 @@ public class DeveloperEndpointModule extends AbstractModule {
 	public JsonRpcHandler developerBuildGenesis(DeveloperHandler developerHandler) {
 		return developerHandler::handleGenesisConstruction;
 	}
+
+	@DeveloperEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("developer.parse_transaction")
+	public JsonRpcHandler developerParseTransaction(DeveloperHandler developerHandler) {
+		return developerHandler::handleParseTxn;
+	}
+
+	@DeveloperEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("developer.parse_address")
+	public JsonRpcHandler developerParseAddress(DeveloperHandler developerHandler) {
+		return developerHandler::handleParseAddress;
+	}
 }

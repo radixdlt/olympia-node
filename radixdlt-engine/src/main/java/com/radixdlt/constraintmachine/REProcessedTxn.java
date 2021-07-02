@@ -40,13 +40,20 @@ import java.util.stream.Stream;
 public final class REProcessedTxn {
 	private final List<List<REStateUpdate>> stateUpdates;
 	private final ParsedTxn parsedTxn;
+	private final List<REEvent> events;
 
 	public REProcessedTxn(
 		ParsedTxn parsedTxn,
-		List<List<REStateUpdate>> stateUpdates
+		List<List<REStateUpdate>> stateUpdates,
+		List<REEvent> events
 	) {
 		this.parsedTxn = parsedTxn;
 		this.stateUpdates = stateUpdates;
+		this.events = events;
+	}
+
+	public List<REEvent> getEvents() {
+		return events;
 	}
 
 	public UInt256 getFeePaid() {

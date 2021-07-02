@@ -63,11 +63,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
@@ -175,7 +173,6 @@ public final class EpochManager {
 		BFTConfiguration config = this.currentEpoch.getBFTConfiguration();
 		BFTValidatorSet validatorSet = config.getValidatorSet();
 		if (!validatorSet.containsNode(self)) {
-			logEpochChange(this.currentEpoch, "excluded from");
 			this.bftRebuildProcessors = Set.of();
 			this.bftUpdateProcessors = Set.of();
 			this.syncRequestProcessors = Set.of();
@@ -188,7 +185,6 @@ public final class EpochManager {
 		}
 
 		final long nextEpoch = this.currentEpoch.getEpoch();
-		logEpochChange(this.currentEpoch, "included in");
 
 		// Config
 		final BFTConfiguration bftConfiguration = this.currentEpoch.getBFTConfiguration();
@@ -241,7 +237,6 @@ public final class EpochManager {
 	}
 
 	public void start() {
-		log.info("EpochManager Start: {}", currentEpoch);
 		this.bftEventProcessor.start();
 	}
 
@@ -254,11 +249,12 @@ public final class EpochManager {
 	}
 
 	private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
-		var epochChange = (Optional<EpochChange>) ledgerUpdate.getStateComputerOutput();
-		epochChange.ifPresentOrElse(
-			this::processEpochChange,
-			() -> this.syncLedgerUpdateProcessor.process(ledgerUpdate)
-		);
+		var epochChange = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
+		if (epochChange != null) {
+			this.processEpochChange(epochChange);
+		} else {
+			this.syncLedgerUpdateProcessor.process(ledgerUpdate);
+		}
 	}
 
 	private void processEpochChange(EpochChange epochChange) {
@@ -268,7 +264,6 @@ public final class EpochManager {
 		}
 
 		if (this.currentEpoch.getBFTConfiguration().getValidatorSet().containsNode(this.self)) {
-			log.info("EPOCH_CHANGE: broadcasting next epoch {}", epochChange.getEpoch());
 			final ImmutableSet<BFTValidator> currentAndNextValidators =
 					ImmutableSet.<BFTValidator>builder()
 						.addAll(epochChange.getBFTConfiguration().getValidatorSet().getValidators())
@@ -283,8 +278,6 @@ public final class EpochManager {
 			}
 		}
 
-		log.trace("EPOCH_CHANGE: {}", epochChange);
-
 		this.currentEpoch = epochChange;
 		this.updateEpochState();
 		this.bftEventProcessor.start();
@@ -296,30 +289,6 @@ public final class EpochManager {
 			.forEach(this::processConsensusEventInternal);
 
 		queuedEvents.remove(epochChange.getEpoch());
-	}
-
-	private void logEpochChange(EpochChange epochChange, String message) {
-		if (log.isInfoEnabled()) {
-			// Reduce complexity of epoch change log message, and make it easier to correlate with
-			// other logs.  Size reduced from circa 6Kib to approx 1Kib over ValidatorSet.toString().
-			BFTConfiguration configuration = epochChange.getBFTConfiguration();
-			StringBuilder epochMessage = new StringBuilder(this.self.getSimpleName());
-			epochMessage.append(": EPOCH_CHANGE: ");
-			epochMessage.append(message);
-			epochMessage.append(" new epoch ").append(epochChange.getEpoch());
-			epochMessage.append(" with ").append(configuration.getValidatorSet().getValidators().size()).append(" validators: ");
-			Iterator<BFTValidator> i = configuration.getValidatorSet().getValidators().iterator();
-			if (i.hasNext()) {
-				appendValidator(epochMessage, i.next());
-				while (i.hasNext()) {
-					epochMessage.append(',');
-					appendValidator(epochMessage, i.next());
-				}
-			} else {
-				epochMessage.append("[NONE]");
-			}
-			log.info("{}", epochMessage);
-		}
 	}
 
 	private void appendValidator(StringBuilder msg, BFTValidator v) {

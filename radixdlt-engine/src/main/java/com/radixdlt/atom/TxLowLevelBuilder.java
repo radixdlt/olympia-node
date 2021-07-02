@@ -22,7 +22,7 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.ShutdownAllIndex;
+import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
@@ -175,11 +175,11 @@ public final class TxLowLevelBuilder {
 	}
 
 	public TxLowLevelBuilder downAll(Byte typeByte) {
-		instruction(REInstruction.REMicroOp.DOWNALL, new byte[] {typeByte});
+		instruction(REInstruction.REMicroOp.DOWNINDEX, new byte[] {1, typeByte});
 		return this;
 	}
 
-	public TxLowLevelBuilder downAll(ShutdownAllIndex index) {
+	public TxLowLevelBuilder downAll(SubstateIndex index) {
 		var buf = ByteBuffer.allocate(1 + index.getPrefix().length);
 		buf.put((byte) index.getPrefix().length);
 		buf.put(index.getPrefix());

@@ -18,14 +18,13 @@
 
 package com.radixdlt.application.system.construction;
 
+import com.google.common.collect.Streams;
 import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.NextEpoch;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
@@ -41,7 +40,7 @@ import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRakeCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
-import com.radixdlt.constraintmachine.ShutdownAllIndex;
+import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
@@ -51,6 +50,7 @@ import com.radixdlt.utils.UInt256;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -62,31 +62,34 @@ import java.util.stream.Collectors;
 import static com.radixdlt.application.validators.state.PreparedRakeUpdate.RAKE_MAX;
 
 public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch> {
-	private static Logger logger = LogManager.getLogger();
 	private final UInt256 rewardsPerProposal;
 	private final long unstakingEpochDelay;
 	private final long minimumCompletedProposalsPercentage;
+	private final int maxValidators;
 
 	public NextEpochConstructorV3(
 		UInt256 rewardsPerProposal,
 		long minimumCompletedProposalsPercentage,
-		long unstakingEpochDelay
+		long unstakingEpochDelay,
+		int maxValidators
 	) {
 		this.rewardsPerProposal = rewardsPerProposal;
 		this.unstakingEpochDelay = unstakingEpochDelay;
 		this.minimumCompletedProposalsPercentage = minimumCompletedProposalsPercentage;
+		this.maxValidators = maxValidators;
 	}
 
 	private static ValidatorScratchPad loadValidatorStakeData(
 		TxBuilder txBuilder,
 		ECPublicKey k,
-		TreeMap<ECPublicKey, ValidatorScratchPad> validatorsToUpdate
+		TreeMap<ECPublicKey, ValidatorScratchPad> validatorsToUpdate,
+		boolean canBeVirtual
 	) throws TxBuilderException {
 		if (!validatorsToUpdate.containsKey(k)) {
 			var validatorData = txBuilder.down(
 				ValidatorStakeData.class,
 				p -> p.getValidatorKey().equals(k),
-				Optional.of(SubstateWithArg.noArg(ValidatorStakeData.createVirtual(k))),
+				canBeVirtual ? Optional.of(SubstateWithArg.noArg(ValidatorStakeData.createVirtual(k))) : Optional.empty(),
 				() -> new TxBuilderException("Validator not found")
 			);
 			validatorsToUpdate.put(k, new ValidatorScratchPad(validatorData));
@@ -109,7 +112,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		for (var e : preparing.entrySet()) {
 			var k = e.getKey();
 			var update = e.getValue();
-			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate);
+			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate, true);
 			updater.accept(curValidator, update);
 			txBuilder.up(copy.apply(update));
 		}
@@ -134,7 +137,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		unlockedStateIndexBuf.put(SubstateTypeId.EXITTING_STAKE.id());
 		unlockedStateIndexBuf.put((byte) 0);
 		unlockedStateIndexBuf.putLong(closingEpoch.getEpoch() + 1);
-		var unlockedStakeIndex = new ShutdownAllIndex(unlockedStateIndexBuf.array(), ExittingStake.class);
+		var unlockedStakeIndex = SubstateIndex.create(unlockedStateIndexBuf.array(), ExittingStake.class);
 		var exitting = txBuilder.shutdownAll(unlockedStakeIndex, (Iterator<ExittingStake> i) -> {
 			final TreeSet<ExittingStake> exit = new TreeSet<>(
 				(o1, o2) -> Arrays.compare(o1.dataKey(), o2.dataKey())
@@ -148,12 +151,9 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 
 		var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorScratchPad>(KeyComparator.instance());
 		var validatorBFTData = txBuilder.shutdownAll(ValidatorBFTData.class, i -> {
-			final TreeMap<ECPublicKey, ValidatorBFTData> proposalsCompleted = new TreeMap<>(KeyComparator.instance());
-			i.forEachRemaining(e -> {
-				proposalsCompleted.put(e.validatorKey(), e);
-				logger.info("Validator {} completed {} missed {}", e.validatorKey(), e.proposalsCompleted(), e.proposalsMissed());
-			});
-			return proposalsCompleted;
+			final TreeMap<ECPublicKey, ValidatorBFTData> bftData = new TreeMap<>(KeyComparator.instance());
+			i.forEachRemaining(e -> bftData.put(e.validatorKey(), e));
+			return bftData;
 		});
 		var preparingStake = new TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>>(KeyComparator.instance());
 		for (var e : validatorBFTData.entrySet()) {
@@ -175,7 +175,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 				continue;
 			}
 
-			var validatorStakeData = loadValidatorStakeData(txBuilder, k, validatorsToUpdate);
+			var validatorStakeData = loadValidatorStakeData(txBuilder, k, validatorsToUpdate, false);
 			int rakePercentage = validatorStakeData.getRakePercentage();
 			final UInt256 rakedEmissions;
 			if (rakePercentage != 0) {
@@ -207,7 +207,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		});
 		for (var e : allPreparedUnstake.entrySet()) {
 			var k = e.getKey();
-			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate);
+			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate, false);
 			var unstakes = e.getValue();
 			for (var entry : unstakes.entrySet()) {
 				var addr = entry.getKey();
@@ -233,7 +233,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		for (var e : allPreparedStake.entrySet()) {
 			var k = e.getKey();
 			var stakes = e.getValue();
-			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate);
+			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate, true);
 			for (var entry : stakes.entrySet()) {
 				var addr = entry.getKey();
 				var amt = entry.getValue();
@@ -253,7 +253,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		buf.put(SubstateTypeId.PREPARED_RAKE_UPDATE.id());
 		buf.put((byte) 0);
 		buf.putLong(closingEpoch.getEpoch() + 1);
-		var index = new ShutdownAllIndex(buf.array(), PreparedRakeUpdate.class);
+		var index = SubstateIndex.create(buf.array(), PreparedRakeUpdate.class);
 		txBuilder.shutdownAll(index, (Iterator<PreparedRakeUpdate> i) -> {
 			i.forEachRemaining(preparedValidatorUpdate ->
 				preparingRakeUpdates.put(preparedValidatorUpdate.getValidatorKey(), preparedValidatorUpdate)
@@ -263,7 +263,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		for (var e : preparingRakeUpdates.entrySet()) {
 			var k = e.getKey();
 			var update = e.getValue();
-			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate);
+			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate, true);
 			curValidator.setRakePercentage(update.getNextRakePercentage());
 			txBuilder.up(new ValidatorRakeCopy(k, update.getNextRakePercentage()));
 		}
@@ -287,14 +287,25 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		);
 
 		validatorsToUpdate.forEach((k, v) -> txBuilder.up(v.toSubstate()));
-		var validatorKeys = action.validators(
-			validatorsToUpdate.values().stream().map(ValidatorScratchPad::toSubstate).collect(Collectors.toList())
-		);
-		validatorKeys.forEach(k -> txBuilder.up(new ValidatorBFTData(k, 0, 0)));
 
+		try (var cursor = txBuilder.readIndex(
+			SubstateIndex.create(new byte[] {SubstateTypeId.VALIDATOR_STAKE_DATA.id(), 0, 1}, ValidatorStakeData.class)
+		)) {
+			// TODO: Explicitly specify next validatorset
+			var nextValidators = Streams.stream(cursor)
+				.map(ValidatorStakeData.class::cast)
+				.sorted(Comparator.comparing(ValidatorStakeData::getAmount)
+					.thenComparing(ValidatorStakeData::getValidatorKey, KeyComparator.instance())
+					.reversed()
+				)
+				.limit(maxValidators)
+				.peek(v -> txBuilder.up(new ValidatorBFTData(v.getValidatorKey(), 0, 0)))
+				.collect(Collectors.toList());
+
+			action.validators(nextValidators);
+		}
 		txBuilder.up(new EpochData(closingEpoch.getEpoch() + 1));
 		txBuilder.up(new RoundData(0, closedRound.getTimestamp()));
 		txBuilder.end();
 	}
-
 }

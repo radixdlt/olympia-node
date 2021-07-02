@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRegistrator;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
-import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -47,9 +46,8 @@ public class IncreasingValidatorsTest {
 			NetworkLatencies.fixed()
 		)
 		.pacemakerTimeout(3000)
-		.numNodes(50, 2) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware pacemaker
+		.numNodes(10) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware pacemaker
 		.addRadixEngineConfigModules(
-			RadixEngineConfig.asModule(2, 40),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMaxSigsPerRound(5)),
 			new ForkManagerModule(),
 			new MainnetForksModule()
@@ -57,7 +55,7 @@ public class IncreasingValidatorsTest {
 		.ledgerAndRadixEngineWithEpochHighView()
 		.addTestModules(
 			ConsensusMonitors.safety(),
-			ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+			ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
 			ConsensusMonitors.noTimeouts(),
 			ConsensusMonitors.directParents(),
 			LedgerMonitors.consensusToLedger(),

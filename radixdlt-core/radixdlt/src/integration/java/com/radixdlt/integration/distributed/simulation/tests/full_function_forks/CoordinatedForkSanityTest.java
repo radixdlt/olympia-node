@@ -57,7 +57,7 @@ public final class CoordinatedForkSanityTest {
 
 	public CoordinatedForkSanityTest() {
 		bftTestBuilder = SimulationTest.builder()
-			.numNodes(numValidators, numValidators, Collections.nCopies(numValidators, UInt256.ONE))
+			.numNodes(numValidators, Collections.nCopies(numValidators, UInt256.ONE))
 			.networkModules(
 				NetworkOrdering.inOrder(),
 				NetworkLatencies.fixed()

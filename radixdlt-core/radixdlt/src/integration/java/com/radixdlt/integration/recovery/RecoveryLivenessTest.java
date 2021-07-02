@@ -26,7 +26,6 @@ import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
@@ -158,12 +157,12 @@ public class RecoveryLivenessTest {
 					Amount.ofTokens(10),
 					1,
 					Amount.ofTokens(10),
-					9800
+					9800,
+					10
 				)),
 			new ForkManagerModule(),
 			new MainnetForksModule(),
 			new RadixEngineModule(),
-			RadixEngineConfig.asModule(1, 100),
 			new AbstractModule() {
 				@Override
 				public void configure() {
@@ -214,11 +213,11 @@ public class RecoveryLivenessTest {
 					Amount.ofTokens(10),
 					1,
 					Amount.ofTokens(10),
-					9800
+					9800,
+					10
 				)),
 			new ForkManagerModule(),
 			new MainnetForksModule(),
-			RadixEngineConfig.asModule(1, 100),
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {
 				@Override
