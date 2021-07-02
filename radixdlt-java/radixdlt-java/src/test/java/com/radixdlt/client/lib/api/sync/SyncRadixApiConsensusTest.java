@@ -58,8 +58,7 @@ public class SyncRadixApiConsensusTest {
 			.onSuccess(client -> client.consensus().configuration()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(configuration -> assertEquals(200L, configuration.getBftSyncPatienceMs()))
-				.onSuccess(configuration -> assertEquals(3000L, configuration.getPacemakerTimeout()))
-			);
+				.onSuccess(configuration -> assertEquals(3000L, configuration.getPacemakerTimeout())));
 	}
 
 	@Test
@@ -71,8 +70,7 @@ public class SyncRadixApiConsensusTest {
 				client -> client.consensus().data()
 					.onFailure(failure -> fail(failure.toString()))
 					.onSuccess(data -> assertEquals(159959L, data.getProcessed()))
-					.onSuccess(data -> assertEquals(159960L, data.getStateVersion()))
-			);
+					.onSuccess(data -> assertEquals(159960L, data.getStateVersion())));
 	}
 
 	private Result<RadixApi> prepareClient(String responseBody) throws IOException {

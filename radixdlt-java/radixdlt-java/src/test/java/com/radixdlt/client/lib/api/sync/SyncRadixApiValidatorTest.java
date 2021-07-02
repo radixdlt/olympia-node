@@ -69,8 +69,7 @@ public class SyncRadixApiValidatorTest {
 			.onSuccess(client -> client.validator().list(10, Optional.empty())
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(validatorsResponse -> assertTrue(validatorsResponse.getCursor().isPresent()))
-				.onSuccess(validatorsResponse -> assertEquals(2, validatorsResponse.getValidators().size()))
-			);
+				.onSuccess(validatorsResponse -> assertEquals(2, validatorsResponse.getValidators().size())));
 	}
 
 	@Test
@@ -86,8 +85,7 @@ public class SyncRadixApiValidatorTest {
 				client -> client.validator().lookup(address)
 					.onFailure(failure -> fail(failure.toString()))
 					.onSuccess(validatorDTO -> assertTrue(validatorDTO.isExternalStakeAccepted()))
-					.onSuccess(validatorDTO -> assertEquals(stake, validatorDTO.getTotalDelegatedStake()))
-			);
+					.onSuccess(validatorDTO -> assertEquals(stake, validatorDTO.getTotalDelegatedStake())));
 	}
 
 	private Result<RadixApi> prepareClient(String responseBody) throws IOException {

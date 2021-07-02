@@ -150,8 +150,7 @@ public class SyncRadixApiLocalTest {
 					.build())
 				.flatMap(request -> client.local().submitTxSingleStep(request)
 					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(txData -> assertNotNull(txData.getTxId()))
-				));
+					.onSuccess(txData -> assertNotNull(txData.getTxId()))));
 	}
 
 	private void transferFunds(RadixApi client, AccountAddress address) {

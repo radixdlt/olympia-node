@@ -60,13 +60,11 @@ public class AsyncRadixApiRadixEngineTest {
 			.map(RadixApi::withTrace)
 			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(
-				client -> client.radixEngine().data().join()
-					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(data -> assertEquals(37884L, data.getSystemTransactions()))
-					.onSuccess(data -> assertEquals(2016L, data.getUserTransactions()))
-					.onSuccess(data -> assertEquals(1L, data.getInvalidProposedCommands()))
-			);
+			.onSuccess(client -> client.radixEngine().data().join()
+				.onFailure(failure -> fail(failure.toString()))
+				.onSuccess(data -> assertEquals(37884L, data.getSystemTransactions()))
+				.onSuccess(data -> assertEquals(2016L, data.getUserTransactions()))
+				.onSuccess(data -> assertEquals(1L, data.getInvalidProposedCommands())));
 	}
 
 	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {

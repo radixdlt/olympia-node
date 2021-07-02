@@ -133,8 +133,7 @@ public class AsyncRadixApiTest {
 			.onSuccess(client -> client.account().stakes(ACCOUNT_ADDRESS1)
 				.join()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(stakePositionsDTOS -> System.out.println("Stake positions: " + stakePositionsDTOS.toString()))
-			);
+				.onSuccess(stakePositionsDTOS -> System.out.println("Stake positions: " + stakePositionsDTOS.toString())));
 	}
 
 	@Test
@@ -147,8 +146,7 @@ public class AsyncRadixApiTest {
 			.onSuccess(client -> client.account().unstakes(ACCOUNT_ADDRESS1)
 				.join()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(unstakePositionsDTOS -> System.out.println("UnStake positions: " + unstakePositionsDTOS.toString()))
-			);
+				.onSuccess(unstakePositionsDTOS -> System.out.println("UnStake positions: " + unstakePositionsDTOS.toString())));
 	}
 
 	@Test
