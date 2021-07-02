@@ -33,9 +33,14 @@ import static com.radixdlt.application.validators.state.PreparedRakeUpdate.RAKE_
 
 public final class UpdateRakeConstructor implements ActionConstructor<UpdateRake> {
 	private final long rakeIncreaseDebounceEpochLength;
+	private final int maxRakeIncrease;
 
-	public UpdateRakeConstructor(long rakeIncreaseDebounceEpochLength) {
+	public UpdateRakeConstructor(
+		long rakeIncreaseDebounceEpochLength,
+		int maxRakeIncrease
+	) {
 		this.rakeIncreaseDebounceEpochLength = rakeIncreaseDebounceEpochLength;
+		this.maxRakeIncrease = maxRakeIncrease;
 	}
 
 	@Override
@@ -61,6 +66,10 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateRake
 
 		var curEpoch = builder.read(EpochData.class, p -> true, Optional.empty(), "Cannot find epoch");
 		var isIncrease = action.getRakePercentage() > curRakePercentage;
+		var rakeIncrease = action.getRakePercentage() - curRakePercentage;
+		if (isIncrease && rakeIncrease >= maxRakeIncrease) {
+			throw new TxBuilderException("Max rake increase is " + maxRakeIncrease + " but trying to increase " + rakeIncrease);
+		}
 		var epochDiff = isIncrease ? rakeIncreaseDebounceEpochLength : 1;
 		var epoch = curEpoch.getEpoch() + epochDiff;
 		builder.up(new PreparedRakeUpdate(

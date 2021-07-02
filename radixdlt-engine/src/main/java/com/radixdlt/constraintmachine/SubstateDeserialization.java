@@ -19,6 +19,7 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atomos.SubstateDefinition;
+import com.radixdlt.engine.parser.exceptions.SubstateDeserializationException;
 import com.radixdlt.serialization.DeserializeException;
 
 import java.nio.ByteBuffer;
@@ -70,6 +71,10 @@ public final class SubstateDeserialization {
 			throw new DeserializeException("Unknown byte type: " + typeByte);
 		}
 
-		return deserializer.getDeserializer().deserialize(buf);
+		try {
+			return deserializer.getDeserializer().deserialize(buf);
+		} catch (Exception e) {
+			throw new SubstateDeserializationException(deserializer.getSubstateClass(), e);
+		}
 	}
 }

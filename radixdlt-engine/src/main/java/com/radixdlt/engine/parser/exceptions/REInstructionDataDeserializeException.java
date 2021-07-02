@@ -16,16 +16,12 @@
  *
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.engine.parser.exceptions;
 
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.constraintmachine.REInstruction;
 
-/**
- * Exception from the Radix Engine mempool
- */
-public final class RadixEngineMempoolException extends MempoolRejectedException {
-    public RadixEngineMempoolException(RadixEngineException exception) {
-        super(exception);
-    }
+public class REInstructionDataDeserializeException extends Exception {
+	public REInstructionDataDeserializeException(REInstruction.REMicroOp microOp, Throwable cause) {
+		super("op=" + microOp, cause);
+	}
 }

@@ -20,10 +20,14 @@ package com.radixdlt.integration.staking;
 
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
+import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.serialization.DeserializeException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
+import org.assertj.core.util.Throwables;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -276,6 +280,21 @@ public class StakingUnstakingValidatorsTest {
 						InvalidProposedTxn.class,
 						i -> {
 							throw new IllegalStateException("Invalid proposed transaction occurred: " + i, i.getException());
+						}
+					);
+				}
+
+				@ProvidesIntoSet
+				EventProcessorOnDispatch<?> mempoolFail() {
+					return new EventProcessorOnDispatch<>(
+						MempoolAddFailure.class,
+						e -> {
+							if (e.getException().getCause() instanceof RadixEngineException) {
+								var rootCause = Throwables.getRootCause(e.getException());
+								if (!(rootCause instanceof SubstateNotFoundException)) {
+									throw new IllegalStateException("Found unexpected mempool exception", e.getException());
+								}
+							}
 						}
 					);
 				}

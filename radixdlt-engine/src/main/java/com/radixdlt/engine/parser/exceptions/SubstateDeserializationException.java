@@ -16,18 +16,13 @@
  *
  */
 
-package com.radixdlt.constraintmachine.exceptions;
+package com.radixdlt.engine.parser.exceptions;
 
-public class TxnParseException extends Exception {
-	public TxnParseException(String message, Throwable cause) {
-		super(message, cause);
-	}
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.serialization.DeserializeException;
 
-	public TxnParseException(Throwable cause) {
-		super(cause);
-	}
-
-	public TxnParseException(String message) {
-		super(message);
+public class SubstateDeserializationException extends DeserializeException {
+	public SubstateDeserializationException(Class<? extends Particle> substateClass, Throwable cause) {
+		super("Failed to deserialize " + substateClass.getSimpleName(), cause);
 	}
 }
