@@ -43,7 +43,6 @@ import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.JsonRpcUtil.optString;
 import static com.radixdlt.api.JsonRpcUtil.safeArray;
 import static com.radixdlt.api.JsonRpcUtil.safeBlob;
-import static com.radixdlt.api.JsonRpcUtil.safeObject;
 import static com.radixdlt.api.JsonRpcUtil.safeString;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
 import static com.radixdlt.api.data.ApiErrors.INVALID_SIGNATURE_DER;
@@ -91,7 +90,7 @@ public class ConstructionHandler {
 	public JSONObject handleConstructionFinalizeTransaction(JSONObject request) {
 		return withRequiredParameters(
 			request,
-			List.of("transaction", "signatureDER", "publicKeyOfSigner"),
+			List.of("blob", "signatureDER", "publicKeyOfSigner"),
 			List.of("immediateSubmit"),
 			params ->
 				allOf(parseBlob(params), parseSignatureDer(params), parsePublicKey(params))
@@ -122,8 +121,7 @@ public class ConstructionHandler {
 	}
 
 	private static Result<byte[]> parseBlob(JSONObject params) {
-		return safeObject(params, "transaction")
-			.flatMap(txObj -> safeBlob(txObj, "blob"));
+		return safeBlob(params, "blob");
 	}
 
 	private static Result<ECDSASignature> parseSignatureDer(JSONObject params) {

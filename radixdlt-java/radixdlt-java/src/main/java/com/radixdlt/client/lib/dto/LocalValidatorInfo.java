@@ -68,7 +68,7 @@ public class LocalValidatorInfo {
 		@JsonProperty(value = "registered", required = true) boolean registered,
 		@JsonProperty(value = "stakes", required = true) List<DelegatedStake> stakes,
 		@JsonProperty(value = "owner", required = true) AccountAddress owner,
-		@JsonProperty(value = "rakePercentage", required = true) int rakePercentage,
+		@JsonProperty(value = "validatorFee", required = true) int rakePercentage,
 		@JsonProperty(value = "allowDelegation", required = true) boolean allowDelegation
 	) {
 		return new LocalValidatorInfo(address, totalStake, name, url, registered, stakes, owner, rakePercentage, allowDelegation);

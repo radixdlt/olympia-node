@@ -130,16 +130,10 @@ public class ConstructionHandlerTest {
 
 		var blob = randomBytes();
 		var hash = HashUtils.sha256(blob).asBytes();
-
-		var transaction = jsonObject()
-			.put("blob", Hex.toHexString(blob))
-			.put("hashOfBlobToSign", Hex.toHexString(hash));
-
 		var keyPair = ECKeyPair.generateNew();
-
 		var signature = keyPair.sign(hash);
 		var params = jsonArray()
-			.put(transaction)
+			.put(Hex.toHexString(blob))
 			.put(encodeToDer(signature))
 			.put(keyPair.getPublicKey().toHex());
 
@@ -166,16 +160,10 @@ public class ConstructionHandlerTest {
 
 		var blob = randomBytes();
 		var hash = HashUtils.sha256(blob).asBytes();
-
-		var transaction = jsonObject()
-			.put("blob", Hex.toHexString(blob))
-			.put("hashOfBlobToSign", Hex.toHexString(hash));
-
 		var keyPair = ECKeyPair.generateNew();
-
 		var signature = keyPair.sign(hash);
 		var params = jsonObject()
-			.put("transaction", transaction)
+			.put("blob", Hex.toHexString(blob))
 			.put("signatureDER", encodeToDer(signature))
 			.put("publicKeyOfSigner", keyPair.getPublicKey().toHex());
 

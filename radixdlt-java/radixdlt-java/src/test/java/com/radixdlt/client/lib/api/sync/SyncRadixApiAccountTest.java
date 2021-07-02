@@ -31,13 +31,9 @@ import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
-import java.io.IOException;
+import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
 import java.util.Optional;
-
-import okhttp3.Call;
-import okhttp3.OkHttpClient;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -46,8 +42,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_PRIMARY_PORT;
-import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_SECONDARY_PORT;
 import static com.radixdlt.client.lib.api.token.Amount.amount;
 
 public class SyncRadixApiAccountTest {
@@ -82,10 +76,10 @@ public class SyncRadixApiAccountTest {
 		+ ":\"a8b096c07e13080299e1733a654eb60fa45014caf5d0d1d16578e8f1c3680bec\",\"epochsUntil\":147,\"validator\":"
 		+ "\"dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\"}],\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
-	private final OkHttpClient client = mock(OkHttpClient.class);
+	private final HttpClient client = mock(HttpClient.class);
 
 	@Test
-	public void testTransactionHistory() throws IOException {
+	public void testTransactionHistory() throws Exception {
 		prepareClient(TX_HISTORY)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
@@ -100,7 +94,7 @@ public class SyncRadixApiAccountTest {
 	}
 
 	@Test
-	public void testTokenBalances() throws IOException {
+	public void testTokenBalances() throws Exception {
 		prepareClient(TOKEN_BALANCES)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
@@ -112,7 +106,7 @@ public class SyncRadixApiAccountTest {
 	}
 
 	@Test
-	public void testErrorResponse() throws IOException {
+	public void testErrorResponse() throws Exception {
 		prepareClient(ERROR_RESPONSE)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
@@ -122,7 +116,7 @@ public class SyncRadixApiAccountTest {
 	}
 
 	@Test
-	public void listStakes() throws IOException {
+	public void listStakes() throws Exception {
 		prepareClient(STAKES_RESPONSE)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
@@ -133,7 +127,7 @@ public class SyncRadixApiAccountTest {
 	}
 
 	@Test
-	public void listUnStakes() throws IOException {
+	public void listUnStakes() throws Exception {
 		prepareClient(UNSTAKES_RESPONSE)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
@@ -201,17 +195,14 @@ public class SyncRadixApiAccountTest {
 				.onSuccess(transaction -> client.transaction().finalize(transaction, true)));
 	}
 
-	private Result<RadixApi> prepareClient(String responseBody) throws IOException {
-		var call = mock(Call.class);
-		var response = mock(Response.class);
-		var body = mock(ResponseBody.class);
+	private Result<RadixApi> prepareClient(String responseBody) throws Exception {
+		@SuppressWarnings("unchecked")
+		var response = (HttpResponse<String>) mock(HttpResponse.class);
 
-		when(client.newCall(any())).thenReturn(call);
-		when(call.execute()).thenReturn(response);
-		when(response.body()).thenReturn(body);
-		when(body.string()).thenReturn(NETWORK_ID, responseBody);
+		when(response.body()).thenReturn(NETWORK_ID, responseBody);
+		when(client.<String>send(any(), any())).thenReturn(response);
 
-		return SyncRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
+		return SyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
 	}
 
 	private static ECKeyPair keyPairOf(int pk) {

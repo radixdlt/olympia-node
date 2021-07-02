@@ -57,6 +57,7 @@ import com.radixdlt.client.lib.dto.ValidatorsResponse;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.functional.Result;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -73,6 +74,8 @@ public interface RadixApi {
 	}
 
 	RadixApi withTrace();
+
+	RadixApi withTimeout(Duration timeout);
 
 	interface Network {
 		Result<NetworkId> id();

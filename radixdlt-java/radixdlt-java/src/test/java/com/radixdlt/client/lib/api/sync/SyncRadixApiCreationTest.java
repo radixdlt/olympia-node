@@ -35,24 +35,17 @@ import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
-import java.io.IOException;
+import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
 import java.util.Optional;
-
-import okhttp3.Call;
-import okhttp3.OkHttpClient;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_PRIMARY_PORT;
-import static com.radixdlt.client.lib.api.sync.RadixApi.DEFAULT_SECONDARY_PORT;
 import static com.radixdlt.client.lib.api.token.Amount.amount;
 
 public class SyncRadixApiCreationTest {
@@ -99,10 +92,10 @@ public class SyncRadixApiCreationTest {
 	private static final String SUBMIT_TRANSACTION = "{\"result\":{\"txID\":\"a84843d8c51f92a872a926cd29a2074f1c85bf4739"
 		+ "2a2fd0e41a4272e38f1aa5\"},\"id\":\"4\",\"jsonrpc\":\"2.0\"}";
 
-	private final OkHttpClient client = mock(OkHttpClient.class);
+	private final HttpClient client = mock(HttpClient.class);
 
 	@Test
-	public void testBuildTransaction() throws IOException {
+	public void testBuildTransaction() throws Exception {
 		var hash = Hex.decode("76448a9f09e5bb9fbce11844731e8a7e28601733100787462401f47916bbc4ac");
 
 		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
@@ -158,13 +151,10 @@ public class SyncRadixApiCreationTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.transaction().build(request)
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(builtTransactionDTO -> assertEquals(UInt256.from(100000000000000000L), builtTransactionDTO.getFee()))
+				.onSuccess(builtTransactionDTO -> assertEquals(amount(73800).micros(), builtTransactionDTO.getFee()))
 				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
-				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, false)
-					.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
-					.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
-						.onFailure(failure -> fail(failure.toString()))
-						.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId())))));
+				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true)
+					.onFailure(failure -> fail(failure.toString()))));
 	}
 
 	@Test
@@ -179,13 +169,10 @@ public class SyncRadixApiCreationTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.transaction().build(request)
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(builtTransactionDTO -> assertEquals(UInt256.from(100000000000000000L), builtTransactionDTO.getFee()))
+				.onSuccess(builtTransactionDTO -> assertEquals(amount(56800).micros(), builtTransactionDTO.getFee()))
 				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR3))
-				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, false)
-					.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
-					.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
-						.onFailure(failure -> fail(failure.toString()))
-						.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId())))));
+				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true)
+					.onFailure(failure -> fail(failure.toString()))));
 	}
 
 	private TxBlobDTO buildBlobDto() {
@@ -199,19 +186,6 @@ public class SyncRadixApiCreationTest {
 		return FinalizedTransaction.create(blobDTO.getBlob(), sig, pubkey, blobDTO.getTxId());
 	}
 
-	private Result<RadixApi> prepareClient(String responseBody) throws IOException {
-		var call = mock(Call.class);
-		var response = mock(Response.class);
-		var body = mock(ResponseBody.class);
-
-		when(client.newCall(any())).thenReturn(call);
-		when(call.execute()).thenReturn(response);
-		when(response.body()).thenReturn(body);
-		when(body.string()).thenReturn(NETWORK_ID, responseBody);
-
-		return SyncRadixApi.connect(BASE_URL, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, client);
-	}
-
 	private static ECKeyPair keyPairOf(int pk) {
 		var privateKey = new byte[ECKeyPair.BYTES];
 
@@ -222,5 +196,15 @@ public class SyncRadixApiCreationTest {
 		} catch (PrivateKeyException | PublicKeyException e) {
 			throw new IllegalArgumentException("Error while generating public key", e);
 		}
+	}
+
+	private Result<RadixApi> prepareClient(String responseBody) throws Exception {
+		@SuppressWarnings("unchecked")
+		var response = (HttpResponse<String>) mock(HttpResponse.class);
+
+		when(response.body()).thenReturn(NETWORK_ID, responseBody);
+		when(client.<String>send(any(), any())).thenReturn(response);
+
+		return SyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
 	}
 }
