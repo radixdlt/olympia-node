@@ -407,10 +407,10 @@ public class AsyncRadixApi implements RadixApi {
 		return ofNullable(url)
 			.map(baseUrl -> Result.ok(new AsyncRadixApi(baseUrl, primaryPort, secondaryPort, client)))
 			.orElseGet(BASE_URL_IS_MANDATORY::result)
-			.fold(Promise::<AsyncRadixApi>failure, Promise::ok)
-			.flatMap(asyncRadixApi -> asyncRadixApi.network().id()
+			.flatMap(asyncRadixApi -> asyncRadixApi.network().id().join()
 				.onSuccess(networkId -> asyncRadixApi.configureSerialization(networkId.getNetworkId()))
-				.map(__ -> asyncRadixApi));
+				.map(__ -> asyncRadixApi))
+			.fold(Promise::failure, Promise::ok);
 	}
 
 	@Override
