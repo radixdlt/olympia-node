@@ -18,7 +18,6 @@
 
 package com.radixdlt.api.service;
 
-import com.radixdlt.networks.Addressing;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -36,8 +35,7 @@ import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.statecomputer.MaxValidators;
-import com.radixdlt.statecomputer.MinValidators;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.sync.SyncConfig;
@@ -49,6 +47,7 @@ import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static com.radixdlt.api.JsonRpcUtil.ARRAY;
 import static com.radixdlt.api.JsonRpcUtil.fromList;
 import static com.radixdlt.api.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
@@ -170,7 +169,7 @@ public class SystemConfigService {
 		@MempoolMaxSize int mempoolMaxSize,
 		@MempoolThrottleMs long mempoolThrottleMs,
 		@Genesis VerifiedTxnsAndProof genesis,
-		Forks forks,
+		TreeMap<Long, ForkConfig> forks,
 		SyncConfig syncConfig,
 		InMemorySystemInfo inMemorySystemInfo,
 		SystemCounters systemCounters,
@@ -184,8 +183,7 @@ public class SystemConfigService {
 		this.peersView = peersView;
 		this.addressing = addressing;
 
-		radixEngineConfiguration = prepareRadixEngineConfiguration(forkConfigTreeMap);
-		radixEngineConfiguration = prepareRadixEngineConfiguration(forks, minValidators, maxValidators);
+		radixEngineConfiguration = prepareRadixEngineConfiguration(forks);
 		mempoolConfiguration = prepareMempoolConfiguration(mempoolMaxSize, mempoolThrottleMs);
 		apiConfiguration = prepareApiConfiguration(endpointStatuses);
 		bftConfiguration = prepareBftConfiguration(pacemakerTimeout, bftSyncPatienceMillis);
@@ -344,25 +342,10 @@ public class SystemConfigService {
 	}
 
 	@VisibleForTesting
-	static JSONObject prepareRadixEngineConfiguration(Forks forks, int minValidators, int maxValidators
-	) {
-		var forksJson = jsonArray();
-		forks.forEach((e, rules) -> forksJson.put(
-			jsonObject()
-				.put("name", rules.name())
-				.put("maxRounds", rules.getMaxRounds().number())
-				.put("maxSigsPerRound", rules.getMaxSigsPerRound().orElse(-1))
-		));
-
-		return jsonObject()
-			.put("minValidators", minValidators)
-			.put("maxValidators", maxValidators)
-			.put("forks", forksJson);
-	}
-	@VisibleForTesting
-	static JSONObject prepareRadixEngineConfiguration(TreeMap<Long, ForkConfig> forkConfigTreeMap) {
+	static JSONObject prepareRadixEngineConfiguration(TreeMap<Long, ForkConfig> forksConfigs) {
 		var forks = jsonArray();
-		forkConfigTreeMap.forEach((e, config) -> forks.put(
+
+		forksConfigs.forEach((e, config) -> forks.put(
 			jsonObject()
 				.put("name", config.getName())
 				.put("version", config.getVersion().name().toLowerCase())
@@ -372,8 +355,7 @@ public class SystemConfigService {
 				.put("epoch", e)
 		));
 
-		return jsonObject()
-			.put("forks", forks);
+		return jsonObject().put(ARRAY, forks);
 	}
 
 	@VisibleForTesting

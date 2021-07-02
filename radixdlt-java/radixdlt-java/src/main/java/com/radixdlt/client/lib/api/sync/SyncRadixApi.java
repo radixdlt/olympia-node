@@ -37,6 +37,7 @@ import com.radixdlt.client.lib.dto.ConsensusConfiguration;
 import com.radixdlt.client.lib.dto.ConsensusData;
 import com.radixdlt.client.lib.dto.EpochData;
 import com.radixdlt.client.lib.dto.FinalizedTransaction;
+import com.radixdlt.client.lib.dto.ForkDetails;
 import com.radixdlt.client.lib.dto.JsonRpcRequest;
 import com.radixdlt.client.lib.dto.JsonRpcResponse;
 import com.radixdlt.client.lib.dto.LocalAccount;
@@ -50,7 +51,6 @@ import com.radixdlt.client.lib.dto.NetworkPeers;
 import com.radixdlt.client.lib.dto.NetworkStats;
 import com.radixdlt.client.lib.dto.PortSelector;
 import com.radixdlt.client.lib.dto.Proof;
-import com.radixdlt.client.lib.dto.RadixEngineConfiguration;
 import com.radixdlt.client.lib.dto.RadixEngineData;
 import com.radixdlt.client.lib.dto.RpcMethod;
 import com.radixdlt.client.lib.dto.StakePositions;
@@ -335,7 +335,7 @@ class SyncRadixApi implements RadixApi {
 
 	private final RadixEngine radixEngine = new RadixEngine() {
 		@Override
-		public Result<RadixEngineConfiguration> configuration() {
+		public Result<List<ForkDetails>> configuration() {
 			return call(request(RADIX_ENGINE_CONFIGURATION), new TypeReference<>() {});
 		}
 

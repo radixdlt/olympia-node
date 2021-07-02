@@ -29,6 +29,7 @@ import com.radixdlt.client.lib.dto.ConsensusConfiguration;
 import com.radixdlt.client.lib.dto.ConsensusData;
 import com.radixdlt.client.lib.dto.EpochData;
 import com.radixdlt.client.lib.dto.FinalizedTransaction;
+import com.radixdlt.client.lib.dto.ForkDetails;
 import com.radixdlt.client.lib.dto.LocalAccount;
 import com.radixdlt.client.lib.dto.LocalValidatorInfo;
 import com.radixdlt.client.lib.dto.MempoolConfiguration;
@@ -39,7 +40,6 @@ import com.radixdlt.client.lib.dto.NetworkId;
 import com.radixdlt.client.lib.dto.NetworkPeers;
 import com.radixdlt.client.lib.dto.NetworkStats;
 import com.radixdlt.client.lib.dto.Proof;
-import com.radixdlt.client.lib.dto.RadixEngineConfiguration;
 import com.radixdlt.client.lib.dto.RadixEngineData;
 import com.radixdlt.client.lib.dto.StakePositions;
 import com.radixdlt.client.lib.dto.SyncConfiguration;
@@ -168,7 +168,7 @@ public interface ImperativeRadixApi {
 	Mempool mempool();
 
 	interface RadixEngine {
-		RadixEngineConfiguration configuration();
+		List<ForkDetails> configuration();
 
 		RadixEngineData data();
 	}
@@ -407,7 +407,7 @@ public interface ImperativeRadixApi {
 			public RadixEngine radixEngine() {
 				return new RadixEngine() {
 					@Override
-					public RadixEngineConfiguration configuration() {
+					public List<ForkDetails> configuration() {
 						return unwrap(api.radixEngine().configuration());
 					}
 

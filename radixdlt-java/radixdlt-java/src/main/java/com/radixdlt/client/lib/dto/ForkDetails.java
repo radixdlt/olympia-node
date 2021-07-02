@@ -24,25 +24,31 @@ import java.util.Objects;
 
 public class ForkDetails {
 	private final String name;
+	private final String version;
 	private final long epoch;
 	private final long maxRounds;
 	private final long maxSigsPerRound;
+	private final long maxValidators;
 
-	private ForkDetails(String name, long epoch, long maxRounds, long maxSigsPerRound) {
+	private ForkDetails(String name, String version, long epoch, long maxRounds, long maxSigsPerRound, long maxValidators) {
 		this.name = name;
+		this.version = version;
 		this.epoch = epoch;
 		this.maxRounds = maxRounds;
 		this.maxSigsPerRound = maxSigsPerRound;
+		this.maxValidators = maxValidators;
 	}
 
 	@JsonCreator
 	public static ForkDetails create(
 		@JsonProperty(value = "name", required = true) String name,
+		@JsonProperty(value = "version", required = true) String version,
 		@JsonProperty(value = "epoch", required = true) long epoch,
 		@JsonProperty(value = "maxRounds", required = true) long maxRounds,
-		@JsonProperty(value = "maxSigsPerRound", required = true) long maxSigsPerRound
+		@JsonProperty(value = "maxSigsPerRound", required = true) long maxSigsPerRound,
+		@JsonProperty(value = "maxValidators", required = true) long maxValidators
 	) {
-		return new ForkDetails(name, epoch, maxRounds, maxSigsPerRound);
+		return new ForkDetails(name, version, epoch, maxRounds, maxSigsPerRound, maxValidators);
 	}
 
 	@Override
@@ -59,22 +65,32 @@ public class ForkDetails {
 		return epoch == that.epoch
 			&& maxRounds == that.maxRounds
 			&& maxSigsPerRound == that.maxSigsPerRound
-			&& name.equals(that.name);
+			&& maxValidators == that.maxValidators
+			&& name.equals(that.name)
+			&& version.equals(that.version);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(name, epoch, maxRounds, maxSigsPerRound);
+		return Objects.hash(name, version, epoch, maxRounds, maxSigsPerRound, maxValidators);
 	}
 
 	@Override
 	public String toString() {
-		return "{name:'" + name + '\'' + ", epoch:" + epoch
-			+ ", maxRounds:" + maxRounds + ", maxSigsPerRound:" + maxSigsPerRound + '}';
+		return "{name:'" + name + '\''
+			+ ", version:'" + version + '\''
+			+ ", epoch:" + epoch
+			+ ", maxRounds:" + maxRounds
+			+ ", maxSigsPerRound:" + maxSigsPerRound
+			+ ", maxValidators:" + maxValidators + '}';
 	}
 
 	public String getName() {
 		return name;
+	}
+
+	public String getVersion() {
+		return version;
 	}
 
 	public long getEpoch() {
@@ -87,5 +103,9 @@ public class ForkDetails {
 
 	public long getMaxSigsPerRound() {
 		return maxSigsPerRound;
+	}
+
+	public long getMaxValidators() {
+		return maxValidators;
 	}
 }

@@ -33,9 +33,10 @@ public class AsyncRadixApiRadixEngineTest {
 	private static final String BASE_URL = "http://localhost/";
 
 	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
-	private static final String CONFIGURATION = "{\"result\":{\"forks\":[{\"maxSigsPerRound\":50,\"name\":\"mainnet\","
-		+ "\"maxRounds\":1500000,\"epoch\":0},{\"maxSigsPerRound\":50,\"name\":\"mainnet\",\"maxRounds\":10000,"
-		+ "\"epoch\":2}],\"maxValidators\":100,\"minValidators\":1},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String CONFIGURATION = "{\"result\":[{\"maxSigsPerRound\":50,\"maxValidators\":100,"
+		+ "\"name\":\"olympia-first-epoch\",\"maxRounds\":1500000,\"epoch\":0,\"version\":\"olympia_v1\"},"
+		+ "{\"maxSigsPerRound\":50,\"maxValidators\":100,\"name\":\"olympia\",\"maxRounds\":10000,\"epoch\":2,"
+		+ "\"version\":\"olympia_v1\"}],\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 	private static final String DATA = "{\"result\":{\"systemTransactions\":37884,\"invalidProposedCommands\":1,"
 		+ "\"userTransactions\":2016},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
@@ -49,8 +50,8 @@ public class AsyncRadixApiRadixEngineTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.radixEngine().configuration().join()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(configuration -> assertEquals(2, configuration.getForks().size()))
-				.onSuccess(configuration -> assertEquals("mainnet", configuration.getForks().get(1).getName())));
+				.onSuccess(configuration -> assertEquals(2, configuration.size()))
+				.onSuccess(configuration -> assertEquals("olympia", configuration.get(1).getName())));
 	}
 
 	@Test
