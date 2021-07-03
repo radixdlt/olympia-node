@@ -67,13 +67,9 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 
 					@Override
 					public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index) {
-						return CloseableCursor.concat(
-							tStore.openIndexedCursor(index),
-							() -> CloseableCursor.filter(
-								baseStore.openIndexedCursor(index),
-								s -> transientStore.getSpin(SubstateId.fromBytes(s.getId())).isEmpty()
-							)
-						);
+						return tStore.openIndexedCursor(index)
+							.concat(() -> baseStore.openIndexedCursor(index)
+								.filter(s -> transientStore.getSpin(SubstateId.fromBytes(s.getId())).isEmpty()));
 					}
 
 					@Override
@@ -87,12 +83,8 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 
 	@Override
 	public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index) {
-		return CloseableCursor.concat(
-			transientStore.openIndexedCursor(index),
-			() -> CloseableCursor.filter(
-				base.openIndexedCursor(index),
-				s -> transientStore.getSpin(SubstateId.fromBytes(s.getId())).isEmpty()
-			)
-		);
+		return transientStore.openIndexedCursor(index)
+			.concat(() -> base.openIndexedCursor(index)
+				.filter(s -> transientStore.getSpin(SubstateId.fromBytes(s.getId())).isEmpty()));
 	}
 }

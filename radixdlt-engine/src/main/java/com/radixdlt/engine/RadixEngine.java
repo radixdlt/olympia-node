@@ -435,10 +435,9 @@ public final class RadixEngine<M> {
 
 	private TxBuilder construct(TxBuilderExecutable executable, Set<SubstateId> avoid) throws TxBuilderException {
 		synchronized (stateUpdateEngineLock) {
-			SubstateStore filteredStore = b -> CloseableCursor.filter(
-				engineStore.openIndexedCursor(b),
-				i -> !avoid.contains(SubstateId.fromBytes(i.getId()))
-			);
+			SubstateStore filteredStore = b ->
+				engineStore.openIndexedCursor(b)
+					.filter(i -> !avoid.contains(SubstateId.fromBytes(i.getId())));;
 
 			var txBuilder = TxBuilder.newBuilder(
 				filteredStore,
