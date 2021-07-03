@@ -22,9 +22,9 @@ import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.PreparedOwnerUpdate;
-import com.radixdlt.application.validators.state.PreparedRakeUpdate;
 import com.radixdlt.application.validators.state.PreparedRegisteredUpdate;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
+import com.radixdlt.application.validators.state.ValidatorRakeCopy;
 import com.radixdlt.constraintmachine.Particle;
 
 import java.util.Set;
@@ -45,7 +45,7 @@ public final class AllValidatorsReducer {
 			PreparedOwnerUpdate.class,
 			AllowDelegationFlag.class,
 			ValidatorMetaData.class,
-			PreparedRakeUpdate.class
+			ValidatorRakeCopy.class
 		);
 	}
 
@@ -66,9 +66,9 @@ public final class AllValidatorsReducer {
 			} else if (p instanceof AllowDelegationFlag) {
 				var s = (AllowDelegationFlag) p;
 				return prev.setAllowDelegationFlag(s.getValidatorKey(), s.allowsDelegation());
-			} else if (p instanceof PreparedRakeUpdate) {
-				var s = (PreparedRakeUpdate) p;
-				return prev.setRake(s.getValidatorKey(), s.getNextRakePercentage());
+			} else if (p instanceof ValidatorRakeCopy) {
+				var s = (ValidatorRakeCopy) p;
+				return prev.setRake(s.getValidatorKey(), s.getRakePercentage());
 			} else {
 				var s = (ValidatorStakeData) p;
 				return prev.setOwner(s.getValidatorKey(), s.getOwnerAddr())

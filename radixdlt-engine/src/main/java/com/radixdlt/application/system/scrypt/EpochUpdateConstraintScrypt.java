@@ -37,7 +37,6 @@ import com.radixdlt.application.validators.state.PreparedRegisteredUpdate;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.PreparedOwnerUpdate;
 import com.radixdlt.application.validators.state.ValidatorRakeCopy;
-import com.radixdlt.application.validators.state.PreparedRakeUpdate;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -71,7 +70,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static com.radixdlt.application.validators.state.PreparedRakeUpdate.RAKE_MAX;
+import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
 
 public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	private final long maxRounds;
@@ -464,10 +463,10 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	}
 
 	private static final class ResetRakeUpdate implements ReducerState {
-		private final PreparedRakeUpdate update;
+		private final ValidatorRakeCopy update;
 		private final Supplier<ReducerState> next;
 
-		ResetRakeUpdate(PreparedRakeUpdate update, Supplier<ReducerState> next) {
+		ResetRakeUpdate(ValidatorRakeCopy update, Supplier<ReducerState> next) {
 			this.update = update;
 			this.next = next;
 		}
@@ -477,8 +476,12 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 				throw new ProcedureException("Validator keys must match.");
 			}
 
-			if (rakeCopy.getCurRakePercentage() != update.getNextRakePercentage()) {
+			if (rakeCopy.getRakePercentage() != update.getRakePercentage()) {
 				throw new ProcedureException("Rake percentage must match.");
+			}
+
+			if (rakeCopy.getEpochUpdate().isPresent()) {
+				throw new ProcedureException("Reset of rake update should not have an epoch.");
 			}
 
 			return next.get();
@@ -488,7 +491,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	private final class PreparingRakeUpdate implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
-		private final TreeMap<ECPublicKey, PreparedRakeUpdate> preparingRakeUpdates = new TreeMap<>(KeyComparator.instance());
+		private final TreeMap<ECPublicKey, ValidatorRakeCopy> preparingRakeUpdates = new TreeMap<>(KeyComparator.instance());
 
 		PreparingRakeUpdate(
 			UpdatingEpoch updatingEpoch,
@@ -498,18 +501,20 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.validatorsScratchPad = validatorsScratchPad;
 		}
 
-		ReducerState prepareRakeUpdates(IndexedSubstateIterator<PreparedRakeUpdate> indexedSubstateIterator) throws ProcedureException {
+		ReducerState prepareRakeUpdates(IndexedSubstateIterator<ValidatorRakeCopy> indexedSubstateIterator) throws ProcedureException {
 			var expectedEpoch = updatingEpoch.prevEpoch.getEpoch() + 1;
 			var expectedPrefix = new byte[Long.BYTES + 1];
+			expectedPrefix[0] = 1;
 			Longs.copyTo(expectedEpoch, expectedPrefix, 1);
 			indexedSubstateIterator.verifyPostTypePrefixEquals(expectedPrefix);
 			var iter = indexedSubstateIterator.iterator();
 			while (iter.hasNext()) {
 				var preparedRakeUpdate = iter.next();
 				// Sanity check
-				if (preparedRakeUpdate.getEpoch() != expectedEpoch) {
+				var epochUpdate = preparedRakeUpdate.getEpochUpdate();
+				if (epochUpdate.orElseThrow() != expectedEpoch) {
 					throw new IllegalStateException("Invalid rake update epoch expected " + expectedEpoch
-						+ " but was " + preparedRakeUpdate.getEpoch());
+						+ " but was " + epochUpdate);
 				}
 				preparingRakeUpdates.put(preparedRakeUpdate.getValidatorKey(), preparedRakeUpdate);
 			}
@@ -526,11 +531,11 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			if (!validatorsScratchPad.containsKey(k)) {
 				return new LoadingStake(k, validatorStake -> {
 					validatorsScratchPad.put(k, validatorStake);
-					validatorStake.setRakePercentage(validatorUpdate.getNextRakePercentage());
+					validatorStake.setRakePercentage(validatorUpdate.getRakePercentage());
 					return new ResetRakeUpdate(validatorUpdate, this::next);
 				});
 			} else {
-				validatorsScratchPad.get(k).setRakePercentage(validatorUpdate.getNextRakePercentage());
+				validatorsScratchPad.get(k).setRakePercentage(validatorUpdate.getRakePercentage());
 				return new ResetRakeUpdate(validatorUpdate, this::next);
 			}
 		}
@@ -773,7 +778,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			(s, d, c, r) -> ReducerResult.incomplete(s.prepareStakes(d))
 		));
 		os.procedure(new ShutdownAllProcedure<>(
-			PreparedRakeUpdate.class, PreparingRakeUpdate.class,
+			ValidatorRakeCopy.class, PreparingRakeUpdate.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, d, c, r) -> ReducerResult.incomplete(s.prepareRakeUpdates(d))
 		));

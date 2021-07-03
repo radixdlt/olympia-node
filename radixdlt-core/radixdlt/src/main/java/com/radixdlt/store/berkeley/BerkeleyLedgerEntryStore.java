@@ -361,13 +361,15 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 							}
 
 							var substateTypeId = data.getData()[data.getOffset()];
+							var subType = data.getData()[data.getOffset() + 1];
 							final int prefixIndexSize;
 							if (substateTypeId == SubstateTypeId.EXITTING_STAKE.id()) {
 								// 0: Type Byte
 								// 1: Reserved Byte
 								// 2-5: Epoch
 								prefixIndexSize = 2 + Long.BYTES;
-							} else if (substateTypeId == SubstateTypeId.PREPARED_RAKE_UPDATE.id()) {
+							} else if (substateTypeId == SubstateTypeId.VALIDATOR_RAKE_COPY.id()
+								&& subType == (byte) 0x1) {
 								// 0: Type Byte
 								// 1: Reserved Byte
 								// 2-5: Epoch
@@ -543,7 +545,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			this.db = db;
 			this.indexableBytes = indexableBytes;
 			this.reverse = indexableBytes[0] == SubstateTypeId.VALIDATOR_STAKE_DATA.id()
-				|| indexableBytes[0] == SubstateTypeId.PREPARED_RAKE_UPDATE.id();
+				|| indexableBytes[0] == SubstateTypeId.VALIDATOR_RAKE_COPY.id();
 		}
 
 		private void open() {

@@ -26,7 +26,7 @@ import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 
-import static com.radixdlt.application.validators.state.PreparedRakeUpdate.RAKE_MAX;
+import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
 
 public final class ValidatorStakeData implements ResourceInBucket {
 	private final UInt256 totalStake;

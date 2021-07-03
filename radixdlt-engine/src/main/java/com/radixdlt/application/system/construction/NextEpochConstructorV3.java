@@ -34,7 +34,6 @@ import com.radixdlt.application.tokens.state.ExittingStake;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.application.validators.state.PreparedOwnerUpdate;
-import com.radixdlt.application.validators.state.PreparedRakeUpdate;
 import com.radixdlt.application.validators.state.PreparedRegisteredUpdate;
 import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
@@ -57,7 +56,7 @@ import java.util.TreeSet;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import static com.radixdlt.application.validators.state.PreparedRakeUpdate.RAKE_MAX;
+import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
 
 public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch> {
 	private final UInt256 rewardsPerProposal;
@@ -246,13 +245,13 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 			validatorsToUpdate.put(k, curValidator);
 		}
 
-		var preparingRakeUpdates = new TreeMap<ECPublicKey, PreparedRakeUpdate>(KeyComparator.instance());
+		var preparingRakeUpdates = new TreeMap<ECPublicKey, ValidatorRakeCopy>(KeyComparator.instance());
 		var buf = ByteBuffer.allocate(2 + Long.BYTES);
-		buf.put(SubstateTypeId.PREPARED_RAKE_UPDATE.id());
-		buf.put((byte) 0);
+		buf.put(SubstateTypeId.VALIDATOR_RAKE_COPY.id());
+		buf.put((byte) 1);
 		buf.putLong(closingEpoch.getEpoch() + 1);
-		var index = SubstateIndex.create(buf.array(), PreparedRakeUpdate.class);
-		txBuilder.shutdownAll(index, (Iterator<PreparedRakeUpdate> i) -> {
+		var index = SubstateIndex.create(buf.array(), ValidatorRakeCopy.class);
+		txBuilder.shutdownAll(index, (Iterator<ValidatorRakeCopy> i) -> {
 			i.forEachRemaining(preparedValidatorUpdate ->
 				preparingRakeUpdates.put(preparedValidatorUpdate.getValidatorKey(), preparedValidatorUpdate)
 			);
@@ -262,8 +261,8 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 			var k = e.getKey();
 			var update = e.getValue();
 			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate, true);
-			curValidator.setRakePercentage(update.getNextRakePercentage());
-			txBuilder.up(new ValidatorRakeCopy(k, update.getNextRakePercentage()));
+			curValidator.setRakePercentage(update.getRakePercentage());
+			txBuilder.up(new ValidatorRakeCopy(k, update.getRakePercentage()));
 		}
 
 		// Update owners
