@@ -68,7 +68,7 @@ public final class AllValidatorsReducer {
 				return prev.setAllowDelegationFlag(s.getValidatorKey(), s.allowsDelegation());
 			} else if (p instanceof PreparedRakeUpdate) {
 				var s = (PreparedRakeUpdate) p;
-				return prev.setRake(s.getValidatorKey(), s.getCurRakePercentage());
+				return prev.setRake(s.getValidatorKey(), s.getNextRakePercentage());
 			} else {
 				var s = (ValidatorStakeData) p;
 				return prev.setOwner(s.getValidatorKey(), s.getOwnerAddr())

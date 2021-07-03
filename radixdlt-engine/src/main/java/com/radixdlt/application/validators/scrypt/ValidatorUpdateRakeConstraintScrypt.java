@@ -38,6 +38,7 @@ import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DeserializeException;
 
 import java.util.Objects;
@@ -88,14 +89,14 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 	}
 
 	private class UpdatingRakeNeedToReadCurrentRake implements ReducerState {
-		private final ValidatorRakeCopy rakeCopy;
+		private final ECPublicKey validatorKey;
 
-		UpdatingRakeNeedToReadCurrentRake(ValidatorRakeCopy rakeCopy) {
-			this.rakeCopy = rakeCopy;
+		UpdatingRakeNeedToReadCurrentRake(ECPublicKey validatorKey) {
+			this.validatorKey = validatorKey;
 		}
 
 		public ReducerState readValidatorStakeState(ValidatorStakeData validatorStakeData) throws ProcedureException {
-			if (!validatorStakeData.getValidatorKey().equals(rakeCopy.getValidatorKey())) {
+			if (!validatorStakeData.getValidatorKey().equals(validatorKey)) {
 				throw new ProcedureException("Invalid key update");
 			}
 
@@ -142,22 +143,17 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 				REFieldSerialization.deserializeReservedByte(buf);
 				var epoch = REFieldSerialization.deserializeNonNegativeLong(buf);
 				var validatorKey = REFieldSerialization.deserializeKey(buf);
-				var curRakePercentage = REFieldSerialization.deserializeInt(buf);
-				if (curRakePercentage < RAKE_MIN || curRakePercentage > RAKE_MAX) {
-					throw new DeserializeException("Invalid cur rake percentage " + curRakePercentage);
-				}
 				var nextRakePercentage = REFieldSerialization.deserializeInt(buf);
 				if (nextRakePercentage < RAKE_MIN || nextRakePercentage > RAKE_MAX) {
 					throw new DeserializeException("Invalid rake percentage " + nextRakePercentage);
 				}
 
-				return new PreparedRakeUpdate(epoch, validatorKey, curRakePercentage, nextRakePercentage);
+				return new PreparedRakeUpdate(epoch, validatorKey, nextRakePercentage);
 			},
 			(s, buf) -> {
 				REFieldSerialization.serializeReservedByte(buf);
 				buf.putLong(s.getEpoch());
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
-				buf.putInt(s.getCurRakePercentage());
 				buf.putInt(s.getNextRakePercentage());
 			}
 		));
@@ -175,7 +171,7 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 				if (d.getArg().isPresent()) {
 					throw new ProcedureException("Args not allowed");
 				}
-				return ReducerResult.incomplete(new UpdatingRakeNeedToReadCurrentRake(d.getSubstate().getCurrentConfig()));
+				return ReducerResult.incomplete(new UpdatingRakeNeedToReadCurrentRake(d.getSubstate().getValidatorKey()));
 			}
 		));
 		os.procedure(new DownProcedure<>(
@@ -192,7 +188,7 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 				if (d.getArg().isPresent()) {
 					throw new ProcedureException("Args not allowed");
 				}
-				return ReducerResult.incomplete(new UpdatingRakeNeedToReadCurrentRake(d.getSubstate()));
+				return ReducerResult.incomplete(new UpdatingRakeNeedToReadCurrentRake(d.getSubstate().getValidatorKey()));
 			}
 		));
 		os.procedure(new ReadProcedure<>(

@@ -83,7 +83,6 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateRake
 		builder.up(new PreparedRakeUpdate(
 			epoch,
 			action.getValidatorKey(),
-			curRakePercentage,
 			action.getRakePercentage()
 		));
 		builder.end();

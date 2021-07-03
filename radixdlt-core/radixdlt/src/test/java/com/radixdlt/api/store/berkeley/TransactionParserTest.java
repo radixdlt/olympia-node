@@ -18,6 +18,7 @@ package com.radixdlt.api.store.berkeley;
 
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.accounting.TwoActorEntry;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
@@ -112,6 +113,7 @@ public class TransactionParserTest {
 		cmAtomOS.load(new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()));
 		cmAtomOS.load(new FeeConstraintScrypt());
 		cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
+		cmAtomOS.load(new ValidatorUpdateRakeConstraintScrypt(2));
 
 		final var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),

@@ -29,21 +29,15 @@ public final class PreparedRakeUpdate implements ValidatorData {
 
 	private final long epoch;
 	private final ECPublicKey validatorKey;
-	private final int curRakePercentage;
 	private final int nextRakePercentage;
 
-	public PreparedRakeUpdate(long epoch, ECPublicKey validatorKey, int curRakePercentage, int nextRakePercentage) {
+	public PreparedRakeUpdate(long epoch, ECPublicKey validatorKey, int nextRakePercentage) {
 		if (nextRakePercentage < RAKE_MIN || nextRakePercentage > RAKE_MAX) {
 			throw new IllegalArgumentException("Illegal fee " + nextRakePercentage);
 		}
 		this.epoch = epoch;
 		this.validatorKey = validatorKey;
-		this.curRakePercentage = curRakePercentage;
 		this.nextRakePercentage = nextRakePercentage;
-	}
-
-	public ValidatorRakeCopy getCurrentConfig() {
-		return new ValidatorRakeCopy(validatorKey, curRakePercentage);
 	}
 
 	@Override
@@ -55,17 +49,13 @@ public final class PreparedRakeUpdate implements ValidatorData {
 		return epoch;
 	}
 
-	public int getCurRakePercentage() {
-		return curRakePercentage;
-	}
-
 	public int getNextRakePercentage() {
 		return nextRakePercentage;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(epoch, validatorKey, curRakePercentage, nextRakePercentage);
+		return Objects.hash(epoch, validatorKey, nextRakePercentage);
 	}
 
 	@Override
@@ -77,15 +67,14 @@ public final class PreparedRakeUpdate implements ValidatorData {
 		var other = (PreparedRakeUpdate) o;
 		return this.epoch == other.epoch
 			&& Objects.equals(this.validatorKey, other.validatorKey)
-			&& this.curRakePercentage == other.curRakePercentage
 			&& this.nextRakePercentage == other.nextRakePercentage;
 	}
 
 	@Override
 	public String toString() {
 		return String.format(
-			"%s{epoch=%s cur=%s next=%s}",
-			this.getClass().getSimpleName(), epoch, curRakePercentage, nextRakePercentage
+			"%s{epoch=%s next=%s}",
+			this.getClass().getSimpleName(), epoch, nextRakePercentage
 		);
 	}
 }
