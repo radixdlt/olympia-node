@@ -20,8 +20,11 @@ package com.radixdlt.atomos;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserializer;
 import com.radixdlt.constraintmachine.SubstateSerializer;
+import com.radixdlt.constraintmachine.VirtualIndex;
 
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * Defines how to retrieve important properties from a given particle type.
@@ -34,7 +37,7 @@ public final class SubstateDefinition<T extends Particle> {
 	private final byte typeByte;
 	private final SubstateDeserializer<T> deserializer;
 	private final SubstateSerializer<T> serializer;
-	private final Predicate<T> virtualized; // may be null
+	private final Supplier<Set<VirtualIndex>> virtualized;
 
 	public SubstateDefinition(
 		Class<T> substateClass,
@@ -46,7 +49,7 @@ public final class SubstateDefinition<T extends Particle> {
 		this.typeByte = typeByte;
 		this.deserializer = deserializer;
 		this.serializer = serializer;
-		this.virtualized = s -> false;
+		this.virtualized = Set::of;
 	}
 
 	public SubstateDefinition(
@@ -54,7 +57,7 @@ public final class SubstateDefinition<T extends Particle> {
 		byte typeByte,
 		SubstateDeserializer<T> deserializer,
 		SubstateSerializer<T> serializer,
-		Predicate<T> virtualized
+		Supplier<Set<VirtualIndex>> virtualized
 	) {
 		this.substateClass = substateClass;
 		this.typeByte = typeByte;
@@ -79,7 +82,7 @@ public final class SubstateDefinition<T extends Particle> {
 		return deserializer;
 	}
 
-	public Predicate<T> getVirtualized() {
-		return virtualized;
+	public Set<VirtualIndex> getVirtualized() {
+		return virtualized.get();
 	}
 }

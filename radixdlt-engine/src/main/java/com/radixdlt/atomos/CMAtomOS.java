@@ -18,6 +18,7 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.Authorization;
@@ -29,10 +30,12 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateSerialization;
+import com.radixdlt.constraintmachine.VirtualIndex;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.Bytes;
 
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -87,7 +90,12 @@ public final class CMAtomOS {
 						REFieldSerialization.serializeReservedByte(buf);
 						REFieldSerialization.serializeREAddr(buf, s.getAddr());
 					},
-					v -> claimableAddrTypes.contains(v.getAddr().getType())
+					() -> Set.of(
+						new VirtualIndex(new byte[] { SubstateTypeId.UNCLAIMED_READDR.id(), 0, REAddr.REAddrType.SYSTEM.byteValue() }),
+						new VirtualIndex(new byte[] { SubstateTypeId.UNCLAIMED_READDR.id(), 0, REAddr.REAddrType.NATIVE_TOKEN.byteValue() }),
+						new VirtualIndex(new byte[] { SubstateTypeId.UNCLAIMED_READDR.id(), 0, REAddr.REAddrType.HASHED_KEY.byteValue()},
+							3, 26)
+					)
 				)
 			);
 			os.procedure(new DownProcedure<>(
@@ -152,16 +160,20 @@ public final class CMAtomOS {
 
 	@SuppressWarnings("unchecked")
 	public Predicate<Particle> virtualizedUpParticles() {
-		Map<? extends Class<? extends Particle>, Predicate<Particle>> virtualizedParticles = substateDefinitions.entrySet().stream()
-			.filter(def -> def.getValue().getVirtualized() != null)
-			.collect(Collectors.toMap(
-				Map.Entry::getKey,
-				def -> p -> ((Predicate<Particle>) def.getValue().getVirtualized()).test(p))
-			);
-
+		var serialization = buildSubstateSerialization();
 		return p -> {
-			var virtualizer = virtualizedParticles.get(p.getClass());
-			return virtualizer != null && virtualizer.test(p);
+			var def = substateDefinitions.get(p.getClass());
+			if (def.getVirtualized().isEmpty()) {
+				return false;
+			}
+			// TODO: Remove this extra serialization
+			var serialized = serialization.serialize(p);
+			for (var virtualized : def.getVirtualized()) {
+				if (virtualized.test(serialized)) {
+					return true;
+				}
+			}
+			return false;
 		};
 	}
 }

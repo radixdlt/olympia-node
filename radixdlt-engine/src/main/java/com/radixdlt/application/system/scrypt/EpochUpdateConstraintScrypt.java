@@ -47,6 +47,7 @@ import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReadIndexProcedure;
+import com.radixdlt.constraintmachine.VirtualIndex;
 import com.radixdlt.constraintmachine.exceptions.MismatchException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
@@ -66,6 +67,7 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Function;
@@ -914,7 +916,21 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					buf.putInt(s.getRakePercentage());
 					REFieldSerialization.serializeOptionalREAddr(buf, s.getOwnerAddr());
 				},
-				s -> s.equals(ValidatorStakeData.createVirtual(s.getValidatorKey()))
+				() -> {
+					var buf = ByteBuffer.wrap(new byte[72]);
+					buf.put(SubstateTypeId.VALIDATOR_STAKE_DATA.id()); // 1 byte
+					REFieldSerialization.serializeReservedByte(buf); // 1 byte
+					REFieldSerialization.serializeBoolean(buf, false); // 1 byte
+					REFieldSerialization.serializeUInt256(buf, UInt256.ZERO); // 32 bytes
+					var virtualPosition = buf.position();
+					REFieldSerialization.serializeUInt256(buf, UInt256.ZERO); // 32 bytes
+					buf.putInt(RAKE_MAX); // 4 bytes
+					REFieldSerialization.serializeOptionalREAddr(buf, Optional.empty()); // 1 byte
+
+					return Set.of(
+						new VirtualIndex(buf.array(), virtualPosition, ECPublicKey.COMPRESSED_BYTES)
+					);
+				}
 			)
 		);
 		os.substate(

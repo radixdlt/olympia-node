@@ -166,6 +166,13 @@ public final class REInstruction {
 				buf.get(b);
 				return SubstateIndex.create(b, d.byteToClass(b[0]));
 			}
+		},
+		VUP((byte) 0xe, REOp.UP) {
+			@Override
+			Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
+				int substateSize = Byte.toUnsignedInt(buf.get());
+				return null;
+			}
 		};
 
 		private final REOp op;

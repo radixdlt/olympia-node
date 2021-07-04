@@ -32,6 +32,7 @@ import com.radixdlt.constraintmachine.ReadProcedure;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
+import com.radixdlt.constraintmachine.VirtualIndex;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
@@ -39,7 +40,9 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 
+import java.nio.ByteBuffer;
 import java.util.OptionalLong;
+import java.util.Set;
 
 public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
 
@@ -95,7 +98,17 @@ public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				REFieldSerialization.serializeOptionalREAddr(buf, s.getOwner());
 			},
-			s -> s.getEpochUpdate().isEmpty() && s.getOwner().isEmpty()
+			() -> {
+				var buf = ByteBuffer.wrap(new byte[4]);
+				buf.put(SubstateTypeId.VALIDATOR_OWNER_COPY.id()); // 1 byte
+				REFieldSerialization.serializeReservedByte(buf); // 1 byte
+				REFieldSerialization.serializeOptionalLong(buf, OptionalLong.empty()); // 1 byte
+				var virtualPosition = buf.position();
+				REFieldSerialization.serializeBoolean(buf, false); // 1 byte
+				return Set.of(
+					new VirtualIndex(buf.array(), virtualPosition, ECPublicKey.COMPRESSED_BYTES)
+				);
+			}
 		));
 
 		os.procedure(new DownProcedure<>(

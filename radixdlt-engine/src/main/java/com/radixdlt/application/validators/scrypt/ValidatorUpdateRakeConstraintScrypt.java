@@ -33,14 +33,17 @@ import com.radixdlt.constraintmachine.ReadProcedure;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
+import com.radixdlt.constraintmachine.VirtualIndex;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DeserializeException;
 
+import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.OptionalLong;
+import java.util.Set;
 
 public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScrypt {
 	public static final int RAKE_PERCENTAGE_GRANULARITY = 10 * 10; // 100 == 1.00%, 1 == 0.01%
@@ -139,7 +142,17 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				buf.putInt(s.getRakePercentage());
 			},
-			s -> s.getEpochUpdate().isEmpty() && s.getRakePercentage() == RAKE_MAX
+			() -> {
+				var buf = ByteBuffer.wrap(new byte[7]);
+				buf.put(SubstateTypeId.VALIDATOR_RAKE_COPY.id()); // 1 byte
+				REFieldSerialization.serializeReservedByte(buf); // 1 byte
+				REFieldSerialization.serializeOptionalLong(buf, OptionalLong.empty()); // 1 byte
+				var virtualPosition = buf.position();
+				buf.putInt(RAKE_MAX); // 4 byte
+				return Set.of(
+					new VirtualIndex(buf.array(), virtualPosition, ECPublicKey.COMPRESSED_BYTES)
+				);
+			}
 		));
 
 		os.procedure(new DownProcedure<>(

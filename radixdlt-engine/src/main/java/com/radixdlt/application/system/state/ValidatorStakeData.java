@@ -61,7 +61,7 @@ public final class ValidatorStakeData implements ResourceInBucket {
 	}
 
 	public static ValidatorStakeData createVirtual(ECPublicKey validatorKey) {
-		return new ValidatorStakeData(validatorKey, UInt256.ZERO, UInt256.ZERO, RAKE_MAX, Optional.of(REAddr.ofPubKeyAccount(validatorKey)), false);
+		return new ValidatorStakeData(validatorKey, UInt256.ZERO, UInt256.ZERO, RAKE_MAX, Optional.empty(), false);
 	}
 
 	public static ValidatorStakeData create(
@@ -108,13 +108,14 @@ public final class ValidatorStakeData implements ResourceInBucket {
 
 	@Override
 	public String toString() {
-		return String.format("%s{registered=%s stake=%s validator=%s ownership=%s rake=%s}",
+		return String.format("%s{registered=%s stake=%s validator=%s ownership=%s rake=%s owner=%s}",
 			getClass().getSimpleName(),
 			isRegistered,
 			totalStake,
 			validatorKey.toHex().substring(0, 11),
 			totalOwnership,
-			rakePercentage
+			rakePercentage,
+			ownerAddr
 		);
 	}
 
