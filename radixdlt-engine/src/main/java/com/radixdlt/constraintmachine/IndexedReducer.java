@@ -20,10 +20,10 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 
-public interface ShutdownAllReducer<D extends Particle, S extends ReducerState> {
+public interface IndexedReducer<D extends Particle, S extends ReducerState> {
 	ReducerResult reduce(
 		S reducerState,
-		ShutdownAll<D> inputState,
+		IndexedSubstateIterator<D> inputState,
 		ExecutionContext context,
 		ImmutableAddrs immutableAddrs
 	) throws ProcedureException;

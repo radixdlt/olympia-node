@@ -18,83 +18,62 @@
 
 package com.radixdlt.statecomputer;
 
-import com.google.common.collect.Sets;
+import com.radixdlt.application.system.NextValidatorSetEvent;
+import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.MetadataException;
-import com.radixdlt.ledger.ByzantineQuorumException;
 
-import java.util.Objects;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class EpochProofVerifierV2 implements BatchVerifier<LedgerAndBFTProof> {
 	@Override
-	public BatchVerifier.PerStateChangeVerifier<LedgerAndBFTProof> newVerifier(BatchVerifier.ComputedState computedState) {
-		return new PerEpochVerifier(computedState);
-	}
+	public void testMetadata(LedgerAndBFTProof metadata, List<REProcessedTxn> txns) throws MetadataException {
+		NextValidatorSetEvent nextValidatorSetEvent = null;
+		for (int i = 0; i < txns.size(); i++) {
+			var processed = txns.get(i);
+			var nextEpochEvents = processed.getEvents().stream()
+				.filter(NextValidatorSetEvent.class::isInstance)
+				.map(NextValidatorSetEvent.class::cast)
+				.collect(Collectors.toList());
 
-	private final class PerEpochVerifier implements BatchVerifier.PerStateChangeVerifier<LedgerAndBFTProof> {
-		private final EpochView epochView;
-		private boolean epochChangeFlag = false;
+			if (!nextEpochEvents.isEmpty()) {
+				// TODO: Move this check into Meter
+				if (i != txns.size() - 1) {
+					throw new MetadataException("Additional txns added to end of epoch.");
+				}
 
-		private PerEpochVerifier(BatchVerifier.ComputedState initState) {
-			this.epochView = initState.get(EpochView.class);
+				// TODO: Move this check into Meter
+				if (nextEpochEvents.size() != 1) {
+					throw new MetadataException("Multiple epoch events occurred in batch.");
+				}
+
+				// TODO: Move this check into Meter
+				var stateUpdates = processed.getGroupedStateUpdates();
+				if (stateUpdates.get(stateUpdates.size() - 1).stream()
+					.noneMatch(u -> u.getRawSubstate() instanceof EpochData)) {
+					throw new MetadataException("Epoch update is not the last execution.");
+				}
+
+				nextValidatorSetEvent = nextEpochEvents.get(0);
+			}
 		}
 
-		@Override
-		public void test(BatchVerifier.ComputedState computedState) {
-			if (epochChangeFlag) {
-				throw new ByzantineQuorumException("Additional commands added to end of epoch.");
-			}
-
-			var nextEpochView = computedState.get(EpochView.class);
-			if (nextEpochView.getEpoch() > epochView.getEpoch()) {
-				epochChangeFlag = true;
-			}
+		var nextValidatorSetMaybe = metadata.getProof().getNextValidatorSet();
+		if (nextValidatorSetEvent == null != nextValidatorSetMaybe.isEmpty()) {
+			throw new MetadataException("Epoch event does not match proof " + nextValidatorSetEvent + " " + nextValidatorSetMaybe);
 		}
-
-		@Override
-		public void testMetadata(LedgerAndBFTProof metadata, BatchVerifier.ComputedState computedState) throws MetadataException {
-			// Verify that output of radix engine and signed output match
-			// TODO: Always follow radix engine as its a deeper source of truth and just mark validator
-			// TODO: set as malicious (RPNV1-633)
-			if (epochChangeFlag) {
-				if (metadata == null) {
-					throw new IllegalStateException();
-				}
-
-				final var validatorKeys = computedState.get(CurrentValidators.class).validatorKeys();
-				final var reNextValidatorSet = computedState.get(StakedValidators.class).toValidatorSet();
-				if (reNextValidatorSet == null) {
-					throw new MetadataException("Computed state has no staked validators.");
-				}
-				final var signedValidatorSet = metadata.getProof().getNextValidatorSet()
-					.orElseThrow(() -> new MetadataException("RE has changed epochs but proofs don't show."));
-
-				var stakedKeys = reNextValidatorSet.nodes().stream().map(BFTNode::getKey).collect(Collectors.toSet());
-				if (!Objects.equals(stakedKeys, validatorKeys)) {
-					throw new MetadataException(
-						String.format(
-							"Current validators does not agree with staked validators stakedDiff: %s currentDiff: %s",
-							Sets.difference(stakedKeys, validatorKeys),
-							Sets.difference(validatorKeys, stakedKeys)
-						));
-				}
-
-				if (!signedValidatorSet.equals(reNextValidatorSet)) {
-					throw new MetadataException(
-						String.format(
-							"RE validator set %s does not agree with signed validator set %s",
-							reNextValidatorSet, signedValidatorSet
-						));
-				}
-			} else {
-				if (metadata != null) {
-					if (metadata.getProof().getNextValidatorSet().isPresent()) {
-						throw new MetadataException("RE validator set should not be present.");
-					}
-				}
+		if (nextValidatorSetEvent != null) {
+			// TODO: Comparison of ordering as well
+			var nextValidatorSet = nextValidatorSetEvent.nextValidators().stream()
+				.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount()));
+			var bftValidatorSet = BFTValidatorSet.from(nextValidatorSet);
+			if (!nextValidatorSetMaybe.orElseThrow().equals(bftValidatorSet)) {
+				throw new MetadataException("Validator set computed does not match proof.");
 			}
 		}
 	}

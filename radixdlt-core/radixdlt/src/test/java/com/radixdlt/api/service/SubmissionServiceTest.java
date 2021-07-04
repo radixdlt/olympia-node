@@ -16,6 +16,19 @@
  */
 package com.radixdlt.api.service;
 
+import com.radixdlt.application.system.NextValidatorSetEvent;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.atom.actions.NextRound;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,25 +45,17 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.api.data.PreparedTransaction;
 import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.api.store.ClientApiStore;
-import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -58,7 +63,6 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
@@ -73,12 +77,9 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.statecomputer.StakedValidators;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -93,6 +94,7 @@ import java.util.Optional;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class SubmissionServiceTest {
 	@Inject
@@ -193,8 +195,16 @@ public class SubmissionServiceTest {
 
 	private void setupGenesis() throws RadixEngineException {
 		var branch = radixEngine.transientBranch();
-		branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
-		final var genesisValidatorSet = branch.getComputedState(StakedValidators.class).toValidatorSet();
+		var processed = branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
+		var genesisValidatorSet = processed.get(0).getEvents().stream()
+			.filter(NextValidatorSetEvent.class::isInstance)
+			.map(NextValidatorSetEvent.class::cast)
+			.findFirst()
+			.map(e -> BFTValidatorSet.from(
+				e.nextValidators().stream()
+					.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount())))
+			).orElseThrow(() -> new IllegalStateException("No validator set in genesis."));
+
 		radixEngine.deleteBranches();
 
 		var genesisLedgerHeader = LedgerProof.genesis(
@@ -226,11 +236,13 @@ public class SubmissionServiceTest {
 	public void testPrepareTransaction() throws Exception {
 		var acct = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var action = new TransferToken(nativeToken, acct, ALICE_ACCT, BIG_AMOUNT);
+		var tx1 = radixEngine.construct(new NextRound(1, true, 0, i -> registeredNodes.get(0).getPublicKey()))
+			.buildWithoutSignature();
 		var request = TxnConstructionRequest.create().action(action).feePayer(acct);
-
-		var tx = radixEngine.construct(request).signAndBuild(key::sign);
-
-		radixEngine.execute(List.of(tx));
+		var tx2 = radixEngine.construct(request).signAndBuild(key::sign);
+		var ledgerAndBFTProof = mock(LedgerAndBFTProof.class);
+		when(ledgerAndBFTProof.getProof()).thenReturn(mock(LedgerProof.class));
+		radixEngine.execute(List.of(tx1, tx2), ledgerAndBFTProof, PermissionLevel.SUPER_USER);
 
 		var steps = List.of(
 			TransactionAction.transfer(
@@ -297,9 +309,13 @@ public class SubmissionServiceTest {
 		var action = new TransferToken(nativeToken, acct, ALICE_ACCT, BIG_AMOUNT);
 		var request = TxnConstructionRequest.create().action(action).feePayer(acct);
 
-		var tx = radixEngine.construct(request).signAndBuild(key::sign);
+		var tx1 = radixEngine.construct(new NextRound(1, true, 0, i -> registeredNodes.get(0).getPublicKey()))
+			.buildWithoutSignature();
+		var tx2 = radixEngine.construct(request).signAndBuild(key::sign);
 
-		radixEngine.execute(List.of(tx));
+		var ledgerAndBFTProof = mock(LedgerAndBFTProof.class);
+		when(ledgerAndBFTProof.getProof()).thenReturn(mock(LedgerProof.class));
+		radixEngine.execute(List.of(tx1, tx2), ledgerAndBFTProof, PermissionLevel.SUPER_USER);
 
 		var steps = List.of(
 			TransactionAction.transfer(ALICE_ACCT, BOB_ACCT, UInt256.FOUR, nativeToken)

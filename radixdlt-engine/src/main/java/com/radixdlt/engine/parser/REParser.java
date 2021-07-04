@@ -149,7 +149,7 @@ public final class REParser {
 
 			if (inst.isStateUpdate()) {
 				parserState.substateUpdate(inst.getMicroOp().getOp());
-			} else if (inst.getMicroOp().getOp() == REOp.READ) {
+			} else if (inst.getMicroOp().getOp() == REOp.READ || inst.getMicroOp().getOp() == REOp.READINDEX) {
 				parserState.read();
 			} else if (inst.getMicroOp() == REInstruction.REMicroOp.HEADER) {
 				parserState.header(inst.getData());

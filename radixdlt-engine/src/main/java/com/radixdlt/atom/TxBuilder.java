@@ -319,7 +319,7 @@ public final class TxBuilder {
 	}
 
 	public <T extends Particle> CloseableCursor<T> readIndex(SubstateIndex index) {
-		var comparator = UnsignedBytes.lexicographicalComparator();
+		var comparator = UnsignedBytes.lexicographicalComparator().reversed();
 		var cursor = createRemoteSubstateCursor(index);
 		var localIterator = lowLevelBuilder.localUpSubstate().stream()
 			.map(LocalSubstate::getParticle)
@@ -329,6 +329,8 @@ public final class TxBuilder {
 			.filter(p -> index.test(p.getSecond()))
 			.sorted(Comparator.comparing(Pair::getSecond, comparator))
 			.iterator();
+
+		lowLevelBuilder.readIndex(index);
 
 		return new CloseableCursor<T>() {
 			private RawSubstateBytes nextRemote = cursor.hasNext() ? cursor.next() : null;
@@ -389,7 +391,7 @@ public final class TxBuilder {
 				.iterator();
 			var remoteIterator = Iterators.transform(cursor, s -> (T) this.deserialize(s).getParticle());
 			var result = mapper.apply(Iterators.concat(localIterator, remoteIterator));
-			lowLevelBuilder.downAll(index);
+			lowLevelBuilder.downIndex(index);
 			return result;
 		}
 	}

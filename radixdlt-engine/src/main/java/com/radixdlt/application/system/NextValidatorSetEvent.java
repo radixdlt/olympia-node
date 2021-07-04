@@ -16,23 +16,25 @@
  *
  */
 
-package com.radixdlt.engine;
+package com.radixdlt.application.system;
 
-import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.constraintmachine.REEvent;
 
 import java.util.List;
 
-/**
- * Verifies that batched atoms executed on Radix Engine follow some
- * specified rules.
- *
- * @param <M> class of metadata
- */
-public interface BatchVerifier<M> {
-	default void testMetadata(M metadata, List<REProcessedTxn> txns) throws MetadataException {
+public class NextValidatorSetEvent implements REEvent {
+	private final List<ValidatorStakeData> nextValidators;
+
+	private NextValidatorSetEvent(List<ValidatorStakeData> nextValidators) {
+		this.nextValidators = nextValidators;
 	}
 
-	static <M> BatchVerifier<M> empty() {
-		return new BatchVerifier<>() {};
+	public static NextValidatorSetEvent create(List<ValidatorStakeData> nextValidators) {
+		return new NextValidatorSetEvent(List.copyOf(nextValidators));
+	}
+
+	public List<ValidatorStakeData> nextValidators() {
+		return nextValidators;
 	}
 }

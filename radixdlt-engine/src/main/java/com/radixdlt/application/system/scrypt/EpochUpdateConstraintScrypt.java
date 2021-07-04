@@ -18,6 +18,8 @@
 
 package com.radixdlt.application.system.scrypt;
 
+import com.google.common.collect.Streams;
+import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.application.system.ValidatorBFTDataEvent;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
@@ -45,11 +47,12 @@ import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ReadIndexProcedure;
 import com.radixdlt.constraintmachine.exceptions.MismatchException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.ShutdownAll;
+import com.radixdlt.constraintmachine.IndexedSubstateIterator;
 import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.crypto.ECPublicKey;
@@ -59,13 +62,14 @@ import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.Objects;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static com.radixdlt.application.validators.state.PreparedRakeUpdate.RAKE_MAX;
 
@@ -100,12 +104,12 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.updatingEpoch = updatingEpoch;
 		}
 
-		public ReducerState process(ShutdownAll<ExittingStake> shutdownAll) throws ProcedureException {
+		public ReducerState process(IndexedSubstateIterator<ExittingStake> indexedSubstateIterator) throws ProcedureException {
 			var expectedEpoch = updatingEpoch.prevEpoch.getEpoch() + 1;
 			var expectedPrefix = new byte[Long.BYTES + 1];
 			Longs.copyTo(expectedEpoch, expectedPrefix, 1);
-			shutdownAll.verifyPostTypePrefixEquals(expectedPrefix);
-			shutdownAll.iterator().forEachRemaining(e -> {
+			indexedSubstateIterator.verifyPostTypePrefixEquals(expectedPrefix);
+			indexedSubstateIterator.iterator().forEachRemaining(e -> {
 				// Sanity check
 				if (e.getEpochUnlocked() != expectedEpoch) {
 					throw new IllegalStateException("Invalid shutdown of exitting stake update epoch expected "
@@ -146,7 +150,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		}
 
 		// TODO: Remove context
-		public ReducerState process(ShutdownAll<ValidatorBFTData> i, ExecutionContext context) throws ProcedureException {
+		public ReducerState process(IndexedSubstateIterator<ValidatorBFTData> i, ExecutionContext context) throws ProcedureException {
 			i.verifyPostTypePrefixIsEmpty();
 			var iter = i.iterator();
 			while (iter.hasNext()) {
@@ -210,39 +214,27 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		}
 	}
 
-	public final class CreatingNextValidatorSet implements ReducerState {
-		private final Set<ECPublicKey> validators = new HashSet<>();
-		private final UpdatingEpoch updatingEpoch;
+	public static final class BootupValidator implements ReducerState {
+		private final ValidatorBFTData expected;
+		private final Supplier<ReducerState> onDone;
 
-		CreatingNextValidatorSet(UpdatingEpoch updatingEpoch) {
-			this.updatingEpoch = updatingEpoch;
+		BootupValidator(ValidatorStakeData validator, Supplier<ReducerState> onDone) {
+			this.expected = new ValidatorBFTData(validator.getValidatorKey(), 0, 0);
+			this.onDone = onDone;
 		}
 
-		ReducerState nextValidator(ValidatorBFTData u) throws ProcedureException {
-			if (validators.size() >= maxValidators) {
-				throw new ProcedureException("Max validators is " + maxValidators);
+		public ReducerState bootUp(ValidatorBFTData data) throws MismatchException {
+			if (!Objects.equals(this.expected, data)) {
+				throw new MismatchException(this.expected, data);
 			}
-
-			if (validators.contains(u.validatorKey())) {
-				throw new ProcedureException("Already in set: " + u.validatorKey());
-			}
-			if (u.proposalsCompleted() != 0) {
-				throw new ProcedureException("Proposals completed must be 0");
-			}
-			validators.add(u.validatorKey());
-
-			return this;
-		}
-
-		ReducerState nextEpoch(EpochData epochData) throws ProcedureException {
-			return updatingEpoch.nextEpoch(epochData);
+			return this.onDone.get();
 		}
 	}
 
-	public static final class UpdatingEpoch implements ReducerState {
+	public static class StartingNextEpoch implements ReducerState {
 		private final HasEpochData prevEpoch;
 
-		UpdatingEpoch(HasEpochData prevEpoch) {
+		StartingNextEpoch(HasEpochData prevEpoch) {
 			this.prevEpoch = prevEpoch;
 		}
 
@@ -252,6 +244,46 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					+ " Expected: " + (prevEpoch.getEpoch() + 1));
 			}
 			return new StartingEpochRound();
+		}
+	}
+
+	public class CreatingNextValidatorSet implements ReducerState {
+		private LinkedList<ValidatorStakeData> nextValidatorSet;
+		private final UpdatingEpoch updatingEpoch;
+
+		CreatingNextValidatorSet(UpdatingEpoch updatingEpoch) {
+			this.updatingEpoch = updatingEpoch;
+		}
+
+		ReducerState readIndex(IndexedSubstateIterator<ValidatorStakeData> substateIterator, ExecutionContext context) throws ProcedureException {
+			substateIterator.verifyPostTypePrefixEquals(new byte[] {0, 1}); // registered validator
+			this.nextValidatorSet = Streams.stream(substateIterator.iterator())
+				.sorted(Comparator.comparing(ValidatorStakeData::getAmount)
+					.thenComparing(ValidatorStakeData::getValidatorKey, KeyComparator.instance())
+					.reversed()
+				)
+				.limit(maxValidators)
+				.collect(Collectors.toCollection(LinkedList::new));
+
+			context.emitEvent(NextValidatorSetEvent.create(this.nextValidatorSet));
+			return next();
+		}
+
+		ReducerState next() {
+			if (this.nextValidatorSet.isEmpty()) {
+				return new StartingNextEpoch(updatingEpoch.prevEpoch);
+			}
+
+			var nextValidator = this.nextValidatorSet.pop();
+			return new BootupValidator(nextValidator, this::next);
+		}
+	}
+
+	public static final class UpdatingEpoch implements ReducerState {
+		private final HasEpochData prevEpoch;
+
+		UpdatingEpoch(HasEpochData prevEpoch) {
+			this.prevEpoch = prevEpoch;
 		}
 	}
 
@@ -308,7 +340,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.preparingStake = preparingStake;
 		}
 
-		ReducerState unstakes(ShutdownAll<PreparedUnstakeOwnership> i) throws ProcedureException {
+		ReducerState unstakes(IndexedSubstateIterator<PreparedUnstakeOwnership> i) throws ProcedureException {
 			i.verifyPostTypePrefixIsEmpty();
 			i.iterator().forEachRemaining(preparedUnstakeOwned ->
 				preparingUnstake
@@ -400,7 +432,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.preparingStake = preparingStake;
 		}
 
-		ReducerState prepareStakes(ShutdownAll<PreparedStake> i) throws ProcedureException {
+		ReducerState prepareStakes(IndexedSubstateIterator<PreparedStake> i) throws ProcedureException {
 			i.verifyPostTypePrefixIsEmpty();
 			i.iterator().forEachRemaining(preparedStake ->
 				preparingStake
@@ -466,12 +498,12 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.validatorsScratchPad = validatorsScratchPad;
 		}
 
-		ReducerState prepareRakeUpdates(ShutdownAll<PreparedRakeUpdate> shutdownAll) throws ProcedureException {
+		ReducerState prepareRakeUpdates(IndexedSubstateIterator<PreparedRakeUpdate> indexedSubstateIterator) throws ProcedureException {
 			var expectedEpoch = updatingEpoch.prevEpoch.getEpoch() + 1;
 			var expectedPrefix = new byte[Long.BYTES + 1];
 			Longs.copyTo(expectedEpoch, expectedPrefix, 1);
-			shutdownAll.verifyPostTypePrefixEquals(expectedPrefix);
-			var iter = shutdownAll.iterator();
+			indexedSubstateIterator.verifyPostTypePrefixEquals(expectedPrefix);
+			var iter = indexedSubstateIterator.iterator();
 			while (iter.hasNext()) {
 				var preparedRakeUpdate = iter.next();
 				// Sanity check
@@ -535,9 +567,9 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.validatorsScratchPad = validatorsScratchPad;
 		}
 
-		ReducerState prepareValidatorUpdate(ShutdownAll<PreparedOwnerUpdate> shutdownAll) throws ProcedureException {
-			shutdownAll.verifyPostTypePrefixIsEmpty();
-			var iter = shutdownAll.iterator();
+		ReducerState prepareValidatorUpdate(IndexedSubstateIterator<PreparedOwnerUpdate> indexedSubstateIterator) throws ProcedureException {
+			indexedSubstateIterator.verifyPostTypePrefixIsEmpty();
+			var iter = indexedSubstateIterator.iterator();
 			while (iter.hasNext()) {
 				var preparedValidatorUpdate = iter.next();
 				preparingOwnerUpdates.put(preparedValidatorUpdate.getValidatorKey(), preparedValidatorUpdate);
@@ -605,9 +637,9 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.validatorsScratchPad = validatorsScratchPad;
 		}
 
-		ReducerState prepareRegisterUpdates(ShutdownAll<PreparedRegisteredUpdate> shutdownAll) throws ProcedureException {
-			shutdownAll.verifyPostTypePrefixIsEmpty();
-			var iter = shutdownAll.iterator();
+		ReducerState prepareRegisterUpdates(IndexedSubstateIterator<PreparedRegisteredUpdate> indexedSubstateIterator) throws ProcedureException {
+			indexedSubstateIterator.verifyPostTypePrefixIsEmpty();
+			var iter = indexedSubstateIterator.iterator();
 			while (iter.hasNext()) {
 				var preparedRegisteredUpdate = iter.next();
 				preparingRegisteredUpdates.put(preparedRegisteredUpdate.getValidatorKey(), preparedRegisteredUpdate);
@@ -773,7 +805,6 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			(s, u, c, r) -> ReducerResult.incomplete(s.reset(u))
 		));
 
-
 		os.procedure(new UpProcedure<>(
 			Staking.class, StakeOwnership.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
@@ -785,14 +816,20 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			(s, u, c, r) -> ReducerResult.incomplete(s.updateStake(u))
 		));
 
-		os.procedure(new UpProcedure<>(
-			CreatingNextValidatorSet.class, ValidatorBFTData.class,
-			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, u, c, r) -> ReducerResult.incomplete(s.nextValidator(u))
+		os.procedure(new ReadIndexProcedure<>(
+			CreatingNextValidatorSet.class, ValidatorStakeData.class,
+			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, d, c, r) -> ReducerResult.incomplete(s.readIndex(d, c))
 		));
 
 		os.procedure(new UpProcedure<>(
-			CreatingNextValidatorSet.class, EpochData.class,
+			BootupValidator.class, ValidatorBFTData.class,
+			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			(s, u, c, r) -> ReducerResult.incomplete(s.bootUp(u))
+		));
+
+		os.procedure(new UpProcedure<>(
+			StartingNextEpoch.class, EpochData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.nextEpoch(u))
 		));

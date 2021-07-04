@@ -174,12 +174,15 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
-	public TxLowLevelBuilder downAll(Byte typeByte) {
-		instruction(REInstruction.REMicroOp.DOWNINDEX, new byte[] {1, typeByte});
+	public TxLowLevelBuilder readIndex(SubstateIndex index) {
+		var buf = ByteBuffer.allocate(1 + index.getPrefix().length);
+		buf.put((byte) index.getPrefix().length);
+		buf.put(index.getPrefix());
+		instruction(REInstruction.REMicroOp.READINDEX, buf.array());
 		return this;
 	}
 
-	public TxLowLevelBuilder downAll(SubstateIndex index) {
+	public TxLowLevelBuilder downIndex(SubstateIndex index) {
 		var buf = ByteBuffer.allocate(1 + index.getPrefix().length);
 		buf.put((byte) index.getPrefix().length);
 		buf.put(index.getPrefix());

@@ -25,6 +25,7 @@ import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ImmutableAddrs;
 import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.exceptions.ResourceAllocationAndDestructionException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
@@ -61,7 +62,7 @@ public final class TokenHoldingBucket implements ReducerState {
 		return p.getFirst();
 	}
 
-	public void destroy(ExecutionContext c, ImmutableAddrs r) throws ProcedureException {
+	public void destroy(ExecutionContext c, ImmutableAddrs r) throws ResourceAllocationAndDestructionException, ProcedureException {
 		if (!tokens.isZero()) {
 			c.verifyCanAllocAndDestroyResources();
 

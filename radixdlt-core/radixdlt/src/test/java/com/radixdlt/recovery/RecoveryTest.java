@@ -255,22 +255,6 @@ public class RecoveryTest {
 	}
 
 	@Test
-	public void on_reboot_should_load_same_computed_state() {
-		// Arrange
-		processForCount(processForCount);
-		var radixEngine = getRadixEngine();
-		var epochView = radixEngine.getComputedState(EpochView.class);
-
-		// Act
-		restartNode();
-
-		// Assert
-		var restartedRadixEngine = getRadixEngine();
-		var restartedEpochView = restartedRadixEngine.getComputedState(EpochView.class);
-		assertThat(restartedEpochView).isEqualTo(epochView);
-	}
-
-	@Test
 	public void on_reboot_should_load_same_last_header() {
 		// Arrange
 		processForCount(processForCount);

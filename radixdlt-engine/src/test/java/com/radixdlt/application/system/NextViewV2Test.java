@@ -128,7 +128,7 @@ public class NextViewV2Test {
 				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, Amount.ofTokens(10).toSubunits()))
 				.action(new StakeTokens(accountAddr, key.getPublicKey(), Amount.ofTokens(10).toSubunits()))
 				.action(new RegisterValidator(key.getPublicKey()))
-				.action(new NextEpoch(u -> List.of(key.getPublicKey()), 0))
+				.action(new NextEpoch(0))
 		).buildWithoutSignature();
 		this.sut.execute(List.of(txn), null, PermissionLevel.SYSTEM);
 	}

@@ -22,27 +22,27 @@ import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 
 import java.util.function.Supplier;
 
-public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> implements Procedure {
-	private final Class<D> downClass;
+public class ReadIndexProcedure<D extends Particle, S extends ReducerState> implements Procedure {
+	private final Class<D> readClass;
 	private final Class<S> reducerStateClass;
-	private final IndexedReducer<D, S> downReducer;
+	private final IndexedReducer<D, S> readReducer;
 	private final Supplier<Authorization> authorization;
 
-	public ShutdownAllProcedure(
-		Class<D> downClass,
+	public ReadIndexProcedure(
 		Class<S> reducerStateClass,
+		Class<D> readClass,
 		Supplier<Authorization> authorization,
-		IndexedReducer<D, S> downReducer
+		IndexedReducer<D, S> readReducer
 	) {
-		this.downClass = downClass;
+		this.readClass = readClass;
 		this.reducerStateClass = reducerStateClass;
-		this.downReducer = downReducer;
+		this.readReducer = readReducer;
 		this.authorization = authorization;
 	}
 
 	@Override
 	public ProcedureKey key() {
-		return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.DOWNINDEX, downClass));
+		return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.READINDEX, readClass));
 	}
 
 	@Override
@@ -57,6 +57,6 @@ public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> im
 		ImmutableAddrs immutableAddrs,
 		ExecutionContext context
 	) throws ProcedureException {
-		return downReducer.reduce((S) reducerState, (IndexedSubstateIterator<D>) o, context, immutableAddrs);
+		return readReducer.reduce((S) reducerState, (IndexedSubstateIterator<D>) o, context, immutableAddrs);
 	}
 }

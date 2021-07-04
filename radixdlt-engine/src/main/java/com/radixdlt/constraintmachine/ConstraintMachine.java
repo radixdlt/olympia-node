@@ -187,7 +187,7 @@ public final class ConstraintMachine {
 			return substate;
 		}
 
-		public CloseableCursor<Substate> shutdownAll(SubstateIndex index) {
+		public CloseableCursor<Substate> getIndexedCursor(SubstateIndex index) {
 			return CloseableCursor.concat(
 				CloseableCursor.wrapIterator(localUpParticles.values().stream()
 					.filter(s -> index.test(s.getSecond().get())).map(Pair::getFirst).iterator()
@@ -300,9 +300,9 @@ public final class ConstraintMachine {
 					var methodProcedure = loadProcedure(reducerState, eventId);
 					reducerState = callProcedure(methodProcedure, nextParticle, reducerState, readableAddrs, context);
 					expectEnd = reducerState == null;
-				} else if (inst.getMicroOp().getOp() == REOp.DOWNINDEX) {
+				} else if (inst.getMicroOp().getOp() == REOp.DOWNINDEX || inst.getMicroOp().getOp() == REOp.READINDEX) {
 					SubstateIndex index = inst.getData();
-					var substateCursor = validationState.shutdownAll(index);
+					var substateCursor = validationState.getIndexedCursor(index);
 					var tmp = stateUpdates;
 					var iterator = new Iterator<Particle>() {
 						@Override
@@ -315,17 +315,19 @@ public final class ConstraintMachine {
 							// FIXME: this is a hack
 							// FIXME: do this via shutdownAll state update rather than individually
 							var substate = substateCursor.next();
-							tmp.add(REStateUpdate.of(REOp.DOWN, substate, null, inst::getDataByteBuffer));
+							if (inst.getMicroOp().getOp() == REOp.DOWNINDEX) {
+								tmp.add(REStateUpdate.of(REOp.DOWN, substate, null, inst::getDataByteBuffer));
+							}
 							return substate.getParticle();
 						}
 					};
-					var shutdownAllIterator = new ShutdownAll<>(index, iterator);
+					var substateIterator = new IndexedSubstateIterator<>(index, iterator);
 					try {
 						var eventId = OpSignature.ofSubstateUpdate(
 							inst.getMicroOp().getOp(), index.getSubstateClass()
 						);
 						var methodProcedure = loadProcedure(reducerState, eventId);
-						reducerState = callProcedure(methodProcedure, shutdownAllIterator, reducerState, readableAddrs, context);
+						reducerState = callProcedure(methodProcedure, substateIterator, reducerState, readableAddrs, context);
 					} finally {
 						substateCursor.close();
 					}
@@ -387,7 +389,15 @@ public final class ConstraintMachine {
 
 					expectEnd = false;
 				} else if (inst.getMicroOp() == REInstruction.REMicroOp.SIG) {
-					metering.onSigInstruction(context);
+					if (context.permissionLevel() != PermissionLevel.SYSTEM) {
+						metering.onSigInstruction(context);
+					}
+				} else {
+					// Collect no-ops here
+					if (inst.getMicroOp() != REInstruction.REMicroOp.MSG
+						&& inst.getMicroOp() != REInstruction.REMicroOp.HEADER) {
+						throw new ProcedureException("Unknown op " + inst.getMicroOp());
+					}
 				}
 			} catch (Exception e) {
 				throw new ConstraintMachineException(instIndex, inst, reducerState, e);

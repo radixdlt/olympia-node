@@ -172,7 +172,7 @@ public class TransactionParserTest {
 				.action(nativeStake())
 		).signAndBuild(tokenOwnerKeyPair::sign);
 		engine.execute(List.of(txn1));
-		var nextEpoch = engine.construct(new NextEpoch(s -> List.of(validatorKeyPair.getPublicKey()), 0))
+		var nextEpoch = engine.construct(new NextEpoch(0))
 			.buildWithoutSignature();
 		engine.execute(List.of(nextEpoch), null, PermissionLevel.SYSTEM);
 

@@ -21,6 +21,7 @@ package com.radixdlt.application.tokens;
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.REConstructor;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
@@ -32,6 +33,7 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.exceptions.ResourceAllocationAndDestructionException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.parser.REParser;
@@ -145,5 +147,26 @@ public final class MintTokensTest {
 		).signAndBuild(nextKey::sign);
 		assertThatThrownBy(() -> this.engine.execute(List.of(mintTxn)))
 			.hasRootCauseInstanceOf(AuthorizationException.class);
+	}
+
+
+	@Test
+	public void cannot_mint_on_disable_resource_alloc() throws Exception {
+		// Arrange
+		var key = ECKeyPair.generateNew();
+		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
+		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
+		var txn = this.engine.construct(
+			new CreateMutableToken(key.getPublicKey(), "test", "Name", "", "", "")
+		).signAndBuild(key::sign);
+		this.engine.execute(List.of(txn));
+
+		// Act, Assert
+		var request = TxnConstructionRequest.create()
+			.disableResourceAllocAndDestroy()
+			.action(new MintToken(tokenAddr, accountAddr, UInt256.ONE));
+		var mintTxn = this.engine.construct(request).signAndBuild(key::sign);
+		assertThatThrownBy(() -> this.engine.execute(List.of(mintTxn)))
+			.hasRootCauseInstanceOf(ResourceAllocationAndDestructionException.class);
 	}
 }
