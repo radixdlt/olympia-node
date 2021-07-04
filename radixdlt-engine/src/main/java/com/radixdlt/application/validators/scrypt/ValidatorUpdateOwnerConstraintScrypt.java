@@ -86,19 +86,16 @@ public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
 				REFieldSerialization.deserializeReservedByte(buf);
 				OptionalLong epochUpdate = REFieldSerialization.deserializeOptionalNonNegativeLong(buf);
 				var key = REFieldSerialization.deserializeKey(buf);
-				var owner = REFieldSerialization.deserializeAccountREAddr(buf);
-				if (!owner.isAccount()) {
-					throw new DeserializeException("Address is not an account: " + owner);
-				}
+				var owner = REFieldSerialization.deserializeOptionalAccountREAddr(buf);
 				return new ValidatorOwnerCopy(epochUpdate, key, owner);
 			},
 			(s, buf) -> {
 				REFieldSerialization.serializeReservedByte(buf);
 				REFieldSerialization.serializeOptionalLong(buf, s.getEpochUpdate());
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
-				REFieldSerialization.serializeREAddr(buf, s.getOwner());
+				REFieldSerialization.serializeOptionalREAddr(buf, s.getOwner());
 			},
-			s -> s.getEpochUpdate().isEmpty() && REAddr.ofPubKeyAccount(s.getValidatorKey()).equals(s.getOwner())
+			s -> s.getEpochUpdate().isEmpty() && s.getOwner().isEmpty()
 		));
 
 		os.procedure(new DownProcedure<>(

@@ -63,7 +63,7 @@ public final class AllValidatorsReducer {
 				return prev.add(s.getDelegateKey(), s.getAmount());
 			} else if (p instanceof ValidatorOwnerCopy) {
 				var s = (ValidatorOwnerCopy) p;
-				return prev.setOwner(s.getValidatorKey(), s.getOwner());
+				return prev.setOwner(s.getValidatorKey(), s.getOwner().orElse(REAddr.ofPubKeyAccount(s.getValidatorKey())));
 			} else if (p instanceof AllowDelegationFlag) {
 				var s = (AllowDelegationFlag) p;
 				return prev.setAllowDelegationFlag(s.getValidatorKey(), s.allowsDelegation());

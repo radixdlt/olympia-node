@@ -66,8 +66,8 @@ public final class ValidatorScratchPad {
 		this.rakePercentage = rakePercentage;
 	}
 
-	public void setOwnerAddr(REAddr ownerAddr) {
-		this.ownerAddr = Optional.of(ownerAddr);
+	public void setOwnerAddr(Optional<REAddr> ownerAddr) {
+		this.ownerAddr = ownerAddr;
 	}
 
 	public void addEmission(UInt256 amount) {
