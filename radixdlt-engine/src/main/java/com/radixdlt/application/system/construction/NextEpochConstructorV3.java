@@ -103,9 +103,10 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		Function<T, U> copy
 	) throws TxBuilderException {
 		var preparing = new TreeMap<ECPublicKey, T>(KeyComparator.instance());
-		var buf = ByteBuffer.allocate(2 + Long.BYTES);
+		var buf = ByteBuffer.allocate(3 + Long.BYTES);
 		buf.put(typeId);
-		buf.put((byte) 1);
+		buf.put((byte) 0); // Reserved byte
+		buf.put((byte) 1); // Optional flag
 		buf.putLong(epoch);
 		var index = SubstateIndex.create(buf.array(), preparedClass);
 		txBuilder.shutdownAll(index, (Iterator<T> i) -> {

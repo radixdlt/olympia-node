@@ -153,9 +153,6 @@ public final class REInstruction {
 			@Override
 			Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
 				int indexSize = Byte.toUnsignedInt(buf.get());
-				if (indexSize <= 0 || indexSize > 10) {
-					throw new DeserializeException("Bad ReadIndex size " + indexSize);
-				}
 				var array = new byte[indexSize];
 				buf.get(array);
 				return SubstateIndex.create(array, d.byteToClass(array[0]));
@@ -165,9 +162,6 @@ public final class REInstruction {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
 				int indexSize = Byte.toUnsignedInt(buf.get());
-				if (indexSize <= 0 || indexSize > 10) {
-					throw new DeserializeException("Bad DownIndex size " + indexSize);
-				}
 				var b = new byte[indexSize];
 				buf.get(b);
 				return SubstateIndex.create(b, d.byteToClass(b[0]));

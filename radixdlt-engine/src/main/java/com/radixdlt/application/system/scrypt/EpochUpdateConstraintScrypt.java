@@ -60,6 +60,7 @@ import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.UInt256;
 
+import java.nio.ByteBuffer;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.Objects;
@@ -502,9 +503,10 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 		ReducerState prepareRakeUpdates(IndexedSubstateIterator<ValidatorRakeCopy> indexedSubstateIterator) throws ProcedureException {
 			var expectedEpoch = updatingEpoch.prevEpoch.getEpoch() + 1;
-			var expectedPrefix = new byte[Long.BYTES + 1];
-			expectedPrefix[0] = 1;
-			Longs.copyTo(expectedEpoch, expectedPrefix, 1);
+			var expectedPrefix = new byte[2 + Long.BYTES];
+			expectedPrefix[0] = 0;
+			expectedPrefix[1] = 1;
+			Longs.copyTo(expectedEpoch, expectedPrefix, 2);
 			indexedSubstateIterator.verifyPostTypePrefixEquals(expectedPrefix);
 			var iter = indexedSubstateIterator.iterator();
 			while (iter.hasNext()) {
@@ -577,9 +579,10 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 		ReducerState prepareValidatorUpdate(IndexedSubstateIterator<ValidatorOwnerCopy> indexedSubstateIterator) throws ProcedureException {
 			var expectedEpoch = updatingEpoch.prevEpoch.getEpoch() + 1;
-			var expectedPrefix = new byte[Long.BYTES + 1];
-			expectedPrefix[0] = 1;
-			Longs.copyTo(expectedEpoch, expectedPrefix, 1);
+			var expectedPrefix = new byte[2 + Long.BYTES];
+			expectedPrefix[0] = 0;
+			expectedPrefix[1] = 1;
+			Longs.copyTo(expectedEpoch, expectedPrefix, 2);
 			indexedSubstateIterator.verifyPostTypePrefixEquals(expectedPrefix);
 
 			var iter = indexedSubstateIterator.iterator();
@@ -656,9 +659,10 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 		ReducerState prepareRegisterUpdates(IndexedSubstateIterator<ValidatorRegisteredCopy> indexedSubstateIterator) throws ProcedureException {
 			var expectedEpoch = updatingEpoch.prevEpoch.getEpoch() + 1;
-			var expectedPrefix = new byte[Long.BYTES + 1];
-			expectedPrefix[0] = 1;
-			Longs.copyTo(expectedEpoch, expectedPrefix, 1);
+			var expectedPrefix = new byte[2 + Long.BYTES];
+			expectedPrefix[0] = 0;
+			expectedPrefix[1] = 1;
+			Longs.copyTo(expectedEpoch, expectedPrefix, 2);
 			indexedSubstateIterator.verifyPostTypePrefixEquals(expectedPrefix);
 			var iter = indexedSubstateIterator.iterator();
 			while (iter.hasNext()) {

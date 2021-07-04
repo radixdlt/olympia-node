@@ -28,6 +28,7 @@ import com.radixdlt.utils.UInt256;
 
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
+import java.util.OptionalLong;
 import java.util.regex.Pattern;
 
 public final class REFieldSerialization {
@@ -111,6 +112,27 @@ public final class REFieldSerialization {
 
 	public static void serializeReservedByte(ByteBuffer buf) {
 		buf.put((byte) 0);
+	}
+
+	public static void serializeOptionalLong(ByteBuffer buf, OptionalLong optionalLong) {
+		optionalLong.ifPresentOrElse(
+			e -> {
+				buf.put((byte) 0x1);
+				buf.putLong(e);
+			},
+			() -> buf.put((byte) 0x0)
+		);
+	}
+
+	public static OptionalLong deserializeOptionalNonNegativeLong(ByteBuffer buf) throws DeserializeException {
+		var type = buf.get();
+		if (type == 0) {
+			return OptionalLong.empty();
+		} else if (type == 1) {
+			return OptionalLong.of(REFieldSerialization.deserializeNonNegativeLong(buf));
+		} else {
+			throw new DeserializeException("Unknown optionalLongType: " + type);
+		}
 	}
 
 	public static Long deserializeNonNegativeLong(ByteBuffer buf) throws DeserializeException {

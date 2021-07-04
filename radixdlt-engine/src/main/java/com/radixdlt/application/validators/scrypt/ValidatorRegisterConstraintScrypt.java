@@ -80,28 +80,15 @@ public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 			ValidatorRegisteredCopy.class,
 			SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id(),
 			buf -> {
-				var subType = buf.get();
-				OptionalLong epochUpdate;
-				if (subType == 0) {
-					epochUpdate = OptionalLong.empty();
-				} else if (subType == 1) {
-					epochUpdate = OptionalLong.of(REFieldSerialization.deserializeNonNegativeLong(buf));
-				} else {
-					throw new DeserializeException("Unknown type: " + subType);
-				}
-
+				REFieldSerialization.deserializeReservedByte(buf);
+				var epochUpdate = REFieldSerialization.deserializeOptionalNonNegativeLong(buf);
 				var key = REFieldSerialization.deserializeKey(buf);
 				var flag = REFieldSerialization.deserializeBoolean(buf);
 				return new ValidatorRegisteredCopy(epochUpdate, key, flag);
 			},
 			(s, buf) -> {
-				s.getEpochUpdate().ifPresentOrElse(
-					e -> {
-						buf.put((byte) 0x1);
-						buf.putLong(e);
-					},
-					() -> buf.put((byte) 0x0)
-				);
+				REFieldSerialization.serializeReservedByte(buf);
+				REFieldSerialization.serializeOptionalLong(buf, s.getEpochUpdate());
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				buf.put((byte) (s.isRegistered() ? 1 : 0));
 			},
