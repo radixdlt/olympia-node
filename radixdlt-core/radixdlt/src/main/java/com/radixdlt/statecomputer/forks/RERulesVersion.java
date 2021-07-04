@@ -19,6 +19,7 @@
 package com.radixdlt.statecomputer.forks;
 
 import com.radixdlt.application.system.construction.FeeReserveCompleteConstructor;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.actions.BurnToken;
@@ -94,6 +95,7 @@ public enum RERulesVersion {
 			v4.load(new ValidatorConstraintScryptV2());
 			v4.load(new ValidatorUpdateRakeConstraintScrypt(rakeIncreaseDebouncerEpochLength));
 			v4.load(new ValidatorRegisterConstraintScrypt());
+			v4.load(new ValidatorUpdateOwnerConstraintScrypt());
 			v4.load(new TokensConstraintScryptV3());
 			v4.load(new FeeConstraintScrypt());
 			v4.load(new StakingConstraintScryptV4(config.getMinimumStake().toSubunits()));

@@ -18,6 +18,7 @@
 
 package com.radixdlt.application.system;
 
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.REConstructor;
@@ -99,6 +100,7 @@ public class NextViewV2Test {
 		cmAtomOS.load(new ValidatorConstraintScryptV2());
 		cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
 		cmAtomOS.load(new ValidatorUpdateRakeConstraintScrypt(2));
+		cmAtomOS.load(new ValidatorUpdateOwnerConstraintScrypt());
 		var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures()

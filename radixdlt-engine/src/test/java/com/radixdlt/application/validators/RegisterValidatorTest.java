@@ -18,12 +18,17 @@
 
 package com.radixdlt.application.validators;
 
+import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
+import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
+import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
+import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.application.validators.construction.RegisterValidatorConstructor;
 import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.SubstateSerialization;
@@ -32,6 +37,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
+import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -45,8 +51,10 @@ public class RegisterValidatorTest {
 	private SubstateSerialization serialization;
 
 	@Before
-	public void setup() {
+	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
+		cmAtomOS.load(new RoundUpdateConstraintScrypt(2));
+		cmAtomOS.load(new EpochUpdateConstraintScrypt(2, UInt256.NINE, 1, 1, 100));
 		cmAtomOS.load(new ValidatorConstraintScryptV2());
 		cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
 		var cm = new ConstraintMachine(
@@ -61,10 +69,13 @@ public class RegisterValidatorTest {
 			serialization,
 			REConstructor.newBuilder()
 				.put(RegisterValidator.class, new RegisterValidatorConstructor())
+				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.build(),
 			cm,
 			store
 		);
+		var txn = this.engine.construct(new CreateSystem(0)).buildWithoutSignature();
+		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
 	}
 
 	@Test
