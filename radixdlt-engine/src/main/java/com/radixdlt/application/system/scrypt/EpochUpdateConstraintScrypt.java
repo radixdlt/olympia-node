@@ -18,7 +18,9 @@
 
 package com.radixdlt.application.system.scrypt;
 
+import com.google.common.collect.Comparators;
 import com.google.common.collect.Streams;
+import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.application.system.ValidatorBFTDataEvent;
 import com.radixdlt.atom.REFieldSerialization;
@@ -58,7 +60,6 @@ import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.UInt256;
 
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.Objects;
@@ -94,7 +95,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	public final class ProcessExittingStake implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeSet<ExittingStake> exitting = new TreeSet<>(
-			(o1, o2) -> Arrays.compare(o1.dataKey(), o2.dataKey())
+			Comparator.comparing(ExittingStake::dataKey, UnsignedBytes.lexicographicalComparator())
 		);
 
 		ProcessExittingStake(UpdatingEpoch updatingEpoch) {
@@ -196,7 +197,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 						.multiply(UInt256.from(rakePercentage))
 						.divide(UInt256.from(RAKE_MAX));
 					var validatorOwner = validatorStakeData.getOwnerAddr();
-					var initStake = new TreeMap<REAddr, UInt256>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
+					var initStake = new TreeMap<REAddr, UInt256>(Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator()));
 					initStake.put(validatorOwner, rake);
 					preparingStake.put(k, initStake);
 					rakedEmissions = nodeRewards.subtract(rake);
@@ -343,7 +344,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 				preparingUnstake
 					.computeIfAbsent(
 						preparedUnstakeOwned.getDelegateKey(),
-						k -> new TreeMap<>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()))
+						k -> new TreeMap<>(Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator()))
 					)
 					.merge(preparedUnstakeOwned.getOwner(), preparedUnstakeOwned.getAmount(), UInt256::add)
 			);
@@ -435,7 +436,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 				preparingStake
 					.computeIfAbsent(
 						preparedStake.getDelegateKey(),
-						k -> new TreeMap<>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()))
+						k -> new TreeMap<>(Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator()))
 					)
 					.merge(preparedStake.getOwner(), preparedStake.getAmount(), UInt256::add)
 			);

@@ -19,6 +19,7 @@
 package com.radixdlt.application.system.construction;
 
 import com.google.common.collect.Streams;
+import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.SubstateTypeId;
@@ -46,7 +47,7 @@ import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -142,7 +143,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		var unlockedStakeIndex = SubstateIndex.create(unlockedStateIndexBuf.array(), ExittingStake.class);
 		var exitting = txBuilder.shutdownAll(unlockedStakeIndex, (Iterator<ExittingStake> i) -> {
 			final TreeSet<ExittingStake> exit = new TreeSet<>(
-				(o1, o2) -> Arrays.compare(o1.dataKey(), o2.dataKey())
+				Comparator.comparing(ExittingStake::dataKey, UnsignedBytes.lexicographicalComparator())
 			);
 			i.forEachRemaining(exit::add);
 			return exit;
@@ -185,7 +186,9 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 					.multiply(UInt256.from(rakePercentage))
 					.divide(UInt256.from(RAKE_MAX));
 				var validatorOwner = validatorStakeData.getOwnerAddr();
-				var initStake = new TreeMap<REAddr, UInt256>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()));
+				var initStake = new TreeMap<REAddr, UInt256>(
+					Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator())
+				);
 				initStake.put(validatorOwner, rake);
 				preparingStake.put(k, initStake);
 				rakedEmissions = nodeRewards.subtract(rake);
@@ -201,7 +204,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 				map
 					.computeIfAbsent(
 						preparedStake.getDelegateKey(),
-						k -> new TreeMap<>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()))
+						k -> new TreeMap<>(Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator()))
 					)
 					.merge(preparedStake.getOwner(), preparedStake.getAmount(), UInt256::add)
 			);
@@ -226,7 +229,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 				preparingStake
 					.computeIfAbsent(
 						preparedStake.getDelegateKey(),
-						k -> new TreeMap<>((o1, o2) -> Arrays.compare(o1.getBytes(), o2.getBytes()))
+						k -> new TreeMap<>(Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator()))
 					)
 					.merge(preparedStake.getOwner(), preparedStake.getAmount(), UInt256::add)
 			);
