@@ -367,6 +367,12 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 								// 1: Reserved Byte
 								// 2-5: Epoch
 								prefixIndexSize = 2 + Long.BYTES;
+							} else if (substateTypeId == SubstateTypeId.VALIDATOR_OWNER_COPY.id()
+								&& subType == (byte) 0x1) {
+								// 0: Type Byte
+								// 1: Reserved Byte
+								// 2-5: Epoch
+								prefixIndexSize = 2 + Long.BYTES;
 							} else if (substateTypeId == SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id()
 								&& subType == (byte) 0x1) {
 								// 0: Type Byte
@@ -551,6 +557,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			this.indexableBytes = indexableBytes;
 			this.reverse = indexableBytes[0] == SubstateTypeId.VALIDATOR_STAKE_DATA.id()
 				|| indexableBytes[0] == SubstateTypeId.VALIDATOR_RAKE_COPY.id()
+				|| indexableBytes[0] == SubstateTypeId.VALIDATOR_OWNER_COPY.id()
 				|| indexableBytes[0] == SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id();
 		}
 

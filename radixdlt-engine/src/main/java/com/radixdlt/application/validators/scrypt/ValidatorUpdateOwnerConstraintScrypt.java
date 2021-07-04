@@ -18,7 +18,7 @@
 
 package com.radixdlt.application.validators.scrypt;
 
-import com.radixdlt.application.validators.state.PreparedOwnerUpdate;
+import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
@@ -28,6 +28,7 @@ import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ReadProcedure;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
@@ -38,19 +39,41 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 
+import java.util.OptionalLong;
+
 public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
 
 	private static class UpdatingValidatorOwner implements ReducerState {
 		private final ECPublicKey validatorKey;
+		private final EpochData epochData;
 
-		UpdatingValidatorOwner(ECPublicKey validatorKey) {
+		UpdatingValidatorOwner(ECPublicKey validatorKey, EpochData epochData) {
 			this.validatorKey = validatorKey;
+			this.epochData = epochData;
 		}
 
-		void update(PreparedOwnerUpdate update) throws ProcedureException {
+		void update(ValidatorOwnerCopy update) throws ProcedureException {
 			if (!update.getValidatorKey().equals(validatorKey)) {
 				throw new ProcedureException("Invalid key update");
 			}
+
+			var expectedEpoch = epochData.getEpoch() + 1;
+			if (update.getEpochUpdate().orElseThrow() != expectedEpoch) {
+				throw new ProcedureException("Expected epoch to be " + expectedEpoch + " but is " + update.getEpochUpdate());
+			}
+		}
+	}
+
+
+	private static class UpdatingOwnerNeedToReadEpoch implements ReducerState {
+		private final ECPublicKey validatorKey;
+
+		UpdatingOwnerNeedToReadEpoch(ECPublicKey validatorKey) {
+			this.validatorKey = validatorKey;
+		}
+
+		ReducerState readEpoch(EpochData epochData) {
+			return new UpdatingValidatorOwner(validatorKey, epochData);
 		}
 	}
 
@@ -60,57 +83,37 @@ public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
 			ValidatorOwnerCopy.class,
 			SubstateTypeId.VALIDATOR_OWNER_COPY.id(),
 			buf -> {
-				REFieldSerialization.deserializeReservedByte(buf);
+				var subType = buf.get();
+				OptionalLong epochUpdate;
+				if (subType == 0) {
+					epochUpdate = OptionalLong.empty();
+				} else if (subType == 1) {
+					epochUpdate = OptionalLong.of(REFieldSerialization.deserializeNonNegativeLong(buf));
+				} else {
+					throw new DeserializeException("Unknown type: " + subType);
+				}
+
 				var key = REFieldSerialization.deserializeKey(buf);
 				var owner = REFieldSerialization.deserializeAccountREAddr(buf);
 				if (!owner.isAccount()) {
 					throw new DeserializeException("Address is not an account: " + owner);
 				}
-				return new ValidatorOwnerCopy(key, owner);
+				return new ValidatorOwnerCopy(epochUpdate, key, owner);
 			},
 			(s, buf) -> {
-				REFieldSerialization.serializeReservedByte(buf);
+				s.getEpochUpdate().ifPresentOrElse(
+					e -> {
+						buf.put((byte) 0x1);
+						buf.putLong(e);
+					},
+					() -> buf.put((byte) 0x0)
+				);
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				REFieldSerialization.serializeREAddr(buf, s.getOwner());
 			},
-			s -> REAddr.ofPubKeyAccount(s.getValidatorKey()).equals(s.getOwner())
+			s -> s.getEpochUpdate().isEmpty() && REAddr.ofPubKeyAccount(s.getValidatorKey()).equals(s.getOwner())
 		));
 
-		os.substate(new SubstateDefinition<>(
-			PreparedOwnerUpdate.class,
-			SubstateTypeId.PREPARED_VALIDATOR_OWNER_UPDATE.id(),
-			buf -> {
-				REFieldSerialization.deserializeReservedByte(buf);
-				var key = REFieldSerialization.deserializeKey(buf);
-				var ownerAddr = REFieldSerialization.deserializeAccountREAddr(buf);
-				if (!ownerAddr.isAccount()) {
-					throw new DeserializeException("Owner address must be an account");
-				}
-				return new PreparedOwnerUpdate(key, ownerAddr);
-			},
-			(s, buf) -> {
-				REFieldSerialization.serializeReservedByte(buf);
-				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
-				REFieldSerialization.serializeREAddr(buf, s.getOwnerAddress());
-			}
-		));
-		os.procedure(new DownProcedure<>(
-			VoidReducerState.class, PreparedOwnerUpdate.class,
-			d -> new Authorization(
-				PermissionLevel.USER,
-				(r, c) -> {
-					if (!c.key().map(d.getSubstate().getValidatorKey()::equals).orElse(false)) {
-						throw new AuthorizationException("Key does not match.");
-					}
-				}
-			),
-			(d, s, r) -> {
-				if (d.getArg().isPresent()) {
-					throw new ProcedureException("Args not allowed");
-				}
-				return ReducerResult.incomplete(new UpdatingValidatorOwner(d.getSubstate().getValidatorKey()));
-			}
-		));
 		os.procedure(new DownProcedure<>(
 			VoidReducerState.class, ValidatorOwnerCopy.class,
 			d -> new Authorization(
@@ -125,12 +128,19 @@ public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
 				if (d.getArg().isPresent()) {
 					throw new ProcedureException("Args not allowed");
 				}
-				return ReducerResult.incomplete(new UpdatingValidatorOwner(d.getSubstate().getValidatorKey()));
+				return ReducerResult.incomplete(new UpdatingOwnerNeedToReadEpoch(d.getSubstate().getValidatorKey()));
 			}
 		));
 
+
+		os.procedure(new ReadProcedure<>(
+			UpdatingOwnerNeedToReadEpoch.class, EpochData.class,
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			(s, u, r) -> ReducerResult.incomplete(s.readEpoch(u))
+		));
+
 		os.procedure(new UpProcedure<>(
-			UpdatingValidatorOwner.class, PreparedOwnerUpdate.class,
+			UpdatingValidatorOwner.class, ValidatorOwnerCopy.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> {
 				s.update(u);

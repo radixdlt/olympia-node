@@ -21,8 +21,8 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.application.validators.state.PreparedOwnerUpdate;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
+import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRakeCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.constraintmachine.Particle;
@@ -42,7 +42,7 @@ public final class AllValidatorsReducer {
 			ValidatorStakeData.class,
 			ValidatorRegisteredCopy.class,
 			PreparedStake.class,
-			PreparedOwnerUpdate.class,
+			ValidatorOwnerCopy.class,
 			AllowDelegationFlag.class,
 			ValidatorMetaData.class,
 			ValidatorRakeCopy.class
@@ -60,9 +60,9 @@ public final class AllValidatorsReducer {
 			} else if (p instanceof PreparedStake) { // TODO: Remove for mainnet
 				var s = (PreparedStake) p;
 				return prev.add(s.getDelegateKey(), s.getAmount());
-			} else if (p instanceof PreparedOwnerUpdate) {
-				var s = (PreparedOwnerUpdate) p;
-				return prev.setOwner(s.getValidatorKey(), s.getOwnerAddress());
+			} else if (p instanceof ValidatorOwnerCopy) {
+				var s = (ValidatorOwnerCopy) p;
+				return prev.setOwner(s.getValidatorKey(), s.getOwner());
 			} else if (p instanceof AllowDelegationFlag) {
 				var s = (AllowDelegationFlag) p;
 				return prev.setAllowDelegationFlag(s.getValidatorKey(), s.allowsDelegation());

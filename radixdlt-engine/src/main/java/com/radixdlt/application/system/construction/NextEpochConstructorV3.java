@@ -33,7 +33,6 @@ import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.ExittingStake;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
-import com.radixdlt.application.validators.state.PreparedOwnerUpdate;
 import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRakeCopy;
@@ -91,27 +90,6 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 			validatorsToUpdate.put(k, new ValidatorScratchPad(validatorData));
 		}
 		return validatorsToUpdate.get(k);
-	}
-
-	private static <T extends ValidatorData, U extends ValidatorData> void prepare(
-		TxBuilder txBuilder,
-		TreeMap<ECPublicKey, ValidatorScratchPad> validatorsToUpdate,
-		Class<T> preparedClass,
-		BiConsumer<ValidatorScratchPad, T> updater,
-		Function<T, U> copy
-	) throws TxBuilderException {
-		var preparing = new TreeMap<ECPublicKey, T>(KeyComparator.instance());
-		txBuilder.shutdownAll(preparedClass, i -> {
-			i.forEachRemaining(update -> preparing.put(update.getValidatorKey(), update));
-			return preparing;
-		});
-		for (var e : preparing.entrySet()) {
-			var k = e.getKey();
-			var update = e.getValue();
-			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate, true);
-			updater.accept(curValidator, update);
-			txBuilder.up(copy.apply(update));
-		}
 	}
 
 	private static <T extends ValidatorData, U extends ValidatorData> void prepare(
@@ -287,9 +265,11 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		prepare(
 			txBuilder,
 			validatorsToUpdate,
-			PreparedOwnerUpdate.class,
-			(v, u) -> v.setOwnerAddr(u.getOwnerAddress()),
-			u -> new ValidatorOwnerCopy(u.getValidatorKey(), u.getOwnerAddress())
+			ValidatorOwnerCopy.class,
+			SubstateTypeId.VALIDATOR_OWNER_COPY.id(),
+			closingEpoch.getEpoch() + 1,
+			(v, u) -> v.setOwnerAddr(u.getOwner()),
+			u -> new ValidatorOwnerCopy(u.getValidatorKey(), u.getOwner())
 		);
 
 		// Update registered flag

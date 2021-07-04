@@ -34,7 +34,6 @@ import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.application.validators.state.PreparedOwnerUpdate;
 import com.radixdlt.application.validators.state.ValidatorRakeCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atomos.CMAtomOS;
@@ -554,6 +553,10 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 				throw new ProcedureException("Validator keys must match.");
 			}
 
+			if (update.getEpochUpdate().isPresent()) {
+				throw new ProcedureException("Epoch should not be present.");
+			}
+
 			return next.get();
 		}
 	}
@@ -561,7 +564,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	private final class PreparingOwnerUpdate implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
-		private final TreeMap<ECPublicKey, PreparedOwnerUpdate> preparingOwnerUpdates = new TreeMap<>(KeyComparator.instance());
+		private final TreeMap<ECPublicKey, ValidatorOwnerCopy> preparingOwnerUpdates = new TreeMap<>(KeyComparator.instance());
 
 		PreparingOwnerUpdate(
 			UpdatingEpoch updatingEpoch,
@@ -571,8 +574,13 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.validatorsScratchPad = validatorsScratchPad;
 		}
 
-		ReducerState prepareValidatorUpdate(IndexedSubstateIterator<PreparedOwnerUpdate> indexedSubstateIterator) throws ProcedureException {
-			indexedSubstateIterator.verifyPostTypePrefixIsEmpty();
+		ReducerState prepareValidatorUpdate(IndexedSubstateIterator<ValidatorOwnerCopy> indexedSubstateIterator) throws ProcedureException {
+			var expectedEpoch = updatingEpoch.prevEpoch.getEpoch() + 1;
+			var expectedPrefix = new byte[Long.BYTES + 1];
+			expectedPrefix[0] = 1;
+			Longs.copyTo(expectedEpoch, expectedPrefix, 1);
+			indexedSubstateIterator.verifyPostTypePrefixEquals(expectedPrefix);
+
 			var iter = indexedSubstateIterator.iterator();
 			while (iter.hasNext()) {
 				var preparedValidatorUpdate = iter.next();
@@ -591,11 +599,11 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			if (!validatorsScratchPad.containsKey(k)) {
 				return new LoadingStake(k, validatorStake -> {
 					validatorsScratchPad.put(k, validatorStake);
-					validatorStake.setOwnerAddr(validatorUpdate.getOwnerAddress());
+					validatorStake.setOwnerAddr(validatorUpdate.getOwner());
 					return new ResetOwnerUpdate(k, this::next);
 				});
 			} else {
-				validatorsScratchPad.get(k).setOwnerAddr(validatorUpdate.getOwnerAddress());
+				validatorsScratchPad.get(k).setOwnerAddr(validatorUpdate.getOwner());
 				return new ResetOwnerUpdate(k, this::next);
 			}
 		}
@@ -796,7 +804,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		));
 
 		os.procedure(new ShutdownAllProcedure<>(
-			PreparedOwnerUpdate.class, PreparingOwnerUpdate.class,
+			ValidatorOwnerCopy.class, PreparingOwnerUpdate.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, d, c, r) -> ReducerResult.incomplete(s.prepareValidatorUpdate(d))
 		));
