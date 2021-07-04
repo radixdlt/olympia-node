@@ -26,6 +26,7 @@ import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRakeCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.identifiers.REAddr;
 
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -71,7 +72,7 @@ public final class AllValidatorsReducer {
 				return prev.setRake(s.getValidatorKey(), s.getRakePercentage());
 			} else {
 				var s = (ValidatorStakeData) p;
-				return prev.setOwner(s.getValidatorKey(), s.getOwnerAddr())
+				return prev.setOwner(s.getValidatorKey(), s.getOwnerAddr().orElse(REAddr.ofPubKeyAccount(s.getValidatorKey())))
 					.setStake(s.getValidatorKey(), s.getAmount())
 					.setRegistered(s.getValidatorKey(), s.isRegistered());
 			}

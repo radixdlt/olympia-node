@@ -56,6 +56,7 @@ import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.UInt256;
@@ -64,6 +65,7 @@ import java.nio.ByteBuffer;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Function;
@@ -197,7 +199,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					var rake = nodeRewards
 						.multiply(UInt256.from(rakePercentage))
 						.divide(UInt256.from(RAKE_MAX));
-					var validatorOwner = validatorStakeData.getOwnerAddr();
+					var validatorOwner = validatorStakeData.getOwnerAddr().orElse(REAddr.ofPubKeyAccount(k));
 					var initStake = new TreeMap<REAddr, UInt256>(Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator()));
 					initStake.put(validatorOwner, rake);
 					preparingStake.put(k, initStake);
@@ -900,7 +902,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					var delegate = REFieldSerialization.deserializeKey(buf);
 					var ownership = REFieldSerialization.deserializeUInt256(buf);
 					var rakePercentage = REFieldSerialization.deserializeInt(buf);
-					var ownerAddress = REFieldSerialization.deserializeAccountREAddr(buf);
+					var ownerAddress = REFieldSerialization.deserializeOptionalAccountREAddr(buf);
 					return ValidatorStakeData.create(delegate, amount, ownership, rakePercentage, ownerAddress, isRegistered);
 				},
 				(s, buf) -> {
@@ -910,7 +912,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 					buf.put(s.getTotalOwnership().toByteArray());
 					buf.putInt(s.getRakePercentage());
-					REFieldSerialization.serializeREAddr(buf, s.getOwnerAddr());
+					REFieldSerialization.serializeOptionalREAddr(buf, s.getOwnerAddr());
 				},
 				s -> s.equals(ValidatorStakeData.createVirtual(s.getValidatorKey()))
 			)

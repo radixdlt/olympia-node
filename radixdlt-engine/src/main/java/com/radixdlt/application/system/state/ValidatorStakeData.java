@@ -25,6 +25,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
 
@@ -32,7 +33,7 @@ public final class ValidatorStakeData implements ResourceInBucket {
 	private final UInt256 totalStake;
 	private final UInt256 totalOwnership;
 	private final int rakePercentage;
-	private final REAddr ownerAddr;
+	private final Optional<REAddr> ownerAddr;
 	private final boolean isRegistered;
 
 	// Bucket keys
@@ -43,7 +44,7 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		UInt256 totalStake,
 		UInt256 totalOwnership,
 		int rakePercentage,
-		REAddr ownerAddr,
+		Optional<REAddr> ownerAddr,
 		boolean isRegistered
 	) {
 		if (totalStake.isZero() != totalOwnership.isZero()) {
@@ -60,7 +61,7 @@ public final class ValidatorStakeData implements ResourceInBucket {
 	}
 
 	public static ValidatorStakeData createVirtual(ECPublicKey validatorKey) {
-		return new ValidatorStakeData(validatorKey, UInt256.ZERO, UInt256.ZERO, RAKE_MAX, REAddr.ofPubKeyAccount(validatorKey), false);
+		return new ValidatorStakeData(validatorKey, UInt256.ZERO, UInt256.ZERO, RAKE_MAX, Optional.of(REAddr.ofPubKeyAccount(validatorKey)), false);
 	}
 
 	public static ValidatorStakeData create(
@@ -68,7 +69,7 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		UInt256 totalStake,
 		UInt256 totalOwnership,
 		int rakePercentage,
-		REAddr ownerAddress,
+		Optional<REAddr> ownerAddress,
 		boolean isRegistered
 	) {
 		return new ValidatorStakeData(
@@ -89,7 +90,7 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		return isRegistered;
 	}
 
-	public REAddr getOwnerAddr() {
+	public Optional<REAddr> getOwnerAddr() {
 		return ownerAddr;
 	}
 

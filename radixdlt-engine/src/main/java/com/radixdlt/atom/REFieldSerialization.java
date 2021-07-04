@@ -28,6 +28,7 @@ import com.radixdlt.utils.UInt256;
 
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
+import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.regex.Pattern;
 
@@ -73,6 +74,27 @@ public final class REFieldSerialization {
 			throw new DeserializeException("Invalid flag");
 		}
 		return flag == 1;
+	}
+
+	public static void serializeOptionalREAddr(ByteBuffer buf, Optional<REAddr> addr) {
+		addr.ifPresentOrElse(
+			o -> {
+				buf.put((byte) 0x1);
+				buf.put(o.getBytes());
+			},
+			() -> buf.put((byte) 0x0)
+		);
+	}
+
+	public static Optional<REAddr> deserializeOptionalAccountREAddr(ByteBuffer buf) throws DeserializeException {
+		var type = buf.get();
+		if (type == 0) {
+			return Optional.empty();
+		} else if (type == 1) {
+			return Optional.of(REFieldSerialization.deserializeAccountREAddr(buf));
+		} else {
+			throw new DeserializeException("Unknown optionalAccountREAddr: " + type);
+		}
 	}
 
 	public static void serializeREAddr(ByteBuffer buf, REAddr rri) {

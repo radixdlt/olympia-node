@@ -186,7 +186,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 				var rake = nodeRewards
 					.multiply(UInt256.from(rakePercentage))
 					.divide(UInt256.from(RAKE_MAX));
-				var validatorOwner = validatorStakeData.getOwnerAddr();
+				var validatorOwner = validatorStakeData.getOwnerAddr().orElse(REAddr.ofPubKeyAccount(k));
 				var initStake = new TreeMap<REAddr, UInt256>(
 					Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator())
 				);
