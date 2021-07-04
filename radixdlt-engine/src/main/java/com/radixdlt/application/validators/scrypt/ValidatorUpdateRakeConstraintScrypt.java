@@ -123,14 +123,14 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 			ValidatorRakeCopy.class,
 			SubstateTypeId.VALIDATOR_RAKE_COPY.id(),
 			buf -> {
-				var type = buf.get();
+				var subType = buf.get();
 				OptionalLong epochUpdate;
-				if (type == 0) {
+				if (subType == 0) {
 					epochUpdate = OptionalLong.empty();
-				} else if (type == 1) {
+				} else if (subType == 1) {
 					epochUpdate = OptionalLong.of(REFieldSerialization.deserializeNonNegativeLong(buf));
 				} else {
-					throw new DeserializeException("Unknown type: " + type);
+					throw new DeserializeException("Unknown type: " + subType);
 				}
 				var key = REFieldSerialization.deserializeKey(buf);
 				var curRakePercentage = REFieldSerialization.deserializeInt(buf);

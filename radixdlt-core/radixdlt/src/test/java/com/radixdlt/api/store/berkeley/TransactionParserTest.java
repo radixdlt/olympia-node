@@ -145,9 +145,9 @@ public class TransactionParserTest {
 		).buildWithoutSignature();
 		var validatorBuilder = this.engine.construct(
 			TxnConstructionRequest.create()
+				.action(new CreateSystem(System.currentTimeMillis()))
 				.action(new RegisterValidator(this.validatorKeyPair.getPublicKey()))
 				.action(new UpdateAllowDelegationFlag(this.validatorKeyPair.getPublicKey(), true))
-				.action(new CreateSystem(System.currentTimeMillis()))
 		);
 		var txn1 = validatorBuilder.buildWithoutSignature();
 

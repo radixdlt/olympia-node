@@ -19,7 +19,6 @@ package com.radixdlt.engine;
 
 import com.radixdlt.application.system.construction.FeeReserveCompleteException;
 import com.radixdlt.atom.REConstructor;
-import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
@@ -437,7 +436,7 @@ public final class RadixEngine<M> {
 		synchronized (stateUpdateEngineLock) {
 			SubstateStore filteredStore = b ->
 				engineStore.openIndexedCursor(b)
-					.filter(i -> !avoid.contains(SubstateId.fromBytes(i.getId())));;
+					.filter(i -> !avoid.contains(SubstateId.fromBytes(i.getId())));
 
 			var txBuilder = TxBuilder.newBuilder(
 				filteredStore,

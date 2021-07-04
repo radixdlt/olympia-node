@@ -19,17 +19,13 @@
 package com.radixdlt.application.validators;
 
 import com.radixdlt.atom.REConstructor;
-import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.application.validators.construction.RegisterValidatorConstructor;
 import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
-import com.radixdlt.application.validators.state.PreparedRegisteredUpdate;
-import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -92,21 +88,5 @@ public class RegisterValidatorTest {
 			.signAndBuild(key::sign);
 		assertThatThrownBy(() -> this.engine.execute(List.of(registerTxn)))
 			.hasRootCauseInstanceOf(AuthorizationException.class);
-	}
-
-	@Test
-	public void changing_validator_key_should_fail() {
-		// Arrange
-		var key = ECKeyPair.generateNew();
-		var builder = TxLowLevelBuilder.newBuilder(serialization)
-			.virtualDown(new ValidatorRegisteredCopy(key.getPublicKey(), false))
-			.up(new PreparedRegisteredUpdate(ECKeyPair.generateNew().getPublicKey(), true))
-			.end();
-		var sig = key.sign(builder.hashToSign().asBytes());
-		var txn = builder.sig(sig).build();
-
-		// Act and Assert
-		assertThatThrownBy(() -> this.engine.execute(List.of(txn)))
-			.hasRootCauseInstanceOf(ProcedureException.class);
 	}
 }

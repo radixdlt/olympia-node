@@ -22,9 +22,9 @@ import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.PreparedOwnerUpdate;
-import com.radixdlt.application.validators.state.PreparedRegisteredUpdate;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.application.validators.state.ValidatorRakeCopy;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.constraintmachine.Particle;
 
 import java.util.Set;
@@ -40,7 +40,7 @@ public final class AllValidatorsReducer {
 		// after ValidatorStake to get to the correct state
 		return ImmutableSet.of(
 			ValidatorStakeData.class,
-			PreparedRegisteredUpdate.class,
+			ValidatorRegisteredCopy.class,
 			PreparedStake.class,
 			PreparedOwnerUpdate.class,
 			AllowDelegationFlag.class,
@@ -51,8 +51,8 @@ public final class AllValidatorsReducer {
 
 	public BiFunction<AllValidators, Particle, AllValidators> outputReducer() {
 		return (prev, p) -> {
-			if (p instanceof PreparedRegisteredUpdate) {
-				var v = (PreparedRegisteredUpdate) p;
+			if (p instanceof ValidatorRegisteredCopy) {
+				var v = (ValidatorRegisteredCopy) p;
 				return prev.add(v.getValidatorKey());
 			} else if (p instanceof ValidatorMetaData) {
 				var s = (ValidatorMetaData) p;

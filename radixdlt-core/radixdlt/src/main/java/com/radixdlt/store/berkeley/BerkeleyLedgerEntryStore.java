@@ -18,7 +18,6 @@
 package com.radixdlt.store.berkeley;
 
 import com.google.common.collect.Streams;
-import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
@@ -368,6 +367,12 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 								// 1: Reserved Byte
 								// 2-5: Epoch
 								prefixIndexSize = 2 + Long.BYTES;
+							} else if (substateTypeId == SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id()
+								&& subType == (byte) 0x1) {
+								// 0: Type Byte
+								// 1: Reserved Byte
+								// 2-5: Epoch
+								prefixIndexSize = 2 + Long.BYTES;
 							} else if (substateTypeId == SubstateTypeId.VALIDATOR_RAKE_COPY.id()
 								&& subType == (byte) 0x1) {
 								// 0: Type Byte
@@ -545,7 +550,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			this.db = db;
 			this.indexableBytes = indexableBytes;
 			this.reverse = indexableBytes[0] == SubstateTypeId.VALIDATOR_STAKE_DATA.id()
-				|| indexableBytes[0] == SubstateTypeId.VALIDATOR_RAKE_COPY.id();
+				|| indexableBytes[0] == SubstateTypeId.VALIDATOR_RAKE_COPY.id()
+				|| indexableBytes[0] == SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id();
 		}
 
 		private void open() {

@@ -21,17 +21,34 @@ package com.radixdlt.application.validators.state;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
+import java.util.OptionalLong;
 
 public final class ValidatorRegisteredCopy implements ValidatorData {
 	private final ECPublicKey validatorKey;
 	private final boolean isRegistered;
+	private final OptionalLong epochUpdate;
 
 	public ValidatorRegisteredCopy(
 		ECPublicKey validatorKey,
 		boolean isRegistered
 	) {
+		this.epochUpdate = OptionalLong.empty();
 		this.validatorKey = validatorKey;
 		this.isRegistered = isRegistered;
+	}
+
+	public ValidatorRegisteredCopy(
+		OptionalLong epochUpdate,
+		ECPublicKey validatorKey,
+		boolean isRegistered
+	) {
+		this.epochUpdate = epochUpdate;
+		this.validatorKey = validatorKey;
+		this.isRegistered = isRegistered;
+	}
+
+	public OptionalLong getEpochUpdate() {
+		return epochUpdate;
 	}
 
 	public ECPublicKey getValidatorKey() {
@@ -44,7 +61,7 @@ public final class ValidatorRegisteredCopy implements ValidatorData {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(validatorKey, isRegistered);
+		return Objects.hash(epochUpdate, validatorKey, isRegistered);
 	}
 
 	@Override
@@ -54,7 +71,8 @@ public final class ValidatorRegisteredCopy implements ValidatorData {
 		}
 
 		var other = (ValidatorRegisteredCopy) o;
-		return Objects.equals(this.validatorKey, other.validatorKey)
+		return Objects.equals(this.epochUpdate, other.epochUpdate)
+			&& Objects.equals(this.validatorKey, other.validatorKey)
 			&& this.isRegistered == other.isRegistered;
 	}
 }

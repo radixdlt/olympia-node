@@ -144,7 +144,10 @@ public enum RERulesVersion {
 				.put(UpdateValidatorMetadata.class, new UpdateValidatorConstructor())
 				.put(FeeReservePut.class, new FeeReservePutConstructor())
 				.put(FeeReserveComplete.class, new FeeReserveCompleteConstructor(config.getFeeTable()))
-				.put(UpdateRake.class, new UpdateRakeConstructor(rakeIncreaseDebouncerEpochLength, ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE))
+				.put(UpdateRake.class, new UpdateRakeConstructor(
+					rakeIncreaseDebouncerEpochLength,
+					ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE
+				))
 				.put(UpdateValidatorOwnerAddress.class, new UpdateValidatorOwnerConstructor())
 				.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())
 				.build();

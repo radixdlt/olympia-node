@@ -33,7 +33,6 @@ import com.radixdlt.application.tokens.state.ExittingStake;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.application.validators.state.PreparedRegisteredUpdate;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.PreparedOwnerUpdate;
 import com.radixdlt.application.validators.state.ValidatorRakeCopy;
@@ -608,10 +607,10 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	}
 
 	private static final class ResetRegisteredUpdate implements ReducerState {
-		private final PreparedRegisteredUpdate update;
+		private final ValidatorRegisteredCopy update;
 		private final Supplier<ReducerState> next;
 
-		ResetRegisteredUpdate(PreparedRegisteredUpdate update, Supplier<ReducerState> next) {
+		ResetRegisteredUpdate(ValidatorRegisteredCopy update, Supplier<ReducerState> next) {
 			this.update = update;
 			this.next = next;
 		}
@@ -625,6 +624,10 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 				throw new ProcedureException("Registered flags must match.");
 			}
 
+			if (registeredCopy.getEpochUpdate().isPresent()) {
+				throw new ProcedureException("Should not have an epoch.");
+			}
+
 			return next.get();
 		}
 	}
@@ -632,7 +635,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	private final class PreparingRegisteredUpdate implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
-		private final TreeMap<ECPublicKey, PreparedRegisteredUpdate> preparingRegisteredUpdates = new TreeMap<>(KeyComparator.instance());
+		private final TreeMap<ECPublicKey, ValidatorRegisteredCopy> preparingRegisteredUpdates = new TreeMap<>(KeyComparator.instance());
 
 		PreparingRegisteredUpdate(
 			UpdatingEpoch updatingEpoch,
@@ -642,8 +645,12 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.validatorsScratchPad = validatorsScratchPad;
 		}
 
-		ReducerState prepareRegisterUpdates(IndexedSubstateIterator<PreparedRegisteredUpdate> indexedSubstateIterator) throws ProcedureException {
-			indexedSubstateIterator.verifyPostTypePrefixIsEmpty();
+		ReducerState prepareRegisterUpdates(IndexedSubstateIterator<ValidatorRegisteredCopy> indexedSubstateIterator) throws ProcedureException {
+			var expectedEpoch = updatingEpoch.prevEpoch.getEpoch() + 1;
+			var expectedPrefix = new byte[Long.BYTES + 1];
+			expectedPrefix[0] = 1;
+			Longs.copyTo(expectedEpoch, expectedPrefix, 1);
+			indexedSubstateIterator.verifyPostTypePrefixEquals(expectedPrefix);
 			var iter = indexedSubstateIterator.iterator();
 			while (iter.hasNext()) {
 				var preparedRegisteredUpdate = iter.next();
@@ -800,7 +807,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		));
 
 		os.procedure(new ShutdownAllProcedure<>(
-			PreparedRegisteredUpdate.class, PreparingRegisteredUpdate.class,
+			ValidatorRegisteredCopy.class, PreparingRegisteredUpdate.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, d, c, r) -> ReducerResult.incomplete(s.prepareRegisterUpdates(d))
 		));
