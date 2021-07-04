@@ -32,7 +32,6 @@ import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -108,11 +107,8 @@ public final class TxBuilder {
 		return numResourcesCreated;
 	}
 
-	private void virtualDown(SubstateWithArg<?> substateWithArg) {
-		substateWithArg.getArg().ifPresentOrElse(
-			arg -> lowLevelBuilder.virtualDown(substateWithArg.getSubstate(), arg),
-			() -> lowLevelBuilder.virtualDown(substateWithArg.getSubstate())
-		);
+	private void virtualDown(Particle particle) {
+		lowLevelBuilder.virtualDown(particle);
 	}
 
 	public void down(SubstateId substateId) {
@@ -223,7 +219,7 @@ public final class TxBuilder {
 	public <T extends Particle> T down(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
-		Optional<SubstateWithArg<T>> virtualParticle,
+		Optional<T> virtualParticle,
 		Supplier<TxBuilderException> exceptionSupplier
 	) throws TxBuilderException {
 		var localDown = lowLevelBuilder.localUpSubstate().stream()
@@ -253,7 +249,7 @@ public final class TxBuilder {
 				.findFirst()
 				.or(() -> {
 					virtualParticle.ifPresent(this::virtualDown);
-					return virtualParticle.map(SubstateWithArg::getSubstate);
+					return virtualParticle;
 				});
 
 			if (substateDown.isEmpty()) {
@@ -414,7 +410,7 @@ public final class TxBuilder {
 	public <T extends Particle> Replacer<T> swap(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
-		Optional<SubstateWithArg<T>> virtualParticle,
+		Optional<T> virtualParticle,
 		Supplier<TxBuilderException> exceptionSupplier
 	) throws TxBuilderException {
 		T t = down(particleClass, particlePredicate, virtualParticle, exceptionSupplier);
@@ -580,10 +576,12 @@ public final class TxBuilder {
 
 	public TxBuilder mutex(ECPublicKey key, String id) throws TxBuilderException {
 		final var addr = REAddr.ofHashedKey(key, id);
+
+		lowLevelBuilder.syscall(Syscall.READDR_CLAIM, id.getBytes(StandardCharsets.UTF_8));
 		down(
 			UnclaimedREAddr.class,
 			p -> p.getAddr().equals(addr),
-			Optional.of(SubstateWithArg.withArg(new UnclaimedREAddr(addr), id.getBytes(StandardCharsets.UTF_8))),
+			Optional.of(new UnclaimedREAddr(addr)),
 			() -> new TxBuilderException("Address already claimed")
 		);
 		end();

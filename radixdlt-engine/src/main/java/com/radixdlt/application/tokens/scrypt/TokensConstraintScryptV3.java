@@ -18,6 +18,7 @@
 
 package com.radixdlt.application.tokens.scrypt;
 
+import com.radixdlt.application.tokens.ResourceCreatedEvent;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
@@ -28,6 +29,7 @@ import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
+import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
@@ -40,6 +42,8 @@ import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.UInt256;
+
+import java.nio.charset.StandardCharsets;
 
 public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 	@Override
@@ -141,14 +145,19 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 
 	private static class NeedMetadata implements ReducerState {
 		private final TokenResource tokenResource;
-		private NeedMetadata(TokenResource tokenResource) {
+		private final byte[] arg;
+		private NeedMetadata(byte[] arg, TokenResource tokenResource) {
+			this.arg = arg;
 			this.tokenResource = tokenResource;
 		}
 
-		void metadata(TokenResourceMetadata metadata) throws ProcedureException {
+		void metadata(TokenResourceMetadata metadata, ExecutionContext context) throws ProcedureException {
 			if (!metadata.getAddr().equals(tokenResource.getAddr())) {
 				throw new ProcedureException("Addresses don't match");
 			}
+
+			var symbol = new String(arg, StandardCharsets.UTF_8);
+			context.emitEvent(new ResourceCreatedEvent(symbol, tokenResource, metadata));
 		}
 	}
 
@@ -162,7 +171,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				}
 
 				if (u.isMutable()) {
-					return ReducerResult.incomplete(new NeedMetadata(u));
+					return ReducerResult.incomplete(new NeedMetadata(s.getArg(), u));
 				}
 
 				if (!u.getGranularity().equals(UInt256.ONE)) {
@@ -180,7 +189,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				if (!u.getResourceAddr().equals(s.tokenResource.getAddr())) {
 					throw new ProcedureException("Addresses don't match.");
 				}
-				return ReducerResult.incomplete(new NeedMetadata(s.tokenResource));
+				return ReducerResult.incomplete(new NeedMetadata(s.arg, s.tokenResource));
 			}
 		));
 
@@ -188,7 +197,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 			NeedMetadata.class, TokenResourceMetadata.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> {
-				s.metadata(u);
+				s.metadata(u, c);
 				return ReducerResult.complete();
 			}
 		));
@@ -232,10 +241,9 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 		// Initial Withdraw
 		os.procedure(new DownProcedure<>(
 			VoidReducerState.class, TokensInAccount.class,
-			d -> d.getSubstate().bucket().withdrawAuthorization(),
-			(d, s, r) -> {
-				var tokensInAccount = d.getSubstate();
-				var state = new TokenHoldingBucket(tokensInAccount.toTokens());
+			d -> d.bucket().withdrawAuthorization(),
+			(d, s, r, c) -> {
+				var state = new TokenHoldingBucket(d.toTokens());
 				return ReducerResult.incomplete(state);
 			}
 		));
@@ -243,10 +251,9 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 		// More Withdraws
 		os.procedure(new DownProcedure<>(
 			TokenHoldingBucket.class, TokensInAccount.class,
-			d -> d.getSubstate().bucket().withdrawAuthorization(),
-			(d, s, r) -> {
-				var tokensInAccount = d.getSubstate();
-				s.deposit(tokensInAccount.toTokens());
+			d -> d.bucket().withdrawAuthorization(),
+			(d, s, r, c) -> {
+				s.deposit(d.toTokens());
 				return ReducerResult.incomplete(s);
 			}
 		));

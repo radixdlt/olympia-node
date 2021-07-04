@@ -18,6 +18,7 @@
 
 package com.radixdlt.application.tokens.construction;
 
+import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
@@ -25,7 +26,6 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.atomos.UnclaimedREAddr;
-import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.identifiers.REAddr;
 
 import java.nio.charset.StandardCharsets;
@@ -37,10 +37,13 @@ public final class CreateMutableTokenConstructor implements ActionConstructor<Cr
 		final var reAddress = action.getKey() == null
 			? REAddr.ofNativeToken()
 			: REAddr.ofHashedKey(action.getKey(), action.getSymbol());
+
+		txBuilder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, action.getSymbol().getBytes(StandardCharsets.UTF_8));
+
 		txBuilder.down(
 			UnclaimedREAddr.class,
 			p -> p.getAddr().equals(reAddress),
-			Optional.of(SubstateWithArg.withArg(new UnclaimedREAddr(reAddress), action.getSymbol().getBytes(StandardCharsets.UTF_8))),
+			Optional.of(new UnclaimedREAddr(reAddress)),
 			() -> new TxBuilderException("RRI not available")
 		);
 		txBuilder.up(TokenResource.createMutableSupplyResource(reAddress, action.getKey()));

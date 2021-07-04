@@ -18,6 +18,8 @@
 
 package com.radixdlt.application.tokens;
 
+import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxBuilder;
@@ -31,9 +33,9 @@ import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.UnclaimedREAddr;
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.SubstateSerialization;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -47,6 +49,7 @@ import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -59,6 +62,7 @@ public class TokenDefinitionTest {
 	@Before
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
+		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		cmAtomOS.load(new TokensConstraintScryptV3());
 		var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
@@ -80,7 +84,7 @@ public class TokenDefinitionTest {
 	}
 
 	@Test
-	public void create_new_token_with_no_errors() throws RadixEngineException {
+	public void create_new_token_with_no_errors() throws Exception {
 		// Arrange
 		var keyPair = ECKeyPair.generateNew();
 		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
@@ -93,7 +97,8 @@ public class TokenDefinitionTest {
 			UInt256.TEN
 		);
 		var builder = TxLowLevelBuilder.newBuilder(serialization)
-			.virtualDown(addrParticle, "test".getBytes(StandardCharsets.UTF_8))
+			.syscall(Syscall.READDR_CLAIM, "test".getBytes(StandardCharsets.UTF_8))
+			.virtualDown(addrParticle)
 			.up(tokenResource)
 			.up(tokensParticle)
 			.up(TokenResourceMetadata.empty(addr))
@@ -114,7 +119,8 @@ public class TokenDefinitionTest {
 		var addrParticle = new UnclaimedREAddr(addr);
 		var tokenDefinitionParticle = TokenResource.createFixedSupplyResource(addr);
 		var builder = TxLowLevelBuilder.newBuilder(serialization)
-			.virtualDown(addrParticle, "test".getBytes(StandardCharsets.UTF_8))
+			.syscall(Syscall.READDR_CLAIM, "test".getBytes(StandardCharsets.UTF_8))
+			.virtualDown(addrParticle)
 			.up(tokenDefinitionParticle)
 			.end();
 		var sig = keyPair.sign(builder.hashToSign().asBytes());
@@ -133,7 +139,8 @@ public class TokenDefinitionTest {
 		var tokenDefinitionParticle = TokenResource.createMutableSupplyResource(addr, keyPair.getPublicKey());
 		var builder = TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization)
 			.toLowLevelBuilder()
-			.virtualDown(new UnclaimedREAddr(addr), "smthng".getBytes(StandardCharsets.UTF_8))
+			.syscall(Syscall.READDR_CLAIM, "smthng".getBytes(StandardCharsets.UTF_8))
+			.virtualDown(new UnclaimedREAddr(addr))
 			.up(tokenDefinitionParticle)
 			.end();
 		var sig = keyPair.sign(builder.hashToSign());
@@ -141,6 +148,6 @@ public class TokenDefinitionTest {
 
 		// Act and Assert
 		assertThatThrownBy(() -> this.engine.execute(List.of(txn)))
-			.hasRootCauseInstanceOf(AuthorizationException.class);
+			.hasRootCauseInstanceOf(ProcedureException.class);
 	}
 }

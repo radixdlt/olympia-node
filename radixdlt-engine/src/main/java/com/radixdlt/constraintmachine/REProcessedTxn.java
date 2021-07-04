@@ -26,7 +26,6 @@ import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.engine.parser.ParsedTxn;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
 import java.util.List;
@@ -99,9 +98,6 @@ public final class REProcessedTxn {
 				} else if (i.getMicroOp() == REInstruction.REMicroOp.VDOWN || i.getMicroOp() == REInstruction.REMicroOp.VREAD) {
 					Substate substate = i.getData();
 					return Stream.of(substate.getId());
-				} else if (i.getMicroOp() == REInstruction.REMicroOp.VDOWNARG) {
-					Pair<Substate, byte[]> substateArg = i.getData();
-					return Stream.of(substateArg.getFirst().getId());
 				}
 				return Stream.empty();
 			});

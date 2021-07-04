@@ -39,7 +39,6 @@ import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRakeCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -85,7 +84,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 			var validatorData = txBuilder.down(
 				ValidatorStakeData.class,
 				p -> p.getValidatorKey().equals(k),
-				canBeVirtual ? Optional.of(SubstateWithArg.noArg(ValidatorStakeData.createVirtual(k))) : Optional.empty(),
+				canBeVirtual ? Optional.of(ValidatorStakeData.createVirtual(k)) : Optional.empty(),
 				() -> new TxBuilderException("Validator not found")
 			);
 			validatorsToUpdate.put(k, new ValidatorScratchPad(validatorData));

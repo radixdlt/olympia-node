@@ -17,7 +17,8 @@
 
 package com.radixdlt.api.store.berkeley;
 
-import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.application.tokens.ResourceCreatedEvent;
+import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.networks.Addressing;
 import org.apache.logging.log4j.LogManager;
@@ -43,8 +44,6 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.tokens.Bucket;
-import com.radixdlt.application.tokens.state.TokenResource;
-import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
@@ -699,6 +698,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		// TODO: cur epoch retrieval a bit hacky but needs to be like this for now
 		// TODO: as epoch get updated at the end of an epoch transition
 		var curEpoch = currentEpoch.get();
+		processEvents(reTxn.getEvents());
+
 		var accountingObjects = reTxn.getGroupedStateUpdates().stream()
 			.map(updates -> processGroupedStateUpdates(updates, reTxn.getTxn().getId()))
 			.collect(Collectors.toList());
@@ -727,35 +728,29 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		log.debug("TRANSACTION_LOG: {}", () -> accountingJson(curEpoch, reTxn, accountingObjects));
 	}
 
-	private REResourceAccounting processGroupedStateUpdates(List<REStateUpdate> updates, AID txId) {
-		byte[] addressArg = null;
-		TokenResource res = null;
-
-		for (var update : updates) {
-			var substate = update.getRawSubstate();
-			if (substate instanceof UnclaimedREAddr) {
-				// FIXME: sort of a hacky way of getting this info
-				addressArg = update.getArg().orElse("xrd".getBytes(StandardCharsets.UTF_8));
-			} else if (substate instanceof TokenResource) {
-				res = (TokenResource) substate;
-			} else if (substate instanceof TokenResourceMetadata) {
-				var meta = (TokenResourceMetadata) substate;
-				if (addressArg == null || res == null) {
-					throw new IllegalStateException();
-				}
-				var symbol = new String(addressArg);
+	private void processEvents(List<REEvent> events) {
+		for (var event : events) {
+			if (event instanceof ResourceCreatedEvent) {
+				var resourceCreated = (ResourceCreatedEvent) event;
 				var record = TokenDefinitionRecord.create(
-					symbol,
-					meta.getName(),
-					meta.getAddr(),
-					meta.getDescription(),
+					resourceCreated.getSymbol(),
+					resourceCreated.getMetadata().getName(),
+					resourceCreated.getMetadata().getAddr(),
+					resourceCreated.getMetadata().getDescription(),
 					UInt384.ZERO,
-					meta.getIconUrl(),
-					meta.getUrl(),
-					res.isMutable()
+					resourceCreated.getMetadata().getIconUrl(),
+					resourceCreated.getMetadata().getUrl(),
+					resourceCreated.getTokenResource().isMutable()
 				);
 				storeTokenDefinition(record);
-			} else if (substate instanceof RoundData) {
+			}
+		}
+	}
+
+	private REResourceAccounting processGroupedStateUpdates(List<REStateUpdate> updates, AID txId) {
+		for (var update : updates) {
+			var substate = update.getRawSubstate();
+			if (substate instanceof RoundData) {
 				var d = (RoundData) substate;
 				if (d.getTimestamp() > 0) {
 					currentTimestamp.set(d.asInstant());

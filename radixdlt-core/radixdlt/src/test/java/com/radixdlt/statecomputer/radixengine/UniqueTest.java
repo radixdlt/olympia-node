@@ -18,6 +18,7 @@
 
 package com.radixdlt.statecomputer.radixengine;
 
+import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERules;
@@ -36,7 +37,6 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.qualifier.NumPeers;
@@ -77,18 +77,19 @@ public final class UniqueTest {
 		);
 	}
 
-	private Txn uniqueTxn(ECKeyPair keyPair) {
+	private Txn uniqueTxn(ECKeyPair keyPair) throws Exception {
 		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
 		var rriParticle = new UnclaimedREAddr(addr);
 		var atomBuilder = TxLowLevelBuilder.newBuilder(rules.getSerialization())
-			.virtualDown(rriParticle, "test".getBytes(StandardCharsets.UTF_8))
+			.syscall(Syscall.READDR_CLAIM, "test".getBytes(StandardCharsets.UTF_8))
+			.virtualDown(rriParticle)
 			.end();
 		var sig = keyPair.sign(atomBuilder.hashToSign());
 		return atomBuilder.sig(sig).build();
 	}
 
 	@Test
-	public void conflicting_atoms_should_not_be_committed() throws RadixEngineException {
+	public void conflicting_atoms_should_not_be_committed() throws Exception {
 		// Arrange
 		createInjector().injectMembers(this);
 		var keyPair = ECKeyPair.generateNew();

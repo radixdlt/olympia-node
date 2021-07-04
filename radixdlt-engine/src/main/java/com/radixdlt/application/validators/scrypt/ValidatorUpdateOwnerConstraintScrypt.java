@@ -37,8 +37,6 @@ import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.serialization.DeserializeException;
 
 import java.nio.ByteBuffer;
 import java.util.OptionalLong;
@@ -116,17 +114,12 @@ public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {
-					if (!c.key().map(d.getSubstate().getValidatorKey()::equals).orElse(false)) {
+					if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
 						throw new AuthorizationException("Key does not match.");
 					}
 				}
 			),
-			(d, s, r) -> {
-				if (d.getArg().isPresent()) {
-					throw new ProcedureException("Args not allowed");
-				}
-				return ReducerResult.incomplete(new UpdatingOwnerNeedToReadEpoch(d.getSubstate().getValidatorKey()));
-			}
+			(d, s, r, c) -> ReducerResult.incomplete(new UpdatingOwnerNeedToReadEpoch(d.getValidatorKey()))
 		));
 
 

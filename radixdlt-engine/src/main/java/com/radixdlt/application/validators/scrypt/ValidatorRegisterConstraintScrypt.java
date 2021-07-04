@@ -37,7 +37,6 @@ import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.serialization.DeserializeException;
 
 import java.nio.ByteBuffer;
 import java.util.OptionalLong;
@@ -113,16 +112,13 @@ public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {
-					if (!c.key().map(d.getSubstate().getValidatorKey()::equals).orElse(false)) {
+					if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
 						throw new AuthorizationException("Key does not match.");
 					}
 				}
 			),
-			(d, s, r) -> {
-				if (d.getArg().isPresent()) {
-					throw new ProcedureException("Args not allowed");
-				}
-				return ReducerResult.incomplete(new UpdatingRegisteredNeedToReadEpoch(d.getSubstate().getValidatorKey()));
+			(d, s, r, c) -> {
+				return ReducerResult.incomplete(new UpdatingRegisteredNeedToReadEpoch(d.getValidatorKey()));
 			}
 		));
 

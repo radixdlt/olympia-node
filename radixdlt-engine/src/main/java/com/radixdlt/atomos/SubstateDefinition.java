@@ -23,7 +23,6 @@ import com.radixdlt.constraintmachine.SubstateSerializer;
 import com.radixdlt.constraintmachine.VirtualIndex;
 
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**

@@ -24,8 +24,6 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.constraintmachine.SubstateWithArg;
-import com.radixdlt.identifiers.REAddr;
 
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -36,12 +34,14 @@ public class UpdateValidatorOwnerConstructor implements ActionConstructor<Update
 		txBuilder.down(
 			ValidatorOwnerCopy.class,
 			p -> p.getValidatorKey().equals(action.getValidatorKey()),
-			Optional.of(SubstateWithArg.noArg(new ValidatorOwnerCopy(action.getValidatorKey(), Optional.empty()))),
+			Optional.of(new ValidatorOwnerCopy(action.getValidatorKey(), Optional.empty())),
 			() -> new TxBuilderException("Cannot find state")
 		);
 
 		var curEpoch = txBuilder.read(EpochData.class, p -> true, Optional.empty(), "Cannot find epoch");
-		txBuilder.up(new ValidatorOwnerCopy(OptionalLong.of(curEpoch.getEpoch() + 1), action.getValidatorKey(), Optional.of(action.getOwnerAddress())));
+		txBuilder.up(new ValidatorOwnerCopy(
+			OptionalLong.of(curEpoch.getEpoch() + 1), action.getValidatorKey(), Optional.of(action.getOwnerAddress())
+		));
 		txBuilder.end();
 	}
 }

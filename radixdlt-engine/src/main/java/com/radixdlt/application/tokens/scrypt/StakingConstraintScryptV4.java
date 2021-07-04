@@ -186,15 +186,15 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 		// Unstake
 		os.procedure(new DownProcedure<>(
 			VoidReducerState.class, StakeOwnership.class,
-			d -> d.getSubstate().bucket().withdrawAuthorization(),
-			(d, s, r) -> ReducerResult.incomplete(new StakeOwnershipHoldingBucket(d.getSubstate()))
+			d -> d.bucket().withdrawAuthorization(),
+			(d, s, r, c) -> ReducerResult.incomplete(new StakeOwnershipHoldingBucket(d))
 		));
 		// Additional Unstake
 		os.procedure(new DownProcedure<>(
 			StakeOwnershipHoldingBucket.class, StakeOwnership.class,
-			d -> d.getSubstate().bucket().withdrawAuthorization(),
-			(d, s, r) -> {
-				s.depositOwnership(d.getSubstate());
+			d -> d.bucket().withdrawAuthorization(),
+			(d, s, r, c) -> {
+				s.depositOwnership(d);
 				return ReducerResult.incomplete(s);
 			}
 		));

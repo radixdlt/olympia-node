@@ -18,7 +18,6 @@
 
 package com.radixdlt.application.system.scrypt;
 
-import com.google.common.collect.Comparators;
 import com.google.common.collect.Streams;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.application.system.NextValidatorSetEvent;
@@ -57,7 +56,6 @@ import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.UInt256;
@@ -750,14 +748,14 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		os.procedure(new DownProcedure<>(
 			EndPrevRound.class, EpochData.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(d, s, r) -> {
+			(d, s, r, c) -> {
 				// TODO: Should move this authorization instead of checking epoch > 0
-				if (d.getSubstate().getEpoch() > 0 && s.getClosedRound().getView() != maxRounds) {
+				if (d.getEpoch() > 0 && s.getClosedRound().getView() != maxRounds) {
 					throw new ProcedureException("Must execute epoch update on end of round " + maxRounds
 						+ " but is " + s.getClosedRound().getView());
 				}
 
-				return ReducerResult.incomplete(new UpdatingEpoch(d.getSubstate()));
+				return ReducerResult.incomplete(new UpdatingEpoch(d));
 			}
 		));
 
@@ -788,8 +786,8 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		));
 		os.procedure(new DownProcedure<>(
 			LoadingStake.class, ValidatorStakeData.class,
-			d -> d.getSubstate().bucket().withdrawAuthorization(),
-			(d, s, r) -> ReducerResult.incomplete(s.startUpdate(d.getSubstate()))
+			d -> d.bucket().withdrawAuthorization(),
+			(d, s, r, c) -> ReducerResult.incomplete(s.startUpdate(d))
 		));
 		os.procedure(new UpProcedure<>(
 			Unstaking.class, ExittingStake.class,

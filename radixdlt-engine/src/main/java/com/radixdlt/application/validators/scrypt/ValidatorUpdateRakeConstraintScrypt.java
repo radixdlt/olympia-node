@@ -160,16 +160,13 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {
-					if (!c.key().map(d.getSubstate().getValidatorKey()::equals).orElse(false)) {
+					if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
 						throw new AuthorizationException("Key does not match.");
 					}
 				}
 			),
-			(d, s, r) -> {
-				if (d.getArg().isPresent()) {
-					throw new ProcedureException("Args not allowed");
-				}
-				return ReducerResult.incomplete(new UpdatingRakeNeedToReadCurrentRake(d.getSubstate().getValidatorKey()));
+			(d, s, r, c) -> {
+				return ReducerResult.incomplete(new UpdatingRakeNeedToReadCurrentRake(d.getValidatorKey()));
 			}
 		));
 		os.procedure(new ReadProcedure<>(

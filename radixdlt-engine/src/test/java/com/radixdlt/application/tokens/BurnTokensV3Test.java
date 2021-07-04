@@ -19,6 +19,7 @@
 package com.radixdlt.application.tokens;
 
 import com.radixdlt.accounting.REResourceAccounting;
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.BurnToken;
@@ -45,6 +46,7 @@ import org.junit.Test;
 
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -55,6 +57,7 @@ public class BurnTokensV3Test {
 	@Before
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
+		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		cmAtomOS.load(new TokensConstraintScryptV3());
 		var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),

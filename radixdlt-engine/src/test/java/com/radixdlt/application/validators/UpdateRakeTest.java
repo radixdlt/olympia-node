@@ -21,6 +21,7 @@ package com.radixdlt.application.validators;
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.validators.construction.UpdateRakeConstructor;
 import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
@@ -41,6 +42,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Set;
 
 public class UpdateRakeTest {
 	private RadixEngine<Void> engine;
@@ -50,6 +52,7 @@ public class UpdateRakeTest {
 	@Before
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
+		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		cmAtomOS.load(new RoundUpdateConstraintScrypt(1));
 		cmAtomOS.load(new EpochUpdateConstraintScrypt(1, UInt256.TEN, 0, 1, 100));
 		cmAtomOS.load(new ValidatorConstraintScryptV2());

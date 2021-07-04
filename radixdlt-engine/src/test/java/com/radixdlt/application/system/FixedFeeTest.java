@@ -21,7 +21,7 @@ package com.radixdlt.application.system;
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.application.system.construction.FeeReservePutConstructor;
 import com.radixdlt.application.system.construction.FeeReserveTakeConstructor;
-import com.radixdlt.application.system.scrypt.FeeConstraintScrypt;
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.application.tokens.construction.MintTokenConstructor;
 import com.radixdlt.application.tokens.construction.TransferTokensConstructorV2;
@@ -52,6 +52,7 @@ import org.junit.Test;
 
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -66,7 +67,7 @@ public class FixedFeeTest {
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new TokensConstraintScryptV3());
-		cmAtomOS.load(new FeeConstraintScrypt());
+		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures(),

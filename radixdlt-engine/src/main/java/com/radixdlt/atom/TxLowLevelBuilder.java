@@ -147,18 +147,6 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
-	public TxLowLevelBuilder virtualDown(Particle particle, byte[] arg) {
-		Objects.requireNonNull(particle, "particle is required");
-		var bytes = serialization.serialize(particle);
-		var buf = ByteBuffer.allocate(bytes.length + 1 + arg.length);
-		buf.put(bytes);
-		buf.put((byte) arg.length); // arg length
-		buf.put(arg);
-		instruction(REInstruction.REMicroOp.VDOWNARG, buf.array());
-		this.remoteDownSubstate.add(SubstateId.ofVirtualSubstate(bytes));
-		return this;
-	}
-
 	public TxLowLevelBuilder localDown(int index) {
 		var particle = localUpParticles.remove(index);
 		if (particle == null) {
@@ -192,6 +180,19 @@ public final class TxLowLevelBuilder {
 
 	public TxLowLevelBuilder end() {
 		instruction(REInstruction.REMicroOp.END, new byte[0]);
+		return this;
+	}
+
+	public TxLowLevelBuilder syscall(Syscall syscall, byte[] bytes) throws TxBuilderException {
+		if (bytes.length < 1 || bytes.length > 32) {
+			throw new TxBuilderException("Str length must be >= 1 and <= 32");
+		}
+		var data = new byte[3 + bytes.length];
+		data[0] = (byte) (bytes.length + 2);
+		data[1] = syscall.id();
+		data[2] = (byte) bytes.length;
+		System.arraycopy(bytes, 0, data, 3, bytes.length);
+		instruction(REInstruction.REMicroOp.SYSCALL, data);
 		return this;
 	}
 

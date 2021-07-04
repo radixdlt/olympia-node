@@ -107,17 +107,12 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {
-					if (!c.key().map(d.getSubstate().getValidatorKey()::equals).orElse(false)) {
+					if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
 						throw new AuthorizationException("Key does not match.");
 					}
 				}
 			),
-			(d, s, r) -> {
-				if (d.getArg().isPresent()) {
-					throw new ProcedureException("Args not allowed");
-				}
-				return ReducerResult.incomplete(new UpdatingValidatorInfo(d.getSubstate()));
-			}
+			(d, s, r, c) -> ReducerResult.incomplete(new UpdatingValidatorInfo(d))
 		));
 
 		os.procedure(new UpProcedure<>(
@@ -169,17 +164,12 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {
-					if (!c.key().map(d.getSubstate().getValidatorKey()::equals).orElse(false)) {
+					if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
 						throw new AuthorizationException("Key does not match.");
 					}
 				}
 			),
-			(d, s, r) -> {
-				if (d.getArg().isPresent()) {
-					throw new ProcedureException("Args not allowed");
-				}
-				return ReducerResult.incomplete(new UpdatingDelegationFlag(d.getSubstate()));
-			}
+			(d, s, r, c) -> ReducerResult.incomplete(new UpdatingDelegationFlag(d))
 		));
 
 		os.procedure(new UpProcedure<>(

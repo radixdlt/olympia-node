@@ -20,7 +20,7 @@ package com.radixdlt.application.system;
 
 import com.radixdlt.application.system.construction.FeeReserveCompleteConstructor;
 import com.radixdlt.application.system.construction.FeeReservePutConstructor;
-import com.radixdlt.application.system.scrypt.FeeConstraintScrypt;
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.application.tokens.construction.MintTokenConstructor;
@@ -49,6 +49,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -62,7 +63,7 @@ public final class ResourceFeeTest {
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new TokensConstraintScryptV3());
-		cmAtomOS.load(new FeeConstraintScrypt());
+		cmAtomOS.load(new SystemConstraintScrypt(Set.of("xrd")));
 		var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures(),

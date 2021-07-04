@@ -23,7 +23,6 @@ import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.engine.parser.exceptions.REInstructionDataDeserializeException;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.utils.Pair;
 
 import java.nio.ByteBuffer;
 
@@ -105,19 +104,6 @@ public final class REInstruction {
 				int length = buf.position() - pos;
 				var b = ByteBuffer.wrap(buf.array(), pos, length);
 				return Substate.create(p, SubstateId.ofVirtualSubstate(b));
-			}
-		},
-		VDOWNARG((byte) 0x9, REOp.DOWN) {
-			@Override
-			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
-				int pos = buf.position();
-				var p = d.deserialize(buf);
-				int length = buf.position() - pos;
-				var b = ByteBuffer.wrap(buf.array(), pos, length);
-				var argLength = buf.get();
-				var arg = new byte[Byte.toUnsignedInt(argLength)];
-				buf.get(arg);
-				return Pair.of(Substate.create(p, SubstateId.ofVirtualSubstate(b)), arg);
 			}
 		},
 		SIG((byte) 0xa, REOp.SIG) {

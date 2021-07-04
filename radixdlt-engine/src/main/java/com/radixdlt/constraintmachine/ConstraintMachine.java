@@ -311,7 +311,7 @@ public final class ConstraintMachine {
 							// FIXME: do this via shutdownAll state update rather than individually
 							var substate = substateCursor.next();
 							if (inst.getMicroOp().getOp() == REOp.DOWNINDEX) {
-								tmp.add(REStateUpdate.of(REOp.DOWN, substate, null, inst::getDataByteBuffer));
+								tmp.add(REStateUpdate.of(REOp.DOWN, substate, inst::getDataByteBuffer));
 							}
 							return substate.getParticle();
 						}
@@ -329,48 +329,32 @@ public final class ConstraintMachine {
 				} else if (inst.isStateUpdate()) {
 					final Particle nextParticle;
 					final Substate substate;
-					final byte[] arg;
-					final Object o;
 					if (inst.getMicroOp() == REInstruction.REMicroOp.UP) {
 						// TODO: Cleanup indexing of substate class
 						substate = inst.getData();
-						arg = null;
 						nextParticle = substate.getParticle();
-						o = nextParticle;
 						validationState.bootUp(substate, inst::getDataByteBuffer);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.VDOWN) {
 						substate = inst.getData();
-						arg = null;
 						nextParticle = substate.getParticle();
-						o = SubstateWithArg.noArg(nextParticle);
-						validationState.virtualShutdown(substate);
-					} else if (inst.getMicroOp() == REInstruction.REMicroOp.VDOWNARG) {
-						substate = (Substate) ((Pair) inst.getData()).getFirst();
-						arg = (byte[]) ((Pair) inst.getData()).getSecond();
-						nextParticle = substate.getParticle();
-						o = SubstateWithArg.withArg(nextParticle, arg);
 						validationState.virtualShutdown(substate);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.DOWN) {
 						SubstateId substateId = inst.getData();
 						nextParticle = validationState.shutdown(substateId);
 						substate = Substate.create(nextParticle, substateId);
-						arg = null;
-						o = SubstateWithArg.noArg(nextParticle);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.LDOWN) {
 						SubstateId substateId = inst.getData();
 						nextParticle = validationState.localShutdown(substateId.getIndex().orElseThrow());
 						substate = Substate.create(nextParticle, substateId);
-						arg = null;
-						o = SubstateWithArg.noArg(nextParticle);
 					} else {
 						throw new IllegalStateException("Unhandled op: " + inst.getMicroOp());
 					}
 
 					var op = inst.getMicroOp().getOp();
-					stateUpdates.add(REStateUpdate.of(op, substate, arg, inst::getDataByteBuffer));
+					stateUpdates.add(REStateUpdate.of(op, substate, inst::getDataByteBuffer));
 					var eventId = OpSignature.ofSubstateUpdate(op, nextParticle.getClass());
 					var methodProcedure = loadProcedure(reducerState, eventId);
-					reducerState = callProcedure(methodProcedure, o, reducerState, readableAddrs, context);
+					reducerState = callProcedure(methodProcedure, nextParticle, reducerState, readableAddrs, context);
 					expectEnd = reducerState == null;
 				} else if (inst.getMicroOp() == REInstruction.REMicroOp.END) {
 					groupedStateUpdates.add(stateUpdates);
