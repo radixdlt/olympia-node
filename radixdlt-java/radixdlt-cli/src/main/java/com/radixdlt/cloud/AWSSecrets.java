@@ -185,7 +185,7 @@ public class AWSSecrets {
 				var keystoreFile = new File(keyFilePath.toString());
 				var keyFileAwsSecret = new HashMap<String, Object>();
 				var publicKeyFileAwsSecret = new HashMap<String, Object>();
-				final ValidatorAddressing validatorAddresses = ValidatorAddressing.bech32(network.getAccountHrp());
+				final ValidatorAddressing validatorAddresses = ValidatorAddressing.bech32(network.getNodeHrp());
 				try {
 					var data = Files.readAllBytes(keyFilePath);
 					keyFileAwsSecret.put("key", data);
