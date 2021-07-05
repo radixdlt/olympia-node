@@ -27,7 +27,6 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.sync.CommittedReader;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 public final class ForkVotesVerifier implements BatchVerifier<LedgerAndBFTProof> {
