@@ -16,6 +16,7 @@ import com.radixdlt.crypto.exception.KeyStoreException;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.ValidatorAddressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.utils.AWSSecretManager;
 import com.radixdlt.utils.AWSSecretsOutputOptions;
 
@@ -148,7 +149,9 @@ public class AWSSecrets {
 			var keyStoreName = String.format("%s.ks", nodeName);
 			var keyStoreSecretName = String.format("%s.ks", nodeName);
 			var passwordName = "password";
+			var network = findNetwork(networkName);
 			var publicKeyFileSecretName = String.format("%s/%s/public_key", networkName, nodeName);
+
 			if (namePrefix.equals(CORE_NODE_PREFIX)) {
 				if (isStaker) {
 					keyStoreSecretName = "staker_key";
@@ -182,14 +185,15 @@ public class AWSSecrets {
 				var keystoreFile = new File(keyFilePath.toString());
 				var keyFileAwsSecret = new HashMap<String, Object>();
 				var publicKeyFileAwsSecret = new HashMap<String, Object>();
-				final ValidatorAddressing validatorAddresses = ValidatorAddressing.bech32("vb");
+				final ValidatorAddressing validatorAddresses = ValidatorAddressing.bech32(network.getValidatorHrp());
 				try {
 					var data = Files.readAllBytes(keyFilePath);
 					keyFileAwsSecret.put("key", data);
 					var pubKey = returnPublicKey(keystoreFile, password);
 					publicKeyFileAwsSecret.put("bech32", validatorAddresses.of(pubKey));
 					publicKeyFileAwsSecret.put("hex", pubKey.toHex());
-					System.out.println(pubKey);
+					System.out.println(validatorAddresses.of(pubKey));
+					System.out.println(pubKey.toHex());
 				} catch (IOException e) {
 					throw new IllegalStateException("While reading validator keys", e);
 				}
@@ -214,15 +218,10 @@ public class AWSSecrets {
 		try {
 			keyPair = RadixKeyStore.fromFile(keystoreFile, password.toCharArray(), true)
 				.readKeyPair(KEYPAIR_NAME, false);
-		} catch (KeyStoreException e) {
-			e.printStackTrace();
-		} catch (PrivateKeyException e) {
-			e.printStackTrace();
-		} catch (PublicKeyException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
+		} catch (KeyStoreException | PrivateKeyException | PublicKeyException | IOException e) {
 			e.printStackTrace();
 		}
+
 		return keyPair.getPublicKey();
 	}
 
@@ -276,5 +275,15 @@ public class AWSSecrets {
 		return awsSecretsOutputOptions.getRecreateAwsSecrets()
 			&& (!awsSecretsOutputOptions.getNetworkName().equalsIgnoreCase("betanet")
 					|| !awsSecretsOutputOptions.getNetworkName().equalsIgnoreCase("mainnet"));
+	}
+
+	private static Network findNetwork(String networkName) {
+		var network = Network.ofName(networkName);
+
+		if (network.isEmpty()) {
+			System.out.println("Network " + networkName + " is not supported. Available networks: " + Arrays.toString(Network.values()));
+		}
+
+		return network.get();
 	}
 }
