@@ -132,7 +132,7 @@ public final class TxBuilder {
 		lowLevelBuilder.virtualRead(substateClass, key);
 	}
 
-	private CloseableCursor<RawSubstateBytes> createRemoteSubstateCursor(SubstateIndex index) {
+	private CloseableCursor<RawSubstateBytes> createRemoteSubstateCursor(SubstateIndex<?> index) {
 		return remoteSubstate.openIndexedCursor(index)
 			.filter(s -> !lowLevelBuilder.remoteDownSubstate().contains(SubstateId.fromBytes(s.getId())));
 	}
@@ -390,7 +390,7 @@ public final class TxBuilder {
 	}
 
 	public <T extends Particle, U> U shutdownAll(
-		SubstateIndex index,
+		SubstateIndex<T> index,
 		Function<Iterator<T>, U> mapper
 	) {
 		try (var cursor = createRemoteSubstateCursor(index)) {
