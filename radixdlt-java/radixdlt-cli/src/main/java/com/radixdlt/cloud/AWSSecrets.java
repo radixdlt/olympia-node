@@ -16,7 +16,6 @@ import com.radixdlt.crypto.RadixKeyStore;
 import com.radixdlt.crypto.exception.KeyStoreException;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.identifiers.ValidatorAddressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.utils.AWSSecretManager;
 import com.radixdlt.utils.AWSSecretsOutputOptions;
@@ -35,7 +34,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.security.SecureRandom;
-
 
 public class AWSSecrets {
 	private static final Boolean DEFAULT_ENABLE_AWS_SECRETS = false;
