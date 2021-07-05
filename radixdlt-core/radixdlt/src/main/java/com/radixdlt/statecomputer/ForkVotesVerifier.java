@@ -45,6 +45,7 @@ public class ForkVotesVerifier implements BatchVerifier<LedgerAndBFTProof> {
 		this.forkManager = Objects.requireNonNull(forkManager);
 		this.committedReader = Objects.requireNonNull(committedReader);
 	}
+
 	@Override
 	public LedgerAndBFTProof processMetadata(
 		LedgerAndBFTProof metadata,

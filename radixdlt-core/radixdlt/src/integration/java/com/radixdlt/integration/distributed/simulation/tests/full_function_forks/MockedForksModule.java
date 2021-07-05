@@ -64,7 +64,7 @@ public final class MockedForksModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	ForkBuilder fork4() {
-		return copyBaseWithVoting("fork4", 0.51, 20L);
+		return copyBaseWithVoting("fork4", 5100, 20L);
 	}
 
 	private ForkBuilder copyBaseAtEpoch(String name, long epoch) {
@@ -77,11 +77,11 @@ public final class MockedForksModule extends AbstractModule {
 		);
 	}
 
-	private ForkBuilder copyBaseWithVoting(String name, double required, long minEpoch) {
+	private ForkBuilder copyBaseWithVoting(String name, int percentage, long minEpoch) {
 		return new ForkBuilder(
 			name,
 			HashUtils.sha256(name.getBytes(StandardCharsets.UTF_8)),
-			CandidateForkPredicates.stakeVoting(minEpoch, required),
+			CandidateForkPredicates.stakeVoting(minEpoch, percentage),
 			baseForkBuilder.getEngineRulesFactory(),
 			baseForkBuilder.getEngineRulesConfig()
 		);

@@ -39,7 +39,7 @@ public final class CandidateForkPredicates {
 	/**
 	 * Returns a fork predicate that requires the specified percentage of stake votes.
 	 */
-	public static CandidateForkPredicate stakeVoting(long minEpoch, double requiredPercentage) {
+	public static CandidateForkPredicate stakeVoting(long minEpoch, int percentage) {
 		return new CandidateForkPredicate() {
 			@Override
 			public long minEpoch() {
@@ -55,9 +55,8 @@ public final class CandidateForkPredicates {
 			) {
 				final var validatorSet = ledgerAndBFTProof.getProof().getNextValidatorSet().get();
 
-				final var requiredPower =
-					new BigDecimal(new BigInteger(1, validatorSet.getTotalPower().toByteArray()))
-						.multiply(BigDecimal.valueOf(requiredPercentage));
+				final var requiredPower = validatorSet.getTotalPower().multiply(UInt256.from(percentage))
+					.divide(UInt256.from(10000));
 
 				final var substateDeserialization = reParser.getSubstateDeserialization();
 
@@ -80,8 +79,7 @@ public final class CandidateForkPredicates {
 						.map(validatorMetadata -> validatorSet.getPower(validatorMetadata.getValidatorKey()))
 						.reduce(UInt256.ZERO, UInt256::add);
 
-					return new BigDecimal(new BigInteger(1, forkVotesPower.toByteArray()))
-						.compareTo(requiredPower) >= 0;
+					return forkVotesPower.compareTo(requiredPower) >= 0;
 				}
 			}
 		};

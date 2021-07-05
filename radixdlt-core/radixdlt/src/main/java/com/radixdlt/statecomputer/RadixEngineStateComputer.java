@@ -323,7 +323,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		try {
 			radixEngineResult = this.radixEngine.execute(
 				verifiedTxnsAndProof.getTxns(),
-					LedgerAndBFTProof.create(proof, vertexStoreState),
+				LedgerAndBFTProof.create(proof, vertexStoreState),
 				PermissionLevel.SUPER_USER
 			);
 		} catch (RadixEngineException e) {

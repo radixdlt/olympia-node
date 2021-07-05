@@ -34,9 +34,9 @@ public final class LedgerAndBFTProof {
 	private final Optional<HashCode> nextForkHash;
 
 	private LedgerAndBFTProof(
-			LedgerProof ledgerProof,
-			VerifiedVertexStoreState vertexStoreState,
-			Optional<HashCode> nextForkHash
+		LedgerProof ledgerProof,
+		VerifiedVertexStoreState vertexStoreState,
+		Optional<HashCode> nextForkHash
 	) {
 		this.ledgerProof = ledgerProof;
 		this.vertexStoreState = vertexStoreState;

@@ -24,6 +24,7 @@ import com.radixdlt.store.EngineStore;
 
 public interface CandidateForkPredicate {
 	long minEpoch();
+
 	boolean test(
 		CandidateForkConfig forkConfig,
 		EngineStore<LedgerAndBFTProof> radixEngine,
