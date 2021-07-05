@@ -18,12 +18,19 @@
 
 package com.radixdlt.networks;
 
+import java.util.Locale;
 import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 public enum Network {
 	MAINNET(1, "rdx", "rv", "_rr", "rn"),
 	STOKENET(2, "tdx", "tv", "_tr", "tn"),
-	LOCALNET(99, "ddx", "dv", "_dr", "dn");
+	LOCALNET(99, "ddx", "dv", "_dr", "dn"),
+
+	RELEASENET(3, "tn3", "v3", "_r3", "n3"),
+	MILESTONENET(5, "tn5", "v5", "_r5", "n5"),
+	DEVOPSNET(6, "tn6", "v6", "_r6", "n6");
 
 	private final int id;
 	private final String accountHrp;
@@ -64,12 +71,17 @@ public enum Network {
 	}
 
 	public static Optional<Network> ofId(int id) {
-		for (var network : values()) {
-			if (network.id == id) {
-				return Optional.of(network);
-			}
-		}
+		return find(network -> network.id == id);
+	}
 
-		return Optional.empty();
+	public static Optional<Network> ofName(String name) {
+		var upperCaseName = name.toUpperCase(Locale.US);
+		return find(network -> network.name().equals(upperCaseName));
+	}
+
+	private static Optional<Network> find(Predicate<Network> predicate) {
+		return Stream.of(values())
+			.filter(predicate)
+			.findAny();
 	}
 }
