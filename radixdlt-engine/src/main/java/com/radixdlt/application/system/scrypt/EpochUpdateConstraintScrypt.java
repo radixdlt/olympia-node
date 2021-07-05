@@ -37,7 +37,6 @@ import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRakeCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
-import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
@@ -717,7 +716,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	private void registerGenesisTransitions(Loader os) {
 		// For Mainnet Genesis
 		os.procedure(new UpProcedure<>(
-			CMAtomOS.REAddrClaim.class, EpochData.class,
+			SystemConstraintScrypt.REAddrClaim.class, EpochData.class,
 			u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> { }),
 			(s, u, c, r) -> {
 				if (u.getEpoch() != 0) {

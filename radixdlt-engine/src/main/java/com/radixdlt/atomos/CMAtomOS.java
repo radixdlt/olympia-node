@@ -18,102 +18,19 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atom.REFieldSerialization;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.constraintmachine.Authorization;
-import com.radixdlt.constraintmachine.DownProcedure;
-import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Procedures;
-import com.radixdlt.constraintmachine.ReducerResult;
-import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.identifiers.REAddr;
 
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Implementation of the AtomOS interface on top of a UTXO based Constraint Machine.
- */
 public final class CMAtomOS {
 	private final Map<Class<? extends Particle>, SubstateDefinition<? extends Particle>> substateDefinitions = new HashMap<>();
 	private Procedures procedures = Procedures.empty();
 
-	public static class REAddrClaim implements ReducerState {
-		private final byte[] arg;
-		private final UnclaimedREAddr unclaimedREAddr;
-
-		public REAddrClaim(UnclaimedREAddr unclaimedREAddr, byte[] arg) {
-			this.unclaimedREAddr = unclaimedREAddr;
-			this.arg = arg;
-		}
-
-		public byte[] getArg() {
-			return arg;
-		}
-
-		public REAddr getAddr() {
-			return unclaimedREAddr.getAddr();
-		}
-	}
-
-	public static class REAddrClaimStart implements ReducerState {
-		private final byte[] arg;
-		public REAddrClaimStart(byte[] arg) {
-			this.arg = arg;
-		}
-
-		public ReducerState claim(UnclaimedREAddr unclaimedREAddr, ExecutionContext ctx) throws ProcedureException {
-			if (ctx.permissionLevel() != PermissionLevel.SYSTEM
-				&& !ctx.key().map(k -> unclaimedREAddr.allow(k, arg)).orElse(false)) {
-				throw new ProcedureException("Invalid key/arg combination.");
-			}
-			return new REAddrClaim(unclaimedREAddr, arg);
-		}
-	}
-
 	public CMAtomOS() {
-		// PUB_KEY type is already claimed by accounts
-		var claimableAddrTypes =
-			EnumSet.of(REAddr.REAddrType.NATIVE_TOKEN, REAddr.REAddrType.HASHED_KEY, REAddr.REAddrType.SYSTEM);
-
-		load(os -> {
-			os.substate(
-				new SubstateDefinition<>(
-					UnclaimedREAddr.class,
-					SubstateTypeId.UNCLAIMED_READDR.id(),
-					buf -> {
-						throw new UnsupportedOperationException();
-					},
-					(s, buf) -> {
-						throw new UnsupportedOperationException();
-					},
-					buf -> {
-						var addr = REFieldSerialization.deserializeREAddr(buf, claimableAddrTypes);
-						return new UnclaimedREAddr(addr);
-					},
-					(a, buf) -> REFieldSerialization.serializeREAddr(buf, (REAddr) a)
-				));
-
-			os.procedure(new DownProcedure<>(
-				REAddrClaimStart.class, UnclaimedREAddr.class,
-				d -> {
-					final PermissionLevel permissionLevel;
-					if (d.getAddr().isNativeToken() || d.getAddr().isSystem()) {
-						permissionLevel = PermissionLevel.SYSTEM;
-					} else {
-						permissionLevel = PermissionLevel.USER;
-					}
-					return new Authorization(permissionLevel, (r, ctx) -> { });
-				},
-				(d, s, r, c) -> ReducerResult.incomplete(s.claim(d, c))
-			));
-		});
 	}
 
 	public void load(ConstraintScrypt constraintScrypt) {

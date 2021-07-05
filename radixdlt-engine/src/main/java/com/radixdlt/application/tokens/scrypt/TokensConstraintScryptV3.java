@@ -18,13 +18,13 @@
 
 package com.radixdlt.application.tokens.scrypt;
 
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.tokens.ResourceCreatedEvent;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
@@ -152,7 +152,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 
 	private void defineTokenCreation(Loader os) {
 		os.procedure(new UpProcedure<>(
-			CMAtomOS.REAddrClaim.class, TokenResource.class,
+			SystemConstraintScrypt.REAddrClaim.class, TokenResource.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> {
 				if (!u.getAddr().equals(s.getAddr())) {

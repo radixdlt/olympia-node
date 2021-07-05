@@ -19,17 +19,24 @@
 package com.radixdlt.application.system.scrypt;
 
 import com.radixdlt.application.tokens.scrypt.TokenHoldingBucket;
-import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
+import com.radixdlt.atomos.SubstateDefinition;
+import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.constraintmachine.Authorization;
+import com.radixdlt.constraintmachine.DownProcedure;
+import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.SystemCallProcedure;
 import com.radixdlt.identifiers.REAddr;
 
+import java.util.EnumSet;
 import java.util.Set;
 
 import static com.radixdlt.identifiers.Naming.NAME_PATTERN;
@@ -39,6 +46,40 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 
 	public SystemConstraintScrypt(Set<String> systemNames) {
 		this.systemNames = systemNames;
+	}
+
+
+	public static class REAddrClaim implements ReducerState {
+		private final byte[] arg;
+		private final UnclaimedREAddr unclaimedREAddr;
+
+		public REAddrClaim(UnclaimedREAddr unclaimedREAddr, byte[] arg) {
+			this.unclaimedREAddr = unclaimedREAddr;
+			this.arg = arg;
+		}
+
+		public byte[] getArg() {
+			return arg;
+		}
+
+		public REAddr getAddr() {
+			return unclaimedREAddr.getAddr();
+		}
+	}
+
+	public static class REAddrClaimStart implements ReducerState {
+		private final byte[] arg;
+		public REAddrClaimStart(byte[] arg) {
+			this.arg = arg;
+		}
+
+		public ReducerState claim(UnclaimedREAddr unclaimedREAddr, ExecutionContext ctx) throws ProcedureException {
+			if (ctx.permissionLevel() != PermissionLevel.SYSTEM
+				&& !ctx.key().map(k -> unclaimedREAddr.allow(k, arg)).orElse(false)) {
+				throw new ProcedureException("Invalid key/arg combination.");
+			}
+			return new REAddrClaim(unclaimedREAddr, arg);
+		}
 	}
 
 	@Override
@@ -83,12 +124,46 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 							throw new ProcedureException("invalid rri name: " + str);
 						}
 
-						return ReducerResult.incomplete(new CMAtomOS.REAddrClaimStart(bytes));
+						return ReducerResult.incomplete(new REAddrClaimStart(bytes));
 					} else {
 						throw new ProcedureException("Invalid call type: " + syscall);
 					}
 				}
 			)
 		);
+
+		// PUB_KEY type is already claimed by accounts
+		var claimableAddrTypes =
+			EnumSet.of(REAddr.REAddrType.NATIVE_TOKEN, REAddr.REAddrType.HASHED_KEY, REAddr.REAddrType.SYSTEM);
+		os.substate(
+			new SubstateDefinition<>(
+				UnclaimedREAddr.class,
+				SubstateTypeId.UNCLAIMED_READDR.id(),
+				buf -> {
+					throw new UnsupportedOperationException();
+				},
+				(s, buf) -> {
+					throw new UnsupportedOperationException();
+				},
+				buf -> {
+					var addr = REFieldSerialization.deserializeREAddr(buf, claimableAddrTypes);
+					return new UnclaimedREAddr(addr);
+				},
+				(a, buf) -> REFieldSerialization.serializeREAddr(buf, (REAddr) a)
+			));
+
+		os.procedure(new DownProcedure<>(
+			REAddrClaimStart.class, UnclaimedREAddr.class,
+			d -> {
+				final PermissionLevel permissionLevel;
+				if (d.getAddr().isNativeToken() || d.getAddr().isSystem()) {
+					permissionLevel = PermissionLevel.SYSTEM;
+				} else {
+					permissionLevel = PermissionLevel.USER;
+				}
+				return new Authorization(permissionLevel, (r, ctx) -> { });
+			},
+			(d, s, r, c) -> ReducerResult.incomplete(s.claim(d, c))
+		));
 	}
 }
