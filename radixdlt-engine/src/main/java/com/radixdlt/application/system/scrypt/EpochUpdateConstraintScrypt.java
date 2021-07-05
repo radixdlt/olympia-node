@@ -18,7 +18,6 @@
 
 package com.radixdlt.application.system.scrypt;
 
-import com.google.common.collect.Comparators;
 import com.google.common.collect.Streams;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.application.system.NextValidatorSetEvent;
