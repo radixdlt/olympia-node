@@ -34,6 +34,7 @@ import java.util.Optional;
 /**
  * A wrapper around a real httpclient, which provides easy to use methods. Knows the url paths.
  */
+//TODO: replace with implementation based on java client
 public class HttpClient {
 
     private static final String MEMPOOL_FILLER_PATH = "/api/chaos/mempool-filler";
