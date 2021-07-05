@@ -65,7 +65,7 @@ Addresses are used to identify a particular entity and resource. The first byte 
 Currently, there are 4 types of addresses:
 - `0x00` - System
 - `0x01` - Radix native token
-- `0x03 + lower_26_bytes(hash(public_key + args))` - A resource address
+- `0x03 + lower_26_bytes(hash(public_key + symbl))` - A resource address
 - `0x04 + public_key` - An account address
 
 At api/user level, addresses are wrapped into user-friendly identifiers:
@@ -310,7 +310,7 @@ The table below summarizes all opcodes.
 | `LDOWN`     | `0x07`         | `substate_index`  | Spin down a local substate                    |
 | `VDOWN`     | `0x08`         | `substate`        | Spin down a virtual substate                  |
 | `SIG`       | `0x09`         | `signature`       | Provide a signature for prior instructions    |
-| `MSG`       | `0x0A`         | `bytes`           | Record a message                              |
+| `MSG`       | `0x0A`         | `msg`             | Record a message                              |
 | `HEADER`    | `0x0B`         | `version + flags` | Specify headers                               |
 | `READINDEX` | `0x0C`         | `prefix`          | Read all substates with the given prefix      |
 | `DOWNINDEX` | `0x0D`         | `prefix`          | Spin down all substates with the given prefix |
