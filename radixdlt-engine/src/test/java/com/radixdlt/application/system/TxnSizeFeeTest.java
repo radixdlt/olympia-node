@@ -150,7 +150,7 @@ public class TxnSizeFeeTest {
 
 		// Act
 		var result = this.engine.execute(List.of(transfer));
-		REResourceAccounting.compute(result.get(0).getGroupedStateUpdates().get(0));
+		REResourceAccounting.compute(result.getFirst().get(0).getGroupedStateUpdates().get(0));
 	}
 
 
@@ -203,7 +203,7 @@ public class TxnSizeFeeTest {
 
 		// Act
 		var result = this.engine.execute(List.of(transfer));
-		var refund = REResourceAccounting.compute(result.get(0).getGroupedStateUpdates().get(2))
+		var refund = REResourceAccounting.compute(result.getFirst().get(0).getGroupedStateUpdates().get(2))
 			.bucketAccounting()
 			.get(new AccountBucket(REAddr.ofNativeToken(), accountAddr));
 		assertThat(refund).isEqualTo(expectedRefund);

@@ -61,17 +61,14 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.GenesisProvider;
-import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.UInt256;
-import org.json.JSONObject;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.security.Security;
 import java.time.Instant;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;

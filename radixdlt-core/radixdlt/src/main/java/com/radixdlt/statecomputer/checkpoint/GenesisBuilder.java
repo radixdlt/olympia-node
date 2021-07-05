@@ -53,8 +53,8 @@ public final class GenesisBuilder {
 
 	@Inject
 	public GenesisBuilder(
-			ForkManager forkManager,
-			LedgerAccumulator ledgerAccumulator
+		ForkManager forkManager,
+		LedgerAccumulator ledgerAccumulator
 	) {
 		this.ledgerAccumulator = ledgerAccumulator;
 		final var rules = forkManager.genesisFork().getEngineRules();

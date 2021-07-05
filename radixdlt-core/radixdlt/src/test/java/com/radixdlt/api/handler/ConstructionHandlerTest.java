@@ -139,16 +139,16 @@ public class ConstructionHandlerTest {
 		var txn = Txn.create(randomBytes());
 
 		when(submissionService.finalizeTxn(any(), any(), anyBoolean()))
-				.thenReturn(Result.ok(txn));
+			.thenReturn(Result.ok(txn));
 
 		var blob = randomBytes();
 		var hash = HashUtils.sha256(blob).asBytes();
 		var keyPair = ECKeyPair.generateNew();
 		var signature = keyPair.sign(hash);
 		var params = jsonArray()
-				.put(Hex.toHexString(blob))
-				.put(encodeToDer(signature))
-				.put(keyPair.getPublicKey().toHex());
+			.put(Hex.toHexString(blob))
+			.put(encodeToDer(signature))
+			.put(keyPair.getPublicKey().toHex());
 
 		var response = handler.handleConstructionFinalizeTransaction(requestWith(params));
 
@@ -169,16 +169,16 @@ public class ConstructionHandlerTest {
 		var txn = Txn.create(randomBytes());
 
 		when(submissionService.finalizeTxn(any(), any(), anyBoolean()))
-				.thenReturn(Result.ok(txn));
+			.thenReturn(Result.ok(txn));
 
 		var blob = randomBytes();
 		var hash = HashUtils.sha256(blob).asBytes();
 		var keyPair = ECKeyPair.generateNew();
 		var signature = keyPair.sign(hash);
 		var params = jsonObject()
-				.put("blob", Hex.toHexString(blob))
-				.put("signatureDER", encodeToDer(signature))
-				.put("publicKeyOfSigner", keyPair.getPublicKey().toHex());
+			.put("blob", Hex.toHexString(blob))
+			.put("signatureDER", encodeToDer(signature))
+			.put("publicKeyOfSigner", keyPair.getPublicKey().toHex());
 
 		var response = handler.handleConstructionFinalizeTransaction(requestWith(params));
 
@@ -200,11 +200,11 @@ public class ConstructionHandlerTest {
 		var txn = Txn.create(blob);
 
 		when(submissionService.submitTx(any(), any()))
-				.thenReturn(Result.ok(txn));
+			.thenReturn(Result.ok(txn));
 
 		var params = jsonArray()
-				.put(Hex.toHexString(blob))
-				.put(txn.getId().toString());
+			.put(Hex.toHexString(blob))
+			.put(txn.getId().toString());
 
 		var response = handler.handleConstructionSubmitTransaction(requestWith(params));
 
@@ -223,11 +223,11 @@ public class ConstructionHandlerTest {
 		var txn = Txn.create(blob);
 
 		when(submissionService.submitTx(any(), any()))
-				.thenReturn(Result.ok(txn));
+			.thenReturn(Result.ok(txn));
 
 		var params = jsonObject()
-				.put("blob", Hex.toHexString(blob))
-				.put("txID", txn.getId().toJson());
+			.put("blob", Hex.toHexString(blob))
+			.put("txID", txn.getId().toJson());
 
 		var response = handler.handleConstructionSubmitTransaction(requestWith(params));
 

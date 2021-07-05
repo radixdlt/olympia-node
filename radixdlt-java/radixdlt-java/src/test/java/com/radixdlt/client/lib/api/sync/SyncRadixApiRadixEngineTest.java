@@ -34,11 +34,11 @@ public class SyncRadixApiRadixEngineTest {
 
 	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
 	private static final String CONFIGURATION = "{\"result\":[{\"maxSigsPerRound\":50,\"maxValidators\":100,"
-			+ "\"name\":\"olympia-first-epoch\",\"maxRounds\":1500000,\"epoch\":0,\"version\":\"olympia_v1\"},"
-			+ "{\"maxSigsPerRound\":50,\"maxValidators\":100,\"name\":\"olympia\",\"maxRounds\":10000,\"epoch\":2,"
-			+ "\"version\":\"olympia_v1\"}],\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
+		+ "\"name\":\"olympia-first-epoch\",\"maxRounds\":1500000,\"epoch\":0,\"version\":\"olympia_v1\"},"
+		+ "{\"maxSigsPerRound\":50,\"maxValidators\":100,\"name\":\"olympia\",\"maxRounds\":10000,\"epoch\":2,"
+		+ "\"version\":\"olympia_v1\"}],\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 	private static final String DATA = "{\"result\":{\"systemTransactions\":37884,\"invalidProposedCommands\":1,"
-			+ "\"userTransactions\":2016},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
+		+ "\"userTransactions\":2016},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
 	private final HttpClient client = mock(HttpClient.class);
 
@@ -56,14 +56,14 @@ public class SyncRadixApiRadixEngineTest {
 	@Test
 	public void testData() throws Exception {
 		prepareClient(DATA)
-				.map(RadixApi::withTrace)
-				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(
-						client -> client.radixEngine().data()
-								.onFailure(failure -> fail(failure.toString()))
-								.onSuccess(data -> assertEquals(37884L, data.getSystemTransactions()))
-								.onSuccess(data -> assertEquals(2016L, data.getUserTransactions()))
-								.onSuccess(data -> assertEquals(1L, data.getInvalidProposedCommands())));
+			.map(RadixApi::withTrace)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(
+				client -> client.radixEngine().data()
+					.onFailure(failure -> fail(failure.toString()))
+					.onSuccess(data -> assertEquals(37884L, data.getSystemTransactions()))
+					.onSuccess(data -> assertEquals(2016L, data.getUserTransactions()))
+					.onSuccess(data -> assertEquals(1L, data.getInvalidProposedCommands())));
 	}
 
 	private Result<RadixApi> prepareClient(String responseBody) throws Exception {

@@ -45,26 +45,26 @@ public class AsyncRadixApiRadixEngineTest {
 	@Test
 	public void testConfiguration() throws IOException {
 		prepareClient(CONFIGURATION)
-				.map(RadixApi::withTrace)
-				.join()
+			.map(RadixApi::withTrace)
+			.join()
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> client.radixEngine().configuration().join()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(client -> client.radixEngine().configuration().join()
-						.onFailure(failure -> fail(failure.toString()))
-						.onSuccess(configuration -> assertEquals(2, configuration.size()))
-						.onSuccess(configuration -> assertEquals("olympia", configuration.get(1).getName())));
+				.onSuccess(configuration -> assertEquals(2, configuration.size()))
+				.onSuccess(configuration -> assertEquals("olympia", configuration.get(1).getName())));
 	}
 
 	@Test
 	public void testData() throws IOException {
 		prepareClient(DATA)
-				.map(RadixApi::withTrace)
-				.join()
+			.map(RadixApi::withTrace)
+			.join()
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> client.radixEngine().data().join()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(client -> client.radixEngine().data().join()
-						.onFailure(failure -> fail(failure.toString()))
-						.onSuccess(data -> assertEquals(37884L, data.getSystemTransactions()))
-						.onSuccess(data -> assertEquals(2016L, data.getUserTransactions()))
-						.onSuccess(data -> assertEquals(1L, data.getInvalidProposedCommands())));
+				.onSuccess(data -> assertEquals(37884L, data.getSystemTransactions()))
+				.onSuccess(data -> assertEquals(2016L, data.getUserTransactions()))
+				.onSuccess(data -> assertEquals(1L, data.getInvalidProposedCommands())));
 	}
 
 	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {

@@ -36,8 +36,8 @@ public class BalanceStakes {
 
 	@JsonCreator
 	public static BalanceStakes create(
-			@JsonProperty(value = "delegate", required = true) String validator,
-			@JsonProperty(value = "amount", required = true) UInt256 amount
+		@JsonProperty(value = "delegate", required = true) String validator,
+		@JsonProperty(value = "amount", required = true) UInt256 amount
 	) {
 		requireNonNull(validator);
 		requireNonNull(amount);

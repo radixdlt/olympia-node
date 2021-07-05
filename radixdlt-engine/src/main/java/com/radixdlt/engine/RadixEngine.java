@@ -418,11 +418,9 @@ public final class RadixEngine<M> {
 
 		try {
 			final var processedMetadata = batchVerifier.processMetadata(meta, engineStore, processedTxns);
-
 			if (processedMetadata != null) {
 				engineStoreInTransaction.storeMetadata(processedMetadata);
 			}
-
 			return Pair.of(processedTxns, processedMetadata);
 		} catch (MetadataException e) {
 			logger.error("Invalid metadata: " + processedTxns);

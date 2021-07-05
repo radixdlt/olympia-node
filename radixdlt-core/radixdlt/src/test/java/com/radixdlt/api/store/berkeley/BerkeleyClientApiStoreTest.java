@@ -306,7 +306,6 @@ public class BerkeleyClientApiStoreTest {
 
 		var txMap = new HashMap<AID, Txn>();
 		var clientApiStore = prepareApiStore(tx, txMap);
-		var txId = txMap.entrySet().stream().findFirst().map(Map.Entry::getKey).orElse(AID.ZERO);
 
 		clientApiStore.getTransaction(tx.getId())
 			.onFailure(this::failWithMessage)
