@@ -1,14 +1,10 @@
-
-
 extern crate bytebuffer;
 
 use bytebuffer::ByteBuffer;
 use std::fmt;
 
 use crate::substates::*;
-use crate::types::Bytes;
-use crate::types::Signature;
-use crate::types::SubstateId;
+use crate::types::*;
 
 pub struct Transaction {
     pub instructions: Vec<Instruction>,
@@ -26,15 +22,13 @@ pub enum Instruction {
 
     LREAD(u32),
 
-    VREAD(Box<dyn Substate>),
+    VREAD(Box<dyn VirtualSubstate>),
 
     DOWN(SubstateId),
 
     LDOWN(u32),
 
-    VDOWN(Box<dyn Substate>),
-
-    VDOWNARG(Box<dyn Substate>, Bytes),
+    VDOWN(Box<dyn VirtualSubstate>),
 
     SIG(Signature),
 
@@ -53,7 +47,7 @@ impl Transaction {
         let mut buffer = ByteBuffer::from_bytes(&bytes[..]);
         while buffer.get_rpos() < buffer.get_wpos() {
             let inst = Instruction::from_buffer(&mut buffer);
-            // println!("{:?}", inst);
+            println!("{:?}", inst);
             instructions.push(inst);
         }
         Self { instructions }
@@ -79,16 +73,15 @@ impl Instruction {
             0x02 => Self::UP(Self::read_substate(buffer)),
             0x03 => Self::READ(SubstateId::from_buffer(buffer)),
             0x04 => Self::LREAD(buffer.read_u32()),
-            0x05 => Self::VREAD(Self::read_substate(buffer)),
+            0x05 => Self::VREAD(Self::read_virtual_substate(buffer)),
             0x06 => Self::DOWN(SubstateId::from_buffer(buffer)),
             0x07 => Self::LDOWN(buffer.read_u32()),
-            0x08 => Self::VDOWN(Self::read_substate(buffer)),
-            0x09 => Self::VDOWNARG(Self::read_substate(buffer), Bytes::from_buffer(buffer)),
-            0x0A => Self::SIG(Signature::from_buffer(buffer)),
-            0x0B => Self::MSG(Bytes::from_buffer(buffer)),
-            0x0C => Self::HEADER(buffer.read_u8(), buffer.read_u8()),
-            0x0D => Self::READINDEX(Bytes::from_buffer(buffer)),
-            0x0E => Self::DOWNINDEX(Bytes::from_buffer(buffer)),
+            0x08 => Self::VDOWN(Self::read_virtual_substate(buffer)),
+            0x09 => Self::SIG(Signature::from_buffer(buffer)),
+            0x0A => Self::MSG(Bytes::from_buffer(buffer)),
+            0x0B => Self::HEADER(buffer.read_u8(), buffer.read_u8()),
+            0x0C => Self::READINDEX(Bytes::from_buffer(buffer)),
+            0x0D => Self::DOWNINDEX(Bytes::from_buffer(buffer)),
             _ => panic!("Unexpected opcode: {:#04X}", t),
         }
     }
@@ -96,7 +89,6 @@ impl Instruction {
     fn read_substate(buffer: &mut ByteBuffer) -> Box<dyn Substate> {
         let t = buffer.read_u8();
         match t {
-            0x00 => Box::new(REAddress::from_buffer(buffer)),
             0x03 => Box::new(TokenResource::from_buffer(buffer)),
             0x04 => Box::new(TokenResourceMetadata::from_buffer(buffer)),
             0x05 => Box::new(Tokens::from_buffer(buffer)),
@@ -106,9 +98,19 @@ impl Instruction {
             0x09 => Box::new(ExitingStake::from_buffer(buffer)),
             0x0D => Box::new(ValidatorAllowDelegationFlag::from_buffer(buffer)),
             0x0E => Box::new(ValidatorRegisteredFlagCopy::from_buffer(buffer)),
-            0x0F => Box::new(PreparedRegisteredFlagUpdate::from_buffer(buffer)),
-            0x12 => Box::new(ValidatorOwnerCopy::from_buffer(buffer)),
+            0x10 => Box::new(ValidatorOwnerCopy::from_buffer(buffer)),
             _ => panic!("Unsupported substate type: {:#04X}", t),
+        }
+    }
+
+    fn read_virtual_substate(buffer: &mut ByteBuffer) -> Box<dyn VirtualSubstate> {
+        let t = buffer.read_u8();
+        match t {
+            0x00 => Box::new(VirtualREAddress::from_buffer(buffer)),
+            0x0D => Box::new(VirtualValidatorAllowDelegationFlag::from_buffer(buffer)),
+            0x0E => Box::new(VirtualValidatorRegisteredFlagCopy::from_buffer(buffer)),
+            0x10 => Box::new(VirtualValidatorOwnerCopy::from_buffer(buffer)),
+            _ => panic!("Unsupported virtual substate type: {:#04X}", t),
         }
     }
 }

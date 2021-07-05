@@ -78,6 +78,12 @@ At api/user level, addresses are wrapped into user-friendly identifiers:
 
 Bech32 encoding is specified [here](https://en.bitcoin.it/wiki/Bech32).
 
+### Optional
+
+Optional fields are encoded as:
+- `0x00` for `None`
+- `0x01 + <value>` for `Some`
+
 ## Substate
 
 A substate is an object that is stored in the ledger state, which can be viewed as a map of substates indexed by substate ID.
@@ -119,11 +125,8 @@ Currently, we have the following types:
 | `VALIDATOR_BFT_DATA`              | `0x0C`   | Validator BFT data                                             |
 | `VALIDATOR_ALLOW_DELEGATION_FLAG` | `0x0D`   | Validator allow delegation from others flag                    |
 | `VALIDATOR_REGISTERED_FLAG_COPY`  | `0x0E`   | Validator registered flag copy                                 |
-| `PREPARED_REGISTERED_FLAG_UPDATE` | `0x0F`   | Prepared registered flag copy                                  |
-| `VALIDATOR_RAKE_COPY`             | `0x10`   | Validator rake (fee) copy                                      |
-| `PREPARED_RAKE_UPDATE`            | `0x11`   | Prepared validator rake update                                 |
-| `VALIDATOR_OWNER_COPY`            | `0x12`   | Validator owner copy                                           |
-| `PREPARED_VALIDATOR_OWNER_UPDATE` | `0x13`   | Prepared validator owner update                                |
+| `VALIDATOR_RAKE_COPY`             | `0x0F`   | Validator rake (fee) copy                                      |
+| `VALIDATOR_OWNER_COPY`            | `0x10`   | Validator owner copy                                           |
 
 ### Substate Schema
 
@@ -155,12 +158,13 @@ Substates are serialized and deserialized based on the following protocol:
 
 #### `TOKEN_RESOURCE`
 
-| **Name**      | **Type**     | **Description**                                                                              |
-|---------------|--------------|----------------------------------------------------------------------------------------------|
-| `type`        | `u8`         | The resource type (`0x00`: immutable, `0x01`: mutable, `0x03`: mutable with specified owner) |
-| `resource`    | `address`    | The resource address                                                                         |
-| `granularity` | `u256`       | The token granularity, must be `1` as of now                                                 |
-| `owner`       | `public_key` | (If `type == 0x03`) The token owner public key                                               |
+| **Name**      | **Type**          | **Description**                              |
+|---------------|-------------------|----------------------------------------------|
+| `type`        | `u8`              | Reserved, always `0`                         |
+| `resource`    | `address`         | The resource address                         |
+| `granularity` | `u256`            | The token granularity, must be `1` as of now |
+| `is_mutable`  | `opt<boolean>`    | (Optional) Whether it's mutable              |
+| `miner`       | `opt<public_key>` | (Optional) The token owner public key        |
 
 #### `TOKEN_RESOURCE_METADATA`
 
@@ -262,51 +266,27 @@ Substates are serialized and deserialized based on the following protocol:
 | **Name**        | **Type**     | **Description**                             |
 |-----------------|--------------|---------------------------------------------|
 | `reserved`      | `u8`         | Reserved, always `0`                        |
+| `epoch_update`  | `opt<u64>`   | The effective epoch                         |
 | `validator`     | `public_key` | Validator public key                        |
 | `is_registered` | `bool`       | Whether this validator is registered active |
-
-#### `PREPARED_REGISTERED_FLAG_UPDATE`
-
-| **Name**        | **Type**     | **Description**                                |
-|-----------------|--------------|------------------------------------------------|
-| `reserved`      | `u8`         | Reserved, always `0`                           |
-| `validator`     | `public_key` | Validator public key                           |
-| `is_registered` | `bool`       | Whether this validator is registered as active |
 
 #### `VALIDATOR_RAKE_COPY`
 
 | **Name**          | **Type**     | **Description**           |
 |-------------------|--------------|---------------------------|
 | `reserved`        | `u8`         | Reserved, always `0`      |
+| `epoch_update`    | `opt<u64>`   | The effective epoch       |
 | `validator`       | `public_key` | Validator public key      |
 | `rake_percentage` | `u32`        | Validator rake percentage |
 
-#### `PREPARED_RAKE_UPDATE`
-
-| **Name**                  | **Type**     | **Description**         |
-|---------------------------|--------------|-------------------------|
-| `reserved`                | `u8`         | Reserved, always `0`    |
-| `epoch`                   | `u64`        | Epoch                   |
-| `validator`               | `public_key` | Validator public key    |
-| `current_rake_percentage` | `u32`        | Current rake percentage |
-| `next_rake_percentage`    | `u32`        | Next rake percentage    |
-
 #### `VALIDATOR_OWNER_COPY`
 
-| **Name**    | **Type**     | **Description**         |
-|-------------|--------------|-------------------------|
-| `reserved`  | `u8`         | Reserved, always `0`    |
-| `validator` | `public_key` | Validator public key    |
-| `owner`     | `address`    | Validator owner address |
-
-#### `PREPARED_VALIDATOR_OWNER_UPDATE`
-
-| **Name**    | **Type**     | **Description**         |
-|-------------|--------------|-------------------------|
-| `reserved`  | `u8`         | Reserved, always `0`    |
-| `validator` | `public_key` | Validator public key    |
-| `owner`     | `address`    | Validator owner address |
-
+| **Name**        | **Type**     | **Description**         |
+|-----------------|--------------|-------------------------|
+| `reserved`      | `u8`         | Reserved, always `0`    |
+| `epoch_update`  | `opt<u64>`   | The effective epoch     |
+| `validator`     | `public_key` | Validator public key    |
+| `owner`         | `address`    | Validator owner address |
 
 ## Transaction Format
 
@@ -318,93 +298,38 @@ Each instruction consists of
 
 The table below summarizes all opcodes.
 
-| **Opcode**  | **Byte Value** | **Operand**         | **Description**                               |
-|-------------|----------------|---------------------|-----------------------------------------------|
-| `END`       | `0x00`         | None                | Mark the end of an action                     |
-| `SYSCALL`   | `0x01`         | `call_data`         | Make a system call                            |
-| `UP`        | `0x02`         | `substate`          | Boot up a new substate                        |
-| `READ`      | `0x03`         | `substate_id`       | Read a remote substate                        |
-| `LREAD`     | `0x04`         | `substate_index`    | Read a local substate                         |
-| `VREAD`     | `0x05`         | `substate`          | Read a virtual substate                       |
-| `DOWN`      | `0x06`         | `substate_id`       | Spin down a remote substate                   |
-| `LDOWN`     | `0x07`         | `substate_index`    | Spin down a local substate                    |
-| `VDOWN`     | `0x08`         | `substate`          | Spin down a virtual substate                  |
-| `VDOWNARG`  | `0x09`         | `substate + string` | Spin down a virtual substate with arguments   |
-| `SIG`       | `0x0A`         | `signature`         | Provide a signature for prior instructions    |
-| `MSG`       | `0x0B`         | `bytes`             | Record a message                              |
-| `HEADER`    | `0x0C`         | `version + flags`   | Specify headers                               |
-| `READINDEX` | `0x0D`         | `prefix`            | Read all substates with the given prefix      |
-| `DOWNINDEX` | `0x0E`         | `prefix`            | Spin down all substates with the given prefix |
+| **Opcode**  | **Byte Value** | **Operand**       | **Description**                               |
+|-------------|----------------|-------------------|-----------------------------------------------|
+| `END`       | `0x00`         | None              | Mark the end of an action                     |
+| `SYSCALL`   | `0x01`         | `call_data`       | Make a system call                            |
+| `UP`        | `0x02`         | `substate`        | Boot up a new substate                        |
+| `READ`      | `0x03`         | `substate_id`     | Read a remote substate                        |
+| `LREAD`     | `0x04`         | `substate_index`  | Read a local substate                         |
+| `VREAD`     | `0x05`         | `substate`        | Read a virtual substate                       |
+| `DOWN`      | `0x06`         | `substate_id`     | Spin down a remote substate                   |
+| `LDOWN`     | `0x07`         | `substate_index`  | Spin down a local substate                    |
+| `VDOWN`     | `0x08`         | `substate`        | Spin down a virtual substate                  |
+| `SIG`       | `0x09`         | `signature`       | Provide a signature for prior instructions    |
+| `MSG`       | `0x0A`         | `bytes`           | Record a message                              |
+| `HEADER`    | `0x0B`         | `version + flags` | Specify headers                               |
+| `READINDEX` | `0x0C`         | `prefix`          | Read all substates with the given prefix      |
+| `DOWNINDEX` | `0x0D`         | `prefix`          | Spin down all substates with the given prefix |
 
-### `END`
-
-An `END` instruction marks the end of an instruction group (a.k.a. action).
-
-### `SYSCALL`
-
-A `SYSCALL` instruction allows a system invocation, e.g. to pay transaction fee. The operand `call_data` is a `bytes`.
-
-### `UP`
-
-An `UP` instruction instructs Radix Engine to create a new remote substate. The operand is the serialization of the new substate.
-
-### `READ`
-
-A `READ` instruction reads a remote substate.
-
-### `LREAD`
-
-A `LREAD` instruction reads a local substate.
-
-### `VREAD`
-
-A `VREAD` instruction reads a virtual substate.
-
-### `DOWN`
-
-A `DOWN` instruction spins down a remote substate. The operand is substate id.
-
-### `LDOWN`
-
-A `LDOWN` instruction spins down a local substate created by this transaction. The operand is an index (`u32`).
-
-### `VDOWN`
-
-A `VDOWN` instruction spins down a virtual substate (which is not stored in global state).
-
-### `VDOWNARG`
-
-A `VDOWNARG` instruction spins down a virtual substate with an additional argument. 
-
-One use case is to create a new token by spinning down a `UNCLAIMED_READDR` substate and booting up a `TOKEN_RESOURCE` substate, where the argument is the token symbol.
-
-### `SIG`
-
-A `SIG` instruction provides a signature for authenticating all instructions before. The operand is a `signature`.
-
-### `MSG`
-
-A `MSG` instruction is used to emit a message. The operand is a `bytes`.
-
-### `HEADER`
-
-A `HEADER` instruction specifies transaction meta. Currently, we have the following structure:
-
-```
-+--------------+--------------+
-| version (u8) | flags (u8)   |
-+--------------+--------------+
-```
-
-### `DOWNINDEX`
-
-A `DOWNINDEX` instruction spins down all substates whose serialization has the given prefix (`bytes`) as in operand.
+### Operand Format
 
 
-### `READINDEX`
-
-A `READINDEX` instruction asserts all substates whose serialization has the given prefix (`bytes`) as in operand.
-
+| **Name**         | **Description**                                                             |
+|------------------|-----------------------------------------------------------------------------|
+| `call_data`      | System call data (`bytes`) and the content must match function requirements |
+| `substate`       | Serialized substate                                                         |
+| `substate_id`    | Substate ID                                                                 |
+| `substate_index` | Substate index (`u32`)                                                      |
+| `substate`       | Spin down a virtual substate                                                |
+| `signature`      | ECDSA Signature                                                             |
+| `msg`            | Message (`bytes`)                                                           |
+| `version`        | Header version (`u8`)                                                       |
+| `flags`          | Header flags (`u8`)                                                         |
+| `prefix`         | Substate prefix (`bytes`)                                                   |
 
 ## Error Handling
 
