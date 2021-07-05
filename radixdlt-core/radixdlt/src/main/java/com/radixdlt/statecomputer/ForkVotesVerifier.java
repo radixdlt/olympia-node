@@ -52,8 +52,14 @@ public final class ForkVotesVerifier implements BatchVerifier<LedgerAndBFTProof>
 		List<REProcessedTxn> txns
 	) throws MetadataException {
 		final var ignoredMetadata = baseVerifier.processMetadata(metadata, engineStore, txns);
+		// just a sanity check, otherwise it would be silently ignored
 		if (ignoredMetadata != metadata) {
 			throw new IllegalStateException("Unexpected metadata modification by the baseVerifier");
+		}
+
+		// no forks checking if not end of epoch
+		if (metadata.getProof().getNextValidatorSet().isEmpty()) {
+			return metadata;
 		}
 
 		final var currentForkConfig = forkManager.getCurrentFork(committedReader.getEpochsForkHashes());

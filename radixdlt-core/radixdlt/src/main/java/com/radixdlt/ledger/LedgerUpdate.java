@@ -18,6 +18,7 @@
 package com.radixdlt.ledger;
 
 import com.google.common.collect.ClassToInstanceMap;
+import com.google.common.hash.HashCode;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -31,9 +32,16 @@ public final class LedgerUpdate {
 	// FIXME: Easiest way to implement this part for now
 	private final ClassToInstanceMap<Object> output;
 
+	private final Optional<HashCode> nextForkHash;
+
 	public LedgerUpdate(VerifiedTxnsAndProof verifiedTxnsAndProof, ClassToInstanceMap<Object> output) {
+		this(verifiedTxnsAndProof, output, Optional.empty());
+	}
+
+	public LedgerUpdate(VerifiedTxnsAndProof verifiedTxnsAndProof, ClassToInstanceMap<Object> output, Optional<HashCode> nextForkHash) {
 		this.verifiedTxnsAndProof = Objects.requireNonNull(verifiedTxnsAndProof);
 		this.output = Objects.requireNonNull(output);
+		this.nextForkHash = Objects.requireNonNull(nextForkHash);
 	}
 
 	public ClassToInstanceMap<Object> getStateComputerOutput() {
@@ -52,6 +60,10 @@ public final class LedgerUpdate {
 		return verifiedTxnsAndProof.getProof().getNextValidatorSet();
 	}
 
+	public Optional<HashCode> getNextForkHash() {
+		return nextForkHash;
+	}
+
 	@Override
 	public String toString() {
 		return String.format("%s{commands=%s}", this.getClass().getSimpleName(), verifiedTxnsAndProof);
@@ -59,7 +71,7 @@ public final class LedgerUpdate {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(verifiedTxnsAndProof, output);
+		return Objects.hash(verifiedTxnsAndProof, output, nextForkHash);
 	}
 
 	@Override
@@ -70,6 +82,7 @@ public final class LedgerUpdate {
 
 		LedgerUpdate other = (LedgerUpdate) o;
 		return Objects.equals(other.verifiedTxnsAndProof, this.verifiedTxnsAndProof)
-			&& Objects.equals(other.output, this.output);
+			&& Objects.equals(other.output, this.output)
+			&& Objects.equals(other.nextForkHash, this.nextForkHash);
 	}
 }

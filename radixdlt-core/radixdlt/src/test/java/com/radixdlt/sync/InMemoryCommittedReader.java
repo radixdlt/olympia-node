@@ -22,7 +22,6 @@ import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.DtoLedgerProof;
@@ -42,16 +41,12 @@ class InMemoryCommittedReader implements CommittedReader {
 	private final Object lock = new Object();
 	private final TreeMap<Long, VerifiedTxnsAndProof> commandsAndProof = new TreeMap<>();
 	private final LedgerAccumulatorVerifier accumulatorVerifier;
-	private final Hasher hasher;
 	private final TreeMap<Long, LedgerProof> epochProofs = new TreeMap<>();
+	private final TreeMap<Long, HashCode> epochsForkHashes = new TreeMap<>();
 
 	@Inject
-	InMemoryCommittedReader(
-		LedgerAccumulatorVerifier accumulatorVerifier,
-		Hasher hasher
-	) {
+	InMemoryCommittedReader(LedgerAccumulatorVerifier accumulatorVerifier) {
 		this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
-		this.hasher = Objects.requireNonNull(hasher);
 	}
 
 	public EventProcessor<LedgerUpdate> updateProcessor() {
@@ -70,9 +65,15 @@ class InMemoryCommittedReader implements CommittedReader {
 					);
 				}
 
+				final var nextEpoch = update.getTail().getEpoch() + 1;
+
 				if (update.getTail().isEndOfEpoch()) {
-					this.epochProofs.put(update.getTail().getEpoch() + 1, update.getTail());
+					this.epochProofs.put(nextEpoch, update.getTail());
 				}
+
+				update.getNextForkHash().ifPresent(nextForkHash -> {
+					this.epochsForkHashes.put(nextEpoch, nextForkHash);
+				});
 			}
 		};
 	}
@@ -113,6 +114,6 @@ class InMemoryCommittedReader implements CommittedReader {
 
 	@Override
 	public ImmutableMap<Long, HashCode> getEpochsForkHashes() {
-		return ImmutableMap.of();
+		return ImmutableMap.copyOf(epochsForkHashes);
 	}
 }
