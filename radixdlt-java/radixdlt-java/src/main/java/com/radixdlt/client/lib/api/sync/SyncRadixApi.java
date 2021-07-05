@@ -137,7 +137,7 @@ import static com.radixdlt.networks.Network.LOCALNET;
 
 import static java.util.Optional.ofNullable;
 
-class SyncRadixApi implements RadixApi {
+public class SyncRadixApi implements RadixApi {
 	private static final Logger log = LogManager.getLogger();
 	private static final String CONTENT_TYPE = "Content-Type";
 	private static final String APPLICATION_JSON = "application/json";
@@ -572,7 +572,7 @@ class SyncRadixApi implements RadixApi {
 			.build());
 	}
 
-	private static Failure decodeSslExceptions(Throwable throwable) {
+	public static Failure decodeSslExceptions(Throwable throwable) {
 		if (throwable instanceof NoSuchAlgorithmException) {
 			return SSL_KEY_ERROR.with(throwable.getMessage());
 		}
