@@ -63,7 +63,6 @@ import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForkManager;
 import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -97,7 +96,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private ProposerElection proposerElection;
 	private View epochCeilingView;
 	private OptionalInt maxSigsPerRound;
-	private ForkConfig currentForkConfig;
 
 	@Inject
 	public RadixEngineStateComputer(
@@ -113,8 +111,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
 		Hasher hasher,
 		SystemCounters systemCounters,
-		ForkManager forkManager,
-		ForkConfig initialForkConfig
+		ForkManager forkManager
 	) {
 		if (epochCeilingView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
@@ -133,7 +130,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.systemCounters = Objects.requireNonNull(systemCounters);
 		this.proposerElection = proposerElection;
 		this.forkManager = Objects.requireNonNull(forkManager);
-		this.currentForkConfig = Objects.requireNonNull(initialForkConfig);
 	}
 
 	public static class RadixEngineTxn implements PreparedTxn {
@@ -314,7 +310,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		return new StateComputerResult(successBuilder.build(), exceptionBuilder.build(), nextValidatorSet.orElse(null));
 	}
 
-	private List<REProcessedTxn> commitInternal(
+	private Pair<List<REProcessedTxn>, LedgerAndBFTProof> commitInternal(
 		VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState
 	) {
 		var proof = verifiedTxnsAndProof.getProof();
@@ -345,7 +341,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 			);
 			this.epochCeilingView = rules.getMaxRounds();
 			this.maxSigsPerRound = rules.getMaxSigsPerRound();
-			this.currentForkConfig = nextForkConfig;
 		});
 
 		radixEngineResult.getFirst().forEach(t -> {
@@ -356,12 +351,14 @@ public final class RadixEngineStateComputer implements StateComputer {
 			}
 		});
 
-		return radixEngineResult.getFirst();
+		return radixEngineResult;
 	}
 
 	@Override
 	public void commit(VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
-		var txCommitted = commitInternal(txnsAndProof, vertexStoreState);
+		final var radixEngineResult = commitInternal(txnsAndProof, vertexStoreState);
+		final var txCommitted = radixEngineResult.getFirst();
+		final var ledgerAndBftProof = radixEngineResult.getSecond();
 
 		// TODO: refactor mempool to be less generic and make this more efficient
 		// TODO: Move this into engine
@@ -401,7 +398,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			outputBuilder.put(EpochChange.class, e);
 		});
 		outputBuilder.put(REOutput.class, REOutput.create(txCommitted));
-		var ledgerUpdate = new LedgerUpdate(txnsAndProof, outputBuilder.build());
+		var ledgerUpdate = new LedgerUpdate(txnsAndProof, outputBuilder.build(), ledgerAndBftProof.getNextForkHash());
 		ledgerUpdateDispatcher.dispatch(ledgerUpdate);
 	}
 }

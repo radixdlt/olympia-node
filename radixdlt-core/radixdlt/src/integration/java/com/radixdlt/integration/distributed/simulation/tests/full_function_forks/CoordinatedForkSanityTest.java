@@ -64,7 +64,7 @@ public final class CoordinatedForkSanityTest {
 			)
 			.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
 			.addRadixEngineConfigModules(
-				new MockedForksModule(View.of(numValidators * 2)),
+				new MockedForksModule(View.of(2)),
 				new ForkManagerModule()
 			)
 			.addNodeModule(MempoolConfig.asModule(1000, 10))
