@@ -17,6 +17,7 @@
 
 package com.radixdlt;
 
+import com.radixdlt.statecomputer.forks.TestingForksModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.util.Strings;
@@ -206,7 +207,7 @@ public final class RadixNodeModule extends AbstractModule {
 
 		// State Computer
 		install(new ForkManagerModule());
-		install(new MainnetForksModule());
+		install(new TestingForksModule());
 		if (properties.get("overwrite_forks.enable", false)) {
 			log.info("Enabling fork overwrites");
 			install(new ForkOverwritesFromPropertiesModule());
