@@ -21,15 +21,16 @@ package com.radixdlt.statecomputer.forks;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.sync.CommittedReader;
 import org.bouncycastle.pqc.math.linearalgebra.ByteUtils;
 
 /**
  * Configuration used for hard forks
  */
 public abstract class ForkConfig {
-	private final String name;
-	private final HashCode hash;
-	private final RERules reRules;
+	protected final String name;
+	protected final HashCode hash;
+	protected final RERules reRules;
 
 	public ForkConfig(String name, HashCode hash, RERules reRules) {
 		this.name = name;
@@ -48,6 +49,8 @@ public abstract class ForkConfig {
 	public RERules getEngineRules() {
 		return reRules;
 	}
+
+	public abstract ForkConfig withForksVerifier(ForkManager forkManager, CommittedReader committedReader);
 
 	@Override
 	public String toString() {

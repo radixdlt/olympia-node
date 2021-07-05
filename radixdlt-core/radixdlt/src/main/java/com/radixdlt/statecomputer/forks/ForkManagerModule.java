@@ -41,16 +41,17 @@ public final class ForkManagerModule extends AbstractModule {
 	@Singleton
 	private ForkManager forkManager(
 			Set<ForkBuilder> forkBuilders,
-			Optional<UnaryOperator<Set<ForkBuilder>>> transformer
+			Optional<UnaryOperator<Set<ForkBuilder>>> transformer,
+			CommittedReader committedReader
 	) {
 		final var transformed = transformer.map(o -> o.apply(forkBuilders))
-				.orElse(forkBuilders);
+			.orElse(forkBuilders);
 
 		final var forkConfigs = transformed.stream()
-				.map(ForkBuilder::build)
-				.collect(Collectors.toSet());
+			.map(ForkBuilder::build)
+			.collect(Collectors.toSet());
 
-		return ForkManager.create(forkConfigs);
+		return ForkManager.create(committedReader, forkConfigs);
 	}
 
 	@Provides

@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public class ForkVotesVerifier implements BatchVerifier<LedgerAndBFTProof> {
+public final class ForkVotesVerifier implements BatchVerifier<LedgerAndBFTProof> {
 
 	private final BatchVerifier<LedgerAndBFTProof> baseVerifier;
 	private final ForkManager forkManager;
@@ -41,9 +41,9 @@ public class ForkVotesVerifier implements BatchVerifier<LedgerAndBFTProof> {
 	 	ForkManager forkManager,
 		CommittedReader committedReader
 	) {
-		this.baseVerifier = Objects.requireNonNull(baseVerifier);
-		this.forkManager = Objects.requireNonNull(forkManager);
-		this.committedReader = Objects.requireNonNull(committedReader);
+		this.baseVerifier = baseVerifier;
+		this.forkManager = forkManager;
+		this.committedReader = committedReader;
 	}
 
 	@Override
@@ -61,7 +61,7 @@ public class ForkVotesVerifier implements BatchVerifier<LedgerAndBFTProof> {
 
 		final var maybeNextForkConfig = metadata.getProof().getNextValidatorSet().isPresent()
 			? forkManager.findNextForkConfig(currentForkConfig, engineStore, metadata)
-			: Optional.<ForkConfig>empty(); //forks only happen at epoch boundary
+			: Optional.<ForkConfig>empty(); // forks only happen at epoch boundary
 
 		return maybeNextForkConfig
 			.map(nextForkConfig -> metadata.withNextForkHash(nextForkConfig.getHash()))

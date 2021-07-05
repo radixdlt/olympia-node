@@ -18,16 +18,17 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.EngineStore;
+import com.radixdlt.sync.CommittedReader;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Set;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -44,7 +45,8 @@ public final class ForkManagerTest {
 		final var fork2 = new FixedEpochForkConfig("fork2", HashCode.fromInt(2), null, 1L);
 		final var fork3 = new CandidateForkConfig("fork3", HashCode.fromInt(3), null, sameProof(2L, fork3Proof));
 
-		final var forkManager = ForkManager.create(Set.of(fork1, fork2, fork3));
+		final var committedReader = mock(CommittedReader.class);
+		final var forkManager = ForkManager.create(committedReader, Set.of(fork1, fork2, fork3));
 
 		assertEquals(fork1, forkManager.genesisFork());
 		assertEquals(fork3, forkManager.latestKnownFork());
@@ -65,20 +67,6 @@ public final class ForkManagerTest {
 		assertTrue(forkManager.findNextForkConfig(fork3, null, proofAtEpoch(1L)).isEmpty());
 		assertTrue(forkManager.findNextForkConfig(fork3, null, proofAtEpoch(1L)).isEmpty());
 		assertTrue(forkManager.findNextForkConfig(fork3, null, fork3Proof).isEmpty());
-	}
-
-	@Test
-	public void should_correctly_parse_forks_set() {
-		final var fork1 = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), null, 0L);
-		final var fork2 = new FixedEpochForkConfig("fork2", HashCode.fromInt(2), null, 5L);
-		final var fork3 = new FixedEpochForkConfig("fork3", HashCode.fromInt(3), null, 6L);
-		final var fork4 = new FixedEpochForkConfig("fork4", HashCode.fromInt(4), null, 7L);
-		final var fork5 = new FixedEpochForkConfig("fork5", HashCode.fromInt(5), null, 10L);
-
-		assertEquals(
-			ImmutableList.of(fork1, fork2, fork3, fork4, fork5),
-			ForkManager.create(Set.of(fork1, fork2, fork3, fork4, fork5)).forkConfigs()
-		);
 	}
 
 	private LedgerAndBFTProof proofAtEpoch(long epoch) {

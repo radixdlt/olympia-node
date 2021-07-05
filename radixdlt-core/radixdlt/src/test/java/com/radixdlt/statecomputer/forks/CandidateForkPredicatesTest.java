@@ -45,7 +45,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
  */
 
-public final class ForksPredicatesTest {
+public final class CandidateForkPredicatesTest {
 
 	/* TODO(luk): fixme
 	@Test

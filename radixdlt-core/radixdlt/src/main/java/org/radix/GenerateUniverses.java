@@ -69,6 +69,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.security.Security;
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -148,14 +149,14 @@ public final class GenerateUniverses {
 					@Provides
 					@Singleton
 					private ForkManager forkManager(ForkConfig initialForkConfig) {
-						return ForkManager.create(Set.of(initialForkConfig));
+						return ForkManager.create(null, Set.of(initialForkConfig));
 					}
 
 					@Provides
 					@Singleton
 					private ForkConfig initialForkConfig(Set<ForkBuilder> forkBuilders) {
 						return forkBuilders.stream()
-							.max((a, b) -> (int) (a.fixedOrMinEpoch() - b.fixedOrMinEpoch()))
+							.min((a, b) -> (int) (a.fixedOrMinEpoch() - b.fixedOrMinEpoch()))
 							.get()
 							.build();
 					}
@@ -169,6 +170,8 @@ public final class GenerateUniverses {
 					.toInstance(tokenIssuancesBuilder.build());
 				bind(new TypeLiteral<ImmutableList<ECPublicKey>>() {}).annotatedWith(Genesis.class)
 					.toInstance(allValidatorKeys);
+				bind(new TypeLiteral<List<TxAction>>() {}).annotatedWith(Genesis.class)
+					.toInstance(List.of());
 				bindConstant().annotatedWith(MaxValidators.class).to(100);
 			}
 		}).getInstance(GenesisProvider.class);
