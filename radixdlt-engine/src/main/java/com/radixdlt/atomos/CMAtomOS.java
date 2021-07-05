@@ -33,7 +33,9 @@ import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.VirtualIndex;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.serialization.DeserializeException;
 
+import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -143,18 +145,22 @@ public final class CMAtomOS {
 		return new SubstateSerialization(substateDefinitions.values());
 	}
 
-	@SuppressWarnings("unchecked")
-	public Predicate<Particle> virtualizedUpParticles() {
-		var serialization = buildSubstateSerialization();
+	public Predicate<ByteBuffer> virtualizedUpParticles() {
+		var deserialization = buildSubstateDeserialization();
 		return p -> {
-			var def = substateDefinitions.get(p.getClass());
-			if (def.getVirtualized().isEmpty()) {
+			var start = p.position();
+			var typeByte = p.get();
+			Class<? extends Particle> c;
+			try {
+				c = deserialization.byteToClass(typeByte);
+			} catch (DeserializeException e) {
 				return false;
 			}
-			// TODO: Remove this extra serialization
-			var serialized = serialization.serialize(p);
+
+			var def = substateDefinitions.get(c);
 			for (var virtualized : def.getVirtualized()) {
-				if (virtualized.test(serialized)) {
+				p.position(start);
+				if (virtualized.test(p)) {
 					return true;
 				}
 			}

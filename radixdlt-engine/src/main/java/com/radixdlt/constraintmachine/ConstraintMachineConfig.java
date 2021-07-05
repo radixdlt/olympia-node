@@ -20,15 +20,16 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.constraintmachine.meter.Meter;
 
+import java.nio.ByteBuffer;
 import java.util.function.Predicate;
 
 public final class ConstraintMachineConfig {
-	private final Predicate<Particle> virtualStoreLayer;
+	private final Predicate<ByteBuffer> virtualStoreLayer;
 	private final Procedures procedures;
 	private final Meter metering;
 
 	public ConstraintMachineConfig(
-		Predicate<Particle> virtualStoreLayer,
+		Predicate<ByteBuffer> virtualStoreLayer,
 		Procedures procedures,
 		Meter metering
 	) {
@@ -37,7 +38,7 @@ public final class ConstraintMachineConfig {
 		this.metering = metering;
 	}
 
-	public Predicate<Particle> getVirtualStoreLayer() {
+	public Predicate<ByteBuffer> getVirtualStoreLayer() {
 		return virtualStoreLayer;
 	}
 

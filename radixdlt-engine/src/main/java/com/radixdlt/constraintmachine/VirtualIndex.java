@@ -20,6 +20,7 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.utils.Bytes;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class VirtualIndex {
@@ -39,16 +40,20 @@ public class VirtualIndex {
 		this.virtualLength = virtualLength;
 	}
 
-	public boolean test(byte[] substate) {
-		if (substate.length != virtualBytes.length + virtualLength) {
+	public boolean test(ByteBuffer buf) {
+		var start = buf.position();
+		var end = buf.limit();
+		var substateBytes = new byte[end - start];
+		buf.get(substateBytes);
+		if (substateBytes.length != virtualBytes.length + virtualLength) {
 			return false;
 		}
 
-		if (!Arrays.equals(virtualBytes, 0, virtualStart, substate, 0, virtualStart)) {
+		if (!Arrays.equals(virtualBytes, 0, virtualStart, substateBytes, 0, virtualStart)) {
 			return false;
 		}
 
-		if (!Arrays.equals(virtualBytes, virtualStart, virtualBytes.length, substate, virtualStart + virtualLength, substate.length)) {
+		if (!Arrays.equals(virtualBytes, virtualStart, virtualBytes.length, substateBytes, virtualStart + virtualLength, substateBytes.length)) {
 			return false;
 		}
 

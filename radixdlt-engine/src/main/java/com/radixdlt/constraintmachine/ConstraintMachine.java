@@ -57,19 +57,19 @@ import java.util.function.Supplier;
 // FIXME: unchecked, rawtypes
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class ConstraintMachine {
-	private final Predicate<Particle> virtualStoreLayer;
+	private final Predicate<ByteBuffer> virtualStoreLayer;
 	private final Procedures procedures;
 	private final Meter metering;
 
 	public ConstraintMachine(
-		Predicate<Particle> virtualStoreLayer,
+		Predicate<ByteBuffer> virtualStoreLayer,
 		Procedures procedures
 	) {
 		this(virtualStoreLayer, procedures, Meter.EMPTY);
 	}
 
 	public ConstraintMachine(
-		Predicate<Particle> virtualStoreLayer,
+		Predicate<ByteBuffer> virtualStoreLayer,
 		Procedures procedures,
 		Meter metering
 	) {
@@ -82,13 +82,13 @@ public final class ConstraintMachine {
 		private final Map<Integer, Pair<Substate, Supplier<ByteBuffer>>> localUpParticles = new HashMap<>();
 		private final Set<SubstateId> remoteDownParticles = new HashSet<>();
 		private final CMStore store;
-		private final Predicate<Particle> virtualStoreLayer;
+		private final Predicate<ByteBuffer> virtualStoreLayer;
 		private final SubstateDeserialization deserialization;
 		private int bootupCount = 0;
 
 		CMValidationState(
 			SubstateDeserialization deserialization,
-			Predicate<Particle> virtualStoreLayer,
+			Predicate<ByteBuffer> virtualStoreLayer,
 			CMStore store
 		) {
 			this.deserialization = deserialization;
@@ -136,12 +136,12 @@ public final class ConstraintMachine {
 			bootupCount++;
 		}
 
-		public void virtualRead(Substate substate) throws SubstateNotFoundException, InvalidVirtualSubstateException {
+		public void virtualRead(Substate substate, Supplier<ByteBuffer> buffer) throws SubstateNotFoundException, InvalidVirtualSubstateException {
 			if (remoteDownParticles.contains(substate.getId())) {
 				throw new SubstateNotFoundException(substate.getId());
 			}
 
-			if (!virtualStoreLayer.test(substate.getParticle())) {
+			if (!virtualStoreLayer.test(buffer.get())) {
 				throw new InvalidVirtualSubstateException(substate.getParticle());
 			}
 
@@ -150,8 +150,8 @@ public final class ConstraintMachine {
 			}
 		}
 
-		public void virtualShutdown(Substate substate) throws SubstateNotFoundException, InvalidVirtualSubstateException {
-			virtualRead(substate);
+		public void virtualShutdown(Substate substate, Supplier<ByteBuffer> buffer) throws SubstateNotFoundException, InvalidVirtualSubstateException {
+			virtualRead(substate, buffer);
 			remoteDownParticles.add(substate.getId());
 		}
 
@@ -281,7 +281,7 @@ public final class ConstraintMachine {
 					if (inst.getMicroOp() == REInstruction.REMicroOp.VREAD) {
 						Substate substate = inst.getData();
 						nextParticle = substate.getParticle();
-						validationState.virtualRead(substate);
+						validationState.virtualRead(substate, inst::getDataByteBuffer);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.READ) {
 						SubstateId substateId = inst.getData();
 						nextParticle = validationState.read(substateId);
@@ -337,7 +337,7 @@ public final class ConstraintMachine {
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.VDOWN) {
 						substate = inst.getData();
 						nextParticle = substate.getParticle();
-						validationState.virtualShutdown(substate);
+						validationState.virtualShutdown(substate, inst::getDataByteBuffer);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.DOWN) {
 						SubstateId substateId = inst.getData();
 						nextParticle = validationState.shutdown(substateId);
