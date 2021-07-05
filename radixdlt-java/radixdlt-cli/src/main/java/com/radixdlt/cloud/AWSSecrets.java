@@ -150,7 +150,6 @@ public class AWSSecrets {
 			var keyStoreSecretName = String.format("%s.ks", nodeName);
 			var passwordName = "password";
 			var network = findNetwork(networkName);
-			var publicKeyPrefix = String.format("tn%d", network.getId());
 			var publicKeyFileSecretName = String.format("%s/%s/public_key", networkName, nodeName);
 
 			if (namePrefix.equals(CORE_NODE_PREFIX)) {
@@ -186,7 +185,7 @@ public class AWSSecrets {
 				var keystoreFile = new File(keyFilePath.toString());
 				var keyFileAwsSecret = new HashMap<String, Object>();
 				var publicKeyFileAwsSecret = new HashMap<String, Object>();
-				final ValidatorAddressing validatorAddresses = ValidatorAddressing.bech32(publicKeyPrefix);
+				final ValidatorAddressing validatorAddresses = ValidatorAddressing.bech32(network.getValidatorHrp());
 				try {
 					var data = Files.readAllBytes(keyFilePath);
 					keyFileAwsSecret.put("key", data);
