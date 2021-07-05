@@ -27,10 +27,12 @@ public enum Network {
 	MAINNET(1, "rdx", "rv", "_rr", "rn"),
 	STOKENET(2, "tdx", "tv", "_tr", "tn"),
 	LOCALNET(99, "ddx", "dv", "_dr", "dn"),
+	RCNET(4, "tn4", "v4", "_r4", "n4"),
 
 	RELEASENET(3, "tn3", "v3", "_r3", "n3"),
 	MILESTONENET(5, "tn5", "v5", "_r5", "n5"),
-	DEVOPSNET(6, "tn6", "v6", "_r6", "n6");
+	DEVOPSNET(6, "tn6", "v6", "_r6", "n6"),
+	SANDPITNET(7, "tn7", "v7", "_r7", "n7");
 
 	private final int id;
 	private final String accountHrp;
