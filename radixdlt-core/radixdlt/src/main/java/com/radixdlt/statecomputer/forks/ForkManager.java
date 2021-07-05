@@ -244,7 +244,7 @@ public final class ForkManager {
 		if (maybeNextFixedEpochFork.isPresent()) {
 			// move to a next fixed epoch fork, if there is one
 			return (Optional) maybeNextFixedEpochFork;
-		} else if (currentFixedEpochFork.equals(latestFixedEpochFork)) {
+		} else if (currentFixedEpochFork.getHash().equals(latestFixedEpochFork.getHash())) {
 			// if we're at the latest fixed epoch fork, then consider the candidate fork
 			final var reParser = currentFixedEpochFork.getEngineRules().getParser();
 			return (Optional) candidateFork
