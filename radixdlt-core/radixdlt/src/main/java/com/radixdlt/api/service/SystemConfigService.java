@@ -149,7 +149,6 @@ public class SystemConfigService {
 		CounterType.NETWORKING_RECEIVED_BYTES
 	);
 
-	private final JSONObject radixEngineConfiguration;
 	private final JSONObject mempoolConfiguration;
 	private final JSONObject apiConfiguration;
 	private final JSONObject bftConfiguration;
@@ -162,6 +161,8 @@ public class SystemConfigService {
 	private final List<EndpointStatus> endpointStatuses;
 	private final PeersView peersView;
 	private final Addressing addressing;
+	private final ForkManager forkManager;
+	private final CommittedReader committedReader;
 
 	@Inject
 	public SystemConfigService(
@@ -185,8 +186,9 @@ public class SystemConfigService {
 		this.endpointStatuses = endpointStatuses;
 		this.peersView = peersView;
 		this.addressing = addressing;
+		this.forkManager = forkManager;
+		this.committedReader = committedReader;
 
-		radixEngineConfiguration = prepareRadixEngineConfiguration(forkManager, committedReader);
 		mempoolConfiguration = prepareMempoolConfiguration(mempoolMaxSize, mempoolThrottleMs);
 		apiConfiguration = prepareApiConfiguration(endpointStatuses);
 		bftConfiguration = prepareBftConfiguration(pacemakerTimeout, bftSyncPatienceMillis);
@@ -230,7 +232,7 @@ public class SystemConfigService {
 	}
 
 	public JSONObject getRadixEngineConfiguration() {
-		return radixEngineConfiguration;
+		return prepareRadixEngineConfiguration();
 	}
 
 	public JSONObject getRadixEngineData() {
@@ -277,6 +279,35 @@ public class SystemConfigService {
 
 	public AccumulatorState accumulatorState() {
 		return inMemorySystemInfo.getCurrentProof().getAccumulatorState();
+	}
+
+	private JSONObject prepareRadixEngineConfiguration() {
+		final var knownForks = jsonArray();
+		forkManager.forkConfigs().forEach(config -> knownForks.put(forkConfigJson(config)));
+
+		final var currentFork = forkManager.getCurrentFork(committedReader.getEpochsForkHashes());
+
+		return jsonObject()
+			.put("known_forks", knownForks)
+			.put("current_fork", forkConfigJson(currentFork));
+	}
+
+	private JSONObject forkConfigJson(ForkConfig forkConfig) {
+		final var json = new JSONObject()
+			.put("name", forkConfig.getName())
+			.put("hash", forkConfig.getHash().toString())
+			.put("isCandidate", forkConfig instanceof CandidateForkConfig)
+			.put("maxRounds", forkConfig.getEngineRules().getMaxRounds().number())
+			.put("maxValidators", forkConfig.getEngineRules().getMaxValidators())
+			.put("maxSigsPerRound", forkConfig.getEngineRules().getMaxSigsPerRound().orElse(-1));
+
+		if (forkConfig instanceof FixedEpochForkConfig) {
+			json.put("epoch", ((FixedEpochForkConfig) forkConfig).getEpoch());
+		} else if (forkConfig instanceof CandidateForkConfig) {
+			json.put("min_epoch", ((CandidateForkConfig) forkConfig).getPredicate().minEpoch());
+		}
+
+		return json;
 	}
 
 	@VisibleForTesting
@@ -342,39 +373,6 @@ public class SystemConfigService {
 			"endpoints",
 			fromList(enabled, endpoint -> "/" + endpoint)
 		);
-	}
-
-	@VisibleForTesting
-	static JSONObject prepareRadixEngineConfiguration(
-		ForkManager forkManager,
-		CommittedReader committedReader
-	) {
-		final var knownForks = jsonArray();
-		forkManager.forkConfigs().forEach(config -> knownForks.put(forkConfigJson(config)));
-
-		final var currentFork = forkManager.getCurrentFork(committedReader.getEpochsForkHashes());
-
-		return jsonObject()
-			.put("known_forks", knownForks)
-			.put("current_fork", forkConfigJson(currentFork));
-	}
-
-	private static JSONObject forkConfigJson(ForkConfig forkConfig) {
-		final var json = new JSONObject()
-			.put("name", forkConfig.getName())
-			.put("hash", forkConfig.getHash().toString())
-			.put("isCandidate", forkConfig instanceof CandidateForkConfig)
-			.put("maxRounds", forkConfig.getEngineRules().getMaxRounds().number())
-			.put("maxValidators", forkConfig.getEngineRules().getMaxValidators())
-			.put("maxSigsPerRound", forkConfig.getEngineRules().getMaxSigsPerRound().orElse(-1));
-
-		if (forkConfig instanceof FixedEpochForkConfig) {
-			json.put("epoch", ((FixedEpochForkConfig) forkConfig).getEpoch());
-		} else if (forkConfig instanceof CandidateForkConfig) {
-			json.put("min_epoch", ((CandidateForkConfig) forkConfig).getPredicate().minEpoch());
-		}
-
-		return json;
 	}
 
 	@VisibleForTesting
