@@ -65,8 +65,8 @@ Addresses are used to identify a particular entity and resource. The first byte 
 Currently, there are 4 types of addresses:
 - `0x00` - System
 - `0x01` - Radix native token
-- `0x02 + lower_26_bytes(hash(public_key + args))` - A resource address
-- `0x03 + public_key` - An account address
+- `0x03 + lower_26_bytes(hash(public_key + args))` - A resource address
+- `0x04 + public_key` - An account address
 
 At api/user level, addresses are wrapped into user-friendly identifiers:
 
@@ -403,7 +403,7 @@ A `DOWNINDEX` instruction spins down all substates whose serialization has the g
 
 ### `READINDEX`
 
-A `DOWNINDEX` instruction asserts all substates whose serialization has the given prefix (`bytes`) as in operand.
+A `READINDEX` instruction asserts all substates whose serialization has the given prefix (`bytes`) as in operand.
 
 
 ## Error Handling
