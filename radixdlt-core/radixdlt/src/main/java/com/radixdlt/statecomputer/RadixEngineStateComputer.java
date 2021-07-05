@@ -388,9 +388,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 					Optional.empty(),
 					hasher
 				);
-			if (validatorSet.getValidators().isEmpty()) {
-				throw new IllegalStateException();
-			}
 			var proposerElection = new WeightedRotatingLeaders(validatorSet);
 			var bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, initialState);
 			return new EpochChange(header, bftConfiguration);

@@ -39,7 +39,6 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.UInt256;
 
@@ -59,32 +58,22 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				TokenResource.class,
 				SubstateTypeId.TOKEN_RESOURCE.id(),
 				buf -> {
-					var type = buf.get();
+					REFieldSerialization.deserializeReservedByte(buf);
 					var addr = REFieldSerialization.deserializeResourceAddr(buf);
 					var granularity = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					if (!granularity.equals(UInt256.ONE)) {
 						throw new DeserializeException("Granularity must be one.");
 					}
-					final ECPublicKey minter;
-					if (type == (byte) 0x1) {
-						return new TokenResource(addr, granularity, true, null);
-					} else if (type == (byte) 0x3) {
-						minter = REFieldSerialization.deserializeKey(buf);
-						return new TokenResource(addr, granularity, true, minter);
-					} else if (type == (byte) 0x0) {
-						return new TokenResource(addr, granularity, false, null);
-					} else {
-						throw new DeserializeException("Unknown token def type " + type);
-					}
+					var isMutable = REFieldSerialization.deserializeBoolean(buf);
+					var minter = REFieldSerialization.deserializeOptionalKey(buf);
+					return new TokenResource(addr, granularity, isMutable, minter.orElse(null));
 				},
 				(s, buf) -> {
-					byte type = 0;
-					type |= (s.isMutable() ? 0x1 : 0x0);
-					type |= (s.getOwner().isPresent() ? 0x2 : 0x0);
-					buf.put(type);
+					REFieldSerialization.serializeReservedByte(buf);
 					REFieldSerialization.serializeREAddr(buf, s.getAddr());
 					REFieldSerialization.serializeUInt256(buf, UInt256.ONE);
-					s.getOwner().ifPresent(k -> REFieldSerialization.serializeKey(buf, k));
+					REFieldSerialization.serializeBoolean(buf, s.isMutable());
+					REFieldSerialization.serializeOptionalKey(buf, s.getOwner());
 				}
 			)
 		);
