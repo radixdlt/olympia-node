@@ -16,6 +16,7 @@ import com.radixdlt.crypto.exception.KeyStoreException;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.ValidatorAddressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.utils.AWSSecretManager;
 import com.radixdlt.utils.AWSSecretsOutputOptions;
 
@@ -148,12 +149,10 @@ public class AWSSecrets {
 			var keyStoreName = String.format("%s.ks", nodeName);
 			var keyStoreSecretName = String.format("%s.ks", nodeName);
 			var passwordName = "password";
-			var networkId = findNetworkId(networkName);
-			var publicKeyPrefix = String.format("tn%s", networkId);
-			if (networkName.equals("stokenet")){
-				publicKeyPrefix = "tn";
-			}
+			var network = findNetwork(networkName);
+			var publicKeyPrefix = String.format("tn%d", network.getId());
 			var publicKeyFileSecretName = String.format("%s/%s/public_key", networkName, nodeName);
+
 			if (namePrefix.equals(CORE_NODE_PREFIX)) {
 				if (isStaker) {
 					keyStoreSecretName = "staker_key";
@@ -220,15 +219,10 @@ public class AWSSecrets {
 		try {
 			keyPair = RadixKeyStore.fromFile(keystoreFile, password.toCharArray(), true)
 				.readKeyPair(KEYPAIR_NAME, false);
-		} catch (KeyStoreException e) {
-			e.printStackTrace();
-		} catch (PrivateKeyException e) {
-			e.printStackTrace();
-		} catch (PublicKeyException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
+		} catch (KeyStoreException | PrivateKeyException | PublicKeyException | IOException e) {
 			e.printStackTrace();
 		}
+
 		return keyPair.getPublicKey();
 	}
 
@@ -284,19 +278,13 @@ public class AWSSecrets {
 					|| !awsSecretsOutputOptions.getNetworkName().equalsIgnoreCase("mainnet"));
 	}
 
-	private static String findNetworkId(String networkName) {
-		Map<String, String> networks = new HashMap<String, String>();
-		networks.put("releasenet", "3");
-		networks.put("rcnet", "4");
-		networks.put("milestonenet", "5");
-		networks.put("devopsnet", "6");
-		networks.put("stokenet", "2");
-		networks.put("mainnet", "1");
+	private static Network findNetwork(String networkName) {
+		var network = Network.ofName(networkName);
 
-		if (!networks.containsKey(networkName)) {
-			System.out.println("Network " + networkName + " is not supported. Available networks: " + networks.keySet());
-			System.exit(1);
+		if (network.isEmpty()) {
+			System.out.println("Network " + networkName + " is not supported. Available networks: " + Arrays.toString(Network.values()));
 		}
-		return networks.get(networkName);
+
+		return network.get();
 	}
 }
