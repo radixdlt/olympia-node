@@ -38,7 +38,8 @@ public enum SubstateTypeId {
 	VALIDATOR_RAKE_COPY((byte) 0x10),
 	PREPARED_RAKE_UPDATE((byte) 0x11),
 	VALIDATOR_OWNER_COPY((byte) 0x12),
-	PREPARED_VALIDATOR_OWNER_UPDATE((byte) 0x13);
+	PREPARED_VALIDATOR_OWNER_UPDATE((byte) 0x13),
+	VALIDATOR_SYSTEM_META_DATA((byte) 0x14);
 
 	private final byte id;
 

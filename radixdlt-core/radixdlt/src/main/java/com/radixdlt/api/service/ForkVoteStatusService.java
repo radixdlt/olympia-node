@@ -20,7 +20,7 @@ package com.radixdlt.api.service;
 import com.google.common.collect.Streams;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.radixdlt.application.validators.state.ValidatorMetaData;
+import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -71,24 +71,23 @@ public class ForkVoteStatusService {
 
 		// TODO: this could be optimized
 		try (var validatorMetadataCursor = engineStore.openIndexedCursor(
-				SubstateIndex.create(SubstateTypeId.VALIDATOR_META_DATA.id(), ValidatorMetaData.class))) {
+				SubstateIndex.create(SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(), ValidatorSystemMetadata.class))) {
 
 			final var maybeSelfForkVoteHash = Streams.stream(validatorMetadataCursor)
 				.map(s -> {
 					try {
-						return (ValidatorMetaData) substateDeserialization.deserialize(s.getData());
+						return (ValidatorSystemMetadata) substateDeserialization.deserialize(s.getData());
 					} catch (DeserializeException e) {
 						throw new IllegalStateException("Failed to deserialize ValidatorMetaData substate");
 					}
 				})
 				.filter(vm -> vm.getValidatorKey().equals(self.getKey()))
 				.findAny()
-				.flatMap(ValidatorMetaData::getForkVoteHash);
+				.map(ValidatorSystemMetadata::getAsHash);
 
 			return maybeSelfForkVoteHash.filter(expectedCandidateForkVoteHash::equals).isPresent()
 				? ForkVoteStatus.NO_ACTION_NEEDED
 				: ForkVoteStatus.VOTE_REQUIRED;
-
 		}
 	}
 }

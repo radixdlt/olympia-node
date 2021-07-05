@@ -179,10 +179,7 @@ public final class REFieldSerialization {
 		return dest;
 	}
 
-	public static void serializeFixedLengthBytes(ByteBuffer buf, byte[] bytes, int length) {
-		if (bytes.length != length) {
-			throw new IllegalArgumentException("Expected " + length + " bytes, but got " + bytes.length);
-		}
+	public static void serializeFixedLengthBytes(ByteBuffer buf, byte[] bytes) {
 		buf.put(bytes);
 	}
 

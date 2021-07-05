@@ -127,9 +127,9 @@ public class ValidatorInfoServiceTest {
 			engineStore, committedReader, forkManager, Addressing.ofNetwork(Network.LOCALNET)
 		);
 
-		var particle1 = new ValidatorMetaData(validator1, "V1", "http://v1.com", Optional.empty());
-		var particle2 = new ValidatorMetaData(validator2, "V2", "http://v2.com", Optional.empty());
-		var particle3 = new ValidatorMetaData(validator3, "V3", "http://v3.com", Optional.empty());
+		var particle1 = new ValidatorMetaData(validator1, "V1", "http://v1.com");
+		var particle2 = new ValidatorMetaData(validator2, "V2", "http://v2.com");
+		var particle3 = new ValidatorMetaData(validator3, "V3", "http://v3.com");
 		var validators = AllValidators.create()
 			.set(particle1)
 			.set(particle2)

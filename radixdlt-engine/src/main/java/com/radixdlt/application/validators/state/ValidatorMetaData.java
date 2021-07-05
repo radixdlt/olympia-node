@@ -18,32 +18,27 @@
 
 package com.radixdlt.application.validators.state;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
-import java.util.Optional;
 
 public final class ValidatorMetaData implements ValidatorData {
 	private final ECPublicKey validatorKey;
 	private final String name;
 	private final String url;
-	private final Optional<HashCode> forkVoteHash;
 
 	public ValidatorMetaData(ECPublicKey validatorKey) {
-		this(validatorKey, "", "", Optional.empty());
+		this(validatorKey, "", "");
 	}
 
 	public ValidatorMetaData(
 		ECPublicKey validatorKey,
 		String name,
-		String url,
-		Optional<HashCode> forkVoteHash
+		String url
 	) {
 		this.validatorKey = Objects.requireNonNull(validatorKey);
 		this.name = Objects.requireNonNull(name);
 		this.url = Objects.requireNonNull(url);
-		this.forkVoteHash = Objects.requireNonNull(forkVoteHash);
 	}
 
 	@Override
@@ -59,13 +54,9 @@ public final class ValidatorMetaData implements ValidatorData {
 		return url;
 	}
 
-	public Optional<HashCode> getForkVoteHash() {
-		return forkVoteHash;
-	}
-
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.validatorKey, this.name, this.url, this.forkVoteHash);
+		return Objects.hash(this.validatorKey, this.name, this.url);
 	}
 
 	@Override
@@ -79,15 +70,14 @@ public final class ValidatorMetaData implements ValidatorData {
 		final var that = (ValidatorMetaData) obj;
 		return Objects.equals(this.validatorKey, that.validatorKey)
 			&& Objects.equals(this.name, that.name)
-			&& Objects.equals(this.url, that.url)
-			&& Objects.equals(this.forkVoteHash, that.forkVoteHash);
+			&& Objects.equals(this.url, that.url);
 	}
 
 	@Override
 	public String toString() {
 		return String.format(
 			"%s[%s, %s, %s]",
-			getClass().getSimpleName(), getValidatorKey(), getUrl(), forkVoteHash
+			getClass().getSimpleName(), getValidatorKey(), getUrl()
 		);
 	}
 }

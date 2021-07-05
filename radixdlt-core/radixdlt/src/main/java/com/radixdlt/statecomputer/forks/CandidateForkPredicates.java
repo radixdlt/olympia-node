@@ -19,7 +19,7 @@
 package com.radixdlt.statecomputer.forks;
 
 import com.google.common.collect.Streams;
-import com.radixdlt.application.validators.state.ValidatorMetaData;
+import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.engine.parser.REParser;
@@ -27,9 +27,6 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.utils.UInt256;
-
-import java.math.BigDecimal;
-import java.math.BigInteger;
 
 public final class CandidateForkPredicates {
 
@@ -61,12 +58,12 @@ public final class CandidateForkPredicates {
 				final var substateDeserialization = reParser.getSubstateDeserialization();
 
 				try (var validatorMetadataCursor = engineStore.openIndexedCursor(
-						SubstateIndex.create(SubstateTypeId.VALIDATOR_META_DATA.id(), ValidatorMetaData.class))) {
-
+						SubstateIndex.create(SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(), ValidatorSystemMetadata.class))
+				) {
 					final var forkVotesPower = Streams.stream(validatorMetadataCursor)
 						.map(s -> {
 							try {
-								return (ValidatorMetaData) substateDeserialization.deserialize(s.getData());
+								return (ValidatorSystemMetadata) substateDeserialization.deserialize(s.getData());
 							} catch (DeserializeException e) {
 								throw new IllegalStateException("Failed to deserialize ValidatorMetaData substate");
 							}
@@ -74,7 +71,7 @@ public final class CandidateForkPredicates {
 						.filter(vm -> validatorSet.containsNode(vm.getValidatorKey()))
 						.filter(vm -> {
 							final var expectedVoteHash = ForkConfig.voteHash(vm.getValidatorKey(), forkConfig);
-							return vm.getForkVoteHash().filter(expectedVoteHash::equals).isPresent();
+							return vm.getAsHash().equals(expectedVoteHash);
 						})
 						.map(validatorMetadata -> validatorSet.getPower(validatorMetadata.getValidatorKey()))
 						.reduce(UInt256.ZERO, UInt256::add);

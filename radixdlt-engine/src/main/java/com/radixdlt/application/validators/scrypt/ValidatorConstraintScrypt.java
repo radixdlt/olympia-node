@@ -18,7 +18,7 @@
 
 package com.radixdlt.application.validators.scrypt;
 
-import com.google.common.hash.HashCode;
+import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.application.system.state.EpochData;
@@ -42,11 +42,11 @@ import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 
 import java.util.Objects;
-import java.util.Optional;
 
 import static com.radixdlt.application.validators.state.PreparedRakeUpdate.RAKE_MAX;
 import static com.radixdlt.application.validators.state.PreparedRakeUpdate.RAKE_MIN;
@@ -59,6 +59,20 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 
 	public ValidatorConstraintScrypt(long rakeIncreaseDebounceEpochLength) {
 		this.rakeIncreaseDebounceEpochLength = rakeIncreaseDebounceEpochLength;
+	}
+
+	private static class UpdatingValidatorHashMetadata implements ReducerState {
+		private final ValidatorSystemMetadata prevState;
+
+		private UpdatingValidatorHashMetadata(ValidatorSystemMetadata prevState) {
+			this.prevState = prevState;
+		}
+
+		void update(ValidatorSystemMetadata next) throws ProcedureException {
+			if (!prevState.getValidatorKey().equals(next.getValidatorKey())) {
+				throw new ProcedureException("Invalid key");
+			}
+		}
 	}
 
 	private static class UpdatingValidatorInfo implements ReducerState {
@@ -149,6 +163,51 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 
 	@Override
 	public void main(Loader os) {
+		os.substate(
+			new SubstateDefinition<>(
+				ValidatorSystemMetadata.class,
+				SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(),
+				buf -> {
+					REFieldSerialization.deserializeReservedByte(buf);
+					var key = REFieldSerialization.deserializeKey(buf);
+					var bytes = REFieldSerialization.deserializeFixedLengthBytes(buf, 32);
+					return new ValidatorSystemMetadata(key, bytes);
+				},
+				(s, buf) -> {
+					REFieldSerialization.serializeReservedByte(buf);
+					REFieldSerialization.serializeKey(buf, s.getValidatorKey());
+					REFieldSerialization.serializeFixedLengthBytes(buf, s.getData());
+				},
+				s -> s.getAsHash().equals(HashUtils.zero256())
+			)
+		);
+
+		os.procedure(new DownProcedure<>(
+			VoidReducerState.class, ValidatorSystemMetadata.class,
+			d -> new Authorization(
+				PermissionLevel.USER,
+				(r, c) -> {
+					if (!c.key().map(d.getSubstate().getValidatorKey()::equals).orElse(false)) {
+						throw new AuthorizationException("Key does not match.");
+					}
+				}
+			),
+			(d, s, r) -> {
+				if (d.getArg().isPresent()) {
+					throw new ProcedureException("Args not allowed");
+				}
+				return ReducerResult.incomplete(new UpdatingValidatorHashMetadata(d.getSubstate()));
+			}
+		));
+		os.procedure(new UpProcedure<>(
+			UpdatingValidatorHashMetadata.class, ValidatorSystemMetadata.class,
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			(s, u, c, r) -> {
+				s.update(u);
+				return ReducerResult.complete();
+			}
+		));
+
 
 		os.substate(
 			new SubstateDefinition<>(
@@ -159,31 +218,13 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 					var key = REFieldSerialization.deserializeKey(buf);
 					var name = REFieldSerialization.deserializeString(buf);
 					var url = REFieldSerialization.deserializeUrl(buf);
-					final var forkVoteHashBytes = REFieldSerialization.deserializeFixedLengthBytes(buf, FORK_VOTE_LENGTH);
-
-					var forkVoteHashAllZeros = true;
-					for (int i = 0; i < FORK_VOTE_LENGTH; i++) {
-						if (forkVoteHashBytes[i] != (byte) 0x00) {
-							forkVoteHashAllZeros = false;
-							break;
-						}
-					}
-
-					final var forkVoteHash = forkVoteHashAllZeros
-						? Optional.<HashCode>empty()
-						: Optional.of(HashCode.fromBytes(forkVoteHashBytes));
-
-					return new ValidatorMetaData(key, name, url, forkVoteHash);
+					return new ValidatorMetaData(key, name, url);
 				},
 				(s, buf) -> {
 					REFieldSerialization.serializeReservedByte(buf);
 					REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 					REFieldSerialization.serializeString(buf, s.getName());
 					REFieldSerialization.serializeString(buf, s.getUrl());
-					s.getForkVoteHash().ifPresentOrElse(
-						forkVoteHash -> REFieldSerialization.serializeFixedLengthBytes(buf, forkVoteHash.asBytes(), FORK_VOTE_LENGTH),
-						() -> REFieldSerialization.serializeBytes(buf, new byte[FORK_VOTE_LENGTH])
-					);
 				},
 				p -> p.getUrl().isEmpty() && p.getName().isEmpty()
 			)
