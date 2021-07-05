@@ -294,7 +294,7 @@ public final class ConstraintMachine {
 							// FIXME: do this via shutdownAll state update rather than individually
 							var substate = substateCursor.next();
 							if (inst.getMicroOp().getOp() == REOp.DOWNINDEX) {
-								tmp.add(REStateUpdate.of(REOp.DOWN, substate, inst::getDataByteBuffer));
+								tmp.add(REStateUpdate.of(REOp.DOWN, substate.getId(), inst::getDataByteBuffer, substate.getParticle()));
 							}
 							return substate.getParticle();
 						}
@@ -311,30 +311,30 @@ public final class ConstraintMachine {
 					}
 				} else if (inst.isStateUpdate()) {
 					final Particle nextParticle;
-					final Substate substate;
+					final SubstateId substateId;
 					if (inst.getMicroOp() == REInstruction.REMicroOp.UP) {
 						// TODO: Cleanup indexing of substate class
-						substate = inst.getData();
+						Substate substate = inst.getData();
 						nextParticle = substate.getParticle();
+						substateId = substate.getId();
 						validationState.bootUp(substate, inst::getDataByteBuffer);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.VDOWN) {
-						substate = inst.getData();
+						Substate substate = inst.getData();
 						nextParticle = substate.getParticle();
+						substateId = substate.getId();
 						validationState.virtualShutdown(substate);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.DOWN) {
-						SubstateId substateId = inst.getData();
+						substateId = inst.getData();
 						nextParticle = validationState.shutdown(substateId);
-						substate = Substate.create(nextParticle, substateId);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.LDOWN) {
-						SubstateId substateId = inst.getData();
+						substateId = inst.getData();
 						nextParticle = validationState.localShutdown(substateId.getIndex().orElseThrow());
-						substate = Substate.create(nextParticle, substateId);
 					} else {
 						throw new IllegalStateException("Unhandled op: " + inst.getMicroOp());
 					}
 
 					var op = inst.getMicroOp().getOp();
-					stateUpdates.add(REStateUpdate.of(op, substate, inst::getDataByteBuffer));
+					stateUpdates.add(REStateUpdate.of(op, substateId, inst::getDataByteBuffer, nextParticle));
 					var eventId = OpSignature.ofSubstateUpdate(op, nextParticle.getClass());
 					var methodProcedure = loadProcedure(reducerState, eventId);
 					reducerState = callProcedure(methodProcedure, nextParticle, reducerState, readableAddrs, context);

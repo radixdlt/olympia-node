@@ -25,7 +25,6 @@ import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.REOp;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.engine.RadixEngineException;
@@ -53,13 +52,13 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 			@Override
 			public void storeTxn(Txn txn, List<REStateUpdate> stateUpdates) {
 				synchronized (lock) {
-					stateUpdates.forEach(i -> storedParticles.put(i.getSubstate().getId(), i));
+					stateUpdates.forEach(i -> storedParticles.put(i.getId(), i));
 					stateUpdates.stream()
 						.filter(REStateUpdate::isBootUp)
 						.forEach(p -> {
 							// FIXME: Superhack
-							if (p.getRawSubstate() instanceof TokenResource) {
-								var tokenDef = (TokenResource) p.getRawSubstate();
+							if (p.getParsed() instanceof TokenResource) {
+								var tokenDef = (TokenResource) p.getParsed();
 								addrParticles.put(tokenDef.getAddr(), p::getStateBuf);
 							}
 						});
@@ -83,7 +82,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 			public Optional<ByteBuffer> loadSubstate(SubstateId substateId) {
 				synchronized (lock) {
 					var inst = storedParticles.get(substateId);
-					if (inst == null || inst.getOp() != REOp.UP) {
+					if (inst == null || !inst.isBootUp()) {
 						return Optional.empty();
 					}
 
@@ -92,7 +91,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 			}
 
 			@Override
-			public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index) {
+			public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index) {
 				return InMemoryEngineStore.this.openIndexedCursor(index);
 			}
 
@@ -107,7 +106,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index) {
+	public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index) {
 		final List<RawSubstateBytes> substates = new ArrayList<>();
 		synchronized (lock) {
 			for (var i : storedParticles.values()) {
@@ -125,10 +124,10 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 		return CloseableCursor.wrapIterator(substates.iterator());
 	}
 
-	public Optional<REOp> getSpin(SubstateId substateId) {
+	public boolean contains(SubstateId substateId) {
 		synchronized (lock) {
 			var inst = storedParticles.get(substateId);
-			return Optional.ofNullable(inst).map(REStateUpdate::getOp);
+			return inst != null;
 		}
 	}
 
@@ -144,17 +143,17 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 
 		synchronized (lock) {
 			for (var i : storedParticles.values()) {
-				if (!i.isBootUp() || !isOneOf(types, i.getRawSubstate())) {
+				if (!i.isBootUp() || !isOneOf(types, i.getParsed())) {
 					continue;
 				}
 
-				v = outputReducer.apply(v, i.getRawSubstate());
+				v = outputReducer.apply(v, (Particle) i.getParsed());
 			}
 		}
 		return v;
 	}
 
-	private static boolean isOneOf(Set<Class<? extends Particle>> bundle, Particle instance) {
+	private static boolean isOneOf(Set<Class<? extends Particle>> bundle, Object instance) {
 		return bundle.stream().anyMatch(v -> v.isInstance(instance));
 	}
 

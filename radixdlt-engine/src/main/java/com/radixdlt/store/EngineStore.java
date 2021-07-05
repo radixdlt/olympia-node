@@ -45,7 +45,7 @@ public interface EngineStore<M> {
 	/**
 	 * For construction
 	 */
-	CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index);
+	CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index);
 
 	/**
 	 * Deterministically computes a value from a list of particles of a given type.

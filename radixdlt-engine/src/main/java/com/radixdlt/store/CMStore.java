@@ -31,5 +31,5 @@ import java.util.Optional;
 public interface CMStore extends ResourceStore {
 	boolean isVirtualDown(SubstateId substateId);
 	Optional<ByteBuffer> loadSubstate(SubstateId substateId);
-	CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index);
+	CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index);
 }

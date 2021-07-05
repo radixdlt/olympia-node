@@ -77,8 +77,8 @@ public final class REProcessedTxn {
 
 	// FIXME: Currently a hack, better would be to put this at transaction layer for fees
 	public boolean isSystemOnly() {
-		return stateUpdates().anyMatch(i -> i.getSubstate().getParticle() instanceof RoundData)
-			|| stateUpdates().anyMatch(i -> i.getSubstate().getParticle() instanceof EpochData);
+		return stateUpdates().anyMatch(i -> i.getParsed() instanceof RoundData)
+			|| stateUpdates().anyMatch(i -> i.getParsed() instanceof EpochData);
 	}
 
 	public List<List<REStateUpdate>> getGroupedStateUpdates() {

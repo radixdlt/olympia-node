@@ -224,7 +224,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				}
 
 				@Override
-				public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index) {
+				public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index) {
 					return BerkeleyLedgerEntryStore.this.openIndexedCursor(dbTxn, index);
 				}
 
@@ -242,7 +242,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index) {
+	public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index) {
 		return BerkeleyLedgerEntryStore.this.openIndexedCursor(null, index);
 	}
 
@@ -614,7 +614,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 	}
 
-	private CloseableCursor<RawSubstateBytes> openIndexedCursor(Transaction dbTxn, SubstateIndex index) {
+	private CloseableCursor<RawSubstateBytes> openIndexedCursor(Transaction dbTxn, SubstateIndex<?> index) {
 		var cursor = new BerkeleySubstateCursor(dbTxn, indexedSubstatesDatabase, index.getPrefix());
 		cursor.open();
 		return cursor;
@@ -697,21 +697,21 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	private void updateParticle(com.sleepycat.je.Transaction txn, REStateUpdate stateUpdate) {
 		if (stateUpdate.isBootUp()) {
 			var buf = stateUpdate.getStateBuf();
-			upParticle(txn, buf, stateUpdate.getSubstate().getId());
+			upParticle(txn, buf, stateUpdate.getId());
 
 			// FIXME: Superhack
-			if (stateUpdate.getRawSubstate() instanceof TokenResource) {
-				var p = (TokenResource) stateUpdate.getRawSubstate();
+			if (stateUpdate.getParsed() instanceof TokenResource) {
+				var p = (TokenResource) stateUpdate.getParsed();
 				var addr = p.getAddr();
 				var buf2 = stateUpdate.getStateBuf();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
 				resourceDatabase.putNoOverwrite(txn, new DatabaseEntry(addr.getBytes()), value);
 			}
 		} else if (stateUpdate.isShutDown()) {
-			if (stateUpdate.getSubstate().getId().isVirtual()) {
-				downVirtualSubstate(txn, stateUpdate.getSubstate().getId());
+			if (stateUpdate.getId().isVirtual()) {
+				downVirtualSubstate(txn, stateUpdate.getId());
 			} else {
-				downSubstate(txn, stateUpdate.getSubstate().getId());
+				downSubstate(txn, stateUpdate.getId());
 			}
 		} else {
 			throw new IllegalStateException("Must bootup or shutdown to update particle: " + stateUpdate);
