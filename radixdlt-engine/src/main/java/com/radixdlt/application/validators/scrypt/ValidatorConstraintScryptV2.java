@@ -89,7 +89,10 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 					var key = REFieldSerialization.deserializeKey(buf);
 					return new ValidatorMetaData(key, "", "");
 				},
-				(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k)
+				(k, buf) -> {
+					REFieldSerialization.serializeKey(buf, (ECPublicKey) k);
+					return new ValidatorMetaData((ECPublicKey) k, "", "");
+				}
 			)
 		);
 
@@ -142,7 +145,10 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				var key = REFieldSerialization.deserializeKey(buf);
 				return new AllowDelegationFlag(key, false);
 			},
-			(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k)
+			(k, buf) -> {
+				REFieldSerialization.serializeKey(buf, (ECPublicKey) k);
+				return new AllowDelegationFlag((ECPublicKey) k, false);
+			}
 		));
 
 		os.procedure(new DownProcedure<>(

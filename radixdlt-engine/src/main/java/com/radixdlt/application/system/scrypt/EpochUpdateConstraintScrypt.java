@@ -913,7 +913,10 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					var key = REFieldSerialization.deserializeKey(buf);
 					return ValidatorStakeData.createVirtual(key);
 				},
-				(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k)
+				(k, buf) -> {
+					REFieldSerialization.serializeKey(buf, (ECPublicKey) k);
+					return ValidatorStakeData.createVirtual((ECPublicKey) k);
+				}
 			)
 		);
 		os.substate(

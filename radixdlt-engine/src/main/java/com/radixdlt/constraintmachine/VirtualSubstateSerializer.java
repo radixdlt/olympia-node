@@ -20,6 +20,6 @@ package com.radixdlt.constraintmachine;
 
 import java.nio.ByteBuffer;
 
-public interface VirtualSubstateSerializer {
-	void serialize(Object key, ByteBuffer buf);
+public interface VirtualSubstateSerializer<T extends Particle> {
+	T serialize(Object key, ByteBuffer buf);
 }

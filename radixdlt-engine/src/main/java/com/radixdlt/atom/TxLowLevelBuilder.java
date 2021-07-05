@@ -119,14 +119,18 @@ public final class TxLowLevelBuilder {
 	}
 
 	public TxLowLevelBuilder virtualDown(Class<? extends Particle> substateClass, Object key) {
-		var bytes = serialization.serializeVirtual(substateClass, key);
-		instruction(REInstruction.REMicroOp.VDOWN, bytes);
+		var pair = serialization.serializeVirtual(substateClass, key);
+		instruction(REInstruction.REMicroOp.VDOWN, pair.getSecond());
 		return this;
 	}
 
-	public TxLowLevelBuilder virtualRead(Class<? extends Particle> substateClass, Object key) {
-		var bytes = serialization.serializeVirtual(substateClass, key);
-		instruction(REInstruction.REMicroOp.VREAD, bytes);
+	public TxLowLevelBuilder virtualDown(byte[] virtualKey) {
+		instruction(REInstruction.REMicroOp.VDOWN, virtualKey);
+		return this;
+	}
+
+	public TxLowLevelBuilder virtualRead(byte[] virtualKey) {
+		instruction(REInstruction.REMicroOp.VREAD, virtualKey);
 		return this;
 	}
 

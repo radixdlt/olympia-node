@@ -92,6 +92,7 @@ public class TokenDefinitionTest {
 			addr,
 			UInt256.TEN
 		);
+
 		var builder = TxLowLevelBuilder.newBuilder(serialization)
 			.syscall(Syscall.READDR_CLAIM, "test".getBytes(StandardCharsets.UTF_8))
 			.virtualDown(UnclaimedREAddr.class, addr)

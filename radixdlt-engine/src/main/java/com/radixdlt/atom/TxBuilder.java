@@ -108,8 +108,10 @@ public final class TxBuilder {
 		return numResourcesCreated;
 	}
 
-	private void virtualDown(Class<? extends Particle> substateClass, Object key) {
-		lowLevelBuilder.virtualDown(substateClass, key);
+	private <T extends Particle> T virtualDown(Class<T> substateClass, Object key) {
+		var pair = serialization.serializeVirtual(substateClass, key);
+		lowLevelBuilder.virtualDown(pair.getSecond());
+		return pair.getFirst();
 	}
 
 	public void down(SubstateId substateId) {
@@ -128,8 +130,10 @@ public final class TxBuilder {
 		lowLevelBuilder.localRead(index);
 	}
 
-	private void virtualRead(Class<? extends Particle> substateClass, Object key) {
-		lowLevelBuilder.virtualRead(substateClass, key);
+	private <T extends Particle> T virtualRead(Class<T> substateClass, Object key) {
+		var pair = serialization.serializeVirtual(substateClass, key);
+		lowLevelBuilder.virtualRead(pair.getSecond());
+		return pair.getFirst();
 	}
 
 	private CloseableCursor<RawSubstateBytes> createRemoteSubstateCursor(SubstateIndex<?> index) {
@@ -248,18 +252,7 @@ public final class TxBuilder {
 				.map(Substate::getParticle)
 				.map(particleClass::cast)
 				.findFirst()
-				.or(() -> {
-					keyToVirtual.ifPresent(k -> this.virtualDown(particleClass, k));
-					return keyToVirtual.map(k -> {
-						var bytes = serialization.serializeVirtual(particleClass, k);
-						try {
-							// TODO: Remove this serialization/deserialization mess
-							return (T) deserialization.deserializeVirtual(ByteBuffer.wrap(bytes));
-						} catch (DeserializeException e) {
-							throw new IllegalStateException("Should not get here");
-						}
-					});
-				});
+				.or(() -> keyToVirtual.map(k -> this.virtualDown(particleClass, k)));
 
 			if (substateDown.isEmpty()) {
 				throw exceptionSupplier.get();
@@ -300,18 +293,7 @@ public final class TxBuilder {
 				.map(Substate::getParticle)
 				.map(particleClass::cast)
 				.findFirst()
-				.or(() -> {
-					keyToVirtual.ifPresent(k -> this.virtualRead(particleClass, k));
-					return keyToVirtual.map(k -> {
-						var bytes = serialization.serializeVirtual(particleClass, k);
-						try {
-							// TODO: Remove this serialization/deserialization mess
-							return (T) deserialization.deserializeVirtual(ByteBuffer.wrap(bytes));
-						} catch (DeserializeException e) {
-							throw new IllegalStateException("Should not get here");
-						}
-					});
-				});
+				.or(() -> keyToVirtual.map(k -> this.virtualRead(particleClass, k)));
 
 			if (substateDown.isEmpty()) {
 				throw new TxBuilderException(errorMessage + " (Substate not found)");
