@@ -108,4 +108,9 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 			throw new ProcedureException(e);
 		}
 	}
+
+	@Override
+	public String toString() {
+		return downReducer.getClass().getSimpleName();
+	}
 }

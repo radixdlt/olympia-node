@@ -109,4 +109,9 @@ public final class UpProcedure<S extends ReducerState, U extends Particle> imple
 			throw new ProcedureException(e);
 		}
 	}
+
+	@Override
+	public String toString() {
+		return upReducer.getClass().getSimpleName();
+	}
 }

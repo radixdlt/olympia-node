@@ -105,4 +105,9 @@ public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> im
 	) throws ProcedureException {
 		return downReducer.reduce((S) reducerState, (IndexedSubstateIterator<D>) o, context, immutableAddrs);
 	}
+
+	@Override
+	public String toString() {
+		return downReducer.getClass().getSimpleName();
+	}
 }

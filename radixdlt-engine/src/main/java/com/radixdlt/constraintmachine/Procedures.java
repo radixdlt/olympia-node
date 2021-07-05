@@ -71,7 +71,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class Procedures {
-	private final Map<ProcedureKey, Procedure> procedures;
+	public final Map<ProcedureKey, Procedure> procedures;
 
 	public Procedures(Map<ProcedureKey, Procedure> procedures) {
 		this.procedures = procedures;

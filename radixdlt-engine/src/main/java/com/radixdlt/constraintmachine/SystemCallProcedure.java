@@ -110,4 +110,9 @@ public class SystemCallProcedure<S extends ReducerState> implements Procedure {
 			throw new ProcedureException(e);
 		}
 	}
+
+	@Override
+	public String toString() {
+		return reducer.getClass().getSimpleName();
+	}
 }

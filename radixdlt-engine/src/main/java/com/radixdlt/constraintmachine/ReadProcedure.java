@@ -104,4 +104,9 @@ public final class ReadProcedure<D extends Particle, S extends ReducerState> imp
 	) throws ProcedureException {
 		return readReducer.reduce((S) reducerState, (D) o, immutableAddrs);
 	}
+
+	@Override
+	public String toString() {
+		return readReducer.getClass().getSimpleName();
+	}
 }

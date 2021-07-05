@@ -69,8 +69,8 @@ import com.radixdlt.identifiers.REAddr;
 import java.util.Objects;
 
 public final class OpSignature {
-	private final REOp op;
-	private final Object type;
+	public final REOp op;
+	public final Object type;
 
 	private OpSignature(REOp op, Object type) {
 		this.op = op;

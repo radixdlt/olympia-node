@@ -67,8 +67,8 @@ package com.radixdlt.constraintmachine;
 import java.util.Objects;
 
 public final class ProcedureKey {
-	private final Class<? extends ReducerState> currentState;
-	private final OpSignature opSignature;
+	public final Class<? extends ReducerState> currentState;
+	public final OpSignature opSignature;
 
 	private ProcedureKey(Class<? extends ReducerState> currentState, OpSignature opSignature) {
 		this.currentState = currentState;

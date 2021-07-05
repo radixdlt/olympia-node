@@ -105,4 +105,9 @@ public class ReadIndexProcedure<D extends Particle, S extends ReducerState> impl
 	) throws ProcedureException {
 		return readReducer.reduce((S) reducerState, (IndexedSubstateIterator<D>) o, context, immutableAddrs);
 	}
+
+	@Override
+	public String toString() {
+		return readReducer.getClass().getSimpleName();
+	}
 }

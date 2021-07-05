@@ -31,6 +31,7 @@ import com.radixdlt.atom.actions.*;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.exceptions.MissingProcedureException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
@@ -40,9 +41,7 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
+import com.radixdlt.statecomputer.forks.*;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
@@ -55,6 +54,8 @@ import org.radix.TokenIssuance;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import static com.radixdlt.utils.Bytes.toHexString;
@@ -137,8 +138,8 @@ public class TestSuite {
                         new CreateMutableToken(tokDef)
                 ))).signAndBuild(keyPair::sign);
         System.out.println(toHexString(tx.getPayload()));
-        sut.execute(List.of(tx));
-        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/home/radix/Desktop/docs/transaction-specs/test/samples/token_create.txt"));
+        var results = sut.execute(List.of(tx));
+        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/token_create.txt"));
 
         System.out.println("[This account] Mint resource...");
         tx = sut.construct(TxnConstructionRequest.create()
@@ -147,8 +148,8 @@ public class TestSuite {
                         new MintToken(tokenAddr, accountAddr, UInt256.NINE)
                 ))).signAndBuild(keyPair::sign);
         System.out.println(toHexString(tx.getPayload()));
-        sut.execute(List.of(tx));
-        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/home/radix/Desktop/docs/transaction-specs/test/samples/token_mint.txt"));
+        results = sut.execute(List.of(tx));
+        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/token_mint.txt"));
 
 
         System.out.println("[This account] Transfer tokens...");
@@ -158,8 +159,8 @@ public class TestSuite {
                         new TransferToken(tokenAddr, accountAddr, otherAccountAddr, UInt256.ONE)
                 ))).signAndBuild(keyPair::sign);
         System.out.println(toHexString(tx.getPayload()));
-        sut.execute(List.of(tx));
-        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/home/radix/Desktop/docs/transaction-specs/test/samples/token_transfer.txt"));
+        results = sut.execute(List.of(tx));
+        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/token_transfer.txt"));
 
 
         System.out.println("[This account] burn tokens...");
@@ -169,8 +170,8 @@ public class TestSuite {
                         new BurnToken(tokenAddr, accountAddr, UInt256.ONE)
                 ))).signAndBuild(keyPair::sign);
         System.out.println(toHexString(tx.getPayload()));
-        sut.execute(List.of(tx));
-        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/home/radix/Desktop/docs/transaction-specs/test/samples/token_burn.txt"));
+        results = sut.execute(List.of(tx));
+        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/token_burn.txt"));
 
 
         System.out.println("[This account] Transfer XRD...");
@@ -182,8 +183,8 @@ public class TestSuite {
                         new TransferToken(REAddr.ofNativeToken(), accountAddr, otherAccountAddr, Amount.ofTokens(1_000).toSubunits())
                 ))).signAndBuild(keyPair::sign);
         System.out.println(toHexString(tx.getPayload()));
-        sut.execute(List.of(tx));
-        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/home/radix/Desktop/docs/transaction-specs/test/samples/xrd_transfer.txt"));
+        results = sut.execute(List.of(tx));
+        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/xrd_transfer.txt"));
 
         System.out.println("[This account] Transfer XRD with message ...");
         tx = sut.construct(TxnConstructionRequest.create()
@@ -196,8 +197,8 @@ public class TestSuite {
                 )))
                 .signAndBuild(keyPair::sign);
         System.out.println(toHexString(tx.getPayload()));
-        sut.execute(List.of(tx));
-        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/home/radix/Desktop/docs/transaction-specs/test/samples/xrd_transfer_with_msg.txt"));
+        results = sut.execute(List.of(tx));
+        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/xrd_transfer_with_msg.txt"));
 
         System.out.println("[Other account] Register validator...");
         tx = sut.construct(TxnConstructionRequest.create()
@@ -207,8 +208,8 @@ public class TestSuite {
                         new RegisterValidator(otherAccount.getPublicKey())
                 ))).signAndBuild(otherAccount::sign);
         System.out.println(toHexString(tx.getPayload()));
-        sut.execute(List.of(tx));
-        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/home/radix/Desktop/docs/transaction-specs/test/samples/validator_register.txt"));
+        results = sut.execute(List.of(tx));
+        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/validator_register.txt"));
 
         System.out.println("[Other account] Unregister validator...");
         tx = sut.construct(TxnConstructionRequest.create()
@@ -218,8 +219,8 @@ public class TestSuite {
                         new UnregisterValidator(otherAccount.getPublicKey())
                 ))).signAndBuild(otherAccount::sign);
         System.out.println(toHexString(tx.getPayload()));
-        sut.execute(List.of(tx));
-        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/home/radix/Desktop/docs/transaction-specs/test/samples/validator_unregister.txt"));
+        results = sut.execute(List.of(tx));
+        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/validator_unregister.txt"));
 
         System.out.println("[Other account] Re-register validator...");
         tx = sut.construct(TxnConstructionRequest.create()
@@ -229,8 +230,8 @@ public class TestSuite {
                         new RegisterValidator(otherAccount.getPublicKey())
                 ))).signAndBuild(otherAccount::sign);
         System.out.println(toHexString(tx.getPayload()));
-        sut.execute(List.of(tx));
-        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/home/radix/Desktop/docs/transaction-specs/test/samples/validator_re_register.txt"));
+        results = sut.execute(List.of(tx));
+        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/validator_re_register.txt"));
 
         System.out.println("[Other account] Stake 200 XRD...");
         tx = sut.construct(TxnConstructionRequest.create()
@@ -240,8 +241,8 @@ public class TestSuite {
                         new StakeTokens(otherAccountAddr, otherAccount.getPublicKey(), Amount.ofTokens(200).toSubunits())
                 ))).signAndBuild(otherAccount::sign);
         System.out.println(toHexString(tx.getPayload()));
-        sut.execute(List.of(tx));
-        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/home/radix/Desktop/docs/transaction-specs/test/samples/other_stake_from_validator_1.txt"));
+        results = sut.execute(List.of(tx));
+        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/other_stake_from_validator_1.txt"));
 
         System.out.println("[Other account] Allow 3rd-party delegation...");
         tx = sut.construct(TxnConstructionRequest.create()
@@ -251,8 +252,8 @@ public class TestSuite {
                         new UpdateAllowDelegationFlag(otherAccount.getPublicKey(), true)
                 ))).signAndBuild(otherAccount::sign);
         System.out.println(toHexString(tx.getPayload()));
-        sut.execute(List.of(tx));
-        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/home/radix/Desktop/docs/transaction-specs/test/samples/validator_allow_delegation.txt"));
+        results = sut.execute(List.of(tx));
+        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/validator_allow_delegation.txt"));
 
         System.out.println("[Other account] Stake 200 XRD...");
         tx = sut.construct(TxnConstructionRequest.create()
@@ -262,8 +263,8 @@ public class TestSuite {
                         new StakeTokens(otherAccountAddr, otherAccount.getPublicKey(), Amount.ofTokens(200).toSubunits())
                 ))).signAndBuild(otherAccount::sign);
         System.out.println(toHexString(tx.getPayload()));
-        sut.execute(List.of(tx));
-        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/home/radix/Desktop/docs/transaction-specs/test/samples/other_stake_from_validator_2.txt"));
+        results = sut.execute(List.of(tx));
+        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/other_stake_from_validator_2.txt"));
 
         System.out.println("[This account] Stake 200 XRD...");
         tx = sut.construct(TxnConstructionRequest.create()
@@ -273,8 +274,8 @@ public class TestSuite {
                         new StakeTokens(accountAddr, otherAccount.getPublicKey(), Amount.ofTokens(200).toSubunits())
                 ))).signAndBuild(keyPair::sign);
         System.out.println(toHexString(tx.getPayload()));
-        sut.execute(List.of(tx));
-        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/home/radix/Desktop/docs/transaction-specs/test/samples/xrd_stake.txt"));
+        results = sut.execute(List.of(tx));
+        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/xrd_stake.txt"));
 
         // move epoch
         for (int i = 1; i <= 10; i++) {
@@ -294,8 +295,8 @@ public class TestSuite {
                         new UnstakeTokens(accountAddr, otherAccount.getPublicKey(), Amount.ofTokens(100).toSubunits())
                 ))).signAndBuild(keyPair::sign);
         System.out.println(toHexString(tx.getPayload()));
-        sut.execute(List.of(tx));
-        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/home/radix/Desktop/docs/transaction-specs/test/samples/xrd_unstake1.txt"));
+        results = sut.execute(List.of(tx));
+        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/xrd_unstake1.txt"));
 
         System.out.println("[This account] Unstake 100 XRD...");
         tx = sut.construct(TxnConstructionRequest.create()
@@ -305,8 +306,8 @@ public class TestSuite {
                         new UnstakeTokens(accountAddr, otherAccount.getPublicKey(), Amount.ofTokens(100).toSubunits())
                 ))).signAndBuild(keyPair::sign);
         System.out.println(toHexString(tx.getPayload()));
-        sut.execute(List.of(tx));
-        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/home/radix/Desktop/docs/transaction-specs/test/samples/xrd_unstake2.txt"));
+        results = sut.execute(List.of(tx));
+        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/xrd_unstake2.txt"));
 
 
         System.out.println("[This account] Transfer to self ...");
@@ -317,8 +318,8 @@ public class TestSuite {
                         new TransferToken(REAddr.ofNativeToken(), accountAddr, accountAddr, Amount.ofTokens(5).toSubunits())
                 ))).signAndBuild(keyPair::sign);
         System.out.println(toHexString(tx.getPayload()));
-        sut.execute(List.of(tx));
-        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/home/radix/Desktop/docs/transaction-specs/test/samples/other_transfer_to_self.txt"));
+        results = sut.execute(List.of(tx));
+        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/other_transfer_to_self.txt"));
 
 
         System.out.println("[This account] Transfer XRD and token ...");
@@ -330,8 +331,8 @@ public class TestSuite {
                         new TransferToken(tokenAddr, accountAddr, otherAccountAddr, UInt256.TWO)
                 ))).signAndBuild(keyPair::sign);
         System.out.println(toHexString(tx.getPayload()));
-        sut.execute(List.of(tx));
-        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/home/radix/Desktop/docs/transaction-specs/test/samples/other_transfer_mixed_tokens.txt"));
+        results = sut.execute(List.of(tx));
+        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/other_transfer_mixed_tokens.txt"));
 
         System.out.println("[This account] Transfer XRD and token ...");
         tx = sut.construct(TxnConstructionRequest.create()
@@ -342,8 +343,24 @@ public class TestSuite {
                         new FeeReserveComplete(accountAddr)
                 ))).signAndBuild(keyPair::sign);
         System.out.println(toHexString(tx.getPayload()));
-        sut.execute(List.of(tx));
-        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/home/radix/Desktop/docs/transaction-specs/test/samples/other_complex_fee.txt"));
+        results = sut.execute(List.of(tx));
+        Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/other_complex_fee.txt"));
 
+    }
+
+    @Test
+    public void dumpProcedures() throws MissingProcedureException {
+        var m = new MainnetForkConfigsModule();
+        var config = m.olympia();
+        var rules = RERulesVersion.OLYMPIA_V1.create(config.getConfig());
+        var procedures = rules.getConstraintMachineConfig().getProcedures();
+        var keys = new ArrayList<>(procedures.procedures.keySet());
+        keys.sort(Comparator.comparing(k -> k.currentState.getSimpleName()));
+        for (var k : keys) {
+            System.out.printf("| %s | `%s` | %s | `%s` |%n", k.currentState.getSimpleName(), k.opSignature.op, (
+                            k.opSignature.type instanceof Class ? ((Class<?>) k.opSignature.type).getSimpleName()
+                                    : (k.opSignature.type == null ? "" : k.opSignature.type))
+                    , procedures.getProcedure(k));
+        }
     }
 }
