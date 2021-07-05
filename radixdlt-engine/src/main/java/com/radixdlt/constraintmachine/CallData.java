@@ -56,7 +56,7 @@ public final class CallData {
 			throw new ProcedureException("Invalid length");
 		}
 
-		if (length + offset > data.length) {
+		if (length + offset + 1 > data.length) {
 			throw new CallDataAccessException(data.length, offset, length);
 		}
 
