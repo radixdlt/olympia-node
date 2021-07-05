@@ -249,6 +249,13 @@ public final class REAddr {
 		return create(buf.array());
 	}
 
+	public static REAddr ofHashedKey(ByteBuffer readBuf) {
+		var buf = ByteBuffer.allocate(HASHED_KEY_BYTES + 1);
+		buf.put(REAddrType.HASHED_KEY.type);
+		buf.put(readBuf.get(HASHED_KEY_BYTES));
+		return create(buf.array());
+	}
+
 	public static REAddr ofPubKeyAccount(ECPublicKey key) {
 		Objects.requireNonNull(key);
 		var buf = ByteBuffer.allocate(ECPublicKey.COMPRESSED_BYTES + 1);

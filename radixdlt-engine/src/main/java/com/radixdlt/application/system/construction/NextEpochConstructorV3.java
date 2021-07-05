@@ -84,7 +84,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 			var validatorData = txBuilder.down(
 				ValidatorStakeData.class,
 				p -> p.getValidatorKey().equals(k),
-				canBeVirtual ? Optional.of(ValidatorStakeData.createVirtual(k)) : Optional.empty(),
+				canBeVirtual ? Optional.of(k) : Optional.empty(),
 				() -> new TxBuilderException("Validator not found")
 			);
 			validatorsToUpdate.put(k, new ValidatorScratchPad(validatorData));
@@ -185,7 +185,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 				var rake = nodeRewards
 					.multiply(UInt256.from(rakePercentage))
 					.divide(UInt256.from(RAKE_MAX));
-				var validatorOwner = validatorStakeData.getOwnerAddr().orElse(REAddr.ofPubKeyAccount(k));
+				var validatorOwner = validatorStakeData.getOwnerAddr();
 				var initStake = new TreeMap<REAddr, UInt256>(
 					Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator())
 				);

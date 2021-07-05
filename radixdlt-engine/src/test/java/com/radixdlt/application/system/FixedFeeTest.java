@@ -69,7 +69,6 @@ public class FixedFeeTest {
 		cmAtomOS.load(new TokensConstraintScryptV3());
 		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		var cm = new ConstraintMachine(
-			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures(),
 			FixedFeeMeter.create(UInt256.FIVE)
 		);

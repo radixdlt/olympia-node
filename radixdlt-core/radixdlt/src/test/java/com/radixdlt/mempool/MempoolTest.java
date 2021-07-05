@@ -106,10 +106,9 @@ public class MempoolTest {
 		for (int i = 0; i < numMutexes; i++) {
 			var symbol = "test" + (char) ('c' + i);
 			var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), symbol);
-			var rriParticle = new UnclaimedREAddr(addr);
 			atomBuilder
 				.syscall(Syscall.READDR_CLAIM, symbol.getBytes(StandardCharsets.UTF_8))
-				.virtualDown(rriParticle)
+				.virtualDown(UnclaimedREAddr.class, addr)
 				.end();
 		}
 		var signature = keyPair.sign(atomBuilder.hashToSign());

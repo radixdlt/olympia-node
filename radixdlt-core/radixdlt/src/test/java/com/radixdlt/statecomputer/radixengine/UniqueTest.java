@@ -79,10 +79,9 @@ public final class UniqueTest {
 
 	private Txn uniqueTxn(ECKeyPair keyPair) throws Exception {
 		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
-		var rriParticle = new UnclaimedREAddr(addr);
 		var atomBuilder = TxLowLevelBuilder.newBuilder(rules.getSerialization())
 			.syscall(Syscall.READDR_CLAIM, "test".getBytes(StandardCharsets.UTF_8))
-			.virtualDown(rriParticle)
+			.virtualDown(UnclaimedREAddr.class, addr)
 			.end();
 		var sig = keyPair.sign(atomBuilder.hashToSign());
 		return atomBuilder.sig(sig).build();

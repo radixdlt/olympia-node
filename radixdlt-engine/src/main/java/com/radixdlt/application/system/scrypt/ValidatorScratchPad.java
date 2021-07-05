@@ -27,14 +27,12 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
-import java.util.Optional;
-
 public final class ValidatorScratchPad {
 	private final ECPublicKey validatorKey;
 	private UInt384 totalStake;
 	private UInt384 totalOwnership;
 	private int rakePercentage;
-	private Optional<REAddr> ownerAddr;
+	private REAddr ownerAddr;
 	private boolean isRegistered;
 
 	public ValidatorScratchPad(ValidatorStakeData validatorStakeData) {
@@ -50,7 +48,7 @@ public final class ValidatorScratchPad {
 		return validatorKey;
 	}
 
-	public Optional<REAddr> getOwnerAddr() {
+	public REAddr getOwnerAddr() {
 		return ownerAddr;
 	}
 
@@ -66,7 +64,7 @@ public final class ValidatorScratchPad {
 		this.rakePercentage = rakePercentage;
 	}
 
-	public void setOwnerAddr(Optional<REAddr> ownerAddr) {
+	public void setOwnerAddr(REAddr ownerAddr) {
 		this.ownerAddr = ownerAddr;
 	}
 

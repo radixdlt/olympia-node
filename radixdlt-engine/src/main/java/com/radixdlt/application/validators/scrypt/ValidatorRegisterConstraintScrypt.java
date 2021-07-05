@@ -27,7 +27,6 @@ import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.ReadProcedure;
-import com.radixdlt.constraintmachine.VirtualIndex;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -37,10 +36,6 @@ import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
-
-import java.nio.ByteBuffer;
-import java.util.OptionalLong;
-import java.util.Set;
 
 public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 	private static class UpdatingRegistered implements ReducerState {
@@ -94,17 +89,11 @@ public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				buf.put((byte) (s.isRegistered() ? 1 : 0));
 			},
-			() -> {
-				var buf = ByteBuffer.wrap(new byte[4]);
-				buf.put(SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id()); // 1 byte
-				REFieldSerialization.serializeReservedByte(buf); // 1 byte
-				REFieldSerialization.serializeOptionalLong(buf, OptionalLong.empty()); // 1 byte
-				var virtualPosition = buf.position();
-				REFieldSerialization.serializeBoolean(buf, false); // 1 byte
-				return Set.of(
-					new VirtualIndex(buf.array(), virtualPosition, ECPublicKey.COMPRESSED_BYTES)
-				);
-			}
+			buf -> {
+				var key = REFieldSerialization.deserializeKey(buf);
+				return new ValidatorRegisteredCopy(key, false);
+			},
+			(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k)
 		));
 
 		os.procedure(new DownProcedure<>(

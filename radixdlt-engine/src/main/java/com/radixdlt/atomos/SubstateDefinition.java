@@ -20,10 +20,8 @@ package com.radixdlt.atomos;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserializer;
 import com.radixdlt.constraintmachine.SubstateSerializer;
-import com.radixdlt.constraintmachine.VirtualIndex;
-
-import java.util.Set;
-import java.util.function.Supplier;
+import com.radixdlt.constraintmachine.VirtualSubstateSerializer;
+import com.radixdlt.serialization.DeserializeException;
 
 /**
  * Defines how to retrieve important properties from a given particle type.
@@ -35,8 +33,9 @@ public final class SubstateDefinition<T extends Particle> {
 	private final Class<T> substateClass;
 	private final byte typeByte;
 	private final SubstateDeserializer<T> deserializer;
+	private final SubstateDeserializer<T> virtualDeserializer;
 	private final SubstateSerializer<T> serializer;
-	private final Supplier<Set<VirtualIndex>> virtualized;
+	private final VirtualSubstateSerializer virtualSerializer;
 
 	public SubstateDefinition(
 		Class<T> substateClass,
@@ -48,7 +47,12 @@ public final class SubstateDefinition<T extends Particle> {
 		this.typeByte = typeByte;
 		this.deserializer = deserializer;
 		this.serializer = serializer;
-		this.virtualized = Set::of;
+		this.virtualDeserializer = buf -> {
+			throw new DeserializeException("Virtual substate not supported");
+		};
+		this.virtualSerializer = (o, buf) -> {
+			throw new IllegalStateException("Cannot virtualize");
+		};
 	}
 
 	public SubstateDefinition(
@@ -56,13 +60,15 @@ public final class SubstateDefinition<T extends Particle> {
 		byte typeByte,
 		SubstateDeserializer<T> deserializer,
 		SubstateSerializer<T> serializer,
-		Supplier<Set<VirtualIndex>> virtualized
+		SubstateDeserializer<T> virtualDeserializer,
+		VirtualSubstateSerializer virtualSubstateSerializer
 	) {
 		this.substateClass = substateClass;
 		this.typeByte = typeByte;
 		this.deserializer = deserializer;
+		this.virtualDeserializer = virtualDeserializer;
 		this.serializer = serializer;
-		this.virtualized = virtualized;
+		this.virtualSerializer = virtualSubstateSerializer;
 	}
 
 	public byte getTypeByte() {
@@ -81,7 +87,11 @@ public final class SubstateDefinition<T extends Particle> {
 		return deserializer;
 	}
 
-	public Set<VirtualIndex> getVirtualized() {
-		return virtualized.get();
+	public SubstateDeserializer<T> getVirtualDeserializer() {
+		return virtualDeserializer;
+	}
+
+	public VirtualSubstateSerializer getVirtualSerializer() {
+		return virtualSerializer;
 	}
 }

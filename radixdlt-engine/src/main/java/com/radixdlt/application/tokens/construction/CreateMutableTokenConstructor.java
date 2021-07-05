@@ -43,7 +43,7 @@ public final class CreateMutableTokenConstructor implements ActionConstructor<Cr
 		txBuilder.down(
 			UnclaimedREAddr.class,
 			p -> p.getAddr().equals(reAddress),
-			Optional.of(new UnclaimedREAddr(reAddress)),
+			Optional.of(reAddress),
 			() -> new TxBuilderException("RRI not available")
 		);
 		txBuilder.up(TokenResource.createMutableSupplyResource(reAddress, action.getKey()));

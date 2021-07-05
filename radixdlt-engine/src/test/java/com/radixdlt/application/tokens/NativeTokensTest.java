@@ -75,10 +75,7 @@ public class NativeTokensTest {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(scrypt);
 		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
-		var cm = new ConstraintMachine(
-			cmAtomOS.virtualizedUpParticles(),
-			cmAtomOS.getProcedures()
-		);
+		var cm = new ConstraintMachine(cmAtomOS.getProcedures());
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		var serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();

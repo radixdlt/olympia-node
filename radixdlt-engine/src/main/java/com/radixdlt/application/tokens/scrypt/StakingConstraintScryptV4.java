@@ -114,7 +114,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 			if (!allowDelegationFlag.getValidatorKey().equals(ownerCopy.getValidatorKey())) {
 				throw new ProcedureException("Not matching validator keys");
 			}
-			var owner = ownerCopy.getOwner().orElse(REAddr.ofPubKeyAccount(ownerCopy.getValidatorKey()));
+			var owner = ownerCopy.getOwner();
 			return new StakePrepare(
 				tokenHoldingBucket,
 				allowDelegationFlag.getValidatorKey(),

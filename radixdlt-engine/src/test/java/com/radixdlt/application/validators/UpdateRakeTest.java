@@ -57,10 +57,7 @@ public class UpdateRakeTest {
 		cmAtomOS.load(new EpochUpdateConstraintScrypt(1, UInt256.TEN, 0, 1, 100));
 		cmAtomOS.load(new ValidatorConstraintScryptV2());
 		cmAtomOS.load(new ValidatorUpdateRakeConstraintScrypt(2));
-		var cm = new ConstraintMachine(
-			cmAtomOS.virtualizedUpParticles(),
-			cmAtomOS.getProcedures()
-		);
+		var cm = new ConstraintMachine(cmAtomOS.getProcedures());
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		this.serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();

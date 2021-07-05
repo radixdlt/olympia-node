@@ -26,7 +26,6 @@ import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
-import com.radixdlt.constraintmachine.VirtualIndex;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -37,9 +36,7 @@ import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
 
-import java.nio.ByteBuffer;
 import java.util.Objects;
-import java.util.Set;
 
 
 public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
@@ -88,17 +85,11 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 					REFieldSerialization.serializeString(buf, s.getName());
 					REFieldSerialization.serializeString(buf, s.getUrl());
 				},
-				() -> {
-					var buf = ByteBuffer.wrap(new byte[4]);
-					buf.put(SubstateTypeId.VALIDATOR_META_DATA.id()); // 1 byte
-					REFieldSerialization.serializeReservedByte(buf); // 1 byte
-					var virtualPosition = buf.position();
-					REFieldSerialization.serializeString(buf, ""); // 1 byte
-					REFieldSerialization.serializeString(buf, ""); // 1 byte
-					return Set.of(
-						new VirtualIndex(buf.array(), virtualPosition, ECPublicKey.COMPRESSED_BYTES)
-					);
-				}
+				buf -> {
+					var key = REFieldSerialization.deserializeKey(buf);
+					return new ValidatorMetaData(key, "", "");
+				},
+				(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k)
 			)
 		);
 
@@ -147,16 +138,11 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				buf.put((byte) (s.allowsDelegation() ? 1 : 0));
 			},
-			() -> {
-				var buf = ByteBuffer.wrap(new byte[3]);
-				buf.put(SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG.id()); // 1 byte
-				REFieldSerialization.serializeReservedByte(buf); // 1 byte
-				var virtualPosition = buf.position();
-				REFieldSerialization.serializeBoolean(buf, false); // 1 byte
-				return Set.of(
-					new VirtualIndex(buf.array(), virtualPosition, ECPublicKey.COMPRESSED_BYTES)
-				);
-			}
+			buf -> {
+				var key = REFieldSerialization.deserializeKey(buf);
+				return new AllowDelegationFlag(key, false);
+			},
+			(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k)
 		));
 
 		os.procedure(new DownProcedure<>(

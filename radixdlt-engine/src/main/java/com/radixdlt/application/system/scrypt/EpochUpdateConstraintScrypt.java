@@ -46,7 +46,6 @@ import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReadIndexProcedure;
-import com.radixdlt.constraintmachine.VirtualIndex;
 import com.radixdlt.constraintmachine.exceptions.MismatchException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
@@ -60,12 +59,9 @@ import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.UInt256;
 
-import java.nio.ByteBuffer;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Function;
@@ -199,7 +195,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					var rake = nodeRewards
 						.multiply(UInt256.from(rakePercentage))
 						.divide(UInt256.from(RAKE_MAX));
-					var validatorOwner = validatorStakeData.getOwnerAddr().orElse(REAddr.ofPubKeyAccount(k));
+					var validatorOwner = validatorStakeData.getOwnerAddr();
 					var initStake = new TreeMap<REAddr, UInt256>(Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator()));
 					initStake.put(validatorOwner, rake);
 					preparingStake.put(k, initStake);
@@ -902,7 +898,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					var delegate = REFieldSerialization.deserializeKey(buf);
 					var ownership = REFieldSerialization.deserializeUInt256(buf);
 					var rakePercentage = REFieldSerialization.deserializeInt(buf);
-					var ownerAddress = REFieldSerialization.deserializeOptionalAccountREAddr(buf);
+					var ownerAddress = REFieldSerialization.deserializeAccountREAddr(buf);
 					return ValidatorStakeData.create(delegate, amount, ownership, rakePercentage, ownerAddress, isRegistered);
 				},
 				(s, buf) -> {
@@ -912,23 +908,13 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 					buf.put(s.getTotalOwnership().toByteArray());
 					buf.putInt(s.getRakePercentage());
-					REFieldSerialization.serializeOptionalREAddr(buf, s.getOwnerAddr());
+					REFieldSerialization.serializeREAddr(buf, s.getOwnerAddr());
 				},
-				() -> {
-					var buf = ByteBuffer.wrap(new byte[72]);
-					buf.put(SubstateTypeId.VALIDATOR_STAKE_DATA.id()); // 1 byte
-					REFieldSerialization.serializeReservedByte(buf); // 1 byte
-					REFieldSerialization.serializeBoolean(buf, false); // 1 byte
-					REFieldSerialization.serializeUInt256(buf, UInt256.ZERO); // 32 bytes
-					var virtualPosition = buf.position();
-					REFieldSerialization.serializeUInt256(buf, UInt256.ZERO); // 32 bytes
-					buf.putInt(RAKE_MAX); // 4 bytes
-					REFieldSerialization.serializeOptionalREAddr(buf, Optional.empty()); // 1 byte
-
-					return Set.of(
-						new VirtualIndex(buf.array(), virtualPosition, ECPublicKey.COMPRESSED_BYTES)
-					);
-				}
+				buf -> {
+					var key = REFieldSerialization.deserializeKey(buf);
+					return ValidatorStakeData.createVirtual(key);
+				},
+				(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k)
 			)
 		);
 		os.substate(

@@ -74,7 +74,7 @@ public final class REInstruction {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
 				int pos = buf.position();
-				var p = d.deserialize(buf);
+				var p = d.deserializeVirtual(buf);
 				int length = buf.position() - pos;
 				var b = ByteBuffer.wrap(buf.array(), pos, length);
 				return Substate.create(p, SubstateId.ofVirtualSubstate(b));
@@ -100,19 +100,19 @@ public final class REInstruction {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
 				int pos = buf.position();
-				var p = d.deserialize(buf);
+				var p = d.deserializeVirtual(buf);
 				int length = buf.position() - pos;
 				var b = ByteBuffer.wrap(buf.array(), pos, length);
 				return Substate.create(p, SubstateId.ofVirtualSubstate(b));
 			}
 		},
-		SIG((byte) 0xa, REOp.SIG) {
+		SIG((byte) 0x9, REOp.SIG) {
 			@Override
 			Object read(REParser.ParserState parserState, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
 				return REFieldSerialization.deserializeSignature(b);
 			}
 		},
-		MSG((byte) 0xb, REOp.MSG) {
+		MSG((byte) 0xa, REOp.MSG) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
 				var length = Byte.toUnsignedInt(b.get());
@@ -121,7 +121,7 @@ public final class REInstruction {
 				return bytes;
 			}
 		},
-		HEADER((byte) 0xc, REOp.HEADER) {
+		HEADER((byte) 0xb, REOp.HEADER) {
 			@Override
 			Object read(REParser.ParserState parserState, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
 				int version = b.get();
@@ -135,7 +135,7 @@ public final class REInstruction {
 				return (flags & 0x1) == 1;
 			}
 		},
-		READINDEX((byte) 0xd, REOp.READINDEX) {
+		READINDEX((byte) 0xc, REOp.READINDEX) {
 			@Override
 			Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
 				int indexSize = Byte.toUnsignedInt(buf.get());
@@ -144,20 +144,13 @@ public final class REInstruction {
 				return SubstateIndex.create(array, d.byteToClass(array[0]));
 			}
 		},
-		DOWNINDEX((byte) 0xe, REOp.DOWNINDEX) {
+		DOWNINDEX((byte) 0xd, REOp.DOWNINDEX) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
 				int indexSize = Byte.toUnsignedInt(buf.get());
 				var b = new byte[indexSize];
 				buf.get(b);
 				return SubstateIndex.create(b, d.byteToClass(b[0]));
-			}
-		},
-		VUP((byte) 0xe, REOp.UP) {
-			@Override
-			Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
-				int substateSize = Byte.toUnsignedInt(buf.get());
-				return null;
 			}
 		};
 

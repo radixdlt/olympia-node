@@ -48,7 +48,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
@@ -57,23 +56,14 @@ import java.util.function.Supplier;
 // FIXME: unchecked, rawtypes
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class ConstraintMachine {
-	private final Predicate<ByteBuffer> virtualStoreLayer;
 	private final Procedures procedures;
 	private final Meter metering;
 
-	public ConstraintMachine(
-		Predicate<ByteBuffer> virtualStoreLayer,
-		Procedures procedures
-	) {
-		this(virtualStoreLayer, procedures, Meter.EMPTY);
+	public ConstraintMachine(Procedures procedures) {
+		this(procedures, Meter.EMPTY);
 	}
 
-	public ConstraintMachine(
-		Predicate<ByteBuffer> virtualStoreLayer,
-		Procedures procedures,
-		Meter metering
-	) {
-		this.virtualStoreLayer = Objects.requireNonNull(virtualStoreLayer);
+	public ConstraintMachine(Procedures procedures, Meter metering) {
 		this.procedures = Objects.requireNonNull(procedures);
 		this.metering = Objects.requireNonNull(metering);
 	}
@@ -82,17 +72,14 @@ public final class ConstraintMachine {
 		private final Map<Integer, Pair<Substate, Supplier<ByteBuffer>>> localUpParticles = new HashMap<>();
 		private final Set<SubstateId> remoteDownParticles = new HashSet<>();
 		private final CMStore store;
-		private final Predicate<ByteBuffer> virtualStoreLayer;
 		private final SubstateDeserialization deserialization;
 		private int bootupCount = 0;
 
 		CMValidationState(
 			SubstateDeserialization deserialization,
-			Predicate<ByteBuffer> virtualStoreLayer,
 			CMStore store
 		) {
 			this.deserialization = deserialization;
-			this.virtualStoreLayer = virtualStoreLayer;
 			this.store = store;
 		}
 
@@ -136,13 +123,9 @@ public final class ConstraintMachine {
 			bootupCount++;
 		}
 
-		public void virtualRead(Substate substate, Supplier<ByteBuffer> buffer) throws SubstateNotFoundException, InvalidVirtualSubstateException {
+		public void virtualRead(Substate substate) throws SubstateNotFoundException {
 			if (remoteDownParticles.contains(substate.getId())) {
 				throw new SubstateNotFoundException(substate.getId());
-			}
-
-			if (!virtualStoreLayer.test(buffer.get())) {
-				throw new InvalidVirtualSubstateException(substate.getParticle());
 			}
 
 			if (store.isVirtualDown(substate.getId())) {
@@ -150,8 +133,8 @@ public final class ConstraintMachine {
 			}
 		}
 
-		public void virtualShutdown(Substate substate, Supplier<ByteBuffer> buffer) throws SubstateNotFoundException, InvalidVirtualSubstateException {
-			virtualRead(substate, buffer);
+		public void virtualShutdown(Substate substate) throws SubstateNotFoundException, InvalidVirtualSubstateException {
+			virtualRead(substate);
 			remoteDownParticles.add(substate.getId());
 		}
 
@@ -281,7 +264,7 @@ public final class ConstraintMachine {
 					if (inst.getMicroOp() == REInstruction.REMicroOp.VREAD) {
 						Substate substate = inst.getData();
 						nextParticle = substate.getParticle();
-						validationState.virtualRead(substate, inst::getDataByteBuffer);
+						validationState.virtualRead(substate);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.READ) {
 						SubstateId substateId = inst.getData();
 						nextParticle = validationState.read(substateId);
@@ -337,7 +320,7 @@ public final class ConstraintMachine {
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.VDOWN) {
 						substate = inst.getData();
 						nextParticle = substate.getParticle();
-						validationState.virtualShutdown(substate, inst::getDataByteBuffer);
+						validationState.virtualShutdown(substate);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.DOWN) {
 						SubstateId substateId = inst.getData();
 						nextParticle = validationState.shutdown(substateId);
@@ -406,7 +389,7 @@ public final class ConstraintMachine {
 		ExecutionContext context,
 		List<REInstruction> instructions
 	) throws TxnParseException, ConstraintMachineException {
-		var validationState = new CMValidationState(deserialization, virtualStoreLayer, cmStore);
+		var validationState = new CMValidationState(deserialization, cmStore);
 		return this.statefulVerify(context, validationState, instructions);
 	}
 }

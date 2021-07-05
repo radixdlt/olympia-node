@@ -104,10 +104,7 @@ public class NextViewV2Test {
 		cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
 		cmAtomOS.load(new ValidatorUpdateRakeConstraintScrypt(2));
 		cmAtomOS.load(new ValidatorUpdateOwnerConstraintScrypt());
-		var cm = new ConstraintMachine(
-			cmAtomOS.virtualizedUpParticles(),
-			cmAtomOS.getProcedures()
-		);
+		var cm = new ConstraintMachine(cmAtomOS.getProcedures());
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		var serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();

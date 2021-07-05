@@ -53,10 +53,7 @@ public class UniqueTest {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new MutexConstraintScrypt());
 		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
-		var cm = new ConstraintMachine(
-			cmAtomOS.virtualizedUpParticles(),
-			cmAtomOS.getProcedures()
-		);
+		var cm = new ConstraintMachine(cmAtomOS.getProcedures());
 		this.parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		this.serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();
@@ -77,7 +74,7 @@ public class UniqueTest {
 		var builder = TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization)
 			.toLowLevelBuilder()
 			.syscall(Syscall.READDR_CLAIM, "smthng".getBytes(StandardCharsets.UTF_8))
-			.virtualDown(new UnclaimedREAddr(addr))
+			.virtualDown(UnclaimedREAddr.class, addr)
 			.end();
 		var sig = keyPair.sign(builder.hashToSign());
 		var txn = builder.sig(sig).build();

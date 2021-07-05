@@ -34,12 +34,11 @@ import java.util.Optional;
 public final class CreateFixedTokenConstructor implements ActionConstructor<CreateFixedToken> {
 	@Override
 	public void construct(CreateFixedToken action, TxBuilder txBuilder) throws TxBuilderException {
-		var addrParticle = new UnclaimedREAddr(action.getResourceAddr());
 		txBuilder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, action.getSymbol().getBytes(StandardCharsets.UTF_8));
 		txBuilder.down(
 			UnclaimedREAddr.class,
 			p -> p.getAddr().equals(action.getResourceAddr()),
-			Optional.of(addrParticle),
+			Optional.of(action.getResourceAddr()),
 			() -> new TxBuilderException("RRI not available")
 		);
 		txBuilder.up(TokenResource.createFixedSupplyResource(action.getResourceAddr()));

@@ -30,17 +30,12 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.constraintmachine.VirtualIndex;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.serialization.DeserializeException;
 
-import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Predicate;
 
 /**
  * Implementation of the AtomOS interface on top of a UTXO based Constraint Machine.
@@ -93,22 +88,17 @@ public final class CMAtomOS {
 					UnclaimedREAddr.class,
 					SubstateTypeId.UNCLAIMED_READDR.id(),
 					buf -> {
-						REFieldSerialization.deserializeReservedByte(buf);
-						var rri = REFieldSerialization.deserializeREAddr(buf, claimableAddrTypes);
-						return new UnclaimedREAddr(rri);
+						throw new UnsupportedOperationException();
 					},
 					(s, buf) -> {
-						REFieldSerialization.serializeReservedByte(buf);
-						REFieldSerialization.serializeREAddr(buf, s.getAddr());
+						throw new UnsupportedOperationException();
 					},
-					() -> Set.of(
-						new VirtualIndex(new byte[] {SubstateTypeId.UNCLAIMED_READDR.id(), 0, REAddr.REAddrType.SYSTEM.byteValue()}),
-						new VirtualIndex(new byte[] {SubstateTypeId.UNCLAIMED_READDR.id(), 0, REAddr.REAddrType.NATIVE_TOKEN.byteValue()}),
-						new VirtualIndex(new byte[] {SubstateTypeId.UNCLAIMED_READDR.id(), 0, REAddr.REAddrType.HASHED_KEY.byteValue()},
-							3, 26)
-					)
-				)
-			);
+					buf -> {
+						var addr = REFieldSerialization.deserializeREAddr(buf, claimableAddrTypes);
+						return new UnclaimedREAddr(addr);
+					},
+					(a, buf) -> REFieldSerialization.serializeREAddr(buf, (REAddr) a)
+				));
 
 			os.procedure(new DownProcedure<>(
 				REAddrClaimStart.class, UnclaimedREAddr.class,
@@ -143,28 +133,5 @@ public final class CMAtomOS {
 
 	public SubstateSerialization buildSubstateSerialization() {
 		return new SubstateSerialization(substateDefinitions.values());
-	}
-
-	public Predicate<ByteBuffer> virtualizedUpParticles() {
-		var deserialization = buildSubstateDeserialization();
-		return p -> {
-			var start = p.position();
-			var typeByte = p.get();
-			Class<? extends Particle> c;
-			try {
-				c = deserialization.byteToClass(typeByte);
-			} catch (DeserializeException e) {
-				return false;
-			}
-
-			var def = substateDefinitions.get(c);
-			for (var virtualized : def.getVirtualized()) {
-				p.position(start);
-				if (virtualized.test(p)) {
-					return true;
-				}
-			}
-			return false;
-		};
 	}
 }

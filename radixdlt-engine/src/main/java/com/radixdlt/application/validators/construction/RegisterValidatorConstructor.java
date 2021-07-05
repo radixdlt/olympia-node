@@ -34,7 +34,7 @@ public class RegisterValidatorConstructor implements ActionConstructor<RegisterV
 		txBuilder.down(
 			ValidatorRegisteredCopy.class,
 			p -> p.getValidatorKey().equals(action.validatorKey()),
-			Optional.of(new ValidatorRegisteredCopy(action.validatorKey(), false)),
+			Optional.of(action.validatorKey()),
 			() -> new TxBuilderException("Cannot find state")
 		);
 

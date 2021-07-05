@@ -22,18 +22,17 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.OptionalLong;
 
 public final class ValidatorOwnerCopy implements ValidatorData {
 	private final ECPublicKey validatorKey;
-	private final Optional<REAddr> owner;
+	private final REAddr owner;
 	private final OptionalLong epochUpdate;
 
 	public ValidatorOwnerCopy(
 		OptionalLong epochUpdate,
 		ECPublicKey validatorKey,
-		Optional<REAddr> owner
+		REAddr owner
 	) {
 		this.epochUpdate = epochUpdate;
 		this.validatorKey = validatorKey;
@@ -42,7 +41,7 @@ public final class ValidatorOwnerCopy implements ValidatorData {
 
 	public ValidatorOwnerCopy(
 		ECPublicKey validatorKey,
-		Optional<REAddr> owner
+		REAddr owner
 	) {
 		this.epochUpdate = OptionalLong.empty();
 		this.validatorKey = validatorKey;
@@ -58,7 +57,7 @@ public final class ValidatorOwnerCopy implements ValidatorData {
 		return validatorKey;
 	}
 
-	public Optional<REAddr> getOwner() {
+	public REAddr getOwner() {
 		return this.owner;
 	}
 

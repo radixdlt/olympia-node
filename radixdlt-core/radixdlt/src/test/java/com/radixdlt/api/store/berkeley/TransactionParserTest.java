@@ -119,7 +119,6 @@ public class TransactionParserTest {
 		cmAtomOS.load(new ValidatorUpdateOwnerConstraintScrypt());
 
 		final var cm = new ConstraintMachine(
-			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures(),
 			FixedFeeMeter.create(UInt256.FOUR)
 		);

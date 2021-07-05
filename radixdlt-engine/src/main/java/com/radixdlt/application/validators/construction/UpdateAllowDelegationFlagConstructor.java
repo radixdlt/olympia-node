@@ -33,7 +33,7 @@ public class UpdateAllowDelegationFlagConstructor implements ActionConstructor<U
 		builder.swap(
 			AllowDelegationFlag.class,
 			p -> p.getValidatorKey().equals(action.getValidatorKey()) && p.allowsDelegation() != action.allowDelegation(),
-			Optional.of(new AllowDelegationFlag(action.getValidatorKey(), false)),
+			Optional.of(action.getValidatorKey()),
 			() -> new TxBuilderException("Flag already set to " + action.allowDelegation())
 		).with(
 			substateDown -> List.of(new AllowDelegationFlag(

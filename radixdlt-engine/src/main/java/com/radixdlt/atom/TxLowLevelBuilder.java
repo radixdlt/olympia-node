@@ -118,10 +118,15 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
-	public TxLowLevelBuilder virtualDown(Particle particle) {
-		Objects.requireNonNull(particle, "particle is required");
-		var bytes = serialization.serialize(particle);
+	public TxLowLevelBuilder virtualDown(Class<? extends Particle> substateClass, Object key) {
+		var bytes = serialization.serializeVirtual(substateClass, key);
 		instruction(REInstruction.REMicroOp.VDOWN, bytes);
+		return this;
+	}
+
+	public TxLowLevelBuilder virtualRead(Class<? extends Particle> substateClass, Object key) {
+		var bytes = serialization.serializeVirtual(substateClass, key);
+		instruction(REInstruction.REMicroOp.VREAD, bytes);
 		return this;
 	}
 
@@ -131,13 +136,6 @@ public final class TxLowLevelBuilder {
 			throw new IllegalStateException("Local particle does not exist: " + index);
 		}
 		instruction(REInstruction.REMicroOp.LREAD, Ints.toByteArray(index));
-		return this;
-	}
-
-	public TxLowLevelBuilder virtualRead(Particle particle) {
-		Objects.requireNonNull(particle, "particle is required");
-		var bytes = serialization.serialize(particle);
-		instruction(REInstruction.REMicroOp.VREAD, bytes);
 		return this;
 	}
 

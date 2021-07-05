@@ -32,15 +32,13 @@ import com.radixdlt.constraintmachine.ReadProcedure;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
-import com.radixdlt.constraintmachine.VirtualIndex;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 
-import java.nio.ByteBuffer;
 import java.util.OptionalLong;
-import java.util.Set;
 
 public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
 
@@ -87,26 +85,20 @@ public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
 				REFieldSerialization.deserializeReservedByte(buf);
 				OptionalLong epochUpdate = REFieldSerialization.deserializeOptionalNonNegativeLong(buf);
 				var key = REFieldSerialization.deserializeKey(buf);
-				var owner = REFieldSerialization.deserializeOptionalAccountREAddr(buf);
+				var owner = REFieldSerialization.deserializeAccountREAddr(buf);
 				return new ValidatorOwnerCopy(epochUpdate, key, owner);
 			},
 			(s, buf) -> {
 				REFieldSerialization.serializeReservedByte(buf);
 				REFieldSerialization.serializeOptionalLong(buf, s.getEpochUpdate());
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
-				REFieldSerialization.serializeOptionalREAddr(buf, s.getOwner());
+				REFieldSerialization.serializeREAddr(buf, s.getOwner());
 			},
-			() -> {
-				var buf = ByteBuffer.wrap(new byte[4]);
-				buf.put(SubstateTypeId.VALIDATOR_OWNER_COPY.id()); // 1 byte
-				REFieldSerialization.serializeReservedByte(buf); // 1 byte
-				REFieldSerialization.serializeOptionalLong(buf, OptionalLong.empty()); // 1 byte
-				var virtualPosition = buf.position();
-				REFieldSerialization.serializeBoolean(buf, false); // 1 byte
-				return Set.of(
-					new VirtualIndex(buf.array(), virtualPosition, ECPublicKey.COMPRESSED_BYTES)
-				);
-			}
+			buf -> {
+				var key = REFieldSerialization.deserializeKey(buf);
+				return new ValidatorOwnerCopy(OptionalLong.empty(), key, REAddr.ofPubKeyAccount(key));
+			},
+			(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k)
 		));
 
 		os.procedure(new DownProcedure<>(

@@ -35,11 +35,10 @@ public class CreateSystemConstructorV2 implements ActionConstructor<CreateSystem
 	@Override
 	public void construct(CreateSystem action, TxBuilder builder) throws TxBuilderException {
 		builder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, "sys".getBytes(StandardCharsets.UTF_8));
-		var sysAddr = new UnclaimedREAddr(REAddr.ofSystem());
 		builder.down(
 			UnclaimedREAddr.class,
 			addr -> addr.getAddr().isSystem(),
-			Optional.of(sysAddr),
+			Optional.of(REAddr.ofSystem()),
 			() -> new TxBuilderException("No system address")
 		);
 		builder.up(new EpochData(0));

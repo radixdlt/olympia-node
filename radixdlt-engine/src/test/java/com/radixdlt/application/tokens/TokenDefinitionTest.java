@@ -64,10 +64,7 @@ public class TokenDefinitionTest {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		cmAtomOS.load(new TokensConstraintScryptV3());
-		var cm = new ConstraintMachine(
-			cmAtomOS.virtualizedUpParticles(),
-			cmAtomOS.getProcedures()
-		);
+		var cm = new ConstraintMachine(cmAtomOS.getProcedures());
 		this.parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		this.serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();
@@ -88,7 +85,6 @@ public class TokenDefinitionTest {
 		// Arrange
 		var keyPair = ECKeyPair.generateNew();
 		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
-		var addrParticle = new UnclaimedREAddr(addr);
 		var tokenResource = TokenResource.createFixedSupplyResource(addr);
 		var holdingAddress = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
 		var tokensParticle = new TokensInAccount(
@@ -98,7 +94,7 @@ public class TokenDefinitionTest {
 		);
 		var builder = TxLowLevelBuilder.newBuilder(serialization)
 			.syscall(Syscall.READDR_CLAIM, "test".getBytes(StandardCharsets.UTF_8))
-			.virtualDown(addrParticle)
+			.virtualDown(UnclaimedREAddr.class, addr)
 			.up(tokenResource)
 			.up(tokensParticle)
 			.up(TokenResourceMetadata.empty(addr))
@@ -116,11 +112,10 @@ public class TokenDefinitionTest {
 		// Arrange
 		var keyPair = ECKeyPair.generateNew();
 		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
-		var addrParticle = new UnclaimedREAddr(addr);
 		var tokenDefinitionParticle = TokenResource.createFixedSupplyResource(addr);
 		var builder = TxLowLevelBuilder.newBuilder(serialization)
 			.syscall(Syscall.READDR_CLAIM, "test".getBytes(StandardCharsets.UTF_8))
-			.virtualDown(addrParticle)
+			.virtualDown(UnclaimedREAddr.class, addr)
 			.up(tokenDefinitionParticle)
 			.end();
 		var sig = keyPair.sign(builder.hashToSign().asBytes());
@@ -140,7 +135,7 @@ public class TokenDefinitionTest {
 		var builder = TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization)
 			.toLowLevelBuilder()
 			.syscall(Syscall.READDR_CLAIM, "smthng".getBytes(StandardCharsets.UTF_8))
-			.virtualDown(new UnclaimedREAddr(addr))
+			.virtualDown(UnclaimedREAddr.class, addr)
 			.up(tokenDefinitionParticle)
 			.end();
 		var sig = keyPair.sign(builder.hashToSign());

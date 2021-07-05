@@ -18,31 +18,8 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.constraintmachine.meter.Meter;
+import java.nio.ByteBuffer;
 
-public final class ConstraintMachineConfig {
-	private final Procedures procedures;
-	private final Meter metering;
-
-	public ConstraintMachineConfig(
-		Procedures procedures,
-		Meter metering
-	) {
-		this.procedures = procedures;
-		this.metering = metering;
-	}
-
-	public Procedures getProcedures() {
-		return procedures;
-	}
-
-	public Meter getMeter() {
-		return metering;
-	}
-
-	public ConstraintMachineConfig metering(Meter metering) {
-		return new ConstraintMachineConfig(
-			procedures, metering
-		);
-	}
+public interface VirtualSubstateSerializer {
+	void serialize(Object key, ByteBuffer buf);
 }
