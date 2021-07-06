@@ -20,8 +20,8 @@ package com.radixdlt.constraintmachine.exceptions;
 
 import com.radixdlt.atom.SubstateId;
 
-public class SubstateNotFoundException extends Exception {
-	public SubstateNotFoundException(SubstateId substateId) {
-		super("Substate " + substateId + " not found.");
+public class VirtualSubstateAlreadyDownException extends SubstateNotFoundException {
+	public VirtualSubstateAlreadyDownException(SubstateId substateId) {
+		super(substateId);
 	}
 }

@@ -31,6 +31,7 @@ import com.radixdlt.constraintmachine.exceptions.MissingProcedureException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
 import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
+import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.constraintmachine.meter.Meter;
 import com.radixdlt.identifiers.REAddr;
@@ -125,17 +126,15 @@ public final class ConstraintMachine {
 			bootupCount++;
 		}
 
-		public void virtualRead(SubstateId substateId) throws SubstateNotFoundException {
+		public void virtualRead(SubstateId substateId) throws VirtualSubstateAlreadyDownException {
 			if (remoteDownParticles.contains(substateId)) {
-				throw new SubstateNotFoundException(substateId);
+				throw new VirtualSubstateAlreadyDownException(substateId);
 			}
 
-			if (store.isVirtualDown(substateId)) {
-				throw new SubstateNotFoundException(substateId);
-			}
+			store.verifyVirtualSubstate(substateId);
 		}
 
-		public void virtualShutdown(SubstateId substateId) throws SubstateNotFoundException, InvalidVirtualSubstateException {
+		public void virtualShutdown(SubstateId substateId) throws VirtualSubstateAlreadyDownException {
 			virtualRead(substateId);
 			remoteDownParticles.add(substateId);
 		}

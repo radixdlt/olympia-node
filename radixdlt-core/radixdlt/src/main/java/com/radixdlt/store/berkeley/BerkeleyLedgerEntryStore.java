@@ -22,6 +22,8 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
+import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.store.ResourceStore;
@@ -214,8 +216,10 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				}
 
 				@Override
-				public boolean isVirtualDown(SubstateId substateId) {
-					return BerkeleyLedgerEntryStore.this.isVirtualDown(dbTxn, substateId);
+				public void verifyVirtualSubstate(SubstateId substateId) throws VirtualSubstateAlreadyDownException {
+					if (BerkeleyLedgerEntryStore.this.isVirtualDown(dbTxn, substateId)) {
+						throw new VirtualSubstateAlreadyDownException(substateId);
+					}
 				}
 
 				@Override

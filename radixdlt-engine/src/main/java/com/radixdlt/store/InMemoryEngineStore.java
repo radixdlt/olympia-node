@@ -27,6 +27,7 @@ import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 
@@ -71,10 +72,12 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 			}
 
 			@Override
-			public boolean isVirtualDown(SubstateId substateId) {
+			public void verifyVirtualSubstate(SubstateId substateId) throws VirtualSubstateAlreadyDownException {
 				synchronized (lock) {
 					var inst = storedParticles.get(substateId);
-					return inst != null && inst.isShutDown();
+					if (inst != null && inst.isShutDown()) {
+						throw new VirtualSubstateAlreadyDownException(substateId);
+					}
 				}
 			}
 

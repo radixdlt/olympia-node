@@ -56,8 +56,7 @@ public final class LogCMStore implements CMStore {
 	}
 
 	@Override
-	public boolean isVirtualDown(SubstateId substateId) {
-		return false;
+	public void verifyVirtualSubstate(SubstateId substateId) {
 	}
 
 	@Override
