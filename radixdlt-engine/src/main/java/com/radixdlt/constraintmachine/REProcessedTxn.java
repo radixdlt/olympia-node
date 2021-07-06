@@ -96,8 +96,9 @@ public final class REProcessedTxn {
 					SubstateId substateId = i.getData();
 					return Stream.of(substateId);
 				} else if (i.getMicroOp() == REInstruction.REMicroOp.VDOWN || i.getMicroOp() == REInstruction.REMicroOp.VREAD) {
-					Substate substate = i.getData();
-					return Stream.of(substate.getId());
+					VirtualKey virtualKey = i.getData();
+					var substateId = SubstateId.ofVirtualSubstate(virtualKey.get());
+					return Stream.of(substateId);
 				}
 				return Stream.empty();
 			});

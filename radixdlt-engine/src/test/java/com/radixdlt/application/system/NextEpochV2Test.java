@@ -123,7 +123,7 @@ public class NextEpochV2Test {
 		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		scrypts.forEach(cmAtomOS::load);
 		cmAtomOS.load(new MutexConstraintScrypt()); // For v1 start
-		var cm = new ConstraintMachine(cmAtomOS.getProcedures());
+		var cm = new ConstraintMachine(cmAtomOS.getProcedures(), cmAtomOS.buildVirtualSubstateDeserialization());
 		this.parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		var serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();

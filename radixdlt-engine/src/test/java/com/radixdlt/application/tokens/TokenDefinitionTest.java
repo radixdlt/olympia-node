@@ -64,7 +64,7 @@ public class TokenDefinitionTest {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		cmAtomOS.load(new TokensConstraintScryptV3());
-		var cm = new ConstraintMachine(cmAtomOS.getProcedures());
+		var cm = new ConstraintMachine(cmAtomOS.getProcedures(), cmAtomOS.buildVirtualSubstateDeserialization());
 		this.parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		this.serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();

@@ -219,6 +219,7 @@ public final class RadixEngine<M> {
 		synchronized (stateUpdateEngineLock) {
 			this.constraintMachine = new ConstraintMachine(
 				constraintMachineConfig.getProcedures(),
+				constraintMachineConfig.getVirtualSubstateDeserialization(),
 				constraintMachineConfig.getMeter()
 			);
 			this.actionConstructors = actionToConstructorMap;

@@ -57,14 +57,16 @@ import java.util.function.Supplier;
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class ConstraintMachine {
 	private final Procedures procedures;
+	private final VirtualSubstateDeserialization virtualSubstateDeserialization;
 	private final Meter metering;
 
-	public ConstraintMachine(Procedures procedures) {
-		this(procedures, Meter.EMPTY);
+	public ConstraintMachine(Procedures procedures, VirtualSubstateDeserialization virtualSubstateDeserialization) {
+		this(procedures, virtualSubstateDeserialization, Meter.EMPTY);
 	}
 
-	public ConstraintMachine(Procedures procedures, Meter metering) {
+	public ConstraintMachine(Procedures procedures, VirtualSubstateDeserialization virtualSubstateDeserialization, Meter metering) {
 		this.procedures = Objects.requireNonNull(procedures);
+		this.virtualSubstateDeserialization = virtualSubstateDeserialization;
 		this.metering = Objects.requireNonNull(metering);
 	}
 
@@ -123,19 +125,19 @@ public final class ConstraintMachine {
 			bootupCount++;
 		}
 
-		public void virtualRead(Substate substate) throws SubstateNotFoundException {
-			if (remoteDownParticles.contains(substate.getId())) {
-				throw new SubstateNotFoundException(substate.getId());
+		public void virtualRead(SubstateId substateId) throws SubstateNotFoundException {
+			if (remoteDownParticles.contains(substateId)) {
+				throw new SubstateNotFoundException(substateId);
 			}
 
-			if (store.isVirtualDown(substate.getId())) {
-				throw new SubstateNotFoundException(substate.getId());
+			if (store.isVirtualDown(substateId)) {
+				throw new SubstateNotFoundException(substateId);
 			}
 		}
 
-		public void virtualShutdown(Substate substate) throws SubstateNotFoundException, InvalidVirtualSubstateException {
-			virtualRead(substate);
-			remoteDownParticles.add(substate.getId());
+		public void virtualShutdown(SubstateId substateId) throws SubstateNotFoundException, InvalidVirtualSubstateException {
+			virtualRead(substateId);
+			remoteDownParticles.add(substateId);
 		}
 
 		public Particle localShutdown(int index) throws LocalSubstateNotFoundException {
@@ -262,9 +264,10 @@ public final class ConstraintMachine {
 				} else if (inst.getMicroOp().getOp() == REOp.READ) {
 					final Particle nextParticle;
 					if (inst.getMicroOp() == REInstruction.REMicroOp.VREAD) {
-						Substate substate = inst.getData();
-						nextParticle = substate.getParticle();
-						validationState.virtualRead(substate);
+						VirtualKey virtualKey = inst.getData();
+						nextParticle = virtualSubstateDeserialization.keyToSubstate(virtualKey.get());
+						var substateId = SubstateId.ofVirtualSubstate(virtualKey.get());
+						validationState.virtualRead(substateId);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.READ) {
 						SubstateId substateId = inst.getData();
 						nextParticle = validationState.read(substateId);
@@ -319,10 +322,10 @@ public final class ConstraintMachine {
 						substateId = substate.getId();
 						validationState.bootUp(substate, inst::getDataByteBuffer);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.VDOWN) {
-						Substate substate = inst.getData();
-						nextParticle = substate.getParticle();
-						substateId = substate.getId();
-						validationState.virtualShutdown(substate);
+						VirtualKey virtualKey = inst.getData();
+						nextParticle = virtualSubstateDeserialization.keyToSubstate(virtualKey.get());
+						substateId = SubstateId.ofVirtualSubstate(virtualKey.get());
+						validationState.virtualShutdown(substateId);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.DOWN) {
 						substateId = inst.getData();
 						nextParticle = validationState.shutdown(substateId);

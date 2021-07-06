@@ -73,11 +73,12 @@ public final class REInstruction {
 		VREAD((byte) 0x5, REOp.READ) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
+				var length = Byte.toUnsignedInt(buf.get());
 				int pos = buf.position();
-				var p = d.deserializeVirtual(buf);
-				int length = buf.position() - pos;
-				var b = ByteBuffer.wrap(buf.array(), pos, length);
-				return Substate.create(p, SubstateId.ofVirtualSubstate(b));
+				var bytes = new byte[length];
+				buf.get(bytes);
+				buf.position(pos + length);
+				return new VirtualKey(() -> ByteBuffer.wrap(buf.array(), pos, length));
 			}
 		},
 		DOWN((byte) 0x6, REOp.DOWN) {
@@ -99,11 +100,12 @@ public final class REInstruction {
 		VDOWN((byte) 0x8, REOp.DOWN) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
+				var length = Byte.toUnsignedInt(buf.get());
 				int pos = buf.position();
-				var p = d.deserializeVirtual(buf);
-				int length = buf.position() - pos;
-				var b = ByteBuffer.wrap(buf.array(), pos, length);
-				return Substate.create(p, SubstateId.ofVirtualSubstate(b));
+				var bytes = new byte[length];
+				buf.get(bytes);
+				buf.position(pos + length);
+				return new VirtualKey(() -> ByteBuffer.wrap(buf.array(), pos, length));
 			}
 		},
 		SIG((byte) 0x9, REOp.SIG) {
@@ -114,10 +116,10 @@ public final class REInstruction {
 		},
 		MSG((byte) 0xa, REOp.MSG) {
 			@Override
-			public Object read(REParser.ParserState parserState, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
-				var length = Byte.toUnsignedInt(b.get());
+			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
+				var length = Byte.toUnsignedInt(buf.get());
 				var bytes = new byte[length];
-				b.get(bytes);
+				buf.get(bytes);
 				return bytes;
 			}
 		},

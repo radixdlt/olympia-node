@@ -70,6 +70,7 @@ public class FixedFeeTest {
 		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		var cm = new ConstraintMachine(
 			cmAtomOS.getProcedures(),
+			cmAtomOS.buildVirtualSubstateDeserialization(),
 			FixedFeeMeter.create(UInt256.FIVE)
 		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());

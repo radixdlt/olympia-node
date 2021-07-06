@@ -122,7 +122,7 @@ public class StakeTokensTest {
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
 		scrypts.forEach(cmAtomOS::load);
-		var cm = new ConstraintMachine(cmAtomOS.getProcedures());
+		var cm = new ConstraintMachine(cmAtomOS.getProcedures(), cmAtomOS.buildVirtualSubstateDeserialization());
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		var serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();

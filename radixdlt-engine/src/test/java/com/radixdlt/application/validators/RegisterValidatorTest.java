@@ -60,7 +60,7 @@ public class RegisterValidatorTest {
 		cmAtomOS.load(new EpochUpdateConstraintScrypt(2, UInt256.NINE, 1, 1, 100));
 		cmAtomOS.load(new ValidatorConstraintScryptV2());
 		cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
-		var cm = new ConstraintMachine(cmAtomOS.getProcedures());
+		var cm = new ConstraintMachine(cmAtomOS.getProcedures(), cmAtomOS.buildVirtualSubstateDeserialization());
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		this.serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();

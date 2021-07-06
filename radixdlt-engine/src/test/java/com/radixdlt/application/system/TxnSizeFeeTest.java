@@ -89,6 +89,7 @@ public class TxnSizeFeeTest {
 		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		var cm = new ConstraintMachine(
 			cmAtomOS.getProcedures(),
+			cmAtomOS.buildVirtualSubstateDeserialization(),
 			TxnSizeFeeMeter.create(costPerByte.toSubunits())
 		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());

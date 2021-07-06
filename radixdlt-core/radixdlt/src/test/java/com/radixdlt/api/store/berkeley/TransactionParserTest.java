@@ -120,6 +120,7 @@ public class TransactionParserTest {
 
 		final var cm = new ConstraintMachine(
 			cmAtomOS.getProcedures(),
+			cmAtomOS.buildVirtualSubstateDeserialization(),
 			FixedFeeMeter.create(UInt256.FOUR)
 		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());

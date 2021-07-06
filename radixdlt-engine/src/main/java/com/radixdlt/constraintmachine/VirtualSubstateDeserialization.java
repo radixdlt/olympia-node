@@ -20,6 +20,7 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.engine.parser.exceptions.SubstateDeserializationException;
+import com.radixdlt.engine.parser.exceptions.TrailingBytesException;
 import com.radixdlt.serialization.DeserializeException;
 
 import java.nio.ByteBuffer;
@@ -27,54 +28,31 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public final class SubstateDeserialization {
+public class VirtualSubstateDeserialization {
 	private final Map<Byte, SubstateDefinition<? extends Particle>> byteToDeserializer;
-	private final Map<Class<? extends Particle>, Byte> classToTypeByte;
 
-	public SubstateDeserialization(
-		Collection<SubstateDefinition<? extends Particle>> definitions
-	) {
+	public VirtualSubstateDeserialization(Collection<SubstateDefinition<? extends Particle>> definitions) {
 		this.byteToDeserializer = definitions.stream()
 			.collect(Collectors.toMap(SubstateDefinition::getTypeByte, d -> d));
-		this.classToTypeByte = definitions.stream()
-			.collect(Collectors.toMap(SubstateDefinition::getSubstateClass, SubstateDefinition::getTypeByte));
 	}
 
-	public Class<? extends Particle> byteToClass(Byte typeByte) throws DeserializeException {
-		var definition = byteToDeserializer.get(typeByte);
-		if (definition == null) {
-			throw new DeserializeException("Unknown substate byte type: " + typeByte);
-		}
-		return definition.getSubstateClass();
-	}
-
-	public byte classToByte(Class<? extends Particle> substateClass) {
-		var b = classToTypeByte.get(substateClass);
-		if (b == null) {
-			throw new IllegalStateException("Unknown substateClass: " + substateClass);
-		}
-		return b;
-	}
-
-	public SubstateIndex index(Class<? extends Particle> substateClass) {
-		return SubstateIndex.create(classToByte(substateClass), substateClass);
-	}
-
-	public Particle deserialize(byte[] b) throws DeserializeException {
-		return deserialize(ByteBuffer.wrap(b));
-	}
-
-	public Particle deserialize(ByteBuffer buf) throws DeserializeException {
+	public Particle keyToSubstate(ByteBuffer buf) throws DeserializeException {
 		var typeByte = buf.get();
 		var deserializer = byteToDeserializer.get(typeByte);
 		if (deserializer == null) {
 			throw new DeserializeException("Unknown byte type: " + typeByte);
 		}
-
+		Particle rawSubstate;
 		try {
-			return deserializer.getDeserializer().deserialize(buf);
+			rawSubstate = deserializer.getVirtualDeserializer().deserialize(buf);
 		} catch (Exception e) {
 			throw new SubstateDeserializationException(deserializer.getSubstateClass(), e);
 		}
+
+		if (buf.hasRemaining()) {
+			throw new TrailingBytesException("Buffer has " + buf.remaining() + " bytes remaining.");
+		}
+
+		return rawSubstate;
 	}
 }

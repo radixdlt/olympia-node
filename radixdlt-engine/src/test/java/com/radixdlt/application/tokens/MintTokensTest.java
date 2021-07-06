@@ -79,7 +79,7 @@ public final class MintTokensTest {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		cmAtomOS.load(scrypt);
-		var cm = new ConstraintMachine(cmAtomOS.getProcedures());
+		var cm = new ConstraintMachine(cmAtomOS.getProcedures(), cmAtomOS.buildVirtualSubstateDeserialization());
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		var serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();

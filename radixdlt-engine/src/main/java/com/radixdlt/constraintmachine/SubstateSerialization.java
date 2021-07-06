@@ -31,7 +31,6 @@ public final class SubstateSerialization {
 	private final Map<Class<? extends Particle>, VirtualSubstateSerializer> classToVirtualSerializer;
 	private final Map<Class<? extends Particle>, Byte> classToTypeByte;
 
-
 	public SubstateSerialization(
 		Collection<SubstateDefinition<? extends Particle>> definitions
 	) {
