@@ -33,7 +33,7 @@ compileTestJava {
 }
 
 dependencies {
-    implementation project(':radixdlt-java')
+    implementation project(':radixdlt-java-common')
 
     implementation 'com.google.code.gson:gson'
     implementation 'commons-cli:commons-cli'
@@ -42,6 +42,8 @@ dependencies {
     annotationProcessor 'info.picocli:picocli-codegen'
 
     testImplementation 'junit:junit'
+    testImplementation 'org.mockito:mockito-core'
+    testImplementation 'org.assertj:assertj-core'
 }
 
 shadowJar {
@@ -70,8 +72,6 @@ def nodeNames = properties.get('nodeNames', "")
 task generateNodeKey(type: Exec) {
     dependsOn compileJava
     dependsOn ':radixdlt-java-common:jar'
-    dependsOn ':radixdlt-engine:jar'
-    dependsOn ':radixdlt-java:jar'
 
     group = "Execution"
     description = "Generate Node key"
