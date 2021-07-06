@@ -25,8 +25,6 @@ package com.radixdlt.cli;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
 
-import static com.radixdlt.cli.Utils.println;
-
 public class Composite {
 	public static class Encrypted {
 		@Option(
@@ -54,7 +52,7 @@ public class Composite {
 
 		boolean isInvalid() {
 			if (keyStore == null || keyStore.isBlank()) {
-				println("Keystore name must not be empty");
+				System.out.println("Keystore name must not be empty");
 			} else if (password == null || password.isBlank()) {
 				System.out.println("Password must not be empty");
 			} else if (keypair == null || keypair.isBlank()) {
