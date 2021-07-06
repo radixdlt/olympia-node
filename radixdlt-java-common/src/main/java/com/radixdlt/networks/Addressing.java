@@ -27,17 +27,17 @@ public final class Addressing {
 
 	public static String accountHrp(int networkId) {
 		return Network.ofId(networkId).map(Network::getAccountHrp)
-			.orElse(Network.STOKENET.getNodeHrp() + networkId);
+			.orElse(Network.STOKENET.getAccountHrp() + networkId);
 	}
 
 	public static String validatorHrp(int networkId) {
 		return Network.ofId(networkId).map(Network::getValidatorHrp)
-			.orElse(Network.STOKENET.getNodeHrp() + networkId);
+			.orElse(Network.STOKENET.getValidatorHrp() + networkId);
 	}
 
 	public static String resourceHrpSuffix(int networkId) {
 		return Network.ofId(networkId).map(Network::getResourceHrpSuffix)
-			.orElse(Network.STOKENET.getNodeHrp() + networkId);
+			.orElse(Network.STOKENET.getResourceHrpSuffix() + networkId);
 	}
 
 	public static String nodeHrp(int networkId) {
