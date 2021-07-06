@@ -185,7 +185,7 @@ public final class ForkManager {
 					Optional.ofNullable(fixedEpochForksMap.get(e.getKey()));
 
 				final var maybeExpectedCandidate = candidateFork
-					.filter(f -> f.getPredicate().minEpoch() >= e.getKey());
+					.filter(f -> e.getKey() >= f.getPredicate().minEpoch());
 
 				final var expectedAtFixedEpochMatches =
 					maybeExpectedAtFixedEpoch.isPresent() && maybeExpectedAtFixedEpoch.get().getHash().equals(e.getValue());
