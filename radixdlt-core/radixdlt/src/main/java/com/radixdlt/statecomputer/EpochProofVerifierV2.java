@@ -79,13 +79,14 @@ import java.util.stream.Collectors;
 public class EpochProofVerifierV2 implements BatchVerifier<LedgerAndBFTProof> {
 	@Override
 	public void testMetadata(LedgerAndBFTProof metadata, List<REProcessedTxn> txns) throws MetadataException {
+		if (metadata == null) { return; };
 		NextValidatorSetEvent nextValidatorSetEvent = null;
 		for (int i = 0; i < txns.size(); i++) {
 			var processed = txns.get(i);
 			var nextEpochEvents = processed.getEvents().stream()
-				.filter(NextValidatorSetEvent.class::isInstance)
-				.map(NextValidatorSetEvent.class::cast)
-				.collect(Collectors.toList());
+					.filter(NextValidatorSetEvent.class::isInstance)
+					.map(NextValidatorSetEvent.class::cast)
+					.collect(Collectors.toList());
 
 			if (!nextEpochEvents.isEmpty()) {
 				// TODO: Move this check into Meter
@@ -101,7 +102,7 @@ public class EpochProofVerifierV2 implements BatchVerifier<LedgerAndBFTProof> {
 				// TODO: Move this check into Meter
 				var stateUpdates = processed.getGroupedStateUpdates();
 				if (stateUpdates.get(stateUpdates.size() - 1).stream()
-					.noneMatch(u -> u.getParsed() instanceof EpochData)) {
+						.noneMatch(u -> u.getParsed() instanceof EpochData)) {
 					throw new MetadataException("Epoch update is not the last execution.");
 				}
 
@@ -116,7 +117,7 @@ public class EpochProofVerifierV2 implements BatchVerifier<LedgerAndBFTProof> {
 		if (nextValidatorSetEvent != null) {
 			// TODO: Comparison of ordering as well
 			var nextValidatorSet = nextValidatorSetEvent.nextValidators().stream()
-				.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount()));
+					.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount()));
 			var bftValidatorSet = BFTValidatorSet.from(nextValidatorSet);
 			if (!nextValidatorSetMaybe.orElseThrow().equals(bftValidatorSet)) {
 				throw new MetadataException("Validator set computed does not match proof.");
