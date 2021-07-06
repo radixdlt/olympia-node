@@ -68,7 +68,7 @@ public final class REInstruction {
 		LREAD((byte) 0x4, REOp.READ) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf) throws DeserializeException {
-				var index = buf.getInt();
+				var index = buf.getShort();
 				if (index < 0 || index >= parserState.upSubstateCount()) {
 					throw new DeserializeException("Bad local index: " + index);
 				}
@@ -91,15 +91,15 @@ public final class REInstruction {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf) throws DeserializeException {
 				var length = Byte.toUnsignedInt(buf.get());
-				if (length <= Integer.BYTES) {
+				if (length <= Short.BYTES) {
 					throw new DeserializeException("SubstateId is not virtual.");
 				}
-				var index = buf.getInt();
+				var index = buf.getShort();
 				if (index < 0 || index >= parserState.upSubstateCount()) {
 					throw new DeserializeException("Bad local index: " + index);
 				}
 				var parent = SubstateId.ofSubstate(parserState.txnId(), index);
-				var bytes = new byte[length - Integer.BYTES];
+				var bytes = new byte[length - Short.BYTES];
 				buf.get(bytes);
 				return SubstateId.ofVirtualSubstate(parent, bytes);
 			}
@@ -113,7 +113,7 @@ public final class REInstruction {
 		LDOWN((byte) 0x8, REOp.DOWN) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf) throws DeserializeException {
-				var index = buf.getInt();
+				var index = buf.getShort();
 				if (index < 0 || index >= parserState.upSubstateCount()) {
 					throw new DeserializeException("Bad local index: " + index);
 				}
@@ -136,15 +136,15 @@ public final class REInstruction {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf) throws DeserializeException {
 				var length = Byte.toUnsignedInt(buf.get());
-				if (length <= Integer.BYTES) {
+				if (length <= Short.BYTES) {
 					throw new DeserializeException("SubstateId is not virtual.");
 				}
-				var index = buf.getInt();
+				var index = buf.getShort();
 				if (index < 0 || index >= parserState.upSubstateCount()) {
 					throw new DeserializeException("Bad local index: " + index);
 				}
 				var parent = SubstateId.ofSubstate(parserState.txnId(), index);
-				var bytes = new byte[length - Integer.BYTES];
+				var bytes = new byte[length - Short.BYTES];
 				buf.get(bytes);
 				return SubstateId.ofVirtualSubstate(parent, bytes);
 			}

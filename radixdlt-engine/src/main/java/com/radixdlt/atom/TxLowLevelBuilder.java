@@ -26,7 +26,7 @@ import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.utils.Ints;
+import com.radixdlt.utils.Shorts;
 import com.radixdlt.utils.UInt256;
 
 import java.io.ByteArrayOutputStream;
@@ -125,9 +125,9 @@ public final class TxLowLevelBuilder {
 		if (virtualKey.length > 128) {
 			throw new IllegalStateException();
 		}
-		var buf = ByteBuffer.allocate(Integer.BYTES + 1 + virtualKey.length);
-		buf.put((byte) (virtualKey.length + Integer.BYTES));
-		buf.putInt(index);
+		var buf = ByteBuffer.allocate(Short.BYTES + 1 + virtualKey.length);
+		buf.put((byte) (virtualKey.length + Short.BYTES));
+		buf.putShort((short) index);
 		buf.put(virtualKey);
 		instruction(REInstruction.REMicroOp.LVDOWN, buf.array());
 		return this;
@@ -137,9 +137,9 @@ public final class TxLowLevelBuilder {
 		if (virtualKey.length > 128) {
 			throw new IllegalStateException();
 		}
-		var buf = ByteBuffer.allocate(Integer.BYTES + 1 + virtualKey.length);
-		buf.put((byte) (virtualKey.length + Integer.BYTES));
-		buf.putInt(index);
+		var buf = ByteBuffer.allocate(Short.BYTES + 1 + virtualKey.length);
+		buf.put((byte) (virtualKey.length + Short.BYTES));
+		buf.putShort((short) index);
 		buf.put(virtualKey);
 		instruction(REInstruction.REMicroOp.LVREAD, buf.array());
 		return this;
@@ -174,7 +174,7 @@ public final class TxLowLevelBuilder {
 		if (particle == null) {
 			throw new IllegalStateException("Local particle does not exist: " + index);
 		}
-		instruction(REInstruction.REMicroOp.LREAD, Ints.toByteArray(index));
+		instruction(REInstruction.REMicroOp.LREAD, Shorts.toByteArray((short) index));
 		return this;
 	}
 
@@ -189,7 +189,7 @@ public final class TxLowLevelBuilder {
 		if (particle == null) {
 			throw new IllegalStateException("Local particle does not exist: " + index);
 		}
-		instruction(REInstruction.REMicroOp.LDOWN, Ints.toByteArray(index));
+		instruction(REInstruction.REMicroOp.LDOWN, Shorts.toByteArray((short) index));
 		return this;
 	}
 
