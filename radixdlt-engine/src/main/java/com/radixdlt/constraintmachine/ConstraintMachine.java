@@ -61,16 +61,31 @@ import java.util.function.Supplier;
 public final class ConstraintMachine {
 	private final Procedures procedures;
 	private final VirtualSubstateDeserialization virtualSubstateDeserialization;
+	private final SubstateDeserialization deserialization;
 	private final Meter metering;
 
-	public ConstraintMachine(Procedures procedures, VirtualSubstateDeserialization virtualSubstateDeserialization) {
-		this(procedures, virtualSubstateDeserialization, Meter.EMPTY);
+	public ConstraintMachine(
+		Procedures procedures,
+		SubstateDeserialization deserialization,
+		VirtualSubstateDeserialization virtualSubstateDeserialization
+	) {
+		this(procedures, deserialization, virtualSubstateDeserialization, Meter.EMPTY);
 	}
 
-	public ConstraintMachine(Procedures procedures, VirtualSubstateDeserialization virtualSubstateDeserialization, Meter metering) {
+	public ConstraintMachine(
+		Procedures procedures,
+		SubstateDeserialization deserialization,
+		VirtualSubstateDeserialization virtualSubstateDeserialization,
+		Meter metering
+	) {
 		this.procedures = Objects.requireNonNull(procedures);
+		this.deserialization = deserialization;
 		this.virtualSubstateDeserialization = virtualSubstateDeserialization;
 		this.metering = Objects.requireNonNull(metering);
+	}
+
+	public SubstateDeserialization getDeserialization() {
+		return deserialization;
 	}
 
 	private static final class CMValidationState {
@@ -436,7 +451,6 @@ public final class ConstraintMachine {
 	 * @return the first error found, otherwise an empty optional
 	 */
 	public List<List<REStateUpdate>> verify(
-		SubstateDeserialization deserialization,
 		CMStore cmStore,
 		ExecutionContext context,
 		List<REInstruction> instructions

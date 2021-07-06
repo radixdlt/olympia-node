@@ -30,6 +30,7 @@ import com.radixdlt.atom.actions.FeeReserveComplete;
 import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.ExecutionContext;
+import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.REProcessedTxn;
@@ -219,6 +220,7 @@ public final class RadixEngine<M> {
 		synchronized (stateUpdateEngineLock) {
 			this.constraintMachine = new ConstraintMachine(
 				constraintMachineConfig.getProcedures(),
+				constraintMachineConfig.getDeserialization(),
 				constraintMachineConfig.getVirtualSubstateDeserialization(),
 				constraintMachineConfig.getMeter()
 			);
@@ -327,7 +329,6 @@ public final class RadixEngine<M> {
 		context.setDisableResourceAllocAndDestroy(parsedTxn.disableResourceAllocAndDestroy());
 
 		var stateUpdates = constraintMachine.verify(
-			parser.getSubstateDeserialization(),
 			engineStoreInTransaction,
 			context,
 			parsedTxn.instructions()
@@ -440,7 +441,7 @@ public final class RadixEngine<M> {
 
 			var txBuilder = TxBuilder.newBuilder(
 				filteredStore,
-				parser.getSubstateDeserialization(),
+				constraintMachine.getDeserialization(),
 				serialization
 			);
 
