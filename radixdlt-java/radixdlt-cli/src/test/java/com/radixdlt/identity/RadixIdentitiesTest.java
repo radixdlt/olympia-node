@@ -20,15 +20,15 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-package com.radixdlt.client.lib.identity;
+package com.radixdlt.identity;
+
+import org.junit.Test;
+
+import java.io.Writer;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
-import java.io.Writer;
-
-import org.junit.Test;
 
 public class RadixIdentitiesTest {
 
