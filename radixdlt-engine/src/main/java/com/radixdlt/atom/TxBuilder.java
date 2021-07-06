@@ -136,10 +136,8 @@ public final class TxBuilder {
 	}
 
 	private CloseableCursor<RawSubstateBytes> createRemoteSubstateCursor(SubstateIndex index) {
-		return CloseableCursor.filter(
-			remoteSubstate.openIndexedCursor(index),
-			s -> !lowLevelBuilder.remoteDownSubstate().contains(SubstateId.fromBytes(s.getId()))
-		);
+		return remoteSubstate.openIndexedCursor(index)
+			.filter(s -> !lowLevelBuilder.remoteDownSubstate().contains(SubstateId.fromBytes(s.getId())));
 	}
 
 	private CloseableCursor<RawSubstateBytes> createRemoteSubstateCursor(Class<? extends Particle> c) {

@@ -29,4 +29,8 @@ public class MempoolRejectedException extends Exception {
 	public MempoolRejectedException(String message, Throwable cause) {
 		super(message, cause);
 	}
+
+	public MempoolRejectedException(Throwable cause) {
+		super(cause);
+	}
 }

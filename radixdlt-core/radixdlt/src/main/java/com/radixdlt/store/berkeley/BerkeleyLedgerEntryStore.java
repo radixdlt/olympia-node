@@ -391,13 +391,27 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 							}
 
 							var substateTypeId = data.getData()[data.getOffset()];
+							var subType = data.getData()[data.getOffset() + 1];
 							final int prefixIndexSize;
 							if (substateTypeId == SubstateTypeId.EXITTING_STAKE.id()) {
 								// 0: Type Byte
 								// 1: Reserved Byte
 								// 2-5: Epoch
 								prefixIndexSize = 2 + Long.BYTES;
-							} else if (substateTypeId == SubstateTypeId.PREPARED_RAKE_UPDATE.id()) {
+							} else if (substateTypeId == SubstateTypeId.VALIDATOR_OWNER_COPY.id()
+								&& subType == (byte) 0x1) {
+								// 0: Type Byte
+								// 1: Reserved Byte
+								// 2-5: Epoch
+								prefixIndexSize = 2 + Long.BYTES;
+							} else if (substateTypeId == SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id()
+								&& subType == (byte) 0x1) {
+								// 0: Type Byte
+								// 1: Reserved Byte
+								// 2-5: Epoch
+								prefixIndexSize = 2 + Long.BYTES;
+							} else if (substateTypeId == SubstateTypeId.VALIDATOR_RAKE_COPY.id()
+								&& subType == (byte) 0x1) {
 								// 0: Type Byte
 								// 1: Reserved Byte
 								// 2-5: Epoch
@@ -573,19 +587,21 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			this.dbTxn = dbTxn;
 			this.db = db;
 			this.indexableBytes = indexableBytes;
-			this.reverse = indexableBytes[0] == SubstateTypeId.VALIDATOR_STAKE_DATA.id();
+			this.reverse = indexableBytes[0] == SubstateTypeId.VALIDATOR_STAKE_DATA.id()
+				|| indexableBytes[0] == SubstateTypeId.VALIDATOR_RAKE_COPY.id()
+				|| indexableBytes[0] == SubstateTypeId.VALIDATOR_OWNER_COPY.id()
+				|| indexableBytes[0] == SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id();
 		}
 
 		private void open() {
 			this.cursor = db.openCursor(dbTxn, null);
 			if (reverse) {
-				var copy = Arrays.copyOf(indexableBytes, indexableBytes.length);
-				var lastIndex = indexableBytes.length - 1;
-				if (copy[lastIndex] == (byte) (0xff)) {
-					throw new IllegalStateException("Unexpected last byte.");
+				if ((indexableBytes[0] & 0x80) != 0) {
+					throw new IllegalStateException("Unexpected first byte.");
 				}
-				copy[lastIndex]++;
-				this.key = entry(copy);
+				var copy = new BigInteger(indexableBytes);
+				var firstKey = copy.add(BigInteger.ONE).toByteArray();
+				this.key = entry(firstKey);
 				cursor.getSearchKeyRange(key, substateIdBytes, value, null);
 				this.status = cursor.getPrev(key, substateIdBytes, value, null);
 			} else {

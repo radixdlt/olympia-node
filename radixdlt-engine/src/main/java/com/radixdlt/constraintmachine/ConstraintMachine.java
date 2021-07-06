@@ -31,7 +31,7 @@ import com.radixdlt.constraintmachine.exceptions.MissingProcedureException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
 import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
-import com.radixdlt.constraintmachine.exceptions.TxnParseException;
+import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.constraintmachine.meter.Meter;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
@@ -188,24 +188,19 @@ public final class ConstraintMachine {
 		}
 
 		public CloseableCursor<Substate> getIndexedCursor(SubstateIndex index) {
-			return CloseableCursor.concat(
-				CloseableCursor.wrapIterator(localUpParticles.values().stream()
+			return CloseableCursor.wrapIterator(localUpParticles.values().stream()
 					.filter(s -> index.test(s.getSecond().get())).map(Pair::getFirst).iterator()
-				),
-				() -> CloseableCursor.filter(
-					CloseableCursor.map(
-						store.openIndexedCursor(index),
-						r -> {
-							try {
-								var substate = deserialization.deserialize(r.getData());
-								return Substate.create(substate, SubstateId.fromBytes(r.getId()));
-							} catch (DeserializeException e) {
-								throw new IllegalStateException();
-							}
-						}),
-					s -> !remoteDownParticles.contains(s.getId())
-				)
-			);
+				).concat(() -> store.openIndexedCursor(index)
+					.map(r -> {
+						try {
+							var substate = deserialization.deserialize(r.getData());
+							return Substate.create(substate, SubstateId.fromBytes(r.getId()));
+						} catch (DeserializeException e) {
+							throw new IllegalStateException();
+						}
+					})
+					.filter(s -> !remoteDownParticles.contains(s.getId()))
+				);
 		}
 	}
 

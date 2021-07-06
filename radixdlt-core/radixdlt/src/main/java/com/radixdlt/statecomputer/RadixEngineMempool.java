@@ -90,7 +90,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 			radixEngineTxns = checker.execute(List.of(txn)).getFirst();
 		} catch (RadixEngineException e) {
 			// TODO: allow missing dependency atoms to live for a certain amount of time
-			throw new RadixEngineMempoolException(e);
+			throw new MempoolRejectedException(e);
 		} finally {
 			radixEngine.deleteBranches();
 		}

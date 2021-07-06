@@ -19,7 +19,6 @@ package com.radixdlt.engine;
 
 import com.radixdlt.application.system.construction.FeeReserveCompleteException;
 import com.radixdlt.atom.REConstructor;
-import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
@@ -39,7 +38,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.constraintmachine.exceptions.TxnParseException;
+import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
@@ -438,10 +437,9 @@ public final class RadixEngine<M> {
 
 	private TxBuilder construct(TxBuilderExecutable executable, Set<SubstateId> avoid) throws TxBuilderException {
 		synchronized (stateUpdateEngineLock) {
-			SubstateStore filteredStore = b -> CloseableCursor.filter(
-				engineStore.openIndexedCursor(b),
-				i -> !avoid.contains(SubstateId.fromBytes(i.getId()))
-			);
+			SubstateStore filteredStore = b ->
+				engineStore.openIndexedCursor(b)
+					.filter(i -> !avoid.contains(SubstateId.fromBytes(i.getId())));
 
 			var txBuilder = TxBuilder.newBuilder(
 				filteredStore,

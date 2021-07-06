@@ -19,6 +19,8 @@
 package com.radixdlt.application.tokens;
 
 import com.radixdlt.application.validators.construction.RegisterValidatorConstructor;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxAction;
@@ -87,8 +89,10 @@ public class UnstakeTokensV2Test {
 					),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
-					new ValidatorConstraintScryptV2(2),
-					new ValidatorRegisterConstraintScrypt()
+					new ValidatorConstraintScryptV2(),
+					new ValidatorRegisterConstraintScrypt(),
+					new ValidatorUpdateRakeConstraintScrypt(2),
+					new ValidatorUpdateOwnerConstraintScrypt()
 				),
 				new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()),
 				new UnstakeOwnershipConstructor()
@@ -104,8 +108,10 @@ public class UnstakeTokensV2Test {
 					),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
-					new ValidatorConstraintScryptV2(2),
-					new ValidatorRegisterConstraintScrypt()
+					new ValidatorConstraintScryptV2(),
+					new ValidatorRegisterConstraintScrypt(),
+					new ValidatorUpdateRakeConstraintScrypt(2),
+					new ValidatorUpdateOwnerConstraintScrypt()
 				),
 				new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()),
 				new UnstakeOwnershipConstructor()
@@ -121,8 +127,10 @@ public class UnstakeTokensV2Test {
 					),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
-					new ValidatorConstraintScryptV2(2),
-					new ValidatorRegisterConstraintScrypt()
+					new ValidatorConstraintScryptV2(),
+					new ValidatorRegisterConstraintScrypt(),
+					new ValidatorUpdateRakeConstraintScrypt(2),
+					new ValidatorUpdateOwnerConstraintScrypt()
 				),
 				new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()),
 				new UnstakeOwnershipConstructor()
@@ -138,8 +146,10 @@ public class UnstakeTokensV2Test {
 					),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
-					new ValidatorConstraintScryptV2(2),
-					new ValidatorRegisterConstraintScrypt()
+					new ValidatorConstraintScryptV2(),
+					new ValidatorRegisterConstraintScrypt(),
+					new ValidatorUpdateRakeConstraintScrypt(2),
+					new ValidatorUpdateOwnerConstraintScrypt()
 				),
 				new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()),
 				new UnstakeOwnershipConstructor()

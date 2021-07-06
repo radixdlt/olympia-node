@@ -18,6 +18,8 @@ package com.radixdlt.api.store.berkeley;
 
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.accounting.TwoActorEntry;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
@@ -107,11 +109,13 @@ public class TransactionParserTest {
 		cmAtomOS.load(new EpochUpdateConstraintScrypt(
 			10, Amount.ofTokens(10).toSubunits(), 9800, 1, 10
 		));
-		cmAtomOS.load(new ValidatorConstraintScryptV2(2));
+		cmAtomOS.load(new ValidatorConstraintScryptV2());
 		cmAtomOS.load(new TokensConstraintScryptV3());
 		cmAtomOS.load(new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()));
 		cmAtomOS.load(new FeeConstraintScrypt());
 		cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
+		cmAtomOS.load(new ValidatorUpdateRakeConstraintScrypt(2));
+		cmAtomOS.load(new ValidatorUpdateOwnerConstraintScrypt());
 
 		final var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),
@@ -143,9 +147,9 @@ public class TransactionParserTest {
 		).buildWithoutSignature();
 		var validatorBuilder = this.engine.construct(
 			TxnConstructionRequest.create()
+				.action(new CreateSystem(System.currentTimeMillis()))
 				.action(new RegisterValidator(this.validatorKeyPair.getPublicKey()))
 				.action(new UpdateAllowDelegationFlag(this.validatorKeyPair.getPublicKey(), true))
-				.action(new CreateSystem(System.currentTimeMillis()))
 		);
 		var txn1 = validatorBuilder.buildWithoutSignature();
 

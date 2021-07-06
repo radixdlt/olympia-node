@@ -21,10 +21,10 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.engine.parser.exceptions.REInstructionDataDeserializeException;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Pair;
 
-import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
 /**
@@ -238,15 +238,16 @@ public final class REInstruction {
 	}
 
 	public static REInstruction readFrom(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization deserialization)
-		throws DeserializeException {
+		throws DeserializeException, REInstructionDataDeserializeException {
+
+		var microOp = REMicroOp.fromByte(buf.get());
+		var pos = buf.position();
 		try {
-			var microOp = REMicroOp.fromByte(buf.get());
-			var pos = buf.position();
 			var data = microOp.read(parserState, buf, deserialization);
 			var length = buf.position() - pos;
 			return new REInstruction(microOp, data, buf.array(), pos, length);
-		} catch (BufferUnderflowException e) {
-			throw new DeserializeException("Buffer underflow @" + parserState.curIndex(), e);
+		} catch (Exception e) {
+			throw new REInstructionDataDeserializeException(microOp, e);
 		}
 	}
 

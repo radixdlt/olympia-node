@@ -18,8 +18,31 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.construction.FeeReserveCompleteConstructor;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
+import com.radixdlt.atom.REConstructor;
+import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atom.actions.CreateFixedToken;
+import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.atom.actions.CreateSystem;
+import com.radixdlt.atom.actions.FeeReserveComplete;
+import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.NextEpoch;
+import com.radixdlt.atom.actions.NextRound;
+import com.radixdlt.atom.actions.FeeReservePut;
+import com.radixdlt.atom.actions.RegisterValidator;
+import com.radixdlt.atom.actions.SplitToken;
+import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.atom.actions.UnregisterValidator;
+import com.radixdlt.atom.actions.UnstakeOwnership;
+import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
+import com.radixdlt.atom.actions.UpdateRake;
+import com.radixdlt.atom.actions.UpdateValidatorMetadata;
+import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
+import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.construction.FeeReservePutConstructor;
 import com.radixdlt.application.system.construction.NextEpochConstructorV3;
 import com.radixdlt.application.system.construction.NextViewConstructorV3;
@@ -46,27 +69,6 @@ import com.radixdlt.application.validators.construction.UpdateValidatorConstruct
 import com.radixdlt.application.validators.construction.UpdateValidatorOwnerConstructor;
 import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
-import com.radixdlt.atom.REConstructor;
-import com.radixdlt.atom.actions.BurnToken;
-import com.radixdlt.atom.actions.CreateFixedToken;
-import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.atom.actions.CreateSystem;
-import com.radixdlt.atom.actions.FeeReserveComplete;
-import com.radixdlt.atom.actions.FeeReservePut;
-import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.NextEpoch;
-import com.radixdlt.atom.actions.NextRound;
-import com.radixdlt.atom.actions.RegisterValidator;
-import com.radixdlt.atom.actions.SplitToken;
-import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnregisterValidator;
-import com.radixdlt.atom.actions.UnstakeOwnership;
-import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
-import com.radixdlt.atom.actions.UpdateRake;
-import com.radixdlt.atom.actions.UpdateValidatorMetadata;
-import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
@@ -88,9 +90,11 @@ public final class MainnetEngineRules {
 		final var perResourceFee = config.getFeeTable().getPerResourceFee().toSubunits();
 		final var rakeIncreaseDebouncerEpochLength = config.getRakeIncreaseDebouncerEpochLength();
 
-		final var v4 = new CMAtomOS(Set.of("xrd"));
-		v4.load(new ValidatorConstraintScryptV2(rakeIncreaseDebouncerEpochLength));
+		final CMAtomOS v4 = new CMAtomOS(Set.of("xrd"));
+		v4.load(new ValidatorConstraintScryptV2());
+		v4.load(new ValidatorUpdateRakeConstraintScrypt(rakeIncreaseDebouncerEpochLength));
 		v4.load(new ValidatorRegisterConstraintScrypt());
+		v4.load(new ValidatorUpdateOwnerConstraintScrypt());
 		v4.load(new TokensConstraintScryptV3());
 		v4.load(new FeeConstraintScrypt());
 		v4.load(new StakingConstraintScryptV4(config.getMinimumStake().toSubunits()));
@@ -103,21 +107,21 @@ public final class MainnetEngineRules {
 			config.getUnstakingEpochDelay(),
 			config.getMaxValidators()
 		));
-		final var meter = Meters.combine(
+		var meter = Meters.combine(
 			config.getMaxSigsPerRound().stream().<Meter>mapToObj(SigsPerRoundMeter::create).findAny().orElse(Meter.EMPTY),
 			Meters.combine(
 				TxnSizeFeeMeter.create(perByteFee),
 				ResourceFeeMeter.create(perResourceFee)
 			)
 		);
-		final var constraintMachineConfig = new ConstraintMachineConfig(
+		var constraintMachineConfig = new ConstraintMachineConfig(
 			v4.virtualizedUpParticles(),
 			v4.getProcedures(),
 			meter
 		);
-		final var parser = new REParser(v4.buildSubstateDeserialization());
-		final var serialization = v4.buildSubstateSerialization();
-		final var actionConstructors = REConstructor.newBuilder()
+		var parser = new REParser(v4.buildSubstateDeserialization());
+		var serialization = v4.buildSubstateSerialization();
+		var actionConstructors = REConstructor.newBuilder()
 			.perByteFee(perByteFee)
 			.put(CreateSystem.class, new CreateSystemConstructorV2())
 			.put(BurnToken.class, new BurnTokenConstructor())
@@ -141,7 +145,10 @@ public final class MainnetEngineRules {
 			.put(UpdateValidatorMetadata.class, new UpdateValidatorConstructor())
 			.put(FeeReservePut.class, new FeeReservePutConstructor())
 			.put(FeeReserveComplete.class, new FeeReserveCompleteConstructor(config.getFeeTable()))
-			.put(UpdateRake.class, new UpdateRakeConstructor(rakeIncreaseDebouncerEpochLength))
+			.put(UpdateRake.class, new UpdateRakeConstructor(
+				rakeIncreaseDebouncerEpochLength,
+				ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE
+			))
 			.put(UpdateValidatorOwnerAddress.class, new UpdateValidatorOwnerConstructor())
 			.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())
 			.build();

@@ -18,51 +18,30 @@
 
 package com.radixdlt.application.validators.construction;
 
+import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.application.validators.state.PreparedOwnerUpdate;
 import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.identifiers.REAddr;
 
-import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 public class UpdateValidatorOwnerConstructor implements ActionConstructor<UpdateValidatorOwnerAddress> {
 	@Override
-	public void construct(UpdateValidatorOwnerAddress action, TxBuilder builder) throws TxBuilderException {
-		var updateInFlight = builder
-			.find(PreparedOwnerUpdate.class, p -> p.getValidatorKey().equals(action.getValidatorKey()));
+	public void construct(UpdateValidatorOwnerAddress action, TxBuilder txBuilder) throws TxBuilderException {
+		txBuilder.down(
+			ValidatorOwnerCopy.class,
+			p -> p.getValidatorKey().equals(action.getValidatorKey()),
+			Optional.of(SubstateWithArg.noArg(new ValidatorOwnerCopy(action.getValidatorKey(), REAddr.ofPubKeyAccount(action.getValidatorKey())))),
+			() -> new TxBuilderException("Cannot find state")
+		);
 
-		if (updateInFlight.isPresent()) {
-			builder.swap(
-				PreparedOwnerUpdate.class,
-				p -> p.getValidatorKey().equals(action.getValidatorKey()),
-				Optional.empty(),
-				() -> new TxBuilderException("Cannot find state")
-			).with(substateDown ->
-				List.of(new PreparedOwnerUpdate(
-					action.getValidatorKey(),
-					action.getOwnerAddress()
-				))
-			);
-		} else {
-			builder.swap(
-				ValidatorOwnerCopy.class,
-				p -> p.getValidatorKey().equals(action.getValidatorKey()),
-				Optional.of(SubstateWithArg.noArg(
-					new ValidatorOwnerCopy(action.getValidatorKey(), REAddr.ofPubKeyAccount(action.getValidatorKey()))
-				)),
-				() -> new TxBuilderException("Cannot find state")
-			).with(substateDown ->
-				List.of(new PreparedOwnerUpdate(
-					action.getValidatorKey(),
-					action.getOwnerAddress()
-				))
-			);
-		}
-		builder.end();
+		var curEpoch = txBuilder.read(EpochData.class, p -> true, Optional.empty(), "Cannot find epoch");
+		txBuilder.up(new ValidatorOwnerCopy(OptionalLong.of(curEpoch.getEpoch() + 1), action.getValidatorKey(), action.getOwnerAddress()));
+		txBuilder.end();
 	}
 }
