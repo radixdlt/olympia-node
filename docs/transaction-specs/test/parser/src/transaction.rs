@@ -1,3 +1,5 @@
+
+
 extern crate bytebuffer;
 
 use bytebuffer::ByteBuffer;
@@ -14,35 +16,35 @@ pub struct Transaction {
 
 #[derive(Debug)]
 pub enum Instruction {
-    HEADER(u8, u8),
+    END,
 
     SYSCALL(Bytes),
 
     UP(Box<dyn Substate>),
 
-    VDOWN(Box<dyn Substate>),
-
-    VDOWNARG(Box<dyn Substate>, Bytes),
-
-    DOWN(SubstateId),
-
-    LDOWN(u32),
-
-    DOWNALL(u8),
-
-    MSG(Bytes),
-
-    SIG(Signature),
-
-    DOWNINDEX(Bytes),
+    READ(SubstateId),
 
     LREAD(u32),
 
     VREAD(Box<dyn Substate>),
 
-    READ(SubstateId),
+    DOWN(SubstateId),
 
-    END,
+    LDOWN(u32),
+
+    VDOWN(Box<dyn Substate>),
+
+    VDOWNARG(Box<dyn Substate>, Bytes),
+
+    SIG(Signature),
+
+    MSG(Bytes),
+
+    HEADER(u8, u8),
+
+    READINDEX(Bytes),
+
+    DOWNINDEX(Bytes),
 }
 
 impl Transaction {
@@ -73,20 +75,20 @@ impl Instruction {
         let t = buffer.read_u8();
         match t {
             0x00 => Self::END,
-            0x01 => Self::UP(Self::read_substate(buffer)),
-            0x02 => Self::VDOWN(Self::read_substate(buffer)),
-            0x03 => Self::VDOWNARG(Self::read_substate(buffer), Bytes::from_buffer(buffer)),
-            0x04 => Self::DOWN(SubstateId::from_buffer(buffer)),
-            0x05 => Self::LDOWN(buffer.read_u32()),
-            0x06 => Self::MSG(Bytes::from_buffer(buffer)),
-            0x07 => Self::SIG(Signature::from_buffer(buffer)),
-            0x08 => Self::DOWNALL(buffer.read_u8()),
-            0x09 => Self::SYSCALL(Bytes::from_buffer(buffer)),
-            0x0A => Self::HEADER(buffer.read_u8(), buffer.read_u8()),
-            0x0B => Self::DOWNINDEX(Bytes::from_buffer(buffer)),
-            0x0C => Self::LREAD(buffer.read_u32()),
-            0x0D => Self::VREAD(Self::read_substate(buffer)),
-            0x0E => Self::READ(SubstateId::from_buffer(buffer)),
+            0x01 => Self::SYSCALL(Bytes::from_buffer(buffer)),
+            0x02 => Self::UP(Self::read_substate(buffer)),
+            0x03 => Self::READ(SubstateId::from_buffer(buffer)),
+            0x04 => Self::LREAD(buffer.read_u32()),
+            0x05 => Self::VREAD(Self::read_substate(buffer)),
+            0x06 => Self::DOWN(SubstateId::from_buffer(buffer)),
+            0x07 => Self::LDOWN(buffer.read_u32()),
+            0x08 => Self::VDOWN(Self::read_substate(buffer)),
+            0x09 => Self::VDOWNARG(Self::read_substate(buffer), Bytes::from_buffer(buffer)),
+            0x0A => Self::SIG(Signature::from_buffer(buffer)),
+            0x0B => Self::MSG(Bytes::from_buffer(buffer)),
+            0x0C => Self::HEADER(buffer.read_u8(), buffer.read_u8()),
+            0x0D => Self::READINDEX(Bytes::from_buffer(buffer)),
+            0x0E => Self::DOWNINDEX(Bytes::from_buffer(buffer)),
             _ => panic!("Unexpected opcode: {:#04X}", t),
         }
     }
@@ -225,6 +227,30 @@ mod tests {
     #[test]
     fn other_transfer_mixed_tokens() {
         let contents = fs::read_to_string("../samples/other_transfer_mixed_tokens.txt").unwrap();
+        let raw = hex::decode(contents).unwrap();
+        let tx = Transaction::from_bytes(raw);
+        println!("{:?}", tx)
+    }
+
+    #[test]
+    fn other_stake_from_validator_1() {
+        let contents = fs::read_to_string("../samples/other_stake_from_validator_1.txt").unwrap();
+        let raw = hex::decode(contents).unwrap();
+        let tx = Transaction::from_bytes(raw);
+        println!("{:?}", tx)
+    }
+
+    #[test]
+    fn other_stake_from_validator_2() {
+        let contents = fs::read_to_string("../samples/other_stake_from_validator_2.txt").unwrap();
+        let raw = hex::decode(contents).unwrap();
+        let tx = Transaction::from_bytes(raw);
+        println!("{:?}", tx)
+    }
+
+    #[test]
+    fn other_complex_fee() {
+        let contents = fs::read_to_string("../samples/other_complex_fee.txt").unwrap();
         let raw = hex::decode(contents).unwrap();
         let tx = Transaction::from_bytes(raw);
         println!("{:?}", tx)
