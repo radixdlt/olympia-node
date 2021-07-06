@@ -16,18 +16,12 @@
  *
  */
 
-package com.radixdlt.constraintmachine.exceptions;
+package com.radixdlt.engine.parser.exceptions;
 
-public class TxnParseException extends Exception {
-	public TxnParseException(String message, Throwable cause) {
-		super(message, cause);
-	}
+import com.radixdlt.constraintmachine.REInstruction;
 
-	public TxnParseException(Throwable cause) {
-		super(cause);
-	}
-
-	public TxnParseException(String message) {
-		super(message);
+public class REInstructionDataDeserializeException extends Exception {
+	public REInstructionDataDeserializeException(REInstruction.REMicroOp microOp, Throwable cause) {
+		super("op=" + microOp, cause);
 	}
 }

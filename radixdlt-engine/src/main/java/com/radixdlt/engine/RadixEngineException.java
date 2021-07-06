@@ -27,12 +27,18 @@ import com.radixdlt.utils.Bytes;
 public final class RadixEngineException extends Exception {
 	private final Txn txn;
 	private final int txnIndex;
+	private final int batchSize;
 
 	public RadixEngineException(int txnIndex, int batchSize, Txn txn, Exception cause) {
 		super("index=" + txnIndex + " batchSize=" + batchSize + " txnId=" + txn.getId()
-			+ " size=" + txn.getPayload().length + " txn=" + Bytes.toHexString(txn.getPayload()), cause);
+			+ " txn_size=" + txn.getPayload().length + " txn=" + Bytes.toHexString(txn.getPayload()), cause);
 		this.txn = txn;
 		this.txnIndex = txnIndex;
+		this.batchSize = batchSize;
+	}
+
+	public int getBatchSize() {
+		return batchSize;
 	}
 
 	public Txn getTxn() {

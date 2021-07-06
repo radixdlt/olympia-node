@@ -18,12 +18,17 @@
 
 package com.radixdlt.integration.staking;
 
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
+import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.serialization.DeserializeException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
+import org.assertj.core.util.Throwables;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -55,7 +60,6 @@ import com.radixdlt.application.tokens.state.ExittingStake;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.application.validators.state.PreparedRakeUpdate;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.RegisterValidator;
@@ -276,6 +280,21 @@ public class StakingUnstakingValidatorsTest {
 						InvalidProposedTxn.class,
 						i -> {
 							throw new IllegalStateException("Invalid proposed transaction occurred: " + i, i.getException());
+						}
+					);
+				}
+
+				@ProvidesIntoSet
+				EventProcessorOnDispatch<?> mempoolFail() {
+					return new EventProcessorOnDispatch<>(
+						MempoolAddFailure.class,
+						e -> {
+							if (e.getException().getCause() instanceof RadixEngineException) {
+								var rootCause = Throwables.getRootCause(e.getException());
+								if (!(rootCause instanceof SubstateNotFoundException)) {
+									throw new IllegalStateException("Found unexpected mempool exception", e.getException());
+								}
+							}
 						}
 					);
 				}
@@ -514,7 +533,7 @@ public class StakingUnstakingValidatorsTest {
 					restartNode(nodeIndex);
 					continue;
 				case 6:
-					action = new UpdateRake(privKey.getPublicKey(), random.nextInt(PreparedRakeUpdate.RAKE_MAX + 1));
+					action = new UpdateRake(privKey.getPublicKey(), random.nextInt(ValidatorUpdateRakeConstraintScrypt.RAKE_MAX + 1));
 					break;
 				case 7:
 					action = new UpdateValidatorOwnerAddress(privKey.getPublicKey(), REAddr.ofPubKeyAccount(to));

@@ -19,6 +19,8 @@
 package com.radixdlt.statecomputer.forks;
 
 import com.radixdlt.application.system.construction.FeeReserveCompleteConstructor;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
@@ -90,8 +92,10 @@ public enum RERulesVersion {
 			var rakeIncreaseDebouncerEpochLength = config.getRakeIncreaseDebouncerEpochLength();
 
 			final CMAtomOS v4 = new CMAtomOS(Set.of("xrd"));
-			v4.load(new ValidatorConstraintScryptV2(rakeIncreaseDebouncerEpochLength));
+			v4.load(new ValidatorConstraintScryptV2());
+			v4.load(new ValidatorUpdateRakeConstraintScrypt(rakeIncreaseDebouncerEpochLength));
 			v4.load(new ValidatorRegisterConstraintScrypt());
+			v4.load(new ValidatorUpdateOwnerConstraintScrypt());
 			v4.load(new TokensConstraintScryptV3());
 			v4.load(new FeeConstraintScrypt());
 			v4.load(new StakingConstraintScryptV4(config.getMinimumStake().toSubunits()));
@@ -142,7 +146,10 @@ public enum RERulesVersion {
 				.put(UpdateValidatorMetadata.class, new UpdateValidatorConstructor())
 				.put(FeeReservePut.class, new FeeReservePutConstructor())
 				.put(FeeReserveComplete.class, new FeeReserveCompleteConstructor(config.getFeeTable()))
-				.put(UpdateRake.class, new UpdateRakeConstructor(rakeIncreaseDebouncerEpochLength))
+				.put(UpdateRake.class, new UpdateRakeConstructor(
+					rakeIncreaseDebouncerEpochLength,
+					ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE
+				))
 				.put(UpdateValidatorOwnerAddress.class, new UpdateValidatorOwnerConstructor())
 				.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())
 				.build();

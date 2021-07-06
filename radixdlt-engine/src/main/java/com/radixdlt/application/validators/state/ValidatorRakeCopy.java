@@ -21,14 +21,27 @@ package com.radixdlt.application.validators.state;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
+import java.util.OptionalLong;
 
 public final class ValidatorRakeCopy implements ValidatorData {
 	private final ECPublicKey validatorKey;
 	private final int curRakePercentage;
+	private final OptionalLong epochUpdate;
 
-	public ValidatorRakeCopy(ECPublicKey validatorKey, int curRakePercentage) {
+	public ValidatorRakeCopy(OptionalLong epochUpdate, ECPublicKey validatorKey, int curRakePercentage) {
+		this.epochUpdate = epochUpdate;
 		this.validatorKey = Objects.requireNonNull(validatorKey);
 		this.curRakePercentage = curRakePercentage;
+	}
+
+	public ValidatorRakeCopy(ECPublicKey validatorKey, int curRakePercentage) {
+		this.epochUpdate = OptionalLong.empty();
+		this.validatorKey = Objects.requireNonNull(validatorKey);
+		this.curRakePercentage = curRakePercentage;
+	}
+
+	public OptionalLong getEpochUpdate() {
+		return epochUpdate;
 	}
 
 	@Override
@@ -36,13 +49,13 @@ public final class ValidatorRakeCopy implements ValidatorData {
 		return validatorKey;
 	}
 
-	public int getCurRakePercentage() {
+	public int getRakePercentage() {
 		return curRakePercentage;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(validatorKey, curRakePercentage);
+		return Objects.hash(epochUpdate, validatorKey, curRakePercentage);
 	}
 
 	@Override
@@ -51,7 +64,8 @@ public final class ValidatorRakeCopy implements ValidatorData {
 			return false;
 		}
 		var other = (ValidatorRakeCopy) o;
-		return Objects.equals(this.validatorKey, other.validatorKey)
+		return Objects.equals(this.epochUpdate, other.epochUpdate)
+			&& Objects.equals(this.validatorKey, other.validatorKey)
 			&& this.curRakePercentage == other.curRakePercentage;
 	}
 }

@@ -19,6 +19,7 @@
 package com.radixdlt.application.tokens;
 
 import com.radixdlt.accounting.REResourceAccounting;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
@@ -71,7 +72,8 @@ public class StakeTokensTest {
 				List.of(
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
-					new ValidatorConstraintScryptV2(2)
+					new ValidatorConstraintScryptV2(),
+					new ValidatorUpdateOwnerConstraintScrypt()
 				),
 				new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits())
 			)

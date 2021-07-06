@@ -33,7 +33,7 @@ public final class IndexedSubstateIterator<D extends Particle> {
 	}
 
 	public void verifyPostTypePrefixEquals(byte[] prefix) throws ProcedureException {
-		if (index.getPrefix().length != 1 + prefix.length) { // 2, one for type byte, one for reserved
+		if (index.getPrefix().length != 1 + prefix.length) {
 			throw new ProcedureException("Invalid shutdownAll prefix");
 		}
 		for (int i = 0; i < prefix.length; i++) {
